@@ -73,16 +73,9 @@
 
   ST_BT_RT_ET_zero_removal_flag: 0      # 0 = not remove zeros before ST and after ET; 1 = remove zeros before ST and after ET
 
-  start_transect: 1                     # start transect number
-
-  end_transect: 200                     # end transect number
-
   transect_offset: 0                    # transect offset added to the CAN transect when merge the uS and CAN data
 
   age1_haul: [0]                        # trawls to be excluded if age-1 is excluded
-
-  KS_stratification: 0                  # 1 - stratification based on KS (or trawl) - based analysis
-                                        # 0 - geographically defined strata
 
   haul_no_offset: 200                   # Canadian's trawl number offset
 

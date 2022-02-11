@@ -5,13 +5,11 @@
   target_species_name: Hake       # name of the target species
 
   opr_indx: 1                     # 1 = Redefine Data Filenames, 2 = View Parameters, 3 = Data processing
-                                  # 4 = Visualization, 5 = Report
+                                  # 4 = Visualization, 5 = Report  TODO: Might only be used for GUI, look into this!
 
   #####################################################################################################################
   # Processing Parameters#
   ########################
-
-  exclude_age1: 1                       # 0 = include age 1 hake,   1 = exclude age 1 hake
 
   bio_Lmin: 15                          # minimum length for age1+
 
@@ -28,8 +26,6 @@
   int_for_zeros: 5                      # number of sample intervals for zeros along transect (nmi)
 
   disp_bins: 120                        # number of bins for histogram visualization
-
-  bootstrap_limit: 1                    # set initial bootstrapping limit be unity
 
   bootstrap_cnt: 0                      # set initial bootstrapping count be zero
 
@@ -108,9 +104,6 @@
 #####################################################################################################################
   # kriging parameters#
   #####################
-  kriging: 1                              # whether or not to conduct kriging, 1 will conduct, 0 will not
-
-  kriging_input: 1                        # 1 = biomass density; 2 = NASC;  3 = number density
 
   kriging_auto: 1                         # flag for automated kriging, 1 True, 0 False
 

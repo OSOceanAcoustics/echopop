@@ -8,5 +8,5 @@ epro_2019 = EchoPro(init_file_path='./config_files/initialization_config.yml',
 # print(epro_2019.get_initialized_parameters())
 # print(epro_2019.get_survey_year_parameters())
 
-epro_2019.process(extrapolation=True)
+epro_2019.process()
 

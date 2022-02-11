@@ -116,7 +116,16 @@ class EchoPro:
                 age_data_status: int = 1,
                 source: int = 3,
                 bio_data_type: int = 1,
-                KS_stratification : int = 1):
+                KS_stratification: int = 1,
+                kriging: bool = True,
+                kriging_input: int = 1,
+                exclude_age1: bool = False,
+                start_transect: int = 1,
+                end_transect: int = 200,
+                transect_reduction_fraction: float = 0.0,
+                transect_reduction_mode: int = 1,
+                bootstrap_limit: int = 1,
+                default_parameters: bool = True):
         """
         Parameters
         ----------
@@ -140,6 +149,28 @@ class EchoPro:
             Specifies the type of stratification to be used.
             0 = Pre-Stratification or customized stratification (geographically defined)
             1 = Post-Stratification (KS-based or trawl-based)
+        kriging : bool
+            States whether or not to perform kriging
+        kriging_input : int
+            Specifies TODO: ask Chu what this variable actually specifies
+            1 = Biomass density
+            2 = NASC
+            3 = Number density
+        exclude_age1 : bool
+            States whether or not age 1 hake should be included in analysis.
+        start_transect : int
+            Value to start transect
+        end_transect : int
+            Value to end transect
+        transect_reduction_fraction : float
+            Reduction fraction for transect TODO: should this be 5 or 0.05?
+        transect_reduction_mode : int
+            1 = Regular
+            2 = Random
+        bootstrap_limit : int
+            The number of bootstraping iterations to perform
+        default_parameters : bool
+            States whether or not to use the default parameters
 
         Returns
         -------
@@ -157,7 +188,7 @@ class EchoPro:
                 bio_data_type = 3
                 print("Changing bio_data_type to 3 based on platform name.")
 
-        opr_indx = 3 # TODO: look into this variable, might only be necessary for Matlab GUI
+        self.__init_params["opr_indx"] = 3 # TODO: look into this variable, might only be necessary for Matlab GUI
 
         # setting the species code ID based on bio data type
         if bio_data_type == 1:
@@ -189,6 +220,17 @@ class EchoPro:
                                          # 10 = one stratum for the whole survey
                                          # TODO: ask about the above comments
 
+
+        # TODO: make sure to take this into account!
+        # if para.proc.exclude_age1 == 1
+        #     para.acoust.filename.processed_data = para.acoust.filename.processed_data_age2;
+        #     para.bio_acoust.filename.Transect_region_haul = para.bio_acoust.filename.Transect_region_haul_age2;
+        # else
+        #     para.acoust.filename.processed_data = para.acoust.filename.processed_data_age1;
+        #     para.bio_acoust.filename.Transect_region_haul = para.bio_acoust.filename.Transect_region_haul_age1;
+        # end
+
+
         # check to make sure no survey year and initialization parameters are the same
         param_intersect = set(self.__init_params.keys()).intersection(set(self.__survey_params.keys()))
 
@@ -199,7 +241,10 @@ class EchoPro:
             full_params.update(self.__init_params)
             full_params.update(self.__survey_params)
 
-            return ProcessData(full_params)
+            return ProcessData(full_params, extrapolation, age_data_status, source, bio_data_type, KS_stratification,
+                               stratification_index, kriging, kriging_input, exclude_age1, start_transect,
+                               end_transect, transect_reduction_fraction, transect_reduction_mode, bootstrap_limit,
+                               default_parameters)
         else:
             raise RuntimeError('The initialization and survey year configuration files define the same variable! ' +
                                f'\n These variables are: {param_intersect}')
