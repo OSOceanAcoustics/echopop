@@ -1,8 +1,7 @@
-"""
-EchoProParameters is an object that handles the parsing of the
-parameter files and preparing parameters for later use
-"""
 from .echo_pro import EchoPro
+from .create_preliminary_files import CreateFiles
+from .generate_reports import GenerateReports
+from .visualization import Visualize
 
-__all__ = ["EchoPro"]
+__all__ = ["EchoPro", "CreateFiles", "GenerateReports", "Visualize"]
 

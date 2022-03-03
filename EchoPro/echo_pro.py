@@ -1,6 +1,6 @@
 import yaml
 import numpy as np
-from .data_processing import ProcessData
+from .run_bootstrapping import RunBootstrapping
 
 
 class EchoPro:
@@ -22,6 +22,8 @@ class EchoPro:
                  init_file_path: str,
                  survey_year_file_path: str):
 
+        self.bootstrapping_performed = False
+
         self.__init_file_path = init_file_path
         self.__check_init_file()
 
@@ -32,6 +34,8 @@ class EchoPro:
         self.__set_params_from_init()
 
         self.__read_survey_year_config()
+
+        self.__load_files()
 
     def __check_init_file(self):
         # TODO: create this function that checks the contents of the initialization config file
@@ -99,38 +103,34 @@ class EchoPro:
 
         print("Do stuff!")
 
-    def get_initialized_parameters(self):
-        """
-        Returns a dictionary specifying all initialized parameters.
-        """
-        return self.__init_params
+    def __load_files(self):
 
-    def get_survey_year_parameters(self):
-        """
-        Returns a dictionary specifying all survey year specific parameters.
-        """
-        return self.__survey_params
+        print("Loading files")
 
-    def process(self,
-                extrapolation: bool = False,
-                age_data_status: int = 1,
-                source: int = 3,
-                bio_data_type: int = 1,
-                KS_stratification: int = 1,
-                kriging: bool = True,
-                kriging_input: int = 1,
-                exclude_age1: bool = False,
-                start_transect: int = 1,
-                end_transect: int = 200,
-                transect_reduction_fraction: float = 0.0,
-                transect_reduction_mode: int = 1,
-                bootstrap_limit: int = 1,
-                default_parameters: bool = True):
+    def run_bootstrapping(self,
+                          extrapolation: bool = False,
+                          age_data_status: int = 1,
+                          source: int = 3,
+                          bio_data_type: int = 1,
+                          KS_stratification: int = 1,
+                          kriging: bool = True,
+                          kriging_input: int = 1,
+                          exclude_age1: bool = False,
+                          start_transect: int = 1,
+                          end_transect: int = 200,
+                          transect_reduction_fraction: float = 0.0,
+                          transect_reduction_mode: int = 1,
+                          bootstrap_limit: int = 1,
+                          default_parameters: bool = True):
         """
+        A function that performs bootstrapping. This involves processing
+        acoustic and biological data, computation of CV analysis,
+        and Kriging.
+
         Parameters
         ----------
         extrapolation : bool
-            Specifies if extrapolation should be used for Kriging
+                Specifies if extrapolation should be used for Kriging
         age_data_status : int
             0 = fake age data (TODO: this option looks unused)
             1 = actual age data
@@ -171,80 +171,30 @@ class EchoPro:
             The number of bootstraping iterations to perform
         default_parameters : bool
             States whether or not to use the default parameters
-
-        Returns
-        -------
-        ProcessData object
         """
 
-        # TODO: eventually bulk the below functions
+        # Get all inputs to the function run_bootstrapping()
+        function_args = locals()
 
-        # set variables based on the source used
-        if source <= 3:
-            self.__init_params["platform_name"] = 'FSV'
-        else: # TODO look into this and see if this else statement is necessary
-            self.__init_params["platform_name"] = 'SD'
-            if bio_data_type != 3:
-                bio_data_type = 3
-                print("Changing bio_data_type to 3 based on platform name.")
+        # remove the self argument
+        del function_args['self']
 
-        self.__init_params["opr_indx"] = 3 # TODO: look into this variable, might only be necessary for Matlab GUI
+        print(f"saved args = {function_args}")
 
-        # setting the species code ID based on bio data type
-        if bio_data_type == 1:
-            self.__init_params["species_code_ID"] = 22500 # target species_code for acoustic survey
-        elif bio_data_type == 2:
-            self.__init_params["species_code_ID"] = 22500 # target species_code for bottom trawl survey
-        elif bio_data_type == 3:
-            self.__init_params["species_code_ID"] = 206   # target species_code for industry data(observer data)
+        import copy
 
-        # setting the stratification index based on user provided input
-        # TODO: Might be able to take out this if else statement depending on downstream items
-        if KS_stratification == 1:
-            stratification_index = 1
-        else:
-            stratification_index = 0
+        # get copy of EchoPro
+        # TODO: This is creating a copy of the EchoPro object that
+        # TODO: could eat up memory if the input files are large
+        # epro_copy = copy.deepcopy(self)
+        #
+        # print(self)
 
-        # check that the stratification index is correctly set
-        if bio_data_type != 1:
-            if stratification_index != 0:
-                stratification_index = 0 # non - acoustical and trawl survey data only use INPFC stratification
-                print("Changing stratification_index to 0.")
-        else:
-            if stratification_index != 1:
-                print("Changing stratification_index to 1")
-                stratification_index = 1 # index for the chosen stratification
-                                         # 1 = KS(trawl) - based, 2 - 7 = geographically based but close to trawl - based stratification
-                                         # 0 = INPFC strata
-                                         # 7 = mix - proportion, rather than 85 % & 20 % hake / hake - mix rules
-                                         # 10 = one stratum for the whole survey
-                                         # TODO: ask about the above comments
+        bootstrapping_routine = RunBootstrapping(**function_args)
+
+        bootstrapping_routine.set_echopro_object(self)
+
+        return
 
 
-        # TODO: make sure to take this into account!
-        # if para.proc.exclude_age1 == 1
-        #     para.acoust.filename.processed_data = para.acoust.filename.processed_data_age2;
-        #     para.bio_acoust.filename.Transect_region_haul = para.bio_acoust.filename.Transect_region_haul_age2;
-        # else
-        #     para.acoust.filename.processed_data = para.acoust.filename.processed_data_age1;
-        #     para.bio_acoust.filename.Transect_region_haul = para.bio_acoust.filename.Transect_region_haul_age1;
-        # end
 
-
-        # check to make sure no survey year and initialization parameters are the same
-        param_intersect = set(self.__init_params.keys()).intersection(set(self.__survey_params.keys()))
-
-        # if no parameters are the same, then run process, else return error
-        if not param_intersect:
-            # combine survey year and initialization parameters into one dictionary
-            full_params = {}
-            full_params.update(self.__init_params)
-            full_params.update(self.__survey_params)
-
-            return ProcessData(full_params, extrapolation, age_data_status, source, bio_data_type, KS_stratification,
-                               stratification_index, kriging, kriging_input, exclude_age1, start_transect,
-                               end_transect, transect_reduction_fraction, transect_reduction_mode, bootstrap_limit,
-                               default_parameters)
-        else:
-            raise RuntimeError('The initialization and survey year configuration files define the same variable! ' +
-                               f'\n These variables are: {param_intersect}')
