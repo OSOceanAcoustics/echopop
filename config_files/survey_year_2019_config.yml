@@ -4,32 +4,25 @@
 ---
 
   # directory path that contains all data needed
-  data_root_dir: /Users/brandonreyes/Desktop/Washington_move_UW/Job_material/EchoPro_work/UW_EchoProMatlab_Repackaged/inputs/
-
-  # Path from the data_root_dir that contains Biological xlsx files for the US (can be left blank)
-  bio_data_path_US: Biological/2019/US/
-
-  # Path from the data_root_dir that contains Biological xlsx files for Canada (can be left blank)
-  bio_data_path_CAN: Biological/2019/CAN/
-
+  data_root_dir: ../2019_consolidated_files/
 
   #####################################################################################################################
   # Biological trawl data filenames #
   ###################################
 
   # File names for the US section, these variables can be left blank
-  filename_trawl_US: 2019_biodata_haul.xlsx
-  filename_gear_US:  2019_biodata_gear.xlsx
-  filename_catch_US: 2019_biodata_catch.xlsx
-  filename_length_US: 2019_biodata_length.xlsx
-  filename_specimen_US: 2019_biodata_specimen_AGES.xlsx
+  filename_trawl_US: Biological/US/2019_biodata_haul.xlsx
+  filename_gear_US:  Biological/US/2019_biodata_gear.xlsx
+  filename_catch_US: Biological/US/2019_biodata_catch.xlsx
+  filename_length_US: Biological/US/2019_biodata_length.xlsx
+  filename_specimen_US: Biological/US/2019_biodata_specimen_AGES.xlsx
 
   # File names for the Canada section, these variables can be left blank
-  filename_trawl_CAN: 2019_biodata_haul_CAN.xlsx
-  filename_gear_CAN: 2019_biodata_gear_CAN.xlsx
-  filename_catch_CAN: 2019_biodata_catch_CAN.xlsx
-  filename_length_CAN: 2019_biodata_length_CAN.xlsx
-  filename_specimen_CAN: 2019_biodata_specimen_CAN_AGES.xlsx
+  filename_trawl_CAN: Biological/CAN/2019_biodata_haul_CAN.xlsx
+  filename_gear_CAN: Biological/CAN/2019_biodata_gear_CAN.xlsx
+  filename_catch_CAN: Biological/CAN/2019_biodata_catch_CAN.xlsx
+  filename_length_CAN: Biological/CAN/2019_biodata_length_CAN.xlsx
+  filename_specimen_CAN: Biological/CAN/2019_biodata_specimen_CAN_AGES.xlsx
   #####################################################################################################################
 
 
@@ -39,12 +32,12 @@
 
   # The below variables are the path from data_root_dir set above
   # any of these paths may be left blank if they are unused
-  filename_strata: Stratification/2019/US&CAN strata 2019_final.xlsx
+  filename_strata: Stratification/US&CAN strata 2019_final.xlsx
   filename_processed_data_age2: Exports/US&CAN_detailsa_2019_table2y+_ALL_final - updated.xlsx
   filename_processed_data_age1: Exports/US&CAN_detailsa_2019_table1y+_ALL_final - updated.xlsx
-  filename_Transect_region_haul_age2: Stratification/2019/US&CAN_2019_transect_region_haul_age2+ auto_20191205.xlsx
-  filename_Transect_region_haul_age1: Stratification/2019/US&CAN_2019_transect_region_haul_age1+ auto_final.xlsx
-  stratification_filename: Stratification/2019/Stratification_geographic_Lat_2019_final.xlsx
+  filename_Transect_region_haul_age2: Stratification/US&CAN_2019_transect_region_haul_age2+ auto_20191205.xlsx
+  filename_Transect_region_haul_age1: Stratification/US&CAN_2019_transect_region_haul_age1+ auto_final.xlsx
+  stratification_filename: Stratification/Stratification_geographic_Lat_2019_final.xlsx
 
   ## TODO: Maybe put variables here that will deal with the switch case statement in proc_parameters_XXXX.m
 
@@ -57,9 +50,9 @@
 
   # The below variables are the path from data_root_dir set above
   # any of these paths may be left blank if they are unused
-  vario_krig_para_filename: Kriging files & parameters/2019/default_vario_krig_settings_2019_US&CAN.xlsx
-  filename_grid_cell: Kriging files & parameters/Kriging grid files/krig_grid2_5nm_cut_centroids_2013.xlsx # 2013 cell res = 2.50 nmi with extended area coverage
-  filename_smoothed_contour: Kriging files & parameters/Kriging grid files/Smoothing_EasyKrig.xlsx
+  vario_krig_para_filename: Kriging_files/default_vario_krig_settings_2019_US&CAN.xlsx
+  filename_grid_cell: Kriging_files/Kriging_grid_files/krig_grid2_5nm_cut_centroids_2013.xlsx # 2013 cell res = 2.50 nmi with extended area coverage
+  filename_smoothed_contour: Kriging_files/Kriging_grid_files/Smoothing_EasyKrig.xlsx
   #####################################################################################################################
 
 
@@ -71,9 +64,14 @@
 
   US_Ship_ID: V160                      # Ship ID, example options: V160, V21, V01
 
+  hemisphere: NW                        # north/south and west/east hemispheres
+
   ST_BT_RT_ET_zero_removal_flag: 0      # 0 = not remove zeros before ST and after ET; 1 = remove zeros before ST and after ET
 
   transect_offset: 0                    # transect offset added to the CAN transect when merge the uS and CAN data
+
+  exclude_age1: 0                       # States whether or not age 1 hake should be included in analysis.
+                                        # 0 is False, 1 is True
 
   age1_haul: [0]                        # trawls to be excluded if age-1 is excluded
 

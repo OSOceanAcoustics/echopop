@@ -29,8 +29,6 @@
 
   bootstrap_cnt: 0                      # set initial bootstrapping count be zero
 
-  hemisphere: NW                        # north/south and west/east hemispheres
-
   end_index: 9000                       # end index for transects whose sample indces are less than this number
                                         # and whose west extend will be added zeros
 
@@ -43,8 +41,6 @@
   AK_CAN_border: 55.4                   # latitute of AK/CAN border
 
   JH_fac: 0.75                          # percent of Jolly-Hampton transects in each stratum
-
-  bio_species_code_ID: 22500            # RACE & NWFSC adult hake Species ID
 
   bio_hake_len_bin: [                   # length sequence array 2 - 80 cm
                   2,                    # start of sequence
