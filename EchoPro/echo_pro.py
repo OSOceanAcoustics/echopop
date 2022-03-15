@@ -454,7 +454,22 @@ class EchoPro:
         return catch_can_df, length_can_df, trawl_can_df, gear_can_df, specimen_can_df
 
     def __load_biological_data(self):
+        """
+        A function that loads the appropriate data based on the source provided.
 
+        Returns
+        -------
+        self.length_df : Dataframe
+            A dataframe containing the length information to be used downstream. If source=3 it contains US and Canada.
+        self.specimen_df : Dataframe
+            A dataframe containing the specimen information to be used downstream. If source=3 it contains US and Canada.
+        self.trawl_df : Dataframe
+            A dataframe containing the trawl information to be used downstream. If source=3 it contains US and Canada.
+        self.gear_df : Dataframe
+            A dataframe containing the gear information to be used downstream. If source=3 it contains US and Canada.
+        self.catch_df : Dataframe
+            A dataframe containing the catch information to be used downstream. If source=3 it contains US and Canada.
+        """
         if self.params['source'] == 3:
 
             print("Loading US biological data ...")
@@ -463,8 +478,36 @@ class EchoPro:
             catch_can_df, length_can_df, trawl_can_df, gear_can_df, specimen_can_df = self.load_biological_data_canada()
 
             # combine specimen and length dataframes
-            length_df = pd.concat([length_us_df, length_can_df])
-            specimen_df = pd.concat([specimen_us_df, specimen_can_df])
+            self.length_df = pd.concat([length_us_df, length_can_df])
+            self.specimen_df = pd.concat([specimen_us_df, specimen_can_df])
+
+            # deal with trawl number offset
+            max_US_haul_no = trawl_us_df['Haul'].max()
+            if max_US_haul_no > self.params['haul_no_offset']:
+                CAN_haul_no_offset = 100 * np.ceil(max_US_haul_no / 100.0)
+            else:
+                CAN_haul_no_offset = self.params['haul_no_offset']
+
+            # max_US_Transect = max(data.bio.gear.transect) # TODO: This looks unused, make sure this is the case
+
+            # combine US & CAN trawl files
+            trawl_can_df['Haul'] = trawl_can_df['Haul'] + CAN_haul_no_offset  # add haul_offset
+            # change lon to -lon
+            trawl_can_df['EQ_Longitude'] = trawl_can_df['EQ_Longitude'].apply(lambda x: -1.0 * x if x > 0 else x)
+            self.trawl_df = pd.concat([trawl_us_df, trawl_can_df])
+
+            # transect offset is set to zero since we will not have overlap transects
+            # TODO: Is this a necessary variable? If so, we should make it an input to the function.
+            CAN_Transect_offset = 0
+
+            # combine US & CAN gear files
+            gear_can_df['Haul'] = gear_can_df['Haul'] + CAN_haul_no_offset  # add haul_offset
+            gear_can_df['Transect'] = gear_can_df['Transect'] + CAN_Transect_offset
+            self.gear_df = pd.concat([gear_us_df, gear_can_df])
+
+            # combine US & CAN catch files
+            catch_can_df.index = catch_can_df.index + CAN_haul_no_offset  # add haul_offset
+            self.catch_df = pd.concat([catch_us_df, catch_can_df])
 
         else:
 
