@@ -36,7 +36,7 @@ epro_2019 = EchoPro(init_file_path='./config_files/initialization_config.yml',
 
 # TODO: new idea
 # This class will return important info that can be used downstream (i.e. generate reports and plots)
-epro_2019.run_process(start_transect=1, end_transect=200, kriging=True)
+# epro_2019.run_process(start_transect=1, end_transect=200, kriging=True)
 
 # epro_2019.down_sample()
 
@@ -51,13 +51,13 @@ epro_2019.run_process(start_transect=1, end_transect=200, kriging=True)
 # the EchoPro object.
 # This class can only be ran after bootstrapping is performed.
 # 1. Use epro_2019 to write variables to consolidated xlsx files
-from EchoPro import GenerateReports
-GenerateReports(epro_2019)
+# from EchoPro import GenerateReports
+# GenerateReports(epro_2019)
 
 # This is a class that creates all visualization plots using
 # the EchoPro object.
 # This class can only be ran after bootstrapping is performed.
 # 1. Use epro_2019 to create plots.
-from EchoPro import Visualize
-Visualize(epro_2019)
+# from EchoPro import Visualize
+# Visualize(epro_2019)
 
