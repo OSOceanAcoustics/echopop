@@ -172,8 +172,47 @@ class EchoPro:
 
         return full_params
 
-    def process_length_data(self, df, haul_num_offset):
+    def process_length_data_ds(self, df, haul_num_offset):
         """
+        Process and turn the length data file into a xarray Dataset, where the frequency
+        column has not been expanded.
+        Parameters
+        ----------
+        df : Pandas Dataframe
+            Dataframe holding the length data
+        haul_num_offset : int
+            # TODO: what does this refer to? Should we account for this in the code?
+
+        Returns
+        -------
+        xarray Dataset
+
+        Notes
+        -----
+        The produced Dataset is a compressed version of the true data.
+        """
+
+        # obtaining those columns that are required
+        df = df[['Haul', 'Species_Code', 'Sex', 'Length', 'Frequency']].copy()
+
+        # extract target species
+        df = df.loc[df['Species_Code'] == self.params['species_code_ID']]
+
+        # Apply haul_num_offset
+        df['Haul'] = df['Haul'] + haul_num_offset
+
+        if self.params['exclude_age1'] == 1:
+            raise NotImplementedError("Excluding age 1 data has not been implemented!")
+
+        df.drop(columns=['Species_Code'], inplace=True)
+
+        ds = df
+
+        return ds
+
+    def process_length_data_df(self, df, haul_num_offset):
+        """
+        Process the length data file, which includes expanding the frequencies column.
         Parameters
         ----------
         df : Pandas Dataframe
@@ -382,7 +421,7 @@ class EchoPro:
             catch_us_df = self.process_catch_data(catch_us_df)
 
             length_us_df = pd.read_excel(self.params['data_root_dir'] + self.params['filename_length_US'])
-            length_us_df = self.process_length_data(length_us_df, 0)
+            length_us_df = self.process_length_data_df(length_us_df, 0)
         else:
             catch_us_df = None
             length_us_df = None
@@ -429,7 +468,7 @@ class EchoPro:
             catch_can_df = self.process_catch_data(catch_can_df)
 
             length_can_df = pd.read_excel(self.params['data_root_dir'] + self.params['filename_length_CAN'])
-            length_can_df = self.process_length_data(length_can_df, self.params['haul_no_offset'])
+            length_can_df = self.process_length_data_df(length_can_df, self.params['haul_no_offset'])
         else:
             catch_can_df = None
             length_can_df = None

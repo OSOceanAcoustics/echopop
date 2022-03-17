@@ -20,6 +20,8 @@ epro_2019 = EchoPro(init_file_path='./config_files/initialization_config.yml',
                     bio_data_type=1,
                     age_data_status=1)
 
+print(epro_2019.gear_df.head())
+
 # This is a class that runs bootstrapping, the main input will be
 # an EchoPro object and bootstrapping/Kriging inputs
 # This class will call several other classes:
