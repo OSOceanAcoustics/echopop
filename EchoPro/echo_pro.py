@@ -2,6 +2,7 @@ import yaml
 import numpy as np
 # from .run_bootstrapping import RunBootstrapping
 import pandas as pd
+import xarray as xr
 
 
 class EchoPro:
@@ -30,6 +31,8 @@ class EchoPro:
     age_data_status : int
         1 = actual age data
         2 = from age_vs_len
+    exclude_age1 : bool
+        States whether age 1 hake should be included in analysis.
     """
 
     def __init__(self,
@@ -37,7 +40,8 @@ class EchoPro:
                  survey_year_file_path: str,
                  source: int = 3,
                  bio_data_type: int = 1,
-                 age_data_status: int = 1):
+                 age_data_status: int = 1,
+                 exclude_age1: bool = False):
 
         self.bootstrapping_performed = False
 
@@ -54,7 +58,7 @@ class EchoPro:
 
         self.params = self.__collect_parameters(init_params, survey_year_params)
 
-        self.__load_files()
+        self.__load_files(exclude_age1)
 
     def __check_init_file(self):
         # TODO: create this function that checks the contents of the initialization config file
@@ -181,7 +185,7 @@ class EchoPro:
         df : Pandas Dataframe
             Dataframe holding the length data
         haul_num_offset : int
-            # TODO: what does this refer to? Should we account for this in the code?
+            The value that should be added to the haul index to differentiate it from other ships
 
         Returns
         -------
@@ -206,7 +210,45 @@ class EchoPro:
 
         df.drop(columns=['Species_Code'], inplace=True)
 
-        ds = df
+        df.set_index('Haul', inplace=True)
+        max_haul_size = df.index.value_counts().max()
+        series_haul = df.groupby('Haul').apply(np.array)
+
+        # pad the numpy arrays of each haul to match the maximum haul size
+        series_haul_pad = series_haul.apply(
+            lambda x: np.vstack((x, np.nan * np.ones((max_haul_size - x.shape[0], 3))))
+            if x.shape[0] != max_haul_size else x)
+
+        # collect all hauls into a 2D array
+        np_haul_pad = series_haul_pad.agg(lambda x: np.vstack(x.values))
+
+        ds = xr.Dataset(
+            data_vars={
+                'sex': (['haul', 'haul_index'], np_haul_pad[:, 0].reshape((series_haul_pad.shape[0], max_haul_size))),
+                'bio_length': (
+                ['haul', 'haul_index'], np_haul_pad[:, 1].reshape((series_haul_pad.shape[0], max_haul_size))),
+                'frequency': (
+                ['haul', 'haul_index'], np_haul_pad[:, 2].reshape((series_haul_pad.shape[0], max_haul_size)))
+            },
+            coords={
+                'haul': (['haul'], series_haul_pad.index),
+                'haul_index': (['haul_index'], range(max_haul_size))
+            })
+
+        # add variables that are helpful for downstream processes
+        ds['n'] = ds.frequency.sum('haul_index', skipna=True)
+        ds['meanlen'] = (ds.bio_length * ds.frequency).sum('haul_index', skipna=True) / (ds.n)
+        ds['stdlen'] = np.sqrt(
+            (((abs(ds.bio_length - ds.meanlen) ** 2) * ds.frequency).sum('haul_index', skipna=True)) / (ds.n - 1.0))
+
+        TS0 = 20.0 * np.log10(ds.bio_length) - 68.0
+        ds['TS_lin'] = 10.0 * np.log10((10.0 ** (TS0 / 10.0) * ds.frequency).sum('haul_index', skipna=True) / (ds.n))
+        ds['TS_log'] = (TS0 * ds.frequency).sum('haul_index', skipna=True) / (ds.n)
+        ds['TS_sd'] = np.sqrt(
+            (((abs(TS0 - ds.TS_log) ** 2) * ds.frequency).sum('haul_index', skipna=True)) / (ds.n - 1.0))
+
+        ds['nM'] = (ds[['sex', 'frequency']].where(ds.sex == 1.0, drop=True)).frequency.sum('haul_index', skipna=True)
+        ds['nF'] = (ds[['sex', 'frequency']].where(ds.sex == 2.0, drop=True)).frequency.sum('haul_index', skipna=True)
 
         return ds
 
@@ -264,7 +306,7 @@ class EchoPro:
         return df
 
     @staticmethod
-    def process_catch_data(df):
+    def process_catch_data_df(df):
         """
         Parameters
         ----------
@@ -283,6 +325,55 @@ class EchoPro:
         df.sort_index(inplace=True)
 
         return df
+
+    @staticmethod
+    def process_catch_data_ds(df):
+        """
+        Parameters
+        ----------
+        df : Pandas Dataframe
+            Dataframe holding the catch data
+        Returns
+        -------
+        Processed xarray Dataset
+        """
+
+        # obtaining those columns that are required
+        df = df[['Haul', 'Species_Code', 'Species_Name', 'Number_In_Haul', 'Weight_In_Haul']].copy()
+
+        df.set_index('Haul', inplace=True)
+
+        df.sort_index(inplace=True)
+
+        max_haul_size = df.index.value_counts().max()
+        series_haul = df.groupby('Haul').apply(np.array)
+
+        # pad the numpy arrays of each haul to match the maximum haul size
+        series_haul_pad = series_haul.apply(
+            lambda x: np.vstack((x, np.nan * np.ones((max_haul_size - x.shape[0], 4)))) if x.shape[
+                                                                                               0] != max_haul_size else x)
+
+        # collect all hauls into a 2D array
+        np_haul_pad = series_haul_pad.agg(lambda x: np.vstack(x.values))
+
+        ds = xr.Dataset(
+            data_vars={
+                'species_code': (
+                ['haul', 'haul_index'], np_haul_pad[:, 0].reshape((series_haul_pad.shape[0], max_haul_size))),
+                'species_name': (
+                ['haul', 'haul_index'], np_haul_pad[:, 1].reshape((series_haul_pad.shape[0], max_haul_size))),
+                'number_in_haul': (
+                ['haul', 'haul_index'], np_haul_pad[:, 2].reshape((series_haul_pad.shape[0], max_haul_size))),
+                'weight_in_haul': (
+                ['haul', 'haul_index'], np_haul_pad[:, 3].reshape((series_haul_pad.shape[0], max_haul_size))),
+                'no_null_length': (['haul'], df.index.value_counts().sort_index().to_numpy())
+            },
+            coords={
+                'haul': (['haul'], series_haul_pad.index),
+                'haul_index': (['haul_index'], range(max_haul_size))
+            })
+
+        return ds
 
     def process_trawl_data(self, df):
         """
@@ -307,10 +398,6 @@ class EchoPro:
 
         if self.params['exclude_age1'] == 1:
             raise NotImplementedError("Excluding age 1 data has not been implemented!")
-
-        # TODO: Should these two lines be added or assumed?
-        # ind=find(diff(out.trawl_no)< -10);
-        # out.trawl_no(ind + 1: end)=out.trawl_no(ind + 1: end)+para.bio.haul_no_offset;
 
         if self.params['hemisphere'][0] == 'N':
             df['EQ_Latitude'] = df['EQ_Latitude'].abs()
@@ -344,15 +431,6 @@ class EchoPro:
 
         if self.params['exclude_age1'] == 1:
             raise NotImplementedError("Excluding age 1 data has not been implemented!")
-
-        # TODO: Are these lines necessary? We should maybe take this into account during data construction.
-        # if str2num(char(para.survey_year))  ~= 2011 & str2num(char(para.survey_year))  ~= 2015 & str2num(char(para.survey_year))  ~= 1995
-        #     ind = find(diff(out.transect) < -10);
-        #     out.transect(ind + 1: end)=out.transect(ind + 1: end)+out.transect(ind);
-        # ind = 1:length(out.transect);
-        # out.transect = out.transect(ind);
-        # ind = find(diff(out.trawl_no) < -10);
-        # out.trawl_no(ind + 1: end)=out.trawl_no(ind + 1: end)+para.bio.haul_no_offset;
 
         df['Net_Height'] = df['Net_Height'].apply(lambda x: np.nan if type(x) == str else x).astype(float)
 
@@ -418,7 +496,7 @@ class EchoPro:
 
         if self.params['database_type'] == 'Oracle':
             catch_us_df = pd.read_excel(self.params['data_root_dir'] + self.params['filename_catch_US'])
-            catch_us_df = self.process_catch_data(catch_us_df)
+            catch_us_df = self.process_catch_data_df(catch_us_df)
 
             length_us_df = pd.read_excel(self.params['data_root_dir'] + self.params['filename_length_US'])
             length_us_df = self.process_length_data_df(length_us_df, 0)
@@ -465,7 +543,7 @@ class EchoPro:
 
         if self.params['database_type'] == 'Oracle':
             catch_can_df = pd.read_excel(self.params['data_root_dir'] + self.params['filename_catch_CAN'])
-            catch_can_df = self.process_catch_data(catch_can_df)
+            catch_can_df = self.process_catch_data_df(catch_can_df)
 
             length_can_df = pd.read_excel(self.params['data_root_dir'] + self.params['filename_length_CAN'])
             length_can_df = self.process_length_data_df(length_can_df, self.params['haul_no_offset'])
@@ -552,9 +630,132 @@ class EchoPro:
 
             raise NotImplementedError(f"Source of {self.params['source']} not implemented yet.")
 
-    def __load_files(self):
+    def __load_nasc_data(self, exclude_age1):
+        """
+        Load VL interval-based NASC table.
+
+        Parameters
+        ----------
+        exclude_age1 : bool
+            States whether age 1 hake should be included in analysis.
+
+        Returns
+        -------
+        Pandas Dataframe of NASC table.
+        """
+
+        if exclude_age1:
+            df = pd.read_excel(self.params['data_root_dir'] + self.params['filename_processed_data_no_age1'])
+        else:
+            df = pd.read_excel(self.params['data_root_dir'] + self.params['filename_processed_data_all_ages'])
+
+        if self.params['survey_year'] < 2003:
+
+            # TODO: is the below code necessary?
+            # [n, m] = size(dat);
+            # out(1: n, 1)=dat(:, 1); % transect number
+            # ind = find(out(1:n, 1) > 1000); % 1000 is a fixed number added to the first transect of the CAN survey transect
+            # if ~isempty(ind)
+            #     out(ind, 1) = out(ind, 1) - 1000 + transect_offset; % modify the first transect line number to Tnum + offset
+            #     out(ind + 1: end, 1)=out(ind + 1: end, 1)+transect_offset; % modify the rest CAN transect line numbers to Tnum + offset
+            # end
+            # out(1: n, 2)=999 * ones(n, 1); % region number - not useful
+            # out(1: n, 3)=dat(:, 2); % VL start
+            # out(1: n, 4)=dat(:, 2)+0.5; % VL stop
+            # out(1: n, 5: m + 2)=dat(:, 3: m); %
+            # ind = find(out(1:n, 6) > 0  ); % convert longitude to negative
+            # out(ind, 6) = -out(ind, 6);
+            # if str2num(survey_year) == 1995
+            #     ind_nan = find(isnan(out(:, 7)) == 1);
+            #     ind_good = find(isnan(out(:, 7)) == 0);
+            #     out(ind_nan, 7) = floor(interp1(ind_good, out(ind_good, 7), ind_nan));
+            #     ind7 = find(out(:, 7) == 7);
+            #     ind7_lt5000 = ind7(ind7 < 5000);
+            #     ind7_gt5000 = ind7(ind7 >= 5000);
+            #     out(ind7_lt5000, 7) = 6;
+            #     out(ind7_gt5000, 7) = 8;
+            # end
+
+            raise NotImplementedError("Loading the NASC table for survey years less than 2003 has not been implemented!")
+
+        else:
+            df.set_index('Transect', inplace=True)
+            df.sort_index(inplace=True)
+
+        return df
+
+    def process_length_weight_data(self):
+        """
+        process length weight data (all hake trawls) to obtain
+        (1) length-weight regression or length-weight-key
+        (2) length-age keys
+
+        Returns
+        -------
+
+        """
+
+        # select the indices that do not have nan in either Length or Weight
+        len_wgt_nonull = np.logical_and(self.specimen_df.Length.notnull(), self.specimen_df.Weight.notnull())
+
+        df_no_null = self.specimen_df.loc[len_wgt_nonull]
+
+        # length-weight regression for all trawls (male & female)
+        x = np.log10(df_no_null.Length).values
+        y = np.log10(df_no_null.Weight).values
+
+        p = np.polyfit(x, y, 1)  # linear regression
+
+        self.params['reg_w0'] = 10.0 ** p[1]
+        self.params['reg_p'] = p[0]
+
+        # length-weight regression for all trawls for male
+        xM = np.log10(df_no_null.Length[df_no_null.Sex == 1]).values
+        yM = np.log10(df_no_null.Weight[df_no_null.Sex == 1]).values
+
+        pM = np.polyfit(xM, yM, 1)  # linear regression
+
+        self.params['reg_w0M'] = 10.0 ** pM[1]
+        self.params['reg_pM'] = pM[0]
+
+        # # length-weight regression for all trawls for female
+        # xF = np.log10(df_no_null.Length[df_no_null.Sex == 2]).values
+        # yF = np.log10(df_no_null.Weight[df_no_null.Sex == 2]).values
+        #
+        # print(xF)
+        #
+        # pF = np.polyfit(xF, yF, 1)  # linear regression
+        #
+        # print(pF)
+        #
+        # self.params['reg_w0F'] = 10.0 ** pF[1]
+        # self.params['reg_pF'] = pF[0]
+
+
+    def __load_files(self, exclude_age1):
+        """
+        Load the biological, NASC table,
+
+        Parameters
+        ----------
+        exclude_age1 : bool
+            States whether age 1 hake should be included in analysis.
+
+        Returns
+        -------
+
+        """
 
         self.__load_biological_data()
+
+        self.__load_nasc_data(exclude_age1)
+
+        if self.params['bio_data_type'] == 1:
+
+            print("hi")
+        else:
+            raise NotImplementedError(f"Processing bio_data_type = {self.params['bio_data_type']} has not been implemented!")
+
 
     # def init_params(self):
     #
