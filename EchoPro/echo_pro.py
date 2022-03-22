@@ -3,6 +3,7 @@ import numpy as np
 # from .run_bootstrapping import RunBootstrapping
 import pandas as pd
 import xarray as xr
+import warnings
 
 
 class EchoPro:
@@ -41,7 +42,7 @@ class EchoPro:
                  source: int = 3,
                  bio_data_type: int = 1,
                  age_data_status: int = 1,
-                 exclude_age1: bool = False):
+                 exclude_age1: bool = True):
 
         self.bootstrapping_performed = False
 
@@ -58,7 +59,9 @@ class EchoPro:
 
         self.params = self.__collect_parameters(init_params, survey_year_params)
 
-        self.__load_files(exclude_age1)
+        self.params['exclude_age1'] = exclude_age1
+
+        self.__load_files()
 
     def __check_init_file(self):
         # TODO: create this function that checks the contents of the initialization config file
@@ -97,13 +100,13 @@ class EchoPro:
         init_params["bio_hake_len_bin"] = np.linspace(init_params["bio_hake_len_bin"][0],
                                                       init_params["bio_hake_len_bin"][1],
                                                       num=init_params["bio_hake_len_bin"][2],
-                                                      dtype=np.float64)
+                                                      dtype=np.int64)
 
         # setting bio_hake_age_bin variable to a numpy array
         init_params["bio_hake_age_bin"] = np.linspace(init_params["bio_hake_age_bin"][0],
                                                       init_params["bio_hake_age_bin"][1],
                                                       num=init_params["bio_hake_age_bin"][2],
-                                                      dtype=np.float64)
+                                                      dtype=np.int64)
 
         # making acoust_freq0 into a numpy array
         init_params["acoust_freq0"] = np.array(init_params["acoust_freq0"], dtype=np.float64)
@@ -202,11 +205,23 @@ class EchoPro:
         # extract target species
         df = df.loc[df['Species_Code'] == self.params['species_code_ID']]
 
+        # set data types of dataframe
+        df = df.astype({'Haul': int, 'Species_Code': int, 'Sex': int, 'Length': np.float64, 'Frequency': np.float64})
+
+        # check to make sure that the Sex column is composed of 1's and 2's
+        unknown_sex_values = set(df.Sex.unique()) - {1, 2}
+        if unknown_sex_values:
+            warnings.warn(
+                f"The Sex column contains values {unknown_sex_values}, converting values greater than 2 to 2 and values less than 2 to 1")
+
+            df.loc[df.Sex > 2, 'Sex'] = int(2)
+            df.loc[df.Sex < 1, 'Sex'] = int(1)
+
         # Apply haul_num_offset
         df['Haul'] = df['Haul'] + haul_num_offset
 
-        if self.params['exclude_age1'] == 1:
-            raise NotImplementedError("Excluding age 1 data has not been implemented!")
+        if self.params['exclude_age1'] is False:
+            raise NotImplementedError("Including age 1 data has not been implemented!")
 
         df.drop(columns=['Species_Code'], inplace=True)
 
@@ -272,16 +287,28 @@ class EchoPro:
         # extract target species
         df = df.loc[df['Species_Code'] == self.params['species_code_ID']]
 
+        # set data types of dataframe
+        df = df.astype({'Haul': int, 'Species_Code': int, 'Sex': int, 'Length': np.float64, 'Frequency': np.float64})
+
+        # check to make sure that the Sex column is composed of 1's and 2's
+        unknown_sex_values = set(df.Sex.unique()) - {1, 2}
+        if unknown_sex_values:
+            warnings.warn(
+                f"The Sex column contains values {unknown_sex_values}, converting values greater than 2 to 2 and values less than 2 to 1")
+
+            df.loc[df.Sex > 2, 'Sex'] = int(2)
+            df.loc[df.Sex < 1, 'Sex'] = int(1)
+
         # Apply haul_num_offset
         df['Haul'] = df['Haul'] + haul_num_offset
 
-        if self.params['exclude_age1'] == 1:
-            raise NotImplementedError("Excluding age 1 data has not been implemented!")
+        if self.params['exclude_age1'] is False:
+            raise NotImplementedError("Including age 1 data has not been implemented!")
 
         df.drop(columns=['Species_Code'], inplace=True)
 
         # expand length and sex columns
-        df['Frequency'] = df['Frequency'].apply(lambda x: np.ones(x))
+        df['Frequency'] = df['Frequency'].apply(lambda x: np.ones(int(x)))
         df['Length'] = df['Length'] * df['Frequency']
         df['Sex'] = df['Sex'] * df['Frequency']
         df.drop(columns='Frequency', inplace=True)
@@ -320,6 +347,10 @@ class EchoPro:
         # obtaining those columns that are required
         df = df[['Haul', 'Species_Code', 'Species_Name', 'Number_In_Haul', 'Weight_In_Haul']].copy()
 
+        # set data types of dataframe
+        df = df.astype({'Haul': int, 'Species_Code': int, 'Species_Name': str, 'Number_In_Haul': np.float64,
+                        'Weight_In_Haul': np.float64})
+
         df.set_index('Haul', inplace=True)
 
         df.sort_index(inplace=True)
@@ -340,6 +371,10 @@ class EchoPro:
 
         # obtaining those columns that are required
         df = df[['Haul', 'Species_Code', 'Species_Name', 'Number_In_Haul', 'Weight_In_Haul']].copy()
+
+        # set data types of dataframe
+        df = df.astype({'Haul': int, 'Species_Code': int, 'Species_Name': str, 'Number_In_Haul': np.float64,
+                        'Weight_In_Haul': np.float64})
 
         df.set_index('Haul', inplace=True)
 
@@ -396,8 +431,14 @@ class EchoPro:
 
         df['Duration'] = pd.to_timedelta(df['Duration']) # change datatype from string to timedelta
 
-        if self.params['exclude_age1'] == 1:
-            raise NotImplementedError("Excluding age 1 data has not been implemented!")
+        # set data types of dataframe
+        df = df.astype({'Haul': int, 'Haul_Type': int, 'Performance_Code': np.float64, 'Distance_Fished': np.float64,
+                        'Stratum': int, 'EQ_Latitude': np.float64, 'EQ_Longitude': np.float64,
+                        'Average_Bottom_Depth': np.float64, 'Vessel_Log_Start': np.float64,
+                        'Vessel_Log_Stop': np.float64})
+
+        if self.params['exclude_age1'] is False:
+            raise NotImplementedError("Including age 1 data has not been implemented!")
 
         if self.params['hemisphere'][0] == 'N':
             df['EQ_Latitude'] = df['EQ_Latitude'].abs()
@@ -429,8 +470,12 @@ class EchoPro:
         df = df[['Haul', 'Average_Footrope_Depth', 'Surface_Temperature', 'Gear_Temperature', 'Average_Wireout',
                  'Transect', 'Net_Height']].copy()
 
-        if self.params['exclude_age1'] == 1:
-            raise NotImplementedError("Excluding age 1 data has not been implemented!")
+        # set data types of dataframe
+        df = df.astype({'Haul': int, 'Average_Footrope_Depth': np.float64, 'Surface_Temperature': np.float64,
+                        'Gear_Temperature': np.float64, 'Average_Wireout': np.float64, 'Transect': np.float64})
+
+        if self.params['exclude_age1'] is False:
+            raise NotImplementedError("Including age 1 data has not been implemented!")
 
         df['Net_Height'] = df['Net_Height'].apply(lambda x: np.nan if type(x) == str else x).astype(float)
 
@@ -454,11 +499,25 @@ class EchoPro:
         # extract target species
         df = df.loc[df['Species_Code'] == self.params['species_code_ID']]
 
+        # set data types of dataframe
+        df = df.astype({'Haul': int, 'Species_Code': int, 'Sex': int, 'Length': np.float64, 'Weight': np.float64,
+                        'Specimen_Number': np.float64, 'Age': np.float64})
+
+        # check to make sure that the Sex column is composed of 1's and 2's
+        unknown_sex_values = set(df.Sex.unique()) - {1, 2}
+        if unknown_sex_values:
+            warnings.warn(
+                f"The Sex column contains values {unknown_sex_values}, converting values greater than 2 to 2 and values less than 2 to 1")
+
+            df.loc[df.Sex > 2, 'Sex'] = int(2)
+            df.loc[df.Sex < 1, 'Sex'] = int(1)
+
+
         # Apply haul_num_offset
         df['Haul'] = df['Haul'] + haul_num_offset
 
-        if self.params['exclude_age1'] == 1:
-            raise NotImplementedError("Excluding age 1 data has not been implemented!")
+        if self.params['exclude_age1'] is False:
+            raise NotImplementedError("Including age 1 data has not been implemented!")
 
         df.drop(columns=['Species_Code'], inplace=True)
 
@@ -630,7 +689,7 @@ class EchoPro:
 
             raise NotImplementedError(f"Source of {self.params['source']} not implemented yet.")
 
-    def __load_nasc_data(self, exclude_age1):
+    def __load_nasc_data(self):
         """
         Load VL interval-based NASC table.
 
@@ -644,7 +703,7 @@ class EchoPro:
         Pandas Dataframe of NASC table.
         """
 
-        if exclude_age1:
+        if self.params['exclude_age1']:
             df = pd.read_excel(self.params['data_root_dir'] + self.params['filename_processed_data_no_age1'])
         else:
             df = pd.read_excel(self.params['data_root_dir'] + self.params['filename_processed_data_all_ages'])
@@ -684,15 +743,11 @@ class EchoPro:
 
         return df
 
-    def process_length_weight_data(self):
+    def __process_length_weight_data(self):
         """
         process length weight data (all hake trawls) to obtain
         (1) length-weight regression or length-weight-key
         (2) length-age keys
-
-        Returns
-        -------
-
         """
 
         # select the indices that do not have nan in either Length or Weight
@@ -700,9 +755,17 @@ class EchoPro:
 
         df_no_null = self.specimen_df.loc[len_wgt_nonull]
 
+        # all valid length - weight measurements (no nan's)
+        L = df_no_null.Length.values
+        W = df_no_null.Weight.values
+        Lm = df_no_null.Length[df_no_null.Sex == 1].values
+        Wm = df_no_null.Weight[df_no_null.Sex == 1].values
+        Lf = df_no_null.Length[df_no_null.Sex == 2].values
+        Wf = df_no_null.Weight[df_no_null.Sex == 2].values
+
         # length-weight regression for all trawls (male & female)
-        x = np.log10(df_no_null.Length).values
-        y = np.log10(df_no_null.Weight).values
+        x = np.log10(L)
+        y = np.log10(W)
 
         p = np.polyfit(x, y, 1)  # linear regression
 
@@ -710,36 +773,85 @@ class EchoPro:
         self.params['reg_p'] = p[0]
 
         # length-weight regression for all trawls for male
-        xM = np.log10(df_no_null.Length[df_no_null.Sex == 1]).values
-        yM = np.log10(df_no_null.Weight[df_no_null.Sex == 1]).values
+        xM = np.log10(Lm)
+        yM = np.log10(Wm)
 
         pM = np.polyfit(xM, yM, 1)  # linear regression
 
         self.params['reg_w0M'] = 10.0 ** pM[1]
         self.params['reg_pM'] = pM[0]
 
-        # # length-weight regression for all trawls for female
-        # xF = np.log10(df_no_null.Length[df_no_null.Sex == 2]).values
-        # yF = np.log10(df_no_null.Weight[df_no_null.Sex == 2]).values
-        #
-        # print(xF)
-        #
-        # pF = np.polyfit(xF, yF, 1)  # linear regression
-        #
-        # print(pF)
-        #
-        # self.params['reg_w0F'] = 10.0 ** pF[1]
-        # self.params['reg_pF'] = pF[0]
+        # length-weight regression for all trawls for female
+        xF = np.log10(Lf)
+        yF = np.log10(Wf)
+
+        pF = np.polyfit(xF, yF, 1)  # linear regression
+
+        self.params['reg_w0F'] = 10.0 ** pF[1]
+        self.params['reg_pF'] = pF[0]
+
+        # total number of fish individuals at length specified by bio_hake_len_bin
+        self.params['len_nM'], _ = np.histogram(Lm, bins=self.params['bio_hake_len_bin'])
+        self.params['len_nF'], _ = np.histogram(Lf, bins=self.params['bio_hake_len_bin'])
+        self.params['len_nALL'], _ = np.histogram(L, bins=self.params['bio_hake_len_bin'])
+
+        # add zero to end of arrays to account for histogram not being centered
+        self.params['len_nM'] = np.concatenate([self.params['len_nM'], np.array([0], dtype=np.int64)])
+        self.params['len_nF'] = np.concatenate([self.params['len_nF'], np.array([0], dtype=np.int64)])
+        self.params['len_nALL'] = np.concatenate([self.params['len_nALL'], np.array([0], dtype=np.int64)])
+
+        # length-key
+        self.params['len_key_M'] = self.params['len_nM'] / sum(self.params['len_nM'])
+        self.params['len_key_F'] = self.params['len_nF'] / sum(self.params['len_nF'])
+        self.params['len_key_ALL'] = self.params['len_nALL'] / sum(self.params['len_nALL'])
+
+        # weight at length or length-weight-key
+        # length-weight-key per fish over entire survey region (an array)
+        self.params['len_wgt_M'] = self.params['reg_w0M'] * self.params['bio_hake_len_bin'] ** self.params['reg_pM']
+        self.params['len_wgt_F'] = self.params['reg_w0F'] * self.params['bio_hake_len_bin'] ** self.params['reg_pF']
+        self.params['len_wgt_ALL'] = self.params['reg_w0'] * self.params['bio_hake_len_bin'] ** self.params['reg_p']
+
+        # create length-weight sex structured relations
+        for i in range(len(self.params['len_nM'])):
+
+            # bins with less than 5 samples will be replaced by the regression curve
+            # this is done for all Male, Female, and both Females and Males.
+            if self.params['len_nM'][i] >= 5:
+                indm = (self.params['bio_hake_len_bin'][i] - 1 < Lm) & (Lm <= self.params['bio_hake_len_bin'][i] + 1)
+                self.params['len_wgt_M'][i] = np.mean(Wm[indm])
+
+            if self.params['len_nF'][i] >= 5:
+                indf = (self.params['bio_hake_len_bin'][i] - 1 < Lf) & (Lf <= self.params['bio_hake_len_bin'][i] + 1)
+                self.params['len_wgt_F'][i] = np.mean(Wf[indf])
+
+            if self.params['len_nALL'][i] >= 5:
+                ind = (self.params['bio_hake_len_bin'][i] - 1 < L) & (L <= self.params['bio_hake_len_bin'][i] + 1)
+                self.params['len_wgt_ALL'][i] = np.mean(W[ind])
+
+        # average length-weight-key per fish over entire survey region (a scalar)
+        self.params['ave_len_wgt_M'] = np.dot(self.params['len_wgt_M'], self.params['len_key_M'])
+        self.params['ave_len_wgt_F'] = np.dot(self.params['len_wgt_F'], self.params['len_key_F'])
+        self.params['ave_len_wgt_ALL'] = np.dot(self.params['len_wgt_ALL'], self.params['len_key_ALL'])
+
+    def construct_catch_trawl_output_matrices(self):
+        """
+        construct the hake (or taget species) catch output matrix for
+        visualization & generate report tables
+        """
+
+        print("constructing catch trawl")
+        # Create catch table with
+        # Columns   1-3:   'Trawl number'   'Abundance'     'Biomass'
+        self.final_table_catch = self.catch_df[self.catch_df['Species_Code'] == self.params['species_code_ID']]
 
 
-    def __load_files(self, exclude_age1):
+    def __load_files(self):
         """
         Load the biological, NASC table,
 
         Parameters
         ----------
-        exclude_age1 : bool
-            States whether age 1 hake should be included in analysis.
+
 
         Returns
         -------
@@ -748,11 +860,14 @@ class EchoPro:
 
         self.__load_biological_data()
 
-        self.__load_nasc_data(exclude_age1)
+        self.__load_nasc_data()
 
         if self.params['bio_data_type'] == 1:
 
-            print("hi")
+            self.__process_length_weight_data()
+
+            # self.construct_catch_trawl_output_matrices()
+
         else:
             raise NotImplementedError(f"Processing bio_data_type = {self.params['bio_data_type']} has not been implemented!")
 
