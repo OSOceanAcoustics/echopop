@@ -34,6 +34,18 @@ class EchoPro:
         2 = from age_vs_len
     exclude_age1 : bool
         States whether age 1 hake should be included in analysis.
+    KS_stratification : int
+        Specifies the type of stratification to be used.
+        0 = Pre-Stratification or customized stratification (geographically defined)
+        1 = Post-Stratification (KS-based or trawl-based)
+    stratification_index : int  # TODO: this looks to mirror KS_stratification, it seems to be unnecessary to use this
+                                # TODO: Ask Chu if it is ok to remove this.
+        Index for the chosen stratification
+        0 = INPFC strata
+        1 = KS (trawl)-based
+        2-6 = geographically based but close to trawl-based stratification
+        7 = mix-proportion, rather than 85% & 20% hake/hake-mix rules
+        10 = one stratum for the whole survey
     """
 
     def __init__(self,
@@ -42,7 +54,9 @@ class EchoPro:
                  source: int = 3,
                  bio_data_type: int = 1,
                  age_data_status: int = 1,
-                 exclude_age1: bool = True):
+                 exclude_age1: bool = True,
+                 KS_stratification: int = 1,
+                 stratification_index: int = 1):
 
         self.bootstrapping_performed = False
 
@@ -61,7 +75,7 @@ class EchoPro:
 
         self.params['exclude_age1'] = exclude_age1
 
-        self.__load_files()
+        self.__load_files(KS_stratification, stratification_index)
 
     def __check_init_file(self):
         # TODO: create this function that checks the contents of the initialization config file
@@ -266,6 +280,80 @@ class EchoPro:
         ds['nF'] = (ds[['sex', 'frequency']].where(ds.sex == 2.0, drop=True)).frequency.sum('haul_index', skipna=True)
 
         return ds
+
+    def process_length_data_ds_wu_jung(self, df, haul_num_offset):
+        """
+        Process and turn the length data file into a xarray Dataset, where the frequency
+        column has not been expanded.
+        Parameters
+        ----------
+        df : Pandas Dataframe
+            Dataframe holding the length data
+        haul_num_offset : int
+            The value that should be added to the haul index to differentiate it from other ships
+
+        Returns
+        -------
+        xarray Dataset
+
+        Notes
+        -----
+        The produced Dataset is a compressed version of the true data.
+        """
+
+        # obtaining those columns that are required
+        df = df[['Haul', 'Species_Code', 'Sex', 'Length', 'Frequency']].copy()
+
+        # extract target species
+        df = df.loc[df['Species_Code'] == self.params['species_code_ID']]
+
+        # set data types of dataframe
+        df = df.astype({'Haul': int, 'Species_Code': int, 'Sex': int, 'Length': np.float64, 'Frequency': int})
+
+        # check to make sure that the Sex column is composed of 1's and 2's
+        unknown_sex_values = set(df.Sex.unique()) - {1, 2}
+        if unknown_sex_values:
+            warnings.warn(
+                f"The Sex column contains values {unknown_sex_values}, converting values greater than 2 to 2 and values less than 2 to 1")
+
+            df.loc[df.Sex > 2, 'Sex'] = int(2)
+            df.loc[df.Sex < 1, 'Sex'] = int(1)
+
+        # Apply haul_num_offset
+        df['Haul'] = df['Haul'] + haul_num_offset
+
+        if self.params['exclude_age1'] is False:
+            raise NotImplementedError("Including age 1 data has not been implemented!")
+
+        df.drop(columns=['Species_Code'], inplace=True)
+
+        # haul_len_multi = pd.MultiIndex.from_product([list(df.Haul.unique()), list(df.Length.unique()), [1, 2]],
+        #                                             names=['Haul', 'Length', 'Sex'])
+
+        df.set_index(['Haul', 'Length', 'Sex'], inplace=True)
+
+        ds = df.groupby(level=[0, 1, 2]).sum().to_xarray()
+
+        ds['n'] = ds.Frequency.sum(['Length', 'Sex'])
+
+        ds['meanlen'] = (ds.Length * ds.Frequency).sum(['Length', 'Sex']) / ds.n
+
+        ds['stdlen'] = np.sqrt((((np.abs(ds.Length - ds.meanlen) ** 2) * ds.Frequency).sum(['Length', 'Sex'])) / (ds.n - 1.0))
+
+        TS0 = 20.0 * np.log10(ds.Length) - 68.0
+
+        ds['TS_lin'] = 10.0 * np.log10((10.0 ** (TS0 / 10.0) * ds.Frequency).sum(['Length', 'Sex']) / (ds.n))
+
+        ds['TS_log'] = (TS0 * ds.Frequency).sum(['Length', 'Sex']) / (ds.n)
+
+        ds['TS_sd'] = np.sqrt((((np.abs(TS0 - ds.TS_log) ** 2) * ds.Frequency).sum(['Length', 'Sex'])) / (ds.n - 1.0))
+
+        ds['nM'] = ds.sel(Sex=1).Frequency.sum('Length')
+        ds['nF'] = ds.sel(Sex=2).Frequency.sum('Length')
+
+        return ds
+
+
 
     def process_length_data_df(self, df, haul_num_offset):
         """
@@ -543,8 +631,8 @@ class EchoPro:
         -------
         catch_us_df : Pandas Dataframe
             Dataframe containing the catch data for the US
-        length_us_df  : Pandas Dataframe
-            Dataframe containing the length data for the US
+        length_us_ds  : xarray Dataset
+            Dataset containing the length data for the US
         trawl_us_df : Pandas Dataframe
             Dataframe containing the trawl data for the US
         gear_us_df : Pandas Dataframe
@@ -558,10 +646,11 @@ class EchoPro:
             catch_us_df = self.process_catch_data_df(catch_us_df)
 
             length_us_df = pd.read_excel(self.params['data_root_dir'] + self.params['filename_length_US'])
-            length_us_df = self.process_length_data_df(length_us_df, 0)
+            # length_us_df = self.process_length_data_df(length_us_df, 0)
+            length_us_ds = self.process_length_data_ds(length_us_df, 0)
         else:
             catch_us_df = None
-            length_us_df = None
+            length_us_ds = None
             raise NotImplementedError("Loading data from a non-Oracle database has not been implemented!")
 
         if self.params['filename_trawl_US']:
@@ -580,7 +669,7 @@ class EchoPro:
         specimen_us_df = pd.read_excel(self.params['data_root_dir'] + self.params['filename_specimen_US'])
         specimen_us_df = self.process_specimen_data(specimen_us_df, 0)
 
-        return catch_us_df, length_us_df, trawl_us_df, gear_us_df, specimen_us_df
+        return catch_us_df, length_us_ds, trawl_us_df, gear_us_df, specimen_us_df
 
     def load_biological_data_canada(self):
         """
@@ -605,10 +694,11 @@ class EchoPro:
             catch_can_df = self.process_catch_data_df(catch_can_df)
 
             length_can_df = pd.read_excel(self.params['data_root_dir'] + self.params['filename_length_CAN'])
-            length_can_df = self.process_length_data_df(length_can_df, self.params['haul_no_offset'])
+            # length_can_df = self.process_length_data_df(length_can_df, self.params['haul_no_offset'])
+            length_can_ds = self.process_length_data_ds(length_can_df, self.params['haul_no_offset'])
         else:
             catch_can_df = None
-            length_can_df = None
+            length_can_ds = None
             raise NotImplementedError("Loading data from a non-Oracle database has not been implemented!")
 
         specimen_can_df = pd.read_excel(self.params['data_root_dir'] + self.params['filename_specimen_CAN'])
@@ -627,7 +717,7 @@ class EchoPro:
         else:
             gear_can_df = None
 
-        return catch_can_df, length_can_df, trawl_can_df, gear_can_df, specimen_can_df
+        return catch_can_df, length_can_ds, trawl_can_df, gear_can_df, specimen_can_df
 
     def __load_biological_data(self):
         """
@@ -650,11 +740,12 @@ class EchoPro:
 
             print("Loading US biological data ...")
 
-            catch_us_df, length_us_df, trawl_us_df, gear_us_df, specimen_us_df = self.load_biological_data_us()
-            catch_can_df, length_can_df, trawl_can_df, gear_can_df, specimen_can_df = self.load_biological_data_canada()
+            catch_us_df, length_us_ds, trawl_us_df, gear_us_df, specimen_us_df = self.load_biological_data_us()
+            catch_can_df, length_can_ds, trawl_can_df, gear_can_df, specimen_can_df = self.load_biological_data_canada()
 
             # combine specimen and length dataframes
-            self.length_df = pd.concat([length_us_df, length_can_df])
+            # self.length_df = pd.concat([length_us_df, length_can_df])
+            self.length_ds = length_us_ds.merge(length_can_ds)
             self.specimen_df = pd.concat([specimen_us_df, specimen_can_df])
 
             # deal with trawl number offset
@@ -833,10 +924,25 @@ class EchoPro:
         self.params['ave_len_wgt_F'] = np.dot(self.params['len_wgt_F'], self.params['len_key_F'])
         self.params['ave_len_wgt_ALL'] = np.dot(self.params['len_wgt_ALL'], self.params['len_key_ALL'])
 
-    def construct_catch_trawl_output_matrices(self):
+    def construct_catch_trawl_output_matrices(self, KS_stratification, stratification_index):
         """
         construct the hake (or taget species) catch output matrix for
         visualization & generate report tables
+
+        Parameters
+        ----------
+        KS_stratification : int
+            Specifies the type of stratification to be used.
+            0 = Pre-Stratification or customized stratification (geographically defined)
+            1 = Post-Stratification (KS-based or trawl-based)
+        stratification_index : int  # TODO: this looks to mirror KS_stratification, it seems to be unnecessary to use this
+                                    # TODO: Ask Chu if it is ok to remove this.
+            Index for the chosen stratification
+            0 = INPFC strata
+            1 = KS (trawl)-based
+            2-6 = geographically based but close to trawl-based stratification
+            7 = mix-proportion, rather than 85% & 20% hake/hake-mix rules
+            10 = one stratum for the whole survey
         """
 
         print("constructing catch trawl")
@@ -845,13 +951,24 @@ class EchoPro:
         self.final_table_catch = self.catch_df[self.catch_df['Species_Code'] == self.params['species_code_ID']]
 
 
-    def __load_files(self):
+    def __load_files(self, KS_stratification, stratification_index):
         """
         Load the biological, NASC table,
 
         Parameters
         ----------
-
+        KS_stratification : int
+            Specifies the type of stratification to be used.
+            0 = Pre-Stratification or customized stratification (geographically defined)
+            1 = Post-Stratification (KS-based or trawl-based)
+        stratification_index : int  # TODO: this looks to mirror KS_stratification, it seems to be unnecessary to use this
+                                    # TODO: Ask Chu if it is ok to remove this.
+            Index for the chosen stratification
+            0 = INPFC strata
+            1 = KS (trawl)-based
+            2-6 = geographically based but close to trawl-based stratification
+            7 = mix-proportion, rather than 85% & 20% hake/hake-mix rules
+            10 = one stratum for the whole survey
 
         Returns
         -------
@@ -866,7 +983,7 @@ class EchoPro:
 
             self.__process_length_weight_data()
 
-            # self.construct_catch_trawl_output_matrices()
+            self.construct_catch_trawl_output_matrices(KS_stratification, stratification_index)
 
         else:
             raise NotImplementedError(f"Processing bio_data_type = {self.params['bio_data_type']} has not been implemented!")
