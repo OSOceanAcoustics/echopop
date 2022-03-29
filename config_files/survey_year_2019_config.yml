@@ -72,7 +72,7 @@
 
   age1_haul: [0]                        # trawls to be excluded if age-1 is excluded
 
-  haul_no_offset: 200                   # Canadian's trawl number offset
+  CAN_haul_offset: 200                  # The value to be added to the Canadian's haul number
 
   CAN_strata_num0: []                   # for combined satrta definiation file
 
