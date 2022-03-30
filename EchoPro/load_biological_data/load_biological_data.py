@@ -612,6 +612,43 @@ class LoadBioData:
 
         self.__load_specimen_data()
 
+    @staticmethod
+    def __get_bin_counts(input_data: np.array, centered_bins: np.array):
+        """
+        This function manually computes bin counts given ``input_data``. This
+        function is computing the histogram of ``input_data`` using
+        bins that are centered, rather than bins that are on the edge.
+        The first value is between negative infinity and the first bin
+        center plus the bin width divided by two. The last value is
+        between the second to last bin center plus the bin width
+        divided by two to infinity.
+
+
+        Parameters
+        ----------
+        input_data: numpy array
+            The data to create a histogram of.
+        centered_bins: numpy array
+            A function that specifies the bin centers.
+
+        Returns
+        -------
+        hist: numpy array
+            The values of the histogram
+        """
+
+        bin_diff = np.diff(centered_bins) / 2.0
+
+        hist = [(input_data <= centered_bins[0] + bin_diff[0]).sum()]
+
+        for i in range(len(centered_bins) - 2):
+            hist.append(((centered_bins[i] + bin_diff[i] < input_data)
+                         & (input_data <= centered_bins[i + 1] + bin_diff[i + 1])).sum())
+
+        hist.append((input_data > centered_bins[-2] + bin_diff[-1]).sum())
+
+        return np.array(hist)
+
     def process_length_weight_data(self, specimen_df: pd.DataFrame = None):
         """
         process length weight data (all hake trawls) to obtain
@@ -666,107 +703,44 @@ class LoadBioData:
         self.EPro.params['reg_pF'] = pF[0]
 
         # total number of fish individuals at length specified by bio_hake_len_bin
-        # TODO: Look into binning right vs. center
-        # making the hake bins act as centers, rather than edges
-        bio_hake_len_bin = np.concatenate(([2], self.EPro.params['bio_hake_len_bin'][1:], [np.inf]))
-        self.EPro.params['len_nM'], _ = np.histogram(Lm, bins=bio_hake_len_bin, range=(np.NINF, np.inf))
-        self.EPro.params['len_nF'], _ = np.histogram(Lf, bins=bio_hake_len_bin, range=(np.NINF, np.inf))
-
-        # bio_hake_len_bin = self.EPro.params['bio_hake_len_bin'] # np.concatenate((self.EPro.params['bio_hake_len_bin']))
-
-        self.EPro.params['len_nALL'], bins = np.histogram(L, bins=bio_hake_len_bin, range=(np.NINF, np.inf))
-
-        # bin_mid = 0.5 * (bins[1:] + bins[:-1])
-        # print(f"bin_mid = {bin_mid}")
-        # print(f"bins = {bins}")
-
-        hake_len_bin = np.linspace(1, 79, 40, dtype=np.int64)
-
-        hist = [(L <= 2).sum()]
-
-        for i in range(1, 40-1):
-            hist.append(((L > hake_len_bin[i]) & (hake_len_bin[i + 1] >= L)).sum())
-
-        print(hist)
-
-
-
-        sys.exit()
-
+        self.EPro.params['len_nM'] = self.__get_bin_counts(Lm, self.EPro.params['bio_hake_len_bin'])
+        self.EPro.params['len_nF'] = self.__get_bin_counts(Lf, self.EPro.params['bio_hake_len_bin'])
+        self.EPro.params['len_nALL'] = self.__get_bin_counts(L, self.EPro.params['bio_hake_len_bin'])
 
         # length-key
         self.EPro.params['len_key_M'] = self.EPro.params['len_nM'] / sum(self.EPro.params['len_nM'])
         self.EPro.params['len_key_F'] = self.EPro.params['len_nF'] / sum(self.EPro.params['len_nF'])
         self.EPro.params['len_key_ALL'] = self.EPro.params['len_nALL'] / sum(self.EPro.params['len_nALL'])
 
-        print(f"sum M = {sum(self.EPro.params['len_nM'])}")
-        print(f"sum f = {sum(self.EPro.params['len_nF'])}")
-        print(f"sum ALL = {sum(self.EPro.params['len_nALL'])}")
-        print(" ")
-        print(self.EPro.params['len_nALL'])
-
         # weight at length or length-weight-key
         # length-weight-key per fish over entire survey region (an array)
-        # self.EPro.params['len_wgt_M'] = self.EPro.params['reg_w0M'] * self.EPro.params['bio_hake_len_bin'] ** \
-        #                                 self.EPro.params['reg_pM']
-        # self.EPro.params['len_wgt_F'] = self.EPro.params['reg_w0F'] * self.EPro.params['bio_hake_len_bin'] ** \
-        #                                 self.EPro.params['reg_pF']
-        # self.EPro.params['len_wgt_ALL'] = self.EPro.params['reg_w0'] * self.EPro.params['bio_hake_len_bin'] ** \
-        #                                   self.EPro.params['reg_p']
-
-        self.EPro.params['len_wgt_M'] = self.EPro.params['reg_w0M'] * bin_mid ** \
+        self.EPro.params['len_wgt_M'] = self.EPro.params['reg_w0M'] * self.EPro.params['bio_hake_len_bin'] ** \
                                         self.EPro.params['reg_pM']
-        self.EPro.params['len_wgt_F'] = self.EPro.params['reg_w0F'] * bin_mid ** \
+        self.EPro.params['len_wgt_F'] = self.EPro.params['reg_w0F'] * self.EPro.params['bio_hake_len_bin'] ** \
                                         self.EPro.params['reg_pF']
-        self.EPro.params['len_wgt_ALL'] = self.EPro.params['reg_w0'] * bin_mid ** \
+        self.EPro.params['len_wgt_ALL'] = self.EPro.params['reg_w0'] * self.EPro.params['bio_hake_len_bin'] ** \
                                           self.EPro.params['reg_p']
 
-
         # create length-weight sex structured relations
-        # for i in range(len(self.EPro.params['len_nM'])):
-        #
-        #     # bins with less than 5 samples will be replaced by the regression curve
-        #     # this is done for all Male, Female, and both Females and Males.
-        #     if self.EPro.params['len_nM'][i] >= 5:
-        #         indm = (self.EPro.params['bio_hake_len_bin'][i] - 1 < Lm) & (
-        #                     Lm <= self.EPro.params['bio_hake_len_bin'][i] + 1)
-        #         self.EPro.params['len_wgt_M'][i] = np.mean(Wm[indm])
-        #
-        #     if self.EPro.params['len_nF'][i] >= 5:
-        #         indf = (self.EPro.params['bio_hake_len_bin'][i] - 1 < Lf) & (
-        #                     Lf <= self.EPro.params['bio_hake_len_bin'][i] + 1)
-        #         self.EPro.params['len_wgt_F'][i] = np.mean(Wf[indf])
-        #
-        #     if self.EPro.params['len_nALL'][i] >= 5:
-        #         ind = (self.EPro.params['bio_hake_len_bin'][i] - 1 < L) & (
-        #                     L <= self.EPro.params['bio_hake_len_bin'][i] + 1)
-        #         self.EPro.params['len_wgt_ALL'][i] = np.mean(W[ind])
-
-
         for i in range(len(self.EPro.params['len_nM'])):
 
             # bins with less than 5 samples will be replaced by the regression curve
             # this is done for all Male, Female, and both Females and Males.
             if self.EPro.params['len_nM'][i] >= 5:
-                indm = (bin_mid[i] - 1 < Lm) & (
-                            Lm <= bin_mid[i] + 1)
+                indm = (self.EPro.params['bio_hake_len_bin'][i] - 1 < Lm) & (
+                            Lm <= self.EPro.params['bio_hake_len_bin'][i] + 1)
                 self.EPro.params['len_wgt_M'][i] = np.mean(Wm[indm])
 
             if self.EPro.params['len_nF'][i] >= 5:
-                indf = (bin_mid[i] - 1 < Lf) & (
-                            Lf <= bin_mid[i] + 1)
+                indf = (self.EPro.params['bio_hake_len_bin'][i] - 1 < Lf) & (
+                            Lf <= self.EPro.params['bio_hake_len_bin'][i] + 1)
                 self.EPro.params['len_wgt_F'][i] = np.mean(Wf[indf])
 
             if self.EPro.params['len_nALL'][i] >= 5:
-                ind = (bin_mid[i] - 1 < L) & (
-                            L <= bin_mid[i] + 1)
+                ind = (self.EPro.params['bio_hake_len_bin'][i] - 1 < L) & (
+                            L <= self.EPro.params['bio_hake_len_bin'][i] + 1)
                 self.EPro.params['len_wgt_ALL'][i] = np.mean(W[ind])
 
-
-        # print(" ")
-        # print(self.EPro.params['len_wgt_ALL'])
-        # print(" ")
-        # print(self.EPro.params['len_key_ALL'])
         # average length-weight-key per fish over entire survey region (a scalar)
         self.EPro.params['ave_len_wgt_M'] = np.dot(self.EPro.params['len_wgt_M'], self.EPro.params['len_key_M'])
         self.EPro.params['ave_len_wgt_F'] = np.dot(self.EPro.params['len_wgt_F'], self.EPro.params['len_key_F'])
@@ -797,3 +771,91 @@ class LoadBioData:
         # Create catch table with
         # Columns   1-3:   'Trawl number'   'Abundance'     'Biomass'
         self.final_table_catch = self.EPro.catch_df[self.EPro.catch_df['Species_Code'] == self.EPro.params['species_code_ID']]
+
+        # # TODO: make strata_df a variable of epro_2019
+        # # load stratification file
+        # stratification_index = 1
+        # if stratification_index != 1 and stratification_index != 0:
+        #     raise NotImplementedError(f"stratification_index of {stratification_index} has not been implemented!")
+        # else:
+        #
+        #     if stratification_index == 1:
+        #         strata_df = pd.read_excel(epro_2019.params['data_root_dir'] + epro_2019.params['filename_strata'],
+        #                                   sheet_name='Base KS')
+        #         strata_df = strata_df[['Year', 'Cluster name', 'Haul', 'wt']].copy()
+        #
+        #         # set data types of dataframe
+        #         strata_df = strata_df.astype({'Year': int, 'Cluster name': int, 'Haul': int, 'wt': np.float64})
+        #
+        #         strata_df.set_index('Haul', inplace=True)
+        #         strata_df.sort_index(inplace=True)
+        #
+        #     else:
+        #         strata_df = pd.read_excel(epro_2019.params['data_root_dir'] + epro_2019.params['filename_strata'],
+        #                                   sheet_name='INPFC')
+        #         strata_df = strata_df[['Year', 'INPFC', 'Haul', 'wt']].copy()
+        #
+        #         # set data types of dataframe
+        #         strata_df = strata_df.astype({'Year': int, 'INPFC': int, 'Haul': int, 'wt': np.float64})
+        #
+        #         strata_df.set_index('Haul', inplace=True)
+        #         strata_df.sort_index(inplace=True)
+        #
+        # strata_df.head()
+
+        # # TODO: make final_table_trawl a variable of epro_2019
+        # if stratification_index == 1:
+        #     selected_columns = ['Haul', 'Transect', 'EQ_Latitude', 'EQ_Longitude', 'Cluster name',
+        #                         'Average_Bottom_Depth',
+        #                         'Surface_Temperature', 'Gear_Temperature', 'Length', 'Sex', 'Age', 'Weight',
+        #                         'Frequency',
+        #                         'Average_Footrope_Depth', 'Weight_In_Haul']
+        #     final_table_trawl = pd.DataFrame(columns=selected_columns)
+        # elif stratification_index == 0:
+        #     selected_columns = ['Haul', 'Transect', 'EQ_Latitude', 'EQ_Longitude', 'INPFC', 'Average_Bottom_Depth',
+        #                         'Surface_Temperature', 'Gear_Temperature', 'Length', 'Sex', 'Age', 'Weight',
+        #                         'Frequency',
+        #                         'Average_Footrope_Depth', 'Weight_In_Haul']
+        #     final_table_trawl = pd.DataFrame(columns=selected_columns)
+        # else:
+        #     raise NotImplementedError(f"stratification_index of {stratification_index} has not been implemented!")
+        #
+        # catch_specific = epro_2019.catch_df[epro_2019.catch_df['Species_Code'] == epro_2019.params['species_code_ID']]
+        #
+        # # get all unique Haul values accross all of the data
+        # full_haul = np.unique(np.concatenate([strata_df.index.values, epro_2019.gear_df.index.values,
+        #                                       catch_specific.index.values, epro_2019.length_ds_wu_jung.Haul.values,
+        #                                       epro_2019.trawl_df.index.values,
+        #                                       epro_2019.specimen_df.index.unique().values]))
+        #
+        # full_haul
+
+
+        # from functools import reduce
+        #
+        # temp = epro_2019.length_ds_wu_jung.Frequency.to_dataframe().reset_index().dropna(subset='Frequency').set_index(
+        #     'Haul')
+        #
+        # # TODO: change strata_df['Cluster name'] to be more inclusive
+        # data_frames_length = [temp, catch_specific, epro_2019.gear_df, epro_2019.trawl_df, strata_df['Cluster name']]
+        # df_merged_length = reduce(lambda left, right: pd.merge(left, right, on=['Haul'], how='outer'),
+        #                           data_frames_length)
+        #
+        # df_merged_length['Age'] = np.nan
+        # df_merged_length['Weight'] = np.nan
+        #
+        # # TODO: change strata_df['Cluster name'] to be more inclusive
+        # data_frames_specimen = [epro_2019.specimen_df, catch_specific, epro_2019.gear_df, epro_2019.trawl_df,
+        #                         strata_df['Cluster name']]
+        # df_merged_specimen = reduce(lambda left, right: pd.merge(left, right, on=['Haul'], how='outer'),
+        #                             data_frames_specimen)
+        #
+        # df_merged_specimen['Frequency'] = np.int64(
+        #     1)  # TODO: check to make sure if adding a frequency column makes sense with Chu
+        #
+        # df_merged_length[selected_columns[1:]]
+        # # df_merged_specimen[selected_columns[1:]]
+        #
+        # # TODO: combine df_merged_length and df_merged_specimen
+
+

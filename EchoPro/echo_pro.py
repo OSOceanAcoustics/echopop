@@ -126,16 +126,10 @@ class EchoPro:
     def __set_params_from_init(source: int, bio_data_type: int, init_params: dict, age_data_status: int):
 
         # setting bio_hake_lin_bin variable to a numpy array
-        # init_params["bio_hake_len_bin"] = np.linspace(init_params["bio_hake_len_bin"][0],
-        #                                               init_params["bio_hake_len_bin"][1],
-        #                                               num=init_params["bio_hake_len_bin"][2],
-        #                                               dtype=np.int64)
-
-        init_params["bio_hake_len_bin"] = np.linspace(init_params["bio_hake_len_bin"][0]-1,
-                                                      init_params["bio_hake_len_bin"][1]+2,
+        init_params["bio_hake_len_bin"] = np.linspace(init_params["bio_hake_len_bin"][0],
+                                                      init_params["bio_hake_len_bin"][1],
                                                       num=init_params["bio_hake_len_bin"][2],
                                                       dtype=np.int64)
-
 
         # setting bio_hake_age_bin variable to a numpy array
         init_params["bio_hake_age_bin"] = np.linspace(init_params["bio_hake_age_bin"][0],
@@ -298,11 +292,10 @@ class EchoPro:
 
         if self.params['bio_data_type'] == 1:
 
-            print("hello")
-            # self.load_bio.process_length_weight_data(self.specimen_df)
-        #
-        #     self.load_bio.construct_catch_trawl_output_matrices(KS_stratification, stratification_index)
-        #
+            self.load_bio.process_length_weight_data(self.specimen_df)
+
+            self.load_bio.construct_catch_trawl_output_matrices(KS_stratification, stratification_index)
+
         else:
             raise NotImplementedError(f"Processing bio_data_type = {self.params['bio_data_type']} has not been implemented!")
 

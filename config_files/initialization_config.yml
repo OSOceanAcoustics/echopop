@@ -42,10 +42,10 @@
 
   JH_fac: 0.75                          # percent of Jolly-Hampton transects in each stratum
 
-  bio_hake_len_bin: [                   # length sequence array 2 - 80 cm
-                  2,                    # start of sequence
-                  80,                   # end of sequence
-                  40                    # number of points in the sequence
+  bio_hake_len_bin: [                   # length sequence array 2 - 80 cm. This specifies the bin centers!
+                  2,                    # start of bin centers
+                  80,                   # end of bin centers
+                  40                    # number of bins in total
   ]
 
   bio_hake_age_bin: [                   # age sequence array: year - age  1-20
