@@ -262,9 +262,55 @@ class EchoPro:
 
         return df
 
+    def __load_stratafication_file(self, stratification_index):
+        """
+        Loads stratification file. Produces the variable self.strata_df,
+        which is a Pandas dataframe representing stratification file.
+
+        Parameters
+        ----------
+        stratification_index : int  # TODO: this looks to mirror KS_stratification, it seems to be unnecessary to use this
+                                    # TODO: Ask Chu if it is ok to remove this.
+            Index for the chosen stratification
+            0 = INPFC strata
+            1 = KS (trawl)-based
+            2-6 = geographically based but close to trawl-based stratification
+            7 = mix-proportion, rather than 85% & 20% hake/hake-mix rules
+            10 = one stratum for the whole survey
+        """
+
+        # load stratification file
+        if stratification_index != 1 and stratification_index != 0:
+            raise NotImplementedError(f"stratification_index of {stratification_index} has not been implemented!")
+        else:
+
+            if stratification_index == 1:
+                self.strata_df = pd.read_excel(self.params['data_root_dir'] + self.params['filename_strata'],
+                                               sheet_name='Base KS')
+                self.strata_df = self.strata_df[['Year', 'Cluster name', 'Haul', 'wt']].copy()
+
+                # set data types of dataframe
+                self.strata_df = self.strata_df.astype({'Year': int, 'Cluster name': int, 'Haul': int,
+                                                        'wt': np.float64})
+
+                self.strata_df.set_index('Haul', inplace=True)
+                self.strata_df.sort_index(inplace=True)
+
+            else:
+                self.strata_df = pd.read_excel(self.params['data_root_dir'] + self.params['filename_strata'],
+                                               sheet_name='INPFC')
+                self.strata_df = self.strata_df[['Year', 'INPFC', 'Haul', 'wt']].copy()
+
+                # set data types of dataframe
+                self.strata_df = self.strata_df.astype({'Year': int, 'INPFC': int, 'Haul': int, 'wt': np.float64})
+
+                self.strata_df.set_index('Haul', inplace=True)
+                self.strata_df.sort_index(inplace=True)
+
     def __load_files(self, KS_stratification, stratification_index):
         """
-        Load the biological, NASC table,
+        Load the biological, NASC table, stratification file,
+        Constructs final trawl and catch tables
 
         Parameters
         ----------
@@ -294,7 +340,9 @@ class EchoPro:
 
             self.load_bio.process_length_weight_data(self.specimen_df)
 
-            self.load_bio.construct_catch_trawl_output_matrices(KS_stratification, stratification_index)
+            self.__load_stratafication_file(stratification_index)
+
+            self.load_bio.get_final_catch_trawl_tables(stratification_index)
 
         else:
             raise NotImplementedError(f"Processing bio_data_type = {self.params['bio_data_type']} has not been implemented!")

@@ -483,9 +483,12 @@ class LoadBioData:
 
         if self.EPro.params['source'] == 3:
 
-            df_us = pd.read_excel(self.EPro.params['data_root_dir'] + self.EPro.params['filename_length_US'])
-            df_can = pd.read_excel(self.EPro.params['data_root_dir'] + self.EPro.params['filename_length_CAN'])
+            df_us = pd.read_excel(self.EPro.params['data_root_dir'] + self.EPro.params['filename_length_US'],
+                                  sheet_name='biodata_length')
+            df_can = pd.read_excel(self.EPro.params['data_root_dir'] + self.EPro.params['filename_length_CAN'],
+                                   sheet_name='biodata_length_CAN')
 
+            # TODO: Pick an option and stick with it!!
             # Option 1, Dataframe with array elements
             length_us_df = self.__process_length_data_df(df_us, 0)
             length_can_df = self.__process_length_data_df(df_can, self.EPro.params['CAN_haul_offset'])
@@ -499,7 +502,7 @@ class LoadBioData:
             # Option 3, Dataset with Haul, Length, and Sex as coordinates
             length_us_ds_wu_jung = self.__process_length_data_ds_wu_jung(df_us, 0)
             length_can_ds_wu_jung = self.__process_length_data_ds_wu_jung(df_can, self.EPro.params['CAN_haul_offset'])
-            self.EPro.length_ds_wu_jung = length_us_ds_wu_jung.merge(length_can_ds_wu_jung)
+            self.EPro.length_ds = length_us_ds_wu_jung.merge(length_can_ds_wu_jung)
 
         else:
             raise NotImplementedError(f"Source of {self.EPro.params['source']} not implemented yet.")
@@ -746,17 +749,122 @@ class LoadBioData:
         self.EPro.params['ave_len_wgt_F'] = np.dot(self.EPro.params['len_wgt_F'], self.EPro.params['len_key_F'])
         self.EPro.params['ave_len_wgt_ALL'] = np.dot(self.EPro.params['len_wgt_ALL'], self.EPro.params['len_key_ALL'])
 
-    def construct_catch_trawl_output_matrices(self, KS_stratification, stratification_index):
+    def __get_statification_based_values(self, stratification_index: int):
+        """
+        Get stratification based values for the final trawl table.
+
+        Parameters
+        ----------
+        stratification_index : int  # TODO: this looks to mirror KS_stratification, it seems to be unnecessary to use this
+                                    # TODO: Ask Chu if it is ok to remove this.
+            Index for the chosen stratification
+            0 = INPFC strata
+            1 = KS (trawl)-based
+            2-6 = geographically based but close to trawl-based stratification
+            7 = mix-proportion, rather than 85% & 20% hake/hake-mix rules
+            10 = one stratum for the whole survey
+
+        Returns
+        -------
+        selected_columns : list
+            A list of strings specifying the columns wanted for the final trawl table.
+        df_common : Pandas Dataframe
+            Dataframe of all collected biological files.
+        """
+        if stratification_index == 1:
+            selected_columns = ['Haul', 'Transect', 'EQ_Latitude', 'EQ_Longitude', 'Cluster name',
+                                'Average_Bottom_Depth', 'Surface_Temperature', 'Gear_Temperature',
+                                'Length', 'Sex', 'Age', 'Weight', 'Frequency',
+                                'Average_Footrope_Depth', 'Weight_In_Haul']
+
+            # Collect all biological files (that are dataframes) based on the intersection of the index Haul
+            df_common = pd.concat([self.EPro.gear_df, self.EPro.trawl_df, self.EPro.final_catch_table,
+                                   self.EPro.strata_df['Cluster name']], axis=1, join='inner')
+
+        elif stratification_index == 0:
+            selected_columns = ['Haul', 'Transect', 'EQ_Latitude', 'EQ_Longitude', 'INPFC', 'Average_Bottom_Depth',
+                                'Surface_Temperature', 'Gear_Temperature', 'Length', 'Sex', 'Age', 'Weight',
+                                'Frequency', 'Average_Footrope_Depth', 'Weight_In_Haul']
+
+            # Collect all biological files (that are dataframes) based on the intersection of the index Haul
+            df_common = pd.concat([self.EPro.gear_df, self.EPro.trawl_df, self.EPro.final_catch_table,
+                                   self.EPro.strata_df['INPFC']], axis=1, join='inner')
+
+        else:
+            raise NotImplementedError(f"stratification_index of {stratification_index} has not been implemented!")
+
+        return selected_columns, df_common
+
+    def __get_df_merged_length(self, selected_columns: list, df_common: pd.DataFrame):
+        """
+        Parameters
+        ----------
+        selected_columns : list
+            A list of strings specifying the columns wanted for the final trawl table.
+        df_common : Pandas Dataframe
+            Dataframe of all collected biological files.
+        Returns
+        -------
+        df_merged_length : Pandas Dataframe
+            Portion of the final trawl table corresponding to the length data.
+        """
+
+        # get Length, Sex, and Age from xarray dataset and turn if into a Dataframe
+        temp = self.EPro.length_ds.Frequency.to_dataframe().reset_index().dropna(subset='Frequency').set_index('Haul')
+
+        # obtain length portion of the final table trawl
+        df_merged_length = pd.merge(df_common, temp, on=['Haul'], how='inner')
+
+        # add Age and Weight columns (not available in the data)
+        df_merged_length['Age'] = np.nan
+        df_merged_length['Weight'] = np.nan
+
+        # Select columns needed for final table trawl
+        df_merged_length = df_merged_length.reset_index()[selected_columns]
+
+        return df_merged_length
+
+    def __get_df_merged_specimen(self, selected_columns: list, df_common: pd.DataFrame, len_df_merged_length: int):
+        """
+        Parameters
+        ----------
+        selected_columns : list
+            A list of strings specifying the columns wanted for the final trawl table.
+        df_common : Pandas Dataframe
+            Dataframe of all collected biological files.
+        len_df_merged_length : int
+            The length of df_merged_length.
+        Returns
+        -------
+        df_merged_specimen : Pandas Dataframe
+            Portion of the final trawl table corresponding to the specimen data.
+        """
+
+        # obtain specimen portion of the final table trawl
+        df_merged_specimen = pd.merge(df_common, self.EPro.specimen_df, on=['Haul'], how='inner')
+
+        # TODO: check to make sure if adding a frequency column makes sense with Chu
+        # Add frequency column to be consistent with the df_merged_length
+        df_merged_specimen['Frequency'] = np.int64(1)
+
+        # Set Weight_In_Haul to zero as this data doesn't exist for df_merged_specimen
+        df_merged_specimen['Weight_In_Haul'] = np.float64(0.0)
+
+        # Select columns needed for final table trawl
+        df_merged_specimen = df_merged_specimen.reset_index()[selected_columns]
+
+        # Add length of df_merged_length (plus 1 for zero index) so we can concatenate it with df_merged_length
+        df_merged_specimen.index = df_merged_specimen.index + len_df_merged_length + 1
+
+        return df_merged_specimen
+
+    def get_final_catch_trawl_tables(self, stratification_index):
         """
         construct the hake (or taget species) catch output matrix for
         visualization & generate report tables
 
         Parameters
         ----------
-        KS_stratification : int
-            Specifies the type of stratification to be used.
-            0 = Pre-Stratification or customized stratification (geographically defined)
-            1 = Post-Stratification (KS-based or trawl-based)
         stratification_index : int  # TODO: this looks to mirror KS_stratification, it seems to be unnecessary to use this
                                     # TODO: Ask Chu if it is ok to remove this.
             Index for the chosen stratification
@@ -767,95 +875,21 @@ class LoadBioData:
             10 = one stratum for the whole survey
         """
 
-        print("constructing catch trawl")
-        # Create catch table with
+        # Create final catch table with
         # Columns   1-3:   'Trawl number'   'Abundance'     'Biomass'
-        self.final_table_catch = self.EPro.catch_df[self.EPro.catch_df['Species_Code'] == self.EPro.params['species_code_ID']]
+        self.EPro.final_catch_table = self.EPro.catch_df[self.EPro.catch_df['Species_Code']
+                                                         == self.EPro.params['species_code_ID']]
 
-        # # TODO: make strata_df a variable of epro_2019
-        # # load stratification file
-        # stratification_index = 1
-        # if stratification_index != 1 and stratification_index != 0:
-        #     raise NotImplementedError(f"stratification_index of {stratification_index} has not been implemented!")
-        # else:
-        #
-        #     if stratification_index == 1:
-        #         strata_df = pd.read_excel(epro_2019.params['data_root_dir'] + epro_2019.params['filename_strata'],
-        #                                   sheet_name='Base KS')
-        #         strata_df = strata_df[['Year', 'Cluster name', 'Haul', 'wt']].copy()
-        #
-        #         # set data types of dataframe
-        #         strata_df = strata_df.astype({'Year': int, 'Cluster name': int, 'Haul': int, 'wt': np.float64})
-        #
-        #         strata_df.set_index('Haul', inplace=True)
-        #         strata_df.sort_index(inplace=True)
-        #
-        #     else:
-        #         strata_df = pd.read_excel(epro_2019.params['data_root_dir'] + epro_2019.params['filename_strata'],
-        #                                   sheet_name='INPFC')
-        #         strata_df = strata_df[['Year', 'INPFC', 'Haul', 'wt']].copy()
-        #
-        #         # set data types of dataframe
-        #         strata_df = strata_df.astype({'Year': int, 'INPFC': int, 'Haul': int, 'wt': np.float64})
-        #
-        #         strata_df.set_index('Haul', inplace=True)
-        #         strata_df.sort_index(inplace=True)
-        #
-        # strata_df.head()
+        selected_columns, df_common = self.__get_statification_based_values(stratification_index)
 
-        # # TODO: make final_table_trawl a variable of epro_2019
-        # if stratification_index == 1:
-        #     selected_columns = ['Haul', 'Transect', 'EQ_Latitude', 'EQ_Longitude', 'Cluster name',
-        #                         'Average_Bottom_Depth',
-        #                         'Surface_Temperature', 'Gear_Temperature', 'Length', 'Sex', 'Age', 'Weight',
-        #                         'Frequency',
-        #                         'Average_Footrope_Depth', 'Weight_In_Haul']
-        #     final_table_trawl = pd.DataFrame(columns=selected_columns)
-        # elif stratification_index == 0:
-        #     selected_columns = ['Haul', 'Transect', 'EQ_Latitude', 'EQ_Longitude', 'INPFC', 'Average_Bottom_Depth',
-        #                         'Surface_Temperature', 'Gear_Temperature', 'Length', 'Sex', 'Age', 'Weight',
-        #                         'Frequency',
-        #                         'Average_Footrope_Depth', 'Weight_In_Haul']
-        #     final_table_trawl = pd.DataFrame(columns=selected_columns)
-        # else:
-        #     raise NotImplementedError(f"stratification_index of {stratification_index} has not been implemented!")
-        #
-        # catch_specific = epro_2019.catch_df[epro_2019.catch_df['Species_Code'] == epro_2019.params['species_code_ID']]
-        #
-        # # get all unique Haul values accross all of the data
-        # full_haul = np.unique(np.concatenate([strata_df.index.values, epro_2019.gear_df.index.values,
-        #                                       catch_specific.index.values, epro_2019.length_ds_wu_jung.Haul.values,
-        #                                       epro_2019.trawl_df.index.values,
-        #                                       epro_2019.specimen_df.index.unique().values]))
-        #
-        # full_haul
+        # modify the Footrope depth
+        # TODO: see if 10.0 should be a variable
+        df_common['Average_Footrope_Depth'] = df_common['Average_Footrope_Depth'] - 10.0
 
+        # Get portion of the final trawl table corresponding to the length data.
+        df_merged_length = self.__get_df_merged_length(selected_columns, df_common)
 
-        # from functools import reduce
-        #
-        # temp = epro_2019.length_ds_wu_jung.Frequency.to_dataframe().reset_index().dropna(subset='Frequency').set_index(
-        #     'Haul')
-        #
-        # # TODO: change strata_df['Cluster name'] to be more inclusive
-        # data_frames_length = [temp, catch_specific, epro_2019.gear_df, epro_2019.trawl_df, strata_df['Cluster name']]
-        # df_merged_length = reduce(lambda left, right: pd.merge(left, right, on=['Haul'], how='outer'),
-        #                           data_frames_length)
-        #
-        # df_merged_length['Age'] = np.nan
-        # df_merged_length['Weight'] = np.nan
-        #
-        # # TODO: change strata_df['Cluster name'] to be more inclusive
-        # data_frames_specimen = [epro_2019.specimen_df, catch_specific, epro_2019.gear_df, epro_2019.trawl_df,
-        #                         strata_df['Cluster name']]
-        # df_merged_specimen = reduce(lambda left, right: pd.merge(left, right, on=['Haul'], how='outer'),
-        #                             data_frames_specimen)
-        #
-        # df_merged_specimen['Frequency'] = np.int64(
-        #     1)  # TODO: check to make sure if adding a frequency column makes sense with Chu
-        #
-        # df_merged_length[selected_columns[1:]]
-        # # df_merged_specimen[selected_columns[1:]]
-        #
-        # # TODO: combine df_merged_length and df_merged_specimen
+        df_merged_specimen = self.__get_df_merged_specimen(selected_columns, df_common, len(df_merged_length))
 
-
+        # combine df_merged_length and df_merged_specimen and setting the index to Haul
+        self.EPro.final_trawl_table = pd.concat([df_merged_length, df_merged_specimen], axis=0).set_index('Haul')
