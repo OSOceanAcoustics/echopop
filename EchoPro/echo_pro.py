@@ -223,9 +223,21 @@ class EchoPro:
         """
 
         if self.params['exclude_age1']:
-            df = pd.read_excel(self.params['data_root_dir'] + self.params['filename_processed_data_no_age1'])
+            df = pd.read_excel(self.params['data_root_dir'] + self.params['filename_processed_data_no_age1'],
+                               sheet_name='Sheet1')
         else:
-            df = pd.read_excel(self.params['data_root_dir'] + self.params['filename_processed_data_all_ages'])
+            df = pd.read_excel(self.params['data_root_dir'] + self.params['filename_processed_data_all_ages'],
+                               sheet_name='Sheet1')
+
+        # obtaining those columns that are required
+        df = df[['Transect', 'Region ID', 'VL start', 'VL end', 'Latitude', 'Longitude', 'Stratum', 'Spacing',
+                 'Layer mean depth', 'Layer height', 'Bottom depth', 'NASC', 'Assigned haul']].copy()
+
+        # set data types of dataframe
+        df = df.astype({'Transect': int, 'Region ID': int, 'VL start': np.float64, 'VL end': np.float64,
+                        'Latitude': np.float64, 'Longitude': np.float64, 'Stratum': int, 'Spacing': np.float64,
+                        'Layer mean depth': np.float64, 'Layer height': np.float64, 'Bottom depth': np.float64,
+                        'NASC': np.float64, 'Assigned haul': int})
 
         if self.params['survey_year'] < 2003:
 
@@ -342,7 +354,7 @@ class EchoPro:
 
             self.__load_stratafication_file(stratification_index)
 
-            self.load_bio.get_final_catch_trawl_tables(stratification_index)
+            self.load_bio.get_final_catch_trawl_tables(stratification_index) # TODO: this might not be needed make it optional
 
         else:
             raise NotImplementedError(f"Processing bio_data_type = {self.params['bio_data_type']} has not been implemented!")

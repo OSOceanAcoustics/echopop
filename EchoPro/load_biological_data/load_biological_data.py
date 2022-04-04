@@ -463,10 +463,12 @@ class LoadBioData:
         if self.EPro.params['source'] == 3:
 
             if self.EPro.params['database_type'] == 'Oracle':
-                catch_us_df = pd.read_excel(self.EPro.params['data_root_dir'] + self.EPro.params['filename_catch_US'])
+                catch_us_df = pd.read_excel(self.EPro.params['data_root_dir'] + self.EPro.params['filename_catch_US'],
+                                            sheet_name='biodata_catch')
                 catch_us_df = self.__process_catch_data_df(catch_us_df)
 
-                catch_can_df = pd.read_excel(self.EPro.params['data_root_dir'] + self.EPro.params['filename_catch_CAN'])
+                catch_can_df = pd.read_excel(self.EPro.params['data_root_dir'] + self.EPro.params['filename_catch_CAN'],
+                                             sheet_name='biodata_catch_CAN')
                 catch_can_df = self.__process_catch_data_df(catch_can_df)
 
                 # combine US & CAN catch files
@@ -513,14 +515,14 @@ class LoadBioData:
 
             if self.EPro.params['filename_trawl_US']:
                 trawl_us_df = pd.read_excel(self.EPro.params['data_root_dir'] + self.EPro.params['filename_trawl_US'],
-                                            converters={'Duration': str})
+                                            converters={'Duration': str}, sheet_name='biodata_haul')
                 trawl_us_df = self.__process_trawl_data(trawl_us_df)
             else:
                 trawl_us_df = None
 
             if self.EPro.params['filename_trawl_CAN']:
                 trawl_can_df = pd.read_excel(self.EPro.params['data_root_dir'] + self.EPro.params['filename_trawl_CAN'],
-                                             converters={'Duration': str})
+                                             converters={'Duration': str}, sheet_name='biodata_haul_CAN')
                 trawl_can_df = self.__process_trawl_data(trawl_can_df)
 
                 trawl_can_df.index = trawl_can_df.index + self.EPro.params['CAN_haul_offset']  # add haul_offset
@@ -544,13 +546,15 @@ class LoadBioData:
         if self.EPro.params['source'] == 3:
 
             if self.EPro.params['filename_gear_US']:
-                gear_us_df = pd.read_excel(self.EPro.params['data_root_dir'] + self.EPro.params['filename_gear_US'])
+                gear_us_df = pd.read_excel(self.EPro.params['data_root_dir'] + self.EPro.params['filename_gear_US'],
+                                           sheet_name='biodata_gear')
                 gear_us_df = self.__process_gear_data(gear_us_df)
             else:
                 gear_us_df = None
 
             if self.EPro.params['filename_gear_CAN']:
-                gear_can_df = pd.read_excel(self.EPro.params['data_root_dir'] + self.EPro.params['filename_gear_CAN'])
+                gear_can_df = pd.read_excel(self.EPro.params['data_root_dir'] + self.EPro.params['filename_gear_CAN'],
+                                            sheet_name='biodata_gear_CAN')
                 gear_can_df = self.__process_gear_data(gear_can_df)
 
                 # transect offset is set to zero since we will not have overlap transects
@@ -576,10 +580,12 @@ class LoadBioData:
 
         if self.EPro.params['source'] == 3:
 
-            specimen_us_df = pd.read_excel(self.EPro.params['data_root_dir'] + self.EPro.params['filename_specimen_US'])
+            specimen_us_df = pd.read_excel(self.EPro.params['data_root_dir'] + self.EPro.params['filename_specimen_US'],
+                                           sheet_name='biodata_specimen')
             specimen_us_df = self.__process_specimen_data(specimen_us_df, 0)
 
-            specimen_can_df = pd.read_excel(self.EPro.params['data_root_dir'] + self.EPro.params['filename_specimen_CAN'])
+            specimen_can_df = pd.read_excel(self.EPro.params['data_root_dir'] + self.EPro.params['filename_specimen_CAN']
+                                            , sheet_name='biodata_specimen_CAN')
             specimen_can_df = self.__process_specimen_data(specimen_can_df, self.EPro.params['CAN_haul_offset'])
 
             self.EPro.specimen_df = pd.concat([specimen_us_df, specimen_can_df])
