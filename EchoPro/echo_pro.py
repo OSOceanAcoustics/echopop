@@ -82,7 +82,7 @@ class EchoPro:
 
         self.length_df = None
         self.length_ds_bran = None
-        self.length_ds_wu_jung = None
+        self.length_ds = None
 
         self.trawl_df = None
 
@@ -319,6 +319,277 @@ class EchoPro:
                 self.strata_df.set_index('Haul', inplace=True)
                 self.strata_df.sort_index(inplace=True)
 
+    def __get_bio_strata(self, stratification_index, KS_stratification, transect_reduction_fraction):
+
+        if stratification_index == 1:
+
+            if self.params['CAN_strata_num0']:
+                raise NotImplementedError("Filled CAN_strata_num0 value has not been implemented!")
+
+            if self.params['exclude_age1']:
+
+                # TODO: Do we need to have a condition to check for para.proc.age1_haul?
+                # TODO: According to Chu, this seems to be unused.
+                # raise NotImplementedError(f"age1_haul")
+
+                if transect_reduction_fraction != 0.0:
+                    raise NotImplementedError("transect reduction has not been implemented!")
+                else:
+
+                    # select only stratum not equal to zero
+                    strata_mask = self.strata_df['Cluster name'] != 0
+                    self.bio_strata = self.strata_df[strata_mask][
+                        ['Cluster name', 'wt']].reset_index().set_index('Cluster name')
+        else:
+
+            if self.params['CAN_strata_num0']:
+                raise NotImplementedError("Filled CAN_strata_num0 value has not been implemented!")
+
+            if self.params['exclude_age1']:
+
+                # TODO: Do we need to have a condition to check for para.proc.age1_haul?
+                # TODO: According to Chu, this seems to be unused.
+                # raise NotImplementedError(f"age1_haul")
+
+                if transect_reduction_fraction != 0.0:
+                    raise NotImplementedError("transect reduction has not been implemented!")
+                else:
+
+                    # select only stratum not equal to zero
+                    strata_mask = self.strata_df['INPFC'] != 0
+                    self.bio_strata = self.strata_df[strata_mask][['INPFC', 'wt']].reset_index().set_index('INPFC')
+
+        # TODO: Do we have to fill-in trawl information for stratum number < first non-empty stratum?
+        #  Matlab get_historical_strata_data lines 144-169
+
+        # TODO: Do we have to interpolate trawl information to stranum (no tralws) by using the parameters
+        #  of the adjacient strata (stratum)
+        #  Matlab get_historical_strata_data lines 172-194
+
+        # TODO: determine if this code is necessary.
+        # # extrpolate trawl information to stranum (no tralws) > last non-empty stratum (situation in using the Observer data or A-SHOP data)
+        # # automatically determine the maximum number of stratum   11/2/2021 (SD, and/or Observer uses geographic_stratification xlsx file)
+        # if para.proc.KS_stratification == 1
+        #     n_strata_max =  max(dat0(:,2));     # change max(dat0(:,1)) to max(dat0(:,2)) on 5/29/2021
+        #                                         # change back from max(dat0(:,2)) to max(dat0(:,1)) on 10/18/2021
+        #                                         # change to if loop for determining what which column corresponding strata index
+        # else
+        #     n_strata_max =  max(dat0(:,1));
+        #     if n_strata_max > 20
+        #         n_strata_max =  max(dat0(:,2));
+        #     end
+        # end
+
+        # for i = data.bio.haul_strata(end)+1:n_strata_max   # change max(dat0(:,1)) to max(dat0(:,2)) on 5/29/2021
+        #                                                    # change back from max(dat0(:,2)) to max(dat0(:,1)) on 10/18/2021
+        #     data.bio.strata(i).trawls=data.bio.strata(data.bio.haul_strata(end)).trawls;
+        #     data.bio.strata(i).wgt=data.bio.strata(data.bio.haul_strata(end)).wgt;
+        #     data.bio.haul_strata(i) = i;
+        #     if length(data.bio.strata(i).trawls) < 1
+        #         disp(data.bio.strata(i).trawls)
+        #     end
+        # end
+
+    def __get_bio_len_age_haul(self):
+
+        # construct hake-haul number array
+        self.params['bio_hake_trawl_num'] = np.union1d(self.length_ds.Haul.values,
+                                                       self.specimen_df.index.unique().values)
+
+        # TODO: uncomment below if we want unsexed to be included
+        self.params['bio_len_haul_U'] = np.zeros(
+            (len(self.params['bio_hake_len_bin']), len(self.params['bio_hake_trawl_num'])))
+        self.params['bio_aged_len_haul_U'] = np.zeros(
+            (len(self.params['bio_hake_len_bin']), len(self.params['bio_hake_trawl_num'])))
+
+        self.params['bio_len_haul_M'] = np.zeros(
+            (len(self.params['bio_hake_len_bin']), len(self.params['bio_hake_trawl_num'])))
+        self.params['bio_len_haul_F'] = np.zeros(
+            (len(self.params['bio_hake_len_bin']), len(self.params['bio_hake_trawl_num'])))
+
+        self.params['bio_aged_len_haul_M'] = np.zeros(
+            (len(self.params['bio_hake_len_bin']), len(self.params['bio_hake_trawl_num'])))
+        self.params['bio_aged_len_haul_F'] = np.zeros(
+            (len(self.params['bio_hake_len_bin']), len(self.params['bio_hake_trawl_num'])))
+
+        j = 0
+        for i in self.params['bio_hake_trawl_num']:
+
+            # Collect expanded length data from length_ds
+            if i in self.length_ds.Haul:
+                male_val_len = np.repeat(self.length_ds.Length.values,
+                                         np.nan_to_num(self.length_ds.Frequency.sel(Haul=i, Sex=1).values).astype(
+                                             dtype=int), axis=0)
+
+                female_val_len = np.repeat(self.length_ds.Length.values,
+                                           np.nan_to_num(
+                                               self.length_ds.Frequency.sel(Haul=i, Sex=2).values).astype(
+                                               dtype=int), axis=0)
+
+                # TODO: uncomment below if we want unsexed to be included
+                unsexed_val_len = np.repeat(self.length_ds.Length.values,
+                                            np.nan_to_num(
+                                                self.length_ds.Frequency.sel(Haul=i, Sex=3).values).astype(
+                                                dtype=int), axis=0)
+            else:
+                male_val_len = []
+                female_val_len = []
+
+                # TODO: uncomment below if we want unsexed to be included
+                unsexed_val_len = []
+
+            # Collect length data from specimen_df
+            male_selected_ind = (self.specimen_df['Sex'] == 1.0) & pd.notnull(self.specimen_df['Age'])
+            if i in male_selected_ind[male_selected_ind].index:
+                male_val_specimen = self.specimen_df[male_selected_ind].loc[i]['Length']
+
+                if isinstance(male_val_specimen, np.float64):
+                    male_val_specimen = [male_val_specimen]
+                else:
+                    male_val_specimen = male_val_specimen.values
+            else:
+                male_val_specimen = []
+
+            female_selected_ind = (self.specimen_df['Sex'] == 2.0) & pd.notnull(self.specimen_df['Age'])
+            if i in female_selected_ind[female_selected_ind].index:
+                female_val_specimen = self.specimen_df[female_selected_ind].loc[i]['Length']
+
+                if isinstance(female_val_specimen, np.float64):
+                    female_val_specimen = [female_val_specimen]
+                else:
+                    female_val_specimen = female_val_specimen.values
+
+            else:
+                female_val_specimen = []
+
+            # TODO: uncomment below if we want unsexed to be included
+            unsexed_selected_ind = (self.specimen_df['Sex'] == 3.0) & pd.notnull(self.specimen_df['Age'])
+            if i in unsexed_selected_ind[unsexed_selected_ind].index:
+                unsexed_val_specimen = self.specimen_df[unsexed_selected_ind].loc[i]['Length']
+
+                if isinstance(unsexed_val_specimen, np.float64):
+                    unsexed_val_specimen = [unsexed_val_specimen]
+                else:
+                    unsexed_val_specimen = unsexed_val_specimen.values
+
+            else:
+                unsexed_val_specimen = []
+
+            # store length data from length_ds and specimen_df
+            self.params['bio_len_haul_M'][:, j] = self.load_bio.get_bin_counts(
+                np.concatenate([male_val_len, male_val_specimen]),
+                self.params['bio_hake_len_bin'])
+
+            self.params['bio_len_haul_F'][:, j] = self.load_bio.get_bin_counts(
+                np.concatenate([female_val_len, female_val_specimen]),
+                self.params['bio_hake_len_bin'])
+
+            # TODO: uncomment below if we want unsexed to be included
+            self.params['bio_len_haul_U'][:, j] = self.load_bio.get_bin_counts(
+                np.concatenate([unsexed_val_len, unsexed_val_specimen]),
+                self.params['bio_hake_len_bin'])
+
+            if j == 37:
+                print(i)
+                # print(np.sort(self.specimen_df[(self.specimen_df['Sex'] == 1.0)].loc[i]))
+                # print(self.specimen_df[(self.specimen_df['Sex'] == 1.0)].loc[i])
+                # print(" ")
+                # print(np.sort(np.concatenate([male_val_len, male_val_specimen])))
+                print(np.sort(male_val_specimen))
+
+            self.params['bio_aged_len_haul_M'][:, j] = self.load_bio.get_bin_counts(male_val_specimen,
+                                                                                              self.params[
+                                                                                                  'bio_hake_len_bin'])
+            self.params['bio_aged_len_haul_F'][:, j] = self.load_bio.get_bin_counts(female_val_specimen,
+                                                                                              self.params[
+                                                                                                  'bio_hake_len_bin'])
+
+            # TODO: uncomment below if we want unsexed to be included
+            self.params['bio_aged_len_haul_U'][:, j] = self.load_bio.get_bin_counts(unsexed_val_specimen,
+                                                                                              self.params[
+                                                                                                  'bio_hake_len_bin'])
+
+            j += 1
+
+        # self.params['bio_len_haul_ALL'] =  self.params['bio_len_haul_M'] + self.params['bio_len_haul_F'] 
+        # self.params['bio_aged_len_haul_ALL'] =  self.params['bio_aged_len_haul_M'] + self.params['bio_aged_len_haul_F'] 
+
+        # TODO: uncomment below if we want unsexed to be included
+        self.params['bio_len_haul_ALL'] = self.params['bio_len_haul_M'] + self.params['bio_len_haul_F'] + \
+                                               self.params['bio_len_haul_U']
+
+        # TODO: uncomment below if we want unsexed to be included
+        self.params['bio_aged_len_haul_ALL'] = self.params['bio_aged_len_haul_M'] + self.params[
+            'bio_aged_len_haul_F'] + self.params['bio_aged_len_haul_U']
+
+    def get_historical_strata_data(self, stratification_index, KS_stratification,
+                                   transect_reduction_fraction: float = 0.0):
+        """
+        Get quantities and keys associated with strata for:
+        1. trawl information
+        2. Length - key
+        3. Length-weight key
+        4. Length-age - key for abundance & biomass
+
+        Parameters
+        ----------
+        stratification_index : int  # TODO: this looks to mirror KS_stratification, it seems to be unnecessary to use this
+                                    # TODO: Ask Chu if it is ok to remove this.
+            Index for the chosen stratification
+            0 = INPFC strata
+            1 = KS (trawl)-based
+            2-6 = geographically based but close to trawl-based stratification
+            7 = mix-proportion, rather than 85% & 20% hake/hake-mix rules
+            10 = one stratum for the whole survey
+        KS_stratification : int
+            Specifies the type of stratification to be used.
+            0 = Pre-Stratification or customized stratification (geographically defined)
+            1 = Post-Stratification (KS-based or trawl-based)
+        transect_reduction_fraction : float
+            Reduction fraction for transect TODO: should this be 5 or 0.05?
+        """
+
+        # TODO: is it necessary to have this? It looks like it is not necessary.
+        # if para.proc.stratification_index == 0 & para.proc.KS_stratification == 0 # INPFC with
+        # if dat0(1, 1) == 2015
+        #     # remove age1 hauls but not those used in transect_region_hual files, to be consistent
+        #     with K - S stratification
+        #     para.proc.age1_haul = [4 9 10 13 15 18 23 30 35 39 41 48 60 69 227];
+
+        if self.params['bio_data_type'] != 3:
+
+            # TODO: Is this code necessary? It looks like the file para.acoust.filename.strata will
+            # TODO: only have one year
+            # indx = find(str2num(para.survey_year ) == dat0(:,1));
+            # dat = dat0(indx,[2 4 5]);                         % strata-haul-weight factor
+
+            print("Do we need to set stratum_id or just use strata_df? Look into this!")
+            # stratum_id = self.strata_df['Cluster name'] or self.strata_df['INPFC']
+
+        else:
+            # TODO: If this statement is triggered, then this is probably not the right place to
+            # TODO: put this code because is could potential be ran in bootstrapping.
+            raise NotImplementedError("Loading the stratification file has not been "
+                                      + f"implemented for bio_data_type = {self.params['bio_data_type']}")
+
+        # TODO: these lines look unnecessary for the Python version
+        # data.bio_acoust.haul_wgt_tbl = dat(:, 2: 3);
+        # data.bio.haul_strata = unique(dat(:, 1));
+
+        # TODO: these lines look unnecessary for the Python version
+        # % % remove strata index 0 - - YOY
+        # ind = find(data.bio.haul_strata == 0);
+        # data.bio.haul_strata(ind) = [];
+        # n = length(data.bio.haul_strata); % number of strata
+
+        self.__get_bio_strata(stratification_index, KS_stratification, transect_reduction_fraction)
+
+        self.__get_bio_len_age_haul()
+
+
+        return
+
+
     def __load_files(self, KS_stratification, stratification_index):
         """
         Load the biological, NASC table, stratification file,
@@ -359,6 +630,8 @@ class EchoPro:
         else:
             raise NotImplementedError(f"Processing bio_data_type = {self.params['bio_data_type']} has not been implemented!")
 
+
+        # self.get_historical_strata_data(stratification_index, transect_reduction_fraction)
 
     # def init_params(self):
     #

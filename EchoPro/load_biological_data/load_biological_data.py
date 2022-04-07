@@ -57,15 +57,6 @@ class LoadBioData:
         # set data types of dataframe
         df = df.astype({'Haul': int, 'Species_Code': int, 'Sex': int, 'Length': np.float64, 'Frequency': np.float64})
 
-        # check to make sure that the Sex column is composed of 1's and 2's
-        unknown_sex_values = set(df.Sex.unique()) - {1, 2}
-        if unknown_sex_values:
-            warnings.warn(
-                f"The Sex column contains values {unknown_sex_values}, converting values greater than 2 to 2 and values less than 2 to 1")
-
-            df.loc[df.Sex > 2, 'Sex'] = int(2)
-            df.loc[df.Sex < 1, 'Sex'] = int(1)
-
         # Apply haul_num_offset
         df['Haul'] = df['Haul'] + haul_num_offset
 
@@ -145,15 +136,6 @@ class LoadBioData:
         # set data types of dataframe
         df = df.astype({'Haul': int, 'Species_Code': int, 'Sex': int, 'Length': np.float64, 'Frequency': int})
 
-        # check to make sure that the Sex column is composed of 1's and 2's
-        unknown_sex_values = set(df.Sex.unique()) - {1, 2}
-        if unknown_sex_values:
-            warnings.warn(
-                f"The Sex column contains values {unknown_sex_values}, converting values greater than 2 to 2 and values less than 2 to 1")
-
-            df.loc[df.Sex > 2, 'Sex'] = int(2)
-            df.loc[df.Sex < 1, 'Sex'] = int(1)
-
         # Apply haul_num_offset
         df['Haul'] = df['Haul'] + haul_num_offset
 
@@ -207,15 +189,6 @@ class LoadBioData:
 
         # set data types of dataframe
         df = df.astype({'Haul': int, 'Species_Code': int, 'Sex': int, 'Length': np.float64, 'Frequency': np.float64})
-
-        # check to make sure that the Sex column is composed of 1's and 2's
-        unknown_sex_values = set(df.Sex.unique()) - {1, 2}
-        if unknown_sex_values:
-            warnings.warn(
-                f"The Sex column contains values {unknown_sex_values}, converting values greater than 2 to 2 and values less than 2 to 1")
-
-            df.loc[df.Sex > 2, 'Sex'] = int(2)
-            df.loc[df.Sex < 1, 'Sex'] = int(1)
 
         # Apply haul_num_offset
         df['Haul'] = df['Haul'] + haul_num_offset
@@ -427,15 +400,6 @@ class LoadBioData:
         df = df.astype({'Haul': int, 'Species_Code': int, 'Sex': int, 'Length': np.float64, 'Weight': np.float64,
                         'Specimen_Number': np.float64, 'Age': np.float64})
 
-        # check to make sure that the Sex column is composed of 1's and 2's
-        unknown_sex_values = set(df.Sex.unique()) - {1, 2}
-        if unknown_sex_values:
-            warnings.warn(
-                f"The Sex column contains values {unknown_sex_values}, converting values greater than 2 to 2 and values less than 2 to 1")
-
-            df.loc[df.Sex > 2, 'Sex'] = int(2)
-            df.loc[df.Sex < 1, 'Sex'] = int(1)
-
         # Apply haul_num_offset
         df['Haul'] = df['Haul'] + haul_num_offset
 
@@ -622,7 +586,7 @@ class LoadBioData:
         self.__load_specimen_data()
 
     @staticmethod
-    def __get_bin_counts(input_data: np.array, centered_bins: np.array):
+    def get_bin_counts(input_data: np.array, centered_bins: np.array):
         """
         This function manually computes bin counts given ``input_data``. This
         function is computing the histogram of ``input_data`` using
@@ -679,10 +643,10 @@ class LoadBioData:
         # all valid length - weight measurements (no nan's)
         L = df_no_null.Length.values
         W = df_no_null.Weight.values
-        Lm = df_no_null.Length[df_no_null.Sex == 1].values
-        Wm = df_no_null.Weight[df_no_null.Sex == 1].values
-        Lf = df_no_null.Length[df_no_null.Sex == 2].values
-        Wf = df_no_null.Weight[df_no_null.Sex == 2].values
+        Lm = df_no_null.Length[df_no_null.Sex == 1.0].values
+        Wm = df_no_null.Weight[df_no_null.Sex == 1.0].values
+        Lf = df_no_null.Length[df_no_null.Sex == 2.0].values
+        Wf = df_no_null.Weight[df_no_null.Sex == 2.0].values
 
         # length-weight regression for all trawls (male & female)
         x = np.log10(L)
@@ -712,9 +676,9 @@ class LoadBioData:
         self.EPro.params['reg_pF'] = pF[0]
 
         # total number of fish individuals at length specified by bio_hake_len_bin
-        self.EPro.params['len_nM'] = self.__get_bin_counts(Lm, self.EPro.params['bio_hake_len_bin'])
-        self.EPro.params['len_nF'] = self.__get_bin_counts(Lf, self.EPro.params['bio_hake_len_bin'])
-        self.EPro.params['len_nALL'] = self.__get_bin_counts(L, self.EPro.params['bio_hake_len_bin'])
+        self.EPro.params['len_nM'] = self.get_bin_counts(Lm, self.EPro.params['bio_hake_len_bin'])
+        self.EPro.params['len_nF'] = self.get_bin_counts(Lf, self.EPro.params['bio_hake_len_bin'])
+        self.EPro.params['len_nALL'] = self.get_bin_counts(L, self.EPro.params['bio_hake_len_bin'])
 
         # length-key
         self.EPro.params['len_key_M'] = self.EPro.params['len_nM'] / sum(self.EPro.params['len_nM'])
@@ -816,7 +780,8 @@ class LoadBioData:
         """
 
         # get Length, Sex, and Age from xarray dataset and turn if into a Dataframe
-        temp = self.EPro.length_ds.Frequency.to_dataframe().reset_index().dropna(subset='Frequency').set_index('Haul')
+        temp = self.EPro.length_ds.Frequency.to_dataframe().reset_index().dropna(subset='Frequency',
+                                                                                 how='all').set_index('Haul')
 
         # obtain length portion of the final table trawl
         df_merged_length = pd.merge(df_common, temp, on=['Haul'], how='inner')
