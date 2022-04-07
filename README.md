@@ -5,3 +5,7 @@ data analysis results with biological information from trawls (such as length, a
 of Pacific hake.
 
 The current Python version of EchoPro was developed using Python version 3.10.0. 
+
+## Project updates
+
+* [April 7, 2022](https://github.com/uw-echospace/EchoPro/blob/master/project_docs/2022_03_07_update.md)
