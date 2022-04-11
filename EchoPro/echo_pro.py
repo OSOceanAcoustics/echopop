@@ -320,6 +320,11 @@ class EchoPro:
                 self.strata_df.sort_index(inplace=True)
 
     def __get_bio_strata(self, stratification_index, KS_stratification, transect_reduction_fraction):
+        """
+        A function that obtains a subset of the strata data corresponding
+        to the biological data. This information is stored in the
+        Pandas Dataframe ``self.bio_strata``.
+        """
 
         if stratification_index == 1:
 
@@ -390,125 +395,119 @@ class EchoPro:
         #     end
         # end
 
+    def __get_expanded_data(self, ind):
+        """
+        Collect the expanded length data from length_ds for
+        male, female, and unsexed genders.
+
+        Parameters
+        ----------
+        ind : int
+            index of haul to select data from
+        """
+        # Collect expanded length data from length_ds
+        if ind in self.length_ds.Haul:
+            male_val_len = np.repeat(self.length_ds.Length.values,
+                                     np.nan_to_num(
+                                         self.length_ds.Frequency.sel(Haul=ind, Sex=1).values).astype(dtype=int),
+                                     axis=0)
+
+            female_val_len = np.repeat(self.length_ds.Length.values,
+                                       np.nan_to_num(
+                                           self.length_ds.Frequency.sel(Haul=ind, Sex=2).values).astype(dtype=int),
+                                       axis=0)
+
+            # TODO: uncomment below if we want unsexed to be included
+            unsexed_val_len = np.repeat(self.length_ds.Length.values,
+                                        np.nan_to_num(
+                                            self.length_ds.Frequency.sel(Haul=ind, Sex=3).values).astype(dtype=int),
+                                        axis=0)
+        else:
+            male_val_len = []
+            female_val_len = []
+
+            # TODO: uncomment below if we want unsexed to be included
+            unsexed_val_len = []
+
+        return male_val_len, female_val_len, unsexed_val_len
+
+    def __get_len_data_specimen(self, gen, ind):
+        """
+        Collect length data from specimen_df for a specific gender.
+
+        Parameters
+        ----------
+        gen : float
+            Gender
+        ind : int
+            index of haul to select data from
+        """
+        selected_ind = (self.specimen_df['Sex'] == gen) & pd.notnull(self.specimen_df['Age'])
+        if ind in selected_ind[selected_ind].index:
+            val_specimen = self.specimen_df[selected_ind].loc[ind]['Length']
+
+            if isinstance(val_specimen, np.float64):
+                val_specimen = [val_specimen]
+            else:
+                val_specimen = val_specimen.values
+        else:
+            val_specimen = []
+
+        return val_specimen
+
     def __get_bio_len_age_haul(self):
 
         # construct hake-haul number array
         self.params['bio_hake_trawl_num'] = np.union1d(self.length_ds.Haul.values,
                                                        self.specimen_df.index.unique().values)
 
+        # initialize parameters with a numpy array
+        len_bio_hake_len_bin = len(self.params['bio_hake_len_bin'])
+        len_bio_hake_trawl_num = len(self.params['bio_hake_trawl_num'])
+
         # TODO: uncomment below if we want unsexed to be included
-        self.params['bio_len_haul_U'] = np.zeros(
-            (len(self.params['bio_hake_len_bin']), len(self.params['bio_hake_trawl_num'])))
-        self.params['bio_aged_len_haul_U'] = np.zeros(
-            (len(self.params['bio_hake_len_bin']), len(self.params['bio_hake_trawl_num'])))
+        self.params['bio_len_haul_U'] = np.zeros((len_bio_hake_len_bin, len_bio_hake_trawl_num))
+        self.params['bio_aged_len_haul_U'] = np.zeros((len_bio_hake_len_bin, len_bio_hake_trawl_num))
 
-        self.params['bio_len_haul_M'] = np.zeros(
-            (len(self.params['bio_hake_len_bin']), len(self.params['bio_hake_trawl_num'])))
-        self.params['bio_len_haul_F'] = np.zeros(
-            (len(self.params['bio_hake_len_bin']), len(self.params['bio_hake_trawl_num'])))
-
-        self.params['bio_aged_len_haul_M'] = np.zeros(
-            (len(self.params['bio_hake_len_bin']), len(self.params['bio_hake_trawl_num'])))
-        self.params['bio_aged_len_haul_F'] = np.zeros(
-            (len(self.params['bio_hake_len_bin']), len(self.params['bio_hake_trawl_num'])))
+        self.params['bio_len_haul_M'] = np.zeros((len_bio_hake_len_bin, len_bio_hake_trawl_num))
+        self.params['bio_len_haul_F'] = np.zeros((len_bio_hake_len_bin, len_bio_hake_trawl_num))
+        self.params['bio_aged_len_haul_M'] = np.zeros((len_bio_hake_len_bin, len_bio_hake_trawl_num))
+        self.params['bio_aged_len_haul_F'] = np.zeros((len_bio_hake_len_bin, len_bio_hake_trawl_num))
 
         j = 0
         for i in self.params['bio_hake_trawl_num']:
 
-            # Collect expanded length data from length_ds
-            if i in self.length_ds.Haul:
-                male_val_len = np.repeat(self.length_ds.Length.values,
-                                         np.nan_to_num(self.length_ds.Frequency.sel(Haul=i, Sex=1).values).astype(
-                                             dtype=int), axis=0)
+            male_val_len, female_val_len, unsexed_val_len = self.__get_expanded_data(i)
 
-                female_val_len = np.repeat(self.length_ds.Length.values,
-                                           np.nan_to_num(
-                                               self.length_ds.Frequency.sel(Haul=i, Sex=2).values).astype(
-                                               dtype=int), axis=0)
+            # Collect length data from specimen_df for males
+            male_val_specimen = self.__get_len_data_specimen(1.0, i)
 
-                # TODO: uncomment below if we want unsexed to be included
-                unsexed_val_len = np.repeat(self.length_ds.Length.values,
-                                            np.nan_to_num(
-                                                self.length_ds.Frequency.sel(Haul=i, Sex=3).values).astype(
-                                                dtype=int), axis=0)
-            else:
-                male_val_len = []
-                female_val_len = []
-
-                # TODO: uncomment below if we want unsexed to be included
-                unsexed_val_len = []
-
-            # Collect length data from specimen_df
-            male_selected_ind = (self.specimen_df['Sex'] == 1.0) & pd.notnull(self.specimen_df['Age'])
-            if i in male_selected_ind[male_selected_ind].index:
-                male_val_specimen = self.specimen_df[male_selected_ind].loc[i]['Length']
-
-                if isinstance(male_val_specimen, np.float64):
-                    male_val_specimen = [male_val_specimen]
-                else:
-                    male_val_specimen = male_val_specimen.values
-            else:
-                male_val_specimen = []
-
-            female_selected_ind = (self.specimen_df['Sex'] == 2.0) & pd.notnull(self.specimen_df['Age'])
-            if i in female_selected_ind[female_selected_ind].index:
-                female_val_specimen = self.specimen_df[female_selected_ind].loc[i]['Length']
-
-                if isinstance(female_val_specimen, np.float64):
-                    female_val_specimen = [female_val_specimen]
-                else:
-                    female_val_specimen = female_val_specimen.values
-
-            else:
-                female_val_specimen = []
+            # Collect length data from specimen_df for females
+            female_val_specimen = self.__get_len_data_specimen(2.0, i)
 
             # TODO: uncomment below if we want unsexed to be included
-            unsexed_selected_ind = (self.specimen_df['Sex'] == 3.0) & pd.notnull(self.specimen_df['Age'])
-            if i in unsexed_selected_ind[unsexed_selected_ind].index:
-                unsexed_val_specimen = self.specimen_df[unsexed_selected_ind].loc[i]['Length']
-
-                if isinstance(unsexed_val_specimen, np.float64):
-                    unsexed_val_specimen = [unsexed_val_specimen]
-                else:
-                    unsexed_val_specimen = unsexed_val_specimen.values
-
-            else:
-                unsexed_val_specimen = []
+            # Collect length data from specimen_df for unsexed
+            unsexed_val_specimen = self.__get_len_data_specimen(3.0, i)
 
             # store length data from length_ds and specimen_df
             self.params['bio_len_haul_M'][:, j] = self.load_bio.get_bin_counts(
-                np.concatenate([male_val_len, male_val_specimen]),
-                self.params['bio_hake_len_bin'])
+                np.concatenate([male_val_len, male_val_specimen]), self.params['bio_hake_len_bin'])
 
             self.params['bio_len_haul_F'][:, j] = self.load_bio.get_bin_counts(
-                np.concatenate([female_val_len, female_val_specimen]),
-                self.params['bio_hake_len_bin'])
+                np.concatenate([female_val_len, female_val_specimen]), self.params['bio_hake_len_bin'])
 
             # TODO: uncomment below if we want unsexed to be included
             self.params['bio_len_haul_U'][:, j] = self.load_bio.get_bin_counts(
-                np.concatenate([unsexed_val_len, unsexed_val_specimen]),
-                self.params['bio_hake_len_bin'])
-
-            if j == 37:
-                print(i)
-                # print(np.sort(self.specimen_df[(self.specimen_df['Sex'] == 1.0)].loc[i]))
-                # print(self.specimen_df[(self.specimen_df['Sex'] == 1.0)].loc[i])
-                # print(" ")
-                # print(np.sort(np.concatenate([male_val_len, male_val_specimen])))
-                print(np.sort(male_val_specimen))
+                np.concatenate([unsexed_val_len, unsexed_val_specimen]), self.params['bio_hake_len_bin'])
 
             self.params['bio_aged_len_haul_M'][:, j] = self.load_bio.get_bin_counts(male_val_specimen,
-                                                                                              self.params[
-                                                                                                  'bio_hake_len_bin'])
+                                                                                    self.params['bio_hake_len_bin'])
             self.params['bio_aged_len_haul_F'][:, j] = self.load_bio.get_bin_counts(female_val_specimen,
-                                                                                              self.params[
-                                                                                                  'bio_hake_len_bin'])
+                                                                                    self.params['bio_hake_len_bin'])
 
             # TODO: uncomment below if we want unsexed to be included
             self.params['bio_aged_len_haul_U'][:, j] = self.load_bio.get_bin_counts(unsexed_val_specimen,
-                                                                                              self.params[
-                                                                                                  'bio_hake_len_bin'])
-
+                                                                                    self.params['bio_hake_len_bin'])
             j += 1
 
         # self.params['bio_len_haul_ALL'] =  self.params['bio_len_haul_M'] + self.params['bio_len_haul_F'] 
@@ -521,6 +520,14 @@ class EchoPro:
         # TODO: uncomment below if we want unsexed to be included
         self.params['bio_aged_len_haul_ALL'] = self.params['bio_aged_len_haul_M'] + self.params[
             'bio_aged_len_haul_F'] + self.params['bio_aged_len_haul_U']
+
+    def __remove_empty_bio_len_age_haul(self):
+        """
+        Deletes columns in bio_len_age_haul arrays that are empty.
+        """
+
+        aged_del_ind = self.params['bio_aged_len_haul_ALL'].sum(axis=0)
+
 
     def get_historical_strata_data(self, stratification_index, KS_stratification,
                                    transect_reduction_fraction: float = 0.0):
@@ -586,6 +593,7 @@ class EchoPro:
 
         self.__get_bio_len_age_haul()
 
+        # self.__remove_empty_bio_len_age_haul()
 
         return
 
