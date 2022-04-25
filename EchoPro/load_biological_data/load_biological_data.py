@@ -12,15 +12,12 @@ class LoadBioData:
 
     Parameters
     ----------
-    params : dict
-        The parameter dictionary constructed in the EchoPro class. Note that any
-        modification to this dictionary made within this class will be also
-        done to params in the EchoPro class.
+    EPro : EchoPro object
+        An initialized EchoPro object. Note that any change to
+        self.EPro will also change this object.
     """
 
     def __init__(self, EPro = None):
-
-        # self.params = params
 
         self.EPro = EPro
 
@@ -814,7 +811,6 @@ class LoadBioData:
         # obtain specimen portion of the final table trawl
         df_merged_specimen = pd.merge(df_common, self.EPro.specimen_df, on=['Haul'], how='inner')
 
-        # TODO: check to make sure if adding a frequency column makes sense with Chu
         # Add frequency column to be consistent with the df_merged_length
         df_merged_specimen['Frequency'] = np.int64(1)
 
