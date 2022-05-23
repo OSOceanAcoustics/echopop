@@ -716,51 +716,52 @@ class LoadBioData:
         self.EPro.params['ave_len_wgt_F'] = np.dot(self.EPro.params['len_wgt_F'], self.EPro.params['len_key_F'])
         self.EPro.params['ave_len_wgt_ALL'] = np.dot(self.EPro.params['len_wgt_ALL'], self.EPro.params['len_key_ALL'])
 
-    def __get_statification_based_values(self, stratification_index: int):
-        """
-        Get stratification based values for the final trawl table.
-
-        Parameters
-        ----------
-        stratification_index : int  # TODO: this looks to mirror KS_stratification, it seems to be unnecessary to use this
-                                    # TODO: Ask Chu if it is ok to remove this.
-            Index for the chosen stratification
-            0 = INPFC strata
-            1 = KS (trawl)-based
-            2-6 = geographically based but close to trawl-based stratification
-            7 = mix-proportion, rather than 85% & 20% hake/hake-mix rules
-            10 = one stratum for the whole survey
-
-        Returns
-        -------
-        selected_columns : list
-            A list of strings specifying the columns wanted for the final trawl table.
-        df_common : Pandas Dataframe
-            Dataframe of all collected biological files.
-        """
-        if stratification_index == 1:
-            selected_columns = ['Haul', 'Transect', 'EQ_Latitude', 'EQ_Longitude', 'Cluster name',
-                                'Average_Bottom_Depth', 'Surface_Temperature', 'Gear_Temperature',
-                                'Length', 'Sex', 'Age', 'Weight', 'Frequency',
-                                'Average_Footrope_Depth', 'Weight_In_Haul']
-
-            # Collect all biological files (that are dataframes) based on the intersection of the index Haul
-            df_common = pd.concat([self.EPro.gear_df, self.EPro.trawl_df, self.EPro.final_catch_table,
-                                   self.EPro.strata_df['Cluster name']], axis=1, join='inner')
-
-        elif stratification_index == 0:
-            selected_columns = ['Haul', 'Transect', 'EQ_Latitude', 'EQ_Longitude', 'INPFC', 'Average_Bottom_Depth',
-                                'Surface_Temperature', 'Gear_Temperature', 'Length', 'Sex', 'Age', 'Weight',
-                                'Frequency', 'Average_Footrope_Depth', 'Weight_In_Haul']
-
-            # Collect all biological files (that are dataframes) based on the intersection of the index Haul
-            df_common = pd.concat([self.EPro.gear_df, self.EPro.trawl_df, self.EPro.final_catch_table,
-                                   self.EPro.strata_df['INPFC']], axis=1, join='inner')
-
-        else:
-            raise NotImplementedError(f"stratification_index of {stratification_index} has not been implemented!")
-
-        return selected_columns, df_common
+    # def __get_statification_based_values(self, stratification_index: int):
+    #     """
+    #     Get stratification based values for the final trawl table.
+    #
+    #     Parameters
+    #     ----------
+    #     stratification_index : int  # TODO: this looks to mirror KS_stratification, it seems to be unnecessary to use this
+    #                                 # TODO: Ask Chu if it is ok to remove this.
+    #         Index for the chosen stratification
+    #         0 = INPFC strata
+    #         1 = KS (trawl)-based
+    #         2-6 = geographically based but close to trawl-based stratification
+    #         7 = mix-proportion, rather than 85% & 20% hake/hake-mix rules
+    #         10 = one stratum for the whole survey
+    #
+    #     Returns
+    #     -------
+    #     selected_columns : list
+    #         A list of strings specifying the columns wanted for the final trawl table.
+    #     df_common : Pandas Dataframe
+    #         Dataframe of all collected biological files.
+    #     """
+    #     print(self.EPro.strata_df)
+    #     if stratification_index == 1:
+    #         selected_columns = ['Haul', 'Transect', 'EQ_Latitude', 'EQ_Longitude', 'strata',
+    #                             'Average_Bottom_Depth', 'Surface_Temperature', 'Gear_Temperature',
+    #                             'Length', 'Sex', 'Age', 'Weight', 'Frequency',
+    #                             'Average_Footrope_Depth', 'Weight_In_Haul']
+    #
+    #         # Collect all biological files (that are dataframes) based on the intersection of the index Haul
+    #         df_common = pd.concat([self.EPro.gear_df, self.EPro.trawl_df, self.EPro.final_catch_table,
+    #                                self.EPro.strata_df['strata']], axis=1, join='inner')
+    #
+    #     elif stratification_index == 0:
+    #         selected_columns = ['Haul', 'Transect', 'EQ_Latitude', 'EQ_Longitude', 'strata', 'Average_Bottom_Depth',
+    #                             'Surface_Temperature', 'Gear_Temperature', 'Length', 'Sex', 'Age', 'Weight',
+    #                             'Frequency', 'Average_Footrope_Depth', 'Weight_In_Haul']
+    #
+    #         # Collect all biological files (that are dataframes) based on the intersection of the index Haul
+    #         df_common = pd.concat([self.EPro.gear_df, self.EPro.trawl_df, self.EPro.final_catch_table,
+    #                                self.EPro.strata_df['strata']], axis=1, join='inner')
+    #
+    #     else:
+    #         raise NotImplementedError(f"stratification_index of {stratification_index} has not been implemented!")
+    #
+    #     return selected_columns, df_common
 
     def __get_df_merged_length(self, selected_columns: list, df_common: pd.DataFrame):
         """
@@ -825,38 +826,38 @@ class LoadBioData:
 
         return df_merged_specimen
 
-    def get_final_catch_trawl_tables(self, stratification_index):
-        """
-        construct the hake (or taget species) catch output matrix for
-        visualization & generate report tables
-
-        Parameters
-        ----------
-        stratification_index : int  # TODO: this looks to mirror KS_stratification, it seems to be unnecessary to use this
-                                    # TODO: Ask Chu if it is ok to remove this.
-            Index for the chosen stratification
-            0 = INPFC strata
-            1 = KS (trawl)-based
-            2-6 = geographically based but close to trawl-based stratification
-            7 = mix-proportion, rather than 85% & 20% hake/hake-mix rules
-            10 = one stratum for the whole survey
-        """
-
-        # Create final catch table with
-        # Columns   1-3:   'Trawl number'   'Abundance'     'Biomass'
-        self.EPro.final_catch_table = self.EPro.catch_df[self.EPro.catch_df['Species_Code']
-                                                         == self.EPro.params['species_code_ID']]
-
-        selected_columns, df_common = self.__get_statification_based_values(stratification_index)
-
-        # modify the Footrope depth
-        # TODO: see if 10.0 should be a variable
-        df_common['Average_Footrope_Depth'] = df_common['Average_Footrope_Depth'] - 10.0
-
-        # Get portion of the final trawl table corresponding to the length data.
-        df_merged_length = self.__get_df_merged_length(selected_columns, df_common)
-
-        df_merged_specimen = self.__get_df_merged_specimen(selected_columns, df_common, len(df_merged_length))
-
-        # combine df_merged_length and df_merged_specimen and setting the index to Haul
-        self.EPro.final_trawl_table = pd.concat([df_merged_length, df_merged_specimen], axis=0).set_index('Haul')
+    # def get_final_catch_trawl_tables(self, stratification_index):
+    #     """
+    #     construct the hake (or taget species) catch output matrix for
+    #     visualization & generate report tables
+    #
+    #     Parameters
+    #     ----------
+    #     stratification_index : int  # TODO: this looks to mirror KS_stratification, it seems to be unnecessary to use this
+    #                                 # TODO: Ask Chu if it is ok to remove this.
+    #         Index for the chosen stratification
+    #         0 = INPFC strata
+    #         1 = KS (trawl)-based
+    #         2-6 = geographically based but close to trawl-based stratification
+    #         7 = mix-proportion, rather than 85% & 20% hake/hake-mix rules
+    #         10 = one stratum for the whole survey
+    #     """
+    #
+    #     # Create final catch table with
+    #     # Columns   1-3:   'Trawl number'   'Abundance'     'Biomass'
+    #     self.EPro.final_catch_table = self.EPro.catch_df[self.EPro.catch_df['Species_Code']
+    #                                                      == self.EPro.params['species_code_ID']]
+    #
+    #     selected_columns, df_common = self.__get_statification_based_values(stratification_index)
+    #
+    #     # modify the Footrope depth
+    #     # TODO: see if 10.0 should be a variable
+    #     df_common['Average_Footrope_Depth'] = df_common['Average_Footrope_Depth'] - 10.0
+    #
+    #     # Get portion of the final trawl table corresponding to the length data.
+    #     df_merged_length = self.__get_df_merged_length(selected_columns, df_common)
+    #
+    #     df_merged_specimen = self.__get_df_merged_specimen(selected_columns, df_common, len(df_merged_length))
+    #
+    #     # combine df_merged_length and df_merged_specimen and setting the index to Haul
+    #     self.EPro.final_trawl_table = pd.concat([df_merged_length, df_merged_specimen], axis=0).set_index('Haul')

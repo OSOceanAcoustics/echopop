@@ -45,34 +45,38 @@ class LoadStrataData:
         else:
 
             if stratification_index == 1:
-                self.EPro.strata_df = pd.read_excel(self.EPro.params['data_root_dir'] +
+                strata_df = pd.read_excel(self.EPro.params['data_root_dir'] +
                                                     self.EPro.params['filename_strata'],
                                                     sheet_name='Base KS')
-                self.EPro.strata_df = self.EPro.strata_df[['Year', 'Cluster name', 'Haul', 'wt']].copy()
+                strata_df = strata_df[['Year', 'Cluster name', 'Haul', 'wt']].copy()
 
                 # set data types of dataframe
-                self.EPro.strata_df = self.EPro.strata_df.astype({'Year': int,
+                strata_df = strata_df.astype({'Year': int,
                                                                   'Cluster name': int,
                                                                   'Haul': int,
                                                                   'wt': np.float64})
 
-                self.EPro.strata_df.set_index('Haul', inplace=True)
-                self.EPro.strata_df.sort_index(inplace=True)
+                strata_df.rename(columns={'Cluster name': 'strata'}, inplace=True)
+                strata_df.set_index(['Haul', 'strata'], inplace=True)
+                strata_df.sort_index(inplace=True)
 
             else:
-                self.EPro.strata_df = pd.read_excel(self.EPro.params['data_root_dir'] +
+                strata_df = pd.read_excel(self.EPro.params['data_root_dir'] +
                                                     self.EPro.params['filename_strata'],
                                                     sheet_name='INPFC')
-                self.EPro.strata_df = self.EPro.strata_df[['Year', 'INPFC', 'Haul', 'wt']].copy()
+                strata_df = strata_df[['Year', 'INPFC', 'Haul', 'wt']].copy()
 
                 # set data types of dataframe
-                self.EPro.strata_df = self.EPro.strata_df.astype({'Year': int,
+                strata_df = strata_df.astype({'Year': int,
                                                                   'INPFC': int,
                                                                   'Haul': int,
                                                                   'wt': np.float64})
 
-                self.EPro.strata_df.set_index('Haul', inplace=True)
-                self.EPro.strata_df.sort_index(inplace=True)
+                strata_df.rename(columns={'INPFC': 'strata'}, inplace=True)
+                strata_df.set_index(['Haul', 'strata'], inplace=True)
+                strata_df.sort_index(inplace=True)
+
+            self.EPro.strata_df = strata_df
 
     def __check_for_empty_strata(self):
         """
@@ -101,53 +105,53 @@ class LoadStrataData:
         #  Say we want 6 strata (INPFC), but we have data for strata 2, 4, 5. Then this code copies
         #  stratum 2 to stratum 1, and average strata 2 and 4 to get stratum 3, then copy stratum 5 to stratum 6.
 
-    def __get_bio_strata(self, stratification_index, KS_stratification, transect_reduction_fraction):
-        """
-        A function that obtains a subset of the strata data corresponding
-        to the biological data. This information is stored in the
-        Pandas Dataframe ``self.bio_strata``.
-        """
-
-        if stratification_index == 1:
-
-            if self.EPro.params['CAN_strata_num0']:
-                raise NotImplementedError("Filled CAN_strata_num0 value has not been implemented!")
-
-            if self.EPro.params['exclude_age1']:
-
-                # TODO: Do we need to have a condition to check for para.proc.age1_haul?
-                # TODO: According to Chu, this seems to be unused.
-                # raise NotImplementedError(f"age1_haul")
-
-                if transect_reduction_fraction != 0.0:
-                    raise NotImplementedError("transect reduction has not been implemented!")
-                else:
-
-                    # select only stratum not equal to zero
-                    strata_mask = self.EPro.strata_df['Cluster name'] != 0
-                    self.EPro.bio_strata = self.EPro.strata_df[strata_mask][
-                        ['Cluster name', 'wt']].reset_index().set_index('Cluster name')
-        else:
-
-            if self.EPro.params['CAN_strata_num0']:
-                raise NotImplementedError("Filled CAN_strata_num0 value has not been implemented!")
-
-            if self.EPro.params['exclude_age1']:
-
-                # TODO: Do we need to have a condition to check for para.proc.age1_haul?
-                # TODO: According to Chu, this seems to be unused.
-                # raise NotImplementedError(f"age1_haul")
-
-                if transect_reduction_fraction != 0.0:
-                    raise NotImplementedError("transect reduction has not been implemented!")
-                else:
-
-                    # select only stratum not equal to zero
-                    strata_mask = self.EPro.strata_df['INPFC'] != 0
-                    self.EPro.bio_strata = self.EPro.strata_df[strata_mask][['INPFC', 'wt']].reset_index().set_index('INPFC')
-
-        # TODO: investigate this further! Currently no techniques for filling in the strata have been implemented.
-        self.__check_for_empty_strata()
+    # def __get_bio_strata(self, stratification_index, KS_stratification, transect_reduction_fraction):
+    #     """
+    #     A function that obtains a subset of the strata data corresponding
+    #     to the biological data. This information is stored in the
+    #     Pandas Dataframe ``self.bio_strata``.
+    #     """
+    #
+    #     if stratification_index == 1:
+    #
+    #         if self.EPro.params['CAN_strata_num0']:
+    #             raise NotImplementedError("Filled CAN_strata_num0 value has not been implemented!")
+    #
+    #         if self.EPro.params['exclude_age1']:
+    #
+    #             # TODO: Do we need to have a condition to check for para.proc.age1_haul?
+    #             # TODO: According to Chu, this seems to be unused.
+    #             # raise NotImplementedError(f"age1_haul")
+    #
+    #             if transect_reduction_fraction != 0.0:
+    #                 raise NotImplementedError("transect reduction has not been implemented!")
+    #             else:
+    #
+    #                 # select only stratum not equal to zero
+    #                 strata_mask = self.EPro.strata_df['strata'] != 0
+    #                 self.EPro.bio_strata = self.EPro.strata_df[strata_mask][
+    #                     ['strata', 'wt']].reset_index().set_index('Cluster name')
+    #     else:
+    #
+    #         if self.EPro.params['CAN_strata_num0']:
+    #             raise NotImplementedError("Filled CAN_strata_num0 value has not been implemented!")
+    #
+    #         if self.EPro.params['exclude_age1']:
+    #
+    #             # TODO: Do we need to have a condition to check for para.proc.age1_haul?
+    #             # TODO: According to Chu, this seems to be unused.
+    #             # raise NotImplementedError(f"age1_haul")
+    #
+    #             if transect_reduction_fraction != 0.0:
+    #                 raise NotImplementedError("transect reduction has not been implemented!")
+    #             else:
+    #
+    #                 # select only stratum not equal to zero
+    #                 strata_mask = self.EPro.strata_df['strata'] != 0
+    #                 self.EPro.bio_strata = self.EPro.strata_df[strata_mask][['strata', 'wt']].reset_index().set_index('strata')
+    #
+    #     # TODO: investigate this further! Currently no techniques for filling in the strata have been implemented.
+    #     self.__check_for_empty_strata()
 
     def __get_expanded_data(self, ind):
         """
@@ -341,7 +345,7 @@ class LoadStrataData:
         #     else:
         #         self.EPro.strata_df = self.EPro.strata_df[self.EPro.strata_df['INPFC'] != 0]
 
-        self.__get_bio_strata(stratification_index, KS_stratification, transect_reduction_fraction)
+        # self.__get_bio_strata(stratification_index, KS_stratification, transect_reduction_fraction)
         #
         self.__get_bio_len_age_haul()
 

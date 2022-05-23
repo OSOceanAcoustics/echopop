@@ -251,6 +251,40 @@ class EchoPro:
 
         return df
 
+    # def get_final_biomass_table(self):
+    #
+    #     nasc_df = self.__load_nasc_data()
+    #
+    #     # minimal columns to do Jolly Hampton CV on data that has not been kriged
+    #     self.final_biomass_table = nasc_df[['Latitude', 'Longitude', 'Stratum',
+    #                                         'Bottom depth']]
+
+    def get_strata_ds(self):
+
+        self.strata_df["length_average_haul"] = np.nan
+        self.strata_df["TS_lin_haul"] = np.nan
+        self.strata_df["sig_bs_haul"] = np.nan
+        for haul_num in self.specimen_df.index.unique():
+
+            all_len = self.specimen_df.loc[haul_num]['Length']
+
+            # TODO: replace with length_ds?
+            if haul_num in self.length_df.index:
+                all_len = np.concatenate([all_len,
+                                          self.length_df.loc[haul_num]['Length']])
+
+            TS0j = 20.0 * np.log10(all_len) - 68.0
+            TSj = 10.0 * np.log10(np.nanmean(10.0 ** (TS0j / 10.0)))
+            self.strata_df.loc[haul_num, "TS_lin_haul"] = TSj
+            self.strata_df.loc[haul_num, "sig_bs_haul"] = 10.0 ** (TSj / 10.0)
+            self.strata_df.loc[haul_num, "length_average_haul"] = np.nanmean(all_len)
+
+        self.strata_ds = self.strata_df.to_xarray()
+
+        self.strata_ds["sig_bs"] = self.strata_ds.sig_bs_haul.mean(dim="Haul", skipna=True)
+        self.strata_ds["sig_b"] = 4.0 * np.pi * self.strata_ds["sig_bs"]
+
+
     def __load_files(self, KS_stratification, stratification_index):
         """
         Load the biological, NASC table, stratification file,
@@ -276,11 +310,9 @@ class EchoPro:
 
         """
 
+        self.load_strata = LoadStrataData(self)  # TODO: remove self from load_strata, only necessary for testing
+
         self.load_bio = LoadBioData(self)  # TODO: remove self from load_bio, only necessary for testing
-
-        self.load_strata = LoadStrataData(self) # TODO: remove self from load_strata, only necessary for testing
-
-        self.__load_nasc_data()
 
         if self.params['bio_data_type'] == 1:
 
@@ -288,13 +320,16 @@ class EchoPro:
 
             self.load_strata.load_stratafication_file(stratification_index)
 
-            self.load_bio.get_final_catch_trawl_tables(stratification_index) # TODO: this might not be needed make it optional
+            # self.load_bio.get_final_catch_trawl_tables(stratification_index) # TODO: this might not be needed make it optional
 
         else:
             raise NotImplementedError(f"Processing bio_data_type = {self.params['bio_data_type']} has not been implemented!")
 
         # print("getting strata data")
         # self.load_strata.get_strata_data(stratification_index, KS_stratification, transect_reduction_fraction=0.0)
+
+        # self.get_final_biomass_table()
+        self.get_strata_ds()
 
     # def init_params(self):
     #
