@@ -6,8 +6,10 @@ import numpy as np
 from .load_biological_data import LoadBioData
 from .load_stratification_data import LoadStrataData
 import pandas as pd
+import scipy.io
 import xarray as xr
 import warnings
+from geopy import distance
 
 
 class EchoPro:
@@ -90,6 +92,10 @@ class EchoPro:
         self.gear_df = None
 
         self.specimen_df = None
+
+        self.strata_df = None
+        self.geo_strata_df = None
+        self.strata_ds = None
 
         self.__load_files(KS_stratification, stratification_index)
 
@@ -251,38 +257,44 @@ class EchoPro:
 
         return df
 
-    # def get_final_biomass_table(self):
+    def get_final_biomass_table(self):
+
+        nasc_df = self.__load_nasc_data()
+
+        # minimal columns to do Jolly Hampton CV on data that has not been kriged
+        self.final_biomass_table = nasc_df[['Latitude', 'Longitude', 'Stratum', 'Spacing']]
+
+        mat = scipy.io.loadmat('../2019_consolidated_files/final_biomass_table_wgt_total.mat')
+
+        self.final_biomass_table["wgt_total"] = mat['wgt_total']
+
+        warnings.warn("We are currently using wgt_total from Matlab for CV, change this!")
+
+
+    # def get_strata_ds(self):
     #
-    #     nasc_df = self.__load_nasc_data()
+    #     self.strata_df["length_average_haul"] = np.nan
+    #     self.strata_df["TS_lin_haul"] = np.nan
+    #     self.strata_df["sig_bs_haul"] = np.nan
+    #     for haul_num in self.specimen_df.index.unique():
     #
-    #     # minimal columns to do Jolly Hampton CV on data that has not been kriged
-    #     self.final_biomass_table = nasc_df[['Latitude', 'Longitude', 'Stratum',
-    #                                         'Bottom depth']]
-
-    def get_strata_ds(self):
-
-        self.strata_df["length_average_haul"] = np.nan
-        self.strata_df["TS_lin_haul"] = np.nan
-        self.strata_df["sig_bs_haul"] = np.nan
-        for haul_num in self.specimen_df.index.unique():
-
-            all_len = self.specimen_df.loc[haul_num]['Length']
-
-            # TODO: replace with length_ds?
-            if haul_num in self.length_df.index:
-                all_len = np.concatenate([all_len,
-                                          self.length_df.loc[haul_num]['Length']])
-
-            TS0j = 20.0 * np.log10(all_len) - 68.0
-            TSj = 10.0 * np.log10(np.nanmean(10.0 ** (TS0j / 10.0)))
-            self.strata_df.loc[haul_num, "TS_lin_haul"] = TSj
-            self.strata_df.loc[haul_num, "sig_bs_haul"] = 10.0 ** (TSj / 10.0)
-            self.strata_df.loc[haul_num, "length_average_haul"] = np.nanmean(all_len)
-
-        self.strata_ds = self.strata_df.to_xarray()
-
-        self.strata_ds["sig_bs"] = self.strata_ds.sig_bs_haul.mean(dim="Haul", skipna=True)
-        self.strata_ds["sig_b"] = 4.0 * np.pi * self.strata_ds["sig_bs"]
+    #         all_len = self.specimen_df.loc[haul_num]['Length']
+    #
+    #         # TODO: replace with length_ds?
+    #         if haul_num in self.length_df.index:
+    #             all_len = np.concatenate([all_len,
+    #                                       self.length_df.loc[haul_num]['Length']])
+    #
+    #         TS0j = 20.0 * np.log10(all_len) - 68.0
+    #         TSj = 10.0 * np.log10(np.nanmean(10.0 ** (TS0j / 10.0)))
+    #         self.strata_df.loc[haul_num, "TS_lin_haul"] = TSj
+    #         self.strata_df.loc[haul_num, "sig_bs_haul"] = 10.0 ** (TSj / 10.0)
+    #         self.strata_df.loc[haul_num, "length_average_haul"] = np.nanmean(all_len)
+    #
+    #     self.strata_ds = self.strata_df.to_xarray()
+    #
+    #     self.strata_ds["sig_bs"] = self.strata_ds.sig_bs_haul.mean(dim="Haul", skipna=True)
+    #     self.strata_ds["sig_b"] = 4.0 * np.pi * self.strata_ds["sig_bs"]
 
 
     def __load_files(self, KS_stratification, stratification_index):
@@ -328,8 +340,142 @@ class EchoPro:
         # print("getting strata data")
         # self.load_strata.get_strata_data(stratification_index, KS_stratification, transect_reduction_fraction=0.0)
 
-        # self.get_final_biomass_table()
-        self.get_strata_ds()
+        self.get_final_biomass_table()
+        # self.get_st rata_ds()
+
+    def run_jolly_hampton(self, nr, ns):
+        """
+        Runs the Jolly Hampton algorithm to compute
+        the CV
+
+        Parameters
+        ----------
+        nr : int
+            The number of realizations to perform
+        ns : int
+            The number of strata
+        """
+
+        for ii in range(nr):   # loop through realizations
+
+            # round(fac * strata(i).n)
+            from numpy.random import default_rng
+            rng = default_rng()
+            arr = np.array([0.2, 5.5, 1, 4, 8.8, 9.6])
+            vals = rng.choice(arr, 3, replace=False)
+            vals
+
+            # for i in range(ns): # loop through strata
+            #     # number of transects within the current stratum
+            #     ni(i)=round(fac*strata(i).n)
+                # ni(i) transect indeices selected randomly within the ith stratum
+
+        #         Lij=dist(strata(i).ind(indx_i));        # length of the jth transect in ith stratum
+        #         latitude_ij=latitude(strata(i).ind(indx_i));
+        #         biomass_ij=biomass(strata(i).ind(indx_i));  # biomass of the selected transects in the ith stratum
+        #         strata(i).biomass=biomass_ij;           # biomass of the selected transects in ith stratum
+        #         strata(i).L=Lij;                        # transect length of the jth transect in ith stratum
+        #         strata(i).latitude=mean(latitude_ij);
+        #         strata(i).wgt=Lij/mean(Lij);             # transect length weithing factor of the jth transect in ith stratum (2-7-2018)
+        # #         strata(i).wgt=Lij/sum(Lij);             # transect length weithing factor of the jth transect in ith stratum
+        #         strata(i).rhom_ij=biomass_ij./Lij;      # normalized biomass of the jth transect in ith stratum
+        #         strata(i).rhom_i=sum(biomass_ij.*Lij)/sum(Lij);    # transect-length-normalized mean density in the ith stratum (2-7-2018)
+        #  #       strata(i).rhom_i=sum(biomass_ij)/(ni(i)*sum(Lij));    # transect-length-normalized mean density in the ith stratum
+        #         area_i(i)=strata(i).area;               # total area in the ith stratum
+        #         rhom_i(i)=strata(i).rhom_i;
+        #         # variance of the transect-length weighted biomass within the stratum
+        #         if ni(i) ~= 1
+        #             var_rhom_i(i)=nansum(strata(i).wgt.^2.*(strata(i).rhom_ij-strata(i).rhom_i).^2)/(ni(i)*(ni(i)-1));
+        #         else
+        #             var_rhom_i(i)=nansum(strata(i).wgt.^2.*(strata(i).rhom_ij-strata(i).rhom_i).^2)/(ni(i)*(ni(i)));
+        #         end
+        #         biomass_i(i)=nansum(biomass_ij);
+        #         nt(i)=strata(i).n;                      # number of transects in the ith stratum
+        #         X_length(i)=sum(Lij);                   # total length of the selected ni(i) transects in the ith stratum
+        #     end
+        #     var_rho=sum(area_i.^2.*var_rhom_i)/sum(area).^2
+        #     biomass_m(ii)=sum(biomass_i.*area_i)/sum(area_i)
+        #     # area weighted variance of the "transect-length weighted biomass"
+        #     CV(ii)=sqrt(nansum(var_rhom_i.*area_i.^2))/nansum(area_i.*rhom_i)
+        #     rhom_all=nansum(area_i.*rhom_i)/sum(area)
+        #     biomass_m_ave(ii)=rhom_all*sum(area_i)
+
+    def get_transect_strata_info(self, lat_INPFC):
+
+        transect_info = pd.DataFrame(index=self.final_biomass_table.index.unique())
+        transect_info["max_longitude"] = self.final_biomass_table['Longitude'].groupby(level=0).max()
+        transect_info["min_longitude"] = self.final_biomass_table['Longitude'].groupby(level=0).min()
+        transect_info["mean_latitude"] = self.final_biomass_table['Latitude'].groupby(level=0).mean()
+        transect_info["mean_spacing"] = self.final_biomass_table['Spacing'].groupby(level=0).mean()
+        transect_info["biomass"] = self.final_biomass_table['wgt_total'].groupby(level=0).sum()
+
+        transect_info["distance"] = transect_info.apply(
+            lambda x: distance.distance(
+                (x['mean_latitude'], x['min_longitude']),
+                (x['mean_latitude'], x['max_longitude'])).nm,
+            axis=1
+        )
+
+        transect_info["area"] = transect_info.apply(lambda x: x["distance"] * x["mean_spacing"], axis=1)
+
+        # bin the mean latitude using lat_INPFC
+        strata_lat_bin = pd.cut(transect_info['mean_latitude'],
+                                lat_INPFC,
+                                labels=range(len(lat_INPFC) - 1),
+                                right=False).rename('lat_INPFC_bin')
+
+        strata_info = transect_info["area"].groupby(strata_lat_bin).agg(['count', 'sum'])
+
+        # add this binning as a column
+        transect_info['lat_INPFC_bin'] = strata_lat_bin
+
+        # change index to lat_INPFC_bin
+        transect_info = transect_info.reset_index().set_index(['lat_INPFC_bin', 'Transect'])
+
+        return transect_info, strata_info
+
+    def compute_random_strata_info(self, transect_info, strata_info):
+
+        for bin_val in strata_info.index:
+            num_ind = round(self.params["JH_fac"] * strata_info.loc[bin_val]['count'])
+            #     sel_ind = rng.choice(transect_info.loc[bin_val].index, num_ind, replace=False)
+            sel_ind = np.array([1, 3, 4, 5, 6, 7, 9, 10])
+            print(f"num_ind = {num_ind}")
+            print(sel_ind)
+
+            transect_bin_info = transect_info.loc[(bin_val, sel_ind), ['distance', 'biomass']]
+
+            # transect-length weighting factor of the transects in the "bin_val" bin
+            wgt = transect_bin_info['distance'] / transect_bin_info['distance'].mean()
+
+            # normalized biomass of the transects in the "bin_val" bin
+            rhom_trans_bin = transect_bin_info['biomass'] / transect_bin_info['distance']
+
+            # transect-length-normalized mean density of the "bin_val" bin
+            rhom_trans = (transect_bin_info['biomass'] * transect_bin_info['distance']).sum() / transect_bin_info[
+                'distance'].sum()
+
+            print(rhom_trans)
+            sys.exit()
+
+
+    def run_cv_analysis(self, kriged_data=False):
+        # self.params["JH_fac"]
+        if self.params["JH_fac"] == 1:
+            nr = 1  # number of realizations
+        else:
+            nr = 10000  # number of realizations
+
+        lat_INPFC = [36, 40.5, 43.000, 45.7667, 48.5, 55.0000]  # INPFC
+        lon_inc = 0.05  # longitude increment along the transect
+
+        transect_info, strata_info = self.get_transect_strata_info(lat_INPFC)
+
+
+
+
+
+
 
     # def init_params(self):
     #

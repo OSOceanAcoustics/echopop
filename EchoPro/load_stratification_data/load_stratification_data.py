@@ -38,6 +38,7 @@ class LoadStrataData:
             7 = mix-proportion, rather than 85% & 20% hake/hake-mix rules
             10 = one stratum for the whole survey
         """
+        # TODO: we should make stratification_index the sheet name
 
         # load stratification file
         if stratification_index != 1 and stratification_index != 0:
@@ -77,6 +78,35 @@ class LoadStrataData:
                 strata_df.sort_index(inplace=True)
 
             self.EPro.strata_df = strata_df
+
+    def load_geographic_stratification(self, stratification_index):
+
+        # TODO: we should make stratification_index the sheet name
+
+        # load geographic stratification file
+        if stratification_index != 1 and stratification_index != 0:
+            raise NotImplementedError(f"stratification_index of {stratification_index} has not been implemented!")
+        else:
+            if stratification_index == 1:
+                geo_strata_df = pd.read_excel(self.EPro.params['data_root_dir'] +
+                                          self.EPro.params['stratification_filename'],
+                                          sheet_name='stratification1')
+                geo_strata_df = geo_strata_df[['Strata index', 'Latitude (upper limit)']].copy()
+
+                # set data types of dataframe
+                geo_strata_df = geo_strata_df.astype({'Strata index': int,
+                                                      'Latitude (upper limit)': np.float64})
+            else:
+                geo_strata_df = pd.read_excel(self.EPro.params['data_root_dir'] +
+                                          self.EPro.params['stratification_filename'],
+                                          sheet_name='INPFC')
+                geo_strata_df = geo_strata_df[['Strata index', 'Latitude (upper limit)']].copy()
+
+                # set data types of dataframe
+                geo_strata_df = geo_strata_df.astype({'Strata index': int,
+                                                      'Latitude (upper limit)': np.float64})
+
+        self.geo_strata_df = geo_strata_df
 
     def __check_for_empty_strata(self):
         """
