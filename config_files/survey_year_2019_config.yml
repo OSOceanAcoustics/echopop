@@ -6,6 +6,8 @@
   # directory path that contains all data needed
   data_root_dir: ../2019_consolidated_files/
 
+  # TODO: For all excel files also include the sheet name.
+
   #####################################################################################################################
   # Biological trawl data filenames #
   ###################################
