@@ -7,6 +7,7 @@ from .load_biological_data import LoadBioData
 from .load_stratification_data import LoadStrataData
 from .cv_analysis import CVAnalysis
 from .kriging import Kriging
+from .kriging_mesh import KrigingMesh
 import pandas as pd
 import scipy.io
 import xarray as xr
@@ -357,11 +358,17 @@ class EchoPro:
             cva.run_jolly_hampton(nr, lat_INPFC, self.final_biomass_table)
             return cva
 
-    def run_kriging(self):
+    # def run_kriging(self):
+    #
+    #     krig = Kriging(self)
+    #
+    #     return krig
 
-        krig = Kriging(self)
+    def get_kriging_mesh(self):
 
-        return krig
+        krig_mesh = KrigingMesh(self)
+
+        return krig_mesh
 
 
     # def init_params(self):
