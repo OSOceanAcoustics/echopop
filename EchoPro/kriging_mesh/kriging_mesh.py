@@ -30,13 +30,25 @@ class KrigingMesh:
 
         self.EPro = EPro
 
+        # Default parameters for the folium map
+        self.folium_map_kwargs = {
+            'location': [44.61, -125.66],
+            'zoom_start': 4,
+            'tiles': 'CartoDB positron'
+        }
+
         self.__load_mesh()
         self.__load_smoothed_contour()
 
     def __load_mesh(self):
         """
-        The returned Dataframe is a
-        GeoPandas Dataframe
+        Loads the full mesh of the region being considered.
+        Action is completed by reading in excel file determined
+        by the user defined parameter ``'filename_grid_cell'``.
+
+        Returns
+        -------
+        GeoPandas Dataframe representing the full mesh.
         """
 
         df = pd.read_excel(
@@ -63,8 +75,13 @@ class KrigingMesh:
 
     def __load_smoothed_contour(self):
         """
-        The returned Dataframe is a
-        GeoPandas Dataframe
+        Loads the smoothed contour of the region being considered.
+        Action is completed by reading in excel file determined
+        by the user defined parameter ``'filename_smoothed_contour'``.
+
+        Returns
+        -------
+        GeoPandas Dataframe representing the full mesh.
         """
 
         df = pd.read_excel(
@@ -83,7 +100,8 @@ class KrigingMesh:
 
         self.smoothed_contour_gdf = df
 
-    def get_polygon_of_transects(self, gdf, gdf_tran_mean, n_close, nm_to_buffer=1.25):
+    @staticmethod
+    def get_polygon_of_transects(gdf, gdf_tran_mean, n_close, nm_to_buffer=1.25):
         """
         This function constructs a polygon that contains
         all transects.
@@ -138,75 +156,63 @@ class KrigingMesh:
 
         return pol.buffer(buf_val)
 
-    def reduce_grid_points(self,
-                           bio_df, bio_df_lat_name, bio_df_lon_name,
-                           gdf, gdf_lat_name, gdf_lon_name,
-                           n_close):
+    def reduce_grid_points(self, transect_polygon):
         """
+        Reduces the full mesh points provided to the ``KrigingMesh``
+        class by selecting those points that are within the
+        transect polygon.
 
         Parameters
         ----------
-        bio_df : Pandas Dataframe
-            Contains the position of the trawl points and has columns
-            `bio_data_lat_name`, `bio_data_lon_name`, and index
-            `Transects`.
-        bio_df_lat_name : str
-            String specifying the name of the latitude column for bio_df
-        bio_df_lon_name : str
-            String specifying the name of the longitude column for bio_df
-        gdf : GeoPandas Dataframe
-            Contains the
-        gdf_lat_name : str
-            String specifying the name of the latitude column for gdf
-        gdf_lon_name : str
-            String specifying the name of the longitude column for gdf
-        n_close :
-            The number of closest transects to include in the Polygon
-            construction. This value includes the transect under
-            consideration. Thus, it should be greater than or equal to 2.
+        transect_polygon : Polygon
+            A Polygon that contains all transect data.
 
         Returns
         -------
-
-        Note: The connectivity of the final polygon
-        is determined by n_close.
+        GeoPandas Dataframe representing the reduced
+        mesh points
         """
 
-        bio_gdf = geopandas.GeoDataFrame(bio_df,
-                                         geometry=geopandas.points_from_xy(
-                                             bio_df[bio_df_lon_name],
-                                             bio_df[bio_df_lat_name]))
+        # get bool mask of points that are within the polygon
+        in_poly = self.mesh_gdf['geometry'].within(transect_polygon)
 
-        # get the mean latitude and longitude values of bio_df along the transects
-        bio_df_tran_mean = bio_gdf[[bio_df_lon_name, bio_df_lat_name]].groupby(level=0).mean()
-
-        # get GeoPandas form of bio_df_tran_mean
-        bio_gdf_tran_mean = geopandas.GeoDataFrame(bio_df_tran_mean,
-                                                   geometry=geopandas.points_from_xy(
-                                                       bio_df[bio_df_lon_name],
-                                                       bio_df[bio_df_lat_name]))
-
-        self.get_polygon_of_transects(bio_gdf, bio_gdf_tran_mean, n_close)
-
+        # select gdf rows based on bool mask
+        return self.mesh_gdf.loc[in_poly]
 
     def get_folium_map(self,
-                       map_kwargs={
-                           'location': [44.61, -125.66],
-                           'zoom_start': 4, 'tiles':
-                               'CartoDB positron'}):
+                       map_kwargs=None):
         """
-        grabs the folium map with specifications
+        Grabs the folium map.
+
+        Parameters
+        ----------
+        map_kwargs : dict
+            Dictionary of kwargs for the folium.Map function.
+
         Returns
         -------
+        A folium map object with provided specifications.
 
+        Notes
+        -----
+        If ``map_kwargs`` is empty, then the default dictionary
+        ``map_kwargs={'location': [44.61, -125.66], 'zoom_start': 4,
+        'tiles': 'CartoDB positron'}`` will be used.
         """
 
-        fmap = folium.Map( **map_kwargs)
+        if map_kwargs is None:
+            map_kwargs = self.folium_map_kwargs
+
+        fmap = folium.Map(**map_kwargs)
 
         return fmap
 
-    def plot_points(self, fmap, geo_df, cmap_column=None, color='hex'):
+    def plot_points(self, geo_df, fmap=None, cmap_column=None,
+                    color='hex', marker_kwargs={}):
         """
+        Allows for a simple way to plot and
+        visualize mesh points on a folium map.
+
         Parameters
         ----------
         fmap
@@ -219,12 +225,23 @@ class KrigingMesh:
         cmap_column : str
             Column of geo_df that the colormap should correspond
             to. This is only used if color='hex'.
-        # TODO: make kwargs for folium.Map and folium.CircleMarker
+        marker_kwargs : dict
+            Dictionary of kwargs that should be provided to
+            folium.CircleMarker
+        # TODO: make kwargs for folium.Map
 
         Returns
         -------
         folium.Map
+
+        Notes
+        -----
+        If ``fmap`` is not provided, then a default folium map
+        will be created using the class function ``get_folium_map``.
         """
+
+        if fmap is None:
+            fmap = self.get_folium_map()
 
         if color == 'hex':
             uniq_vals = geo_df[cmap_column].unique()
@@ -244,6 +261,7 @@ class KrigingMesh:
             # Place the markers with the popup labels and data
             fmap.add_child(folium.CircleMarker(location=coordinates,
                                                radius=1,
-                                               color=color_val))
+                                               color=color_val,
+                                               **marker_kwargs))
 
         return fmap
