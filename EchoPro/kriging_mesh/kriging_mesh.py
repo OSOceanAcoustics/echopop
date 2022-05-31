@@ -101,29 +101,44 @@ class KrigingMesh:
         self.smoothed_contour_gdf = df
 
     @staticmethod
-    def get_polygon_of_transects(gdf, gdf_tran_mean, n_close, nm_to_buffer=1.25):
+    def get_coordinate_mean(gdf):
         """
-        This function constructs a polygon that contains
-        all transects.
-
-        How it works: Using the mean latitude, longitude
-        point of each transect, we find the `nsmall` closest
-        transects to each transect and construct a Polygon
-        of these transects. Then, we compute the convex
-        hull of this Polygon, which creates the smallest
-        convex Polygon containing all the points in the object.
-        Lastly, we take the unary union of all constructed
-        convex Polygons.
+        Creates a GeoPandas Dataframe representing
+        the coordinate (latitude and longitude) mean
+        of the provided Dataframe.
 
         Parameters
         ----------
         gdf : GeoPandas Dataframe
             All transect points with index transect and
-            geometry column of shapely points.
-        gdf_tran_mean : GeoPandas Dataframe
-            Contains the mean coordinate point (latitude, longitude)
-            of each transect with index representing the transect
-            and geometry column of shapely points.
+            columns: Latitude and Longitude.
+
+
+        Returns
+        -------
+        A GeoPandas Dataframe containing the mean coordinate
+        point (latitude, longitude) of each transect with
+        index representing the transect and geometry column
+        of shapely points.
+        """
+
+        # get the mean latitude and longitude based on the transects
+        df_tran_mean = gdf[["Latitude", "Longitude"]].groupby(level=0).mean()
+
+        return geopandas.GeoDataFrame(df_tran_mean,
+                                      geometry=geopandas.points_from_xy(df_tran_mean.Longitude,
+                                                                        df_tran_mean.Latitude))
+
+    def get_polygon_of_transects(self, gdf, n_close, nm_to_buffer=1.25):
+        """
+        This function constructs a polygon that contains
+        all transects.
+
+        Parameters
+        ----------
+        gdf : GeoPandas Dataframe
+            All transect points with index transect and
+            columns: Latitude and Longitude
         n_close : int
             The number of closest transects to include in the Polygon.
             This value includes the transect under consideration. Thus,
@@ -135,9 +150,22 @@ class KrigingMesh:
         -------
         Polygon that contains all transect data
 
-        Note: The connectivity of this polygon
-        is determined by n_close.
+        Notes
+        -----
+        How it works: Using the mean latitude, longitude
+        point of each transect, we find the ``n_close`` closest
+        transects to each transect and construct a Polygon
+        of these transects. Then, we compute the convex
+        hull of this Polygon, which creates the smallest
+        convex Polygon containing all the points in the object.
+        Lastly, we take the unary union of all constructed
+        convex Polygons.
+
+        The connectivity of this polygon
+        is determined by ``n_close``.
         """
+
+        gdf_tran_mean = self.get_coordinate_mean(gdf)
 
         transect_polygons = []
         for transect in gdf_tran_mean.index:
@@ -179,8 +207,42 @@ class KrigingMesh:
         # select gdf rows based on bool mask
         return self.mesh_gdf.loc[in_poly]
 
-    def get_folium_map(self,
-                       map_kwargs=None):
+    def apply_longitude_transformation(self, gdf, lon_ref):
+        """
+        This function applies a transformation to the
+        longitude coordinate so that the anisotropic signature
+        of the animal biomass distribution can be approximately
+        characterized by two perpendicular (principal) correlation
+        scales: one is along the isobaths and the other is across
+        the isobaths.
+
+        Parameters
+        ----------
+        gdf : GeoPandas Dataframe
+            All transect points with index transect and
+            columns: Latitude and Longitude
+        lon_ref : float
+            An arbitrary scalar, or a reference longitude
+            (e.g., the mean longitude of the 200m isobath)
+
+        Notes
+        -----
+        Extreme caution should be used here. This transformation
+        was specifically designed for a NWFSC application!
+        """
+
+        gdf_tran_mean = self.get_coordinate_mean(gdf)
+
+        # choose
+        # TODO: to create the interpolated data looked at smoothed
+        #  contour points and interpolate the two closest points in
+        #  terms of latitude. When applying the transformation,
+        #  choose the interpolation function that is closest to the
+        #  mean of the transect point (using Longitude)
+
+        return None
+
+    def get_folium_map(self, map_kwargs=None):
         """
         Grabs the folium map.
 
