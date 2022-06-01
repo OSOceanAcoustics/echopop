@@ -105,8 +105,6 @@
 
   kriging_A0: 6.25                        # base area of the grid cell
 
-  krig_shelf_break_Ref_lon: -124.78338    # reference longitude
-
   krig_x_res: 0.02                        # kriging resolution in lon (deg)
 
   krig_y_res: 0.05                        # kriging resolution in lat (deg)

@@ -54,7 +54,8 @@
   # any of these paths may be left blank if they are unused
   vario_krig_para_filename: Kriging_files/default_vario_krig_settings_2019_US&CAN.xlsx
   filename_grid_cell: Kriging_files/Kriging_grid_files/krig_grid2_5nm_cut_centroids_2013.xlsx # 2013 cell res = 2.50 nmi with extended area coverage
-  filename_smoothed_contour: Kriging_files/Kriging_grid_files/Smoothing_EasyKrig.xlsx
+#  filename_smoothed_contour: Kriging_files/Kriging_grid_files/Smoothing_EasyKrig.xlsx
+  filename_smoothed_contour: Kriging_files/Kriging_grid_files/transformation_isobath_coordinates.xlsx
   #####################################################################################################################
 
 

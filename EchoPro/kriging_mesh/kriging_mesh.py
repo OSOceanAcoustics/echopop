@@ -2,15 +2,13 @@ import numpy as np
 import pandas as pd
 import warnings
 import sys
-import folium
 from matplotlib.colors import to_hex
 from matplotlib import cm
 import folium
 import geopandas
-from shapely.geometry import Polygon, Point, MultiPoint, MultiPolygon
-from shapely.geometry import LineString
-import shapely
+from shapely.geometry import Polygon
 from shapely.ops import unary_union
+from scipy import interpolate
 
 
 class KrigingMesh:
@@ -111,7 +109,7 @@ class KrigingMesh:
         ----------
         gdf : GeoPandas Dataframe
             All transect points with index transect and
-            columns: Latitude and Longitude.
+            columns: Latitude, Longitude, and geometry.
 
 
         Returns
@@ -138,7 +136,7 @@ class KrigingMesh:
         ----------
         gdf : GeoPandas Dataframe
             All transect points with index transect and
-            columns: Latitude and Longitude
+            columns: Latitude, Longitude, and geometry
         n_close : int
             The number of closest transects to include in the Polygon.
             This value includes the transect under consideration. Thus,
@@ -207,23 +205,30 @@ class KrigingMesh:
         # select gdf rows based on bool mask
         return self.mesh_gdf.loc[in_poly]
 
-    def apply_longitude_transformation(self, gdf, lon_ref):
+    def apply_longitude_transformation(self, gdf, lon_ref=-124.78338):
         """
         This function applies a transformation to the
-        longitude coordinate so that the anisotropic signature
-        of the animal biomass distribution can be approximately
-        characterized by two perpendicular (principal) correlation
-        scales: one is along the isobaths and the other is across
-        the isobaths.
+        longitude column of the provided Dataframe so that
+        the anisotropic signature of the animal biomass
+        distribution can be approximately characterized by two
+        perpendicular (principal) correlation scales: one is
+        along the isobaths and the other is across the isobaths.
 
         Parameters
         ----------
-        gdf : GeoPandas Dataframe
-            All transect points with index transect and
-            columns: Latitude and Longitude
+        gdf : Geopandas Dataframe
+            Dataframe with Latitude, Longitude, and geometry
+            columns.
         lon_ref : float
             An arbitrary scalar, or a reference longitude
             (e.g., the mean longitude of the 200m isobath)
+
+        Returns
+        -------
+        A copy of ``gdf`` with the Longitude column transformed
+        according to the interpolated (Latitude, Longitude) values
+        pulled from the file specified by the parameter
+        ``filename_smoothed_contour``.
 
         Notes
         -----
@@ -231,16 +236,19 @@ class KrigingMesh:
         was specifically designed for a NWFSC application!
         """
 
-        gdf_tran_mean = self.get_coordinate_mean(gdf)
+        f = interpolate.interp1d(self.smoothed_contour_gdf['Latitude'],
+                                 self.smoothed_contour_gdf['Longitude'],
+                                 kind='linear', bounds_error=False)
 
-        # choose
-        # TODO: to create the interpolated data looked at smoothed
-        #  contour points and interpolate the two closest points in
-        #  terms of latitude. When applying the transformation,
-        #  choose the interpolation function that is closest to the
-        #  mean of the transect point (using Longitude)
+        # TODO: do we need to drop NaNs after interpolating?
+        #  Investigate this further.
 
-        return None
+        trans_gdf = gdf.copy()
+        trans_gdf['Longitude'] = gdf['Longitude'] - f(gdf['Latitude']) + lon_ref
+        trans_gdf['geometry'] = geopandas.points_from_xy(trans_gdf.Longitude,
+                                                         trans_gdf.Latitude)
+
+        return trans_gdf
 
     def get_folium_map(self, map_kwargs=None):
         """
