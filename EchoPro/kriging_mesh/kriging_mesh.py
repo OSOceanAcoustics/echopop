@@ -335,3 +335,61 @@ class KrigingMesh:
                                                **marker_kwargs))
 
         return fmap
+
+    @staticmethod
+    def calculate_semi_variogram(x, y, field, bins):
+        """
+        Calculates the semi-variogram standardized by the
+        standard deviation of the head multiplied by
+        the standard deviation of the tail for each
+        lag. This calculation assumes that the mesh
+        points (x,y) are isotropic and the search
+        area is omnidirectional.
+
+        Parameters
+        ----------
+        x
+        y
+        field
+        bins
+
+        Returns
+        -------
+
+        """
+
+        x_diff = np.subtract.outer(x, x)
+        y_diff = np.subtract.outer(y, y)
+
+        field_head, field_tail = np.meshgrid(field, field, indexing='ij')
+        field_diff_sqrd = np.power(field_head - field_tail, 2)
+
+        # find the distance between points
+        dis = np.sqrt(np.power(x_diff, 2) + np.power(y_diff, 2))
+
+        # obtain the upper triangular portion of dis
+        dis_2 = np.triu(dis, k=1)  # TODO: we can put this in a sparse form
+
+        gamma_standardized = []
+        for i in range(len(bins) - 1):
+            # get indices of distances that are between bins[i] and bins[i+1] (i.e. in the lag)
+            ind_in_lag = np.argwhere((bins[i] <= dis_2) & (dis_2 < bins[i + 1]) & (dis_2 != 0))
+
+            # indices in the lag
+            x_ind = ind_in_lag[:, 0]
+            y_ind = ind_in_lag[:, 1]
+
+            # calculate the semi-variogram value
+            gamma = 0.5 * np.mean(field_diff_sqrd[x_ind, y_ind])
+
+            # standardize gamma by the standard deviation of the head
+            # multiplied by the standard deviation of the tail
+            std_head = np.std(field_head[x_ind, y_ind])
+            std_tail = np.std(field_tail[x_ind, y_ind])
+            gamma_standardized.append(gamma / (std_head * std_tail))
+
+        return np.array(gamma_standardized)
+
+
+
+

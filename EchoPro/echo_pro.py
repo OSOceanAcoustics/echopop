@@ -8,6 +8,7 @@ from .load_stratification_data import LoadStrataData
 from .cv_analysis import CVAnalysis
 from .kriging import Kriging
 from .kriging_mesh import KrigingMesh
+from .semivariogram import SemiVariogram
 import pandas as pd
 import scipy.io
 import xarray as xr
@@ -370,6 +371,11 @@ class EchoPro:
 
         return krig_mesh
 
+    def get_semi_variogram(self, x, y, field):
+
+        semi_vario = SemiVariogram(x, y, field)
+
+        return semi_vario
 
     # def init_params(self):
     #
