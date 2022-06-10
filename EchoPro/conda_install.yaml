@@ -9,3 +9,4 @@ dependencies:
   - geopy=2.2.0
   - openpyxl=3.0.9
   - ipywidgets=7.7.0
+  - ipympl=0.8.7
