@@ -377,6 +377,13 @@ class EchoPro:
 
         return semi_vario
 
+    def get_kriging(self):
+
+        krig = Kriging(self)
+
+        return krig
+
+
     # def init_params(self):
     #
     #     # TODO: eventually bulk the below functions
