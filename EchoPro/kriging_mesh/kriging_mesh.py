@@ -205,7 +205,9 @@ class KrigingMesh:
         # select gdf rows based on bool mask
         return self.mesh_gdf.loc[in_poly]
 
-    def apply_longitude_transformation(self, gdf, lon_ref=-124.78338):
+    def apply_longitude_transformation(self, gdf, gdf_lon_name="Longitude",
+                                       gdf_lat_name="Latitude",
+                                       lon_ref=-124.78338):
         """
         This function applies a transformation to the
         longitude column of the provided Dataframe so that
@@ -217,8 +219,12 @@ class KrigingMesh:
         Parameters
         ----------
         gdf : Geopandas Dataframe
-            Dataframe with Latitude, Longitude, and geometry
-            columns.
+            Dataframe with columns specifying Latitude, Longitude,
+            and geometry.
+        gdf_lon_name : str
+            Name of the longitude column in gdf
+        gdf_lat_name : str
+            Name of the latitude column in gdf
         lon_ref : float
             An arbitrary scalar, or a reference longitude
             (e.g., the mean longitude of the 200m isobath)
@@ -244,11 +250,17 @@ class KrigingMesh:
         #  Investigate this further.
 
         trans_gdf = gdf.copy()
-        trans_gdf['Longitude'] = gdf['Longitude'] - f(gdf['Latitude']) + lon_ref
-        trans_gdf['geometry'] = geopandas.points_from_xy(trans_gdf.Longitude,
-                                                         trans_gdf.Latitude)
+        trans_gdf[gdf_lon_name] = gdf[gdf_lon_name] - f(gdf[gdf_lat_name]) + lon_ref
+        trans_gdf['geometry'] = geopandas.points_from_xy(trans_gdf[gdf_lon_name],
+                                                         trans_gdf[gdf_lat_name])
 
         return trans_gdf
+
+    def apply_distance_transformation(self):
+
+        print("This needs to be implemented!!")
+
+        # TODO: implement the distance transformation!!
 
     def get_folium_map(self, map_kwargs=None):
         """
@@ -335,61 +347,3 @@ class KrigingMesh:
                                                **marker_kwargs))
 
         return fmap
-
-    @staticmethod
-    def calculate_semi_variogram(x, y, field, bins):
-        """
-        Calculates the semi-variogram standardized by the
-        standard deviation of the head multiplied by
-        the standard deviation of the tail for each
-        lag. This calculation assumes that the mesh
-        points (x,y) are isotropic and the search
-        area is omnidirectional.
-
-        Parameters
-        ----------
-        x
-        y
-        field
-        bins
-
-        Returns
-        -------
-
-        """
-
-        x_diff = np.subtract.outer(x, x)
-        y_diff = np.subtract.outer(y, y)
-
-        field_head, field_tail = np.meshgrid(field, field, indexing='ij')
-        field_diff_sqrd = np.power(field_head - field_tail, 2)
-
-        # find the distance between points
-        dis = np.sqrt(np.power(x_diff, 2) + np.power(y_diff, 2))
-
-        # obtain the upper triangular portion of dis
-        dis_2 = np.triu(dis, k=1)  # TODO: we can put this in a sparse form
-
-        gamma_standardized = []
-        for i in range(len(bins) - 1):
-            # get indices of distances that are between bins[i] and bins[i+1] (i.e. in the lag)
-            ind_in_lag = np.argwhere((bins[i] <= dis_2) & (dis_2 < bins[i + 1]) & (dis_2 != 0))
-
-            # indices in the lag
-            x_ind = ind_in_lag[:, 0]
-            y_ind = ind_in_lag[:, 1]
-
-            # calculate the semi-variogram value
-            gamma = 0.5 * np.mean(field_diff_sqrd[x_ind, y_ind])
-
-            # standardize gamma by the standard deviation of the head
-            # multiplied by the standard deviation of the tail
-            std_head = np.std(field_head[x_ind, y_ind])
-            std_tail = np.std(field_tail[x_ind, y_ind])
-            gamma_standardized.append(gamma / (std_head * std_tail))
-
-        return np.array(gamma_standardized)
-
-
-
-

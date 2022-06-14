@@ -87,10 +87,11 @@ class SemiVariogram:
         field_rep = np.tile(self.field, (len(self.field), 1))
         field_head = field_rep[j_up_ind, i_up_ind]
         field_tail = field_rep[i_up_ind, j_up_ind]
-        field_diff_sqrd = np.power(field_head - field_tail, 2)
+        field_diff = field_head - field_tail
+        field_diff_sqrd = field_diff*field_diff
 
         # find the distance between points
-        dis = np.sqrt(np.power(x_diff, 2) + np.power(y_diff, 2))
+        dis = np.sqrt(x_diff*x_diff + y_diff*y_diff)
 
         self.gamma_standardized = []
         for i in range(len(center_bins)):
@@ -164,11 +165,13 @@ class SemiVariogram:
                              'exp_pow': self._exp_pow_box, 'ls_hole_eff': self._ls_hole_eff_box,
                              'nugget': self._nugget_box}
 
-    def generalized_exp_bessel(self, lag_vec, sill, ls, exp_pow, ls_hole_eff, nugget):
+    @staticmethod
+    def generalized_exp_bessel(lag_vec, sill, ls, exp_pow, ls_hole_eff, nugget):
 
         return (sill - nugget)*(1.0 - np.exp(-(lag_vec/ls)**exp_pow)*special.j0(ls_hole_eff*lag_vec)) + nugget
 
-    def exponential(self, lag_vec, sill, ls, nugget):
+    @staticmethod
+    def exponential(lag_vec, sill, ls, nugget):
 
         return (sill - nugget)*(1.0 - np.exp(-(lag_vec/ls))) + nugget
 
