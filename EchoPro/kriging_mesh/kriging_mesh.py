@@ -218,7 +218,7 @@ class KrigingMesh:
 
         Parameters
         ----------
-        gdf : Geopandas Dataframe
+        gdf : Geopandas Dataframe or Pandas Dataframe
             Dataframe with columns specifying Latitude, Longitude,
             and geometry.
         gdf_lon_name : str
@@ -256,11 +256,61 @@ class KrigingMesh:
 
         return trans_gdf
 
-    def apply_distance_transformation(self):
+    def apply_distance_transformation(self, gdf, gdf_lon_name="Longitude",
+                                      gdf_lat_name="Latitude",
+                                      x_offset=-124.78338, y_offset=45.0):
+        """
+        Transforms the input coordinates from degrees
+        to distance i.e. puts them into a distance
+        coordinate system.
 
-        print("This needs to be implemented!!")
+        Parameters
+        ----------
+        gdf : Geopandas Dataframe or Pandas Dataframe
+            Dataframe with columns specifying Latitude, Longitude,
+            and geometry.
+        gdf_lon_name : str
+            Name of the longitude column in gdf
+        gdf_lat_name : str
+            Name of the latitude column in gdf
+        x_offset : float
+            An arbitrary scalar, or a reference longitude
+            (e.g., the mean longitude of the 200m isobath)
+        y_offset : float
+            An arbitrary scalar, or a reference latitude
+            (e.g., the mean latitude of the 200m isobath)
 
-        # TODO: implement the distance transformation!!
+        Returns
+        -------
+        x : Numpy array
+            1D array representing the x coordinate of the distance
+            coordinate system
+        y : Numpy array
+            1D array representing the y coordinate of the distance
+            coordinate system
+
+        Notes
+        -----
+        Extreme caution should be used here. This transformation
+        was specifically designed for a NWFSC application!
+        """
+
+        # constant that converts degrees to radians
+        DEG2RAD = np.pi / 180.0
+
+        # initial coordinates without distance transformation
+        x = gdf[gdf_lon_name]
+        y = gdf[gdf_lat_name]
+
+        # get normalization constants
+        D_x = x.max() - x.min()
+        D_y = y.max() - y.min()
+
+        # transform the coordinates so they are in terms of distance
+        x = np.cos(DEG2RAD * y) * (x - x_offset) / D_x
+        y = (y - y_offset) / D_y
+
+        return x.values.flatten(), y.values.flatten()
 
     def get_folium_map(self, map_kwargs=None):
         """
@@ -340,7 +390,7 @@ class KrigingMesh:
             else:
                 color_val = color
 
-            # Place the markers with the popup labels and data
+            # Place the markers with specific color
             fmap.add_child(folium.CircleMarker(location=coordinates,
                                                radius=1,
                                                color=color_val,

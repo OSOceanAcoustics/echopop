@@ -267,11 +267,11 @@ class EchoPro:
         # minimal columns to do Jolly Hampton CV on data that has not been kriged
         self.final_biomass_table = nasc_df[['Latitude', 'Longitude', 'Stratum', 'Spacing']].copy()
 
-        mat = scipy.io.loadmat('../2019_consolidated_files/final_biomass_table_wgt_total.mat')
+        mat = scipy.io.loadmat('../2019_consolidated_files/final_biomass_table_nwgt_total.mat')
 
-        self.final_biomass_table["wgt_total"] = mat['wgt_total']
+        self.final_biomass_table["nwgt_total"] = mat['nwgt_total']
 
-        warnings.warn("We are currently using wgt_total from Matlab for CV, change this!")
+        warnings.warn("We are currently using nwgt_total from Matlab for CV, change this!")
 
     # def get_strata_ds(self):
     #
@@ -358,12 +358,6 @@ class EchoPro:
         else:
             cva.run_jolly_hampton(nr, lat_INPFC, self.final_biomass_table)
             return cva
-
-    # def run_kriging(self):
-    #
-    #     krig = Kriging(self)
-    #
-    #     return krig
 
     def get_kriging_mesh(self):
 

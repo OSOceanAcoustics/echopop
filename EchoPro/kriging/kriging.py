@@ -1,9 +1,8 @@
 import numpy as np
-import pandas as pd
 import warnings
 import sys
 import folium
-from matplotlib.colors import to_hex
+import branca.colormap as cm
 
 
 class Kriging:
@@ -285,8 +284,51 @@ class Kriging:
 
     def run_kriging(self, x_mesh, x_data, y_mesh, y_data, field_data,
                     k_max, k_min, R, ratio, s_v_params, s_v_model):
+        """
+        Runs Kriging using the provided mesh and data. Currently,
+        only Ordinary Kriging has been implemented.
 
-        # TODO: create doc string, think about making kriging mesh class and input
+        Parameters
+        ----------
+        x_mesh : Numpy array
+            1D array denoting the x coordinates of the mesh
+        x_data : Numpy array
+            1D array denoting the x coordinates of the data
+        y_mesh : Numpy array
+            1D array denoting the y coordinates of the mesh
+        y_data : Numpy array
+            1D array denoting the y coordinates of the data
+        field_data : Numpy array
+            1D array denoting the field values at the (x ,y)
+            coordinates of the data (e.g. biomass density).
+        k_max : int
+            Denotes the maximum number of data points within the
+            search radius.
+        k_min : int
+            Denotes the minimum number of data points within the
+            search radius.
+        R : float
+            Search radius for kriging
+        ratio : float
+            Acceptable ratio for the singular values divided
+            by the largest singular value.
+        s_v_params : dict
+            Dictionary specifying the parameter values for the
+            semi-variogram model.
+        s_v_model : function
+            A Semi-variogram model from the SemiVariogram class
+
+        Returns
+        -------
+        ep_arr : 1D Numpy array
+            Kriging variance for each mesh coordinate
+        eps_arr : 1D Numpy array
+            Kriging sample variance for each mesh coordinate
+        vp_arr : 1D Numpy array
+            Kriged value for each mesh coordinate
+        """
+
+        # TODO: think about making kriging mesh class an input
 
         dis, dis_kmax_ind = self.__compute_k_smallest_distances(x_mesh, x_data,
                                                                 y_mesh, y_data, k_max)
@@ -295,6 +337,7 @@ class Kriging:
         eps_list = []
         vp_list = []
 
+        # TODO: should we implement the other Kriging methods?
         # does Ordinary Kriging, follow Journel and Huijbregts, p. 307
         for row in range(dis_kmax_ind.shape[0]):
 
@@ -322,5 +365,32 @@ class Kriging:
         vp_arr = np.array(vp_list)
 
         return ep_arr, eps_arr, vp_arr
+
+    def plot_kriging_results(self, x_mesh, y_mesh, krig_val):
+
+        # TODO: formalize this function more (add kwargs, doc string, ...)
+
+        fmap = folium.Map(location=[44.61, -125.66], zoom_start=4)
+
+        data = np.hstack([x_mesh[:, None], y_mesh[:, None]])
+
+        # colormap = cm.LinearColormap(colors=['#000080', '#3385ff'],
+        #                              vmin=0.0, vmax=np.max(vp_arr))
+
+        colormap = cm.LinearColormap(colors=['#3385ff', '#FF0000'],
+                                     vmin=0.0, vmax=np.max(krig_val))
+
+        for i in range(len(krig_val)):
+            coordinates = (data[i, 0], data[i, 1])
+            color_val = colormap(krig_val[i])
+
+            # Place the markers with a color value
+            fmap.add_child(folium.CircleMarker(location=coordinates,
+                                               radius=1,
+                                               color=color_val))
+
+        fmap.add_child(colormap)
+
+        return fmap
 
 
