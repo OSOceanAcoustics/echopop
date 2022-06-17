@@ -1,4 +1,6 @@
 import numpy as np
+import numba as nb
+import math
 from scipy import special
 import ipywidgets as widgets
 import matplotlib.pyplot as plt
@@ -7,6 +9,8 @@ import inspect
 import traitlets
 import warnings
 import sys
+from ..numba_modules import nb_subtract_outer, nb_dis_vec, nb_diff_sqrd
+
 
 # default bounds for fitting the semi-variogram model
 bnds_default = {'LB': {'sill': 0.0, 'ls': 0.0,
@@ -81,19 +85,18 @@ class SemiVariogram:
         # get upper triangular indices
         i_up_ind, j_up_ind = np.triu_indices(len(self.x), k=1)
 
-        x_diff = np.subtract.outer(self.x, self.x)[i_up_ind, j_up_ind]
-        y_diff = np.subtract.outer(self.y, self.y)[i_up_ind, j_up_ind]
+        x_diff = nb_subtract_outer(self.x, self.x)[i_up_ind, j_up_ind]
+        y_diff = nb_subtract_outer(self.y, self.y)[i_up_ind, j_up_ind]
+
+        # find the distance between points
+        dis = nb_dis_vec(x_diff, y_diff)
 
         field_rep = np.tile(self.field, (len(self.field), 1))
         field_head = field_rep[j_up_ind, i_up_ind]
         field_tail = field_rep[i_up_ind, j_up_ind]
-        field_diff = field_head - field_tail
-        field_diff_sqrd = field_diff*field_diff
+        field_diff_sqrd = nb_diff_sqrd(field_head, field_tail)
 
-        # find the distance between points
-        dis = np.sqrt(x_diff*x_diff + y_diff*y_diff)
-
-        self.gamma_standardized = []
+        self.gamma_standardized = np.empty(len(center_bins), dtype=np.float64)
         for i in range(len(center_bins)):
             # get indices of distances that are in the lag
             if i == 0:
@@ -116,9 +119,7 @@ class SemiVariogram:
             # multiplied by the standard deviation of the tail
             std_head = np.std(field_head[ind_in_lag])
             std_tail = np.std(field_tail[ind_in_lag])
-            self.gamma_standardized.append(gamma / (std_head * std_tail))
-
-        self.gamma_standardized = np.array(self.gamma_standardized)
+            self.gamma_standardized[i] = gamma / (std_head * std_tail)
 
     def get_widgets(self):
 

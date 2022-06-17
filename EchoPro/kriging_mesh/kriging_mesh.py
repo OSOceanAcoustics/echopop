@@ -256,7 +256,7 @@ class KrigingMesh:
 
         return trans_gdf
 
-    def apply_distance_transformation(self, gdf, gdf_lon_name="Longitude",
+    def apply_distance_transformation(self, gdf, D_x, D_y, gdf_lon_name="Longitude",
                                       gdf_lat_name="Latitude",
                                       x_offset=-124.78338, y_offset=45.0):
         """
@@ -269,6 +269,7 @@ class KrigingMesh:
         gdf : Geopandas Dataframe or Pandas Dataframe
             Dataframe with columns specifying Latitude, Longitude,
             and geometry.
+         D_x, D_y # TODO: fill in these detail, if necessary
         gdf_lon_name : str
             Name of the longitude column in gdf
         gdf_lat_name : str
@@ -303,8 +304,8 @@ class KrigingMesh:
         y = gdf[gdf_lat_name]
 
         # get normalization constants
-        D_x = x.max() - x.min()
-        D_y = y.max() - y.min()
+        # D_x = x.max() - x.min()
+        # D_y = y.max() - y.min()
 
         # transform the coordinates so they are in terms of distance
         x = np.cos(DEG2RAD * y) * (x - x_offset) / D_x

@@ -1,4 +1,5 @@
 import numpy as np
+import numba as nb
 import pandas as pd
 import warnings
 import sys
@@ -31,7 +32,7 @@ class CVAnalysis:
         transect_info["min_longitude"] = biomass_table['Longitude'].groupby(level=0).min()
         transect_info["mean_latitude"] = biomass_table['Latitude'].groupby(level=0).mean()
         transect_info["mean_spacing"] = biomass_table['Spacing'].groupby(level=0).mean()
-        transect_info["biomass"] = biomass_table['wgt_total'].groupby(level=0).sum()
+        transect_info["biomass"] = biomass_table['nwgt_total'].groupby(level=0).sum()
 
         transect_info["distance"] = transect_info.apply(
             lambda x: distance.distance(
@@ -76,6 +77,7 @@ class CVAnalysis:
             sel_ind = rng.choice(transect_info.loc[stratum].index, num_ind, replace=False)
 
             transect_stratum_info = transect_info.loc[(stratum, sel_ind), ['distance', 'biomass']]
+            # transect_stratum_info = transect_info.loc[stratum].iloc[:8][['distance', 'biomass']]
 
             # transect-length weighting factor of the transects in the stratum
             wgt = transect_stratum_info['distance'] / transect_stratum_info['distance'].mean()
@@ -128,14 +130,20 @@ class CVAnalysis:
         CV_JH_vals = np.full((nr, ), np.nan)
 
         # TODO: this can be parallelized ... if we want to/ need to
-        for i in range(nr):   # loop through realizations
+        # for i in range(nr):   # loop through realizations
+        #
+        #     CV_JH_vals[i] = self.compute_random_strata_info(transect_info, strata_info, rng)
+        #
+        #     print(CV_JH_vals[i])
+        #     import sys
+        #     sys.exit()
+        #
+        # CV_JH_mean = np.nanmean(CV_JH_vals)
+        #
+        # print(f"CV_JH_mean = {CV_JH_mean}")
+        #
+        # return CV_JH_mean
 
-            CV_JH_vals[i] = self.compute_random_strata_info(transect_info, strata_info, rng)
-
-        CV_JH_mean = np.nanmean(CV_JH_vals)
-
-        print(f"CV_JH_mean = {CV_JH_mean}")
-
-        return CV_JH_mean
+        return transect_info, strata_info, rng
 
 

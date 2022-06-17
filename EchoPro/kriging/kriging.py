@@ -1,8 +1,11 @@
 import numpy as np
+import numba as nb
+import math
 import warnings
 import sys
 import folium
 import branca.colormap as cm
+from ..numba_modules import nb_subtract_outer, nb_dis_mat
 
 
 class Kriging:
@@ -21,8 +24,7 @@ class Kriging:
 
         self.EPro = EPro
 
-    @staticmethod
-    def __compute_k_smallest_distances(x_mesh, x_data,
+    def __compute_k_smallest_distances(self, x_mesh, x_data,
                                        y_mesh, y_data, k_max):
         """
         Computes the distance between the data
@@ -55,12 +57,9 @@ class Kriging:
         """
 
         # compute the distance between the mesh points and transect points
-        x_diff = np.subtract.outer(x_mesh, x_data)
-        y_diff = np.subtract.outer(y_mesh, y_data)
-        dis = np.sqrt(x_diff * x_diff + y_diff * y_diff)
-
-        # TODO: computing dis takes the most time, can we improve it?
-        #  It might be necessary to use Cython in order to improve it.
+        x_diff = nb_subtract_outer(x_mesh, x_data)
+        y_diff = nb_subtract_outer(y_mesh, y_data)
+        dis = nb_dis_mat(x_diff, y_diff)
 
         # sort dis up to the kmax smallest elements in each row
         dis_sort_ind = np.argpartition(dis, k_max, axis=1)
@@ -333,11 +332,11 @@ class Kriging:
         dis, dis_kmax_ind = self.__compute_k_smallest_distances(x_mesh, x_data,
                                                                 y_mesh, y_data, k_max)
 
-        ep_list = []
-        eps_list = []
-        vp_list = []
+        ep_arr = np.empty(dis_kmax_ind.shape[0])
+        eps_arr = np.empty(dis_kmax_ind.shape[0])
+        vp_arr = np.empty(dis_kmax_ind.shape[0])
 
-        # TODO: should we implement the other Kriging methods?
+        # TODO: look into parallelizing this for loop
         # does Ordinary Kriging, follow Journel and Huijbregts, p. 307
         for row in range(dis_kmax_ind.shape[0]):
 
@@ -356,13 +355,9 @@ class Kriging:
                                                                   M2_weight, R_ind,
                                                                   R_ind_not, dis_sel_ind)
 
-            ep_list.append(ep_val)
-            eps_list.append(eps_val)
-            vp_list.append(vp_val)
-
-        ep_arr = np.array(ep_list)
-        eps_arr = np.array(eps_list)
-        vp_arr = np.array(vp_list)
+            ep_arr[row] = ep_val
+            eps_arr[row] = eps_val
+            vp_arr[row] = vp_val
 
         return ep_arr, eps_arr, vp_arr
 

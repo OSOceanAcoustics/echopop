@@ -273,30 +273,30 @@ class EchoPro:
 
         warnings.warn("We are currently using nwgt_total from Matlab for CV, change this!")
 
-    # def get_strata_ds(self):
-    #
-    #     self.strata_df["length_average_haul"] = np.nan
-    #     self.strata_df["TS_lin_haul"] = np.nan
-    #     self.strata_df["sig_bs_haul"] = np.nan
-    #     for haul_num in self.specimen_df.index.unique():
-    #
-    #         all_len = self.specimen_df.loc[haul_num]['Length']
-    #
-    #         # TODO: replace with length_ds?
-    #         if haul_num in self.length_df.index:
-    #             all_len = np.concatenate([all_len,
-    #                                       self.length_df.loc[haul_num]['Length']])
-    #
-    #         TS0j = 20.0 * np.log10(all_len) - 68.0
-    #         TSj = 10.0 * np.log10(np.nanmean(10.0 ** (TS0j / 10.0)))
-    #         self.strata_df.loc[haul_num, "TS_lin_haul"] = TSj
-    #         self.strata_df.loc[haul_num, "sig_bs_haul"] = 10.0 ** (TSj / 10.0)
-    #         self.strata_df.loc[haul_num, "length_average_haul"] = np.nanmean(all_len)
-    #
-    #     self.strata_ds = self.strata_df.to_xarray()
-    #
-    #     self.strata_ds["sig_bs"] = self.strata_ds.sig_bs_haul.mean(dim="Haul", skipna=True)
-    #     self.strata_ds["sig_b"] = 4.0 * np.pi * self.strata_ds["sig_bs"]
+    def get_strata_ds(self):
+
+        self.strata_df["length_average_haul"] = np.nan
+        self.strata_df["TS_lin_haul"] = np.nan
+        self.strata_df["sig_bs_haul"] = np.nan
+        for haul_num in self.specimen_df.index.unique():
+
+            all_len = self.specimen_df.loc[haul_num]['Length']
+
+            # TODO: replace with length_ds?
+            if haul_num in self.length_df.index:
+                all_len = np.concatenate([all_len,
+                                          self.length_df.loc[haul_num]['Length']])
+
+            TS0j = 20.0 * np.log10(all_len) - 68.0
+            TSj = 10.0 * np.log10(np.nanmean(10.0 ** (TS0j / 10.0)))
+            self.strata_df.loc[haul_num, "TS_lin_haul"] = TSj
+            self.strata_df.loc[haul_num, "sig_bs_haul"] = 10.0 ** (TSj / 10.0)
+            self.strata_df.loc[haul_num, "length_average_haul"] = np.nanmean(all_len)
+
+        self.strata_ds = self.strata_df.to_xarray()
+
+        self.strata_ds["sig_bs"] = self.strata_ds.sig_bs_haul.mean(dim="Haul", skipna=True)
+        self.strata_ds["sig_b"] = 4.0 * np.pi * self.strata_ds["sig_bs"]
 
     def __load_files(self, KS_stratification, stratification_index):
         """
@@ -356,8 +356,8 @@ class EchoPro:
         if kriged_data:
             raise NotImplementedError("CV analysis for kriged data has not been implemented")
         else:
-            cva.run_jolly_hampton(nr, lat_INPFC, self.final_biomass_table)
-            return cva
+            # cva.run_jolly_hampton(nr, lat_INPFC, self.final_biomass_table)
+            return cva.run_jolly_hampton(nr, lat_INPFC, self.final_biomass_table)
 
     def get_kriging_mesh(self):
 
