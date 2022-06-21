@@ -8,10 +8,6 @@ class CreateFiles:
 
     NASC table
 
-
-    Parameters
-    ----------
-
     """
 
     def __init__(self):

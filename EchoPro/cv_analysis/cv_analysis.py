@@ -1,10 +1,9 @@
 import numpy as np
-import numba as nb
 import pandas as pd
 import warnings
 import sys
 from geopy import distance
-from numpy.random import default_rng
+from ..numba_modules import compute_jolly_hampton
 
 
 class CVAnalysis:
@@ -66,51 +65,51 @@ class CVAnalysis:
 
         return transect_info, strata_info
 
-    def compute_random_strata_info(self, transect_info, strata_info, rng):
-        # TODO: we need to improve the speed of this computation!
-        #  Maybe replace pandas with numpy here
+    # def compute_random_strata_info(self, transect_info, strata_info):
+    #     # TODO: Remove this!
+    #
+    #     for stratum in strata_info.index:
+    #
+    #         # randomly select transects in the stratum
+    #         num_ind = round(self.EPro.params["JH_fac"] * strata_info.loc[stratum]['num_transects'])
+    #         # sel_ind = rng.choice(transect_info.loc[stratum].index, num_ind, replace=False)
+    #         sel_ind = np.random.choice(transect_info.loc[stratum].index, num_ind, replace=False)
+    #
+    #         transect_stratum_info = transect_info.loc[(stratum, sel_ind), ['distance', 'biomass']]
+    #         # transect_stratum_info = transect_info.loc[stratum].iloc[:8][['distance', 'biomass']]
+    #
+    #         # transect-length weighting factor of the transects in the stratum
+    #         wgt = transect_stratum_info['distance'] / transect_stratum_info['distance'].mean()
+    #
+    #         # normalized biomass of the transects in the stratum
+    #         rhom_trans_stratum = transect_stratum_info['biomass'] / transect_stratum_info['distance']
+    #
+    #         # transect-length-normalized mean density of the stratum
+    #         strata_info.loc[stratum, "rhom"] = (transect_stratum_info['biomass'] * transect_stratum_info[
+    #             'distance']).sum() / transect_stratum_info[
+    #                                                'distance'].sum()
+    #
+    #         # variance of the transect-length weighted biomass within the stratum
+    #         if num_ind != 1:
+    #             strata_info.loc[stratum, "var_rhom"] = (wgt ** 2 * (
+    #                         rhom_trans_stratum - strata_info["rhom"].loc[stratum]) ** 2).sum() / (
+    #                                                                num_ind * (num_ind - 1))
+    #         else:
+    #             strata_info.loc[stratum, "var_rhom"] = (wgt ** 2 * (
+    #                         rhom_trans_stratum - strata_info["rhom"].loc[stratum]) ** 2).sum() / (num_ind * num_ind)
+    #
+    #         strata_info.loc[stratum, "biomass"] = transect_stratum_info['biomass'].sum()
+    #
+    #     # area weighted variance of the "transect-length weighted biomass"
+    #     CV = np.sqrt((strata_info["var_rhom"] * strata_info["total_transect_area"] ** 2).sum()) / (
+    #                 strata_info["total_transect_area"] * strata_info["rhom"]).sum()
+    #
+    #     return CV
 
-        for stratum in strata_info.index:
-
-            # randomly select transects in the stratum
-            num_ind = round(self.EPro.params["JH_fac"] * strata_info.loc[stratum]['num_transects'])
-            sel_ind = rng.choice(transect_info.loc[stratum].index, num_ind, replace=False)
-
-            transect_stratum_info = transect_info.loc[(stratum, sel_ind), ['distance', 'biomass']]
-            # transect_stratum_info = transect_info.loc[stratum].iloc[:8][['distance', 'biomass']]
-
-            # transect-length weighting factor of the transects in the stratum
-            wgt = transect_stratum_info['distance'] / transect_stratum_info['distance'].mean()
-
-            # normalized biomass of the transects in the stratum
-            rhom_trans_stratum = transect_stratum_info['biomass'] / transect_stratum_info['distance']
-
-            # transect-length-normalized mean density of the stratum
-            strata_info.loc[stratum, "rhom"] = (transect_stratum_info['biomass'] * transect_stratum_info[
-                'distance']).sum() / transect_stratum_info[
-                                                   'distance'].sum()
-
-            # variance of the transect-length weighted biomass within the stratum
-            if num_ind != 1:
-                strata_info.loc[stratum, "var_rhom"] = (wgt ** 2 * (
-                            rhom_trans_stratum - strata_info["rhom"].loc[stratum]) ** 2).sum() / (
-                                                                   num_ind * (num_ind - 1))
-            else:
-                strata_info.loc[stratum, "var_rhom"] = (wgt ** 2 * (
-                            rhom_trans_stratum - strata_info["rhom"].loc[stratum]) ** 2).sum() / (num_ind * num_ind)
-
-            strata_info.loc[stratum, "biomass"] = transect_stratum_info['biomass'].sum()
-
-        # area weighted variance of the "transect-length weighted biomass"
-        CV = np.sqrt((strata_info["var_rhom"] * strata_info["total_transect_area"] ** 2).sum()) / (
-                    strata_info["total_transect_area"] * strata_info["rhom"]).sum()
-
-        return CV
-
-    def run_jolly_hampton(self, nr, lat_INPFC, biomass_table):
+    def run_jolly_hampton(self, nr, lat_INPFC, biomass_table, seed=None):
         """
         Runs the Jolly Hampton algorithm to compute
-        the CV
+        the CV value.
 
         Parameters
         ----------
@@ -121,29 +120,29 @@ class CVAnalysis:
         biomass_table : Dataframe
             Table values used to compute the data needed
             for CV analysis.
+        seed : int
+            Seed value for the random number generator
         """
-
-        rng = default_rng()  # TODO: make this an input of the function
 
         transect_info, strata_info = self.get_transect_strata_info(lat_INPFC, biomass_table)
 
-        CV_JH_vals = np.full((nr, ), np.nan)
+        # get numpy form of dataframe values so we can use Numba
+        distance = transect_info['distance'].values.flatten()
+        field = transect_info['biomass'].values.flatten()
+        num_transects = strata_info['num_transects'].values.flatten()
+        strata_nums = strata_info.index.values.to_numpy()
+        total_transect_area = strata_info["total_transect_area"].values.flatten()
 
-        # TODO: this can be parallelized ... if we want to/ need to
-        # for i in range(nr):   # loop through realizations
-        #
-        #     CV_JH_vals[i] = self.compute_random_strata_info(transect_info, strata_info, rng)
-        #
-        #     print(CV_JH_vals[i])
-        #     import sys
-        #     sys.exit()
-        #
-        # CV_JH_mean = np.nanmean(CV_JH_vals)
-        #
-        # print(f"CV_JH_mean = {CV_JH_mean}")
-        #
-        # return CV_JH_mean
+        # construct start and end indices for the strata
+        start_end = [[np.sum(num_transects[:i]), np.sum(num_transects[:i]) + num_transects[i]] for i in
+                     range(len(strata_nums))]
+        s_e_ind = np.array(start_end)
 
-        return transect_info, strata_info, rng
+        CV_JH_mean = compute_jolly_hampton(nr, self.EPro.params["JH_fac"],
+                                           num_transects, s_e_ind, distance, field,
+                                           total_transect_area, seed_val=seed)
+
+        return CV_JH_mean
+
 
 

@@ -10,6 +10,7 @@ class GenerateReports:
     ----------
     echopro : EchoPro
         EchoPro object that contains all necessary parameters
+
     """
 
     def __init__(self,

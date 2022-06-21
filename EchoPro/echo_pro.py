@@ -19,7 +19,7 @@ class EchoPro:
     """
     EchoPro base class that importing and prepares parameters for
     later processes. Additionally, it includes functions for
-    acessing the processing, visualization, and generating reports
+    accessing the processing, visualization, and generating reports
     Classes.
 
     Parameters
@@ -47,16 +47,15 @@ class EchoPro:
         Specifies the type of stratification to be used.
         0 = Pre-Stratification or customized stratification (geographically defined)
         1 = Post-Stratification (KS-based or trawl-based)
-    stratification_index : int  # TODO: this looks to mirror KS_stratification, it seems to be unnecessary to use this
-                                # TODO: Ask Chu if it is ok to remove this.
+    stratification_index : int
         Index for the chosen stratification
         0 = INPFC strata
         1 = KS (trawl)-based
         2-6 = geographically based but close to trawl-based stratification
         7 = mix-proportion, rather than 85% & 20% hake/hake-mix rules
         10 = one stratum for the whole survey
-    """
 
+    """
     def __init__(self,
                  init_file_path: str,
                  survey_year_file_path: str,
@@ -344,7 +343,7 @@ class EchoPro:
         self.get_final_biomass_table()
         # self.get_st rata_ds()
 
-    def run_cv_analysis(self, lat_INPFC=None, kriged_data=False):
+    def run_cv_analysis(self, lat_INPFC=None, kriged_data=False, seed=None):
 
         if self.params["JH_fac"] == 1:
             nr = 1  # number of realizations
@@ -357,7 +356,7 @@ class EchoPro:
             raise NotImplementedError("CV analysis for kriged data has not been implemented")
         else:
             # cva.run_jolly_hampton(nr, lat_INPFC, self.final_biomass_table)
-            return cva.run_jolly_hampton(nr, lat_INPFC, self.final_biomass_table)
+            return cva.run_jolly_hampton(nr, lat_INPFC, self.final_biomass_table, seed)
 
     def get_kriging_mesh(self):
 
