@@ -217,7 +217,7 @@ class EchoPro:
 
         return full_params
 
-    def __load_nasc_data(self):
+    def load_nasc_data(self):
         """
         Load VL interval-based NASC table.
 
@@ -248,6 +248,8 @@ class EchoPro:
                         'Layer mean depth': np.float64, 'Layer height': np.float64, 'Bottom depth': np.float64,
                         'NASC': np.float64, 'Assigned haul': int})
 
+        df.rename(columns={'Assigned haul': 'Haul'}, inplace=True)
+
         if self.params['survey_year'] < 2003:
             # TODO: it may be the case that we need to include lines 35-61 of
             #  EchoPro/general/load_files_parameters/get_NASC_data.m
@@ -255,13 +257,13 @@ class EchoPro:
 
         else:
             df.set_index('Transect', inplace=True)
-            df.sort_index(inplace=True)
+            # df.sort_index(inplace=True)
 
         return df
 
     def get_final_biomass_table(self):
 
-        nasc_df = self.__load_nasc_data()
+        nasc_df = self.load_nasc_data()
 
         # minimal columns to do Jolly Hampton CV on data that has not been kriged
         self.final_biomass_table = nasc_df[['Latitude', 'Longitude', 'Stratum', 'Spacing']].copy()
@@ -286,6 +288,7 @@ class EchoPro:
                 all_len = np.concatenate([all_len,
                                           self.length_df.loc[haul_num]['Length']])
 
+            # TODO: these two functions are specific to Hake, replace with input in the future
             TS0j = 20.0 * np.log10(all_len) - 68.0
             TSj = 10.0 * np.log10(np.nanmean(10.0 ** (TS0j / 10.0)))
             self.strata_df.loc[haul_num, "TS_lin_haul"] = TSj
@@ -337,11 +340,11 @@ class EchoPro:
         else:
             raise NotImplementedError(f"Processing bio_data_type = {self.params['bio_data_type']} has not been implemented!")
 
-        # print("getting strata data")
-        # self.load_strata.get_strata_data(stratification_index, KS_stratification, transect_reduction_fraction=0.0)
+        print("getting strata data")
+        self.load_strata.get_strata_data(stratification_index, KS_stratification, transect_reduction_fraction=0.0)
 
         self.get_final_biomass_table()
-        # self.get_st rata_ds()
+        self.get_strata_ds()
 
     def run_cv_analysis(self, lat_INPFC=None, kriged_data=False, seed=None):
 
@@ -376,131 +379,6 @@ class EchoPro:
 
         return krig
 
-
-    # def init_params(self):
-    #
-    #     # TODO: eventually bulk the below functions
-    #
-    #     # setting the stratification index based on user provided input
-    #     # TODO: Might be able to take out this if else statement depending on downstream items
-    #     if KS_stratification == 1:
-    #         stratification_index = 1
-    #     else:
-    #         stratification_index = 0
-    #
-    #     # check that the stratification index is correctly set
-    #     if bio_data_type != 1:
-    #         if stratification_index != 0:
-    #             stratification_index = 0  # non - acoustical and trawl survey data only use INPFC stratification
-    #             print("Changing stratification_index to 0.")
-    #     else:
-    #         if stratification_index != 1:
-    #             print("Changing stratification_index to 1")
-    #             stratification_index = 1  # index for the chosen stratification
-    #             # 1 = KS(trawl) - based, 2 - 7 = geographically based but close to trawl - based stratification
-    #             # 0 = INPFC strata
-    #             # 7 = mix - proportion, rather than 85 % & 20 % hake / hake - mix rules
-    #             # 10 = one stratum for the whole survey
-    #             # TODO: ask about the above comments
-    #
-    #     # TODO: make sure to take this into account!
-    #     # if para.proc.exclude_age1 == 1
-    #     #     para.acoust.filename.processed_data = para.acoust.filename.processed_data_age2;
-    #     #     para.bio_acoust.filename.Transect_region_haul = para.bio_acoust.filename.Transect_region_haul_age2;
-    #     # else
-    #     #     para.acoust.filename.processed_data = para.acoust.filename.processed_data_age1;
-    #     #     para.bio_acoust.filename.Transect_region_haul = para.bio_acoust.filename.Transect_region_haul_age1;
-    #     # end
-    #
-    #     # check to make sure no survey year and initialization parameters are the same
-    #     param_intersect = set(self.__init_params.keys()).intersection(set(self.__survey_params.keys()))
-    #
-    #     # if no parameters are the same, then run process, else return error
-    #     if not param_intersect:
-    #         # combine survey year and initialization parameters into one dictionary
-    #         full_params = {}
-    #         full_params.update(self.__init_params)
-    #         full_params.update(self.__survey_params)
-    #
-    #         return ProcessData(full_params, extrapolation, age_data_status, source, bio_data_type, KS_stratification,
-    #                            stratification_index, kriging, kriging_input, exclude_age1, start_transect,
-    #                            end_transect, transect_reduction_fraction, transect_reduction_mode, bootstrap_limit,
-    #                            default_parameters)
-    #     else:
-    #         raise RuntimeError('The initialization and survey year configuration files define the same variable! ' +
-    #                            f'\n These variables are: {param_intersect}')
-
-    # def run_process(self,
-    #                       extrapolation: bool = False,
-    #                       KS_stratification: int = 1,
-    #                       kriging: bool = True,
-    #                       kriging_input: int = 1,
-    #                       exclude_age1: bool = False,
-    #                       start_transect: int = 1,
-    #                       end_transect: int = 200,
-    #                       transect_reduction_fraction: float = 0.0,
-    #                       transect_reduction_mode: int = 1,
-    #                       bootstrap_limit: int = 1,
-    #                       default_parameters: bool = True):
-    #     """
-    #     A function that performs bootstrapping. This involves processing
-    #     acoustic and biological data, computation of CV analysis,
-    #     and Kriging.
-    #
-    #     Parameters
-    #     ----------
-    #     extrapolation : bool
-    #             Specifies if extrapolation should be used for Kriging
-    #     KS_stratification : int
-    #         Specifies the type of stratification to be used.
-    #         0 = Pre-Stratification or customized stratification (geographically defined)
-    #         1 = Post-Stratification (KS-based or trawl-based)
-    #     kriging : bool
-    #         States whether or not to perform kriging
-    #     kriging_input : int
-    #         Specifies TODO: ask Chu what this variable actually specifies
-    #         1 = Biomass density
-    #         2 = NASC
-    #         3 = Number density
-    #     exclude_age1 : bool
-    #         States whether or not age 1 hake should be included in analysis.
-    #     start_transect : int
-    #         Value to start transect
-    #     end_transect : int
-    #         Value to end transect
-    #     transect_reduction_fraction : float
-    #         Reduction fraction for transect TODO: should this be 5 or 0.05?
-    #     transect_reduction_mode : int
-    #         1 = Regular
-    #         2 = Random
-    #     bootstrap_limit : int
-    #         The number of bootstraping iterations to perform
-    #     default_parameters : bool
-    #         States whether or not to use the default parameters
-    #     """
-    #
-    #     # Get all inputs to the function run_bootstrapping()
-    #     function_args = locals()
-    #
-    #     # remove the self argument
-    #     del function_args['self']
-    #
-    #     print(f"saved args = {function_args}")
-    #
-    #     # import copy
-    #     #
-    #     # # get copy of EchoPro
-    #     # # TODO: This is creating a copy of the EchoPro object that
-    #     # # TODO: could eat up memory if the input files are large
-    #     # # epro_copy = copy.deepcopy(self)
-    #     # #
-    #     # # print(self)
-    #     #
-    #     # bootstrapping_routine = RunBootstrapping(**function_args)
-    #     #
-    #     # bootstrapping_routine.set_echopro_object(self)
-    #
-    #     return
 
 
 

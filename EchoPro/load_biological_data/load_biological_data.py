@@ -716,6 +716,95 @@ class LoadBioData:
         self.EPro.params['ave_len_wgt_F'] = np.dot(self.EPro.params['len_wgt_F'], self.EPro.params['len_key_F'])
         self.EPro.params['ave_len_wgt_ALL'] = np.dot(self.EPro.params['len_wgt_ALL'], self.EPro.params['len_key_ALL'])
 
+    def generate_length_key(self, bio_hake_len_bin, len_name, df: pd.DataFrame = None):
+        """
+        process length weight data (all hake trawls) to obtain
+        (1) length-weight regression or length-weight-key
+        (2) length-age keys
+
+        Parameters
+        ----------
+        df: Pandas Dataframe
+            Pandas Dataframe describing the length weight data
+
+        """
+
+        # all length - value measurements
+        if isinstance(df[len_name], pd.core.series.Series):
+            L = df[len_name].values
+        else:
+            L = df[len_name]
+
+        # select the indices that do not have nan in either Length or Value
+        mask = np.logical_not(np.isnan(L))
+
+        L = L[mask].flatten()
+
+        # total number of fish individuals at length specified by bio_hake_len_bin
+        len_nALL = self.get_bin_counts(L, bio_hake_len_bin)
+
+        # normalized length-key
+        norm_len_key_ALL = len_nALL / sum(len_nALL)
+
+        return norm_len_key_ALL
+
+    def generate_length_val_key(self, bio_hake_len_bin, len_name, val_name, df: pd.DataFrame = None):
+        """
+        process length weight data (all hake trawls) to obtain
+        (1) length-weight regression or length-weight-key
+        (2) length-age keys
+
+        Parameters
+        ----------
+        df: Pandas Dataframe
+            Pandas Dataframe describing the length weight data
+
+        """
+
+        # all length - value measurements
+        if isinstance(df[len_name], pd.core.series.Series):
+            L = df[len_name].values
+            V = df[val_name].values
+        else:
+            L = df[len_name]
+            V = df[val_name]
+
+        # select the indices that do not have nan in either Length or Value
+        mask = np.logical_not(np.logical_and(np.isnan(L), np.isnan(V)))
+
+        L = L[mask].flatten()
+        V = V[mask].flatten()
+
+        # length-value regression for all trawls (male & female)
+        x = np.log10(L)
+        y = np.log10(V)
+
+        p = np.polyfit(x, y, 1)  # linear regression
+
+        reg_w0 = 10.0 ** p[1]
+        reg_p = p[0]
+
+        # total number of fish individuals at length specified by bio_hake_len_bin
+        len_nALL = self.get_bin_counts(L, bio_hake_len_bin)
+
+        # normalized length-key
+        norm_len_key_ALL = len_nALL #/ sum(len_nALL)
+
+        # value at length or length-value-key
+        # length-weight-key per fish over entire survey region (an array)
+        len_val_ALL = reg_w0 * bio_hake_len_bin ** reg_p
+
+        # create length-value structured relations
+        for i in range(len(len_nALL)):
+
+            # bins with less than 5 samples will be replaced by the regression curve
+            if len_nALL[i] >= 5:
+                ind = (bio_hake_len_bin[i] - 1 < L) & (
+                            L <= bio_hake_len_bin[i] + 1)
+                len_val_ALL[i] = np.mean(V[ind])
+
+        return len_val_ALL, norm_len_key_ALL
+
     # def __get_statification_based_values(self, stratification_index: int):
     #     """
     #     Get stratification based values for the final trawl table.

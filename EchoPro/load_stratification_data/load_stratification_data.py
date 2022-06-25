@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import xarray as xr
 import warnings
 import sys
 from ..load_biological_data import LoadBioData
@@ -314,6 +315,242 @@ class LoadStrataData:
         """
 
         aged_del_ind = self.EPro.params['bio_aged_len_haul_ALL'].sum(axis=0)
+
+    @staticmethod
+    def get_bin_ind(input_data: np.array, centered_bins: np.array):
+        """
+        This function manually computes bin counts given ``input_data``. This
+        function is computing the histogram of ``input_data`` using
+        bins that are centered, rather than bins that are on the edge.
+        The first value is between negative infinity and the first bin
+        center plus the bin width divided by two. The last value is
+        between the second to last bin center plus the bin width
+        divided by two to infinity.
+
+
+        Parameters
+        ----------
+        input_data: numpy array
+            The data to create a histogram of.
+        centered_bins: numpy array
+            An array that specifies the bin centers.
+
+        Returns
+        -------
+        hist_ind: numpy array
+            The index values of input_data corresponding to the histogram
+
+        """
+
+        bin_diff = np.diff(centered_bins) / 2.0
+
+        hist_ind = [np.argwhere(input_data <= centered_bins[0] + bin_diff[0]).flatten()]
+
+        for i in range(len(centered_bins) - 2):
+            # get values greater than lower bound
+            g_lb = centered_bins[i] + bin_diff[i] < input_data
+
+            # get values less than or equal to the upper bound
+            le_ub = input_data <= centered_bins[i + 1] + bin_diff[i + 1]
+
+            hist_ind.append(np.argwhere(g_lb & le_ub).flatten())
+
+        hist_ind.append(np.argwhere(input_data > centered_bins[-2] + bin_diff[-1]).flatten())
+
+        return hist_ind
+
+    def get_age_key_das(self, spec_w_strata, bins_len, bins_age):
+        """
+        Constructs the DataArrays corresponding to the keys
+        associated with age.
+
+        Parameters
+        ----------
+        spec_w_strata : Pandas Dataframe
+            Species Dataframe with the strata as an index and
+            columns "Length", "Age", "Weight".
+        bins_len : Numpy array
+            1D numpy array specifies the bin centers for lengths.
+        bins_age : Numpy array
+            1D numpy array specifies the bin centers for ages.
+
+        Returns
+        -------
+        The Xarray DataArrays: age_len_key_da, age_len_key_wgt_da,
+        and age_len_key_norm_da with coordinates
+        (strata, bins_len, bins_age).
+
+        """
+
+        unique_strata = np.sort(spec_w_strata.index.unique())
+
+        age_len_key = np.empty((unique_strata.shape[0],
+                                bins_len.shape[0], bins_age.shape[0]), dtype=int)
+
+        age_len_key_wgt = np.empty((unique_strata.shape[0],
+                                    bins_len.shape[0], bins_age.shape[0]), dtype=np.float64)
+
+        age_len_key_norm = np.empty((unique_strata.shape[0],
+                                     bins_len.shape[0], bins_age.shape[0]), dtype=np.float64)
+
+        stratum_i = 0
+        for stratum in unique_strata:
+
+            input_arr_len = spec_w_strata.loc[stratum].Length.values
+            input_arr_age = spec_w_strata.loc[stratum].Age.values
+            input_arr_wgt = spec_w_strata.loc[stratum].Weight.values
+
+            age_bins_ind = self.get_bin_ind(input_arr_age, bins_age)
+
+            i = 0
+            for arr_ind in age_bins_ind:
+                temp = self.get_bin_ind(input_arr_len[arr_ind], bins_len)
+                age_len_key[stratum_i, :, i] = np.array([i.shape[0] for i in temp])
+
+                age_len_key_wgt[stratum_i, :, i] = np.array([np.sum(input_arr_wgt[arr_ind[i]]) for i in temp])
+                i += 1
+
+            # normalized age_len_ky
+            age_len_key_norm[stratum_i, :, :] = age_len_key[stratum_i, :, :] / np.sum(age_len_key[stratum_i, :, :])
+
+            stratum_i += 1
+
+        age_len_key_da = xr.DataArray(data=age_len_key,
+                                      coords={'strata': unique_strata,
+                                              'len_bins': bins_len, 'age_bins': bins_age})
+
+        age_len_key_wgt_da = xr.DataArray(data=age_len_key_wgt,
+                                          coords={'strata': unique_strata,
+                                                  'len_bins': bins_len, 'age_bins': bins_age})
+
+        age_len_key_norm_da = xr.DataArray(data=age_len_key_norm,
+                                           coords={'strata': unique_strata,
+                                                   'len_bins': bins_len, 'age_bins': bins_age})
+
+        return age_len_key_da, age_len_key_wgt_da, age_len_key_norm_da
+
+    @staticmethod
+    def get_length_val_reg_vals(len_name, val_name, df: pd.DataFrame = None):
+        """
+        Obtains the regression values for a provided length and value.
+
+        Parameters
+        ----------
+        len_name : str
+            Name of column in df corresponding to the length
+        val_name : str
+            Name of column in df corresponding to the value
+        df : Pandas Dataframe
+            Dataframe containing the length and value columns
+
+
+        Returns
+        -------
+        reg_w0 and reg_p used in the calculation
+        reg_w0 * bio_hake_len_bin ** reg_p
+        """
+
+        # select the indices that do not have nan in either Length or Weight
+        len_wgt_nonull = np.logical_and(df[len_name].notnull(), df[val_name].notnull())
+
+        df_no_null = df.loc[len_wgt_nonull]
+
+        L = df_no_null[len_name].values
+        V = df_no_null[val_name].values
+
+        # length-value regression for all trawls (male & female)
+        x = np.log10(L)
+        y = np.log10(V)
+
+        p = np.polyfit(x, y, 1)  # linear regression
+
+        reg_w0 = 10.0 ** p[1]
+        reg_p = p[0]
+
+        return reg_w0, reg_p
+
+    def generate_length_val_key(self, bio_hake_len_bin, reg_w0, reg_p,
+                                len_name, val_name, df: pd.DataFrame = None):
+        """
+        process length weight data (all hake trawls) to obtain
+        (1) length-weight regression or length-weight-key
+        (2) length-age keys
+
+        Parameters
+        ----------
+        df: Pandas Dataframe
+            Pandas Dataframe describing the length weight data
+
+        """
+
+        # select the indices that do not have nan in either Length or Weight
+        len_wgt_nonull = np.logical_and(df[len_name].notnull(), df[val_name].notnull())
+
+        df_no_null = df.loc[len_wgt_nonull]
+
+        L = df_no_null[len_name].values
+        V = df_no_null[val_name].values
+
+        # total number of fish individuals at length specified by bio_hake_len_bin
+        len_nALL = self.get_bin_ind(L, bio_hake_len_bin)
+        len_nALL = np.array([i.shape[0] for i in len_nALL])
+
+        # normalized length-key
+        norm_len_key_ALL = len_nALL / sum(len_nALL)
+
+        # value at length or length-value-key
+        # length-weight-key per fish over entire survey region (an array)
+        len_val_ALL = reg_w0 * bio_hake_len_bin ** reg_p
+
+        # create length-value structured relations
+        for i in range(len(len_nALL)):
+
+            # bins with less than 5 samples will be replaced by the regression curve
+            if len_nALL[i] >= 5:
+                ind = (bio_hake_len_bin[i] - 1 < L) & (
+                            L <= bio_hake_len_bin[i] + 1)
+                len_val_ALL[i] = np.mean(V[ind])
+
+        return len_val_ALL, len_nALL, norm_len_key_ALL
+
+    def get_weight_key_das(self, spec_w_strata, bins_len, reg_w0, reg_p, len_name='Length',
+                           val_name='Weight'):
+
+        unique_strata = np.sort(spec_w_strata.index.unique())
+
+        len_wgt_key = np.empty((unique_strata.shape[0], bins_len.shape[0]))
+        len_wgt_key[:, :] = np.nan
+
+        len_key = np.empty((unique_strata.shape[0], bins_len.shape[0]))
+        len_key[:, :] = np.nan
+
+        len_key_norm = np.empty((unique_strata.shape[0], bins_len.shape[0]))
+        len_key_norm[:, :] = np.nan
+
+        stratum_i = 0
+        for stratum in unique_strata:
+            l_w_k, l_k, l_k_n = self.generate_length_val_key(bins_len, reg_w0, reg_p,
+                                                             len_name=len_name,
+                                                             val_name=val_name,
+                                                             df=spec_w_strata.loc[stratum])
+
+            len_wgt_key[stratum_i, :] = l_w_k
+            len_key[stratum_i, :] = l_k
+            len_key_norm[stratum_i, :] = l_k_n
+
+            stratum_i += 1
+
+        len_wgt_key_da = xr.DataArray(data=len_wgt_key,
+                                      coords={'strata': unique_strata, 'len_bins': bins_len})
+
+        len_key_da = xr.DataArray(data=len_key,
+                                  coords={'strata': unique_strata, 'len_bins': bins_len})
+
+        len_key_norm_da = xr.DataArray(data=len_key_norm,
+                                       coords={'strata': unique_strata, 'len_bins': bins_len})
+
+        return len_wgt_key_da, len_key_da, len_key_norm_da
+
 
     def get_strata_data(self, stratification_index, KS_stratification,
                         transect_reduction_fraction: float = 0.0):
