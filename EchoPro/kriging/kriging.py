@@ -359,6 +359,10 @@ class Kriging:
             eps_arr[row] = eps_val
             vp_arr[row] = vp_val
 
+        # zero-out all vp values that are nan or negative # TODO: Is this necessary?
+        neg_nan_ind = np.argwhere((vp_arr < 0) | np.isnan(vp_arr)).flatten()
+        vp_arr[neg_nan_ind] = 0.0
+
         return ep_arr, eps_arr, vp_arr
 
     def plot_kriging_results(self, x_mesh, y_mesh, krig_val):

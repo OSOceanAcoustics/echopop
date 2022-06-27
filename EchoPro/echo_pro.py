@@ -379,6 +379,130 @@ class EchoPro:
 
         return krig
 
-
+    # # import class to use it's functions
+    # from EchoPro.load_stratification_data import LoadStrataData
+    #
+    # strata_class = LoadStrataData(epro_2019)
+    #
+    # # get df relating the haul to the stratum
+    # strata_haul_df = epro_2019.strata_df.reset_index()[['Haul', 'strata']].set_index('Haul')
+    #
+    # # get the bins for the lengths
+    # bins_len = epro_2019.params['bio_hake_len_bin']
+    #
+    # # get the bins for the ages
+    # bins_age = epro_2019.params['bio_hake_age_bin']
+    #
+    # # get all specimen data that is necessary for key generation
+    # spec_w_strata = epro_2019.specimen_df.drop('Specimen_Number', axis=1).copy().reset_index()
+    #
+    # # add strata column
+    # spec_w_strata['Strata'] = spec_w_strata.apply(lambda x: strata_haul_df.loc[x[0]],
+    #                                               axis=1).values
+    #
+    # spec_w_strata.set_index('Strata', inplace=True)
+    #
+    # # spec_w_strata = spec_w_strata[(spec_w_strata['Sex'] != 3)].copy() # TODO: this should be for all sexes
+    #
+    # age_len_key_da, age_len_key_wgt_da, age_len_key_norm_da = strata_class.get_age_key_das(spec_w_strata,
+    #                                                                                        bins_len, bins_age)
+    #
+    # # TODO: it would probably be better to do an average of station 1 and 2 here... (Chu doesn't do this)
+    # age_len_key_wgt_norm_da = age_len_key_wgt_da / age_len_key_wgt_da.sum(dim=['len_bins', 'age_bins'])
+    #
+    # # each stratum's multiplier once normalized weight has been calculated
+    # age2_wgt_proportion_da = 1.0 - age_len_key_wgt_norm_da.isel(age_bins=0).sum(
+    #     dim='len_bins') / age_len_key_wgt_norm_da.sum(dim=['len_bins', 'age_bins'])
+    #
+    # # get all specimen data that is necessary for key generation
+    # spec_w_strata = epro_2019.specimen_df.drop('Specimen_Number', axis=1).copy().reset_index()
+    #
+    # # add strata column
+    # spec_w_strata['Strata'] = spec_w_strata.apply(lambda x: strata_haul_df.loc[x[0]],
+    #                                               axis=1).values
+    #
+    # spec_w_strata.set_index('Strata', inplace=True)
+    #
+    # reg_w0, reg_p = strata_class.get_length_val_reg_vals(len_name='Length', val_name="Weight", df=spec_w_strata)
+    #
+    # len_weight_ALL, len_nALL, norm_len_key_ALL = strata_class.generate_length_val_key(bins_len, reg_w0, reg_p,
+    #                                                                                   len_name='Length',
+    #                                                                                   val_name='Weight',
+    #                                                                                   df=spec_w_strata)
+    #
+    # # spec_w_strata = spec_w_strata[(spec_w_strata['Sex'] != 3)] # TODO: this should be for all sexes
+    # len_wgt_key_spec_da, len_key_spec_da, len_key_norm_spec_da = strata_class.get_weight_key_das(spec_w_strata,
+    #                                                                                              bins_len, reg_w0,
+    #                                                                                              reg_p,
+    #                                                                                              len_name='Length',
+    #                                                                                              val_name='Weight')
+    #
+    # length_explode_df = epro_2019.length_df[['Sex', 'Length']].copy()
+    # # add strata column
+    # length_explode_df['Strata'] = length_explode_df.reset_index().apply(lambda x: strata_haul_df.loc[x[0]],
+    #                                                                     axis=1).values
+    #
+    # length_explode_df.reset_index(inplace=True)
+    #
+    # length_explode_df.set_index('Strata', inplace=True)
+    #
+    # length_explode_df = length_explode_df.explode(['Sex', 'Length'])
+    #
+    # length_explode_df = length_explode_df.astype({'Haul': int,
+    #                                               'Sex': int,
+    #                                               'Length': np.float64})
+    #
+    # # length_explode_df = length_explode_df[(length_explode_df['Sex'] != 3)] # TODO: this should be for all sexes
+    #
+    # unique_strata = length_explode_df.index.unique().values
+    #
+    # len_key_norm_length = np.empty((unique_strata.shape[0], bins_len.shape[0]), dtype=np.float64)
+    # len_key_norm_length[:, :] = 0.0
+    #
+    # stratum_ind = 0
+    # for stratum in unique_strata:
+    #     input_data = length_explode_df.loc[stratum]['Length'].values
+    #     len_ind = strata_class.get_bin_ind(input_data, bins_len)
+    #
+    #     len_key_n = np.array([i.shape[0] for i in len_ind])
+    #     len_key_norm_length[stratum_ind, :] = len_key_n / np.sum(len_key_n)
+    #
+    #     stratum_ind += 1
+    #
+    # len_key_norm_length_da = xr.DataArray(data=len_key_norm_length,
+    #                                       coords={'strata': unique_strata, 'len_bins': bins_len})
+    #
+    # len_key_norm_ave = (len_key_norm_length_da + len_key_norm_spec_da) / 2
+    #
+    # # get the nasc dataframe
+    # nasc_df = epro_2019.load_nasc_data()
+    #
+    # # calculates the interval for the area calculation
+    # interval = (nasc_df['VL start'].iloc[1:].values - nasc_df['VL start'].iloc[:-1].values)
+    # last_interval = nasc_df['VL end'].iloc[-1] - nasc_df['VL start'].iloc[-1]
+    #
+    # interval = np.concatenate([interval, np.array([last_interval])])
+    #
+    # median_interval = np.median(interval)
+    #
+    # # remove outliers at the end of the transect
+    # ind_outliers = np.argwhere(np.abs(interval - median_interval) > 0.05).flatten()
+    # interval[ind_outliers] = nasc_df['VL end'].values[ind_outliers] - nasc_df['VL start'].values[ind_outliers]
+    #
+    # bio_dense_df = nasc_df[['Stratum', 'NASC', 'Haul']].copy()
+    # bio_dense_df['interval'] = interval
+    # bio_dense_df['n_A'] = nasc_df.apply(lambda x: x.NASC / epro_2019.strata_ds.sig_b.sel(strata=x.Stratum).values,
+    #                                     axis=1)
+    # # bio_dense_df['A'] = bio_dense_df['interval']*nasc_df['Spacing']
+    # # bio_dense_df['N_A'] = bio_dense_df['n_A']*bio_dense_df['A']
+    #
+    # bio_density = bio_dense_df.apply(lambda x: x.n_A * np.dot(len_key_norm_ave.sel(strata=x.Stratum),
+    #                                                           len_wgt_key_spec_da.sel(strata=x.Stratum)), axis=1)
+    #
+    # bio_density_2_prop = bio_dense_df.apply(lambda x: x.n_A * np.dot(len_key_norm_ave.sel(strata=x.Stratum),
+    #                                                                  len_wgt_key_spec_da.sel(
+    #                                                                      strata=x.Stratum)) * age2_wgt_proportion_da.sel(
+    #     strata=x.Stratum).values,
+    #                                         axis=1)
 
 

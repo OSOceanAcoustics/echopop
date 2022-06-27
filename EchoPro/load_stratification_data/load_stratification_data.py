@@ -21,7 +21,6 @@ class LoadStrataData:
     def __init__(self, EPro = None):
 
         self.EPro = EPro
-        self.EPro.strata_df = None
 
     def load_stratafication_file(self, stratification_index):
         """
@@ -551,6 +550,10 @@ class LoadStrataData:
 
         return len_wgt_key_da, len_key_da, len_key_norm_da
 
+    # def get_key_ds(self):
+
+
+
 
     def get_strata_data(self, stratification_index, KS_stratification,
                         transect_reduction_fraction: float = 0.0):
@@ -614,7 +617,7 @@ class LoadStrataData:
 
         # self.__get_bio_strata(stratification_index, KS_stratification, transect_reduction_fraction)
         #
-        self.__get_bio_len_age_haul()
+        # self.__get_bio_len_age_haul()
 
         # self.__remove_empty_bio_len_age_haul()
 
