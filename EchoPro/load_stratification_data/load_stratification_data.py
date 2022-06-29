@@ -497,6 +497,17 @@ class LoadStrataData:
         # normalized length-key
         norm_len_key_ALL = len_nALL / sum(len_nALL)
 
+        if (reg_p is None) or (reg_w0 is None):
+
+            # length-value regression for all trawls (male & female)
+            x = np.log10(L)
+            y = np.log10(V)
+
+            p = np.polyfit(x, y, 1)  # linear regression
+
+            reg_w0 = 10.0 ** p[1]
+            reg_p = p[0]
+
         # value at length or length-value-key
         # length-weight-key per fish over entire survey region (an array)
         len_val_ALL = reg_w0 * bio_hake_len_bin ** reg_p
@@ -550,10 +561,208 @@ class LoadStrataData:
 
         return len_wgt_key_da, len_key_da, len_key_norm_da
 
-    # def get_key_ds(self):
+    def get_len_keys_strata(self, len_strata, bins_len):
+
+        input_data = len_strata['Length'].values
+        len_ind = self.get_bin_ind(input_data, bins_len)
+        len_key = np.array([i.shape[0] for i in len_ind])
+        len_key_n = len_key / np.sum(len_key)
+
+        input_data = len_strata[len_strata['Sex'] == 1]['Length'].values
+        len_ind = self.get_bin_ind(input_data, bins_len)
+        len_key = np.array([i.shape[0] for i in len_ind])
+        len_key_M = len_key / np.sum(len_key)
+
+        input_data = len_strata[len_strata['Sex'] == 2]['Length'].values
+        len_ind = self.get_bin_ind(input_data, bins_len)
+        len_key = np.array([i.shape[0] for i in len_ind])
+        len_key_F = len_key / np.sum(len_key)
+
+        return len_key_n, len_key_M, len_key_F
+
+    def get_age_related_sums(self, spec_strata_M, spec_strata_F, bins_len, bins_age):
+
+        input_df = pd.concat([spec_strata_M, spec_strata_F], axis=0)
+
+        # age_len_key_da, _, age_len_key_norm_da = self.get_age_key_das(input_df, bins_len, bins_age)
+        # age_len_key_M_da, _, age_len_key_norm_M_da = self.get_age_key_das(spec_strata_M, bins_len, bins_age)
+        # age_len_key_F_da, _, age_len_key_norm_F_da = self.get_age_key_das(spec_strata_F, bins_len, bins_age)
+
+        _, _, age_len_key_norm_da = self.get_age_key_das(input_df, bins_len, bins_age)
+        _, _, age_len_key_norm_M_da = self.get_age_key_das(spec_strata_M, bins_len, bins_age)
+        _, _, age_len_key_norm_F_da = self.get_age_key_das(spec_strata_F, bins_len, bins_age)
+
+        len_age_key_sum = age_len_key_norm_da.isel(strata=0).sum(dim='age_bins').values
+
+        len_age_key_M_sum = age_len_key_norm_M_da.isel(strata=0).sum(dim='age_bins').values
+
+        len_age_key_F_sum = age_len_key_norm_F_da.isel(strata=0).sum(dim='age_bins').values
+
+        return len_age_key_sum, len_age_key_M_sum, len_age_key_F_sum
+
+    def get_biomass_constants(self, spec_w_strata, length_explode_df, bins_len, bins_age):
+        """
+        Obtains the constants associated with each stratum,
+        which are used in the biomass density calculation
+        """
+
+        spec_strata_ind = spec_w_strata.index.unique()
+        len_strata_ind = length_explode_df.index.unique()
+        strata_ind = spec_strata_ind.intersection(len_strata_ind).values
+
+        total_N = np.empty(strata_ind.shape[0], dtype=np.float64)
+
+        spec_M_prop = np.empty(strata_ind.shape[0], dtype=np.float64)
+        spec_F_prop = np.empty(strata_ind.shape[0], dtype=np.float64)
+
+        len_M_prop = np.empty(strata_ind.shape[0], dtype=np.float64)
+        len_F_prop = np.empty(strata_ind.shape[0], dtype=np.float64)
+
+        fac2_ALL = np.empty(strata_ind.shape[0], dtype=np.float64)
+        fac1_ALL = np.empty(strata_ind.shape[0], dtype=np.float64)
+
+        fac1_M = np.empty(strata_ind.shape[0], dtype=np.float64)
+        fac1_F = np.empty(strata_ind.shape[0], dtype=np.float64)
+
+        fac2_M = np.empty(strata_ind.shape[0], dtype=np.float64)
+        fac2_F = np.empty(strata_ind.shape[0], dtype=np.float64)
+
+        len_wgt_prod = np.empty(strata_ind.shape[0], dtype=np.float64)
+        len_wgt_M_prod = np.empty(strata_ind.shape[0], dtype=np.float64)
+        len_wgt_F_prod= np.empty(strata_ind.shape[0], dtype=np.float64)
+
+        len_weight_ALL, _, _ = self.generate_length_val_key(bins_len, reg_w0=None, reg_p=None,
+                                                            len_name='Length',
+                                                            val_name='Weight', df=spec_w_strata)
+
+        ind = 0
+        for stratum in strata_ind:
+
+            spec_strata = spec_w_strata.loc[stratum]
+            spec_strata_M = spec_strata[spec_strata['Sex'] == 1]
+            spec_strata_F = spec_strata[spec_strata['Sex'] == 2]
+            len_strata = length_explode_df.loc[stratum]
+            len_strata_M = len_strata[len_strata['Sex'] == 1]
+            len_strata_F = len_strata[len_strata['Sex'] == 2]
+
+            len_age_key_sum, len_age_key_M_sum, len_age_key_F_sum \
+                = self.get_age_related_sums(spec_strata_M, spec_strata_F, bins_len, bins_age)
+
+            # total number of sexed fish at stations 1 and 2
+            # total_N[ind] = spec_strata_M.shape[0] + spec_strata_F.shape[0] + len_strata_M.shape[0] + len_strata_F.shape[0]
+
+            total_N[ind] = spec_strata_M.shape[0] + spec_strata_F.shape[0] + len_strata.shape[0]
+
+            # total_N[ind] = spec_strata.shape[0] + len_strata.shape[0] - 1  # TODO: Correct this!
+
+            # proportion of males/females in station 2
+            spec_M_prop[ind] = spec_strata_M.shape[0] / total_N[ind]
+            spec_F_prop[ind] = spec_strata_F.shape[0] / total_N[ind]
+
+            # proportion of males/females in station 1
+            len_M_prop[ind] = len_strata_M.shape[0] / total_N[ind]
+            len_F_prop[ind] = len_strata_F.shape[0] / total_N[ind]
+
+            # total proportion of sexed fish in station 2
+            fac2_ALL[ind] = spec_M_prop[ind] + spec_F_prop[ind]
+
+            # total proportion of sexed fish in station 1
+            fac1_ALL[ind] = 1.0 - fac2_ALL[ind]
+
+            fac1_M[ind] = fac1_ALL[ind] * 1.0
+            fac1_F[ind] = fac1_ALL[ind] * 1.0  # TODO: something looks wrong here, ask Chu
+
+            fac1_M[ind] = fac1_M[ind] / (fac1_M[ind] + spec_M_prop[ind])
+            fac1_F[ind] = fac1_F[ind] / (fac1_F[ind] + spec_F_prop[ind])
+
+            fac2_M[ind] = spec_M_prop[ind] / (fac1_M[ind] + spec_M_prop[ind])
+            fac2_F[ind] = spec_F_prop[ind] / (fac1_F[ind] + spec_F_prop[ind])
+
+            # average of total proportion of sexed fish pertaining to station 1
+            # fac1_ALL = fac1_ALL / (fac1_ALL + fac2_ALL) # TODO: do we need to calculate this?
+
+            # average of total proportion of sexed fish pertaining to station 2
+            # fac2_ALL = fac2_ALL / (fac1_ALL + fac2_ALL) # TODO: do we need to calculate this?
+
+            len_key_n, len_key_M, len_key_F = self.get_len_keys_strata(len_strata, bins_len)
+
+            len_wgt_prod[ind] = np.dot(fac1_ALL[ind] * len_key_n + fac2_ALL[ind] * len_age_key_sum, len_weight_ALL)
+            len_wgt_M_prod[ind] = np.dot(fac1_M[ind] * len_key_M + fac2_M[ind] * len_age_key_M_sum, len_weight_ALL)
+            len_wgt_F_prod[ind] = np.dot(fac1_F[ind] * len_key_F + fac2_F[ind] * len_age_key_F_sum, len_weight_ALL)
+
+            ind += 1
+
+        total_N_da = xr.DataArray(data=total_N, coords={'strata': strata_ind})
+
+        spec_M_prop_da = xr.DataArray(data=spec_M_prop, coords={'strata': strata_ind})
+        spec_F_prop_da = xr.DataArray(data=spec_F_prop, coords={'strata': strata_ind})
+
+        len_M_prop_da = xr.DataArray(data=len_M_prop, coords={'strata': strata_ind})
+        len_F_prop_da = xr.DataArray(data=len_F_prop, coords={'strata': strata_ind})
+
+        len_wgt_prod_da = xr.DataArray(data=len_wgt_prod, coords={'strata': strata_ind})
+        len_wgt_M_prod_da = xr.DataArray(data=len_wgt_M_prod, coords={'strata': strata_ind})
+        len_wgt_F_prod_da = xr.DataArray(data=len_wgt_F_prod, coords={'strata': strata_ind})
 
 
+        # bio_calc_const = xr.Dataset({'total_N': total_N_da, 'spec_M_prop': spec_M_prop_da,
+        #                              'spec_F_prop': spec_F_prop_da, 'len_M_prop': len_M_prop_da,
+        #                              'len_F_prop_da': len_F_prop_da, 'fac1_ALL': fac1_ALL,
+        #                              'fac2_ALL': fac2_ALL, 'fac1_M': fac1_M, 'fac1_F': fac1_F,
+        #                              'fac2_M': fac2_M, 'fac2_F': fac2_F})
 
+        bio_calc_const = xr.Dataset({'spec_M_prop': spec_M_prop_da, 'spec_F_prop': spec_F_prop_da,
+                                     'len_M_prop': len_M_prop_da, 'len_F_prop': len_F_prop_da,
+                                     'len_wgt_prod': len_wgt_prod_da, 'len_wgt_M_prod': len_wgt_M_prod_da,
+                                     'len_wgt_F_prod': len_wgt_F_prod_da, 'total_N': total_N_da})
+
+        return bio_calc_const
+
+    # from EchoPro.load_stratification_data import LoadStrataData
+    # strata_class = LoadStrataData(epro_2019)
+    # # get the bins for the lengths
+    # bins_len = epro_2019.params['bio_hake_len_bin']
+    # # get the bins for the ages
+    # bins_age = epro_2019.params['bio_hake_age_bin']
+    #
+    # bc = strata_class.get_biomass_constants(spec_w_strata, length_explode_df, bins_len, bins_age)
+    # bc
+    #
+    # nntk_male = bio_dense_df.apply(lambda x: np.round(
+    #     x.n_A * (bc.len_M_prop.sel(strata=x.Stratum).values + bc.spec_M_prop.sel(strata=x.Stratum).values)), axis=1)
+    # nntk_female = bio_dense_df.apply(lambda x: np.round(
+    #     x.n_A * (bc.len_F_prop.sel(strata=x.Stratum).values + bc.spec_F_prop.sel(strata=x.Stratum).values)), axis=1)
+    #
+    # bio_dense_df['nntk_male'] = nntk_male
+    # bio_dense_df['nntk_female'] = nntk_female
+    #
+    # nWgt_male_int = bio_dense_df.apply(lambda x: x.nntk_male * bc.len_wgt_M_prod.sel(strata=x.Stratum).values, axis=1)
+    # nWgt_female_int = bio_dense_df.apply(lambda x: x.nntk_female * bc.len_wgt_F_prod.sel(strata=x.Stratum).values,
+    #                                      axis=1)
+    #
+    # bio_dense_df['nWgt_male'] = nWgt_male_int
+    # bio_dense_df['nWgt_female'] = nWgt_female_int
+    #
+    # nWgt_unsexed_int = bio_dense_df.apply(
+    #     lambda x: (x.n_A - x.nntk_male - x.nntk_female) * bc.len_wgt_prod.sel(strata=x.Stratum).values, axis=1)
+    # bio_dense_df['nWgt_unsexed'] = nWgt_unsexed_int
+    #
+    # bio_dense_df['nWgt_total'] = bio_dense_df['nWgt_male'] + bio_dense_df['nWgt_female'] + bio_dense_df['nWgt_unsexed']
+    #
+    # age_len_key_da, age_len_key_wgt_da, age_len_key_norm_da = strata_class.get_age_key_das(spec_w_strata,
+    #                                                                                        bins_len, bins_age)
+    #
+    # # TODO: it would probably be better to do an average of station 1 and 2 here... (Chu doesn't do this)
+    # age_len_key_wgt_norm_da = age_len_key_wgt_da / age_len_key_wgt_da.sum(dim=['len_bins', 'age_bins'])
+    #
+    # # each stratum's multiplier once normalized weight has been calculated
+    # age2_wgt_proportion_da = 1.0 - age_len_key_wgt_norm_da.isel(age_bins=0).sum(
+    #     dim='len_bins') / age_len_key_wgt_norm_da.sum(dim=['len_bins', 'age_bins'])
+    #
+    # nWgt_total_2_prop = bio_dense_df.apply(lambda x: x.nWgt_total * age2_wgt_proportion_da.sel(strata=x.Stratum).values,
+    #                                        axis=1)
+    #
+    # bio_dense_df['nWgt_total_2_prop'] = nWgt_total_2_prop
 
     def get_strata_data(self, stratification_index, KS_stratification,
                         transect_reduction_fraction: float = 0.0):
