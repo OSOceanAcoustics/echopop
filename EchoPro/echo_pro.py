@@ -279,6 +279,7 @@ class EchoPro:
         self.strata_df["length_average_haul"] = np.nan
         self.strata_df["TS_lin_haul"] = np.nan
         self.strata_df["sig_bs_haul"] = np.nan
+
         for haul_num in self.specimen_df.index.unique():
 
             all_len = self.specimen_df.loc[haul_num]['Length']

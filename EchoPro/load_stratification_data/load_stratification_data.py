@@ -635,6 +635,12 @@ class LoadStrataData:
                                                             len_name='Length',
                                                             val_name='Weight', df=spec_w_strata)
 
+        # # select the indices that do not have nan in either Length or Weight
+        spec_w_strata = spec_w_strata.dropna(how='any')
+
+        # select the indices that do not have nan in either Length or Weight
+        length_explode_df = length_explode_df.dropna(how='any')
+
         ind = 0
         for stratum in strata_ind:
 
@@ -649,11 +655,8 @@ class LoadStrataData:
                 = self.get_age_related_sums(spec_strata_M, spec_strata_F, bins_len, bins_age)
 
             # total number of sexed fish at stations 1 and 2
-            # total_N[ind] = spec_strata_M.shape[0] + spec_strata_F.shape[0] + len_strata_M.shape[0] + len_strata_F.shape[0]
-
             total_N[ind] = spec_strata_M.shape[0] + spec_strata_F.shape[0] + len_strata.shape[0]
-
-            # total_N[ind] = spec_strata.shape[0] + len_strata.shape[0] - 1  # TODO: Correct this!
+            # total_N[ind] = spec_strata.shape[0] + len_strata.shape[0]  # TODO: This is what it should be
 
             # proportion of males/females in station 2
             spec_M_prop[ind] = spec_strata_M.shape[0] / total_N[ind]
@@ -727,28 +730,53 @@ class LoadStrataData:
     #
     # bc = strata_class.get_biomass_constants(spec_w_strata, length_explode_df, bins_len, bins_age)
     # bc
+    # # get the nasc dataframe
+    # nasc_df = epro_2019.load_nasc_data()
     #
-    # nntk_male = bio_dense_df.apply(lambda x: np.round(
-    #     x.n_A * (bc.len_M_prop.sel(strata=x.Stratum).values + bc.spec_M_prop.sel(strata=x.Stratum).values)), axis=1)
-    # nntk_female = bio_dense_df.apply(lambda x: np.round(
-    #     x.n_A * (bc.len_F_prop.sel(strata=x.Stratum).values + bc.spec_F_prop.sel(strata=x.Stratum).values)), axis=1)
+    # # calculates the interval for the area calculation
+    # interval = (nasc_df['VL start'].iloc[1:].values - nasc_df['VL start'].iloc[:-1].values)
+    # last_interval = nasc_df['VL end'].iloc[-1] - nasc_df['VL start'].iloc[-1]
+    #
+    # interval = np.concatenate([interval, np.array([last_interval])])
+    #
+    # median_interval = np.median(interval)
+    #
+    # # remove outliers at the end of the transect
+    # ind_outliers = np.argwhere(np.abs(interval - median_interval) > 0.05).flatten()
+    # interval[ind_outliers] = nasc_df['VL end'].values[ind_outliers] - nasc_df['VL start'].values[ind_outliers]
+    # bio_dense_df = nasc_df[['Stratum', 'NASC', 'Haul']].copy()
+    # bio_dense_df['interval'] = interval
+    # wgt_vals = epro_2019.strata_df.reset_index().set_index('Haul')['wt']
+    # wgt_vals_ind = wgt_vals.index
+    #
+    # # TODO: replace this with DataSet representation
+    # mix_sa_ratio = nasc_df.apply(lambda x: wgt_vals[x.Haul] if x.Haul in wgt_vals_ind else 0.0, axis=1)
+    #
+    # nasc_df['mix_sa_ratio'] = mix_sa_ratio
+    # bio_dense_df['n_A'] = nasc_df.apply(
+    #     lambda x: np.round((x.mix_sa_ratio * x.NASC) / float(epro_2019.strata_ds.sig_b.sel(strata=x.Stratum))), axis=1)
+    # bio_dense_df['A'] = bio_dense_df['interval'] * nasc_df['Spacing']
+    # bio_dense_df['N_A'] = bio_dense_df['n_A'] * bio_dense_df['A']
+    # nntk_male = bio_dense_df.apply(
+    #     lambda x: np.round(x.n_A * float(bc.len_M_prop.sel(strata=x.Stratum) + bc.spec_M_prop.sel(strata=x.Stratum))),
+    #     axis=1)
+    # nntk_female = bio_dense_df.apply(
+    #     lambda x: np.round(x.n_A * float(bc.len_F_prop.sel(strata=x.Stratum) + bc.spec_F_prop.sel(strata=x.Stratum))),
+    #     axis=1)
     #
     # bio_dense_df['nntk_male'] = nntk_male
     # bio_dense_df['nntk_female'] = nntk_female
-    #
-    # nWgt_male_int = bio_dense_df.apply(lambda x: x.nntk_male * bc.len_wgt_M_prod.sel(strata=x.Stratum).values, axis=1)
-    # nWgt_female_int = bio_dense_df.apply(lambda x: x.nntk_female * bc.len_wgt_F_prod.sel(strata=x.Stratum).values,
+    # nWgt_male_int = bio_dense_df.apply(lambda x: x.nntk_male * float(bc.len_wgt_M_prod.sel(strata=x.Stratum)), axis=1)
+    # nWgt_female_int = bio_dense_df.apply(lambda x: x.nntk_female * float(bc.len_wgt_F_prod.sel(strata=x.Stratum)),
     #                                      axis=1)
     #
     # bio_dense_df['nWgt_male'] = nWgt_male_int
     # bio_dense_df['nWgt_female'] = nWgt_female_int
-    #
     # nWgt_unsexed_int = bio_dense_df.apply(
-    #     lambda x: (x.n_A - x.nntk_male - x.nntk_female) * bc.len_wgt_prod.sel(strata=x.Stratum).values, axis=1)
+    #     lambda x: (x.n_A - x.nntk_male - x.nntk_female) * float(bc.len_wgt_prod.sel(strata=x.Stratum)), axis=1)
     # bio_dense_df['nWgt_unsexed'] = nWgt_unsexed_int
-    #
     # bio_dense_df['nWgt_total'] = bio_dense_df['nWgt_male'] + bio_dense_df['nWgt_female'] + bio_dense_df['nWgt_unsexed']
-    #
+    # spec_w_strata = spec_w_strata.dropna(how='any')
     # age_len_key_da, age_len_key_wgt_da, age_len_key_norm_da = strata_class.get_age_key_das(spec_w_strata,
     #                                                                                        bins_len, bins_age)
     #
@@ -759,7 +787,7 @@ class LoadStrataData:
     # age2_wgt_proportion_da = 1.0 - age_len_key_wgt_norm_da.isel(age_bins=0).sum(
     #     dim='len_bins') / age_len_key_wgt_norm_da.sum(dim=['len_bins', 'age_bins'])
     #
-    # nWgt_total_2_prop = bio_dense_df.apply(lambda x: x.nWgt_total * age2_wgt_proportion_da.sel(strata=x.Stratum).values,
+    # nWgt_total_2_prop = bio_dense_df.apply(lambda x: x.nWgt_total * float(age2_wgt_proportion_da.sel(strata=x.Stratum)),
     #                                        axis=1)
     #
     # bio_dense_df['nWgt_total_2_prop'] = nWgt_total_2_prop
