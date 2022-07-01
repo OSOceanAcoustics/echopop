@@ -1,13 +1,9 @@
 import numpy as np
-import numba as nb
-import math
 from scipy import special
 import ipywidgets as widgets
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 import inspect
-import traitlets
-import warnings
 import sys
 from ..numba_modules import nb_subtract_outer, nb_dis_vec, nb_diff_sqrd
 
