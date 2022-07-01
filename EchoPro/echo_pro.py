@@ -1,18 +1,14 @@
-import sys
-
 import yaml
 import numpy as np
 # from .run_bootstrapping import RunBootstrapping
 from .load_biological_data import LoadBioData
 from .load_stratification_data import LoadStrataData
+from .compute_biomass_density import ComputeBiomassDensity
 from .cv_analysis import CVAnalysis
 from .kriging import Kriging
 from .kriging_mesh import KrigingMesh
 from .semivariogram import SemiVariogram
 import pandas as pd
-import scipy.io
-import xarray as xr
-import warnings
 
 
 class EchoPro:
@@ -43,10 +39,6 @@ class EchoPro:
         2 = from age_vs_len
     exclude_age1 : bool
         States whether age 1 hake should be included in analysis.
-    KS_stratification : int
-        Specifies the type of stratification to be used.
-        0 = Pre-Stratification or customized stratification (geographically defined)
-        1 = Post-Stratification (KS-based or trawl-based)
     stratification_index : int
         Index for the chosen stratification
         0 = INPFC strata
@@ -63,25 +55,25 @@ class EchoPro:
                  bio_data_type: int = 1,
                  age_data_status: int = 1,
                  exclude_age1: bool = True,
-                 KS_stratification: int = 1,
                  stratification_index: int = 1):
 
         self.bootstrapping_performed = False
 
-        # self.__init_file_path = init_file_path
-        self.__check_init_file()
+        self._check_init_file()
+        self._check_survey_year_file()
 
-        # self.__survey_year_file_path = survey_year_file_path
-        self.__check_survey_year_file()
+        init_params = self._read_initialization_config(init_file_path)
+        init_params = self._set_params_from_init(source, bio_data_type, init_params, age_data_status)
 
-        init_params = self.__read_initialization_config(init_file_path)
-        init_params = self.__set_params_from_init(source, bio_data_type, init_params, age_data_status)
+        survey_year_params = self._read_survey_year_config(survey_year_file_path)
 
-        survey_year_params = self.__read_survey_year_config(survey_year_file_path)
-
-        self.params = self.__collect_parameters(init_params, survey_year_params)
+        self.params = self._collect_parameters(init_params, survey_year_params)
 
         self.params['exclude_age1'] = exclude_age1
+
+        self.strata_df = None
+        self.geo_strata_df = None
+        self.strata_ds = None
 
         self.strata_class = LoadStrataData(stratification_index,
                                            self.params['data_root_dir'],
@@ -89,29 +81,30 @@ class EchoPro:
                                            self.params['stratification_filename'])
 
         self.length_df = None
-        self.length_ds_bran = None
         self.length_ds = None
 
         self.specimen_df = None
 
-        self.strata_df = None
-        self.geo_strata_df = None
-        self.strata_ds = None
+        self.nasc_df = None
 
-        self.__load_files(KS_stratification, stratification_index)
+        self.final_biomass_table = None
 
-    def __check_init_file(self):
+        self._load_files(stratification_index)
+
+        self._compute_biomass_density()
+
+    def _check_init_file(self):
         # TODO: create this function that checks the contents of the initialization config file
         # TODO: it should make sure that certain variables are defined too
         print("A check of the initialization file needs to be done!")
 
-    def __check_survey_year_file(self):
+    def _check_survey_year_file(self):
         # TODO: create this function that checks the contents of the survey year config file
         # TODO: it should make sure that certain variables are defined and all paths exist
         print("A check of the survey year file needs to be done!")
 
     @staticmethod
-    def __read_initialization_config(init_file_path):
+    def _read_initialization_config(init_file_path):
 
         with open(init_file_path) as f:
 
@@ -120,7 +113,7 @@ class EchoPro:
         return init_params
 
     @staticmethod
-    def __read_survey_year_config(survey_year_file_path):
+    def _read_survey_year_config(survey_year_file_path):
         # TODO: This may need to be replaced in the future with a python file that way we can
         # TODO: mirror proc_parameters_XXXX.m more closely (specifically the switch case statement)
 
@@ -131,7 +124,7 @@ class EchoPro:
         return survey_params
 
     @staticmethod
-    def __set_params_from_init(source: int, bio_data_type: int, init_params: dict, age_data_status: int):
+    def _set_params_from_init(source: int, bio_data_type: int, init_params: dict, age_data_status: int):
 
         # setting bio_hake_lin_bin variable to a numpy array
         init_params["bio_hake_len_bin"] = np.linspace(init_params["bio_hake_len_bin"][0],
@@ -185,7 +178,7 @@ class EchoPro:
 
         return init_params
 
-    def __collect_parameters(self, init_params, survey_params):
+    def _collect_parameters(self, init_params, survey_params):
 
         # check to make sure no survey year and initialization parameters are the same
         param_intersect = set(init_params.keys()).intersection(set(survey_params.keys()))
@@ -203,7 +196,7 @@ class EchoPro:
 
         return full_params
 
-    def load_nasc_data(self):
+    def _load_nasc_data(self):
         """
         Load VL interval-based NASC table.
 
@@ -216,6 +209,8 @@ class EchoPro:
         -------
         Pandas Dataframe of NASC table.
         """
+
+        # TODO: Should we create a class for this?
 
         if self.params['exclude_age1']:
             df = pd.read_excel(self.params['data_root_dir'] + self.params['filename_processed_data_no_age1'],
@@ -246,19 +241,14 @@ class EchoPro:
 
         return df
 
-    def __load_files(self, KS_stratification, stratification_index):
+    def _load_files(self, stratification_index):
         """
         Load the biological, NASC table, stratification file,
         Constructs final trawl and catch tables
 
         Parameters
         ----------
-        KS_stratification : int
-            Specifies the type of stratification to be used.
-            0 = Pre-Stratification or customized stratification (geographically defined)
-            1 = Post-Stratification (KS-based or trawl-based)
-        stratification_index : int  # TODO: this looks to mirror KS_stratification, it seems to be unnecessary to use this
-                                    # TODO: Ask Chu if it is ok to remove this.
+        stratification_index : int
             Index for the chosen stratification
             0 = INPFC strata
             1 = KS (trawl)-based
@@ -271,19 +261,27 @@ class EchoPro:
 
         """
 
-        self.load_bio = LoadBioData(self)  # TODO: remove self from load_bio, only necessary for testing
+        # load specimen and length data using EchoPro variables
+        LoadBioData(self)
 
+        # load all associated stratification data
         self.strata_df, self.strata_ds, self.geo_strata_df = self.strata_class.get_strata_data(self.specimen_df,
                                                                                                self.length_df)
 
-        # if self.params['bio_data_type'] == 1:
-        #
-        #     self.load_strata.load_stratafication_file(stratification_index)
-        #
-        # else:
-        #     raise NotImplementedError(f"Processing bio_data_type = {self.params['bio_data_type']} has not been implemented!")
+        self.nasc_df = self._load_nasc_data()
 
-        self.get_final_biomass_table()
+    def _compute_biomass_density(self):
+        """
+        Computes the biomass density estimate based on
+        the nasc_df, strata_df, strata_ds, specimen_df,
+        and length_df inputs. Additionally, it produces
+        the final_biomass_table that is used by
+        downstream processes.
+        """
+
+        bio_dense = ComputeBiomassDensity(self)
+
+        bio_dense.get_final_biomass_table()
 
     def run_cv_analysis(self, lat_INPFC=None, kriged_data=False, seed=None):
 
@@ -297,7 +295,6 @@ class EchoPro:
         if kriged_data:
             raise NotImplementedError("CV analysis for kriged data has not been implemented")
         else:
-            # cva.run_jolly_hampton(nr, lat_INPFC, self.final_biomass_table)
             return cva.run_jolly_hampton(nr, lat_INPFC, self.final_biomass_table, seed)
 
     def get_kriging_mesh(self):

@@ -21,88 +21,7 @@ class LoadBioData:
 
         self.EPro = EPro
 
-        print("Loading biological data ...")
-
         self.__load_biological_data()
-
-    def __process_length_data_ds(self, df, haul_num_offset):
-        """
-        Process and turn the length data file into a xarray Dataset, where the frequency
-        column has not been expanded. This one has 'haul' and 'haul_index' as coordinates.
-        Parameters
-        ----------
-        df : Pandas Dataframe
-            Dataframe holding the length data
-        haul_num_offset : int
-            The value that should be added to the haul index to differentiate it from other ships
-
-        Returns
-        -------
-        xarray Dataset
-
-        Notes
-        -----
-        The produced Dataset is a compressed version of the true data.
-        """
-
-        # obtaining those columns that are required
-        df = df[['Haul', 'Species_Code', 'Sex', 'Length', 'Frequency']].copy()
-
-        # extract target species
-        df = df.loc[df['Species_Code'] == self.EPro.params['species_code_ID']]
-
-        # set data types of dataframe
-        df = df.astype({'Haul': int, 'Species_Code': int, 'Sex': int, 'Length': np.float64, 'Frequency': np.float64})
-
-        # Apply haul_num_offset
-        df['Haul'] = df['Haul'] + haul_num_offset
-
-        if self.EPro.params['exclude_age1'] is False:
-            raise NotImplementedError("Including age 1 data has not been implemented!")
-
-        df.drop(columns=['Species_Code'], inplace=True)
-
-        df.set_index('Haul', inplace=True)
-        max_haul_size = df.index.value_counts().max()
-        series_haul = df.groupby('Haul').apply(np.array)
-
-        # pad the numpy arrays of each haul to match the maximum haul size
-        series_haul_pad = series_haul.apply(
-            lambda x: np.vstack((x, np.nan * np.ones((max_haul_size - x.shape[0], 3))))
-            if x.shape[0] != max_haul_size else x)
-
-        # collect all hauls into a 2D array
-        np_haul_pad = series_haul_pad.agg(lambda x: np.vstack(x.values))
-
-        ds = xr.Dataset(
-            data_vars={
-                'sex': (['haul', 'haul_index'], np_haul_pad[:, 0].reshape((series_haul_pad.shape[0], max_haul_size))),
-                'bio_length': (
-                ['haul', 'haul_index'], np_haul_pad[:, 1].reshape((series_haul_pad.shape[0], max_haul_size))),
-                'frequency': (
-                ['haul', 'haul_index'], np_haul_pad[:, 2].reshape((series_haul_pad.shape[0], max_haul_size)))
-            },
-            coords={
-                'haul': (['haul'], series_haul_pad.index),
-                'haul_index': (['haul_index'], range(max_haul_size))
-            })
-
-        # add variables that are helpful for downstream processes
-        ds['n'] = ds.frequency.sum('haul_index', skipna=True)
-        ds['meanlen'] = (ds.bio_length * ds.frequency).sum('haul_index', skipna=True) / (ds.n)
-        ds['stdlen'] = np.sqrt(
-            (((abs(ds.bio_length - ds.meanlen) ** 2) * ds.frequency).sum('haul_index', skipna=True)) / (ds.n - 1.0))
-
-        TS0 = 20.0 * np.log10(ds.bio_length) - 68.0
-        ds['TS_lin'] = 10.0 * np.log10((10.0 ** (TS0 / 10.0) * ds.frequency).sum('haul_index', skipna=True) / (ds.n))
-        ds['TS_log'] = (TS0 * ds.frequency).sum('haul_index', skipna=True) / (ds.n)
-        ds['TS_sd'] = np.sqrt(
-            (((abs(TS0 - ds.TS_log) ** 2) * ds.frequency).sum('haul_index', skipna=True)) / (ds.n - 1.0))
-
-        ds['nM'] = (ds[['sex', 'frequency']].where(ds.sex == 1.0, drop=True)).frequency.sum('haul_index', skipna=True)
-        ds['nF'] = (ds[['sex', 'frequency']].where(ds.sex == 2.0, drop=True)).frequency.sum('haul_index', skipna=True)
-
-        return ds
 
     def __process_length_data_ds_wu_jung(self, df, haul_num_offset):
         """
@@ -279,11 +198,6 @@ class LoadBioData:
             length_can_df = self.__process_length_data_df(df_can, self.EPro.params['CAN_haul_offset'])
             self.EPro.length_df = pd.concat([length_us_df, length_can_df])
 
-            # Option 2, Dataset with haul and haul_index as coordinates
-            length_us_ds_bran = self.__process_length_data_ds(df_us, 0)
-            length_can_ds_bran = self.__process_length_data_ds(df_can, self.EPro.params['CAN_haul_offset'])
-            self.EPro.length_ds_bran = length_us_ds_bran.merge(length_can_ds_bran)
-
             # Option 3, Dataset with Haul, Length, and Sex as coordinates
             length_us_ds_wu_jung = self.__process_length_data_ds_wu_jung(df_us, 0)
             length_can_ds_wu_jung = self.__process_length_data_ds_wu_jung(df_can, self.EPro.params['CAN_haul_offset'])
@@ -311,14 +225,17 @@ class LoadBioData:
 
     def __load_biological_data(self):
         """
-        A function that loads the appropriate data based on the source provided.
+        A function that loads the appropriate data based on the
+        source provided.
 
         Returns
         -------
         self.length_df : Dataframe
-            A dataframe containing the length information to be used downstream. If source=3 it contains US and Canada.
+            A dataframe containing the length information to
+            be used downstream. If source=3 it contains US and Canada.
         self.specimen_df : Dataframe
-            A dataframe containing the specimen information to be used downstream. If source=3 it contains US and Canada.
+            A dataframe containing the specimen information to be used
+            downstream. If source=3 it contains US and Canada.
         """
 
         self.__load_length_data()

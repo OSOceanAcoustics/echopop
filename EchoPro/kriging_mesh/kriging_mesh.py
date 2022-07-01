@@ -340,7 +340,7 @@ class KrigingMesh:
 
         return fmap
 
-    def plot_points(self, geo_df, fmap=None, cmap_column=None,
+    def plot_points(self, df, lon_name, lat_name, fmap=None, cmap_column=None,
                     color='hex', marker_kwargs={}):
         """
         Allows for a simple way to plot and
@@ -350,8 +350,13 @@ class KrigingMesh:
         ----------
         fmap
             Folium map to plot the points on
-        geo_df : GeoPandas Dataframe
-            Contains the data to be plotted with a geometry column
+        df : Pandas Dataframe
+            Contains  Longitude and Latitude columns named ``lon_name``
+            and ``lat_name``, respectively
+        lat_name : str
+            The name of the Latitude column in df
+        lon_name : str
+            The name of the Longitude column in df
         color : str
             The color of the markers representing the points. If
             color='hex', then a matplotlib color map will be created.
@@ -377,14 +382,14 @@ class KrigingMesh:
             fmap = self.get_folium_map()
 
         if color == 'hex':
-            uniq_vals = geo_df[cmap_column].unique()
+            uniq_vals = df[cmap_column].unique()
             cmap = cm.get_cmap('viridis', len(uniq_vals))
             hex_color_options = {rgb[0]: to_hex(rgb[1])
                                  for rgb in zip(uniq_vals, cmap(uniq_vals))}
 
-        for index, row in geo_df.iterrows():
+        for index, row in df.iterrows():
 
-            coordinates = (row.geometry.xy[1][0], row.geometry.xy[0][0])
+            coordinates = (row[lat_name], row[lon_name]) #(row.geometry.xy[1][0], row.geometry.xy[0][0])
 
             if color == 'hex':
                 color_val = hex_color_options[row[cmap_column]]

@@ -20,6 +20,9 @@ class ComputeBiomassDensity:
 
         self.EPro = EPro
 
+        self.bio_hake_len_bin = EPro.params['bio_hake_len_bin']
+        self.bio_hake_age_bin = EPro.params['bio_hake_age_bin']
+
     @staticmethod
     def get_bin_ind(input_data: np.array, centered_bins: np.array):
         """
@@ -289,10 +292,7 @@ class ComputeBiomassDensity:
 
         input_df = pd.concat([spec_strata_M, spec_strata_F], axis=0)
 
-        # age_len_key_da, _, age_len_key_norm_da = self.get_age_key_das(input_df, bins_len, bins_age)
-        # age_len_key_M_da, _, age_len_key_norm_M_da = self.get_age_key_das(spec_strata_M, bins_len, bins_age)
-        # age_len_key_F_da, _, age_len_key_norm_F_da = self.get_age_key_das(spec_strata_F, bins_len, bins_age)
-
+        # TODO: clean up outputs of this function call
         _, _, age_len_key_norm_da = self.get_age_key_das(input_df, bins_len, bins_age)
         _, _, age_len_key_norm_M_da = self.get_age_key_das(spec_strata_M, bins_len, bins_age)
         _, _, age_len_key_norm_F_da = self.get_age_key_das(spec_strata_F, bins_len, bins_age)
@@ -310,6 +310,9 @@ class ComputeBiomassDensity:
         Obtains the constants associated with each stratum,
         which are used in the biomass density calculation
         """
+
+        # TODO: clean up this code! There may be things saved here
+        #  that do not need to be saved...
 
         spec_strata_ind = spec_w_strata.index.unique()
         len_strata_ind = length_explode_df.index.unique()
@@ -336,6 +339,7 @@ class ComputeBiomassDensity:
         len_wgt_M_prod = np.empty(strata_ind.shape[0], dtype=np.float64)
         len_wgt_F_prod= np.empty(strata_ind.shape[0], dtype=np.float64)
 
+        # TODO: clean up outputs of this function
         len_weight_ALL, _, _ = self.generate_length_val_key(bins_len, reg_w0=None, reg_p=None,
                                                             len_name='Length',
                                                             val_name='Weight', df=spec_w_strata)
@@ -412,13 +416,6 @@ class ComputeBiomassDensity:
         len_wgt_M_prod_da = xr.DataArray(data=len_wgt_M_prod, coords={'strata': strata_ind})
         len_wgt_F_prod_da = xr.DataArray(data=len_wgt_F_prod, coords={'strata': strata_ind})
 
-
-        # bio_calc_const = xr.Dataset({'total_N': total_N_da, 'spec_M_prop': spec_M_prop_da,
-        #                              'spec_F_prop': spec_F_prop_da, 'len_M_prop': len_M_prop_da,
-        #                              'len_F_prop_da': len_F_prop_da, 'fac1_ALL': fac1_ALL,
-        #                              'fac2_ALL': fac2_ALL, 'fac1_M': fac1_M, 'fac1_F': fac1_F,
-        #                              'fac2_M': fac2_M, 'fac2_F': fac2_F})
-
         bio_calc_const = xr.Dataset({'spec_M_prop': spec_M_prop_da, 'spec_F_prop': spec_F_prop_da,
                                      'len_M_prop': len_M_prop_da, 'len_F_prop': len_F_prop_da,
                                      'len_wgt_prod': len_wgt_prod_da, 'len_wgt_M_prod': len_wgt_M_prod_da,
@@ -428,16 +425,16 @@ class ComputeBiomassDensity:
 
     def get_final_biomass_table(self):
 
-        nasc_df = self.load_nasc_data()
+        # TODO: clean up this code!! Is it necessary to create bio_dense_df?
 
         # minimal columns to do Jolly Hampton CV on data that has not been kriged
-        self.final_biomass_table = nasc_df[['Latitude', 'Longitude', 'Stratum', 'Spacing']].copy()
+        self.EPro.final_biomass_table = self.EPro.nasc_df[['Latitude', 'Longitude', 'Stratum', 'Spacing']].copy()
 
         # get df relating the haul to the stratum
-        strata_haul_df = self.strata_df.reset_index()[['Haul', 'strata']].set_index('Haul')
+        strata_haul_df = self.EPro.strata_df.reset_index()[['Haul', 'strata']].set_index('Haul')
 
         # get all specimen data that is necessary for key generation
-        spec_w_strata = self.specimen_df.drop('Specimen_Number', axis=1).copy().reset_index()
+        spec_w_strata = self.EPro.specimen_df.drop('Specimen_Number', axis=1).copy().reset_index()
 
         # add strata column
         spec_w_strata['Strata'] = spec_w_strata.apply(lambda x: strata_haul_df.loc[x[0]],
@@ -445,7 +442,7 @@ class ComputeBiomassDensity:
 
         spec_w_strata.set_index('Strata', inplace=True)
 
-        length_explode_df = self.length_df[['Sex', 'Length']].copy()
+        length_explode_df = self.EPro.length_df[['Sex', 'Length']].copy()
         # add strata column
         length_explode_df['Strata'] = length_explode_df.reset_index().apply(lambda x: strata_haul_df.loc[x[0]],
                                                                             axis=1).values
@@ -460,17 +457,10 @@ class ComputeBiomassDensity:
                                                       'Sex': int,
                                                       'Length': np.float64})
 
-        strata_class = LoadStrataData(self)
-        # get the bins for the lengths
-        bins_len = self.params['bio_hake_len_bin']
-        # get the bins for the ages
-        bins_age = self.params['bio_hake_age_bin']
+        bc = self.get_biomass_constants(spec_w_strata, length_explode_df,
+                                        self.bio_hake_len_bin, self.bio_hake_age_bin)
 
-        bc = strata_class.get_biomass_constants(spec_w_strata, length_explode_df, bins_len, bins_age)
-
-        # get the nasc dataframe
-        nasc_df = self.load_nasc_data()
-
+        # TODO: should we include the below code that is commented out?
         # # calculates the interval for the area calculation
         # interval = (nasc_df['VL start'].iloc[1:].values - nasc_df['VL start'].iloc[:-1].values)
         # last_interval = nasc_df['VL end'].iloc[-1] - nasc_df['VL start'].iloc[-1]
@@ -483,19 +473,18 @@ class ComputeBiomassDensity:
         # ind_outliers = np.argwhere(np.abs(interval - median_interval) > 0.05).flatten()
         # interval[ind_outliers] = nasc_df['VL end'].values[ind_outliers] - nasc_df['VL start'].values[ind_outliers]
 
-        bio_dense_df = nasc_df[['Stratum', 'NASC', 'Haul']].copy()
+        bio_dense_df = self.EPro.nasc_df[['Stratum', 'NASC', 'Haul']].copy()
         # bio_dense_df['interval'] = interval
 
-        wgt_vals = self.strata_df.reset_index().set_index('Haul')['wt']
+        wgt_vals = self.EPro.strata_df.reset_index().set_index('Haul')['wt']
         wgt_vals_ind = wgt_vals.index
 
-        # TODO: replace this with DataSet representation
-        mix_sa_ratio = nasc_df.apply(lambda x: wgt_vals[x.Haul] if x.Haul in wgt_vals_ind else 0.0, axis=1)
+        mix_sa_ratio = self.EPro.nasc_df.apply(lambda x: wgt_vals[x.Haul] if x.Haul in wgt_vals_ind else 0.0, axis=1)
 
-        nasc_df['mix_sa_ratio'] = mix_sa_ratio
+        self.EPro.nasc_df['mix_sa_ratio'] = mix_sa_ratio
 
-        bio_dense_df['n_A'] = nasc_df.apply(
-            lambda x: np.round((x.mix_sa_ratio * x.NASC) / float(self.strata_ds.sig_b.sel(strata=x.Stratum))),
+        bio_dense_df['n_A'] = self.EPro.nasc_df.apply(
+            lambda x: np.round((x.mix_sa_ratio * x.NASC) / float(self.EPro.strata_ds.sig_b.sel(strata=x.Stratum))),
             axis=1)
         # bio_dense_df['A'] = bio_dense_df['interval'] * nasc_df['Spacing']
         # bio_dense_df['N_A'] = bio_dense_df['n_A'] * bio_dense_df['A']
@@ -524,8 +513,9 @@ class ComputeBiomassDensity:
             'nWgt_unsexed']
 
         spec_w_strata = spec_w_strata.dropna(how='any')
-        age_len_key_da, age_len_key_wgt_da, age_len_key_norm_da = strata_class.get_age_key_das(spec_w_strata,
-                                                                                               bins_len, bins_age)
+        age_len_key_da, age_len_key_wgt_da, age_len_key_norm_da = self.get_age_key_das(spec_w_strata,
+                                                                                       self.bio_hake_len_bin,
+                                                                                       self.bio_hake_age_bin)
 
         # TODO: it would probably be better to do an average of station 1 and 2 here... (Chu doesn't do this)
         age_len_key_wgt_norm_da = age_len_key_wgt_da / age_len_key_wgt_da.sum(dim=['len_bins', 'age_bins'])
@@ -538,13 +528,6 @@ class ComputeBiomassDensity:
             lambda x: x.nWgt_total * float(age2_wgt_proportion_da.sel(strata=x.Stratum)),
             axis=1)
 
-        bio_dense_df['nWgt_total_2_prop'] = nWgt_total_2_prop
-
-
-        # mat = scipy.io.loadmat('../2019_consolidated_files/final_biomass_table_nwgt_total.mat')
-
-        self.final_biomass_table["nwgt_total"] = nWgt_total_2_prop # mat['nwgt_total']
-
-        # warnings.warn("We are currently using nwgt_total from Matlab for CV, change this!")
+        self.EPro.final_biomass_table["normalized_biomass_density"] = nWgt_total_2_prop
 
         print("We are using our own biomass density calculation!")

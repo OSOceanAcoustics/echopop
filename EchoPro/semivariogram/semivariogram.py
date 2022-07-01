@@ -212,10 +212,10 @@ class SemiVariogram:
 
     def plot_data(self, model, lsq_fit, apply_model):
 
-        plt.close(1)
-        fig = plt.figure(1, figsize=(8, 4), dpi=100)
+        plt.close(999)
+        fig = plt.figure(999, figsize=(8, 4), dpi=100)
         fig.canvas.manager.set_window_title('')
-        plt.close(1)
+        plt.close(999)
         ax1 = fig.add_subplot()
 
         ax1.plot(self._center_bins, self.gamma_standardized, 'bo')
