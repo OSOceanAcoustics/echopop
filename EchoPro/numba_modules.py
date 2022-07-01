@@ -13,7 +13,7 @@ def nb_subtract_outer(a, b):
     return res
 
 
-@nb.njit(nb.float64[:](nb.float64[:], nb.float64[:]), parallel=True, fastmath=True)
+@nb.njit(nb.float64[:](nb.float64[:], nb.float64[:]), fastmath=True, parallel=True)
 def nb_dis_vec(a, b):
     res = np.empty(a.shape, dtype=np.float64)
     for i in nb.prange(a.shape[0]):
@@ -21,7 +21,7 @@ def nb_dis_vec(a, b):
     return res
 
 
-@nb.njit(nb.float64[:, :](nb.float64[:, :], nb.float64[:, :]), parallel=True, fastmath=True)
+@nb.njit(nb.float64[:, :](nb.float64[:, :], nb.float64[:, :]), fastmath=True, parallel=True)
 def nb_dis_mat(a, b):
     res = np.empty(a.shape)
     for i in nb.prange(a.shape[0]):
@@ -30,7 +30,7 @@ def nb_dis_mat(a, b):
     return res
 
 
-@nb.njit(nb.float64[:](nb.float64[:], nb.float64[:]), parallel=True, fastmath=True)
+@nb.njit(nb.float64[:](nb.float64[:], nb.float64[:]), fastmath=True, parallel=True)
 def nb_diff_sqrd(a, b):
     res = np.empty(a.shape, dtype=np.float64)
     for i in nb.prange(a.shape[0]):
