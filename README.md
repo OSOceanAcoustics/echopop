@@ -6,12 +6,12 @@ of Pacific hake.
 
 ## Python EchoPro Workflow
 
-We have compiled the Jupyter notebook [echopro_workflow.ipynb](https://github.com/uw-echospace/EchoPro/blob/5d46d77c6a4ec9600ff2a66ed308c452c6af4c5d/echopro_workflow.ipynb) 
+We have compiled the Jupyter notebook [echopro_workflow.ipynb](https://github.com/uw-echospace/EchoPro/blob/master/echopro_workflow.ipynb) 
 that highlights the current workflow of the Python version of EchoPro. It can be ran after cloning this repository and
 setting up the Jupyter notebook. Below we outline the process of setting up the notebook using [Anaconda](https://www.anaconda.com/) 
 and obtaining all necessary data. All steps contained in codeblocks should be performed using a terminal. 
 
-1. Use [conda_install.yaml](https://github.com/uw-echospace/EchoPro/blob/5d46d77c6a4ec9600ff2a66ed308c452c6af4c5d/EchoPro/conda_install.yaml)
+1. Use [conda_install.yaml](https://github.com/uw-echospace/EchoPro/blob/master/EchoPro/conda_install.yaml)
 to create the conda environment called `echopro_env`:
 ```
 conda env create -f conda_install.yaml 
@@ -33,7 +33,7 @@ hovering over "Change kernel", and selecting "echopro_env".
 6. Download the folder [2019_consolidated_files](https://drive.google.com/drive/folders/13o1z5ebn3G05kAmfAVYJ3QqNEgxL8xxw?usp=sharing), 
 which contains all files necessary to run the notebook. Note that this link has restricted access and the folder can 
 only be downloaded by approved parties. 
-7. Modify `data_root_dir` in [survey_year_2019_config.yml](https://github.com/uw-echospace/EchoPro/blob/5d46d77c6a4ec9600ff2a66ed308c452c6af4c5d/config_files/survey_year_2019_config.yml)
+7. Modify `data_root_dir` in [survey_year_2019_config.yml](https://github.com/uw-echospace/EchoPro/blob/master/config_files/survey_year_2019_config.yml)
 so that it points to the directory `2019_consolidated_files`, which was downloaded in the previous step.
 
 ## Project updates
