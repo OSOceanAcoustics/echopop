@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import geopandas as gpd
 import xarray as xr
 
 
@@ -428,7 +429,11 @@ class ComputeBiomassDensity:
         # TODO: clean up this code!! Is it necessary to create bio_dense_df?
 
         # minimal columns to do Jolly Hampton CV on data that has not been kriged
-        self.EPro.final_biomass_table = self.EPro.nasc_df[['Latitude', 'Longitude', 'Stratum', 'Spacing']].copy()
+        final_biomass_table_df = self.EPro.nasc_df[['Latitude', 'Longitude', 'Stratum', 'Spacing']].copy()
+        self.EPro.final_biomass_table = gpd.GeoDataFrame(
+            final_biomass_table_df,
+            geometry=gpd.points_from_xy(final_biomass_table_df['Longitude'], final_biomass_table_df['Latitude'])
+        )
 
         # get df relating the haul to the stratum
         strata_haul_df = self.EPro.strata_df.reset_index()[['Haul', 'strata']].set_index('Haul')
