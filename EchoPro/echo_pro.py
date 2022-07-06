@@ -305,7 +305,7 @@ class EchoPro:
 
     def get_semi_variogram(self, x, y, field):
 
-        semi_vario = SemiVariogram(x, y, field)
+        semi_vario = SemiVariogram(x, y, field.values.flatten())
 
         return semi_vario
 

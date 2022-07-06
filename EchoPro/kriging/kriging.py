@@ -351,7 +351,8 @@ class Kriging:
 
             lamb = self.__compute_lambda_weights(M2, K, ratio)
 
-            ep_val, eps_val, vp_val = self.__compute_kriging_vals(field_data, M2, lamb,
+            ep_val, eps_val, vp_val = self.__compute_kriging_vals(field_data.values.flatten(), 
+                                                                  M2, lamb,
                                                                   M2_weight, R_ind,
                                                                   R_ind_not, dis_sel_ind)
 
