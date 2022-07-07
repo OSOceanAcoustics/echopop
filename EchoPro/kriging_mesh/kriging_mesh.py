@@ -35,6 +35,10 @@ class KrigingMesh:
             'tiles': 'CartoDB positron'
         }
 
+        self.transect_transf_df = None
+        self.transect_transf_D_x = None
+        self.transect_transf_D_y = None
+        self.mesh_transf_df = None
         self.__load_mesh()
         self.__load_smoothed_contour()
 
@@ -205,60 +209,41 @@ class KrigingMesh:
         # select gdf rows based on bool mask
         return self.mesh_gdf.loc[in_poly]
 
-    def apply_longitude_transformation(self, gdf, gdf_lon_name="Longitude",
-                                       gdf_lat_name="Latitude",
-                                       lon_ref=-124.78338):
-        """
-        This function applies a transformation to the
-        longitude column of the provided Dataframe so that
-        the anisotropic signature of the animal biomass
-        distribution can be approximately characterized by two
-        perpendicular (principal) correlation scales: one is
-        along the isobaths and the other is across the isobaths.
+    def apply_longitude_distance_transform(self, input_gdf, transform_type='transect'):
+        # NOTE: mesh_df and transect_df are indeed geodataframes
 
-        Parameters
-        ----------
-        gdf : Geopandas Dataframe or Pandas Dataframe
-            Dataframe with columns specifying Latitude, Longitude,
-            and geometry.
-        gdf_lon_name : str
-            Name of the longitude column in gdf
-        gdf_lat_name : str
-            Name of the latitude column in gdf
-        lon_ref : float
-            An arbitrary scalar, or a reference longitude
-            (e.g., the mean longitude of the 200m isobath)
+        if transform_type == 'transect':
+            # apply transformations to transect points
+            transect_df = self.apply_longitude_transformation(input_gdf)
+            D_x = transect_df.geometry.x.max() - transect_df.geometry.x.min()
+            D_y = transect_df.geometry.y.max() - transect_df.geometry.y.min()
+            x_transect, y_transect = self.apply_distance_transformation(transect_df, D_x, D_y)
+            transect_df['x_transect'] = x_transect
+            transect_df['y_transect'] = y_transect
+            self.transect_transf_df = transect_df
+            self.transect_transf_D_x = D_x
+            self.transect_transf_D_y = D_y
+        elif transform_type == 'mesh':
+            # apply transformations to mesh points
+            mesh_df = self.apply_longitude_transformation(input_gdf)
+            x_mesh, y_mesh = self.apply_distance_transformation(
+                mesh_df,
+                self.transect_transf_D_x,
+                self.transect_transf_D_y
+            )
+            mesh_df['x_mesh'] = x_mesh
+            mesh_df['y_mesh'] = y_mesh
 
-        Returns
-        -------
-        A copy of ``gdf`` with the Longitude column transformed
-        according to the interpolated (Latitude, Longitude) values
-        pulled from the file specified by the parameter
-        ``filename_smoothed_contour``.
+            self.mesh_transf_df = mesh_df
 
-        Notes
-        -----
-        Extreme caution should be used here. This transformation
-        was specifically designed for a NWFSC application!
-        """
-
-        f = interpolate.interp1d(self.smoothed_contour_gdf['Latitude'],
-                                 self.smoothed_contour_gdf['Longitude'],
-                                 kind='linear', bounds_error=False)
-
-        # TODO: do we need to drop NaNs after interpolating?
-        #  Investigate this further.
-
-        trans_gdf = gdf.copy()
-        trans_gdf[gdf_lon_name] = gdf[gdf_lon_name] - f(gdf[gdf_lat_name]) + lon_ref
-        trans_gdf['geometry'] = geopandas.points_from_xy(trans_gdf[gdf_lon_name],
-                                                         trans_gdf[gdf_lat_name])
-
-        return trans_gdf
-
-    def apply_distance_transformation(self, gdf, D_x, D_y, gdf_lon_name="Longitude",
-                                      gdf_lat_name="Latitude",
-                                      x_offset=-124.78338, y_offset=45.0):
+    def apply_distance_transformation(
+            self,
+            gdf,
+            D_x,
+            D_y,
+            x_offset=-124.78338,
+            y_offset=45.0
+    ):
         """
         Transforms the input coordinates from degrees
         to distance i.e. puts them into a distance
@@ -300,8 +285,8 @@ class KrigingMesh:
         DEG2RAD = np.pi / 180.0
 
         # initial coordinates without distance transformation
-        x = gdf[gdf_lon_name]
-        y = gdf[gdf_lat_name]
+        x = gdf.geometry.x
+        y = gdf.geometry.y
 
         # get normalization constants
         # D_x = x.max() - x.min()
@@ -312,6 +297,57 @@ class KrigingMesh:
         y = (y - y_offset) / D_y
 
         return x.values.flatten(), y.values.flatten()
+
+    def apply_longitude_transformation(self, gdf, lon_ref=-124.78338):
+        """
+        This function applies a transformation to the
+        longitude column of the provided Dataframe so that
+        the anisotropic signature of the animal biomass
+        distribution can be approximately characterized by two
+        perpendicular (principal) correlation scales: one is
+        along the isobaths and the other is across the isobaths.
+
+        Parameters
+        ----------
+        gdf : Geopandas Dataframe or Pandas Dataframe
+            Dataframe with columns specifying Latitude, Longitude,
+            and geometry.
+        gdf_lon_name : str
+            Name of the longitude column in gdf
+        gdf_lat_name : str
+            Name of the latitude column in gdf
+        lon_ref : float
+            An arbitrary scalar, or a reference longitude
+            (e.g., the mean longitude of the 200m isobath)
+
+        Returns
+        -------
+        A copy of ``gdf`` with the Longitude column transformed
+        according to the interpolated (Latitude, Longitude) values
+        pulled from the file specified by the parameter
+        ``filename_smoothed_contour``.
+
+        Notes
+        -----
+        Extreme caution should be used here. This transformation
+        was specifically designed for a NWFSC application!
+        """
+
+        f = interpolate.interp1d(self.smoothed_contour_gdf['Latitude'],
+                                 self.smoothed_contour_gdf['Longitude'],
+                                 kind='linear', bounds_error=False)
+
+        # TODO: do we need to drop NaNs after interpolating?
+        #  Investigate this further.
+
+        transformed_gdf = gdf.copy()
+        transformed_gdf['longitude_transformed'] = gdf.geometry.x - f(gdf.geometry.y) + lon_ref
+        transformed_gdf['geometry'] = geopandas.points_from_xy(
+            transformed_gdf['longitude_transformed'],
+            gdf.geometry.y
+        )
+
+        return transformed_gdf
 
     def get_folium_map(self, map_kwargs=None):
         """
@@ -341,7 +377,6 @@ class KrigingMesh:
         return fmap
 
     def plot_points(self, df, 
-                    # lon_name, lat_name, 
                     fmap=None, cmap_column=None,
                     color='hex', marker_kwargs={}):
         """

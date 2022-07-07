@@ -75,6 +75,7 @@ class EchoPro:
         self.geo_strata_df = None
         self.strata_ds = None
 
+        # initialization only; doesn't load data files
         self.strata_class = LoadStrataData(stratification_index,
                                            self.params['data_root_dir'],
                                            self.params['filename_strata'],
@@ -89,8 +90,11 @@ class EchoPro:
 
         self.final_biomass_table = None
 
-        self._load_files(stratification_index)
+        # self._load_files(stratification_index)
 
+        # self._compute_biomass_density()
+
+    def compute_biomass_density(self):
         self._compute_biomass_density()
 
     def _check_init_file(self):
@@ -241,7 +245,9 @@ class EchoPro:
 
         return df
 
-    def _load_files(self, stratification_index):
+    # def _load_files(self, stratification_index):
+    def load_data(self, file_types='all'):
+
         """
         Load the biological, NASC table, stratification file,
         Constructs final trawl and catch tables
@@ -262,13 +268,19 @@ class EchoPro:
         """
 
         # load specimen and length data using EchoPro variables
-        LoadBioData(self)
+        if file_types in ('biological', 'all'):
+            LoadBioData(self)
 
         # load all associated stratification data
-        self.strata_df, self.strata_ds, self.geo_strata_df = self.strata_class.get_strata_data(self.specimen_df,
-                                                                                               self.length_df)
+        if file_types in ('strata', 'all'):
+            self.strata_df, self.strata_ds, self.geo_strata_df = self.strata_class.get_strata_data(
+                self.specimen_df,
+                self.length_df
+            )
 
-        self.nasc_df = self._load_nasc_data()
+        # load NASC data
+        if file_types in ('nasc', 'all'):
+            self.nasc_df = self._load_nasc_data()
 
     def _compute_biomass_density(self):
         """
@@ -303,14 +315,20 @@ class EchoPro:
 
         return krig_mesh
 
-    def get_semi_variogram(self, x, y, field):
+    def get_semi_variogram(self, krig_mesh, params):
 
-        semi_vario = SemiVariogram(x, y, field.values.flatten())
+        semi_vario = SemiVariogram(
+            krig_mesh.transect_transf_df['x_transect'].values,
+            krig_mesh.transect_transf_df['y_transect'].values,
+            self.final_biomass_table['normalized_biomass_density'].values.flatten(),
+            params['nlag'],
+            params['lag_res']
+        )
 
         return semi_vario
 
-    def get_kriging(self):
+    def get_kriging(self, params):
 
-        krig = Kriging(self)
+        krig = Kriging(self, params)
 
         return krig

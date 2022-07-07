@@ -35,14 +35,16 @@ class SemiVariogram:
         semi-variogram calculation (e.g. biomass density).
     """
 
-    def __init__(self, x, y, field):
+    def __init__(self, x, y, field, nlag, lag_res):
 
         self.x = x
         self.y = y
         self.field = field
 
+        self.nlag = nlag
+        self.lag_res = lag_res
         # bins provided to calculate_semi_variogram
-        self._center_bins = None
+        self._center_bins = lag_res * np.arange(nlag)
 
         # standardized semi-variogram values
         self.gamma_standardized = None
@@ -58,7 +60,7 @@ class SemiVariogram:
         self._lsq_toggle = None
         self._full_params = None
 
-    def calculate_semi_variogram(self, center_bins):
+    def calculate_semi_variogram(self, center_bins=None):
         """
         Calculates the semi-variogram standardized by the
         standard deviation of the head multiplied by
@@ -76,7 +78,10 @@ class SemiVariogram:
 
         """
 
-        self._center_bins = np.sort(center_bins)
+        if center_bins is None:
+            center_bins = self._center_bins
+        else:
+            self._center_bins = np.sort(center_bins)
 
         # get upper triangular indices
         i_up_ind, j_up_ind = np.triu_indices(len(self.x), k=1)

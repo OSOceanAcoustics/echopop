@@ -20,9 +20,21 @@ class Kriging:
         self.EPro will also change this object.
     """
 
-    def __init__(self, EPro = None):
+    def __init__(self, EPro=None, params_dct=None):
 
         self.EPro = EPro
+
+        # Kriging parameters
+        self.k_max = params_dct['k_max']
+        self.k_min = params_dct['k_min']
+        self.R = params_dct['R']
+        self.ratio = params_dct['ratio']
+
+        # # parameters for semi-variogram model
+        self.s_v_params = params_dct['s_v_params']
+
+        # grab appropriate semi-variogram model
+        self.s_v_model = params_dct['s_v_model']
 
     def __compute_k_smallest_distances(self, x_mesh, x_data,
                                        y_mesh, y_data, k_max):
@@ -281,6 +293,28 @@ class Kriging:
 
         return ep_val, eps_val, vp_val
 
+    def run_biomass_kriging(self, krig_mesh):
+        epro = krig_mesh.EPro
+        
+        ep_arr, eps_arr, vp_arr = self.run_kriging(
+            krig_mesh.mesh_transf_df['x_mesh'].values,
+            krig_mesh.transect_transf_df['x_transect'].values, 
+            krig_mesh.mesh_transf_df['y_mesh'].values, 
+            krig_mesh.transect_transf_df['y_transect'].values, 
+            epro.final_biomass_table['normalized_biomass_density'],
+            self.k_max, self.k_min, self.R, self.ratio, 
+            self.s_v_params, self.s_v_model
+        )
+
+        results_gdf = krig_mesh.mesh_gdf.copy()
+        results_gdf['krig_biomass_vp'] = vp_arr
+        results_gdf['krig_biomass_ep'] = ep_arr
+        results_gdf['krig_biomass_eps'] = eps_arr
+        results_gdf["area_calc"] = epro.params['kriging_A0'] * results_gdf['Cell portion']
+        results_gdf["krig_biomass_vals"] = 1e-6 * results_gdf['krig_biomass_vp'] * results_gdf["area_calc"]
+
+        return results_gdf
+    
     def run_kriging(self, x_mesh, x_data, y_mesh, y_data, field_data,
                     k_max, k_min, R, ratio, s_v_params, s_v_model):
         """
@@ -366,17 +400,19 @@ class Kriging:
 
         return ep_arr, eps_arr, vp_arr
 
-    def plot_kriging_results(self, x_mesh, y_mesh, krig_val):
+    def plot_kriging_results(self, gdf, krig_fieldname):
 
         # TODO: formalize this function more (add kwargs, doc string, ...)
 
         fmap = folium.Map(location=[44.61, -125.66], zoom_start=4)
 
-        data = np.hstack([x_mesh[:, None], y_mesh[:, None]])
+        x_mesh = gdf.geometry.x.values
+        y_mesh = gdf.geometry.y.values
+        krig_val = gdf[krig_fieldname].values
+        data = np.hstack([y_mesh[:, None], x_mesh[:, None]])
 
         # colormap = cm.LinearColormap(colors=['#000080', '#3385ff'],
         #                              vmin=0.0, vmax=np.max(vp_arr))
-
         colormap = cm.LinearColormap(colors=['#3385ff', '#FF0000'],
                                      vmin=0.0, vmax=np.max(krig_val))
 
