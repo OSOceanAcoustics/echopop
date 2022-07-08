@@ -535,4 +535,4 @@ class ComputeBiomassDensity:
 
         self.EPro.final_biomass_table["normalized_biomass_density"] = nWgt_total_2_prop
 
-        print("We are using our own biomass density calculation!")
+        # print("We are using our own biomass density calculation!")

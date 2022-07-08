@@ -34,9 +34,6 @@ class EchoPro:
         1 = Acoustic Survey Trawl Survey
         2 = Bottom Trawl Survey
         3 = Observer Data
-    age_data_status : int
-        1 = actual age data
-        2 = from age_vs_len
     exclude_age1 : bool
         States whether age 1 hake should be included in analysis.
     stratification_index : int
@@ -53,17 +50,16 @@ class EchoPro:
                  survey_year_file_path: str,
                  source: int = 3,
                  bio_data_type: int = 1,
-                 age_data_status: int = 1,
                  exclude_age1: bool = True,
                  stratification_index: int = 1):
 
         self.bootstrapping_performed = False
 
-        self._check_init_file()
-        self._check_survey_year_file()
+        # self._check_init_file()
+        # self._check_survey_year_file()
 
         init_params = self._read_initialization_config(init_file_path)
-        init_params = self._set_params_from_init(source, bio_data_type, init_params, age_data_status)
+        init_params = self._set_params_from_init(source, bio_data_type, init_params)
 
         survey_year_params = self._read_survey_year_config(survey_year_file_path)
 
@@ -97,15 +93,15 @@ class EchoPro:
     def compute_biomass_density(self):
         self._compute_biomass_density()
 
-    def _check_init_file(self):
-        # TODO: create this function that checks the contents of the initialization config file
-        # TODO: it should make sure that certain variables are defined too
-        print("A check of the initialization file needs to be done!")
-
-    def _check_survey_year_file(self):
-        # TODO: create this function that checks the contents of the survey year config file
-        # TODO: it should make sure that certain variables are defined and all paths exist
-        print("A check of the survey year file needs to be done!")
+    # def _check_init_file(self):
+    #     # TODO: create this function that checks the contents of the initialization config file
+    #     # TODO: it should make sure that certain variables are defined too
+    #     print("A check of the initialization file needs to be done!")
+    #
+    # def _check_survey_year_file(self):
+    #     # TODO: create this function that checks the contents of the survey year config file
+    #     # TODO: it should make sure that certain variables are defined and all paths exist
+    #     print("A check of the survey year file needs to be done!")
 
     @staticmethod
     def _read_initialization_config(init_file_path):
@@ -128,7 +124,7 @@ class EchoPro:
         return survey_params
 
     @staticmethod
-    def _set_params_from_init(source: int, bio_data_type: int, init_params: dict, age_data_status: int):
+    def _set_params_from_init(source: int, bio_data_type: int, init_params: dict):
 
         # setting bio_hake_lin_bin variable to a numpy array
         init_params["bio_hake_len_bin"] = np.linspace(init_params["bio_hake_len_bin"][0],
@@ -178,7 +174,6 @@ class EchoPro:
 
         init_params["source"] = source
         init_params["bio_data_type"] = bio_data_type
-        init_params["age_data_status"] = age_data_status
 
         return init_params
 

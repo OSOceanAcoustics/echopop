@@ -419,6 +419,7 @@ class KrigingMesh:
             fmap = self.get_folium_map()
 
         if color == 'hex':
+            df = df.reset_index()  # TODO: this was specifically done for final_biomass_table, should we keep this?
             uniq_vals = df[cmap_column].unique()
             cmap = cm.get_cmap('viridis', len(uniq_vals))
             hex_color_options = {rgb[0]: to_hex(rgb[1])

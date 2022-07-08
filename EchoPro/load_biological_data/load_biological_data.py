@@ -169,12 +169,6 @@ class LoadBioData:
 
         df.drop(columns=['Species_Code'], inplace=True)
 
-        if self.EPro.params['age_data_status'] == 2:
-            raise NotImplementedError("age_data_status = 2 has not been implemented")
-        elif self.EPro.params['age_data_status'] != 1:
-            raise NotImplementedError(
-                f"age_data_status = {self.EPro.params['age_data_status']} has not been implemented")
-
         df.set_index('Haul', inplace=True)
         df.sort_index(inplace=True)
 
