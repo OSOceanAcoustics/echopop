@@ -377,6 +377,7 @@ class KrigingMesh:
         return fmap
 
     def plot_points(self, df, 
+                    name=None,
                     fmap=None, cmap_column=None,
                     color='hex', marker_kwargs={}):
         """
@@ -425,18 +426,28 @@ class KrigingMesh:
             hex_color_options = {rgb[0]: to_hex(rgb[1])
                                  for rgb in zip(uniq_vals, cmap(uniq_vals))}
 
-        for index, row in df.iterrows():
+        if name is not None:
+            fg = folium.FeatureGroup(name=name)
+            fparent = fg
+        else:
+            fparent = fmap
+        
+        
+        for _, row in df.iterrows():
             if color == 'hex':
                 color_val = hex_color_options[row[cmap_column]]
             else:
                 color_val = color
 
             # Place the markers with specific color
-            fmap.add_child(
+            fparent.add_child(
                 folium.CircleMarker(location=(row.geometry.y, row.geometry.x),
                                     radius=1,
                                     color=color_val,
                                     **marker_kwargs)
             )
+
+        if name is not None:
+            fg.add_to(fmap)
 
         return fmap
