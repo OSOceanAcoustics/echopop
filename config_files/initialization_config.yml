@@ -2,44 +2,9 @@
 # initialization parameters used in EchoPro
 
 ---
-  target_species_name: Hake       # name of the target species
-
-  opr_indx: 1                     # 1 = Redefine Data Filenames, 2 = View Parameters, 3 = Data processing
-                                  # 4 = Visualization, 5 = Report  TODO: Might only be used for GUI, look into this!
-
   #####################################################################################################################
   # Processing Parameters#
   ########################
-
-  bio_Lmin: 15                          # minimum length for age1+
-
-  len_wgt_method: 1                     # 1 = using length PDF of whole region with no gender difference
-                                        # 2 = using length PDF of whole region with gender difference
-                                        # 3 = using length PDF of each strtum
-                                        # 4 = using averaged length of of each strtum
-
-  survey_len_wgt_key_sex: 0             # 1 = both male & female over the whole survey to compute length-weight-key
-                                        # 0 = seperate male, female over the whole survey to compute length-weight-key
-
-  max_spacing: 10                       # maximum transect spacing for biomass estimate
-
-  int_for_zeros: 5                      # number of sample intervals for zeros along transect (nmi)
-
-  disp_bins: 120                        # number of bins for histogram visualization
-
-  bootstrap_cnt: 0                      # set initial bootstrapping count be zero
-
-  end_index: 9000                       # end index for transects whose sample indces are less than this number
-                                        # and whose west extend will be added zeros
-
-  add_zero_num: 10                      # number of samples added to the west extend of the transects
-
-  ordered_by_transects: 1               # flag of constructing NASC table based on the transect numbers
-
-  WA_CAN_border: 48.5                   # latitute of WA/CAN border
-
-  AK_CAN_border: 55.4                   # latitute of AK/CAN border
-
   JH_fac: 0.75                          # percent of Jolly-Hampton transects in each stratum
 
   bio_hake_len_bin: [                   # length sequence array 2 - 80 cm. This specifies the bin centers!
@@ -53,67 +18,12 @@
                   20,                   # end of sequence
                   20                    # number of points in the sequence
   ]
-
-  bio_age1_min_len: 10                  # minimum length (cm) of age1 hake
   #####################################################################################################################
 
 
   #####################################################################################################################
-  # acoustic data parameters#
-  ###########################
-
-  acoust_file_sys: 1                         # 1 = EK60, 2 = EK500,  3 = EK6
-
-  acoust_file_type: 1                        # 1 = processed, 2 = raw
-  #####################################################################################################################
-
-
-  #####################################################################################################################
-  # process parameters#
-  #####################
-
-  acoust_freq0: [18, 38, 70, 120, 200]         # all available frequencies for Shimada
-
-  acoust_freq: 38000                           # frequencies to be processed
-
-  acoust_bw: [11, 7, 7, 7, 7]                  # beamwidth (radian), this array will be multiplied by pi/180
-
-  acoust_sig_b_coef: 10**(-6.8)                # coefficient of the sigma_bs = coef *L^2
-  #####################################################################################################################
-
-
-#####################################################################################################################
-  # default visualization parameters#
-  ###################################
-
-  visual_var1: 5                          # 1 = length, 2 = age, 3 = NASC, 4 =  number, 5 = biomass
-
-  visual_var2: 2                          # 1 = transect, 2 = Lat, 3 = strata, 4 = trawl, 5 = Length, 6 = Age,
-                                          # 7 = gender, 8 = survey region, 9 = lat/lon
-
-  visual_kriged: 0                        # display quantities: 1 = kriged quantities, 0 = non-kriged quantities
-
-  visual_disp_clr_fac: 0.3                # display color scale factor
-#####################################################################################################################
-
-
-#####################################################################################################################
   # kriging parameters#
   #####################
-
-  kriging_auto: 1                         # flag for automated kriging, 1 True, 0 False
-
   kriging_A0: 6.25                        # base area of the grid cell
-
-  krig_x_res: 0.02                        # kriging resolution in lon (deg)
-
-  krig_y_res: 0.05                        # kriging resolution in lat (deg)
-
-  krig_loop: 0                            # kriging loop flag
-
-  bio_info_disp: 0                        # flag for whether or not to display biological file information
-                                          # for debugging, 0 is False, 1 is True
-#####################################################################################################################
-
-
+  #####################################################################################################################
 ...

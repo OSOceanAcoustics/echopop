@@ -9,20 +9,14 @@
   # TODO: For all excel files also include the sheet name.
 
   #####################################################################################################################
-  # Biological trawl data filenames #
-  ###################################
+  # Biological data filenames #
+  #############################
 
   # File names for the US section, these variables can be left blank
-  filename_trawl_US: Biological/US/2019_biodata_haul.xlsx
-  filename_gear_US:  Biological/US/2019_biodata_gear.xlsx
-  filename_catch_US: Biological/US/2019_biodata_catch.xlsx
   filename_length_US: Biological/US/2019_biodata_length.xlsx
   filename_specimen_US: Biological/US/2019_biodata_specimen_AGES.xlsx
 
   # File names for the Canada section, these variables can be left blank
-  filename_trawl_CAN: Biological/CAN/2019_biodata_haul_CAN.xlsx
-  filename_gear_CAN: Biological/CAN/2019_biodata_gear_CAN.xlsx
-  filename_catch_CAN: Biological/CAN/2019_biodata_catch_CAN.xlsx
   filename_length_CAN: Biological/CAN/2019_biodata_length_CAN.xlsx
   filename_specimen_CAN: Biological/CAN/2019_biodata_specimen_CAN_AGES.xlsx
   #####################################################################################################################
@@ -40,9 +34,6 @@
   filename_Transect_region_haul_age2: Stratification/US&CAN_2019_transect_region_haul_age2+ auto_20191205.xlsx
   filename_Transect_region_haul_age1: Stratification/US&CAN_2019_transect_region_haul_age1+ auto_final.xlsx
   stratification_filename: Stratification/Stratification_geographic_Lat_2019_final.xlsx
-
-  ## TODO: Maybe put variables here that will deal with the switch case statement in proc_parameters_XXXX.m
-
   #####################################################################################################################
 
 
@@ -62,26 +53,31 @@
   #####################################################################################################################
   # Additional Parameters for Survey Year #
   #########################################
-
   survey_year: 2019                     # survey year being considered
 
-  US_Ship_ID: V160                      # Ship ID, example options: V160, V21, V01
+  species_code_ID: 22500                # target species_code for the survey year
+
+  CAN_haul_offset: 200                  # The value to be added to the Canadian's haul number
+  #####################################################################################################################
+
+
+  #####################################################################################################################
+  # Parameters used for generating reports #
+  #########################################
 
   hemisphere: NW                        # north/south and west/east hemispheres
 
-  ST_BT_RT_ET_zero_removal_flag: 0      # 0 = not remove zeros before ST and after ET; 1 = remove zeros before ST and after ET
-
-  transect_offset: 0                    # transect offset added to the CAN transect when merge the uS and CAN data
-
-  age1_haul: [0]                        # trawls to be excluded if age-1 is excluded
-
-  CAN_haul_offset: 200                  # The value to be added to the Canadian's haul number
-
-  CAN_strata_num0: []                   # for combined satrta definiation file
-
   database_type: 'Oracle'               # biodata format: 'Oracle' or 'FSCS'
 
-  TS_station_num: 2                     # number of trawl sampling stations, whose data are used to compute the TS
+  # File names for the US section, these variables can be left blank
+  filename_trawl_US: Biological/US/2019_biodata_haul.xlsx
+  filename_gear_US: Biological/US/2019_biodata_gear.xlsx
+  filename_catch_US: Biological/US/2019_biodata_catch.xlsx
+
+  # File names for the Canada section, these variables can be left blank
+  filename_trawl_CAN: Biological/CAN/2019_biodata_haul_CAN.xlsx
+  filename_gear_CAN: Biological/CAN/2019_biodata_gear_CAN.xlsx
+  filename_catch_CAN: Biological/CAN/2019_biodata_catch_CAN.xlsx
   #####################################################################################################################
 
 ...
