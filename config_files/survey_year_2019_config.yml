@@ -6,11 +6,11 @@
   # directory path that contains all data needed
   data_root_dir: ../2019_consolidated_files/
 
-  # TODO: For all excel files also include the sheet name.
-
   #####################################################################################################################
   # Biological data filenames #
   #############################
+
+  # The paths defined below are concatenated with the data_root_dir set above
 
   # File names and associated sheet name for the US section, these variables can be left blank
   length_US_filename: Biological/US/2019_biodata_length.xlsx
@@ -31,14 +31,22 @@
   # Paths to stratification files #
   #################################
 
-  # The below variables are the path from data_root_dir set above
+  # The paths defined below are concatenated with the data_root_dir set above
   # any of these paths may be left blank if they are unused
-  filename_strata: Stratification/US&CAN strata 2019_final.xlsx
+
+  # file that relates the stratification to the Haul
+  strata_filename: Stratification/US&CAN strata 2019_final.xlsx
+  strata_sheetname: Base KS  # INPFC
+
+  # file that defines the geographic definition of strata
+  geo_strata_filename: Stratification/Stratification_geographic_Lat_2019_final.xlsx
+  geo_strata_sheetname: stratification1  # INPFC
+
+
   filename_processed_data_no_age1: Exports/US&CAN_detailsa_2019_table2y+_ALL_final - updated.xlsx
   filename_processed_data_all_ages: Exports/US&CAN_detailsa_2019_table1y+_ALL_final - updated.xlsx
   filename_Transect_region_haul_age2: Stratification/US&CAN_2019_transect_region_haul_age2+ auto_20191205.xlsx
   filename_Transect_region_haul_age1: Stratification/US&CAN_2019_transect_region_haul_age1+ auto_final.xlsx
-  stratification_filename: Stratification/Stratification_geographic_Lat_2019_final.xlsx
   #####################################################################################################################
 
 

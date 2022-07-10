@@ -431,7 +431,7 @@ class ComputeBiomassDensity:
         self.EPro.final_biomass_table = self.EPro.nasc_df[['Latitude', 'Longitude', 'Stratum', 'Spacing']].copy()
 
         # get df relating the haul to the stratum
-        strata_haul_df = self.EPro.strata_df.reset_index()[['Haul', 'strata']].set_index('Haul')
+        strata_haul_df = self.EPro.strata_df.reset_index()[['Haul', 'stratum']].set_index('Haul')
 
         # get all specimen data that is necessary for key generation  # TODO: we may be able to remove this line
         spec_w_strata = self.EPro.specimen_df.copy().reset_index()
@@ -483,9 +483,14 @@ class ComputeBiomassDensity:
 
         self.EPro.nasc_df['mix_sa_ratio'] = mix_sa_ratio
 
+        # bio_dense_df['n_A'] = self.EPro.nasc_df.apply(
+        #     lambda x: np.round((x.mix_sa_ratio * x.NASC) / float(self.EPro.strata_ds.sig_b.sel(stratum=x.Stratum))),
+        #     axis=1)
+
         bio_dense_df['n_A'] = self.EPro.nasc_df.apply(
-            lambda x: np.round((x.mix_sa_ratio * x.NASC) / float(self.EPro.strata_ds.sig_b.sel(strata=x.Stratum))),
+            lambda x: np.round((x.mix_sa_ratio * x.NASC) / float(self.EPro.strata_sig_b.loc[x.Stratum])),
             axis=1)
+
         # bio_dense_df['A'] = bio_dense_df['interval'] * nasc_df['Spacing']
         # bio_dense_df['N_A'] = bio_dense_df['n_A'] * bio_dense_df['A']
 

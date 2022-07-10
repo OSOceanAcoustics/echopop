@@ -4,7 +4,7 @@ import pandas as pd
 
 class LoadBioData:  # TODO: Does it make sense for this to be a class?
     """
-    This class loads and checks those files 
+    This class loads and checks those files
     associated with the biological data.
 
     Parameters
@@ -37,7 +37,7 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         """
 
         if not set(len_df.columns).intersection(self.len_cols):
-            raise NameError("Length dataframe does not contains all expected columns!")
+            raise NameError("Length dataframe does not contain all expected columns!")
 
     def _check_specimen_df(self, spec_df: pd.DataFrame):
         """
@@ -48,7 +48,7 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         """
 
         if not set(spec_df.columns).intersection(self.spec_cols):
-            raise NameError("Specimen dataframe does not contains all expected columns!")
+            raise NameError("Specimen dataframe does not contain all expected columns!")
 
     def _process_length_data_df(self, df: pd.DataFrame, haul_num_offset: int):
         """

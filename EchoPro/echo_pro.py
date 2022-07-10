@@ -72,12 +72,7 @@ class EchoPro:
 
         self.strata_df = None
         self.geo_strata_df = None
-        self.strata_ds = None
-
-        self.strata_class = LoadStrataData(stratification_index,
-                                           self.params['data_root_dir'],
-                                           self.params['filename_strata'],
-                                           self.params['stratification_filename'])
+        self.strata_sig_b = None
 
         self.length_df = None
         self.specimen_df = None
@@ -202,12 +197,11 @@ class EchoPro:
         files then assigns them as variables of the class.
         """
 
-        # load specimen and length data using EchoPro variables
+        # load specimen and length data
         LoadBioData(self)
 
         # load all associated stratification data
-        self.strata_df, self.strata_ds, self.geo_strata_df = self.strata_class.get_strata_data(self.specimen_df,
-                                                                                               self.length_df)
+        LoadStrataData(self)
 
         self.nasc_df = self._load_nasc_data()
 
