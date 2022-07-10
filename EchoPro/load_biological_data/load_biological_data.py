@@ -1,97 +1,73 @@
 import numpy as np
 import pandas as pd
-import xarray as xr
-import warnings
-import sys
 
 
-class LoadBioData:
+class LoadBioData:  # TODO: Does it make sense for this to be a class?
     """
-    A Class that loads and processes all
-    biological data
+    This class loads and checks those files 
+    associated with the biological data.
 
     Parameters
     ----------
-    EPro : EchoPro object
+    epro : EchoPro object
         An initialized EchoPro object. Note that any change to
-        self.EPro will also change this object.
+        self.epro will also change this object.
     """
 
-    def __init__(self, EPro = None):
+    def __init__(self, epro=None):
 
-        self.EPro = EPro
+        self.epro = epro
 
-        self.__load_biological_data()
+        # expected columns for length Dataframe
+        self.len_cols = {'Haul', 'Species_Code', 'Sex', 'Length', 'Frequency'}
 
-    def __process_length_data_ds_wu_jung(self, df, haul_num_offset):
+        # expected columns for specimen Dataframe
+        self.spec_cols = {'Haul', 'Species_Code', 'Sex', 'Length', 'Weight',
+                          'Age'}
+
+        self._load_length_data()
+        self._load_specimen_data()
+
+    def _check_length_df(self, len_df: pd.DataFrame):
         """
-        Process and turn the length data file into a xarray Dataset, where the frequency
-        column has not been expanded. The Dataset has coordinates Haul, Length, and Sex.
-        Parameters
-        ----------
-        df : Pandas Dataframe
-            Dataframe holding the length data
-        haul_num_offset : int
-            The value that should be added to the haul index to differentiate it from other ships
+        Ensures that the appropriate columns are
+        contained in the length Dataframe.
 
-        Returns
-        -------
-        xarray Dataset
-
-        Notes
-        -----
-        The produced Dataset is a compressed version of the true data.
+        TODO: should we add more in-depth checks here?
         """
 
-        # obtaining those columns that are required
-        df = df[['Haul', 'Species_Code', 'Sex', 'Length', 'Frequency']].copy()
+        if not set(len_df.columns).intersection(self.len_cols):
+            raise NameError("Length dataframe does not contains all expected columns!")
 
-        # extract target species
-        df = df.loc[df['Species_Code'] == self.EPro.params['species_code_ID']]
-
-        # set data types of dataframe
-        df = df.astype({'Haul': int, 'Species_Code': int, 'Sex': int, 'Length': np.float64, 'Frequency': int})
-
-        # Apply haul_num_offset
-        df['Haul'] = df['Haul'] + haul_num_offset
-
-        if self.EPro.params['exclude_age1'] is False:
-            raise NotImplementedError("Including age 1 data has not been implemented!")
-
-        df.drop(columns=['Species_Code'], inplace=True)
-
-        df.set_index(['Haul', 'Length', 'Sex'], inplace=True)
-
-        ds = df.groupby(level=[0, 1, 2]).sum().to_xarray()
-
-        ds['n'] = ds.Frequency.sum(['Length', 'Sex'])
-
-        ds['meanlen'] = (ds.Length * ds.Frequency).sum(['Length', 'Sex']) / ds.n
-
-        ds['stdlen'] = np.sqrt((((np.abs(ds.Length - ds.meanlen) ** 2) * ds.Frequency).sum(['Length', 'Sex'])) / (ds.n - 1.0))
-
-        TS0 = 20.0 * np.log10(ds.Length) - 68.0
-
-        ds['TS_lin'] = 10.0 * np.log10((10.0 ** (TS0 / 10.0) * ds.Frequency).sum(['Length', 'Sex']) / (ds.n))
-
-        ds['TS_log'] = (TS0 * ds.Frequency).sum(['Length', 'Sex']) / (ds.n)
-
-        ds['TS_sd'] = np.sqrt((((np.abs(TS0 - ds.TS_log) ** 2) * ds.Frequency).sum(['Length', 'Sex'])) / (ds.n - 1.0))
-
-        ds['nM'] = ds.sel(Sex=1).Frequency.sum('Length')
-        ds['nF'] = ds.sel(Sex=2).Frequency.sum('Length')
-
-        return ds
-
-    def __process_length_data_df(self, df, haul_num_offset):
+    def _check_specimen_df(self, spec_df: pd.DataFrame):
         """
-        Process the length data file, which includes expanding the frequencies column.
+        Ensures that the appropriate columns are
+        contained in the specimen Dataframe.
+
+        TODO: should we add more in-depth checks here?
+        """
+
+        if not set(spec_df.columns).intersection(self.spec_cols):
+            raise NameError("Specimen dataframe does not contains all expected columns!")
+
+    def _process_length_data_df(self, df: pd.DataFrame, haul_num_offset: int):
+        """
+        Processes the length dataframe by:
+        * Obtaining the required columns from the dataframe
+        * Extracting only the target species
+        * Setting the data type of each column
+        * Applying a haul offset, if necessary
+        * Replacing the length and sex columns with an array
+        of length frequency and dropping the frequency column
+        * Setting the index required for downstream processes
+
         Parameters
         ----------
         df : Pandas Dataframe
             Dataframe holding the length data
         haul_num_offset : int
             The offset that should be applied to the Haul column
+
         Returns
         -------
         Processed Dataframe
@@ -100,18 +76,20 @@ class LoadBioData:
         # obtaining those columns that are required
         df = df[['Haul', 'Species_Code', 'Sex', 'Length', 'Frequency']].copy()
 
-        # extract target species
-        df = df.loc[df['Species_Code'] == self.EPro.params['species_code_ID']]
-
         # set data types of dataframe
-        df = df.astype({'Haul': int, 'Species_Code': int, 'Sex': int, 'Length': np.float64, 'Frequency': np.float64})
+        df = df.astype({'Haul': int, 'Species_Code': int, 'Sex': int,
+                        'Length': np.float64, 'Frequency': np.float64})
 
-        # Apply haul_num_offset
+        # extract target species
+        df = df.loc[df['Species_Code'] == self.epro.params['species_code_ID']]
+
+        # Apply haul offset
         df['Haul'] = df['Haul'] + haul_num_offset
 
-        if self.EPro.params['exclude_age1'] is False:
+        if self.epro.params['exclude_age1'] is False:
             raise NotImplementedError("Including age 1 data has not been implemented!")
 
+        # remove species code column
         df.drop(columns=['Species_Code'], inplace=True)
 
         # expand length and sex columns
@@ -120,118 +98,115 @@ class LoadBioData:
         df['Sex'] = df['Sex'] * df['Frequency']
         df.drop(columns='Frequency', inplace=True)
 
-        # Group by Haul and calculate necessary statistics
+        # Group by Haul
         df = df.groupby('Haul').agg(lambda x: np.concatenate(x.values))
-        df['TS0'] = 20.0 * df['Length'].apply(lambda x: np.log10(x)) - 68.0
-        df = pd.concat([df, df.apply(lambda x: pd.Series([np.where(x.Sex == 1)[0], np.where(x.Sex == 2)[0],
-                                                          len(x.Length), np.nanmean(x.Length),
-                                                          np.nanstd(x.Length, ddof=1),
-                                                          10.0 * np.log10(np.nanmean(10.0 ** (x.TS0 / 10.0))),
-                                                          np.std(x.TS0, ddof=1), np.mean(x.TS0)],
-                                                         index=['Male_ind', 'Female_ind', 'n', 'meanlen', 'stdlen',
-                                                                'TS_lin', 'TS_sd', 'TS_log']),
-                                     result_type='expand', axis=1)], axis=1)
-        df.drop(columns='TS0', inplace=True)
-
-        # get number of female and males
-        df[['nM', 'nF']] = df.apply(lambda x: pd.Series([len(x.Male_ind), len(x.Female_ind)]), result_type='expand',
-                                    axis=1)
 
         return df
 
-    def __process_specimen_data(self, df, haul_num_offset):
+    def _process_specimen_data(self, df: pd.DataFrame, haul_num_offset: int):
         """
+        Processes the specimen dataframe by:
+        * Obtaining the required columns from the dataframe
+        * Extracting only the target species
+        * Setting the data type of each column
+        * Applying a haul offset, if necessary
+        * Setting the index required for downstream processes
+
         Parameters
         ----------
         df : Pandas Dataframe
             Dataframe holding the specimen data
         haul_num_offset : int
-            # TODO: what does this refer to? Should we account for this in the code?
+
         Returns
         -------
         Processed Dataframe
         """
 
-        df = df[['Haul', 'Species_Code', 'Sex', 'Length', 'Weight', 'Specimen_Number', 'Age']].copy()
-
-        # extract target species
-        df = df.loc[df['Species_Code'] == self.EPro.params['species_code_ID']]
+        # obtaining those columns that are required
+        df = df[['Haul', 'Species_Code', 'Sex', 'Length', 'Weight', 'Age']].copy()
 
         # set data types of dataframe
-        df = df.astype({'Haul': int, 'Species_Code': int, 'Sex': int, 'Length': np.float64, 'Weight': np.float64,
-                        'Specimen_Number': np.float64, 'Age': np.float64})
+        df = df.astype({'Haul': int, 'Species_Code': int, 'Sex': int,
+                        'Length': np.float64, 'Weight': np.float64,
+                        'Age': np.float64})
+
+        # extract target species
+        df = df.loc[df['Species_Code'] == self.epro.params['species_code_ID']]
 
         # Apply haul_num_offset
         df['Haul'] = df['Haul'] + haul_num_offset
 
-        if self.EPro.params['exclude_age1'] is False:
+        if self.epro.params['exclude_age1'] is False:
             raise NotImplementedError("Including age 1 data has not been implemented!")
 
+        # remove species code column
         df.drop(columns=['Species_Code'], inplace=True)
 
+        # set and organize index
         df.set_index('Haul', inplace=True)
         df.sort_index(inplace=True)
 
+        # perform check on data
         if len(df['Age']) - df['Age'].isna().sum() < 0.1 * len(df['Age']):
             raise RuntimeWarning('Aged data are less than 10%!\n')
 
         return df
 
-    def __load_length_data(self):
-
-        if self.EPro.params['source'] == 3:
-
-            df_us = pd.read_excel(self.EPro.params['data_root_dir'] + self.EPro.params['filename_length_US'],
-                                  sheet_name='biodata_length')
-            df_can = pd.read_excel(self.EPro.params['data_root_dir'] + self.EPro.params['filename_length_CAN'],
-                                   sheet_name='biodata_length_CAN')
-
-            # TODO: Pick an option and stick with it!!
-            # Option 1, Dataframe with array elements
-            length_us_df = self.__process_length_data_df(df_us, 0)
-            length_can_df = self.__process_length_data_df(df_can, self.EPro.params['CAN_haul_offset'])
-            self.EPro.length_df = pd.concat([length_us_df, length_can_df])
-
-            # Option 3, Dataset with Haul, Length, and Sex as coordinates
-            length_us_ds_wu_jung = self.__process_length_data_ds_wu_jung(df_us, 0)
-            length_can_ds_wu_jung = self.__process_length_data_ds_wu_jung(df_can, self.EPro.params['CAN_haul_offset'])
-            self.EPro.length_ds = length_us_ds_wu_jung.merge(length_can_ds_wu_jung)
-
-        else:
-            raise NotImplementedError(f"Source of {self.EPro.params['source']} not implemented yet.")
-
-    def __load_specimen_data(self):
-
-        if self.EPro.params['source'] == 3:
-
-            specimen_us_df = pd.read_excel(self.EPro.params['data_root_dir'] + self.EPro.params['filename_specimen_US'],
-                                           sheet_name='biodata_specimen')
-            specimen_us_df = self.__process_specimen_data(specimen_us_df, 0)
-
-            specimen_can_df = pd.read_excel(self.EPro.params['data_root_dir'] + self.EPro.params['filename_specimen_CAN']
-                                            , sheet_name='biodata_specimen_CAN')
-            specimen_can_df = self.__process_specimen_data(specimen_can_df, self.EPro.params['CAN_haul_offset'])
-
-            self.EPro.specimen_df = pd.concat([specimen_us_df, specimen_can_df])
-
-        else:
-            raise NotImplementedError(f"Source of {self.EPro.params['source']} not implemented yet.")
-
-    def __load_biological_data(self):
+    def _load_length_data(self):
         """
-        A function that loads the appropriate data based on the
-        source provided.
-
-        Returns
-        -------
-        self.length_df : Dataframe
-            A dataframe containing the length information to
-            be used downstream. If source=3 it contains US and Canada.
-        self.specimen_df : Dataframe
-            A dataframe containing the specimen information to be used
-            downstream. If source=3 it contains US and Canada.
+        Loads and prepares data associated with a station
+        that records the length and sex of the animal.
+        Additionally, it sets epro.length_df using the
+        final processed dataframe.
         """
 
-        self.__load_length_data()
+        if self.epro.params['source'] == 3:
 
-        self.__load_specimen_data()
+            # read in and check US and Canada Excel files
+            df_us = pd.read_excel(self.epro.params['data_root_dir'] + self.epro.params['length_US_filename'],
+                                  sheet_name=self.epro.params['length_US_sheet'])
+            self._check_length_df(df_us)
+
+            df_can = pd.read_excel(self.epro.params['data_root_dir'] + self.epro.params['length_CAN_filename'],
+                                   sheet_name=self.epro.params['length_CAN_sheet'])
+            self._check_length_df(df_can)
+
+            # process US and Canada dataframes
+            length_us_df = self._process_length_data_df(df_us, 0)
+            length_can_df = self._process_length_data_df(df_can, self.epro.params['CAN_haul_offset'])
+
+            # Construct full length dataframe from US and Canada sections
+            self.epro.length_df = pd.concat([length_us_df, length_can_df])
+
+        else:
+            raise NotImplementedError(f"Source of {self.epro.params['source']} not implemented yet.")
+
+    def _load_specimen_data(self):
+        """
+        Loads and prepares data associated with a station
+        that records the length, weight, age, and sex of
+        the animal. Additionally, it sets epro.specimen_df
+        using the final processed dataframe.
+        """
+
+        if self.epro.params['source'] == 3:
+
+            # read in and check US and Canada Excel files
+            specimen_us_df = pd.read_excel(self.epro.params['data_root_dir'] + self.epro.params['specimen_US_filename'],
+                                           sheet_name=self.epro.params['specimen_US_sheet'])
+            self._check_specimen_df(specimen_us_df)
+
+            specimen_can_df = pd.read_excel(self.epro.params['data_root_dir'] + self.epro.params['specimen_CAN_filename']
+                                            , sheet_name=self.epro.params['specimen_CAN_sheet'])
+            self._check_specimen_df(specimen_can_df)
+
+            # process US and Canada dataframes
+            specimen_us_df = self._process_specimen_data(specimen_us_df, 0)
+            specimen_can_df = self._process_specimen_data(specimen_can_df, self.epro.params['CAN_haul_offset'])
+
+            # Construct full specimen dataframe from US and Canada sections
+            self.epro.specimen_df = pd.concat([specimen_us_df, specimen_can_df])
+
+        else:
+            raise NotImplementedError(f"Source of {self.epro.params['source']} not implemented yet.")

@@ -80,10 +80,7 @@ class EchoPro:
                                            self.params['stratification_filename'])
 
         self.length_df = None
-        self.length_ds = None
-
         self.specimen_df = None
-
         self.nasc_df = None
 
         self.final_biomass_table = None

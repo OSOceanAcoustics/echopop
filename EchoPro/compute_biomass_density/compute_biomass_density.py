@@ -433,8 +433,8 @@ class ComputeBiomassDensity:
         # get df relating the haul to the stratum
         strata_haul_df = self.EPro.strata_df.reset_index()[['Haul', 'strata']].set_index('Haul')
 
-        # get all specimen data that is necessary for key generation
-        spec_w_strata = self.EPro.specimen_df.drop('Specimen_Number', axis=1).copy().reset_index()
+        # get all specimen data that is necessary for key generation  # TODO: we may be able to remove this line
+        spec_w_strata = self.EPro.specimen_df.copy().reset_index()
 
         # add strata column
         spec_w_strata['Strata'] = spec_w_strata.apply(lambda x: strata_haul_df.loc[x[0]],

@@ -12,13 +12,18 @@
   # Biological data filenames #
   #############################
 
-  # File names for the US section, these variables can be left blank
-  filename_length_US: Biological/US/2019_biodata_length.xlsx
-  filename_specimen_US: Biological/US/2019_biodata_specimen_AGES.xlsx
+  # File names and associated sheet name for the US section, these variables can be left blank
+  length_US_filename: Biological/US/2019_biodata_length.xlsx
+  length_US_sheet: biodata_length
+  specimen_US_filename: Biological/US/2019_biodata_specimen_AGES.xlsx
+  specimen_US_sheet: biodata_specimen
+
 
   # File names for the Canada section, these variables can be left blank
-  filename_length_CAN: Biological/CAN/2019_biodata_length_CAN.xlsx
-  filename_specimen_CAN: Biological/CAN/2019_biodata_specimen_CAN_AGES.xlsx
+  length_CAN_filename: Biological/CAN/2019_biodata_length_CAN.xlsx
+  length_CAN_sheet: biodata_length_CAN
+  specimen_CAN_filename: Biological/CAN/2019_biodata_specimen_CAN_AGES.xlsx
+  specimen_CAN_sheet: biodata_specimen_CAN
   #####################################################################################################################
 
 
