@@ -8,7 +8,7 @@ from .cv_analysis import CVAnalysis
 from .kriging import Kriging
 from .kriging_mesh import KrigingMesh
 from .semivariogram import SemiVariogram
-import pandas as pd
+from .load_nasc_data import load_nasc_data
 
 
 class EchoPro:
@@ -152,45 +152,6 @@ class EchoPro:
 
         return full_params
 
-    def _load_nasc_data(self):
-        """
-        Load VL interval-based NASC table.
-        Returns
-        -------
-        Pandas Dataframe of NASC table.
-        """
-
-        # TODO: Should we create a class for this?
-
-        if self.params['exclude_age1']:
-            df = pd.read_excel(self.params['data_root_dir'] + self.params['filename_processed_data_no_age1'],
-                               sheet_name='Sheet1')
-        else:
-            df = pd.read_excel(self.params['data_root_dir'] + self.params['filename_processed_data_all_ages'],
-                               sheet_name='Sheet1')
-
-        # obtaining those columns that are required
-        df = df[['Transect', 'Region ID', 'VL start', 'VL end', 'Latitude', 'Longitude', 'Stratum', 'Spacing',
-                 'Layer mean depth', 'Layer height', 'Bottom depth', 'NASC', 'Assigned haul']].copy()
-
-        # set data types of dataframe
-        df = df.astype({'Transect': int, 'Region ID': int, 'VL start': np.float64, 'VL end': np.float64,
-                        'Latitude': np.float64, 'Longitude': np.float64, 'Stratum': int, 'Spacing': np.float64,
-                        'Layer mean depth': np.float64, 'Layer height': np.float64, 'Bottom depth': np.float64,
-                        'NASC': np.float64, 'Assigned haul': int})
-
-        df.rename(columns={'Assigned haul': 'Haul'}, inplace=True)
-
-        if self.params['survey_year'] < 2003:
-            # TODO: it may be the case that we need to include lines 35-61 of
-            #  EchoPro/general/load_files_parameters/get_NASC_data.m
-            raise NotImplementedError("Loading the NASC table for survey years less than 2003 has not been implemented!")
-
-        else:
-            df.set_index('Transect', inplace=True)
-
-        return df
-
     def _load_files(self):
         """
         Loads the biological, NASC, and stratification
@@ -203,7 +164,7 @@ class EchoPro:
         # load all associated stratification data
         LoadStrataData(self)
 
-        self.nasc_df = self._load_nasc_data()
+        self.nasc_df = load_nasc_data.load_nasc_df(self)
 
     def _compute_biomass_density(self):
         """

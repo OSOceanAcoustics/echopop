@@ -42,11 +42,13 @@
   geo_strata_filename: Stratification/Stratification_geographic_Lat_2019_final.xlsx
   geo_strata_sheetname: stratification1  # INPFC
 
+  # file that provides NASC values, which do not include age1 values
+  nasc_no_age1_filename: Exports/US&CAN_detailsa_2019_table2y+_ALL_final - updated.xlsx
+  nasc_no_age1_sheetname: Sheet1
 
-  filename_processed_data_no_age1: Exports/US&CAN_detailsa_2019_table2y+_ALL_final - updated.xlsx
-  filename_processed_data_all_ages: Exports/US&CAN_detailsa_2019_table1y+_ALL_final - updated.xlsx
-  filename_Transect_region_haul_age2: Stratification/US&CAN_2019_transect_region_haul_age2+ auto_20191205.xlsx
-  filename_Transect_region_haul_age1: Stratification/US&CAN_2019_transect_region_haul_age1+ auto_final.xlsx
+  # file that provides NASC values, which include all ages
+  nasc_all_ages_filename: Exports/US&CAN_detailsa_2019_table1y+_ALL_final - updated.xlsx
+  nasc_all_ages_sheetname: Sheet1
   #####################################################################################################################
 
 
@@ -91,6 +93,9 @@
   filename_trawl_CAN: Biological/CAN/2019_biodata_haul_CAN.xlsx
   filename_gear_CAN: Biological/CAN/2019_biodata_gear_CAN.xlsx
   filename_catch_CAN: Biological/CAN/2019_biodata_catch_CAN.xlsx
+
+  filename_Transect_region_haul_age2: Stratification/US&CAN_2019_transect_region_haul_age2+ auto_20191205.xlsx
+  filename_Transect_region_haul_age1: Stratification/US&CAN_2019_transect_region_haul_age1+ auto_final.xlsx
   #####################################################################################################################
 
 ...
