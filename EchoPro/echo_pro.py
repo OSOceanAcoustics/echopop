@@ -50,8 +50,7 @@ class EchoPro:
                  init_file_path: str,
                  survey_year_file_path: str,
                  source: int = 3,
-                 exclude_age1: bool = True,
-                 stratification_index: int = 1):
+                 exclude_age1: bool = True):
 
         self.bootstrapping_performed = False
 
@@ -80,9 +79,8 @@ class EchoPro:
 
         self.final_biomass_table = None
 
-        self._load_files()
-
-        self._compute_biomass_density()
+        # self._load_files()
+        # self._compute_biomass_density()
 
     def _check_init_file(self):
         """"""
@@ -152,21 +150,24 @@ class EchoPro:
 
         return full_params
 
-    def _load_files(self):
+    def load_data(self, file_types='all'):
         """
         Loads the biological, NASC, and stratification
         files then assigns them as variables of the class.
         """
 
         # load specimen and length data
-        LoadBioData(self)
+        if file_types in ('biological', 'all'):
+            LoadBioData(self)
 
         # load all associated stratification data
-        LoadStrataData(self)
+        if file_types in ('strata', 'all'):
+            LoadStrataData(self)
 
-        self.nasc_df = load_nasc_data.load_nasc_df(self)
+        if file_types in ('nasc', 'all'):
+            self.nasc_df = load_nasc_data.load_nasc_df(self)
 
-    def _compute_biomass_density(self):
+    def compute_biomass_density(self):
         """
         Computes the biomass density estimate based on
         the nasc_df, strata_df, strata_ds, specimen_df,

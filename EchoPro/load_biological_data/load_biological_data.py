@@ -92,14 +92,7 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         # remove species code column
         df.drop(columns=['Species_Code'], inplace=True)
 
-        # expand length and sex columns
-        df['Frequency'] = df['Frequency'].apply(lambda x: np.ones(int(x)))
-        df['Length'] = df['Length'] * df['Frequency']
-        df['Sex'] = df['Sex'] * df['Frequency']
-        df.drop(columns='Frequency', inplace=True)
-
-        # Group by Haul
-        df = df.groupby('Haul').agg(lambda x: np.concatenate(x.values))
+        df.set_index('Haul', inplace=True)
 
         return df
 
