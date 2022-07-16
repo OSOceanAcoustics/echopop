@@ -11,20 +11,20 @@ class ComputeBiomassDensity:
 
     Parameters
     ----------
-    EPro : EchoPro object
+    epro : EchoPro object
         An initialized EchoPro object. Note that any change to
-        self.EPro will also change this object.
+        self.epro will also change this object.
     """
 
-    def __init__(self, EPro = None):
+    def __init__(self, epro = None):
 
-        self.EPro = EPro
+        self.epro = epro
 
-        self.bio_hake_len_bin = EPro.params['bio_hake_len_bin']
-        self.bio_hake_age_bin = EPro.params['bio_hake_age_bin']
+        self.bio_hake_len_bin = epro.params['bio_hake_len_bin']
+        self.bio_hake_age_bin = epro.params['bio_hake_age_bin']
 
     @staticmethod
-    def get_bin_ind(input_data: np.array, centered_bins: np.array):
+    def _get_bin_ind(input_data: np.array, centered_bins: np.array):
         """
         This function manually computes bin counts given ``input_data``. This
         function is computing the histogram of ``input_data`` using
@@ -66,234 +66,137 @@ class ComputeBiomassDensity:
 
         return hist_ind
 
-    def get_age_key_das(self, spec_w_strata, bins_len, bins_age):
+    def _generate_length_val_key(self, len_name: str, val_name: str, df: pd.DataFrame = None):
         """
-        Constructs the DataArrays corresponding to the keys
-        associated with age.
+        Generates a length-value key by
+        1. Binning the lengths
+        2. Fitting a linear regression model to the length and values points
+        3. Set bins with greater than 5 samples equal to the mean of
+        the values corresponding to that bin
+        4. Set bins with less than 5 samples equal to regression curve
+        calculated in step 2
 
         Parameters
         ----------
-        spec_w_strata : Pandas Dataframe
-            Species Dataframe with the strata as an index and
-            columns "Length", "Age", "Weight".
-        bins_len : Numpy array
-            1D numpy array specifies the bin centers for lengths.
-        bins_age : Numpy array
-            1D numpy array specifies the bin centers for ages.
+        len_name : str 
+            Name of length column in df 
+        val_name : str 
+            Name of value column in df
+        df: pd.DataFrame
+            Pandas Dataframe containing the length and value data
 
         Returns
         -------
-        The Xarray DataArrays: age_len_key_da, age_len_key_wgt_da,
-        and age_len_key_norm_da with coordinates
-        (strata, bins_len, bins_age).
-
-        """
-
-        unique_strata = np.sort(spec_w_strata.index.unique())
-
-        age_len_key = np.empty((unique_strata.shape[0],
-                                bins_len.shape[0], bins_age.shape[0]), dtype=int)
-
-        age_len_key_wgt = np.empty((unique_strata.shape[0],
-                                    bins_len.shape[0], bins_age.shape[0]), dtype=np.float64)
-
-        age_len_key_norm = np.empty((unique_strata.shape[0],
-                                     bins_len.shape[0], bins_age.shape[0]), dtype=np.float64)
-
-        stratum_i = 0
-        for stratum in unique_strata:
-
-            input_arr_len = spec_w_strata.loc[stratum].Length.values
-            input_arr_age = spec_w_strata.loc[stratum].Age.values
-            input_arr_wgt = spec_w_strata.loc[stratum].Weight.values
-
-            age_bins_ind = self.get_bin_ind(input_arr_age, bins_age)
-
-            i = 0
-            for arr_ind in age_bins_ind:
-                temp = self.get_bin_ind(input_arr_len[arr_ind], bins_len)
-                age_len_key[stratum_i, :, i] = np.array([i.shape[0] for i in temp])
-
-                age_len_key_wgt[stratum_i, :, i] = np.array([np.sum(input_arr_wgt[arr_ind[i]]) for i in temp])
-                i += 1
-
-            # normalized age_len_ky
-            age_len_key_norm[stratum_i, :, :] = age_len_key[stratum_i, :, :] / np.sum(age_len_key[stratum_i, :, :])
-
-            stratum_i += 1
-
-        age_len_key_da = xr.DataArray(data=age_len_key,
-                                      coords={'strata': unique_strata,
-                                              'len_bins': bins_len, 'age_bins': bins_age})
-
-        age_len_key_wgt_da = xr.DataArray(data=age_len_key_wgt,
-                                          coords={'strata': unique_strata,
-                                                  'len_bins': bins_len, 'age_bins': bins_age})
-
-        age_len_key_norm_da = xr.DataArray(data=age_len_key_norm,
-                                           coords={'strata': unique_strata,
-                                                   'len_bins': bins_len, 'age_bins': bins_age})
-
-        return age_len_key_da, age_len_key_wgt_da, age_len_key_norm_da
-
-    @staticmethod
-    def get_length_val_reg_vals(len_name, val_name, df: pd.DataFrame = None):
-        """
-        Obtains the regression values for a provided length and value.
-
-        Parameters
-        ----------
-        len_name : str
-            Name of column in df corresponding to the length
-        val_name : str
-            Name of column in df corresponding to the value
-        df : Pandas Dataframe
-            Dataframe containing the length and value columns
-
-
-        Returns
-        -------
-        reg_w0 and reg_p used in the calculation
-        reg_w0 * bio_hake_len_bin ** reg_p
+        len_val_key np.ndarray 
+            1D array representing the length-value key 
         """
 
         # select the indices that do not have nan in either Length or Weight
         len_wgt_nonull = np.logical_and(df[len_name].notnull(), df[val_name].notnull())
-
         df_no_null = df.loc[len_wgt_nonull]
 
+        # get numpy version of those entries that are not NaN
         L = df_no_null[len_name].values
         V = df_no_null[val_name].values
 
-        # length-value regression for all trawls (male & female)
-        x = np.log10(L)
-        y = np.log10(V)
+        # binned length indices
+        len_bin_ind = self._get_bin_ind(L, self.bio_hake_len_bin)
 
-        p = np.polyfit(x, y, 1)  # linear regression
+        # total number of lengths in a bin
+        len_bin_cnt = np.array([i.shape[0] for i in len_bin_ind])
 
+        # length-value regression
+        p = np.polyfit(np.log10(L), np.log10(V), 1)
+
+        # obtain linear regression parameters
         reg_w0 = 10.0 ** p[1]
         reg_p = p[0]
 
-        return reg_w0, reg_p
+        # value at length or length-value-key.
+        # length-value-key per fish over entire survey region (an array)
+        len_val_reg = reg_w0 * self.bio_hake_len_bin ** reg_p
 
-    def generate_length_val_key(self, bio_hake_len_bin, reg_w0, reg_p,
-                                len_name, val_name, df: pd.DataFrame = None):
+        # set length-value key to the mean of the values in the bin
+        len_val_key = np.array([np.mean(V[ind]) if ind.size > 0 else 0.0 for ind in len_bin_ind])
+
+        # replace those bins with less than 5 samples with the regression value
+        less_five_ind = np.argwhere(len_bin_cnt < 5).flatten()
+        len_val_key[less_five_ind] = len_val_reg[less_five_ind]
+
+        return len_val_key
+
+    def get_norm_len_key_station_1(self, df: pd.DataFrame):
         """
-        process length weight data (all hake trawls) to obtain
-        (1) length-weight regression or length-weight-key
-        (2) length-age keys
+        Computes the normalized length key for
+        data obtained from station 1 i.e. data
+        that tells you how many fish are of a
+        particular length.
 
         Parameters
         ----------
-        df: Pandas Dataframe
-            Pandas Dataframe describing the length weight data
+        df : pd.DataFrame
+            Data from station 1 that has columns Length and
+            Frequency.
 
+        Returns
+        -------
+        A numpy array of the normalized length key i.e. the
+        count of each bin divided by the total of all bin counts
         """
 
-        # select the indices that do not have nan in either Length or Weight
-        len_wgt_nonull = np.logical_and(df[len_name].notnull(), df[val_name].notnull())
-        df_no_null = df.loc[len_wgt_nonull]
+        # get numpy arrays of the Length and Frequency columns
+        length_arr = df.Length.values
+        freq_arr = df.Frequency.values
 
-        L = df_no_null[len_name].values
-        V = df_no_null[val_name].values
+        # binned length indices
+        len_ind = self._get_bin_ind(length_arr, self.bio_hake_len_bin)
 
-        # total number of fish individuals at length specified by bio_hake_len_bin
-        len_nALL = self.get_bin_ind(L, bio_hake_len_bin)
-        len_nALL = np.array([i.shape[0] for i in len_nALL])
+        # total number of lengths in a bin
+        len_bin_cnt = np.array([np.sum(freq_arr[i]) for i in len_ind])
 
-        # normalized length-key
-        norm_len_key_ALL = len_nALL / sum(len_nALL)
+        return len_bin_cnt / np.sum(len_bin_cnt)
 
-        if (reg_p is None) or (reg_w0 is None):
+    def get_norm_len_key_station_2(self, df: pd.DataFrame):
+        """
+        Computes the normalized length key for
+        data obtained from station 2 i.e. data
+        that does not have a frequency associated
+        with it.
 
-            # length-value regression for all trawls (male & female)
-            x = np.log10(L)
-            y = np.log10(V)
+        Parameters
+        ----------
+        df : pd.DataFrame
+            Data from station 2 that has a Length column
 
-            p = np.polyfit(x, y, 1)  # linear regression
+        Returns
+        -------
+        A numpy array of the normalized length key i.e. the
+        count of each bin divided by the total of all bin counts
+        """
 
-            reg_w0 = 10.0 ** p[1]
-            reg_p = p[0]
+        # numpy array of Length column
+        length_arr = df.Length.values
 
-        # value at length or length-value-key
-        # length-weight-key per fish over entire survey region (an array)
-        len_val_ALL = reg_w0 * bio_hake_len_bin ** reg_p
+        # binned length indices
+        len_bin_ind = self._get_bin_ind(length_arr, self.bio_hake_len_bin)
 
-        # create length-value structured relations
-        for i in range(len(len_nALL)):
+        # total number of lengths in a bin
+        len_bin_cnt = np.array([i.shape[0] for i in len_bin_ind])
 
-            # bins with less than 5 samples will be replaced by the regression curve
-            if len_nALL[i] >= 5:
-                ind = (bio_hake_len_bin[i] - 1 < L) & (
-                            L <= bio_hake_len_bin[i] + 1)
-                len_val_ALL[i] = np.mean(V[ind])
+        return len_bin_cnt / np.sum(len_bin_cnt)
 
-        return len_val_ALL, len_nALL, norm_len_key_ALL
+    def _get_age_weight_keys(self, df, age_name, len_name):
 
-    def get_weight_key_das(self, spec_w_strata, bins_len, reg_w0, reg_p, len_name='Length',
-                           val_name='Weight'):
+        # TODO: document/comment this!
 
-        unique_strata = np.sort(spec_w_strata.index.unique())
+        input_arr_len = df[len_name].values
+        input_arr_age = df[age_name].values
+        input_arr_wgt = df.Weight.values
 
-        len_wgt_key = np.empty((unique_strata.shape[0], bins_len.shape[0]))
-        len_wgt_key[:, :] = np.nan
+        age_bins_ind = self._get_bin_ind(input_arr_age, self.bio_hake_age_bin)
+        len_bin_ind = self._get_bin_ind(input_arr_len[age_bins_ind[0]], self.bio_hake_len_bin)
 
-        len_key = np.empty((unique_strata.shape[0], bins_len.shape[0]))
-        len_key[:, :] = np.nan
-
-        len_key_norm = np.empty((unique_strata.shape[0], bins_len.shape[0]))
-        len_key_norm[:, :] = np.nan
-
-        stratum_i = 0
-        for stratum in unique_strata:
-            l_w_k, l_k, l_k_n = self.generate_length_val_key(bins_len, reg_w0, reg_p,
-                                                             len_name=len_name,
-                                                             val_name=val_name,
-                                                             df=spec_w_strata.loc[stratum])
-
-            len_wgt_key[stratum_i, :] = l_w_k
-            len_key[stratum_i, :] = l_k
-            len_key_norm[stratum_i, :] = l_k_n
-
-            stratum_i += 1
-
-        len_wgt_key_da = xr.DataArray(data=len_wgt_key,
-                                      coords={'strata': unique_strata, 'len_bins': bins_len})
-
-        len_key_da = xr.DataArray(data=len_key,
-                                  coords={'strata': unique_strata, 'len_bins': bins_len})
-
-        len_key_norm_da = xr.DataArray(data=len_key_norm,
-                                       coords={'strata': unique_strata, 'len_bins': bins_len})
-
-        return len_wgt_key_da, len_key_da, len_key_norm_da
-
-    def get_norm_len_key(self, len_strata, bins_len):
-
-        input_data = len_strata['Length'].values
-        input_data_freq = len_strata['Frequency'].values
-        len_ind = self.get_bin_ind(input_data, bins_len)
-        len_key = np.array([np.sum(input_data_freq[i]) for i in len_ind])
-        len_key_n = len_key / np.sum(len_key)
-
-        return len_key_n
-
-    def get_age_related_sums(self, spec_strata_M, spec_strata_F, bins_len, bins_age):
-
-        input_df = pd.concat([spec_strata_M, spec_strata_F], axis=0)
-
-        # TODO: clean up outputs of this function call
-        _, _, age_len_key_norm_da = self.get_age_key_das(input_df, bins_len, bins_age)
-        _, _, age_len_key_norm_M_da = self.get_age_key_das(spec_strata_M, bins_len, bins_age)
-        _, _, age_len_key_norm_F_da = self.get_age_key_das(spec_strata_F, bins_len, bins_age)
-
-        len_age_key_sum = age_len_key_norm_da.isel(strata=0).sum(dim='age_bins').values
-
-        len_age_key_M_sum = age_len_key_norm_M_da.isel(strata=0).sum(dim='age_bins').values
-
-        len_age_key_F_sum = age_len_key_norm_F_da.isel(strata=0).sum(dim='age_bins').values
-
-        return len_age_key_sum, len_age_key_M_sum, len_age_key_F_sum
+        return np.array([np.sum(input_arr_wgt[age_bins_ind[0][i]]) for i in len_bin_ind]).sum() / input_arr_wgt.sum()
 
     def _compute_proportions(self, spec_strata_M, spec_strata_F,
                              len_strata, len_strata_M, len_strata_F):
@@ -335,83 +238,135 @@ class ComputeBiomassDensity:
 
         return spec_M_prop + len_M_prop, spec_F_prop + len_F_prop, fac1_M, fac1_F, fac2_M, fac2_F, fac1_ALL, fac2_ALL
 
-    def get_biomass_constants(self, bins_len, bins_age):
+    def _fill_len_wgt_prod(self, bio_const_df: pd.DataFrame,
+                           stratum: int, spec_drop_df: pd.DataFrame,
+                           length_drop_df: pd.DataFrame, len_weight_key: np.array):
+        """
+
+
+        Parameters
+        ----------
+        bio_const_df : pd.DataFrame
+        stratum : int
+        spec_drop_df : pd.DataFrame
+        length_drop_df : pd.DataFrame
+        len_weight_key : np.array
+
+        Returns
+        -------
+
+        """
+
+        # TODO: document and comment!
+
+        # get specimen in the stratum and split sort into males and females
+        spec_stratum = spec_drop_df.loc[stratum]
+        spec_strata_m = spec_stratum[spec_stratum['Sex'] == 1]
+        spec_strata_f = spec_stratum[spec_stratum['Sex'] == 2]
+
+        # get lengths in the stratum and split sort into males and females
+        len_strata = length_drop_df.loc[stratum]
+        len_strata_m = len_strata[len_strata['Sex'] == 1]
+        len_strata_f = len_strata[len_strata['Sex'] == 2]
+
+        # get the normalized length keys for station 1
+        len_key_all_s1 = self.get_norm_len_key_station_1(len_strata)
+        len_key_m_s1 = self.get_norm_len_key_station_1(len_strata_m)
+        len_key_f_s1 = self.get_norm_len_key_station_1(len_strata_f)
+
+        # get the normalized length keys for station 2
+        # len_key_all_s2 = self.get_norm_len_key_station_2(spec_stratum)  # TODO: this is what should be done!
+        spec_stratum_mf = pd.concat([spec_strata_m, spec_strata_f], axis=0)
+        len_key_all_s2 = self.get_norm_len_key_station_2(spec_stratum_mf)
+        len_key_m_s2 = self.get_norm_len_key_station_2(spec_strata_m)
+        len_key_f_s2 = self.get_norm_len_key_station_2(spec_strata_f)
+
+        # TODO: stopped here!
+
+        m_prop, f_prop, fac1_m, fac1_f, fac2_m, \
+        fac2_f, fac1_all, fac2_all = self._compute_proportions(spec_strata_m, spec_strata_f,
+                                                               len_strata, len_strata_m, len_strata_f)
+
+        bio_const_df.M_prop.loc[stratum] = m_prop
+        bio_const_df.F_prop.loc[stratum] = f_prop
+
+        bio_const_df.len_wgt_prod.loc[stratum] = np.dot(fac1_all * len_key_all_s1 + fac2_all * len_key_all_s2,
+                                                        len_weight_key)
+        bio_const_df.len_wgt_M_prod.loc[stratum] = np.dot(fac1_m * len_key_m_s1 + fac2_m * len_key_m_s2,
+                                                          len_weight_key)
+        bio_const_df.len_wgt_F_prod.loc[stratum] = np.dot(fac1_f * len_key_f_s1 + fac2_f * len_key_f_s2,
+                                                          len_weight_key)
+
+        return bio_const_df
+
+    def _get_biomass_constants(self):
         """
         Obtains the constants associated with each stratum,
-        which are used in the biomass density calculation
+        which are used in the biomass density calculation.
+        Specifically, we obtain the following constants for
+        each stratum:
+        * M_prop -- proportion of males
+        * F_prop -- proportion of females
+        * len_wgt_prod -- product of the length-key and
+        the weight-key for the whole population
+        * len_wgt_M_prod -- product of the length-key and
+        the weight-key for the male population
+        * len_wgt_F_prod -- product of the length-key and
+        the weight-key for the female population
+
+        Returns
+        -------
+        bio_const_df : pd.Dataframe
+            Dataframe with index of stratum and columns
+            corresponding to the constants specified
+            above.
         """
 
-        # TODO: clean up this code!
-
-        # determine the strata that are in specimen_df and length_df
-        spec_strata_ind = self.EPro.specimen_df.index.unique()
-        len_strata_ind = self.EPro.length_df.index.unique()
+        # determine the strata that are in both specimen_df and length_df
+        spec_strata_ind = self.epro.specimen_df.index.unique()
+        len_strata_ind = self.epro.length_df.index.unique()
         strata_ind = spec_strata_ind.intersection(len_strata_ind).values
 
         # obtain the length-weight key for all specimen data
-        len_weight_ALL, _, _ = self.generate_length_val_key(bins_len, reg_w0=None, reg_p=None,
-                                                            len_name='Length',
-                                                            val_name='Weight',
-                                                            df=self.EPro.specimen_df)
+        len_weight_ALL = self._generate_length_val_key(len_name='Length',
+                                                       val_name='Weight',
+                                                       df=self.epro.specimen_df)
 
         # select the indices that do not have nan in either Length or Weight
-        spec_w_strata = self.EPro.specimen_df.dropna(how='any')
+        spec_drop = self.epro.specimen_df.dropna(how='any')
 
         # select the indices that do not have nan in either Length or Weight
-        length_drop_df = self.EPro.length_df.dropna(how='any')
+        length_drop_df = self.epro.length_df.dropna(how='any')
 
         # initialize dataframe that will hold all important calculated constants
         bio_const_df = pd.DataFrame(columns=['M_prop', 'F_prop', 'len_wgt_prod',
                                              'len_wgt_M_prod', 'len_wgt_F_prod'],
                                     index=strata_ind, dtype=np.float64)
 
-        print("put into a new function!")
+        # for each stratum compute the necessary constants
         for stratum in strata_ind:
-
-            spec_strata = spec_w_strata.loc[stratum]
-            spec_strata_M = spec_strata[spec_strata['Sex'] == 1]
-            spec_strata_F = spec_strata[spec_strata['Sex'] == 2]
-            len_strata = length_drop_df.loc[stratum]
-            len_strata_M = len_strata[len_strata['Sex'] == 1]
-            len_strata_F = len_strata[len_strata['Sex'] == 2]
-
-            len_age_key_sum, len_age_key_M_sum, len_age_key_F_sum \
-                = self.get_age_related_sums(spec_strata_M, spec_strata_F, bins_len, bins_age)
-
-            M_prop, F_prop, fac1_M, fac1_F, fac2_M, \
-            fac2_F, fac1_ALL, fac2_ALL = self._compute_proportions(spec_strata_M, spec_strata_F,
-                                                                   len_strata, len_strata_M, len_strata_F)
-
-            bio_const_df.M_prop.loc[stratum] = M_prop
-            bio_const_df.F_prop.loc[stratum] = F_prop
-
-            len_key_n = self.get_norm_len_key(len_strata, bins_len)
-            len_key_M = self.get_norm_len_key(len_strata_M, bins_len)
-            len_key_F = self.get_norm_len_key(len_strata_F, bins_len)
-
-            bio_const_df.len_wgt_prod.loc[stratum] = np.dot(fac1_ALL * len_key_n + fac2_ALL * len_age_key_sum, len_weight_ALL)
-            bio_const_df.len_wgt_M_prod.loc[stratum] = np.dot(fac1_M * len_key_M + fac2_M * len_age_key_M_sum, len_weight_ALL)
-            bio_const_df.len_wgt_F_prod.loc[stratum] = np.dot(fac1_F * len_key_F + fac2_F * len_age_key_F_sum, len_weight_ALL)
+            bio_const_df = self._fill_len_wgt_prod(bio_const_df, stratum, spec_drop,
+                                                        length_drop_df, len_weight_ALL)
 
         return bio_const_df
 
     def _add_stratum_column(self):
         """
-        Adds the "stratum" column to self.EPro.strata_df
-        and self.EPro.length_df. Additionally, this
+        Adds the "stratum" column to self.epro.strata_df
+        and self.epro.length_df. Additionally, this
         function will set the index to "stratum".
         """
 
         # get df relating the haul to the stratum
-        strata_haul_df = self.EPro.strata_df.reset_index()[['Haul', 'stratum']].set_index('Haul')
+        strata_haul_df = self.epro.strata_df.reset_index()[['Haul', 'stratum']].set_index('Haul')
 
         # add stratum column to strata_df and set it as the index
-        self.EPro.specimen_df['stratum'] = strata_haul_df.loc[self.EPro.specimen_df.index]
-        self.EPro.specimen_df.set_index('stratum', inplace=True)
+        self.epro.specimen_df['stratum'] = strata_haul_df.loc[self.epro.specimen_df.index]
+        self.epro.specimen_df.set_index('stratum', inplace=True)
 
         # add stratum column to length_df and set it as the index
-        self.EPro.length_df['stratum'] = strata_haul_df.loc[self.EPro.length_df.index]
-        self.EPro.length_df.set_index('stratum', inplace=True)
+        self.epro.length_df['stratum'] = strata_haul_df.loc[self.epro.length_df.index]
+        self.epro.length_df.set_index('stratum', inplace=True)
 
     def get_final_biomass_table(self):
 
@@ -420,7 +375,7 @@ class ComputeBiomassDensity:
         # add stratum column to length and specimen df and set it as the index
         self._add_stratum_column()
 
-        bc_df = self.get_biomass_constants(self.bio_hake_len_bin, self.bio_hake_age_bin)
+        bc_df = self._get_biomass_constants()
 
         # TODO: should we include the below code that is commented out?
         # # calculates the interval for the area calculation
@@ -435,17 +390,17 @@ class ComputeBiomassDensity:
         # ind_outliers = np.argwhere(np.abs(interval - median_interval) > 0.05).flatten()
         # interval[ind_outliers] = nasc_df['VL end'].values[ind_outliers] - nasc_df['VL start'].values[ind_outliers]
 
-        bio_dense_df = self.EPro.nasc_df[['Stratum', 'NASC', 'Haul']].copy()
+        bio_dense_df = self.epro.nasc_df[['Stratum', 'NASC', 'Haul']].copy()
         # bio_dense_df['interval'] = interval
 
-        wgt_vals = self.EPro.strata_df.reset_index().set_index('Haul')['wt']
+        wgt_vals = self.epro.strata_df.reset_index().set_index('Haul')['wt']
         wgt_vals_ind = wgt_vals.index
 
-        mix_sa_ratio = self.EPro.nasc_df.apply(lambda x: wgt_vals[x.Haul] if x.Haul in wgt_vals_ind else 0.0, axis=1)
-        self.EPro.nasc_df['mix_sa_ratio'] = mix_sa_ratio
+        mix_sa_ratio = self.epro.nasc_df.apply(lambda x: wgt_vals[x.Haul] if x.Haul in wgt_vals_ind else 0.0, axis=1)
+        self.epro.nasc_df['mix_sa_ratio'] = mix_sa_ratio
 
-        bio_dense_df['n_A'] = self.EPro.nasc_df.apply(
-            lambda x: np.round((x.mix_sa_ratio * x.NASC) / float(self.EPro.strata_sig_b.loc[x.Stratum])),
+        bio_dense_df['n_A'] = self.epro.nasc_df.apply(
+            lambda x: np.round((x.mix_sa_ratio * x.NASC) / float(self.epro.strata_sig_b.loc[x.Stratum])),
             axis=1)
 
         # bio_dense_df['A'] = bio_dense_df['interval'] * nasc_df['Spacing']
@@ -453,7 +408,6 @@ class ComputeBiomassDensity:
 
         # expand the bio constants dataframe so that it corresponds to bio_dense_df
         bc_expanded_df = bc_df.loc[bio_dense_df.Stratum.values]
-
 
         bio_dense_df['nntk_male'] = np.round(bio_dense_df.n_A.values * bc_expanded_df.M_prop.values)
         bio_dense_df['nntk_female'] = np.round(bio_dense_df.n_A.values * bc_expanded_df.F_prop.values)
@@ -470,25 +424,39 @@ class ComputeBiomassDensity:
         # TODO: This is necessary to match the Matlab output
         #  in theory this should be done when we load the df,
         #  however, this changes the results slightly.
-        spec_drop = self.EPro.specimen_df.dropna(how='any')
+        spec_drop = self.epro.specimen_df.dropna(how='any')
 
-        age_len_key_da, age_len_key_wgt_da, age_len_key_norm_da = self.get_age_key_das(spec_drop,
-                                                                                       self.bio_hake_len_bin,
-                                                                                       self.bio_hake_age_bin)
+        # age_len_key_da, age_len_key_wgt_da, age_len_key_norm_da = self.get_age_key_das(spec_drop)
 
         # TODO: it would probably be better to do an average of station 1 and 2 here... (Chu doesn't do this)
-        age_len_key_wgt_norm_da = age_len_key_wgt_da / age_len_key_wgt_da.sum(dim=['len_bins', 'age_bins'])
+        # age_len_key_wgt_norm_da = age_len_key_wgt_da / age_len_key_wgt_da.sum(dim=['len_bins', 'age_bins'])
+
+        # bran_cool = age_len_key_wgt_norm_da.isel(age_bins=0).sum(dim='len_bins') / age_len_key_wgt_norm_da.sum(dim=['len_bins', 'age_bins'])
+        # print(f"bran_cool = {bran_cool}")
+        # print(age_len_key_wgt_da.isel(age_bins=0).sum(dim='len_bins'))
+        # print(" ")
 
         # each stratum's multiplier once normalized weight has been calculated
-        age2_wgt_proportion_da = 1.0 - age_len_key_wgt_norm_da.isel(age_bins=0).sum(
-            dim='len_bins') / age_len_key_wgt_norm_da.sum(dim=['len_bins', 'age_bins'])
+        stratum_ind = spec_drop.index.unique()
+        age2_wgt_proportion_df = pd.DataFrame(columns=['val'], index=stratum_ind)
+        for i in stratum_ind:
+            # print(spec_drop.loc[i].Weight.sum())
+            out = self._get_age_weight_keys(spec_drop.loc[i], age_name="Age", len_name="Length")
+            age2_wgt_proportion_df.loc[i].val = 1.0 - out
+
+        # each stratum's multiplier once normalized weight has been calculated
+        # age2_wgt_proportion_da = 1.0 - age_len_key_wgt_norm_da.isel(age_bins=0).sum(
+        #     dim='len_bins') / age_len_key_wgt_norm_da.sum(dim=['len_bins', 'age_bins'])
+
+        # nWgt_total_2_prop = bio_dense_df.apply(
+        #     lambda x: x.nWgt_total * float(age2_wgt_proportion_da.sel(strata=x.Stratum)),
+        #     axis=1)
 
         nWgt_total_2_prop = bio_dense_df.apply(
-            lambda x: x.nWgt_total * float(age2_wgt_proportion_da.sel(strata=x.Stratum)),
-            axis=1)
+            lambda x: x.nWgt_total * float(age2_wgt_proportion_df.loc[x.Stratum]), axis=1)
 
         # minimal columns to do Jolly Hampton CV on data that has not been kriged
-        self.EPro.final_biomass_table = self.EPro.nasc_df[['Latitude', 'Longitude', 'Stratum', 'Spacing']].copy()
-        self.EPro.final_biomass_table["normalized_biomass_density"] = nWgt_total_2_prop
+        self.epro.final_biomass_table = self.epro.nasc_df[['Latitude', 'Longitude', 'Stratum', 'Spacing']].copy()
+        self.epro.final_biomass_table["normalized_biomass_density"] = nWgt_total_2_prop
 
         print("We are using our own biomass density calculation!")
