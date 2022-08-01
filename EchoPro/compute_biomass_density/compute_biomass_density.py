@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 from typing import Tuple, List
-import EchoPro.survey as Survey
 
 
 class ComputeBiomassDensity:
@@ -17,7 +16,7 @@ class ComputeBiomassDensity:
         self.survey will also change this object.
     """
 
-    def __init__(self, survey: Survey = None):
+    def __init__(self, survey=None):
 
         self.survey = survey
 

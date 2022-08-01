@@ -1,6 +1,5 @@
 import pandas as pd
 import numpy as np
-import EchoPro.survey as Survey
 
 
 nasc_cols = {'Transect', 'VL start', 'VL end', 'Latitude', 'Longitude',
@@ -19,7 +18,7 @@ def _check_nasc_df(nasc_df: pd.DataFrame) -> None:
         raise NameError("NASC dataframe does not contain all expected columns!")
 
 
-def load_nasc_df(survey: Survey) -> pd.DataFrame:
+def load_nasc_df(survey) -> pd.DataFrame:
     """
     Load VL interval-based NASC table.
 

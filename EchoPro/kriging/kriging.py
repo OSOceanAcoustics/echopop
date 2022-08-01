@@ -2,7 +2,6 @@ import numpy as np
 import folium
 import branca.colormap as cm
 from ..numba_modules import nb_subtract_outer, nb_dis_mat
-import EchoPro.survey as Survey
 
 
 class Kriging:
@@ -17,7 +16,7 @@ class Kriging:
         self.survey will also change this object.
     """
 
-    def __init__(self, survey: Survey = None):
+    def __init__(self, survey=None):
 
         self.survey = survey
 

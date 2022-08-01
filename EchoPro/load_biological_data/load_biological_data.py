@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-import EchoPro.survey as Survey
 
 
 class LoadBioData:  # TODO: Does it make sense for this to be a class?
@@ -15,7 +14,7 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         self.survey will also change this object.
     """
 
-    def __init__(self, survey: Survey = None):
+    def __init__(self, survey=None):
 
         self.survey = survey
 

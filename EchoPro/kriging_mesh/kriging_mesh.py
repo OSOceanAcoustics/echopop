@@ -7,7 +7,6 @@ import geopandas
 from shapely.geometry import Polygon
 from shapely.ops import unary_union
 from scipy import interpolate
-import EchoPro.survey as Survey
 
 
 class KrigingMesh:
@@ -23,7 +22,7 @@ class KrigingMesh:
         self.survey will also change this object.
     """
 
-    def __init__(self, survey: Survey = None):
+    def __init__(self, survey=None):
 
         self.survey = survey
 
