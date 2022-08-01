@@ -28,7 +28,7 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         self._load_length_data()
         self._load_specimen_data()
 
-    def _check_length_df(self, len_df: pd.DataFrame):
+    def _check_length_df(self, len_df: pd.DataFrame) -> None:
         """
         Ensures that the appropriate columns are
         contained in the length Dataframe.
@@ -39,7 +39,7 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         if not set(len_df.columns).intersection(self.len_cols):
             raise NameError("Length dataframe does not contain all expected columns!")
 
-    def _check_specimen_df(self, spec_df: pd.DataFrame):
+    def _check_specimen_df(self, spec_df: pd.DataFrame) -> None:
         """
         Ensures that the appropriate columns are
         contained in the specimen Dataframe.
@@ -50,7 +50,8 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         if not set(spec_df.columns).intersection(self.spec_cols):
             raise NameError("Specimen dataframe does not contain all expected columns!")
 
-    def _process_length_data_df(self, df: pd.DataFrame, haul_num_offset: int):
+    def _process_length_data_df(self, df: pd.DataFrame,
+                                haul_num_offset: int) -> pd.DataFrame:
         """
         Processes the length dataframe by:
         * Obtaining the required columns from the dataframe
@@ -96,7 +97,8 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
 
         return df
 
-    def _process_specimen_data(self, df: pd.DataFrame, haul_num_offset: int):
+    def _process_specimen_data(self, df: pd.DataFrame,
+                               haul_num_offset: int) -> pd.DataFrame:
         """
         Processes the specimen dataframe by:
         * Obtaining the required columns from the dataframe
@@ -146,7 +148,7 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
 
         return df
 
-    def _load_length_data(self):
+    def _load_length_data(self) -> None:
         """
         Loads and prepares data associated with a station
         that records the length and sex of the animal.
@@ -175,7 +177,7 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         else:
             raise NotImplementedError(f"Source of {self.epro.params['source']} not implemented yet.")
 
-    def _load_specimen_data(self):
+    def _load_specimen_data(self) -> None:
         """
         Loads and prepares data associated with a station
         that records the length, weight, age, and sex of

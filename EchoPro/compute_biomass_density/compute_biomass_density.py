@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from typing import Tuple, List
 
 
 class ComputeBiomassDensity:
@@ -23,7 +24,8 @@ class ComputeBiomassDensity:
         self.bio_hake_age_bin = epro.params['bio_hake_age_bin']
 
     @staticmethod
-    def _get_bin_ind(input_data: np.array, centered_bins: np.array):
+    def _get_bin_ind(input_data: np.ndarray,
+                     centered_bins: np.ndarray) -> List[np.ndarray]:
         """
         This function manually computes bin counts given ``input_data``. This
         function is computing the histogram of ``input_data`` using
@@ -36,14 +38,14 @@ class ComputeBiomassDensity:
 
         Parameters
         ----------
-        input_data: numpy array
+        input_data: np.ndarray
             The data to create a histogram of.
-        centered_bins: numpy array
+        centered_bins: np.ndarray
             An array that specifies the bin centers.
 
         Returns
         -------
-        hist_ind: numpy array
+        hist_ind: list
             The index values of input_data corresponding to the histogram
 
         """
@@ -69,7 +71,7 @@ class ComputeBiomassDensity:
 
         return hist_ind
 
-    def _add_stratum_column(self):
+    def _add_stratum_column(self) -> None:
         """
         Adds the "stratum" column to self.epro.strata_df
         and self.epro.length_df. Additionally, this
@@ -87,7 +89,8 @@ class ComputeBiomassDensity:
         self.epro.length_df['stratum'] = strata_haul_df.loc[self.epro.length_df.index]
         self.epro.length_df.set_index('stratum', inplace=True)
 
-    def _generate_length_val_key(self, len_name: str, val_name: str, df: pd.DataFrame = None):
+    def _generate_length_val_key(self, len_name: str, val_name: str,
+                                 df: pd.DataFrame = None) -> np.ndarray:
         """
         Generates a length-value key by
         1. Binning the lengths
@@ -108,7 +111,7 @@ class ComputeBiomassDensity:
 
         Returns
         -------
-        len_val_key np.ndarray 
+        len_val_key : np.ndarray
             1D array representing the length-value key 
         """
 
@@ -146,7 +149,7 @@ class ComputeBiomassDensity:
 
         return len_val_key
 
-    def _get_norm_len_key_station_1(self, df: pd.DataFrame):
+    def _get_norm_len_key_station_1(self, df: pd.DataFrame) -> np.ndarray:
         """
         Computes the normalized length key for
         data obtained from station 1 i.e. data
@@ -177,7 +180,7 @@ class ComputeBiomassDensity:
 
         return len_bin_cnt / np.sum(len_bin_cnt)
 
-    def _get_norm_len_key_station_2(self, df: pd.DataFrame):
+    def _get_norm_len_key_station_2(self, df: pd.DataFrame) -> np.ndarray:
         """
         Computes the normalized length key for
         data obtained from station 2 i.e. data
@@ -207,9 +210,9 @@ class ComputeBiomassDensity:
         return len_bin_cnt / np.sum(len_bin_cnt)
 
     @staticmethod
-    def _compute_proportions(spec_strata_m: pd.DataFrame,
-                             spec_strata_f: pd.DataFrame, len_strata: pd.DataFrame,
-                             len_strata_m: pd.DataFrame, len_strata_f: pd.DataFrame):
+    def _compute_proportions(spec_strata_m: pd.DataFrame, spec_strata_f: pd.DataFrame,
+                             len_strata: pd.DataFrame, len_strata_m: pd.DataFrame,
+                             len_strata_f: pd.DataFrame) -> Tuple[list, list, list, list]:
         """
         Computes proportions needed for biomass density
         calculation.
@@ -291,7 +294,8 @@ class ComputeBiomassDensity:
 
     def _fill_len_wgt_prod(self, bio_const_df: pd.DataFrame,
                            stratum: int, spec_drop_df: pd.DataFrame,
-                           length_drop_df: pd.DataFrame, len_weight_key: np.array):
+                           length_drop_df: pd.DataFrame,
+                           len_weight_key: np.array) -> pd.DataFrame:
         """
         Fills in the biomass constant dataframe for a
         particular stratum.
@@ -353,7 +357,7 @@ class ComputeBiomassDensity:
 
         return bio_const_df
 
-    def _get_biomass_constants(self):
+    def _get_biomass_constants(self) -> pd.DataFrame:
         """
         Obtains the constants associated with each stratum,
         which are used in the biomass density calculation.
@@ -405,7 +409,7 @@ class ComputeBiomassDensity:
         return bio_const_df
 
     @staticmethod
-    def _get_interval(nasc_df: pd.DataFrame):
+    def _get_interval(nasc_df: pd.DataFrame) -> np.ndarray:
         """
         Calculates the interval needed for the area calculation.
 
@@ -416,7 +420,7 @@ class ComputeBiomassDensity:
 
         Returns
         -------
-        interval : pd.Series
+        interval : np.ndarray
             Intervals needed for area calculation
         """
 
@@ -438,7 +442,7 @@ class ComputeBiomassDensity:
 
         return interval
 
-    def _get_tot_norm_wgt(self, bc_df: pd.DataFrame, n_A: pd.Series):
+    def _get_tot_norm_wgt(self, bc_df: pd.DataFrame, n_A: pd.Series) -> np.ndarray:
         """
         Calculates the total normalized weight
         for each NASC value.
@@ -463,14 +467,14 @@ class ComputeBiomassDensity:
         nntk_female = np.round(n_A.values * bc_expanded_df.F_prop.values)
 
         # compute the normalized weight for males, females, and unsexed
-        nWgt_male = nntk_male * bc_expanded_df.len_wgt_M_prod.values
-        nWgt_female = nntk_female * bc_expanded_df.len_wgt_F_prod.values
-        nWgt_unsexed = (n_A.values - nntk_male - nntk_female) * bc_expanded_df.len_wgt_prod.values
+        nwgt_male = nntk_male * bc_expanded_df.len_wgt_M_prod.values
+        nwgt_female = nntk_female * bc_expanded_df.len_wgt_F_prod.values
+        nwgt_unsexed = (n_A.values - nntk_male - nntk_female) * bc_expanded_df.len_wgt_prod.values
 
         # compute the total normalized weight
-        return nWgt_male + nWgt_female + nWgt_unsexed
+        return nwgt_male + nwgt_female + nwgt_unsexed
 
-    def _get_age_weight_key(self, df: pd.DataFrame):
+    def _get_age_weight_key(self, df: pd.DataFrame) -> float:
         """
         Computes the normalized weight of animals
         in the first age bin.
@@ -500,7 +504,7 @@ class ComputeBiomassDensity:
         # normalized weight for the first age bin
         return np.array([np.sum(input_arr_wgt[age_bins_ind[0][i]]) for i in len_bin_ind]).sum() / input_arr_wgt.sum()
 
-    def _get_normalized_biomass_density(self, nwgt_total: np.array):
+    def _get_normalized_biomass_density(self, nwgt_total: np.ndarray) -> np.ndarray:
         """
         Computes and returns the normalized
         biomass density.
@@ -529,7 +533,7 @@ class ComputeBiomassDensity:
         # normalized biomass density
         return nwgt_total * age2_wgt_prop_df.loc[self.epro.nasc_df.Stratum.values].values.flatten()
 
-    def _construct_biomass_table(self, norm_bio_dense: np.array):
+    def _construct_biomass_table(self, norm_bio_dense: np.array) -> None:
         """
         Constructs self.epro.final_biomass_table, which
         contains the normalized biomass density.
@@ -554,7 +558,7 @@ class ComputeBiomassDensity:
         # calculate the total number of fish in a given area
         # self.epro.final_biomass_table["N_A"] = n_A * A
 
-    def get_final_biomass_table(self):
+    def get_final_biomass_table(self) -> None:
         """
         Orchestrates the calculation of the normalized
         biomass density and creation of

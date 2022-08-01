@@ -4,7 +4,7 @@ import numpy as np
 from .load_biological_data import LoadBioData
 from .load_stratification_data import LoadStrataData
 from .compute_biomass_density import ComputeBiomassDensity
-from .cv_analysis import CVAnalysis
+from .cv_analysis import cv_analysis
 from .kriging import Kriging
 from .kriging_mesh import KrigingMesh
 from .semivariogram import SemiVariogram
@@ -15,7 +15,7 @@ class EchoPro:
     """
     EchoPro base class that imports and prepares parameters for
     later processes. Additionally, it includes functions for
-    accessing the classes associated with the biomass density
+    accessing the modules associated with the biomass density
     calculation, CV analysis, semi-variogram algorithm, and
     Kriging.
 
@@ -26,25 +26,12 @@ class EchoPro:
     survey_year_file_path : str
         A string specifying the path to the survey year YAML file
     source : int
-        Define the region of data to use.
+        The region of data to use.
         1 = US
         2 = Canada
         3 = US and Canada
-    bio_data_type : int
-        Specifies the biological data to be used.
-        1 = Acoustic Survey Trawl Survey
-        2 = Bottom Trawl Survey
-        3 = Observer Data
     exclude_age1 : bool
         States whether age 1 hake should be included in analysis.
-    stratification_index : int
-        Index for the chosen stratification
-        0 = INPFC strata
-        1 = KS (trawl)-based
-        2-6 = geographically based but close to trawl-based stratification
-        7 = mix-proportion, rather than 85% & 20% hake/hake-mix rules
-        10 = one stratum for the whole survey
-
     """
     def __init__(self,
                  init_file_path: str,
@@ -52,52 +39,52 @@ class EchoPro:
                  source: int = 3,
                  exclude_age1: bool = True):
 
-        self.bootstrapping_performed = False
-
-        self._check_init_file()
-        self._check_survey_year_file()
+        self._check_init_file(init_file_path)
+        self._check_survey_year_file(survey_year_file_path)
 
         # read initialization configuration file
         init_params = self._read_config(init_file_path)
-
         init_params = self._set_params_from_init(source, init_params)
 
         # read survey year configuration file
         survey_year_params = self._read_config(survey_year_file_path)
 
+        # assign parameters from configuration files and init params
         self.params = self._collect_parameters(init_params, survey_year_params)
-
         self.params['exclude_age1'] = exclude_age1
 
+        # initialize all class variables
         self.strata_df = None
         self.geo_strata_df = None
         self.strata_sig_b = None
-
         self.length_df = None
         self.specimen_df = None
         self.nasc_df = None
-
         self.final_biomass_table = None
 
-        # self._load_files()
-        # self._compute_biomass_density()
-
-    def _check_init_file(self):
+    @staticmethod
+    def _check_init_file(init_file_path: str) -> None:
         """"""
         # TODO: create this function that checks the contents of the initialization config file
         # TODO: it should make sure that certain variables are defined too
         print("A check of the initialization file needs to be done!")
 
-    def _check_survey_year_file(self):
+    @staticmethod
+    def _check_survey_year_file(survey_year_file_path: str) -> None:
         # TODO: create this function that checks the contents of the survey year config file
         # TODO: it should make sure that certain variables are defined and all paths exist
         print("A check of the survey year file needs to be done!")
 
     @staticmethod
-    def _read_config(file_path):
+    def _read_config(file_path: str) -> dict:
         """
         Reads configuration files and returns a dictionary
         with the parameters specified in the file.
+
+        Parameters
+        ----------
+        file_path: str
+            Path to configuration file.
         """
 
         with open(file_path) as f:
@@ -106,10 +93,25 @@ class EchoPro:
         return params
 
     @staticmethod
-    def _set_params_from_init(source: int, init_params: dict):
+    def _set_params_from_init(source: int, init_params: dict) -> dict:
         """
         Constructs and assigns important variables using
         parameters from the initialization configuration file.
+
+        Parameters
+        ----------
+        source : int
+            The region of data to use.
+            1 = US
+            2 = Canada
+            3 = US and Canada
+        init_params : dict
+            Parameters obtained from the initialization file
+
+        Returns
+        -------
+        init_params : dict
+            The input ``init_params`` with additional variables
         """
 
         # setting bio_hake_lin_bin variable to a numpy array
@@ -128,10 +130,24 @@ class EchoPro:
 
         return init_params
 
-    def _collect_parameters(self, init_params, survey_params):
+    @staticmethod
+    def _collect_parameters(init_params: dict, survey_params: dict) -> dict:
         """
         Collects all parameters defined in the initialization
         and survey year configuration files  into one variable.
+
+        Parameters
+        ----------
+        init_params : dict
+            Parameters obtained from the initialization file
+        survey_params : dict
+            Parameters obtained from the survey year file
+
+        Returns
+        -------
+        full_params : dict
+            All parameters obtained from both the survey year
+            and initialization configuration files
         """
 
         # check to make sure no survey year and initialization parameters are the same
@@ -139,6 +155,7 @@ class EchoPro:
 
         # if no parameters are the same, then run process, else return error
         if not param_intersect:
+
             # combine survey year and initialization parameters into one dictionary
             full_params = {}
             full_params.update(init_params)
@@ -150,21 +167,50 @@ class EchoPro:
 
         return full_params
 
-    def load_data(self, file_types='all'):
+    def load_survey_data(self, file_type: str = 'all') -> None:
         """
         Loads the biological, NASC, and stratification
-        files then assigns them as variables of the class.
+        data using parameters obtained from the configuration
+        files.
+
+        Parameters
+        ----------
+        file_type : str
+            Specifies what survey data should be loaded.
+            Possible options:
+            - 'all' -> loads all survey data
+            - 'biological' -> only loads the biological data
+            - 'strata' -> only loads the stratification data
+            - 'nasc' -> only loads the NASC data
+
+        Notes
+        -----
+        This function assigns class variables obtained from loading the
+        data. Specifically, the following class variables are created
+        for the file_type:
+        - ``file_type='biological'``
+            - ``self.length_df``
+            - ``self.specimen_df``
+        - ``file_type='strata'``
+            - ``self.strata_df``
+            - ``self.geo_strata_df``
+            - ``self.strata_sig_b``
+        - `file_type='nasc'``
+            - ``self.nasc_df``
         """
 
+        if file_type not in ['all', 'biological', 'strata', 'nasc']:
+            raise ValueError("file_type must be 'all', 'biological', 'strata', or 'nasc'!")
+
         # load specimen and length data
-        if file_types in ('biological', 'all'):
+        if file_type in ('biological', 'all'):
             LoadBioData(self)
 
         # load all associated stratification data
-        if file_types in ('strata', 'all'):
+        if file_type in ('strata', 'all'):
             LoadStrataData(self)
 
-        if file_types in ('nasc', 'all'):
+        if file_type in ('nasc', 'all'):
             self.nasc_df = load_nasc_data.load_nasc_df(self)
 
     def compute_biomass_density(self):
@@ -187,12 +233,12 @@ class EchoPro:
         else:
             nr = 10000  # number of realizations
 
-        cva = CVAnalysis(self)
-
         if kriged_data:
             raise NotImplementedError("CV analysis for kriged data has not been implemented")
         else:
-            return cva.run_jolly_hampton(nr, lat_INPFC, self.final_biomass_table, seed)
+            return cv_analysis.run_jolly_hampton(nr, lat_INPFC,
+                                                 self.final_biomass_table,
+                                                 self.params["JH_fac"], seed)
 
     def get_kriging_mesh(self):
 

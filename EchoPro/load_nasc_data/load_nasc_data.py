@@ -6,7 +6,7 @@ nasc_cols = {'Transect', 'VL start', 'VL end', 'Latitude', 'Longitude',
              'Stratum', 'Spacing', 'NASC', 'Assigned haul'}
 
 
-def _check_nasc_df(nasc_df: pd.DataFrame):
+def _check_nasc_df(nasc_df: pd.DataFrame) -> None:
     """
     Ensures that the appropriate columns are
     contained in the NASC Dataframe.
@@ -18,7 +18,7 @@ def _check_nasc_df(nasc_df: pd.DataFrame):
         raise NameError("NASC dataframe does not contain all expected columns!")
 
 
-def load_nasc_df(epro):
+def load_nasc_df(epro) -> pd.DataFrame:
     """
     Load VL interval-based NASC table.
 

@@ -30,7 +30,7 @@ class LoadStrataData:  # TODO: Does it make sense for this to be a class?
         self._load_geographic_stratification()
         self._get_strata_sig_b()
 
-    def _check_strata_df(self, strata_df: pd.DataFrame):
+    def _check_strata_df(self, strata_df: pd.DataFrame) -> None:
         """
         Ensures that the appropriate columns are
         contained in the stratification Dataframe.
@@ -41,7 +41,7 @@ class LoadStrataData:  # TODO: Does it make sense for this to be a class?
         if not set(strata_df.columns).intersection(self.strata_cols):
             raise NameError("Strata dataframe does not contain all expected columns!")
 
-    def _load_stratification_file(self):
+    def _load_stratification_file(self) -> None:
         """
         Loads and checks the stratification file associated
         with relating the stratification to the Haul.
@@ -75,7 +75,7 @@ class LoadStrataData:  # TODO: Does it make sense for this to be a class?
         else:
             raise NotImplementedError(f"strata_filename has unknown sheet name!")
 
-    def _check_geo_strata_df(self, geo_strata_df: pd.DataFrame):
+    def _check_geo_strata_df(self, geo_strata_df: pd.DataFrame) -> None:
         """
         Ensures that the appropriate columns are
         contained in the geographic stratification Dataframe.
@@ -86,7 +86,7 @@ class LoadStrataData:  # TODO: Does it make sense for this to be a class?
         if not set(geo_strata_df.columns).intersection(self.geo_strata_cols):
             raise NameError("geo_strata dataframe does not contain all expected columns!")
 
-    def _load_geographic_stratification(self):
+    def _load_geographic_stratification(self) -> None:
         """
         Loads and checks the geographic stratification
         file defining the stratum and the associated
@@ -117,7 +117,7 @@ class LoadStrataData:  # TODO: Does it make sense for this to be a class?
         else:
             raise NotImplementedError(f"geo_strata_filename has unknown sheet name!")
 
-    def _get_strata_sig_b(self):
+    def _get_strata_sig_b(self) -> None:
         """
         Computes the backscattering cross-section (sigma_b),
         using the strata, specimen, and length dataframes.
