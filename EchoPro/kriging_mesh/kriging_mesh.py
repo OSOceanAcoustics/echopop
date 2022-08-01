@@ -1,7 +1,5 @@
 import numpy as np
 import pandas as pd
-import warnings
-import sys
 from matplotlib.colors import to_hex
 from matplotlib import cm
 import folium
@@ -9,6 +7,7 @@ import geopandas
 from shapely.geometry import Polygon
 from shapely.ops import unary_union
 from scipy import interpolate
+import EchoPro.survey as Survey
 
 
 class KrigingMesh:
@@ -19,14 +18,14 @@ class KrigingMesh:
 
     Parameters
     ----------
-    EPro : EchoPro object
-        An initialized EchoPro object. Note that any change to
-        self.EPro will also change this object.
+    survey : Survey
+        An initialized Survey object. Note that any change to
+        self.survey will also change this object.
     """
 
-    def __init__(self, EPro = None):
+    def __init__(self, survey: Survey = None):
 
-        self.EPro = EPro
+        self.survey = survey
 
         # Default parameters for the folium map
         self.folium_map_kwargs = {
@@ -50,7 +49,7 @@ class KrigingMesh:
         """
 
         df = pd.read_excel(
-            self.EPro.params['data_root_dir'] + self.EPro.params['filename_grid_cell'],
+            self.survey.params['data_root_dir'] + self.survey.params['filename_grid_cell'],
             sheet_name='krigedgrid2_5nm_forChu')  # TODO: make the sheet name an input
 
         # obtaining those columns that are required
@@ -83,7 +82,7 @@ class KrigingMesh:
         """
 
         df = pd.read_excel(
-            self.EPro.params['data_root_dir'] + self.EPro.params['filename_smoothed_contour'],
+            self.survey.params['data_root_dir'] + self.survey.params['filename_smoothed_contour'],
             sheet_name='Smoothing_EasyKrig')  # TODO: make the sheet name an input
 
         # obtaining those columns that are required

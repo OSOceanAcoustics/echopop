@@ -4,7 +4,7 @@
 ---
 
   # directory path that contains all data needed
-  data_root_dir: ../2019_consolidated_files/
+  data_root_dir: ../../2019_consolidated_files/
 
   #####################################################################################################################
   # Biological data filenames #

@@ -1,20 +1,20 @@
 import yaml
 import numpy as np
 # from .run_bootstrapping import RunBootstrapping
-from .load_biological_data import LoadBioData
-from .load_stratification_data import LoadStrataData
-from .compute_biomass_density import ComputeBiomassDensity
-from .cv_analysis import cv_analysis
-from .kriging import Kriging
-from .kriging_mesh import KrigingMesh
-from .semivariogram import SemiVariogram
-from .load_nasc_data import load_nasc_data
+from ..load_biological_data import LoadBioData
+from ..load_stratification_data import LoadStrataData
+from ..compute_biomass_density import ComputeBiomassDensity
+from ..cv_analysis import cv_analysis
+from ..kriging import Kriging
+from ..kriging_mesh import KrigingMesh
+from ..semivariogram import SemiVariogram
+from ..load_nasc_data import load_nasc_data
 
 
-class EchoPro:
+class Survey:
     """
     EchoPro base class that imports and prepares parameters for
-    later processes. Additionally, it includes functions for
+    a survey. Additionally, it includes functions for
     accessing the modules associated with the biomass density
     calculation, CV analysis, semi-variogram algorithm, and
     Kriging.

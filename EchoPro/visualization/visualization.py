@@ -1,4 +1,4 @@
-from ..echo_pro import EchoPro
+from ..survey import Survey
 
 
 class Visualize:
@@ -13,9 +13,9 @@ class Visualize:
     """
 
     def __init__(self,
-                 echopro: EchoPro):
+                 survey: Survey):
 
-        if echopro.bootstrapping_performed:
+        if survey.bootstrapping_performed:
             print("Plotting ...")
         else:
             raise RuntimeError("Bootstrapping must be performed first!")

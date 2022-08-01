@@ -1,11 +1,8 @@
 import numpy as np
-import numba as nb
-import math
-import warnings
-import sys
 import folium
 import branca.colormap as cm
 from ..numba_modules import nb_subtract_outer, nb_dis_mat
+import EchoPro.survey as Survey
 
 
 class Kriging:
@@ -15,14 +12,14 @@ class Kriging:
 
     Parameters
     ----------
-    EPro : EchoPro object
-        An initialized EchoPro object. Note that any change to
-        self.EPro will also change this object.
+    survey : Survey
+        An initialized Survey object. Note that any change to
+        self.survey will also change this object.
     """
 
-    def __init__(self, EPro = None):
+    def __init__(self, survey: Survey = None):
 
-        self.EPro = EPro
+        self.survey = survey
 
     def __compute_k_smallest_distances(self, x_mesh, x_data,
                                        y_mesh, y_data, k_max):

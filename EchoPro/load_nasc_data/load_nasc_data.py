@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import EchoPro.survey as Survey
 
 
 nasc_cols = {'Transect', 'VL start', 'VL end', 'Latitude', 'Longitude',
@@ -18,14 +19,14 @@ def _check_nasc_df(nasc_df: pd.DataFrame) -> None:
         raise NameError("NASC dataframe does not contain all expected columns!")
 
 
-def load_nasc_df(epro) -> pd.DataFrame:
+def load_nasc_df(survey: Survey) -> pd.DataFrame:
     """
     Load VL interval-based NASC table.
 
     Parameters
     ----------
-    epro : EchoPro object
-        An initialized EchoPro object
+    survey : Survey
+        An initialized Survey object
 
     Returns
     -------
@@ -33,12 +34,12 @@ def load_nasc_df(epro) -> pd.DataFrame:
     """
 
     # select and check the appropriate nasc data file
-    if epro.params['exclude_age1']:
-        df = pd.read_excel(epro.params['data_root_dir'] + epro.params['nasc_no_age1_filename'],
-                           sheet_name=epro.params['nasc_no_age1_sheetname'])
+    if survey.params['exclude_age1']:
+        df = pd.read_excel(survey.params['data_root_dir'] + survey.params['nasc_no_age1_filename'],
+                           sheet_name=survey.params['nasc_no_age1_sheetname'])
     else:
-        df = pd.read_excel(epro.params['data_root_dir'] + epro.params['nasc_all_ages_filename'],
-                           sheet_name=epro.params['nasc_all_ages_sheetname'])
+        df = pd.read_excel(survey.params['data_root_dir'] + survey.params['nasc_all_ages_filename'],
+                           sheet_name=survey.params['nasc_all_ages_sheetname'])
     _check_nasc_df(df)
 
     # obtaining those columns that are required
@@ -53,7 +54,7 @@ def load_nasc_df(epro) -> pd.DataFrame:
     # rename column TODO: in the future require Haul as the column name
     df.rename(columns={'Assigned haul': 'Haul'}, inplace=True)
 
-    if epro.params['survey_year'] < 2003:
+    if survey.params['survey_year'] < 2003:
         # TODO: it may be the case that we need to include lines 35-61 of
         #  EchoPro/general/load_files_parameters/get_NASC_data.m
         raise NotImplementedError("Loading the NASC table for survey years less than 2003 has not been implemented!")

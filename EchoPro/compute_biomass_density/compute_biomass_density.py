@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from typing import Tuple, List
+import EchoPro.survey as Survey
 
 
 class ComputeBiomassDensity:
@@ -11,17 +12,17 @@ class ComputeBiomassDensity:
 
     Parameters
     ----------
-    epro : EchoPro object
-        An initialized EchoPro object. Note that any change to
-        self.epro will also change this object.
+    survey : Survey
+        An initialized Survey object. Note that any change to
+        self.survey will also change this object.
     """
 
-    def __init__(self, epro = None):
+    def __init__(self, survey: Survey = None):
 
-        self.epro = epro
+        self.survey = survey
 
-        self.bio_hake_len_bin = epro.params['bio_hake_len_bin']
-        self.bio_hake_age_bin = epro.params['bio_hake_age_bin']
+        self.bio_hake_len_bin = survey.params['bio_hake_len_bin']
+        self.bio_hake_age_bin = survey.params['bio_hake_age_bin']
 
     @staticmethod
     def _get_bin_ind(input_data: np.ndarray,
@@ -73,21 +74,21 @@ class ComputeBiomassDensity:
 
     def _add_stratum_column(self) -> None:
         """
-        Adds the "stratum" column to self.epro.strata_df
-        and self.epro.length_df. Additionally, this
+        Adds the "stratum" column to self.survey.strata_df
+        and self.survey.length_df. Additionally, this
         function will set the index to "stratum".
         """
 
         # get df relating the haul to the stratum
-        strata_haul_df = self.epro.strata_df.reset_index()[['Haul', 'stratum']].set_index('Haul')
+        strata_haul_df = self.survey.strata_df.reset_index()[['Haul', 'stratum']].set_index('Haul')
 
         # add stratum column to strata_df and set it as the index
-        self.epro.specimen_df['stratum'] = strata_haul_df.loc[self.epro.specimen_df.index]
-        self.epro.specimen_df.set_index('stratum', inplace=True)
+        self.survey.specimen_df['stratum'] = strata_haul_df.loc[self.survey.specimen_df.index]
+        self.survey.specimen_df.set_index('stratum', inplace=True)
 
         # add stratum column to length_df and set it as the index
-        self.epro.length_df['stratum'] = strata_haul_df.loc[self.epro.length_df.index]
-        self.epro.length_df.set_index('stratum', inplace=True)
+        self.survey.length_df['stratum'] = strata_haul_df.loc[self.survey.length_df.index]
+        self.survey.length_df.set_index('stratum', inplace=True)
 
     def _generate_length_val_key(self, len_name: str, val_name: str,
                                  df: pd.DataFrame = None) -> np.ndarray:
@@ -381,20 +382,20 @@ class ComputeBiomassDensity:
         """
 
         # determine the strata that are in both specimen_df and length_df
-        spec_strata_ind = self.epro.specimen_df.index.unique()
-        len_strata_ind = self.epro.length_df.index.unique()
+        spec_strata_ind = self.survey.specimen_df.index.unique()
+        len_strata_ind = self.survey.length_df.index.unique()
         strata_ind = spec_strata_ind.intersection(len_strata_ind).values
 
         # obtain the length-weight key for all specimen data
         len_weight_spec = self._generate_length_val_key(len_name='Length',
                                                         val_name='Weight',
-                                                        df=self.epro.specimen_df)
+                                                        df=self.survey.specimen_df)
 
         # select the indices that do not have nan in either Length or Weight
-        spec_drop = self.epro.specimen_df.dropna(how='any')
+        spec_drop = self.survey.specimen_df.dropna(how='any')
 
         # select the indices that do not have nan in either Length or Weight
-        length_drop_df = self.epro.length_df.dropna(how='any')
+        length_drop_df = self.survey.length_df.dropna(how='any')
 
         # initialize dataframe that will hold all important calculated constants
         bio_const_df = pd.DataFrame(columns=['M_prop', 'F_prop', 'len_wgt_prod',
@@ -460,7 +461,7 @@ class ComputeBiomassDensity:
         """
 
         # expand the bio constants dataframe so that it corresponds to nasc_df
-        bc_expanded_df = bc_df.loc[self.epro.nasc_df.Stratum.values]
+        bc_expanded_df = bc_df.loc[self.survey.nasc_df.Stratum.values]
 
         # compute the normalized biomass density for males and females
         nntk_male = np.round(n_A.values * bc_expanded_df.M_prop.values)
@@ -522,7 +523,7 @@ class ComputeBiomassDensity:
         # TODO: This is necessary to match the Matlab output
         #  in theory this should be done when we load the df,
         #  however, this changes the results slightly.
-        spec_drop = self.epro.specimen_df.dropna(how='any')
+        spec_drop = self.survey.specimen_df.dropna(how='any')
 
         # each stratum's multiplier once normalized weight has been calculated
         stratum_ind = spec_drop.index.unique()
@@ -531,11 +532,11 @@ class ComputeBiomassDensity:
             age2_wgt_prop_df.loc[i].val = 1.0 - self._get_age_weight_key(spec_drop.loc[i])
 
         # normalized biomass density
-        return nwgt_total * age2_wgt_prop_df.loc[self.epro.nasc_df.Stratum.values].values.flatten()
+        return nwgt_total * age2_wgt_prop_df.loc[self.survey.nasc_df.Stratum.values].values.flatten()
 
     def _construct_biomass_table(self, norm_bio_dense: np.array) -> None:
         """
-        Constructs self.epro.final_biomass_table, which
+        Constructs self.survey.final_biomass_table, which
         contains the normalized biomass density.
 
         Parameters
@@ -545,24 +546,24 @@ class ComputeBiomassDensity:
         """
 
         # minimal columns to do Jolly Hampton CV on data that has not been kriged
-        self.epro.final_biomass_table = self.epro.nasc_df[['Latitude', 'Longitude', 'Stratum', 'Spacing']].copy()
-        self.epro.final_biomass_table["normalized_biomass_density"] = norm_bio_dense
+        self.survey.final_biomass_table = self.survey.nasc_df[['Latitude', 'Longitude', 'Stratum', 'Spacing']].copy()
+        self.survey.final_biomass_table["normalized_biomass_density"] = norm_bio_dense
 
         # TODO: should we include the below values in the final biomass table?
         # calculates the interval for the area calculation
-        # self.epro.final_biomass_table["interval"] = self._get_interval(self.epro.nasc_df)
+        # self.survey.final_biomass_table["interval"] = self._get_interval(self.survey.nasc_df)
 
         # calculate the area corresponding to the NASC value
-        # self.epro.final_biomass_table["Area"] = interval * self.epro.nasc_df['Spacing']
+        # self.survey.final_biomass_table["Area"] = interval * self.survey.nasc_df['Spacing']
 
         # calculate the total number of fish in a given area
-        # self.epro.final_biomass_table["N_A"] = n_A * A
+        # self.survey.final_biomass_table["N_A"] = n_A * A
 
     def get_final_biomass_table(self) -> None:
         """
         Orchestrates the calculation of the normalized
         biomass density and creation of
-        self.epro.final_biomass_table, which contains
+        self.survey.final_biomass_table, which contains
         the normalized biomass density and associated
         useful variables.
         """
@@ -573,13 +574,13 @@ class ComputeBiomassDensity:
         bc_df = self._get_biomass_constants()
 
         # calculate proportion coefficient for mixed species
-        wgt_vals = self.epro.strata_df.reset_index().set_index('Haul')['wt']
+        wgt_vals = self.survey.strata_df.reset_index().set_index('Haul')['wt']
         wgt_vals_ind = wgt_vals.index
-        mix_sa_ratio = self.epro.nasc_df.apply(lambda x: wgt_vals[x.Haul] if x.Haul in wgt_vals_ind else 0.0, axis=1)
+        mix_sa_ratio = self.survey.nasc_df.apply(lambda x: wgt_vals[x.Haul] if x.Haul in wgt_vals_ind else 0.0, axis=1)
 
         # calculate the nautical areal density
-        n_A = np.round((mix_sa_ratio*self.epro.nasc_df.NASC) /
-                       self.epro.strata_sig_b.loc[self.epro.nasc_df.Stratum].values)
+        n_A = np.round((mix_sa_ratio*self.survey.nasc_df.NASC) /
+                       self.survey.strata_sig_b.loc[self.survey.nasc_df.Stratum].values)
 
         # total normalized weight for each n_A value
         nwgt_total = self._get_tot_norm_wgt(bc_df, n_A)

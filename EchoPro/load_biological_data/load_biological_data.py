@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import EchoPro.survey as Survey
 
 
 class LoadBioData:  # TODO: Does it make sense for this to be a class?
@@ -9,14 +10,14 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
 
     Parameters
     ----------
-    epro : EchoPro object
-        An initialized EchoPro object. Note that any change to
-        self.epro will also change this object.
+    survey : Survey
+        An initialized Survey object. Note that any change to
+        self.survey will also change this object.
     """
 
-    def __init__(self, epro=None):
+    def __init__(self, survey: Survey = None):
 
-        self.epro = epro
+        self.survey = survey
 
         # expected columns for length Dataframe
         self.len_cols = {'Haul', 'Species_Code', 'Sex', 'Length', 'Frequency'}
@@ -82,12 +83,12 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
                         'Length': np.float64, 'Frequency': np.float64})
 
         # extract target species
-        df = df.loc[df['Species_Code'] == self.epro.params['species_code_ID']]
+        df = df.loc[df['Species_Code'] == self.survey.params['species_code_ID']]
 
         # Apply haul offset
         df['Haul'] = df['Haul'] + haul_num_offset
 
-        if self.epro.params['exclude_age1'] is False:
+        if self.survey.params['exclude_age1'] is False:
             raise NotImplementedError("Including age 1 data has not been implemented!")
 
         # remove species code column
@@ -127,12 +128,12 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
                         'Age': np.float64})
 
         # extract target species
-        df = df.loc[df['Species_Code'] == self.epro.params['species_code_ID']]
+        df = df.loc[df['Species_Code'] == self.survey.params['species_code_ID']]
 
         # Apply haul_num_offset
         df['Haul'] = df['Haul'] + haul_num_offset
 
-        if self.epro.params['exclude_age1'] is False:
+        if self.survey.params['exclude_age1'] is False:
             raise NotImplementedError("Including age 1 data has not been implemented!")
 
         # remove species code column
@@ -152,56 +153,56 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         """
         Loads and prepares data associated with a station
         that records the length and sex of the animal.
-        Additionally, it sets epro.length_df using the
+        Additionally, it sets survey.length_df using the
         final processed dataframe.
         """
 
-        if self.epro.params['source'] == 3:
+        if self.survey.params['source'] == 3:
 
             # read in and check US and Canada Excel files
-            df_us = pd.read_excel(self.epro.params['data_root_dir'] + self.epro.params['length_US_filename'],
-                                  sheet_name=self.epro.params['length_US_sheet'])
+            df_us = pd.read_excel(self.survey.params['data_root_dir'] + self.survey.params['length_US_filename'],
+                                  sheet_name=self.survey.params['length_US_sheet'])
             self._check_length_df(df_us)
 
-            df_can = pd.read_excel(self.epro.params['data_root_dir'] + self.epro.params['length_CAN_filename'],
-                                   sheet_name=self.epro.params['length_CAN_sheet'])
+            df_can = pd.read_excel(self.survey.params['data_root_dir'] + self.survey.params['length_CAN_filename'],
+                                   sheet_name=self.survey.params['length_CAN_sheet'])
             self._check_length_df(df_can)
 
             # process US and Canada dataframes
             length_us_df = self._process_length_data_df(df_us, 0)
-            length_can_df = self._process_length_data_df(df_can, self.epro.params['CAN_haul_offset'])
+            length_can_df = self._process_length_data_df(df_can, self.survey.params['CAN_haul_offset'])
 
             # Construct full length dataframe from US and Canada sections
-            self.epro.length_df = pd.concat([length_us_df, length_can_df])
+            self.survey.length_df = pd.concat([length_us_df, length_can_df])
 
         else:
-            raise NotImplementedError(f"Source of {self.epro.params['source']} not implemented yet.")
+            raise NotImplementedError(f"Source of {self.survey.params['source']} not implemented yet.")
 
     def _load_specimen_data(self) -> None:
         """
         Loads and prepares data associated with a station
         that records the length, weight, age, and sex of
-        the animal. Additionally, it sets epro.specimen_df
+        the animal. Additionally, it sets survey.specimen_df
         using the final processed dataframe.
         """
 
-        if self.epro.params['source'] == 3:
+        if self.survey.params['source'] == 3:
 
             # read in and check US and Canada Excel files
-            specimen_us_df = pd.read_excel(self.epro.params['data_root_dir'] + self.epro.params['specimen_US_filename'],
-                                           sheet_name=self.epro.params['specimen_US_sheet'])
+            specimen_us_df = pd.read_excel(self.survey.params['data_root_dir'] + self.survey.params['specimen_US_filename'],
+                                           sheet_name=self.survey.params['specimen_US_sheet'])
             self._check_specimen_df(specimen_us_df)
 
-            specimen_can_df = pd.read_excel(self.epro.params['data_root_dir'] + self.epro.params['specimen_CAN_filename']
-                                            , sheet_name=self.epro.params['specimen_CAN_sheet'])
+            specimen_can_df = pd.read_excel(self.survey.params['data_root_dir'] + self.survey.params['specimen_CAN_filename']
+                                            , sheet_name=self.survey.params['specimen_CAN_sheet'])
             self._check_specimen_df(specimen_can_df)
 
             # process US and Canada dataframes
             specimen_us_df = self._process_specimen_data(specimen_us_df, 0)
-            specimen_can_df = self._process_specimen_data(specimen_can_df, self.epro.params['CAN_haul_offset'])
+            specimen_can_df = self._process_specimen_data(specimen_can_df, self.survey.params['CAN_haul_offset'])
 
             # Construct full specimen dataframe from US and Canada sections
-            self.epro.specimen_df = pd.concat([specimen_us_df, specimen_can_df])
+            self.survey.specimen_df = pd.concat([specimen_us_df, specimen_can_df])
 
         else:
-            raise NotImplementedError(f"Source of {self.epro.params['source']} not implemented yet.")
+            raise NotImplementedError(f"Source of {self.survey.params['source']} not implemented yet.")

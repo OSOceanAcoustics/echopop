@@ -1,6 +1,7 @@
-from ..echo_pro import EchoPro
+from ..survey.survey import Survey
 import pandas as pd
 import numpy as np
+import xarray as xr
 
 
 class GenerateReports:
@@ -16,14 +17,14 @@ class GenerateReports:
     """
 
     def __init__(self,
-                 echopro: EchoPro):
+                 survey: Survey):
 
-        if echopro.bootstrapping_performed:
+        if survey.bootstrapping_performed:
             print("Generate all consolidated files")
         else:
             raise RuntimeError("Bootstrapping must be performed first!")
 
-        self.EPro = echopro
+        self.EPro = survey
 
     def __process_gear_data(self, df):
         """
