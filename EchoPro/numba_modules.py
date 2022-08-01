@@ -1,6 +1,7 @@
 import numba as nb
 import numpy as np
 import math
+from typing import Tuple
 
 
 @nb.njit(nb.float64[:, :](nb.float64[:], nb.float64[:]), parallel=True)
@@ -43,7 +44,8 @@ def nb_diff_sqrd(a, b):
 ##############################################
 
 @nb.njit
-def compute_mean_var_density(distance, field, num_ind):
+def compute_mean_var_density(distance: np.ndarray, field: np.ndarray,
+                             num_ind: int) -> Tuple[float, float]:
     """
     Computes the transect-length-normalized mean density
     of the stratum and its associated variance for the
@@ -61,13 +63,10 @@ def compute_mean_var_density(distance, field, num_ind):
 
     Returns
     -------
-    rhom : Numpy array
-        1D numpy array of the transect-length-normalized mean
-        density of the stratum
-    var_rhom : Numpy array
-        1D numpy array of the variance of the transect-length
-        weighted field within the stratum
-
+    rhom : float
+        The transect-length-normalized mean density of the stratum
+    var_rhom : float
+        The transect-length weighted field within the stratum
     """
 
     # transect-length weighting factor of the transects in the stratum
@@ -89,40 +88,48 @@ def compute_mean_var_density(distance, field, num_ind):
 
 
 @nb.njit
-def seed(val):
-    """ seeds the random number generator """
+def seed(val: int):
+    """
+    Seeds the random number generator.
+
+    Parameters
+    ----------
+    val : int
+        Seed value for the generator
+    """
     np.random.seed(val)
 
 
 @nb.njit
-def compute_cv_value(JH_fac, num_transects, s_e_ind, distance, field, total_transect_area):
+def compute_cv_value(jh_fac: float, num_transects: np.ndarray,
+                     s_e_ind: np.ndarray, distance: np.ndarray,
+                     field: np.ndarray, total_transect_area: np.ndarray) -> float:
     """
-    Computes the CV value for the strata i.e. the area weighted variance of the
-    transect-length weighted field.
+    Computes the CV value for the strata i.e. the area weighted
+    variance of the transect-length weighted field.
 
     Parameters
     ----------
-    JH_fac : float
+    jh_fac : float
         Portion of points to select within each stratum
-    num_transects : Numpy array
+    num_transects : np.ndarray
         1D array specifying the number of transects
         within each stratum.
-    s_e_ind : Numpy array
+    s_e_ind : np.ndarray
         2D array specifying the indices of the distance and
         field arrays that correspond to each stratum.
-    distance : Numpy array
+    distance : np.ndarray
         1D array of distances between (mean latitude, min longitude)
         and (mean latitude, max longitude).
-    field : Numpy array
+    field : np.ndarray
         1D array of field values.
-    total_transect_area : Numpy array
+    total_transect_area : np.ndarray
         1D array specifying the total area covered by the stratum
 
     Returns
     -------
     CV : float
         CV value for the provided distance and field values
-
     """
 
     rhom = np.empty(s_e_ind.shape[0], dtype=np.float64)
@@ -131,7 +138,7 @@ def compute_cv_value(JH_fac, num_transects, s_e_ind, distance, field, total_tran
     for i in range(s_e_ind.shape[0]):
 
         # randomly select samples within the stratum
-        num_ind = round(JH_fac * num_transects[i])
+        num_ind = round(jh_fac * num_transects[i])
         inds = np.arange(num_transects[i])
         sel_ind = np.random.choice(inds, num_ind, replace=False)
 
@@ -142,15 +149,17 @@ def compute_cv_value(JH_fac, num_transects, s_e_ind, distance, field, total_tran
                                                         field[start:end][sel_ind], num_ind)
 
     # area weighted variance of the "transect-length weighted field"
-    CV = np.sqrt(np.nansum(var_rhom * total_transect_area ** 2)) / np.nansum(
+    cv = np.sqrt(np.nansum(var_rhom * total_transect_area ** 2)) / np.nansum(
         total_transect_area * rhom)
 
-    return CV
+    return cv
 
 
 @nb.njit
-def compute_jolly_hampton(nr, JH_fac, num_transects,
-          s_e_ind, distance, field, total_transect_area, seed_val):
+def compute_jolly_hampton(nr: int, jh_fac: float, num_transects: np.ndarray,
+                          s_e_ind: np.ndarray, distance: np.ndarray,
+                          field: np.ndarray, total_transect_area: np.ndarray,
+                          seed_val: int):
     """
     Computes the Jolly-Hampton CV value using
     nr iterations.
@@ -159,20 +168,20 @@ def compute_jolly_hampton(nr, JH_fac, num_transects,
     ----------
     nr : int
         The number of iterations to run the algorithm for
-    JH_fac : float
+    jh_fac : float
         Portion of points to select within each stratum
-    num_transects : Numpy array
+    num_transects : np.ndarray
         1D array specifying the number of transects
         within each stratum.
-    s_e_ind : Numpy array
+    s_e_ind : np.ndarray
         2D array specifying the indices of the distance and
         field arrays that correspond to each stratum.
-    distance : Numpy array
+    distance : np.ndarray
         1D array of distances between (mean latitude, min longitude)
         and (mean latitude, max longitude).
-    field : Numpy array
+    field : np.ndarray
         1D array of field values.
-    total_transect_area : Numpy array
+    total_transect_area : np.ndarray
         1D array specifying the total area covered by the stratum
     seed_val : int
         Seed value for the random number generator
@@ -180,17 +189,16 @@ def compute_jolly_hampton(nr, JH_fac, num_transects,
     Returns
     -------
     The NaN mean of the nr computed CV values
-
     """
 
-    CV_JH_vals = np.empty(nr, dtype=np.float64)
+    cv_jh_vals = np.empty(nr, dtype=np.float64)
 
     if seed_val is not None:
         seed(seed_val)
 
     for i in range(nr):
-        CV_JH_vals[i] = compute_cv_value(JH_fac, num_transects,
+        cv_jh_vals[i] = compute_cv_value(jh_fac, num_transects,
                                          s_e_ind, distance, field,
                                          total_transect_area)
 
-    return np.nanmean(CV_JH_vals)
+    return np.nanmean(cv_jh_vals)

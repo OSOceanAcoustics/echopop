@@ -9,6 +9,7 @@ from ..kriging import Kriging
 from ..kriging_mesh import KrigingMesh
 from ..semivariogram import SemiVariogram
 from ..load_nasc_data import load_nasc_data
+from typing import Tuple
 
 
 class Survey:
@@ -215,18 +216,47 @@ class Survey:
 
     def compute_biomass_density(self):
         """
-        Computes the biomass density estimate based on
-        the nasc_df, strata_df, strata_ds, specimen_df,
-        and length_df inputs. Additionally, it produces
-        the final_biomass_table that is used by
-        downstream processes.
+        Computes the normalized biomass density and
+        creates ``self.final_biomass_table``, which
+        is a Pandas DataFrame that contains the
+        normalized biomass density and associated
+        useful variables.
         """
 
         bio_dense = ComputeBiomassDensity(self)
-
         bio_dense.get_final_biomass_table()
 
-    def run_cv_analysis(self, lat_INPFC=None, kriged_data=False, seed=None):
+    def run_cv_analysis(self,
+                        lat_inpfc: Tuple[float] = (np.NINF, 36, 40.5, 43.000, 45.7667, 48.5, 55.0000),
+                        kriged_data=False, seed=None) -> float:
+        """
+        Performs CV analysis by running the Jolly-Hampton
+        algorithm.
+
+        Parameters
+        ----------
+        lat_inpfc : Tuple[float]
+            Bin values which represent the latitude bounds for
+            each region within a survey (established by INPFC)
+        kriged_data : bool
+            If True, perform CV analysis on Kriged data, otherwise
+            perform CV analysis on data that has not been Kriged
+        seed : int
+            Seed value for the random number generator
+
+        Returns
+        -------
+        The mean Jolly-Hampton CV value.
+
+        Notes
+        -----
+        The format of ``lat_inpfc`` should be such that it can be
+        used by Pandas.cut.
+
+        If the initialization parameter ``JH_fac`` is 1, then only
+        1 realization is run, otherwise 10,000 realizations of the
+        algorithm are run.
+        """
 
         if self.params["JH_fac"] == 1:
             nr = 1  # number of realizations
@@ -236,7 +266,7 @@ class Survey:
         if kriged_data:
             raise NotImplementedError("CV analysis for kriged data has not been implemented")
         else:
-            return cv_analysis.run_jolly_hampton(nr, lat_INPFC,
+            return cv_analysis.run_jolly_hampton(nr, lat_inpfc,
                                                  self.final_biomass_table,
                                                  self.params["JH_fac"], seed)
 
