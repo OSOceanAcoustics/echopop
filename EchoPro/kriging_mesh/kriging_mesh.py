@@ -489,7 +489,7 @@ class KrigingMesh:
         else:
             raise ValueError("Unrecognized coordinate type.")
 
-    def get_folium_map(self, map_kwargs=None):
+    def get_folium_map(self, map_kwargs: dict = None) -> folium.Map:
         """
         Grabs the folium map.
 
@@ -500,7 +500,8 @@ class KrigingMesh:
 
         Returns
         -------
-        A folium map object with provided specifications.
+        folium.Map
+            A folium map object with provided specifications.
 
         Notes
         -----
@@ -512,60 +513,62 @@ class KrigingMesh:
         if map_kwargs is None:
             map_kwargs = self.folium_map_kwargs
 
-        fmap = folium.Map(**map_kwargs)
+        return folium.Map(**map_kwargs)
 
-        return fmap
-
-    def plot_points(self, df, lon_name, lat_name, fmap=None, cmap_column=None,
-                    color='hex', marker_kwargs={}):
+    def plot_points(self, gdf: gpd.GeoDataFrame,
+                    fobj: Union[folium.Map, folium.map.FeatureGroup] = None,
+                    color: str = 'hex', cmap_column: str = None,
+                    marker_kwargs: dict = {}) -> Union[folium.Map, folium.map.FeatureGroup]:
         """
         Allows for a simple way to plot and
         visualize mesh points on a folium map.
 
         Parameters
         ----------
-        fmap
-            Folium map to plot the points on
-        df : Pandas Dataframe
-            Contains  Longitude and Latitude columns named ``lon_name``
-            and ``lat_name``, respectively
-        lat_name : str
-            The name of the Latitude column in df
-        lon_name : str
-            The name of the Longitude column in df
+        gdf : gpd.GeoDataFrame
+            Contains a geometry column representing the points to plot
+        fobj : Union[folium.Map, folium.map.FeatureGroup]
+            Folium object to plot the points on
         color : str
             The color of the markers representing the points. If
             color='hex', then a matplotlib color map will be created.
         cmap_column : str
-            Column of geo_df that the colormap should correspond
+            Column of gdf that the colormap should correspond
             to. This is only used if color='hex'.
         marker_kwargs : dict
             Dictionary of kwargs that should be provided to
             folium.CircleMarker
-        # TODO: make kwargs for folium.Map
 
         Returns
         -------
-        folium.Map
+        Union[folium.Map, folium.map.FeatureGroup]
+            Folium object with points attached to it
 
         Notes
         -----
-        If ``fmap`` is not provided, then a default folium map
+        If ``fobj`` is not provided, then a default folium map
         will be created using the class function ``get_folium_map``.
         """
 
-        if fmap is None:
-            fmap = self.get_folium_map()
+        if fobj is None:
+            fobj = self.get_folium_map()
 
         if color == 'hex':
-            uniq_vals = df[cmap_column].unique()
+
+            if cmap_column in gdf.index.names:
+                gdf = gdf.reset_index()
+            elif cmap_column not in gdf:
+                raise RuntimeError(f"gdf does not contain an index or column with name {cmap_column}!")
+
+            # create a color map using hex values based off a value in gdf
+            uniq_vals = gdf[cmap_column].unique()
             cmap = cm.get_cmap('viridis', len(uniq_vals))
             hex_color_options = {rgb[0]: to_hex(rgb[1])
                                  for rgb in zip(uniq_vals, cmap(uniq_vals))}
 
-        for index, row in df.iterrows():
-
-            coordinates = (row[lat_name], row[lon_name]) #(row.geometry.xy[1][0], row.geometry.xy[0][0])
+        # plot each point in gdf on a folium object
+        # TODO: Can we do this more efficiently?
+        for _, row in gdf.iterrows():
 
             if color == 'hex':
                 color_val = hex_color_options[row[cmap_column]]
@@ -573,9 +576,55 @@ class KrigingMesh:
                 color_val = color
 
             # Place the markers with specific color
-            fmap.add_child(folium.CircleMarker(location=coordinates,
+            fobj.add_child(folium.CircleMarker(location=(row.geometry.y, row.geometry.x),
                                                radius=1,
                                                color=color_val,
                                                **marker_kwargs))
+
+        return fobj
+
+    def plot_layered_points(self) -> folium.Map:
+        """
+        This function constructs a layered Folium plot.
+        The layers correspond to the full set of mesh
+        points, the ``final_biomass_table`` points with
+        color corresponding to the transect number, and
+        the smoothed contour points (e.g. 200m isobath).
+
+        Returns
+        -------
+        fmap : folium.Map
+            A Map with layers corresponding to the
+            various points plotted.
+
+        Notes
+        -----
+        This function is considered a high-level plotting
+        tool. Thus, fine control of color and the type of
+        points to plot has not been implemented. If one
+        wants low-level control for plotting, the class
+        function ``plot_points`` should be used.
+        """
+
+        fmap = self.get_folium_map()
+
+        # plot mesh points and add them to fmap
+        folium_layer = folium.FeatureGroup(name='mesh')
+        folium_layer = self.plot_points(self.mesh_gdf, folium_layer, color='gray')
+        folium_layer.add_to(fmap)
+
+        # plot the transect points and add them to fmap
+        folium_layer = folium.FeatureGroup(name='transects')
+        folium_layer = self.plot_points(self.survey.final_biomass_table, folium_layer,
+                                        cmap_column='Transect', color='hex')
+        folium_layer.add_to(fmap)
+
+        # plot smoothed contour points and add them to fmap
+        folium_layer = folium.FeatureGroup(name='smoothed contour')
+        folium_layer = self.plot_points(self.smoothed_contour_gdf, folium_layer, color='blue')
+        folium_layer.add_to(fmap)
+
+        # add layer control to fmap
+        folium.LayerControl().add_to(fmap)
 
         return fmap

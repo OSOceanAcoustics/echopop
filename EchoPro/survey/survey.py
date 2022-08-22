@@ -294,9 +294,15 @@ class Survey:
 
         return KrigingMesh(self)
 
-    def get_semi_variogram(self, x, y, field):
+    def get_semi_variogram(self, krig_mesh: KrigingMesh = None, params: dict = {}):
 
-        semi_vario = SemiVariogram(x, y, field)
+        semi_vario = SemiVariogram(
+            krig_mesh.transformed_transect_df.x_transect.values,
+            krig_mesh.transformed_transect_df.y_transect.values,
+            self.final_biomass_table['normalized_biomass_density'].values.flatten(),
+            params['nlag'],
+            params['lag_res']
+        )
 
         return semi_vario
 
