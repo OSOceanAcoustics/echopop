@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import geopandas as gpd
 from typing import Tuple, List
 
 
@@ -545,18 +546,23 @@ class ComputeBiomassDensity:
         """
 
         # minimal columns to do Jolly Hampton CV on data that has not been kriged
-        self.survey.final_biomass_table = self.survey.nasc_df[['Latitude', 'Longitude', 'Stratum', 'Spacing']].copy()
-        self.survey.final_biomass_table["normalized_biomass_density"] = norm_bio_dense
+        final_df = self.survey.nasc_df[['Latitude', 'Longitude', 'Stratum', 'Spacing']].copy()
+        final_df["normalized_biomass_density"] = norm_bio_dense
 
         # TODO: should we include the below values in the final biomass table?
         # calculates the interval for the area calculation
-        # self.survey.final_biomass_table["interval"] = self._get_interval(self.survey.nasc_df)
+        # final_df["interval"] = self._get_interval(self.survey.nasc_df)
 
         # calculate the area corresponding to the NASC value
-        # self.survey.final_biomass_table["Area"] = interval * self.survey.nasc_df['Spacing']
+        # final_df["Area"] = interval * self.survey.nasc_df['Spacing']
 
         # calculate the total number of fish in a given area
-        # self.survey.final_biomass_table["N_A"] = n_A * A
+        # final_df["N_A"] = n_A * A
+
+        # construct GeoPandas DataFrame to simplify downstream processes
+        self.survey.final_biomass_table = gpd.GeoDataFrame(final_df,
+                                                           geometry=gpd.points_from_xy(final_df.Longitude,
+                                                                                       final_df.Latitude))
 
     def get_final_biomass_table(self) -> None:
         """
