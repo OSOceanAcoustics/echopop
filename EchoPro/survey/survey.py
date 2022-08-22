@@ -300,14 +300,14 @@ class Survey:
             krig_mesh.transformed_transect_df.x_transect.values,
             krig_mesh.transformed_transect_df.y_transect.values,
             self.final_biomass_table['normalized_biomass_density'].values.flatten(),
+            params['lag_res'],
             params['nlag'],
-            params['lag_res']
         )
 
         return semi_vario
 
-    def get_kriging(self):
+    def get_kriging(self, params):
 
-        krig = Kriging(self)
+        krig = Kriging(self, params)
 
         return krig

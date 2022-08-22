@@ -16,9 +16,21 @@ class Kriging:
         self.survey will also change this object.
     """
 
-    def __init__(self, survey=None):
+    def __init__(self, survey=None, params={}):
 
         self.survey = survey
+
+        # Kriging parameters
+        self.k_max = params['k_max']
+        self.k_min = params['k_min']
+        self.R = params['R']
+        self.ratio = params['ratio']
+
+        # # parameters for semi-variogram model
+        self.s_v_params = params['s_v_params']
+
+        # grab appropriate semi-variogram model
+        self.s_v_model = params['s_v_model']
 
     def __compute_k_smallest_distances(self, x_mesh, x_data,
                                        y_mesh, y_data, k_max):

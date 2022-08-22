@@ -24,25 +24,40 @@ class SemiVariogram:
 
     Parameters
     ----------
-    x : Numpy array
+    x : np.ndarray
         A 1D array representing the x coordinate for
-        the semi-variogram calculation.
-    y : Numpy array
+        the semi-variogram calculation
+    y : np.ndarray
         A 1D array representing the y coordinate for
-        the semi-variogram calculation.
-    field : Numpy array
+        the semi-variogram calculation
+    field : np.ndarray
         A 1D array representing the field for the
-        semi-variogram calculation (e.g. biomass density).
+        semi-variogram calculation (e.g. biomass density)
+    lag_res : float
+        The spacing between lag centers
+    nlag : int
+        The total number of lag centers
+
+    Notes
+    -----
+    The variables ``lag_res`` and ``nlag`` determine
+    the center of bins used to calculate the
+    semi-variogram. For example, if `lag_res=3`` and
+    ``nlag=0.1`` then we would obtain the bin centers
+    ``[0.0, 0.1, 0.2]``.
     """
 
-    def __init__(self, x, y, field):
+    def __init__(self, x: np.ndarray, y: np.ndarray,
+                 field: np.ndarray, lag_res, nlag):
 
         self.x = x
         self.y = y
         self.field = field
+        self.nlag = nlag
+        self.lag_res = lag_res
 
         # bins provided to calculate_semi_variogram
-        self._center_bins = None
+        self._center_bins = lag_res * np.arange(nlag)
 
         # standardized semi-variogram values
         self.gamma_standardized = None
@@ -58,7 +73,7 @@ class SemiVariogram:
         self._lsq_toggle = None
         self._full_params = None
 
-    def calculate_semi_variogram(self, center_bins):
+    def calculate_semi_variogram(self, center_bins: np.ndarray = None):
         """
         Calculates the semi-variogram standardized by the
         standard deviation of the head multiplied by
@@ -69,14 +84,24 @@ class SemiVariogram:
 
         Parameters
         ----------
-        center_bins: Numpy Array  # TODO: fill in
+        center_bins: np.ndarray
+        # TODO: fill in
 
         Returns
         -------
 
         """
 
-        self._center_bins = np.sort(center_bins)
+        # check center_bins and assign it, if necessary
+        if isinstance(center_bins, np.ndarray):
+            if center_bins.ndim == 1:
+                center_bins = np.sort(center_bins)
+            else:
+                ValueError("center_bins must be 1-dimensional!")
+        elif center_bins is None:
+            center_bins = self._center_bins
+        else:
+            raise ValueError("center_bins must be an np.ndarray or None!")
 
         # get upper triangular indices
         i_up_ind, j_up_ind = np.triu_indices(len(self.x), k=1)
@@ -240,9 +265,8 @@ class SemiVariogram:
 
     def view_semi_variogram(self):
 
-        if self._center_bins is None:
-            print("You must calculate the semi-variogram first!")
-            sys.exit()
+        if not isinstance(self.gamma_standardized, np.ndarray):
+            raise RuntimeError("You must calculate the semi-variogram first!")
 
         self.get_widgets()
 
