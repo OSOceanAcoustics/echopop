@@ -7,6 +7,7 @@ import geopandas
 from shapely.geometry import Polygon
 from shapely.ops import unary_union
 from scipy import interpolate
+from typing import Union
 
 
 class KrigingMesh:
@@ -18,8 +19,12 @@ class KrigingMesh:
     Parameters
     ----------
     survey : Survey
-        An initialized Survey object. Note that any change to
-        self.survey will also change this object.
+        An initialized Survey object.
+
+    Notes
+    -----
+    Any change to self.survey will also change
+    the input survey object.
     """
 
     def __init__(self, survey=None):
@@ -33,23 +38,49 @@ class KrigingMesh:
             'tiles': 'CartoDB positron'
         }
 
+        # expected columns for the mesh Dataframe
+        self.mesh_cols = {'Latitude of centroid', 'Longitude of centroid', 'Area (km^2)', 'Cell portion'}
+
+        # expected columns for the smoothed contour Dataframe
+        self.contour_cols = {'Latitude', 'Longitude'}
+
         self.__load_mesh()
         self.__load_smoothed_contour()
 
-    def __load_mesh(self):
+    def _check_mesh_df(self, mesh_df: pd.DataFrame) -> None:
+        """
+        Ensures that the appropriate columns are
+        contained in the mesh Dataframe.
+
+        TODO: should we add more in-depth checks here?
+        """
+
+        if not set(mesh_df.columns).intersection(self.mesh_cols):
+            raise NameError("Mesh dataframe does not contain all expected columns!")
+
+    def _check_smoothed_contour_df(self, contour_df: pd.DataFrame) -> None:
+        """
+        Ensures that the appropriate columns are
+        contained in the smoothed contour Dataframe.
+
+        TODO: should we add more in-depth checks here?
+        """
+
+        if not set(contour_df.columns).intersection(self.contour_cols):
+            raise NameError("Smoothed contour dataframe does not contain all expected columns!")
+
+    def __load_mesh(self) -> None:
         """
         Loads the full mesh of the region being considered.
-        Action is completed by reading in excel file determined
-        by the user defined parameter ``'filename_grid_cell'``.
-
-        Returns
-        -------
-        GeoPandas Dataframe representing the full mesh.
+        Action is completed by reading in an Excel file provided
+        by the user defined parameter ``'mesh_filename'``.
+        Finally, constructs the GeoPandas Dataframe representing
+        the full mesh and assigns it as the class variable ``mesh_gdf``.
         """
 
-        df = pd.read_excel(
-            self.survey.params['data_root_dir'] + self.survey.params['filename_grid_cell'],
-            sheet_name='krigedgrid2_5nm_forChu')  # TODO: make the sheet name an input
+        df = pd.read_excel(self.survey.params['data_root_dir'] + self.survey.params['mesh_filename'],
+                           sheet_name=self.survey.params['mesh_sheetname'])
+        self._check_mesh_df(df)
 
         # obtaining those columns that are required
         df = df[['Latitude of centroid', 'Longitude of centroid', 'Area (km^2)', 'Cell portion']].copy()
@@ -60,29 +91,28 @@ class KrigingMesh:
                         'Area (km^2)': float,
                         'Cell portion': np.float64})
 
-        df = geopandas.GeoDataFrame(df,
-                                    geometry=geopandas.points_from_xy(
-                                        df['Longitude of centroid'],
-                                        df['Latitude of centroid']
-                                    )
-                                    )
+        # construct geopandas DataFrame to simplify downstream processes
+        gdf = geopandas.GeoDataFrame(df,
+                                     geometry=geopandas.points_from_xy(
+                                         df['Longitude of centroid'],
+                                         df['Latitude of centroid']))
 
-        self.mesh_gdf = df
+        # assign class variable
+        self.mesh_gdf = gdf
 
     def __load_smoothed_contour(self):
         """
         Loads the smoothed contour of the region being considered.
-        Action is completed by reading in excel file determined
-        by the user defined parameter ``'filename_smoothed_contour'``.
-
-        Returns
-        -------
-        GeoPandas Dataframe representing the full mesh.
+        Action is completed by reading in an excel file determined
+        by the user defined parameter ``'smoothed_contour_filename'``.
+        Finally, constructs the GeoPandas Dataframe representing
+        the smoothed contour and assigns it as the class variable
+        ``smoothed_contour_gdf``.
         """
 
-        df = pd.read_excel(
-            self.survey.params['data_root_dir'] + self.survey.params['filename_smoothed_contour'],
-            sheet_name='Smoothing_EasyKrig')  # TODO: make the sheet name an input
+        df = pd.read_excel(self.survey.params['data_root_dir'] + self.survey.params['smoothed_contour_filename'],
+                           sheet_name=self.survey.params['smoothed_contour_sheetname'])
+        self._check_smoothed_contour_df(df)
 
         # obtaining those columns that are required
         df = df[['Latitude', 'Longitude']].copy()
@@ -91,13 +121,15 @@ class KrigingMesh:
         df = df.astype({'Latitude': float,
                         'Longitude': float})
 
+        # construct geopandas DataFrame to simplify downstream processes
         df = geopandas.GeoDataFrame(df,
                                     geometry=geopandas.points_from_xy(df.Longitude, df.Latitude))
 
+        # assign class variable
         self.smoothed_contour_gdf = df
 
     @staticmethod
-    def get_coordinate_mean(gdf):
+    def get_coordinate_mean(gdf: geopandas.GeoDataFrame):
         """
         Creates a GeoPandas Dataframe representing
         the coordinate (latitude and longitude) mean
@@ -109,9 +141,9 @@ class KrigingMesh:
             All transect points with index transect and
             columns: Latitude, Longitude, and geometry.
 
-
         Returns
         -------
+
         A GeoPandas Dataframe containing the mean coordinate
         point (latitude, longitude) of each transect with
         index representing the transect and geometry column

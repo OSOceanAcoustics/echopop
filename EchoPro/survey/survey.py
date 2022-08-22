@@ -270,11 +270,29 @@ class Survey:
                                                  self.final_biomass_table,
                                                  self.params["JH_fac"], seed)
 
-    def get_kriging_mesh(self):
+    def get_kriging_mesh(self) -> KrigingMesh:
+        """
+        Initializes a ``KrigingMesh`` object using
+        parameters obtained from the configuration
+        files.
 
-        krig_mesh = KrigingMesh(self)
+        Returns
+        -------
+        KrigingMesh
+            An initialized object that contains the mesh
+            data, functions to transform the mesh, and
+            functions to plot the mesh.
 
-        return krig_mesh
+        Notes
+        -----
+        This function assigns class variables to the returned object.
+        Specifically, the following class variables are created:
+        - ``mesh_gdf`` a GeoPandas Dataframe representing the full mesh
+        - ``smoothed_contour_gdf`` a GeoPandas Dataframe representing
+        the smoothed contour (e.g. 200m isobath)
+        """
+
+        return KrigingMesh(self)
 
     def get_semi_variogram(self, x, y, field):
 

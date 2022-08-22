@@ -12,14 +12,14 @@
 
   # The paths defined below are concatenated with the data_root_dir set above
 
-  # File names and associated sheet name for the US section, these variables can be left blank
+  # File names and associated sheet name for the US section
   length_US_filename: Biological/US/2019_biodata_length.xlsx
   length_US_sheet: biodata_length
   specimen_US_filename: Biological/US/2019_biodata_specimen_AGES.xlsx
   specimen_US_sheet: biodata_specimen
 
 
-  # File names for the Canada section, these variables can be left blank
+  # File names for the Canada section
   length_CAN_filename: Biological/CAN/2019_biodata_length_CAN.xlsx
   length_CAN_sheet: biodata_length_CAN
   specimen_CAN_filename: Biological/CAN/2019_biodata_specimen_CAN_AGES.xlsx
@@ -32,7 +32,6 @@
   #################################
 
   # The paths defined below are concatenated with the data_root_dir set above
-  # any of these paths may be left blank if they are unused
 
   # file that relates the stratification to the Haul
   strata_filename: Stratification/US&CAN strata 2019_final.xlsx
@@ -53,15 +52,21 @@
 
 
   #####################################################################################################################
-  # Paths to kriging files #
+  # Paths to Kriging files #
   ##########################
 
   # The below variables are the path from data_root_dir set above
-  # any of these paths may be left blank if they are unused
+
+  # Mesh filename representing the centroids of the Kriging grid
+  mesh_filename: Kriging_files/Kriging_grid_files/krig_grid2_5nm_cut_centroids_2013.xlsx
+  mesh_sheetname: krigedgrid2_5nm_forChu
+
+  # smoothed contour used to transform the mesh points
+  smoothed_contour_filename: Kriging_files/Kriging_grid_files/transformation_isobath_coordinates.xlsx
+  #  smoothed_contour_filename: Kriging_files/Kriging_grid_files/Smoothing_EasyKrig.xlsx
+  smoothed_contour_sheetname: Smoothing_EasyKrig
+
   vario_krig_para_filename: Kriging_files/default_vario_krig_settings_2019_US&CAN.xlsx
-  filename_grid_cell: Kriging_files/Kriging_grid_files/krig_grid2_5nm_cut_centroids_2013.xlsx # 2013 cell res = 2.50 nmi with extended area coverage
-#  filename_smoothed_contour: Kriging_files/Kriging_grid_files/Smoothing_EasyKrig.xlsx
-  filename_smoothed_contour: Kriging_files/Kriging_grid_files/transformation_isobath_coordinates.xlsx
   #####################################################################################################################
 
 
