@@ -294,7 +294,8 @@ class Survey:
 
         return KrigingMesh(self)
 
-    def get_semi_variogram(self, krig_mesh: KrigingMesh = None, params: dict = {}):
+    def get_semi_variogram(self, krig_mesh: KrigingMesh = None,
+                           params: dict = {}):  # TODO: figure out how to put dict key types
         """
         Initializes a ``SemiVariogram`` object based on the provided
         ``KrigingMesh`` object, the calculated normalized biomass
@@ -305,7 +306,9 @@ class Survey:
         krig_mesh : KrigingMesh
             Object representing the Kriging mesh
         params : dict
-            # TODO: fill in parameter description
+            Contains the following parameters:
+            - ``nlag`` -- The total number of lag centers
+            - ``lag_res`` -- The spacing between lag centers
 
         Returns
         -------
@@ -321,8 +324,19 @@ class Survey:
         biomass density using ``compute_biomass_density``.
         """
 
+        if not isinstance(krig_mesh, KrigingMesh):
+            raise ValueError("You must provide a KrigingMesh object!")
+
+        if not params:
+            raise ValueError("You must provide parameters for the semi-variogram")
+        else:
+            if (not "nlag" in params.keys()) or (not "lag_res" in params.keys()):
+                raise ValueError("You must include the parameters nlag and lag_res!")
+
         # TODO: check that the biomass density has been calculated (should we compute it for them?)
         #  and the input is in the correct form
+
+        # TODO: finish the api here
 
         semi_vario = SemiVariogram(
             krig_mesh.transformed_transect_df.x_transect.values,
