@@ -5,7 +5,24 @@ from typing import Tuple
 
 
 @nb.njit(nb.float64[:, :](nb.float64[:], nb.float64[:]), parallel=True)
-def nb_subtract_outer(a, b):
+def nb_subtract_outer(a: nb.float64[:], b: nb.float64[:]) -> nb.float64[:, :]:
+    """
+    Performs an outer subtraction between the inputs
+    ``a`` and ``b``.
+
+    Parameters
+    ----------
+    a : nb.float64[:]
+        The first array
+    b : nb.float64[:]
+        The second array
+
+    Returns
+    -------
+    res : nb.float64[:, :]
+        An outer subtraction between ``a`` and ``b`` e.g
+        ``res[i_0, ... i_M-1, j_0, ... j_M-1] = a[i] - b[j]``
+    """
     res = np.empty((a.shape[0], b.shape[0]), dtype=np.float64)
     for i in nb.prange(a.shape[0]):
         for j in range(b.shape[0]):
@@ -15,7 +32,25 @@ def nb_subtract_outer(a, b):
 
 
 @nb.njit(nb.float64[:](nb.float64[:], nb.float64[:]), fastmath=True, parallel=True)
-def nb_dis_vec(a, b):
+def nb_dis_vec(a: nb.float64[:], b: nb.float64[:]) -> nb.float64[:]:
+    """
+    Calculates the distance between the elements
+    of the input vectors.
+
+    Parameters
+    ----------
+    a : nb.float64[:]
+        The first vector
+    b : nb.float64[:]
+        The second vector
+
+    Returns
+    -------
+    res : nb.float64[:]
+        A vector representing the distance
+        between the elements of ``a`` and
+        ``b`` e.g. ``res[i] = sqrt(a[i]^2 + b[i]^2)``
+    """
     res = np.empty(a.shape, dtype=np.float64)
     for i in nb.prange(a.shape[0]):
         res[i] = math.sqrt(a[i] * a[i] + b[i] * b[i])
@@ -23,7 +58,25 @@ def nb_dis_vec(a, b):
 
 
 @nb.njit(nb.float64[:, :](nb.float64[:, :], nb.float64[:, :]), fastmath=True, parallel=True)
-def nb_dis_mat(a, b):
+def nb_dis_mat(a: nb.float64[:, :], b: nb.float64[:, :]) -> nb.float64[:, :]:
+    """
+    Calculates the distance between the elements
+    of the input matrices.
+
+    Parameters
+    ----------
+    a : nb.float64[:, :]
+        The first matrix
+    b : nb.float64[:, :]
+        The second matrix
+
+    Returns
+    -------
+    res : nb.float64[:, :]
+        A matrix representing the distance between
+        the elements of ``a`` and ``b`` e.g.
+        ``res[i,j] = sqrt(a[i,j]^2 + b[i,j]^2)``
+    """
     res = np.empty(a.shape)
     for i in nb.prange(a.shape[0]):
         for j in range(a.shape[1]):
@@ -32,7 +85,25 @@ def nb_dis_mat(a, b):
 
 
 @nb.njit(nb.float64[:](nb.float64[:], nb.float64[:]), fastmath=True, parallel=True)
-def nb_diff_sqrd(a, b):
+def nb_diff_sqrd(a: nb.float64[:], b: nb.float64[:]) -> nb.float64[:]:
+    """
+    Calculates the squared difference between
+    the elements of the inputs.
+
+    Parameters
+    ----------
+    a : nb.float64[:]
+        The first vector
+    b : nb.float64[:]
+        The second vector
+
+    Returns
+    -------
+    res : nb.float64[:]
+        A vector representing the squared
+        difference between ``a`` and ``b``
+        e.g. ``res[i] = (a[i] - b[i])^2``
+    """
     res = np.empty(a.shape, dtype=np.float64)
     for i in nb.prange(a.shape[0]):
         res[i] = (a[i] - b[i]) ** 2

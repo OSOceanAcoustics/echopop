@@ -295,6 +295,34 @@ class Survey:
         return KrigingMesh(self)
 
     def get_semi_variogram(self, krig_mesh: KrigingMesh = None, params: dict = {}):
+        """
+        Initializes a ``SemiVariogram`` object based on the provided
+        ``KrigingMesh`` object, the calculated normalized biomass
+        density, and user provided semi-variogram parameters.
+
+        Parameters
+        ----------
+        krig_mesh : KrigingMesh
+            Object representing the Kriging mesh
+        params : dict
+            # TODO: fill in parameter description
+
+        Returns
+        -------
+        SemiVariogram
+            An initialized object, which provides users with access
+            to a routine that calculates the standardized
+            semi-variogram and routines for obtaining the best
+            semi-variogram model for the estimated semi-variogram.
+
+        Notes
+        -----
+        To run this routine, one must first compute the normalized
+        biomass density using ``compute_biomass_density``.
+        """
+
+        # TODO: check that the biomass density has been calculated (should we compute it for them?)
+        #  and the input is in the correct form
 
         semi_vario = SemiVariogram(
             krig_mesh.transformed_transect_df.x_transect.values,

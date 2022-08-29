@@ -4,7 +4,6 @@ import ipywidgets as widgets
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 import inspect
-import sys
 from ..numba_modules import nb_subtract_outer, nb_dis_vec, nb_diff_sqrd
 
 
@@ -50,6 +49,7 @@ class SemiVariogram:
     def __init__(self, x: np.ndarray, y: np.ndarray,
                  field: np.ndarray, lag_res, nlag):
 
+        # input data
         self.x = x
         self.y = y
         self.field = field
@@ -73,7 +73,7 @@ class SemiVariogram:
         self._lsq_toggle = None
         self._full_params = None
 
-    def calculate_semi_variogram(self, center_bins: np.ndarray = None):
+    def calculate_semi_variogram(self, center_bins: np.ndarray = None) -> None:
         """
         Calculates the semi-variogram standardized by the
         standard deviation of the head multiplied by
@@ -85,11 +85,13 @@ class SemiVariogram:
         Parameters
         ----------
         center_bins: np.ndarray
-        # TODO: fill in
+            A 1D array representing the center of the bins used
+            to calculate the semi-variogram
 
-        Returns
-        -------
-
+        Notes
+        -----
+        The calculated standardized semi-variogram values are
+        stored in the class variable ``gamma_standardized``.
         """
 
         # check center_bins and assign it, if necessary
@@ -106,15 +108,19 @@ class SemiVariogram:
         # get upper triangular indices
         i_up_ind, j_up_ind = np.triu_indices(len(self.x), k=1)
 
+        # get the upper triangular mesh of differences for x/y
         x_diff = nb_subtract_outer(self.x, self.x)[i_up_ind, j_up_ind]
         y_diff = nb_subtract_outer(self.y, self.y)[i_up_ind, j_up_ind]
 
         # find the distance between points
         dis = nb_dis_vec(x_diff, y_diff)
 
+        # construct head and tail field values
         field_rep = np.tile(self.field, (len(self.field), 1))
         field_head = field_rep[j_up_ind, i_up_ind]
         field_tail = field_rep[i_up_ind, j_up_ind]
+
+        # get the squared difference of the head and the tail
         field_diff_sqrd = nb_diff_sqrd(field_head, field_tail)
 
         self.gamma_standardized = np.empty(len(center_bins), dtype=np.float64)
