@@ -316,13 +316,14 @@ class Survey:
         krig_mesh : KrigingMesh
             Object representing the Kriging mesh
         params : dict
-            Contains the following parameters:
+            Semi-variogram specific parameters. Contains the following
+            parameters:
             - ``nlag: int`` -- The total number of lag centers
             - ``lag_res: float`` -- The spacing between lag centers
 
         Returns
         -------
-        SemiVariogram
+        semi_vario : SemiVariogram
             An initialized object, which provides users with access
             to a routine that calculates the normalized
             semi-variogram and routines for obtaining the best
@@ -364,15 +365,15 @@ class Survey:
 
         return semi_vario
 
-    def get_kriging(self, params):
+    def get_kriging(self, params: krig_param_type) -> Kriging:
         """
-
-
+        Initializes a ``Kriging`` object using the
+        provided parameters
 
         Parameters
         ----------
         params : dict
-            Contains the following parameters:
+            Kriging specific parameters. Contains the following parameters:
             - ``k_max: int`` -- the maximum number of data points within the
             search radius.
             - ``k_min: int`` -- the minimum number of data points within the
@@ -382,11 +383,14 @@ class Survey:
             divided by the largest singular value.
             - ``s_v_params: dict`` -- dictionary specifying the parameter values
             for the semi-variogram model.
-            - ``s_v_model: Callable`` -- a Semi-variogram model from the SemiVariogram class
+            - ``s_v_model: Callable`` -- a Semi-variogram model from the ``SemiVariogram`` class
 
         Returns
         -------
-
+        krig : Kriging
+            An initialized ``Kriging`` object that provides users with
+            access to routines that run Ordinary Kriging and routines
+            that plot final Kriging results
         """
 
         if not params:

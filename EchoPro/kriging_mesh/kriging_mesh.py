@@ -19,11 +19,11 @@ class KrigingMesh:
     Parameters
     ----------
     survey : Survey
-        An initialized Survey object.
+        An initialized ``Survey`` object.
 
     Notes
     -----
-    Any change to self.survey will also change
+    Any change to ``self.survey`` will also change
     the input survey object.
     """
 

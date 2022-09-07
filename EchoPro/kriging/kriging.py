@@ -2,19 +2,21 @@ import numpy as np
 import folium
 import branca.colormap as cm
 from ..numba_modules import nb_subtract_outer, nb_dis_mat
-from typing import Callable
+from typing import Callable, Tuple
+from ..kriging_mesh import KrigingMesh
+import geopandas as gpd
 
 
 class Kriging:
     """
     This class constructs all data necessary
-    for kriging and performs kriging
+    for Kriging and performs Kriging
 
     Parameters
     ----------
     survey : Survey
         An initialized Survey object. Note that any change to
-        self.survey will also change this object.
+        ``self.survey`` will also change this object.
     k_max: int
         The maximum number of data points within the search radius
     k_min: int
@@ -27,7 +29,7 @@ class Kriging:
     s_v_params: dict
         Dictionary specifying the parameter values for the semi-variogram model.
     s_v_model: Callable
-        a Semi-variogram model from the SemiVariogram class
+        a Semi-variogram model from the ``SemiVariogram`` class
     """
 
     def __init__(self, survey=None, k_max: int = None, k_min: int = None,
@@ -48,32 +50,33 @@ class Kriging:
         # grab appropriate semi-variogram model
         self.s_v_model = s_v_model
 
-    def __compute_k_smallest_distances(self, x_mesh, x_data,
-                                       y_mesh, y_data):
+    def _compute_k_smallest_distances(self, x_mesh: np.ndarray,
+                                      x_data: np.ndarray, y_mesh: np.ndarray,
+                                      y_data: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
         Computes the distance between the data
-        and the mesh points. Using the distance it then
+        and the mesh points. Using the distance, it then
         selects the kmax smallest values amongst the
         columns.
 
         Parameters
         ----------
-        x_mesh : Numpy array
+        x_mesh : np.ndarray
             1D array denoting the x coordinates of the mesh
-        x_data : Numpy array
+        x_data : np.ndarray
             1D array denoting the x coordinates of the data
-        y_mesh : Numpy array
+        y_mesh : np.ndarray
             1D array denoting the y coordinates of the mesh
-        y_data : Numpy array
+        y_data : np.ndarray
             1D array denoting the y coordinates of the data
 
         Returns
         -------
-        dis : Numpy array
-            2D numpy array representing the distance between each
-            mesh points and each transect point
-        dis_kmax_ind : Numpy array
-            A 2D Numpy array index array representing the kmax
+        dis : np.ndarray
+            2D array representing the distance between each
+            mesh point and each transect point
+        dis_kmax_ind : np.ndarray
+            A 2D array index array representing the kmax
             closest transect points to each mesh point.
         """
 
@@ -90,32 +93,33 @@ class Kriging:
 
         return dis, dis_kmax_ind
 
-    def __get_indices_and_weight(self, dis_kmax_ind, row, dis):
+    def _get_indices_and_weight(self, dis_kmax_ind: np.ndarray, row: int,
+                                dis: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray, float]:
         """
-        Obtains the indices of dis that are in R, outside R, and
-        the k_max smallest values. Additionally, obtains the weight
+        Obtains the indices of ``dis`` that are in ``R``, outside ``R``, and
+        the ``k_max`` smallest values. Additionally, obtains the weight
         for points outside the transect region.
 
 
         Parameters
         ----------
-        dis_kmax_ind : Numpy array
-            The indices of dis that represent the k_max smallest
+        dis_kmax_ind : np.ndarray
+            The indices of ``dis`` that represent the ``k_max`` smallest
             values
         row : int
-            Row index of dis_kmax_ind being considered
-        dis : Numpy array
+            Row index of ``dis_kmax_ind`` being considered
+        dis : np.ndarray
             2D numpy array representing the distance between each
-            mesh points and each transect point
+            mesh point and each transect point
 
         Returns
         -------
-        R_ind : Numpy array
-            Indices of dis that are in R
-        R_ind_not : Numpy array
-            Indices of dis that are outside R
-        sel_ind : Numpy array
-            Indices of dis representing the k_max smallest values
+        R_ind : np.ndarray
+            Indices of ``dis`` that are in ``R``
+        R_ind_not : np.ndarray
+            Indices of ``dis`` that are outside ``R``
+        sel_ind : np.ndarray
+            Indices of ``dis`` representing the ``k_max`` smallest values
         M2_weight : float
             The weight for points outside the transect region.
         """
@@ -130,6 +134,7 @@ class Kriging:
         R_ind = np.argwhere(dis[row, sel_ind] <= self.R).flatten()
 
         if len(R_ind) < self.k_min:
+
             # get the k_min smallest distance values' indices
             R_ind = np.argsort(dis[row, sel_ind]).flatten()[:self.k_min]
 
@@ -144,36 +149,36 @@ class Kriging:
 
         return R_ind, R_ind_not, sel_ind, M2_weight
 
-    def __get_M2_K(self, x_data, y_data, dis, row, dis_sel_ind):
+    def _get_M2_K(self, x_data: np.ndarray, y_data: np.ndarray, dis: np.ndarray,
+                  row: int, dis_sel_ind: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
 
         Parameters
         ----------
-        x_data : Numpy array
+        x_data : np.ndarray
             1D array denoting the x coordinates of the data
-        y_data : Numpy array
+        y_data : np.ndarray
             1D array denoting the y coordinates of the data
-        dis : Numpy array
+        dis : np.ndarray
             2D numpy array representing the distance between each
-            mesh points and each transect point
+            mesh point and each transect point
         row : int
-            Row index of dis_kmax_ind being considered
-        dis_sel_ind : Numpy array
-            Indices of dis within the search radius
+            Row index of ``dis_kmax_ind`` being considered
+        dis_sel_ind : np.ndarray
+            Indices of ``dis`` within the search radius
 
         Returns
         -------
-        M2 : Numpy array
+        M2 : np.ndarray
             1D array representing the vector in Kriging
-        K : Numpy array
+        K : np.ndarray
             2D array representing the matrix in Kriging
         """
 
         # calculate semi-variogram value
         M20 = self.s_v_model(dis[row, dis_sel_ind], **self.s_v_params)
 
-        # TODO: put in statements for Objective mapping and
-        #  Universal Kriging w/ Linear drift
+        # TODO: Should we put in statements for Objective mapping and Universal Kriging w/ Linear drift?
         M2 = np.concatenate([M20, np.array([1.0])])  # for Ordinary Kriging
 
         # select those data within the search radius
@@ -188,8 +193,7 @@ class Kriging:
         # calculate semi-variogram value
         K0 = self.s_v_model(dis1, **self.s_v_params)
 
-        # TODO: put in statements for Objective mapping and
-        #  Universal Kriging w/ Linear drift
+        # TODO: Should we put in statements for Objective mapping and Universal Kriging w/ Linear drift?
         # Add column and row of ones for Ordinary Kriging
         K = np.concatenate([K0, np.ones((len(x1), 1))], axis=1)
         K = np.concatenate([K, np.ones((1, len(x1) + 1))], axis=0)
@@ -199,21 +203,21 @@ class Kriging:
 
         return M2, K
 
-    def __compute_lambda_weights(self, M2, K):
+    def _compute_lambda_weights(self, M2: np.ndarray, K: np.ndarray) -> np.ndarray:
         """
         Computes the lambda weights of Kriging.
 
         Parameters
         ----------
-        M2 : Numpy array
+        M2 : np.ndarray
             1D array representing the vector in Kriging
-        K : Numpy array
+        K : np.ndarray
             2D array representing the matrix in Kriging
 
         Returns
         -------
-        lamb : Numpy array
-            Lambda weights of Kriging
+        lamb : np.ndarray
+            Lambda weights computed from Kriging
         """
 
         # compute SVD
@@ -231,28 +235,29 @@ class Kriging:
         return lamb
 
     @staticmethod
-    def __compute_kriging_vals(field_data, M2, lamb, M2_weight,
-                               R_ind, R_ind_not, dis_sel_ind):
+    def _compute_kriging_vals(field_data: np.ndarray, M2: np.ndarray, lamb: np.ndarray,
+                              M2_weight: float, R_ind: np.ndarray, R_ind_not: np.ndarray,
+                              dis_sel_ind: np.ndarray) -> Tuple[float, float, float]:
         """
         Computes the Kriged values, Kriging variance, and
         Kriging sample variance.
 
         Parameters
         ----------
-        field_data : Numpy array
+        field_data : np.ndarray
             1D array denoting the field values at the (x ,y)
             coordinates of the data (e.g. biomass density).
-        M2 : Numpy array
+        M2 : np.ndarray
             1D array representing the vector in Kriging
-        lamb : Numpy array
+        lamb : np.ndarray
             Lambda weights of Kriging
         M2_weight : float
             The weight for points outside the transect region.
-        R_ind : Numpy array
+        R_ind : np.ndarray
             Indices of dis that are in R
-        R_ind_not : Numpy array
+        R_ind_not : np.ndarray
             Indices of dis that are outside R
-        dis_sel_ind : Numpy array
+        dis_sel_ind : np.ndarray
             Indices of dis within the search radius
 
         Returns
@@ -272,9 +277,11 @@ class Kriging:
         else:
             field_vals = field_data[dis_sel_ind]
 
+        # calculate Kriging value and variance
         vp_val = np.nansum(lamb[:len(R_ind)] * field_vals) * M2_weight
         ep_val = np.nansum(lamb * M2)
 
+        # calculate Kriging sample variance
         if abs(vp_val) < np.finfo(float).eps:
             eps_val = np.nan
         else:
@@ -285,62 +292,67 @@ class Kriging:
 
         return ep_val, eps_val, vp_val
 
-    def run_kriging(self, x_mesh, x_data, y_mesh, y_data, field_data):
+    def run_kriging(self, x_mesh: np.ndarray, x_data: np.ndarray,
+                    y_mesh: np.ndarray, y_data: np.ndarray,
+                    field_data: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
-        Runs Kriging using the provided mesh and data. Currently,
-        only Ordinary Kriging has been implemented.
+        A low-level interface that runs Kriging using the provided
+        mesh and data.
 
         Parameters
         ----------
-        x_mesh : Numpy array
+        x_mesh : np.ndarray
             1D array denoting the x coordinates of the mesh
-        x_data : Numpy array
+        x_data : np.ndarray
             1D array denoting the x coordinates of the data
-        y_mesh : Numpy array
+        y_mesh : np.ndarray
             1D array denoting the y coordinates of the mesh
-        y_data : Numpy array
+        y_data : np.ndarray
             1D array denoting the y coordinates of the data
-        field_data : Numpy array
+        field_data : np.ndarray
             1D array denoting the field values at the (x ,y)
             coordinates of the data (e.g. biomass density).
 
         Returns
         -------
-        ep_arr : 1D Numpy array
-            Kriging variance for each mesh coordinate
-        eps_arr : 1D Numpy array
-            Kriging sample variance for each mesh coordinate
-        vp_arr : 1D Numpy array
-            Kriged value for each mesh coordinate
+        ep_arr : np.ndarray
+            1D array representing the Kriging variance for each mesh coordinate
+        eps_arr : np.ndarray
+            1D array representing the Kriging sample variance for each mesh coordinate
+        vp_arr : np.ndarray
+            1D array representing the Kriged value for each mesh coordinate
+
+        Notes
+        -----
+        Currently, this routine only runs Ordinary Kriging.
         """
 
-        # TODO: think about making kriging mesh class an input
+        dis, dis_kmax_ind = self._compute_k_smallest_distances(x_mesh, x_data,
+                                                               y_mesh, y_data)
 
-        dis, dis_kmax_ind = self.__compute_k_smallest_distances(x_mesh, x_data,
-                                                                y_mesh, y_data)
-
+        # initialize arrays that store calculated Kriging values
         ep_arr = np.empty(dis_kmax_ind.shape[0])
         eps_arr = np.empty(dis_kmax_ind.shape[0])
         vp_arr = np.empty(dis_kmax_ind.shape[0])
 
-        # TODO: look into parallelizing this for loop
+        # TODO: This loop can be parallelized, if necessary
         # does Ordinary Kriging, follow Journel and Huijbregts, p. 307
         for row in range(dis_kmax_ind.shape[0]):
 
-            R_ind, R_ind_not, sel_ind, M2_weight = \
-                self.__get_indices_and_weight(dis_kmax_ind, row, dis)
+            R_ind, R_ind_not, sel_ind, M2_weight = self._get_indices_and_weight(dis_kmax_ind, row, dis)
 
             # indices of dis within the search radius
             dis_sel_ind = sel_ind[R_ind]
 
-            M2, K = self.__get_M2_K(x_data, y_data, dis, row, dis_sel_ind)
+            M2, K = self._get_M2_K(x_data, y_data, dis, row, dis_sel_ind)
 
-            lamb = self.__compute_lambda_weights(M2, K)
+            lamb = self._compute_lambda_weights(M2, K)
 
-            ep_val, eps_val, vp_val = self.__compute_kriging_vals(field_data, M2, lamb,
-                                                                  M2_weight, R_ind,
-                                                                  R_ind_not, dis_sel_ind)
+            ep_val, eps_val, vp_val = self._compute_kriging_vals(field_data, M2, lamb,
+                                                                 M2_weight, R_ind,
+                                                                 R_ind_not, dis_sel_ind)
 
+            # store important calculated values
             ep_arr[row] = ep_val
             eps_arr[row] = eps_val
             vp_arr[row] = vp_val
@@ -351,30 +363,102 @@ class Kriging:
 
         return ep_arr, eps_arr, vp_arr
 
-    def plot_kriging_results(self, x_mesh, y_mesh, krig_val):
+    def run_biomass_kriging(self, krig_mesh: KrigingMesh) -> gpd.GeoDataFrame:
+        """
+        A high-level interface that sets up and runs
+        Kriging using the normalized biomass density.
 
-        # TODO: formalize this function more (add kwargs, doc string, ...)
+        Parameters
+        ----------
+        krig_mesh : KrigingMesh
+            Object representing the Kriging mesh
 
+        Returns
+        -------
+        results_gdf : gpd.GeoDataFrame
+            Dataframe filled with information pertaining to the
+            mesh and Kriging values calculated at those mesh points
+
+        Notes
+        -----
+        To run this routine, one must first compute the normalized
+        biomass density using ``compute_biomass_density``.
+        """
+
+        if not isinstance(krig_mesh, KrigingMesh):
+            raise ValueError("You must provide a KrigingMesh object!")
+
+        if (not isinstance(self.survey.final_biomass_table, gpd.GeoDataFrame)) \
+                and ('normalized_biomass_density' not in self.survey.final_biomass_table):
+            raise ValueError("The normalized biomass density must be calculated before running this routine!")
+
+        ep_arr, eps_arr, vp_arr = self.run_kriging(
+            krig_mesh.transformed_mesh_df['x_mesh'].values,
+            krig_mesh.transformed_transect_df['x_transect'].values,
+            krig_mesh.transformed_mesh_df['y_mesh'].values,
+            krig_mesh.transformed_transect_df['y_transect'].values,
+            self.survey.final_biomass_table['normalized_biomass_density'].values.flatten())
+
+        # collect all important Kriging results
+        results_gdf = krig_mesh.mesh_gdf.copy()
+        results_gdf['krig_biomass_vp'] = vp_arr
+        results_gdf['krig_biomass_ep'] = ep_arr
+        results_gdf['krig_biomass_eps'] = eps_arr
+        results_gdf["area_calc"] = self.survey.params['kriging_A0'] * results_gdf['Cell portion']
+        results_gdf["krig_biomass_vals"] = 1e-6 * results_gdf['krig_biomass_vp'] * results_gdf["area_calc"]
+
+        return results_gdf
+
+    @staticmethod
+    def plot_kriging_results(krig_results_gdf: gpd.GeoDataFrame,
+                             krig_field_name: str) -> folium.Map:
+        """
+        Constructs a Folium plot depicting the ``krig_field_name``
+        values at each mesh point.
+
+        Parameters
+        ----------
+        krig_results_gdf: gpd.GeoDataFrame
+            Dataframe containing a geometry column that holds the
+            mesh coordinates and the column ``krig_field_name``
+        krig_field_name: str
+            The name of the column in ``krig_results_gdf`` containing
+            the Kriging values to plot at each mesh point
+
+        Returns
+        -------
+        fmap : folium.Map
+            A Folium plot with the ``krig_field_name`` values at each
+            mesh point.
+        """
+
+        # create folium map
         fmap = folium.Map(location=[44.61, -125.66], zoom_start=4)
 
-        data = np.hstack([x_mesh[:, None], y_mesh[:, None]])
+        # collect the appropriate data from the input Dataframe
+        x_mesh = krig_results_gdf.geometry.x.values
+        y_mesh = krig_results_gdf.geometry.y.values
+        krig_val = krig_results_gdf[krig_field_name].values
 
-        # colormap = cm.LinearColormap(colors=['#000080', '#3385ff'],
-        #                              vmin=0.0, vmax=np.max(vp_arr))
-
+        # create a colormap for the values
         colormap = cm.LinearColormap(colors=['#3385ff', '#FF0000'],
                                      vmin=0.0, vmax=np.max(krig_val))
 
+        # plot each mesh point and the corresponding krig_field_name value
         for i in range(len(krig_val)):
-            coordinates = (data[i, 0], data[i, 1])
+
+            # get the color of the marker we want to plot
             color_val = colormap(krig_val[i])
+
+            # get coordinate of marker we are plotting
+            coordinates = (y_mesh[i], x_mesh[i])
 
             # Place the markers with a color value
             fmap.add_child(folium.CircleMarker(location=coordinates,
                                                radius=1,
                                                color=color_val))
 
-        fmap.add_child(colormap)
+        fmap.add_child(colormap)  # adds color bar to map
 
         return fmap
 
