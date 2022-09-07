@@ -472,6 +472,8 @@ class ComputeBiomassDensity:
         nwgt_female = nntk_female * bc_expanded_df.len_wgt_F_prod.values
         nwgt_unsexed = (n_A.values - nntk_male - nntk_female) * bc_expanded_df.len_wgt_prod.values
 
+        # TODO: the returned value is called normalized, but it isn't between [0, 1]! Different name or bug?
+
         # compute the total normalized weight
         return nwgt_male + nwgt_female + nwgt_unsexed
 
@@ -530,6 +532,8 @@ class ComputeBiomassDensity:
         age2_wgt_prop_df = pd.DataFrame(columns=['val'], index=stratum_ind, dtype=np.float64)
         for i in stratum_ind:
             age2_wgt_prop_df.loc[i].val = 1.0 - self._get_age_weight_key(spec_drop.loc[i])
+
+        # TODO: the returned value is called normalized, but it isn't between [0, 1]! Different name or bug?
 
         # normalized biomass density
         return nwgt_total * age2_wgt_prop_df.loc[self.survey.nasc_df.Stratum.values].values.flatten()

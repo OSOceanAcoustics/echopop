@@ -9,7 +9,11 @@ from ..kriging import Kriging
 from ..kriging_mesh import KrigingMesh
 from ..semivariogram import SemiVariogram
 from ..load_nasc_data import load_nasc_data
-from typing import Tuple
+from typing import Tuple, TypedDict
+import geopandas as gpd
+
+# define the semi-variogram input types
+vario_param_type = TypedDict('vario_param_type', {'nlag': int, 'lag_res': float})
 
 
 class Survey:
@@ -295,7 +299,7 @@ class Survey:
         return KrigingMesh(self)
 
     def get_semi_variogram(self, krig_mesh: KrigingMesh = None,
-                           params: dict = {}):  # TODO: figure out how to put dict key types
+                           params: vario_param_type = {}):
         """
         Initializes a ``SemiVariogram`` object based on the provided
         ``KrigingMesh`` object, the calculated normalized biomass
@@ -307,14 +311,14 @@ class Survey:
             Object representing the Kriging mesh
         params : dict
             Contains the following parameters:
-            - ``nlag`` -- The total number of lag centers
-            - ``lag_res`` -- The spacing between lag centers
+            - ``nlag: int`` -- The total number of lag centers
+            - ``lag_res: float`` -- The spacing between lag centers
 
         Returns
         -------
         SemiVariogram
             An initialized object, which provides users with access
-            to a routine that calculates the standardized
+            to a routine that calculates the normalized
             semi-variogram and routines for obtaining the best
             semi-variogram model for the estimated semi-variogram.
 
@@ -330,13 +334,18 @@ class Survey:
         if not params:
             raise ValueError("You must provide parameters for the semi-variogram")
         else:
-            if (not "nlag" in params.keys()) or (not "lag_res" in params.keys()):
+            if ("nlag" not in params.keys()) or ("lag_res" not in params.keys()):
                 raise ValueError("You must include the parameters nlag and lag_res!")
 
-        # TODO: check that the biomass density has been calculated (should we compute it for them?)
-        #  and the input is in the correct form
+        if not isinstance(params['nlag'], int):
+            raise TypeError("params['nlag'] must be an integer!")
 
-        # TODO: finish the api here
+        if not isinstance(params['lag_res'], float):
+            raise TypeError("params['lag_res'] must be a float!")
+
+        if (not isinstance(self.final_biomass_table, gpd.GeoDataFrame)) \
+                and ('normalized_biomass_density' not in self.final_biomass_table):
+            raise ValueError("The normalized biomass density must be calculated before running this routine!")
 
         semi_vario = SemiVariogram(
             krig_mesh.transformed_transect_df.x_transect.values,

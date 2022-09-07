@@ -18,7 +18,7 @@ bnds_default = {'LB': {'sill': 0.0, 'ls': 0.0,
 class SemiVariogram:
     """
     This class contains a routine that calculates a
-    standardized semi-variogram and routines for
+    normalized semi-variogram and routines for
     obtaining the best semi-variogram model for the
     estimated semi-variogram.
 
@@ -60,8 +60,8 @@ class SemiVariogram:
         # bins provided to calculate_semi_variogram
         self._center_bins = lag_res * np.arange(nlag)
 
-        # standardized semi-variogram values
-        self.gamma_standardized = None
+        # normalized semi-variogram values
+        self.gamma_normalized = None
 
         # widget variables
         self._model_drop = None
@@ -76,7 +76,7 @@ class SemiVariogram:
 
     def calculate_semi_variogram(self, center_bins: np.ndarray = None) -> None:
         """
-        Calculates the semi-variogram standardized by the
+        Calculates the semi-variogram normalized by the
         standard deviation of the head multiplied by
         the standard deviation of the tail for each
         lag. This calculation assumes that the mesh
@@ -91,8 +91,8 @@ class SemiVariogram:
 
         Notes
         -----
-        The calculated standardized semi-variogram values are
-        stored in the class variable ``gamma_standardized``.
+        The calculated normalized semi-variogram values are
+        stored in the class variable ``gamma_normalized``.
         """
 
         # check center_bins and assign it, if necessary
@@ -124,7 +124,7 @@ class SemiVariogram:
         # get the squared difference of the head and the tail
         field_diff_sqrd = nb_diff_sqrd(field_head, field_tail)
 
-        self.gamma_standardized = np.empty(len(center_bins), dtype=np.float64)
+        self.gamma_normalized = np.empty(len(center_bins), dtype=np.float64)
         for i in range(len(center_bins)):
             # get indices of distances that are in the lag
             if i == 0:
@@ -143,11 +143,11 @@ class SemiVariogram:
             # calculate the semi-variogram value
             gamma = 0.5 * np.mean(field_diff_sqrd[ind_in_lag])
 
-            # standardize gamma by the standard deviation of the head
+            # normalize gamma by the standard deviation of the head
             # multiplied by the standard deviation of the tail
             std_head = np.std(field_head[ind_in_lag])
             std_tail = np.std(field_tail[ind_in_lag])
-            self.gamma_standardized[i] = gamma / (std_head * std_tail)
+            self.gamma_normalized[i] = gamma / (std_head * std_tail)
 
     def _create_widgets(self):
         """
@@ -318,7 +318,7 @@ class SemiVariogram:
         """
         Obtains the set of model parameters that minimize the sum
         of the squared residuals. The residual is defined as the
-        difference between the standardized semi-variogram and
+        difference between the normalized semi-variogram and
         the semi-variogram model selected.
 
         Parameters
@@ -345,8 +345,8 @@ class SemiVariogram:
         low_bnds = [bnds_default['LB'][key] for key in model_keys if key in bnds_default['LB']]
         up_bnds = [bnds_default['UB'][key] for key in model_keys if key in bnds_default['UB']]
 
-        # fit the model to the standardized semi-variogram values
-        fit_params, _ = curve_fit(func, self._center_bins, self.gamma_standardized,
+        # fit the model to the normalized semi-variogram values
+        fit_params, _ = curve_fit(func, self._center_bins, self.gamma_normalized,
                                   bounds=(low_bnds, up_bnds))
 
         # TODO: Open up an issue for the differences in lsq against Matlab version
@@ -389,7 +389,7 @@ class SemiVariogram:
     def _manage_plots(self, model: str, lsq_fit: bool, apply_model: bool) -> None:
         """
         Manages the construction of the figure to plot on,
-        plotting of the standardized semi-variogram values,
+        plotting of the normalized semi-variogram values,
         Least Squares fitting, and plotting of the model.
 
         Parameters
@@ -413,9 +413,9 @@ class SemiVariogram:
 
         ax1 = fig.add_subplot()  # create axis to plot on
 
-        # plot the standardized semi-variogram values
-        ax1.plot(self._center_bins, self.gamma_standardized, 'bo')
-        ax1.set_ylabel("gamma standardized")
+        # plot the normalized semi-variogram values
+        ax1.plot(self._center_bins, self.gamma_normalized, 'bo')
+        ax1.set_ylabel("gamma normalized")
         ax1.set_xlabel("lag")
 
         # apply Least Squares, plot the data, and update the parameters
@@ -467,8 +467,8 @@ class SemiVariogram:
     def get_widget(self) -> ipywidgets.GridspecLayout:
         """
         Collects and returns a widget that allows one to
-        plot the standardized semi-variogram values, apply
-        a Least Squares fit to the standardized semi-variogram
+        plot the normalized semi-variogram values, apply
+        a Least Squares fit to the normalized semi-variogram
         values (for a given model), and interactively plot a
         model for a given set of parameters.
 
@@ -484,7 +484,7 @@ class SemiVariogram:
         using ``get_params_for_kriging``, after this function.
         """
 
-        if not isinstance(self.gamma_standardized, np.ndarray):
+        if not isinstance(self.gamma_normalized, np.ndarray):
             raise RuntimeError("You must calculate the semi-variogram first!")
 
         self._create_widgets()
