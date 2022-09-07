@@ -9,11 +9,17 @@ from ..kriging import Kriging
 from ..kriging_mesh import KrigingMesh
 from ..semivariogram import SemiVariogram
 from ..load_nasc_data import load_nasc_data
-from typing import Tuple, TypedDict
+from typing import Tuple, TypedDict, Callable
 import geopandas as gpd
 
 # define the semi-variogram input types
-vario_param_type = TypedDict('vario_param_type', {'nlag': int, 'lag_res': float})
+vario_type_dict = {'nlag': int, 'lag_res': float}
+vario_param_type = TypedDict('vario_param_type', vario_type_dict)
+
+# define the Kriging parameter input types
+krig_type_dict = {'k_max': int, 'k_min': int, 'R': float, 'ratio': float,
+                  's_v_params': dict, 's_v_model': Callable}
+krig_param_type = TypedDict('krig_param_type', krig_type_dict)
 
 
 class Survey:
@@ -332,16 +338,17 @@ class Survey:
             raise ValueError("You must provide a KrigingMesh object!")
 
         if not params:
-            raise ValueError("You must provide parameters for the semi-variogram")
-        else:
-            if ("nlag" not in params.keys()) or ("lag_res" not in params.keys()):
-                raise ValueError("You must include the parameters nlag and lag_res!")
+            raise ValueError("You must provide parameters for the semi-variogram!")
 
-        if not isinstance(params['nlag'], int):
-            raise TypeError("params['nlag'] must be an integer!")
+        # make sure all parameters are included
+        if set(vario_type_dict.keys()).difference(set(params.keys())):
+            raise ValueError("Some required parameters where not provided!")
 
-        if not isinstance(params['lag_res'], float):
-            raise TypeError("params['lag_res'] must be a float!")
+        # check that all types are correct for params
+        for key, val in params.items():
+            expected_type = vario_type_dict.get(key)
+            if not isinstance(val, expected_type):
+                raise TypeError(f"{key} is not of type {expected_type}")
 
         if (not isinstance(self.final_biomass_table, gpd.GeoDataFrame)) \
                 and ('normalized_biomass_density' not in self.final_biomass_table):
@@ -358,7 +365,44 @@ class Survey:
         return semi_vario
 
     def get_kriging(self, params):
+        """
 
-        krig = Kriging(self, params)
+
+
+        Parameters
+        ----------
+        params : dict
+            Contains the following parameters:
+            - ``k_max: int`` -- the maximum number of data points within the
+            search radius.
+            - ``k_min: int`` -- the minimum number of data points within the
+            search radius.
+            - ``R: float`` -- search radius for Kriging
+            - ``ratio: float`` -- acceptable ratio for the singular values
+            divided by the largest singular value.
+            - ``s_v_params: dict`` -- dictionary specifying the parameter values
+            for the semi-variogram model.
+            - ``s_v_model: Callable`` -- a Semi-variogram model from the SemiVariogram class
+
+        Returns
+        -------
+
+        """
+
+        if not params:
+            raise ValueError("You must provide parameters for the Kriging routine!")
+
+        # make sure all parameters are included
+        if set(krig_type_dict.keys()).difference(set(params.keys())):
+            raise ValueError("Some required parameters where not provided!")
+
+        # check that all types are correct for params
+        for key, val in params.items():
+            expected_type = krig_type_dict.get(key)
+            if not isinstance(val, expected_type):
+                raise TypeError(f"{key} is not of type {expected_type}")
+
+        krig = Kriging(self, params['k_max'], params['k_min'], params['R'],
+                       params['ratio'], params['s_v_params'], params['s_v_model'])
 
         return krig

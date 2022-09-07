@@ -2,6 +2,7 @@ import numpy as np
 import folium
 import branca.colormap as cm
 from ..numba_modules import nb_subtract_outer, nb_dis_mat
+from typing import Callable
 
 
 class Kriging:
@@ -14,26 +15,41 @@ class Kriging:
     survey : Survey
         An initialized Survey object. Note that any change to
         self.survey will also change this object.
+    k_max: int
+        The maximum number of data points within the search radius
+    k_min: int
+        The minimum number of data points within the search radius
+    R: float
+        Search radius for Kriging
+    ratio: float
+        Acceptable ratio for the singular values divided by the largest
+        singular value.
+    s_v_params: dict
+        Dictionary specifying the parameter values for the semi-variogram model.
+    s_v_model: Callable
+        a Semi-variogram model from the SemiVariogram class
     """
 
-    def __init__(self, survey=None, params={}):
+    def __init__(self, survey=None, k_max: int = None, k_min: int = None,
+                 R: float = None, ratio: float = None, s_v_params: dict = None,
+                 s_v_model: Callable = None):
 
         self.survey = survey
 
         # Kriging parameters
-        self.k_max = params['k_max']
-        self.k_min = params['k_min']
-        self.R = params['R']
-        self.ratio = params['ratio']
+        self.k_max = k_max
+        self.k_min = k_min
+        self.R = R
+        self.ratio = ratio
 
-        # # parameters for semi-variogram model
-        self.s_v_params = params['s_v_params']
+        # parameters for semi-variogram model
+        self.s_v_params = s_v_params
 
         # grab appropriate semi-variogram model
-        self.s_v_model = params['s_v_model']
+        self.s_v_model = s_v_model
 
     def __compute_k_smallest_distances(self, x_mesh, x_data,
-                                       y_mesh, y_data, k_max):
+                                       y_mesh, y_data):
         """
         Computes the distance between the data
         and the mesh points. Using the distance it then
@@ -50,9 +66,6 @@ class Kriging:
             1D array denoting the y coordinates of the mesh
         y_data : Numpy array
             1D array denoting the y coordinates of the data
-        k_max : int
-            Denotes the maximum number of data points within the
-            search radius.
 
         Returns
         -------
@@ -70,15 +83,14 @@ class Kriging:
         dis = nb_dis_mat(x_diff, y_diff)
 
         # sort dis up to the kmax smallest elements in each row
-        dis_sort_ind = np.argpartition(dis, k_max, axis=1)
+        dis_sort_ind = np.argpartition(dis, self.k_max, axis=1)
 
         # select only the kmax smallest elements in each row
-        dis_kmax_ind = dis_sort_ind[:, :k_max]
+        dis_kmax_ind = dis_sort_ind[:, :self.k_max]
 
         return dis, dis_kmax_ind
 
-    @staticmethod
-    def __get_indices_and_weight(dis_kmax_ind, row, dis, R, k_min):
+    def __get_indices_and_weight(self, dis_kmax_ind, row, dis):
         """
         Obtains the indices of dis that are in R, outside R, and
         the k_max smallest values. Additionally, obtains the weight
@@ -95,11 +107,6 @@ class Kriging:
         dis : Numpy array
             2D numpy array representing the distance between each
             mesh points and each transect point
-        R : float
-            Search radius for kriging
-        k_min : int
-            Denotes the minimum number of data points within the
-            search radius.
 
         Returns
         -------
@@ -120,26 +127,24 @@ class Kriging:
         sel_ind = dis_kmax_ind[row, :]
 
         # get all indices within R
-        R_ind = np.argwhere(dis[row, sel_ind] <= R).flatten()
+        R_ind = np.argwhere(dis[row, sel_ind] <= self.R).flatten()
 
-        if len(R_ind) < k_min:
+        if len(R_ind) < self.k_min:
             # get the k_min smallest distance values' indices
-            R_ind = np.argsort(dis[row, sel_ind]).flatten()[:k_min]
+            R_ind = np.argsort(dis[row, sel_ind]).flatten()[:self.k_min]
 
             # get the indices of sel_ind[R_ind] that are outside of R
-            R_ind_not = np.argwhere(dis[row, sel_ind[R_ind]] > R).flatten()
+            R_ind_not = np.argwhere(dis[row, sel_ind[R_ind]] > self.R).flatten()
 
             # TODO: should we change this to how Chu does it?
             # tapered function to handle extrapolation
-            M2_weight = np.exp(-np.nanmean(dis[row, sel_ind[R_ind]]) / R)
+            M2_weight = np.exp(-np.nanmean(dis[row, sel_ind[R_ind]]) / self.R)
         else:
             R_ind_not = []
 
         return R_ind, R_ind_not, sel_ind, M2_weight
 
-    @staticmethod
-    def __get_M2_K(x_data, y_data, dis, row, dis_sel_ind,
-                   s_v_params, s_v_model):
+    def __get_M2_K(self, x_data, y_data, dis, row, dis_sel_ind):
         """
 
         Parameters
@@ -155,11 +160,6 @@ class Kriging:
             Row index of dis_kmax_ind being considered
         dis_sel_ind : Numpy array
             Indices of dis within the search radius
-        s_v_params : dict
-            Dictionary specifying the parameter values for the
-            semi-variogram model.
-        s_v_model : function
-            A Semi-variogram model from the SemiVariogram class
 
         Returns
         -------
@@ -170,7 +170,7 @@ class Kriging:
         """
 
         # calculate semi-variogram value
-        M20 = s_v_model(dis[row, dis_sel_ind], **s_v_params)
+        M20 = self.s_v_model(dis[row, dis_sel_ind], **self.s_v_params)
 
         # TODO: put in statements for Objective mapping and
         #  Universal Kriging w/ Linear drift
@@ -186,7 +186,7 @@ class Kriging:
         dis1 = np.sqrt(x1_diff * x1_diff + y1_diff * y1_diff)
 
         # calculate semi-variogram value
-        K0 = s_v_model(dis1, **s_v_params)
+        K0 = self.s_v_model(dis1, **self.s_v_params)
 
         # TODO: put in statements for Objective mapping and
         #  Universal Kriging w/ Linear drift
@@ -199,8 +199,7 @@ class Kriging:
 
         return M2, K
 
-    @staticmethod
-    def __compute_lambda_weights(M2, K, ratio):
+    def __compute_lambda_weights(self, M2, K):
         """
         Computes the lambda weights of Kriging.
 
@@ -210,9 +209,6 @@ class Kriging:
             1D array representing the vector in Kriging
         K : Numpy array
             2D array representing the matrix in Kriging
-        ratio : float
-            Acceptable ratio for the singular values divided
-            by the largest singular value.
 
         Returns
         -------
@@ -223,7 +219,7 @@ class Kriging:
         # compute SVD
         u, s, vh = np.linalg.svd(K, full_matrices=True)
 
-        kindx = np.argwhere(np.abs(s / s[0]) > ratio).flatten()
+        kindx = np.argwhere(np.abs(s / s[0]) > self.ratio).flatten()
 
         s_inv = 1.0 / s[kindx]
 
@@ -289,8 +285,7 @@ class Kriging:
 
         return ep_val, eps_val, vp_val
 
-    def run_kriging(self, x_mesh, x_data, y_mesh, y_data, field_data,
-                    k_max, k_min, R, ratio, s_v_params, s_v_model):
+    def run_kriging(self, x_mesh, x_data, y_mesh, y_data, field_data):
         """
         Runs Kriging using the provided mesh and data. Currently,
         only Ordinary Kriging has been implemented.
@@ -308,22 +303,6 @@ class Kriging:
         field_data : Numpy array
             1D array denoting the field values at the (x ,y)
             coordinates of the data (e.g. biomass density).
-        k_max : int
-            Denotes the maximum number of data points within the
-            search radius.
-        k_min : int
-            Denotes the minimum number of data points within the
-            search radius.
-        R : float
-            Search radius for kriging
-        ratio : float
-            Acceptable ratio for the singular values divided
-            by the largest singular value.
-        s_v_params : dict
-            Dictionary specifying the parameter values for the
-            semi-variogram model.
-        s_v_model : function
-            A Semi-variogram model from the SemiVariogram class
 
         Returns
         -------
@@ -338,7 +317,7 @@ class Kriging:
         # TODO: think about making kriging mesh class an input
 
         dis, dis_kmax_ind = self.__compute_k_smallest_distances(x_mesh, x_data,
-                                                                y_mesh, y_data, k_max)
+                                                                y_mesh, y_data)
 
         ep_arr = np.empty(dis_kmax_ind.shape[0])
         eps_arr = np.empty(dis_kmax_ind.shape[0])
@@ -349,15 +328,14 @@ class Kriging:
         for row in range(dis_kmax_ind.shape[0]):
 
             R_ind, R_ind_not, sel_ind, M2_weight = \
-                self.__get_indices_and_weight(dis_kmax_ind, row, dis, R, k_min)
+                self.__get_indices_and_weight(dis_kmax_ind, row, dis)
 
             # indices of dis within the search radius
             dis_sel_ind = sel_ind[R_ind]
 
-            M2, K = self.__get_M2_K(x_data, y_data, dis, row, dis_sel_ind,
-                                    s_v_params, s_v_model)
+            M2, K = self.__get_M2_K(x_data, y_data, dis, row, dis_sel_ind)
 
-            lamb = self.__compute_lambda_weights(M2, K, ratio)
+            lamb = self.__compute_lambda_weights(M2, K)
 
             ep_val, eps_val, vp_val = self.__compute_kriging_vals(field_data, M2, lamb,
                                                                   M2_weight, R_ind,
