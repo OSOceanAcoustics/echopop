@@ -11,11 +11,12 @@ data that is Kriged and data that is not Kriged.
 """
 
 
-def get_transect_strata_info(lat_inpfc: Tuple[float],
-                             biomass_table: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
+def get_transect_strata_info_no_kriging(lat_inpfc: Tuple[float],
+                                        biomass_table: pd.Dataframe) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
     Computes transect and stratification information necessary
-    for running the Jolly-Hampton algorithm.
+    for running the Jolly-Hampton algorithm for data that
+    has not been Kriged.
 
     Parameters
     ----------
@@ -78,28 +79,80 @@ def get_transect_strata_info(lat_inpfc: Tuple[float],
     return transect_info, strata_info
 
 
-def run_jolly_hampton(nr: int, lat_inpfc: Tuple[float],
-                      biomass_table: pd.DataFrame, jh_fac: float,
-                      seed: int = None) -> float:
+def get_transect_strata_info_kriged(lat_inpfc: Tuple[float],
+                                    biomass_table: pd.Dataframe) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    """
+    Computes transect and stratification information necessary
+    for running the Jolly-Hampton algorithm for data that
+    has been Kriged.
+
+    Parameters
+    ----------
+    lat_inpfc : Tuple[float]
+        Bin values which represent the latitude bounds for
+        each region within a survey (established by INPFC)
+    biomass_table : pd.Dataframe
+        DataFrame containing TODO: fill in
+
+    Returns
+    -------
+    transect_info : pd.DataFrame
+        Transect information needed by the JH algorithm
+    strata_info : pd.DataFrame
+        Stratum information needed by the JH algorithm
+    """
+
+    # reduce biomass table to only essential columns
+    reduced_table = biomass_table[["Latitude of centroid",
+                                   "Longitude of centroid",
+                                   "krig_biomass_vals"]].copy()
+
+    # number of "virtual transects" within a latitude degree
+    n_transect_per_lat = 5  # TODO: make this an input
+
+    # latitude array with equal increment
+    reduced_table["lat_eq_inc"] = np.round(
+        reduced_table["Latitude of centroid"] * n_transect_per_lat + 0.5) / n_transect_per_lat
+
+    reduced_table.set_index("lat_eq_inc", inplace=True)
+
+    # add columns to table
+    reduced_table["biomass"] = np.nan
+    reduced_table["distance"] = np.nan
+    reduced_table["area"] = np.nan
+
+    # unique equal-spacing transects
+    uniq_lat_eq_inc = np.unique(reduced_table["lat_eq_inc"])
+
+    for ind, uniq_lat in enumerate(uniq_lat_eq_inc):
+        print(ind, uniq_lat)
+
+    # compute transect values needed for distance calculation
+    # transect_info = pd.DataFrame(index=biomass_table.index.unique())
+
+    # return transect_info
+
+
+def run_jolly_hampton(survey, nr: int, lat_inpfc: Tuple[float],
+                      seed: int = None, kriged_data: bool = False) -> float:
     """
     Runs the Jolly-Hampton algorithm and computes
     the mean CV value over the given realizations.
 
     Parameters
     ----------
+    survey : Survey
+        An initialized Survey object.
     nr : int
         The number of realizations to perform
     lat_inpfc : Tuple[float]
         Bin values which represent the latitude bounds for
         each region within a survey (established by INPFC)
-    biomass_table : pd.Dataframe
-        DataFrame containing Longitude, Latitude, Spacing, and
-        normalized_biomass_density columns
-    jh_fac : float
-        Percent of transects to select in each stratum
-        for the Jolly-Hampton algorithm
     seed : int
         Seed value for the random number generator
+    kriged_data : bool
+        If True, perform CV analysis on Kriged data, otherwise
+        perform CV analysis on data that has not been Kriged
 
     Returns
     -------
@@ -111,7 +164,13 @@ def run_jolly_hampton(nr: int, lat_inpfc: Tuple[float],
     used by Pandas.cut.
     """
 
-    transect_info, strata_info = get_transect_strata_info(lat_inpfc, biomass_table)
+    if kriged_data:
+        raise NotImplementedError("Not done")
+        transect_info, strata_info = get_transect_strata_info_no_kriging(lat_inpfc,
+                                                                         survey.krig_results_gdf)
+    else:
+        transect_info, strata_info = get_transect_strata_info_no_kriging(lat_inpfc,
+                                                                         survey.final_biomass_table)
 
     # get numpy form of dataframe values, so we can use Numba
     transect_distances = transect_info['distance'].values.flatten()
@@ -125,7 +184,7 @@ def run_jolly_hampton(nr: int, lat_inpfc: Tuple[float],
                  range(len(strata_nums))]
     s_e_ind = np.array(start_end)
 
-    cv_jh_mean = compute_jolly_hampton(nr, jh_fac, num_transects, s_e_ind,
+    cv_jh_mean = compute_jolly_hampton(nr, survey.params["JH_fac"], num_transects, s_e_ind,
                                        transect_distances, field, total_transect_area,
                                        seed_val=seed)
 
