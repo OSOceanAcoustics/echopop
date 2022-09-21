@@ -12,7 +12,7 @@ data that is Kriged and data that is not Kriged.
 
 
 def get_transect_strata_info_no_kriging(lat_inpfc: Tuple[float],
-                                        biomass_table: pd.Dataframe) -> Tuple[pd.DataFrame, pd.DataFrame]:
+                                        biomass_table: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
     Computes transect and stratification information necessary
     for running the Jolly-Hampton algorithm for data that
@@ -23,7 +23,7 @@ def get_transect_strata_info_no_kriging(lat_inpfc: Tuple[float],
     lat_inpfc : Tuple[float]
         Bin values which represent the latitude bounds for
         each region within a survey (established by INPFC)
-    biomass_table : pd.Dataframe
+    biomass_table : pd.DataFrame
         DataFrame containing Longitude, Latitude, Spacing, and
         normalized_biomass_density columns
 
@@ -80,7 +80,7 @@ def get_transect_strata_info_no_kriging(lat_inpfc: Tuple[float],
 
 
 def get_transect_strata_info_kriged(lat_inpfc: Tuple[float],
-                                    biomass_table: pd.Dataframe) -> Tuple[pd.DataFrame, pd.DataFrame]:
+                                    biomass_table: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
     Computes transect and stratification information necessary
     for running the Jolly-Hampton algorithm for data that
@@ -91,7 +91,7 @@ def get_transect_strata_info_kriged(lat_inpfc: Tuple[float],
     lat_inpfc : Tuple[float]
         Bin values which represent the latitude bounds for
         each region within a survey (established by INPFC)
-    biomass_table : pd.Dataframe
+    biomass_table : pd.DataFrame
         DataFrame containing TODO: fill in
 
     Returns
