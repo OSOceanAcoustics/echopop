@@ -65,17 +65,6 @@ def get_transect_strata_info_no_kriging(lat_inpfc: Tuple[float],
     strata_info = transect_info["area"].groupby(strata_lat_stratum).agg(['count', 'sum'])
     strata_info = strata_info.rename(columns={'count': 'num_transects', 'sum': 'total_transect_area'})
 
-    # add this binning as a column
-    transect_info['lat_INPFC_stratum'] = strata_lat_stratum
-
-    # change index to lat_INPFC_bin
-    transect_info = transect_info.reset_index().set_index(['lat_INPFC_stratum', 'Transect'])
-
-    # create empty columns that will hold values in Jolly-Hampton algorithm
-    strata_info["rhom"] = np.nan
-    strata_info["biomass"] = np.nan
-    strata_info["var_rhom"] = np.nan
-
     return transect_info, strata_info
 
 
@@ -92,7 +81,8 @@ def get_transect_strata_info_kriged(lat_inpfc: Tuple[float],
         Bin values which represent the latitude bounds for
         each region within a survey (established by INPFC)
     biomass_table : pd.DataFrame
-        DataFrame containing TODO: fill in
+        DataFrame containing Latitude of centroid,
+        Longitude of centroid, and krig_biomass_vals columns
 
     Returns
     -------
@@ -116,21 +106,55 @@ def get_transect_strata_info_kriged(lat_inpfc: Tuple[float],
 
     reduced_table.set_index("lat_eq_inc", inplace=True)
 
-    # add columns to table
-    reduced_table["biomass"] = np.nan
-    reduced_table["distance"] = np.nan
-    reduced_table["area"] = np.nan
-
     # unique equal-spacing transects
-    uniq_lat_eq_inc = np.unique(reduced_table["lat_eq_inc"])
-
-    for ind, uniq_lat in enumerate(uniq_lat_eq_inc):
-        print(ind, uniq_lat)
+    uniq_lat_eq_inc = np.unique(reduced_table.index.values)
 
     # compute transect values needed for distance calculation
-    # transect_info = pd.DataFrame(index=biomass_table.index.unique())
+    transect_info = pd.DataFrame(index=uniq_lat_eq_inc, dtype=np.float64)
 
-    # return transect_info
+    # store the sum of the biomass for each transect
+    transect_info['biomass'] = reduced_table['krig_biomass_vals'].groupby(level='lat_eq_inc').sum()
+
+    # store max and min of the longitude
+    transect_info["max_longitude"] = reduced_table['Longitude of centroid'].groupby(level=0).max()
+    transect_info["min_longitude"] = reduced_table['Longitude of centroid'].groupby(level=0).min()
+
+    # compute and store the length of each transect
+    transect_info["distance"] = transect_info.apply(
+        lambda x: distance.distance(
+            (x.name, x['min_longitude']),
+            (x.name, x['max_longitude'])).nm,
+        axis=1
+    )
+
+    # compute differences in unique latitudes
+    uniq_lat_eq_inc_diff = np.diff(transect_info.index)
+    mean_diff = np.mean(uniq_lat_eq_inc_diff)
+
+    # compute the spacing between unique latitudes as nmi
+    transect_info["spacing"] = np.nan
+    transect_info["spacing"].iloc[1:-1] = uniq_lat_eq_inc_diff[:-1] * (60.0 / 2.0)
+    transect_info["spacing"].iloc[0] = mean_diff * 60.0
+    transect_info["spacing"].iloc[-1] = mean_diff * 60.0
+
+    # compute the area covered by each transect
+    transect_info["area"] = transect_info.apply(lambda x: x["distance"] * x["spacing"], axis=1)
+
+    # bin the mean latitude using lat_inpfc, each bin represents a stratum
+    temp_df = pd.DataFrame(index=uniq_lat_eq_inc, dtype=np.float64)
+    temp_df["unique_lat"] = transect_info.index.values
+    strata_lat_stratum = pd.cut(temp_df["unique_lat"],
+                                lat_inpfc, right=False,
+                                labels=range(len(lat_inpfc) - 1)).rename('lat_INPFC_stratum')
+
+    # include the last lat_inpfc right interval
+    strata_lat_stratum.loc[lat_inpfc[-1]] = strata_lat_stratum.cat.categories.max()
+
+    # create important strata information
+    strata_info = transect_info["area"].groupby(strata_lat_stratum).agg(['count', 'sum'])
+    strata_info = strata_info.rename(columns={'count': 'num_transects', 'sum': 'total_transect_area'})
+
+    return transect_info, strata_info
 
 
 def run_jolly_hampton(survey, nr: int, lat_inpfc: Tuple[float],
@@ -165,9 +189,8 @@ def run_jolly_hampton(survey, nr: int, lat_inpfc: Tuple[float],
     """
 
     if kriged_data:
-        raise NotImplementedError("Not done")
-        transect_info, strata_info = get_transect_strata_info_no_kriging(lat_inpfc,
-                                                                         survey.krig_results_gdf)
+        transect_info, strata_info = get_transect_strata_info_kriged(lat_inpfc,
+                                                                     survey.krig_results_gdf)
     else:
         transect_info, strata_info = get_transect_strata_info_no_kriging(lat_inpfc,
                                                                          survey.final_biomass_table)
