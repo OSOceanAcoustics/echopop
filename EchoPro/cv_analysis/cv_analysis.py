@@ -119,7 +119,7 @@ def get_transect_strata_info_kriged(lat_inpfc: Tuple[float],
     transect_info["max_longitude"] = reduced_table['Longitude of centroid'].groupby(level=0).max()
     transect_info["min_longitude"] = reduced_table['Longitude of centroid'].groupby(level=0).min()
 
-    # compute and store the length of each transect
+    # compute and store the length (in nmi) of each transect
     transect_info["distance"] = transect_info.apply(
         lambda x: distance.distance(
             (x.name, x['min_longitude']),
@@ -137,7 +137,7 @@ def get_transect_strata_info_kriged(lat_inpfc: Tuple[float],
     transect_info["spacing"].iloc[0] = mean_diff * 60.0
     transect_info["spacing"].iloc[-1] = mean_diff * 60.0
 
-    # compute the area covered by each transect
+    # compute the area (with units nmi^2) covered by each transect
     transect_info["area"] = transect_info.apply(lambda x: x["distance"] * x["spacing"], axis=1)
 
     # bin the mean latitude using lat_inpfc, each bin represents a stratum
