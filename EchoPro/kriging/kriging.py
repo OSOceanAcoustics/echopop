@@ -363,21 +363,18 @@ class Kriging:
 
         return ep_arr, eps_arr, vp_arr
 
-    def run_biomass_kriging(self, krig_mesh: KrigingMesh) -> gpd.GeoDataFrame:
+    def run_biomass_kriging(self, krig_mesh: KrigingMesh) -> None:
         """
         A high-level interface that sets up and runs
         Kriging using the normalized biomass density.
+        The results are then stored in the ``Survey``
+        object as ``krig_results_gdf``.
+
 
         Parameters
         ----------
         krig_mesh : KrigingMesh
             Object representing the Kriging mesh
-
-        Returns
-        -------
-        results_gdf : gpd.GeoDataFrame
-            Dataframe filled with information pertaining to the
-            mesh and Kriging values calculated at those mesh points
 
         Notes
         -----
@@ -405,9 +402,9 @@ class Kriging:
         results_gdf['krig_biomass_ep'] = ep_arr
         results_gdf['krig_biomass_eps'] = eps_arr
         results_gdf["area_calc"] = self.survey.params['kriging_A0'] * results_gdf['Cell portion']
-        results_gdf["krig_biomass_vals"] = 1e-6 * results_gdf['krig_biomass_vp'] * results_gdf["area_calc"]
+        results_gdf["krig_biomass_vals"] = results_gdf['krig_biomass_vp'] * results_gdf["area_calc"]
 
-        return results_gdf
+        self.survey.krig_results_gdf = results_gdf
 
     @staticmethod
     def plot_kriging_results(krig_results_gdf: gpd.GeoDataFrame,
