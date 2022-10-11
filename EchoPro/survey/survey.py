@@ -72,6 +72,7 @@ class Survey:
         self.specimen_df = None
         self.nasc_df = None
         self.final_biomass_table = None
+        self.krig_results_gdf = None
 
     @staticmethod
     def _check_init_file(init_file_path: str) -> None:
@@ -274,11 +275,13 @@ class Survey:
             nr = 10000  # number of realizations
 
         if kriged_data:
-            raise NotImplementedError("CV analysis for kriged data has not been implemented")
+            if self.krig_results_gdf is None:
+                raise RuntimeError("Kriging must be ran before performing CV anlysis on Kriged data!")
         else:
-            return cv_analysis.run_jolly_hampton(nr, lat_inpfc,
-                                                 self.final_biomass_table,
-                                                 self.params["JH_fac"], seed)
+            if self.final_biomass_table is None:
+                raise RuntimeError("The biomass density must be calculated before performing CV anlysis on data!")
+
+        return cv_analysis.run_jolly_hampton(self, nr, lat_inpfc, seed, kriged_data)
 
     def get_kriging_mesh(self) -> KrigingMesh:
         """
