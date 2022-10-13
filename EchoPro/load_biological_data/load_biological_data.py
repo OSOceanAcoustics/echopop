@@ -27,6 +27,7 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
 
         self._load_length_data()
         self._load_specimen_data()
+        self._load_gear_data()
 
     def _check_length_df(self, len_df: pd.DataFrame) -> None:
         """
@@ -202,6 +203,72 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
 
             # Construct full specimen dataframe from US and Canada sections
             self.survey.specimen_df = pd.concat([specimen_us_df, specimen_can_df])
+
+        else:
+            raise NotImplementedError(f"Source of {self.survey.params['source']} not implemented yet.")
+
+    def _process_gear_data(self, df):
+        """
+        Parameters
+        ----------
+        df : Pandas Dataframe
+            Dataframe holding the gear data
+        Returns
+        -------
+        Processed Dataframe
+        """
+        # TODO: document/ move to a more appropriate class
+
+        df = df[['Haul', 'Average_Footrope_Depth', 'Surface_Temperature', 'Gear_Temperature', 'Average_Wireout',
+                 'Transect', 'Net_Height']].copy()
+
+        # set data types of dataframe
+        df = df.astype({'Haul': int, 'Average_Footrope_Depth': np.float64, 'Surface_Temperature': np.float64,
+                        'Gear_Temperature': np.float64, 'Average_Wireout': np.float64, 'Transect': np.float64})
+
+        if self.survey.params['exclude_age1'] is False:
+            raise NotImplementedError("Including age 1 data has not been implemented!")
+
+        df['Net_Height'] = df['Net_Height'].apply(lambda x: np.nan if type(x) == str else x).astype(float)
+
+        df.set_index('Haul', inplace=True)
+        df.sort_index(inplace=True)
+
+        return df
+
+    def _load_gear_data(self):
+
+        # TODO: document/ move to a more appropriate class
+
+        if self.survey.params['source'] == 3:
+
+            if self.survey.params['filename_gear_US']:
+                gear_us_df = pd.read_excel(self.survey.params['data_root_dir'] + self.survey.params['filename_gear_US'],
+                                           sheet_name='biodata_gear')
+                gear_us_df = self._process_gear_data(gear_us_df)
+            else:
+                gear_us_df = None
+
+            if self.survey.params['filename_gear_CAN']:
+                gear_can_df = pd.read_excel(self.survey.params['data_root_dir'] + self.survey.params['filename_gear_CAN'],
+                                            sheet_name='biodata_gear_CAN')
+                gear_can_df = self._process_gear_data(gear_can_df)
+
+                # transect offset is set to zero since we will not have overlap transects
+                # TODO: Is this a necessary variable? If so, we should make it an input to the function.
+                CAN_Transect_offset = 0
+
+                # combine US & CAN gear files
+                gear_can_df.index = gear_can_df.index + self.survey.params['CAN_haul_offset']  # add haul_offset
+                gear_can_df['Transect'] = gear_can_df['Transect'] + CAN_Transect_offset
+            else:
+                gear_can_df = None
+
+            # combine US & CAN trawl files
+            if isinstance(gear_us_df, pd.DataFrame) and isinstance(gear_can_df, pd.DataFrame):
+                self.survey.gear_df = pd.concat([gear_us_df, gear_can_df])
+            else:
+                raise SystemError(f"Cannot construct gear_df for source = 3, since either US or CAN is not available.")
 
         else:
             raise NotImplementedError(f"Source of {self.survey.params['source']} not implemented yet.")

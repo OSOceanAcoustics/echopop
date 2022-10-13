@@ -28,7 +28,6 @@ class LoadStrataData:  # TODO: Does it make sense for this to be a class?
 
         self._load_stratification_file()
         self._load_geographic_stratification()
-        self._get_strata_sig_b()
 
     def _check_strata_df(self, strata_df: pd.DataFrame) -> None:
         """
@@ -116,61 +115,3 @@ class LoadStrataData:  # TODO: Does it make sense for this to be a class?
 
         else:
             raise NotImplementedError(f"geo_strata_filename has unknown sheet name!")
-
-    def _get_strata_sig_b(self) -> None:
-        """
-        Computes the backscattering cross-section (sigma_b),
-        using the strata, specimen, and length dataframes.
-        These values are then stored in self.survey.strata_sig_b
-        as a Pandas series with index "stratum".
-        """
-
-        # TODO: the target strength functions are specific to Hake, replace with input in the future
-
-        # initialize sig_bs_haul column in strata_df
-        self.survey.strata_df["sig_bs_haul"] = np.nan
-
-        # select the indices that do not have nan in either Length or Weight
-        spec_df = self.survey.specimen_df[['Length', 'Weight']].copy()
-        spec_df = spec_df.dropna(how='any')
-
-        for haul_num in spec_df.index.unique():
-
-            # lengths from specimen file associated with index haul_num
-            spec_len = spec_df.loc[haul_num]['Length']
-
-            if haul_num in self.survey.length_df.index:
-
-                # add lengths from length file associated with index haul_num
-                length_len = self.survey.length_df.loc[haul_num]['Length'].values
-                length_freq = self.survey.length_df.loc[haul_num]['Frequency'].values
-
-                # empirical relation for target strength
-                TS0j_length = 20.0 * np.log10(length_len) - 68.0
-
-                # sum of target strengths
-                sum_TS0j_length = np.nansum((10.0 ** (TS0j_length / 10.0)) * length_freq)
-
-                # total number of values used to calculate sum_TS0j_length
-                num_length = np.nansum(length_freq)
-
-            else:
-
-                # sum of target strengths
-                sum_TS0j_length = 0.0
-
-                # total number of values used to calculate sum_TS0j_length
-                num_length = 0.0
-
-            # empirical relation for target strength
-            TS0j_spec = 20.0 * np.log10(spec_len) - 68.0
-
-            # sum of target strengths
-            sum_TS0j_spec = np.nansum(10.0 ** (TS0j_spec / 10.0))
-
-            # mean differential backscattering cross-section for each haul
-            self.survey.strata_df.loc[haul_num,
-                                    "sig_bs_haul"] = (sum_TS0j_spec + sum_TS0j_length)/(num_length + TS0j_spec.size)
-
-        # mean backscattering cross-section for each stratum
-        self.survey.strata_sig_b = 4.0 * np.pi * self.survey.strata_df['sig_bs_haul'].groupby('stratum').mean()

@@ -9,7 +9,7 @@ from ..kriging import Kriging
 from ..kriging_mesh import KrigingMesh
 from ..semivariogram import SemiVariogram
 from ..load_nasc_data import load_nasc_data
-from typing import Tuple, TypedDict, Callable
+from typing import Tuple, TypedDict, Callable, List, Optional
 import geopandas as gpd
 
 # define the semi-variogram input types
@@ -71,8 +71,8 @@ class Survey:
         self.length_df = None
         self.specimen_df = None
         self.nasc_df = None
-        self.final_biomass_table = None
         self.krig_results_gdf = None
+        self.bio_calc = None
 
     @staticmethod
     def _check_init_file(init_file_path: str) -> None:
@@ -225,17 +225,25 @@ class Survey:
         if file_type in ('nasc', 'all'):
             self.nasc_df = load_nasc_data.load_nasc_df(self)
 
-    def compute_biomass_density(self):
+    def compute_biomass_density(self, selected_transects: Optional[List] = None) -> None:
         """
         Computes the normalized biomass density and
         creates ``self.final_biomass_table``, which
         is a Pandas DataFrame that contains the
         normalized biomass density and associated
         useful variables.
+
+        Parameters
+        ----------
+        selected_transects : list or None
+            The subset of transects used in the biomass calculation
         """
 
-        bio_dense = ComputeBiomassDensity(self)
-        bio_dense.get_final_biomass_table()
+        self.bio_calc = ComputeBiomassDensity(self)
+        self.bio_calc.get_final_biomass_table(selected_transects)
+
+        # TODO: change reference to all Dataframes i.e. length_df, strata_df, specimen_df, nasc_df
+        #  from survey.df to survey.bio_calc.df in all downstream computations after computing biomass density
 
     def run_cv_analysis(self,
                         lat_inpfc: Tuple[float] = (np.NINF, 36, 40.5, 43.000, 45.7667, 48.5, 55.0000),
@@ -275,10 +283,10 @@ class Survey:
             nr = 10000  # number of realizations
 
         if kriged_data:
-            if self.krig_results_gdf is None:
+            if self.bio_calc.krig_results_gdf is None:
                 raise RuntimeError("Kriging must be ran before performing CV anlysis on Kriged data!")
         else:
-            if self.final_biomass_table is None:
+            if self.bio_calc.final_biomass_table is None:
                 raise RuntimeError("The biomass density must be calculated before performing CV anlysis on data!")
 
         return cv_analysis.run_jolly_hampton(self, nr, lat_inpfc, seed, kriged_data)
@@ -353,6 +361,8 @@ class Survey:
             expected_type = vario_type_dict.get(key)
             if not isinstance(val, expected_type):
                 raise TypeError(f"{key} is not of type {expected_type}")
+
+        raise RuntimeError("should final_biomass_table from subset transects be used here?")
 
         if (not isinstance(self.final_biomass_table, gpd.GeoDataFrame)) \
                 and ('normalized_biomass_density' not in self.final_biomass_table):
