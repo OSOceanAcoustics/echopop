@@ -668,7 +668,11 @@ class ComputeBiomassDensity:
             self.length_df = self.survey.length_df.loc[sel_hauls_length].copy()
             self.strata_df = self.survey.strata_df.loc[sel_haul_strata].copy()
             self.specimen_df = self.survey.specimen_df.loc[sel_haul_specimen].copy()
-            self.nasc_df = self.survey.nasc_df.loc[selected_transects].copy()
+
+            # select nasc data based on Haul, so we do not select a stratum that is not in length/specimen data
+            sel_haul_nasc = self.survey.nasc_df.reset_index().set_index("Haul").index.intersection(sel_hauls).unique()
+            self.nasc_df = self.survey.nasc_df.reset_index().set_index("Haul").loc[sel_haul_nasc].copy()
+            self.nasc_df = self.nasc_df.reset_index().set_index("Transect")  # set index to what we expect
 
         else:
             self.length_df = self.survey.length_df.copy()
