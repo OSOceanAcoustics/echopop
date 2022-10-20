@@ -31,6 +31,8 @@ class ComputeBiomassDensity:
         self.nasc_df = None
         self.final_biomass_table = None
         self.krig_results_gdf = None
+        self.bc_df = None   # biomass constants for each stratum
+        self.age2_wgt_prop = None
 
     def _get_strata_sig_b(self) -> None:
         """
@@ -89,6 +91,104 @@ class ComputeBiomassDensity:
 
         # mean backscattering cross-section for each stratum
         self.strata_sig_b = 4.0 * np.pi * self.strata_df['sig_bs_haul'].groupby('stratum').mean()
+
+    def _fill_missing_strata_indices(self) -> None:
+        """
+        When selecting a subset of the transects, it is possible that some
+        strata do not have a sigma b value or biomass constants. This function fills in these
+        missing values with artificial data. This is done as follows for
+        each missing stratum:
+        - If the value is only known for 1 stratum, then all missing stratum will be
+        filled with the value of the known stratum, otherwise the below items
+        will determine how the value is filled:
+            - If the missing stratum index is less than the minimum known stratum index,
+            then the missing stratum value will be set to the value of the minimum known
+            stratum index.
+            - If the missing stratum index is greater than the maximum known stratum index,
+            then the missing stratum value will be set to the value of the maximum known
+            stratum index.
+            - If the missing stratum index is between the minimum and maximum known stratum
+            indices, then the missing value will be set to the average of the values provided
+            by the two closest known stratum indices.
+
+        Notes
+        -----
+        If there are missing stratum indices, then the class variable ``self.strata_sig_b``,
+        ``self.bc_df``, and ``self.age2_wgt_prop_df`` will be directly modified.
+        """
+
+        # all strata indices that are missing
+        missing_strata = set(self.nasc_df["Stratum"].unique()) - set(self.strata_sig_b.index.values)
+
+        # if there are no missing strata then do nothing
+        if len(missing_strata) == 0:
+            return
+
+        max_known_strata = self.strata_sig_b.index.max()
+        min_known_strata = self.strata_sig_b.index.min()
+
+        # if there is only 1 stratum with a value, fill all missing
+        # strata with the only known value
+        fill_w_one_val = False
+        if len(self.strata_sig_b.index) == 1:
+            fill_w_one_val = True
+
+        for strata in missing_strata:
+
+            if fill_w_one_val:
+
+                # fill all missing strata with the only known value
+                self.strata_sig_b.loc[strata] = self.strata_sig_b.loc[max_known_strata]
+                self.bc_df.loc[strata] = self.bc_df.loc[max_known_strata]
+                self.age2_wgt_prop_df.loc[strata] = self.age2_wgt_prop_df.loc[max_known_strata]
+
+            else:
+
+                if strata > max_known_strata:
+
+                    # fill value with the value at the largest known stratum
+                    self.strata_sig_b.loc[strata] = self.strata_sig_b.loc[max_known_strata]
+                    self.bc_df.loc[strata] = self.bc_df.loc[max_known_strata]
+                    self.age2_wgt_prop_df.loc[strata] = self.age2_wgt_prop_df.loc[max_known_strata]
+
+                elif strata < min_known_strata:
+
+                    # fill value with the value at the smallest known stratum
+                    self.strata_sig_b.loc[strata] = self.strata_sig_b.loc[min_known_strata]
+                    self.bc_df.loc[strata] = self.bc_df.loc[min_known_strata]
+                    self.age2_wgt_prop_df.loc[strata] = self.age2_wgt_prop_df.loc[min_known_strata]
+
+                else:
+
+                    # get the two indices of strata_sig_b.index that are closest to strata
+                    strata_ind_diff = np.abs(strata - self.strata_sig_b.index)
+                    idx = np.argpartition(strata_ind_diff, 2)
+
+                    # get sig_b values at two smallest indices
+                    sig_b_1 = self.strata_sig_b.iloc[idx[0]]
+                    sig_b_2 = self.strata_sig_b.iloc[idx[1]]
+
+                    # get biomass constant values at two smallest indices
+                    vals_1 = self.bc_df.iloc[idx[0]]
+                    vals_2 = self.bc_df.iloc[idx[1]]
+
+                    # get age 2 weight proportion at two smallest indices
+                    wgt_prop_1 = self.age2_wgt_prop_df.iloc[idx[0]]
+                    wgt_prop_2 = self.age2_wgt_prop_df.iloc[idx[1]]
+
+                    # average two closest sig_b values
+                    average_sig_b = (sig_b_1 + sig_b_2) / 2.0
+
+                    # average two closest biomass constant values
+                    average_vals = (vals_1 + vals_2) / 2.0
+
+                    # average two closest age 2 weight proportion values
+                    average_wgt_prop = (wgt_prop_1 + wgt_prop_2) / 2.0
+
+                    # fill in value with the average value of the two closest known strata
+                    self.strata_sig_b.loc[strata] = average_sig_b
+                    self.bc_df.loc[strata] = average_vals
+                    self.age2_wgt_prop_df.loc[strata] = average_wgt_prop
 
     @staticmethod
     def _get_bin_ind(input_data: np.ndarray,
@@ -424,7 +524,7 @@ class ComputeBiomassDensity:
 
         return bio_const_df
 
-    def _get_biomass_constants(self) -> pd.DataFrame:
+    def _get_biomass_constants(self) -> None:
         """
         Obtains the constants associated with each stratum,
         which are used in the biomass density calculation.
@@ -439,8 +539,9 @@ class ComputeBiomassDensity:
         * len_wgt_F_prod -- product of the length-key and
         the weight-key for the female population
 
-        Returns
-        -------
+        Notes
+        -----
+        The following class variable is created in this function:
         bio_const_df : pd.Dataframe
             Dataframe with index of stratum and columns
             corresponding to the constants specified
@@ -473,7 +574,7 @@ class ComputeBiomassDensity:
             bio_const_df = self._fill_len_wgt_prod(bio_const_df, stratum, spec_drop,
                                                    length_drop_df, len_weight_spec)
 
-        return bio_const_df
+        self.bc_df = bio_const_df
 
     @staticmethod
     def _get_interval(nasc_df: pd.DataFrame) -> np.ndarray:
@@ -509,15 +610,13 @@ class ComputeBiomassDensity:
 
         return interval
 
-    def _get_tot_norm_wgt(self, bc_df: pd.DataFrame, n_A: pd.Series) -> np.ndarray:
+    def _get_tot_norm_wgt(self, n_A: pd.Series) -> np.ndarray:
         """
         Calculates the total normalized weight
         for each NASC value.
 
         Parameters
         ----------
-        bc_df : pd.Dataframe
-            Dataframe of biomass constants for each stratum
         n_A : pd.Series
             Series representing the nautical areal density
 
@@ -527,7 +626,7 @@ class ComputeBiomassDensity:
         """
 
         # expand the bio constants dataframe so that it corresponds to nasc_df
-        bc_expanded_df = bc_df.loc[self.nasc_df.Stratum.values]
+        bc_expanded_df = self.bc_df.loc[self.nasc_df.Stratum.values]
 
         # compute the normalized biomass density for males and females
         nntk_male = np.round(n_A.values * bc_expanded_df.M_prop.values)
@@ -573,19 +672,10 @@ class ComputeBiomassDensity:
         # normalized weight for the first age bin
         return np.array([np.sum(input_arr_wgt[age_bins_ind[0][i]]) for i in len_bin_ind]).sum() / input_arr_wgt.sum()
 
-    def _get_normalized_biomass_density(self, nwgt_total: np.ndarray) -> np.ndarray:
+    def _get_age2_wgt_prop(self) -> None:
         """
-        Computes and returns the normalized
-        biomass density.
-
-        Parameters
-        ----------
-        nwgt_total : np.array
-            Total normalized weight for each n_A value
-
-        Returns
-        -------
-        Numpy array of normalized biomass density
+        Obtains the multiplier for each stratum to be applied to the total
+        normalized weight. The weight corresponds to the age 2 weight proportion.
         """
 
         # TODO: This is necessary to match the Matlab output
@@ -595,14 +685,9 @@ class ComputeBiomassDensity:
 
         # each stratum's multiplier once normalized weight has been calculated
         stratum_ind = spec_drop.index.unique()
-        age2_wgt_prop_df = pd.DataFrame(columns=['val'], index=stratum_ind, dtype=np.float64)
+        self.age2_wgt_prop_df = pd.DataFrame(columns=['val'], index=stratum_ind, dtype=np.float64)
         for i in stratum_ind:
-            age2_wgt_prop_df.loc[i].val = 1.0 - self._get_age_weight_key(spec_drop.loc[i])
-
-        # TODO: the returned value is called normalized, but it isn't between [0, 1]! Different name or bug?
-
-        # normalized biomass density
-        return nwgt_total * age2_wgt_prop_df.loc[self.nasc_df.Stratum.values].values.flatten()
+            self.age2_wgt_prop_df.loc[i].val = 1.0 - self._get_age_weight_key(spec_drop.loc[i])
 
     def _construct_biomass_table(self, norm_bio_dense: np.array) -> None:
         """
@@ -670,9 +755,7 @@ class ComputeBiomassDensity:
             self.specimen_df = self.survey.specimen_df.loc[sel_haul_specimen].copy()
 
             # select nasc data based on Haul, so we do not select a stratum that is not in length/specimen data
-            sel_haul_nasc = self.survey.nasc_df.reset_index().set_index("Haul").index.intersection(sel_hauls).unique()
-            self.nasc_df = self.survey.nasc_df.reset_index().set_index("Haul").loc[sel_haul_nasc].copy()
-            self.nasc_df = self.nasc_df.reset_index().set_index("Transect")  # set index to what we expect
+            self.nasc_df = self.survey.nasc_df.loc[sel_transects]
 
         else:
             self.length_df = self.survey.length_df.copy()
@@ -696,12 +779,17 @@ class ComputeBiomassDensity:
 
         self.set_class_variables(selected_transects)
 
+        # get the backscattering cross-section for each stratum
         self._get_strata_sig_b()
 
         # add stratum column to length and specimen df and set it as the index
         self._add_stratum_column()
 
-        bc_df = self._get_biomass_constants()
+        self._get_biomass_constants()
+
+        self._get_age2_wgt_prop()
+
+        self._fill_missing_strata_indices()
 
         # calculate proportion coefficient for mixed species
         wgt_vals = self.strata_df.reset_index().set_index('Haul')['wt']
@@ -713,8 +801,10 @@ class ComputeBiomassDensity:
                        self.strata_sig_b.loc[self.nasc_df.Stratum].values)
 
         # total normalized weight for each n_A value
-        nwgt_total = self._get_tot_norm_wgt(bc_df, n_A)
+        nwgt_total = self._get_tot_norm_wgt(n_A)
 
-        norm_bio_dense = self._get_normalized_biomass_density(nwgt_total)
+        # obtain normalized biomass density
+        # TODO: the computed value is called normalized, but it isn't between [0, 1]! Different name or bug?
+        norm_bio_dense = nwgt_total * self.age2_wgt_prop_df.loc[self.nasc_df.Stratum.values].values.flatten()
 
         self._construct_biomass_table(norm_bio_dense)
