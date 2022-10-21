@@ -234,6 +234,7 @@ class Survey:
             The subset of transects used in the biomass calculation
         """
 
+        self.bio_calc = None
         self.bio_calc = ComputeBiomassDensity(self)
         self.bio_calc.get_final_biomass_table(selected_transects)
 

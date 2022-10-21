@@ -32,7 +32,8 @@ class ComputeBiomassDensity:
         self.final_biomass_table = None
         self.krig_results_gdf = None
         self.bc_df = None   # biomass constants for each stratum
-        self.age2_wgt_prop = None
+        self.age2_wgt_prop_df = None
+        self.strata_sig_b = None
 
     def _get_strata_sig_b(self) -> None:
         """
@@ -92,10 +93,10 @@ class ComputeBiomassDensity:
         # mean backscattering cross-section for each stratum
         self.strata_sig_b = 4.0 * np.pi * self.strata_df['sig_bs_haul'].groupby('stratum').mean()
 
-    def _fill_missing_strata_indices(self) -> None:
+    def _fill_missing_strata_indices(self, df: pd.DataFrame) -> pd.DataFrame:
         """
         When selecting a subset of the transects, it is possible that some
-        strata do not have a sigma b value or biomass constants. This function fills in these
+        strata do not have important constants defined. This function fills in these
         missing values with artificial data. This is done as follows for
         each missing stratum:
         - If the value is only known for 1 stratum, then all missing stratum will be
@@ -111,26 +112,31 @@ class ComputeBiomassDensity:
             indices, then the missing value will be set to the average of the values provided
             by the two closest known stratum indices.
 
-        Notes
-        -----
-        If there are missing stratum indices, then the class variable ``self.strata_sig_b``,
-        ``self.bc_df``, and ``self.age2_wgt_prop_df`` will be directly modified.
+        Parameters
+        ----------
+        df: pd.DataFrame
+            A Dataframe with stratum as its index
+
+        Returns
+        -------
+        df: pd.DataFrame
+            ``df`` with all missing strata data filled in
         """
 
         # all strata indices that are missing
-        missing_strata = set(self.nasc_df["Stratum"].unique()) - set(self.strata_sig_b.index.values)
+        missing_strata = set(self.nasc_df["Stratum"].unique()) - set(df.index.values)
 
         # if there are no missing strata then do nothing
         if len(missing_strata) == 0:
-            return
+            return df
 
-        max_known_strata = self.strata_sig_b.index.max()
-        min_known_strata = self.strata_sig_b.index.min()
+        max_known_strata = df.index.max()
+        min_known_strata = df.index.min()
 
         # if there is only 1 stratum with a value, fill all missing
         # strata with the only known value
         fill_w_one_val = False
-        if len(self.strata_sig_b.index) == 1:
+        if len(df.index) == 1:
             fill_w_one_val = True
 
         for strata in missing_strata:
@@ -138,57 +144,37 @@ class ComputeBiomassDensity:
             if fill_w_one_val:
 
                 # fill all missing strata with the only known value
-                self.strata_sig_b.loc[strata] = self.strata_sig_b.loc[max_known_strata]
-                self.bc_df.loc[strata] = self.bc_df.loc[max_known_strata]
-                self.age2_wgt_prop_df.loc[strata] = self.age2_wgt_prop_df.loc[max_known_strata]
+                df.loc[strata] = df.loc[max_known_strata]
 
             else:
 
                 if strata > max_known_strata:
 
                     # fill value with the value at the largest known stratum
-                    self.strata_sig_b.loc[strata] = self.strata_sig_b.loc[max_known_strata]
-                    self.bc_df.loc[strata] = self.bc_df.loc[max_known_strata]
-                    self.age2_wgt_prop_df.loc[strata] = self.age2_wgt_prop_df.loc[max_known_strata]
+                    df.loc[strata] = df.loc[max_known_strata]
 
                 elif strata < min_known_strata:
 
                     # fill value with the value at the smallest known stratum
-                    self.strata_sig_b.loc[strata] = self.strata_sig_b.loc[min_known_strata]
-                    self.bc_df.loc[strata] = self.bc_df.loc[min_known_strata]
-                    self.age2_wgt_prop_df.loc[strata] = self.age2_wgt_prop_df.loc[min_known_strata]
+                    df.loc[strata] = df.loc[min_known_strata]
 
                 else:
 
                     # get the two indices of strata_sig_b.index that are closest to strata
-                    strata_ind_diff = np.abs(strata - self.strata_sig_b.index)
+                    strata_ind_diff = np.abs(strata - df.index)
                     idx = np.argpartition(strata_ind_diff, 2)
 
-                    # get sig_b values at two smallest indices
-                    sig_b_1 = self.strata_sig_b.iloc[idx[0]]
-                    sig_b_2 = self.strata_sig_b.iloc[idx[1]]
+                    # get values at two smallest indices
+                    val_1 = df.iloc[idx[0]]
+                    val_2 = df.iloc[idx[1]]
 
-                    # get biomass constant values at two smallest indices
-                    vals_1 = self.bc_df.iloc[idx[0]]
-                    vals_2 = self.bc_df.iloc[idx[1]]
-
-                    # get age 2 weight proportion at two smallest indices
-                    wgt_prop_1 = self.age2_wgt_prop_df.iloc[idx[0]]
-                    wgt_prop_2 = self.age2_wgt_prop_df.iloc[idx[1]]
-
-                    # average two closest sig_b values
-                    average_sig_b = (sig_b_1 + sig_b_2) / 2.0
-
-                    # average two closest biomass constant values
-                    average_vals = (vals_1 + vals_2) / 2.0
-
-                    # average two closest age 2 weight proportion values
-                    average_wgt_prop = (wgt_prop_1 + wgt_prop_2) / 2.0
+                    # average two closest values
+                    average_vals = (val_1 + val_2) / 2.0
 
                     # fill in value with the average value of the two closest known strata
-                    self.strata_sig_b.loc[strata] = average_sig_b
-                    self.bc_df.loc[strata] = average_vals
-                    self.age2_wgt_prop_df.loc[strata] = average_wgt_prop
+                    df.loc[strata] = average_vals
+
+        return df
 
     @staticmethod
     def _get_bin_ind(input_data: np.ndarray,
@@ -789,7 +775,10 @@ class ComputeBiomassDensity:
 
         self._get_age2_wgt_prop()
 
-        self._fill_missing_strata_indices()
+        # fill in missing strata constants
+        self.strata_sig_b = self._fill_missing_strata_indices(df=self.strata_sig_b.copy())
+        self.bc_df = self._fill_missing_strata_indices(df=self.bc_df.copy())
+        self.age2_wgt_prop_df = self._fill_missing_strata_indices(df=self.age2_wgt_prop_df.copy())
 
         # calculate proportion coefficient for mixed species
         wgt_vals = self.strata_df.reset_index().set_index('Haul')['wt']
