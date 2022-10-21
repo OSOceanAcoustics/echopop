@@ -11,6 +11,7 @@ from ..semivariogram import SemiVariogram
 from ..load_nasc_data import load_nasc_data
 from typing import Tuple, TypedDict, Callable, List, Optional
 import geopandas as gpd
+from warnings import warn
 
 # define the semi-variogram input types
 vario_type_dict = {'nlag': int, 'lag_res': float}
@@ -228,7 +229,7 @@ class Survey:
     def compute_biomass_density(self, selected_transects: Optional[List] = None) -> None:
         """
         Computes the normalized biomass density and
-        creates ``self.final_biomass_table``, which
+        creates ``self.bio_calc.final_biomass_table``, which
         is a Pandas DataFrame that contains the
         normalized biomass density and associated
         useful variables.
@@ -316,7 +317,7 @@ class Survey:
         return KrigingMesh(self)
 
     def get_semi_variogram(self, krig_mesh: KrigingMesh = None,
-                           params: vario_param_type = {}):
+                           params: vario_param_type = {}, warning: bool = True):
         """
         Initializes a ``SemiVariogram`` object based on the provided
         ``KrigingMesh`` object, the calculated normalized biomass
@@ -331,6 +332,9 @@ class Survey:
             parameters:
             - ``nlag: int`` -- The total number of lag centers
             - ``lag_res: float`` -- The spacing between lag centers
+        warning : bool
+            If True all warnings are printed to the terminal, otherwise
+            they are silenced.
 
         Returns
         -------
@@ -340,10 +344,31 @@ class Survey:
             semi-variogram and routines for obtaining the best
             semi-variogram model for the estimated semi-variogram.
 
+        Warnings
+        --------
+        UserWarning
+            If the final biomass table being used was created from a subset
+            of the full data
+
+        Raises
+        ------
+        ValueError
+            If ``krig_mesh`` is not a ``KrigingMesh`` object
+        ValueError
+            If ``params`` is empty
+        ValueError
+            If ``params`` does not contain all required parameters
+        TypeError
+            If the values of ``params`` are not the expected type
+        ValueError
+            If the normalized biomass density has not been calculated
+
         Notes
         -----
         To run this routine, one must first compute the normalized
-        biomass density using ``compute_biomass_density``.
+        biomass density using ``compute_biomass_density``. It is standard
+        to compute the biomass density from the full set of data (i.e. not
+        from a subset of the data).
         """
 
         if not isinstance(krig_mesh, KrigingMesh):
@@ -362,16 +387,21 @@ class Survey:
             if not isinstance(val, expected_type):
                 raise TypeError(f"{key} is not of type {expected_type}")
 
-        raise RuntimeError("should final_biomass_table from subset transects be used here?")
+        # provide a warning if the final_biomass_table being used was
+        # created from a subset of the full data
+        if (len(self.bio_calc.final_biomass_table) != len(self.nasc_df)) and warning:
+            warn("The biomass data being used is a subset of the full dataset. "
+                 "It is recommended that you use the biomass data created from the full dataset. "
+                 "To silence this warning set the warning argument to False.")
 
-        if (not isinstance(self.final_biomass_table, gpd.GeoDataFrame)) \
-                and ('normalized_biomass_density' not in self.final_biomass_table):
+        if (not isinstance(self.bio_calc.final_biomass_table, gpd.GeoDataFrame)) \
+                and ('normalized_biomass_density' not in self.bio_calc.final_biomass_table):
             raise ValueError("The normalized biomass density must be calculated before running this routine!")
 
         semi_vario = SemiVariogram(
             krig_mesh.transformed_transect_df.x_transect.values,
             krig_mesh.transformed_transect_df.y_transect.values,
-            self.final_biomass_table['normalized_biomass_density'].values.flatten(),
+            self.bio_calc.final_biomass_table['normalized_biomass_density'].values.flatten(),
             params['lag_res'],
             params['nlag'],
         )
