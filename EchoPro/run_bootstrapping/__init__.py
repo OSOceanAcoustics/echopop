@@ -3,6 +3,6 @@
     acoustic and biological data, computation of CV analysis,
     and Kriging.
 """
-from .run_bootstrapping import RunBootstrapping
+from .run_bootstrapping import Bootstrapping
 
-__all__ = ["RunBootstrapping"]
+__all__ = ["Bootstrapping"]

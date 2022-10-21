@@ -1,6 +1,6 @@
 import yaml
 import numpy as np
-# from .run_bootstrapping import RunBootstrapping
+from ..run_bootstrapping import Bootstrapping
 from ..load_biological_data import LoadBioData
 from ..load_stratification_data import LoadStrataData
 from ..compute_biomass_density import ComputeBiomassDensity
@@ -9,18 +9,12 @@ from ..kriging import Kriging
 from ..kriging_mesh import KrigingMesh
 from ..semivariogram import SemiVariogram
 from ..load_nasc_data import load_nasc_data
-from typing import Tuple, TypedDict, Callable, List, Optional
+from typing import Tuple, List, Optional
 import geopandas as gpd
 from warnings import warn
 
-# define the semi-variogram input types
-vario_type_dict = {'nlag': int, 'lag_res': float}
-vario_param_type = TypedDict('vario_param_type', vario_type_dict)
-
-# define the Kriging parameter input types
-krig_type_dict = {'k_max': int, 'k_min': int, 'R': float, 'ratio': float,
-                  's_v_params': dict, 's_v_model': Callable}
-krig_param_type = TypedDict('krig_param_type', krig_type_dict)
+from ..global_vars import vario_type_dict, vario_param_type, \
+    krig_type_dict, krig_param_type
 
 
 class Survey:
@@ -447,9 +441,26 @@ class Survey:
         for key, val in params.items():
             expected_type = krig_type_dict.get(key)
             if not isinstance(val, expected_type):
-                raise TypeError(f"{key} is not of type {expected_type}")
+                raise TypeError(f"The Kriging parameter {key} is not of type {expected_type}")
 
         krig = Kriging(self, params['k_max'], params['k_min'], params['R'],
                        params['ratio'], params['s_v_params'], params['s_v_model'])
 
         return krig
+
+    def get_bootstrapping(self):
+        """
+        Initializes a ``Bootstrapping`` object.
+
+        Returns
+        -------
+        boot: Bootstrapping
+            An initialized ``Bootstrapping`` object that provides users with
+            access to a routine that runs bootstrapping
+        """
+
+        boot = Bootstrapping(self)
+
+        return boot
+
+
