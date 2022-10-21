@@ -3,6 +3,7 @@ from ..kriging_mesh import KrigingMesh
 from typing import Optional
 import math
 import numpy as np
+import pandas as pd
 
 
 class Bootstrapping:
@@ -105,29 +106,40 @@ class Bootstrapping:
         # initialize the random number generator object
         rng = np.random.default_rng(seed)
 
+        vals_to_keep = []
         for iteration in range(num_iterations):
-
-            print(f"Bootstrap iteration: {iteration}")
 
             # randomly select transects without replacement
             selected_transects = list(rng.choice(unique_transects, num_sel_transects, replace=False))
 
-            print(f"selected_transects {selected_transects}")
-
             self.survey.compute_biomass_density(selected_transects=selected_transects)
 
-            tot_bio_mass = self.survey.bio_calc.final_biomass_table["normalized_biomass_density"].sum()
+            tot_bio_mass_no_kriging = self.survey.bio_calc.final_biomass_table["normalized_biomass_density"].sum()
 
-            print(f"total biomass density = {tot_bio_mass} \n")
+            CV_JH_mean_no_kriging = self.survey.run_cv_analysis(kriged_data=False)
 
-            # CV_JH_mean = survey_2019.run_cv_analysis(kriged_data=False)
-
-            # if run_kriging:
+            if run_kriging:
+                print("hi")
                 # kriging_params["krig_mesh"].apply_coordinate_transformation(coord_type='transect')  # TODO: make sure that subselected transects are correctly transformed
                 # krig.run_biomass_kriging(kriging_params["krig_mesh"])
                 # survey_2019.krig_results_gdf.krig_biomass_vals.sum()
 
+                # vals_to_keep.append([tot_bio_mass_no_kriging, CV_JH_mean_no_kriging])
 
+            else:
 
+                vals_to_keep.append([tot_bio_mass_no_kriging, CV_JH_mean_no_kriging])
 
+        if run_kriging:
+            col_names = ["tot_biomass_no_kriging", "CV_JH_mean_no_kriging",
+                         "tot_biomass_kriging", "CV_JH_mean_kriging"]
+        else:
+            col_names = ["tot_biomass_no_kriging", "CV_JH_mean_no_kriging"]
 
+        boot_final_results = pd.DataFrame(vals_to_keep,
+                                          columns=col_names, index=range(1, num_iterations+1),
+                                          dtype=np.float64)
+
+        boot_final_results.index.name = "iteration"
+
+        return boot_final_results

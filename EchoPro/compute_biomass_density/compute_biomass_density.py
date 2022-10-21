@@ -644,10 +644,18 @@ class ComputeBiomassDensity:
         weight for the first age bin.
         """
 
-        # get numpy arrays of length, age, and weight
-        input_arr_len = df.Length.values
-        input_arr_age = df.Age.values
-        input_arr_wgt = df.Weight.values
+        # account for DataFrames with only 1 row
+        if isinstance(df.Length, np.float64):
+            # get numpy arrays of length, age, and weight
+            input_arr_len = np.array([df.Length])
+            input_arr_age = np.array([df.Age])
+            input_arr_wgt = np.array([df.Weight])
+
+        else:
+            # get numpy arrays of length, age, and weight
+            input_arr_len = df.Length.values
+            input_arr_age = df.Age.values
+            input_arr_wgt = df.Weight.values
 
         # bin the ages
         age_bins_ind = self._get_bin_ind(input_arr_age, self.bio_hake_age_bin)
