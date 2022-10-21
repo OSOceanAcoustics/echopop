@@ -69,17 +69,15 @@ class Bootstrapping:
             if kriging_params is None:
                 raise ValueError("If Kriging should be run, the input ``kriging_params`` must be provided!")
 
+            if ("krig_mesh" not in kriging_params.keys()) or (not isinstance(kriging_params["krig_mesh"], KrigingMesh)):
+                raise TypeError("The parameter ``krig_mesh`` was not provided or it is not of type KrigingMesh!")
+
+            # get krig_mesh object and remove it from kriging_params
+            krig_mesh_obj = kriging_params["krig_mesh"]
+            del kriging_params["krig_mesh"]
+
             # make sure all kriging parameters are included
-            needed_params = set(krig_type_dict.keys()).difference(set(kriging_params.keys()))
-
-            if "krig_mesh" not in kriging_params.keys():
-                needed_params.add("krig_mesh")
-            else:
-
-                if not isinstance(kriging_params["krig_mesh"], KrigingMesh):
-                    raise TypeError("The parameter ``krig_mesh`` is not of type KrigingMesh!")
-
-            if needed_params:
+            if set(krig_type_dict.keys()).difference(set(kriging_params.keys())):
                 raise ValueError("Some required parameters where not provided!")
 
             # check that all types are correct for params
@@ -88,11 +86,8 @@ class Bootstrapping:
                 if not isinstance(val, expected_type):
                     raise TypeError(f"The Kriging parameter {key} is not of type {expected_type}")
 
-            # TODO: make sure that kriging_params["krig_mesh"].survey and `self.survey` are the same objects
-
-            # apply full mesh transformation
-            # TODO: we should make it so that the user can provide their own transformation
-            kriging_params["krig_mesh"].apply_coordinate_transformation(coord_type='mesh')
+            # TODO: make sure that kriging_params["krig_mesh"].survey and
+            #  `self.survey` are the same objects, error out if they are not
 
             # initalize kriging routine
             krig = self.survey.get_kriging(kriging_params)
@@ -119,12 +114,25 @@ class Bootstrapping:
             CV_JH_mean_no_kriging = self.survey.run_cv_analysis(kriged_data=False)
 
             if run_kriging:
-                print("hi")
-                # kriging_params["krig_mesh"].apply_coordinate_transformation(coord_type='transect')  # TODO: make sure that subselected transects are correctly transformed
-                # krig.run_biomass_kriging(kriging_params["krig_mesh"])
-                # survey_2019.krig_results_gdf.krig_biomass_vals.sum()
 
-                # vals_to_keep.append([tot_bio_mass_no_kriging, CV_JH_mean_no_kriging])
+                # TODO: we should make it so that the user can provide their
+                #  own transformation for the below meshes
+
+                # apply transect mesh transformation
+                krig_mesh_obj.apply_coordinate_transformation(coord_type='transect')
+
+                # apply full mesh transformation
+                # TODO: they way this is setup is inefficient because we need
+                #  to transform the full mesh every time, can we avoid this?
+                krig_mesh_obj.apply_coordinate_transformation(coord_type='mesh')
+
+                krig.run_biomass_kriging(krig_mesh_obj)
+
+                tot_bio_mass_kriging = self.survey.bio_calc.krig_results_gdf.krig_biomass_vals.sum()
+                CV_JH_mean_kriging = self.survey.run_cv_analysis(kriged_data=True)
+
+                vals_to_keep.append([tot_bio_mass_no_kriging, CV_JH_mean_no_kriging,
+                                     tot_bio_mass_kriging, CV_JH_mean_kriging])
 
             else:
 

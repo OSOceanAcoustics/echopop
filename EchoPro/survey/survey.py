@@ -66,7 +66,6 @@ class Survey:
         self.length_df = None
         self.specimen_df = None
         self.nasc_df = None
-        self.krig_results_gdf = None
         self.bio_calc = None
 
     @staticmethod

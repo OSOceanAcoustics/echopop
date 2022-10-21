@@ -404,7 +404,7 @@ class Kriging:
         results_gdf["area_calc"] = self.survey.params['kriging_A0'] * results_gdf['Cell portion']
         results_gdf["krig_biomass_vals"] = results_gdf['krig_biomass_vp'] * results_gdf["area_calc"]
 
-        self.survey.krig_results_gdf = results_gdf
+        self.survey.bio_calc.krig_results_gdf = results_gdf
 
     @staticmethod
     def plot_kriging_results(krig_results_gdf: gpd.GeoDataFrame,
