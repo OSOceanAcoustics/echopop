@@ -385,8 +385,8 @@ class Kriging:
         if not isinstance(krig_mesh, KrigingMesh):
             raise ValueError("You must provide a KrigingMesh object!")
 
-        if (not isinstance(self.survey.final_biomass_table, gpd.GeoDataFrame)) \
-                and ('normalized_biomass_density' not in self.survey.final_biomass_table):
+        if (not isinstance(self.survey.bio_calc.final_biomass_table, gpd.GeoDataFrame)) \
+                and ('normalized_biomass_density' not in self.survey.bio_calc.final_biomass_table):
             raise ValueError("The normalized biomass density must be calculated before running this routine!")
 
         ep_arr, eps_arr, vp_arr = self.run_kriging(
@@ -394,7 +394,7 @@ class Kriging:
             krig_mesh.transformed_transect_df['x_transect'].values,
             krig_mesh.transformed_mesh_df['y_mesh'].values,
             krig_mesh.transformed_transect_df['y_transect'].values,
-            self.survey.final_biomass_table['normalized_biomass_density'].values.flatten())
+            self.survey.bio_calc.final_biomass_table['normalized_biomass_density'].values.flatten())
 
         # collect all important Kriging results
         results_gdf = krig_mesh.mesh_gdf.copy()
