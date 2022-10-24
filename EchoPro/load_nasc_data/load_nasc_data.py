@@ -14,7 +14,7 @@ def _check_nasc_df(nasc_df: pd.DataFrame) -> None:
     TODO: should we add more in-depth checks here?
     """
 
-    if not set(nasc_df.columns).intersection(nasc_cols):
+    if len(set(nasc_df.columns).intersection(nasc_cols)) != len(nasc_cols):
         raise NameError("NASC dataframe does not contain all expected columns!")
 
 

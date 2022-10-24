@@ -37,7 +37,7 @@ class LoadStrataData:  # TODO: Does it make sense for this to be a class?
         TODO: should we add more in-depth checks here?
         """
 
-        if not set(strata_df.columns).intersection(self.strata_cols):
+        if len(set(strata_df.columns).intersection(self.strata_cols)) != len(self.strata_cols):
             raise NameError("Strata dataframe does not contain all expected columns!")
 
     def _load_stratification_file(self) -> None:
@@ -82,7 +82,7 @@ class LoadStrataData:  # TODO: Does it make sense for this to be a class?
         TODO: should we add more in-depth checks here?
         """
 
-        if not set(geo_strata_df.columns).intersection(self.geo_strata_cols):
+        if len(set(geo_strata_df.columns).intersection(self.geo_strata_cols)) != len(self.geo_strata_cols):
             raise NameError("geo_strata dataframe does not contain all expected columns!")
 
     def _load_geographic_stratification(self) -> None:

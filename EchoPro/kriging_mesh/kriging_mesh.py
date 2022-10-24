@@ -61,7 +61,7 @@ class KrigingMesh:
         TODO: should we add more in-depth checks here?
         """
 
-        if not set(mesh_df.columns).intersection(self.mesh_cols):
+        if len(set(mesh_df.columns).intersection(self.mesh_cols)) != len(self.mesh_cols):
             raise NameError("Mesh dataframe does not contain all expected columns!")
 
     def _check_smoothed_contour_df(self, contour_df: pd.DataFrame) -> None:
@@ -72,7 +72,7 @@ class KrigingMesh:
         TODO: should we add more in-depth checks here?
         """
 
-        if not set(contour_df.columns).intersection(self.contour_cols):
+        if len(set(contour_df.columns).intersection(self.contour_cols)) != len(self.contour_cols):
             raise NameError("Smoothed contour dataframe does not contain all expected columns!")
 
     def _load_mesh(self) -> None:
