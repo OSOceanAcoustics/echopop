@@ -718,7 +718,6 @@ class ComputeBiomassDensity:
         Set class variables corresponding to the Dataframes from ``survey``,
         which hold all necessary data for the biomass calculation.
 
-
         Parameters
         ----------
         selected_transects : list or None

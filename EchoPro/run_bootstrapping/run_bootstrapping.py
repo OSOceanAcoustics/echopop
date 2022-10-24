@@ -184,7 +184,7 @@ class Bootstrapping:
         ``removal_percentage`` should be set to ``30.0``.
 
         If ``removal_percentage`` multiplied by the number of unique transects in
-        ``self.nasc_df`` is not an integer, then the ceiling of the result will
+        ``survey.nasc_df`` is not an integer, then the ceiling of the result will
         be used for the number of transects to be removed.
 
         If ``run_kriging=False`` then the Dataframe will have the columns

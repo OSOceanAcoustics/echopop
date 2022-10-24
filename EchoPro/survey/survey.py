@@ -237,9 +237,6 @@ class Survey:
         self.bio_calc = ComputeBiomassDensity(self)
         self.bio_calc.get_final_biomass_table(selected_transects)
 
-        # TODO: change reference to all Dataframes i.e. length_df, strata_df, specimen_df, nasc_df
-        #  from survey.df to survey.bio_calc.df in all downstream computations after computing biomass density
-
     def run_cv_analysis(self,
                         lat_inpfc: Tuple[float] = (np.NINF, 36, 40.5, 43.000, 45.7667, 48.5, 55.0000),
                         kriged_data=False, seed=None) -> float:
