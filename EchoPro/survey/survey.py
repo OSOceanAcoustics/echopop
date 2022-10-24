@@ -448,7 +448,7 @@ class Survey:
 
         return krig
 
-    def get_bootstrapping(self):
+    def get_bootstrapping(self) -> Bootstrapping:
         """
         Initializes a ``Bootstrapping`` object.
 
@@ -456,9 +456,11 @@ class Survey:
         -------
         boot: Bootstrapping
             An initialized ``Bootstrapping`` object that provides users with
-            access to a routine that runs bootstrapping
+            access to the routine ``run_bootstrapping``, which runs bootstrapping
+            for data with Kriging and data without Kriging.
         """
 
+        # initialize bootstrapping class
         boot = Bootstrapping(self)
 
         return boot
