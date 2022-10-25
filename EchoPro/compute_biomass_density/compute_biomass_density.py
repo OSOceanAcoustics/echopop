@@ -31,7 +31,7 @@ class ComputeBiomassDensity:
         self.nasc_df = None
         self.final_biomass_table = None
         self.krig_results_gdf = None
-        self.bc_df = None   # biomass constants for each stratum
+        self.bio_const_df = None   # biomass constants for each stratum
         self.age2_wgt_prop_df = None
         self.strata_sig_b = None
 
@@ -560,7 +560,7 @@ class ComputeBiomassDensity:
             bio_const_df = self._fill_len_wgt_prod(bio_const_df, stratum, spec_drop,
                                                    length_drop_df, len_weight_spec)
 
-        self.bc_df = bio_const_df
+        self.bio_const_df = bio_const_df
 
     @staticmethod
     def _get_interval(nasc_df: pd.DataFrame) -> np.ndarray:
@@ -612,7 +612,7 @@ class ComputeBiomassDensity:
         """
 
         # expand the bio constants dataframe so that it corresponds to nasc_df
-        bc_expanded_df = self.bc_df.loc[self.nasc_df.Stratum.values]
+        bc_expanded_df = self.bio_const_df.loc[self.nasc_df.Stratum.values]
 
         # compute the normalized biomass density for males and females
         nntk_male = np.round(n_A.values * bc_expanded_df.M_prop.values)
@@ -784,7 +784,7 @@ class ComputeBiomassDensity:
 
         # fill in missing strata constants
         self.strata_sig_b = self._fill_missing_strata_indices(df=self.strata_sig_b.copy())
-        self.bc_df = self._fill_missing_strata_indices(df=self.bc_df.copy())
+        self.bio_const_df = self._fill_missing_strata_indices(df=self.bio_const_df.copy())
         self.age2_wgt_prop_df = self._fill_missing_strata_indices(df=self.age2_wgt_prop_df.copy())
 
         # calculate proportion coefficient for mixed species
