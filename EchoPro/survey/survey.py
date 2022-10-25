@@ -1,6 +1,6 @@
 import yaml
 import numpy as np
-# from .run_bootstrapping import RunBootstrapping
+from ..run_bootstrapping import Bootstrapping
 from ..load_biological_data import LoadBioData
 from ..load_stratification_data import LoadStrataData
 from ..compute_biomass_density import ComputeBiomassDensity
@@ -9,17 +9,12 @@ from ..kriging import Kriging
 from ..kriging_mesh import KrigingMesh
 from ..semivariogram import SemiVariogram
 from ..load_nasc_data import load_nasc_data
-from typing import Tuple, TypedDict, Callable
+from typing import Tuple, List, Optional
 import geopandas as gpd
+from warnings import warn
 
-# define the semi-variogram input types
-vario_type_dict = {'nlag': int, 'lag_res': float}
-vario_param_type = TypedDict('vario_param_type', vario_type_dict)
-
-# define the Kriging parameter input types
-krig_type_dict = {'k_max': int, 'k_min': int, 'R': float, 'ratio': float,
-                  's_v_params': dict, 's_v_model': Callable}
-krig_param_type = TypedDict('krig_param_type', krig_type_dict)
+from ..global_vars import vario_type_dict, vario_param_type, \
+    krig_type_dict, krig_param_type
 
 
 class Survey:
@@ -71,8 +66,7 @@ class Survey:
         self.length_df = None
         self.specimen_df = None
         self.nasc_df = None
-        self.final_biomass_table = None
-        self.krig_results_gdf = None
+        self.bio_calc = None
 
     @staticmethod
     def _check_init_file(init_file_path: str) -> None:
@@ -225,17 +219,23 @@ class Survey:
         if file_type in ('nasc', 'all'):
             self.nasc_df = load_nasc_data.load_nasc_df(self)
 
-    def compute_biomass_density(self):
+    def compute_biomass_density(self, selected_transects: Optional[List] = None) -> None:
         """
         Computes the normalized biomass density and
-        creates ``self.final_biomass_table``, which
+        creates ``self.bio_calc.final_biomass_table``, which
         is a Pandas DataFrame that contains the
         normalized biomass density and associated
         useful variables.
+
+        Parameters
+        ----------
+        selected_transects : list or None
+            The subset of transects used in the biomass calculation
         """
 
-        bio_dense = ComputeBiomassDensity(self)
-        bio_dense.get_final_biomass_table()
+        self.bio_calc = None
+        self.bio_calc = ComputeBiomassDensity(self)
+        self.bio_calc.get_final_biomass_table(selected_transects)
 
     def run_cv_analysis(self,
                         lat_inpfc: Tuple[float] = (np.NINF, 36, 40.5, 43.000, 45.7667, 48.5, 55.0000),
@@ -275,10 +275,10 @@ class Survey:
             nr = 10000  # number of realizations
 
         if kriged_data:
-            if self.krig_results_gdf is None:
+            if self.bio_calc.krig_results_gdf is None:
                 raise RuntimeError("Kriging must be ran before performing CV anlysis on Kriged data!")
         else:
-            if self.final_biomass_table is None:
+            if self.bio_calc.final_biomass_table is None:
                 raise RuntimeError("The biomass density must be calculated before performing CV anlysis on data!")
 
         return cv_analysis.run_jolly_hampton(self, nr, lat_inpfc, seed, kriged_data)
@@ -308,7 +308,7 @@ class Survey:
         return KrigingMesh(self)
 
     def get_semi_variogram(self, krig_mesh: KrigingMesh = None,
-                           params: vario_param_type = {}):
+                           params: vario_param_type = {}, warning: bool = True):
         """
         Initializes a ``SemiVariogram`` object based on the provided
         ``KrigingMesh`` object, the calculated normalized biomass
@@ -323,6 +323,9 @@ class Survey:
             parameters:
             - ``nlag: int`` -- The total number of lag centers
             - ``lag_res: float`` -- The spacing between lag centers
+        warning : bool
+            If True all warnings are printed to the terminal, otherwise
+            they are silenced.
 
         Returns
         -------
@@ -332,10 +335,31 @@ class Survey:
             semi-variogram and routines for obtaining the best
             semi-variogram model for the estimated semi-variogram.
 
+        Warnings
+        --------
+        UserWarning
+            If the final biomass table being used was created from a subset
+            of the full data
+
+        Raises
+        ------
+        ValueError
+            If ``krig_mesh`` is not a ``KrigingMesh`` object
+        ValueError
+            If ``params`` is empty
+        ValueError
+            If ``params`` does not contain all required parameters
+        TypeError
+            If the values of ``params`` are not the expected type
+        ValueError
+            If the normalized biomass density has not been calculated
+
         Notes
         -----
         To run this routine, one must first compute the normalized
-        biomass density using ``compute_biomass_density``.
+        biomass density using ``compute_biomass_density``. It is standard
+        to compute the biomass density from the full set of data (i.e. not
+        from a subset of the data).
         """
 
         if not isinstance(krig_mesh, KrigingMesh):
@@ -354,14 +378,21 @@ class Survey:
             if not isinstance(val, expected_type):
                 raise TypeError(f"{key} is not of type {expected_type}")
 
-        if (not isinstance(self.final_biomass_table, gpd.GeoDataFrame)) \
-                and ('normalized_biomass_density' not in self.final_biomass_table):
+        # provide a warning if the final_biomass_table being used was
+        # created from a subset of the full data
+        if (len(self.bio_calc.final_biomass_table) != len(self.nasc_df)) and warning:
+            warn("The biomass data being used is a subset of the full dataset. "
+                 "It is recommended that you use the biomass data created from the full dataset. "
+                 "To silence this warning set the warning argument to False.")
+
+        if (not isinstance(self.bio_calc.final_biomass_table, gpd.GeoDataFrame)) \
+                and ('normalized_biomass_density' not in self.bio_calc.final_biomass_table):
             raise ValueError("The normalized biomass density must be calculated before running this routine!")
 
         semi_vario = SemiVariogram(
             krig_mesh.transformed_transect_df.x_transect.values,
             krig_mesh.transformed_transect_df.y_transect.values,
-            self.final_biomass_table['normalized_biomass_density'].values.flatten(),
+            self.bio_calc.final_biomass_table['normalized_biomass_density'].values.flatten(),
             params['lag_res'],
             params['nlag'],
         )
@@ -407,9 +438,28 @@ class Survey:
         for key, val in params.items():
             expected_type = krig_type_dict.get(key)
             if not isinstance(val, expected_type):
-                raise TypeError(f"{key} is not of type {expected_type}")
+                raise TypeError(f"The Kriging parameter {key} is not of type {expected_type}")
 
         krig = Kriging(self, params['k_max'], params['k_min'], params['R'],
                        params['ratio'], params['s_v_params'], params['s_v_model'])
 
         return krig
+
+    def get_bootstrapping(self) -> Bootstrapping:
+        """
+        Initializes a ``Bootstrapping`` object.
+
+        Returns
+        -------
+        boot: Bootstrapping
+            An initialized ``Bootstrapping`` object that provides users with
+            access to the routine ``run_bootstrapping``, which runs bootstrapping
+            for data with Kriging and data without Kriging.
+        """
+
+        # initialize bootstrapping class
+        boot = Bootstrapping(self)
+
+        return boot
+
+

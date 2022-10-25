@@ -190,10 +190,10 @@ def run_jolly_hampton(survey, nr: int, lat_inpfc: Tuple[float],
 
     if kriged_data:
         transect_info, strata_info = get_transect_strata_info_kriged(lat_inpfc,
-                                                                     survey.krig_results_gdf)
+                                                                     survey.bio_calc.krig_results_gdf)
     else:
         transect_info, strata_info = get_transect_strata_info_no_kriging(lat_inpfc,
-                                                                         survey.final_biomass_table)
+                                                                         survey.bio_calc.final_biomass_table)
 
     # get numpy form of dataframe values, so we can use Numba
     transect_distances = transect_info['distance'].values.flatten()
