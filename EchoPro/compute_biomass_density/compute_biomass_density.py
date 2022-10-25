@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import geopandas as gpd
-from typing import Tuple, List, Optional
+from typing import Tuple, List, Optional, Union
 
 
 class ComputeBiomassDensity:
@@ -628,24 +628,29 @@ class ComputeBiomassDensity:
         # compute the total normalized weight
         return nwgt_male + nwgt_female + nwgt_unsexed
 
-    def _get_age_weight_key(self, df: pd.DataFrame) -> float:
+    def _get_age_weight_key(self, df: Union[pd.DataFrame, pd.Series]) -> float:
         """
         Computes the normalized weight of animals
         in the first age bin.
 
         Parameters
         ----------
-        df : pd.DataFrame
+        df : pd.DataFrame or pd.Series
             species_df with NaNs dropped for a particular stratum
 
         Returns
         -------
         A float value corresponding to the normalized
         weight for the first age bin.
+
+        Notes
+        -----
+        The input ``df`` is often a DataFrame, however, when a subset of
+        data is selected it can become a Series.
         """
 
-        # account for DataFrames with only 1 row
-        if isinstance(df.Length, np.float64):
+        # account for the case when df is a Series
+        if isinstance(df, pd.Series):
             # get numpy arrays of length, age, and weight
             input_arr_len = np.array([df.Length])
             input_arr_age = np.array([df.Age])
