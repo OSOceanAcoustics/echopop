@@ -1,5 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
+from _echopro_version import __version__
+
 from .survey import Survey
 from .create_preliminary_files import CreateFiles
 from .generate_reports import GenerateReports
