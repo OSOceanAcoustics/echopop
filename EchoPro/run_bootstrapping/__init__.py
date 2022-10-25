@@ -1,8 +1,7 @@
 """
-    This is a class that performs bootstrapping. This involves processing
-    acoustic and biological data, computation of CV analysis,
-    and Kriging.
+This is a class that performs bootstrapping for data that
+has been Kriged and data that has not been Kriged.
 """
-from .run_bootstrapping import RunBootstrapping
+from .run_bootstrapping import Bootstrapping
 
-__all__ = ["RunBootstrapping"]
+__all__ = ["Bootstrapping"]

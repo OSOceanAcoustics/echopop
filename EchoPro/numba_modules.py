@@ -208,16 +208,25 @@ def compute_cv_value(jh_fac: float, num_transects: np.ndarray,
 
     for i in range(s_e_ind.shape[0]):
 
-        # randomly select samples within the stratum
-        num_ind = round(jh_fac * num_transects[i])
-        inds = np.arange(num_transects[i])
-        sel_ind = np.random.choice(inds, num_ind, replace=False)
+        # for subsets of data, it is possible to get 0 transects in a region.
+        # If this is encountered, we set the values to NaN
+        if int(num_transects[i]) == int(0):
 
-        # start and end indices of the stratum for the distance and field arrays
-        start = s_e_ind[i][0]
-        end = s_e_ind[i][1]
-        rhom[i], var_rhom[i] = compute_mean_var_density(distance[start:end][sel_ind],
-                                                        field[start:end][sel_ind], num_ind)
+            rhom[i] = np.nan
+            var_rhom[i] = np.nan
+
+        else:
+
+            # randomly select samples within the stratum
+            num_ind = round(jh_fac * num_transects[i])
+            inds = np.arange(num_transects[i])
+            sel_ind = np.random.choice(inds, num_ind, replace=False)
+
+            # start and end indices of the stratum for the distance and field arrays
+            start = s_e_ind[i][0]
+            end = s_e_ind[i][1]
+            rhom[i], var_rhom[i] = compute_mean_var_density(distance[start:end][sel_ind],
+                                                            field[start:end][sel_ind], num_ind)
 
     # area weighted variance of the "transect-length weighted field"
     cv = np.sqrt(np.nansum(var_rhom * total_transect_area ** 2)) / np.nansum(
