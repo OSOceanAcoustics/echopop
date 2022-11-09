@@ -62,7 +62,7 @@ class KrigingMesh:
         """
 
         if len(set(mesh_df.columns).intersection(self.mesh_cols)) != len(self.mesh_cols):
-            raise NameError("Mesh dataframe does not contain all expected columns!")
+            raise NameError(f"The mesh dataframe created does not contain all expected columns: {self.mesh_cols}")
 
     def _check_smoothed_contour_df(self, contour_df: pd.DataFrame) -> None:
         """
@@ -73,7 +73,8 @@ class KrigingMesh:
         """
 
         if len(set(contour_df.columns).intersection(self.contour_cols)) != len(self.contour_cols):
-            raise NameError("Smoothed contour dataframe does not contain all expected columns!")
+            raise NameError("The smoothed contour dataframe created does not "
+                            f"contain all expected columns: {self.contour_cols}")
 
     def _load_mesh(self) -> None:
         """

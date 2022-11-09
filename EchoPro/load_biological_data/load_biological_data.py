@@ -41,7 +41,7 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         """
 
         if len(set(len_df.columns).intersection(self.len_cols)) != len(self.len_cols):
-            raise NameError("Length dataframe does not contain all expected columns!")
+            raise NameError(f"The length dataframe created does not contain all expected columns: {self.len_cols}")
 
     def _check_specimen_df(self, spec_df: pd.DataFrame) -> None:
         """
@@ -52,7 +52,7 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         """
 
         if len(set(spec_df.columns).intersection(self.spec_cols)) != len(self.spec_cols):
-            raise NameError("Specimen dataframe does not contain all expected columns!")
+            raise NameError(f"The specimen dataframe created does not contain all expected columns: {self.spec_cols}")
 
     def _check_gear_df(self, gear_df: pd.DataFrame) -> None:
         """
@@ -63,7 +63,7 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         """
 
         if len(set(gear_df.columns).intersection(self.gear_cols)) != len(self.gear_cols):
-            raise NameError("Gear dataframe does not contain all expected columns!")
+            raise NameError(f"The gear dataframe created does not contain all expected columns: {self.gear_cols}")
 
     def _process_length_data_df(self, df: pd.DataFrame,
                                 haul_num_offset: int) -> pd.DataFrame:

@@ -15,7 +15,7 @@ def _check_nasc_df(nasc_df: pd.DataFrame) -> None:
     """
 
     if len(set(nasc_df.columns).intersection(nasc_cols)) != len(nasc_cols):
-        raise NameError("NASC dataframe does not contain all expected columns!")
+        raise NameError(f"The NASC dataframe created does not contain all expected columns: {nasc_cols}")
 
 
 def load_nasc_df(survey) -> pd.DataFrame:

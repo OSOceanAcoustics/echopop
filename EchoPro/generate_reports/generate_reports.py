@@ -56,6 +56,8 @@ class GenerateReports:
 
     def __load_gear_data(self):
 
+        # TODO: if this function ends up being used, we need to document and create a check for df
+
         if self.EPro.params['source'] == 3:
 
             if self.EPro.params['filename_gear_US']:
@@ -169,6 +171,8 @@ class GenerateReports:
 
     def __load_catch_data(self):
 
+        # TODO: if this function ends up being used, we need to document and create a check for df
+
         if self.EPro.params['source'] == 3:
 
             if self.EPro.params['database_type'] == 'Oracle':
@@ -243,6 +247,8 @@ class GenerateReports:
         return df
 
     def __load_trawl_data(self):
+
+        # TODO: if this function ends up being used, we need to document and create a check for df
 
         if self.EPro.params['source'] == 3:
 
