@@ -8,6 +8,8 @@ from shapely.geometry import Polygon
 from shapely.ops import unary_union
 from scipy import interpolate
 from typing import Union, Tuple
+from ..utils.input_checks import check_column_names, check_existence_of_file
+from pathlib import Path
 
 
 class KrigingMesh:
@@ -53,28 +55,39 @@ class KrigingMesh:
         self._load_mesh()
         self._load_smoothed_contour()
 
-    def _check_mesh_df(self, mesh_df: pd.DataFrame) -> None:
+    def _check_mesh_df(self, mesh_df: pd.DataFrame, df_path: Path) -> None:
         """
         Ensures that the appropriate columns are
         contained in the mesh Dataframe.
 
-        TODO: should we add more in-depth checks here?
+        Parameters
+        ----------
+        mesh_df: pd.DataFrame
+            The constructed Mesh DataFrame
+        df_path: Path
+            The path to the Excel file used to construct the DataFrame
         """
 
-        if len(set(mesh_df.columns).intersection(self.mesh_cols)) != len(self.mesh_cols):
-            raise NameError(f"The mesh dataframe created does not contain all expected columns: {self.mesh_cols}")
+        # TODO: should we add more in-depth checks here?
 
-    def _check_smoothed_contour_df(self, contour_df: pd.DataFrame) -> None:
+        check_column_names(df=mesh_df, expected_names=self.mesh_cols, path_for_df=df_path)
+
+    def _check_smoothed_contour_df(self, contour_df: pd.DataFrame, df_path: Path) -> None:
         """
         Ensures that the appropriate columns are
         contained in the smoothed contour Dataframe.
 
-        TODO: should we add more in-depth checks here?
+        Parameters
+        ----------
+        contour_df: pd.DataFrame
+            The constructed Contour DataFrame
+        df_path: Path
+            The path to the Excel file used to construct the DataFrame
         """
 
-        if len(set(contour_df.columns).intersection(self.contour_cols)) != len(self.contour_cols):
-            raise NameError("The smoothed contour dataframe created does not "
-                            f"contain all expected columns: {self.contour_cols}")
+        # TODO: should we add more in-depth checks here?
+
+        check_column_names(df=contour_df, expected_names=self.contour_cols, path_for_df=df_path)
 
     def _load_mesh(self) -> None:
         """
@@ -85,9 +98,12 @@ class KrigingMesh:
         the full mesh and assigns it as the class variable ``mesh_gdf``.
         """
 
-        df = pd.read_excel(self.survey.params['data_root_dir'] + self.survey.params['mesh_filename'],
-                           sheet_name=self.survey.params['mesh_sheetname'])
-        self._check_mesh_df(df)
+        # check existence of the file
+        file_path = self.survey.params['data_root_dir'] / self.survey.params['mesh_filename']
+        check_existence_of_file(file_path)
+
+        df = pd.read_excel(file_path, sheet_name=self.survey.params['mesh_sheetname'])
+        self._check_mesh_df(df, file_path)
 
         # obtaining those columns that are required
         df = df[['Latitude of centroid', 'Longitude of centroid', 'Area (km^2)', 'Cell portion']].copy()
@@ -115,9 +131,12 @@ class KrigingMesh:
         ``smoothed_contour_gdf``.
         """
 
-        df = pd.read_excel(self.survey.params['data_root_dir'] + self.survey.params['smoothed_contour_filename'],
-                           sheet_name=self.survey.params['smoothed_contour_sheetname'])
-        self._check_smoothed_contour_df(df)
+        # check existence of the file
+        file_path = self.survey.params['data_root_dir'] / self.survey.params['smoothed_contour_filename']
+        check_existence_of_file(file_path)
+
+        df = pd.read_excel(file_path, sheet_name=self.survey.params['smoothed_contour_sheetname'])
+        self._check_smoothed_contour_df(df, file_path)
 
         # obtaining those columns that are required
         df = df[['Latitude', 'Longitude']].copy()

@@ -1,5 +1,7 @@
 import numpy as np
 import pandas as pd
+from pathlib import Path
+from ..utils.input_checks import check_column_names, check_existence_of_file
 
 
 class LoadStrataData:  # TODO: Does it make sense for this to be a class?
@@ -29,16 +31,22 @@ class LoadStrataData:  # TODO: Does it make sense for this to be a class?
         self._load_stratification_file()
         self._load_geographic_stratification()
 
-    def _check_strata_df(self, strata_df: pd.DataFrame) -> None:
+    def _check_strata_df(self, strata_df: pd.DataFrame, df_path: Path) -> None:
         """
         Ensures that the appropriate columns are
         contained in the stratification Dataframe.
 
-        TODO: should we add more in-depth checks here?
+        Parameters
+        ----------
+        strata_df: pd.DataFrame
+            The constructed Strata DataFrame
+        df_path: Path
+            The path to the Excel file used to construct the DataFrame
         """
 
-        if len(set(strata_df.columns).intersection(self.strata_cols)) != len(self.strata_cols):
-            raise NameError(f"The strata dataframe created does not contain all expected columns: {self.strata_cols}")
+        # TODO: should we add more in-depth checks here?
+
+        check_column_names(df=strata_df, expected_names=self.strata_cols, path_for_df=df_path)
 
     def _load_stratification_file(self) -> None:
         """
@@ -53,10 +61,13 @@ class LoadStrataData:  # TODO: Does it make sense for this to be a class?
 
         if self.survey.params['strata_sheetname'] in ['Base KS', 'INPFC']:
 
+            # check existence of the file
+            file_path = self.survey.params['data_root_dir'] / self.survey.params['strata_filename']
+            check_existence_of_file(file_path)
+
             # read and check stratification file
-            strata_df = pd.read_excel(self.survey.params['data_root_dir'] + self.survey.params['strata_filename'],
-                                      sheet_name=self.survey.params['strata_sheetname'])
-            self._check_strata_df(strata_df)
+            strata_df = pd.read_excel(file_path, sheet_name=self.survey.params['strata_sheetname'])
+            self._check_strata_df(strata_df, file_path)
 
             # extract only those columns that are necessary
             strata_df = strata_df[['Year', 'stratum', 'Haul', 'wt']].copy()
@@ -74,17 +85,22 @@ class LoadStrataData:  # TODO: Does it make sense for this to be a class?
         else:
             raise NotImplementedError(f"strata_filename has unknown sheet name!")
 
-    def _check_geo_strata_df(self, geo_strata_df: pd.DataFrame) -> None:
+    def _check_geo_strata_df(self, geo_strata_df: pd.DataFrame, df_path: Path) -> None:
         """
         Ensures that the appropriate columns are
         contained in the geographic stratification Dataframe.
 
-        TODO: should we add more in-depth checks here?
+        Parameters
+        ----------
+        geo_strata_df: pd.DataFrame
+            The constructed Geo Strata DataFrame
+        df_path: Path
+            The path to the Excel file used to construct the DataFrame
         """
 
-        if len(set(geo_strata_df.columns).intersection(self.geo_strata_cols)) != len(self.geo_strata_cols):
-            raise NameError("The geo strata dataframe created does not contain all "
-                            f"expected columns: {self.geo_strata_cols}")
+        # TODO: should we add more in-depth checks here?
+
+        check_column_names(df=geo_strata_df, expected_names=self.geo_strata_cols, path_for_df=df_path)
 
     def _load_geographic_stratification(self) -> None:
         """
@@ -100,10 +116,13 @@ class LoadStrataData:  # TODO: Does it make sense for this to be a class?
 
         if self.survey.params['geo_strata_sheetname'] in ['stratification1', 'INPFC']:
 
+            # check existence of the file
+            file_path = self.survey.params['data_root_dir'] / self.survey.params['geo_strata_filename']
+            check_existence_of_file(file_path)
+
             # read and check geographic stratification file
-            geo_strata_df = pd.read_excel(self.survey.params['data_root_dir'] + self.survey.params['geo_strata_filename'],
-                                          sheet_name=self.survey.params['geo_strata_sheetname'])
-            self._check_geo_strata_df(geo_strata_df)
+            geo_strata_df = pd.read_excel(file_path, sheet_name=self.survey.params['geo_strata_sheetname'])
+            self._check_geo_strata_df(geo_strata_df, file_path)
 
             # extract only those columns that are necessary
             geo_strata_df = geo_strata_df[['Strata index', 'Latitude (upper limit)']].copy()

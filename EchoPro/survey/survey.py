@@ -9,9 +9,12 @@ from ..kriging import Kriging
 from ..kriging_mesh import KrigingMesh
 from ..semivariogram import SemiVariogram
 from ..load_nasc_data import load_nasc_data
-from typing import Tuple, List, Optional
+from typing import Tuple, List, Optional, Union
 import geopandas as gpd
 from warnings import warn
+from pathlib import Path
+from ..utils.input_checks import check_existence_of_file
+
 
 from ..global_vars import vario_type_dict, vario_param_type, \
     krig_type_dict, krig_param_type
@@ -27,9 +30,9 @@ class Survey:
 
     Parameters
     ----------
-    init_file_path : str
+    init_file_path : str or pathlib.Path
         A string specifying the path to the initialization YAML file
-    survey_year_file_path : str
+    survey_year_file_path : str or pathlib.Path
         A string specifying the path to the survey year YAML file
     source : int
         The region of data to use.
@@ -40,10 +43,14 @@ class Survey:
         States whether age 1 hake should be included in analysis.
     """
     def __init__(self,
-                 init_file_path: str,
-                 survey_year_file_path: str,
+                 init_file_path: Union[str, Path],
+                 survey_year_file_path: Union[str, Path],
                  source: int = 3,
                  exclude_age1: bool = True):
+
+        # convert configuration paths to Path objects, if necessary
+        init_file_path = Path(init_file_path)
+        survey_year_file_path = Path(survey_year_file_path)
 
         self._check_init_file(init_file_path)
         self._check_survey_year_file(survey_year_file_path)
@@ -59,6 +66,9 @@ class Survey:
         self.params = self._collect_parameters(init_params, survey_year_params)
         self.params['exclude_age1'] = exclude_age1
 
+        # convert all string paths to Path objects in params
+        self._convert_str_to_path_obj()
+
         # initialize all class variables
         self.strata_df = None
         self.geo_strata_df = None
@@ -69,20 +79,55 @@ class Survey:
         self.bio_calc = None
 
     @staticmethod
-    def _check_init_file(init_file_path: str) -> None:
-        """"""
+    def _check_init_file(init_file_path: Path) -> None:
+        """
+        Ensures that the initialization configuration file
+        exists and contains the appropriate contents.
+
+        Parameters
+        ----------
+        init_file_path: Path
+            The path to the initialization configuration file
+
+        Raises
+        ------
+        FileNotFoundError
+            If the file does not exist
+        """
+
+        # make sure the configuration file exists
+        check_existence_of_file(init_file_path)
+
         # TODO: create this function that checks the contents of the initialization config file
         # TODO: it should make sure that certain variables are defined too
-        print("A check of the initialization file needs to be done!")
+        print("A full check of the initialization file contents needs to be done!")
 
     @staticmethod
-    def _check_survey_year_file(survey_year_file_path: str) -> None:
+    def _check_survey_year_file(survey_year_file_path: Path) -> None:
+        """
+        Ensures that the survey year configuration file
+        exists and contains the appropriate contents.
+
+        Parameters
+        ----------
+        survey_year_file_path: Path
+            The path to the survey year configuration file
+
+        Raises
+        ------
+        FileNotFoundError
+            If the file does not exist
+        """
+
+        # make sure the survey year file exists
+        check_existence_of_file(survey_year_file_path)
+
         # TODO: create this function that checks the contents of the survey year config file
         # TODO: it should make sure that certain variables are defined and all paths exist
-        print("A check of the survey year file needs to be done!")
+        print("A check of the survey year file contents needs to be done!")
 
     @staticmethod
-    def _read_config(file_path: str) -> dict:
+    def _read_config(file_path: Path) -> dict:
         """
         Reads configuration files and returns a dictionary
         with the parameters specified in the file.
@@ -172,6 +217,25 @@ class Survey:
                                f'\n These variables are: {param_intersect}')
 
         return full_params
+
+    def _convert_str_to_path_obj(self) -> None:
+        """
+        Converts all string paths to pathlib.Path objects in the
+        class variable ``params``.
+
+        Notes
+        -----
+        The class variable ``params`` will be directly modified.
+        """
+
+        # convert the root directory to a Path object
+        self.params["data_root_dir"] = Path(self.params["data_root_dir"])
+
+        for param_name, param_val in self.params.items():
+
+            # convert each filename path to a Path object
+            if "filename" in param_name:
+                self.params[param_name] = Path(param_val)
 
     def load_survey_data(self, file_type: str = 'all') -> None:
         """
