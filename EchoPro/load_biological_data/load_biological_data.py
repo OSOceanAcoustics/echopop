@@ -1,5 +1,7 @@
 import numpy as np
 import pandas as pd
+from pathlib import Path
+from ..utils.input_checks import check_column_names, check_existence_of_file
 
 
 class LoadBioData:  # TODO: Does it make sense for this to be a class?
@@ -32,38 +34,56 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         self._load_specimen_data()
         self._load_gear_data()
 
-    def _check_length_df(self, len_df: pd.DataFrame) -> None:
+    def _check_length_df(self, len_df: pd.DataFrame, df_path: Path) -> None:
         """
         Ensures that the appropriate columns are
         contained in the length Dataframe.
 
-        TODO: should we add more in-depth checks here?
+        Parameters
+        ----------
+        len_df: pd.DataFrame
+            The constructed Length DataFrame
+        df_path: Path
+            The path to the Excel file used to construct the DataFrame
         """
 
-        if len(set(len_df.columns).intersection(self.len_cols)) != len(self.len_cols):
-            raise NameError("Length dataframe does not contain all expected columns!")
+        # TODO: should we add more in-depth checks here?
 
-    def _check_specimen_df(self, spec_df: pd.DataFrame) -> None:
+        check_column_names(df=len_df, expected_names=self.len_cols, path_for_df=df_path)
+
+    def _check_specimen_df(self, spec_df: pd.DataFrame, df_path: Path) -> None:
         """
         Ensures that the appropriate columns are
         contained in the specimen Dataframe.
 
-        TODO: should we add more in-depth checks here?
+        Parameters
+        ----------
+        spec_df: pd.DataFrame
+            The constructed Specimen DataFrame
+        df_path: Path
+            The path to the Excel file used to construct the DataFrame
         """
 
-        if len(set(spec_df.columns).intersection(self.spec_cols)) != len(self.spec_cols):
-            raise NameError("Specimen dataframe does not contain all expected columns!")
+        # TODO: should we add more in-depth checks here?
 
-    def _check_gear_df(self, gear_df: pd.DataFrame) -> None:
+        check_column_names(df=spec_df, expected_names=self.spec_cols, path_for_df=df_path)
+
+    def _check_gear_df(self, gear_df: pd.DataFrame, df_path: Path) -> None:
         """
         Ensures that the appropriate columns are
         contained in the gear Dataframe.
 
-        TODO: should we add more in-depth checks here?
+        Parameters
+        ----------
+        gear_df: pd.DataFrame
+            The constructed Gear DataFrame
+        df_path: Path
+            The path to the Excel file used to construct the DataFrame
         """
 
-        if len(set(gear_df.columns).intersection(self.gear_cols)) != len(self.gear_cols):
-            raise NameError("Gear dataframe does not contain all expected columns!")
+        # TODO: should we add more in-depth checks here?
+
+        check_column_names(df=gear_df, expected_names=self.gear_cols, path_for_df=df_path)
 
     def _process_length_data_df(self, df: pd.DataFrame,
                                 haul_num_offset: int) -> pd.DataFrame:
@@ -173,14 +193,18 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
 
         if self.survey.params['source'] == 3:
 
-            # read in and check US and Canada Excel files
-            df_us = pd.read_excel(self.survey.params['data_root_dir'] + self.survey.params['length_US_filename'],
-                                  sheet_name=self.survey.params['length_US_sheet'])
-            self._check_length_df(df_us)
+            # check existence of the files
+            file_path_us = self.survey.params['data_root_dir'] / self.survey.params['length_US_filename']
+            file_path_can = self.survey.params['data_root_dir'] / self.survey.params['length_CAN_filename']
+            check_existence_of_file(file_path_us)
+            check_existence_of_file(file_path_can)
 
-            df_can = pd.read_excel(self.survey.params['data_root_dir'] + self.survey.params['length_CAN_filename'],
-                                   sheet_name=self.survey.params['length_CAN_sheet'])
-            self._check_length_df(df_can)
+            # read in and check US and Canada Excel files
+            df_us = pd.read_excel(file_path_us, sheet_name=self.survey.params['length_US_sheet'])
+            self._check_length_df(df_us, file_path_us)
+
+            df_can = pd.read_excel(file_path_can, sheet_name=self.survey.params['length_CAN_sheet'])
+            self._check_length_df(df_can, file_path_can)
 
             # process US and Canada dataframes
             length_us_df = self._process_length_data_df(df_us, 0)
@@ -202,14 +226,18 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
 
         if self.survey.params['source'] == 3:
 
-            # read in and check US and Canada Excel files
-            specimen_us_df = pd.read_excel(self.survey.params['data_root_dir'] + self.survey.params['specimen_US_filename'],
-                                           sheet_name=self.survey.params['specimen_US_sheet'])
-            self._check_specimen_df(specimen_us_df)
+            # check existence of the files
+            file_path_us = self.survey.params['data_root_dir'] / self.survey.params['specimen_US_filename']
+            file_path_can = self.survey.params['data_root_dir'] / self.survey.params['specimen_CAN_filename']
+            check_existence_of_file(file_path_us)
+            check_existence_of_file(file_path_can)
 
-            specimen_can_df = pd.read_excel(self.survey.params['data_root_dir'] + self.survey.params['specimen_CAN_filename']
-                                            , sheet_name=self.survey.params['specimen_CAN_sheet'])
-            self._check_specimen_df(specimen_can_df)
+            # read in and check US and Canada Excel files
+            specimen_us_df = pd.read_excel(file_path_us, sheet_name=self.survey.params['specimen_US_sheet'])
+            self._check_specimen_df(specimen_us_df, file_path_us)
+
+            specimen_can_df = pd.read_excel(file_path_can, sheet_name=self.survey.params['specimen_CAN_sheet'])
+            self._check_specimen_df(specimen_can_df, file_path_can)
 
             # process US and Canada dataframes
             specimen_us_df = self._process_specimen_data(specimen_us_df, 0)
@@ -267,43 +295,36 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         transect selection.
         """
         # TODO: replace the gear file with a more purposeful mapping between hauls and transects
+        # TODO: make sheet_name part of configuration file, if we need it
 
         if self.survey.params['source'] == 3:
 
-            if self.survey.params['filename_gear_US']:
+            # check existence of the files
+            file_path_us = self.survey.params['data_root_dir'] / self.survey.params['filename_gear_US']
+            file_path_can = self.survey.params['data_root_dir'] / self.survey.params['filename_gear_CAN']
+            check_existence_of_file(file_path_us)
+            check_existence_of_file(file_path_can)
 
-                # read in, check, and process the US gear file
-                gear_us_df = pd.read_excel(self.survey.params['data_root_dir'] + self.survey.params['filename_gear_US'],
-                                           sheet_name='biodata_gear')
-                self._check_gear_df(gear_us_df)
-                gear_us_df = self._process_gear_data(gear_us_df)
+            # read in, check, and process the US gear file
+            gear_us_df = pd.read_excel(file_path_us, sheet_name='biodata_gear')
+            self._check_gear_df(gear_us_df, file_path_us)
+            gear_us_df = self._process_gear_data(gear_us_df)
 
-            else:
-                gear_us_df = None
+            # read in, check, and process the Canada gear file
+            gear_can_df = pd.read_excel(file_path_can, sheet_name='biodata_gear_CAN')
+            self._check_gear_df(gear_can_df, file_path_can)
+            gear_can_df = self._process_gear_data(gear_can_df)
 
-            if self.survey.params['filename_gear_CAN']:
+            # transect offset is set to zero since we will not have overlapping transects
+            # TODO: Is this a necessary variable? If so, we should make it an input to the function.
+            CAN_Transect_offset = 0
 
-                # read in, check, and process the Canada gear file
-                gear_can_df = pd.read_excel(self.survey.params['data_root_dir'] + self.survey.params['filename_gear_CAN'],
-                                            sheet_name='biodata_gear_CAN')
-                self._check_gear_df(gear_can_df)
-                gear_can_df = self._process_gear_data(gear_can_df)
-
-                # transect offset is set to zero since we will not have overlapping transects
-                # TODO: Is this a necessary variable? If so, we should make it an input to the function.
-                CAN_Transect_offset = 0
-
-                # add Canada transect and haul offset
-                gear_can_df.index = gear_can_df.index + self.survey.params['CAN_haul_offset']
-                gear_can_df['Transect'] = gear_can_df['Transect'] + CAN_Transect_offset
-            else:
-                gear_can_df = None
+            # add Canada transect and haul offset
+            gear_can_df.index = gear_can_df.index + self.survey.params['CAN_haul_offset']
+            gear_can_df['Transect'] = gear_can_df['Transect'] + CAN_Transect_offset
 
             # combine US & CAN trawl files
-            if isinstance(gear_us_df, pd.DataFrame) and isinstance(gear_can_df, pd.DataFrame):
-                self.survey.gear_df = pd.concat([gear_us_df, gear_can_df])
-            else:
-                raise SystemError(f"Cannot construct gear_df for source = 3, since either US or CAN is not available.")
+            self.survey.gear_df = pd.concat([gear_us_df, gear_can_df])
 
         else:
             raise NotImplementedError(f"Source of {self.survey.params['source']} not implemented yet.")
