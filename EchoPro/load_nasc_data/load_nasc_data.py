@@ -1,21 +1,29 @@
 import pandas as pd
 import numpy as np
+from pathlib import Path
+from ..utils.input_checks import check_column_names, check_existence_of_file
 
 
 nasc_cols = {'Transect', 'VL start', 'VL end', 'Latitude', 'Longitude',
              'Stratum', 'Spacing', 'NASC', 'Assigned haul'}
 
 
-def _check_nasc_df(nasc_df: pd.DataFrame) -> None:
+def _check_nasc_df(nasc_df: pd.DataFrame, df_path: Path) -> None:
     """
     Ensures that the appropriate columns are
     contained in the NASC Dataframe.
 
-    TODO: should we add more in-depth checks here?
+    Parameters
+    ----------
+    nasc_df: pd.DataFrame
+        The constructed NASC DataFrame
+    df_path: Path
+        The path to the Excel file used to construct the DataFrame
     """
 
-    if len(set(nasc_df.columns).intersection(nasc_cols)) != len(nasc_cols):
-        raise NameError("NASC dataframe does not contain all expected columns!")
+    # TODO: should we add more in-depth checks here?
+
+    check_column_names(df=nasc_df, expected_names=nasc_cols, path_for_df=df_path)
 
 
 def load_nasc_df(survey) -> pd.DataFrame:
@@ -34,12 +42,21 @@ def load_nasc_df(survey) -> pd.DataFrame:
 
     # select and check the appropriate nasc data file
     if survey.params['exclude_age1']:
-        df = pd.read_excel(survey.params['data_root_dir'] + survey.params['nasc_no_age1_filename'],
-                           sheet_name=survey.params['nasc_no_age1_sheetname'])
+
+        # check existence of the file
+        file_path = survey.params['data_root_dir'] / survey.params['nasc_no_age1_filename']
+        check_existence_of_file(file_path)
+
+        df = pd.read_excel(file_path, sheet_name=survey.params['nasc_no_age1_sheetname'])
     else:
-        df = pd.read_excel(survey.params['data_root_dir'] + survey.params['nasc_all_ages_filename'],
-                           sheet_name=survey.params['nasc_all_ages_sheetname'])
-    _check_nasc_df(df)
+
+        # check existence of the file
+        file_path = survey.params['data_root_dir'] / survey.params['nasc_all_ages_filename']
+        check_existence_of_file(file_path)
+
+        df = pd.read_excel(file_path, sheet_name=survey.params['nasc_all_ages_sheetname'])
+
+    _check_nasc_df(df, file_path)
 
     # obtaining those columns that are required
     df = df[['Transect', 'VL start', 'VL end', 'Latitude', 'Longitude', 'Stratum', 'Spacing',
