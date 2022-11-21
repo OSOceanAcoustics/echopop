@@ -4,8 +4,8 @@ from pathlib import Path
 from ..utils.input_checks import check_column_names, check_existence_of_file
 
 
-nasc_cols = {'Transect', 'VL start', 'VL end', 'Latitude', 'Longitude',
-             'Stratum', 'Spacing', 'NASC', 'Assigned haul'}
+nasc_cols = {'transect_num', 'vessel_log_start', 'vessel_log_end', 'latitude', 'longitude',
+             'stratum_num', 'transect_spacing', 'NASC', 'haul_num'}
 
 
 def _check_nasc_df(nasc_df: pd.DataFrame, df_path: Path) -> None:
@@ -59,16 +59,13 @@ def load_nasc_df(survey) -> pd.DataFrame:
     _check_nasc_df(df, file_path)
 
     # obtaining those columns that are required
-    df = df[['Transect', 'VL start', 'VL end', 'Latitude', 'Longitude', 'Stratum', 'Spacing',
-            'NASC', 'Assigned haul']].copy()
+    df = df[['transect_num', 'vessel_log_start', 'vessel_log_end', 'latitude', 'longitude',
+             'stratum_num', 'transect_spacing', 'NASC', 'haul_num']].copy()
 
     # set data types of dataframe
-    df = df.astype({'Transect': int, 'VL start': np.float64, 'VL end': np.float64,
-                    'Latitude': np.float64, 'Longitude': np.float64, 'Stratum': int,
-                    'Spacing': np.float64, 'NASC': np.float64, 'Assigned haul': int})
-
-    # rename column TODO: in the future require Haul as the column name
-    df.rename(columns={'Assigned haul': 'Haul'}, inplace=True)
+    df = df.astype({'transect_num': int, 'vessel_log_start': np.float64, 'vessel_log_end': np.float64,
+                    'latitude': np.float64, 'longitude': np.float64, 'stratum_num': int,
+                    'transect_spacing': np.float64, 'NASC': np.float64, 'haul_num': int})
 
     if survey.params['survey_year'] < 2003:
         # TODO: it may be the case that we need to include lines 35-61 of
@@ -76,6 +73,6 @@ def load_nasc_df(survey) -> pd.DataFrame:
         raise NotImplementedError("Loading the NASC table for survey years less than 2003 has not been implemented!")
 
     # set dataframe index
-    df.set_index('Transect', inplace=True)
+    df.set_index('transect_num', inplace=True)
 
     return df
