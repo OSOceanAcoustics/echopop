@@ -322,13 +322,13 @@ class ComputeBiomassDensity:
 
         # get numpy arrays of the length and length_count columns
         length_arr = df.length.values
-        len_count_arr = df.length_count.values
+        length_count_arr = df.length_count.values
 
         # binned length indices
         len_ind = self._get_bin_ind(length_arr, self.bio_hake_len_bin)
 
         # total number of lengths in a bin
-        len_bin_cnt = np.array([np.sum(len_count_arr[i]) for i in len_ind])
+        len_bin_cnt = np.array([np.sum(length_count_arr[i]) for i in len_ind])
 
         return len_bin_cnt / np.sum(len_bin_cnt)
 
