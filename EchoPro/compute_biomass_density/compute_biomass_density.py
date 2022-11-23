@@ -342,7 +342,7 @@ class ComputeBiomassDensity:
         Parameters
         ----------
         df : pd.DataFrame
-            Data from station 2 that has a ``length`` column
+            Data from fish measurement station 2 that has a ``length`` column
 
         Returns
         -------
