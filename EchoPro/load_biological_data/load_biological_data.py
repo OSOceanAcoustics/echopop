@@ -92,8 +92,6 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         * Extracting only the target species
         * Setting the data type of each column
         * Applying a haul offset, if necessary
-        * Replacing the length and sex columns with an array
-        of length counts and dropping the ``length_count`` column
         * Setting the index required for downstream processes
 
         Parameters
