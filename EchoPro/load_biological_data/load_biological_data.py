@@ -114,7 +114,7 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
                         'length': np.float64, 'length_count': np.float64})
 
         # extract target species
-        df = df.loc[df['species_id'] == self.survey.params['species_code_ID']]
+        df = df.loc[df['species_id'] == self.survey.params['species_id']]
 
         # Apply haul offset
         df['haul_num'] = df['haul_num'] + haul_num_offset
@@ -160,7 +160,7 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
                         'age': np.float64})
 
         # extract target species
-        df = df.loc[df['species_id'] == self.survey.params['species_code_ID']]
+        df = df.loc[df['species_id'] == self.survey.params['species_id']]
 
         # Apply haul_num_offset
         df['haul_num'] = df['haul_num'] + haul_num_offset

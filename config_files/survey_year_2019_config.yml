@@ -75,7 +75,7 @@
   #########################################
   survey_year: 2019                     # survey year being considered
 
-  species_code_ID: 22500                # target species_code for the survey year
+  species_id: 22500                # target species ID for the survey year
 
   CAN_haul_offset: 200                  # The value to be added to the Canadian's haul number
   #####################################################################################################################
