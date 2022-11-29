@@ -37,10 +37,10 @@ def get_transect_strata_info_no_kriging(lat_inpfc: Tuple[float],
 
     # compute transect values needed for distance calculation
     transect_info = pd.DataFrame(index=biomass_table.index.unique())
-    transect_info["max_longitude"] = biomass_table['Longitude'].groupby(level=0).max()
-    transect_info["min_longitude"] = biomass_table['Longitude'].groupby(level=0).min()
-    transect_info["mean_latitude"] = biomass_table['Latitude'].groupby(level=0).mean()
-    transect_info["mean_spacing"] = biomass_table['Spacing'].groupby(level=0).mean()
+    transect_info["max_longitude"] = biomass_table['longitude'].groupby(level=0).max()
+    transect_info["min_longitude"] = biomass_table['longitude'].groupby(level=0).min()
+    transect_info["mean_latitude"] = biomass_table['latitude'].groupby(level=0).mean()
+    transect_info["mean_spacing"] = biomass_table['transect_spacing'].groupby(level=0).mean()
 
     # store the sum of the biomass for each transect
     transect_info["biomass"] = biomass_table['normalized_biomass_density'].groupby(level=0).sum()
@@ -93,8 +93,8 @@ def get_transect_strata_info_kriged(lat_inpfc: Tuple[float],
     """
 
     # reduce biomass table to only essential columns
-    reduced_table = biomass_table[["Latitude of centroid",
-                                   "Longitude of centroid",
+    reduced_table = biomass_table[["centroid_latitude",
+                                   "centroid_longitude",
                                    "krig_biomass_vals"]].copy()
 
     # number of "virtual transects" within a latitude degree
@@ -102,7 +102,7 @@ def get_transect_strata_info_kriged(lat_inpfc: Tuple[float],
 
     # latitude array with equal increment
     reduced_table["lat_eq_inc"] = np.round(
-        reduced_table["Latitude of centroid"] * n_transect_per_lat + 0.5) / n_transect_per_lat
+        reduced_table["centroid_latitude"] * n_transect_per_lat + 0.5) / n_transect_per_lat
 
     reduced_table.set_index("lat_eq_inc", inplace=True)
 
@@ -116,8 +116,8 @@ def get_transect_strata_info_kriged(lat_inpfc: Tuple[float],
     transect_info['biomass'] = reduced_table['krig_biomass_vals'].groupby(level='lat_eq_inc').sum()
 
     # store max and min of the longitude
-    transect_info["max_longitude"] = reduced_table['Longitude of centroid'].groupby(level=0).max()
-    transect_info["min_longitude"] = reduced_table['Longitude of centroid'].groupby(level=0).min()
+    transect_info["max_longitude"] = reduced_table['centroid_longitude'].groupby(level=0).max()
+    transect_info["min_longitude"] = reduced_table['centroid_longitude'].groupby(level=0).min()
 
     # compute and store the length (in nmi) of each transect
     transect_info["distance"] = transect_info.apply(

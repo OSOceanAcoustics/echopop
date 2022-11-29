@@ -21,14 +21,13 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         self.survey = survey
 
         # expected columns for length Dataframe
-        self.len_cols = {'Haul', 'Species_Code', 'Sex', 'Length', 'Frequency'}
+        self.len_cols = {'haul_num', 'species_id', 'sex', 'length', 'length_count'}
 
         # expected columns for specimen Dataframe
-        self.spec_cols = {'Haul', 'Species_Code', 'Sex', 'Length', 'Weight',
-                          'Age'}
+        self.spec_cols = {'haul_num', 'species_id', 'sex', 'length', 'weight', 'age'}
 
         # expected columns for gear Dataframe
-        self.gear_cols = {'Haul', 'Transect'}
+        self.gear_cols = {'haul_num', 'transect_num'}
 
         self._load_length_data()
         self._load_specimen_data()
@@ -93,8 +92,6 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         * Extracting only the target species
         * Setting the data type of each column
         * Applying a haul offset, if necessary
-        * Replacing the length and sex columns with an array
-        of length frequency and dropping the frequency column
         * Setting the index required for downstream processes
 
         Parameters
@@ -102,7 +99,7 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         df : Pandas Dataframe
             Dataframe holding the length data
         haul_num_offset : int
-            The offset that should be applied to the Haul column
+            The offset that should be applied to the ``haul_num`` column
 
         Returns
         -------
@@ -110,25 +107,25 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         """
 
         # obtaining those columns that are required
-        df = df[['Haul', 'Species_Code', 'Sex', 'Length', 'Frequency']].copy()
+        df = df[['haul_num', 'species_id', 'sex', 'length', 'length_count']].copy()
 
         # set data types of dataframe
-        df = df.astype({'Haul': int, 'Species_Code': int, 'Sex': int,
-                        'Length': np.float64, 'Frequency': np.float64})
+        df = df.astype({'haul_num': int, 'species_id': int, 'sex': int,
+                        'length': np.float64, 'length_count': np.float64})
 
         # extract target species
-        df = df.loc[df['Species_Code'] == self.survey.params['species_code_ID']]
+        df = df.loc[df['species_id'] == self.survey.params['species_id']]
 
         # Apply haul offset
-        df['Haul'] = df['Haul'] + haul_num_offset
+        df['haul_num'] = df['haul_num'] + haul_num_offset
 
         if self.survey.params['exclude_age1'] is False:
             raise NotImplementedError("Including age 1 data has not been implemented!")
 
-        # remove species code column
-        df.drop(columns=['Species_Code'], inplace=True)
+        # remove species_id column
+        df.drop(columns=['species_id'], inplace=True)
 
-        df.set_index('Haul', inplace=True)
+        df.set_index('haul_num', inplace=True)
 
         return df
 
@@ -147,6 +144,7 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         df : Pandas Dataframe
             Dataframe holding the specimen data
         haul_num_offset : int
+            The offset that should be applied to the ``haul_num`` column
 
         Returns
         -------
@@ -154,31 +152,31 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         """
 
         # obtaining those columns that are required
-        df = df[['Haul', 'Species_Code', 'Sex', 'Length', 'Weight', 'Age']].copy()
+        df = df[['haul_num', 'species_id', 'sex', 'length', 'weight', 'age']].copy()
 
         # set data types of dataframe
-        df = df.astype({'Haul': int, 'Species_Code': int, 'Sex': int,
-                        'Length': np.float64, 'Weight': np.float64,
-                        'Age': np.float64})
+        df = df.astype({'haul_num': int, 'species_id': int, 'sex': int,
+                        'length': np.float64, 'weight': np.float64,
+                        'age': np.float64})
 
         # extract target species
-        df = df.loc[df['Species_Code'] == self.survey.params['species_code_ID']]
+        df = df.loc[df['species_id'] == self.survey.params['species_id']]
 
         # Apply haul_num_offset
-        df['Haul'] = df['Haul'] + haul_num_offset
+        df['haul_num'] = df['haul_num'] + haul_num_offset
 
         if self.survey.params['exclude_age1'] is False:
             raise NotImplementedError("Including age 1 data has not been implemented!")
 
-        # remove species code column
-        df.drop(columns=['Species_Code'], inplace=True)
+        # remove species_id column
+        df.drop(columns=['species_id'], inplace=True)
 
         # set and organize index
-        df.set_index('Haul', inplace=True)
+        df.set_index('haul_num', inplace=True)
         df.sort_index(inplace=True)
 
         # perform check on data
-        if len(df['Age']) - df['Age'].isna().sum() < 0.1 * len(df['Age']):
+        if len(df['age']) - df['age'].isna().sum() < 0.1 * len(df['age']):
             raise RuntimeWarning('Aged data are less than 10%!\n')
 
         return df
@@ -254,8 +252,8 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         Processes the gear data by
         * selecting the haul and transect columns
         * ensuring the dataframe has the appropriate data types
-        * setting the ``Haul`` column as the Dataframe index
-        * sorting the ``Haul`` index in ascending order
+        * setting the ``haul_num`` column as the Dataframe index
+        * sorting the ``haul_num`` index in ascending order
 
         Parameters
         ----------
@@ -269,23 +267,23 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         """
 
         # obtain those columns necessary for core downstream processes
-        df = df[['Haul', 'Transect']].copy()
+        df = df[['haul_num', 'transect_num']].copy()
 
         # set data types of dataframe
-        df = df.astype({'Haul': int, 'Transect': np.float64})
+        df = df.astype({'haul_num': int, 'transect_num': np.float64})
 
         if self.survey.params['exclude_age1'] is False:
             raise NotImplementedError("Including age 1 data has not been implemented!")
 
-        # set Haul as index and sort it
-        df.set_index('Haul', inplace=True)
+        # set haul_num as index and sort it
+        df.set_index('haul_num', inplace=True)
         df.sort_index(inplace=True)
 
         return df
 
     def _load_gear_data(self) -> None:
         """
-        Loads and prepares the gear data ``Haul`` and ``Transects``. Additionally,
+        Loads and prepares the gear data ``haul_num`` and ``transect_num``. Additionally,
         it sets survey.gear_df using the final processed dataframe.
 
         Notes
@@ -321,7 +319,7 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
 
             # add Canada transect and haul offset
             gear_can_df.index = gear_can_df.index + self.survey.params['CAN_haul_offset']
-            gear_can_df['Transect'] = gear_can_df['Transect'] + CAN_Transect_offset
+            gear_can_df['transect_num'] = gear_can_df['transect_num'] + CAN_Transect_offset
 
             # combine US & CAN trawl files
             self.survey.gear_df = pd.concat([gear_us_df, gear_can_df])
