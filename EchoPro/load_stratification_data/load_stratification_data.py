@@ -23,10 +23,10 @@ class LoadStrataData:  # TODO: Does it make sense for this to be a class?
         self.survey = survey
 
         # expected columns for strata Dataframe
-        self.strata_cols = {'Year', 'stratum', 'Haul', 'wt'}
+        self.strata_cols = {'year', 'stratum_num', 'haul_num', 'fraction_hake'}
 
         # expected columns for geo strata Dataframe
-        self.geo_strata_cols = {'Strata index', 'Latitude (upper limit)'}
+        self.geo_strata_cols = {'stratum_num', 'Latitude (upper limit)'}
 
         self._load_stratification_file()
         self._load_geographic_stratification()
@@ -70,14 +70,14 @@ class LoadStrataData:  # TODO: Does it make sense for this to be a class?
             self._check_strata_df(strata_df, file_path)
 
             # extract only those columns that are necessary
-            strata_df = strata_df[['Year', 'stratum', 'Haul', 'wt']].copy()
+            strata_df = strata_df[['year', 'stratum_num', 'haul_num', 'fraction_hake']].copy()
 
             # set data types of dataframe
-            strata_df = strata_df.astype({'Year': int, 'stratum': int,
-                                          'Haul': int, 'wt': np.float64})
+            strata_df = strata_df.astype({'year': int, 'stratum_num': int,
+                                          'haul_num': int, 'fraction_hake': np.float64})
 
             # set index of dataframe
-            strata_df.set_index(['Haul', 'stratum'], inplace=True)
+            strata_df.set_index(['haul_num', 'stratum_num'], inplace=True)
             strata_df.sort_index(inplace=True)
 
             self.survey.strata_df = strata_df
@@ -125,10 +125,10 @@ class LoadStrataData:  # TODO: Does it make sense for this to be a class?
             self._check_geo_strata_df(geo_strata_df, file_path)
 
             # extract only those columns that are necessary
-            geo_strata_df = geo_strata_df[['Strata index', 'Latitude (upper limit)']].copy()
+            geo_strata_df = geo_strata_df[['stratum_num', 'Latitude (upper limit)']].copy()
 
             # set data types of dataframe
-            geo_strata_df = geo_strata_df.astype({'Strata index': int,
+            geo_strata_df = geo_strata_df.astype({'stratum_num': int,
                                                   'Latitude (upper limit)': np.float64})
 
             self.survey.geo_strata_df = geo_strata_df

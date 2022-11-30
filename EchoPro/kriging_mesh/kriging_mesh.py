@@ -41,10 +41,10 @@ class KrigingMesh:
         }
 
         # expected columns for the mesh Dataframe
-        self.mesh_cols = {'Latitude of centroid', 'Longitude of centroid', 'Area (km^2)', 'Cell portion'}
+        self.mesh_cols = {'centroid_latitude', 'centroid_longitude', 'Area (km^2)', 'fraction_cell_in_polygon'}
 
         # expected columns for the smoothed contour Dataframe
-        self.contour_cols = {'Latitude', 'Longitude'}
+        self.contour_cols = {'latitude', 'longitude'}
 
         # initialize mesh parameters
         self.transformed_transect_df = None
@@ -106,17 +106,17 @@ class KrigingMesh:
         self._check_mesh_df(df, file_path)
 
         # obtaining those columns that are required
-        df = df[['Latitude of centroid', 'Longitude of centroid', 'Area (km^2)', 'Cell portion']].copy()
+        df = df[['centroid_latitude', 'centroid_longitude', 'Area (km^2)', 'fraction_cell_in_polygon']].copy()
 
         # set data types of dataframe
-        df = df.astype({'Latitude of centroid': float,
-                        'Longitude of centroid': float,
+        df = df.astype({'centroid_latitude': float,
+                        'centroid_longitude': float,
                         'Area (km^2)': float,
-                        'Cell portion': np.float64})
+                        'fraction_cell_in_polygon': np.float64})
 
         # construct geopandas DataFrame to simplify downstream processes
-        gdf = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df['Longitude of centroid'],
-                                                               df['Latitude of centroid']))
+        gdf = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df['centroid_longitude'],
+                                                               df['centroid_latitude']))
 
         # assign class variable
         self.mesh_gdf = gdf
@@ -139,14 +139,14 @@ class KrigingMesh:
         self._check_smoothed_contour_df(df, file_path)
 
         # obtaining those columns that are required
-        df = df[['Latitude', 'Longitude']].copy()
+        df = df[['latitude', 'longitude']].copy()
 
         # set data types of dataframe
-        df = df.astype({'Latitude': float,
-                        'Longitude': float})
+        df = df.astype({'latitude': float,
+                        'longitude': float})
 
         # construct geopandas DataFrame to simplify downstream processes
-        df = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df.Longitude, df.Latitude))
+        df = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df.longitude, df.latitude))
 
         # assign class variable
         self.smoothed_contour_gdf = df
@@ -174,11 +174,11 @@ class KrigingMesh:
         """
 
         # get the mean latitude and longitude based on the transects
-        df_tran_mean = df[["Latitude", "Longitude"]].groupby(level=0).mean()
+        df_tran_mean = df[["latitude", "longitude"]].groupby(level=0).mean()
 
         return gpd.GeoDataFrame(df_tran_mean,
-                                geometry=gpd.points_from_xy(df_tran_mean.Longitude,
-                                                            df_tran_mean.Latitude))
+                                geometry=gpd.points_from_xy(df_tran_mean.longitude,
+                                                            df_tran_mean.latitude))
 
     def get_polygon_of_transects(self, gdf: gpd.GeoDataFrame,
                                  n_close: int, nm_to_buffer: float = 1.25) -> Polygon:
@@ -298,8 +298,8 @@ class KrigingMesh:
         """
 
         # construct an interpolation between points
-        f = interpolate.interp1d(self.smoothed_contour_gdf['Latitude'],
-                                 self.smoothed_contour_gdf['Longitude'],
+        f = interpolate.interp1d(self.smoothed_contour_gdf['latitude'],
+                                 self.smoothed_contour_gdf['longitude'],
                                  kind='linear', bounds_error=False)
 
         # TODO: do we need to drop NaNs after interpolating?
@@ -636,7 +636,7 @@ class KrigingMesh:
         # plot the transect points and add them to fmap
         folium_layer = folium.FeatureGroup(name='transects')
         folium_layer = self.plot_points(self.survey.bio_calc.final_biomass_table, folium_layer,
-                                        cmap_column='Transect', color='hex')
+                                        cmap_column='transect_num', color='hex')
         folium_layer.add_to(fmap)
 
         # plot smoothed contour points and add them to fmap

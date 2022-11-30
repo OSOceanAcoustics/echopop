@@ -40,7 +40,7 @@ class ComputeBiomassDensity:
         Computes the backscattering cross-section (sigma_b),
         using the strata, specimen, and length dataframes.
         These values are then stored in self.strata_sig_b
-        as a Pandas series with index "stratum".
+        as a Pandas series with index "stratum_num".
         """
 
         # TODO: the target strength functions are specific to Hake, replace with input in the future
@@ -48,29 +48,29 @@ class ComputeBiomassDensity:
         # initialize sig_bs_haul column in strata_df
         self.strata_df["sig_bs_haul"] = np.nan
 
-        # select the indices that do not have nan in either Length or Weight
-        spec_df = self.specimen_df[['Length', 'Weight']].copy()
+        # select the indices that do not have nan in either length or weight
+        spec_df = self.specimen_df[['length', 'weight']].copy()
         spec_df = spec_df.dropna(how='any')
 
         for haul_num in spec_df.index.unique():
 
             # lengths from specimen file associated with index haul_num
-            spec_len = spec_df.loc[haul_num]['Length']
+            spec_len = spec_df.loc[haul_num]['length']
 
             if haul_num in self.length_df.index:
 
                 # add lengths from length file associated with index haul_num
-                length_len = self.length_df.loc[haul_num]['Length'].values
-                length_freq = self.length_df.loc[haul_num]['Frequency'].values
+                length_len = self.length_df.loc[haul_num]['length'].values
+                length_count = self.length_df.loc[haul_num]['length_count'].values
 
                 # empirical relation for target strength
                 TS0j_length = 20.0 * np.log10(length_len) - 68.0
 
                 # sum of target strengths
-                sum_TS0j_length = np.nansum((10.0 ** (TS0j_length / 10.0)) * length_freq)
+                sum_TS0j_length = np.nansum((10.0 ** (TS0j_length / 10.0)) * length_count)
 
                 # total number of values used to calculate sum_TS0j_length
-                num_length = np.nansum(length_freq)
+                num_length = np.nansum(length_count)
 
             else:
 
@@ -91,7 +91,7 @@ class ComputeBiomassDensity:
                                       "sig_bs_haul"] = (sum_TS0j_spec + sum_TS0j_length)/(num_length + TS0j_spec.size)
 
         # mean backscattering cross-section for each stratum
-        self.strata_sig_b = 4.0 * np.pi * self.strata_df['sig_bs_haul'].groupby('stratum').mean()
+        self.strata_sig_b = 4.0 * np.pi * self.strata_df['sig_bs_haul'].groupby('stratum_num').mean()
 
     def _fill_missing_strata_indices(self, df: pd.DataFrame) -> pd.DataFrame:
         """
@@ -124,7 +124,7 @@ class ComputeBiomassDensity:
         """
 
         # all strata indices that are missing
-        missing_strata = set(self.nasc_df["Stratum"].unique()) - set(df.index.values)
+        missing_strata = set(self.nasc_df["stratum_num"].unique()) - set(df.index.values)
 
         # if there are no missing strata then do nothing
         if len(missing_strata) == 0:
@@ -226,21 +226,21 @@ class ComputeBiomassDensity:
 
     def _add_stratum_column(self) -> None:
         """
-        Adds the "stratum" column to self.strata_df
+        Adds the ``stratum_num`` column to self.strata_df
         and self.length_df. Additionally, this
-        function will set the index to "stratum".
+        function will set the index to ``stratum_num``.
         """
 
         # get df relating the haul to the stratum
-        strata_haul_df = self.strata_df.reset_index()[['Haul', 'stratum']].set_index('Haul')
+        strata_haul_df = self.strata_df.reset_index()[['haul_num', 'stratum_num']].set_index('haul_num')
 
-        # add stratum column to specimen_df and set it as the index
-        self.specimen_df['stratum'] = strata_haul_df.loc[self.specimen_df.index]
-        self.specimen_df.set_index('stratum', inplace=True)
+        # add stratum_num column to specimen_df and set it as the index
+        self.specimen_df['stratum_num'] = strata_haul_df.loc[self.specimen_df.index]
+        self.specimen_df.set_index('stratum_num', inplace=True)
 
-        # add stratum column to length_df and set it as the index
-        self.length_df['stratum'] = strata_haul_df.loc[self.length_df.index]
-        self.length_df.set_index('stratum', inplace=True)
+        # add stratum_num column to length_df and set it as the index
+        self.length_df['stratum_num'] = strata_haul_df.loc[self.length_df.index]
+        self.length_df.set_index('stratum_num', inplace=True)
 
     def _generate_length_val_key(self, len_name: str, val_name: str,
                                  df: pd.DataFrame = None) -> np.ndarray:
@@ -268,7 +268,7 @@ class ComputeBiomassDensity:
             1D array representing the length-value key 
         """
 
-        # select the indices that do not have nan in either Length or Weight
+        # select the indices that do not have nan in either length or value
         len_wgt_nonull = np.logical_and(df[len_name].notnull(), df[val_name].notnull())
         df_no_null = df.loc[len_wgt_nonull]
 
@@ -312,8 +312,7 @@ class ComputeBiomassDensity:
         Parameters
         ----------
         df : pd.DataFrame
-            Data from station 1 that has columns Length and
-            Frequency.
+            Data from station 1 that has columns ``length`` and ``length_count``.
 
         Returns
         -------
@@ -321,15 +320,15 @@ class ComputeBiomassDensity:
         count of each bin divided by the total of all bin counts
         """
 
-        # get numpy arrays of the Length and Frequency columns
-        length_arr = df.Length.values
-        freq_arr = df.Frequency.values
+        # get numpy arrays of the length and length_count columns
+        length_arr = df.length.values
+        length_count_arr = df.length_count.values
 
         # binned length indices
         len_ind = self._get_bin_ind(length_arr, self.bio_hake_len_bin)
 
         # total number of lengths in a bin
-        len_bin_cnt = np.array([np.sum(freq_arr[i]) for i in len_ind])
+        len_bin_cnt = np.array([np.sum(length_count_arr[i]) for i in len_ind])
 
         return len_bin_cnt / np.sum(len_bin_cnt)
 
@@ -343,7 +342,7 @@ class ComputeBiomassDensity:
         Parameters
         ----------
         df : pd.DataFrame
-            Data from station 2 that has a Length column
+            Data from fish measurement station 2 that has a ``length`` column
 
         Returns
         -------
@@ -351,8 +350,8 @@ class ComputeBiomassDensity:
         count of each bin divided by the total of all bin counts
         """
 
-        # numpy array of Length column
-        length_arr = df.Length.values
+        # numpy array of length column
+        length_arr = df.length.values
 
         # binned length indices
         len_bin_ind = self._get_bin_ind(length_arr, self.bio_hake_len_bin)
@@ -396,16 +395,16 @@ class ComputeBiomassDensity:
         """
 
         # total number of sexed fish at stations 1 and 2
-        total_n = spec_strata_m.shape[0] + spec_strata_f.shape[0] + len_strata.Frequency.sum()
-        # total_n = spec_strata.shape[0] + (len_strata.Frequency.sum())  # TODO: This is what it should be
+        total_n = spec_strata_m.shape[0] + spec_strata_f.shape[0] + len_strata.length_count.sum()
+        # total_n = spec_strata.shape[0] + (len_strata.length_count.sum())  # TODO: This is what it should be
 
         # proportion of males/females in station 2
         spec_m_prop = spec_strata_m.shape[0] / total_n
         spec_f_prop = spec_strata_f.shape[0] / total_n
 
         # proportion of males/females in station 1
-        len_m_prop = len_strata_m.Frequency.sum() / total_n
-        len_f_prop = len_strata_f.Frequency.sum() / total_n
+        len_m_prop = len_strata_m.length_count.sum() / total_n
+        len_f_prop = len_strata_f.length_count.sum() / total_n
 
         # total proportion of sexed fish in station 2
         tot_prop2 = spec_m_prop + spec_f_prop
@@ -474,13 +473,13 @@ class ComputeBiomassDensity:
 
         # get specimen in the stratum and split into males and females
         spec_stratum = spec_drop_df.loc[stratum]
-        spec_strata_m = spec_stratum[spec_stratum['Sex'] == 1]
-        spec_strata_f = spec_stratum[spec_stratum['Sex'] == 2]
+        spec_strata_m = spec_stratum[spec_stratum['sex'] == 1]
+        spec_strata_f = spec_stratum[spec_stratum['sex'] == 2]
 
         # get lengths in the stratum and split into males and females
         len_strata = length_drop_df.loc[stratum]
-        len_strata_m = len_strata[len_strata['Sex'] == 1]
-        len_strata_f = len_strata[len_strata['Sex'] == 2]
+        len_strata_m = len_strata[len_strata['sex'] == 1]
+        len_strata_f = len_strata[len_strata['sex'] == 2]
 
         # get the normalized length keys for station 1
         len_key_all_s1 = self._get_norm_len_key_station_1(len_strata)
@@ -540,8 +539,8 @@ class ComputeBiomassDensity:
         strata_ind = spec_strata_ind.intersection(len_strata_ind).values
 
         # obtain the length-weight key for all specimen data
-        len_weight_spec = self._generate_length_val_key(len_name='Length',
-                                                        val_name='Weight',
+        len_weight_spec = self._generate_length_val_key(len_name='length',
+                                                        val_name='weight',
                                                         df=self.specimen_df)
 
         # select the indices that do not have nan in either Length or Weight
@@ -570,7 +569,7 @@ class ComputeBiomassDensity:
         Parameters
         ----------
         nasc_df : pd.DataFrame
-            NASC df with 'VL start' and 'VL end' columns
+            NASC df with ``vessel_log_start`` and ``vessel_log_end`` columns
 
         Returns
         -------
@@ -579,10 +578,10 @@ class ComputeBiomassDensity:
         """
 
         # calculate interval for all values except for the last interval
-        interval = (nasc_df['VL start'].iloc[1:].values - nasc_df['VL start'].iloc[:-1].values)
+        interval = (nasc_df['vessel_log_start'].iloc[1:].values - nasc_df['vessel_log_start'].iloc[:-1].values)
 
         # calculate last interval
-        last_interval = nasc_df['VL end'].iloc[-1] - nasc_df['VL start'].iloc[-1]
+        last_interval = nasc_df['vessel_log_end'].iloc[-1] - nasc_df['vessel_log_start'].iloc[-1]
 
         # combines all intervals
         interval = np.concatenate([interval, np.array([last_interval])])
@@ -592,7 +591,7 @@ class ComputeBiomassDensity:
 
         # remove outliers at the end of the transect
         ind_outliers = np.argwhere(np.abs(interval - median_interval) > 0.05).flatten()
-        interval[ind_outliers] = nasc_df['VL end'].values[ind_outliers] - nasc_df['VL start'].values[ind_outliers]
+        interval[ind_outliers] = nasc_df['vessel_log_end'].values[ind_outliers] - nasc_df['vessel_log_start'].values[ind_outliers]
 
         return interval
 
@@ -612,7 +611,7 @@ class ComputeBiomassDensity:
         """
 
         # expand the bio constants dataframe so that it corresponds to nasc_df
-        bc_expanded_df = self.bio_const_df.loc[self.nasc_df.Stratum.values]
+        bc_expanded_df = self.bio_const_df.loc[self.nasc_df.stratum_num.values]
 
         # compute the normalized biomass density for males and females
         nntk_male = np.round(n_A.values * bc_expanded_df.M_prop.values)
@@ -652,15 +651,15 @@ class ComputeBiomassDensity:
         # account for the case when df is a Series
         if isinstance(df, pd.Series):
             # get numpy arrays of length, age, and weight
-            input_arr_len = np.array([df.Length])
-            input_arr_age = np.array([df.Age])
-            input_arr_wgt = np.array([df.Weight])
+            input_arr_len = np.array([df.length])
+            input_arr_age = np.array([df.age])
+            input_arr_wgt = np.array([df.weight])
 
         else:
             # get numpy arrays of length, age, and weight
-            input_arr_len = df.Length.values
-            input_arr_age = df.Age.values
-            input_arr_wgt = df.Weight.values
+            input_arr_len = df.length.values
+            input_arr_age = df.age.values
+            input_arr_wgt = df.weight.values
 
         # bin the ages
         age_bins_ind = self._get_bin_ind(input_arr_age, self.bio_hake_age_bin)
@@ -700,7 +699,7 @@ class ComputeBiomassDensity:
         """
 
         # minimal columns to do Jolly Hampton CV on data that has not been kriged
-        final_df = self.nasc_df[['Latitude', 'Longitude', 'Stratum', 'Spacing']].copy()
+        final_df = self.nasc_df[['latitude', 'longitude', 'stratum_num', 'transect_spacing']].copy()
         final_df["normalized_biomass_density"] = norm_bio_dense
 
         # TODO: should we include the below values in the final biomass table?
@@ -708,15 +707,15 @@ class ComputeBiomassDensity:
         # final_df["interval"] = self._get_interval(self.nasc_df)
 
         # calculate the area corresponding to the NASC value
-        # final_df["Area"] = interval * self.nasc_df['Spacing']
+        # final_df["Area"] = interval * self.nasc_df['transect_spacing']
 
         # calculate the total number of fish in a given area
         # final_df["N_A"] = n_A * A
 
         # construct GeoPandas DataFrame to simplify downstream processes
         self.final_biomass_table = gpd.GeoDataFrame(final_df,
-                                                           geometry=gpd.points_from_xy(final_df.Longitude,
-                                                                                       final_df.Latitude))
+                                                    geometry=gpd.points_from_xy(final_df.longitude,
+                                                                                final_df.latitude))
 
     def set_class_variables(self, selected_transects: Optional[List] = None) -> None:
         """
@@ -737,22 +736,22 @@ class ComputeBiomassDensity:
         if selected_transects is not None:
 
             # TODO: Can we get a file that maps hauls to transects and use this instead?
-            transect_vs_haul = self.survey.gear_df["Transect"].dropna().astype(int).reset_index().set_index("Transect")
+            transect_vs_haul = self.survey.gear_df["transect_num"].dropna().astype(int).reset_index().set_index("transect_num")
 
             # TODO: do a check that all hauls are mapped to a transect
 
             sel_transects = transect_vs_haul.index.unique().intersection(selected_transects).values
-            sel_hauls = transect_vs_haul.loc[sel_transects]["Haul"].unique()
+            sel_hauls = transect_vs_haul.loc[sel_transects]["haul_num"].unique()
 
             sel_hauls_length = self.survey.length_df.index.intersection(sel_hauls).unique()
-            sel_haul_strata = self.survey.strata_df.index.get_level_values("Haul").intersection(sel_hauls).unique()
+            sel_haul_strata = self.survey.strata_df.index.get_level_values("haul_num").intersection(sel_hauls).unique()
             sel_haul_specimen = self.survey.specimen_df.index.intersection(sel_hauls).unique()
 
             self.length_df = self.survey.length_df.loc[sel_hauls_length].copy()
             self.strata_df = self.survey.strata_df.loc[sel_haul_strata].copy()
             self.specimen_df = self.survey.specimen_df.loc[sel_haul_specimen].copy()
 
-            # select nasc data based on Haul, so we do not select a stratum that is not in length/specimen data
+            # select nasc data based on haul_num, so we do not select a stratum that is not in length/specimen data
             self.nasc_df = self.survey.nasc_df.loc[sel_transects]
 
         else:
@@ -780,7 +779,7 @@ class ComputeBiomassDensity:
         # get the backscattering cross-section for each stratum
         self._get_strata_sig_b()
 
-        # add stratum column to length and specimen df and set it as the index
+        # add stratum_num column to length and specimen df and set it as the index
         self._add_stratum_column()
 
         self._get_biomass_constants()
@@ -793,19 +792,19 @@ class ComputeBiomassDensity:
         self.age2_wgt_prop_df = self._fill_missing_strata_indices(df=self.age2_wgt_prop_df.copy())
 
         # calculate proportion coefficient for mixed species
-        wgt_vals = self.strata_df.reset_index().set_index('Haul')['wt']
+        wgt_vals = self.strata_df.reset_index().set_index('haul_num')['fraction_hake']
         wgt_vals_ind = wgt_vals.index
-        mix_sa_ratio = self.nasc_df.apply(lambda x: wgt_vals[x.Haul] if x.Haul in wgt_vals_ind else 0.0, axis=1)
+        mix_sa_ratio = self.nasc_df.apply(lambda x: wgt_vals[x.haul_num] if x.haul_num in wgt_vals_ind else 0.0, axis=1)
 
         # calculate the nautical areal density
         n_A = np.round((mix_sa_ratio*self.nasc_df.NASC) /
-                       self.strata_sig_b.loc[self.nasc_df.Stratum].values)
+                       self.strata_sig_b.loc[self.nasc_df.stratum_num].values)
 
         # total normalized weight for each n_A value
         nwgt_total = self._get_tot_norm_wgt(n_A)
 
         # obtain normalized biomass density
         # TODO: the computed value is called normalized, but it isn't between [0, 1]! Different name or bug?
-        norm_bio_dense = nwgt_total * self.age2_wgt_prop_df.loc[self.nasc_df.Stratum.values].values.flatten()
+        norm_bio_dense = nwgt_total * self.age2_wgt_prop_df.loc[self.nasc_df.stratum_num.values].values.flatten()
 
         self._construct_biomass_table(norm_bio_dense)
