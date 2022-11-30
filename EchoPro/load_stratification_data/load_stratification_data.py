@@ -23,7 +23,7 @@ class LoadStrataData:  # TODO: Does it make sense for this to be a class?
         self.survey = survey
 
         # expected columns for strata Dataframe
-        self.strata_cols = {'year', 'stratum_num', 'haul_num', 'fraction_hake'}
+        self.strata_cols = {'stratum_num', 'haul_num', 'fraction_hake'}
 
         # expected columns for geo strata Dataframe
         self.geo_strata_cols = {'stratum_num', 'Latitude (upper limit)'}
@@ -70,11 +70,11 @@ class LoadStrataData:  # TODO: Does it make sense for this to be a class?
             self._check_strata_df(strata_df, file_path)
 
             # extract only those columns that are necessary
-            strata_df = strata_df[['year', 'stratum_num', 'haul_num', 'fraction_hake']].copy()
+            strata_df = strata_df[['stratum_num', 'haul_num', 'fraction_hake']].copy()
 
             # set data types of dataframe
-            strata_df = strata_df.astype({'year': int, 'stratum_num': int,
-                                          'haul_num': int, 'fraction_hake': np.float64})
+            strata_df = strata_df.astype({'stratum_num': int, 'haul_num': int,
+                                          'fraction_hake': np.float64})
 
             # set index of dataframe
             strata_df.set_index(['haul_num', 'stratum_num'], inplace=True)
