@@ -26,12 +26,12 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         # expected columns for specimen Dataframe
         self.spec_cols = {'haul_num', 'species_id', 'sex', 'length', 'weight', 'age'}
 
-        # expected columns for gear Dataframe
-        self.gear_cols = {'haul_num', 'transect_num'}
+        # expected columns for haul_to_transect_mapping Dataframe
+        self.haul_to_transect_mapping_cols = {'haul_num', 'transect_num'}
 
         self._load_length_data()
         self._load_specimen_data()
-        self._load_gear_data()
+        self._load_haul_to_transect_mapping_data()
 
     def _check_length_df(self, len_df: pd.DataFrame, df_path: Path) -> None:
         """
@@ -67,22 +67,24 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
 
         check_column_names(df=spec_df, expected_names=self.spec_cols, path_for_df=df_path)
 
-    def _check_gear_df(self, gear_df: pd.DataFrame, df_path: Path) -> None:
+    def _check_haul_to_transect_mapping_df(self, haul_to_transect_mapping_df: pd.DataFrame,
+                                           df_path: Path) -> None:
         """
         Ensures that the appropriate columns are
-        contained in the gear Dataframe.
+        contained in the haul to transect mapping Dataframe.
 
         Parameters
         ----------
-        gear_df: pd.DataFrame
-            The constructed Gear DataFrame
+        haul_to_transect_mapping_df: pd.DataFrame
+            The constructed haul to transect mapping DataFrame
         df_path: Path
             The path to the Excel file used to construct the DataFrame
         """
 
         # TODO: should we add more in-depth checks here?
 
-        check_column_names(df=gear_df, expected_names=self.gear_cols, path_for_df=df_path)
+        check_column_names(df=haul_to_transect_mapping_df,
+                           expected_names=self.haul_to_transect_mapping_cols, path_for_df=df_path)
 
     def _process_length_data_df(self, df: pd.DataFrame,
                                 haul_num_offset: int) -> pd.DataFrame:
@@ -247,9 +249,9 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         else:
             raise NotImplementedError(f"Source of {self.survey.params['source']} not implemented yet.")
 
-    def _process_gear_data(self, df: pd.DataFrame) -> pd.DataFrame:
+    def _process_haul_to_transect_mapping_data(self, df: pd.DataFrame) -> pd.DataFrame:
         """
-        Processes the gear data by
+        Processes the haul to transect mapping data by
         * selecting the haul and transect columns
         * ensuring the dataframe has the appropriate data types
         * setting the ``haul_num`` column as the Dataframe index
@@ -258,12 +260,12 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         Parameters
         ----------
         df : pd. Dataframe
-            Dataframe holding the gear data
+            Dataframe holding the haul to transect mapping data
 
         Returns
         -------
         pd.DataFrame
-            Processed gear Dataframe
+            Processed haul to transect mapping Dataframe
         """
 
         # obtain those columns necessary for core downstream processes
@@ -281,48 +283,48 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
 
         return df
 
-    def _load_gear_data(self) -> None:
+    def _load_haul_to_transect_mapping_data(self) -> None:
         """
-        Loads and prepares the gear data ``haul_num`` and ``transect_num``. Additionally,
-        it sets survey.gear_df using the final processed dataframe.
+        Loads and prepares the data that maps each ``haul_num`` to a ``transect_num``.
+        Additionally, it sets survey.haul_to_transect_mapping_df using the final
+        processed dataframe.
 
         Notes
         -----
-        This data is currently only being used as a mapping between hauls and
-        transects, which is necessary for obtaining subsets of data during
-        transect selection.
+        This data is necessary for obtaining subsets of data during transect selection.
         """
-        # TODO: replace the gear file with a more purposeful mapping between hauls and transects
-        # TODO: make sheet_name part of configuration file, if we need it
 
         if self.survey.params['source'] == 3:
 
             # check existence of the files
-            file_path_us = self.survey.params['data_root_dir'] / self.survey.params['filename_gear_US']
-            file_path_can = self.survey.params['data_root_dir'] / self.survey.params['filename_gear_CAN']
+            file_path_us = self.survey.params['data_root_dir'] / self.survey.params['filename_haul_to_transect_US']
+            file_path_can = self.survey.params['data_root_dir'] / self.survey.params['filename_haul_to_transect_CAN']
             check_existence_of_file(file_path_us)
             check_existence_of_file(file_path_can)
 
-            # read in, check, and process the US gear file
-            gear_us_df = pd.read_excel(file_path_us, sheet_name='biodata_gear')
-            self._check_gear_df(gear_us_df, file_path_us)
-            gear_us_df = self._process_gear_data(gear_us_df)
+            # read in, check, and process the US haul to transect mapping file
+            haul_to_transect_mapping_us_df = pd.read_excel(file_path_us,
+                                                           sheet_name=self.survey.params['haul_to_transect_US_sheetname'])
+            self._check_haul_to_transect_mapping_df(haul_to_transect_mapping_us_df, file_path_us)
+            haul_to_transect_mapping_us_df = self._process_haul_to_transect_mapping_data(haul_to_transect_mapping_us_df)
 
-            # read in, check, and process the Canada gear file
-            gear_can_df = pd.read_excel(file_path_can, sheet_name='biodata_gear_CAN')
-            self._check_gear_df(gear_can_df, file_path_can)
-            gear_can_df = self._process_gear_data(gear_can_df)
+            # read in, check, and process the Canada haul to transect mapping file
+            haul_to_transect_mapping_can_df = pd.read_excel(file_path_can,
+                                                            sheet_name=self.survey.params['haul_to_transect_CAN_sheetname'])
+            self._check_haul_to_transect_mapping_df(haul_to_transect_mapping_can_df, file_path_can)
+            haul_to_transect_mapping_can_df = self._process_haul_to_transect_mapping_data(haul_to_transect_mapping_can_df)
 
             # transect offset is set to zero since we will not have overlapping transects
             # TODO: Is this a necessary variable? If so, we should make it an input to the function.
             CAN_Transect_offset = 0
 
             # add Canada transect and haul offset
-            gear_can_df.index = gear_can_df.index + self.survey.params['CAN_haul_offset']
-            gear_can_df['transect_num'] = gear_can_df['transect_num'] + CAN_Transect_offset
+            haul_to_transect_mapping_can_df.index = haul_to_transect_mapping_can_df.index + self.survey.params['CAN_haul_offset']
+            haul_to_transect_mapping_can_df['transect_num'] = haul_to_transect_mapping_can_df['transect_num'] + CAN_Transect_offset
 
             # combine US & CAN trawl files
-            self.survey.gear_df = pd.concat([gear_us_df, gear_can_df])
+            self.survey.haul_to_transect_mapping_df = pd.concat([haul_to_transect_mapping_us_df,
+                                                                 haul_to_transect_mapping_can_df])
 
         else:
             raise NotImplementedError(f"Source of {self.survey.params['source']} not implemented yet.")

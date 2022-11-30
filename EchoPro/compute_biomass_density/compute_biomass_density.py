@@ -735,8 +735,7 @@ class ComputeBiomassDensity:
 
         if selected_transects is not None:
 
-            # TODO: Can we get a file that maps hauls to transects and use this instead?
-            transect_vs_haul = self.survey.gear_df["transect_num"].dropna().astype(int).reset_index().set_index("transect_num")
+            transect_vs_haul = self.survey.haul_to_transect_mapping_df["transect_num"].dropna().astype(int).reset_index().set_index("transect_num")
 
             # TODO: do a check that all hauls are mapped to a transect
 

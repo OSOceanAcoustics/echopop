@@ -71,6 +71,20 @@
 
 
   #####################################################################################################################
+  # Path to mapping between hauls and transects #
+  ###############################################
+
+  # File names for the US section
+  filename_haul_to_transect_US: Mappings/US/haul_to_transect_mapping_2019.xlsx
+  haul_to_transect_US_sheetname: Sheet1
+
+  # File names for the Canada section
+  filename_haul_to_transect_CAN: Mappings/CAN/haul_to_transect_mapping_2019_CAN.xlsx
+  haul_to_transect_CAN_sheetname: Sheet1
+  #####################################################################################################################
+
+
+  #####################################################################################################################
   # Additional Parameters for Survey Year #
   #########################################
   survey_year: 2019                     # survey year being considered
