@@ -322,7 +322,7 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
             haul_to_transect_mapping_can_df.index = haul_to_transect_mapping_can_df.index + self.survey.params['CAN_haul_offset']
             haul_to_transect_mapping_can_df['transect_num'] = haul_to_transect_mapping_can_df['transect_num'] + CAN_Transect_offset
 
-            # combine US & CAN trawl files
+            # combine US & CAN data
             self.survey.haul_to_transect_mapping_df = pd.concat([haul_to_transect_mapping_us_df,
                                                                  haul_to_transect_mapping_can_df])
 
