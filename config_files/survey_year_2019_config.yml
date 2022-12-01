@@ -75,11 +75,11 @@
   ###############################################
 
   # File names for the US section
-  filename_haul_to_transect_US: Mappings/US/haul_to_transect_mapping_2019.xlsx
+  filename_haul_to_transect_US: Biological/US/haul_to_transect_mapping_2019.xlsx
   haul_to_transect_US_sheetname: Sheet1
 
   # File names for the Canada section
-  filename_haul_to_transect_CAN: Mappings/CAN/haul_to_transect_mapping_2019_CAN.xlsx
+  filename_haul_to_transect_CAN: Biological/CAN/haul_to_transect_mapping_2019_CAN.xlsx
   haul_to_transect_CAN_sheetname: Sheet1
   #####################################################################################################################
 
