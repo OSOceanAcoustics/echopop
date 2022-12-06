@@ -597,9 +597,9 @@ class ComputeBiomassDensity:
 
         return interval
 
-    def _get_tot_norm_wgt(self, n_A: pd.Series) -> np.ndarray:
+    def _get_tot_areal_biomass_density(self, n_A: pd.Series) -> np.ndarray:
         """
-        Calculates the total normalized weight
+        Calculates the total areal biomass density
         for each NASC value.
 
         Parameters
@@ -609,25 +609,24 @@ class ComputeBiomassDensity:
 
         Returns
         -------
-        The total normalized weight
+        The total areal biomass density
         """
 
         # expand the bio constants dataframe so that it corresponds to nasc_df
         bc_expanded_df = self.bio_const_df.loc[self.nasc_df.stratum_num.values]
 
-        # compute the normalized biomass density for males and females
-        nntk_male = np.round(n_A.values * bc_expanded_df.M_prop.values)
-        nntk_female = np.round(n_A.values * bc_expanded_df.F_prop.values)
+        # compute the areal numerical density for males and females
+        areal_numerical_density_male = np.round(n_A.values * bc_expanded_df.M_prop.values)
+        areal_numerical_density_female = np.round(n_A.values * bc_expanded_df.F_prop.values)
 
-        # compute the normalized weight for males, females, and unsexed
-        nwgt_male = nntk_male * bc_expanded_df.averaged_weight_M.values
-        nwgt_female = nntk_female * bc_expanded_df.averaged_weight_F.values
-        nwgt_unsexed = (n_A.values - nntk_male - nntk_female) * bc_expanded_df.averaged_weight.values
+        # compute the areal biomass density for males, females, and unsexed
+        areal_biomass_density_male = areal_numerical_density_male * bc_expanded_df.averaged_weight_M.values
+        areal_biomass_density_female = areal_numerical_density_female * bc_expanded_df.averaged_weight_F.values
+        areal_biomass_density_unsexed = (n_A.values - areal_numerical_density_male
+                                         - areal_numerical_density_female) * bc_expanded_df.averaged_weight.values
 
-        # TODO: the returned value is called normalized, but it isn't between [0, 1]! Different name or bug?
-
-        # compute the total normalized weight
-        return nwgt_male + nwgt_female + nwgt_unsexed
+        # compute the total areal biomass density
+        return areal_biomass_density_male + areal_biomass_density_female + areal_biomass_density_unsexed
 
     def _get_age_weight_key(self, df: Union[pd.DataFrame, pd.Series]) -> float:
         """
@@ -801,11 +800,12 @@ class ComputeBiomassDensity:
         n_A = np.round((mix_sa_ratio*self.nasc_df.NASC) /
                        self.strata_sig_b.loc[self.nasc_df.stratum_num].values)
 
-        # total normalized weight for each n_A value
-        nwgt_total = self._get_tot_norm_wgt(n_A)
+        # total areal biomass density for each n_A value
+        areal_biomass_density = self._get_tot_areal_biomass_density(n_A)
 
         # obtain normalized biomass density
         # TODO: the computed value is called normalized, but it isn't between [0, 1]! Different name or bug?
-        norm_bio_dense = nwgt_total * self.age2_wgt_prop_df.loc[self.nasc_df.stratum_num.values].values.flatten()
+        norm_bio_dense = (areal_biomass_density *
+                          self.age2_wgt_prop_df.loc[self.nasc_df.stratum_num.values].values.flatten())
 
         self._construct_biomass_table(norm_bio_dense)
