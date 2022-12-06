@@ -597,15 +597,15 @@ class ComputeBiomassDensity:
 
         return interval
 
-    def _get_tot_areal_biomass_density(self, n_A: pd.Series) -> np.ndarray:
+    def _get_tot_areal_biomass_density(self, areal_numerical_density: pd.Series) -> np.ndarray:
         """
         Calculates the total areal biomass density
         for each NASC value.
 
         Parameters
         ----------
-        n_A : pd.Series
-            Series representing the nautical areal density
+        areal_numerical_density : pd.Series
+            Series representing the areal numerical density
 
         Returns
         -------
@@ -616,13 +616,13 @@ class ComputeBiomassDensity:
         bc_expanded_df = self.bio_const_df.loc[self.nasc_df.stratum_num.values]
 
         # compute the areal numerical density for males and females
-        areal_numerical_density_male = np.round(n_A.values * bc_expanded_df.M_prop.values)
-        areal_numerical_density_female = np.round(n_A.values * bc_expanded_df.F_prop.values)
+        areal_numerical_density_male = np.round(areal_numerical_density.values * bc_expanded_df.M_prop.values)
+        areal_numerical_density_female = np.round(areal_numerical_density.values * bc_expanded_df.F_prop.values)
 
         # compute the areal biomass density for males, females, and unsexed
         areal_biomass_density_male = areal_numerical_density_male * bc_expanded_df.averaged_weight_M.values
         areal_biomass_density_female = areal_numerical_density_female * bc_expanded_df.averaged_weight_F.values
-        areal_biomass_density_unsexed = (n_A.values - areal_numerical_density_male
+        areal_biomass_density_unsexed = (areal_numerical_density.values - areal_numerical_density_male
                                          - areal_numerical_density_female) * bc_expanded_df.averaged_weight.values
 
         # compute the total areal biomass density
@@ -711,7 +711,7 @@ class ComputeBiomassDensity:
         # final_df["Area"] = interval * self.nasc_df['transect_spacing']
 
         # calculate the total number of fish in a given area
-        # final_df["N_A"] = n_A * A
+        # final_df["N_A"] = areal_numerical_density * A
 
         # construct GeoPandas DataFrame to simplify downstream processes
         self.final_biomass_table = gpd.GeoDataFrame(final_df,
@@ -796,12 +796,12 @@ class ComputeBiomassDensity:
         wgt_vals_ind = wgt_vals.index
         mix_sa_ratio = self.nasc_df.apply(lambda x: wgt_vals[x.haul_num] if x.haul_num in wgt_vals_ind else 0.0, axis=1)
 
-        # calculate the nautical areal density
-        n_A = np.round((mix_sa_ratio*self.nasc_df.NASC) /
-                       self.strata_sig_b.loc[self.nasc_df.stratum_num].values)
+        # calculate the areal numerical density
+        areal_numerical_density = np.round((mix_sa_ratio*self.nasc_df.NASC) /
+                                           self.strata_sig_b.loc[self.nasc_df.stratum_num].values)
 
-        # total areal biomass density for each n_A value
-        areal_biomass_density = self._get_tot_areal_biomass_density(n_A)
+        # total areal biomass density for each areal_numerical_density value
+        areal_biomass_density = self._get_tot_areal_biomass_density(areal_numerical_density)
 
         # obtain normalized biomass density
         # TODO: the computed value is called normalized, but it isn't between [0, 1]! Different name or bug?
