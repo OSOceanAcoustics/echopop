@@ -444,10 +444,10 @@ class ComputeBiomassDensity:
 
         return gender_prop, fac1, fac2, tot_prop
 
-    def _fill_len_wgt_prod(self, bio_const_df: pd.DataFrame,
-                           stratum: int, spec_drop_df: pd.DataFrame,
-                           length_drop_df: pd.DataFrame,
-                           length_to_weight_conversion: np.array) -> pd.DataFrame:
+    def _fill_averaged_weight(self, bio_const_df: pd.DataFrame,
+                              stratum: int, spec_drop_df: pd.DataFrame,
+                              length_drop_df: pd.DataFrame,
+                              length_to_weight_conversion: np.array) -> pd.DataFrame:
         """
         Fills in the biomass constant dataframe for a
         particular stratum.
@@ -502,15 +502,15 @@ class ComputeBiomassDensity:
         # fill df with bio constants needed for biomass density calc
         bio_const_df.M_prop.loc[stratum] = gender_prop[0]
         bio_const_df.F_prop.loc[stratum] = gender_prop[1]
-        bio_const_df.len_wgt_prod.loc[stratum] = np.dot(tot_prop[0] * distribution_length_all_s1
-                                                        + tot_prop[1] * distribution_length_all_s2,
-                                                        length_to_weight_conversion)
-        bio_const_df.len_wgt_M_prod.loc[stratum] = np.dot(fac1[0] * distribution_length_m_s1
-                                                          + fac2[0] * distribution_length_m_s2,
-                                                          length_to_weight_conversion)
-        bio_const_df.len_wgt_F_prod.loc[stratum] = np.dot(fac1[1] * distribution_length_f_s1
-                                                          + fac2[1] * distribution_length_f_s2,
-                                                          length_to_weight_conversion)
+        bio_const_df.averaged_weight.loc[stratum] = np.dot(tot_prop[0] * distribution_length_all_s1
+                                                           + tot_prop[1] * distribution_length_all_s2,
+                                                           length_to_weight_conversion)
+        bio_const_df.averaged_weight_M.loc[stratum] = np.dot(fac1[0] * distribution_length_m_s1
+                                                             + fac2[0] * distribution_length_m_s2,
+                                                             length_to_weight_conversion)
+        bio_const_df.averaged_weight_F.loc[stratum] = np.dot(fac1[1] * distribution_length_f_s1
+                                                             + fac2[1] * distribution_length_f_s2,
+                                                             length_to_weight_conversion)
 
         return bio_const_df
 
@@ -522,12 +522,9 @@ class ComputeBiomassDensity:
         each stratum:
         * M_prop -- proportion of males
         * F_prop -- proportion of females
-        * len_wgt_prod -- product of the length-key and
-        the weight-key for the whole population
-        * len_wgt_M_prod -- product of the length-key and
-        the weight-key for the male population
-        * len_wgt_F_prod -- product of the length-key and
-        the weight-key for the female population
+        * averaged_weight-- the averaged weight for the whole population
+        * averaged_weight_M -- averaged_weight for the male population
+        * averaged_weight_F -- averaged_weight for the female population
 
         Notes
         -----
@@ -555,14 +552,14 @@ class ComputeBiomassDensity:
         length_drop_df = self.length_df.dropna(how='any')
 
         # initialize dataframe that will hold all important calculated constants
-        bio_const_df = pd.DataFrame(columns=['M_prop', 'F_prop', 'len_wgt_prod',
-                                             'len_wgt_M_prod', 'len_wgt_F_prod'],
+        bio_const_df = pd.DataFrame(columns=['M_prop', 'F_prop', 'averaged_weight',
+                                             'averaged_weight_M', 'averaged_weight_F'],
                                     index=strata_ind, dtype=np.float64)
 
         # for each stratum compute the necessary constants
         for stratum in strata_ind:
-            bio_const_df = self._fill_len_wgt_prod(bio_const_df, stratum, spec_drop,
-                                                   length_drop_df, length_to_weight_conversion_spec)
+            bio_const_df = self._fill_averaged_weight(bio_const_df, stratum, spec_drop,
+                                                      length_drop_df, length_to_weight_conversion_spec)
 
         self.bio_const_df = bio_const_df
 
@@ -623,9 +620,9 @@ class ComputeBiomassDensity:
         nntk_female = np.round(n_A.values * bc_expanded_df.F_prop.values)
 
         # compute the normalized weight for males, females, and unsexed
-        nwgt_male = nntk_male * bc_expanded_df.len_wgt_M_prod.values
-        nwgt_female = nntk_female * bc_expanded_df.len_wgt_F_prod.values
-        nwgt_unsexed = (n_A.values - nntk_male - nntk_female) * bc_expanded_df.len_wgt_prod.values
+        nwgt_male = nntk_male * bc_expanded_df.averaged_weight_M.values
+        nwgt_female = nntk_female * bc_expanded_df.averaged_weight_F.values
+        nwgt_unsexed = (n_A.values - nntk_male - nntk_female) * bc_expanded_df.averaged_weight.values
 
         # TODO: the returned value is called normalized, but it isn't between [0, 1]! Different name or bug?
 
