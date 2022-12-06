@@ -483,15 +483,15 @@ class ComputeBiomassDensity:
         len_strata_f = len_strata[len_strata['sex'] == 2]
 
         # get the distribution lengths for station 1
-        distribution_length_all_s1 = self._get_distribution_lengths_station_1(len_strata)
+        distribution_length_s1 = self._get_distribution_lengths_station_1(len_strata)
         distribution_length_m_s1 = self._get_distribution_lengths_station_1(len_strata_m)
         distribution_length_f_s1 = self._get_distribution_lengths_station_1(len_strata_f)
 
         # get the distribution lengths for station 2
         # TODO: this is what should be done!
-        # distribution_length_all_s2 = self._get_distribution_lengths_station_2(spec_stratum)
+        # distribution_length_s2 = self._get_distribution_lengths_station_2(spec_stratum)
         spec_stratum_mf = pd.concat([spec_strata_m, spec_strata_f], axis=0)
-        distribution_length_all_s2 = self._get_distribution_lengths_station_2(spec_stratum_mf)
+        distribution_length_s2 = self._get_distribution_lengths_station_2(spec_stratum_mf)
         distribution_length_m_s2 = self._get_distribution_lengths_station_2(spec_strata_m)
         distribution_length_f_s2 = self._get_distribution_lengths_station_2(spec_strata_f)
 
@@ -502,8 +502,8 @@ class ComputeBiomassDensity:
         # fill df with bio constants needed for biomass density calc
         bio_const_df.M_prop.loc[stratum] = gender_prop[0]
         bio_const_df.F_prop.loc[stratum] = gender_prop[1]
-        bio_const_df.averaged_weight.loc[stratum] = np.dot(tot_prop[0] * distribution_length_all_s1
-                                                           + tot_prop[1] * distribution_length_all_s2,
+        bio_const_df.averaged_weight.loc[stratum] = np.dot(tot_prop[0] * distribution_length_s1
+                                                           + tot_prop[1] * distribution_length_s2,
                                                            length_to_weight_conversion)
         bio_const_df.averaged_weight_M.loc[stratum] = np.dot(fac1[0] * distribution_length_m_s1
                                                              + fac2[0] * distribution_length_m_s2,
