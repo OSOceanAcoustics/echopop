@@ -242,10 +242,10 @@ class ComputeBiomassDensity:
         self.length_df['stratum_num'] = strata_haul_df.loc[self.length_df.index]
         self.length_df.set_index('stratum_num', inplace=True)
 
-    def _generate_length_val_key(self, len_name: str, val_name: str,
-                                 df: pd.DataFrame = None) -> np.ndarray:
+    def _generate_length_val_conversion(self, len_name: str, val_name: str,
+                                        df: pd.DataFrame = None) -> np.ndarray:
         """
-        Generates a length-value key by
+        Generates a length-to-value conversion by
         1. Binning the lengths
         2. Fitting a linear regression model to the length and values points
         3. Set bins with greater than 5 samples equal to the mean of
@@ -265,7 +265,7 @@ class ComputeBiomassDensity:
         Returns
         -------
         len_val_key : np.ndarray
-            1D array representing the length-value key 
+            1D array representing the length-to-value conversion
         """
 
         # select the indices that do not have nan in either length or value
@@ -447,7 +447,7 @@ class ComputeBiomassDensity:
     def _fill_len_wgt_prod(self, bio_const_df: pd.DataFrame,
                            stratum: int, spec_drop_df: pd.DataFrame,
                            length_drop_df: pd.DataFrame,
-                           len_weight_key: np.array) -> pd.DataFrame:
+                           length_to_weight_conversion: np.array) -> pd.DataFrame:
         """
         Fills in the biomass constant dataframe for a
         particular stratum.
@@ -462,8 +462,9 @@ class ComputeBiomassDensity:
             specimen_df with NaN values dropped
         length_drop_df : pd.DataFrame
             length_df with NaN values dropped
-        len_weight_key : np.array
-            length-weight key for all specimen data
+        length_to_weight_conversion : np.array
+            length-to-weight conversion (i.e. an array that contains the corresponding
+            weight of the length bins) for all specimen data
 
         Returns
         -------
@@ -502,11 +503,14 @@ class ComputeBiomassDensity:
         bio_const_df.M_prop.loc[stratum] = gender_prop[0]
         bio_const_df.F_prop.loc[stratum] = gender_prop[1]
         bio_const_df.len_wgt_prod.loc[stratum] = np.dot(tot_prop[0] * distribution_length_all_s1
-                                                        + tot_prop[1] * distribution_length_all_s2, len_weight_key)
+                                                        + tot_prop[1] * distribution_length_all_s2,
+                                                        length_to_weight_conversion)
         bio_const_df.len_wgt_M_prod.loc[stratum] = np.dot(fac1[0] * distribution_length_m_s1
-                                                          + fac2[0] * distribution_length_m_s2, len_weight_key)
+                                                          + fac2[0] * distribution_length_m_s2,
+                                                          length_to_weight_conversion)
         bio_const_df.len_wgt_F_prod.loc[stratum] = np.dot(fac1[1] * distribution_length_f_s1
-                                                          + fac2[1] * distribution_length_f_s2, len_weight_key)
+                                                          + fac2[1] * distribution_length_f_s2,
+                                                          length_to_weight_conversion)
 
         return bio_const_df
 
@@ -539,10 +543,10 @@ class ComputeBiomassDensity:
         len_strata_ind = self.length_df.index.unique()
         strata_ind = spec_strata_ind.intersection(len_strata_ind).values
 
-        # obtain the length-weight key for all specimen data
-        len_weight_spec = self._generate_length_val_key(len_name='length',
-                                                        val_name='weight',
-                                                        df=self.specimen_df)
+        # obtain the length-to-weight conversion for all specimen data
+        length_to_weight_conversion_spec = self._generate_length_val_conversion(len_name='length',
+                                                                                val_name='weight',
+                                                                                df=self.specimen_df)
 
         # select the indices that do not have nan in either Length or Weight
         spec_drop = self.specimen_df.dropna(how='any')
@@ -558,7 +562,7 @@ class ComputeBiomassDensity:
         # for each stratum compute the necessary constants
         for stratum in strata_ind:
             bio_const_df = self._fill_len_wgt_prod(bio_const_df, stratum, spec_drop,
-                                                   length_drop_df, len_weight_spec)
+                                                   length_drop_df, length_to_weight_conversion_spec)
 
         self.bio_const_df = bio_const_df
 
