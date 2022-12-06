@@ -628,10 +628,9 @@ class ComputeBiomassDensity:
         # compute the total areal biomass density
         return areal_biomass_density_male + areal_biomass_density_female + areal_biomass_density_unsexed
 
-    def _get_age_weight_key(self, df: Union[pd.DataFrame, pd.Series]) -> float:
+    def _get_age_weight_conversion(self, df: Union[pd.DataFrame, pd.Series]) -> float:
         """
-        Computes the normalized weight of animals
-        in the first age bin.
+        Computes the weight of animals in the first age bin.
 
         Parameters
         ----------
@@ -640,8 +639,7 @@ class ComputeBiomassDensity:
 
         Returns
         -------
-        A float value corresponding to the normalized
-        weight for the first age bin.
+        A float value corresponding to the weight for the first age bin.
 
         Notes
         -----
@@ -668,13 +666,13 @@ class ComputeBiomassDensity:
         # bin those lengths that correspond to the lengths in the first age bin
         len_bin_ind = self._get_bin_ind(input_arr_len[age_bins_ind[0]], self.bio_hake_len_bin)
 
-        # normalized weight for the first age bin
+        # weight for the first age bin
         return np.array([np.sum(input_arr_wgt[age_bins_ind[0][i]]) for i in len_bin_ind]).sum() / input_arr_wgt.sum()
 
     def _get_weight_fraction_adult(self) -> None:
         """
         Obtains the multiplier for each stratum to be applied to the total
-        areal biomass density. The weight corresponds to the age 2 weight proportion.
+        areal biomass density. The weight corresponds to the age 2 weight fraction.
         """
 
         # TODO: This is necessary to match the Matlab output
@@ -686,7 +684,7 @@ class ComputeBiomassDensity:
         stratum_ind = spec_drop.index.unique()
         self.weight_fraction_adult_df = pd.DataFrame(columns=['val'], index=stratum_ind, dtype=np.float64)
         for i in stratum_ind:
-            self.weight_fraction_adult_df.loc[i].val = 1.0 - self._get_age_weight_key(spec_drop.loc[i])
+            self.weight_fraction_adult_df.loc[i].val = 1.0 - self._get_age_weight_conversion(spec_drop.loc[i])
 
     def _construct_biomass_table(self, areal_biomass_density_adult: np.array) -> None:
         """
@@ -762,11 +760,9 @@ class ComputeBiomassDensity:
 
     def get_final_biomass_table(self, selected_transects: Optional[List] = None) -> None:
         """
-        Orchestrates the calculation of the normalized
-        biomass density and creation of
-        self.final_biomass_table, which contains
-        the normalized biomass density and associated
-        useful variables.
+        Orchestrates the calculation of the areal biomass density
+        and creation of self.final_biomass_table, which contains
+        the areal biomass density and associated useful variables.
 
         Parameters
         ----------

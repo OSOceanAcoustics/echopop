@@ -366,7 +366,7 @@ class Kriging:
     def run_biomass_kriging(self, krig_mesh: KrigingMesh) -> None:
         """
         A high-level interface that sets up and runs
-        Kriging using the normalized biomass density.
+        Kriging using the areal biomass density.
         The results are then stored in the ``Survey``
         object as ``krig_results_gdf``.
 
@@ -378,8 +378,8 @@ class Kriging:
 
         Notes
         -----
-        To run this routine, one must first compute the normalized
-        biomass density using ``compute_biomass_density``.
+        To run this routine, one must first compute the areal biomass
+        density using ``compute_biomass_density``.
         """
 
         if not isinstance(krig_mesh, KrigingMesh):
