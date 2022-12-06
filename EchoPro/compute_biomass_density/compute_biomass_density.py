@@ -32,7 +32,7 @@ class ComputeBiomassDensity:
         self.final_biomass_table = None
         self.krig_results_gdf = None
         self.bio_const_df = None   # biomass constants for each stratum
-        self.age2_wgt_prop_df = None
+        self.weight_fraction_adult_df = None
         self.strata_sig_b = None
 
     def _get_strata_sig_b(self) -> None:
@@ -671,10 +671,10 @@ class ComputeBiomassDensity:
         # normalized weight for the first age bin
         return np.array([np.sum(input_arr_wgt[age_bins_ind[0][i]]) for i in len_bin_ind]).sum() / input_arr_wgt.sum()
 
-    def _get_age2_wgt_prop(self) -> None:
+    def _get_weight_fraction_adult(self) -> None:
         """
         Obtains the multiplier for each stratum to be applied to the total
-        normalized weight. The weight corresponds to the age 2 weight proportion.
+        areal biomass density. The weight corresponds to the age 2 weight proportion.
         """
 
         # TODO: This is necessary to match the Matlab output
@@ -682,26 +682,26 @@ class ComputeBiomassDensity:
         #  however, this changes the results slightly.
         spec_drop = self.specimen_df.dropna(how='any')
 
-        # each stratum's multiplier once normalized weight has been calculated
+        # each stratum's multiplier once areal biomass density has been calculated
         stratum_ind = spec_drop.index.unique()
-        self.age2_wgt_prop_df = pd.DataFrame(columns=['val'], index=stratum_ind, dtype=np.float64)
+        self.weight_fraction_adult_df = pd.DataFrame(columns=['val'], index=stratum_ind, dtype=np.float64)
         for i in stratum_ind:
-            self.age2_wgt_prop_df.loc[i].val = 1.0 - self._get_age_weight_key(spec_drop.loc[i])
+            self.weight_fraction_adult_df.loc[i].val = 1.0 - self._get_age_weight_key(spec_drop.loc[i])
 
-    def _construct_biomass_table(self, norm_bio_dense: np.array) -> None:
+    def _construct_biomass_table(self, areal_biomass_density_adult: np.array) -> None:
         """
         Constructs self.final_biomass_table, which
-        contains the normalized biomass density.
+        contains the areal biomass density for adults.
 
         Parameters
         ----------
-        norm_bio_dense : np.array
-            Numpy array of normalized biomass density
+        areal_biomass_density_adult : np.array
+            Numpy array of areal biomass density adult
         """
 
         # minimal columns to do Jolly Hampton CV on data that has not been kriged
         final_df = self.nasc_df[['latitude', 'longitude', 'stratum_num', 'transect_spacing']].copy()
-        final_df["normalized_biomass_density"] = norm_bio_dense
+        final_df["areal_biomass_density_adult"] = areal_biomass_density_adult
 
         # TODO: should we include the below values in the final biomass table?
         # calculates the interval for the area calculation
@@ -784,12 +784,12 @@ class ComputeBiomassDensity:
 
         self._get_biomass_constants()
 
-        self._get_age2_wgt_prop()
+        self._get_weight_fraction_adult()
 
         # fill in missing strata constants
         self.strata_sig_b = self._fill_missing_strata_indices(df=self.strata_sig_b.copy())
         self.bio_const_df = self._fill_missing_strata_indices(df=self.bio_const_df.copy())
-        self.age2_wgt_prop_df = self._fill_missing_strata_indices(df=self.age2_wgt_prop_df.copy())
+        self.weight_fraction_adult_df = self._fill_missing_strata_indices(df=self.weight_fraction_adult_df.copy())
 
         # calculate proportion coefficient for mixed species
         wgt_vals = self.strata_df.reset_index().set_index('haul_num')['fraction_hake']
@@ -803,9 +803,8 @@ class ComputeBiomassDensity:
         # total areal biomass density for each areal_numerical_density value
         areal_biomass_density = self._get_tot_areal_biomass_density(areal_numerical_density)
 
-        # obtain normalized biomass density
-        # TODO: the computed value is called normalized, but it isn't between [0, 1]! Different name or bug?
-        norm_bio_dense = (areal_biomass_density *
-                          self.age2_wgt_prop_df.loc[self.nasc_df.stratum_num.values].values.flatten())
+        # obtain the areal biomass density for adults
+        areal_biomass_density_adult = (areal_biomass_density *
+                                       self.weight_fraction_adult_df.loc[self.nasc_df.stratum_num.values].values.flatten())
 
-        self._construct_biomass_table(norm_bio_dense)
+        self._construct_biomass_table(areal_biomass_density_adult)
