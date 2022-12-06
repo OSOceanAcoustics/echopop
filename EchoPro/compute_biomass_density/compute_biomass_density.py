@@ -302,9 +302,9 @@ class ComputeBiomassDensity:
 
         return len_val_key
 
-    def _get_norm_len_key_station_1(self, df: pd.DataFrame) -> np.ndarray:
+    def _get_distribution_lengths_station_1(self, df: pd.DataFrame) -> np.ndarray:
         """
-        Computes the normalized length key for
+        Computes the distribution lengths for
         data obtained from station 1 i.e. data
         that tells you how many fish are of a
         particular length.
@@ -316,7 +316,7 @@ class ComputeBiomassDensity:
 
         Returns
         -------
-        A numpy array of the normalized length key i.e. the
+        A numpy array of the distribution lengths i.e. the
         count of each bin divided by the total of all bin counts
         """
 
@@ -332,9 +332,9 @@ class ComputeBiomassDensity:
 
         return len_bin_cnt / np.sum(len_bin_cnt)
 
-    def _get_norm_len_key_station_2(self, df: pd.DataFrame) -> np.ndarray:
+    def _get_distribution_lengths_station_2(self, df: pd.DataFrame) -> np.ndarray:
         """
-        Computes the normalized length key for
+        Computes the distribution lengths for
         data obtained from station 2 i.e. data
         that does not have a frequency associated
         with it.
@@ -346,7 +346,7 @@ class ComputeBiomassDensity:
 
         Returns
         -------
-        A numpy array of the normalized length key i.e. the
+        A numpy array of the distribution lengths i.e. the
         count of each bin divided by the total of all bin counts
         """
 
@@ -481,17 +481,18 @@ class ComputeBiomassDensity:
         len_strata_m = len_strata[len_strata['sex'] == 1]
         len_strata_f = len_strata[len_strata['sex'] == 2]
 
-        # get the normalized length keys for station 1
-        len_key_all_s1 = self._get_norm_len_key_station_1(len_strata)
-        len_key_m_s1 = self._get_norm_len_key_station_1(len_strata_m)
-        len_key_f_s1 = self._get_norm_len_key_station_1(len_strata_f)
+        # get the distribution lengths for station 1
+        distribution_length_all_s1 = self._get_distribution_lengths_station_1(len_strata)
+        distribution_length_m_s1 = self._get_distribution_lengths_station_1(len_strata_m)
+        distribution_length_f_s1 = self._get_distribution_lengths_station_1(len_strata_f)
 
-        # get the normalized length keys for station 2
-        # len_key_all_s2 = self._get_norm_len_key_station_2(spec_stratum)  # TODO: this is what should be done!
+        # get the distribution lengths for station 2
+        # TODO: this is what should be done!
+        # distribution_length_all_s2 = self._get_distribution_lengths_station_2(spec_stratum)
         spec_stratum_mf = pd.concat([spec_strata_m, spec_strata_f], axis=0)
-        len_key_all_s2 = self._get_norm_len_key_station_2(spec_stratum_mf)
-        len_key_m_s2 = self._get_norm_len_key_station_2(spec_strata_m)
-        len_key_f_s2 = self._get_norm_len_key_station_2(spec_strata_f)
+        distribution_length_all_s2 = self._get_distribution_lengths_station_2(spec_stratum_mf)
+        distribution_length_m_s2 = self._get_distribution_lengths_station_2(spec_strata_m)
+        distribution_length_f_s2 = self._get_distribution_lengths_station_2(spec_strata_f)
 
         gender_prop, fac1, fac2, tot_prop = self._compute_proportions(spec_strata_m, spec_strata_f,
                                                                       len_strata, len_strata_m,
@@ -500,12 +501,12 @@ class ComputeBiomassDensity:
         # fill df with bio constants needed for biomass density calc
         bio_const_df.M_prop.loc[stratum] = gender_prop[0]
         bio_const_df.F_prop.loc[stratum] = gender_prop[1]
-        bio_const_df.len_wgt_prod.loc[stratum] = np.dot(tot_prop[0] * len_key_all_s1 + tot_prop[1] * len_key_all_s2,
-                                                        len_weight_key)
-        bio_const_df.len_wgt_M_prod.loc[stratum] = np.dot(fac1[0] * len_key_m_s1 + fac2[0] * len_key_m_s2,
-                                                          len_weight_key)
-        bio_const_df.len_wgt_F_prod.loc[stratum] = np.dot(fac1[1] * len_key_f_s1 + fac2[1] * len_key_f_s2,
-                                                          len_weight_key)
+        bio_const_df.len_wgt_prod.loc[stratum] = np.dot(tot_prop[0] * distribution_length_all_s1
+                                                        + tot_prop[1] * distribution_length_all_s2, len_weight_key)
+        bio_const_df.len_wgt_M_prod.loc[stratum] = np.dot(fac1[0] * distribution_length_m_s1
+                                                          + fac2[0] * distribution_length_m_s2, len_weight_key)
+        bio_const_df.len_wgt_F_prod.loc[stratum] = np.dot(fac1[1] * distribution_length_f_s1
+                                                          + fac2[1] * distribution_length_f_s2, len_weight_key)
 
         return bio_const_df
 
