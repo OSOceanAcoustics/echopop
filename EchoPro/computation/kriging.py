@@ -406,57 +406,59 @@ class Kriging:
 
         self.survey.bio_calc.krig_results_gdf = results_gdf
 
-    @staticmethod
-    def plot_kriging_results(krig_results_gdf: gpd.GeoDataFrame,
-                             krig_field_name: str) -> folium.Map:
-        """
-        Constructs a Folium plot depicting the ``krig_field_name``
-        values at each mesh point.
+    # @staticmethod
+    # def plot_kriging_results(krig_results_gdf: gpd.GeoDataFrame,
+    #                          krig_field_name: str) -> folium.Map:
+    #     """
+    #     Constructs a Folium plot depicting the ``krig_field_name``
+    #     values at each mesh point.
+    #
+    #     Parameters
+    #     ----------
+    #     krig_results_gdf: gpd.GeoDataFrame
+    #         Dataframe containing a geometry column that holds the
+    #         mesh coordinates and the column ``krig_field_name``
+    #     krig_field_name: str
+    #         The name of the column in ``krig_results_gdf`` containing
+    #         the Kriging values to plot at each mesh point
+    #
+    #     Returns
+    #     -------
+    #     fmap : folium.Map
+    #         A Folium plot with the ``krig_field_name`` values at each
+    #         mesh point.
+    #     """
+    #
+    #     # create folium map
+    #     fmap = folium.Map(location=[44.61, -125.66], zoom_start=4)
+    #
+    #     # collect the appropriate data from the input Dataframe
+    #     x_mesh = krig_results_gdf.geometry.x.values
+    #     y_mesh = krig_results_gdf.geometry.y.values
+    #     krig_val = krig_results_gdf[krig_field_name].values
+    #
+    #     # create a colormap for the values
+    #     colormap = cm.LinearColormap(colors=['#3385ff', '#FF0000'],
+    #                                  vmin=0.0, vmax=np.max(krig_val))
+    #
+    #     # plot each mesh point and the corresponding krig_field_name value
+    #     for i in range(len(krig_val)):
+    #
+    #         # get the color of the marker we want to plot
+    #         color_val = colormap(krig_val[i])
+    #
+    #         # get coordinate of marker we are plotting
+    #         coordinates = (y_mesh[i], x_mesh[i])
+    #
+    #         # Place the markers with a color value
+    #         fmap.add_child(folium.CircleMarker(location=coordinates,
+    #                                            radius=1,
+    #                                            color=color_val))
+    #
+    #     fmap.add_child(colormap)  # adds color bar to map
+    #
+    #     return fmap
 
-        Parameters
-        ----------
-        krig_results_gdf: gpd.GeoDataFrame
-            Dataframe containing a geometry column that holds the
-            mesh coordinates and the column ``krig_field_name``
-        krig_field_name: str
-            The name of the column in ``krig_results_gdf`` containing
-            the Kriging values to plot at each mesh point
-
-        Returns
-        -------
-        fmap : folium.Map
-            A Folium plot with the ``krig_field_name`` values at each
-            mesh point.
-        """
-
-        # create folium map
-        fmap = folium.Map(location=[44.61, -125.66], zoom_start=4)
-
-        # collect the appropriate data from the input Dataframe
-        x_mesh = krig_results_gdf.geometry.x.values
-        y_mesh = krig_results_gdf.geometry.y.values
-        krig_val = krig_results_gdf[krig_field_name].values
-
-        # create a colormap for the values
-        colormap = cm.LinearColormap(colors=['#3385ff', '#FF0000'],
-                                     vmin=0.0, vmax=np.max(krig_val))
-
-        # plot each mesh point and the corresponding krig_field_name value
-        for i in range(len(krig_val)):
-
-            # get the color of the marker we want to plot
-            color_val = colormap(krig_val[i])
-
-            # get coordinate of marker we are plotting
-            coordinates = (y_mesh[i], x_mesh[i])
-
-            # Place the markers with a color value
-            fmap.add_child(folium.CircleMarker(location=coordinates,
-                                               radius=1,
-                                               color=color_val))
-
-        fmap.add_child(colormap)  # adds color bar to map
-
-        return fmap
+    # TODO: Move plotting to visualization sub-package
 
 

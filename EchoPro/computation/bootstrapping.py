@@ -1,6 +1,6 @@
 from ..global_vars import krig_type_dict
 from ..data_loader import KrigingMesh
-from ..kriging import Kriging
+from .kriging import Kriging
 from typing import Optional, Tuple, List
 import math
 import numpy as np
