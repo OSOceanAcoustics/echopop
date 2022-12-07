@@ -31,7 +31,7 @@ class ComputeBiomassDensity:
         self.nasc_df = None
         self.final_biomass_table = None
         self.krig_results_gdf = None
-        self.bio_const_df = None   # biomass constants for each stratum
+        self.bio_param_df = None   # biomass parameters for each stratum
         self.weight_fraction_adult_df = None
         self.strata_sig_b = None
 
@@ -96,7 +96,7 @@ class ComputeBiomassDensity:
     def _fill_missing_strata_indices(self, df: pd.DataFrame) -> pd.DataFrame:
         """
         When selecting a subset of the transects, it is possible that some
-        strata do not have important constants defined. This function fills in these
+        strata do not have important parameters defined. This function fills in these
         missing values with artificial data. This is done as follows for
         each missing stratum:
         - If the value is only known for 1 stratum, then all missing stratum will be
@@ -444,18 +444,18 @@ class ComputeBiomassDensity:
 
         return gender_prop, fac1, fac2, tot_prop
 
-    def _fill_averaged_weight(self, bio_const_df: pd.DataFrame,
+    def _fill_averaged_weight(self, bio_param_df: pd.DataFrame,
                               stratum: int, spec_drop_df: pd.DataFrame,
                               length_drop_df: pd.DataFrame,
                               length_to_weight_conversion: np.array) -> pd.DataFrame:
         """
-        Fills in the biomass constant dataframe for a
+        Fills in the biomass parameter dataframe for a
         particular stratum.
 
         Parameters
         ----------
-        bio_const_df : pd.DataFrame
-            Biomass constant dataframe to fill
+        bio_param_df : pd.DataFrame
+            Biomass parameter dataframe to fill
         stratum : int
             Stratum to fill
         spec_drop_df : pd.DataFrame
@@ -468,8 +468,8 @@ class ComputeBiomassDensity:
 
         Returns
         -------
-        bio_const_df : pd.DataFrame
-            Biomass constant dataframe with stratum filled in
+        bio_param_df : pd.DataFrame
+            Biomass parameter dataframe with stratum filled in
         """
 
         # get specimen in the stratum and split into males and females
@@ -499,26 +499,26 @@ class ComputeBiomassDensity:
                                                                       len_strata, len_strata_m,
                                                                       len_strata_f)
 
-        # fill df with bio constants needed for biomass density calc
-        bio_const_df.M_prop.loc[stratum] = gender_prop[0]
-        bio_const_df.F_prop.loc[stratum] = gender_prop[1]
-        bio_const_df.averaged_weight.loc[stratum] = np.dot(tot_prop[0] * distribution_length_s1
+        # fill df with bio parameters needed for biomass density calc
+        bio_param_df.M_prop.loc[stratum] = gender_prop[0]
+        bio_param_df.F_prop.loc[stratum] = gender_prop[1]
+        bio_param_df.averaged_weight.loc[stratum] = np.dot(tot_prop[0] * distribution_length_s1
                                                            + tot_prop[1] * distribution_length_s2,
                                                            length_to_weight_conversion)
-        bio_const_df.averaged_weight_M.loc[stratum] = np.dot(fac1[0] * distribution_length_m_s1
+        bio_param_df.averaged_weight_M.loc[stratum] = np.dot(fac1[0] * distribution_length_m_s1
                                                              + fac2[0] * distribution_length_m_s2,
                                                              length_to_weight_conversion)
-        bio_const_df.averaged_weight_F.loc[stratum] = np.dot(fac1[1] * distribution_length_f_s1
+        bio_param_df.averaged_weight_F.loc[stratum] = np.dot(fac1[1] * distribution_length_f_s1
                                                              + fac2[1] * distribution_length_f_s2,
                                                              length_to_weight_conversion)
 
-        return bio_const_df
+        return bio_param_df
 
-    def _get_biomass_constants(self) -> None:
+    def _get_biomass_parameters(self) -> None:
         """
-        Obtains the constants associated with each stratum,
+        Obtains the parameters associated with each stratum,
         which are used in the biomass density calculation.
-        Specifically, we obtain the following constants for
+        Specifically, we obtain the following parameters for
         each stratum:
         * M_prop -- proportion of males
         * F_prop -- proportion of females
@@ -529,9 +529,9 @@ class ComputeBiomassDensity:
         Notes
         -----
         The following class variable is created in this function:
-        bio_const_df : pd.Dataframe
+        bio_param_df : pd.Dataframe
             Dataframe with index of stratum and columns
-            corresponding to the constants specified
+            corresponding to the parameters specified
             above.
         """
 
@@ -551,17 +551,17 @@ class ComputeBiomassDensity:
         # select the indices that do not have nan in either Length or Weight
         length_drop_df = self.length_df.dropna(how='any')
 
-        # initialize dataframe that will hold all important calculated constants
-        bio_const_df = pd.DataFrame(columns=['M_prop', 'F_prop', 'averaged_weight',
+        # initialize dataframe that will hold all important calculated parameters
+        bio_param_df = pd.DataFrame(columns=['M_prop', 'F_prop', 'averaged_weight',
                                              'averaged_weight_M', 'averaged_weight_F'],
                                     index=strata_ind, dtype=np.float64)
 
-        # for each stratum compute the necessary constants
+        # for each stratum compute the necessary parameters
         for stratum in strata_ind:
-            bio_const_df = self._fill_averaged_weight(bio_const_df, stratum, spec_drop,
+            bio_param_df = self._fill_averaged_weight(bio_param_df, stratum, spec_drop,
                                                       length_drop_df, length_to_weight_conversion_spec)
 
-        self.bio_const_df = bio_const_df
+        self.bio_param_df = bio_param_df
 
     @staticmethod
     def _get_interval(nasc_df: pd.DataFrame) -> np.ndarray:
@@ -612,8 +612,8 @@ class ComputeBiomassDensity:
         The total areal biomass density
         """
 
-        # expand the bio constants dataframe so that it corresponds to nasc_df
-        bc_expanded_df = self.bio_const_df.loc[self.nasc_df.stratum_num.values]
+        # expand the bio parameters dataframe so that it corresponds to nasc_df
+        bc_expanded_df = self.bio_param_df.loc[self.nasc_df.stratum_num.values]
 
         # compute the areal numerical density for males and females
         areal_numerical_density_male = np.round(areal_numerical_density.values * bc_expanded_df.M_prop.values)
@@ -778,13 +778,13 @@ class ComputeBiomassDensity:
         # add stratum_num column to length and specimen df and set it as the index
         self._add_stratum_column()
 
-        self._get_biomass_constants()
+        self._get_biomass_parameters()
 
         self._get_weight_fraction_adult()
 
-        # fill in missing strata constants
+        # fill in missing strata parameters
         self.strata_sig_b = self._fill_missing_strata_indices(df=self.strata_sig_b.copy())
-        self.bio_const_df = self._fill_missing_strata_indices(df=self.bio_const_df.copy())
+        self.bio_param_df = self._fill_missing_strata_indices(df=self.bio_param_df.copy())
         self.weight_fraction_adult_df = self._fill_missing_strata_indices(df=self.weight_fraction_adult_df.copy())
 
         # calculate proportion coefficient for mixed species
