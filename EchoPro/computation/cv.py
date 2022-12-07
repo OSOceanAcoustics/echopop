@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from geopy import distance
-from ..numba_modules import compute_jolly_hampton
+from .numba_functions import compute_jolly_hampton
 from typing import Tuple
 
 """

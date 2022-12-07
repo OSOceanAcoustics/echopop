@@ -5,7 +5,7 @@ import ipywidgets as widgets
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 import inspect
-from ..numba_modules import nb_subtract_outer, nb_dis_vec, nb_diff_sqrd
+from .numba_functions import nb_subtract_outer, nb_dis_vec, nb_diff_sqrd
 from typing import Dict, Tuple, Callable, TypedDict
 
 # default bounds for fitting the semi-variogram model

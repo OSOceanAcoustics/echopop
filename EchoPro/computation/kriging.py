@@ -1,7 +1,7 @@
 import numpy as np
 import folium
 import branca.colormap as cm
-from ..numba_modules import nb_subtract_outer, nb_dis_mat
+from .numba_functions import nb_subtract_outer, nb_dis_mat
 from typing import Callable, Tuple, TypedDict
 from ..data_loader import KrigingMesh
 import geopandas as gpd
