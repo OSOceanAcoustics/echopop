@@ -366,7 +366,7 @@ class Kriging:
     def run_biomass_kriging(self, krig_mesh: KrigingMesh) -> None:
         """
         A high-level interface that sets up and runs
-        Kriging using the normalized biomass density.
+        Kriging using the areal biomass density.
         The results are then stored in the ``Survey``
         object as ``krig_results_gdf``.
 
@@ -378,23 +378,23 @@ class Kriging:
 
         Notes
         -----
-        To run this routine, one must first compute the normalized
-        biomass density using ``compute_biomass_density``.
+        To run this routine, one must first compute the areal biomass
+        density using ``compute_biomass_density``.
         """
 
         if not isinstance(krig_mesh, KrigingMesh):
             raise ValueError("You must provide a KrigingMesh object!")
 
         if (not isinstance(self.survey.bio_calc.final_biomass_table, gpd.GeoDataFrame)) \
-                and ('normalized_biomass_density' not in self.survey.bio_calc.final_biomass_table):
-            raise ValueError("The normalized biomass density must be calculated before running this routine!")
+                and ('areal_biomass_density_adult' not in self.survey.bio_calc.final_biomass_table):
+            raise ValueError("The areal biomass density must be calculated before running this routine!")
 
         ep_arr, eps_arr, vp_arr = self.run_kriging(
             krig_mesh.transformed_mesh_df['x_mesh'].values,
             krig_mesh.transformed_transect_df['x_transect'].values,
             krig_mesh.transformed_mesh_df['y_mesh'].values,
             krig_mesh.transformed_transect_df['y_transect'].values,
-            self.survey.bio_calc.final_biomass_table['normalized_biomass_density'].values.flatten())
+            self.survey.bio_calc.final_biomass_table['areal_biomass_density_adult'].values.flatten())
 
         # collect all important Kriging results
         results_gdf = krig_mesh.mesh_gdf.copy()

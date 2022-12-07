@@ -285,10 +285,10 @@ class Survey:
 
     def compute_biomass_density(self, selected_transects: Optional[List] = None) -> None:
         """
-        Computes the normalized biomass density and
+        Computes the areal biomass density and
         creates ``self.bio_calc.final_biomass_table``, which
         is a Pandas DataFrame that contains the
-        normalized biomass density and associated
+        areal biomass density for adult hake and associated
         useful variables.
 
         Parameters
@@ -375,8 +375,8 @@ class Survey:
                            params: vario_param_type = {}, warning: bool = True):
         """
         Initializes a ``SemiVariogram`` object based on the provided
-        ``KrigingMesh`` object, the calculated normalized biomass
-        density, and user provided semi-variogram parameters.
+        ``KrigingMesh`` object, the calculated areal biomass density,
+        and user provided semi-variogram parameters.
 
         Parameters
         ----------
@@ -416,14 +416,13 @@ class Survey:
         TypeError
             If the values of ``params`` are not the expected type
         ValueError
-            If the normalized biomass density has not been calculated
+            If the areal biomass density has not been calculated
 
         Notes
         -----
-        To run this routine, one must first compute the normalized
-        biomass density using ``compute_biomass_density``. It is standard
-        to compute the biomass density from the full set of data (i.e. not
-        from a subset of the data).
+        To run this routine, one must first compute the areal biomass density
+        using ``compute_biomass_density``. It is standard to compute the biomass
+        density from the full set of data (i.e. not from a subset of the data).
         """
 
         if not isinstance(krig_mesh, KrigingMesh):
@@ -450,13 +449,13 @@ class Survey:
                  "To silence this warning set the warning argument to False.")
 
         if (not isinstance(self.bio_calc.final_biomass_table, gpd.GeoDataFrame)) \
-                and ('normalized_biomass_density' not in self.bio_calc.final_biomass_table):
-            raise ValueError("The normalized biomass density must be calculated before running this routine!")
+                and ('areal_biomass_density_adult' not in self.bio_calc.final_biomass_table):
+            raise ValueError("The areal biomass density must be calculated before running this routine!")
 
         semi_vario = SemiVariogram(
             krig_mesh.transformed_transect_df.x_transect.values,
             krig_mesh.transformed_transect_df.y_transect.values,
-            self.bio_calc.final_biomass_table['normalized_biomass_density'].values.flatten(),
+            self.bio_calc.final_biomass_table['areal_biomass_density_adult'].values.flatten(),
             params['lag_res'],
             params['nlag'],
         )

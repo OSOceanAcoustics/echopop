@@ -31,8 +31,8 @@ class ComputeBiomassDensity:
         self.nasc_df = None
         self.final_biomass_table = None
         self.krig_results_gdf = None
-        self.bio_const_df = None   # biomass constants for each stratum
-        self.age2_wgt_prop_df = None
+        self.bio_param_df = None   # biomass parameters for each stratum
+        self.weight_fraction_adult_df = None
         self.strata_sig_b = None
 
     def _get_strata_sig_b(self) -> None:
@@ -96,7 +96,7 @@ class ComputeBiomassDensity:
     def _fill_missing_strata_indices(self, df: pd.DataFrame) -> pd.DataFrame:
         """
         When selecting a subset of the transects, it is possible that some
-        strata do not have important constants defined. This function fills in these
+        strata do not have important parameters defined. This function fills in these
         missing values with artificial data. This is done as follows for
         each missing stratum:
         - If the value is only known for 1 stratum, then all missing stratum will be
@@ -242,10 +242,10 @@ class ComputeBiomassDensity:
         self.length_df['stratum_num'] = strata_haul_df.loc[self.length_df.index]
         self.length_df.set_index('stratum_num', inplace=True)
 
-    def _generate_length_val_key(self, len_name: str, val_name: str,
-                                 df: pd.DataFrame = None) -> np.ndarray:
+    def _generate_length_val_conversion(self, len_name: str, val_name: str,
+                                        df: pd.DataFrame = None) -> np.ndarray:
         """
-        Generates a length-value key by
+        Generates a length-to-value conversion by
         1. Binning the lengths
         2. Fitting a linear regression model to the length and values points
         3. Set bins with greater than 5 samples equal to the mean of
@@ -265,7 +265,7 @@ class ComputeBiomassDensity:
         Returns
         -------
         len_val_key : np.ndarray
-            1D array representing the length-value key 
+            1D array representing the length-to-value conversion
         """
 
         # select the indices that do not have nan in either length or value
@@ -302,9 +302,9 @@ class ComputeBiomassDensity:
 
         return len_val_key
 
-    def _get_norm_len_key_station_1(self, df: pd.DataFrame) -> np.ndarray:
+    def _get_distribution_lengths_station_1(self, df: pd.DataFrame) -> np.ndarray:
         """
-        Computes the normalized length key for
+        Computes the length distribution from
         data obtained from station 1 i.e. data
         that tells you how many fish are of a
         particular length.
@@ -316,7 +316,7 @@ class ComputeBiomassDensity:
 
         Returns
         -------
-        A numpy array of the normalized length key i.e. the
+        A numpy array of the length distribution i.e. the
         count of each bin divided by the total of all bin counts
         """
 
@@ -332,9 +332,9 @@ class ComputeBiomassDensity:
 
         return len_bin_cnt / np.sum(len_bin_cnt)
 
-    def _get_norm_len_key_station_2(self, df: pd.DataFrame) -> np.ndarray:
+    def _get_distribution_lengths_station_2(self, df: pd.DataFrame) -> np.ndarray:
         """
-        Computes the normalized length key for
+        Computes the length distribution from
         data obtained from station 2 i.e. data
         that does not have a frequency associated
         with it.
@@ -346,7 +346,7 @@ class ComputeBiomassDensity:
 
         Returns
         -------
-        A numpy array of the normalized length key i.e. the
+        A numpy array of the length distribution i.e. the
         count of each bin divided by the total of all bin counts
         """
 
@@ -444,31 +444,32 @@ class ComputeBiomassDensity:
 
         return gender_prop, fac1, fac2, tot_prop
 
-    def _fill_len_wgt_prod(self, bio_const_df: pd.DataFrame,
-                           stratum: int, spec_drop_df: pd.DataFrame,
-                           length_drop_df: pd.DataFrame,
-                           len_weight_key: np.array) -> pd.DataFrame:
+    def _fill_averaged_weight(self, bio_param_df: pd.DataFrame,
+                              stratum: int, spec_drop_df: pd.DataFrame,
+                              length_drop_df: pd.DataFrame,
+                              length_to_weight_conversion: np.array) -> pd.DataFrame:
         """
-        Fills in the biomass constant dataframe for a
+        Fills in the biomass parameter dataframe for a
         particular stratum.
 
         Parameters
         ----------
-        bio_const_df : pd.DataFrame
-            Biomass constant dataframe to fill
+        bio_param_df : pd.DataFrame
+            Biomass parameter dataframe to fill
         stratum : int
             Stratum to fill
         spec_drop_df : pd.DataFrame
             specimen_df with NaN values dropped
         length_drop_df : pd.DataFrame
             length_df with NaN values dropped
-        len_weight_key : np.array
-            length-weight key for all specimen data
+        length_to_weight_conversion : np.array
+            length-to-weight conversion (i.e. an array that contains the corresponding
+            weight of the length bins) for all specimen data
 
         Returns
         -------
-        bio_const_df : pd.DataFrame
-            Biomass constant dataframe with stratum filled in
+        bio_param_df : pd.DataFrame
+            Biomass parameter dataframe with stratum filled in
         """
 
         # get specimen in the stratum and split into males and females
@@ -481,55 +482,56 @@ class ComputeBiomassDensity:
         len_strata_m = len_strata[len_strata['sex'] == 1]
         len_strata_f = len_strata[len_strata['sex'] == 2]
 
-        # get the normalized length keys for station 1
-        len_key_all_s1 = self._get_norm_len_key_station_1(len_strata)
-        len_key_m_s1 = self._get_norm_len_key_station_1(len_strata_m)
-        len_key_f_s1 = self._get_norm_len_key_station_1(len_strata_f)
+        # get the distribution lengths for station 1
+        distribution_length_s1 = self._get_distribution_lengths_station_1(len_strata)
+        distribution_length_m_s1 = self._get_distribution_lengths_station_1(len_strata_m)
+        distribution_length_f_s1 = self._get_distribution_lengths_station_1(len_strata_f)
 
-        # get the normalized length keys for station 2
-        # len_key_all_s2 = self._get_norm_len_key_station_2(spec_stratum)  # TODO: this is what should be done!
+        # get the distribution lengths for station 2
+        # TODO: this is what should be done!
+        # distribution_length_s2 = self._get_distribution_lengths_station_2(spec_stratum)
         spec_stratum_mf = pd.concat([spec_strata_m, spec_strata_f], axis=0)
-        len_key_all_s2 = self._get_norm_len_key_station_2(spec_stratum_mf)
-        len_key_m_s2 = self._get_norm_len_key_station_2(spec_strata_m)
-        len_key_f_s2 = self._get_norm_len_key_station_2(spec_strata_f)
+        distribution_length_s2 = self._get_distribution_lengths_station_2(spec_stratum_mf)
+        distribution_length_m_s2 = self._get_distribution_lengths_station_2(spec_strata_m)
+        distribution_length_f_s2 = self._get_distribution_lengths_station_2(spec_strata_f)
 
         gender_prop, fac1, fac2, tot_prop = self._compute_proportions(spec_strata_m, spec_strata_f,
                                                                       len_strata, len_strata_m,
                                                                       len_strata_f)
 
-        # fill df with bio constants needed for biomass density calc
-        bio_const_df.M_prop.loc[stratum] = gender_prop[0]
-        bio_const_df.F_prop.loc[stratum] = gender_prop[1]
-        bio_const_df.len_wgt_prod.loc[stratum] = np.dot(tot_prop[0] * len_key_all_s1 + tot_prop[1] * len_key_all_s2,
-                                                        len_weight_key)
-        bio_const_df.len_wgt_M_prod.loc[stratum] = np.dot(fac1[0] * len_key_m_s1 + fac2[0] * len_key_m_s2,
-                                                          len_weight_key)
-        bio_const_df.len_wgt_F_prod.loc[stratum] = np.dot(fac1[1] * len_key_f_s1 + fac2[1] * len_key_f_s2,
-                                                          len_weight_key)
+        # fill df with bio parameters needed for biomass density calc
+        bio_param_df.M_prop.loc[stratum] = gender_prop[0]
+        bio_param_df.F_prop.loc[stratum] = gender_prop[1]
+        bio_param_df.averaged_weight.loc[stratum] = np.dot(tot_prop[0] * distribution_length_s1
+                                                           + tot_prop[1] * distribution_length_s2,
+                                                           length_to_weight_conversion)
+        bio_param_df.averaged_weight_M.loc[stratum] = np.dot(fac1[0] * distribution_length_m_s1
+                                                             + fac2[0] * distribution_length_m_s2,
+                                                             length_to_weight_conversion)
+        bio_param_df.averaged_weight_F.loc[stratum] = np.dot(fac1[1] * distribution_length_f_s1
+                                                             + fac2[1] * distribution_length_f_s2,
+                                                             length_to_weight_conversion)
 
-        return bio_const_df
+        return bio_param_df
 
-    def _get_biomass_constants(self) -> None:
+    def _get_biomass_parameters(self) -> None:
         """
-        Obtains the constants associated with each stratum,
+        Obtains the parameters associated with each stratum,
         which are used in the biomass density calculation.
-        Specifically, we obtain the following constants for
+        Specifically, we obtain the following parameters for
         each stratum:
         * M_prop -- proportion of males
         * F_prop -- proportion of females
-        * len_wgt_prod -- product of the length-key and
-        the weight-key for the whole population
-        * len_wgt_M_prod -- product of the length-key and
-        the weight-key for the male population
-        * len_wgt_F_prod -- product of the length-key and
-        the weight-key for the female population
+        * averaged_weight-- the averaged weight for the whole population
+        * averaged_weight_M -- averaged_weight for the male population
+        * averaged_weight_F -- averaged_weight for the female population
 
         Notes
         -----
         The following class variable is created in this function:
-        bio_const_df : pd.Dataframe
+        bio_param_df : pd.Dataframe
             Dataframe with index of stratum and columns
-            corresponding to the constants specified
+            corresponding to the parameters specified
             above.
         """
 
@@ -538,10 +540,10 @@ class ComputeBiomassDensity:
         len_strata_ind = self.length_df.index.unique()
         strata_ind = spec_strata_ind.intersection(len_strata_ind).values
 
-        # obtain the length-weight key for all specimen data
-        len_weight_spec = self._generate_length_val_key(len_name='length',
-                                                        val_name='weight',
-                                                        df=self.specimen_df)
+        # obtain the length-to-weight conversion for all specimen data
+        length_to_weight_conversion_spec = self._generate_length_val_conversion(len_name='length',
+                                                                                val_name='weight',
+                                                                                df=self.specimen_df)
 
         # select the indices that do not have nan in either Length or Weight
         spec_drop = self.specimen_df.dropna(how='any')
@@ -549,17 +551,17 @@ class ComputeBiomassDensity:
         # select the indices that do not have nan in either Length or Weight
         length_drop_df = self.length_df.dropna(how='any')
 
-        # initialize dataframe that will hold all important calculated constants
-        bio_const_df = pd.DataFrame(columns=['M_prop', 'F_prop', 'len_wgt_prod',
-                                             'len_wgt_M_prod', 'len_wgt_F_prod'],
+        # initialize dataframe that will hold all important calculated parameters
+        bio_param_df = pd.DataFrame(columns=['M_prop', 'F_prop', 'averaged_weight',
+                                             'averaged_weight_M', 'averaged_weight_F'],
                                     index=strata_ind, dtype=np.float64)
 
-        # for each stratum compute the necessary constants
+        # for each stratum compute the necessary parameters
         for stratum in strata_ind:
-            bio_const_df = self._fill_len_wgt_prod(bio_const_df, stratum, spec_drop,
-                                                   length_drop_df, len_weight_spec)
+            bio_param_df = self._fill_averaged_weight(bio_param_df, stratum, spec_drop,
+                                                      length_drop_df, length_to_weight_conversion_spec)
 
-        self.bio_const_df = bio_const_df
+        self.bio_param_df = bio_param_df
 
     @staticmethod
     def _get_interval(nasc_df: pd.DataFrame) -> np.ndarray:
@@ -595,42 +597,40 @@ class ComputeBiomassDensity:
 
         return interval
 
-    def _get_tot_norm_wgt(self, n_A: pd.Series) -> np.ndarray:
+    def _get_tot_areal_biomass_density(self, areal_numerical_density: pd.Series) -> np.ndarray:
         """
-        Calculates the total normalized weight
+        Calculates the total areal biomass density
         for each NASC value.
 
         Parameters
         ----------
-        n_A : pd.Series
-            Series representing the nautical areal density
+        areal_numerical_density : pd.Series
+            Series representing the areal numerical density
 
         Returns
         -------
-        The total normalized weight
+        The total areal biomass density
         """
 
-        # expand the bio constants dataframe so that it corresponds to nasc_df
-        bc_expanded_df = self.bio_const_df.loc[self.nasc_df.stratum_num.values]
+        # expand the bio parameters dataframe so that it corresponds to nasc_df
+        bc_expanded_df = self.bio_param_df.loc[self.nasc_df.stratum_num.values]
 
-        # compute the normalized biomass density for males and females
-        nntk_male = np.round(n_A.values * bc_expanded_df.M_prop.values)
-        nntk_female = np.round(n_A.values * bc_expanded_df.F_prop.values)
+        # compute the areal numerical density for males and females
+        areal_numerical_density_male = np.round(areal_numerical_density.values * bc_expanded_df.M_prop.values)
+        areal_numerical_density_female = np.round(areal_numerical_density.values * bc_expanded_df.F_prop.values)
 
-        # compute the normalized weight for males, females, and unsexed
-        nwgt_male = nntk_male * bc_expanded_df.len_wgt_M_prod.values
-        nwgt_female = nntk_female * bc_expanded_df.len_wgt_F_prod.values
-        nwgt_unsexed = (n_A.values - nntk_male - nntk_female) * bc_expanded_df.len_wgt_prod.values
+        # compute the areal biomass density for males, females, and unsexed
+        areal_biomass_density_male = areal_numerical_density_male * bc_expanded_df.averaged_weight_M.values
+        areal_biomass_density_female = areal_numerical_density_female * bc_expanded_df.averaged_weight_F.values
+        areal_biomass_density_unsexed = (areal_numerical_density.values - areal_numerical_density_male
+                                         - areal_numerical_density_female) * bc_expanded_df.averaged_weight.values
 
-        # TODO: the returned value is called normalized, but it isn't between [0, 1]! Different name or bug?
+        # compute the total areal biomass density
+        return areal_biomass_density_male + areal_biomass_density_female + areal_biomass_density_unsexed
 
-        # compute the total normalized weight
-        return nwgt_male + nwgt_female + nwgt_unsexed
-
-    def _get_age_weight_key(self, df: Union[pd.DataFrame, pd.Series]) -> float:
+    def _get_age_weight_conversion(self, df: Union[pd.DataFrame, pd.Series]) -> float:
         """
-        Computes the normalized weight of animals
-        in the first age bin.
+        Computes the weight of animals in the first age bin.
 
         Parameters
         ----------
@@ -639,8 +639,7 @@ class ComputeBiomassDensity:
 
         Returns
         -------
-        A float value corresponding to the normalized
-        weight for the first age bin.
+        A float value corresponding to the weight for the first age bin.
 
         Notes
         -----
@@ -667,13 +666,13 @@ class ComputeBiomassDensity:
         # bin those lengths that correspond to the lengths in the first age bin
         len_bin_ind = self._get_bin_ind(input_arr_len[age_bins_ind[0]], self.bio_hake_len_bin)
 
-        # normalized weight for the first age bin
+        # weight for the first age bin
         return np.array([np.sum(input_arr_wgt[age_bins_ind[0][i]]) for i in len_bin_ind]).sum() / input_arr_wgt.sum()
 
-    def _get_age2_wgt_prop(self) -> None:
+    def _get_weight_fraction_adult(self) -> None:
         """
         Obtains the multiplier for each stratum to be applied to the total
-        normalized weight. The weight corresponds to the age 2 weight proportion.
+        areal biomass density. The weight corresponds to the age 2 weight fraction.
         """
 
         # TODO: This is necessary to match the Matlab output
@@ -681,26 +680,26 @@ class ComputeBiomassDensity:
         #  however, this changes the results slightly.
         spec_drop = self.specimen_df.dropna(how='any')
 
-        # each stratum's multiplier once normalized weight has been calculated
+        # each stratum's multiplier once areal biomass density has been calculated
         stratum_ind = spec_drop.index.unique()
-        self.age2_wgt_prop_df = pd.DataFrame(columns=['val'], index=stratum_ind, dtype=np.float64)
+        self.weight_fraction_adult_df = pd.DataFrame(columns=['val'], index=stratum_ind, dtype=np.float64)
         for i in stratum_ind:
-            self.age2_wgt_prop_df.loc[i].val = 1.0 - self._get_age_weight_key(spec_drop.loc[i])
+            self.weight_fraction_adult_df.loc[i].val = 1.0 - self._get_age_weight_conversion(spec_drop.loc[i])
 
-    def _construct_biomass_table(self, norm_bio_dense: np.array) -> None:
+    def _construct_biomass_table(self, areal_biomass_density_adult: np.array) -> None:
         """
         Constructs self.final_biomass_table, which
-        contains the normalized biomass density.
+        contains the areal biomass density for adults.
 
         Parameters
         ----------
-        norm_bio_dense : np.array
-            Numpy array of normalized biomass density
+        areal_biomass_density_adult : np.array
+            Numpy array of areal biomass density adult
         """
 
         # minimal columns to do Jolly Hampton CV on data that has not been kriged
         final_df = self.nasc_df[['latitude', 'longitude', 'stratum_num', 'transect_spacing']].copy()
-        final_df["normalized_biomass_density"] = norm_bio_dense
+        final_df["areal_biomass_density_adult"] = areal_biomass_density_adult
 
         # TODO: should we include the below values in the final biomass table?
         # calculates the interval for the area calculation
@@ -710,7 +709,7 @@ class ComputeBiomassDensity:
         # final_df["Area"] = interval * self.nasc_df['transect_spacing']
 
         # calculate the total number of fish in a given area
-        # final_df["N_A"] = n_A * A
+        # final_df["N_A"] = areal_numerical_density * A
 
         # construct GeoPandas DataFrame to simplify downstream processes
         self.final_biomass_table = gpd.GeoDataFrame(final_df,
@@ -761,11 +760,9 @@ class ComputeBiomassDensity:
 
     def get_final_biomass_table(self, selected_transects: Optional[List] = None) -> None:
         """
-        Orchestrates the calculation of the normalized
-        biomass density and creation of
-        self.final_biomass_table, which contains
-        the normalized biomass density and associated
-        useful variables.
+        Orchestrates the calculation of the areal biomass density
+        and creation of self.final_biomass_table, which contains
+        the areal biomass density of adult hake and associated useful variables.
 
         Parameters
         ----------
@@ -781,29 +778,29 @@ class ComputeBiomassDensity:
         # add stratum_num column to length and specimen df and set it as the index
         self._add_stratum_column()
 
-        self._get_biomass_constants()
+        self._get_biomass_parameters()
 
-        self._get_age2_wgt_prop()
+        self._get_weight_fraction_adult()
 
-        # fill in missing strata constants
+        # fill in missing strata parameters
         self.strata_sig_b = self._fill_missing_strata_indices(df=self.strata_sig_b.copy())
-        self.bio_const_df = self._fill_missing_strata_indices(df=self.bio_const_df.copy())
-        self.age2_wgt_prop_df = self._fill_missing_strata_indices(df=self.age2_wgt_prop_df.copy())
+        self.bio_param_df = self._fill_missing_strata_indices(df=self.bio_param_df.copy())
+        self.weight_fraction_adult_df = self._fill_missing_strata_indices(df=self.weight_fraction_adult_df.copy())
 
         # calculate proportion coefficient for mixed species
         wgt_vals = self.strata_df.reset_index().set_index('haul_num')['fraction_hake']
         wgt_vals_ind = wgt_vals.index
         mix_sa_ratio = self.nasc_df.apply(lambda x: wgt_vals[x.haul_num] if x.haul_num in wgt_vals_ind else 0.0, axis=1)
 
-        # calculate the nautical areal density
-        n_A = np.round((mix_sa_ratio*self.nasc_df.NASC) /
-                       self.strata_sig_b.loc[self.nasc_df.stratum_num].values)
+        # calculate the areal numerical density
+        areal_numerical_density = np.round((mix_sa_ratio*self.nasc_df.NASC) /
+                                           self.strata_sig_b.loc[self.nasc_df.stratum_num].values)
 
-        # total normalized weight for each n_A value
-        nwgt_total = self._get_tot_norm_wgt(n_A)
+        # total areal biomass density for each areal_numerical_density value
+        areal_biomass_density = self._get_tot_areal_biomass_density(areal_numerical_density)
 
-        # obtain normalized biomass density
-        # TODO: the computed value is called normalized, but it isn't between [0, 1]! Different name or bug?
-        norm_bio_dense = nwgt_total * self.age2_wgt_prop_df.loc[self.nasc_df.stratum_num.values].values.flatten()
+        # obtain the areal biomass density for adults
+        areal_biomass_density_adult = (areal_biomass_density *
+                                       self.weight_fraction_adult_df.loc[self.nasc_df.stratum_num.values].values.flatten())
 
-        self._construct_biomass_table(norm_bio_dense)
+        self._construct_biomass_table(areal_biomass_density_adult)

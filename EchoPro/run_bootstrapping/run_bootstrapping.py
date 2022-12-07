@@ -77,13 +77,13 @@ class Bootstrapping:
 
     def _get_results_for_no_kriging(self) -> List[float]:
         """
-        Obtains the total normalized biomass density and associated
+        Obtains the total areal biomass density and associated
         mean Jolly-Hampton CV value for a bootstrapping iteration.
 
         Returns
         -------
         tot_bio_mass_no_kriging: float
-            The total normalized biomass density for data that has not
+            The total areal biomass density for data that has not
             been Kriged
         CV_JH_mean_no_kriging: float
             The mean Jolly-Hampton CV value for the data that has not
@@ -91,7 +91,7 @@ class Bootstrapping:
         """
 
         # calculate total biomass density
-        tot_bio_mass_no_kriging = self.survey.bio_calc.final_biomass_table["normalized_biomass_density"].sum()
+        tot_bio_mass_no_kriging = self.survey.bio_calc.final_biomass_table["areal_biomass_density_adult"].sum()
 
         # perform CV analysis on data
         CV_JH_mean_no_kriging = self.survey.run_cv_analysis(kriged_data=False)
@@ -101,7 +101,7 @@ class Bootstrapping:
     def _get_results_for_kriging(self, krig_mesh_obj: KrigingMesh,
                                  krig: Kriging) -> List[float]:
         """
-        Obtains the total Kriged normalized biomass density and associated
+        Obtains the total Kriged biomass estimate and associated
         mean Jolly-Hampton CV value for a bootstrapping iteration.
 
         Parameters
@@ -114,7 +114,7 @@ class Bootstrapping:
         Returns
         -------
         tot_bio_mass_kriging: float
-            The total normalized biomass density for data that has
+            The total biomass estimate for data that has
             been Kriged
         CV_JH_mean_kriging: float
             The mean Jolly-Hampton CV value for the data that has
@@ -132,7 +132,7 @@ class Bootstrapping:
         #  to transform the full mesh every time, can we avoid this?
         krig_mesh_obj.apply_coordinate_transformation(coord_type='mesh')
 
-        # get Kriged normalized biomass density
+        # get Kriged biomass estimate
         krig.run_biomass_kriging(krig_mesh_obj)
 
         # calculate the total Kriged biomass density
@@ -224,7 +224,7 @@ class Bootstrapping:
             # randomly select transects without replacement
             selected_transects = list(rng.choice(unique_transects, num_sel_transects, replace=False))
 
-            # compute the normalized biomass density for the subset of transects
+            # compute the areal biomass density for the subset of transects
             self.survey.compute_biomass_density(selected_transects=selected_transects)
 
             # collect total biomass and associated JH CV value for data without Kriging
