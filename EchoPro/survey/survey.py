@@ -288,7 +288,7 @@ class Survey:
         Computes the areal biomass density and
         creates ``self.bio_calc.final_biomass_table``, which
         is a Pandas DataFrame that contains the
-        areal biomass density and associated
+        areal biomass density for adult hake and associated
         useful variables.
 
         Parameters

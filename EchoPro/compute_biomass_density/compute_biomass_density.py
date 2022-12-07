@@ -304,7 +304,7 @@ class ComputeBiomassDensity:
 
     def _get_distribution_lengths_station_1(self, df: pd.DataFrame) -> np.ndarray:
         """
-        Computes the distribution lengths for
+        Computes the length distribution from
         data obtained from station 1 i.e. data
         that tells you how many fish are of a
         particular length.
@@ -316,7 +316,7 @@ class ComputeBiomassDensity:
 
         Returns
         -------
-        A numpy array of the distribution lengths i.e. the
+        A numpy array of the length distribution i.e. the
         count of each bin divided by the total of all bin counts
         """
 
@@ -334,7 +334,7 @@ class ComputeBiomassDensity:
 
     def _get_distribution_lengths_station_2(self, df: pd.DataFrame) -> np.ndarray:
         """
-        Computes the distribution lengths for
+        Computes the length distribution from
         data obtained from station 2 i.e. data
         that does not have a frequency associated
         with it.
@@ -346,7 +346,7 @@ class ComputeBiomassDensity:
 
         Returns
         -------
-        A numpy array of the distribution lengths i.e. the
+        A numpy array of the length distribution i.e. the
         count of each bin divided by the total of all bin counts
         """
 
@@ -762,7 +762,7 @@ class ComputeBiomassDensity:
         """
         Orchestrates the calculation of the areal biomass density
         and creation of self.final_biomass_table, which contains
-        the areal biomass density and associated useful variables.
+        the areal biomass density of adult hake and associated useful variables.
 
         Parameters
         ----------
