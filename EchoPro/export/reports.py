@@ -4,7 +4,7 @@ import numpy as np
 import xarray as xr
 
 
-class GenerateReports:
+class Reports:
     """
     A Class that writes requested variables to
     consolidated files.
