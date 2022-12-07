@@ -9,16 +9,14 @@ from .computation import Bootstrapping
 from .computation import ComputeBiomassDensity
 from .computation import run_jolly_hampton
 from .computation import Kriging
+from .computation.kriging import krig_type_dict, krig_param_type
 from .computation import SemiVariogram
+from .computation.semivariogram import vario_type_dict, vario_param_type
 from typing import Tuple, List, Optional, Union
 import geopandas as gpd
 from warnings import warn
 from pathlib import Path
 from .utils.input_checks import check_existence_of_file
-
-
-from .global_vars import vario_type_dict, vario_param_type, \
-    krig_type_dict, krig_param_type
 
 
 class Survey:

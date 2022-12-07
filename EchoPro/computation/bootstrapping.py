@@ -1,4 +1,4 @@
-from ..global_vars import krig_type_dict
+from .kriging import krig_type_dict
 from ..data_loader import KrigingMesh
 from .kriging import Kriging
 from typing import Optional, Tuple, List

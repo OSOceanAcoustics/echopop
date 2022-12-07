@@ -2,9 +2,14 @@ import numpy as np
 import folium
 import branca.colormap as cm
 from ..numba_modules import nb_subtract_outer, nb_dis_mat
-from typing import Callable, Tuple
+from typing import Callable, Tuple, TypedDict
 from ..data_loader import KrigingMesh
 import geopandas as gpd
+
+# define the Kriging parameter input types
+krig_type_dict = {'k_max': int, 'k_min': int, 'R': float, 'ratio': float,
+                  's_v_params': dict, 's_v_model': Callable}
+krig_param_type = TypedDict('krig_param_type', krig_type_dict)
 
 
 class Kriging:
