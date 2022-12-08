@@ -603,7 +603,7 @@ class KrigingMesh:
 
         return fobj
 
-    def plot_layered_points(self) -> folium.Map:
+    def plot_layered_points(self, plot_mesh_points: bool = True) -> folium.Map:
         """
         This function constructs a layered Folium plot.
         The layers correspond to the full set of mesh
@@ -611,6 +611,12 @@ class KrigingMesh:
         color corresponding to the transect number, and
         the smoothed contour points (e.g. 200m isobath).
 
+        Parameters
+        ----------
+        plot_mesh_points : bool
+            If True (the default), the mesh point layer will be generated.
+            Set to False to create a lighter-weight Folium plot that omits
+            the mesh point layer.
         Returns
         -------
         fmap : folium.Map
@@ -628,10 +634,11 @@ class KrigingMesh:
 
         fmap = self.get_folium_map()
 
-        # plot mesh points and add them to fmap
-        folium_layer = folium.FeatureGroup(name='mesh')
-        folium_layer = self.plot_points(self.mesh_gdf, folium_layer, color='gray')
-        folium_layer.add_to(fmap)
+        if plot_mesh_points:
+            # plot mesh points and add them to fmap
+            folium_layer = folium.FeatureGroup(name='mesh')
+            folium_layer = self.plot_points(self.mesh_gdf, folium_layer, color='gray')
+            folium_layer.add_to(fmap)
 
         # plot the transect points and add them to fmap
         folium_layer = folium.FeatureGroup(name='transects')

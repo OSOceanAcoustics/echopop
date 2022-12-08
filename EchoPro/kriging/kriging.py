@@ -408,7 +408,9 @@ class Kriging:
 
     @staticmethod
     def plot_kriging_results(krig_results_gdf: gpd.GeoDataFrame,
-                             krig_field_name: str) -> folium.Map:
+                             krig_field_name: str,
+                             greater_than_0: bool = False,
+                             ) -> folium.Map:
         """
         Constructs a Folium plot depicting the ``krig_field_name``
         values at each mesh point.
@@ -421,6 +423,10 @@ class Kriging:
         krig_field_name: str
             The name of the column in ``krig_results_gdf`` containing
             the Kriging values to plot at each mesh point
+        greater_than_0: bool
+            If False (the default), plot kriged values over all points
+            in the mesh. Set to True to create a lighter-weight Folium plot
+            that only shows kriged values greater than 0.
 
         Returns
         -------
@@ -431,6 +437,10 @@ class Kriging:
 
         # create folium map
         fmap = folium.Map(location=[44.61, -125.66], zoom_start=4)
+
+        if greater_than_0:
+            # filter to only values > 0
+            krig_results_gdf = krig_results_gdf[krig_results_gdf[krig_field_name] > 0]
 
         # collect the appropriate data from the input Dataframe
         x_mesh = krig_results_gdf.geometry.x.values
@@ -458,5 +468,3 @@ class Kriging:
         fmap.add_child(colormap)  # adds color bar to map
 
         return fmap
-
-
