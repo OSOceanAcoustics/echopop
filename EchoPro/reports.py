@@ -1,4 +1,4 @@
-from ..survey import Survey
+from .survey import Survey
 import pandas as pd
 import numpy as np
 import xarray as xr

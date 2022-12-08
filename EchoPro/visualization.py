@@ -5,7 +5,7 @@ import branca.colormap as bcm
 import numpy as np
 import geopandas as gpd
 from typing import Union, Optional
-from ..data_loader.kriging_mesh import KrigingMesh
+from .data_loader.kriging_mesh import KrigingMesh
 
 # Default parameters for the folium map
 folium_map_kwargs = {
