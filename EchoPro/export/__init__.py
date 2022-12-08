@@ -5,6 +5,6 @@ visualization and generating report routines.
 """
 
 from .reports import Reports
-from .visualization import Visualize
+from .visualization import plot_layered_points, plot_kriging_results, plot_points
 
-__all__ = ["Reports", "Visualize"]
+__all__ = ["Reports", "plot_layered_points", "plot_kriging_results", "plot_points"]
