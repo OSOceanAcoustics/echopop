@@ -1,10 +1,7 @@
 import yaml
 import numpy as np
 
-from .data_loader import LoadBioData
-from .data_loader import LoadStrataData
-from .data_loader import KrigingMesh
-from .data_loader import load_nasc_df
+from .data_loader import LoadBioData, LoadStrataData, load_nasc_df, KrigingMesh
 from .computation import Bootstrapping
 from .computation import ComputeBiomassDensity
 from .computation import run_jolly_hampton
