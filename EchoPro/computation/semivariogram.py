@@ -5,14 +5,18 @@ import ipywidgets as widgets
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 import inspect
-from ..numba_modules import nb_subtract_outer, nb_dis_vec, nb_diff_sqrd
-from typing import Dict, Tuple, Callable
+from .numba_functions import nb_subtract_outer, nb_dis_vec, nb_diff_sqrd
+from typing import Dict, Tuple, Callable, TypedDict
 
 # default bounds for fitting the semi-variogram model
 bnds_default = {'LB': {'sill': 0.0, 'ls': 0.0,
                        'exp_pow': 0.0, 'ls_hole_eff': 0.0, 'nugget': 0.0},
                 'UB': {'sill': np.inf, 'ls': np.inf,
                        'exp_pow': np.inf, 'ls_hole_eff': 1e-13, 'nugget': 1e-13}}
+
+# define the semi-variogram input types
+vario_type_dict = {'nlag': int, 'lag_res': float}
+vario_param_type = TypedDict('vario_param_type', vario_type_dict)
 
 
 class SemiVariogram:

@@ -1,23 +1,14 @@
 import yaml
 import numpy as np
-from ..run_bootstrapping import Bootstrapping
-from ..load_biological_data import LoadBioData
-from ..load_stratification_data import LoadStrataData
-from ..compute_biomass_density import ComputeBiomassDensity
-from ..cv_analysis import cv_analysis
-from ..kriging import Kriging
-from ..kriging_mesh import KrigingMesh
-from ..semivariogram import SemiVariogram
-from ..load_nasc_data import load_nasc_data
+
+from .data_loader import LoadBioData, LoadStrataData, load_nasc_df, KrigingMesh
+from .computation import (Bootstrapping, ComputeBiomassDensity, run_jolly_hampton, Kriging,
+                          krig_type_dict, krig_param_type, SemiVariogram, vario_type_dict, vario_param_type)
 from typing import Tuple, List, Optional, Union
 import geopandas as gpd
 from warnings import warn
 from pathlib import Path
-from ..utils.input_checks import check_existence_of_file
-
-
-from ..global_vars import vario_type_dict, vario_param_type, \
-    krig_type_dict, krig_param_type
+from .utils.input_checks import check_existence_of_file
 
 
 class Survey:
@@ -281,7 +272,7 @@ class Survey:
             LoadStrataData(self)
 
         if file_type in ('nasc', 'all'):
-            self.nasc_df = load_nasc_data.load_nasc_df(self)
+            self.nasc_df = load_nasc_df(self)
 
     def compute_biomass_density(self, selected_transects: Optional[List] = None) -> None:
         """
@@ -345,7 +336,7 @@ class Survey:
             if self.bio_calc.final_biomass_table is None:
                 raise RuntimeError("The biomass density must be calculated before performing CV anlysis on data!")
 
-        return cv_analysis.run_jolly_hampton(self, nr, lat_inpfc, seed, kriged_data)
+        return run_jolly_hampton(self, nr, lat_inpfc, seed, kriged_data)
 
     def get_kriging_mesh(self) -> KrigingMesh:
         """
