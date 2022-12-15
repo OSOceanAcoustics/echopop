@@ -242,8 +242,7 @@ class Kriging:
                               M2_weight: float, R_ind: np.ndarray, R_ind_not: np.ndarray,
                               dis_sel_ind: np.ndarray) -> Tuple[float, float, float]:
         """
-        Computes the Kriged values, Kriging variance, and
-        Kriging sample variance.
+        Computes the Kriging mean, variance, and sample variance.
 
         Parameters
         ----------
@@ -265,12 +264,12 @@ class Kriging:
 
         Returns
         -------
-        ep_val : float
+        field_var : float
             Kriging variance
-        eps_val : float
+        field_samplevar : float
             Kriging sample variance
-        vp_val : float
-            Kriged value
+        field_mean : float
+            Kriged value mean
         """
 
         # obtain field values for indices within R
@@ -281,19 +280,20 @@ class Kriging:
             field_vals = field_data[dis_sel_ind]
 
         # calculate Kriging value and variance
-        vp_val = np.nansum(lamb[:len(R_ind)] * field_vals) * M2_weight
-        ep_val = np.nansum(lamb * M2)
+        field_mean = np.nansum(lamb[:len(R_ind)] * field_vals) * M2_weight
+        field_var = np.nansum(lamb * M2)
 
         # calculate Kriging sample variance
-        if abs(vp_val) < np.finfo(float).eps:
-            eps_val = np.nan
+        if abs(field_mean) < np.finfo(float).eps:
+            field_samplevar = np.nan
         else:
-            field_var = np.nanvar(field_vals, ddof=1)
-            eps_val = np.sqrt(ep_val * field_var) / abs(vp_val)
+            # compute the statistical variance using field values
+            stat_field_var = np.nanvar(field_vals, ddof=1)
+            field_samplevar = np.sqrt(field_var * stat_field_var) / abs(field_mean)
 
         # TODO: Do we count the anomalies like Chu does?
 
-        return ep_val, eps_val, vp_val
+        return field_var, field_samplevar, field_mean
 
     def run_kriging(self, x_mesh: np.ndarray, x_data: np.ndarray,
                     y_mesh: np.ndarray, y_data: np.ndarray,
@@ -318,12 +318,12 @@ class Kriging:
 
         Returns
         -------
-        ep_arr : np.ndarray
+        field_var_arr : np.ndarray
             1D array representing the Kriging variance for each mesh coordinate
-        eps_arr : np.ndarray
+        field_samplevar_arr : np.ndarray
             1D array representing the Kriging sample variance for each mesh coordinate
-        vp_arr : np.ndarray
-            1D array representing the Kriged value for each mesh coordinate
+        field_mean_arr : np.ndarray
+            1D array representing the Kriged mean value for each mesh coordinate
 
         Notes
         -----
@@ -334,9 +334,9 @@ class Kriging:
                                                                y_mesh, y_data)
 
         # initialize arrays that store calculated Kriging values
-        ep_arr = np.empty(dis_kmax_ind.shape[0])
-        eps_arr = np.empty(dis_kmax_ind.shape[0])
-        vp_arr = np.empty(dis_kmax_ind.shape[0])
+        field_var_arr = np.empty(dis_kmax_ind.shape[0])
+        field_samplevar_arr = np.empty(dis_kmax_ind.shape[0])
+        field_mean_arr = np.empty(dis_kmax_ind.shape[0])
 
         # TODO: This loop can be parallelized, if necessary
         # does Ordinary Kriging, follow Journel and Huijbregts, p. 307
@@ -351,20 +351,20 @@ class Kriging:
 
             lamb = self._compute_lambda_weights(M2, K)
 
-            ep_val, eps_val, vp_val = self._compute_kriging_vals(field_data, M2, lamb,
-                                                                 M2_weight, R_ind,
-                                                                 R_ind_not, dis_sel_ind)
+            field_var, field_samplevar, field_mean = self._compute_kriging_vals(field_data, M2, lamb,
+                                                                                M2_weight, R_ind,
+                                                                                R_ind_not, dis_sel_ind)
 
             # store important calculated values
-            ep_arr[row] = ep_val
-            eps_arr[row] = eps_val
-            vp_arr[row] = vp_val
+            field_var_arr[row] = field_var
+            field_samplevar_arr[row] = field_samplevar
+            field_mean_arr[row] = field_mean
 
-        # zero-out all vp values that are nan or negative # TODO: Is this necessary?
-        neg_nan_ind = np.argwhere((vp_arr < 0) | np.isnan(vp_arr)).flatten()
-        vp_arr[neg_nan_ind] = 0.0
+        # zero-out all field mean values that are nan or negative # TODO: Is this necessary?
+        neg_nan_ind = np.argwhere((field_mean_arr < 0) | np.isnan(field_mean_arr)).flatten()
+        field_mean_arr[neg_nan_ind] = 0.0
 
-        return ep_arr, eps_arr, vp_arr
+        return field_var_arr, field_samplevar_arr, field_mean_arr
 
     def run_biomass_kriging(self, krig_mesh: KrigingMesh) -> None:
         """
@@ -392,7 +392,7 @@ class Kriging:
                 and ('biomass_density_adult' not in self.survey.bio_calc.final_biomass_table):
             raise ValueError("The areal biomass density must be calculated before running this routine!")
 
-        ep_arr, eps_arr, vp_arr = self.run_kriging(
+        field_var_arr, field_samplevar_arr, field_mean_arr = self.run_kriging(
             krig_mesh.transformed_mesh_df['x_mesh'].values,
             krig_mesh.transformed_transect_df['x_transect'].values,
             krig_mesh.transformed_mesh_df['y_mesh'].values,
@@ -401,9 +401,9 @@ class Kriging:
 
         # collect all important Kriging results
         results_gdf = krig_mesh.mesh_gdf.copy()
-        results_gdf['biomass_density_adult_mean'] = vp_arr
-        results_gdf['biomass_density_adult_var'] = ep_arr
-        results_gdf['biomass_density_adult_samplevar'] = eps_arr
+        results_gdf['biomass_density_adult_mean'] = field_mean_arr
+        results_gdf['biomass_density_adult_var'] = field_var_arr
+        results_gdf['biomass_density_adult_samplevar'] = field_samplevar_arr
         results_gdf["cell_area_nmi2"] = self.survey.params['kriging_A0'] * results_gdf['fraction_cell_in_polygon']
         results_gdf["biomass"] = results_gdf['biomass_density_adult_mean'] * results_gdf["cell_area_nmi2"]
 
