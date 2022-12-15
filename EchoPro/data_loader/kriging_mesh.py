@@ -362,7 +362,7 @@ class KrigingMesh:
                                  x_offset: float = -124.78338,
                                  y_offset: float = 45.0) -> None:
         """
-        Applies a coordinate transformation to ``survey.bio_calc.final_biomass_table``
+        Applies a coordinate transformation to ``survey.bio_calc.transect_results_gdf``
         by first aligning the longitude along the smoothed contour data
         specified by the configuration parameter ``'smoothed_contour_filename'``
         and then transforming the input coordinates from degrees to distance.
@@ -393,9 +393,9 @@ class KrigingMesh:
         value and the minimum latitude value (after aligning the longitude)
         """
 
-        if isinstance(self.survey.bio_calc.final_biomass_table, gpd.GeoDataFrame):
+        if isinstance(self.survey.bio_calc.transect_results_gdf, gpd.GeoDataFrame):
             # apply transformations to transect points
-            transect_df = self.align_longitude(self.survey.bio_calc.final_biomass_table, lon_ref)
+            transect_df = self.align_longitude(self.survey.bio_calc.transect_results_gdf, lon_ref)
 
             # compute distances for each transect
             d_x = transect_df.geometry.x.max() - transect_df.geometry.x.min()
@@ -414,7 +414,7 @@ class KrigingMesh:
             self.transect_d_x = d_x
             self.transect_d_y = d_y
         else:
-            raise RuntimeError("survey.bio_calc.final_biomass_table has not been constructed yet. One "
+            raise RuntimeError("survey.bio_calc.transect_results_gdf has not been constructed yet. One "
                                "must compute the biomass density before running this function!")
 
     def apply_coordinate_transformation(self, coord_type: str = 'transect',
@@ -422,7 +422,7 @@ class KrigingMesh:
                                         x_offset: float = -124.78338,
                                         y_offset: float = 45.0) -> None:
         """
-        Applies a coordinate transformation to either ``survey.bio_calc.final_biomass_table``
+        Applies a coordinate transformation to either ``survey.bio_calc.transect_results_gdf``
         or ``self.mesh_gdf`` by first aligning the longitude along the
         smoothed contour data specified by the configuration
         parameter ``'smoothed_contour_filename'`` and then
@@ -434,7 +434,7 @@ class KrigingMesh:
             The type of coordinate points to transform.
             Possible options:
             - ``'transect'`` specifies that one should
-            copy and transform ``survey.bio_calc.final_biomass_table``
+            copy and transform ``survey.bio_calc.transect_results_gdf``
             - ``'mesh'`` specifies that one should copy '
             and transform `self.mesh_gdf``
         lon_ref : float

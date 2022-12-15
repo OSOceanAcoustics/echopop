@@ -371,7 +371,7 @@ class Kriging:
         A high-level interface that sets up and runs
         Kriging using the areal biomass density.
         The results are then stored in the ``Survey``
-        object as ``krig_results_gdf``.
+        object as ``kriging_results_gdf``.
 
 
         Parameters
@@ -388,8 +388,8 @@ class Kriging:
         if not isinstance(krig_mesh, KrigingMesh):
             raise ValueError("You must provide a KrigingMesh object!")
 
-        if (not isinstance(self.survey.bio_calc.final_biomass_table, gpd.GeoDataFrame)) \
-                and ('biomass_density_adult' not in self.survey.bio_calc.final_biomass_table):
+        if (not isinstance(self.survey.bio_calc.transect_results_gdf, gpd.GeoDataFrame)) \
+                and ('biomass_density_adult' not in self.survey.bio_calc.transect_results_gdf):
             raise ValueError("The areal biomass density must be calculated before running this routine!")
 
         field_var_arr, field_samplevar_arr, field_mean_arr = self.run_kriging(
@@ -397,7 +397,7 @@ class Kriging:
             krig_mesh.transformed_transect_df['x_transect'].values,
             krig_mesh.transformed_mesh_df['y_mesh'].values,
             krig_mesh.transformed_transect_df['y_transect'].values,
-            self.survey.bio_calc.final_biomass_table['biomass_density_adult'].values.flatten())
+            self.survey.bio_calc.transect_results_gdf['biomass_density_adult'].values.flatten())
 
         # collect all important Kriging results
         results_gdf = krig_mesh.mesh_gdf.copy()
@@ -407,4 +407,4 @@ class Kriging:
         results_gdf["cell_area_nmi2"] = self.survey.params['kriging_A0'] * results_gdf['fraction_cell_in_polygon']
         results_gdf["biomass"] = results_gdf['biomass_density_adult_mean'] * results_gdf["cell_area_nmi2"]
 
-        self.survey.bio_calc.krig_results_gdf = results_gdf
+        self.survey.bio_calc.kriging_results_gdf = results_gdf

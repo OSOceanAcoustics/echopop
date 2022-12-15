@@ -277,7 +277,7 @@ class Survey:
     def compute_biomass_density(self, selected_transects: Optional[List] = None) -> None:
         """
         Computes the areal biomass density and
-        creates ``self.bio_calc.final_biomass_table``, which
+        creates ``self.bio_calc.transect_results_gdf``, which
         is a Pandas DataFrame that contains the
         areal biomass density for adult hake and associated
         useful variables.
@@ -290,7 +290,7 @@ class Survey:
 
         self.bio_calc = None
         self.bio_calc = ComputeBiomassDensity(self)
-        self.bio_calc.get_final_biomass_table(selected_transects)
+        self.bio_calc.get_transect_results_gdf(selected_transects)
 
     def run_cv_analysis(self,
                         lat_inpfc: Tuple[float] = (np.NINF, 36, 40.5, 43.000, 45.7667, 48.5, 55.0000),
@@ -330,10 +330,10 @@ class Survey:
             nr = 10000  # number of realizations
 
         if kriged_data:
-            if self.bio_calc.krig_results_gdf is None:
+            if self.bio_calc.kriging_results_gdf is None:
                 raise RuntimeError("Kriging must be ran before performing CV anlysis on Kriged data!")
         else:
-            if self.bio_calc.final_biomass_table is None:
+            if self.bio_calc.transect_results_gdf is None:
                 raise RuntimeError("The biomass density must be calculated before performing CV anlysis on data!")
 
         return run_jolly_hampton(self, nr, lat_inpfc, seed, kriged_data)
@@ -432,21 +432,21 @@ class Survey:
             if not isinstance(val, expected_type):
                 raise TypeError(f"{key} is not of type {expected_type}")
 
-        # provide a warning if the final_biomass_table being used was
+        # provide a warning if the transect_results_gdf being used was
         # created from a subset of the full data
-        if (len(self.bio_calc.final_biomass_table) != len(self.nasc_df)) and warning:
+        if (len(self.bio_calc.transect_results_gdf) != len(self.nasc_df)) and warning:
             warn("The biomass data being used is a subset of the full dataset. "
                  "It is recommended that you use the biomass data created from the full dataset. "
                  "To silence this warning set the warning argument to False.")
 
-        if (not isinstance(self.bio_calc.final_biomass_table, gpd.GeoDataFrame)) \
-                and ('biomass_density_adult' not in self.bio_calc.final_biomass_table):
+        if (not isinstance(self.bio_calc.transect_results_gdf, gpd.GeoDataFrame)) \
+                and ('biomass_density_adult' not in self.bio_calc.transect_results_gdf):
             raise ValueError("The areal biomass density must be calculated before running this routine!")
 
         semi_vario = SemiVariogram(
             krig_mesh.transformed_transect_df.x_transect.values,
             krig_mesh.transformed_transect_df.y_transect.values,
-            self.bio_calc.final_biomass_table['biomass_density_adult'].values.flatten(),
+            self.bio_calc.transect_results_gdf['biomass_density_adult'].values.flatten(),
             params['lag_res'],
             params['nlag'],
         )

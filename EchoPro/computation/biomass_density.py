@@ -29,8 +29,8 @@ class ComputeBiomassDensity:
         self.strata_df = None
         self.specimen_df = None
         self.nasc_df = None
-        self.final_biomass_table = None
-        self.krig_results_gdf = None
+        self.transect_results_gdf = None
+        self.kriging_results_gdf = None
         self.bio_param_df = None   # biomass parameters for each stratum
         self.weight_fraction_adult_df = None
         self.strata_sig_b = None
@@ -688,7 +688,7 @@ class ComputeBiomassDensity:
 
     def _construct_biomass_table(self, biomass_density_adult: np.array) -> None:
         """
-        Constructs self.final_biomass_table, which
+        Constructs self.transect_results_gdf, which
         contains the areal biomass density for adults.
 
         Parameters
@@ -712,9 +712,9 @@ class ComputeBiomassDensity:
         # final_df["N_A"] = numerical_density * A
 
         # construct GeoPandas DataFrame to simplify downstream processes
-        self.final_biomass_table = gpd.GeoDataFrame(final_df,
-                                                    geometry=gpd.points_from_xy(final_df.longitude,
-                                                                                final_df.latitude))
+        self.transect_results_gdf = gpd.GeoDataFrame(final_df,
+                                                     geometry=gpd.points_from_xy(final_df.longitude,
+                                                                                 final_df.latitude))
 
     def set_class_variables(self, selected_transects: Optional[List] = None) -> None:
         """
@@ -758,10 +758,10 @@ class ComputeBiomassDensity:
             self.specimen_df = self.survey.specimen_df.copy()
             self.nasc_df = self.survey.nasc_df
 
-    def get_final_biomass_table(self, selected_transects: Optional[List] = None) -> None:
+    def get_transect_results_gdf(self, selected_transects: Optional[List] = None) -> None:
         """
         Orchestrates the calculation of the areal biomass density
-        and creation of self.final_biomass_table, which contains
+        and creation of self.transect_results_gdf, which contains
         the areal biomass density of adult hake and associated useful variables.
 
         Parameters

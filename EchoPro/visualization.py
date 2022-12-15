@@ -119,7 +119,7 @@ def plot_layered_points(krig_mesh_obj: KrigingMesh,
     """
     This function constructs a layered Folium plot.
     The layers correspond to the full set of mesh
-    points, the ``final_biomass_table`` points with
+    points, the ``transect_results_gdf`` points with
     color corresponding to the transect number, and
     the smoothed contour points (e.g. 200m isobath).
 
@@ -157,7 +157,7 @@ def plot_layered_points(krig_mesh_obj: KrigingMesh,
 
     # plot the transect points and add them to fmap
     folium_layer = folium.FeatureGroup(name='transects')
-    folium_layer = plot_points(krig_mesh_obj.survey.bio_calc.final_biomass_table, folium_layer,
+    folium_layer = plot_points(krig_mesh_obj.survey.bio_calc.transect_results_gdf, folium_layer,
                                cmap_column='transect_num', color='hex')
     folium_layer.add_to(fmap)
 
@@ -173,7 +173,7 @@ def plot_layered_points(krig_mesh_obj: KrigingMesh,
 
 
 # Visualization function for Kriging
-def plot_kriging_results(krig_results_gdf: gpd.GeoDataFrame,
+def plot_kriging_results(kriging_results_gdf: gpd.GeoDataFrame,
                          krig_field_name: str,
                          greater_than_0: bool = False) -> folium.Map:
     """
@@ -182,11 +182,11 @@ def plot_kriging_results(krig_results_gdf: gpd.GeoDataFrame,
 
     Parameters
     ----------
-    krig_results_gdf: gpd.GeoDataFrame
+    kriging_results_gdf: gpd.GeoDataFrame
         Dataframe containing a geometry column that holds the
         mesh coordinates and the column ``krig_field_name``
     krig_field_name: str
-        The name of the column in ``krig_results_gdf`` containing
+        The name of the column in ``kriging_results_gdf`` containing
         the Kriging values to plot at each mesh point
     greater_than_0: bool, default=False
         If False, plot kriged values over all points in the mesh.
@@ -205,12 +205,12 @@ def plot_kriging_results(krig_results_gdf: gpd.GeoDataFrame,
 
     if greater_than_0:
         # filter to only values > 0
-        krig_results_gdf = krig_results_gdf[krig_results_gdf[krig_field_name] > 0]
+        kriging_results_gdf = kriging_results_gdf[kriging_results_gdf[krig_field_name] > 0]
 
     # collect the appropriate data from the input Dataframe
-    x_mesh = krig_results_gdf.geometry.x.values
-    y_mesh = krig_results_gdf.geometry.y.values
-    krig_val = krig_results_gdf[krig_field_name].values
+    x_mesh = kriging_results_gdf.geometry.x.values
+    y_mesh = kriging_results_gdf.geometry.y.values
+    krig_val = kriging_results_gdf[krig_field_name].values
 
     # create a colormap for the values
     colormap = bcm.LinearColormap(colors=['#3385ff', '#FF0000'],
