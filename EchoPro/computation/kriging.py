@@ -404,7 +404,7 @@ class Kriging:
         results_gdf['krig_biomass_vp'] = vp_arr
         results_gdf['krig_biomass_ep'] = ep_arr
         results_gdf['krig_biomass_eps'] = eps_arr
-        results_gdf["area_calc"] = self.survey.params['kriging_A0'] * results_gdf['fraction_cell_in_polygon']
-        results_gdf["krig_biomass_vals"] = results_gdf['krig_biomass_vp'] * results_gdf["area_calc"]
+        results_gdf["cell_area_nmi2"] = self.survey.params['kriging_A0'] * results_gdf['fraction_cell_in_polygon']
+        results_gdf["krig_biomass_vals"] = results_gdf['krig_biomass_vp'] * results_gdf["cell_area_nmi2"]
 
         self.survey.bio_calc.krig_results_gdf = results_gdf
