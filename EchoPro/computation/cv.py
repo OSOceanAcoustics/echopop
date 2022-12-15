@@ -25,7 +25,7 @@ def get_transect_strata_info_no_kriging(lat_inpfc: Tuple[float],
         each region within a survey (established by INPFC)
     biomass_table : pd.DataFrame
         DataFrame containing Longitude, Latitude, Spacing, and
-        areal_biomass_density_adult columns
+        biomass_density_adult columns
 
     Returns
     -------
@@ -43,7 +43,7 @@ def get_transect_strata_info_no_kriging(lat_inpfc: Tuple[float],
     transect_info["mean_spacing"] = biomass_table['transect_spacing'].groupby(level=0).mean()
 
     # store the sum of the biomass for each transect
-    transect_info["biomass"] = biomass_table['areal_biomass_density_adult'].groupby(level=0).sum()
+    transect_info["biomass"] = biomass_table['biomass_density_adult'].groupby(level=0).sum()
 
     # compute the length of each transect
     transect_info["distance"] = transect_info.apply(

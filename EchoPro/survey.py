@@ -440,13 +440,13 @@ class Survey:
                  "To silence this warning set the warning argument to False.")
 
         if (not isinstance(self.bio_calc.final_biomass_table, gpd.GeoDataFrame)) \
-                and ('areal_biomass_density_adult' not in self.bio_calc.final_biomass_table):
+                and ('biomass_density_adult' not in self.bio_calc.final_biomass_table):
             raise ValueError("The areal biomass density must be calculated before running this routine!")
 
         semi_vario = SemiVariogram(
             krig_mesh.transformed_transect_df.x_transect.values,
             krig_mesh.transformed_transect_df.y_transect.values,
-            self.bio_calc.final_biomass_table['areal_biomass_density_adult'].values.flatten(),
+            self.bio_calc.final_biomass_table['biomass_density_adult'].values.flatten(),
             params['lag_res'],
             params['nlag'],
         )

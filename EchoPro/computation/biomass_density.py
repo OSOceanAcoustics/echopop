@@ -597,14 +597,14 @@ class ComputeBiomassDensity:
 
         return interval
 
-    def _get_tot_areal_biomass_density(self, areal_numerical_density: pd.Series) -> np.ndarray:
+    def _get_tot_biomass_density(self, numerical_density: pd.Series) -> np.ndarray:
         """
         Calculates the total areal biomass density
         for each NASC value.
 
         Parameters
         ----------
-        areal_numerical_density : pd.Series
+        numerical_density : pd.Series
             Series representing the areal numerical density
 
         Returns
@@ -616,17 +616,17 @@ class ComputeBiomassDensity:
         bc_expanded_df = self.bio_param_df.loc[self.nasc_df.stratum_num.values]
 
         # compute the areal numerical density for males and females
-        areal_numerical_density_male = np.round(areal_numerical_density.values * bc_expanded_df.M_prop.values)
-        areal_numerical_density_female = np.round(areal_numerical_density.values * bc_expanded_df.F_prop.values)
+        numerical_density_male = np.round(numerical_density.values * bc_expanded_df.M_prop.values)
+        numerical_density_female = np.round(numerical_density.values * bc_expanded_df.F_prop.values)
 
         # compute the areal biomass density for males, females, and unsexed
-        areal_biomass_density_male = areal_numerical_density_male * bc_expanded_df.averaged_weight_M.values
-        areal_biomass_density_female = areal_numerical_density_female * bc_expanded_df.averaged_weight_F.values
-        areal_biomass_density_unsexed = (areal_numerical_density.values - areal_numerical_density_male
-                                         - areal_numerical_density_female) * bc_expanded_df.averaged_weight.values
+        biomass_density_male = numerical_density_male * bc_expanded_df.averaged_weight_M.values
+        biomass_density_female = numerical_density_female * bc_expanded_df.averaged_weight_F.values
+        biomass_density_unsexed = (numerical_density.values - numerical_density_male
+                                   - numerical_density_female) * bc_expanded_df.averaged_weight.values
 
         # compute the total areal biomass density
-        return areal_biomass_density_male + areal_biomass_density_female + areal_biomass_density_unsexed
+        return biomass_density_male + biomass_density_female + biomass_density_unsexed
 
     def _get_age_weight_conversion(self, df: Union[pd.DataFrame, pd.Series]) -> float:
         """
@@ -686,20 +686,20 @@ class ComputeBiomassDensity:
         for i in stratum_ind:
             self.weight_fraction_adult_df.loc[i].val = 1.0 - self._get_age_weight_conversion(spec_drop.loc[i])
 
-    def _construct_biomass_table(self, areal_biomass_density_adult: np.array) -> None:
+    def _construct_biomass_table(self, biomass_density_adult: np.array) -> None:
         """
         Constructs self.final_biomass_table, which
         contains the areal biomass density for adults.
 
         Parameters
         ----------
-        areal_biomass_density_adult : np.array
+        biomass_density_adult : np.array
             Numpy array of areal biomass density adult
         """
 
         # minimal columns to do Jolly Hampton CV on data that has not been kriged
         final_df = self.nasc_df[['latitude', 'longitude', 'stratum_num', 'transect_spacing']].copy()
-        final_df["areal_biomass_density_adult"] = areal_biomass_density_adult
+        final_df["biomass_density_adult"] = biomass_density_adult
 
         # TODO: should we include the below values in the final biomass table?
         # calculates the interval for the area calculation
@@ -709,7 +709,7 @@ class ComputeBiomassDensity:
         # final_df["Area"] = interval * self.nasc_df['transect_spacing']
 
         # calculate the total number of fish in a given area
-        # final_df["N_A"] = areal_numerical_density * A
+        # final_df["N_A"] = numerical_density * A
 
         # construct GeoPandas DataFrame to simplify downstream processes
         self.final_biomass_table = gpd.GeoDataFrame(final_df,
@@ -793,14 +793,14 @@ class ComputeBiomassDensity:
         mix_sa_ratio = self.nasc_df.apply(lambda x: wgt_vals[x.haul_num] if x.haul_num in wgt_vals_ind else 0.0, axis=1)
 
         # calculate the areal numerical density
-        areal_numerical_density = np.round((mix_sa_ratio*self.nasc_df.NASC) /
-                                           self.strata_sig_b.loc[self.nasc_df.stratum_num].values)
+        numerical_density = np.round((mix_sa_ratio*self.nasc_df.NASC) /
+                                     self.strata_sig_b.loc[self.nasc_df.stratum_num].values)
 
-        # total areal biomass density for each areal_numerical_density value
-        areal_biomass_density = self._get_tot_areal_biomass_density(areal_numerical_density)
+        # total areal biomass density for each numerical_density value
+        biomass_density = self._get_tot_biomass_density(numerical_density)
 
         # obtain the areal biomass density for adults
-        areal_biomass_density_adult = (areal_biomass_density *
-                                       self.weight_fraction_adult_df.loc[self.nasc_df.stratum_num.values].values.flatten())
+        biomass_density_adult = (biomass_density *
+                                 self.weight_fraction_adult_df.loc[self.nasc_df.stratum_num.values].values.flatten())
 
-        self._construct_biomass_table(areal_biomass_density_adult)
+        self._construct_biomass_table(biomass_density_adult)

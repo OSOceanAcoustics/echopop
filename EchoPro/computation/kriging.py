@@ -389,7 +389,7 @@ class Kriging:
             raise ValueError("You must provide a KrigingMesh object!")
 
         if (not isinstance(self.survey.bio_calc.final_biomass_table, gpd.GeoDataFrame)) \
-                and ('areal_biomass_density_adult' not in self.survey.bio_calc.final_biomass_table):
+                and ('biomass_density_adult' not in self.survey.bio_calc.final_biomass_table):
             raise ValueError("The areal biomass density must be calculated before running this routine!")
 
         ep_arr, eps_arr, vp_arr = self.run_kriging(
@@ -397,7 +397,7 @@ class Kriging:
             krig_mesh.transformed_transect_df['x_transect'].values,
             krig_mesh.transformed_mesh_df['y_mesh'].values,
             krig_mesh.transformed_transect_df['y_transect'].values,
-            self.survey.bio_calc.final_biomass_table['areal_biomass_density_adult'].values.flatten())
+            self.survey.bio_calc.final_biomass_table['biomass_density_adult'].values.flatten())
 
         # collect all important Kriging results
         results_gdf = krig_mesh.mesh_gdf.copy()
