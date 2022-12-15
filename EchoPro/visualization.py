@@ -114,7 +114,8 @@ def plot_points(gdf: gpd.GeoDataFrame,
     return fobj
 
 
-def plot_layered_points(krig_mesh_obj: KrigingMesh) -> folium.Map:
+def plot_layered_points(krig_mesh_obj: KrigingMesh,
+                        plot_mesh_points: bool = True) -> folium.Map:
     """
     This function constructs a layered Folium plot.
     The layers correspond to the full set of mesh
@@ -126,6 +127,10 @@ def plot_layered_points(krig_mesh_obj: KrigingMesh) -> folium.Map:
     ----------
     krig_mesh_obj : KrigingMesh
         An object specifying the Kriging mesh
+    plot_mesh_points : bool, default=True
+        If True, the mesh point layer will be generated.
+        Set to False to create a lighter-weight Folium plot
+        that omits the mesh point layer.
 
     Returns
     -------
@@ -144,10 +149,11 @@ def plot_layered_points(krig_mesh_obj: KrigingMesh) -> folium.Map:
 
     fmap = get_folium_map()
 
-    # plot mesh points and add them to fmap
-    folium_layer = folium.FeatureGroup(name='mesh')
-    folium_layer = plot_points(krig_mesh_obj.mesh_gdf, folium_layer, color='gray')
-    folium_layer.add_to(fmap)
+    if plot_mesh_points:
+        # plot mesh points and add them to fmap
+        folium_layer = folium.FeatureGroup(name='mesh')
+        folium_layer = plot_points(krig_mesh_obj.mesh_gdf, folium_layer, color='gray')
+        folium_layer.add_to(fmap)
 
     # plot the transect points and add them to fmap
     folium_layer = folium.FeatureGroup(name='transects')
@@ -168,7 +174,8 @@ def plot_layered_points(krig_mesh_obj: KrigingMesh) -> folium.Map:
 
 # Visualization function for Kriging
 def plot_kriging_results(krig_results_gdf: gpd.GeoDataFrame,
-                         krig_field_name: str) -> folium.Map:
+                         krig_field_name: str,
+                         greater_than_0: bool = False) -> folium.Map:
     """
     Constructs a Folium plot depicting the ``krig_field_name``
     values at each mesh point.
@@ -181,6 +188,10 @@ def plot_kriging_results(krig_results_gdf: gpd.GeoDataFrame,
     krig_field_name: str
         The name of the column in ``krig_results_gdf`` containing
         the Kriging values to plot at each mesh point
+    greater_than_0: bool, default=False
+        If False, plot kriged values over all points in the mesh.
+        Set to True to create a lighter-weight Folium plot
+        that only shows kriged values greater than 0.
 
     Returns
     -------
@@ -191,6 +202,10 @@ def plot_kriging_results(krig_results_gdf: gpd.GeoDataFrame,
 
     # create folium map
     fmap = folium.Map(location=[44.61, -125.66], zoom_start=4)
+
+    if greater_than_0:
+        # filter to only values > 0
+        krig_results_gdf = krig_results_gdf[krig_results_gdf[krig_field_name] > 0]
 
     # collect the appropriate data from the input Dataframe
     x_mesh = krig_results_gdf.geometry.x.values
