@@ -401,10 +401,10 @@ class Kriging:
 
         # collect all important Kriging results
         results_gdf = krig_mesh.mesh_gdf.copy()
-        results_gdf['krig_biomass_vp'] = vp_arr
-        results_gdf['krig_biomass_ep'] = ep_arr
-        results_gdf['krig_biomass_eps'] = eps_arr
+        results_gdf['biomass_density_adult_mean'] = vp_arr
+        results_gdf['biomass_density_adult_var'] = ep_arr
+        results_gdf['biomass_density_adult_samplevar'] = eps_arr
         results_gdf["cell_area_nmi2"] = self.survey.params['kriging_A0'] * results_gdf['fraction_cell_in_polygon']
-        results_gdf["biomass"] = results_gdf['krig_biomass_vp'] * results_gdf["cell_area_nmi2"]
+        results_gdf["biomass"] = results_gdf['biomass_density_adult_mean'] * results_gdf["cell_area_nmi2"]
 
         self.survey.bio_calc.krig_results_gdf = results_gdf
