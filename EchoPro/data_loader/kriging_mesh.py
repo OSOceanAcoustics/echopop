@@ -31,7 +31,7 @@ class KrigingMesh:
         self.survey = survey
 
         # expected columns for the mesh Dataframe
-        self.mesh_cols = {'centroid_latitude', 'centroid_longitude', 'Area (km^2)', 'fraction_cell_in_polygon'}
+        self.mesh_cols = {'centroid_latitude', 'centroid_longitude', 'fraction_cell_in_polygon'}
 
         # expected columns for the smoothed contour Dataframe
         self.contour_cols = {'latitude', 'longitude'}
@@ -96,12 +96,11 @@ class KrigingMesh:
         self._check_mesh_df(df, file_path)
 
         # obtaining those columns that are required
-        df = df[['centroid_latitude', 'centroid_longitude', 'Area (km^2)', 'fraction_cell_in_polygon']].copy()
+        df = df[['centroid_latitude', 'centroid_longitude', 'fraction_cell_in_polygon']].copy()
 
         # set data types of dataframe
         df = df.astype({'centroid_latitude': float,
                         'centroid_longitude': float,
-                        'Area (km^2)': float,
                         'fraction_cell_in_polygon': np.float64})
 
         # construct geopandas DataFrame to simplify downstream processes
