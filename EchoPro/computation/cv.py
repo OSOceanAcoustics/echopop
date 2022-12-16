@@ -25,7 +25,7 @@ def get_transect_strata_info_no_kriging(lat_inpfc: Tuple[float],
         each region within a survey (established by INPFC)
     biomass_table : pd.DataFrame
         DataFrame containing Longitude, Latitude, Spacing, and
-        areal_biomass_density_adult columns
+        biomass_density_adult columns
 
     Returns
     -------
@@ -43,7 +43,7 @@ def get_transect_strata_info_no_kriging(lat_inpfc: Tuple[float],
     transect_info["mean_spacing"] = biomass_table['transect_spacing'].groupby(level=0).mean()
 
     # store the sum of the biomass for each transect
-    transect_info["biomass"] = biomass_table['areal_biomass_density_adult'].groupby(level=0).sum()
+    transect_info["biomass"] = biomass_table['biomass_density_adult'].groupby(level=0).sum()
 
     # compute the length of each transect
     transect_info["distance"] = transect_info.apply(
@@ -82,7 +82,7 @@ def get_transect_strata_info_kriged(lat_inpfc: Tuple[float],
         each region within a survey (established by INPFC)
     biomass_table : pd.DataFrame
         DataFrame containing Latitude of centroid,
-        Longitude of centroid, and krig_biomass_vals columns
+        Longitude of centroid, and biomass columns
 
     Returns
     -------
@@ -95,7 +95,7 @@ def get_transect_strata_info_kriged(lat_inpfc: Tuple[float],
     # reduce biomass table to only essential columns
     reduced_table = biomass_table[["centroid_latitude",
                                    "centroid_longitude",
-                                   "krig_biomass_vals"]].copy()
+                                   "biomass"]].copy()
 
     # number of "virtual transects" within a latitude degree
     n_transect_per_lat = 5  # TODO: make this an input
@@ -113,7 +113,7 @@ def get_transect_strata_info_kriged(lat_inpfc: Tuple[float],
     transect_info = pd.DataFrame(index=uniq_lat_eq_inc, dtype=np.float64)
 
     # store the sum of the biomass for each transect
-    transect_info['biomass'] = reduced_table['krig_biomass_vals'].groupby(level='lat_eq_inc').sum()
+    transect_info['biomass'] = reduced_table['biomass'].groupby(level='lat_eq_inc').sum()
 
     # store max and min of the longitude
     transect_info["max_longitude"] = reduced_table['centroid_longitude'].groupby(level=0).max()
@@ -190,10 +190,10 @@ def run_jolly_hampton(survey, nr: int, lat_inpfc: Tuple[float],
 
     if kriged_data:
         transect_info, strata_info = get_transect_strata_info_kriged(lat_inpfc,
-                                                                     survey.bio_calc.krig_results_gdf)
+                                                                     survey.bio_calc.kriging_results_gdf)
     else:
         transect_info, strata_info = get_transect_strata_info_no_kriging(lat_inpfc,
-                                                                         survey.bio_calc.final_biomass_table)
+                                                                         survey.bio_calc.transect_results_gdf)
 
     # get numpy form of dataframe values, so we can use Numba
     transect_distances = transect_info['distance'].values.flatten()

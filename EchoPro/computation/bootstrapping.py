@@ -91,7 +91,7 @@ class Bootstrapping:
         """
 
         # calculate total biomass density
-        tot_bio_mass_no_kriging = self.survey.bio_calc.final_biomass_table["areal_biomass_density_adult"].sum()
+        tot_bio_mass_no_kriging = self.survey.bio_calc.transect_results_gdf["biomass_density_adult"].sum()
 
         # perform CV analysis on data
         CV_JH_mean_no_kriging = self.survey.run_cv_analysis(kriged_data=False)
@@ -136,7 +136,7 @@ class Bootstrapping:
         krig.run_biomass_kriging(krig_mesh_obj)
 
         # calculate the total Kriged biomass density
-        tot_bio_mass_kriging = self.survey.bio_calc.krig_results_gdf.krig_biomass_vals.sum()
+        tot_bio_mass_kriging = self.survey.bio_calc.kriging_results_gdf.biomass.sum()
 
         # perform CV analysis on Kriged data
         CV_JH_mean_kriging = self.survey.run_cv_analysis(kriged_data=True)
