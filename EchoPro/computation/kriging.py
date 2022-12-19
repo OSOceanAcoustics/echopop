@@ -1,13 +1,21 @@
-import numpy as np
-from .numba_functions import nb_subtract_outer, nb_dis_mat
 from typing import Callable, Tuple, TypedDict
-from ..data_loader import KrigingMesh
+
 import geopandas as gpd
+import numpy as np
+
+from ..data_loader import KrigingMesh
+from .numba_functions import nb_dis_mat, nb_subtract_outer
 
 # define the Kriging parameter input types
-krig_type_dict = {'k_max': int, 'k_min': int, 'R': float, 'ratio': float,
-                  's_v_params': dict, 's_v_model': Callable}
-krig_param_type = TypedDict('krig_param_type', krig_type_dict)
+krig_type_dict = {
+    "k_max": int,
+    "k_min": int,
+    "R": float,
+    "ratio": float,
+    "s_v_params": dict,
+    "s_v_model": Callable,
+}
+krig_param_type = TypedDict("krig_param_type", krig_type_dict)
 
 
 class Kriging:
@@ -35,9 +43,16 @@ class Kriging:
         a Semi-variogram model from the ``SemiVariogram`` class
     """
 
-    def __init__(self, survey=None, k_max: int = None, k_min: int = None,
-                 R: float = None, ratio: float = None, s_v_params: dict = None,
-                 s_v_model: Callable = None):
+    def __init__(
+        self,
+        survey=None,
+        k_max: int = None,
+        k_min: int = None,
+        R: float = None,
+        ratio: float = None,
+        s_v_params: dict = None,
+        s_v_model: Callable = None,
+    ):
 
         self.survey = survey
 
@@ -53,9 +68,13 @@ class Kriging:
         # grab appropriate semi-variogram model
         self.s_v_model = s_v_model
 
-    def _compute_k_smallest_distances(self, x_mesh: np.ndarray,
-                                      x_data: np.ndarray, y_mesh: np.ndarray,
-                                      y_data: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def _compute_k_smallest_distances(
+        self,
+        x_mesh: np.ndarray,
+        x_data: np.ndarray,
+        y_mesh: np.ndarray,
+        y_data: np.ndarray,
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Computes the distance between the data
         and the mesh points. Using the distance, it then
@@ -92,12 +111,13 @@ class Kriging:
         dis_sort_ind = np.argpartition(dis, self.k_max, axis=1)
 
         # select only the kmax smallest elements in each row
-        dis_kmax_ind = dis_sort_ind[:, :self.k_max]
+        dis_kmax_ind = dis_sort_ind[:, : self.k_max]
 
         return dis, dis_kmax_ind
 
-    def _get_indices_and_weight(self, dis_kmax_ind: np.ndarray, row: int,
-                                dis: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray, float]:
+    def _get_indices_and_weight(
+        self, dis_kmax_ind: np.ndarray, row: int, dis: np.ndarray
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, float]:
         """
         Obtains the indices of ``dis`` that are in ``R``, outside ``R``, and
         the ``k_max`` smallest values. Additionally, obtains the weight
@@ -139,7 +159,7 @@ class Kriging:
         if len(R_ind) < self.k_min:
 
             # get the k_min smallest distance values' indices
-            R_ind = np.argsort(dis[row, sel_ind]).flatten()[:self.k_min]
+            R_ind = np.argsort(dis[row, sel_ind]).flatten()[: self.k_min]
 
             # get the indices of sel_ind[R_ind] that are outside of R
             R_ind_not = np.argwhere(dis[row, sel_ind[R_ind]] > self.R).flatten()
@@ -152,8 +172,14 @@ class Kriging:
 
         return R_ind, R_ind_not, sel_ind, M2_weight
 
-    def _get_M2_K(self, x_data: np.ndarray, y_data: np.ndarray, dis: np.ndarray,
-                  row: int, dis_sel_ind: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def _get_M2_K(
+        self,
+        x_data: np.ndarray,
+        y_data: np.ndarray,
+        dis: np.ndarray,
+        row: int,
+        dis_sel_ind: np.ndarray,
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """
 
         Parameters
@@ -181,7 +207,7 @@ class Kriging:
         # calculate semi-variogram value
         M20 = self.s_v_model(dis[row, dis_sel_ind], **self.s_v_params)
 
-        # TODO: Should we put in statements for Objective mapping and Universal Kriging w/ Linear drift?
+        # TODO: Should we put in statements for Objective mapping and Universal Kriging w/ Linear drift?  # noqa
         M2 = np.concatenate([M20, np.array([1.0])])  # for Ordinary Kriging
 
         # select those data within the search radius
@@ -196,7 +222,7 @@ class Kriging:
         # calculate semi-variogram value
         K0 = self.s_v_model(dis1, **self.s_v_params)
 
-        # TODO: Should we put in statements for Objective mapping and Universal Kriging w/ Linear drift?
+        # TODO: Should we put in statements for Objective mapping and Universal Kriging w/ Linear drift?  # noqa
         # Add column and row of ones for Ordinary Kriging
         K = np.concatenate([K0, np.ones((len(x1), 1))], axis=1)
         K = np.concatenate([K, np.ones((1, len(x1) + 1))], axis=0)
@@ -238,9 +264,15 @@ class Kriging:
         return lamb
 
     @staticmethod
-    def _compute_kriging_vals(field_data: np.ndarray, M2: np.ndarray, lamb: np.ndarray,
-                              M2_weight: float, R_ind: np.ndarray, R_ind_not: np.ndarray,
-                              dis_sel_ind: np.ndarray) -> Tuple[float, float, float]:
+    def _compute_kriging_vals(
+        field_data: np.ndarray,
+        M2: np.ndarray,
+        lamb: np.ndarray,
+        M2_weight: float,
+        R_ind: np.ndarray,
+        R_ind_not: np.ndarray,
+        dis_sel_ind: np.ndarray,
+    ) -> Tuple[float, float, float]:
         """
         Computes the Kriging mean, variance, and sample variance.
 
@@ -280,7 +312,7 @@ class Kriging:
             field_vals = field_data[dis_sel_ind]
 
         # calculate Kriging value and variance
-        field_mean = np.nansum(lamb[:len(R_ind)] * field_vals) * M2_weight
+        field_mean = np.nansum(lamb[: len(R_ind)] * field_vals) * M2_weight
         field_var = np.nansum(lamb * M2)
 
         # calculate Kriging sample variance
@@ -295,9 +327,14 @@ class Kriging:
 
         return field_var, field_samplevar, field_mean
 
-    def run_kriging(self, x_mesh: np.ndarray, x_data: np.ndarray,
-                    y_mesh: np.ndarray, y_data: np.ndarray,
-                    field_data: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    def run_kriging(
+        self,
+        x_mesh: np.ndarray,
+        x_data: np.ndarray,
+        y_mesh: np.ndarray,
+        y_data: np.ndarray,
+        field_data: np.ndarray,
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
         A low-level interface that runs Kriging using the provided
         mesh and data.
@@ -330,8 +367,9 @@ class Kriging:
         Currently, this routine only runs Ordinary Kriging.
         """
 
-        dis, dis_kmax_ind = self._compute_k_smallest_distances(x_mesh, x_data,
-                                                               y_mesh, y_data)
+        dis, dis_kmax_ind = self._compute_k_smallest_distances(
+            x_mesh, x_data, y_mesh, y_data
+        )
 
         # initialize arrays that store calculated Kriging values
         field_var_arr = np.empty(dis_kmax_ind.shape[0])
@@ -342,7 +380,9 @@ class Kriging:
         # does Ordinary Kriging, follow Journel and Huijbregts, p. 307
         for row in range(dis_kmax_ind.shape[0]):
 
-            R_ind, R_ind_not, sel_ind, M2_weight = self._get_indices_and_weight(dis_kmax_ind, row, dis)
+            R_ind, R_ind_not, sel_ind, M2_weight = self._get_indices_and_weight(
+                dis_kmax_ind, row, dis
+            )
 
             # indices of dis within the search radius
             dis_sel_ind = sel_ind[R_ind]
@@ -351,9 +391,9 @@ class Kriging:
 
             lamb = self._compute_lambda_weights(M2, K)
 
-            field_var, field_samplevar, field_mean = self._compute_kriging_vals(field_data, M2, lamb,
-                                                                                M2_weight, R_ind,
-                                                                                R_ind_not, dis_sel_ind)
+            field_var, field_samplevar, field_mean = self._compute_kriging_vals(
+                field_data, M2, lamb, M2_weight, R_ind, R_ind_not, dis_sel_ind
+            )
 
             # store important calculated values
             field_var_arr[row] = field_var
@@ -361,7 +401,9 @@ class Kriging:
             field_mean_arr[row] = field_mean
 
         # zero-out all field mean values that are nan or negative # TODO: Is this necessary?
-        neg_nan_ind = np.argwhere((field_mean_arr < 0) | np.isnan(field_mean_arr)).flatten()
+        neg_nan_ind = np.argwhere(
+            (field_mean_arr < 0) | np.isnan(field_mean_arr)
+        ).flatten()
         field_mean_arr[neg_nan_ind] = 0.0
 
         return field_var_arr, field_samplevar_arr, field_mean_arr
@@ -388,23 +430,35 @@ class Kriging:
         if not isinstance(krig_mesh, KrigingMesh):
             raise ValueError("You must provide a KrigingMesh object!")
 
-        if (not isinstance(self.survey.bio_calc.transect_results_gdf, gpd.GeoDataFrame)) \
-                and ('biomass_density_adult' not in self.survey.bio_calc.transect_results_gdf):
-            raise ValueError("The areal biomass density must be calculated before running this routine!")
+        if (
+            not isinstance(self.survey.bio_calc.transect_results_gdf, gpd.GeoDataFrame)
+        ) and (
+            "biomass_density_adult" not in self.survey.bio_calc.transect_results_gdf
+        ):
+            raise ValueError(
+                "The areal biomass density must be calculated before running this routine!"
+            )
 
         field_var_arr, field_samplevar_arr, field_mean_arr = self.run_kriging(
-            krig_mesh.transformed_mesh_df['x_mesh'].values,
-            krig_mesh.transformed_transect_df['x_transect'].values,
-            krig_mesh.transformed_mesh_df['y_mesh'].values,
-            krig_mesh.transformed_transect_df['y_transect'].values,
-            self.survey.bio_calc.transect_results_gdf['biomass_density_adult'].values.flatten())
+            krig_mesh.transformed_mesh_df["x_mesh"].values,
+            krig_mesh.transformed_transect_df["x_transect"].values,
+            krig_mesh.transformed_mesh_df["y_mesh"].values,
+            krig_mesh.transformed_transect_df["y_transect"].values,
+            self.survey.bio_calc.transect_results_gdf[
+                "biomass_density_adult"
+            ].values.flatten(),
+        )
 
         # collect all important Kriging results
         results_gdf = krig_mesh.mesh_gdf.copy()
-        results_gdf['biomass_density_adult_mean'] = field_mean_arr
-        results_gdf['biomass_density_adult_var'] = field_var_arr
-        results_gdf['biomass_density_adult_samplevar'] = field_samplevar_arr
-        results_gdf["cell_area_nmi2"] = self.survey.params['kriging_A0'] * results_gdf['fraction_cell_in_polygon']
-        results_gdf["biomass"] = results_gdf['biomass_density_adult_mean'] * results_gdf["cell_area_nmi2"]
+        results_gdf["biomass_density_adult_mean"] = field_mean_arr
+        results_gdf["biomass_density_adult_var"] = field_var_arr
+        results_gdf["biomass_density_adult_samplevar"] = field_samplevar_arr
+        results_gdf["cell_area_nmi2"] = (
+            self.survey.params["kriging_A0"] * results_gdf["fraction_cell_in_polygon"]
+        )
+        results_gdf["biomass"] = (
+            results_gdf["biomass_density_adult_mean"] * results_gdf["cell_area_nmi2"]
+        )
 
         self.survey.bio_calc.kriging_results_gdf = results_gdf

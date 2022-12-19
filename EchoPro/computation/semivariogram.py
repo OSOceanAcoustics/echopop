@@ -1,22 +1,30 @@
+import inspect
+from typing import Callable, Dict, Tuple, TypedDict
+
 import ipywidgets
-import numpy as np
-from scipy import special
 import ipywidgets as widgets
 import matplotlib.pyplot as plt
+import numpy as np
+from scipy import special
 from scipy.optimize import curve_fit
-import inspect
-from .numba_functions import nb_subtract_outer, nb_dis_vec, nb_diff_sqrd
-from typing import Dict, Tuple, Callable, TypedDict
+
+from .numba_functions import nb_diff_sqrd, nb_dis_vec, nb_subtract_outer
 
 # default bounds for fitting the semi-variogram model
-bnds_default = {'LB': {'sill': 0.0, 'ls': 0.0,
-                       'exp_pow': 0.0, 'ls_hole_eff': 0.0, 'nugget': 0.0},
-                'UB': {'sill': np.inf, 'ls': np.inf,
-                       'exp_pow': np.inf, 'ls_hole_eff': 1e-13, 'nugget': 1e-13}}
+bnds_default = {
+    "LB": {"sill": 0.0, "ls": 0.0, "exp_pow": 0.0, "ls_hole_eff": 0.0, "nugget": 0.0},
+    "UB": {
+        "sill": np.inf,
+        "ls": np.inf,
+        "exp_pow": np.inf,
+        "ls_hole_eff": 1e-13,
+        "nugget": 1e-13,
+    },
+}
 
 # define the semi-variogram input types
-vario_type_dict = {'nlag': int, 'lag_res': float}
-vario_param_type = TypedDict('vario_param_type', vario_type_dict)
+vario_type_dict = {"nlag": int, "lag_res": float}
+vario_param_type = TypedDict("vario_param_type", vario_type_dict)
 
 
 class SemiVariogram:
@@ -51,8 +59,9 @@ class SemiVariogram:
     ``[0.0, 0.1, 0.2]``.
     """
 
-    def __init__(self, x: np.ndarray, y: np.ndarray,
-                 field: np.ndarray, lag_res: float, nlag: int):
+    def __init__(
+        self, x: np.ndarray, y: np.ndarray, field: np.ndarray, lag_res: float, nlag: int
+    ):
 
         # input data
         self.x = x
@@ -141,8 +150,9 @@ class SemiVariogram:
                 bin_add_p = (center_bins[i + 1] - center_bins[i]) / 2.0
                 bin_add_m = (center_bins[i] - center_bins[i - 1]) / 2.0
 
-            ind_in_lag = np.argwhere((center_bins[i] - bin_add_m <= dis)
-                                     & (dis < center_bins[i] + bin_add_p))
+            ind_in_lag = np.argwhere(
+                (center_bins[i] - bin_add_m <= dis) & (dis < center_bins[i] + bin_add_p)
+            )
 
             # calculate the semi-variogram value
             gamma = 0.5 * np.mean(field_diff_sqrd[ind_in_lag])
@@ -162,53 +172,79 @@ class SemiVariogram:
         """
 
         # widget to define semi-variogram model
-        self._model_drop = widgets.Dropdown(options=['Exponential', 'Generalized exponential-Bessel'],
-                                            value='Generalized exponential-Bessel',
-                                            description='Semi-variogram model',
-                                            disabled=False, style={'description_width': 'initial'})
+        self._model_drop = widgets.Dropdown(
+            options=["Exponential", "Generalized exponential-Bessel"],
+            value="Generalized exponential-Bessel",
+            description="Semi-variogram model",
+            disabled=False,
+            style={"description_width": "initial"},
+        )
 
         # widgets that accept/display semi-variogram model parameters
-        self._sill_box = widgets.FloatText(value=1.0,
-                                           description='Sill', disabled=False)
-        self._len_scale_box = widgets.FloatText(value=1.0,
-                                                description='Length Scale',
-                                                disabled=False,
-                                                style={'description_width': 'initial'})
-        self._exp_pow_box = widgets.FloatText(value=1.0,
-                                              description='Exponential power',
-                                              disabled=False,
-                                              style={'description_width': 'initial'})
-        self._ls_hole_eff_box = widgets.FloatText(value=1.0,
-                                                  description='Length scale hole effect',
-                                                  disabled=False,
-                                                  style={'description_width': 'initial'})
-        self._nugget_box = widgets.FloatText(value=0.0,
-                                             description='Nugget', disabled=False)
+        self._sill_box = widgets.FloatText(
+            value=1.0, description="Sill", disabled=False
+        )
+        self._len_scale_box = widgets.FloatText(
+            value=1.0,
+            description="Length Scale",
+            disabled=False,
+            style={"description_width": "initial"},
+        )
+        self._exp_pow_box = widgets.FloatText(
+            value=1.0,
+            description="Exponential power",
+            disabled=False,
+            style={"description_width": "initial"},
+        )
+        self._ls_hole_eff_box = widgets.FloatText(
+            value=1.0,
+            description="Length scale hole effect",
+            disabled=False,
+            style={"description_width": "initial"},
+        )
+        self._nugget_box = widgets.FloatText(
+            value=0.0, description="Nugget", disabled=False
+        )
 
         # collect all widgets that define the semi-variogram model parameters
-        self._full_params = {'sill': self._sill_box, 'ls': self._len_scale_box,
-                             'exp_pow': self._exp_pow_box, 'ls_hole_eff': self._ls_hole_eff_box,
-                             'nugget': self._nugget_box}
+        self._full_params = {
+            "sill": self._sill_box,
+            "ls": self._len_scale_box,
+            "exp_pow": self._exp_pow_box,
+            "ls_hole_eff": self._ls_hole_eff_box,
+            "nugget": self._nugget_box,
+        }
 
         # widget that triggers the Least Squares fit
-        self._lsq_toggle = widgets.ToggleButton(value=False,
-                                                description='Run Least Squares fit',
-                                                disabled=False, button_style='info',
-                                                tooltip='Description',
-                                                style={'description_width': 'initial'})
+        self._lsq_toggle = widgets.ToggleButton(
+            value=False,
+            description="Run Least Squares fit",
+            disabled=False,
+            button_style="info",
+            tooltip="Description",
+            style={"description_width": "initial"},
+        )
 
         # widget to apply the model
-        self._apply_mod_toggle = widgets.ToggleButton(value=False,
-                                                      description='Apply model',
-                                                      disabled=False, button_style='info',
-                                                      tooltip='Description',
-                                                      icon='line-chart',
-                                                      style={'description_width': 'initial'})
+        self._apply_mod_toggle = widgets.ToggleButton(
+            value=False,
+            description="Apply model",
+            disabled=False,
+            button_style="info",
+            tooltip="Description",
+            icon="line-chart",
+            style={"description_width": "initial"},
+        )
 
     @staticmethod
-    def generalized_exp_bessel(lag_vec: np.ndarray, sill: float, ls: float,
-                               exp_pow: float, ls_hole_eff: float,
-                               nugget: float) -> np.ndarray:
+    def generalized_exp_bessel(
+        lag_vec: np.ndarray,
+        sill: float,
+        ls: float,
+        exp_pow: float,
+        ls_hole_eff: float,
+        nugget: float,
+    ) -> np.ndarray:
         """
         Applies a generalized exponential bessel function
         to the provided input.
@@ -234,11 +270,15 @@ class SemiVariogram:
             1D array of values obtained from evaluating the function
         """
 
-        return (sill - nugget)*(1.0 - np.exp(-(lag_vec/ls)**exp_pow)*special.j0(ls_hole_eff*lag_vec)) + nugget
+        return (sill - nugget) * (
+            1.0
+            - np.exp(-((lag_vec / ls) ** exp_pow)) * special.j0(ls_hole_eff * lag_vec)
+        ) + nugget
 
     @staticmethod
-    def exponential(lag_vec: np.ndarray, sill: float, ls: float,
-                    nugget: float) -> np.ndarray:
+    def exponential(
+        lag_vec: np.ndarray, sill: float, ls: float, nugget: float
+    ) -> np.ndarray:
         """
         Applies an function to the provided input.
 
@@ -259,7 +299,7 @@ class SemiVariogram:
             1D array of values obtained from evaluating the function
         """
 
-        return (sill - nugget)*(1.0 - np.exp(-(lag_vec/ls))) + nugget
+        return (sill - nugget) * (1.0 - np.exp(-(lag_vec / ls))) + nugget
 
     def get_model_info_from_str(self, model: str) -> Tuple[Callable, tuple]:
         """
@@ -281,9 +321,9 @@ class SemiVariogram:
         """
 
         # select corresponding function
-        if model == 'Generalized exponential-Bessel':
+        if model == "Generalized exponential-Bessel":
             func = self.generalized_exp_bessel
-        elif model == 'Exponential':
+        elif model == "Exponential":
             func = self.exponential
 
         # get required kwargs for func
@@ -346,20 +386,24 @@ class SemiVariogram:
         func, model_keys = self.get_model_info_from_str(model)
 
         # create lower and upper bounds for the fitting parameters
-        low_bnds = [bnds_default['LB'][key] for key in model_keys if key in bnds_default['LB']]
-        up_bnds = [bnds_default['UB'][key] for key in model_keys if key in bnds_default['UB']]
+        low_bnds = [
+            bnds_default["LB"][key] for key in model_keys if key in bnds_default["LB"]
+        ]
+        up_bnds = [
+            bnds_default["UB"][key] for key in model_keys if key in bnds_default["UB"]
+        ]
 
         # fit the model to the normalized semi-variogram values
-        fit_params, _ = curve_fit(func, self._center_bins, self.gamma_normalized,
-                                  bounds=(low_bnds, up_bnds))
+        fit_params, _ = curve_fit(
+            func, self._center_bins, self.gamma_normalized, bounds=(low_bnds, up_bnds)
+        )
 
         # TODO: Open up an issue for the differences in lsq against Matlab version
 
         # collect model parameters
         return dict(zip(model_keys[1:], fit_params))
 
-    def _plot_model(self, all_inputs: dict, model: str,
-                   ax: plt.axes) -> plt.axes:
+    def _plot_model(self, all_inputs: dict, model: str, ax: plt.axes) -> plt.axes:
         """
         Plots a semi-variogram model using the
         provided parameters on the axis ``ax``.
@@ -381,12 +425,13 @@ class SemiVariogram:
         """
 
         # create lag values to plot along
-        all_inputs['lag_vec'] = np.linspace(np.min(self._center_bins),
-                                            np.max(self._center_bins), 100)
+        all_inputs["lag_vec"] = np.linspace(
+            np.min(self._center_bins), np.max(self._center_bins), 100
+        )
 
         model_vals = self._evaluate_model(all_inputs, model)
 
-        ax.plot(all_inputs['lag_vec'], model_vals, 'r-')
+        ax.plot(all_inputs["lag_vec"], model_vals, "r-")
 
         return ax
 
@@ -412,13 +457,13 @@ class SemiVariogram:
 
         # create a figure to hold the plotted data
         fig = plt.figure(999, figsize=(8, 4), dpi=100)
-        fig.canvas.manager.set_window_title('')
+        fig.canvas.manager.set_window_title("")
         plt.close(999)
 
         ax1 = fig.add_subplot()  # create axis to plot on
 
         # plot the normalized semi-variogram values
-        ax1.plot(self._center_bins, self.gamma_normalized, 'bo')
+        ax1.plot(self._center_bins, self.gamma_normalized, "bo")
         ax1.set_ylabel("gamma normalized")
         ax1.set_xlabel("lag")
 
@@ -461,7 +506,11 @@ class SemiVariogram:
             func, model_keys = self.get_model_info_from_str(self._model_drop.value)
 
             # select only those key, value pairs in the stored params that are needed by func
-            model_params = dict((k, self._full_params[k].value) for k in model_keys if k in self._full_params.keys())
+            model_params = dict(
+                (k, self._full_params[k].value)
+                for k in model_keys
+                if k in self._full_params.keys()
+            )
 
             return dict(s_v_model=func, s_v_params=model_params)
 
@@ -494,15 +543,18 @@ class SemiVariogram:
         self._create_widgets()
 
         # construct interactive elements
-        inter_out_exp = widgets.interactive_output(self._manage_plots,
-                                                   {'model': self._model_drop,
-                                                    'lsq_fit': self._lsq_toggle,
-                                                    'apply_model': self._apply_mod_toggle
-                                                    })
-        inter_out_exp.observe(self._sill_box, 'value')
+        inter_out_exp = widgets.interactive_output(
+            self._manage_plots,
+            {
+                "model": self._model_drop,
+                "lsq_fit": self._lsq_toggle,
+                "apply_model": self._apply_mod_toggle,
+            },
+        )
+        inter_out_exp.observe(self._sill_box, "value")
 
         # create grid layout for interactive display
-        grid = widgets.GridspecLayout(8, 2, width='80%', height='auto')
+        grid = widgets.GridspecLayout(8, 2, width="80%", height="auto")
         grid[0, 0] = self._model_drop
         grid[1, 0] = self._sill_box
         grid[2, 0] = self._len_scale_box
@@ -514,5 +566,3 @@ class SemiVariogram:
         grid[:, 1:] = inter_out_exp
 
         return grid
-
-

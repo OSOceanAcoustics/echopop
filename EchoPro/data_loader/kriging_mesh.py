@@ -1,12 +1,14 @@
+from pathlib import Path
+from typing import Tuple, Union
+
+import geopandas as gpd
 import numpy as np
 import pandas as pd
-import geopandas as gpd
+from scipy import interpolate
 from shapely.geometry import Polygon
 from shapely.ops import unary_union
-from scipy import interpolate
-from typing import Union, Tuple
+
 from ..utils.input_checks import check_column_names, check_existence_of_file
-from pathlib import Path
 
 
 class KrigingMesh:
@@ -31,10 +33,14 @@ class KrigingMesh:
         self.survey = survey
 
         # expected columns for the mesh Dataframe
-        self.mesh_cols = {'centroid_latitude', 'centroid_longitude', 'fraction_cell_in_polygon'}
+        self.mesh_cols = {
+            "centroid_latitude",
+            "centroid_longitude",
+            "fraction_cell_in_polygon",
+        }
 
         # expected columns for the smoothed contour Dataframe
-        self.contour_cols = {'latitude', 'longitude'}
+        self.contour_cols = {"latitude", "longitude"}
 
         # initialize mesh parameters
         self.transformed_transect_df = None
@@ -60,9 +66,13 @@ class KrigingMesh:
 
         # TODO: should we add more in-depth checks here?
 
-        check_column_names(df=mesh_df, expected_names=self.mesh_cols, path_for_df=df_path)
+        check_column_names(
+            df=mesh_df, expected_names=self.mesh_cols, path_for_df=df_path
+        )
 
-    def _check_smoothed_contour_df(self, contour_df: pd.DataFrame, df_path: Path) -> None:
+    def _check_smoothed_contour_df(
+        self, contour_df: pd.DataFrame, df_path: Path
+    ) -> None:
         """
         Ensures that the appropriate columns are
         contained in the smoothed contour Dataframe.
@@ -77,7 +87,9 @@ class KrigingMesh:
 
         # TODO: should we add more in-depth checks here?
 
-        check_column_names(df=contour_df, expected_names=self.contour_cols, path_for_df=df_path)
+        check_column_names(
+            df=contour_df, expected_names=self.contour_cols, path_for_df=df_path
+        )
 
     def _load_mesh(self) -> None:
         """
@@ -89,23 +101,35 @@ class KrigingMesh:
         """
 
         # check existence of the file
-        file_path = self.survey.params['data_root_dir'] / self.survey.params['mesh_filename']
+        file_path = (
+            self.survey.params["data_root_dir"] / self.survey.params["mesh_filename"]
+        )
         check_existence_of_file(file_path)
 
-        df = pd.read_excel(file_path, sheet_name=self.survey.params['mesh_sheetname'])
+        df = pd.read_excel(file_path, sheet_name=self.survey.params["mesh_sheetname"])
         self._check_mesh_df(df, file_path)
 
         # obtaining those columns that are required
-        df = df[['centroid_latitude', 'centroid_longitude', 'fraction_cell_in_polygon']].copy()
+        df = df[
+            ["centroid_latitude", "centroid_longitude", "fraction_cell_in_polygon"]
+        ].copy()
 
         # set data types of dataframe
-        df = df.astype({'centroid_latitude': float,
-                        'centroid_longitude': float,
-                        'fraction_cell_in_polygon': np.float64})
+        df = df.astype(
+            {
+                "centroid_latitude": float,
+                "centroid_longitude": float,
+                "fraction_cell_in_polygon": np.float64,
+            }
+        )
 
         # construct geopandas DataFrame to simplify downstream processes
-        gdf = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df['centroid_longitude'],
-                                                               df['centroid_latitude']))
+        gdf = gpd.GeoDataFrame(
+            df,
+            geometry=gpd.points_from_xy(
+                df["centroid_longitude"], df["centroid_latitude"]
+            ),
+        )
 
         # assign class variable
         self.mesh_gdf = gdf
@@ -121,27 +145,35 @@ class KrigingMesh:
         """
 
         # check existence of the file
-        file_path = self.survey.params['data_root_dir'] / self.survey.params['smoothed_contour_filename']
+        file_path = (
+            self.survey.params["data_root_dir"]
+            / self.survey.params["smoothed_contour_filename"]
+        )
         check_existence_of_file(file_path)
 
-        df = pd.read_excel(file_path, sheet_name=self.survey.params['smoothed_contour_sheetname'])
+        df = pd.read_excel(
+            file_path, sheet_name=self.survey.params["smoothed_contour_sheetname"]
+        )
         self._check_smoothed_contour_df(df, file_path)
 
         # obtaining those columns that are required
-        df = df[['latitude', 'longitude']].copy()
+        df = df[["latitude", "longitude"]].copy()
 
         # set data types of dataframe
-        df = df.astype({'latitude': float,
-                        'longitude': float})
+        df = df.astype({"latitude": float, "longitude": float})
 
         # construct geopandas DataFrame to simplify downstream processes
-        df = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df.longitude, df.latitude))
+        df = gpd.GeoDataFrame(
+            df, geometry=gpd.points_from_xy(df.longitude, df.latitude)
+        )
 
         # assign class variable
         self.smoothed_contour_gdf = df
 
     @staticmethod
-    def _get_coordinate_mean(df: Union[gpd.GeoDataFrame, pd.DataFrame]) -> gpd.GeoDataFrame:
+    def _get_coordinate_mean(
+        df: Union[gpd.GeoDataFrame, pd.DataFrame]
+    ) -> gpd.GeoDataFrame:
         """
         Creates a GeoPandas Dataframe representing
         the coordinate (latitude and longitude) mean
@@ -165,12 +197,14 @@ class KrigingMesh:
         # get the mean latitude and longitude based on the transects
         df_tran_mean = df[["latitude", "longitude"]].groupby(level=0).mean()
 
-        return gpd.GeoDataFrame(df_tran_mean,
-                                geometry=gpd.points_from_xy(df_tran_mean.longitude,
-                                                            df_tran_mean.latitude))
+        return gpd.GeoDataFrame(
+            df_tran_mean,
+            geometry=gpd.points_from_xy(df_tran_mean.longitude, df_tran_mean.latitude),
+        )
 
-    def get_polygon_of_transects(self, gdf: gpd.GeoDataFrame,
-                                 n_close: int, nm_to_buffer: float = 1.25) -> Polygon:
+    def get_polygon_of_transects(
+        self, gdf: gpd.GeoDataFrame, n_close: int, nm_to_buffer: float = 1.25
+    ) -> Polygon:
         """
         This function constructs a polygon that contains
         all transects.
@@ -215,7 +249,8 @@ class KrigingMesh:
 
             # obtain n_close closest transects
             closest_trans = gdf_tran_mean.geometry.distance(
-                gdf_tran_mean.loc[transect, 'geometry']).nsmallest(n_close)
+                gdf_tran_mean.loc[transect, "geometry"]
+            ).nsmallest(n_close)
 
             # create polygon encasing closest_trans
             full_pol = Polygon(list(gdf.loc[closest_trans.index, "geometry"]))
@@ -248,13 +283,14 @@ class KrigingMesh:
         """
 
         # get bool mask of points that are within the polygon
-        in_poly = self.mesh_gdf['geometry'].within(transect_polygon)
+        in_poly = self.mesh_gdf["geometry"].within(transect_polygon)
 
         # select gdf rows based on bool mask
         return self.mesh_gdf.loc[in_poly].copy()
 
-    def align_longitude(self, gdf: gpd.GeoDataFrame,
-                        lon_ref: float = -124.78338) -> gpd.GeoDataFrame:
+    def align_longitude(
+        self, gdf: gpd.GeoDataFrame, lon_ref: float = -124.78338
+    ) -> gpd.GeoDataFrame:
         """
         This function applies a transformation to the
         longitude column of the provided Dataframe so that
@@ -287,27 +323,35 @@ class KrigingMesh:
         """
 
         # construct an interpolation between points
-        f = interpolate.interp1d(self.smoothed_contour_gdf['latitude'],
-                                 self.smoothed_contour_gdf['longitude'],
-                                 kind='linear', bounds_error=False)
+        f = interpolate.interp1d(
+            self.smoothed_contour_gdf["latitude"],
+            self.smoothed_contour_gdf["longitude"],
+            kind="linear",
+            bounds_error=False,
+        )
 
         # TODO: do we need to drop NaNs after interpolating?
         #  Investigate this further.
 
         # apply longitude transformation and store values
         transformed_gdf = gdf.copy()
-        transformed_gdf['longitude_transformed'] = gdf.geometry.x - f(gdf.geometry.y) + lon_ref
-        transformed_gdf['geometry'] = gpd.points_from_xy(
-            transformed_gdf['longitude_transformed'],
-            gdf.geometry.y
+        transformed_gdf["longitude_transformed"] = (
+            gdf.geometry.x - f(gdf.geometry.y) + lon_ref
+        )
+        transformed_gdf["geometry"] = gpd.points_from_xy(
+            transformed_gdf["longitude_transformed"], gdf.geometry.y
         )
 
         return transformed_gdf
 
     @staticmethod
-    def apply_distance_transformation(gdf: gpd.GeoDataFrame, d_x: float,
-                                      d_y: float, x_offset: float = -124.78338,
-                                      y_offset: float = 45.0) -> Tuple[np.ndarray, np.ndarray]:
+    def apply_distance_transformation(
+        gdf: gpd.GeoDataFrame,
+        d_x: float,
+        d_y: float,
+        x_offset: float = -124.78338,
+        y_offset: float = 45.0,
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Transforms the input coordinates from degrees
         to distance i.e. puts them into a distance
@@ -358,9 +402,12 @@ class KrigingMesh:
 
         return x.values.flatten(), y.values.flatten()
 
-    def _transform_transect_data(self, lon_ref: float = -124.78338,
-                                 x_offset: float = -124.78338,
-                                 y_offset: float = 45.0) -> None:
+    def _transform_transect_data(
+        self,
+        lon_ref: float = -124.78338,
+        x_offset: float = -124.78338,
+        y_offset: float = 45.0,
+    ) -> None:
         """
         Applies a coordinate transformation to ``survey.bio_calc.transect_results_gdf``
         by first aligning the longitude along the smoothed contour data
@@ -395,32 +442,39 @@ class KrigingMesh:
 
         if isinstance(self.survey.bio_calc.transect_results_gdf, gpd.GeoDataFrame):
             # apply transformations to transect points
-            transect_df = self.align_longitude(self.survey.bio_calc.transect_results_gdf, lon_ref)
+            transect_df = self.align_longitude(
+                self.survey.bio_calc.transect_results_gdf, lon_ref
+            )
 
             # compute distances for each transect
             d_x = transect_df.geometry.x.max() - transect_df.geometry.x.min()
             d_y = transect_df.geometry.y.max() - transect_df.geometry.y.min()
 
-            x_transect, y_transect = self.apply_distance_transformation(transect_df,
-                                                                        d_x, d_y,
-                                                                        x_offset, y_offset)
+            x_transect, y_transect = self.apply_distance_transformation(
+                transect_df, d_x, d_y, x_offset, y_offset
+            )
 
             # store transformed points
-            transect_df['x_transect'] = x_transect
-            transect_df['y_transect'] = y_transect
+            transect_df["x_transect"] = x_transect
+            transect_df["y_transect"] = y_transect
             self.transformed_transect_df = transect_df
 
             # store distance information
             self.transect_d_x = d_x
             self.transect_d_y = d_y
         else:
-            raise RuntimeError("survey.bio_calc.transect_results_gdf has not been constructed yet. One "
-                               "must compute the biomass density before running this function!")
+            raise RuntimeError(
+                "survey.bio_calc.transect_results_gdf has not been constructed yet. One "
+                "must compute the biomass density before running this function!"
+            )
 
-    def apply_coordinate_transformation(self, coord_type: str = 'transect',
-                                        lon_ref: float = -124.78338,
-                                        x_offset: float = -124.78338,
-                                        y_offset: float = 45.0) -> None:
+    def apply_coordinate_transformation(
+        self,
+        coord_type: str = "transect",
+        lon_ref: float = -124.78338,
+        x_offset: float = -124.78338,
+        y_offset: float = 45.0,
+    ) -> None:
         """
         Applies a coordinate transformation to either ``survey.bio_calc.transect_results_gdf``
         or ``self.mesh_gdf`` by first aligning the longitude along the
@@ -474,26 +528,24 @@ class KrigingMesh:
             with this input.
         """
 
-        if coord_type == 'transect':
+        if coord_type == "transect":
 
             self._transform_transect_data(lon_ref, x_offset, y_offset)
 
-        elif coord_type == 'mesh':
+        elif coord_type == "mesh":
 
             if not self.transect_d_x:
                 self._transform_transect_data(lon_ref, x_offset, y_offset)
 
             # apply transformations to mesh points
             mesh_df = self.align_longitude(self.mesh_gdf)
-            x_mesh, y_mesh = self.apply_distance_transformation(mesh_df,
-                                                                self.transect_d_x,
-                                                                self.transect_d_y,
-                                                                x_offset,
-                                                                y_offset)
+            x_mesh, y_mesh = self.apply_distance_transformation(
+                mesh_df, self.transect_d_x, self.transect_d_y, x_offset, y_offset
+            )
 
             # store transformed mesh for downstream processes
-            mesh_df['x_mesh'] = x_mesh
-            mesh_df['y_mesh'] = y_mesh
+            mesh_df["x_mesh"] = x_mesh
+            mesh_df["y_mesh"] = y_mesh
             self.transformed_mesh_df = mesh_df
         else:
             raise ValueError("Unrecognized coordinate type.")
