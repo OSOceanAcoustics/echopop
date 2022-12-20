@@ -1,3 +1,9 @@
+"""
+Contains functions for obtaining all data necessary
+for CV analysis and performs CV analysis for both
+data that is Kriged and data that is not Kriged.
+"""
+
 from typing import Tuple
 
 import numpy as np
@@ -5,12 +11,6 @@ import pandas as pd
 from geopy import distance
 
 from .numba_functions import compute_jolly_hampton
-
-"""
-Contains functions for obtaining all data necessary
-for CV analysis and performs CV analysis for both
-data that is Kriged and data that is not Kriged.
-"""
 
 
 def get_transect_strata_info_no_kriging(
