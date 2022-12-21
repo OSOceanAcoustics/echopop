@@ -7,4 +7,4 @@ with open("requirements.txt") as f:
     requirements = f.readlines()
 
 if __name__ == "__main__":
-    setup(install_requires=requirements, packages=['EchoPro'])
+    setup(install_requires=requirements, packages=["EchoPro"])

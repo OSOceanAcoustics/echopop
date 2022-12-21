@@ -1,10 +1,11 @@
-from .kriging import krig_type_dict
-from ..data_loader import KrigingMesh
-from .kriging import Kriging
-from typing import Optional, Tuple, List
 import math
+from typing import List, Optional, Tuple
+
 import numpy as np
 import pandas as pd
+
+from ..data_loader import KrigingMesh
+from .kriging import Kriging, krig_type_dict
 
 
 class Bootstrapping:
@@ -48,11 +49,17 @@ class Bootstrapping:
 
         # make sure an empty dict was not given
         if kriging_params is None:
-            raise ValueError("If Kriging should be run, the input ``kriging_params`` must be provided!")
+            raise ValueError(
+                "If Kriging should be run, the input ``kriging_params`` must be provided!"
+            )
 
         # ensure that krig_mesh was provided and is of the appropriate type
-        if ("krig_mesh" not in kriging_params.keys()) or (not isinstance(kriging_params["krig_mesh"], KrigingMesh)):
-            raise TypeError("The parameter ``krig_mesh`` was not provided or it is not of type KrigingMesh!")
+        if ("krig_mesh" not in kriging_params.keys()) or (
+            not isinstance(kriging_params["krig_mesh"], KrigingMesh)
+        ):
+            raise TypeError(
+                "The parameter ``krig_mesh`` was not provided or it is not of type KrigingMesh!"
+            )
 
         # get krig_mesh object and remove it from kriging_params
         krig_mesh_obj = kriging_params["krig_mesh"]
@@ -66,12 +73,16 @@ class Bootstrapping:
         for key, val in kriging_params.items():
             expected_type = krig_type_dict.get(key)
             if not isinstance(val, expected_type):
-                raise TypeError(f"The Kriging parameter {key} is not of type {expected_type}")
+                raise TypeError(
+                    f"The Kriging parameter {key} is not of type {expected_type}"
+                )
 
         # make sure that the krig_mesh object refers to the appropriate survey object
         if id(krig_mesh_obj.survey) != id(self.survey):
-            raise RuntimeError("The krig_mesh Survey object and the Survey object used to "
-                               "initialize bootstrapping must be the same!")
+            raise RuntimeError(
+                "The krig_mesh Survey object and the Survey object used to "
+                "initialize bootstrapping must be the same!"
+            )
 
         return kriging_params, krig_mesh_obj
 
@@ -91,15 +102,18 @@ class Bootstrapping:
         """
 
         # calculate total biomass density
-        tot_bio_mass_no_kriging = self.survey.bio_calc.transect_results_gdf["biomass_density_adult"].sum()
+        tot_bio_mass_no_kriging = self.survey.bio_calc.transect_results_gdf[
+            "biomass_density_adult"
+        ].sum()
 
         # perform CV analysis on data
         CV_JH_mean_no_kriging = self.survey.run_cv_analysis(kriged_data=False)
 
         return [tot_bio_mass_no_kriging, CV_JH_mean_no_kriging]
 
-    def _get_results_for_kriging(self, krig_mesh_obj: KrigingMesh,
-                                 krig: Kriging) -> List[float]:
+    def _get_results_for_kriging(
+        self, krig_mesh_obj: KrigingMesh, krig: Kriging
+    ) -> List[float]:
         """
         Obtains the total Kriged biomass estimate and associated
         mean Jolly-Hampton CV value for a bootstrapping iteration.
@@ -125,12 +139,12 @@ class Bootstrapping:
         #  own transformation for the below meshes
 
         # apply transect mesh transformation
-        krig_mesh_obj.apply_coordinate_transformation(coord_type='transect')
+        krig_mesh_obj.apply_coordinate_transformation(coord_type="transect")
 
         # apply full mesh transformation
         # TODO: they way this is setup is inefficient because we need
         #  to transform the full mesh every time, can we avoid this?
-        krig_mesh_obj.apply_coordinate_transformation(coord_type='mesh')
+        krig_mesh_obj.apply_coordinate_transformation(coord_type="mesh")
 
         # get Kriged biomass estimate
         krig.run_biomass_kriging(krig_mesh_obj)
@@ -143,11 +157,14 @@ class Bootstrapping:
 
         return [tot_bio_mass_kriging, CV_JH_mean_kriging]
 
-    def run_bootstrapping(self, run_kriging: bool = False,
-                          kriging_params: Optional[dict] = None,
-                          removal_percentage: float = 50.0,
-                          num_iterations: int = 10,
-                          seed: Optional[int] = None) -> pd.DataFrame:
+    def run_bootstrapping(
+        self,
+        run_kriging: bool = False,
+        kriging_params: Optional[dict] = None,
+        removal_percentage: float = 50.0,
+        num_iterations: int = 10,
+        seed: Optional[int] = None,
+    ) -> pd.DataFrame:
         """
         A routine for running bootstrapping on a reduced number of
         transects within a survey. The bootstrapping performed can
@@ -206,14 +223,16 @@ class Bootstrapping:
             # check kriging_params input and obtain KrigingMesh object
             kriging_params, krig_mesh_obj = self._check_kriging_params(kriging_params)
 
-            # initalize kriging routine
+            # initialize kriging routine
             krig = self.survey.get_kriging(kriging_params)
 
         # get all unique transects in nasc_df
         unique_transects = self.survey.nasc_df.index.unique().values
 
         # determine the number of transects that should be randomly selected
-        num_sel_transects = math.floor(len(unique_transects) * (1.0 - removal_percentage / 100.0))
+        num_sel_transects = math.floor(
+            len(unique_transects) * (1.0 - removal_percentage / 100.0)
+        )
 
         # initialize the random number generator object
         rng = np.random.default_rng(seed)
@@ -222,7 +241,9 @@ class Bootstrapping:
         for iteration in range(num_iterations):
 
             # randomly select transects without replacement
-            selected_transects = list(rng.choice(unique_transects, num_sel_transects, replace=False))
+            selected_transects = list(
+                rng.choice(unique_transects, num_sel_transects, replace=False)
+            )
 
             # compute the areal biomass density for the subset of transects
             self.survey.compute_biomass_density(selected_transects=selected_transects)
@@ -232,7 +253,9 @@ class Bootstrapping:
 
             if run_kriging:
                 # collect total biomass and associated JH CV value for data with Kriging
-                vals_to_keep[iteration] += self._get_results_for_kriging(krig_mesh_obj, krig)
+                vals_to_keep[iteration] += self._get_results_for_kriging(
+                    krig_mesh_obj, krig
+                )
 
         # set DataFrame column names
         col_names = ["tot_biomass_no_kriging", "CV_JH_mean_no_kriging"]
@@ -240,9 +263,12 @@ class Bootstrapping:
             col_names += ["tot_biomass_kriging", "CV_JH_mean_kriging"]
 
         # construct final DataFrame holding bootstrapping results
-        boot_final_results = pd.DataFrame(vals_to_keep,
-                                          columns=col_names, index=range(1, num_iterations+1),
-                                          dtype=np.float64)
+        boot_final_results = pd.DataFrame(
+            vals_to_keep,
+            columns=col_names,
+            index=range(1, num_iterations + 1),
+            dtype=np.float64,
+        )
         boot_final_results.index.name = "iteration"
 
         return boot_final_results

@@ -1,17 +1,19 @@
-from matplotlib.colors import to_hex
-from matplotlib import cm
-import folium
+from typing import Optional, Union
+
 import branca.colormap as bcm
-import numpy as np
+import folium
 import geopandas as gpd
-from typing import Union, Optional
+import numpy as np
+from matplotlib import cm
+from matplotlib.colors import to_hex
+
 from .data_loader.kriging_mesh import KrigingMesh
 
 # Default parameters for the folium map
 folium_map_kwargs = {
-    'location': [44.61, -125.66],
-    'zoom_start': 4,
-    'tiles': 'CartoDB positron'
+    "location": [44.61, -125.66],
+    "zoom_start": 4,
+    "tiles": "CartoDB positron",
 }
 
 
@@ -42,11 +44,14 @@ def get_folium_map(map_kwargs: Optional[dict] = None) -> folium.Map:
     return folium.Map(**map_kwargs)
 
 
-def plot_points(gdf: gpd.GeoDataFrame,
-                fobj: Union[folium.Map, folium.map.FeatureGroup] = None,
-                color: str = 'hex', cmap_column: str = None,
-                marker_kwargs: dict = {},
-                map_kwargs: Optional[dict] = None) -> Union[folium.Map, folium.map.FeatureGroup]:
+def plot_points(
+    gdf: gpd.GeoDataFrame,
+    fobj: Union[folium.Map, folium.map.FeatureGroup] = None,
+    color: str = "hex",
+    cmap_column: str = None,
+    marker_kwargs: dict = {},
+    map_kwargs: Optional[dict] = None,
+) -> Union[folium.Map, folium.map.FeatureGroup]:
     """
     Allows for a simple way to plot and
     visualize mesh points on a folium map.
@@ -83,39 +88,47 @@ def plot_points(gdf: gpd.GeoDataFrame,
     if fobj is None:
         fobj = get_folium_map(map_kwargs)
 
-    if color == 'hex':
+    if color == "hex":
 
         if cmap_column in gdf.index.names:
             gdf = gdf.reset_index()
         elif cmap_column not in gdf:
-            raise RuntimeError(f"gdf does not contain an index or column with name {cmap_column}!")
+            raise RuntimeError(
+                f"gdf does not contain an index or column with name {cmap_column}!"
+            )
 
         # create a color map using hex values based off a value in gdf
         uniq_vals = gdf[cmap_column].unique()
-        cmap = cm.get_cmap('viridis', len(uniq_vals))
-        hex_color_options = {rgb[0]: to_hex(rgb[1])
-                             for rgb in zip(uniq_vals, cmap(uniq_vals))}
+        cmap = cm.get_cmap("viridis", len(uniq_vals))
+        hex_color_options = {
+            rgb[0]: to_hex(rgb[1]) for rgb in zip(uniq_vals, cmap(uniq_vals))
+        }
 
     # plot each point in gdf on a folium object
     # TODO: Can we do this more efficiently?
     for _, row in gdf.iterrows():
 
-        if color == 'hex':
+        if color == "hex":
             color_val = hex_color_options[row[cmap_column]]
         else:
             color_val = color
 
         # Place the markers with specific color
-        fobj.add_child(folium.CircleMarker(location=(row.geometry.y, row.geometry.x),
-                                           radius=1,
-                                           color=color_val,
-                                           **marker_kwargs))
+        fobj.add_child(
+            folium.CircleMarker(
+                location=(row.geometry.y, row.geometry.x),
+                radius=1,
+                color=color_val,
+                **marker_kwargs,
+            )
+        )
 
     return fobj
 
 
-def plot_layered_points(krig_mesh_obj: KrigingMesh,
-                        plot_mesh_points: bool = True) -> folium.Map:
+def plot_layered_points(
+    krig_mesh_obj: KrigingMesh, plot_mesh_points: bool = True
+) -> folium.Map:
     """
     This function constructs a layered Folium plot.
     The layers correspond to the full set of mesh
@@ -151,19 +164,25 @@ def plot_layered_points(krig_mesh_obj: KrigingMesh,
 
     if plot_mesh_points:
         # plot mesh points and add them to fmap
-        folium_layer = folium.FeatureGroup(name='mesh')
-        folium_layer = plot_points(krig_mesh_obj.mesh_gdf, folium_layer, color='gray')
+        folium_layer = folium.FeatureGroup(name="mesh")
+        folium_layer = plot_points(krig_mesh_obj.mesh_gdf, folium_layer, color="gray")
         folium_layer.add_to(fmap)
 
     # plot the transect points and add them to fmap
-    folium_layer = folium.FeatureGroup(name='transects')
-    folium_layer = plot_points(krig_mesh_obj.survey.bio_calc.transect_results_gdf, folium_layer,
-                               cmap_column='transect_num', color='hex')
+    folium_layer = folium.FeatureGroup(name="transects")
+    folium_layer = plot_points(
+        krig_mesh_obj.survey.bio_calc.transect_results_gdf,
+        folium_layer,
+        cmap_column="transect_num",
+        color="hex",
+    )
     folium_layer.add_to(fmap)
 
     # plot smoothed contour points and add them to fmap
-    folium_layer = folium.FeatureGroup(name='smoothed contour')
-    folium_layer = plot_points(krig_mesh_obj.smoothed_contour_gdf, folium_layer, color='blue')
+    folium_layer = folium.FeatureGroup(name="smoothed contour")
+    folium_layer = plot_points(
+        krig_mesh_obj.smoothed_contour_gdf, folium_layer, color="blue"
+    )
     folium_layer.add_to(fmap)
 
     # add layer control to fmap
@@ -173,9 +192,11 @@ def plot_layered_points(krig_mesh_obj: KrigingMesh,
 
 
 # Visualization function for Kriging
-def plot_kriging_results(kriging_results_gdf: gpd.GeoDataFrame,
-                         krig_field_name: str,
-                         greater_than_0: bool = False) -> folium.Map:
+def plot_kriging_results(
+    kriging_results_gdf: gpd.GeoDataFrame,
+    krig_field_name: str,
+    greater_than_0: bool = False,
+) -> folium.Map:
     """
     Constructs a Folium plot depicting the ``krig_field_name``
     values at each mesh point.
@@ -205,7 +226,9 @@ def plot_kriging_results(kriging_results_gdf: gpd.GeoDataFrame,
 
     if greater_than_0:
         # filter to only values > 0
-        kriging_results_gdf = kriging_results_gdf[kriging_results_gdf[krig_field_name] > 0]
+        kriging_results_gdf = kriging_results_gdf[
+            kriging_results_gdf[krig_field_name] > 0
+        ]
 
     # collect the appropriate data from the input Dataframe
     x_mesh = kriging_results_gdf.geometry.x.values
@@ -213,8 +236,9 @@ def plot_kriging_results(kriging_results_gdf: gpd.GeoDataFrame,
     krig_val = kriging_results_gdf[krig_field_name].values
 
     # create a colormap for the values
-    colormap = bcm.LinearColormap(colors=['#3385ff', '#FF0000'],
-                                  vmin=0.0, vmax=np.max(krig_val))
+    colormap = bcm.LinearColormap(
+        colors=["#3385ff", "#FF0000"], vmin=0.0, vmax=np.max(krig_val)
+    )
 
     # plot each mesh point and the corresponding krig_field_name value
     for i in range(len(krig_val)):
@@ -226,9 +250,9 @@ def plot_kriging_results(kriging_results_gdf: gpd.GeoDataFrame,
         coordinates = (y_mesh[i], x_mesh[i])
 
         # Place the markers with a color value
-        fmap.add_child(folium.CircleMarker(location=coordinates,
-                                           radius=1,
-                                           color=color_val))
+        fmap.add_child(
+            folium.CircleMarker(location=coordinates, radius=1, color=color_val)
+        )
 
     fmap.add_child(colormap)  # adds color bar to map
 

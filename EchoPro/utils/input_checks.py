@@ -1,8 +1,11 @@
-import pandas as pd
 from pathlib import Path
 
+import pandas as pd
 
-def check_column_names(df: pd.DataFrame, expected_names: set, path_for_df: Path) -> None:
+
+def check_column_names(
+    df: pd.DataFrame, expected_names: set, path_for_df: Path
+) -> None:
     """
     Ensures that the input DataFrame has the expected column names.
 
@@ -25,8 +28,10 @@ def check_column_names(df: pd.DataFrame, expected_names: set, path_for_df: Path)
     df_expected_columns = set(df.columns).intersection(expected_names)
 
     if len(df_expected_columns) != len(expected_names):
-        raise RuntimeError(f"The file '{str(path_for_df.absolute())}' does not contain the "
-                           f"following columns: {expected_names - df_expected_columns}")
+        raise RuntimeError(
+            f"The file '{str(path_for_df.absolute())}' does not contain the "
+            f"following columns: {expected_names - df_expected_columns}"
+        )
 
 
 def check_existence_of_file(file_path: Path):
@@ -45,9 +50,6 @@ def check_existence_of_file(file_path: Path):
     """
 
     if not file_path.exists():
-        raise FileNotFoundError(f"The file '{str(file_path.absolute())}' does not exist.")
-
-
-
-
-
+        raise FileNotFoundError(
+            f"The file '{str(file_path.absolute())}' does not exist."
+        )

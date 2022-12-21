@@ -1,13 +1,23 @@
-import yaml
-import numpy as np
-
-from .data_loader import LoadBioData, LoadStrataData, load_nasc_df, KrigingMesh
-from .computation import (Bootstrapping, ComputeBiomassDensity, run_jolly_hampton, Kriging,
-                          krig_type_dict, krig_param_type, SemiVariogram, vario_type_dict, vario_param_type)
-from typing import Tuple, List, Optional, Union
-import geopandas as gpd
-from warnings import warn
 from pathlib import Path
+from typing import List, Optional, Tuple, Union
+from warnings import warn
+
+import geopandas as gpd
+import numpy as np
+import yaml
+
+from .computation import (
+    Bootstrapping,
+    ComputeBiomassDensity,
+    Kriging,
+    SemiVariogram,
+    krig_param_type,
+    krig_type_dict,
+    run_jolly_hampton,
+    vario_param_type,
+    vario_type_dict,
+)
+from .data_loader import KrigingMesh, LoadBioData, LoadStrataData, load_nasc_df
 from .utils.input_checks import check_existence_of_file
 
 
@@ -33,11 +43,14 @@ class Survey:
     exclude_age1 : bool
         States whether age 1 hake should be included in analysis.
     """
-    def __init__(self,
-                 init_file_path: Union[str, Path],
-                 survey_year_file_path: Union[str, Path],
-                 source: int = 3,
-                 exclude_age1: bool = True):
+
+    def __init__(
+        self,
+        init_file_path: Union[str, Path],
+        survey_year_file_path: Union[str, Path],
+        source: int = 3,
+        exclude_age1: bool = True,
+    ):
 
         # convert configuration paths to Path objects, if necessary
         init_file_path = Path(init_file_path)
@@ -55,7 +68,7 @@ class Survey:
 
         # assign parameters from configuration files and init params
         self.params = self._collect_parameters(init_params, survey_year_params)
-        self.params['exclude_age1'] = exclude_age1
+        self.params["exclude_age1"] = exclude_age1
 
         # convert all string paths to Path objects in params
         self._convert_str_to_path_obj()
@@ -157,16 +170,20 @@ class Survey:
         """
 
         # setting bio_hake_lin_bin variable to a numpy array
-        init_params["bio_hake_len_bin"] = np.linspace(init_params["bio_hake_len_bin"][0],
-                                                      init_params["bio_hake_len_bin"][1],
-                                                      num=init_params["bio_hake_len_bin"][2],
-                                                      dtype=np.int64)
+        init_params["bio_hake_len_bin"] = np.linspace(
+            init_params["bio_hake_len_bin"][0],
+            init_params["bio_hake_len_bin"][1],
+            num=init_params["bio_hake_len_bin"][2],
+            dtype=np.int64,
+        )
 
         # setting bio_hake_age_bin variable to a numpy array
-        init_params["bio_hake_age_bin"] = np.linspace(init_params["bio_hake_age_bin"][0],
-                                                      init_params["bio_hake_age_bin"][1],
-                                                      num=init_params["bio_hake_age_bin"][2],
-                                                      dtype=np.int64)
+        init_params["bio_hake_age_bin"] = np.linspace(
+            init_params["bio_hake_age_bin"][0],
+            init_params["bio_hake_age_bin"][1],
+            num=init_params["bio_hake_age_bin"][2],
+            dtype=np.int64,
+        )
 
         init_params["source"] = source
 
@@ -193,7 +210,9 @@ class Survey:
         """
 
         # check to make sure no survey year and initialization parameters are the same
-        param_intersect = set(init_params.keys()).intersection(set(survey_params.keys()))
+        param_intersect = set(init_params.keys()).intersection(
+            set(survey_params.keys())
+        )
 
         # if no parameters are the same, then run process, else return error
         if not param_intersect:
@@ -204,8 +223,10 @@ class Survey:
             full_params.update(survey_params)
 
         else:
-            raise RuntimeError('The initialization and survey year configuration files define the same variable! ' +
-                               f'\n These variables are: {param_intersect}')
+            raise RuntimeError(
+                "The initialization and survey year configuration files define the same variable! "
+                + f"\n These variables are: {param_intersect}"
+            )
 
         return full_params
 
@@ -228,7 +249,7 @@ class Survey:
             if "filename" in param_name:
                 self.params[param_name] = Path(param_val)
 
-    def load_survey_data(self, file_type: str = 'all') -> None:
+    def load_survey_data(self, file_type: str = "all") -> None:
         """
         Loads the biological, NASC, and stratification
         data using parameters obtained from the configuration
@@ -260,21 +281,25 @@ class Survey:
             - ``self.nasc_df``
         """
 
-        if file_type not in ['all', 'biological', 'strata', 'nasc']:
-            raise ValueError("file_type must be 'all', 'biological', 'strata', or 'nasc'!")
+        if file_type not in ["all", "biological", "strata", "nasc"]:
+            raise ValueError(
+                "file_type must be 'all', 'biological', 'strata', or 'nasc'!"
+            )
 
         # load specimen and length data
-        if file_type in ('biological', 'all'):
+        if file_type in ("biological", "all"):
             LoadBioData(self)
 
         # load all associated stratification data
-        if file_type in ('strata', 'all'):
+        if file_type in ("strata", "all"):
             LoadStrataData(self)
 
-        if file_type in ('nasc', 'all'):
+        if file_type in ("nasc", "all"):
             self.nasc_df = load_nasc_df(self)
 
-    def compute_biomass_density(self, selected_transects: Optional[List] = None) -> None:
+    def compute_biomass_density(
+        self, selected_transects: Optional[List] = None
+    ) -> None:
         """
         Computes the areal biomass density and
         creates ``self.bio_calc.transect_results_gdf``, which
@@ -292,9 +317,12 @@ class Survey:
         self.bio_calc = ComputeBiomassDensity(self)
         self.bio_calc.get_transect_results_gdf(selected_transects)
 
-    def run_cv_analysis(self,
-                        lat_inpfc: Tuple[float] = (np.NINF, 36, 40.5, 43.000, 45.7667, 48.5, 55.0000),
-                        kriged_data=False, seed=None) -> float:
+    def run_cv_analysis(
+        self,
+        lat_inpfc: Tuple[float] = (np.NINF, 36, 40.5, 43.000, 45.7667, 48.5, 55.0000),
+        kriged_data=False,
+        seed=None,
+    ) -> float:
         """
         Performs CV analysis by running the Jolly-Hampton
         algorithm.
@@ -331,10 +359,14 @@ class Survey:
 
         if kriged_data:
             if self.bio_calc.kriging_results_gdf is None:
-                raise RuntimeError("Kriging must be ran before performing CV anlysis on Kriged data!")
+                raise RuntimeError(
+                    "Kriging must be ran before performing CV analysis on Kriged data!"
+                )
         else:
             if self.bio_calc.transect_results_gdf is None:
-                raise RuntimeError("The biomass density must be calculated before performing CV anlysis on data!")
+                raise RuntimeError(
+                    "The biomass density must be calculated before performing CV analysis on data!"
+                )
 
         return run_jolly_hampton(self, nr, lat_inpfc, seed, kriged_data)
 
@@ -362,8 +394,12 @@ class Survey:
 
         return KrigingMesh(self)
 
-    def get_semi_variogram(self, krig_mesh: KrigingMesh = None,
-                           params: vario_param_type = {}, warning: bool = True):
+    def get_semi_variogram(
+        self,
+        krig_mesh: KrigingMesh = None,
+        params: vario_param_type = {},
+        warning: bool = True,
+    ):
         """
         Initializes a ``SemiVariogram`` object based on the provided
         ``KrigingMesh`` object, the calculated areal biomass density,
@@ -435,20 +471,27 @@ class Survey:
         # provide a warning if the transect_results_gdf being used was
         # created from a subset of the full data
         if (len(self.bio_calc.transect_results_gdf) != len(self.nasc_df)) and warning:
-            warn("The biomass data being used is a subset of the full dataset. "
-                 "It is recommended that you use the biomass data created from the full dataset. "
-                 "To silence this warning set the warning argument to False.")
+            warn(
+                "The biomass data being used is a subset of the full dataset. "
+                "It is recommended that you use the biomass data created from the full dataset. "
+                "To silence this warning set the warning argument to False."
+            )
 
-        if (not isinstance(self.bio_calc.transect_results_gdf, gpd.GeoDataFrame)) \
-                and ('biomass_density_adult' not in self.bio_calc.transect_results_gdf):
-            raise ValueError("The areal biomass density must be calculated before running this routine!")
+        if (not isinstance(self.bio_calc.transect_results_gdf, gpd.GeoDataFrame)) and (
+            "biomass_density_adult" not in self.bio_calc.transect_results_gdf
+        ):
+            raise ValueError(
+                "The areal biomass density must be calculated before running this routine!"
+            )
 
         semi_vario = SemiVariogram(
             krig_mesh.transformed_transect_df.x_transect.values,
             krig_mesh.transformed_transect_df.y_transect.values,
-            self.bio_calc.transect_results_gdf['biomass_density_adult'].values.flatten(),
-            params['lag_res'],
-            params['nlag'],
+            self.bio_calc.transect_results_gdf[
+                "biomass_density_adult"
+            ].values.flatten(),
+            params["lag_res"],
+            params["nlag"],
         )
 
         return semi_vario
@@ -492,10 +535,19 @@ class Survey:
         for key, val in params.items():
             expected_type = krig_type_dict.get(key)
             if not isinstance(val, expected_type):
-                raise TypeError(f"The Kriging parameter {key} is not of type {expected_type}")
+                raise TypeError(
+                    f"The Kriging parameter {key} is not of type {expected_type}"
+                )
 
-        krig = Kriging(self, params['k_max'], params['k_min'], params['R'],
-                       params['ratio'], params['s_v_params'], params['s_v_model'])
+        krig = Kriging(
+            self,
+            params["k_max"],
+            params["k_min"],
+            params["R"],
+            params["ratio"],
+            params["s_v_params"],
+            params["s_v_model"],
+        )
 
         return krig
 
@@ -515,5 +567,3 @@ class Survey:
         boot = Bootstrapping(self)
 
         return boot
-
-

@@ -1,7 +1,8 @@
-import numba as nb
-import numpy as np
 import math
 from typing import Tuple
+
+import numba as nb
+import numpy as np
 
 
 @nb.njit(nb.float64[:, :](nb.float64[:], nb.float64[:]), parallel=True)
@@ -57,7 +58,9 @@ def nb_dis_vec(a: nb.float64[:], b: nb.float64[:]) -> nb.float64[:]:
     return res
 
 
-@nb.njit(nb.float64[:, :](nb.float64[:, :], nb.float64[:, :]), fastmath=True, parallel=True)
+@nb.njit(
+    nb.float64[:, :](nb.float64[:, :], nb.float64[:, :]), fastmath=True, parallel=True
+)
 def nb_dis_mat(a: nb.float64[:, :], b: nb.float64[:, :]) -> nb.float64[:, :]:
     """
     Calculates the distance between the elements
@@ -114,9 +117,11 @@ def nb_diff_sqrd(a: nb.float64[:], b: nb.float64[:]) -> nb.float64[:]:
 # The below functions are for CV analysis    #
 ##############################################
 
+
 @nb.njit
-def compute_mean_var_density(distance: np.ndarray, field: np.ndarray,
-                             num_ind: int) -> Tuple[float, float]:
+def compute_mean_var_density(
+    distance: np.ndarray, field: np.ndarray, num_ind: int
+) -> Tuple[float, float]:
     """
     Computes the transect-length-normalized mean density
     of the stratum and its associated variance for the
@@ -151,9 +156,13 @@ def compute_mean_var_density(distance: np.ndarray, field: np.ndarray,
 
     # variance of the transect-length weighted field within the stratum
     if num_ind != 1:
-        var_rhom = np.nansum(wgt ** 2 * (rhom_trans_stratum - rhom) ** 2) / (num_ind * (num_ind - 1))
+        var_rhom = np.nansum(wgt**2 * (rhom_trans_stratum - rhom) ** 2) / (
+            num_ind * (num_ind - 1)
+        )
     else:
-        var_rhom = np.nansum(wgt ** 2 * (rhom_trans_stratum - rhom) ** 2) / (num_ind * num_ind)
+        var_rhom = np.nansum(wgt**2 * (rhom_trans_stratum - rhom) ** 2) / (
+            num_ind * num_ind
+        )
 
     return rhom, var_rhom
 
@@ -172,9 +181,14 @@ def seed(val: int):
 
 
 @nb.njit
-def compute_cv_value(jh_fac: float, num_transects: np.ndarray,
-                     s_e_ind: np.ndarray, distance: np.ndarray,
-                     field: np.ndarray, total_transect_area: np.ndarray) -> float:
+def compute_cv_value(
+    jh_fac: float,
+    num_transects: np.ndarray,
+    s_e_ind: np.ndarray,
+    distance: np.ndarray,
+    field: np.ndarray,
+    total_transect_area: np.ndarray,
+) -> float:
     """
     Computes the CV value for the strata i.e. the area weighted
     variance of the transect-length weighted field.
@@ -225,21 +239,29 @@ def compute_cv_value(jh_fac: float, num_transects: np.ndarray,
             # start and end indices of the stratum for the distance and field arrays
             start = s_e_ind[i][0]
             end = s_e_ind[i][1]
-            rhom[i], var_rhom[i] = compute_mean_var_density(distance[start:end][sel_ind],
-                                                            field[start:end][sel_ind], num_ind)
+            rhom[i], var_rhom[i] = compute_mean_var_density(
+                distance[start:end][sel_ind], field[start:end][sel_ind], num_ind
+            )
 
     # area weighted variance of the "transect-length weighted field"
-    cv = np.sqrt(np.nansum(var_rhom * total_transect_area ** 2)) / np.nansum(
-        total_transect_area * rhom)
+    cv = np.sqrt(np.nansum(var_rhom * total_transect_area**2)) / np.nansum(
+        total_transect_area * rhom
+    )
 
     return cv
 
 
 @nb.njit
-def compute_jolly_hampton(nr: int, jh_fac: float, num_transects: np.ndarray,
-                          s_e_ind: np.ndarray, distance: np.ndarray,
-                          field: np.ndarray, total_transect_area: np.ndarray,
-                          seed_val: int):
+def compute_jolly_hampton(
+    nr: int,
+    jh_fac: float,
+    num_transects: np.ndarray,
+    s_e_ind: np.ndarray,
+    distance: np.ndarray,
+    field: np.ndarray,
+    total_transect_area: np.ndarray,
+    seed_val: int,
+):
     """
     Computes the Jolly-Hampton CV value using
     nr iterations.
@@ -277,8 +299,8 @@ def compute_jolly_hampton(nr: int, jh_fac: float, num_transects: np.ndarray,
         seed(seed_val)
 
     for i in range(nr):
-        cv_jh_vals[i] = compute_cv_value(jh_fac, num_transects,
-                                         s_e_ind, distance, field,
-                                         total_transect_area)
+        cv_jh_vals[i] = compute_cv_value(
+            jh_fac, num_transects, s_e_ind, distance, field, total_transect_area
+        )
 
     return np.nanmean(cv_jh_vals)
