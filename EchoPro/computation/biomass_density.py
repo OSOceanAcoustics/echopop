@@ -794,7 +794,7 @@ class ComputeBiomassDensity:
         interval = self._get_interval(self.nasc_df)
 
         # calculate the area corresponding to the NASC value
-        area = interval * self.nasc_df['transect_spacing']
+        area = interval * self.nasc_df["transect_spacing"]
 
         # calculate the biomass
         final_df["biomass"] = final_df["biomass_density_adult"] * area
