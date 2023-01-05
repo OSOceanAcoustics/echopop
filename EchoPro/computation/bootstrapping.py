@@ -103,7 +103,7 @@ class Bootstrapping:
 
         # calculate total biomass density
         tot_bio_mass_no_kriging = self.survey.bio_calc.transect_results_gdf[
-            "biomass_density_adult"
+            "biomass"
         ].sum()
 
         # perform CV analysis on data
