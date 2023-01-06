@@ -48,9 +48,7 @@ def get_transect_strata_info_no_kriging(
     )
 
     # store the sum of the biomass for each transect
-    transect_info["biomass"] = (
-        biomass_table["biomass_density_adult"].groupby(level=0).sum()
-    )
+    transect_info["biomass"] = biomass_table["biomass"].groupby(level=0).sum()
 
     # compute the length of each transect
     transect_info["distance"] = transect_info.apply(
