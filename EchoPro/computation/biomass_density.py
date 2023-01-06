@@ -794,13 +794,13 @@ class ComputeBiomassDensity:
         interval = self._get_interval(self.nasc_df)
 
         # calculate the area corresponding to the NASC value
-        area = interval * self.nasc_df["transect_spacing"]
+        final_df["interval_area_nmi2"] = interval * self.nasc_df["transect_spacing"]
 
         # calculate the biomass
-        final_df["biomass"] = final_df["biomass_density_adult"] * area
+        final_df["biomass"] = final_df["biomass_density_adult"] * final_df["interval_area_nmi2"]
         
         # calculate the total number of fish (abundance) in a given area
-        # final_df["abundance"] = numerical_density * area
+        # final_df["abundance"] = numerical_density * final_df["interval_area_nmi2"]
 
         # construct GeoPandas DataFrame to simplify downstream processes
         self.transect_results_gdf = gpd.GeoDataFrame(
