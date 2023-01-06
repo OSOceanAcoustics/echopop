@@ -1,0 +1,15 @@
+# Table of contents
+# Learn more at https://jupyterbook.org/customize/toc.html
+
+format: jb-book
+root: intro
+# TODO: Confirm that the use of "parts" is the currently recommended way
+parts:
+# - file: markdown
+- caption: Notebooks
+  chapters:
+  - file: example_notebooks/echopro_workflow.ipynb
+  - file: example_notebooks/transect_selection_workflow.ipynb
+  - file: example_notebooks/bootstrapping_walkthrough.ipynb
+  - file: example_notebooks/semi_variogram_workflow.ipynb
+  - file: example_notebooks/kriging_mesh_walkthrough.ipynb
