@@ -88,28 +88,28 @@ class Bootstrapping:
 
     def _get_results_for_no_kriging(self) -> List[float]:
         """
-        Obtains the total areal biomass density and associated
+        Obtains the total biomass estimate and associated
         mean Jolly-Hampton CV value for a bootstrapping iteration.
 
         Returns
         -------
-        tot_bio_mass_no_kriging: float
-            The total areal biomass density for data that has not
+        tot_biomass_no_kriging: float
+            The total biomass estimate for data that has not
             been Kriged
         CV_JH_mean_no_kriging: float
             The mean Jolly-Hampton CV value for the data that has not
             been Kriged
         """
 
-        # calculate total biomass density
-        tot_bio_mass_no_kriging = self.survey.bio_calc.transect_results_gdf[
+        # calculate the total biomass estimate
+        tot_biomass_no_kriging = self.survey.bio_calc.transect_results_gdf[
             "biomass"
         ].sum()
 
         # perform CV analysis on data
         CV_JH_mean_no_kriging = self.survey.run_cv_analysis(kriged_data=False)
 
-        return [tot_bio_mass_no_kriging, CV_JH_mean_no_kriging]
+        return [tot_biomass_no_kriging, CV_JH_mean_no_kriging]
 
     def _get_results_for_kriging(
         self, krig_mesh_obj: KrigingMesh, krig: Kriging
