@@ -798,6 +798,9 @@ class ComputeBiomassDensity:
 
         # calculate the biomass
         final_df["biomass"] = final_df["biomass_density_adult"] * area
+        
+        # calculate the total number of fish (abundance) in a given area
+        # final_df["abundance"] = numerical_density * area
 
         # construct GeoPandas DataFrame to simplify downstream processes
         self.transect_results_gdf = gpd.GeoDataFrame(
