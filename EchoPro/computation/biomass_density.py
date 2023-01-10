@@ -665,35 +665,6 @@ class ComputeTransectVariables:
 
         return interval
 
-    # def _get_tot_biomass_density(self, numerical_density: pd.Series) -> np.ndarray:
-    #     """
-    #     Calculates the total areal biomass density
-    #     for each NASC value.
-    #
-    #     Parameters
-    #     ----------
-    #     numerical_density : pd.Series
-    #         Series representing the areal numerical density
-    #
-    #     Returns
-    #     -------
-    #     The total areal biomass density
-    #     """
-    #
-    #     # compute the areal biomass density for males, females, and unsexed
-    #     biomass_density_male = (
-    #         numerical_density_male * bc_expanded_df.averaged_weight_M.values
-    #     )
-    #     biomass_density_female = (
-    #         numerical_density_female * bc_expanded_df.averaged_weight_F.values
-    #     )
-    #     biomass_density_unsexed = (
-    #         numerical_density.values - numerical_density_male - numerical_density_female
-    #     ) * bc_expanded_df.averaged_weight.values
-    #
-    #     # compute the total areal biomass density
-    #     return biomass_density_male + biomass_density_female + biomass_density_unsexed
-
     def _get_age_weight_num_proportions(
         self, df: Union[pd.DataFrame, pd.Series]
     ) -> Tuple[float, float]:
@@ -867,6 +838,14 @@ class ComputeTransectVariables:
             df["numerical_density"].values * bc_expanded_df.F_prop.values
         )
 
+        # compute areal numerical density for adults
+        df["numerical_density_adult"] = (
+            df["numerical_density"]
+            * self.num_fraction_adult_df.loc[
+                self.nasc_df.stratum_num.values
+            ].values.flatten()
+        )
+
     def _set_biomass_density(self, df):
         """
         Calculates and sets the total areal biomass density
@@ -901,7 +880,7 @@ class ComputeTransectVariables:
         ) * bc_expanded_df.averaged_weight.values
 
         # compute the total areal biomass density
-        biomass_density = (
+        df["biomass_density"] = (
             df["biomass_density_male"]
             + df["biomass_density_female"]
             + biomass_density_unsexed
@@ -909,7 +888,32 @@ class ComputeTransectVariables:
 
         # compute the total biomass density for adults
         df["biomass_density_adult"] = (
-            biomass_density
+            df["biomass_density"]
+            * self.weight_fraction_adult_df.loc[
+                self.nasc_df.stratum_num.values
+            ].values.flatten()
+        )
+
+    def _set_biomass(self, df):
+
+        # TODO: document!
+
+        # calculate the biomass
+        df["biomass"] = df["biomass_density_adult"] * df["interval_area_nmi2"]
+
+        biomass_female = df["biomass_density_female"] * df["interval_area_nmi2"]
+
+        biomass_male = df["biomass_density_male"] * df["interval_area_nmi2"]
+
+        df["biomass_female"] = (
+            biomass_female
+            * self.weight_fraction_adult_df.loc[
+                self.nasc_df.stratum_num.values
+            ].values.flatten()
+        )
+
+        df["biomass_male"] = (
+            biomass_male
             * self.weight_fraction_adult_df.loc[
                 self.nasc_df.stratum_num.values
             ].values.flatten()
@@ -938,16 +942,11 @@ class ComputeTransectVariables:
         self._set_numerical_density(final_df)
         self._set_biomass_density(final_df)
 
-        # calculates the interval for the area calculation
-        interval = self._get_interval(self.nasc_df)
-
         # calculate the area corresponding to the NASC value
+        interval = self._get_interval(self.nasc_df)
         final_df["interval_area_nmi2"] = interval * self.nasc_df["transect_spacing"]
 
-        # calculate the biomass
-        final_df["biomass"] = (
-            final_df["biomass_density_adult"] * final_df["interval_area_nmi2"]
-        )
+        self._set_biomass(final_df)
 
         # calculate the abundance in a given area
         abundance = (
