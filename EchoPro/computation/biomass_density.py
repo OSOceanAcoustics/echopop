@@ -705,9 +705,12 @@ class ComputeTransectVariables:
         # compute the total areal biomass density
         return biomass_density_male + biomass_density_female + biomass_density_unsexed
 
-    def _get_age_weight_conversion(self, df: Union[pd.DataFrame, pd.Series]) -> float:
+    def _get_age_weight_num_proportions(
+        self, df: Union[pd.DataFrame, pd.Series]
+    ) -> Tuple[float, float]:
         """
-        Computes the weight of animals in the first age bin.
+        Computes the proportion of animals in a provided age bin for
+        both the weight and number of animals.
 
         Parameters
         ----------
@@ -716,13 +719,18 @@ class ComputeTransectVariables:
 
         Returns
         -------
-        A float value corresponding to the weight for the first age bin.
+        age_len_prop: float
+            The length proportion for a particular age
+        age_wgt_prop
+            The weight proportion for a particular age
 
         Notes
         -----
         The input ``df`` is often a DataFrame, however, when a subset of
         data is selected it can become a Series.
         """
+
+        # TODO: add age_bin_ind as an input here
 
         # account for the case when df is a Series
         if isinstance(df, pd.Series):
@@ -745,18 +753,25 @@ class ComputeTransectVariables:
             input_arr_len[age_bins_ind[0]], self.bio_hake_len_bin
         )
 
-        # weight for the first age bin
-        return (
+        # the length proportion of animals for a given age
+        age_len_prop = len(input_arr_len[age_bins_ind[0]]) / len(input_arr_len)
+
+        # the weight proportion of animals for a given age
+        age_wgt_prop = (
             np.array(
                 [np.sum(input_arr_wgt[age_bins_ind[0][i]]) for i in len_bin_ind]
             ).sum()
             / input_arr_wgt.sum()
         )
 
-    def _get_weight_fraction_adult(self) -> None:
+        # weight for the first age bin
+        return age_len_prop, age_wgt_prop
+
+    def _get_weight_num_fraction_adult(self) -> None:
         """
-        Obtains the multiplier for each stratum to be applied to the total
-        areal biomass density. The weight corresponds to the age 2 weight fraction.
+        Obtains the multipliers for each stratum to be applied to the total
+        areal biomass density and abundance. The values correspond to the
+        age 2 fractions.
         """
 
         # TODO: This is necessary to match the Matlab output
@@ -769,10 +784,18 @@ class ComputeTransectVariables:
         self.weight_fraction_adult_df = pd.DataFrame(
             columns=["val"], index=stratum_ind, dtype=np.float64
         )
+        self.num_fraction_adult_df = pd.DataFrame(
+            columns=["val"], index=stratum_ind, dtype=np.float64
+        )
+
         for i in stratum_ind:
-            self.weight_fraction_adult_df.loc[
-                i
-            ].val = 1.0 - self._get_age_weight_conversion(spec_drop.loc[i])
+
+            age_len_prop, age_wgt_prop = self._get_age_weight_num_proportions(
+                spec_drop.loc[i]
+            )
+
+            self.weight_fraction_adult_df.loc[i].val = 1.0 - age_wgt_prop
+            self.num_fraction_adult_df.loc[i].val = 1.0 - age_len_prop
 
     def _construct_biomass_table(self, biomass_density_adult: np.array) -> None:
         """
@@ -894,7 +917,7 @@ class ComputeTransectVariables:
 
         self._get_biomass_parameters()
 
-        self._get_weight_fraction_adult()
+        self._get_weight_num_fraction_adult()
 
         # fill in missing strata parameters
         self.strata_sig_b = self._fill_missing_strata_indices(
