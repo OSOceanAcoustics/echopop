@@ -8,7 +8,7 @@ import yaml
 
 from .computation import (
     Bootstrapping,
-    ComputeBiomassDensity,
+    ComputeTransectVariables,
     Kriging,
     SemiVariogram,
     krig_param_type,
@@ -314,7 +314,7 @@ class Survey:
         """
 
         self.bio_calc = None
-        self.bio_calc = ComputeBiomassDensity(self)
+        self.bio_calc = ComputeTransectVariables(self)
         self.bio_calc.get_transect_results_gdf(selected_transects)
 
     def run_cv_analysis(

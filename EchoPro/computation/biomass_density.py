@@ -5,7 +5,9 @@ import numpy as np
 import pandas as pd
 
 
-class ComputeBiomassDensity:
+class ComputeTransectVariables:
+    # TODO: once we establish a name here, we need to change it everywhere
+    #  (including this file name) and update all descriptions
     """
     A class that computes the biomass density
     of an animal population based off of NASC
@@ -797,8 +799,10 @@ class ComputeBiomassDensity:
         final_df["interval_area_nmi2"] = interval * self.nasc_df["transect_spacing"]
 
         # calculate the biomass
-        final_df["biomass"] = final_df["biomass_density_adult"] * final_df["interval_area_nmi2"]
-        
+        final_df["biomass"] = (
+            final_df["biomass_density_adult"] * final_df["interval_area_nmi2"]
+        )
+
         # calculate the total number of fish (abundance) in a given area
         # final_df["abundance"] = numerical_density * final_df["interval_area_nmi2"]
 
