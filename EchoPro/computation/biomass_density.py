@@ -797,43 +797,6 @@ class ComputeTransectVariables:
             self.weight_fraction_adult_df.loc[i].val = 1.0 - age_wgt_prop
             self.num_fraction_adult_df.loc[i].val = 1.0 - age_len_prop
 
-    def _construct_biomass_table(self, biomass_density_adult: np.array) -> None:
-        """
-        Constructs self.transect_results_gdf, which
-        contains the areal biomass density for adults.
-
-        Parameters
-        ----------
-        biomass_density_adult : np.array
-            Numpy array of areal biomass density adult
-        """
-
-        # minimal columns to do Jolly Hampton CV on data that has not been kriged
-        final_df = self.nasc_df[
-            ["latitude", "longitude", "stratum_num", "transect_spacing"]
-        ].copy()
-        final_df["biomass_density_adult"] = biomass_density_adult
-
-        # TODO: should we include the below values in the final biomass table?
-        # calculates the interval for the area calculation
-        interval = self._get_interval(self.nasc_df)
-
-        # calculate the area corresponding to the NASC value
-        final_df["interval_area_nmi2"] = interval * self.nasc_df["transect_spacing"]
-
-        # calculate the biomass
-        final_df["biomass"] = (
-            final_df["biomass_density_adult"] * final_df["interval_area_nmi2"]
-        )
-
-        # calculate the total number of fish (abundance) in a given area
-        # final_df["abundance"] = numerical_density * final_df["interval_area_nmi2"]
-
-        # construct GeoPandas DataFrame to simplify downstream processes
-        self.transect_results_gdf = gpd.GeoDataFrame(
-            final_df, geometry=gpd.points_from_xy(final_df.longitude, final_df.latitude)
-        )
-
     def set_class_variables(self, selected_transects: Optional[List] = None) -> None:
         """
         Set class variables corresponding to the Dataframes from ``survey``,
@@ -893,6 +856,72 @@ class ComputeTransectVariables:
             self.specimen_df = self.survey.specimen_df.copy()
             self.nasc_df = self.survey.nasc_df
 
+    def _construct_results_gdf(self) -> None:
+        """
+        Constructs self.transect_results_gdf, which
+        contains the variables such as biomass density,
+        biomass, abundance, and abundance density.
+        """
+
+        # initialize DataFrame using nasc_df variables
+        final_df = self.nasc_df[
+            ["latitude", "longitude", "stratum_num", "transect_spacing"]
+        ].copy()
+
+        # calculate proportion coefficient for mixed species
+        wgt_vals = self.strata_df.reset_index().set_index("haul_num")["fraction_hake"]
+        wgt_vals_ind = wgt_vals.index
+        mix_sa_ratio = self.nasc_df.apply(
+            lambda x: wgt_vals[x.haul_num] if x.haul_num in wgt_vals_ind else 0.0,
+            axis=1,
+        )
+
+        # calculate the areal numerical density
+        numerical_density = np.round(
+            (mix_sa_ratio * self.nasc_df.NASC)
+            / self.strata_sig_b.loc[self.nasc_df.stratum_num].values
+        )
+
+        # total areal biomass density for each numerical_density value
+        biomass_density = self._get_tot_biomass_density(numerical_density)
+
+        # obtain the areal biomass density for adults
+        final_df["biomass_density_adult"] = (
+            biomass_density
+            * self.weight_fraction_adult_df.loc[
+                self.nasc_df.stratum_num.values
+            ].values.flatten()
+        )
+
+        # calculates the interval for the area calculation
+        interval = self._get_interval(self.nasc_df)
+
+        # calculate the area corresponding to the NASC value
+        final_df["interval_area_nmi2"] = interval * self.nasc_df["transect_spacing"]
+
+        # calculate the biomass
+        final_df["biomass"] = (
+            final_df["biomass_density_adult"] * final_df["interval_area_nmi2"]
+        )
+
+        # calculate the abundance in a given area
+        abundance = (
+            mix_sa_ratio * self.nasc_df.NASC * final_df["interval_area_nmi2"]
+        ) / self.strata_sig_b.loc[self.nasc_df.stratum_num].values
+
+        # obtain the abundance for adults
+        final_df["abundance_adult"] = (
+            abundance
+            * self.num_fraction_adult_df.loc[
+                self.nasc_df.stratum_num.values
+            ].values.flatten()
+        )
+
+        # construct GeoPandas DataFrame to simplify downstream processes
+        self.transect_results_gdf = gpd.GeoDataFrame(
+            final_df, geometry=gpd.points_from_xy(final_df.longitude, final_df.latitude)
+        )
+
     def get_transect_results_gdf(
         self, selected_transects: Optional[List] = None
     ) -> None:
@@ -930,29 +959,4 @@ class ComputeTransectVariables:
             df=self.weight_fraction_adult_df.copy()
         )
 
-        # calculate proportion coefficient for mixed species
-        wgt_vals = self.strata_df.reset_index().set_index("haul_num")["fraction_hake"]
-        wgt_vals_ind = wgt_vals.index
-        mix_sa_ratio = self.nasc_df.apply(
-            lambda x: wgt_vals[x.haul_num] if x.haul_num in wgt_vals_ind else 0.0,
-            axis=1,
-        )
-
-        # calculate the areal numerical density
-        numerical_density = np.round(
-            (mix_sa_ratio * self.nasc_df.NASC)
-            / self.strata_sig_b.loc[self.nasc_df.stratum_num].values
-        )
-
-        # total areal biomass density for each numerical_density value
-        biomass_density = self._get_tot_biomass_density(numerical_density)
-
-        # obtain the areal biomass density for adults
-        biomass_density_adult = (
-            biomass_density
-            * self.weight_fraction_adult_df.loc[
-                self.nasc_df.stratum_num.values
-            ].values.flatten()
-        )
-
-        self._construct_biomass_table(biomass_density_adult)
+        self._construct_results_gdf()
