@@ -816,8 +816,26 @@ class ComputeTransectVariables:
             self.specimen_df = self.survey.specimen_df.copy()
             self.nasc_df = self.survey.nasc_df
 
-    def _set_numerical_density(self, df):
-        # TODO: document!
+    def _set_numerical_density(
+        self, df: pd.DataFrame, bc_expanded_df: pd.DataFrame
+    ) -> None:
+        """
+        Calculates numerical density variables (such as numerical density
+        for males and females) and then assigns them to the input
+        DataFrame ``df``.
+
+        Parameters
+        ----------
+        df: pd.DataFrame
+            The DataFrame that should hold the numerical density variables
+        bc_expanded_df: pd.DataFrame
+            An expanded bio parameters dataframe
+
+        Notes
+        -----
+        This function does not return anything, instead, the created
+        variables are directly added to the input DataFrame ``df``.
+        """
 
         # TODO: do we want to change numerical_density to abundance_density?
 
@@ -826,9 +844,6 @@ class ComputeTransectVariables:
             (self.mix_sa_ratio * self.nasc_df.NASC)
             / self.strata_sig_b.loc[self.nasc_df.stratum_num].values
         )
-
-        # expand the bio parameters dataframe so that it corresponds to nasc_df
-        bc_expanded_df = self.bio_param_df.loc[self.nasc_df.stratum_num.values]
 
         # compute the areal numerical density for males and females
         df["numerical_density_male"] = np.round(
@@ -846,25 +861,23 @@ class ComputeTransectVariables:
             ].values.flatten()
         )
 
-    def _set_biomass_density(self, df):
+    def _set_biomass_density(self, df: pd.DataFrame, bc_expanded_df: pd.DataFrame):
         """
-        Calculates and sets the total areal biomass density
-        for each NASC value.
-
+        Calculates total areal biomass density variables for each NASC value
+        and then assigns them to the input DataFrame ``df``.
 
         Parameters
         ----------
-        df
+        df: pd.DataFrame
+            The DataFrame that should hold the biomass density variables
+        bc_expanded_df: pd.DataFrame
+            An expanded bio parameters dataframe
 
-        Returns
-        -------
-
+        Notes
+        -----
+        This function does not return anything, instead, the created
+        variables are directly added to the input DataFrame ``df``.
         """
-
-        # TODO: finish documentation
-
-        # expand the bio parameters dataframe so that it corresponds to nasc_df
-        bc_expanded_df = self.bio_param_df.loc[self.nasc_df.stratum_num.values]
 
         # compute the areal biomass density for males, females, and unsexed
         df["biomass_density_male"] = (
@@ -894,19 +907,31 @@ class ComputeTransectVariables:
             ].values.flatten()
         )
 
-    def _set_abundance(self, df):
-        # TODO: document!
+    def _set_abundance(self, df: pd.DataFrame, bc_expanded_df: pd.DataFrame):
+        """
+        Calculates abundance variables for each NASC value and then assigns
+        them to the input DataFrame ``df``.
 
-        # expand the bio parameters dataframe so that it corresponds to nasc_df
-        bc_expanded_df = self.bio_param_df.loc[self.nasc_df.stratum_num.values]
+        Parameters
+        ----------
+        df: pd.DataFrame
+            The DataFrame that should hold the abundance variables
+        bc_expanded_df: pd.DataFrame
+            An expanded bio parameters dataframe
+
+        Notes
+        -----
+        This function does not return anything, instead, the created
+        variables are directly added to the input DataFrame ``df``.
+        """
 
         # calculate the abundance in a given area
         df["abundance"] = (
             self.mix_sa_ratio * self.nasc_df.NASC * df["interval_area_nmi2"]
         ) / self.strata_sig_b.loc[self.nasc_df.stratum_num].values
 
+        # compute the abundance of males and females
         df["abundance_male"] = df["abundance"] * bc_expanded_df.M_prop.values
-
         df["abundance_female"] = df["abundance"] * bc_expanded_df.F_prop.values
 
         # obtain the abundance for adults
@@ -916,14 +941,12 @@ class ComputeTransectVariables:
                 self.nasc_df.stratum_num.values
             ].values.flatten()
         )
-
         df["abundance_adult_female"] = (
             df["abundance_female"]
             * self.num_fraction_adult_df.loc[
                 self.nasc_df.stratum_num.values
             ].values.flatten()
         )
-
         df["abundance_adult"] = (
             df["abundance"]
             * self.num_fraction_adult_df.loc[
@@ -931,42 +954,52 @@ class ComputeTransectVariables:
             ].values.flatten()
         )
 
-    def _set_biomass(self, df):
+    def _set_biomass(self, df: pd.DataFrame, bc_expanded_df: pd.DataFrame):
+        """
+        Calculates biomass variables for each NASC value and then assigns
+        them to the input DataFrame ``df``.
 
-        # TODO: document!
+        Parameters
+        ----------
+        df: pd.DataFrame
+            The DataFrame that should hold the biomass variables
+        bc_expanded_df: pd.DataFrame
+            An expanded bio parameters dataframe
 
-        # TODO: calculate using abundance!
+        Notes
+        -----
+        This function does not return anything, instead, the created
+        variables are directly added to the input DataFrame ``df``.
 
-        # expand the bio parameters dataframe so that it corresponds to nasc_df
-        bc_expanded_df = self.bio_param_df.loc[self.nasc_df.stratum_num.values]
+        All biomass values are calculated using abundance, instead
+        of using the biomass density.
+        """
 
-        # calculate the biomass
+        # calculate the biomass for males, females, and unsexed
         biomass_female = (
             df["abundance_female"] * bc_expanded_df.averaged_weight_F.values
         )
-
         biomass_male = df["abundance_male"] * bc_expanded_df.averaged_weight_M.values
-
         biomass_unsexed = (
             df["abundance"] - df["abundance_female"] - df["abundance_male"]
         ) * bc_expanded_df.averaged_weight.values
 
+        # compute the total biomass for each NASC value
         biomass = biomass_unsexed + biomass_male + biomass_female
 
+        # obtain the biomass for adults
         df["biomass_female"] = (
             biomass_female
             * self.weight_fraction_adult_df.loc[
                 self.nasc_df.stratum_num.values
             ].values.flatten()
         )
-
         df["biomass_male"] = (
             biomass_male
             * self.weight_fraction_adult_df.loc[
                 self.nasc_df.stratum_num.values
             ].values.flatten()
         )
-
         df["biomass"] = (
             biomass
             * self.weight_fraction_adult_df.loc[
@@ -976,9 +1009,9 @@ class ComputeTransectVariables:
 
     def _construct_results_gdf(self) -> None:
         """
-        Constructs self.transect_results_gdf, which
-        contains the variables such as biomass density,
-        biomass, abundance, and abundance density.
+        Constructs self.transect_results_gdf, which contains the
+        variables such as biomass density, biomass, abundance, and
+        abundance density (numerical density).
         """
 
         # initialize DataFrame using nasc_df variables
@@ -994,11 +1027,14 @@ class ComputeTransectVariables:
             axis=1,
         )
 
-        # TODO: should we just have this here and use it as an input to several functions?
-        # bc_expanded_df = self.bio_param_df.loc[self.nasc_df.stratum_num.values]
+        # expand the bio parameters dataframe so that it corresponds to nasc_df
+        bc_expanded_df = self.bio_param_df.loc[self.nasc_df.stratum_num.values]
 
-        self._set_numerical_density(final_df)
-        self._set_biomass_density(final_df)
+        # calculate and assign numerical density values
+        self._set_numerical_density(final_df, bc_expanded_df)
+
+        # calculate and assign biomass density values
+        self._set_biomass_density(final_df, bc_expanded_df)
 
         # calculate the area corresponding to the NASC value
         final_df["interval"] = self._get_interval(self.nasc_df)
@@ -1006,9 +1042,11 @@ class ComputeTransectVariables:
             final_df["interval"] * self.nasc_df["transect_spacing"]
         )
 
-        self._set_abundance(final_df)
+        # calculate and assign abundance values
+        self._set_abundance(final_df, bc_expanded_df)
 
-        self._set_biomass(final_df)
+        # calculate and assign biomass values
+        self._set_biomass(final_df, bc_expanded_df)
 
         # construct GeoPandas DataFrame to simplify downstream processes
         self.transect_results_gdf = gpd.GeoDataFrame(
