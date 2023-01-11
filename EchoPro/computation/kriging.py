@@ -457,7 +457,7 @@ class Kriging:
         results_gdf["cell_area_nmi2"] = (
             self.survey.params["kriging_A0"] * results_gdf["fraction_cell_in_polygon"]
         )
-        results_gdf["biomass"] = (
+        results_gdf["biomass_adult"] = (
             results_gdf["biomass_density_adult_mean"] * results_gdf["cell_area_nmi2"]
         )
 

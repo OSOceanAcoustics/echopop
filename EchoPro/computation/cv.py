@@ -48,7 +48,9 @@ def get_transect_strata_info_no_kriging(
     )
 
     # store the sum of the biomass for each transect
-    transect_info["biomass"] = biomass_table["biomass"].groupby(level=0).sum()
+    transect_info["biomass_adult"] = (
+        biomass_table["biomass_adult"].groupby(level=0).sum()
+    )
 
     # compute the length of each transect
     transect_info["distance"] = transect_info.apply(
@@ -109,7 +111,7 @@ def get_transect_strata_info_kriged(
 
     # reduce biomass table to only essential columns
     reduced_table = biomass_table[
-        ["centroid_latitude", "centroid_longitude", "biomass"]
+        ["centroid_latitude", "centroid_longitude", "biomass_adult"]
     ].copy()
 
     # number of "virtual transects" within a latitude degree
@@ -130,8 +132,8 @@ def get_transect_strata_info_kriged(
     transect_info = pd.DataFrame(index=uniq_lat_eq_inc, dtype=np.float64)
 
     # store the sum of the biomass for each transect
-    transect_info["biomass"] = (
-        reduced_table["biomass"].groupby(level="lat_eq_inc").sum()
+    transect_info["biomass_adult"] = (
+        reduced_table["biomass_adult"].groupby(level="lat_eq_inc").sum()
     )
 
     # store max and min of the longitude
@@ -233,7 +235,7 @@ def run_jolly_hampton(
 
     # get numpy form of dataframe values, so we can use Numba
     transect_distances = transect_info["distance"].values.flatten()
-    field = transect_info["biomass"].values.flatten()
+    field = transect_info["biomass_adult"].values.flatten()
     num_transects = strata_info["num_transects"].values.flatten()
     strata_nums = strata_info.index.values.to_numpy()
     total_transect_area = strata_info["total_transect_area"].values.flatten()

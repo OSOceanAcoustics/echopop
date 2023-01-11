@@ -666,7 +666,7 @@ class ComputeTransectVariables:
         return interval
 
     def _get_age_weight_num_proportions(
-        self, df: Union[pd.DataFrame, pd.Series]
+        self, df: Union[pd.DataFrame, pd.Series], age_bin_ind: int
     ) -> Tuple[float, float]:
         """
         Computes the proportion of animals in a provided age bin for
@@ -676,6 +676,8 @@ class ComputeTransectVariables:
         ----------
         df : pd.DataFrame or pd.Series
             species_df with NaNs dropped for a particular stratum
+        age_bin_ind: int
+            The age bin index to calculate information for
 
         Returns
         -------
@@ -689,8 +691,6 @@ class ComputeTransectVariables:
         The input ``df`` is often a DataFrame, however, when a subset of
         data is selected it can become a Series.
         """
-
-        # TODO: add age_bin_ind as an input here
 
         # account for the case when df is a Series
         if isinstance(df, pd.Series):
@@ -710,16 +710,21 @@ class ComputeTransectVariables:
 
         # bin those lengths that correspond to the lengths in the first age bin
         len_bin_ind = self._get_bin_ind(
-            input_arr_len[age_bins_ind[0]], self.bio_hake_len_bin
+            input_arr_len[age_bins_ind[age_bin_ind]], self.bio_hake_len_bin
         )
 
         # the length proportion of animals for a given age
-        age_len_prop = len(input_arr_len[age_bins_ind[0]]) / len(input_arr_len)
+        age_len_prop = len(input_arr_len[age_bins_ind[age_bin_ind]]) / len(
+            input_arr_len
+        )
 
         # the weight proportion of animals for a given age
         age_wgt_prop = (
             np.array(
-                [np.sum(input_arr_wgt[age_bins_ind[0][i]]) for i in len_bin_ind]
+                [
+                    np.sum(input_arr_wgt[age_bins_ind[age_bin_ind][i]])
+                    for i in len_bin_ind
+                ]
             ).sum()
             / input_arr_wgt.sum()
         )
@@ -751,11 +756,41 @@ class ComputeTransectVariables:
         for i in stratum_ind:
 
             age_len_prop, age_wgt_prop = self._get_age_weight_num_proportions(
-                spec_drop.loc[i]
+                spec_drop.loc[i], 0
             )
 
             self.weight_fraction_adult_df.loc[i].val = 1.0 - age_wgt_prop
             self.num_fraction_adult_df.loc[i].val = 1.0 - age_len_prop
+
+    def _get_weight_fraction_all_ages(self) -> None:
+        """
+        Obtains the multipliers for each stratum to be applied to the total
+        areal biomass density and abundance. The values correspond to all age bins.
+        """
+
+        # TODO: This is necessary to match the Matlab output
+        #  in theory this should be done when we load the df,
+        #  however, this changes the results slightly.
+        spec_drop = self.specimen_df.dropna(how="any")
+
+        # each stratum's multiplier once areal biomass density has been calculated
+        stratum_ind = spec_drop.index.unique()
+        self.weight_fraction_all_ages_df = pd.DataFrame(
+            columns=["age_bin_" + str(i) for i in range(len(self.bio_hake_age_bin))],
+            index=stratum_ind,
+            dtype=np.float64,
+        )
+
+        for i in stratum_ind:
+
+            # obtain the weight fraction for all age bins and a given stratum
+            for j in range(len(self.bio_hake_age_bin)):
+                _, age_wgt_prop = self._get_age_weight_num_proportions(
+                    spec_drop.loc[i], j
+                )
+                self.weight_fraction_all_ages_df.loc[i][
+                    "age_bin_" + str(j)
+                ] = age_wgt_prop
 
     def set_class_variables(self, selected_transects: Optional[List] = None) -> None:
         """
@@ -978,32 +1013,34 @@ class ComputeTransectVariables:
         """
 
         # calculate the biomass for males, females, and unsexed
-        biomass_female = (
+        df["biomass_female"] = (
             df["abundance_female"] * bc_expanded_df.averaged_weight_F.values
         )
-        biomass_male = df["abundance_male"] * bc_expanded_df.averaged_weight_M.values
+        df["biomass_male"] = (
+            df["abundance_male"] * bc_expanded_df.averaged_weight_M.values
+        )
         biomass_unsexed = (
             df["abundance"] - df["abundance_female"] - df["abundance_male"]
         ) * bc_expanded_df.averaged_weight.values
 
         # compute the total biomass for each NASC value
-        biomass = biomass_unsexed + biomass_male + biomass_female
+        df["biomass"] = biomass_unsexed + df["biomass_male"] + df["biomass_female"]
 
         # obtain the biomass for adults
-        df["biomass_female"] = (
-            biomass_female
+        df["biomass_adult_female"] = (
+            df["biomass_female"]
             * self.weight_fraction_adult_df.loc[
                 self.nasc_df.stratum_num.values
             ].values.flatten()
         )
-        df["biomass_male"] = (
-            biomass_male
+        df["biomass_adult_male"] = (
+            df["biomass_male"]
             * self.weight_fraction_adult_df.loc[
                 self.nasc_df.stratum_num.values
             ].values.flatten()
         )
-        df["biomass"] = (
-            biomass
+        df["biomass_adult"] = (
+            df["biomass"]
             * self.weight_fraction_adult_df.loc[
                 self.nasc_df.stratum_num.values
             ].values.flatten()
@@ -1080,6 +1117,8 @@ class ComputeTransectVariables:
         self._get_biomass_parameters()
 
         self._get_weight_num_fraction_adult()
+
+        self._get_weight_fraction_all_ages()
 
         # fill in missing strata parameters
         self.strata_sig_b = self._fill_missing_strata_indices(
