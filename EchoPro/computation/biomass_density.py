@@ -861,7 +861,9 @@ class ComputeTransectVariables:
             ].values.flatten()
         )
 
-    def _set_biomass_density(self, df: pd.DataFrame, bc_expanded_df: pd.DataFrame):
+    def _set_biomass_density(
+        self, df: pd.DataFrame, bc_expanded_df: pd.DataFrame
+    ) -> None:
         """
         Calculates total areal biomass density variables for each NASC value
         and then assigns them to the input DataFrame ``df``.
@@ -907,7 +909,7 @@ class ComputeTransectVariables:
             ].values.flatten()
         )
 
-    def _set_abundance(self, df: pd.DataFrame, bc_expanded_df: pd.DataFrame):
+    def _set_abundance(self, df: pd.DataFrame, bc_expanded_df: pd.DataFrame) -> None:
         """
         Calculates abundance variables for each NASC value and then assigns
         them to the input DataFrame ``df``.
@@ -954,7 +956,7 @@ class ComputeTransectVariables:
             ].values.flatten()
         )
 
-    def _set_biomass(self, df: pd.DataFrame, bc_expanded_df: pd.DataFrame):
+    def _set_biomass(self, df: pd.DataFrame, bc_expanded_df: pd.DataFrame) -> None:
         """
         Calculates biomass variables for each NASC value and then assigns
         them to the input DataFrame ``df``.
