@@ -29,7 +29,7 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         self.spec_cols = {"haul_num", "species_id", "sex", "length", "weight", "age"}
 
         # expected columns for catch Dataframe
-        self.catch_cols = {"haul_num", "species_id", "count_haul", "weight_haul"}
+        self.catch_cols = {"haul_num", "species_id", "haul_count", "haul_weight"}
 
         # expected columns for haul_to_transect_mapping Dataframe
         self.haul_to_transect_mapping_cols = {"haul_num", "transect_num"}
@@ -249,15 +249,15 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         """
 
         # obtaining those columns that are required
-        df = df[["haul_num", "species_id", "count_haul", "weight_haul"]].copy()
+        df = df[["haul_num", "species_id", "haul_count", "haul_weight"]].copy()
 
         # set data types of dataframe
         df = df.astype(
             {
                 "haul_num": int,
                 "species_id": int,
-                "count_haul": np.float64,
-                "weight_haul": np.float64,
+                "haul_count": np.float64,
+                "haul_weight": np.float64,
             }
         )
 
