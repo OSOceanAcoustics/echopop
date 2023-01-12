@@ -230,18 +230,23 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
 
         return df
 
-    def _process_catch_data(self, df: pd.DataFrame) -> pd.DataFrame:
+    def _process_catch_data(
+        self, df: pd.DataFrame, haul_num_offset: int
+    ) -> pd.DataFrame:
         """
         Processes the catch dataframe by:
         * Obtaining the required columns from the dataframe
         * Extracting only the target species
         * Setting the data type of each column
+        * Applying a haul offset, if necessary
         * Setting the index required for downstream processes
 
         Parameters
         ----------
         df : Pandas Dataframe
             Dataframe holding the catch data
+        haul_num_offset : int
+            The offset that should be applied to the ``haul_num`` column
 
         Returns
         -------
@@ -263,6 +268,9 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
 
         # extract target species
         df = df.loc[df["species_id"] == self.survey.params["species_id"]]
+
+        # Apply haul offset
+        df["haul_num"] = df["haul_num"] + haul_num_offset
 
         # remove species_id column
         df.drop(columns=["species_id"], inplace=True)
@@ -401,12 +409,9 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
             self._check_catch_df(catch_can_df, file_path_can)
 
             # process US and Canada dataframes
-            catch_us_df = self._process_catch_data(catch_us_df)
-            catch_can_df = self._process_catch_data(catch_can_df)
-
-            # apply haul offset to Canada data
-            catch_can_df.index = (
-                catch_can_df.index + self.survey.params["CAN_haul_offset"]
+            catch_us_df = self._process_catch_data(catch_us_df, 0)
+            catch_can_df = self._process_catch_data(
+                catch_can_df, self.survey.params["CAN_haul_offset"]
             )
 
             # Construct full catch dataframe from US and Canada sections
