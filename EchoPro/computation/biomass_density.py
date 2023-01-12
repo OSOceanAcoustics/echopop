@@ -791,13 +791,16 @@ class ComputeBiomassDensity:
 
         # TODO: should we include the below values in the final biomass table?
         # calculates the interval for the area calculation
-        # final_df["interval"] = self._get_interval(self.nasc_df)
+        interval = self._get_interval(self.nasc_df)
 
         # calculate the area corresponding to the NASC value
-        # final_df["Area"] = interval * self.nasc_df['transect_spacing']
+        final_df["interval_area_nmi2"] = interval * self.nasc_df["transect_spacing"]
 
-        # calculate the total number of fish in a given area
-        # final_df["N_A"] = numerical_density * A
+        # calculate the biomass
+        final_df["biomass"] = final_df["biomass_density_adult"] * final_df["interval_area_nmi2"]
+        
+        # calculate the total number of fish (abundance) in a given area
+        # final_df["abundance"] = numerical_density * final_df["interval_area_nmi2"]
 
         # construct GeoPandas DataFrame to simplify downstream processes
         self.transect_results_gdf = gpd.GeoDataFrame(
