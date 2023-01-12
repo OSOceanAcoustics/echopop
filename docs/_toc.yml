@@ -2,8 +2,7 @@
 # Learn more at https://jupyterbook.org/customize/toc.html
 
 format: jb-book
-root: intro
-# TODO: Confirm that the use of "parts" is the currently recommended way
+root: index
 parts:
 # - file: markdown
 - caption: Notebooks
