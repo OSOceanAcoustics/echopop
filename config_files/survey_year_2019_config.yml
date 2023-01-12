@@ -17,6 +17,8 @@
   length_US_sheet: biodata_length
   specimen_US_filename: Biological/US/2019_biodata_specimen_AGES.xlsx
   specimen_US_sheet: biodata_specimen
+  catch_US_filename: Biological/US/2019_biodata_catch.xlsx
+  catch_US_sheet: biodata_catch
 
 
   # File names for the Canada section
@@ -24,6 +26,8 @@
   length_CAN_sheet: biodata_length_CAN
   specimen_CAN_filename: Biological/CAN/2019_biodata_specimen_CAN_AGES.xlsx
   specimen_CAN_sheet: biodata_specimen_CAN
+  catch_CAN_filename: Biological/CAN/2019_biodata_catch_CAN.xlsx
+  catch_CAN_sheet: biodata_catch_CAN
   #####################################################################################################################
 
 
@@ -106,12 +110,10 @@
   # File names for the US section, these variables can be left blank
   filename_trawl_US: Biological/US/2019_biodata_haul.xlsx
   filename_gear_US: Biological/US/2019_biodata_gear.xlsx
-  filename_catch_US: Biological/US/2019_biodata_catch.xlsx
 
   # File names for the Canada section, these variables can be left blank
   filename_trawl_CAN: Biological/CAN/2019_biodata_haul_CAN.xlsx
   filename_gear_CAN: Biological/CAN/2019_biodata_gear_CAN.xlsx
-  filename_catch_CAN: Biological/CAN/2019_biodata_catch_CAN.xlsx
 
   filename_Transect_region_haul_age2: Stratification/US&CAN_2019_transect_region_haul_age2+ auto_20191205.xlsx
   filename_Transect_region_haul_age1: Stratification/US&CAN_2019_transect_region_haul_age1+ auto_final.xlsx
