@@ -36,6 +36,10 @@ class ComputeTransectVariables:
         self.kriging_results_gdf = None
         self.bio_param_df = None  # biomass parameters for each stratum
         self.weight_fraction_adult_df = None
+        self.weight_fraction_all_ages_df = None
+        self.weight_fraction_all_ages_female_df = None
+        self.weight_fraction_all_ages_male_df = None
+        self.num_fraction_adult_df = None
         self.strata_sig_b = None
 
     def _get_strata_sig_b(self) -> None:
@@ -1234,6 +1238,22 @@ class ComputeTransectVariables:
         )
         self.weight_fraction_adult_df = self._fill_missing_strata_indices(
             df=self.weight_fraction_adult_df.copy()
-        )  # TODO: add weight fraction all ages and num fraction adult here too
+        )
+
+        self.weight_fraction_all_ages_df = self._fill_missing_strata_indices(
+            df=self.weight_fraction_all_ages_df.copy()
+        )
+
+        self.weight_fraction_all_ages_female_df = self._fill_missing_strata_indices(
+            df=self.weight_fraction_all_ages_female_df.copy()
+        )
+
+        self.weight_fraction_all_ages_male_df = self._fill_missing_strata_indices(
+            df=self.weight_fraction_all_ages_male_df.copy()
+        )
+
+        self.num_fraction_adult_df = self._fill_missing_strata_indices(
+            df=self.num_fraction_adult_df.copy()
+        )
 
         self._construct_results_gdf()
