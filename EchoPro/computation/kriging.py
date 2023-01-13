@@ -3,6 +3,7 @@ from typing import Callable, Tuple, TypedDict
 import geopandas as gpd
 import numpy as np
 
+from ..computation import ComputeKrigingVariables
 from ..data_loader import KrigingMesh
 from .numba_functions import nb_dis_mat, nb_subtract_outer
 
@@ -462,3 +463,12 @@ class Kriging:
         )
 
         self.survey.bio_calc.kriging_results_gdf = results_gdf
+
+    def compute_kriging_variables(self) -> None:
+        """
+        Computes
+        TODO: fill in docstring with appropriate information!
+        """
+
+        self.krig_bio_calc = None
+        self.krig_bio_calc = ComputeKrigingVariables(self)
