@@ -3,8 +3,8 @@ from typing import Callable, Tuple, TypedDict
 import geopandas as gpd
 import numpy as np
 
-from ..computation import ComputeKrigingVariables
 from ..data_loader import KrigingMesh
+from .kriging_variables import ComputeKrigingVariables
 from .numba_functions import nb_dis_mat, nb_subtract_outer
 
 # define the Kriging parameter input types

@@ -12,7 +12,7 @@ class ComputeKrigingVariables:
 
     Parameters
     ----------
-    Krig : ComputeKrigingVariables
+    krig : ComputeKrigingVariables
         An initialized ComputeKrigingVariables object. Note that any change to
         self.krig will also change this object.
     """
@@ -126,6 +126,10 @@ class ComputeKrigingVariables:
                 "len_age_weight_prop_F": ("stratum", np.zeros(len(stratum_ind))),
                 "aged_proportion": ("stratum", np.zeros(len(stratum_ind))),
                 "unaged_proportion": ("stratum", np.zeros(len(stratum_ind))),
+                "weight_len_all_normalized": (
+                    ["stratum", "len_bin"],
+                    np.zeros((len(stratum_ind), len(len_bin))),
+                ),
                 "len_age_dist_all": (
                     ["stratum", "len_bin", "age_bin"],
                     np.zeros((len(stratum_ind), len(len_bin), len(age_bin))),
@@ -171,7 +175,7 @@ class ComputeKrigingVariables:
         )
 
         # a mapping of hauls to strata
-        haul_vs_stratum = self.krig.survey.strata_df.reset_index()[
+        haul_vs_stratum = self.krig.survey.bio_calc.strata_df.reset_index()[
             ["haul_num", "stratum_num"]
         ]
 
@@ -191,18 +195,11 @@ class ComputeKrigingVariables:
             ],
         )
 
-        # len_wgt_all = self.krig.survey.bio_calc._generate_length_val_conversion(
-        #     len_name="length",
-        #     val_name="weight",
-        #     df=self.krig.survey.bio_calc.specimen_df[
-        #         self.krig.survey.bio_calc.specimen_df["sex"] == 1
-        #         ] + self.krig.survey.bio_calc.specimen_df[
-        #         self.krig.survey.bio_calc.specimen_df["sex"] == 2
-        #         ],
-        # )
-
-        # print(len_wgt_M)
-        # print(len_wgt_F)
+        len_wgt_all = self.krig.survey.bio_calc._generate_length_val_conversion(
+            len_name="length",
+            val_name="weight",
+            df=self.krig.survey.bio_calc.specimen_df,
+        )
 
         for i in stratum_ind:
 
@@ -222,7 +219,9 @@ class ComputeKrigingVariables:
 
             wgt_station_1 = np.array(
                 [
-                    self.krig.survey.catch_df.loc[j]["haul_weight"].sum()
+                    self.krig.survey.catch_df.loc[j][
+                        "haul_weight"
+                    ].sum()  # TODO: make catch_df a bio_calc variable?
                     for j in haul_nums
                 ]
             ).sum()
@@ -309,6 +308,33 @@ class ComputeKrigingVariables:
                 ).sum()
             else:
                 female_wgt = 0.0
+
+            hauls_in_all = [
+                j for j in haul_nums if j in self.krig.survey.length_df.index
+            ]
+
+            # print(hauls_in_all)
+
+            if hauls_in_all:
+
+                len_dist_station1_normalized = (
+                    self.krig.survey.bio_calc._get_distribution_lengths_station_1(
+                        self.krig.survey.length_df.loc[hauls_in_all]
+                    )
+                )
+
+                weight_len_all = len_wgt_all * len_dist_station1_normalized
+
+                # normalized weight per unit length distribution
+                ds.sel(stratum=i).weight_len_all_normalized[:] = (
+                    weight_len_all / weight_len_all.sum()
+                )
+
+            else:
+
+                ds.sel(stratum=i).weight_len_all_normalized[:] = 0.0
+
+            # print(" ")
 
             print(f"male_wgt = {male_wgt}")
             print(f"female_wgt = {female_wgt}")
