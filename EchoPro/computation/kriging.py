@@ -2,6 +2,7 @@ from typing import Callable, Tuple, TypedDict
 
 import geopandas as gpd
 import numpy as np
+import pandas as pd
 
 from ..data_loader import KrigingMesh
 from .kriging_variables import ComputeKrigingVariables
@@ -450,11 +451,25 @@ class Kriging:
             ].values.flatten(),
         )
 
-        # collect all important Kriging results
+        # add corresponding mesh variables
         results_gdf = krig_mesh.mesh_gdf.copy()
+
+        # add the stratum number to the results
+        results_gdf["stratum_num"] = pd.cut(
+            results_gdf["centroid_latitude"],
+            bins=[0.0]
+            + list(self.survey.geo_strata_df["Latitude (upper limit)"])
+            + [90.0],
+            labels=list(self.survey.geo_strata_df["stratum_num"]) + [1],
+            ordered=False,
+        )
+
+        # add all important Kriging results
         results_gdf["biomass_density_adult_mean"] = field_mean_arr
         results_gdf["biomass_density_adult_var"] = field_var_arr
         results_gdf["biomass_density_adult_samplevar"] = field_samplevar_arr
+
+        # add area and biomass results
         results_gdf["cell_area_nmi2"] = (
             self.survey.params["kriging_A0"] * results_gdf["fraction_cell_in_polygon"]
         )

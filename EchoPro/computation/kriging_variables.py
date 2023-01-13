@@ -339,6 +339,10 @@ class ComputeKrigingVariables:
             print(f"male_wgt = {male_wgt}")
             print(f"female_wgt = {female_wgt}")
 
+        return ds
+
+    def set_variables(self, ds):
+
         ds["dist_weight_M"] = (
             ds.len_age_weight_dist_M_normalized * ds.len_age_weight_prop_M
         )
@@ -346,4 +350,48 @@ class ComputeKrigingVariables:
             ds.len_age_weight_dist_F_normalized * ds.len_age_weight_prop_F
         )
 
-        return ds
+        aged_prop_mesh = ds.aged_proportion.sel(
+            stratum=self.krig.survey.bio_calc.kriging_results_gdf["stratum_num"].values
+        ).values
+        # len_age_wgt_norm_mesh = ds.len_age_weight_dist_all_normalized.sel(
+        # stratum=krig_results["stratum_num"].values).values
+        unaged_prop_mesh = ds.unaged_proportion.sel(
+            stratum=self.krig.survey.bio_calc.kriging_results_gdf["stratum_num"].values
+        ).values
+
+        # TODO: in Chu's current calculation there is a normalized term that is summed
+        #  and included in the below expression as it is normalized this sum will always be one
+        Wgt_len_age_ALL_ii = (
+            self.krig.survey.bio_calc.kriging_results_gdf["biomass_density_adult_mean"]
+            * aged_prop_mesh
+            * 1.0
+            * self.krig.survey.bio_calc.kriging_results_gdf["cell_area_nmi2"]
+        )
+        Wgt_len_ALL_ii = (
+            self.krig.survey.bio_calc.kriging_results_gdf["biomass_density_adult_mean"]
+            * unaged_prop_mesh
+            * 1.0
+            * self.krig.survey.bio_calc.kriging_results_gdf["cell_area_nmi2"]
+        )
+
+        # expand the bio parameters dataframe so that it corresponds to nasc_df
+        averaged_weight_expanded = (
+            self.krig.survey.bio_calc.bio_param_df.averaged_weight.loc[
+                self.krig.survey.bio_calc.kriging_results_gdf["stratum_num"].values
+            ]
+        )
+
+        self.krig.survey.bio_calc.kriging_results_gdf["abundance"] = (
+            Wgt_len_age_ALL_ii + Wgt_len_ALL_ii
+        ) / averaged_weight_expanded.values
+
+        self.krig.survey.bio_calc.kriging_results_gdf[
+            "sig_b"
+        ] = self.krig.survey.bio_calc.strata_sig_b.loc[
+            self.krig.survey.bio_calc.kriging_results_gdf["stratum_num"].values
+        ].values
+
+        self.krig.survey.bio_calc.kriging_results_gdf["NASC"] = (
+            self.krig.survey.bio_calc.kriging_results_gdf["abundance"]
+            * self.krig.survey.bio_calc.kriging_results_gdf["sig_b"]
+        )
