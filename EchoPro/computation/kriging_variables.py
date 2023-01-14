@@ -126,6 +126,8 @@ class ComputeKrigingVariables:
                 "len_age_weight_prop_F": ("stratum", np.zeros(len(stratum_ind))),
                 "aged_proportion": ("stratum", np.zeros(len(stratum_ind))),
                 "unaged_proportion": ("stratum", np.zeros(len(stratum_ind))),
+                "unaged_M_wgt_proportion": ("stratum", np.zeros(len(stratum_ind))),
+                "unaged_F_wgt_proportion": ("stratum", np.zeros(len(stratum_ind))),
                 "weight_len_all_normalized": (
                     ["stratum", "len_bin"],
                     np.zeros((len(stratum_ind), len(len_bin))),
@@ -336,19 +338,54 @@ class ComputeKrigingVariables:
 
             # print(" ")
 
-            print(f"male_wgt = {male_wgt}")
-            print(f"female_wgt = {female_wgt}")
+            if (male_wgt != 0.0) and (female_wgt != 0.0):
+                nM_wgt1 = wgt_station_1 * male_wgt / (male_wgt + female_wgt)
+                nF_wgt1 = wgt_station_1 * female_wgt / (male_wgt + female_wgt)
+            else:
+                nM_wgt1 = 0.0
+                nF_wgt1 = 0.0
+
+            # print(f"male_wgt = {male_wgt}")
+            # print(f"female_wgt = {female_wgt}")
+
+            Len_M_wgt_proportion = nM_wgt1 / ds.total_weight.sel(stratum=i).values
+
+            Len_F_wgt_proportion = nF_wgt1 / ds.total_weight.sel(stratum=i).values
+
+            # print(f"nM_wgt1 = {nM_wgt1}")
+            # print(f"nF_wgt1 = {nF_wgt1}")
+
+            # print(f"Len_M_wgt_proportion = {Len_M_wgt_proportion}")
+            # print(f"Len_F_wgt_proportion = {Len_F_wgt_proportion} \n")
+
+            if (Len_M_wgt_proportion == 0.0) and (Len_F_wgt_proportion == 0.0):
+                M_proportion = 0.5
+                F_proportion = 0.5
+            else:
+                M_proportion = Len_M_wgt_proportion / (
+                    Len_M_wgt_proportion + Len_F_wgt_proportion
+                )
+                F_proportion = Len_F_wgt_proportion / (
+                    Len_M_wgt_proportion + Len_F_wgt_proportion
+                )
+
+            ds.unaged_M_wgt_proportion.loc[i] = (
+                ds.unaged_proportion.loc[i].values * M_proportion
+            )
+            ds.unaged_F_wgt_proportion.loc[i] = (
+                ds.unaged_proportion.loc[i].values * F_proportion
+            )
 
         return ds
 
     def set_variables(self, ds):
 
-        ds["dist_weight_M"] = (
+        ds["dist_weight_M_sum"] = (
             ds.len_age_weight_dist_M_normalized * ds.len_age_weight_prop_M
-        )
-        ds["dist_weight_F"] = (
+        ).sum(dim=["len_bin", "age_bin"])
+        ds["dist_weight_F_sum"] = (
             ds.len_age_weight_dist_F_normalized * ds.len_age_weight_prop_F
-        )
+        ).sum(dim=["len_bin", "age_bin"])
 
         aged_prop_mesh = ds.aged_proportion.sel(
             stratum=self.krig.survey.bio_calc.kriging_results_gdf["stratum_num"].values
@@ -374,6 +411,10 @@ class ComputeKrigingVariables:
             * self.krig.survey.bio_calc.kriging_results_gdf["cell_area_nmi2"]
         )
 
+        self.krig.survey.bio_calc.kriging_results_gdf["test"] = (
+            Wgt_len_age_ALL_ii + Wgt_len_ALL_ii
+        )
+
         # expand the bio parameters dataframe so that it corresponds to nasc_df
         averaged_weight_expanded = (
             self.krig.survey.bio_calc.bio_param_df.averaged_weight.loc[
@@ -395,3 +436,5 @@ class ComputeKrigingVariables:
             self.krig.survey.bio_calc.kriging_results_gdf["abundance"]
             * self.krig.survey.bio_calc.kriging_results_gdf["sig_b"]
         )
+
+        # ds["dist_weight_M_sum"]
