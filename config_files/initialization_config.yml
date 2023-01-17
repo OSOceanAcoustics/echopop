@@ -15,8 +15,8 @@
 
   bio_hake_age_bin: [                   # age sequence array: year - age  1-20
                   1,                    # start of sequence
-                  20,                   # end of sequence
-                  20                    # number of points in the sequence
+                  22,                   # end of sequence
+                  22                    # number of points in the sequence
   ]
   #####################################################################################################################
 
