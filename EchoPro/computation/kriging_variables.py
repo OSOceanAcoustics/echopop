@@ -1,3 +1,5 @@
+from typing import List
+
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -22,92 +24,109 @@ class ComputeKrigingVariables:
         self.krig = krig
 
     @staticmethod
-    def _get_bin_ind(
-        input_data: np.ndarray, centered_bins: np.ndarray
-    ) -> list:  # List[np.ndarray]:
+    def _get_bin_ind(input_data: np.ndarray, bin_edges: np.ndarray) -> List[np.ndarray]:
         """
-        This function manually computes bin counts given ``input_data``. This
-        function is computing the histogram of ``input_data`` using
-        bins that are centered, rather than bins that are on the edge.
-        The first value is between negative infinity and the first bin
-        center plus the bin width divided by two. The last value is
-        between the second to last bin center plus the bin width
-        divided by two to infinity.
-
+        This function manually finds those indices in ``input_data``
+        that are in each bin.
 
         Parameters
         ----------
         input_data: np.ndarray
-            The data to create a histogram of.
-        centered_bins: np.ndarray
-            An array that specifies the bin centers.
+            The data to bin
+        bin_edges: np.ndarray
+            An array that specifies the bin edges.
 
         Returns
         -------
         hist_ind: list
-            The index values of input_data corresponding to the histogram
+            The index values of ``input_data`` corresponding to the histogram
 
+        Notes
+        -----
+        The construction of the bin counts differs from the method
+        produced in `biomass_desnity.py`. This is because the Matlab
+        version of EchoPro is inconsistent in how it is binning.
         """
 
-        # fill the first bin
-        hist_ind = []  # np.argwhere(input_data < centered_bins[0]).flatten()]
+        # initialize list that will hold the indices
+        hist_ind = []
 
-        for i in range(len(centered_bins) - 1):
-            # get values greater than lower bound
-            g_lb = centered_bins[i] <= input_data
+        for i in range(len(bin_edges) - 1):
 
-            # get values less than or equal to the upper bound
-            le_ub = input_data < centered_bins[i + 1]
+            # get values greater or equal than lower bound
+            g_lb = bin_edges[i] <= input_data
+
+            # get values less than the upper bound
+            le_ub = input_data < bin_edges[i + 1]
 
             # fill bin
             hist_ind.append(np.argwhere(g_lb & le_ub).flatten())
 
         # fill in the last bin
-        hist_ind.append(np.argwhere(input_data >= centered_bins[-1]).flatten())
+        hist_ind.append(np.argwhere(input_data >= bin_edges[-1]).flatten())
 
         return hist_ind
 
     @staticmethod
     def _get_bin_ind_age(
-        input_data: np.ndarray, centered_bins: np.ndarray
-    ) -> list:  # List[np.ndarray]:
+        input_data: np.ndarray, age_bins: np.ndarray
+    ) -> List[np.ndarray]:
         """
-        This function manually computes bin counts given ``input_data``. This
-        function is computing the histogram of ``input_data`` using
-        bins that are centered, rather than bins that are on the edge.
-        The first value is between negative infinity and the first bin
-        center plus the bin width divided by two. The last value is
-        between the second to last bin center plus the bin width
-        divided by two to infinity.
+        This function manually finds the indices of ``input_data``
+        for each age bin. An age bin here is described as all values
+        equal to the provided age
 
 
         Parameters
         ----------
         input_data: np.ndarray
-            The data to create a histogram of.
-        centered_bins: np.ndarray
-            An array that specifies the bin centers.
+            The data to bin
+        age_bins: np.ndarray
+            An array that specifies the age for each bin
 
         Returns
         -------
         hist_ind: list
-            The index values of input_data corresponding to the histogram
+            The index values of ``input_data`` corresponding to the histogram
 
+        Notes
+        -----
+        The construction of the bin counts differs from the method
+        produced in `biomass_desnity.py`. This is because the Matlab
+        version of EchoPro is inconsistent in how it is binning ages.
         """
 
-        # fill the first bin
-        hist_ind = []  # np.argwhere(input_data < centered_bins[0]).flatten()]
+        # initialize list that will hold indices
+        hist_ind = []
 
-        for i in centered_bins:
+        for age in age_bins:
 
-            cond = input_data == i
-
-            # fill bin
-            hist_ind.append(np.argwhere(cond).flatten())
+            # determine indices with a value equal to age
+            hist_ind.append(np.argwhere(input_data == age).flatten())
 
         return hist_ind
 
-    def _set_len_age_distribution_data(self, stratum, ds, df_M, df_F):
+    def _set_age_distribution_data(
+        self, stratum: int, ds: xr.Dataset, df_M: pd.DataFrame, df_F: pd.DataFrame
+    ) -> None:
+        """
+        Computes distributions for each age using the input DataFrames.
+        Additionally, assigns these computed quantities to the Dataset ``ds``.
+
+        Parameters
+        ----------
+        stratum: int
+            The stratum corresponding to the input data (used when
+            assigning values to ``ds``)
+        ds: xr.Dataset
+            The Dataset where computed quantities should be assigned to
+        df_M: pd.DataFrame
+            A DataFrame specifying length, age, and weight measurements
+            of a male animal within a stratum
+        df_F: pd.DataFrame
+            A DataFrame specifying length, age, and weight measurements
+            of a female animal within a stratum
+        """
 
         # account for the case when df is a Series
         if isinstance(df_M, pd.Series):
@@ -131,14 +150,8 @@ class ComputeKrigingVariables:
             input_arr_wgt_F = df_F.weight.values
 
         # bin the ages
-        # age_bins_ind_M = self.krig.survey.bio_calc._get_bin_ind(
-        #     input_arr_age_M, self.krig.survey.bio_calc.bio_hake_age_bin
-        # )
-        # age_bins_ind_F = self.krig.survey.bio_calc._get_bin_ind(
-        #     input_arr_age_F, self.krig.survey.bio_calc.bio_hake_age_bin
-        # )
-
-        # TODO: binning is occurring differently than in biomass_denisty.py!
+        # TODO: binning is occurring differently than in biomass_denisty.py! It may be
+        #  better and more consistent to use the function self.krig.survey.bio_calc._get_bin_ind
         age_bins_ind_M = self._get_bin_ind_age(
             input_arr_age_M, self.krig.survey.bio_calc.bio_hake_age_bin
         )
@@ -146,23 +159,26 @@ class ComputeKrigingVariables:
             input_arr_age_F, self.krig.survey.bio_calc.bio_hake_age_bin
         )
 
+        # round input lengths
+        # TODO: this is necessary to match the Matlab output and may not be necessary!
         input_arr_len_M = np.round(input_arr_len_M)
         input_arr_len_F = np.round(input_arr_len_F)
 
+        # compute distributions for each age bin
         for age_bin in range(len(age_bins_ind_M)):
+
             # bin those lengths that correspond to the lengths in the given age bin
             # TODO: binning is occurring differently than in biomass_denisty.py!
             len_bin_ind_M = self._get_bin_ind(
                 input_arr_len_M[age_bins_ind_M[age_bin]],
                 self.krig.survey.bio_calc.bio_hake_len_bin,
             )
-
             len_bin_ind_F = self._get_bin_ind(
                 input_arr_len_F[age_bins_ind_F[age_bin]],
                 self.krig.survey.bio_calc.bio_hake_len_bin,
             )
 
-            # get the distribution of weight for males using the length, age, weight data
+            # get the distribution of weight for a particular age bin
             ds.sel(stratum=stratum).len_age_weight_dist_M[:, age_bin] = np.array(
                 [
                     np.sum(input_arr_wgt_M[age_bins_ind_M[age_bin]][i])
@@ -182,6 +198,7 @@ class ComputeKrigingVariables:
                 + ds.sel(stratum=stratum).len_age_weight_dist_F[:, age_bin]
             )
 
+            # get the distribution of lengths for a particular age bin
             ds.sel(stratum=stratum).len_age_dist_M[:, age_bin] = np.array(
                 [len(i) for i in len_bin_ind_M]
             )
@@ -311,7 +328,7 @@ class ComputeKrigingVariables:
             ds.num_M.loc[i] = len(spec_drop_M.loc[i])
             ds.num_F.loc[i] = len(spec_drop_F.loc[i])
 
-            self._set_len_age_distribution_data(
+            self._set_age_distribution_data(
                 stratum=i,
                 ds=ds,
                 df_M=spec_drop_M.loc[i],
