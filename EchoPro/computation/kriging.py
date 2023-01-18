@@ -57,6 +57,7 @@ class Kriging:
     ):
 
         self.survey = survey
+        self.krig_bio_calc = None
 
         # Kriging parameters
         self.k_max = k_max
@@ -481,15 +482,17 @@ class Kriging:
 
     def compute_kriging_variables(self) -> None:
         """
-        Computes
-        TODO: fill in docstring with appropriate information!
+        Computes useful variables corresponding to values at each
+        Kriging mesh point and assigns them to the GeoDataFrame
+        ``self.survey.bio_calc.kriging_results_gdf``. For example,
+        computes the ``abundance`` at each Kriging mesh point.
         """
 
-        self.krig_bio_calc = None
+        # initialize class object
         self.krig_bio_calc = ComputeKrigingVariables(self)
 
-        # generate Dataset containing useful variables
-        ds = self.krig_bio_calc._generate_len_age_distributions()
+        # generate Dataset containing useful parameters
+        ds = self.krig_bio_calc._generate_parameter_ds()
 
         # calculate and assign variables to Kriging results GeoDataFrame
         self.krig_bio_calc.set_variables(ds)

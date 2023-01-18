@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple
 
 import numpy as np
 import pandas as pd
@@ -106,6 +106,136 @@ class ComputeKrigingVariables:
 
         return hist_ind
 
+    @staticmethod
+    def _initialize_ds(
+        stratum_ind: np.ndarray, len_bin: np.ndarray, age_bin: np.ndarray
+    ) -> xr.Dataset:
+        """
+        Initializes the parameter Dataset.
+
+        Parameters
+        ----------
+        stratum_ind: np.ndarray
+            A one dimensional array specifying all strata values
+        len_bin: np.ndarray
+            A one dimensional array specifying the length bin values
+        age_bin: np.ndarray
+            A one dimensional array specifying all age bin values
+
+        Returns
+        -------
+        ds: xr.Dataset
+            The parameter Dataset with all variables initialized
+        """
+
+        # initialize Dataset that will hold length age distributions
+        ds = xr.Dataset(
+            data_vars={
+                "num_M": ("stratum", np.zeros(len(stratum_ind))),
+                "num_F": ("stratum", np.zeros(len(stratum_ind))),
+                "total_weight": ("stratum", np.zeros(len(stratum_ind))),
+                "len_age_weight_prop_all": ("stratum", np.zeros(len(stratum_ind))),
+                "len_age_weight_prop_M": ("stratum", np.zeros(len(stratum_ind))),
+                "len_age_weight_prop_F": ("stratum", np.zeros(len(stratum_ind))),
+                "aged_proportion": ("stratum", np.zeros(len(stratum_ind))),
+                "unaged_proportion": ("stratum", np.zeros(len(stratum_ind))),
+                "unaged_M_wgt_proportion": ("stratum", np.zeros(len(stratum_ind))),
+                "unaged_F_wgt_proportion": ("stratum", np.zeros(len(stratum_ind))),
+                "weight_len_all_normalized": (
+                    ["stratum", "len_bin"],
+                    np.zeros((len(stratum_ind), len(len_bin))),
+                ),
+                "len_age_dist_all": (
+                    ["stratum", "len_bin", "age_bin"],
+                    np.zeros((len(stratum_ind), len(len_bin), len(age_bin))),
+                ),
+                "len_age_dist_M": (
+                    ["stratum", "len_bin", "age_bin"],
+                    np.zeros((len(stratum_ind), len(len_bin), len(age_bin))),
+                ),
+                "len_age_dist_F": (
+                    ["stratum", "len_bin", "age_bin"],
+                    np.zeros((len(stratum_ind), len(len_bin), len(age_bin))),
+                ),
+                "len_age_weight_dist_all": (
+                    ["stratum", "len_bin", "age_bin"],
+                    np.zeros((len(stratum_ind), len(len_bin), len(age_bin))),
+                ),
+                "len_age_weight_dist_M": (
+                    ["stratum", "len_bin", "age_bin"],
+                    np.zeros((len(stratum_ind), len(len_bin), len(age_bin))),
+                ),
+                "len_age_weight_dist_F": (
+                    ["stratum", "len_bin", "age_bin"],
+                    np.zeros((len(stratum_ind), len(len_bin), len(age_bin))),
+                ),
+                "len_age_weight_dist_all_normalized": (
+                    ["stratum", "len_bin", "age_bin"],
+                    np.zeros((len(stratum_ind), len(len_bin), len(age_bin))),
+                ),
+                "len_age_weight_dist_M_normalized": (
+                    ["stratum", "len_bin", "age_bin"],
+                    np.zeros((len(stratum_ind), len(len_bin), len(age_bin))),
+                ),
+                "len_age_weight_dist_F_normalized": (
+                    ["stratum", "len_bin", "age_bin"],
+                    np.zeros((len(stratum_ind), len(len_bin), len(age_bin))),
+                ),
+            },
+            coords={
+                "stratum": ("stratum", stratum_ind),
+                "len_bin": ("len_bin", len_bin),
+                "age_bin": ("age_bin", age_bin),
+            },
+        )
+
+        return ds
+
+    def _get_len_wgt_distributions(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """
+        Computes the length-weight distributions for each gender
+        and all animals using the specimen data
+
+        Returns
+        -------
+        len_wgt_M: np.ndarray
+            The length-weight distribution for males
+        len_wgt_F: np.ndarray
+            The length-weight distribution for females
+        len_wgt_all: np.ndarray
+            The length-weight distribution for all genders
+
+        Notes
+        -----
+        These calculations use all specimen data, rather than the
+        specimen data with NA values dropped. This is necessary to
+        match the Matlab output.
+        """
+
+        len_wgt_M = self.krig.survey.bio_calc._generate_length_val_conversion(
+            len_name="length",
+            val_name="weight",
+            df=self.krig.survey.bio_calc.specimen_df[
+                self.krig.survey.bio_calc.specimen_df["sex"] == 1
+            ],
+        )
+
+        len_wgt_F = self.krig.survey.bio_calc._generate_length_val_conversion(
+            len_name="length",
+            val_name="weight",
+            df=self.krig.survey.bio_calc.specimen_df[
+                self.krig.survey.bio_calc.specimen_df["sex"] == 2
+            ],
+        )
+
+        len_wgt_all = self.krig.survey.bio_calc._generate_length_val_conversion(
+            len_name="length",
+            val_name="weight",
+            df=self.krig.survey.bio_calc.specimen_df,
+        )
+
+        return len_wgt_M, len_wgt_F, len_wgt_all
+
     def _set_age_distribution_data(
         self, stratum: int, ds: xr.Dataset, df_M: pd.DataFrame, df_F: pd.DataFrame
     ) -> None:
@@ -212,122 +342,336 @@ class ComputeKrigingVariables:
                 + ds.sel(stratum=stratum).len_age_dist_F[:, age_bin]
             )
 
-    def _generate_len_age_distributions(self):
+        # obtain normalized distributions
+        ds.sel(stratum=stratum).len_age_weight_dist_all_normalized[
+            :, :
+        ] = ds.len_age_weight_dist_all.sel(stratum=stratum) / np.nansum(
+            ds.len_age_weight_dist_all.sel(stratum=stratum)
+        )
 
+        ds.sel(stratum=stratum).len_age_weight_dist_M_normalized[
+            :, :
+        ] = ds.len_age_weight_dist_M.sel(stratum=stratum) / np.nansum(
+            ds.len_age_weight_dist_M.sel(stratum=stratum)
+        )
+
+        ds.sel(stratum=stratum).len_age_weight_dist_F_normalized[
+            :, :
+        ] = ds.len_age_weight_dist_F.sel(stratum=stratum) / np.nansum(
+            ds.len_age_weight_dist_F.sel(stratum=stratum)
+        )
+
+    def _set_total_weight(
+        self, haul_nums: np.ndarray, stratum: int, ds: xr.Dataset
+    ) -> float:
+        """
+        Computes the total weight within the stratum using data from
+        both stations. Additionally, assigns the variable ``total_weight``
+        to ``ds``.
+
+        Parameters
+        ----------
+        haul_nums: np.ndarray
+            A one dimensional array of haul numbers within the stratum
+            under consideration
+        stratum: int
+            The stratum corresponding to the input data (used when
+            assigning values to ``ds``)
+        ds: xr.Dataset
+            The Dataset where computed quantities should be assigned to
+
+        Returns
+        -------
+        wgt_station_1: float
+            The total weight at station 1 for the stratum
+        """
+
+        # calculate the total weight within the stratum for station 1
+        wgt_station_1 = np.array(
+            [
+                self.krig.survey.catch_df.loc[j][
+                    "haul_weight"
+                ].sum()  # TODO: make catch_df a bio_calc variable?
+                for j in haul_nums
+                if (j in self.krig.survey.catch_df.index)
+                and (j in self.krig.survey.length_df.index)
+            ]
+        ).sum()
+
+        # calculate the total weight within the stratum for station 2
+        wgt_station_2 = self.krig.survey.bio_calc.specimen_df.loc[stratum][
+            "weight"
+        ].sum()
+
+        # the total weight within the stratum
+        ds.total_weight.loc[stratum] = wgt_station_1 + wgt_station_2
+
+        return wgt_station_1
+
+    @staticmethod
+    def _get_length_based_wgt_interp(
+        haul_nums: np.ndarray,
+        df: pd.DataFrame,
+        len_bin: np.ndarray,
+        len_wgt: np.ndarray,
+    ) -> float:
+        """
+        Obtains the weight of animals within a stratum using ``length_df``
+        data and interpolation.
+
+        Parameters
+        ----------
+        haul_nums: np.ndarray
+            A one dimensional array of haul numbers within the stratum
+            under consideration
+        df: pd.DataFrame
+            A DataFrame containing data from ``length_df``
+        len_bin: np.ndarray
+            Length bin values
+        len_wgt: np.ndarray
+            The length-weight distribution corresponding to ``df``
+
+        Returns
+        -------
+        final_wgt: float
+            The total weight of animals within the stratum
+        """
+
+        # initialize weight value
+        final_wgt = 0.0
+
+        # obtain the hauls that are within df
+        len_haul = [round(df.loc[j]["length"]) for j in haul_nums if j in df.index]
+
+        if len_haul:
+
+            # get the number of lengths for each haul
+            len_haul_M_counts = np.concatenate(
+                [df.loc[j]["length_count"].values for j in haul_nums if j in df.index]
+            )
+
+            # calculate the weight of animals within the stratum
+            len_haul_M = np.concatenate(len_haul)
+            final_wgt = (
+                np.interp(len_haul_M, len_bin, len_wgt) * len_haul_M_counts
+            ).sum()
+
+        return final_wgt
+
+    def _get_length_df_based_wgt(
+        self,
+        stratum: int,
+        ds: xr.Dataset,
+        haul_nums: np.ndarray,
+        length_df_M: pd.DataFrame,
+        length_df_F: pd.DataFrame,
+        len_bin: np.ndarray,
+        len_wgt_M: np.ndarray,
+        len_wgt_F: np.ndarray,
+        len_wgt_all: np.ndarray,
+    ) -> Tuple[float, float]:
+        """
+        Computes the weight of a particular stratum based off of the
+        length data. Additionally, assigns values to the ``ds`` variable
+        ``weight_len_all_normalized``.
+
+        Parameters
+        ----------
+        stratum: int
+            The stratum corresponding to the input data (used when
+            assigning values to ``ds``)
+        ds: xr.Dataset
+            The Dataset where computed quantities should be assigned to
+        haul_nums: np.ndarray
+            A one dimensional array of haul numbers within the stratum
+            under consideration
+        length_df_M: pd.DataFrame
+            Male data obtained from ``length_df``
+        length_df_F: pd.DataFrame
+            Female data obtained from ``length_df``
+        len_bin: np.ndarray
+            Length bin values
+        len_wgt_M: np.ndarray
+            The length-weight distribution for males
+        len_wgt_F: np.ndarray
+            The length-weight distribution for females
+        len_wgt_all: np.ndarray
+            The length-weight distribution for all genders
+
+        Returns
+        -------
+        male_wgt: float
+            The total weight of males within the stratum
+        female_wgt: float
+            The total weight of females within the stratum
+        """
+
+        # calculate the weight of male and female animals within the stratum
+        male_wgt = self._get_length_based_wgt_interp(
+            haul_nums, length_df_M, len_bin, len_wgt_M
+        )
+        female_wgt = self._get_length_based_wgt_interp(
+            haul_nums, length_df_F, len_bin, len_wgt_F
+        )
+
+        # obtain all haul numbers within the stratum and in length_df
+        hauls_in_all = [j for j in haul_nums if j in self.krig.survey.length_df.index]
+
+        if hauls_in_all:
+
+            # get normalized length distribution of length_df data
+            len_dist_station1_normalized = (
+                self.krig.survey.bio_calc._get_distribution_lengths_station_1(
+                    self.krig.survey.length_df.loc[hauls_in_all]
+                )
+            )
+
+            # obtain the weight per unit length distribution
+            weight_len_all = len_wgt_all * len_dist_station1_normalized
+
+            # normalized weight per unit length distribution
+            ds.sel(stratum=stratum).weight_len_all_normalized[:] = (
+                weight_len_all / weight_len_all.sum()
+            )
+
+        return female_wgt, male_wgt
+
+    def _set_proportion_parameters(
+        self,
+        stratum: int,
+        ds: xr.Dataset,
+        male_wgt: float,
+        female_wgt: float,
+        wgt_station_1: float,
+    ) -> None:
+        """
+        Calculates and assigns proportion parameters to ``ds`` for a stratum.
+
+        Parameters
+        ----------
+        stratum: int
+            The stratum corresponding to the input data (used when
+            assigning values to ``ds``)
+        ds: xr.Dataset
+            The Dataset where computed quantities should be assigned to
+        male_wgt: float
+            The total weight of males within the stratum
+        female_wgt: float
+            The total weight of females within the stratum
+        wgt_station_1: float
+            The total weight at station 1 for the stratum
+        """
+
+        # calculate and assign the len_age_weight proportions
+        ds.len_age_weight_prop_all.loc[stratum] = np.nansum(
+            ds.len_age_weight_dist_all.sel(stratum=stratum)
+        ) / ds.total_weight.sel(stratum=stratum)
+
+        ds.len_age_weight_prop_M.loc[stratum] = np.nansum(
+            ds.len_age_weight_dist_M.sel(stratum=stratum)
+        ) / ds.total_weight.sel(stratum=stratum)
+
+        ds.len_age_weight_prop_F.loc[stratum] = np.nansum(
+            ds.len_age_weight_dist_F.sel(stratum=stratum)
+        ) / ds.total_weight.sel(stratum=stratum)
+
+        # calculate and assign aged proportions
+        ds.aged_proportion.loc[stratum] = (
+            ds.len_age_weight_prop_M.loc[stratum]
+            + ds.len_age_weight_prop_F.loc[stratum]
+        )
+
+        # calculate and assign the unaged proportions
+        ds.unaged_proportion.loc[stratum] = 1.0 - ds.aged_proportion.loc[stratum]
+
+        # obtain the normalized weight of station 1 for males and females
+        if (male_wgt != 0.0) and (female_wgt != 0.0):
+            nM_wgt1 = wgt_station_1 * male_wgt / (male_wgt + female_wgt)
+            nF_wgt1 = wgt_station_1 * female_wgt / (male_wgt + female_wgt)
+        else:
+            nM_wgt1 = 0.0
+            nF_wgt1 = 0.0
+
+        # obtain length and gender based weight proportion
+        Len_M_wgt_proportion = nM_wgt1 / ds.total_weight.sel(stratum=stratum).values
+        Len_F_wgt_proportion = nF_wgt1 / ds.total_weight.sel(stratum=stratum).values
+
+        # obtain the proportion of males and females
+        if (Len_M_wgt_proportion == 0.0) and (Len_F_wgt_proportion == 0.0):
+            M_proportion = 0.5
+            F_proportion = 0.5
+        else:
+            M_proportion = Len_M_wgt_proportion / (
+                Len_M_wgt_proportion + Len_F_wgt_proportion
+            )
+            F_proportion = Len_F_wgt_proportion / (
+                Len_M_wgt_proportion + Len_F_wgt_proportion
+            )
+
+        # calculate and assign the unaged weight proportion of males and females
+        ds.unaged_M_wgt_proportion.loc[stratum] = (
+            ds.unaged_proportion.loc[stratum].values * M_proportion
+        )
+        ds.unaged_F_wgt_proportion.loc[stratum] = (
+            ds.unaged_proportion.loc[stratum].values * F_proportion
+        )
+
+    def _generate_parameter_ds(self) -> xr.Dataset:
+        """
+        Creates a Dataset containing parameters that are
+        necessary to compute Kriging result variables at
+        each mesh point.
+
+        Returns
+        -------
+        ds: xr.Dataset
+            A Dataset containing useful parameters
+        """
+
+        # obtain specimen DataFrames without NA values
         # TODO: This is necessary to match the Matlab output
         #  in theory this should be done when we load the df,
         #  however, this changes the results slightly.
         spec_drop = self.krig.survey.bio_calc.specimen_df.dropna(how="any")
-
         spec_drop_M = spec_drop[spec_drop["sex"] == 1]
         spec_drop_F = spec_drop[spec_drop["sex"] == 2]
 
-        # TODO: does not use bio_calc.length_df value (it would give incorrect answers)
+        # obtain gender based length DataFrames
+        # TODO: does not use bio_calc.length_df value (it would give incorrect
+        #  answers as that df drops values)
         length_df_M = self.krig.survey.length_df[self.krig.survey.length_df["sex"] == 1]
         length_df_F = self.krig.survey.length_df[self.krig.survey.length_df["sex"] == 2]
 
+        # get all unique stratum values
         stratum_ind = spec_drop.index.unique()
 
+        # get age and length bins (created to reduce clutter)
         len_bin = self.krig.survey.params["bio_hake_len_bin"]
         age_bin = self.krig.survey.params["bio_hake_age_bin"]
 
-        # initialize Dataset that will hold length age distributions
-        ds = xr.Dataset(
-            data_vars={
-                "num_M": ("stratum", np.zeros(len(stratum_ind))),
-                "num_F": ("stratum", np.zeros(len(stratum_ind))),
-                "total_weight": ("stratum", np.zeros(len(stratum_ind))),
-                "len_age_weight_prop_all": ("stratum", np.zeros(len(stratum_ind))),
-                "len_age_weight_prop_M": ("stratum", np.zeros(len(stratum_ind))),
-                "len_age_weight_prop_F": ("stratum", np.zeros(len(stratum_ind))),
-                "aged_proportion": ("stratum", np.zeros(len(stratum_ind))),
-                "unaged_proportion": ("stratum", np.zeros(len(stratum_ind))),
-                "unaged_M_wgt_proportion": ("stratum", np.zeros(len(stratum_ind))),
-                "unaged_F_wgt_proportion": ("stratum", np.zeros(len(stratum_ind))),
-                "weight_len_all_normalized": (
-                    ["stratum", "len_bin"],
-                    np.zeros((len(stratum_ind), len(len_bin))),
-                ),
-                "len_age_dist_all": (
-                    ["stratum", "len_bin", "age_bin"],
-                    np.zeros((len(stratum_ind), len(len_bin), len(age_bin))),
-                ),
-                "len_age_dist_M": (
-                    ["stratum", "len_bin", "age_bin"],
-                    np.zeros((len(stratum_ind), len(len_bin), len(age_bin))),
-                ),
-                "len_age_dist_F": (
-                    ["stratum", "len_bin", "age_bin"],
-                    np.zeros((len(stratum_ind), len(len_bin), len(age_bin))),
-                ),
-                "len_age_weight_dist_all": (
-                    ["stratum", "len_bin", "age_bin"],
-                    np.zeros((len(stratum_ind), len(len_bin), len(age_bin))),
-                ),
-                "len_age_weight_dist_M": (
-                    ["stratum", "len_bin", "age_bin"],
-                    np.zeros((len(stratum_ind), len(len_bin), len(age_bin))),
-                ),
-                "len_age_weight_dist_F": (
-                    ["stratum", "len_bin", "age_bin"],
-                    np.zeros((len(stratum_ind), len(len_bin), len(age_bin))),
-                ),
-                "len_age_weight_dist_all_normalized": (
-                    ["stratum", "len_bin", "age_bin"],
-                    np.zeros((len(stratum_ind), len(len_bin), len(age_bin))),
-                ),
-                "len_age_weight_dist_M_normalized": (
-                    ["stratum", "len_bin", "age_bin"],
-                    np.zeros((len(stratum_ind), len(len_bin), len(age_bin))),
-                ),
-                "len_age_weight_dist_F_normalized": (
-                    ["stratum", "len_bin", "age_bin"],
-                    np.zeros((len(stratum_ind), len(len_bin), len(age_bin))),
-                ),
-            },
-            coords={
-                "stratum": ("stratum", stratum_ind),
-                "len_bin": ("len_bin", len_bin),
-                "age_bin": ("age_bin", age_bin),
-            },
-        )
+        # initialize Dataset that will hold all parameters
+        ds = self._initialize_ds(stratum_ind, len_bin, age_bin)
 
-        # a mapping of hauls to strata
+        # obtain a mapping of hauls to strata
         haul_vs_stratum = self.krig.survey.bio_calc.strata_df.reset_index()[
             ["haul_num", "stratum_num"]
         ]
 
-        len_wgt_M = self.krig.survey.bio_calc._generate_length_val_conversion(
-            len_name="length",
-            val_name="weight",
-            df=self.krig.survey.bio_calc.specimen_df[
-                self.krig.survey.bio_calc.specimen_df["sex"] == 1
-            ],
-        )
-
-        len_wgt_F = self.krig.survey.bio_calc._generate_length_val_conversion(
-            len_name="length",
-            val_name="weight",
-            df=self.krig.survey.bio_calc.specimen_df[
-                self.krig.survey.bio_calc.specimen_df["sex"] == 2
-            ],
-        )
-
-        len_wgt_all = self.krig.survey.bio_calc._generate_length_val_conversion(
-            len_name="length",
-            val_name="weight",
-            df=self.krig.survey.bio_calc.specimen_df,
-        )
+        # get length-weight distributions (includes all ages in quantity)
+        len_wgt_M, len_wgt_F, len_wgt_all = self._get_len_wgt_distributions()
 
         for i in stratum_ind:
 
+            # obtain haul numbers that are in the stratum i
             haul_nums = haul_vs_stratum[haul_vs_stratum["stratum_num"] == i][
                 "haul_num"
             ].values
 
+            # calculate and set the number of animals in the stratum based on gender
             ds.num_M.loc[i] = len(spec_drop_M.loc[i])
             ds.num_F.loc[i] = len(spec_drop_F.loc[i])
 
+            # set age distribution related data
             self._set_age_distribution_data(
                 stratum=i,
                 ds=ds,
@@ -335,154 +679,24 @@ class ComputeKrigingVariables:
                 df_F=spec_drop_F.loc[i],
             )
 
-            wgt_station_1 = np.array(
-                [
-                    self.krig.survey.catch_df.loc[j][
-                        "haul_weight"
-                    ].sum()  # TODO: make catch_df a bio_calc variable?
-                    for j in haul_nums
-                    if (j in self.krig.survey.catch_df.index)
-                    and (j in self.krig.survey.length_df.index)
-                ]
-            ).sum()
+            # assign the total weight in both station to ds and obtain the weight in station 1
+            wgt_station_1 = self._set_total_weight(haul_nums, i, ds)
 
-            wgt_station_2 = self.krig.survey.bio_calc.specimen_df.loc[i]["weight"].sum()
-
-            ds.total_weight.loc[i] = (
-                wgt_station_1 + wgt_station_2
-            )  # TODO this is off for stratum 5
-
-            ds.len_age_weight_prop_all.loc[i] = np.nansum(
-                ds.len_age_weight_dist_all.sel(stratum=i)
-            ) / ds.total_weight.sel(stratum=i)
-
-            ds.len_age_weight_prop_M.loc[i] = np.nansum(
-                ds.len_age_weight_dist_M.sel(stratum=i)
-            ) / ds.total_weight.sel(stratum=i)
-
-            ds.len_age_weight_prop_F.loc[i] = np.nansum(
-                ds.len_age_weight_dist_F.sel(stratum=i)
-            ) / ds.total_weight.sel(stratum=i)
-
-            ds.sel(stratum=i).len_age_weight_dist_all_normalized[
-                :, :
-            ] = ds.len_age_weight_dist_all.sel(stratum=i) / np.nansum(
-                ds.len_age_weight_dist_all.sel(stratum=i)
+            # get length_df based weight for males and females
+            female_wgt, male_wgt = self._get_length_df_based_wgt(
+                i,
+                ds,
+                haul_nums,
+                length_df_M,
+                length_df_F,
+                len_bin,
+                len_wgt_M,
+                len_wgt_F,
+                len_wgt_all,
             )
 
-            ds.sel(stratum=i).len_age_weight_dist_M_normalized[
-                :, :
-            ] = ds.len_age_weight_dist_M.sel(stratum=i) / np.nansum(
-                ds.len_age_weight_dist_M.sel(stratum=i)
-            )
-
-            ds.sel(stratum=i).len_age_weight_dist_F_normalized[
-                :, :
-            ] = ds.len_age_weight_dist_F.sel(stratum=i) / np.nansum(
-                ds.len_age_weight_dist_F.sel(stratum=i)
-            )
-
-            ds.aged_proportion.loc[i] = (
-                ds.len_age_weight_prop_M.loc[i] + ds.len_age_weight_prop_F.loc[i]
-            )
-
-            ds.unaged_proportion.loc[i] = 1.0 - ds.aged_proportion.loc[i]
-
-            len_haul_M = [
-                round(length_df_M.loc[j]["length"])
-                for j in haul_nums
-                if j in length_df_M.index
-            ]
-
-            if len_haul_M:
-                len_haul_M_counts = np.concatenate(
-                    [
-                        length_df_M.loc[j]["length_count"].values
-                        for j in haul_nums
-                        if j in length_df_M.index
-                    ]
-                )
-                len_haul_M = np.concatenate(len_haul_M)
-
-                male_wgt = (
-                    np.interp(len_haul_M, len_bin, len_wgt_M) * len_haul_M_counts
-                ).sum()
-            else:
-                male_wgt = 0.0
-
-            len_haul_F = [
-                round(length_df_F.loc[j]["length"])
-                for j in haul_nums
-                if j in length_df_M.index
-            ]
-            if len_haul_F:
-                len_haul_F_counts = np.concatenate(
-                    [
-                        length_df_F.loc[j]["length_count"].values
-                        for j in haul_nums
-                        if j in length_df_F.index
-                    ]
-                )
-                len_haul_F = np.concatenate(len_haul_F)
-
-                female_wgt = (
-                    np.interp(len_haul_F, len_bin, len_wgt_F) * len_haul_F_counts
-                ).sum()
-            else:
-                female_wgt = 0.0
-
-            hauls_in_all = [
-                j for j in haul_nums if j in self.krig.survey.length_df.index
-            ]
-
-            if hauls_in_all:
-
-                len_dist_station1_normalized = (
-                    self.krig.survey.bio_calc._get_distribution_lengths_station_1(
-                        self.krig.survey.length_df.loc[hauls_in_all]
-                    )
-                )
-
-                weight_len_all = len_wgt_all * len_dist_station1_normalized
-
-                # normalized weight per unit length distribution
-                ds.sel(stratum=i).weight_len_all_normalized[:] = (
-                    weight_len_all / weight_len_all.sum()
-                )
-
-            else:
-
-                ds.sel(stratum=i).weight_len_all_normalized[:] = 0.0
-
-            # print(" ")
-
-            if (male_wgt != 0.0) and (female_wgt != 0.0):
-                nM_wgt1 = wgt_station_1 * male_wgt / (male_wgt + female_wgt)
-                nF_wgt1 = wgt_station_1 * female_wgt / (male_wgt + female_wgt)
-            else:
-                nM_wgt1 = 0.0
-                nF_wgt1 = 0.0
-
-            Len_M_wgt_proportion = nM_wgt1 / ds.total_weight.sel(stratum=i).values
-            Len_F_wgt_proportion = nF_wgt1 / ds.total_weight.sel(stratum=i).values
-
-            if (Len_M_wgt_proportion == 0.0) and (Len_F_wgt_proportion == 0.0):
-                M_proportion = 0.5
-                F_proportion = 0.5
-            else:
-                M_proportion = Len_M_wgt_proportion / (
-                    Len_M_wgt_proportion + Len_F_wgt_proportion
-                )
-                F_proportion = Len_F_wgt_proportion / (
-                    Len_M_wgt_proportion + Len_F_wgt_proportion
-                )
-
-            ds.unaged_M_wgt_proportion.loc[i] = (
-                ds.unaged_proportion.loc[i].values * M_proportion
-            )
-            ds.unaged_F_wgt_proportion.loc[i] = (
-                ds.unaged_proportion.loc[i].values * F_proportion
-            )
+            # calculate and assign proportion parameters to ds
+            self._set_proportion_parameters(i, ds, male_wgt, female_wgt, wgt_station_1)
 
         return ds
 
