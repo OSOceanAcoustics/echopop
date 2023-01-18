@@ -608,3 +608,41 @@ class ComputeKrigingVariables:
             self.krig.survey.bio_calc.kriging_results_gdf["abundance"]
             * self.krig.survey.bio_calc.kriging_results_gdf["sig_b"]
         )
+
+        # compute normalized variance (coefficient of variance CV) for the biomass at each grid cell
+        C0 = (
+            np.std(
+                self.krig.survey.bio_calc.transect_results_gdf[
+                    "biomass_density_adult"
+                ].values,
+                ddof=1,
+            )
+            ** 2
+        )
+        Bn = (
+            np.nansum(
+                self.krig.survey.bio_calc.kriging_results_gdf[
+                    "biomass_density_adult_mean"
+                ]
+                * self.krig.survey.bio_calc.kriging_results_gdf["cell_area_nmi2"]
+            )
+            * 1e-9
+        )
+        self.krig.survey.bio_calc.kriging_results_gdf["biomass_cell_CV"] = (
+            self.krig.survey.params["kriging_A0"]
+            * np.sqrt(
+                self.krig.survey.bio_calc.kriging_results_gdf[
+                    "biomass_density_adult_var"
+                ]
+                * C0
+            )
+            * 1e-9
+            / Bn
+            * np.sqrt(
+                len(
+                    self.krig.survey.bio_calc.kriging_results_gdf[
+                        "biomass_density_adult_var"
+                    ]
+                )
+            )
+        )
