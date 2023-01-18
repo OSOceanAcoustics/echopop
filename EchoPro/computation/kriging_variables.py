@@ -1,5 +1,6 @@
 from typing import List, Tuple
 
+import geopandas as gpd
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -824,39 +825,92 @@ class ComputeKrigingVariables:
             * np.sqrt(len(biomass_density_adult_var))
         )
 
-    # def compute_biomass_all_ages(self):
-    #     stratum_num = krig_results["stratum_num"]
-    #
-    #     for bin_str in survey_2019.bio_calc.weight_fraction_all_ages_df:
-    #         #     expanded_age_bin = survey_2019.bio_calc.weight_fraction_
-    #         all_ages_df[bin_str].loc[stratum_num.values].values
-    #
-    #         #     print((expanded_age_bin*krig_results["biomass_adult"]).sum())
-    #
-    #         expanded_age_bin = survey_2019.bio_calc.weight_fraction_all_ages_male_df[bin_str].loc[
-    #             stratum_num.values].values
-    #
-    #         print((expanded_age_bin * krig_results["biomass_male"]).sum())
+    def _compute_biomass_all_ages(
+        self,
+        weight_fraction_all_ages_df: pd.DataFrame,
+        biomass_column: pd.DataFrame,
+        results_gdf: gpd.GeoDataFrame,
+    ) -> None:
+        """
+        Compute the biomass for each age bin based off the provided input.
+        Additionally, add computed variables to the input ``results_gdf``.
+
+        Parameters
+        ----------
+        weight_fraction_all_ages_df: pd.DataFrame
+            A DataFrame containing the weight fraction at each age
+            bin for all strata (corresponds to ``biomass_column``)
+        biomass_column: pd.DataFrame
+            A DataFrame corresponding to a biomass column from the Kriging results
+        results_gdf: gpd.GeoDataFrame
+            A GeoDataFrame where the biomass at each age bin should be stored
+        """
+
+        # obtain stratum column from Kriging results
+        stratum_vals = results_gdf["stratum_num"].values
+
+        for bin_str in weight_fraction_all_ages_df:
+
+            # expand the weight fraction for all ages
+            expanded_age_bin = (
+                weight_fraction_all_ages_df[bin_str].loc[stratum_vals].values
+            )
+
+            results_gdf["biomass_" + bin_str] = expanded_age_bin * biomass_column
 
     def set_variables(self, ds):
 
-        # calculate and add the male and female biomass to Kriging results df
+        # calculate and add the male and female biomass to Kriging results
         self._set_gender_biomass(ds)
 
-        # calculate and add abundance variables to Kriging results df
+        # calculate and add abundance variables to Kriging results
         self._set_abundance()
 
-        # add sig_b values to Kriging results df
+        # add sig_b values to Kriging results
         self.krig.survey.bio_calc.kriging_results_gdf[
             "sig_b"
         ] = self.krig.survey.bio_calc.strata_sig_b.loc[
             self.krig.survey.bio_calc.kriging_results_gdf["stratum_num"].values
         ].values
 
-        # calculate and add NASC to Kriging results df
+        # calculate and add NASC to Kriging results
         self.krig.survey.bio_calc.kriging_results_gdf["NASC"] = (
             self.krig.survey.bio_calc.kriging_results_gdf["abundance"]
             * self.krig.survey.bio_calc.kriging_results_gdf["sig_b"]
         )
 
+        # calculate and add biomass CV at each grid cell to Kriging results
         self._set_biomass_cell_CV()
+
+        # calculate and add male biomass for all ages to Kriging results
+        # TODO: put other male results in this gdf
+        self.krig.survey.bio_calc.kriging_results_male_gdf = (
+            self.krig.survey.bio_calc.kriging_results_gdf[
+                ["geometry", "stratum_num"]
+            ].copy(deep=True)
+        )
+        self._compute_biomass_all_ages(
+            self.krig.survey.bio_calc.weight_fraction_all_ages_male_df,
+            self.krig.survey.bio_calc.kriging_results_gdf["biomass_adult_male"],
+            self.krig.survey.bio_calc.kriging_results_male_gdf,
+        )
+
+        # calculate and add female biomass for all ages to Kriging results
+        # TODO: put other male results in this gdf
+        self.krig.survey.bio_calc.kriging_results_female_gdf = (
+            self.krig.survey.bio_calc.kriging_results_gdf[
+                ["geometry", "stratum_num"]
+            ].copy(deep=True)
+        )
+        self._compute_biomass_all_ages(
+            self.krig.survey.bio_calc.weight_fraction_all_ages_female_df,
+            self.krig.survey.bio_calc.kriging_results_gdf["biomass_adult_female"],
+            self.krig.survey.bio_calc.kriging_results_female_gdf,
+        )
+
+        # calculate and add biomass for all ages to Kriging results
+        self._compute_biomass_all_ages(
+            self.krig.survey.bio_calc.weight_fraction_all_ages_df,
+            self.krig.survey.bio_calc.kriging_results_gdf["biomass_adult"],
+            self.krig.survey.bio_calc.kriging_results_gdf,
+        )
