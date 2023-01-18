@@ -487,3 +487,9 @@ class Kriging:
 
         self.krig_bio_calc = None
         self.krig_bio_calc = ComputeKrigingVariables(self)
+
+        # generate Dataset containing useful variables
+        ds = self.krig_bio_calc._generate_len_age_distributions()
+
+        # calculate and assign variables to Kriging results GeoDataFrame
+        self.krig_bio_calc.set_variables(ds)

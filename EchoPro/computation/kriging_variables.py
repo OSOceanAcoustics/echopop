@@ -469,6 +469,20 @@ class ComputeKrigingVariables:
 
         return ds
 
+    # def compute_biomass_all_ages(self):
+    #     stratum_num = krig_results["stratum_num"]
+    #
+    #     for bin_str in survey_2019.bio_calc.weight_fraction_all_ages_df:
+    #         #     expanded_age_bin = survey_2019.bio_calc.weight_fraction_
+    #         all_ages_df[bin_str].loc[stratum_num.values].values
+    #
+    #         #     print((expanded_age_bin*krig_results["biomass_adult"]).sum())
+    #
+    #         expanded_age_bin = survey_2019.bio_calc.weight_fraction_all_ages_male_df[bin_str].loc[
+    #             stratum_num.values].values
+    #
+    #         print((expanded_age_bin * krig_results["biomass_male"]).sum())
+
     def set_variables(self, ds):
 
         ds["dist_weight_M_sum"] = (
