@@ -616,7 +616,7 @@ class ComputeKrigingVariables:
             ds.unaged_proportion.loc[stratum].values * F_proportion
         )
 
-    def _generate_parameter_ds(self) -> xr.Dataset:
+    def generate_parameter_ds(self) -> xr.Dataset:
         """
         Creates a Dataset containing parameters that are
         necessary to compute Kriging result variables at
@@ -700,6 +700,130 @@ class ComputeKrigingVariables:
 
         return ds
 
+    def _set_gender_biomass(self, ds: xr.Dataset) -> None:
+        """
+        Calculates the biomass for males and females at
+        each mesh point. Additionally, adds the corresponding
+        variables to ``kriging_results_gdf``.
+
+        Parameters
+        ----------
+        ds: xr.Dataset
+            A Dataset containing all parameters necessary to compute
+            desired variables
+        """
+
+        # obtain stratum column from Kriging results
+        stratum_vals = self.krig.survey.bio_calc.kriging_results_gdf[
+            "stratum_num"
+        ].values
+
+        # create variables to improve readability
+        biomass_density_adult_mean = self.krig.survey.bio_calc.kriging_results_gdf[
+            "biomass_density_adult_mean"
+        ]
+        cell_area_nmi2 = self.krig.survey.bio_calc.kriging_results_gdf["cell_area_nmi2"]
+
+        # calculate the aged biomass for males and females
+        dist_weight_M_sum = (
+            (ds.len_age_weight_dist_M_normalized * ds.len_age_weight_prop_M)
+            .sum(dim=["len_bin", "age_bin"])
+            .sel(stratum=stratum_vals)
+            .values
+        )
+        dist_weight_F_sum = (
+            (ds.len_age_weight_dist_F_normalized * ds.len_age_weight_prop_F)
+            .sum(dim=["len_bin", "age_bin"])
+            .sel(stratum=stratum_vals)
+            .values
+        )
+
+        biomass_aged_M = biomass_density_adult_mean * dist_weight_M_sum * cell_area_nmi2
+        biomass_aged_F = biomass_density_adult_mean * dist_weight_F_sum * cell_area_nmi2
+
+        # calculate the unaged biomass for males and females
+        unaged_M_wgt_prop_expan = ds.unaged_M_wgt_proportion.sel(
+            stratum=stratum_vals
+        ).values
+        unaged_F_wgt_prop_expan = ds.unaged_F_wgt_proportion.sel(
+            stratum=stratum_vals
+        ).values
+
+        biomass_unaged_M = (
+            biomass_density_adult_mean * unaged_M_wgt_prop_expan * cell_area_nmi2
+        )
+        biomass_unaged_F = (
+            biomass_density_adult_mean * unaged_F_wgt_prop_expan * cell_area_nmi2
+        )
+
+        # calculate and assign the total biomass of males and females
+        self.krig.survey.bio_calc.kriging_results_gdf["biomass_adult_male"] = (
+            biomass_aged_M + biomass_unaged_M
+        )
+        self.krig.survey.bio_calc.kriging_results_gdf["biomass_adult_female"] = (
+            biomass_aged_F + biomass_unaged_F
+        )
+
+    def _set_abundance(self) -> None:
+        """
+        Calculates the abundance for males, females, and all sexes at
+        each mesh point. Additionally, adds the corresponding
+        variables to ``kriging_results_gdf``.
+        """
+
+        # expand the bio parameters dataframe so that it corresponds to mesh points
+        averaged_weight_expanded = (
+            self.krig.survey.bio_calc.bio_param_df.averaged_weight.loc[
+                self.krig.survey.bio_calc.kriging_results_gdf["stratum_num"].values
+            ]
+        )
+
+        # calculate and add abundance to Kriging results
+        self.krig.survey.bio_calc.kriging_results_gdf["abundance"] = (
+            self.krig.survey.bio_calc.kriging_results_gdf["biomass_adult"]
+            / averaged_weight_expanded.values
+        )
+
+        self.krig.survey.bio_calc.kriging_results_gdf["abundance_male"] = (
+            self.krig.survey.bio_calc.kriging_results_gdf["biomass_adult_male"]
+            / averaged_weight_expanded.values
+        )
+
+        self.krig.survey.bio_calc.kriging_results_gdf["abundance_female"] = (
+            self.krig.survey.bio_calc.kriging_results_gdf["biomass_adult_female"]
+            / averaged_weight_expanded.values
+        )
+
+    def _set_biomass_cell_CV(self):
+        """
+        Compute the coefficient of Variation (CV) of biomass
+        at each grid cell using Kriging output. Additionally,
+        assigns the created variable to ``kriging_results_gdf``.
+        """
+
+        # create variables to improve readability
+        biomass_density_adult = self.krig.survey.bio_calc.transect_results_gdf[
+            "biomass_density_adult"
+        ].values
+        biomass_density_adult_mean = self.krig.survey.bio_calc.kriging_results_gdf[
+            "biomass_density_adult_mean"
+        ]
+        cell_area_nmi2 = self.krig.survey.bio_calc.kriging_results_gdf["cell_area_nmi2"]
+        biomass_density_adult_var = self.krig.survey.bio_calc.kriging_results_gdf[
+            "biomass_density_adult_var"
+        ]
+        kriging_A0 = self.krig.survey.params["kriging_A0"]
+
+        C0 = np.std(biomass_density_adult, ddof=1) ** 2
+        Bn = np.nansum(biomass_density_adult_mean * cell_area_nmi2) * 1e-9
+        self.krig.survey.bio_calc.kriging_results_gdf["biomass_cell_CV"] = (
+            kriging_A0
+            * np.sqrt(biomass_density_adult_var * C0)
+            * 1e-9
+            / Bn
+            * np.sqrt(len(biomass_density_adult_var))
+        )
+
     # def compute_biomass_all_ages(self):
     #     stratum_num = krig_results["stratum_num"]
     #
@@ -716,178 +840,23 @@ class ComputeKrigingVariables:
 
     def set_variables(self, ds):
 
-        ds["dist_weight_M_sum"] = (
-            ds.len_age_weight_dist_M_normalized * ds.len_age_weight_prop_M
-        ).sum(dim=["len_bin", "age_bin"])
-        ds["dist_weight_F_sum"] = (
-            ds.len_age_weight_dist_F_normalized * ds.len_age_weight_prop_F
-        ).sum(dim=["len_bin", "age_bin"])
+        # calculate and add the male and female biomass to Kriging results df
+        self._set_gender_biomass(ds)
 
-        # TODO: create variable for self.krig.survey.bio_calc.
-        #  kriging_results_gdf["stratum_num"].values
+        # calculate and add abundance variables to Kriging results df
+        self._set_abundance()
 
-        # aged_prop_mesh = ds.aged_proportion.sel(
-        #     stratum=self.krig.survey.bio_calc.kriging_results_gdf["stratum_num"].values
-        # ).values
-        # # len_age_wgt_norm_mesh = ds.len_age_weight_dist_all_normalized.sel(
-        # # stratum=krig_results["stratum_num"].values).values
-        # unaged_prop_mesh = ds.unaged_proportion.sel(
-        #     stratum=self.krig.survey.bio_calc.kriging_results_gdf["stratum_num"].values
-        # ).values
-
-        # TODO: in Chu's current calculation there is a normalized term that is summed
-        #  and included in the below expression as it is normalized this sum will always be one
-        # Wgt_len_age_ALL_ii = (
-        #     self.krig.survey.bio_calc.kriging_results_gdf["biomass_density_adult_mean"]
-        #     * aged_prop_mesh
-        #     * 1.0
-        #     * self.krig.survey.bio_calc.kriging_results_gdf["cell_area_nmi2"]
-        # )
-        # Wgt_len_ALL_ii = (
-        #     self.krig.survey.bio_calc.kriging_results_gdf["biomass_density_adult_mean"]
-        #     * unaged_prop_mesh
-        #     * 1.0
-        #     * self.krig.survey.bio_calc.kriging_results_gdf["cell_area_nmi2"]
-        # )
-        #
-        # # TODO: this may prove that we do not need to create the
-        # #  vars Wgt_len_age_ALL_ii and Wgt_len_ALL_ii
-        # self.krig.survey.bio_calc.kriging_results_gdf["test"] = (
-        #     Wgt_len_age_ALL_ii + Wgt_len_ALL_ii
-        # )
-
-        # expand the bio parameters dataframe so that it corresponds to nasc_df
-        averaged_weight_expanded = (
-            self.krig.survey.bio_calc.bio_param_df.averaged_weight.loc[
-                self.krig.survey.bio_calc.kriging_results_gdf["stratum_num"].values
-            ]
-        )
-
-        # self.krig.survey.bio_calc.kriging_results_gdf["abundance"] = (
-        #     Wgt_len_age_ALL_ii + Wgt_len_ALL_ii
-        # ) / averaged_weight_expanded.values
-
-        dist_weight_M_sum_expanded = (
-            ds["dist_weight_M_sum"]
-            .sel(
-                stratum=self.krig.survey.bio_calc.kriging_results_gdf[
-                    "stratum_num"
-                ].values
-            )
-            .values
-        )
-
-        dist_weight_F_sum_expanded = (
-            ds["dist_weight_F_sum"]
-            .sel(
-                stratum=self.krig.survey.bio_calc.kriging_results_gdf[
-                    "stratum_num"
-                ].values
-            )
-            .values
-        )
-
-        Wgt_len_age_M_ii = (
-            self.krig.survey.bio_calc.kriging_results_gdf["biomass_density_adult_mean"]
-            * dist_weight_M_sum_expanded
-            * self.krig.survey.bio_calc.kriging_results_gdf["cell_area_nmi2"]
-        )
-
-        Wgt_len_age_F_ii = (
-            self.krig.survey.bio_calc.kriging_results_gdf["biomass_density_adult_mean"]
-            * dist_weight_F_sum_expanded
-            * self.krig.survey.bio_calc.kriging_results_gdf["cell_area_nmi2"]
-        )
-
-        unaged_M_wgt_prop_expan = ds.unaged_M_wgt_proportion.sel(
-            stratum=self.krig.survey.bio_calc.kriging_results_gdf["stratum_num"].values
-        ).values
-
-        unaged_F_wgt_prop_expan = ds.unaged_F_wgt_proportion.sel(
-            stratum=self.krig.survey.bio_calc.kriging_results_gdf["stratum_num"].values
-        ).values
-
-        Wgt_len_M_ii = (
-            self.krig.survey.bio_calc.kriging_results_gdf["biomass_density_adult_mean"]
-            * unaged_M_wgt_prop_expan
-            * self.krig.survey.bio_calc.kriging_results_gdf["cell_area_nmi2"]
-        )
-
-        Wgt_len_F_ii = (
-            self.krig.survey.bio_calc.kriging_results_gdf["biomass_density_adult_mean"]
-            * unaged_F_wgt_prop_expan
-            * self.krig.survey.bio_calc.kriging_results_gdf["cell_area_nmi2"]
-        )
-
-        self.krig.survey.bio_calc.kriging_results_gdf["biomass_male"] = (
-            Wgt_len_age_M_ii + Wgt_len_M_ii
-        )
-
-        self.krig.survey.bio_calc.kriging_results_gdf["biomass_female"] = (
-            Wgt_len_age_F_ii + Wgt_len_F_ii
-        )
-
-        # calculate and add abundance to Kriging results
-        self.krig.survey.bio_calc.kriging_results_gdf["abundance"] = (
-            self.krig.survey.bio_calc.kriging_results_gdf["biomass_adult"]
-            / averaged_weight_expanded.values
-        )
-
-        self.krig.survey.bio_calc.kriging_results_gdf["abundance_male"] = (
-            self.krig.survey.bio_calc.kriging_results_gdf["biomass_male"]
-            / averaged_weight_expanded.values
-        )
-
-        self.krig.survey.bio_calc.kriging_results_gdf["abundance_female"] = (
-            self.krig.survey.bio_calc.kriging_results_gdf["biomass_female"]
-            / averaged_weight_expanded.values
-        )
-
+        # add sig_b values to Kriging results df
         self.krig.survey.bio_calc.kriging_results_gdf[
             "sig_b"
         ] = self.krig.survey.bio_calc.strata_sig_b.loc[
             self.krig.survey.bio_calc.kriging_results_gdf["stratum_num"].values
         ].values
 
+        # calculate and add NASC to Kriging results df
         self.krig.survey.bio_calc.kriging_results_gdf["NASC"] = (
             self.krig.survey.bio_calc.kriging_results_gdf["abundance"]
             * self.krig.survey.bio_calc.kriging_results_gdf["sig_b"]
         )
 
-        # compute normalized variance (coefficient of variance CV) for the biomass at each grid cell
-        C0 = (
-            np.std(
-                self.krig.survey.bio_calc.transect_results_gdf[
-                    "biomass_density_adult"
-                ].values,
-                ddof=1,
-            )
-            ** 2
-        )
-        Bn = (
-            np.nansum(
-                self.krig.survey.bio_calc.kriging_results_gdf[
-                    "biomass_density_adult_mean"
-                ]
-                * self.krig.survey.bio_calc.kriging_results_gdf["cell_area_nmi2"]
-            )
-            * 1e-9
-        )
-        self.krig.survey.bio_calc.kriging_results_gdf["biomass_cell_CV"] = (
-            self.krig.survey.params["kriging_A0"]
-            * np.sqrt(
-                self.krig.survey.bio_calc.kriging_results_gdf[
-                    "biomass_density_adult_var"
-                ]
-                * C0
-            )
-            * 1e-9
-            / Bn
-            * np.sqrt(
-                len(
-                    self.krig.survey.bio_calc.kriging_results_gdf[
-                        "biomass_density_adult_var"
-                    ]
-                )
-            )
-        )
+        self._set_biomass_cell_CV()

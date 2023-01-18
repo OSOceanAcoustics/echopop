@@ -492,7 +492,7 @@ class Kriging:
         self.krig_bio_calc = ComputeKrigingVariables(self)
 
         # generate Dataset containing useful parameters
-        ds = self.krig_bio_calc._generate_parameter_ds()
+        ds = self.krig_bio_calc.generate_parameter_ds()
 
         # calculate and assign variables to Kriging results GeoDataFrame
         self.krig_bio_calc.set_variables(ds)
