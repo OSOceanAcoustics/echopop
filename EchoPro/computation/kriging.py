@@ -482,10 +482,10 @@ class Kriging:
         # initialize male and female GeoDataFrames
         # TODO: do we want to include other columns here?
         self.survey.bio_calc.kriging_results_male_gdf = results_gdf[
-            ["geometry", "stratum_num"]
+            ["centroid_latitude", "centroid_longitude", "geometry", "stratum_num"]
         ].copy(deep=True)
         self.survey.bio_calc.kriging_results_female_gdf = results_gdf[
-            ["geometry", "stratum_num"]
+            ["centroid_latitude", "centroid_longitude", "geometry", "stratum_num"]
         ].copy(deep=True)
 
     def compute_kriging_variables(self) -> None:
