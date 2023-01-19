@@ -1,11 +1,14 @@
+[project]
+name = "EchoPro"
+dynamic = ["version"]
+requires-python = ">=3.8"
+
+[tool.setuptools.dynamic]
+version = {attr = "EchoPro.__version__"}
+
 [build-system]
 requires = [
     "setuptools >= 48",
     "wheel >= 0.29.0",
 ]
 build-backend = 'setuptools.build_meta'
-
-[project]
-name = "EchoPro"
-version = "0.2.0"
-requires-python = ">=3.8"
