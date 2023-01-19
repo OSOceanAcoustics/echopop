@@ -418,7 +418,6 @@ class Kriging:
         The results are then stored in the ``Survey``
         object as ``kriging_results_gdf``.
 
-
         Parameters
         ----------
         krig_mesh : KrigingMesh
@@ -453,7 +452,7 @@ class Kriging:
         )
 
         # add corresponding mesh variables
-        results_gdf = krig_mesh.mesh_gdf.copy()
+        results_gdf = krig_mesh.mesh_gdf.copy(deep=True)
 
         # add the stratum number to the results
         results_gdf["stratum_num"] = pd.cut(
@@ -480,6 +479,15 @@ class Kriging:
 
         self.survey.bio_calc.kriging_results_gdf = results_gdf
 
+        # initialize male and female GeoDataFrames
+        # TODO: do we want to include other columns here?
+        self.survey.bio_calc.kriging_results_male_gdf = results_gdf[
+            ["geometry", "stratum_num"]
+        ].copy(deep=True)
+        self.survey.bio_calc.kriging_results_female_gdf = results_gdf[
+            ["geometry", "stratum_num"]
+        ].copy(deep=True)
+
     def compute_kriging_variables(self) -> None:
         """
         Computes useful variables corresponding to values at each
@@ -494,5 +502,5 @@ class Kriging:
         # generate Dataset containing useful parameters
         ds = self.krig_bio_calc.generate_parameter_ds()
 
-        # calculate and assign variables to Kriging results GeoDataFrame
+        # calculate and assign variables to Kriging results GeoDataFrames
         self.krig_bio_calc.set_variables(ds)
