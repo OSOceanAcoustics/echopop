@@ -5,11 +5,11 @@ import numpy as np
 import pandas as pd
 
 
-class ComputeBiomassDensity:
+class ComputeTransectVariables:
     """
-    A class that computes the biomass density
-    of an animal population based off of NASC
-    values and other associated data.
+    A class that computes several variables (e.g. abundance, biomass)
+    describing the animal population at the provided transect points
+    using NASC values and other associated data.
 
     Parameters
     ----------
@@ -31,9 +31,15 @@ class ComputeBiomassDensity:
         self.specimen_df = None
         self.nasc_df = None
         self.transect_results_gdf = None
+        self.transect_results_male_gdf = None
+        self.transect_results_female_gdf = None
         self.kriging_results_gdf = None
         self.bio_param_df = None  # biomass parameters for each stratum
         self.weight_fraction_adult_df = None
+        self.weight_fraction_all_ages_df = None
+        self.weight_fraction_all_ages_female_df = None
+        self.weight_fraction_all_ages_male_df = None
+        self.num_fraction_adult_df = None
         self.strata_sig_b = None
 
     def _get_strata_sig_b(self) -> None:
@@ -663,49 +669,12 @@ class ComputeBiomassDensity:
 
         return interval
 
-    def _get_tot_biomass_density(self, numerical_density: pd.Series) -> np.ndarray:
+    def _get_age_weight_num_proportions(
+        self, df: Union[pd.DataFrame, pd.Series]
+    ) -> Tuple[float, float]:
         """
-        Calculates the total areal biomass density
-        for each NASC value.
-
-        Parameters
-        ----------
-        numerical_density : pd.Series
-            Series representing the areal numerical density
-
-        Returns
-        -------
-        The total areal biomass density
-        """
-
-        # expand the bio parameters dataframe so that it corresponds to nasc_df
-        bc_expanded_df = self.bio_param_df.loc[self.nasc_df.stratum_num.values]
-
-        # compute the areal numerical density for males and females
-        numerical_density_male = np.round(
-            numerical_density.values * bc_expanded_df.M_prop.values
-        )
-        numerical_density_female = np.round(
-            numerical_density.values * bc_expanded_df.F_prop.values
-        )
-
-        # compute the areal biomass density for males, females, and unsexed
-        biomass_density_male = (
-            numerical_density_male * bc_expanded_df.averaged_weight_M.values
-        )
-        biomass_density_female = (
-            numerical_density_female * bc_expanded_df.averaged_weight_F.values
-        )
-        biomass_density_unsexed = (
-            numerical_density.values - numerical_density_male - numerical_density_female
-        ) * bc_expanded_df.averaged_weight.values
-
-        # compute the total areal biomass density
-        return biomass_density_male + biomass_density_female + biomass_density_unsexed
-
-    def _get_age_weight_conversion(self, df: Union[pd.DataFrame, pd.Series]) -> float:
-        """
-        Computes the weight of animals in the first age bin.
+        Computes the proportion of animals in a provided age bin for
+        both the weight and number of animals.
 
         Parameters
         ----------
@@ -714,7 +683,10 @@ class ComputeBiomassDensity:
 
         Returns
         -------
-        A float value corresponding to the weight for the first age bin.
+        age_len_prop: float
+            The length proportion for a particular age
+        age_wgt_prop
+            The weight proportion for a particular age
 
         Notes
         -----
@@ -743,18 +715,108 @@ class ComputeBiomassDensity:
             input_arr_len[age_bins_ind[0]], self.bio_hake_len_bin
         )
 
-        # weight for the first age bin
-        return (
+        # the length proportion of animals for a given age
+        age_len_prop = len(input_arr_len[age_bins_ind[0]]) / len(input_arr_len)
+
+        # the weight proportion of animals for a given age
+        age_wgt_prop = (
             np.array(
                 [np.sum(input_arr_wgt[age_bins_ind[0][i]]) for i in len_bin_ind]
             ).sum()
             / input_arr_wgt.sum()
         )
 
-    def _get_weight_fraction_adult(self) -> None:
+        # length and weight for the first age bin
+        return age_len_prop, age_wgt_prop
+
+    def _get_all_age_weight_proportions(
+        self, df: Union[pd.DataFrame, pd.Series], age_bin_ind: int
+    ) -> float:
         """
-        Obtains the multiplier for each stratum to be applied to the total
-        areal biomass density. The weight corresponds to the age 2 weight fraction.
+        Computes the proportion of animals in a provided age bin for
+        the weight of animals.
+
+        Parameters
+        ----------
+        df : pd.DataFrame or pd.Series
+            species_df with NaNs dropped for a particular stratum
+        age_bin_ind: int
+            The age bin index to calculate information for
+
+        Returns
+        -------
+        age_wgt_prop
+            The weight proportion for a particular age
+
+        Notes
+        -----
+        The input ``df`` is often a DataFrame, however, when a subset of
+        data is selected it can become a Series.
+        """
+
+        # account for the case when df is a Series
+        if isinstance(df, pd.Series):
+            # get numpy arrays of length, age, and weight
+            input_arr_len = np.array([df.length])
+            input_arr_age = np.array([df.age])
+            input_arr_wgt = np.array([df.weight])
+
+        else:
+            # get numpy arrays of length, age, and weight
+            input_arr_len = df.length.values
+            input_arr_age = df.age.values
+            input_arr_wgt = df.weight.values
+
+        # bin the ages
+        age_bins_ind = self._get_bin_ind(input_arr_age, self.bio_hake_age_bin)
+
+        # bin those lengths that correspond to the lengths in the given age bin
+        len_bin_ind = self._get_bin_ind(
+            input_arr_len[age_bins_ind[age_bin_ind]], self.bio_hake_len_bin
+        )
+
+        if self.survey.params["exclude_age1"] is True:
+
+            # return 0.0, since no data should be included here
+            if age_bin_ind == 0:
+                return 0.0
+
+            # bin those lengths that correspond to the lengths in the first age bin
+            len_bin_ind_0 = self._get_bin_ind(
+                input_arr_len[age_bins_ind[0]], self.bio_hake_len_bin
+            )
+
+            # get the weight of the first age bin
+            wgt_age_0 = np.array(
+                [np.sum(input_arr_wgt[age_bins_ind[0][i]]) for i in len_bin_ind_0]
+            ).sum()
+
+            # get total weight minus the first age bin weight
+            denominator_wgt = input_arr_wgt.sum() - wgt_age_0
+        else:
+
+            # get total weight
+            denominator_wgt = input_arr_wgt.sum()
+
+        # the weight of animals in a given age bin
+        numerator_wgt = np.array(
+            [np.sum(input_arr_wgt[age_bins_ind[age_bin_ind][i]]) for i in len_bin_ind]
+        ).sum()
+
+        # the weight proportion of animals for a given age
+        if denominator_wgt != 0.0:
+            age_wgt_prop = numerator_wgt / denominator_wgt
+        else:
+            age_wgt_prop = numerator_wgt
+
+        # weight for the given age bin
+        return age_wgt_prop
+
+    def _get_weight_num_fraction_adult(self) -> None:
+        """
+        Obtains the multipliers for each stratum to be applied to the total
+        areal biomass density and abundance. The values correspond to the
+        age 2 fractions.
         """
 
         # TODO: This is necessary to match the Matlab output
@@ -767,45 +829,77 @@ class ComputeBiomassDensity:
         self.weight_fraction_adult_df = pd.DataFrame(
             columns=["val"], index=stratum_ind, dtype=np.float64
         )
-        for i in stratum_ind:
-            self.weight_fraction_adult_df.loc[
-                i
-            ].val = 1.0 - self._get_age_weight_conversion(spec_drop.loc[i])
-
-    def _construct_biomass_table(self, biomass_density_adult: np.array) -> None:
-        """
-        Constructs self.transect_results_gdf, which
-        contains the areal biomass density for adults.
-
-        Parameters
-        ----------
-        biomass_density_adult : np.array
-            Numpy array of areal biomass density adult
-        """
-
-        # minimal columns to do Jolly Hampton CV on data that has not been kriged
-        final_df = self.nasc_df[
-            ["latitude", "longitude", "stratum_num", "transect_spacing"]
-        ].copy()
-        final_df["biomass_density_adult"] = biomass_density_adult
-
-        # TODO: should we include the below values in the final biomass table?
-        # calculates the interval for the area calculation
-        interval = self._get_interval(self.nasc_df)
-
-        # calculate the area corresponding to the NASC value
-        final_df["interval_area_nmi2"] = interval * self.nasc_df["transect_spacing"]
-
-        # calculate the biomass
-        final_df["biomass"] = final_df["biomass_density_adult"] * final_df["interval_area_nmi2"]
-        
-        # calculate the total number of fish (abundance) in a given area
-        # final_df["abundance"] = numerical_density * final_df["interval_area_nmi2"]
-
-        # construct GeoPandas DataFrame to simplify downstream processes
-        self.transect_results_gdf = gpd.GeoDataFrame(
-            final_df, geometry=gpd.points_from_xy(final_df.longitude, final_df.latitude)
+        self.num_fraction_adult_df = pd.DataFrame(
+            columns=["val"], index=stratum_ind, dtype=np.float64
         )
+
+        for i in stratum_ind:
+
+            age_len_prop, age_wgt_prop = self._get_age_weight_num_proportions(
+                spec_drop.loc[i]
+            )
+
+            self.weight_fraction_adult_df.loc[i].val = 1.0 - age_wgt_prop
+            self.num_fraction_adult_df.loc[i].val = 1.0 - age_len_prop
+
+    def _get_weight_fraction_all_ages(self) -> None:
+        """
+        Obtains the multipliers for each stratum to be applied to the total
+        areal biomass density and abundance. The values correspond to all age bins.
+        """
+
+        # TODO: This is necessary to match the Matlab output
+        #  in theory this should be done when we load the df,
+        #  however, this changes the results slightly.
+        spec_drop = self.specimen_df.dropna(how="any")
+
+        # obtain the male and female entries of spec_drop
+        spec_drop_M = spec_drop[spec_drop["sex"] == 1]
+        spec_drop_F = spec_drop[spec_drop["sex"] == 2]
+
+        # the number of age bins
+        bin_length = len(self.bio_hake_age_bin)
+
+        # each stratum's multiplier once areal biomass density has been calculated
+        stratum_ind = spec_drop.index.unique()
+        self.weight_fraction_all_ages_df = pd.DataFrame(
+            columns=["age_bin_" + str(i + 1) for i in range(bin_length)],
+            index=stratum_ind,
+            dtype=np.float64,
+        )
+        self.weight_fraction_all_ages_male_df = pd.DataFrame(
+            columns=["age_bin_" + str(i + 1) for i in range(bin_length)],
+            index=stratum_ind,
+            dtype=np.float64,
+        )
+        self.weight_fraction_all_ages_female_df = pd.DataFrame(
+            columns=["age_bin_" + str(i + 1) for i in range(bin_length)],
+            index=stratum_ind,
+            dtype=np.float64,
+        )
+
+        for i in stratum_ind:
+
+            # obtain the weight fraction for all age bins and a given stratum
+            for j in range(bin_length):
+                age_wgt_prop = self._get_all_age_weight_proportions(spec_drop.loc[i], j)
+                self.weight_fraction_all_ages_df.loc[i][
+                    "age_bin_" + str(j + 1)
+                ] = age_wgt_prop
+
+                age_wgt_prop_M = self._get_all_age_weight_proportions(
+                    spec_drop_M.loc[i], j
+                )
+                self.weight_fraction_all_ages_male_df.loc[i][
+                    "age_bin_" + str(j + 1)
+                ] = age_wgt_prop_M
+
+                age_wgt_prop_F = self._get_all_age_weight_proportions(
+                    spec_drop_F.loc[i], j
+                )
+                self.weight_fraction_all_ages_female_df.loc[i][
+                    "age_bin_" + str(j + 1)
+                ] = age_wgt_prop_F
 
     def set_class_variables(self, selected_transects: Optional[List] = None) -> None:
         """
@@ -866,18 +960,304 @@ class ComputeBiomassDensity:
             self.specimen_df = self.survey.specimen_df.copy()
             self.nasc_df = self.survey.nasc_df
 
+    def _set_numerical_density(self, bc_expanded_df: pd.DataFrame) -> None:
+        """
+        Calculates numerical density variables (such as numerical density
+        for males and females) and then assigns them to the appropriate
+        DataFrames.
+
+        Parameters
+        ----------
+        bc_expanded_df: pd.DataFrame
+            An expanded bio parameters dataframe
+
+        Notes
+        -----
+        This function does not return anything, instead, the created
+        variables are directly added to class variable DataFrames.
+        """
+
+        # calculate the areal numerical density
+        self.transect_results_gdf["numerical_density"] = np.round(
+            (self.mix_sa_ratio * self.nasc_df.NASC)
+            / self.strata_sig_b.loc[self.nasc_df.stratum_num].values
+        )
+
+        # compute the areal numerical density for males and females
+        self.transect_results_male_gdf["numerical_density"] = np.round(
+            self.transect_results_gdf["numerical_density"].values
+            * bc_expanded_df.M_prop.values
+        )
+        self.transect_results_female_gdf["numerical_density"] = np.round(
+            self.transect_results_gdf["numerical_density"].values
+            * bc_expanded_df.F_prop.values
+        )
+
+        # compute areal numerical density for adults
+        self.transect_results_gdf["numerical_density_adult"] = (
+            self.transect_results_gdf["numerical_density"]
+            * self.num_fraction_adult_df.loc[self.nasc_df.stratum_num].values.flatten()
+        )
+
+    def _set_biomass_density(self, bc_expanded_df: pd.DataFrame) -> None:
+        """
+        Calculates total areal biomass density variables for each NASC value
+        and then assigns them to the appropriate DataFrames.
+
+        Parameters
+        ----------
+        bc_expanded_df: pd.DataFrame
+            An expanded bio parameters dataframe
+
+        Notes
+        -----
+        This function does not return anything, instead, the created
+        variables are directly added to the class variable DataFrames.
+        """
+
+        # compute the areal biomass density for males, females, and unsexed
+        self.transect_results_male_gdf["biomass_density"] = (
+            self.transect_results_male_gdf["numerical_density"]
+            * bc_expanded_df.averaged_weight_M.values
+        )
+        self.transect_results_female_gdf["biomass_density"] = (
+            self.transect_results_female_gdf["numerical_density"]
+            * bc_expanded_df.averaged_weight_F.values
+        )
+        biomass_density_unsexed = (
+            self.transect_results_gdf["numerical_density"]
+            - self.transect_results_male_gdf["numerical_density"]
+            - self.transect_results_female_gdf["numerical_density"]
+        ) * bc_expanded_df.averaged_weight.values
+
+        # compute the total areal biomass density
+        self.transect_results_gdf["biomass_density"] = (
+            self.transect_results_male_gdf["biomass_density"]
+            + self.transect_results_female_gdf["biomass_density"]
+            + biomass_density_unsexed
+        )
+
+        # compute the total biomass density for adults
+        self.transect_results_gdf["biomass_density_adult"] = (
+            self.transect_results_gdf["biomass_density"]
+            * self.weight_fraction_adult_df.loc[
+                self.nasc_df.stratum_num
+            ].values.flatten()
+        )
+
+    def _set_abundance(self, bc_expanded_df: pd.DataFrame) -> None:
+        """
+        Calculates abundance variables for each NASC value and then assigns
+        them to the appropriate DataFrames.
+
+        Parameters
+        ----------
+        bc_expanded_df: pd.DataFrame
+            An expanded bio parameters dataframe
+
+        Notes
+        -----
+        This function does not return anything, instead, the created
+        variables are directly added to the class variable DataFrames.
+        """
+
+        # calculate the abundance in a given area
+        self.transect_results_gdf["abundance"] = (
+            self.mix_sa_ratio
+            * self.nasc_df.NASC
+            * self.transect_results_gdf["interval_area_nmi2"]
+        ) / self.strata_sig_b.loc[self.nasc_df.stratum_num].values
+
+        # compute the abundance of males and females
+        self.transect_results_male_gdf["abundance"] = (
+            self.transect_results_gdf["abundance"] * bc_expanded_df.M_prop.values
+        )
+        self.transect_results_female_gdf["abundance"] = (
+            self.transect_results_gdf["abundance"] * bc_expanded_df.F_prop.values
+        )
+
+        # create variable to improve readability
+        fraction_adult_stratum_df = self.num_fraction_adult_df.loc[
+            self.nasc_df.stratum_num
+        ].values.flatten()
+
+        # obtain the abundance for adults
+        self.transect_results_male_gdf["abundance_adult"] = (
+            self.transect_results_male_gdf["abundance"] * fraction_adult_stratum_df
+        )
+        self.transect_results_female_gdf["abundance_adult"] = (
+            self.transect_results_female_gdf["abundance"] * fraction_adult_stratum_df
+        )
+        self.transect_results_gdf["abundance_adult"] = (
+            self.transect_results_gdf["abundance"] * fraction_adult_stratum_df
+        )
+
+    def _set_biomass(self, bc_expanded_df: pd.DataFrame) -> None:
+        """
+        Calculates biomass variables for each NASC value and then assigns
+        them to the appropriate DataFrames.
+
+        Parameters
+        ----------
+        bc_expanded_df: pd.DataFrame
+            An expanded bio parameters dataframe
+
+        Notes
+        -----
+        This function does not return anything, instead, the created
+        variables are directly added to the class variable DataFrames.
+
+        All biomass values are calculated using abundance, instead
+        of using the biomass density.
+        """
+
+        # calculate the biomass for males, females, and unsexed
+        self.transect_results_female_gdf["biomass"] = (
+            self.transect_results_female_gdf["abundance"]
+            * bc_expanded_df.averaged_weight_F.values
+        )
+        self.transect_results_male_gdf["biomass"] = (
+            self.transect_results_male_gdf["abundance"]
+            * bc_expanded_df.averaged_weight_M.values
+        )
+        biomass_unsexed = (
+            self.transect_results_gdf["abundance"]
+            - self.transect_results_female_gdf["abundance"]
+            - self.transect_results_male_gdf["abundance"]
+        ) * bc_expanded_df.averaged_weight.values
+
+        # compute the total biomass for each NASC value
+        self.transect_results_gdf["biomass"] = (
+            biomass_unsexed
+            + self.transect_results_male_gdf["biomass"]
+            + self.transect_results_female_gdf["biomass"]
+        )
+
+        # create variable to improve readability
+        fraction_adult_stratum_df = self.weight_fraction_adult_df.loc[
+            self.nasc_df.stratum_num
+        ].values.flatten()
+
+        # obtain the biomass for adults
+        self.transect_results_female_gdf["biomass_adult"] = (
+            self.transect_results_female_gdf["biomass"] * fraction_adult_stratum_df
+        )
+        self.transect_results_male_gdf["biomass_adult"] = (
+            self.transect_results_male_gdf["biomass"] * fraction_adult_stratum_df
+        )
+        self.transect_results_gdf["biomass_adult"] = (
+            self.transect_results_gdf["biomass"] * fraction_adult_stratum_df
+        )
+
+    @staticmethod
+    def _compute_biomass_all_ages(
+        weight_fraction_all_ages_df: pd.DataFrame,
+        results_gdf: gpd.GeoDataFrame,
+    ) -> None:
+        """
+        Compute the biomass for each age bin based off the provided input.
+        Additionally, add computed variables to the input ``results_gdf``.
+
+        Parameters
+        ----------
+        weight_fraction_all_ages_df: pd.DataFrame
+            A DataFrame containing the weight fraction at each age
+            bin for all strata (corresponds to ``biomass_column``)
+        results_gdf: gpd.GeoDataFrame
+            A GeoDataFrame containing the columns ``biomass_adult, stratum_num``
+            and where the biomass at each age bin should be stored
+        """
+
+        # obtain stratum column from input gdf
+        stratum_vals = results_gdf["stratum_num"]
+
+        for bin_str in weight_fraction_all_ages_df:
+            # expand the weight fraction for all ages
+            expanded_age_bin = (
+                weight_fraction_all_ages_df[bin_str].loc[stratum_vals].values
+            )
+
+            results_gdf["biomass_" + bin_str] = (
+                expanded_age_bin * results_gdf["biomass_adult"]
+            )
+
+    def _construct_results_gdf(self) -> None:
+        """
+        Constructs self.transect_results_gdf, which contains the
+        variables such as biomass density, biomass, abundance, and
+        abundance density (numerical density).
+        """
+
+        # initialize GeoDataFrames that will hold final results, using nasc_df variables
+        temp_df = self.nasc_df[
+            ["latitude", "longitude", "stratum_num", "transect_spacing"]
+        ].copy(deep=True)
+        self.transect_results_gdf = gpd.GeoDataFrame(
+            temp_df, geometry=gpd.points_from_xy(temp_df.longitude, temp_df.latitude)
+        )
+        self.transect_results_male_gdf = self.transect_results_gdf.copy(deep=True)
+        self.transect_results_female_gdf = self.transect_results_gdf.copy(deep=True)
+
+        # calculate proportion coefficient for mixed species
+        wgt_vals = self.strata_df.reset_index().set_index("haul_num")["fraction_hake"]
+        wgt_vals_ind = wgt_vals.index
+        self.mix_sa_ratio = self.nasc_df.apply(
+            lambda x: wgt_vals[x.haul_num] if x.haul_num in wgt_vals_ind else 0.0,
+            axis=1,
+        )
+
+        # expand the bio parameters dataframe so that it corresponds to nasc_df
+        bc_expanded_df = self.bio_param_df.loc[self.nasc_df.stratum_num]
+
+        # calculate and assign numerical density values
+        self._set_numerical_density(bc_expanded_df)
+
+        # calculate and assign biomass density values
+        self._set_biomass_density(bc_expanded_df)
+
+        # calculate the area corresponding to the NASC value
+        self.transect_results_gdf["interval"] = self._get_interval(self.nasc_df)
+        self.transect_results_gdf["interval_area_nmi2"] = (
+            self.transect_results_gdf["interval"] * self.nasc_df["transect_spacing"]
+        )
+
+        # calculate and assign abundance values
+        self._set_abundance(bc_expanded_df)
+
+        # calculate and assign biomass values
+        self._set_biomass(bc_expanded_df)
+
+        # calculate and add male biomass for all ages to Transect results
+        self._compute_biomass_all_ages(
+            self.weight_fraction_all_ages_male_df,
+            self.transect_results_male_gdf,
+        )
+
+        # calculate and add female biomass for all ages to Transect results
+        self._compute_biomass_all_ages(
+            self.weight_fraction_all_ages_female_df,
+            self.transect_results_female_gdf,
+        )
+
+        # calculate and add biomass for all ages to Transect results
+        self._compute_biomass_all_ages(
+            self.weight_fraction_all_ages_df,
+            self.transect_results_gdf,
+        )
+
     def get_transect_results_gdf(
         self, selected_transects: Optional[List] = None
     ) -> None:
         """
-        Orchestrates the calculation of the areal biomass density
-        and creation of self.transect_results_gdf, which contains
-        the areal biomass density of adult hake and associated useful variables.
+        Orchestrates the construction of ``self.transect_results_gdf``,
+        ``self.transect_results_male_gdf``, and ``self.transect_results_female_gdf``,
+        which are GeoDataFrames that contain variables over the transect
+        points (e.g. abundance, biomass).
 
         Parameters
         ----------
         selected_transects : list or None
-            The subset of transects used in the biomass calculation
+            The subset of transects used in the calculations
         """
 
         self.set_class_variables(selected_transects)
@@ -890,7 +1270,9 @@ class ComputeBiomassDensity:
 
         self._get_biomass_parameters()
 
-        self._get_weight_fraction_adult()
+        self._get_weight_num_fraction_adult()
+
+        self._get_weight_fraction_all_ages()
 
         # fill in missing strata parameters
         self.strata_sig_b = self._fill_missing_strata_indices(
@@ -903,29 +1285,20 @@ class ComputeBiomassDensity:
             df=self.weight_fraction_adult_df.copy()
         )
 
-        # calculate proportion coefficient for mixed species
-        wgt_vals = self.strata_df.reset_index().set_index("haul_num")["fraction_hake"]
-        wgt_vals_ind = wgt_vals.index
-        mix_sa_ratio = self.nasc_df.apply(
-            lambda x: wgt_vals[x.haul_num] if x.haul_num in wgt_vals_ind else 0.0,
-            axis=1,
+        self.weight_fraction_all_ages_df = self._fill_missing_strata_indices(
+            df=self.weight_fraction_all_ages_df.copy()
         )
 
-        # calculate the areal numerical density
-        numerical_density = np.round(
-            (mix_sa_ratio * self.nasc_df.NASC)
-            / self.strata_sig_b.loc[self.nasc_df.stratum_num].values
+        self.weight_fraction_all_ages_female_df = self._fill_missing_strata_indices(
+            df=self.weight_fraction_all_ages_female_df.copy()
         )
 
-        # total areal biomass density for each numerical_density value
-        biomass_density = self._get_tot_biomass_density(numerical_density)
-
-        # obtain the areal biomass density for adults
-        biomass_density_adult = (
-            biomass_density
-            * self.weight_fraction_adult_df.loc[
-                self.nasc_df.stratum_num.values
-            ].values.flatten()
+        self.weight_fraction_all_ages_male_df = self._fill_missing_strata_indices(
+            df=self.weight_fraction_all_ages_male_df.copy()
         )
 
-        self._construct_biomass_table(biomass_density_adult)
+        self.num_fraction_adult_df = self._fill_missing_strata_indices(
+            df=self.num_fraction_adult_df.copy()
+        )
+
+        self._construct_results_gdf()

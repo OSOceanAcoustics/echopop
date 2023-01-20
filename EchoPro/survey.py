@@ -8,7 +8,7 @@ import yaml
 
 from .computation import (
     Bootstrapping,
-    ComputeBiomassDensity,
+    ComputeTransectVariables,
     Kriging,
     SemiVariogram,
     krig_param_type,
@@ -24,10 +24,9 @@ from .utils.input_checks import check_existence_of_file
 class Survey:
     """
     EchoPro base class that imports and prepares parameters for
-    a survey. Additionally, it includes functions for
-    accessing the modules associated with the biomass density
-    calculation, CV analysis, semi-variogram algorithm, and
-    Kriging.
+    a survey. Additionally, it includes functions for accessing
+    the modules associated with the transect and kriging variable
+    calculations, CV analysis, semi-variogram algorithm, and Kriging.
 
     Parameters
     ----------
@@ -297,24 +296,22 @@ class Survey:
         if file_type in ("nasc", "all"):
             self.nasc_df = load_nasc_df(self)
 
-    def compute_biomass_density(
+    def compute_transect_results(
         self, selected_transects: Optional[List] = None
     ) -> None:
         """
-        Computes the areal biomass density and
-        creates ``self.bio_calc.transect_results_gdf``, which
-        is a Pandas DataFrame that contains the
-        areal biomass density for adult hake and associated
-        useful variables.
+        Constructs ``self.bio_calc.transect_results_gdf``, ``self.bio_calc.transect_results_male_gdf``,
+        and ``self.bio_calc.transect_results_female_gdf``, which are GeoDataFrames that contain
+        variables over the transect points (e.g. abundance, biomass).
 
         Parameters
         ----------
         selected_transects : list or None
-            The subset of transects used in the biomass calculation
+            The subset of transects used in the calculations
         """
 
         self.bio_calc = None
-        self.bio_calc = ComputeBiomassDensity(self)
+        self.bio_calc = ComputeTransectVariables(self)
         self.bio_calc.get_transect_results_gdf(selected_transects)
 
     def run_cv_analysis(
@@ -448,7 +445,7 @@ class Survey:
         Notes
         -----
         To run this routine, one must first compute the areal biomass density
-        using ``compute_biomass_density``. It is standard to compute the biomass
+        using ``compute_transect_results``. It is standard to compute the biomass
         density from the full set of data (i.e. not from a subset of the data).
         """
 

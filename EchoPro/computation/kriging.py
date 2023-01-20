@@ -424,7 +424,7 @@ class Kriging:
         Notes
         -----
         To run this routine, one must first compute the areal biomass
-        density using ``compute_biomass_density``.
+        density using ``compute_transect_results``.
         """
 
         if not isinstance(krig_mesh, KrigingMesh):
@@ -457,7 +457,7 @@ class Kriging:
         results_gdf["cell_area_nmi2"] = (
             self.survey.params["kriging_A0"] * results_gdf["fraction_cell_in_polygon"]
         )
-        results_gdf["biomass"] = (
+        results_gdf["biomass_adult"] = (
             results_gdf["biomass_density_adult_mean"] * results_gdf["cell_area_nmi2"]
         )
 
