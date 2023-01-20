@@ -1161,6 +1161,38 @@ class ComputeTransectVariables:
             ].values.flatten()
         )
 
+    @staticmethod
+    def _compute_biomass_all_ages(
+        weight_fraction_all_ages_df: pd.DataFrame,
+        results_gdf: gpd.GeoDataFrame,
+    ) -> None:
+        """
+        Compute the biomass for each age bin based off the provided input.
+        Additionally, add computed variables to the input ``results_gdf``.
+
+        Parameters
+        ----------
+        weight_fraction_all_ages_df: pd.DataFrame
+            A DataFrame containing the weight fraction at each age
+            bin for all strata (corresponds to ``biomass_column``)
+        results_gdf: gpd.GeoDataFrame
+            A GeoDataFrame containing the columns ``biomass_adult, stratum_num``
+            and where the biomass at each age bin should be stored
+        """
+
+        # obtain stratum column from input gdf
+        stratum_vals = results_gdf["stratum_num"].values
+
+        for bin_str in weight_fraction_all_ages_df:
+            # expand the weight fraction for all ages
+            expanded_age_bin = (
+                weight_fraction_all_ages_df[bin_str].loc[stratum_vals].values
+            )
+
+            results_gdf["biomass_" + bin_str] = (
+                expanded_age_bin * results_gdf["biomass_adult"]
+            )
+
     def _construct_results_gdf(self) -> None:
         """
         Constructs self.transect_results_gdf, which contains the
@@ -1206,6 +1238,24 @@ class ComputeTransectVariables:
 
         # calculate and assign biomass values
         self._set_biomass(bc_expanded_df)
+
+        # calculate and add male biomass for all ages to Transect results
+        self._compute_biomass_all_ages(
+            self.weight_fraction_all_ages_male_df,
+            self.transect_results_male_gdf,
+        )
+
+        # calculate and add female biomass for all ages to Transect results
+        self._compute_biomass_all_ages(
+            self.weight_fraction_all_ages_female_df,
+            self.transect_results_female_gdf,
+        )
+
+        # calculate and add biomass for all ages to Transect results
+        self._compute_biomass_all_ages(
+            self.weight_fraction_all_ages_df,
+            self.transect_results_gdf,
+        )
 
     def get_transect_results_gdf(
         self, selected_transects: Optional[List] = None
