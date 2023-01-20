@@ -23,7 +23,7 @@ def test_biomass_age_output():
     survey_2019.load_survey_data()
 
     # compute all transect variables
-    survey_2019.compute_biomass_density()
+    survey_2019.compute_transect_results()
 
     # initialize Kriging mesh object and apply appropriate coordinate transformations
     krig_mesh = survey_2019.get_kriging_mesh()
@@ -111,7 +111,7 @@ def test_core_output():
     survey_2019.load_survey_data()
 
     # compute all transect variables
-    survey_2019.compute_biomass_density()
+    survey_2019.compute_transect_results()
 
     # initialize Kriging mesh object and apply appropriate coordinate transformations
     krig_mesh = survey_2019.get_kriging_mesh()
