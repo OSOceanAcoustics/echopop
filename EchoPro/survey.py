@@ -300,8 +300,8 @@ class Survey:
         self, selected_transects: Optional[List] = None
     ) -> None:
         """
-        Constructs ``self.transect_results_gdf``, ``self.transect_results_male_gdf``,
-        and ``self.transect_results_female_gdf``, which are GeoDataFrames that contain
+        Constructs ``self.bio_calc.transect_results_gdf``, ``self.bio_calc.transect_results_male_gdf``,
+        and ``self.bio_calc.transect_results_female_gdf``, which are GeoDataFrames that contain
         variables over the transect points (e.g. abundance, biomass).
 
         Parameters
