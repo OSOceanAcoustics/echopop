@@ -6,12 +6,10 @@ import pandas as pd
 
 
 class ComputeTransectVariables:
-    # TODO: once we establish a name here, we need to change it everywhere
-    #  (including this file name) and update all descriptions
     """
-    A class that computes the biomass density
-    of an animal population based off of NASC
-    values and other associated data.
+    A class that computes several variables (e.g. abundance, biomass)
+    describing the animal population at the provided transect points
+    using NASC values and other associated data.
 
     Parameters
     ----------
@@ -33,6 +31,8 @@ class ComputeTransectVariables:
         self.specimen_df = None
         self.nasc_df = None
         self.transect_results_gdf = None
+        self.transect_results_male_gdf = None
+        self.transect_results_female_gdf = None
         self.kriging_results_gdf = None
         self.kriging_results_male_gdf = None
         self.kriging_results_female_gdf = None
@@ -962,200 +962,226 @@ class ComputeTransectVariables:
             self.specimen_df = self.survey.specimen_df.copy()
             self.nasc_df = self.survey.nasc_df
 
-    def _set_numerical_density(
-        self, df: pd.DataFrame, bc_expanded_df: pd.DataFrame
-    ) -> None:
+    def _set_numerical_density(self, bc_expanded_df: pd.DataFrame) -> None:
         """
         Calculates numerical density variables (such as numerical density
-        for males and females) and then assigns them to the input
-        DataFrame ``df``.
+        for males and females) and then assigns them to the appropriate
+        DataFrames.
 
         Parameters
         ----------
-        df: pd.DataFrame
-            The DataFrame that should hold the numerical density variables
         bc_expanded_df: pd.DataFrame
             An expanded bio parameters dataframe
 
         Notes
         -----
         This function does not return anything, instead, the created
-        variables are directly added to the input DataFrame ``df``.
+        variables are directly added to class variable DataFrames.
         """
 
-        # TODO: do we want to change numerical_density to abundance_density?
-
         # calculate the areal numerical density
-        df["numerical_density"] = np.round(
+        self.transect_results_gdf["numerical_density"] = np.round(
             (self.mix_sa_ratio * self.nasc_df.NASC)
             / self.strata_sig_b.loc[self.nasc_df.stratum_num].values
         )
 
         # compute the areal numerical density for males and females
-        df["numerical_density_male"] = np.round(
-            df["numerical_density"].values * bc_expanded_df.M_prop.values
+        self.transect_results_male_gdf["numerical_density"] = np.round(
+            self.transect_results_gdf["numerical_density"].values
+            * bc_expanded_df.M_prop.values
         )
-        df["numerical_density_female"] = np.round(
-            df["numerical_density"].values * bc_expanded_df.F_prop.values
+        self.transect_results_female_gdf["numerical_density"] = np.round(
+            self.transect_results_gdf["numerical_density"].values
+            * bc_expanded_df.F_prop.values
         )
 
         # compute areal numerical density for adults
-        df["numerical_density_adult"] = (
-            df["numerical_density"]
-            * self.num_fraction_adult_df.loc[
-                self.nasc_df.stratum_num.values
-            ].values.flatten()
+        self.transect_results_gdf["numerical_density_adult"] = (
+            self.transect_results_gdf["numerical_density"]
+            * self.num_fraction_adult_df.loc[self.nasc_df.stratum_num].values.flatten()
         )
 
-    def _set_biomass_density(
-        self, df: pd.DataFrame, bc_expanded_df: pd.DataFrame
-    ) -> None:
+    def _set_biomass_density(self, bc_expanded_df: pd.DataFrame) -> None:
         """
         Calculates total areal biomass density variables for each NASC value
-        and then assigns them to the input DataFrame ``df``.
+        and then assigns them to the appropriate DataFrames.
 
         Parameters
         ----------
-        df: pd.DataFrame
-            The DataFrame that should hold the biomass density variables
         bc_expanded_df: pd.DataFrame
             An expanded bio parameters dataframe
 
         Notes
         -----
         This function does not return anything, instead, the created
-        variables are directly added to the input DataFrame ``df``.
+        variables are directly added to the class variable DataFrames.
         """
 
         # compute the areal biomass density for males, females, and unsexed
-        df["biomass_density_male"] = (
-            df["numerical_density_male"] * bc_expanded_df.averaged_weight_M.values
+        self.transect_results_male_gdf["biomass_density"] = (
+            self.transect_results_male_gdf["numerical_density"]
+            * bc_expanded_df.averaged_weight_M.values
         )
-        df["biomass_density_female"] = (
-            df["numerical_density_female"] * bc_expanded_df.averaged_weight_F.values
+        self.transect_results_female_gdf["biomass_density"] = (
+            self.transect_results_female_gdf["numerical_density"]
+            * bc_expanded_df.averaged_weight_F.values
         )
         biomass_density_unsexed = (
-            df["numerical_density"].values
-            - df["numerical_density_male"]
-            - df["numerical_density_female"]
+            self.transect_results_gdf["numerical_density"]
+            - self.transect_results_male_gdf["numerical_density"]
+            - self.transect_results_female_gdf["numerical_density"]
         ) * bc_expanded_df.averaged_weight.values
 
         # compute the total areal biomass density
-        df["biomass_density"] = (
-            df["biomass_density_male"]
-            + df["biomass_density_female"]
+        self.transect_results_gdf["biomass_density"] = (
+            self.transect_results_male_gdf["biomass_density"]
+            + self.transect_results_female_gdf["biomass_density"]
             + biomass_density_unsexed
         )
 
         # compute the total biomass density for adults
-        df["biomass_density_adult"] = (
-            df["biomass_density"]
+        self.transect_results_gdf["biomass_density_adult"] = (
+            self.transect_results_gdf["biomass_density"]
             * self.weight_fraction_adult_df.loc[
-                self.nasc_df.stratum_num.values
+                self.nasc_df.stratum_num
             ].values.flatten()
         )
 
-    def _set_abundance(self, df: pd.DataFrame, bc_expanded_df: pd.DataFrame) -> None:
+    def _set_abundance(self, bc_expanded_df: pd.DataFrame) -> None:
         """
         Calculates abundance variables for each NASC value and then assigns
-        them to the input DataFrame ``df``.
+        them to the appropriate DataFrames.
 
         Parameters
         ----------
-        df: pd.DataFrame
-            The DataFrame that should hold the abundance variables
         bc_expanded_df: pd.DataFrame
             An expanded bio parameters dataframe
 
         Notes
         -----
         This function does not return anything, instead, the created
-        variables are directly added to the input DataFrame ``df``.
+        variables are directly added to the class variable DataFrames.
         """
 
         # calculate the abundance in a given area
-        df["abundance"] = (
-            self.mix_sa_ratio * self.nasc_df.NASC * df["interval_area_nmi2"]
+        self.transect_results_gdf["abundance"] = (
+            self.mix_sa_ratio
+            * self.nasc_df.NASC
+            * self.transect_results_gdf["interval_area_nmi2"]
         ) / self.strata_sig_b.loc[self.nasc_df.stratum_num].values
 
         # compute the abundance of males and females
-        df["abundance_male"] = df["abundance"] * bc_expanded_df.M_prop.values
-        df["abundance_female"] = df["abundance"] * bc_expanded_df.F_prop.values
+        self.transect_results_male_gdf["abundance"] = (
+            self.transect_results_gdf["abundance"] * bc_expanded_df.M_prop.values
+        )
+        self.transect_results_female_gdf["abundance"] = (
+            self.transect_results_gdf["abundance"] * bc_expanded_df.F_prop.values
+        )
+
+        # create variable to improve readability
+        fraction_adult_stratum_df = self.num_fraction_adult_df.loc[
+            self.nasc_df.stratum_num
+        ].values.flatten()
 
         # obtain the abundance for adults
-        df["abundance_adult_male"] = (
-            df["abundance_male"]
-            * self.num_fraction_adult_df.loc[
-                self.nasc_df.stratum_num.values
-            ].values.flatten()
+        self.transect_results_male_gdf["abundance_adult"] = (
+            self.transect_results_male_gdf["abundance"] * fraction_adult_stratum_df
         )
-        df["abundance_adult_female"] = (
-            df["abundance_female"]
-            * self.num_fraction_adult_df.loc[
-                self.nasc_df.stratum_num.values
-            ].values.flatten()
+        self.transect_results_female_gdf["abundance_adult"] = (
+            self.transect_results_female_gdf["abundance"] * fraction_adult_stratum_df
         )
-        df["abundance_adult"] = (
-            df["abundance"]
-            * self.num_fraction_adult_df.loc[
-                self.nasc_df.stratum_num.values
-            ].values.flatten()
+        self.transect_results_gdf["abundance_adult"] = (
+            self.transect_results_gdf["abundance"] * fraction_adult_stratum_df
         )
 
-    def _set_biomass(self, df: pd.DataFrame, bc_expanded_df: pd.DataFrame) -> None:
+    def _set_biomass(self, bc_expanded_df: pd.DataFrame) -> None:
         """
         Calculates biomass variables for each NASC value and then assigns
-        them to the input DataFrame ``df``.
+        them to the appropriate DataFrames.
 
         Parameters
         ----------
-        df: pd.DataFrame
-            The DataFrame that should hold the biomass variables
         bc_expanded_df: pd.DataFrame
             An expanded bio parameters dataframe
 
         Notes
         -----
         This function does not return anything, instead, the created
-        variables are directly added to the input DataFrame ``df``.
+        variables are directly added to the class variable DataFrames.
 
         All biomass values are calculated using abundance, instead
         of using the biomass density.
         """
 
         # calculate the biomass for males, females, and unsexed
-        df["biomass_female"] = (
-            df["abundance_female"] * bc_expanded_df.averaged_weight_F.values
+        self.transect_results_female_gdf["biomass"] = (
+            self.transect_results_female_gdf["abundance"]
+            * bc_expanded_df.averaged_weight_F.values
         )
-        df["biomass_male"] = (
-            df["abundance_male"] * bc_expanded_df.averaged_weight_M.values
+        self.transect_results_male_gdf["biomass"] = (
+            self.transect_results_male_gdf["abundance"]
+            * bc_expanded_df.averaged_weight_M.values
         )
         biomass_unsexed = (
-            df["abundance"] - df["abundance_female"] - df["abundance_male"]
+            self.transect_results_gdf["abundance"]
+            - self.transect_results_female_gdf["abundance"]
+            - self.transect_results_male_gdf["abundance"]
         ) * bc_expanded_df.averaged_weight.values
 
         # compute the total biomass for each NASC value
-        df["biomass"] = biomass_unsexed + df["biomass_male"] + df["biomass_female"]
+        self.transect_results_gdf["biomass"] = (
+            biomass_unsexed
+            + self.transect_results_male_gdf["biomass"]
+            + self.transect_results_female_gdf["biomass"]
+        )
+
+        # create variable to improve readability
+        fraction_adult_stratum_df = self.weight_fraction_adult_df.loc[
+            self.nasc_df.stratum_num
+        ].values.flatten()
 
         # obtain the biomass for adults
-        df["biomass_adult_female"] = (
-            df["biomass_female"]
-            * self.weight_fraction_adult_df.loc[
-                self.nasc_df.stratum_num.values
-            ].values.flatten()
+        self.transect_results_female_gdf["biomass_adult"] = (
+            self.transect_results_female_gdf["biomass"] * fraction_adult_stratum_df
         )
-        df["biomass_adult_male"] = (
-            df["biomass_male"]
-            * self.weight_fraction_adult_df.loc[
-                self.nasc_df.stratum_num.values
-            ].values.flatten()
+        self.transect_results_male_gdf["biomass_adult"] = (
+            self.transect_results_male_gdf["biomass"] * fraction_adult_stratum_df
         )
-        df["biomass_adult"] = (
-            df["biomass"]
-            * self.weight_fraction_adult_df.loc[
-                self.nasc_df.stratum_num.values
-            ].values.flatten()
+        self.transect_results_gdf["biomass_adult"] = (
+            self.transect_results_gdf["biomass"] * fraction_adult_stratum_df
         )
+
+    @staticmethod
+    def _compute_biomass_all_ages(
+        weight_fraction_all_ages_df: pd.DataFrame,
+        results_gdf: gpd.GeoDataFrame,
+    ) -> None:
+        """
+        Compute the biomass for each age bin based off the provided input.
+        Additionally, add computed variables to the input ``results_gdf``.
+
+        Parameters
+        ----------
+        weight_fraction_all_ages_df: pd.DataFrame
+            A DataFrame containing the weight fraction at each age
+            bin for all strata (corresponds to ``biomass_column``)
+        results_gdf: gpd.GeoDataFrame
+            A GeoDataFrame containing the columns ``biomass_adult, stratum_num``
+            and where the biomass at each age bin should be stored
+        """
+
+        # obtain stratum column from input gdf
+        stratum_vals = results_gdf["stratum_num"]
+
+        for bin_str in weight_fraction_all_ages_df:
+            # expand the weight fraction for all ages
+            expanded_age_bin = (
+                weight_fraction_all_ages_df[bin_str].loc[stratum_vals].values
+            )
+
+            results_gdf["biomass_" + bin_str] = (
+                expanded_age_bin * results_gdf["biomass_adult"]
+            )
 
     def _construct_results_gdf(self) -> None:
         """
@@ -1164,10 +1190,15 @@ class ComputeTransectVariables:
         abundance density (numerical density).
         """
 
-        # initialize DataFrame using nasc_df variables
-        final_df = self.nasc_df[
+        # initialize GeoDataFrames that will hold final results, using nasc_df variables
+        temp_df = self.nasc_df[
             ["latitude", "longitude", "stratum_num", "transect_spacing"]
-        ].copy()
+        ].copy(deep=True)
+        self.transect_results_gdf = gpd.GeoDataFrame(
+            temp_df, geometry=gpd.points_from_xy(temp_df.longitude, temp_df.latitude)
+        )
+        self.transect_results_male_gdf = self.transect_results_gdf.copy(deep=True)
+        self.transect_results_female_gdf = self.transect_results_gdf.copy(deep=True)
 
         # calculate proportion coefficient for mixed species
         wgt_vals = self.strata_df.reset_index().set_index("haul_num")["fraction_hake"]
@@ -1178,43 +1209,57 @@ class ComputeTransectVariables:
         )
 
         # expand the bio parameters dataframe so that it corresponds to nasc_df
-        bc_expanded_df = self.bio_param_df.loc[self.nasc_df.stratum_num.values]
+        bc_expanded_df = self.bio_param_df.loc[self.nasc_df.stratum_num]
 
         # calculate and assign numerical density values
-        self._set_numerical_density(final_df, bc_expanded_df)
+        self._set_numerical_density(bc_expanded_df)
 
         # calculate and assign biomass density values
-        self._set_biomass_density(final_df, bc_expanded_df)
+        self._set_biomass_density(bc_expanded_df)
 
         # calculate the area corresponding to the NASC value
-        final_df["interval"] = self._get_interval(self.nasc_df)
-        final_df["interval_area_nmi2"] = (
-            final_df["interval"] * self.nasc_df["transect_spacing"]
+        self.transect_results_gdf["interval"] = self._get_interval(self.nasc_df)
+        self.transect_results_gdf["interval_area_nmi2"] = (
+            self.transect_results_gdf["interval"] * self.nasc_df["transect_spacing"]
         )
 
         # calculate and assign abundance values
-        self._set_abundance(final_df, bc_expanded_df)
+        self._set_abundance(bc_expanded_df)
 
         # calculate and assign biomass values
-        self._set_biomass(final_df, bc_expanded_df)
+        self._set_biomass(bc_expanded_df)
 
-        # construct GeoPandas DataFrame to simplify downstream processes
-        self.transect_results_gdf = gpd.GeoDataFrame(
-            final_df, geometry=gpd.points_from_xy(final_df.longitude, final_df.latitude)
+        # calculate and add male biomass for all ages to Transect results
+        self._compute_biomass_all_ages(
+            self.weight_fraction_all_ages_male_df,
+            self.transect_results_male_gdf,
+        )
+
+        # calculate and add female biomass for all ages to Transect results
+        self._compute_biomass_all_ages(
+            self.weight_fraction_all_ages_female_df,
+            self.transect_results_female_gdf,
+        )
+
+        # calculate and add biomass for all ages to Transect results
+        self._compute_biomass_all_ages(
+            self.weight_fraction_all_ages_df,
+            self.transect_results_gdf,
         )
 
     def get_transect_results_gdf(
         self, selected_transects: Optional[List] = None
     ) -> None:
         """
-        Orchestrates the calculation of the areal biomass density
-        and creation of self.transect_results_gdf, which contains
-        the areal biomass density of adult hake and associated useful variables.
+        Orchestrates the construction of ``self.transect_results_gdf``,
+        ``self.transect_results_male_gdf``, and ``self.transect_results_female_gdf``,
+        which are GeoDataFrames that contain variables over the transect
+        points (e.g. abundance, biomass).
 
         Parameters
         ----------
         selected_transects : list or None
-            The subset of transects used in the biomass calculation
+            The subset of transects used in the calculations
         """
 
         self.set_class_variables(selected_transects)

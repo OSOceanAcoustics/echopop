@@ -247,8 +247,8 @@ class Bootstrapping:
                 rng.choice(unique_transects, num_sel_transects, replace=False)
             )
 
-            # compute the areal biomass density for the subset of transects
-            self.survey.compute_biomass_density(selected_transects=selected_transects)
+            # computes transect based variables for the subset of transects
+            self.survey.compute_transect_results(selected_transects=selected_transects)
 
             # collect total biomass and associated JH CV value for data without Kriging
             vals_to_keep.append(self._get_results_for_no_kriging())
