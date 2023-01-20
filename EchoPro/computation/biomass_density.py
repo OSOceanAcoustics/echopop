@@ -1027,7 +1027,7 @@ class ComputeTransectVariables:
             * bc_expanded_df.averaged_weight_F.values
         )
         biomass_density_unsexed = (
-            self.transect_results_gdf["numerical_density"].values
+            self.transect_results_gdf["numerical_density"]
             - self.transect_results_male_gdf["numerical_density"]
             - self.transect_results_female_gdf["numerical_density"]
         ) * bc_expanded_df.averaged_weight.values
@@ -1043,7 +1043,7 @@ class ComputeTransectVariables:
         self.transect_results_gdf["biomass_density_adult"] = (
             self.transect_results_gdf["biomass_density"]
             * self.weight_fraction_adult_df.loc[
-                self.nasc_df.stratum_num.values
+                self.nasc_df.stratum_num
             ].values.flatten()
         )
 
@@ -1081,21 +1081,15 @@ class ComputeTransectVariables:
         # obtain the abundance for adults
         self.transect_results_male_gdf["abundance_adult"] = (
             self.transect_results_male_gdf["abundance"]
-            * self.num_fraction_adult_df.loc[
-                self.nasc_df.stratum_num.values
-            ].values.flatten()
+            * self.num_fraction_adult_df.loc[self.nasc_df.stratum_num].values.flatten()
         )
         self.transect_results_female_gdf["abundance_adult"] = (
             self.transect_results_female_gdf["abundance"]
-            * self.num_fraction_adult_df.loc[
-                self.nasc_df.stratum_num.values
-            ].values.flatten()
+            * self.num_fraction_adult_df.loc[self.nasc_df.stratum_num].values.flatten()
         )
         self.transect_results_gdf["abundance_adult"] = (
             self.transect_results_gdf["abundance"]
-            * self.num_fraction_adult_df.loc[
-                self.nasc_df.stratum_num.values
-            ].values.flatten()
+            * self.num_fraction_adult_df.loc[self.nasc_df.stratum_num].values.flatten()
         )
 
     def _set_biomass(self, bc_expanded_df: pd.DataFrame) -> None:
@@ -1143,19 +1137,19 @@ class ComputeTransectVariables:
         self.transect_results_female_gdf["biomass_adult"] = (
             self.transect_results_female_gdf["biomass"]
             * self.weight_fraction_adult_df.loc[
-                self.nasc_df.stratum_num.values
+                self.nasc_df.stratum_num
             ].values.flatten()
         )
         self.transect_results_male_gdf["biomass_adult"] = (
             self.transect_results_male_gdf["biomass"]
             * self.weight_fraction_adult_df.loc[
-                self.nasc_df.stratum_num.values
+                self.nasc_df.stratum_num
             ].values.flatten()
         )
         self.transect_results_gdf["biomass_adult"] = (
             self.transect_results_gdf["biomass"]
             * self.weight_fraction_adult_df.loc[
-                self.nasc_df.stratum_num.values
+                self.nasc_df.stratum_num
             ].values.flatten()
         )
 
@@ -1179,7 +1173,7 @@ class ComputeTransectVariables:
         """
 
         # obtain stratum column from input gdf
-        stratum_vals = results_gdf["stratum_num"].values
+        stratum_vals = results_gdf["stratum_num"]
 
         for bin_str in weight_fraction_all_ages_df:
             # expand the weight fraction for all ages
@@ -1217,7 +1211,7 @@ class ComputeTransectVariables:
         )
 
         # expand the bio parameters dataframe so that it corresponds to nasc_df
-        bc_expanded_df = self.bio_param_df.loc[self.nasc_df.stratum_num.values]
+        bc_expanded_df = self.bio_param_df.loc[self.nasc_df.stratum_num]
 
         # calculate and assign numerical density values
         self._set_numerical_density(bc_expanded_df)
