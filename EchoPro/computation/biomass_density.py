@@ -998,9 +998,7 @@ class ComputeTransectVariables:
         # compute areal numerical density for adults
         self.transect_results_gdf["numerical_density_adult"] = (
             self.transect_results_gdf["numerical_density"]
-            * self.num_fraction_adult_df.loc[
-                self.nasc_df.stratum_num.values
-            ].values.flatten()
+            * self.num_fraction_adult_df.loc[self.nasc_df.stratum_num].values.flatten()
         )
 
     def _set_biomass_density(self, bc_expanded_df: pd.DataFrame) -> None:
