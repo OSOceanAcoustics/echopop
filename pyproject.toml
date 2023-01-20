@@ -1,7 +1,7 @@
 [project]
 name = "EchoPro"
 dynamic = ["version"]
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 
 [tool.setuptools.dynamic]
 version = {attr = "EchoPro.__version__"}
