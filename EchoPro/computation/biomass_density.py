@@ -1078,18 +1078,20 @@ class ComputeTransectVariables:
             self.transect_results_gdf["abundance"] * bc_expanded_df.F_prop.values
         )
 
+        # create variable to improve readability
+        fraction_adult_stratum_df = self.num_fraction_adult_df.loc[
+            self.nasc_df.stratum_num
+        ].values.flatten()
+
         # obtain the abundance for adults
         self.transect_results_male_gdf["abundance_adult"] = (
-            self.transect_results_male_gdf["abundance"]
-            * self.num_fraction_adult_df.loc[self.nasc_df.stratum_num].values.flatten()
+            self.transect_results_male_gdf["abundance"] * fraction_adult_stratum_df
         )
         self.transect_results_female_gdf["abundance_adult"] = (
-            self.transect_results_female_gdf["abundance"]
-            * self.num_fraction_adult_df.loc[self.nasc_df.stratum_num].values.flatten()
+            self.transect_results_female_gdf["abundance"] * fraction_adult_stratum_df
         )
         self.transect_results_gdf["abundance_adult"] = (
-            self.transect_results_gdf["abundance"]
-            * self.num_fraction_adult_df.loc[self.nasc_df.stratum_num].values.flatten()
+            self.transect_results_gdf["abundance"] * fraction_adult_stratum_df
         )
 
     def _set_biomass(self, bc_expanded_df: pd.DataFrame) -> None:
@@ -1133,24 +1135,20 @@ class ComputeTransectVariables:
             + self.transect_results_female_gdf["biomass"]
         )
 
+        # create variable to improve readability
+        fraction_adult_stratum_df = self.weight_fraction_adult_df.loc[
+            self.nasc_df.stratum_num
+        ].values.flatten()
+
         # obtain the biomass for adults
         self.transect_results_female_gdf["biomass_adult"] = (
-            self.transect_results_female_gdf["biomass"]
-            * self.weight_fraction_adult_df.loc[
-                self.nasc_df.stratum_num
-            ].values.flatten()
+            self.transect_results_female_gdf["biomass"] * fraction_adult_stratum_df
         )
         self.transect_results_male_gdf["biomass_adult"] = (
-            self.transect_results_male_gdf["biomass"]
-            * self.weight_fraction_adult_df.loc[
-                self.nasc_df.stratum_num
-            ].values.flatten()
+            self.transect_results_male_gdf["biomass"] * fraction_adult_stratum_df
         )
         self.transect_results_gdf["biomass_adult"] = (
-            self.transect_results_gdf["biomass"]
-            * self.weight_fraction_adult_df.loc[
-                self.nasc_df.stratum_num
-            ].values.flatten()
+            self.transect_results_gdf["biomass"] * fraction_adult_stratum_df
         )
 
     @staticmethod
