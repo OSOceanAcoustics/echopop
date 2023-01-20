@@ -24,7 +24,7 @@ def test_biomass_age_output():
     survey_2019.load_survey_data()
 
     # compute all transect variables
-    survey_2019.compute_biomass_density()
+    survey_2019.compute_transect_results()
 
     # set variables to improve readability
     transect_results = survey_2019.bio_calc.transect_results_gdf
@@ -85,7 +85,7 @@ def test_core_output():
     survey_2019.load_survey_data()
 
     # compute all transect variables
-    survey_2019.compute_biomass_density()
+    survey_2019.compute_transect_results()
 
     # set variables to improve readability
     transect_results = survey_2019.bio_calc.transect_results_gdf

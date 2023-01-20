@@ -424,7 +424,7 @@ class Kriging:
         Notes
         -----
         To run this routine, one must first compute the areal biomass
-        density using ``compute_biomass_density``.
+        density using ``compute_transect_results``.
         """
 
         if not isinstance(krig_mesh, KrigingMesh):

@@ -6,12 +6,10 @@ import pandas as pd
 
 
 class ComputeTransectVariables:
-    # TODO: once we establish a name here, we need to change it everywhere
-    #  (including this file name) and update all descriptions
     """
-    A class that computes the biomass density
-    of an animal population based off of NASC
-    values and other associated data.
+    A class that computes several variables (e.g. abundance, biomass)
+    describing the animal population at the provided transect points
+    using NASC values and other associated data.
 
     Parameters
     ----------
@@ -1251,14 +1249,15 @@ class ComputeTransectVariables:
         self, selected_transects: Optional[List] = None
     ) -> None:
         """
-        Orchestrates the calculation of the areal biomass density
-        and creation of self.transect_results_gdf, which contains
-        the areal biomass density of adult hake and associated useful variables.
+        Orchestrates the construction of ``self.transect_results_gdf``,
+        ``self.transect_results_male_gdf``, and ``self.transect_results_female_gdf``,
+        which are GeoDataFrames that contain variables over the transect
+        points (e.g. abundance, biomass).
 
         Parameters
         ----------
         selected_transects : list or None
-            The subset of transects used in the biomass calculation
+            The subset of transects used in the calculations
         """
 
         self.set_class_variables(selected_transects)
