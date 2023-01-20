@@ -18,6 +18,7 @@ from .computation import (
     vario_type_dict,
 )
 from .data_loader import KrigingMesh, LoadBioData, LoadStrataData, load_nasc_df
+from .reports import Reports
 from .utils.input_checks import check_existence_of_file
 
 
@@ -566,3 +567,20 @@ class Survey:
         boot = Bootstrapping(self)
 
         return boot
+
+    def get_reports(self) -> Reports:
+        """
+        Initializes a ``Reports`` object.
+
+        Returns
+        -------
+        report: Reports
+            An initialized ``Reports`` object that provides users with
+            access to the routine ``create_and_write_reports``, which
+            generates various transect and Kriging based reports and
+            writes these reports to Excel files.
+        """
+
+        report = Reports(self)
+
+        return report

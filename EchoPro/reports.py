@@ -1,7 +1,8 @@
+import pathlib
+from typing import Union
+
 import numpy as np
 import pandas as pd
-
-from .survey import Survey
 
 
 class Reports:
@@ -11,19 +12,14 @@ class Reports:
 
     Parameters
     ----------
-    echopro : EchoPro
-        EchoPro object that contains all necessary parameters
+    survey : Survey
+        Survey object that contains all necessary parameters
 
     """
 
-    def __init__(self, survey: Survey):
+    def __init__(self, survey):
 
-        if survey.bootstrapping_performed:
-            print("Generate all consolidated files")
-        else:
-            raise RuntimeError("Bootstrapping must be performed first!")
-
-        self.EPro = survey
+        self.survey = survey
 
     def __process_gear_data(self, df):
         """
@@ -255,3 +251,120 @@ class Reports:
             raise NotImplementedError(
                 f"Source of {self.EPro.params['source']} not implemented yet."
             )
+
+    def _aged_len_haul_counts_report(self):
+        """
+        Creates aged length-haul-counts table, which specifies the aged hake
+        counts at each length bin from all hauls for male, female, and all.
+        Additionally, writes this report to an Excel file.
+
+        Returns
+        -------
+
+        """
+
+        pass
+
+    def _transect_based_biomass_ages_report(self):
+        """
+        Generates a transect based biomass at different age bins
+        report and writes it to an Excel file.
+
+        Returns
+        -------
+
+        """
+
+        pass
+
+    def _transect_based_core_variables_report(self):
+        """
+        Generates a report containing core transect based variables
+        and writes it to an Excel file.
+
+        Returns
+        -------
+
+        """
+
+        pass
+
+    def _total_len_haul_counts_report(self):
+        """
+        Generates a report for total hake counts at length with
+        actually measured length (sampled at both biological sampling
+        stations for US/CAN) for all hauls. Additionally, writes this
+        report to an Excel file.
+
+        Returns
+        -------
+
+        """
+
+        pass
+
+    def _transect_based_len_age_abundance_report(self):
+        """
+        Generates a report that is a 40 x 21 matrix, with 40 length bins (1st column)
+        (L =2, 4, 6, … 80 cm, and ith length bin include length i-1 and i cm) and 21
+        age bins (1st row), 1, 2, 3, … 20 year old, and the 21st age bin is un-aged
+        abundance. The abundance values are based on the transect results. There are
+        three tabs with male, female, and all (male+female). Additionally, writes this
+        report to an Excel file.
+
+        Returns
+        -------
+
+        """
+
+        pass
+
+    def _transect_based_len_age_biomass_report(self):
+        """
+        Generates a report that is a 40 x 21 matrix, with 40 length bins (1st column)
+        (L =2, 4, 6, … 80 cm, and ith length bin include length i-1 and i cm) and 21
+        age bins (1st row), 1, 2, 3, … 20 year old. The biomass values are based on the
+        transect results. There are three tabs with male, female, and all (male+female).
+        Additionally, writes this report to an Excel file.
+
+        Returns
+        -------
+
+        """
+
+        pass
+
+    def create_and_write_reports(self, output_path: Union[str, pathlib.Path]) -> None:
+        """
+        Constructs Kriging mesh and Transect report DataFrames and writes
+        them to Excel files.
+
+        Parameters
+        ----------
+        output_path: str or pathlib.Path
+            The output path where all Excel files should be saved
+
+        # TODO: maybe include an option to overwrite files (default to False)
+        """
+
+        if not isinstance(output_path, (str, pathlib.Path)):
+            raise TypeError("output_path must be a string or pathlib.Path!")
+
+        if isinstance(output_path, str):
+            # convert string path to pathlib.Path
+            output_path = pathlib.Path(output_path)
+
+        # check if path exists, if it doesn't create it
+        output_path.mkdir(parents=True, exist_ok=True)
+
+        self._aged_len_haul_counts_report()
+
+        self._transect_based_biomass_ages_report()
+
+        self._transect_based_core_variables_report()
+
+        self._total_len_haul_counts_report()
+
+        self._transect_based_len_age_abundance_report()
+
+        self._transect_based_len_age_biomass_report()
