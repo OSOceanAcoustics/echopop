@@ -1,6 +1,7 @@
 import pathlib
 from typing import Union
 
+import geopandas as gpd
 import numpy as np
 import pandas as pd
 
@@ -265,17 +266,73 @@ class Reports:
 
         pass
 
-    def _transect_based_biomass_ages_report(self):
+    def _write_biomass_ages_report(
+        self,
+        output_excel_path_all: pathlib.Path,
+        output_excel_path_non_zero: pathlib.Path,
+        results: gpd.GeoDataFrame,
+        results_male: gpd.GeoDataFrame,
+        results_female: gpd.GeoDataFrame,
+        krig_result: bool,
+    ) -> None:
         """
-        Generates a transect based biomass at different age bins
-        report and writes it to an Excel file.
+        Generates a biomass at different age bins report based off of the input
+        DataFrames and writes it to an Excel file.
 
-        Returns
-        -------
-
+        Parameters
+        ----------
+        output_excel_path_all: pathlib.Path
+            The output Excel file path where all reports that include all the data
+            should be saved
+        output_excel_path_non_zero: pathlib.Path
+            The output Excel file path where all reports that include all the data
+            should be saved
+        results: gpd.GeoDataFrame
+            A GeoDataFrame containing data that includes all genders
+        results_male: gpd.GeoDataFrame
+            A GeoDataFrame containing data that only includes males
+        results_female: gpd.GeoDataFrame
+            A GeoDataFrame containing data that only includes females
+        krig_result: bool
+            It True the data being written corresponds to Kriging based variables,
+            else corresponds to Transect based variables
         """
 
-        pass
+        # specify columns that should be included in the report
+        if krig_result:
+            lat_lon_names = ["centroid_latitude", "centroid_longitude"]
+        else:
+            lat_lon_names = ["latitude", "longitude"]
+        wanted_columns = (
+            lat_lon_names
+            + ["stratum_num", "biomass_adult"]
+            + [
+                "biomass_age_bin_" + str(i + 1)
+                for i in range(len(self.survey.params["bio_hake_age_bin"]))
+            ]
+        )
+
+        # TODO: should we create a small function to reduce duplicated code?
+
+        # write all results to Excel sheet
+        with pd.ExcelWriter(output_excel_path_all) as writer:
+
+            results[wanted_columns].to_excel(writer, sheet_name="all genders")
+            results_male[wanted_columns].to_excel(writer, sheet_name="male")
+            results_female[wanted_columns].to_excel(writer, sheet_name="female")
+
+        # write only output corresponding to non-zero biomass values
+        with pd.ExcelWriter(output_excel_path_non_zero) as writer:
+
+            results[results["biomass_adult"] != 0][wanted_columns].to_excel(
+                writer, sheet_name="all genders"
+            )
+            results_male[results["biomass_adult"] != 0][wanted_columns].to_excel(
+                writer, sheet_name="male"
+            )
+            results_female[results["biomass_adult"] != 0][wanted_columns].to_excel(
+                writer, sheet_name="female"
+            )
 
     def _transect_based_core_variables_report(self):
         """
@@ -345,6 +402,8 @@ class Reports:
             The output path where all Excel files should be saved
 
         # TODO: maybe include an option to overwrite files (default to False)
+
+        # TODO: should we include an option that allows you to generate a specific report?
         """
 
         if not isinstance(output_path, (str, pathlib.Path)):
@@ -357,9 +416,29 @@ class Reports:
         # check if path exists, if it doesn't create it
         output_path.mkdir(parents=True, exist_ok=True)
 
+        # TODO: perform a check that all necessary DataFrames have been constructed
+
         self._aged_len_haul_counts_report()
 
-        self._transect_based_biomass_ages_report()
+        self._write_biomass_ages_report(
+            output_excel_path_all=output_path / "transect_based_aged_output_all.xlsx",
+            output_excel_path_non_zero=output_path
+            / "transect_based_aged_output_non_zero.xlsx",
+            results=self.survey.bio_calc.transect_results_gdf,
+            results_male=self.survey.bio_calc.transect_results_male_gdf,
+            results_female=self.survey.bio_calc.transect_results_female_gdf,
+            krig_result=False,
+        )
+
+        self._write_biomass_ages_report(
+            output_excel_path_all=output_path / "kriging_based_aged_output_all.xlsx",
+            output_excel_path_non_zero=output_path
+            / "kriging_based_aged_output_non_zero.xlsx",
+            results=self.survey.bio_calc.kriging_results_gdf,
+            results_male=self.survey.bio_calc.kriging_results_male_gdf,
+            results_female=self.survey.bio_calc.kriging_results_female_gdf,
+            krig_result=True,
+        )
 
         self._transect_based_core_variables_report()
 
