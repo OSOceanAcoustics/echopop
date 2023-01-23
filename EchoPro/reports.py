@@ -313,8 +313,8 @@ class Reports:
             The output Excel file path where all reports that include all the data
             should be saved
         output_excel_path_non_zero: pathlib.Path
-            The output Excel file path where all reports that include all the data
-            should be saved
+            The output Excel file path where all reports that include non-zero
+            biomass should be saved
         results: gpd.GeoDataFrame
             A GeoDataFrame containing data that includes all genders
         results_male: gpd.GeoDataFrame
@@ -351,20 +351,29 @@ class Reports:
 
         # write only output corresponding to non-zero biomass values
         df_list = [
-            results[results["biomass_adult"] != 0][wanted_columns],
-            results_male[results["biomass_adult"] != 0][wanted_columns],
-            results_female[results["biomass_adult"] != 0][wanted_columns],
+            results[results["biomass_adult"] != 0.0][wanted_columns],
+            results_male[results["biomass_adult"] != 0.0][wanted_columns],
+            results_female[results["biomass_adult"] != 0.0][wanted_columns],
         ]
         self._write_dfs_to_excel(df_list, sheet_names, output_excel_path_non_zero)
 
-    def _transect_based_core_variables_report(self):
+    def _transect_based_core_variables_report(
+        self,
+        output_excel_path_all: pathlib.Path,
+        output_excel_path_non_zero: pathlib.Path,
+    ) -> None:
         """
         Generates a report containing core transect based variables
         and writes it to an Excel file.
 
-        Returns
-        -------
-
+        Parameters
+        ----------
+        output_excel_path_all: pathlib.Path
+            The output Excel file path where all reports that include all the data
+            should be saved
+        output_excel_path_non_zero: pathlib.Path
+            The output Excel file path where all reports that include non-zero
+            NASC should be saved
         """
 
         # specify column names to grab and their corresponding type
@@ -377,13 +386,131 @@ class Reports:
         }
 
         # obtain NASC data data that was not necessary for core routines
-        extra_nasc_df = _process_nasc_data(self.survey, nasc_var_types)
-        print(type(extra_nasc_df))
+        extra_nasc_df = _process_nasc_data(self.survey, nasc_var_types).set_index(
+            self.survey.bio_calc.nasc_df.index
+        )
 
-        # # set variables to improve readability
-        # transect_results = self.survey.bio_calc.transect_results_gdf
-        # transect_results_male = self.survey.bio_calc.transect_results_male_gdf
-        # transect_results_female = self.survey.bio_calc.transect_results_female_gdf
+        # set variables to improve readability
+        transect_results = self.survey.bio_calc.transect_results_gdf
+        transect_results_male = self.survey.bio_calc.transect_results_male_gdf
+        transect_results_female = self.survey.bio_calc.transect_results_female_gdf
+        stratum_vals = self.survey.bio_calc.nasc_df.stratum_num
+
+        # TODO: change this so that it uses the NASC proportion
+        fraction_adult_stratum_df = self.survey.bio_calc.num_fraction_adult_df.loc[
+            stratum_vals
+        ].values.flatten()
+
+        # define columns to grab from the produced results
+        wanted_columns = [
+            "latitude",
+            "longitude",
+            "stratum_num",
+            "biomass_adult",
+            "biomass_density_adult",
+            "numerical_density_adult",
+            "abundance_adult",
+            "transect_spacing",
+            "interval",
+        ]
+        gender_wanted_columns = [
+            "biomass_adult",
+            "biomass_density",
+            "abundance_adult",
+            "numerical_density",
+        ]
+
+        # select columns from transect data and rename gender specific columns
+        df = transect_results[wanted_columns]
+        male_df = transect_results_male[gender_wanted_columns].rename(
+            columns={
+                "biomass_adult": "biomass_male_adult",
+                "biomass_density": "biomass_density_male",
+                "abundance_adult": "abundance_male_adult",
+                "numerical_density": "numerical_density_male",
+            }
+        )
+        female_df = transect_results_female[gender_wanted_columns].rename(
+            columns={
+                "biomass_adult": "biomass_female_adult",
+                "biomass_density": "biomass_density_female",
+                "abundance_adult": "abundance_female_adult",
+                "numerical_density": "numerical_density_female",
+            }
+        )
+
+        # get sig_b over the NASC points
+        sig_b = (
+            self.survey.bio_calc.strata_sig_b.loc[stratum_vals]
+            .reset_index(drop=True)
+            .set_axis(self.survey.bio_calc.nasc_df.index)
+        )
+
+        # get average weight over the NASC points
+        avg_wgt = (
+            self.survey.bio_calc.bio_param_df.averaged_weight.loc[stratum_vals]
+            .reset_index(drop=True)
+            .set_axis(self.survey.bio_calc.nasc_df.index)
+        )
+
+        # obtain the NASC for adults
+        NASC_adult = self.survey.bio_calc.nasc_df["NASC"] * fraction_adult_stratum_df
+
+        # put all results into one DataFrame
+        final_df = pd.concat(
+            [
+                df,
+                male_df,
+                female_df,
+                extra_nasc_df,
+                self.survey.bio_calc.nasc_df[["vessel_log_start", "vessel_log_end"]],
+                NASC_adult,
+                self.survey.bio_calc.mix_sa_ratio,
+                sig_b,
+                avg_wgt,
+            ],
+            axis=1,
+        )
+
+        # define column names in the same order as the defined report
+        ordered_columns = [
+            "Region ID",
+            "vessel_log_start",
+            "vessel_log_end",
+            "latitude",
+            "longitude",
+            "stratum_num",
+            "Bottom depth",
+            "NASC",
+            "abundance_male_adult",
+            "abundance_female_adult",
+            "abundance_adult",
+            "biomass_male_adult",
+            "biomass_female_adult",
+            "biomass_adult",
+            "numerical_density_male",
+            "numerical_density_female",
+            "numerical_density_adult",
+            "biomass_density_male",
+            "biomass_density_female",
+            "biomass_density_adult",
+            "Layer mean depth",
+            "Layer height",
+            "transect_spacing",
+            "interval",
+            "hake_mix_coefficient",
+            "sig_bs_haul",
+            "averaged_weight",
+        ]
+
+        # write all results to Excel file
+        df_list = [final_df[ordered_columns]]
+        sheet_names = ["Sheet1"]
+        self._write_dfs_to_excel(df_list, sheet_names, output_excel_path_all)
+
+        # write only output corresponding to non-zero NASC values
+        df_list = [final_df[final_df["NASC"] != 0.0][ordered_columns]]
+        self._write_dfs_to_excel(df_list, sheet_names, output_excel_path_non_zero)
 
     def _total_len_haul_counts_report(self):
         """
@@ -459,27 +586,31 @@ class Reports:
 
         self._aged_len_haul_counts_report()
 
-        self._write_biomass_ages_report(
-            output_excel_path_all=output_path / "transect_based_aged_output_all.xlsx",
-            output_excel_path_non_zero=output_path
-            / "transect_based_aged_output_non_zero.xlsx",
-            results=self.survey.bio_calc.transect_results_gdf,
-            results_male=self.survey.bio_calc.transect_results_male_gdf,
-            results_female=self.survey.bio_calc.transect_results_female_gdf,
-            krig_result=False,
-        )
+        # self._write_biomass_ages_report(
+        #     output_excel_path_all=output_path / "transect_based_aged_output_all.xlsx",
+        #     output_excel_path_non_zero=output_path
+        #     / "transect_based_aged_output_non_zero.xlsx",
+        #     results=self.survey.bio_calc.transect_results_gdf,
+        #     results_male=self.survey.bio_calc.transect_results_male_gdf,
+        #     results_female=self.survey.bio_calc.transect_results_female_gdf,
+        #     krig_result=False,
+        # )
+        #
+        # self._write_biomass_ages_report(
+        #     output_excel_path_all=output_path / "kriging_based_aged_output_all.xlsx",
+        #     output_excel_path_non_zero=output_path
+        #     / "kriging_based_aged_output_non_zero.xlsx",
+        #     results=self.survey.bio_calc.kriging_results_gdf,
+        #     results_male=self.survey.bio_calc.kriging_results_male_gdf,
+        #     results_female=self.survey.bio_calc.kriging_results_female_gdf,
+        #     krig_result=True,
+        # )
 
-        self._write_biomass_ages_report(
-            output_excel_path_all=output_path / "kriging_based_aged_output_all.xlsx",
+        self._transect_based_core_variables_report(
+            output_excel_path_all=output_path / "transect_based_core_output_all.xlsx",
             output_excel_path_non_zero=output_path
-            / "kriging_based_aged_output_non_zero.xlsx",
-            results=self.survey.bio_calc.kriging_results_gdf,
-            results_male=self.survey.bio_calc.kriging_results_male_gdf,
-            results_female=self.survey.bio_calc.kriging_results_female_gdf,
-            krig_result=True,
+            / "transect_based_core_output_non_zero.xlsx",
         )
-
-        self._transect_based_core_variables_report()
 
         self._total_len_haul_counts_report()
 

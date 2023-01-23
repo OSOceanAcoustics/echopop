@@ -1207,6 +1207,7 @@ class ComputeTransectVariables:
             lambda x: wgt_vals[x.haul_num] if x.haul_num in wgt_vals_ind else 0.0,
             axis=1,
         )
+        self.mix_sa_ratio.name = "hake_mix_coefficient"
 
         # expand the bio parameters dataframe so that it corresponds to nasc_df
         bc_expanded_df = self.bio_param_df.loc[self.nasc_df.stratum_num]
