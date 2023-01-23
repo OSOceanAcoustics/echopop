@@ -1,5 +1,5 @@
 import pathlib
-from typing import Union
+from typing import List, Union
 
 import geopandas as gpd
 import numpy as np
@@ -253,6 +253,32 @@ class Reports:
                 f"Source of {self.EPro.params['source']} not implemented yet."
             )
 
+    @staticmethod
+    def _write_dfs_to_excel(
+        df_list: List[pd.DataFrame],
+        sheet_name_list: List[str],
+        excel_path: pathlib.Path,
+    ) -> None:
+        """
+        Writes a list of DataFrames to an Excel file using a
+        provided output path and associated sheet name.
+
+        Parameters
+        ----------
+        df_list: list of pd.DataFrame
+            A list of DataFrames to write to the Excel file
+        sheet_name_list: list of str
+            A list of sheet names corresponding to ``df_list``
+        excel_path: pathlib.Path
+            The path to the Excel file where data should be written
+        """
+
+        # write DataFrames to Excel sheet
+        with pd.ExcelWriter(excel_path) as writer:
+
+            for i in range(len(df_list)):
+                df_list[i].to_excel(writer, sheet_name=sheet_name_list[i])
+
     def _aged_len_haul_counts_report(self):
         """
         Creates aged length-haul-counts table, which specifies the aged hake
@@ -312,27 +338,22 @@ class Reports:
             ]
         )
 
-        # TODO: should we create a small function to reduce duplicated code?
-
-        # write all results to Excel sheet
-        with pd.ExcelWriter(output_excel_path_all) as writer:
-
-            results[wanted_columns].to_excel(writer, sheet_name="all genders")
-            results_male[wanted_columns].to_excel(writer, sheet_name="male")
-            results_female[wanted_columns].to_excel(writer, sheet_name="female")
+        # write all results to Excel file
+        df_list = [
+            results[wanted_columns],
+            results_male[wanted_columns],
+            results_female[wanted_columns],
+        ]
+        sheet_names = ["all genders", "male", "female"]
+        self._write_dfs_to_excel(df_list, sheet_names, output_excel_path_all)
 
         # write only output corresponding to non-zero biomass values
-        with pd.ExcelWriter(output_excel_path_non_zero) as writer:
-
-            results[results["biomass_adult"] != 0][wanted_columns].to_excel(
-                writer, sheet_name="all genders"
-            )
-            results_male[results["biomass_adult"] != 0][wanted_columns].to_excel(
-                writer, sheet_name="male"
-            )
-            results_female[results["biomass_adult"] != 0][wanted_columns].to_excel(
-                writer, sheet_name="female"
-            )
+        df_list = [
+            results[results["biomass_adult"] != 0][wanted_columns],
+            results_male[results["biomass_adult"] != 0][wanted_columns],
+            results_female[results["biomass_adult"] != 0][wanted_columns],
+        ]
+        self._write_dfs_to_excel(df_list, sheet_names, output_excel_path_non_zero)
 
     def _transect_based_core_variables_report(self):
         """
