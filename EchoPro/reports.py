@@ -312,6 +312,7 @@ class Reports:
         df_list: List[pd.DataFrame],
         sheet_name_list: List[str],
         excel_path: pathlib.Path,
+        include_index: bool = True,
     ) -> None:
         """
         Writes a list of DataFrames to an Excel file using a
@@ -325,13 +326,17 @@ class Reports:
             A list of sheet names corresponding to ``df_list``
         excel_path: pathlib.Path
             The path to the Excel file where data should be written
+        include_index: bool, default=True
+            If True, the index will be included in the Excel sheet, else it won't be
         """
 
         # write DataFrames to Excel sheet
         with pd.ExcelWriter(excel_path) as writer:
 
             for i in range(len(df_list)):
-                df_list[i].to_excel(writer, sheet_name=sheet_name_list[i])
+                df_list[i].to_excel(
+                    writer, sheet_name=sheet_name_list[i], index=include_index
+                )
 
     def _aged_len_haul_counts_report(self):
         """
@@ -603,6 +608,90 @@ class Reports:
 
         pass
 
+    def _kriging_based_core_variables_report(
+        self,
+        output_excel_path_all: pathlib.Path,
+        output_excel_path_non_zero: pathlib.Path,
+    ) -> None:
+        """
+        Generates a report containing core Kriging based variables
+        and writes it to an Excel file.
+
+        Parameters
+        ----------
+        output_excel_path_all: pathlib.Path
+            The output Excel file path where all reports that include all the data
+            should be saved
+        output_excel_path_non_zero: pathlib.Path
+            The output Excel file path where all reports that include non-zero
+            NASC should be saved
+        """
+
+        # set variables to improve readability
+        krig_results = self.survey.bio_calc.kriging_results_gdf
+        krig_results_male = self.survey.bio_calc.kriging_results_male_gdf
+        krig_results_female = self.survey.bio_calc.kriging_results_female_gdf
+
+        # define columns grab from the produced results
+        wanted_columns = [
+            "centroid_latitude",
+            "centroid_longitude",
+            "stratum_num",
+            "NASC",
+            "biomass_adult",
+            "abundance_adult",
+            "sig_b",
+            "biomass_adult_cell_CV",
+        ]
+        gender_wanted_columns = ["biomass_adult", "abundance_adult"]
+
+        # collect wanted columns from results and rename gender based results
+        df = krig_results[wanted_columns]
+        male_df = krig_results_male[gender_wanted_columns].rename(
+            columns={
+                "biomass_adult": "biomass_male_adult",
+                "abundance_adult": "abundance_male_adult",
+            }
+        )
+        female_df = krig_results_female[gender_wanted_columns].rename(
+            columns={
+                "biomass_adult": "biomass_female_adult",
+                "abundance_adult": "abundance_female_adult",
+            }
+        )
+
+        # put together all wanted results
+        final_df = pd.concat([df, male_df, female_df], axis=1)
+
+        # define column names in the same order as the defined report
+        ordered_columns = [
+            "centroid_latitude",
+            "centroid_longitude",
+            "stratum_num",
+            "NASC",
+            "abundance_male_adult",
+            "abundance_female_adult",
+            "abundance_adult",
+            "biomass_male_adult",
+            "biomass_female_adult",
+            "biomass_adult",
+            "sig_b",
+            "biomass_adult_cell_CV",
+        ]
+
+        # write all results to Excel file
+        df_list = [final_df[ordered_columns]]
+        sheet_names = ["Sheet1"]
+        self._write_dfs_to_excel(
+            df_list, sheet_names, output_excel_path_all, include_index=False
+        )
+
+        # write only output corresponding to non-zero NASC values
+        df_list = [final_df[final_df["NASC"] != 0.0][ordered_columns]]
+        self._write_dfs_to_excel(
+            df_list, sheet_names, output_excel_path_non_zero, include_index=False
+        )
+
     def create_and_write_reports(self, output_path: Union[str, pathlib.Path]) -> None:
         """
         Constructs Kriging mesh and Transect report DataFrames and writes
@@ -652,14 +741,20 @@ class Reports:
         #     krig_result=True,
         # )
 
-        self._transect_based_core_variables_report(
-            output_excel_path_all=output_path / "transect_based_core_output_all.xlsx",
-            output_excel_path_non_zero=output_path
-            / "transect_based_core_output_non_zero.xlsx",
-        )
+        # self._transect_based_core_variables_report(
+        #     output_excel_path_all=output_path / "transect_based_core_output_all.xlsx",
+        #     output_excel_path_non_zero=output_path
+        #     / "transect_based_core_output_non_zero.xlsx",
+        # )
 
         self._total_len_haul_counts_report()
 
         self._transect_based_len_age_abundance_report()
 
         self._transect_based_len_age_biomass_report()
+
+        self._kriging_based_core_variables_report(
+            output_excel_path_all=output_path / "kriging_based_core_output_all.xlsx",
+            output_excel_path_non_zero=output_path
+            / "kriging_based_core_output_non_zero.xlsx",
+        )
