@@ -1,24 +1,13 @@
 from pathlib import Path
+from typing import Set
 
 import numpy as np
 import pandas as pd
 
 from ..utils.input_checks import check_column_names, check_existence_of_file
 
-nasc_cols = {
-    "transect_num",
-    "vessel_log_start",
-    "vessel_log_end",
-    "latitude",
-    "longitude",
-    "stratum_num",
-    "transect_spacing",
-    "NASC",
-    "haul_num",
-}
 
-
-def _check_nasc_df(nasc_df: pd.DataFrame, df_path: Path) -> None:
+def _check_nasc_df(nasc_df: pd.DataFrame, df_path: Path, nasc_cols: Set[str]) -> None:
     """
     Ensures that the appropriate columns are
     contained in the NASC Dataframe.
@@ -29,6 +18,8 @@ def _check_nasc_df(nasc_df: pd.DataFrame, df_path: Path) -> None:
         The constructed NASC DataFrame
     df_path: Path
         The path to the Excel file used to construct the DataFrame
+    nasc_cols: set of str
+        A set of strings specifying the NASC columns to grab
     """
 
     # TODO: should we add more in-depth checks here?
@@ -36,18 +27,24 @@ def _check_nasc_df(nasc_df: pd.DataFrame, df_path: Path) -> None:
     check_column_names(df=nasc_df, expected_names=nasc_cols, path_for_df=df_path)
 
 
-def load_nasc_df(survey) -> pd.DataFrame:
+def _process_nasc_data(survey, nasc_var_types: dict) -> pd.DataFrame:
     """
-    Load VL interval-based NASC table.
+    Loads in NASC data from the appropriate Excel file using the
+    specified columns. Additionally, sets that data type of the
+    columns in the DataFrame.
 
     Parameters
     ----------
     survey : Survey
         An initialized Survey object
+    nasc_var_types: dict
+        A dictionary with string keys that are the NASC column names to
+        grab and values are the types of those columns
 
     Returns
     -------
-    Pandas Dataframe of NASC table.
+    df: pd.DataFrame
+        A DataFrame filled with the requested NASC data
     """
 
     # select and check the appropriate nasc data file
@@ -74,37 +71,13 @@ def load_nasc_df(survey) -> pd.DataFrame:
             file_path, sheet_name=survey.params["nasc_all_ages_sheetname"]
         )
 
-    _check_nasc_df(df, file_path)
+    _check_nasc_df(df, file_path, set(nasc_var_types.keys()))
 
     # obtaining those columns that are required
-    df = df[
-        [
-            "transect_num",
-            "vessel_log_start",
-            "vessel_log_end",
-            "latitude",
-            "longitude",
-            "stratum_num",
-            "transect_spacing",
-            "NASC",
-            "haul_num",
-        ]
-    ].copy()
+    df = df[nasc_var_types.keys()]
 
     # set data types of dataframe
-    df = df.astype(
-        {
-            "transect_num": int,
-            "vessel_log_start": np.float64,
-            "vessel_log_end": np.float64,
-            "latitude": np.float64,
-            "longitude": np.float64,
-            "stratum_num": int,
-            "transect_spacing": np.float64,
-            "NASC": np.float64,
-            "haul_num": int,
-        }
-    )
+    df = df.astype(nasc_var_types)
 
     if survey.params["survey_year"] < 2003:
         # TODO: it may be the case that we need to include lines 35-61 of
@@ -112,6 +85,38 @@ def load_nasc_df(survey) -> pd.DataFrame:
         raise NotImplementedError(
             "Loading the NASC table for survey years less than 2003 has not been implemented!"
         )
+
+    return df
+
+
+def load_nasc_df(survey) -> pd.DataFrame:
+    """
+    Load VL interval-based NASC table.
+
+    Parameters
+    ----------
+    survey : Survey
+        An initialized Survey object
+
+    Returns
+    -------
+    Pandas Dataframe of NASC table.
+    """
+
+    # specify column names to grab and their corresponding type
+    nasc_var_types = {
+        "transect_num": int,
+        "vessel_log_start": np.float64,
+        "vessel_log_end": np.float64,
+        "latitude": np.float64,
+        "longitude": np.float64,
+        "stratum_num": int,
+        "transect_spacing": np.float64,
+        "NASC": np.float64,
+        "haul_num": int,
+    }
+
+    df = _process_nasc_data(survey, nasc_var_types)
 
     # set dataframe index
     df.set_index("transect_num", inplace=True)

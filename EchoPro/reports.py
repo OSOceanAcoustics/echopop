@@ -5,6 +5,8 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 
+from .data_loader.nasc_data import _process_nasc_data
+
 
 class Reports:
     """
@@ -365,7 +367,23 @@ class Reports:
 
         """
 
-        pass
+        # specify column names to grab and their corresponding type
+        # TODO: these columns names have not been reviewed, should they be changed?
+        nasc_var_types = {
+            "Region ID": int,
+            "Bottom depth": np.float64,
+            "Layer mean depth": np.float64,
+            "Layer height": np.float64,
+        }
+
+        # obtain NASC data data that was not necessary for core routines
+        extra_nasc_df = _process_nasc_data(self.survey, nasc_var_types)
+        print(type(extra_nasc_df))
+
+        # # set variables to improve readability
+        # transect_results = self.survey.bio_calc.transect_results_gdf
+        # transect_results_male = self.survey.bio_calc.transect_results_male_gdf
+        # transect_results_female = self.survey.bio_calc.transect_results_female_gdf
 
     def _total_len_haul_counts_report(self):
         """
