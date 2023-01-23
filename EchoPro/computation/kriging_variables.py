@@ -871,8 +871,9 @@ class ComputeKrigingVariables:
             desired variables
         """
 
-        # TODO: maybe only select those variables that are necessary for reports
-        self.krig.ds = ds
+        # store variables for the reports
+        # TODO: do we need to store other variables for the reports?
+        self.krig.survey.bio_calc.len_age_dist_all = ds["len_age_dist_all"]
 
         # calculate and add the male and female biomass to Kriging results
         self._set_gender_biomass(ds)

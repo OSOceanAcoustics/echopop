@@ -255,6 +255,58 @@ class Reports:
                 f"Source of {self.EPro.params['source']} not implemented yet."
             )
 
+    def _get_adult_NASC(self, stratum_vals: np.ndarray) -> pd.Series:
+        """
+        Computes NASC values corresponding to the adult animal population.
+
+        Parameters
+        ----------
+        stratum_vals: np.ndarray
+            The ``stratum_num`` column of the NASC DataFrame
+
+        Returns
+        -------
+        pd.Series
+            A Series representing the NASC for the adult animal population
+        """
+
+        # get the normalized length-age distribution
+        len_age_dist_all_norm = (
+            self.survey.bio_calc.len_age_dist_all
+            / self.survey.bio_calc.len_age_dist_all.sum(dim=["len_bin", "age_bin"])
+        )
+
+        # create adult NASC proportion coefficient
+        nasc_fraction_adult_df = pd.DataFrame(
+            columns=["val"], index=len_age_dist_all_norm.stratum, dtype=np.float64
+        )
+
+        for i in len_age_dist_all_norm.stratum.values:
+            sig_bs_aged_ave = np.sum(
+                self.survey.params["sig_b_coef"]
+                * np.matmul(
+                    (self.survey.params["bio_hake_len_bin"] ** 2),
+                    len_age_dist_all_norm.sel(stratum=i).values,
+                )
+            )
+
+            temp = self.survey.params["sig_b_coef"] * np.matmul(
+                (self.survey.params["bio_hake_len_bin"] ** 2),
+                len_age_dist_all_norm.sel(stratum=i).isel(age_bin=0).values,
+            )
+
+            age1_nasc_proportion = temp / sig_bs_aged_ave
+
+            nasc_fraction_adult_df.loc[i] = abs(1.0 - age1_nasc_proportion)
+
+        # obtain the adult NASC proportion coefficient for each stratum value
+        fraction_adult_stratum_df = nasc_fraction_adult_df.loc[
+            stratum_vals
+        ].values.flatten()
+
+        # obtain the NASC for adults
+        return self.survey.bio_calc.nasc_df["NASC"] * fraction_adult_stratum_df
+
     @staticmethod
     def _write_dfs_to_excel(
         df_list: List[pd.DataFrame],
@@ -385,7 +437,7 @@ class Reports:
             "Layer height": np.float64,
         }
 
-        # obtain NASC data data that was not necessary for core routines
+        # obtain NASC data that was not necessary for core routines
         extra_nasc_df = _process_nasc_data(self.survey, nasc_var_types).set_index(
             self.survey.bio_calc.nasc_df.index
         )
@@ -395,11 +447,6 @@ class Reports:
         transect_results_male = self.survey.bio_calc.transect_results_male_gdf
         transect_results_female = self.survey.bio_calc.transect_results_female_gdf
         stratum_vals = self.survey.bio_calc.nasc_df.stratum_num
-
-        # TODO: change this so that it uses the NASC proportion
-        fraction_adult_stratum_df = self.survey.bio_calc.num_fraction_adult_df.loc[
-            stratum_vals
-        ].values.flatten()
 
         # define columns to grab from the produced results
         wanted_columns = [
@@ -453,8 +500,7 @@ class Reports:
             .set_axis(self.survey.bio_calc.nasc_df.index)
         )
 
-        # obtain the NASC for adults
-        NASC_adult = self.survey.bio_calc.nasc_df["NASC"] * fraction_adult_stratum_df
+        NASC_adult = self._get_adult_NASC(stratum_vals)
 
         # put all results into one DataFrame
         final_df = pd.concat(
