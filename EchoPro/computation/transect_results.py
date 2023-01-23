@@ -4,6 +4,8 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 
+from ..utils.binning import get_bin_ind
+
 
 class ComputeTransectVariables:
     """
@@ -192,57 +194,6 @@ class ComputeTransectVariables:
 
         return df
 
-    @staticmethod
-    def _get_bin_ind(
-        input_data: np.ndarray, centered_bins: np.ndarray
-    ) -> List[np.ndarray]:
-        """
-        This function manually computes bin counts given ``input_data``. This
-        function is computing the histogram of ``input_data`` using
-        bins that are centered, rather than bins that are on the edge.
-        The first value is between negative infinity and the first bin
-        center plus the bin width divided by two. The last value is
-        between the second to last bin center plus the bin width
-        divided by two to infinity.
-
-
-        Parameters
-        ----------
-        input_data: np.ndarray
-            The data to create a histogram of.
-        centered_bins: np.ndarray
-            An array that specifies the bin centers.
-
-        Returns
-        -------
-        hist_ind: list
-            The index values of input_data corresponding to the histogram
-
-        """
-
-        # get the distance between bin centers
-        bin_diff = np.diff(centered_bins) / 2.0
-
-        # fill the first bin
-        hist_ind = [np.argwhere(input_data <= centered_bins[0] + bin_diff[0]).flatten()]
-
-        for i in range(len(centered_bins) - 2):
-            # get values greater than lower bound
-            g_lb = centered_bins[i] + bin_diff[i] < input_data
-
-            # get values less than or equal to the upper bound
-            le_ub = input_data <= centered_bins[i + 1] + bin_diff[i + 1]
-
-            # fill bin
-            hist_ind.append(np.argwhere(g_lb & le_ub).flatten())
-
-        # fill in the last bin
-        hist_ind.append(
-            np.argwhere(input_data > centered_bins[-2] + bin_diff[-1]).flatten()
-        )
-
-        return hist_ind
-
     def _add_stratum_column(self) -> None:
         """
         Adds the ``stratum_num`` column to self.strata_df
@@ -299,7 +250,7 @@ class ComputeTransectVariables:
         V = df_no_null[val_name].values
 
         # binned length indices
-        len_bin_ind = self._get_bin_ind(L, self.bio_hake_len_bin)
+        len_bin_ind = get_bin_ind(L, self.bio_hake_len_bin)
 
         # total number of lengths in a bin
         len_bin_cnt = np.array([i.shape[0] for i in len_bin_ind])
@@ -349,7 +300,7 @@ class ComputeTransectVariables:
         length_count_arr = df.length_count.values
 
         # binned length indices
-        len_ind = self._get_bin_ind(length_arr, self.bio_hake_len_bin)
+        len_ind = get_bin_ind(length_arr, self.bio_hake_len_bin)
 
         # total number of lengths in a bin
         len_bin_cnt = np.array([np.sum(length_count_arr[i]) for i in len_ind])
@@ -378,7 +329,7 @@ class ComputeTransectVariables:
         length_arr = df.length.values
 
         # binned length indices
-        len_bin_ind = self._get_bin_ind(length_arr, self.bio_hake_len_bin)
+        len_bin_ind = get_bin_ind(length_arr, self.bio_hake_len_bin)
 
         # total number of lengths in a bin
         len_bin_cnt = np.array([i.shape[0] for i in len_bin_ind])
@@ -710,12 +661,10 @@ class ComputeTransectVariables:
             input_arr_wgt = df.weight.values
 
         # bin the ages
-        age_bins_ind = self._get_bin_ind(input_arr_age, self.bio_hake_age_bin)
+        age_bins_ind = get_bin_ind(input_arr_age, self.bio_hake_age_bin)
 
         # bin those lengths that correspond to the lengths in the first age bin
-        len_bin_ind = self._get_bin_ind(
-            input_arr_len[age_bins_ind[0]], self.bio_hake_len_bin
-        )
+        len_bin_ind = get_bin_ind(input_arr_len[age_bins_ind[0]], self.bio_hake_len_bin)
 
         # the length proportion of animals for a given age
         age_len_prop = len(input_arr_len[age_bins_ind[0]]) / len(input_arr_len)
@@ -770,10 +719,10 @@ class ComputeTransectVariables:
             input_arr_wgt = df.weight.values
 
         # bin the ages
-        age_bins_ind = self._get_bin_ind(input_arr_age, self.bio_hake_age_bin)
+        age_bins_ind = get_bin_ind(input_arr_age, self.bio_hake_age_bin)
 
         # bin those lengths that correspond to the lengths in the given age bin
-        len_bin_ind = self._get_bin_ind(
+        len_bin_ind = get_bin_ind(
             input_arr_len[age_bins_ind[age_bin_ind]], self.bio_hake_len_bin
         )
 
@@ -784,7 +733,7 @@ class ComputeTransectVariables:
                 return 0.0
 
             # bin those lengths that correspond to the lengths in the first age bin
-            len_bin_ind_0 = self._get_bin_ind(
+            len_bin_ind_0 = get_bin_ind(
                 input_arr_len[age_bins_ind[0]], self.bio_hake_len_bin
             )
 
