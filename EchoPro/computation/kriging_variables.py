@@ -871,6 +871,9 @@ class ComputeKrigingVariables:
             desired variables
         """
 
+        # TODO: maybe only select those variables that are necessary for reports
+        self.krig.ds = ds
+
         # calculate and add the male and female biomass to Kriging results
         self._set_gender_biomass(ds)
 

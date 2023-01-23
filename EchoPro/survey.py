@@ -187,6 +187,8 @@ class Survey:
 
         init_params["source"] = source
 
+        init_params["sig_b_coef"] = 10 ** init_params["sig_b_coeff_power"]
+
         return init_params
 
     @staticmethod

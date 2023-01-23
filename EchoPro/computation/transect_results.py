@@ -841,8 +841,8 @@ class ComputeTransectVariables:
                 spec_drop.loc[i]
             )
 
-            self.weight_fraction_adult_df.loc[i].val = 1.0 - age_wgt_prop
-            self.num_fraction_adult_df.loc[i].val = 1.0 - age_len_prop
+            self.weight_fraction_adult_df.loc[i].val = abs(1.0 - age_wgt_prop)
+            self.num_fraction_adult_df.loc[i].val = abs(1.0 - age_len_prop)
 
     def _get_weight_fraction_all_ages(self) -> None:
         """

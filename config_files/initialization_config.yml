@@ -18,6 +18,9 @@
                   22,                   # end of sequence
                   22                    # number of points in the sequence
   ]
+
+  sig_b_coeff_power: -6.8               # the power for the coefficient of the sigma_bs = coef *L^2,
+                                        # will give coef = 10^(sig_b_coeff_power)
   #####################################################################################################################
 
 
