@@ -314,17 +314,42 @@ class Reports:
         return bin_cnt
 
     def _bin_len_by_haul_df(
-        self, all_hauls, df_len, len_uniq_haul, df_spec, spec_uniq_haul
-    ):
+        self,
+        all_hauls: np.ndarray,
+        df_len: pd.DataFrame,
+        len_uniq_haul: np.ndarray,
+        df_spec: pd.DataFrame,
+        spec_uniq_haul: np.ndarray,
+    ) -> Tuple[pd.DataFrame, pd.DataFrame]:
         """
         For each haul in ``haul_nums`` bin the length data
         contained the provided DataFrames.
 
+        Parameters
+        ----------
+        all_hauls: np.ndarray
+            All haul numbers that should be included (will be columns
+            of returned DataFrames)
+        df_len: pd.DataFrame
+            A DataFrame corresponding to the length data (must contain
+            ``length`` and ``length_counts`` columns)
+        len_uniq_haul: np.ndarray
+            All unique haul numbers in ``df_len``
+        df_spec: pd.DataFrame
+            A DataFrame corresponding to the specimen data (must contain
+            the ``length`` column)
+        spec_uniq_haul: np.ndarray
+            All unique haul numbers in ``df_spec``
+
         Returns
         -------
+        len_bin_haul_df: pd.DataFrame
+            A DataFrame containing the number of animals in each length bin
+            and haul for the length data
+        spec_bin_haul_df: pd.DataFrame
+            A DataFrame containing the number of animals in each length bin
+            and haul for the specimen data
         """
-
-        # TODO: document!
 
         # DataFrame containing the length bin data for each haul
         len_bin_haul_df = pd.DataFrame(
@@ -334,6 +359,7 @@ class Reports:
             dtype=np.int64,
         )
 
+        # DataFrame containing the specimen bin data for each haul
         spec_bin_haul_df = pd.DataFrame(
             data=0,
             columns=list(all_hauls),
@@ -341,6 +367,7 @@ class Reports:
             dtype=np.int64,
         )
 
+        # name index
         len_bin_haul_df.index.name = "length_bin"
         spec_bin_haul_df.index.name = "length_bin"
 
@@ -374,18 +401,34 @@ class Reports:
     ]:
         """
         For each haul in ``haul_nums`` bin the length data
-        contained in ``df``.
+        for the length and specimen data (completed for males,
+        females, and all genders).
 
         Returns
         -------
-
+        len_haul_all_df: pd.DataFrame
+            A DataFrame containing the number of animals in each length bin
+            and haul for the length data and all genders
+        spec_haul_all_df: pd.DataFrame
+            A DataFrame containing the number of animals in each length bin
+            and haul for the specimen data and all genders
+        len_haul_all_df_male: pd.DataFrame
+            A DataFrame containing the number of animals in each length bin
+            and haul for the length data and males
+        spec_haul_all_df_male: pd.DataFrame
+            A DataFrame containing the number of animals in each length bin
+            and haul for the specimen data and males
+        len_haul_all_df_female: pd.DataFrame
+            A DataFrame containing the number of animals in each length bin
+            and haul for the length data and females
+        spec_haul_all_df_female: pd.DataFrame
+            A DataFrame containing the number of animals in each length bin
+            and haul for the specimen data and females
         """
 
-        # TODO: fill in documentation
-
         # create variables to improve readability
-        len_df = self.survey.length_df
-        spec_df = self.survey.specimen_df
+        len_df = self.survey.length_df.dropna(how="all")
+        spec_df = self.survey.specimen_df.dropna(subset=["age"])
 
         # unique hauls in length data
         len_uniq_haul = len_df.index.unique().values
@@ -401,22 +444,30 @@ class Reports:
             all_hauls, len_df, len_uniq_haul, spec_df, spec_uniq_haul
         )
 
+        # get DataFrame values corresponding to males
+        len_df_male = len_df[len_df["sex"] == 1]
+        spec_df_male = spec_df[spec_df["sex"] == 1]
+
         # get binned lengths at each haul for data corresponding to males
         len_haul_all_df_male, spec_haul_all_df_male = self._bin_len_by_haul_df(
             all_hauls,
-            len_df[len_df["sex"] == 1],
-            len_uniq_haul,
-            spec_df[spec_df["sex"] == 1],
-            spec_uniq_haul,
+            len_df_male,
+            len_df_male.index.unique().values,
+            spec_df_male,
+            spec_df_male.index.unique().values,
         )
+
+        # get DataFrame values corresponding to males
+        len_df_female = len_df[len_df["sex"] == 2]
+        spec_df_female = spec_df[spec_df["sex"] == 2]
 
         # get binned lengths at each haul for data corresponding to females
         len_haul_all_df_female, spec_haul_all_df_female = self._bin_len_by_haul_df(
             all_hauls,
-            len_df[len_df["sex"] == 2],
-            len_uniq_haul,
-            spec_df[spec_df["sex"] == 2],
-            spec_uniq_haul,
+            len_df_female,
+            len_df_female.index.unique().values,
+            spec_df_female,
+            spec_df_female.index.unique().values,
         )
 
         return (
@@ -427,6 +478,33 @@ class Reports:
             len_haul_all_df_female,
             spec_haul_all_df_female,
         )
+
+    @staticmethod
+    def add_len_bin_haul_total(df_list: List[pd.DataFrame]) -> None:
+        """
+        A helper function that adds ``length_bin_total`` and ``length_haul_total``,
+        which are the number of animals for each length bin and haul, respectively
+        to each DataFrame in ``df_list``.
+
+        Parameters
+        ----------
+        df_list: list of pd.DataFrame
+            All DataFrames where totals should be calculated and assigned
+
+        Notes
+        -----
+        The totals are directly applied to the DataFrames in ``df_list``.
+        """
+
+        for df in df_list:
+
+            # get totals for the length bins and hauls
+            bin_total = df.sum(axis=1)
+            haul_total = df.sum(axis=0)
+
+            # assign totals to DataFrame
+            df["length_bin_total"] = bin_total
+            df.loc["length_haul_total"] = haul_total
 
     def _get_adult_NASC(self, stratum_vals: np.ndarray) -> pd.Series:
         """
@@ -510,19 +588,6 @@ class Reports:
                 df_list[i].to_excel(
                     writer, sheet_name=sheet_name_list[i], index=include_index
                 )
-
-    def _aged_len_haul_counts_report(self):
-        """
-        Creates aged length-haul-counts table, which specifies the aged hake
-        counts at each length bin from all hauls for male, female, and all.
-        Additionally, writes this report to an Excel file.
-
-        Returns
-        -------
-
-        """
-
-        pass
 
     def _write_biomass_ages_report(
         self,
@@ -736,8 +801,27 @@ class Reports:
         df_list = [final_df[final_df["NASC"] != 0.0][ordered_columns]]
         self._write_dfs_to_excel(df_list, sheet_names, output_excel_path_non_zero)
 
-    def _len_haul_count_reports(self):
+    def _len_haul_count_reports(
+        self,
+        output_excel_path_specimen: pathlib.Path,
+        output_excel_path_total: pathlib.Path,
+    ) -> None:
+        """
+        Generates two reports for hake counts at each length bin for all hauls.
+        One report uses only the specimen data and the other uses both the
+        length and specimen data. Additionally, writes these reports to an Excel file.
 
+        Parameters
+        ----------
+        output_excel_path_specimen: pathlib.Path
+            The output Excel file path where the report corresponding to the specimen
+            data should be saved
+        output_excel_path_total
+            The output Excel file path where the report corresponding to the specimen
+            and length data should be saved
+        """
+
+        # obtain length counts at each haul for the length and specimen data
         (
             len_haul_all_df,
             spec_haul_all_df,
@@ -747,27 +831,31 @@ class Reports:
             spec_haul_all_df_female,
         ) = self._bin_len_by_haul_all_dfs()
 
+        # add the length bin total and length haul total values to DataFrames
+        self.add_len_bin_haul_total(
+            [
+                len_haul_all_df,
+                spec_haul_all_df,
+                len_haul_all_df_male,
+                spec_haul_all_df_male,
+                len_haul_all_df_female,
+                spec_haul_all_df_female,
+            ]
+        )
+
+        # write the reports corresponding to the specimen data to Excel file
+        df_list = [spec_haul_all_df, spec_haul_all_df_male, spec_haul_all_df_female]
+        sheet_names = ["all genders", "male", "female"]
+        self._write_dfs_to_excel(df_list, sheet_names, output_excel_path_specimen)
+
+        # combine results for length and specimen data
         total_haul_all_df = len_haul_all_df + spec_haul_all_df
         total_haul_male_df = len_haul_all_df_male + spec_haul_all_df_male
         total_haul_female_df = len_haul_all_df_female + spec_haul_all_df_female
 
-        print(total_haul_all_df.shape)
-        print(total_haul_male_df.shape)
-        print(total_haul_female_df.shape)
-
-    def _total_len_haul_counts_report(self):
-        """
-        Generates a report for total hake counts at length with
-        actually measured length (sampled at both biological sampling
-        stations for US/CAN) for all hauls. Additionally, writes this
-        report to an Excel file.
-
-        Returns
-        -------
-
-        """
-
-        pass
+        # write the reports corresponding to the specimen and length data to Excel file
+        df_list = [total_haul_all_df, total_haul_male_df, total_haul_female_df]
+        self._write_dfs_to_excel(df_list, sheet_names, output_excel_path_total)
 
     def _transect_based_len_age_abundance_report(self):
         """
@@ -911,8 +999,6 @@ class Reports:
 
         # TODO: perform a check that all necessary DataFrames have been constructed
 
-        self._aged_len_haul_counts_report()
-
         # self._write_biomass_ages_report(
         #     output_excel_path_all=output_path / "transect_based_aged_output_all.xlsx",
         #     output_excel_path_non_zero=output_path
@@ -939,14 +1025,17 @@ class Reports:
         #     / "transect_based_core_output_non_zero.xlsx",
         # )
 
-        self._total_len_haul_counts_report()
-
         self._transect_based_len_age_abundance_report()
 
         self._transect_based_len_age_biomass_report()
 
-        self._kriging_based_core_variables_report(
-            output_excel_path_all=output_path / "kriging_based_core_output_all.xlsx",
-            output_excel_path_non_zero=output_path
-            / "kriging_based_core_output_non_zero.xlsx",
+        # self._kriging_based_core_variables_report(
+        #     output_excel_path_all=output_path / "kriging_based_core_output_all.xlsx",
+        #     output_excel_path_non_zero=output_path
+        #     / "kriging_based_core_output_non_zero.xlsx",
+        # )
+
+        self._len_haul_count_reports(
+            output_excel_path_specimen=output_path / "specimen_length_counts_haul.xlsx",
+            output_excel_path_total=output_path / "total_length_counts_haul.xlsx",
         )
