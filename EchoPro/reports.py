@@ -1,11 +1,12 @@
 import pathlib
-from typing import List, Union
+from typing import List, Tuple, Union
 
 import geopandas as gpd
 import numpy as np
 import pandas as pd
 
 from .data_loader.nasc_data import _process_nasc_data
+from .utils.binning import get_bin_ind
 
 
 class Reports:
@@ -24,236 +25,408 @@ class Reports:
 
         self.survey = survey
 
-    def __process_gear_data(self, df):
+    # def __process_gear_data(self, df):
+    #     """
+    #     Parameters
+    #     ----------
+    #     df : Pandas Dataframe
+    #         Dataframe holding the gear data
+    #     Returns
+    #     -------
+    #     Processed Dataframe
+    #     """
+    #
+    #     df = df[
+    #         [
+    #             "Haul",
+    #             "Average_Footrope_Depth",
+    #             "Surface_Temperature",
+    #             "Gear_Temperature",
+    #             "Average_Wireout",
+    #             "Transect",
+    #             "Net_Height",
+    #         ]
+    #     ].copy()
+    #
+    #     # set data types of dataframe
+    #     df = df.astype(
+    #         {
+    #             "Haul": int,
+    #             "Average_Footrope_Depth": np.float64,
+    #             "Surface_Temperature": np.float64,
+    #             "Gear_Temperature": np.float64,
+    #             "Average_Wireout": np.float64,
+    #             "Transect": np.float64,
+    #         }
+    #     )
+    #
+    #     if self.EPro.params["exclude_age1"] is False:
+    #         raise NotImplementedError("Including age 1 data has not been implemented!")
+    #
+    #     df["Net_Height"] = (
+    #         df["Net_Height"]
+    #         .apply(lambda x: np.nan if type(x) == str else x)
+    #         .astype(float)
+    #     )
+    #
+    #     df.set_index("Haul", inplace=True)
+    #     df.sort_index(inplace=True)
+    #
+    #     return df
+    #
+    # def __load_gear_data(self):
+    #
+    #     # TODO: if this function ends up being used, we need to document and create a check for df
+    #
+    #     if self.EPro.params["source"] == 3:
+    #
+    #         if self.EPro.params["filename_gear_US"]:
+    #             gear_us_df = pd.read_excel(
+    #                 self.EPro.params["data_root_dir"]
+    #                 + self.EPro.params["filename_gear_US"],
+    #                 sheet_name="biodata_gear",
+    #             )
+    #             gear_us_df = self.__process_gear_data(gear_us_df)
+    #         else:
+    #             gear_us_df = None
+    #
+    #         if self.EPro.params["filename_gear_CAN"]:
+    #             gear_can_df = pd.read_excel(
+    #                 self.EPro.params["data_root_dir"]
+    #                 + self.EPro.params["filename_gear_CAN"],
+    #                 sheet_name="biodata_gear_CAN",
+    #             )
+    #             gear_can_df = self.__process_gear_data(gear_can_df)
+    #
+    #             # transect offset is set to zero since we will not have overlap transects
+    #             # TODO: Is this a necessary variable? If so, we should make it an input to the function.  # noqa
+    #             CAN_Transect_offset = 0
+    #
+    #             # combine US & CAN gear files
+    #             gear_can_df.index = (
+    #                 gear_can_df.index + self.EPro.params["CAN_haul_offset"]
+    #             )  # add haul_offset
+    #             gear_can_df["Transect"] = gear_can_df["Transect"] + CAN_Transect_offset
+    #         else:
+    #             gear_can_df = None
+    #
+    #         # combine US & CAN trawl files
+    #         if isinstance(gear_us_df, pd.DataFrame) and isinstance(
+    #             gear_can_df, pd.DataFrame
+    #         ):
+    #             self.EPro.gear_df = pd.concat([gear_us_df, gear_can_df])
+    #         else:
+    #             raise SystemError(
+    #                 "Cannot construct gear_df for source = 3, "
+    #                 "since either US or CAN is not available."
+    #             )
+    #
+    #     else:
+    #         raise NotImplementedError(
+    #             f"Source of {self.EPro.params['source']} not implemented yet."
+    #         )
+    #
+    # def __process_trawl_data(self, df):
+    #     """
+    #     Parameters
+    #     ----------
+    #     df : Pandas Dataframe
+    #         Dataframe holding the trawl data
+    #     Returns
+    #     -------
+    #     Processed Dataframe
+    #     """
+    #
+    #     df = df[
+    #         [
+    #             "Haul",
+    #             "Haul_Type",
+    #             "Performance_Code",
+    #             "Duration",
+    #             "Distance_Fished",
+    #             "Stratum",
+    #             "EQ_Latitude",
+    #             "EQ_Longitude",
+    #             "Average_Bottom_Depth",
+    #             "Vessel_Log_Start",
+    #             "Vessel_Log_Stop",
+    #         ]
+    #     ].copy()
+    #
+    #     if df.dtypes["Average_Bottom_Depth"] == object:
+    #         # remove any instances of >, <, or m from the column Average_Bottom_Depth
+    #         df["Average_Bottom_Depth"] = (
+    #             df["Average_Bottom_Depth"]
+    #             .apply(lambda x: x.strip("><m") if type(x) == str else x)
+    #             .astype(float)
+    #         )
+    #
+    #     df["Duration"] = pd.to_timedelta(
+    #         df["Duration"]
+    #     )  # change datatype from string to timedelta
+    #
+    #     # set data types of dataframe
+    #     df = df.astype(
+    #         {
+    #             "Haul": int,
+    #             "Haul_Type": int,
+    #             "Performance_Code": np.float64,
+    #             "Distance_Fished": np.float64,
+    #             "Stratum": int,
+    #             "EQ_Latitude": np.float64,
+    #             "EQ_Longitude": np.float64,
+    #             "Average_Bottom_Depth": np.float64,
+    #             "Vessel_Log_Start": np.float64,
+    #             "Vessel_Log_Stop": np.float64,
+    #         }
+    #     )
+    #
+    #     df.set_index("Haul", inplace=True)
+    #     df.sort_index(inplace=True)
+    #
+    #     if self.EPro.params["exclude_age1"] is False:
+    #         raise NotImplementedError("Including age 1 data has not been implemented!")
+    #
+    #     if self.EPro.params["hemisphere"][0] == "N":
+    #         df["EQ_Latitude"] = df["EQ_Latitude"].abs()
+    #     elif self.EPro.params["hemisphere"][0] == "S":
+    #         df["EQ_Latitude"] = -1.0 * (df["EQ_Latitude"].abs())
+    #     else:
+    #         raise ValueError("Wrong N/S Hemisphere provided! \n")
+    #
+    #     if self.EPro.params["hemisphere"][1] == "W":
+    #         df["EQ_Longitude"] = -1.0 * (df["EQ_Longitude"].abs())
+    #     elif self.EPro.params["hemisphere"][1] == "E":
+    #         df["EQ_Longitude"] = df["EQ_Longitude"].abs()
+    #     else:
+    #         raise ValueError("Wrong E/W Hemisphere provided! \n")
+    #
+    #     return df
+    #
+    # def __load_trawl_data(self):
+    #
+    #     # TODO: if this function ends up being used, we need to document and create a check for df
+    #
+    #     if self.EPro.params["source"] == 3:
+    #
+    #         if self.EPro.params["filename_trawl_US"]:
+    #             trawl_us_df = pd.read_excel(
+    #                 self.EPro.params["data_root_dir"]
+    #                 + self.EPro.params["filename_trawl_US"],
+    #                 converters={"Duration": str},
+    #                 sheet_name="biodata_haul",
+    #             )
+    #             trawl_us_df = self.__process_trawl_data(trawl_us_df)
+    #         else:
+    #             trawl_us_df = None
+    #
+    #         if self.EPro.params["filename_trawl_CAN"]:
+    #             trawl_can_df = pd.read_excel(
+    #                 self.EPro.params["data_root_dir"]
+    #                 + self.EPro.params["filename_trawl_CAN"],
+    #                 converters={"Duration": str},
+    #                 sheet_name="biodata_haul_CAN",
+    #             )
+    #             trawl_can_df = self.__process_trawl_data(trawl_can_df)
+    #
+    #             trawl_can_df.index = (
+    #                 trawl_can_df.index + self.EPro.params["CAN_haul_offset"]
+    #             )  # add haul_offset
+    #
+    #             # change lon to -lon
+    #             trawl_can_df["EQ_Longitude"] = trawl_can_df["EQ_Longitude"].apply(
+    #                 lambda x: -1.0 * x if x > 0 else x
+    #             )
+    #         else:
+    #             trawl_can_df = None
+    #
+    #         # combine US & CAN trawl files
+    #         if isinstance(trawl_us_df, pd.DataFrame) and isinstance(
+    #             trawl_can_df, pd.DataFrame
+    #         ):
+    #             self.EPro.trawl_df = pd.concat([trawl_us_df, trawl_can_df])
+    #         else:
+    #             raise SystemError(
+    #                 "Cannot construct trawl_df for source = 3, "
+    #                 "since either US or CAN is not available."
+    #             )
+    #
+    #     else:
+    #         raise NotImplementedError(
+    #             f"Source of {self.EPro.params['source']} not implemented yet."
+    #         )
+
+    def _get_bin_count(
+        self, df: pd.DataFrame, haul: int, len_cnt_exists: bool
+    ) -> np.ndarray:
         """
+        Obtains the number of animals in each length bin for the
+        given length data in ``df`` and provided ``haul``.
+
         Parameters
         ----------
-        df : Pandas Dataframe
-            Dataframe holding the gear data
+        df: pd.DataFrame
+            A DataFrame corresponding to either the length or specimen data, which
+            has the haul as its index
+        haul: int
+            The haul number
+        len_cnt_exists: bool
+            If True, ``df`` contains ``length_count``, otherwise it does not
+
         Returns
         -------
-        Processed Dataframe
+        bin_cnt: np.ndarray
+            The number of animals in each bin
+
+        Notes
+        -----
+        The length bins are determined by the parameter
+        ``self.survey.params["bio_hake_len_bin"]``.
         """
 
-        df = df[
-            [
-                "Haul",
-                "Average_Footrope_Depth",
-                "Surface_Temperature",
-                "Gear_Temperature",
-                "Average_Wireout",
-                "Transect",
-                "Net_Height",
-            ]
-        ].copy()
+        # obtain length data
+        length_data = df.loc[haul]["length"]
 
-        # set data types of dataframe
-        df = df.astype(
-            {
-                "Haul": int,
-                "Average_Footrope_Depth": np.float64,
-                "Surface_Temperature": np.float64,
-                "Gear_Temperature": np.float64,
-                "Average_Wireout": np.float64,
-                "Transect": np.float64,
-            }
-        )
+        if len_cnt_exists:
+            # obtain length count data
+            length_count_data = df.loc[haul]["length_count"]
 
-        if self.EPro.params["exclude_age1"] is False:
-            raise NotImplementedError("Including age 1 data has not been implemented!")
-
-        df["Net_Height"] = (
-            df["Net_Height"]
-            .apply(lambda x: np.nan if type(x) == str else x)
-            .astype(float)
-        )
-
-        df.set_index("Haul", inplace=True)
-        df.sort_index(inplace=True)
-
-        return df
-
-    def __load_gear_data(self):
-
-        # TODO: if this function ends up being used, we need to document and create a check for df
-
-        if self.EPro.params["source"] == 3:
-
-            if self.EPro.params["filename_gear_US"]:
-                gear_us_df = pd.read_excel(
-                    self.EPro.params["data_root_dir"]
-                    + self.EPro.params["filename_gear_US"],
-                    sheet_name="biodata_gear",
-                )
-                gear_us_df = self.__process_gear_data(gear_us_df)
-            else:
-                gear_us_df = None
-
-            if self.EPro.params["filename_gear_CAN"]:
-                gear_can_df = pd.read_excel(
-                    self.EPro.params["data_root_dir"]
-                    + self.EPro.params["filename_gear_CAN"],
-                    sheet_name="biodata_gear_CAN",
-                )
-                gear_can_df = self.__process_gear_data(gear_can_df)
-
-                # transect offset is set to zero since we will not have overlap transects
-                # TODO: Is this a necessary variable? If so, we should make it an input to the function.  # noqa
-                CAN_Transect_offset = 0
-
-                # combine US & CAN gear files
-                gear_can_df.index = (
-                    gear_can_df.index + self.EPro.params["CAN_haul_offset"]
-                )  # add haul_offset
-                gear_can_df["Transect"] = gear_can_df["Transect"] + CAN_Transect_offset
-            else:
-                gear_can_df = None
-
-            # combine US & CAN trawl files
-            if isinstance(gear_us_df, pd.DataFrame) and isinstance(
-                gear_can_df, pd.DataFrame
-            ):
-                self.EPro.gear_df = pd.concat([gear_us_df, gear_can_df])
-            else:
-                raise SystemError(
-                    "Cannot construct gear_df for source = 3, "
-                    "since either US or CAN is not available."
-                )
+        # get numpy arrays of data accounting for single values
+        if not isinstance(length_data, pd.Series):
+            length_data = np.array([length_data])
+            if len_cnt_exists:
+                length_count_data = np.array([length_count_data])
 
         else:
-            raise NotImplementedError(
-                f"Source of {self.EPro.params['source']} not implemented yet."
-            )
+            length_data = length_data.values.flatten()
+            if len_cnt_exists:
+                length_count_data = length_count_data.values.flatten()
 
-    def __process_trawl_data(self, df):
+        # get bin indices of length data
+        len_bin_ind = get_bin_ind(length_data, self.survey.params["bio_hake_len_bin"])
+
+        # get total number of lengths in a bin
+        if len_cnt_exists:
+            bin_cnt = np.array([length_count_data[i].sum() for i in len_bin_ind])
+        else:
+            bin_cnt = np.array([i.shape[0] for i in len_bin_ind])
+
+        return bin_cnt
+
+    def _bin_len_by_haul_df(
+        self, all_hauls, df_len, len_uniq_haul, df_spec, spec_uniq_haul
+    ):
         """
-        Parameters
-        ----------
-        df : Pandas Dataframe
-            Dataframe holding the trawl data
+        For each haul in ``haul_nums`` bin the length data
+        contained the provided DataFrames.
+
         Returns
         -------
-        Processed Dataframe
         """
 
-        df = df[
-            [
-                "Haul",
-                "Haul_Type",
-                "Performance_Code",
-                "Duration",
-                "Distance_Fished",
-                "Stratum",
-                "EQ_Latitude",
-                "EQ_Longitude",
-                "Average_Bottom_Depth",
-                "Vessel_Log_Start",
-                "Vessel_Log_Stop",
-            ]
-        ].copy()
+        # TODO: document!
 
-        if df.dtypes["Average_Bottom_Depth"] == object:
-            # remove any instances of >, <, or m from the column Average_Bottom_Depth
-            df["Average_Bottom_Depth"] = (
-                df["Average_Bottom_Depth"]
-                .apply(lambda x: x.strip("><m") if type(x) == str else x)
-                .astype(float)
-            )
-
-        df["Duration"] = pd.to_timedelta(
-            df["Duration"]
-        )  # change datatype from string to timedelta
-
-        # set data types of dataframe
-        df = df.astype(
-            {
-                "Haul": int,
-                "Haul_Type": int,
-                "Performance_Code": np.float64,
-                "Distance_Fished": np.float64,
-                "Stratum": int,
-                "EQ_Latitude": np.float64,
-                "EQ_Longitude": np.float64,
-                "Average_Bottom_Depth": np.float64,
-                "Vessel_Log_Start": np.float64,
-                "Vessel_Log_Stop": np.float64,
-            }
+        # DataFrame containing the length bin data for each haul
+        len_bin_haul_df = pd.DataFrame(
+            data=0,
+            columns=list(all_hauls),
+            index=self.survey.params["bio_hake_len_bin"],
+            dtype=np.int64,
         )
 
-        df.set_index("Haul", inplace=True)
-        df.sort_index(inplace=True)
+        spec_bin_haul_df = pd.DataFrame(
+            data=0,
+            columns=list(all_hauls),
+            index=self.survey.params["bio_hake_len_bin"],
+            dtype=np.int64,
+        )
 
-        if self.EPro.params["exclude_age1"] is False:
-            raise NotImplementedError("Including age 1 data has not been implemented!")
+        len_bin_haul_df.index.name = "length_bin"
+        spec_bin_haul_df.index.name = "length_bin"
 
-        if self.EPro.params["hemisphere"][0] == "N":
-            df["EQ_Latitude"] = df["EQ_Latitude"].abs()
-        elif self.EPro.params["hemisphere"][0] == "S":
-            df["EQ_Latitude"] = -1.0 * (df["EQ_Latitude"].abs())
-        else:
-            raise ValueError("Wrong N/S Hemisphere provided! \n")
+        for haul in all_hauls:
 
-        if self.EPro.params["hemisphere"][1] == "W":
-            df["EQ_Longitude"] = -1.0 * (df["EQ_Longitude"].abs())
-        elif self.EPro.params["hemisphere"][1] == "E":
-            df["EQ_Longitude"] = df["EQ_Longitude"].abs()
-        else:
-            raise ValueError("Wrong E/W Hemisphere provided! \n")
+            if haul in len_uniq_haul:
+                # get the number of animals in each length bin
+                len_bin_cnt = self._get_bin_count(df_len, haul, len_cnt_exists=True)
 
-        return df
+                # store data
+                len_bin_haul_df[haul] = len_bin_cnt
 
-    def __load_trawl_data(self):
+            if haul in spec_uniq_haul:
+                # get the number of animals in each length bin
+                len_bin_cnt = self._get_bin_count(df_spec, haul, len_cnt_exists=False)
 
-        # TODO: if this function ends up being used, we need to document and create a check for df
+                # store data
+                spec_bin_haul_df[haul] = len_bin_cnt
 
-        if self.EPro.params["source"] == 3:
+        return len_bin_haul_df, spec_bin_haul_df
 
-            if self.EPro.params["filename_trawl_US"]:
-                trawl_us_df = pd.read_excel(
-                    self.EPro.params["data_root_dir"]
-                    + self.EPro.params["filename_trawl_US"],
-                    converters={"Duration": str},
-                    sheet_name="biodata_haul",
-                )
-                trawl_us_df = self.__process_trawl_data(trawl_us_df)
-            else:
-                trawl_us_df = None
+    def _bin_len_by_haul_all_dfs(
+        self,
+    ) -> Tuple[
+        pd.DataFrame,
+        pd.DataFrame,
+        pd.DataFrame,
+        pd.DataFrame,
+        pd.DataFrame,
+        pd.DataFrame,
+    ]:
+        """
+        For each haul in ``haul_nums`` bin the length data
+        contained in ``df``.
 
-            if self.EPro.params["filename_trawl_CAN"]:
-                trawl_can_df = pd.read_excel(
-                    self.EPro.params["data_root_dir"]
-                    + self.EPro.params["filename_trawl_CAN"],
-                    converters={"Duration": str},
-                    sheet_name="biodata_haul_CAN",
-                )
-                trawl_can_df = self.__process_trawl_data(trawl_can_df)
+        Returns
+        -------
 
-                trawl_can_df.index = (
-                    trawl_can_df.index + self.EPro.params["CAN_haul_offset"]
-                )  # add haul_offset
+        """
 
-                # change lon to -lon
-                trawl_can_df["EQ_Longitude"] = trawl_can_df["EQ_Longitude"].apply(
-                    lambda x: -1.0 * x if x > 0 else x
-                )
-            else:
-                trawl_can_df = None
+        # TODO: fill in documentation
 
-            # combine US & CAN trawl files
-            if isinstance(trawl_us_df, pd.DataFrame) and isinstance(
-                trawl_can_df, pd.DataFrame
-            ):
-                self.EPro.trawl_df = pd.concat([trawl_us_df, trawl_can_df])
-            else:
-                raise SystemError(
-                    "Cannot construct trawl_df for source = 3, "
-                    "since either US or CAN is not available."
-                )
+        # create variables to improve readability
+        len_df = self.survey.length_df
+        spec_df = self.survey.specimen_df
 
-        else:
-            raise NotImplementedError(
-                f"Source of {self.EPro.params['source']} not implemented yet."
-            )
+        # unique hauls in length data
+        len_uniq_haul = len_df.index.unique().values
+
+        # unique hauls in specimen data
+        spec_uniq_haul = spec_df.index.unique().values
+
+        # get all haul numbers
+        all_hauls = np.union1d(len_uniq_haul, spec_uniq_haul)
+
+        # get binned lengths at each haul for all data
+        len_haul_all_df, spec_haul_all_df = self._bin_len_by_haul_df(
+            all_hauls, len_df, len_uniq_haul, spec_df, spec_uniq_haul
+        )
+
+        # get binned lengths at each haul for data corresponding to males
+        len_haul_all_df_male, spec_haul_all_df_male = self._bin_len_by_haul_df(
+            all_hauls,
+            len_df[len_df["sex"] == 1],
+            len_uniq_haul,
+            spec_df[spec_df["sex"] == 1],
+            spec_uniq_haul,
+        )
+
+        # get binned lengths at each haul for data corresponding to females
+        len_haul_all_df_female, spec_haul_all_df_female = self._bin_len_by_haul_df(
+            all_hauls,
+            len_df[len_df["sex"] == 2],
+            len_uniq_haul,
+            spec_df[spec_df["sex"] == 2],
+            spec_uniq_haul,
+        )
+
+        return (
+            len_haul_all_df,
+            spec_haul_all_df,
+            len_haul_all_df_male,
+            spec_haul_all_df_male,
+            len_haul_all_df_female,
+            spec_haul_all_df_female,
+        )
 
     def _get_adult_NASC(self, stratum_vals: np.ndarray) -> pd.Series:
         """
@@ -562,6 +735,25 @@ class Reports:
         # write only output corresponding to non-zero NASC values
         df_list = [final_df[final_df["NASC"] != 0.0][ordered_columns]]
         self._write_dfs_to_excel(df_list, sheet_names, output_excel_path_non_zero)
+
+    def _len_haul_count_reports(self):
+
+        (
+            len_haul_all_df,
+            spec_haul_all_df,
+            len_haul_all_df_male,
+            spec_haul_all_df_male,
+            len_haul_all_df_female,
+            spec_haul_all_df_female,
+        ) = self._bin_len_by_haul_all_dfs()
+
+        total_haul_all_df = len_haul_all_df + spec_haul_all_df
+        total_haul_male_df = len_haul_all_df_male + spec_haul_all_df_male
+        total_haul_female_df = len_haul_all_df_female + spec_haul_all_df_female
+
+        print(total_haul_all_df.shape)
+        print(total_haul_male_df.shape)
+        print(total_haul_female_df.shape)
 
     def _total_len_haul_counts_report(self):
         """
