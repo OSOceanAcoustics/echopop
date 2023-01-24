@@ -556,7 +556,9 @@ class Reports:
         ].values.flatten()
 
         # obtain the NASC for adults
-        return self.survey.bio_calc.nasc_df["NASC"] * fraction_adult_stratum_df
+        NASC_adult = self.survey.bio_calc.nasc_df["NASC"] * fraction_adult_stratum_df
+        NASC_adult.name = "NASC_adult"
+        return NASC_adult
 
     @staticmethod
     def _write_dfs_to_excel(
@@ -656,6 +658,7 @@ class Reports:
         self,
         output_excel_path_all: pathlib.Path,
         output_excel_path_non_zero: pathlib.Path,
+        NASC_adult: pd.Series,
     ) -> None:
         """
         Generates a report containing core transect based variables
@@ -669,6 +672,9 @@ class Reports:
         output_excel_path_non_zero: pathlib.Path
             The output Excel file path where all reports that include non-zero
             NASC should be saved
+        NASC_adult: pd.Series
+            A Series defining the NASC values corresponding to the adult population
+            at each transect number defined in ``self.survey.bio_calc.nasc_df``
         """
 
         # specify column names to grab and their corresponding type
@@ -743,8 +749,6 @@ class Reports:
             .set_axis(self.survey.bio_calc.nasc_df.index)
         )
 
-        NASC_adult = self._get_adult_NASC(stratum_vals)
-
         # put all results into one DataFrame
         final_df = pd.concat(
             [
@@ -770,7 +774,7 @@ class Reports:
             "longitude",
             "stratum_num",
             "Bottom depth",
-            "NASC",
+            "NASC_adult",
             "abundance_male_adult",
             "abundance_female_adult",
             "abundance_adult",
@@ -798,7 +802,7 @@ class Reports:
         self._write_dfs_to_excel(df_list, sheet_names, output_excel_path_all)
 
         # write only output corresponding to non-zero NASC values
-        df_list = [final_df[final_df["NASC"] != 0.0][ordered_columns]]
+        df_list = [final_df[final_df["NASC_adult"] != 0.0][ordered_columns]]
         self._write_dfs_to_excel(df_list, sheet_names, output_excel_path_non_zero)
 
     def _len_haul_count_reports(
@@ -972,6 +976,39 @@ class Reports:
             df_list, sheet_names, output_excel_path_non_zero, include_index=False
         )
 
+    def _kriging_input_report(
+        self, NASC_adult: pd.Series, output_excel_path: pathlib.Path
+    ) -> None:
+        """
+        Creates a report that contains input used for Kriging.
+
+        Parameters
+        ----------
+        NASC_adult: pd.Series
+            A Series defining the NASC values corresponding to the adult population
+            at each transect number defined in ``self.survey.bio_calc.nasc_df``
+        output_excel_path: pathlib.Path
+            The output Excel file path where the report should be saved
+        """
+
+        # put together all wanted results
+        final_df = pd.concat(
+            [
+                self.survey.bio_calc.transect_results_gdf[["latitude", "longitude"]],
+                self.survey.bio_calc.transect_results_gdf["biomass_density_adult"],
+                NASC_adult,
+                self.survey.bio_calc.transect_results_gdf["numerical_density_adult"],
+            ],
+            axis=1,
+        )
+
+        # write all results to Excel file
+        df_list = [final_df]
+        sheet_names = ["Sheet1"]
+        self._write_dfs_to_excel(
+            df_list, sheet_names, output_excel_path, include_index=False
+        )
+
     def create_and_write_reports(self, output_path: Union[str, pathlib.Path]) -> None:
         """
         Constructs Kriging mesh and Transect report DataFrames and writes
@@ -1019,15 +1056,16 @@ class Reports:
         #     krig_result=True,
         # )
 
+        NASC_adult = self._get_adult_NASC(self.survey.bio_calc.nasc_df.stratum_num)
+
         # self._transect_based_core_variables_report(
         #     output_excel_path_all=output_path / "transect_based_core_output_all.xlsx",
         #     output_excel_path_non_zero=output_path
-        #     / "transect_based_core_output_non_zero.xlsx",
+        #     / "transect_based_core_output_non_zero.xlsx", NASC_adult=NASC_adult
         # )
 
-        self._transect_based_len_age_abundance_report()
-
-        self._transect_based_len_age_biomass_report()
+        # self._transect_based_len_age_abundance_report()
+        # self._transect_based_len_age_biomass_report()
 
         # self._kriging_based_core_variables_report(
         #     output_excel_path_all=output_path / "kriging_based_core_output_all.xlsx",
@@ -1035,7 +1073,11 @@ class Reports:
         #     / "kriging_based_core_output_non_zero.xlsx",
         # )
 
-        self._len_haul_count_reports(
-            output_excel_path_specimen=output_path / "specimen_length_counts_haul.xlsx",
-            output_excel_path_total=output_path / "total_length_counts_haul.xlsx",
+        self._kriging_input_report(
+            NASC_adult=NASC_adult, output_excel_path=output_path / "kriging_input.xlsx"
         )
+
+        # self._len_haul_count_reports(
+        #     output_excel_path_specimen=output_path / "specimen_length_counts_haul.xlsx",
+        #     output_excel_path_total=output_path / "total_length_counts_haul.xlsx",
+        # )
