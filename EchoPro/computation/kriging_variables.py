@@ -809,12 +809,12 @@ class ComputeKrigingVariables:
         biomass_density_adult_mean = self.krig.survey.bio_calc.kriging_results_gdf[
             "biomass_density_adult_mean"
         ]
-        cell_area_nmi2 = self.krig.survey.bio_calc.kriging_results_gdf["cell_area_nmi2"]
         biomass_density_adult_var = self.krig.survey.bio_calc.kriging_results_gdf[
             "biomass_density_adult_var"
         ]
+        cell_area_nmi2 = self.krig.survey.bio_calc.kriging_results_gdf["cell_area_nmi2"]
         kriging_A0 = self.krig.survey.params["kriging_A0"]
-
+        
         C0 = np.std(biomass_density_adult, ddof=1) ** 2
         Bn = np.nansum(biomass_density_adult_mean * cell_area_nmi2) * 1e-9
         self.krig.survey.bio_calc.kriging_results_gdf["biomass_adult_cell_CV"] = (
