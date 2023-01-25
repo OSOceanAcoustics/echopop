@@ -861,6 +861,110 @@ class Reports:
         df_list = [total_haul_all_df, total_haul_male_df, total_haul_female_df]
         self._write_dfs_to_excel(df_list, sheet_names, output_excel_path_total)
 
+    def _redistribute_age1_data(self, Len_Age_Matrix_Acoust):
+        # TODO: document!
+
+        # get the sum of the values for each age bin
+        age_bin_sum = Len_Age_Matrix_Acoust.sum("len_bin").values
+
+        # fill in age 1 data with zero
+        Len_Age_Matrix_Acoust.values[:, 0] = 0.0
+
+        # redistribute age 1 data to the rest of the age bins
+        Len_Age_Matrix_Acoust.values[:, 1:] += (
+            age_bin_sum[0] * Len_Age_Matrix_Acoust.values[:, 1:] / age_bin_sum[1:].sum()
+        )
+
+    def _get_len_age_abundance(self, abundance_df, ds, sex, kriging_vals: bool):
+        # TODO: document!
+
+        # obtain only those strata that are defined in abundance_df
+        defined_stratum = abundance_df.index.unique().values
+
+        # compute the total number of animals in both stations
+        total_N = ds.num_M + ds.num_F + ds.station_1_N
+
+        # compute the proportion of the sex using station 2 data
+        Len_Age_sex_proportion = ds[f"num_{sex}"] / total_N
+
+        # compute the proportion of the sex using station 1 data
+        # TODO: add this in to get the unaged bin
+        # Len_sex_proportion = ds[f"station_1_N_{sex}"] / total_N
+
+        # get the normalized distribution of data in station 2
+        Len_Age_key_sex_norm = ds[f"len_age_dist_{sex}"] / ds[
+            f"len_age_dist_{sex}"
+        ].sum(["len_bin", "age_bin"])
+
+        # sum together all abundance values in each stratum
+        # TODO: we should probably rename ds coordinate to stratum_num
+        if kriging_vals:
+            abundance_sum_stratum = (
+                abundance_df.groupby(level=0)
+                .sum()["abundance_adult"]
+                .to_xarray()
+                .rename({"stratum_num": "stratum"})
+            )
+        else:
+            abundance_sum_stratum = (
+                abundance_df.groupby(level=0)
+                .sum()["abundance"]
+                .to_xarray()
+                .rename({"stratum_num": "stratum"})
+            )
+
+        # get the abundance for the sex for each stratum
+        N_len_age = abundance_sum_stratum * Len_Age_sex_proportion.sel(
+            stratum=defined_stratum
+        )
+
+        # get the abundance for the sex at each length and age bin
+        Len_Age_Matrix_Acoust = (
+            N_len_age * Len_Age_key_sex_norm.sel(stratum=defined_stratum)
+        ).sum("stratum")
+
+        # redistribute the age 1 data if Kriging values are being used
+        if self.survey.params["exclude_age1"] and kriging_vals:
+
+            self._redistribute_age1_data(Len_Age_Matrix_Acoust)
+
+        return Len_Age_Matrix_Acoust
+
+    def _get_len_age_biomass(self, biomass_df, ds, kriging_vals: bool):
+        # TODO: document!
+
+        # obtain only those strata that are defined in biomass_df
+        defined_stratum = biomass_df.index.unique().values
+
+        # obtain the total biomass for each stratum
+        if kriging_vals:
+            biomass_sum_stratum = (
+                biomass_df.groupby(level=0)
+                .sum()["biomass_adult"]
+                .to_xarray()
+                .rename({"stratum_num": "stratum"})
+            )
+        else:
+            biomass_sum_stratum = (
+                biomass_df.groupby(level=0)
+                .sum()["biomass"]
+                .to_xarray()
+                .rename({"stratum_num": "stratum"})
+            )
+
+        # get the abundance for the sex at each length and age bin
+        Len_Age_Matrix_biomass = (
+            biomass_sum_stratum
+            * ds.len_age_weight_dist_all_normalized.sel(stratum=defined_stratum)
+        ).sum("stratum")
+
+        # redistribute the age 1 data if Kriging values are being used
+        # if self.survey.params["exclude_age1"] and kriging_vals:
+        #     self._redistribute_age1_data(Len_Age_Matrix_biomass)
+        # TODO: need to redistribute the data in a special way for biomass
+
+        return Len_Age_Matrix_biomass
+
     def _transect_based_len_age_abundance_report(self):
         """
         Generates a report that is a 40 x 21 matrix, with 40 length bins (1st column)
@@ -874,6 +978,14 @@ class Reports:
         -------
 
         """
+
+        # abundance_df = survey_2019.bio_calc.transect_results_gdf[["abundance", "stratum_num"]]
+
+        # TODO: for Kriging
+        # abundance_df = survey_2019.bio_calc.kriging_results_gdf[
+        # ["abundance_adult", "stratum_num"]]
+
+        # _get_len_age_abundance(self, abundance_df, ds, sex, kriging_vals)
 
         pass
 

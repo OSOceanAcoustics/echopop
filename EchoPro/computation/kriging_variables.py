@@ -135,6 +135,8 @@ class ComputeKrigingVariables:
                 "num_M": ("stratum", np.zeros(len(stratum_ind))),
                 "num_F": ("stratum", np.zeros(len(stratum_ind))),
                 "station_1_N": ("stratum", np.zeros(len(stratum_ind))),
+                "station_1_N_M": ("stratum", np.zeros(len(stratum_ind))),
+                "station_1_N_F": ("stratum", np.zeros(len(stratum_ind))),
                 "total_weight": ("stratum", np.zeros(len(stratum_ind))),
                 "len_age_weight_prop_all": ("stratum", np.zeros(len(stratum_ind))),
                 "len_age_weight_prop_M": ("stratum", np.zeros(len(stratum_ind))),
@@ -530,6 +532,14 @@ class ComputeKrigingVariables:
 
             # store the number of animals in station 1 for the stratum
             ds.station_1_N.loc[stratum] = self.krig.survey.length_df.loc[hauls_in_all][
+                "length_count"
+            ].sum()
+
+            ds.station_1_N_M.loc[stratum] = length_df_M.loc[hauls_in_all][
+                "length_count"
+            ].sum()
+
+            ds.station_1_N_F.loc[stratum] = length_df_F.loc[hauls_in_all][
                 "length_count"
             ].sum()
 
