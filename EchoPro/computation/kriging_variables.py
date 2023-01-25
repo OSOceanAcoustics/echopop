@@ -45,7 +45,7 @@ class ComputeKrigingVariables:
         Notes
         -----
         The construction of the bin counts differs from the method
-        produced in `biomass_desnity.py`. This is because the Matlab
+        produced in `transect_results.py`. This is because the Matlab
         version of EchoPro is inconsistent in how it is binning.
         """
 
@@ -93,7 +93,7 @@ class ComputeKrigingVariables:
         Notes
         -----
         The construction of the bin counts differs from the method
-        produced in `biomass_desnity.py`. This is because the Matlab
+        produced in `transect_results.py`. This is because the Matlab
         version of EchoPro is inconsistent in how it is binning ages.
         """
 
@@ -281,7 +281,7 @@ class ComputeKrigingVariables:
             input_arr_wgt_F = df_F.weight.values
 
         # bin the ages
-        # TODO: binning is occurring differently than in biomass_denisty.py! It may be
+        # TODO: binning is occurring differently than in transect_results.py! It may be
         #  better and more consistent to use the function self.krig.survey.bio_calc._get_bin_ind
         age_bins_ind_M = self._get_bin_ind_age(
             input_arr_age_M, self.krig.survey.bio_calc.bio_hake_age_bin
@@ -299,7 +299,7 @@ class ComputeKrigingVariables:
         for age_bin in range(len(age_bins_ind_M)):
 
             # bin those lengths that correspond to the lengths in the given age bin
-            # TODO: binning is occurring differently than in biomass_denisty.py!
+            # TODO: binning is occurring differently than in transect_results.py!
             len_bin_ind_M = self._get_bin_ind(
                 input_arr_len_M[age_bins_ind_M[age_bin]],
                 self.krig.survey.bio_calc.bio_hake_len_bin,
@@ -814,7 +814,7 @@ class ComputeKrigingVariables:
         ]
         cell_area_nmi2 = self.krig.survey.bio_calc.kriging_results_gdf["cell_area_nmi2"]
         kriging_A0 = self.krig.survey.params["kriging_A0"]
-        
+
         C0 = np.std(biomass_density_adult, ddof=1) ** 2
         Bn = np.nansum(biomass_density_adult_mean * cell_area_nmi2) * 1e-9
         self.krig.survey.bio_calc.kriging_results_gdf["biomass_adult_cell_CV"] = (
