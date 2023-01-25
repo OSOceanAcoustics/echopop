@@ -345,11 +345,11 @@ class ComputeKrigingVariables:
 
         # obtain normalized distributions
         for sex in ["all", "M", "F"]:
-            ds.sel(stratum=stratum)[f"len_age_weight_dist_{sex}_normalized]"[
-                :, :
-            ] = ds[f"len_age_weight_dist_{sex}"].sel(stratum=stratum) / np.nansum(
+            ds.sel(stratum=stratum)[f"len_age_weight_dist_{sex}_normalized"][:, :] = ds[
+                f"len_age_weight_dist_{sex}"
+            ].sel(stratum=stratum) / np.nansum(
                 ds[f"len_age_weight_dist_{sex}"].sel(stratum=stratum)
-                )
+            )
 
     def _set_total_weight(
         self, haul_nums: np.ndarray, stratum: int, ds: xr.Dataset
