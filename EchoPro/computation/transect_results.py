@@ -34,6 +34,8 @@ class ComputeTransectVariables:
         self.transect_results_male_gdf = None
         self.transect_results_female_gdf = None
         self.kriging_results_gdf = None
+        self.kriging_results_male_gdf = None
+        self.kriging_results_female_gdf = None
         self.bio_param_df = None  # biomass parameters for each stratum
         self.weight_fraction_adult_df = None
         self.weight_fraction_all_ages_df = None

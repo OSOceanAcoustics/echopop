@@ -2,8 +2,10 @@ from typing import Callable, Tuple, TypedDict
 
 import geopandas as gpd
 import numpy as np
+import pandas as pd
 
 from ..data_loader import KrigingMesh
+from .kriging_variables import ComputeKrigingVariables
 from .numba_functions import nb_dis_mat, nb_subtract_outer
 
 # define the Kriging parameter input types
@@ -55,6 +57,7 @@ class Kriging:
     ):
 
         self.survey = survey
+        self.krig_bio_calc = None
 
         # Kriging parameters
         self.k_max = k_max
@@ -415,7 +418,6 @@ class Kriging:
         The results are then stored in the ``Survey``
         object as ``kriging_results_gdf``.
 
-
         Parameters
         ----------
         krig_mesh : KrigingMesh
@@ -449,11 +451,25 @@ class Kriging:
             ].values.flatten(),
         )
 
-        # collect all important Kriging results
-        results_gdf = krig_mesh.mesh_gdf.copy()
+        # add corresponding mesh variables
+        results_gdf = krig_mesh.mesh_gdf.copy(deep=True)
+
+        # add the stratum number to the results
+        results_gdf["stratum_num"] = pd.cut(
+            results_gdf["centroid_latitude"],
+            bins=[0.0]
+            + list(self.survey.geo_strata_df["Latitude (upper limit)"])
+            + [90.0],
+            labels=list(self.survey.geo_strata_df["stratum_num"]) + [1],
+            ordered=False,
+        )
+
+        # add adult biomass density Kriging results
         results_gdf["biomass_density_adult_mean"] = field_mean_arr
         results_gdf["biomass_density_adult_var"] = field_var_arr
         results_gdf["biomass_density_adult_samplevar"] = field_samplevar_arr
+
+        # add area and adult biomass results
         results_gdf["cell_area_nmi2"] = (
             self.survey.params["kriging_A0"] * results_gdf["fraction_cell_in_polygon"]
         )
@@ -462,3 +478,29 @@ class Kriging:
         )
 
         self.survey.bio_calc.kriging_results_gdf = results_gdf
+
+        # initialize male and female GeoDataFrames
+        # TODO: do we want to include other columns here?
+        self.survey.bio_calc.kriging_results_male_gdf = results_gdf[
+            ["centroid_latitude", "centroid_longitude", "geometry", "stratum_num"]
+        ].copy(deep=True)
+        self.survey.bio_calc.kriging_results_female_gdf = results_gdf[
+            ["centroid_latitude", "centroid_longitude", "geometry", "stratum_num"]
+        ].copy(deep=True)
+
+    def compute_kriging_variables(self) -> None:
+        """
+        Computes useful variables corresponding to values at each
+        Kriging mesh point and assigns them to the GeoDataFrame
+        ``self.survey.bio_calc.kriging_results_gdf``. For example,
+        computes the ``abundance`` at each Kriging mesh point.
+        """
+
+        # initialize class object
+        self.krig_bio_calc = ComputeKrigingVariables(self)
+
+        # generate Dataset containing useful parameters
+        ds = self.krig_bio_calc.generate_parameter_ds()
+
+        # calculate and assign variables to Kriging results GeoDataFrames
+        self.krig_bio_calc.set_variables(ds)
