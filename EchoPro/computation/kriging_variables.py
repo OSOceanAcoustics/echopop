@@ -134,6 +134,7 @@ class ComputeKrigingVariables:
             data_vars={
                 "num_M": ("stratum", np.zeros(len(stratum_ind))),
                 "num_F": ("stratum", np.zeros(len(stratum_ind))),
+                "station_1_N": ("stratum", np.zeros(len(stratum_ind))),
                 "total_weight": ("stratum", np.zeros(len(stratum_ind))),
                 "len_age_weight_prop_all": ("stratum", np.zeros(len(stratum_ind))),
                 "len_age_weight_prop_M": ("stratum", np.zeros(len(stratum_ind))),
@@ -527,6 +528,11 @@ class ComputeKrigingVariables:
                 )
             )
 
+            # store the number of animals in station 1 for the stratum
+            ds.station_1_N.loc[stratum] = self.krig.survey.length_df.loc[hauls_in_all][
+                "length_count"
+            ].sum()
+
             # obtain the weight per unit length distribution
             weight_len_all = len_wgt_all * len_dist_station1_normalized
 
@@ -874,6 +880,8 @@ class ComputeKrigingVariables:
         # store variables for the reports
         # TODO: do we need to store other variables for the reports?
         self.krig.survey.bio_calc.len_age_dist_all = ds["len_age_dist_all"]
+
+        self.krig.ds = ds
 
         # calculate and add the male and female biomass to Kriging results
         self._set_gender_biomass(ds)
