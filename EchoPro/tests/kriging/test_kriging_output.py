@@ -184,7 +184,3 @@ def test_core_output():
 
     # compare known and produced values
     assert np.all(np.isclose(df_known.to_numpy(), final_df_produced[ordered_columns].to_numpy()))
-
-
-
-
