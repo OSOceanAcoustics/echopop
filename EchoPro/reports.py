@@ -889,7 +889,7 @@ class Reports:
 
         # compute the proportion of the sex using station 1 data
         # TODO: add this in to get the unaged bin
-        # Len_sex_proportion = ds[f"station_1_N_{sex}"] / total_N
+        Len_sex_proportion = ds[f"station_1_N_{sex}"] / total_N
 
         # get the normalized distribution of data in station 2
         Len_Age_key_sex_norm = ds[f"len_age_dist_{sex}"] / ds[
@@ -913,10 +913,18 @@ class Reports:
                 .rename({"stratum_num": "stratum"})
             )
 
-        # get the abundance for the sex for each stratum
+        # get the abundance for the sex for each stratum (station 1)
+        N_len = abundance_sum_stratum * Len_sex_proportion.sel(stratum=defined_stratum)
+
+        # get the abundance for the sex for each stratum (station 2)
         N_len_age = abundance_sum_stratum * Len_Age_sex_proportion.sel(
             stratum=defined_stratum
         )
+
+        Len_Age_Matrix_Acoust_unaged = (
+            N_len
+            * ds[f"len_dist_station1_normalized_{sex}"].sel(stratum=defined_stratum)
+        ).sum("stratum")
 
         # get the abundance for the sex at each length and age bin
         Len_Age_Matrix_Acoust = (
@@ -928,7 +936,7 @@ class Reports:
 
             self._redistribute_age1_data(Len_Age_Matrix_Acoust)
 
-        return Len_Age_Matrix_Acoust
+        return Len_Age_Matrix_Acoust, Len_Age_Matrix_Acoust_unaged
 
     def _get_len_age_biomass(self, biomass_df, ds, kriging_vals: bool):
         # TODO: document!
@@ -985,7 +993,17 @@ class Reports:
         # abundance_df = survey_2019.bio_calc.kriging_results_gdf[
         # ["abundance_adult", "stratum_num"]]
 
-        # _get_len_age_abundance(self, abundance_df, ds, sex, kriging_vals)
+        # temp_M, temp_unaged_M = self._get_len_age_abundance(abundance_df, krig.ds, sex="M",
+        # kriging_vals=False)
+        # temp_F, temp_unaged_F = self._get_len_age_abundance(abundance_df, krig.ds, sex="F",
+        # kriging_vals=False)
+
+        # temp_F.to_pandas()
+
+        # temp_total = temp_M + temp_F
+
+        # TODO: Take note that EchoPro Matlab does not correctly account for age bins, thus
+        #  the output produced for ``Un-aged`` column is not correct when an age bin end is not 20!
 
         pass
 
@@ -1001,6 +1019,24 @@ class Reports:
         -------
 
         """
+
+        # biomass_df = survey_2019.bio_calc.transect_results_male_gdf[["biomass", "stratum_num"]]
+        # biomass_df = biomass_df.reset_index(drop=True).set_index("stratum_num")
+        #
+        # temp_biomass_M = reports._get_len_age_biomass(biomass_df, krig.ds, kriging_vals=False)
+        # temp_biomass_M = temp_biomass_M * 1e-9
+
+        # biomass_df = survey_2019.bio_calc.transect_results_female_gdf[["biomass", "stratum_num"]]
+        # biomass_df = biomass_df.reset_index(drop=True).set_index("stratum_num")
+        #
+        # temp_biomass_F = reports._get_len_age_biomass(biomass_df, krig.ds, kriging_vals=False)
+        # temp_biomass_F = temp_biomass_F * 1e-9
+        #
+        # biomass_df = survey_2019.bio_calc.transect_results_gdf[["biomass", "stratum_num"]]
+        # biomass_df = biomass_df.reset_index(drop=True).set_index("stratum_num")
+        #
+        # temp_biomass_all = reports._get_len_age_biomass(biomass_df, krig.ds, kriging_vals=False)
+        # temp_biomass_all = temp_biomass_all * 1e-9
 
         pass
 

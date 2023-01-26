@@ -152,6 +152,10 @@ class ComputeKrigingVariables:
                 "stratum",
                 np.zeros(len(stratum_ind)),
             )
+            data_vars_dict[f"len_dist_station1_normalized_{sex}"] = (
+                ["stratum", "len_bin"],
+                np.zeros((len(stratum_ind), len(len_bin))),
+            )
 
         # add all variables that have male, female, and all versions
         for sex in ["M", "F", "all"]:
@@ -501,6 +505,25 @@ class ComputeKrigingVariables:
 
         if hauls_in_all:
 
+            for sex in ["M", "F"]:
+
+                if sex == "M":
+                    df = length_df_M
+                else:
+                    df = length_df_F
+
+                # get normalized length distribution of length_df gender data
+                ds[f"len_dist_station1_normalized_{sex}"].sel(stratum=stratum)[
+                    :
+                ] = self.krig.survey.bio_calc._get_distribution_lengths_station_1(
+                    df.loc[hauls_in_all]
+                )
+
+                # store the number of animals in station 1 for the stratum
+                ds[f"station_1_N_{sex}"].loc[stratum] = df.loc[hauls_in_all][
+                    "length_count"
+                ].sum()
+
             # get normalized length distribution of length_df data
             len_dist_station1_normalized = (
                 self.krig.survey.bio_calc._get_distribution_lengths_station_1(
@@ -510,14 +533,6 @@ class ComputeKrigingVariables:
 
             # store the number of animals in station 1 for the stratum
             ds.station_1_N.loc[stratum] = self.krig.survey.length_df.loc[hauls_in_all][
-                "length_count"
-            ].sum()
-
-            ds.station_1_N_M.loc[stratum] = length_df_M.loc[hauls_in_all][
-                "length_count"
-            ].sum()
-
-            ds.station_1_N_F.loc[stratum] = length_df_F.loc[hauls_in_all][
                 "length_count"
             ].sum()
 

@@ -32,7 +32,7 @@ def test_biomass_age_output():
     transect_results_female = survey_2019.bio_calc.transect_results_female_gdf
 
     # TODO: replace this with input in the future
-    file_path = "/Users/brandonreyes/UW_work/EchoPro_work/UW_EchoProMatlab_Repackaged/outputs/EchoPro_matlab_output_brandon/EchoPro_un-kriged_aged_output-2019_0.xlsx"
+    file_path = "/Users/brandonreyes/UW_work/EchoPro_work/UW_EchoProMatlab_Repackaged/outputs/EchoPro_matlab_output_brandon_age_22_end_bin/EchoPro_un-kriged_aged_output-2019_0.xlsx"
     sheet_name = "Sheet1"
     sheet_name_male = "Sheet2"
     sheet_name_female = "Sheet3"
@@ -93,7 +93,7 @@ def test_core_output():
     transect_results_female = survey_2019.bio_calc.transect_results_female_gdf
 
     # TODO: replace this with input in the future
-    file_path = "/Users/brandonreyes/UW_work/EchoPro_work/UW_EchoProMatlab_Repackaged/outputs/EchoPro_matlab_output_brandon/EchoPro_un-kriged_output-11-Jan-2023_0.xlsx"
+    file_path = "/Users/brandonreyes/UW_work/EchoPro_work/UW_EchoProMatlab_Repackaged/outputs/EchoPro_matlab_output_brandon_age_22_end_bin/EchoPro_un-kriged_output-26-Jan-2023_0.xlsx"
     sheet_name = "Sheet1"
 
     # gather known solution data produced by the Matlab version of EchoPro
