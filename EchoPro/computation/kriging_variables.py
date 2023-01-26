@@ -45,7 +45,7 @@ class ComputeKrigingVariables:
         Notes
         -----
         The construction of the bin counts differs from the method
-        produced in `biomass_desnity.py`. This is because the Matlab
+        produced in `transect_results.py`. This is because the Matlab
         version of EchoPro is inconsistent in how it is binning.
         """
 
@@ -93,7 +93,7 @@ class ComputeKrigingVariables:
         Notes
         -----
         The construction of the bin counts differs from the method
-        produced in `biomass_desnity.py`. This is because the Matlab
+        produced in `transect_results.py`. This is because the Matlab
         version of EchoPro is inconsistent in how it is binning ages.
         """
 
@@ -129,63 +129,53 @@ class ComputeKrigingVariables:
             The parameter Dataset with all variables initialized
         """
 
+        # initialize variable that will hold all Dataset initialized variables
+        data_vars_dict = {
+            "total_weight": ("stratum", np.zeros(len(stratum_ind))),
+            "aged_proportion": ("stratum", np.zeros(len(stratum_ind))),
+            "unaged_proportion": ("stratum", np.zeros(len(stratum_ind))),
+            "station_1_N": ("stratum", np.zeros(len(stratum_ind))),
+            "weight_len_all_normalized": (
+                ["stratum", "len_bin"],
+                np.zeros((len(stratum_ind), len(len_bin))),
+            ),
+        }
+
+        # add all variables that have only male and female versions
+        for sex in ["M", "F"]:
+            data_vars_dict[f"num_{sex}"] = ("stratum", np.zeros(len(stratum_ind)))
+            data_vars_dict[f"station_1_N_{sex}"] = (
+                "stratum",
+                np.zeros(len(stratum_ind)),
+            )
+            data_vars_dict[f"unaged_{sex}_wgt_proportion"] = (
+                "stratum",
+                np.zeros(len(stratum_ind)),
+            )
+
+        # add all variables that have male, female, and all versions
+        for sex in ["M", "F", "all"]:
+            data_vars_dict[f"len_age_weight_prop_{sex}"] = (
+                "stratum",
+                np.zeros(len(stratum_ind)),
+            )
+            data_vars_dict[f"len_age_dist_{sex}"] = (
+                ["stratum", "len_bin", "age_bin"],
+                np.zeros((len(stratum_ind), len(len_bin), len(age_bin))),
+            )
+            data_vars_dict[f"len_age_weight_dist_{sex}"] = (
+                ["stratum", "len_bin", "age_bin"],
+                np.zeros((len(stratum_ind), len(len_bin), len(age_bin))),
+            )
+
+            data_vars_dict[f"len_age_weight_dist_{sex}_normalized"] = (
+                ["stratum", "len_bin", "age_bin"],
+                np.zeros((len(stratum_ind), len(len_bin), len(age_bin))),
+            )
+
         # initialize Dataset that will hold length age distributions
         ds = xr.Dataset(
-            data_vars={
-                "num_M": ("stratum", np.zeros(len(stratum_ind))),
-                "num_F": ("stratum", np.zeros(len(stratum_ind))),
-                "station_1_N": ("stratum", np.zeros(len(stratum_ind))),
-                "station_1_N_M": ("stratum", np.zeros(len(stratum_ind))),
-                "station_1_N_F": ("stratum", np.zeros(len(stratum_ind))),
-                "total_weight": ("stratum", np.zeros(len(stratum_ind))),
-                "len_age_weight_prop_all": ("stratum", np.zeros(len(stratum_ind))),
-                "len_age_weight_prop_M": ("stratum", np.zeros(len(stratum_ind))),
-                "len_age_weight_prop_F": ("stratum", np.zeros(len(stratum_ind))),
-                "aged_proportion": ("stratum", np.zeros(len(stratum_ind))),
-                "unaged_proportion": ("stratum", np.zeros(len(stratum_ind))),
-                "unaged_M_wgt_proportion": ("stratum", np.zeros(len(stratum_ind))),
-                "unaged_F_wgt_proportion": ("stratum", np.zeros(len(stratum_ind))),
-                "weight_len_all_normalized": (
-                    ["stratum", "len_bin"],
-                    np.zeros((len(stratum_ind), len(len_bin))),
-                ),
-                "len_age_dist_all": (
-                    ["stratum", "len_bin", "age_bin"],
-                    np.zeros((len(stratum_ind), len(len_bin), len(age_bin))),
-                ),
-                "len_age_dist_M": (
-                    ["stratum", "len_bin", "age_bin"],
-                    np.zeros((len(stratum_ind), len(len_bin), len(age_bin))),
-                ),
-                "len_age_dist_F": (
-                    ["stratum", "len_bin", "age_bin"],
-                    np.zeros((len(stratum_ind), len(len_bin), len(age_bin))),
-                ),
-                "len_age_weight_dist_all": (
-                    ["stratum", "len_bin", "age_bin"],
-                    np.zeros((len(stratum_ind), len(len_bin), len(age_bin))),
-                ),
-                "len_age_weight_dist_M": (
-                    ["stratum", "len_bin", "age_bin"],
-                    np.zeros((len(stratum_ind), len(len_bin), len(age_bin))),
-                ),
-                "len_age_weight_dist_F": (
-                    ["stratum", "len_bin", "age_bin"],
-                    np.zeros((len(stratum_ind), len(len_bin), len(age_bin))),
-                ),
-                "len_age_weight_dist_all_normalized": (
-                    ["stratum", "len_bin", "age_bin"],
-                    np.zeros((len(stratum_ind), len(len_bin), len(age_bin))),
-                ),
-                "len_age_weight_dist_M_normalized": (
-                    ["stratum", "len_bin", "age_bin"],
-                    np.zeros((len(stratum_ind), len(len_bin), len(age_bin))),
-                ),
-                "len_age_weight_dist_F_normalized": (
-                    ["stratum", "len_bin", "age_bin"],
-                    np.zeros((len(stratum_ind), len(len_bin), len(age_bin))),
-                ),
-            },
+            data_vars=data_vars_dict,
             coords={
                 "stratum": ("stratum", stratum_ind),
                 "len_bin": ("len_bin", len_bin),
@@ -284,7 +274,7 @@ class ComputeKrigingVariables:
             input_arr_wgt_F = df_F.weight.values
 
         # bin the ages
-        # TODO: binning is occurring differently than in biomass_denisty.py! It may be
+        # TODO: binning is occurring differently than in transect_results.py! It may be
         #  better and more consistent to use the function self.krig.survey.bio_calc._get_bin_ind
         age_bins_ind_M = self._get_bin_ind_age(
             input_arr_age_M, self.krig.survey.bio_calc.bio_hake_age_bin
@@ -302,68 +292,58 @@ class ComputeKrigingVariables:
         for age_bin in range(len(age_bins_ind_M)):
 
             # bin those lengths that correspond to the lengths in the given age bin
-            # TODO: binning is occurring differently than in biomass_denisty.py!
-            len_bin_ind_M = self._get_bin_ind(
-                input_arr_len_M[age_bins_ind_M[age_bin]],
-                self.krig.survey.bio_calc.bio_hake_len_bin,
-            )
-            len_bin_ind_F = self._get_bin_ind(
-                input_arr_len_F[age_bins_ind_F[age_bin]],
-                self.krig.survey.bio_calc.bio_hake_len_bin,
-            )
+            # TODO: binning is occurring differently than in transect_results.py!
 
-            # get the distribution of weight for a particular age bin
-            ds.sel(stratum=stratum).len_age_weight_dist_M[:, age_bin] = np.array(
-                [
-                    np.sum(input_arr_wgt_M[age_bins_ind_M[age_bin]][i])
-                    for i in len_bin_ind_M
-                ]
-            )
+            for sex in ["M", "F"]:
 
-            ds.sel(stratum=stratum).len_age_weight_dist_F[:, age_bin] = np.array(
-                [
-                    np.sum(input_arr_wgt_F[age_bins_ind_F[age_bin]][i])
-                    for i in len_bin_ind_F
-                ]
-            )
+                if sex == "M":
+                    input_arr_len = input_arr_len_M
+                    age_bins_ind = age_bins_ind_M
+                    input_arr_wgt = input_arr_wgt_M
+                else:
+                    input_arr_len = input_arr_len_F
+                    age_bins_ind = age_bins_ind_F
+                    input_arr_wgt = input_arr_wgt_F
 
+                len_bin_ind = self._get_bin_ind(
+                    input_arr_len[age_bins_ind[age_bin]],
+                    self.krig.survey.bio_calc.bio_hake_len_bin,
+                )
+
+                # get the distribution of weight for a particular age bin
+                ds[f"len_age_weight_dist_{sex}"].sel(stratum=stratum)[
+                    :, age_bin
+                ] = np.array(
+                    [
+                        np.sum(input_arr_wgt[age_bins_ind[age_bin]][i])
+                        for i in len_bin_ind
+                    ]
+                )
+
+                # get the distribution of lengths for a particular age bin
+                ds[f"len_age_dist_{sex}"].sel(stratum=stratum)[:, age_bin] = np.array(
+                    [len(i) for i in len_bin_ind]
+                )
+
+            # get the distribution of weight for a particular age bin for all genders
             ds.sel(stratum=stratum).len_age_weight_dist_all[:, age_bin] = (
                 ds.sel(stratum=stratum).len_age_weight_dist_M[:, age_bin]
                 + ds.sel(stratum=stratum).len_age_weight_dist_F[:, age_bin]
             )
 
-            # get the distribution of lengths for a particular age bin
-            ds.sel(stratum=stratum).len_age_dist_M[:, age_bin] = np.array(
-                [len(i) for i in len_bin_ind_M]
-            )
-
-            ds.sel(stratum=stratum).len_age_dist_F[:, age_bin] = np.array(
-                [len(i) for i in len_bin_ind_F]
-            )
-
+            # get the distribution of lengths for a particular age bin for all genders
             ds.sel(stratum=stratum).len_age_dist_all[:, age_bin] = (
                 ds.sel(stratum=stratum).len_age_dist_M[:, age_bin]
                 + ds.sel(stratum=stratum).len_age_dist_F[:, age_bin]
             )
 
         # obtain normalized distributions
-        ds.sel(stratum=stratum).len_age_weight_dist_all_normalized[
-            :, :
-        ] = ds.len_age_weight_dist_all.sel(stratum=stratum) / np.nansum(
-            ds.len_age_weight_dist_all.sel(stratum=stratum)
-        )
-
-        ds.sel(stratum=stratum).len_age_weight_dist_M_normalized[
-            :, :
-        ] = ds.len_age_weight_dist_M.sel(stratum=stratum) / np.nansum(
-            ds.len_age_weight_dist_M.sel(stratum=stratum)
-        )
-
-        ds.sel(stratum=stratum).len_age_weight_dist_F_normalized[
-            :, :
-        ] = ds.len_age_weight_dist_F.sel(stratum=stratum) / np.nansum(
-            ds.len_age_weight_dist_F.sel(stratum=stratum)
-        )
+        for sex in ["all", "M", "F"]:
+            ds[f"len_age_weight_dist_{sex}_normalized"].sel(stratum=stratum)[:, :] = ds[
+                f"len_age_weight_dist_{sex}"
+            ].sel(stratum=stratum) / np.nansum(
+                ds[f"len_age_weight_dist_{sex}"].sel(stratum=stratum)
+            )
 
     def _set_total_weight(
         self, haul_nums: np.ndarray, stratum: int, ds: xr.Dataset
@@ -450,15 +430,13 @@ class ComputeKrigingVariables:
         if len_haul:
 
             # get the number of lengths for each haul
-            len_haul_M_counts = np.concatenate(
+            len_haul_counts = np.concatenate(
                 [df.loc[j]["length_count"].values for j in haul_nums if j in df.index]
             )
 
             # calculate the weight of animals within the stratum
-            len_haul_M = np.concatenate(len_haul)
-            final_wgt = (
-                np.interp(len_haul_M, len_bin, len_wgt) * len_haul_M_counts
-            ).sum()
+            len_haul = np.concatenate(len_haul)
+            final_wgt = (np.interp(len_haul, len_bin, len_wgt) * len_haul_counts).sum()
 
         return final_wgt
 
@@ -580,17 +558,10 @@ class ComputeKrigingVariables:
         """
 
         # calculate and assign the len_age_weight proportions
-        ds.len_age_weight_prop_all.loc[stratum] = np.nansum(
-            ds.len_age_weight_dist_all.sel(stratum=stratum)
-        ) / ds.total_weight.sel(stratum=stratum)
-
-        ds.len_age_weight_prop_M.loc[stratum] = np.nansum(
-            ds.len_age_weight_dist_M.sel(stratum=stratum)
-        ) / ds.total_weight.sel(stratum=stratum)
-
-        ds.len_age_weight_prop_F.loc[stratum] = np.nansum(
-            ds.len_age_weight_dist_F.sel(stratum=stratum)
-        ) / ds.total_weight.sel(stratum=stratum)
+        for sex in ["all", "M", "F"]:
+            ds[f"len_age_weight_prop_{sex}"].loc[stratum] = np.nansum(
+                ds[f"len_age_weight_dist_{sex}"].sel(stratum=stratum)
+            ) / ds.total_weight.sel(stratum=stratum)
 
         # calculate and assign aged proportions
         ds.aged_proportion.loc[stratum] = (
@@ -742,44 +713,38 @@ class ComputeKrigingVariables:
         cell_area_nmi2 = self.krig.survey.bio_calc.kriging_results_gdf["cell_area_nmi2"]
 
         # calculate the aged biomass for males and females
-        dist_weight_M_sum = (
-            (ds.len_age_weight_dist_M_normalized * ds.len_age_weight_prop_M)
-            .sum(dim=["len_bin", "age_bin"])
-            .sel(stratum=stratum_vals)
-            .values
-        )
-        dist_weight_F_sum = (
-            (ds.len_age_weight_dist_F_normalized * ds.len_age_weight_prop_F)
-            .sum(dim=["len_bin", "age_bin"])
-            .sel(stratum=stratum_vals)
-            .values
-        )
+        for sex in ["M", "F"]:
+            dist_weight_sum = (
+                (
+                    ds[f"len_age_weight_dist_{sex}_normalized"]
+                    * ds[f"len_age_weight_prop_{sex}"]
+                )
+                .sum(dim=["len_bin", "age_bin"])
+                .sel(stratum=stratum_vals)
+                .values
+            )
 
-        biomass_aged_M = biomass_density_adult_mean * dist_weight_M_sum * cell_area_nmi2
-        biomass_aged_F = biomass_density_adult_mean * dist_weight_F_sum * cell_area_nmi2
+            biomass_aged = biomass_density_adult_mean * dist_weight_sum * cell_area_nmi2
 
-        # calculate the unaged biomass for males and females
-        unaged_M_wgt_prop_expan = ds.unaged_M_wgt_proportion.sel(
-            stratum=stratum_vals
-        ).values
-        unaged_F_wgt_prop_expan = ds.unaged_F_wgt_proportion.sel(
-            stratum=stratum_vals
-        ).values
+            # calculate the unaged biomass
+            unaged_wgt_prop_expan = (
+                ds[f"unaged_{sex}_wgt_proportion"].sel(stratum=stratum_vals).values
+            )
 
-        biomass_unaged_M = (
-            biomass_density_adult_mean * unaged_M_wgt_prop_expan * cell_area_nmi2
-        )
-        biomass_unaged_F = (
-            biomass_density_adult_mean * unaged_F_wgt_prop_expan * cell_area_nmi2
-        )
+            biomass_unaged = (
+                biomass_density_adult_mean * unaged_wgt_prop_expan * cell_area_nmi2
+            )
 
-        # calculate and assign the total biomass of males and females
-        self.krig.survey.bio_calc.kriging_results_male_gdf["biomass_adult"] = (
-            biomass_aged_M + biomass_unaged_M
-        )
-        self.krig.survey.bio_calc.kriging_results_female_gdf["biomass_adult"] = (
-            biomass_aged_F + biomass_unaged_F
-        )
+            # calculate and assign the total biomass
+            total_biomass = biomass_aged + biomass_unaged
+            if sex == "M":
+                self.krig.survey.bio_calc.kriging_results_male_gdf[
+                    "biomass_adult"
+                ] = total_biomass
+            else:
+                self.krig.survey.bio_calc.kriging_results_female_gdf[
+                    "biomass_adult"
+                ] = total_biomass
 
     def _set_abundance(self) -> None:
         """
@@ -825,10 +790,10 @@ class ComputeKrigingVariables:
         biomass_density_adult_mean = self.krig.survey.bio_calc.kriging_results_gdf[
             "biomass_density_adult_mean"
         ]
-        cell_area_nmi2 = self.krig.survey.bio_calc.kriging_results_gdf["cell_area_nmi2"]
         biomass_density_adult_var = self.krig.survey.bio_calc.kriging_results_gdf[
             "biomass_density_adult_var"
         ]
+        cell_area_nmi2 = self.krig.survey.bio_calc.kriging_results_gdf["cell_area_nmi2"]
         kriging_A0 = self.krig.survey.params["kriging_A0"]
 
         C0 = np.std(biomass_density_adult, ddof=1) ** 2

@@ -464,12 +464,12 @@ class Kriging:
             ordered=False,
         )
 
-        # add all important Kriging results
+        # add adult biomass density Kriging results
         results_gdf["biomass_density_adult_mean"] = field_mean_arr
         results_gdf["biomass_density_adult_var"] = field_var_arr
         results_gdf["biomass_density_adult_samplevar"] = field_samplevar_arr
 
-        # add area and biomass results
+        # add area and adult biomass results
         results_gdf["cell_area_nmi2"] = (
             self.survey.params["kriging_A0"] * results_gdf["fraction_cell_in_polygon"]
         )
