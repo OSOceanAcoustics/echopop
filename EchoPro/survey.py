@@ -11,6 +11,7 @@ from .computation import (
     ComputeTransectVariables,
     Kriging,
     SemiVariogram,
+    generate_parameter_ds,
     krig_param_type,
     krig_type_dict,
     run_jolly_hampton,
@@ -315,6 +316,9 @@ class Survey:
         self.bio_calc = None
         self.bio_calc = ComputeTransectVariables(self)
         self.bio_calc.get_transect_results_gdf(selected_transects)
+
+        # create Dataset containing useful distributions and variables over length and age
+        self.bio_calc.param_ds = generate_parameter_ds(self)
 
     def run_cv_analysis(
         self,
