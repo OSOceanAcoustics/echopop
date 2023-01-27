@@ -4,6 +4,7 @@ from warnings import warn
 
 import geopandas as gpd
 import numpy as np
+import xarray as xr
 import yaml
 
 from .computation import (
@@ -573,9 +574,10 @@ class Survey:
 
         return boot
 
-    def compute_length_age_variables(self, data: str = "transect"):
+    def compute_length_age_variables(self, data: str = "transect") -> None:
         """
-        Computes abundance and biomass over each length and age bin.
+        Computes abundance and biomass over each length and age bin,
+        for males, females, and all genders.
 
         Parameters
         ----------
@@ -585,19 +587,46 @@ class Survey:
             - 'transect' -> only produces transect based variables
             - 'kriging' -> only produces Kriging variables
 
-        Returns
-        -------
-
+        Notes
+        -----
+        The computed DataFrames containing the specified data are assigned
+        to class variables within ``self.biocalc``.
+        Transect based results
+            - ``self.bio_calc.transect_len_age_abundance_male`` -> abundance at
+             each length and age bin for males
+            - ``self.bio_calc.transect_len_age_abundance_female`` -> abundance at
+             each length and age bin for females
+            - ``self.bio_calc.transect_len_age_abundance`` -> abundance at
+             each length and age bin, when using all genders
+            - A similar set of variables are created for biomass results with
+             'abundance' replaced with 'biomass'. For example, biomass at each
+             length and age bin when using all genders will be stored in the
+             class variable ``self.bio_calc.transect_len_age_biomass``.
+        Kriging based results
+            - An analogous set of variables are created for the Kriging based
+             results with 'transect' replaced with 'kriging'. For example,
+             biomass at each length and age bin when using all genders will
+             be stored in ``self.bio_calc.kriging_len_age_biomass``.
         """
 
-        # TODO: finish documentation!
-
-        # TODO: make sure transect_results_gdf, kriging_results_gdf, param_ds exist
+        if not isinstance(self.bio_calc.param_ds, xr.Dataset):
+            raise RuntimeError(
+                "self.bio_calc.param_ds is not a Dataset, the routine "
+                "self.compute_transect_results must be ran first."
+            )
 
         # TODO: can we think of a shorter name than transect_len_age_abundance_male?
 
         if data in ["transect", "all"]:
 
+            # ensure that the appropriate data exists
+            if not isinstance(self.bio_calc.transect_results_gdf, gpd.GeoDataFrame):
+                raise RuntimeError(
+                    "self.bio_calc does not contain transect based results, "
+                    "self.compute_transect_results must be ran first."
+                )
+
+            # obtain and assign abundance DataFrames for transect data
             (
                 self.bio_calc.transect_len_age_abundance_male,
                 self.bio_calc.transect_len_age_abundance_female,
@@ -608,6 +637,7 @@ class Survey:
                 kriging_vals=False,
             )
 
+            # obtain and assign biomass DataFrames for transect data
             (
                 self.bio_calc.transect_len_age_biomass_male,
                 self.bio_calc.transect_len_age_biomass_female,
@@ -621,6 +651,14 @@ class Survey:
             )
 
         elif data == ["kriging", "all"]:
+
+            # ensure that the appropriate data exists
+            if not isinstance(self.bio_calc.kriging_results_gdf, gpd.GeoDataFrame):
+                raise RuntimeError(
+                    "self.bio_calc does not contain kriging based results, "
+                    "The Kriging routine compute_kriging_variables must be "
+                    "ran first."
+                )
 
             # get_len_age_abundance(gdf=self.bio_calc.kriging_results_gdf,
             #                       ds=self.bio_calc.param_ds, kriging=True)
