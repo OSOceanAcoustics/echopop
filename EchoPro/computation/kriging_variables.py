@@ -5,7 +5,6 @@ import xarray as xr
 
 
 class ComputeKrigingVariables:
-    # TODO: see if we want to change the name of this class
     # TODO: this class may not correctly account for bootstrapping!
     """
     A class that computes key variables corresponding to each
