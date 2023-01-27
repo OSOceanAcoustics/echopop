@@ -650,7 +650,7 @@ class Survey:
                 kriging_vals=False,
             )
 
-        elif data == ["kriging", "all"]:
+        elif data in ["kriging", "all"]:
 
             # ensure that the appropriate data exists
             if not isinstance(self.bio_calc.kriging_results_gdf, gpd.GeoDataFrame):

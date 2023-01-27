@@ -191,7 +191,7 @@ def get_len_age_abundance(
 
         # compute the abundance at each length and age bin for a gender
         aged_da, unaged_da = _compute_len_age_abundance(
-            abundance_df, ds, sex=sex, kriging_vals=False
+            abundance_df, ds, sex=sex, kriging_vals=kriging_vals
         )
 
         # convert returned DataArray to a DataFrame
