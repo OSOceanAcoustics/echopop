@@ -5,8 +5,46 @@ import pandas as pd
 import xarray as xr
 
 
+def _redistribute_age1_data(df: pd.DataFrame, abundance_data: bool):
+    """
+    Redistributes the first age bin data to the rest of the age bins
+    by directly modifying the data in ``df``.
+
+    Parameters
+    ----------
+    df: pd.DataFrame
+        A DataFrame with rows corresponding to length bins and columns
+        corresponding to age bins
+    abundance_data: bool
+        If True, ``df`` corresponds to abundance data (and will therefore
+        have and ``Un-aged`` column that needs to be ignored), else does
+        not correspond to abundance data
+    """
+
+    # get the sum of the values for each age bin
+    age_bin_sum = df.sum(axis=0).values
+
+    # fill in age 1 data with zero
+    df.iloc[:, 0] = 0.0
+
+    # select column indices that data will be redistributed to
+    if abundance_data:
+        column_inds = slice(1, -1)
+    else:
+        column_inds = slice(1, len(age_bin_sum))
+
+    # redistribute age 1 data to the rest of the age bins
+    df.iloc[:, column_inds] += (
+        age_bin_sum[0] * df.iloc[:, column_inds] / age_bin_sum[column_inds].sum()
+    )
+
+
 def _compute_len_age_abundance(
-    abundance_df: pd.DataFrame, ds: xr.Dataset, sex: str, kriging_vals: bool
+    abundance_df: pd.DataFrame,
+    ds: xr.Dataset,
+    sex: str,
+    kriging_vals: bool,
+    exclude_age1: bool,
 ) -> Tuple[xr.DataArray, xr.DataArray]:
     """
     Computes the abundance at each length and age bin for a specified
@@ -27,6 +65,8 @@ def _compute_len_age_abundance(
     kriging_vals: bool
         If True, the abundance data was produced by Kriging, else
         it is Transect based
+    exclude_age1: bool
+        If True, exclude age 1 data, else do not (only applies to Kriging data)
 
     Returns
     -------
@@ -83,11 +123,6 @@ def _compute_len_age_abundance(
     Len_Age_Matrix_Acoust = (
         N_len_age * Len_Age_key_sex_norm.sel(stratum_num=defined_stratum)
     ).sum("stratum_num")
-
-    # TODO: add this in when we implement the Kriging version
-    # # redistribute the age 1 data if Kriging values are being used
-    # if exclude_age1 and kriging_vals:
-    #     self._redistribute_age1_data(Len_Age_Matrix_Acoust)
 
     return Len_Age_Matrix_Acoust, Len_Age_Matrix_Acoust_unaged
 
@@ -147,7 +182,7 @@ def _compute_len_age_biomass(
 
 
 def get_len_age_abundance(
-    gdf: gpd.GeoDataFrame, ds: xr.Dataset, kriging_vals: bool
+    gdf: gpd.GeoDataFrame, ds: xr.Dataset, kriging_vals: bool, exclude_age1: bool
 ) -> List[pd.DataFrame]:
     """
     Obtains and initiates the computation of the abundance at
@@ -167,6 +202,8 @@ def get_len_age_abundance(
     kriging_vals: bool
         If True, the abundance data was produced by Kriging, else
         it is Transect based
+    exclude_age1: bool
+        If True, exclude age 1 data, else do not (only applies to Kriging data)
 
     Returns
     -------
@@ -191,7 +228,11 @@ def get_len_age_abundance(
 
         # compute the abundance at each length and age bin for a gender
         aged_da, unaged_da = _compute_len_age_abundance(
-            abundance_df, ds, sex=sex, kriging_vals=False
+            abundance_df,
+            ds,
+            sex=sex,
+            kriging_vals=kriging_vals,
+            exclude_age1=exclude_age1,
         )
 
         # convert returned DataArray to a DataFrame
@@ -216,6 +257,11 @@ def get_len_age_abundance(
 
     # create and add the length-age abundance df for both genders to list
     len_age_abundance_list += [len_age_abundance_list[0] + len_age_abundance_list[1]]
+
+    # redistribute the age 1 data if Kriging values are being used
+    if exclude_age1 and kriging_vals:
+        for df in len_age_abundance_list:
+            _redistribute_age1_data(df, abundance_data=True)
 
     return len_age_abundance_list
 

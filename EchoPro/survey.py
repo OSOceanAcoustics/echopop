@@ -635,6 +635,7 @@ class Survey:
                 gdf=self.bio_calc.transect_results_gdf,
                 ds=self.bio_calc.param_ds,
                 kriging_vals=False,
+                exclude_age1=self.params["exclude_age1"],
             )
 
             # obtain and assign biomass DataFrames for transect data
@@ -650,7 +651,7 @@ class Survey:
                 kriging_vals=False,
             )
 
-        elif data == ["kriging", "all"]:
+        elif data in ["kriging", "all"]:
 
             # ensure that the appropriate data exists
             if not isinstance(self.bio_calc.kriging_results_gdf, gpd.GeoDataFrame):
@@ -660,13 +661,22 @@ class Survey:
                     "ran first."
                 )
 
-            # get_len_age_abundance(gdf=self.bio_calc.kriging_results_gdf,
-            #                       ds=self.bio_calc.param_ds, kriging=True)
-
-            raise NotImplementedError(
-                "Creating abundance and biomass over each length and "
-                "age bin has not been implemented for Kriging data."
+            # obtain and assign abundance DataFrames for Kriging data
+            (
+                self.bio_calc.kriging_len_age_abundance_male,
+                self.bio_calc.kriging_len_age_abundance_female,
+                self.bio_calc.kriging_len_age_abundance,
+            ) = get_len_age_abundance(
+                gdf=self.bio_calc.kriging_results_gdf,
+                ds=self.bio_calc.param_ds,
+                kriging_vals=True,
+                exclude_age1=self.params["exclude_age1"],
             )
+
+            # raise NotImplementedError(
+            #     "Creating abundance and biomass over each length and "
+            #     "age bin has not been implemented for Kriging data."
+            # )
 
         else:
             raise RuntimeError(
