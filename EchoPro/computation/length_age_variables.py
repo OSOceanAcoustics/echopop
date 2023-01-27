@@ -5,7 +5,24 @@ import xarray as xr
 def _compute_len_age_abundance(
     abundance_df: pd.DataFrame, ds: xr.Dataset, sex: str, kriging_vals: bool
 ):
-    # TODO: document!
+    """
+    Computes the abundance at each length and age bin for a specified
+    gender using the input abundance and parameter Dataset.
+
+    Parameters
+    ----------
+    abundance_df: pd.DataFrame
+
+    ds: xr.Dataset
+
+    sex: str
+
+    kriging_vals: bool
+
+    Returns
+    -------
+
+    """
 
     # obtain only those strata that are defined in abundance_df
     defined_stratum = abundance_df.index.unique().values
@@ -29,35 +46,30 @@ def _compute_len_age_abundance(
     # TODO: we should probably rename ds coordinate to stratum_num
     if kriging_vals:
         abundance_sum_stratum = (
-            abundance_df.groupby(level=0)
-            .sum()["abundance_adult"]
-            .to_xarray()
-            .rename({"stratum_num": "stratum"})
+            abundance_df.groupby(level=0).sum()["abundance_adult"].to_xarray()
         )
     else:
         abundance_sum_stratum = (
-            abundance_df.groupby(level=0)
-            .sum()["abundance"]
-            .to_xarray()
-            .rename({"stratum_num": "stratum"})
+            abundance_df.groupby(level=0).sum()["abundance"].to_xarray()
         )
 
     # get the abundance for the sex for each stratum (station 1)
-    N_len = abundance_sum_stratum * Len_sex_proportion.sel(stratum=defined_stratum)
+    N_len = abundance_sum_stratum * Len_sex_proportion.sel(stratum_num=defined_stratum)
 
     # get the abundance for the sex for each stratum (station 2)
     N_len_age = abundance_sum_stratum * Len_Age_sex_proportion.sel(
-        stratum=defined_stratum
+        stratum_num=defined_stratum
     )
 
     Len_Age_Matrix_Acoust_unaged = (
-        N_len * ds[f"len_dist_station1_normalized_{sex}"].sel(stratum=defined_stratum)
-    ).sum("stratum")
+        N_len
+        * ds[f"len_dist_station1_normalized_{sex}"].sel(stratum_num=defined_stratum)
+    ).sum("stratum_num")
 
     # get the abundance for the sex at each length and age bin
     Len_Age_Matrix_Acoust = (
-        N_len_age * Len_Age_key_sex_norm.sel(stratum=defined_stratum)
-    ).sum("stratum")
+        N_len_age * Len_Age_key_sex_norm.sel(stratum_num=defined_stratum)
+    ).sum("stratum_num")
 
     # TODO: add this in when we implement the Kriging version
     # # redistribute the age 1 data if Kriging values are being used
@@ -76,24 +88,16 @@ def _compute_len_age_biomass(biomass_df, ds, kriging_vals: bool):
     # obtain the total biomass for each stratum
     if kriging_vals:
         biomass_sum_stratum = (
-            biomass_df.groupby(level=0)
-            .sum()["biomass_adult"]
-            .to_xarray()
-            .rename({"stratum_num": "stratum"})
+            biomass_df.groupby(level=0).sum()["biomass_adult"].to_xarray()
         )
     else:
-        biomass_sum_stratum = (
-            biomass_df.groupby(level=0)
-            .sum()["biomass"]
-            .to_xarray()
-            .rename({"stratum_num": "stratum"})
-        )
+        biomass_sum_stratum = biomass_df.groupby(level=0).sum()["biomass"].to_xarray()
 
     # get the abundance for the sex at each length and age bin
     Len_Age_Matrix_biomass = (
         biomass_sum_stratum
-        * ds.len_age_weight_dist_all_normalized.sel(stratum=defined_stratum)
-    ).sum("stratum")
+        * ds.len_age_weight_dist_all_normalized.sel(stratum_num=defined_stratum)
+    ).sum("stratum_num")
 
     # TODO: add this in when we implement the Kriging version
     # redistribute the age 1 data if Kriging values are being used

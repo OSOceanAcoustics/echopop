@@ -54,7 +54,7 @@ class ComputeKrigingVariables:
                     * ds[f"len_age_weight_prop_{sex}"]
                 )
                 .sum(dim=["len_bin", "age_bin"])
-                .sel(stratum=stratum_vals)
+                .sel(stratum_num=stratum_vals)
                 .values
             )
 
@@ -62,7 +62,7 @@ class ComputeKrigingVariables:
 
             # calculate the unaged biomass
             unaged_wgt_prop_expan = (
-                ds[f"unaged_{sex}_wgt_proportion"].sel(stratum=stratum_vals).values
+                ds[f"unaged_{sex}_wgt_proportion"].sel(stratum_num=stratum_vals).values
             )
 
             biomass_unaged = (

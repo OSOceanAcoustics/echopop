@@ -115,49 +115,49 @@ def _initialize_ds(
 
     # initialize variable that will hold all Dataset initialized variables
     data_vars_dict = {
-        "total_weight": ("stratum", np.zeros(len(stratum_ind))),
-        "aged_proportion": ("stratum", np.zeros(len(stratum_ind))),
-        "unaged_proportion": ("stratum", np.zeros(len(stratum_ind))),
-        "station_1_N": ("stratum", np.zeros(len(stratum_ind))),
+        "total_weight": ("stratum_num", np.zeros(len(stratum_ind))),
+        "aged_proportion": ("stratum_num", np.zeros(len(stratum_ind))),
+        "unaged_proportion": ("stratum_num", np.zeros(len(stratum_ind))),
+        "station_1_N": ("stratum_num", np.zeros(len(stratum_ind))),
         "weight_len_all_normalized": (
-            ["stratum", "len_bin"],
+            ["stratum_num", "len_bin"],
             np.zeros((len(stratum_ind), len(len_bin))),
         ),
     }
 
     # add all variables that have only male and female versions
     for sex in ["M", "F"]:
-        data_vars_dict[f"num_{sex}"] = ("stratum", np.zeros(len(stratum_ind)))
+        data_vars_dict[f"num_{sex}"] = ("stratum_num", np.zeros(len(stratum_ind)))
         data_vars_dict[f"station_1_N_{sex}"] = (
-            "stratum",
+            "stratum_num",
             np.zeros(len(stratum_ind)),
         )
         data_vars_dict[f"unaged_{sex}_wgt_proportion"] = (
-            "stratum",
+            "stratum_num",
             np.zeros(len(stratum_ind)),
         )
         data_vars_dict[f"len_dist_station1_normalized_{sex}"] = (
-            ["stratum", "len_bin"],
+            ["stratum_num", "len_bin"],
             np.zeros((len(stratum_ind), len(len_bin))),
         )
 
     # add all variables that have male, female, and all versions
     for sex in ["M", "F", "all"]:
         data_vars_dict[f"len_age_weight_prop_{sex}"] = (
-            "stratum",
+            "stratum_num",
             np.zeros(len(stratum_ind)),
         )
         data_vars_dict[f"len_age_dist_{sex}"] = (
-            ["stratum", "len_bin", "age_bin"],
+            ["stratum_num", "len_bin", "age_bin"],
             np.zeros((len(stratum_ind), len(len_bin), len(age_bin))),
         )
         data_vars_dict[f"len_age_weight_dist_{sex}"] = (
-            ["stratum", "len_bin", "age_bin"],
+            ["stratum_num", "len_bin", "age_bin"],
             np.zeros((len(stratum_ind), len(len_bin), len(age_bin))),
         )
 
         data_vars_dict[f"len_age_weight_dist_{sex}_normalized"] = (
-            ["stratum", "len_bin", "age_bin"],
+            ["stratum_num", "len_bin", "age_bin"],
             np.zeros((len(stratum_ind), len(len_bin), len(age_bin))),
         )
 
@@ -165,7 +165,7 @@ def _initialize_ds(
     ds = xr.Dataset(
         data_vars=data_vars_dict,
         coords={
-            "stratum": ("stratum", stratum_ind),
+            "stratum_num": ("stratum_num", stratum_ind),
             "len_bin": ("len_bin", len_bin),
             "age_bin": ("age_bin", age_bin),
         },
@@ -300,35 +300,35 @@ def _set_age_distribution_data(
             )
 
             # get the distribution of weight for a particular age bin
-            ds[f"len_age_weight_dist_{sex}"].sel(stratum=stratum)[
+            ds[f"len_age_weight_dist_{sex}"].sel(stratum_num=stratum)[
                 :, age_bin
             ] = np.array(
                 [np.sum(input_arr_wgt[age_bins_ind[age_bin]][i]) for i in len_bin_ind]
             )
 
             # get the distribution of lengths for a particular age bin
-            ds[f"len_age_dist_{sex}"].sel(stratum=stratum)[:, age_bin] = np.array(
+            ds[f"len_age_dist_{sex}"].sel(stratum_num=stratum)[:, age_bin] = np.array(
                 [len(i) for i in len_bin_ind]
             )
 
         # get the distribution of weight for a particular age bin for all genders
-        ds.sel(stratum=stratum).len_age_weight_dist_all[:, age_bin] = (
-            ds.sel(stratum=stratum).len_age_weight_dist_M[:, age_bin]
-            + ds.sel(stratum=stratum).len_age_weight_dist_F[:, age_bin]
+        ds.sel(stratum_num=stratum).len_age_weight_dist_all[:, age_bin] = (
+            ds.sel(stratum_num=stratum).len_age_weight_dist_M[:, age_bin]
+            + ds.sel(stratum_num=stratum).len_age_weight_dist_F[:, age_bin]
         )
 
         # get the distribution of lengths for a particular age bin for all genders
-        ds.sel(stratum=stratum).len_age_dist_all[:, age_bin] = (
-            ds.sel(stratum=stratum).len_age_dist_M[:, age_bin]
-            + ds.sel(stratum=stratum).len_age_dist_F[:, age_bin]
+        ds.sel(stratum_num=stratum).len_age_dist_all[:, age_bin] = (
+            ds.sel(stratum_num=stratum).len_age_dist_M[:, age_bin]
+            + ds.sel(stratum_num=stratum).len_age_dist_F[:, age_bin]
         )
 
     # obtain normalized distributions
     for sex in ["all", "M", "F"]:
-        ds[f"len_age_weight_dist_{sex}_normalized"].sel(stratum=stratum)[:, :] = ds[
+        ds[f"len_age_weight_dist_{sex}_normalized"].sel(stratum_num=stratum)[:, :] = ds[
             f"len_age_weight_dist_{sex}"
-        ].sel(stratum=stratum) / np.nansum(
-            ds[f"len_age_weight_dist_{sex}"].sel(stratum=stratum)
+        ].sel(stratum_num=stratum) / np.nansum(
+            ds[f"len_age_weight_dist_{sex}"].sel(stratum_num=stratum)
         )
 
 
@@ -496,7 +496,7 @@ def _get_length_df_based_wgt(
                 df = length_df_F
 
             # get normalized length distribution of length_df gender data
-            ds[f"len_dist_station1_normalized_{sex}"].sel(stratum=stratum)[
+            ds[f"len_dist_station1_normalized_{sex}"].sel(stratum_num=stratum)[
                 :
             ] = survey.bio_calc._get_distribution_lengths_station_1(
                 df.loc[hauls_in_all]
@@ -523,7 +523,7 @@ def _get_length_df_based_wgt(
         weight_len_all = len_wgt_all * len_dist_station1_normalized
 
         # normalized weight per unit length distribution
-        ds.sel(stratum=stratum).weight_len_all_normalized[:] = (
+        ds.sel(stratum_num=stratum).weight_len_all_normalized[:] = (
             weight_len_all / weight_len_all.sum()
         )
 
@@ -558,8 +558,8 @@ def _set_proportion_parameters(
     # calculate and assign the len_age_weight proportions
     for sex in ["all", "M", "F"]:
         ds[f"len_age_weight_prop_{sex}"].loc[stratum] = np.nansum(
-            ds[f"len_age_weight_dist_{sex}"].sel(stratum=stratum)
-        ) / ds.total_weight.sel(stratum=stratum)
+            ds[f"len_age_weight_dist_{sex}"].sel(stratum_num=stratum)
+        ) / ds.total_weight.sel(stratum_num=stratum)
 
     # calculate and assign aged proportions
     ds.aged_proportion.loc[stratum] = (
@@ -578,8 +578,8 @@ def _set_proportion_parameters(
         nF_wgt1 = 0.0
 
     # obtain length and gender based weight proportion
-    Len_M_wgt_proportion = nM_wgt1 / ds.total_weight.sel(stratum=stratum).values
-    Len_F_wgt_proportion = nF_wgt1 / ds.total_weight.sel(stratum=stratum).values
+    Len_M_wgt_proportion = nM_wgt1 / ds.total_weight.sel(stratum_num=stratum).values
+    Len_F_wgt_proportion = nF_wgt1 / ds.total_weight.sel(stratum_num=stratum).values
 
     # obtain the proportion of males and females
     if (Len_M_wgt_proportion == 0.0) and (Len_F_wgt_proportion == 0.0):
