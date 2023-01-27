@@ -12,6 +12,7 @@ from .computation import (
     Kriging,
     SemiVariogram,
     generate_parameter_ds,
+    get_len_age_abundance,
     krig_param_type,
     krig_type_dict,
     run_jolly_hampton,
@@ -570,3 +571,56 @@ class Survey:
         boot = Bootstrapping(self)
 
         return boot
+
+    def compute_length_age_variables(self, data: str = "transect"):
+        """
+        Computes abundance and biomass over each length and age bin.
+
+        Parameters
+        ----------
+        data : str
+            Specifies the results produced:
+            - 'all' -> Both Kriging and transect based variables
+            - 'transect' -> only produces transect based variables
+            - 'kriging' -> only produces Kriging variables
+
+        Returns
+        -------
+
+        """
+
+        # TODO: finish documentation!
+
+        # TODO: make sure transect_results_gdf, kriging_results_gdf, param_ds exist
+
+        # TODO: can we think of a shorter name than transect_len_age_abundance_male?
+
+        if data in ["transect", "all"]:
+
+            (
+                self.bio_calc.transect_len_age_abundance_male,
+                self.bio_calc.transect_len_age_abundance_female,
+                self.bio_calc.transect_len_age_abundance,
+            ) = get_len_age_abundance(
+                gdf=self.bio_calc.transect_results_gdf,
+                ds=self.bio_calc.param_ds,
+                kriging_vals=False,
+            )
+
+        elif data == ["kriging", "all"]:
+
+            # get_len_age_abundance(gdf=self.bio_calc.kriging_results_gdf,
+            #                       ds=self.bio_calc.param_ds, kriging=True)
+
+            raise NotImplementedError(
+                "Creating abundance and biomass over each length and "
+                "age bin has not been implemented for Kriging data."
+            )
+
+        elif data == "all":
+            raise NotImplementedError("This option is currently unavailable.")
+
+        else:
+            raise RuntimeError(
+                "The input variable data must be 'all', 'transect', or 'kriging'!"
+            )

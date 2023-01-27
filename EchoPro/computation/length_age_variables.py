@@ -2,7 +2,7 @@ import pandas as pd
 import xarray as xr
 
 
-def _get_len_age_abundance(
+def _compute_len_age_abundance(
     abundance_df: pd.DataFrame, ds: xr.Dataset, sex: str, kriging_vals: bool
 ):
     # TODO: document!
@@ -67,7 +67,7 @@ def _get_len_age_abundance(
     return Len_Age_Matrix_Acoust, Len_Age_Matrix_Acoust_unaged
 
 
-def _get_len_age_biomass(biomass_df, ds, kriging_vals: bool):
+def _compute_len_age_biomass(biomass_df, ds, kriging_vals: bool):
     # TODO: document!
 
     # obtain only those strata that are defined in biomass_df
@@ -104,24 +104,57 @@ def _get_len_age_biomass(biomass_df, ds, kriging_vals: bool):
     return Len_Age_Matrix_biomass
 
 
-def compute_length_age_variables(
-    transect_results_gdf, ds, compute_transect: bool, compute_kriging: bool
-):
+def get_len_age_abundance(gdf, ds, kriging_vals: bool):
 
-    abundance_df = transect_results_gdf[["abundance", "stratum_num"]]
+    # TODO: document!
 
-    # TODO: use this for Kriging
-    # abundance_df = kriging_results_gdf[["abundance_adult", "stratum_num"]]
+    if kriging_vals:
+        abundance_df = gdf[["abundance_adult", "stratum_num"]]
+    else:
+        abundance_df = gdf[["abundance", "stratum_num"]]
 
-    temp_M, temp_unaged_M = _get_len_age_abundance(
-        abundance_df, ds, sex="M", kriging_vals=False
-    )
-    temp_F, temp_unaged_F = _get_len_age_abundance(
-        abundance_df, ds, sex="F", kriging_vals=False
-    )
+    abundance_df = abundance_df.reset_index(drop=True).set_index("stratum_num")
 
-    temp_F.to_pandas()
+    len_age_abundance_list = []
+    for sex in ["M", "F"]:
+        aged_da, unaged_da = _compute_len_age_abundance(
+            abundance_df, ds, sex=sex, kriging_vals=False
+        )
 
-    temp_total = temp_M + temp_F
+        aged_df = aged_da.to_pandas()
 
-    print(temp_total)
+        final_df = pd.concat([aged_df, unaged_da.to_pandas()], axis=1)
+
+        # create column names
+        final_df.columns = ["age_bin_" + str(column) for column in aged_df.columns] + [
+            "Un-aged"
+        ]
+
+        # remove row header produced by xarray
+        final_df.index.name = ""
+
+        # create index names
+        final_df.index = ["len_bin_" + str(row_ind) for row_ind in final_df.index]
+
+        len_age_abundance_list.append(final_df)
+
+    # create and add the length age abundance df for both genders to list
+    len_age_abundance_list += [len_age_abundance_list[0] + len_age_abundance_list[1]]
+
+    return len_age_abundance_list
+
+
+def get_len_age_biomass(gdf_all, gdf_male, gdf_female, ds, kriging_vals: bool):
+    # TODO: document
+
+    len_age_biomass_list = []
+    for gdf in [gdf_male, gdf_female, gdf_all]:
+
+        biomass_df = gdf[["biomass", "stratum_num"]]
+        biomass_df = biomass_df.reset_index(drop=True).set_index("stratum_num")
+
+        len_age_biomass_list.append(
+            _compute_len_age_biomass(biomass_df, ds, kriging_vals=kriging_vals)
+        )
+
+    return len_age_biomass_list
