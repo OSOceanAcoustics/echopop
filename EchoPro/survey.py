@@ -13,6 +13,7 @@ from .computation import (
     SemiVariogram,
     generate_parameter_ds,
     get_len_age_abundance,
+    get_len_age_biomass,
     krig_param_type,
     krig_type_dict,
     run_jolly_hampton,
@@ -607,6 +608,18 @@ class Survey:
                 kriging_vals=False,
             )
 
+            (
+                self.bio_calc.transect_len_age_biomass_male,
+                self.bio_calc.transect_len_age_biomass_female,
+                self.bio_calc.transect_len_age_biomass,
+            ) = get_len_age_biomass(
+                gdf_all=self.bio_calc.transect_results_gdf,
+                gdf_male=self.bio_calc.transect_results_male_gdf,
+                gdf_female=self.bio_calc.transect_results_female_gdf,
+                ds=self.bio_calc.param_ds,
+                kriging_vals=False,
+            )
+
         elif data == ["kriging", "all"]:
 
             # get_len_age_abundance(gdf=self.bio_calc.kriging_results_gdf,
@@ -616,9 +629,6 @@ class Survey:
                 "Creating abundance and biomass over each length and "
                 "age bin has not been implemented for Kriging data."
             )
-
-        elif data == "all":
-            raise NotImplementedError("This option is currently unavailable.")
 
         else:
             raise RuntimeError(

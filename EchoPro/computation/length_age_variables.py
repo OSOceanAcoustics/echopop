@@ -125,7 +125,7 @@ def get_len_age_abundance(gdf, ds, kriging_vals: bool):
 
         final_df = pd.concat([aged_df, unaged_da.to_pandas()], axis=1)
 
-        # create column names
+        # create and assign column names
         final_df.columns = ["age_bin_" + str(column) for column in aged_df.columns] + [
             "Un-aged"
         ]
@@ -133,7 +133,7 @@ def get_len_age_abundance(gdf, ds, kriging_vals: bool):
         # remove row header produced by xarray
         final_df.index.name = ""
 
-        # create index names
+        # create and assign index names
         final_df.index = ["len_bin_" + str(row_ind) for row_ind in final_df.index]
 
         len_age_abundance_list.append(final_df)
@@ -153,8 +153,21 @@ def get_len_age_biomass(gdf_all, gdf_male, gdf_female, ds, kriging_vals: bool):
         biomass_df = gdf[["biomass", "stratum_num"]]
         biomass_df = biomass_df.reset_index(drop=True).set_index("stratum_num")
 
-        len_age_biomass_list.append(
-            _compute_len_age_biomass(biomass_df, ds, kriging_vals=kriging_vals)
-        )
+        # obtain the biomass at the length and age bins
+        final_df = _compute_len_age_biomass(
+            biomass_df, ds, kriging_vals=kriging_vals
+        ).to_pandas()
+
+        # remove column and row header produced by xarray
+        final_df.columns.name = ""
+        final_df.index.name = ""
+
+        # create and assign column names
+        final_df.columns = ["age_bin_" + str(column) for column in final_df.columns]
+
+        # create and assign index names
+        final_df.index = ["len_bin_" + str(row_ind) for row_ind in final_df.index]
+
+        len_age_biomass_list.append(final_df)
 
     return len_age_biomass_list
