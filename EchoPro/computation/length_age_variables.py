@@ -127,12 +127,13 @@ def _compute_len_age_abundance(
     return Len_Age_Matrix_Acoust, Len_Age_Matrix_Acoust_unaged
 
 
-def _compute_len_age_biomass(
-    biomass_df: pd.DataFrame, ds: xr.Dataset, kriging_vals: bool
+def _compute_transect_len_age_biomass(
+    biomass_df: pd.DataFrame, ds: xr.Dataset
 ) -> xr.DataArray:
     """
     Computes the biomass at each length and age bin using the
-    input biomass DataFrame and parameter Dataset.
+    input biomass DataFrame and parameter Dataset, for the transect
+    based data.
 
     Parameters
     ----------
@@ -144,9 +145,6 @@ def _compute_len_age_biomass(
     ds: xr.Dataset
         A Dataset produced by the module ``parameters_dataset.py``, which
         contains all parameters necessary for computation
-    kriging_vals: bool
-        If True, the biomass data was produced by Kriging, else
-        it is Transect based
 
     Returns
     -------
@@ -159,12 +157,7 @@ def _compute_len_age_biomass(
     defined_stratum = biomass_df.index.unique().values
 
     # obtain the total biomass for each stratum
-    if kriging_vals:
-        biomass_sum_stratum = (
-            biomass_df.groupby(level=0).sum()["biomass_adult"].to_xarray()
-        )
-    else:
-        biomass_sum_stratum = biomass_df.groupby(level=0).sum()["biomass"].to_xarray()
+    biomass_sum_stratum = biomass_df.groupby(level=0).sum()["biomass"].to_xarray()
 
     # get the biomass for the sex at each length and age bin
     Len_Age_Matrix_biomass = (
@@ -179,6 +172,68 @@ def _compute_len_age_biomass(
     #     self._redistribute_age1_data(Len_Age_Matrix_biomass)
 
     return Len_Age_Matrix_biomass
+
+
+def _compute_kriging_len_age_biomass(
+    biomass_df: pd.DataFrame, ds: xr.Dataset, sex: str
+) -> xr.DataArray:
+    """
+    Computes the biomass at each length and age bin using the
+    input biomass DataFrame and parameter Dataset, for the Kriging
+    based data.
+
+    Parameters
+    ----------
+    biomass_df: pd.DataFrame
+        A DataFrame with index ``stratum_num`` and column with biomass
+        values. If DataFrame corresponds to Kriging data then the column
+        should be named ``biomass_adult``, else it should be named
+        ``biomass``.
+    ds: xr.Dataset
+        A Dataset produced by the module ``parameters_dataset.py``, which
+        contains all parameters necessary for computation
+
+    Returns
+    -------
+    Len_Age_Matrix_biomass: xr.DataArray
+        A DataArray representing the biomass at each length and age
+        bin for provided biomass data
+    """
+
+    # TODO: document!
+
+    # obtain only those strata that are defined in biomass_df
+    defined_stratum = biomass_df["stratum_num"].values.unique()
+
+    # create variables to improve readability
+    biomass_density_adult_mean = biomass_df[["biomass_density_adult_mean"]]
+    cell_area_nmi2 = biomass_df[["cell_area_nmi2"]]
+
+    # calculate the biomass multiplied by the cell area and sum these values by stratum
+    bio_times_area = biomass_df["stratum_num"].copy(deep=True).to_frame()
+    bio_times_area["val"] = biomass_density_adult_mean.values * cell_area_nmi2.values
+    sum_bio_area = (
+        bio_times_area.set_index("stratum_num")
+        .groupby(level=0)
+        .sum()["val"]
+        .to_xarray()
+    )
+
+    # calculate the aged biomass for males and females
+    dist_weight_sum = (
+        ds[f"len_age_weight_dist_{sex}_normalized"] * ds[f"len_age_weight_prop_{sex}"]
+    ).sel(
+        stratum_num=defined_stratum
+    )  # .values
+
+    biomass_aged = (dist_weight_sum * sum_bio_area).sum("stratum_num")
+
+    weight_unaged = ds.weight_len_all_normalized * ds[f"unaged_{sex}_wgt_proportion"]
+
+    # calculate the unaged biomass
+    biomass_unaged = (weight_unaged * sum_bio_area).sum("stratum_num")
+
+    return biomass_aged, biomass_unaged
 
 
 def get_len_age_abundance(
@@ -266,33 +321,84 @@ def get_len_age_abundance(
     return len_age_abundance_list
 
 
-def get_len_age_biomass(
+def get_transect_len_age_biomass(
     gdf_all: gpd.GeoDataFrame,
     gdf_male: gpd.GeoDataFrame,
     gdf_female: gpd.GeoDataFrame,
+    ds: xr.Dataset,
+) -> List[pd.DataFrame]:
+    """
+    Obtains and initiates the computation of the biomass at
+    each length and age bin for male, female, and all
+    gender data, for transect based data.
+
+    Parameters
+    ----------
+    gdf_all: gpd.GeoDataFrame
+        A GeoDataFrame with column ``stratum_num`` and column corresponding
+        to the biomass produced by including all genders.
+    gdf_male: gpd.GeoDataFrame
+        A GeoDataFrame with column ``stratum_num`` and column corresponding
+        to the biomass produced by including only males.
+    gdf_female: gpd.GeoDataFrame
+        A GeoDataFrame with column ``stratum_num`` and column corresponding
+        to the biomass produced by including only females.
+    ds: xr.Dataset
+        A Dataset produced by the module ``parameters_dataset.py``, which
+        contains all parameters necessary for computation
+
+    Returns
+    -------
+    len_age_biomass_list: list of pd.DataFrame
+        A list where each element is a DataFrame containing the biomass at
+        each length and age bin for male, female, and all genders (in
+        that order)
+    """
+
+    # compute, format, and store the biomass data for male, females, and all genders
+    len_age_biomass_list = []
+    for gdf in [gdf_male, gdf_female, gdf_all]:
+
+        # obtain the biomass DataFrame
+        biomass_df = gdf[["biomass", "stratum_num"]]
+
+        # make stratum_num the index of the DataFrame
+        biomass_df = biomass_df.reset_index(drop=True).set_index("stratum_num")
+
+        # obtain the biomass at the length and age bins
+        final_df = _compute_transect_len_age_biomass(biomass_df, ds).to_pandas()
+
+        # remove column and row header produced by xarray
+        final_df.columns.name = ""
+        final_df.index.name = ""
+
+        # create and assign column names
+        final_df.columns = ["age_bin_" + str(column) for column in final_df.columns]
+
+        # create and assign index names
+        final_df.index = ["len_bin_" + str(row_ind) for row_ind in final_df.index]
+
+        # store biomass data
+        len_age_biomass_list.append(final_df)
+
+    return len_age_biomass_list
+
+
+def get_kriging_len_age_biomass(
+    gdf_all: gpd.GeoDataFrame,
     ds: xr.Dataset,
     kriging_vals: bool,
 ) -> List[pd.DataFrame]:
     """
     Obtains and initiates the computation of the biomass at
     each length and age bin for male, female, and all
-    gender data.
+    gender data, for Kriging based data.
 
     Parameters
     ----------
     gdf_all: gpd.GeoDataFrame
         A GeoDataFrame with column ``stratum_num`` and column corresponding
         to the biomass produced by including all genders. If GeoDataFrame
-        corresponds to Kriging data then the column should be named
-        ``biomass_adult``, else it should be named ``biomass``.
-    gdf_male: gpd.GeoDataFrame
-        A GeoDataFrame with column ``stratum_num`` and column corresponding
-        to the biomass produced by including only males. If GeoDataFrame
-        corresponds to Kriging data then the column should be named
-        ``biomass_adult``, else it should be named ``biomass``.
-    gdf_female: gpd.GeoDataFrame
-        A GeoDataFrame with column ``stratum_num`` and column corresponding
-        to the biomass produced by including only females. If GeoDataFrame
         corresponds to Kriging data then the column should be named
         ``biomass_adult``, else it should be named ``biomass``.
     ds: xr.Dataset
@@ -310,33 +416,36 @@ def get_len_age_biomass(
         that order)
     """
 
+    # TODO: document
+
     # compute, format, and store the biomass data for male, females, and all genders
     len_age_biomass_list = []
-    for gdf in [gdf_male, gdf_female, gdf_all]:
 
-        # obtain the biomass DataFrame
-        # TODO: may need to account for Kriging here
-        biomass_df = gdf[["biomass", "stratum_num"]]
+    # obtain the biomass at the length and age bins
+    for sex in ["M", "F"]:
+        biomass_aged, biomass_unaged = _compute_kriging_len_age_biomass(
+            gdf_all, ds, sex
+        )
 
-        # make stratum_num the index of the DataFrame
-        biomass_df = biomass_df.reset_index(drop=True).set_index("stratum_num")
+        aged_df = biomass_aged.to_pandas()
 
-        # obtain the biomass at the length and age bins
-        final_df = _compute_len_age_biomass(
-            biomass_df, ds, kriging_vals=kriging_vals
-        ).to_pandas()
+        final_df = pd.concat([aged_df, biomass_unaged.to_pandas()], axis=1)
 
         # remove column and row header produced by xarray
         final_df.columns.name = ""
         final_df.index.name = ""
 
         # create and assign column names
-        final_df.columns = ["age_bin_" + str(column) for column in final_df.columns]
+        final_df.columns = ["age_bin_" + str(column) for column in aged_df.columns] + [
+            "Un-aged"
+        ]
 
         # create and assign index names
         final_df.index = ["len_bin_" + str(row_ind) for row_ind in final_df.index]
 
         # store biomass data
         len_age_biomass_list.append(final_df)
+
+    len_age_biomass_list.append(len_age_biomass_list[0] + len_age_biomass_list[1])
 
     return len_age_biomass_list

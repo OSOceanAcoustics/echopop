@@ -13,8 +13,9 @@ from .computation import (
     Kriging,
     SemiVariogram,
     generate_parameter_ds,
+    get_kriging_len_age_biomass,
     get_len_age_abundance,
-    get_len_age_biomass,
+    get_transect_len_age_biomass,
     krig_param_type,
     krig_type_dict,
     run_jolly_hampton,
@@ -643,12 +644,11 @@ class Survey:
                 self.bio_calc.transect_len_age_biomass_male,
                 self.bio_calc.transect_len_age_biomass_female,
                 self.bio_calc.transect_len_age_biomass,
-            ) = get_len_age_biomass(
+            ) = get_transect_len_age_biomass(
                 gdf_all=self.bio_calc.transect_results_gdf,
                 gdf_male=self.bio_calc.transect_results_male_gdf,
                 gdf_female=self.bio_calc.transect_results_female_gdf,
                 ds=self.bio_calc.param_ds,
-                kriging_vals=False,
             )
 
         elif data in ["kriging", "all"]:
@@ -671,6 +671,17 @@ class Survey:
                 ds=self.bio_calc.param_ds,
                 kriging_vals=True,
                 exclude_age1=self.params["exclude_age1"],
+            )
+
+            # obtain and assign biomass DataFrames for kriging data
+            (
+                self.bio_calc.kriging_len_age_biomass_male,
+                self.bio_calc.kriging_len_age_biomass_female,
+                self.bio_calc.kriging_len_age_biomass,
+            ) = get_kriging_len_age_biomass(
+                gdf_all=self.bio_calc.kriging_results_gdf,
+                ds=self.bio_calc.param_ds,
+                kriging_vals=True,
             )
 
             # raise NotImplementedError(
