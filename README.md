@@ -4,6 +4,24 @@ This repository is for the development of the Python incarnation of EchoPro. Thi
 data analysis results with biological information from trawls (such as length, age, etc.) to produce biomass estimates
 of Pacific hake.
 
+Add mention and link to https://uw-echospace.github.io/EchoPro/
+
+## Installation
+
+### conda
+
+EchoPro installation has been tested extensively with `conda`. At this time 
+
+https://docs.conda.io/
+https://oceanhackweek.org/resources/prep/conda.html#what-is-conda
+https://oceanhackweek.org/resources/prep/conda.html#installing-conda
+
+If you'd 
+
+### Install EchoPro and its dependencies
+
+Development vs user environment
+
 ## Python EchoPro Workflow
 
 We have compiled the Jupyter notebook [echopro_workflow.ipynb](https://github.com/uw-echospace/EchoPro/blob/master/echopro_workflow.ipynb)
