@@ -1,6 +1,7 @@
 from typing import List, Tuple
 
 import geopandas as gpd
+import numpy as np
 import pandas as pd
 import xarray as xr
 
@@ -233,7 +234,15 @@ def _compute_kriging_len_age_biomass(
     # calculate the unaged biomass
     biomass_unaged = (weight_unaged * sum_bio_area).sum("stratum_num")
 
-    return biomass_aged, biomass_unaged
+    # calculate the weight of the unaged for all genders
+    weight_all_unaged = ds.weight_len_all_normalized * ds["unaged_proportion"]
+
+    # calculate the unaged biomass for all genders
+    biomass_all_unaged = (
+        (weight_all_unaged * sum_bio_area).sum("stratum_num") * 1e-6
+    ).values
+
+    return biomass_aged, biomass_unaged, biomass_all_unaged
 
 
 def get_len_age_abundance(
@@ -384,10 +393,112 @@ def get_transect_len_age_biomass(
     return len_age_biomass_list
 
 
+def _redistribute_age1_kriged_biomass(len_age_biomass_list, biomass_unaged):
+
+    # TODO: document!
+
+    male_arr = len_age_biomass_list[0].to_numpy() * 1e-6
+    female_arr = len_age_biomass_list[1].to_numpy() * 1e-6
+
+    Uaged2aged_mat_M = np.zeros((male_arr.shape[0], male_arr.shape[1] - 1))
+    Uaged2aged_mat_F = np.zeros((male_arr.shape[0], male_arr.shape[1] - 1))
+    threshold = 1e-10
+    eps = 2.22044604925031e-16
+
+    for i in range(male_arr.shape[0]):
+
+        if (sum(male_arr[i, :-1]) < threshold) and (
+            sum(female_arr[i, :-1]) < threshold
+        ):
+            # neither male and nor female hake at ith length bin is found
+            # for aged hake (bio-sample station 2)
+            if male_arr[i, -1] < threshold:
+                # no unaged hake found at bio-sample station 1
+                Uaged2aged_mat_M[i, :] = 0.0
+                Uaged2aged_mat_F[i, :] = 0.0
+            else:
+
+                # unaged hake found at bio-sample station 1
+                sum_over_ageM = male_arr[:, :-1].sum(axis=1)
+                ind_M = np.argwhere(sum_over_ageM > eps).flatten() + 1
+                ind_sel_M = np.argmin(abs(ind_M - (i + 1))) + 1
+                ind_sel_M = ind_sel_M + min(ind_M) - 1
+
+                sum_over_ageF = female_arr[:, :-1].sum(axis=1)
+                ind_F = np.argwhere(sum_over_ageF > eps).flatten() + 1
+                ind_sel_F = np.argmin(abs(ind_F - (i + 1))) + 1
+                ind_sel_F = ind_sel_F + min(ind_F) - 1
+
+                if ind_sel_F < ind_sel_M:
+                    # closet length bin has no aged female, using the smaller
+                    # length bin aged female data
+                    while sum(female_arr[ind_sel_F - 1, :-1]) == 0:
+                        ind_sel_F = ind_sel_F - 1
+                    Uaged2aged_mat_M[i, :] = (
+                        male_arr[i, -1]
+                        * female_arr[ind_sel_F - 1, :-1]
+                        / sum(female_arr[ind_sel_F - 1, :-1])
+                    )
+                    Uaged2aged_mat_F[i, :] = (
+                        female_arr[i, -1]
+                        * female_arr[ind_sel_F - 1, :-1]
+                        / sum(female_arr[ind_sel_F - 1, :-1])
+                    )
+                else:
+                    # closet length bin has no aged male, using the smaller
+                    # length bin aged male data
+                    while sum(male_arr[ind_sel_M - 1, :-1]) == 0:
+                        ind_sel_M = ind_sel_M - 1
+                    Uaged2aged_mat_M[i, :] = (
+                        male_arr[i, -1]
+                        * male_arr[ind_sel_M - 1, :-1]
+                        / sum(male_arr[ind_sel_M - 1, :-1])
+                    )
+                    Uaged2aged_mat_F[i, :] = (
+                        female_arr[i, -1]
+                        * male_arr[ind_sel_M - 1, :-1]
+                        / sum(male_arr[ind_sel_M - 1, :-1])
+                    )
+        elif (sum(male_arr[i, :-1]) < threshold) and (male_arr[i, -1] > threshold):
+            # no male hake at ith length bin for aged hake (bio-sample station 2)
+            # but has for unaged hake (bio-sample station 1)
+            Uaged2aged_mat_M[i, :] = (
+                male_arr[i, -1] * female_arr[i, :-1] / sum(female_arr[i, :-1])
+            )
+            Uaged2aged_mat_F[i, :] = (
+                female_arr[i, -1] * female_arr[i, :-1] / sum(female_arr[i, :-1])
+            )
+        elif (sum(female_arr[i, :-1]) < threshold) and (female_arr[i, -1] > threshold):
+            # no female hake at ith length bin for aged hake (bio-sample station 2)
+            # but has for unaged hake (bio-sample station 1)
+            Uaged2aged_mat_M[i, :] = (
+                male_arr[i, -1] * male_arr[i, :-1] / sum(male_arr[i, :-1])
+            )
+            Uaged2aged_mat_F[i, :] = (
+                female_arr[i, -1] * male_arr[i, :-1] / sum(male_arr[i, :-1])
+            )
+        elif (
+            (sum(male_arr[i, :-1]) > threshold)
+            and (sum(female_arr[i, :-1]) > threshold)
+            and (biomass_unaged[i] > threshold)
+        ):
+            # both male and female hake have samples at ith length bin for aged hake
+            # (bio-sample station 2) and unaged hake (bio-sample station 1)
+            Uaged2aged_mat_M[i, :] = (
+                male_arr[i, -1] * male_arr[i, :-1] / sum(male_arr[i, :-1])
+            )
+            Uaged2aged_mat_F[i, :] = (
+                female_arr[i, -1] * female_arr[i, :-1] / sum(female_arr[i, :-1])
+            )
+
+    len_age_biomass_list[0].iloc[:, :-1] += Uaged2aged_mat_M * 1e6
+    len_age_biomass_list[1].iloc[:, :-1] += Uaged2aged_mat_F * 1e6
+
+
 def get_kriging_len_age_biomass(
     gdf_all: gpd.GeoDataFrame,
     ds: xr.Dataset,
-    kriging_vals: bool,
+    exclude_age1: bool,
 ) -> List[pd.DataFrame]:
     """
     Obtains and initiates the computation of the biomass at
@@ -404,9 +515,8 @@ def get_kriging_len_age_biomass(
     ds: xr.Dataset
         A Dataset produced by the module ``parameters_dataset.py``, which
         contains all parameters necessary for computation
-    kriging_vals: bool
-        If True, the biomass data was produced by Kriging, else
-        it is Transect based
+    exclude_age1: bool
+        If True, exclude age 1 data, else do not (only applies to Kriging data)
 
     Returns
     -------
@@ -423,9 +533,11 @@ def get_kriging_len_age_biomass(
 
     # obtain the biomass at the length and age bins
     for sex in ["M", "F"]:
-        biomass_aged, biomass_unaged = _compute_kriging_len_age_biomass(
-            gdf_all, ds, sex
-        )
+        (
+            biomass_aged,
+            biomass_unaged,
+            biomass_all_unaged,
+        ) = _compute_kriging_len_age_biomass(gdf_all, ds, sex)
 
         aged_df = biomass_aged.to_pandas()
 
@@ -446,6 +558,15 @@ def get_kriging_len_age_biomass(
         # store biomass data
         len_age_biomass_list.append(final_df)
 
+    _redistribute_age1_kriged_biomass(len_age_biomass_list, biomass_unaged)
+
     len_age_biomass_list.append(len_age_biomass_list[0] + len_age_biomass_list[1])
+
+    # redistribute the age 1 data if Kriging values are being used
+    if exclude_age1:
+        for df in len_age_biomass_list:
+            _redistribute_age1_data(
+                df, abundance_data=True
+            )  # TODO: change name of abundance_data
 
     return len_age_biomass_list

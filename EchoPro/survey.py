@@ -681,7 +681,7 @@ class Survey:
             ) = get_kriging_len_age_biomass(
                 gdf_all=self.bio_calc.kriging_results_gdf,
                 ds=self.bio_calc.param_ds,
-                kriging_vals=True,
+                exclude_age1=self.params["exclude_age1"],
             )
 
             # raise NotImplementedError(
