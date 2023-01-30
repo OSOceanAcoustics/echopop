@@ -134,9 +134,9 @@ def test_kriging_based_length_age():
     abundance_df = survey_2019.bio_calc.kriging_len_age_abundance
     male_abundance_df = survey_2019.bio_calc.kriging_len_age_abundance_male
     female_abundance_df = survey_2019.bio_calc.kriging_len_age_abundance_female
-    # biomass_df = survey_2019.bio_calc.kriging_len_age_biomass
-    # male_biomass_df = survey_2019.bio_calc.kriging_len_age_biomass_male
-    # female_biomass_df = survey_2019.bio_calc.kriging_len_age_biomass_female
+    biomass_df = survey_2019.bio_calc.kriging_len_age_biomass
+    male_biomass_df = survey_2019.bio_calc.kriging_len_age_biomass_male
+    female_biomass_df = survey_2019.bio_calc.kriging_len_age_biomass_female
 
     # obtain file_path pointing to the known abundance data
     # TODO: replace this with input in the future
@@ -160,21 +160,21 @@ def test_kriging_based_length_age():
 
     assert np.all(np.isclose(female_df_known.to_numpy(), female_abundance_df.to_numpy()))
 
-    # # obtain file_path pointing to the known biomass data
-    # # TODO: replace this with input in the future
-    # file_path_abundance = "/Users/brandonreyes/UW_work/EchoPro_work/UW_EchoProMatlab_Repackaged/outputs/EchoPro_matlab_output_brandon_age_22_end_bin/un-kriged_len_age_biomass_table.xlsx"
-    #
-    # # gather known solution data produced by the Matlab version of EchoPro
-    # df_known = pd.read_excel(file_path_abundance, index_col=0, sheet_name=sheet_name,
-    #                          skiprows=[0, 42, 43, 44, 45, 46], usecols="A:W")
-    # male_df_known = pd.read_excel(file_path_abundance, index_col=0, sheet_name=sheet_name_male,
-    #                               skiprows=[0, 42, 43, 44, 45, 46], usecols="A:W")
-    # female_df_known = pd.read_excel(file_path_abundance, index_col=0, sheet_name=sheet_name_female,
-    #                                 skiprows=[0, 42, 43, 44, 45, 46], usecols="A:W")
-    #
-    # # compare known and produced values for biomass
-    # assert np.all(np.isclose(df_known.to_numpy(), 1e-9 * biomass_df.to_numpy()))
-    #
-    # assert np.all(np.isclose(male_df_known.to_numpy(), 1e-9 * male_biomass_df.to_numpy()))
-    #
-    # assert np.all(np.isclose(female_df_known.to_numpy(), 1e-9 * female_biomass_df.to_numpy()))
+    # obtain file_path pointing to the known biomass data
+    # TODO: replace this with input in the future
+    file_path_abundance = "/Users/brandonreyes/UW_work/EchoPro_work/UW_EchoProMatlab_Repackaged/outputs/EchoPro_matlab_output_brandon_age_22_end_bin/kriged_len_age_biomass_table.xlsx"
+
+    # gather known solution data produced by the Matlab version of EchoPro
+    df_known = pd.read_excel(file_path_abundance, index_col=0, sheet_name=sheet_name,
+                             skiprows=[0, 42, 43, 44, 45, 46], usecols="A:W")
+    male_df_known = pd.read_excel(file_path_abundance, index_col=0, sheet_name=sheet_name_male,
+                                  skiprows=[0, 42, 43, 44, 45, 46], usecols="A:W")
+    female_df_known = pd.read_excel(file_path_abundance, index_col=0, sheet_name=sheet_name_female,
+                                    skiprows=[0, 42, 43, 44, 45, 46], usecols="A:W")
+
+    # compare known and produced values for biomass
+    assert np.all(np.isclose(df_known.to_numpy(), 1e-9 * biomass_df.to_numpy()[:, :-1]))
+
+    assert np.all(np.isclose(male_df_known.to_numpy(), 1e-9 * male_biomass_df.to_numpy()[:, :-1]))
+
+    assert np.all(np.isclose(female_df_known.to_numpy(), 1e-9 * female_biomass_df.to_numpy()[:, :-1]))

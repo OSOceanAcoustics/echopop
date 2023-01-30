@@ -687,7 +687,7 @@ class Survey:
             # raise NotImplementedError(
             #     "Creating abundance and biomass over each length and "
             #     "age bin has not been implemented for Kriging data."
-            # )
+            # )  # TODO: remove once we are happy
 
         else:
             raise RuntimeError(
