@@ -1,59 +1,85 @@
-# EchoPro
+# Python EchoPro
 
-This repository is for the development of the Python incarnation of EchoPro. This program uses combined acoustic
-data analysis results with biological information from trawls (such as length, age, etc.) to produce biomass estimates
-of Pacific hake.
+Python EchoPro ("EchoPro") uses combined acoustic data analysis results with biological information from trawls (such as length, age, etc.) to produce biomass estimates of Pacific hake.
 
-Add mention and link to https://uw-echospace.github.io/EchoPro/
+Go to https://uw-echospace.github.io/EchoPro/ to view Jupyter notebooks that demonstrate EchoPro functionality and typical workflows.
 
 ## Installation
 
-### conda
+Python EchoPro is not yet available for installation as a package on [PyPI](https://pypi.org/) or [conda-forge](https://conda-forge.org/). Until then, it must be installed either from the code (mainly for continued development purposes) after "cloning" the GitHub repository using `git`, or from an EchoPro [Python wheel file](https://realpython.com/python-wheels/) available from the GitHub repository. Either way, we'll use [conda](https://docs.conda.io) to install EchoPro dependencies using the conda environment file [condaenvironment.yaml](https://github.com/uw-echospace/EchoPro/blob/master/condaenvironment.yaml) from the repository. Installation of EchoPro dependencies has been tested extensively with `conda`. 
 
-EchoPro installation has been tested extensively with `conda`. At this time 
+There are [different ways of installing `conda`](https://oceanhackweek.org/resources/prep/conda.html#installing-conda), but we recommend the use of [Miniconda](https://docs.conda.io/en/latest/miniconda.html). `conda` can be used without administrative privileges.
 
-https://docs.conda.io/
-https://oceanhackweek.org/resources/prep/conda.html#what-is-conda
-https://oceanhackweek.org/resources/prep/conda.html#installing-conda
+### Installation as a user
 
-If you'd 
+This simpler installation method is recommended if you don't intend to work on developing the EchoPro code base itself.
 
-### Install EchoPro and its dependencies
+1. Download the `condaenvironment.yaml` file. In https://github.com/uw-echospace/EchoPro/blob/master/condaenvironment.yaml, click on "Raw" (on the right) then save the file.
+2. At the terminal (shell), change directory to where you've placed the `condaenvironment.yaml` file.
+3. Install the dependencies and create a new conda environment called "echopro": 
+    ```bash
+    conda env create -f condaenvironment.yaml
+    ```
+4. Activate the environment: 
+    ```bash
+    conda activate echopro
+    ```
+5. Install EchoPro from its wheel file:
+    ```bash
+    pip install https://uw-echospace.github.io/EchoPro/EchoPro-latest-py3-none-any.whl
+    ```
 
-Development vs user environment
+In order to run EchoPro you will also need to download the EchoPro configuration files. To run the example Jupyter notebooks for the sample 2019 inputs, you will also need to download the notebooks and the input data files.
 
-## Python EchoPro Workflow
+### Installation as a developer
 
-We have compiled the Jupyter notebook [echopro_workflow.ipynb](https://github.com/uw-echospace/EchoPro/blob/master/echopro_workflow.ipynb)
-that highlights the current workflow of the Python version of EchoPro. It can be ran after cloning this repository and
-setting up the Jupyter notebook. Below we outline the process of setting up the notebook using [Anaconda](https://www.anaconda.com/)
-and obtaining all necessary data. All steps contained in codeblocks should be performed using a terminal.
+Follow these steps if you intend to make code contributions to EchoPro:
 
-1. Use [conda_install.yaml](https://github.com/uw-echospace/EchoPro/blob/master/EchoPro/conda_install.yaml)
-to create the conda environment called `echopro_env`:
+1. Clone the repository (alternatively, fork the repository first, then clone your fork):
+    ```bash
+    git clone https://github.com/uw-echospace/EchoPro.git
+    ```
+2. `cd` to the new `EchoPro` directory:
+    ```bash
+    cd EchoPro
+    ```
+3. Install the dependencies and create a new conda environment called "echopro": 
+    ```bash
+    conda env create -f condaenvironment.yaml
+    ```
+4. Activate the environment: 
+    ```bash
+    conda activate echopro
+    ```
+5. Install EchoPro in development mode:
+    ```bash
+    pip install -e .
+    ```
+
+The EchoPro configuration files and example Jupyter notebooks are available in the files you have cloned, but you will need to download the 2019 sample input data files.
+
+## Download 2019 sample input files
+
+Download the folder [2019_consolidated_files](https://drive.google.com/drive/folders/13o1z5ebn3G05kAmfAVYJ3QqNEgxL8xxw?usp=sharing),
+which contains all input files necessary to run the example notebooks. Note that this link has restricted access and the folder can only be downloaded by approved parties.
+
+Note that these files incorporate modifications from the original input files provided the NWFSC FEAT team (Chu). These changes involve primarily column names, plus the source of mappings between haul numbers and transects numbers.
+
+## Running EchoPro
+
+First, set `data_root_dir` in [survey_year_2019_config.yml](https://github.com/uw-echospace/EchoPro/blob/master/config_files/survey_year_2019_config.yml)
+to the path to the directory `2019_consolidated_files`, which was downloaded in the previous step.
+
+- **User** installation:
+    - Download `survey_year_2019_config.yml` and `initialization_config.yml` from https://github.com/uw-echospace/EchoPro/blob/master/config_files/. After navigating to each file, click on "Raw" (on the right) then save the file. Create a directory called `config_files` to store these files.
+    - Download the notebooks from https://uw-echospace.github.io/EchoPro/ and place them in a new directory named `example_notebooks`, at the same level as the `config_files` directory.
+- **Developer** installation:
+    - `survey_year_2019_config.yml` is found in the `config_files` directory.
+
+Now start Jupyter notebook:
+```bash
+cd example_notebooks
+jupyter-notebook
 ```
-conda env create -f conda_install.yaml
-```
-2. Activate the conda environment:
-```
-conda activate echopro_env
-```
-3. Construct a kernel for the Jupyter notebook called `echopro_env` using our conda environment:
-```
-python -m ipykernel install --user --name=echopro_env
-```
-4. Navigate to the directory that contains `echopro_workflow.ipynb` and open it:
-```
-jupyter-notebook echopro_workflow.ipynb
-```
-5. Once the Jupyter notebook has been opened, you can set the kernel by going to the "Kernel" tab in the notebook,
-hovering over "Change kernel", and selecting "echopro_env".
-6. Download the folder [2019_consolidated_files](https://drive.google.com/drive/folders/13o1z5ebn3G05kAmfAVYJ3QqNEgxL8xxw?usp=sharing),
-which contains all files necessary to run the notebook. Note that this link has restricted access and the folder can
-only be downloaded by approved parties.
-7. Modify `data_root_dir` in [survey_year_2019_config.yml](https://github.com/uw-echospace/EchoPro/blob/master/config_files/survey_year_2019_config.yml)
-so that it points to the directory `2019_consolidated_files`, which was downloaded in the previous step.
 
-## Project updates
-
-* [April 7, 2022](https://github.com/uw-echospace/EchoPro/blob/master/project_docs/2022_04_07_update.md)
+Select the notebook you'd like to run. Once the notebook is open, set the "kernel" (conda environment) to "echopro" by going to the menu item `Kernel > Change kernel` and selecting "Python [conda env:echopro]".
