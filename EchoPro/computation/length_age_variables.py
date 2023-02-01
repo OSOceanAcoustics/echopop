@@ -6,7 +6,7 @@ import pandas as pd
 import xarray as xr
 
 
-def _redistribute_age1_data(df: pd.DataFrame, abundance_data: bool):
+def _redistribute_age1_data(df: pd.DataFrame, unaged_column: bool):
     """
     Redistributes the first age bin data to the rest of the age bins
     by directly modifying the data in ``df``.
@@ -16,10 +16,9 @@ def _redistribute_age1_data(df: pd.DataFrame, abundance_data: bool):
     df: pd.DataFrame
         A DataFrame with rows corresponding to length bins and columns
         corresponding to age bins
-    abundance_data: bool
-        If True, ``df`` corresponds to abundance data (and will therefore
-        have and ``Un-aged`` column that needs to be ignored), else does
-        not correspond to abundance data
+    unaged_column: bool
+        If True, ``df`` corresponds to data that has an ``Un-aged`` column
+        (that needs to be ignored), else does not have the column
     """
 
     # get the sum of the values for each age bin
@@ -29,7 +28,7 @@ def _redistribute_age1_data(df: pd.DataFrame, abundance_data: bool):
     df.iloc[:, 0] = 0.0
 
     # select column indices that data will be redistributed to
-    if abundance_data:
+    if unaged_column:
         column_inds = slice(1, -1)
     else:
         column_inds = slice(1, len(age_bin_sum))
@@ -40,17 +39,42 @@ def _redistribute_age1_data(df: pd.DataFrame, abundance_data: bool):
     )
 
 
-def _redistribute_unaged_kriged_biomass(len_age_biomass_list, biomass_unaged):
+def _redistribute_unaged_kriged_biomass(
+    len_age_biomass_list: List[pd.DataFrame], biomass_unaged: np.ndarray
+) -> None:
+    """
+    Redistributes the unaged data to the rest of the age bins
+    by directly modifying the data in ``len_age_biomass_list``.
 
-    # TODO: document!
+    Parameters
+    ----------
+    len_age_biomass_list: list of pd.DataFrame
+        A list of DataFrames containing the male and female biomass at
+        each length and age bin
+    biomass_unaged: np.ndarray
+        The unaged biomass for all genders
 
+    Notes
+    -----
+    This code was directly copied from the Matlab version of EchoPro with
+    only small modifications made to account for Python syntax
+    """
+
+    # get numpy arrays of the male and female DataFrames
+    # scaling of variables was done to match Matlab code
     male_arr = len_age_biomass_list[0].to_numpy() * 1e-6
     female_arr = len_age_biomass_list[1].to_numpy() * 1e-6
 
+    # initialize matrices that will hold the unaged data to distribute to age bins
     Uaged2aged_mat_M = np.zeros((male_arr.shape[0], male_arr.shape[1] - 1))
     Uaged2aged_mat_F = np.zeros((male_arr.shape[0], male_arr.shape[1] - 1))
+
+    # establish constant variables (done to match Matlab code)
     threshold = 1e-10
     eps = 2.22044604925031e-16
+
+    # scale biomass_unaged to match Matlab code
+    biomass_unaged = 1e-6 * biomass_unaged
 
     for i in range(male_arr.shape[0]):
 
@@ -138,6 +162,8 @@ def _redistribute_unaged_kriged_biomass(len_age_biomass_list, biomass_unaged):
                 female_arr[i, -1] * female_arr[i, :-1] / sum(female_arr[i, :-1])
             )
 
+    # distributed the unaged data to the existing data at the age bins
+    # scaling is performed to return to the original values
     len_age_biomass_list[0].iloc[:, :-1] += Uaged2aged_mat_M * 1e6
     len_age_biomass_list[1].iloc[:, :-1] += Uaged2aged_mat_F * 1e6
 
@@ -281,10 +307,10 @@ def _compute_kriging_biomass_area(biomass_df: pd.DataFrame) -> xr.DataArray:
 
     Returns
     -------
-
+    sum_bio_area: xr.DataArray
+        The sum of the biomass density multiplied by the Kriging cell area
+        for each stratum
     """
-
-    # TODO: document!
 
     # create variables to improve readability
     biomass_density_adult_mean = biomass_df[["biomass_density_adult_mean"]]
@@ -305,43 +331,47 @@ def _compute_kriging_biomass_area(biomass_df: pd.DataFrame) -> xr.DataArray:
 
 def _compute_kriging_len_age_biomass(
     defined_stratum: np.ndarray, ds: xr.Dataset, sex: str, sum_bio_area: xr.DataArray
-) -> Tuple[xr.DataArray, xr.DataArray]:
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
     Computes the biomass at each length and age bin using the
-    input biomass DataFrame and parameter Dataset, for the Kriging
-    based data.
+    input variables for the Kriging based data.
 
     Parameters
     ----------
     defined_stratum: np.ndarray
-
+        The unique strata used to create ``sum_bio_area``
     ds: xr.Dataset
         A Dataset produced by the module ``parameters_dataset.py``, which
         contains all parameters necessary for computation
-    sex: str
-
-
+    sex: {"M", ""f}
+        The gender to compute the results for
+    sum_bio_area: xr.DataArray'
+        The sum of the biomass density multiplied by the Kriging cell area
+        for each stratum
 
     Returns
     -------
-    Len_Age_Matrix_biomass: xr.DataArray
-        A DataArray representing the biomass at each length and age
+    biomass_aged: pd.DataFrame
+        A DataFrame representing the biomass at each length and age
         bin for provided biomass data
+    biomass_unaged: pd.DataFrame
+        A DataFrame representing the biomass corresponding to the unaged
+        data for the provided biomass data
     """
-
-    # TODO: document!
 
     # calculate the aged biomass for males and females
     dist_weight_sum = (
         ds[f"len_age_weight_dist_{sex}_normalized"] * ds[f"len_age_weight_prop_{sex}"]
     ).sel(stratum_num=defined_stratum)
 
-    biomass_aged = (dist_weight_sum * sum_bio_area).sum("stratum_num")
+    # compute the biomass at each length and age bin
+    biomass_aged = ((dist_weight_sum * sum_bio_area).sum("stratum_num")).to_pandas()
 
+    # compute the weight of the unaged animals
     weight_unaged = ds.weight_len_all_normalized * ds[f"unaged_{sex}_wgt_proportion"]
 
     # calculate the unaged biomass
-    biomass_unaged = (weight_unaged * sum_bio_area).sum("stratum_num")
+    biomass_unaged = ((weight_unaged * sum_bio_area).sum("stratum_num")).to_pandas()
 
     return biomass_aged, biomass_unaged
 
@@ -425,7 +455,7 @@ def get_len_age_abundance(
     # redistribute the age 1 data if Kriging values are being used
     if exclude_age1 and kriging_vals:
         for df in len_age_abundance_list:
-            _redistribute_age1_data(df, abundance_data=True)
+            _redistribute_age1_data(df, unaged_column=True)
 
     return len_age_abundance_list
 
@@ -507,14 +537,12 @@ def get_kriging_len_age_biomass(
     ----------
     gdf_all: gpd.GeoDataFrame
         A GeoDataFrame with column ``stratum_num`` and column corresponding
-        to the biomass produced by including all genders. If GeoDataFrame
-        corresponds to Kriging data then the column should be named
-        ``biomass_adult``, else it should be named ``biomass``.
+        to the biomass produced by including all genders.
     ds: xr.Dataset
         A Dataset produced by the module ``parameters_dataset.py``, which
         contains all parameters necessary for computation
     exclude_age1: bool
-        If True, exclude age 1 data, else do not (only applies to Kriging data)
+        If True, exclude age 1 data, else do not
 
     Returns
     -------
@@ -524,20 +552,17 @@ def get_kriging_len_age_biomass(
         that order)
     """
 
-    # TODO: document
-
     # compute, format, and store the biomass data for male, females, and all genders
     len_age_biomass_list = []
 
+    # Get the biomass density multiplied by the Kriging cell area for each stratum
     sum_bio_area = _compute_kriging_biomass_area(gdf_all)
 
     # calculate the weight of the unaged for all genders
     weight_all_unaged = ds.weight_len_all_normalized * ds["unaged_proportion"]
 
     # calculate the unaged biomass for all genders
-    biomass_all_unaged = (
-        (weight_all_unaged * sum_bio_area).sum("stratum_num") * 1e-6
-    ).values
+    biomass_all_unaged = ((weight_all_unaged * sum_bio_area).sum("stratum_num")).values
 
     # obtain only those strata that are defined in biomass_df
     defined_stratum = gdf_all["stratum_num"].values.unique()
@@ -545,15 +570,12 @@ def get_kriging_len_age_biomass(
     # obtain the biomass at the length and age bins
     for sex in ["M", "F"]:
         (
-            biomass_aged,
-            biomass_unaged,
+            aged_df,
+            unaged_df,
         ) = _compute_kriging_len_age_biomass(defined_stratum, ds, sex, sum_bio_area)
 
-        # TODO: make biomass_aged/unaged dfs
-
-        aged_df = biomass_aged.to_pandas()
-
-        final_df = pd.concat([aged_df, biomass_unaged.to_pandas()], axis=1)
+        # put the aged and unaged data into one DataFrame
+        final_df = pd.concat([aged_df, unaged_df], axis=1)
 
         # remove column and row header produced by xarray
         final_df.columns.name = ""
@@ -573,13 +595,12 @@ def get_kriging_len_age_biomass(
     # redistribute the unaged data
     _redistribute_unaged_kriged_biomass(len_age_biomass_list, biomass_all_unaged)
 
+    # construct the DataFrame corresponding to all genders
     len_age_biomass_list.append(len_age_biomass_list[0] + len_age_biomass_list[1])
 
     # redistribute the age 1 data if Kriging values are being used
     if exclude_age1:
         for df in len_age_biomass_list:
-            _redistribute_age1_data(
-                df, abundance_data=True
-            )  # TODO: change name of abundance_data
+            _redistribute_age1_data(df, unaged_column=True)
 
     return len_age_biomass_list

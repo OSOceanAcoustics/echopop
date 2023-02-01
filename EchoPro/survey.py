@@ -663,9 +663,9 @@ class Survey:
 
             # obtain and assign abundance DataFrames for Kriging data
             (
-                self.bio_calc.kriging_len_age_abundance_male,
-                self.bio_calc.kriging_len_age_abundance_female,
-                self.bio_calc.kriging_len_age_abundance,
+                self.bio_calc.kriging_bin_abundance_male_df,
+                self.bio_calc.kriging_bin_abundance_female_df,
+                self.bio_calc.kriging_bin_abundance_df,
             ) = get_len_age_abundance(
                 gdf=self.bio_calc.kriging_results_gdf,
                 ds=self.bio_calc.param_ds,
@@ -675,19 +675,14 @@ class Survey:
 
             # obtain and assign biomass DataFrames for kriging data
             (
-                self.bio_calc.kriging_len_age_biomass_male,
-                self.bio_calc.kriging_len_age_biomass_female,
-                self.bio_calc.kriging_len_age_biomass,
+                self.bio_calc.kriging_bin_biomass_male_df,
+                self.bio_calc.kriging_bin_biomass_female_df,
+                self.bio_calc.kriging_bin_biomass_df,
             ) = get_kriging_len_age_biomass(
                 gdf_all=self.bio_calc.kriging_results_gdf,
                 ds=self.bio_calc.param_ds,
                 exclude_age1=self.params["exclude_age1"],
             )
-
-            # raise NotImplementedError(
-            #     "Creating abundance and biomass over each length and "
-            #     "age bin has not been implemented for Kriging data."
-            # )  # TODO: remove once we are happy
 
         else:
             raise RuntimeError(

@@ -131,12 +131,12 @@ def test_kriging_based_length_age():
     survey_2019.compute_length_age_variables(data="kriging")
 
     # set variables to improve readability
-    abundance_df = survey_2019.bio_calc.kriging_len_age_abundance
-    male_abundance_df = survey_2019.bio_calc.kriging_len_age_abundance_male
-    female_abundance_df = survey_2019.bio_calc.kriging_len_age_abundance_female
-    biomass_df = survey_2019.bio_calc.kriging_len_age_biomass
-    male_biomass_df = survey_2019.bio_calc.kriging_len_age_biomass_male
-    female_biomass_df = survey_2019.bio_calc.kriging_len_age_biomass_female
+    abundance_df = survey_2019.bio_calc.kriging_bin_abundance_df
+    male_abundance_df = survey_2019.bio_calc.kriging_bin_abundance_male_df
+    female_abundance_df = survey_2019.bio_calc.kriging_bin_abundance_female_df
+    biomass_df = survey_2019.bio_calc.kriging_bin_biomass_df
+    male_biomass_df = survey_2019.bio_calc.kriging_bin_biomass_male_df
+    female_biomass_df = survey_2019.bio_calc.kriging_bin_biomass_female_df
 
     # obtain file_path pointing to the known abundance data
     # TODO: replace this with input in the future
