@@ -592,21 +592,21 @@ class Survey:
         The computed DataFrames containing the specified data are assigned
         to class variables within ``self.biocalc``.
         Transect based results
-            - ``self.bio_calc.transect_len_age_abundance_male`` -> abundance at
+            - ``self.bio_calc.transect_bin_abundance_male_df`` -> abundance at
              each length and age bin for males
-            - ``self.bio_calc.transect_len_age_abundance_female`` -> abundance at
+            - ``self.bio_calc.transect_bin_abundance_female_df`` -> abundance at
              each length and age bin for females
-            - ``self.bio_calc.transect_len_age_abundance`` -> abundance at
+            - ``self.bio_calc.transect_bin_abundance_df`` -> abundance at
              each length and age bin, when using all genders
             - A similar set of variables are created for biomass results with
              'abundance' replaced with 'biomass'. For example, biomass at each
              length and age bin when using all genders will be stored in the
-             class variable ``self.bio_calc.transect_len_age_biomass``.
+             class variable ``self.bio_calc.transect_bin_biomass_df``.
         Kriging based results
             - An analogous set of variables are created for the Kriging based
              results with 'transect' replaced with 'kriging'. For example,
              biomass at each length and age bin when using all genders will
-             be stored in ``self.bio_calc.kriging_len_age_biomass``.
+             be stored in ``self.bio_calc.kriging_bin_biomass_df``.
         """
 
         if not isinstance(self.bio_calc.bin_ds, xr.Dataset):
@@ -614,8 +614,6 @@ class Survey:
                 "self.bio_calc.bin_ds is not a Dataset, the routine "
                 "self.compute_transect_results must be ran first."
             )
-
-        # TODO: can we think of a shorter name than transect_len_age_abundance_male?
 
         if data in ["transect", "all"]:
 
@@ -628,9 +626,9 @@ class Survey:
 
             # obtain and assign abundance DataFrames for transect data
             (
-                self.bio_calc.transect_len_age_abundance_male,
-                self.bio_calc.transect_len_age_abundance_female,
-                self.bio_calc.transect_len_age_abundance,
+                self.bio_calc.transect_bin_abundance_male_df,
+                self.bio_calc.transect_bin_abundance_female_df,
+                self.bio_calc.transect_bin_abundance_df,
             ) = get_len_age_abundance(
                 gdf=self.bio_calc.transect_results_gdf,
                 ds=self.bio_calc.bin_ds,
@@ -639,9 +637,9 @@ class Survey:
 
             # obtain and assign biomass DataFrames for transect data
             (
-                self.bio_calc.transect_len_age_biomass_male,
-                self.bio_calc.transect_len_age_biomass_female,
-                self.bio_calc.transect_len_age_biomass,
+                self.bio_calc.transect_bin_biomass_male_df,
+                self.bio_calc.transect_bin_biomass_female_df,
+                self.bio_calc.transect_bin_biomass_df,
             ) = get_len_age_biomass(
                 gdf_all=self.bio_calc.transect_results_gdf,
                 gdf_male=self.bio_calc.transect_results_male_gdf,
