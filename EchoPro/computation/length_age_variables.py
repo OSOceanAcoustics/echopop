@@ -20,7 +20,7 @@ def _compute_len_age_abundance(
         should be named ``abundance_adult``, else it should be named
         ``abundance``.
     ds: xr.Dataset
-        A Dataset produced by the module ``parameters_dataset.py``, which
+        A Dataset produced by the module ``bin_dataset.py``, which
         contains all parameters necessary for computation
     sex: {'M', 'F'}
         A string specifying the gender for the abundance computation
@@ -103,7 +103,7 @@ def _compute_len_age_biomass(
         should be named ``biomass_adult``, else it should be named
         ``biomass``.
     ds: xr.Dataset
-        A Dataset produced by the module ``parameters_dataset.py``, which
+        A Dataset produced by the module ``bin_dataset.py``, which
         contains all parameters necessary for computation
     kriging_vals: bool
         If True, the biomass data was produced by Kriging, else
@@ -156,7 +156,7 @@ def get_len_age_abundance(
         abundance column should be named ``abundance_adult``, else it should
         be named ``abundance``.
     ds: xr.Dataset
-        A Dataset produced by the module ``parameters_dataset.py``, which
+        A Dataset produced by the module ``bin_dataset.py``, which
         contains all parameters necessary for computation
     kriging_vals: bool
         If True, the abundance data was produced by Kriging, else
@@ -241,7 +241,7 @@ def get_len_age_biomass(
         corresponds to Kriging data then the column should be named
         ``biomass_adult``, else it should be named ``biomass``.
     ds: xr.Dataset
-        A Dataset produced by the module ``parameters_dataset.py``, which
+        A Dataset produced by the module ``bin_dataset.py``, which
         contains all parameters necessary for computation
     kriging_vals: bool
         If True, the biomass data was produced by Kriging, else

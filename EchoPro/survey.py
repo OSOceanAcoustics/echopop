@@ -12,7 +12,7 @@ from .computation import (
     ComputeTransectVariables,
     Kriging,
     SemiVariogram,
-    generate_parameter_ds,
+    generate_bin_ds,
     get_len_age_abundance,
     get_len_age_biomass,
     krig_param_type,
@@ -321,7 +321,7 @@ class Survey:
         self.bio_calc.get_transect_results_gdf(selected_transects)
 
         # create Dataset containing useful distributions and variables over length and age
-        self.bio_calc.param_ds = generate_parameter_ds(self)
+        self.bio_calc.bin_ds = generate_bin_ds(self)
 
     def run_cv_analysis(
         self,
@@ -609,9 +609,9 @@ class Survey:
              be stored in ``self.bio_calc.kriging_len_age_biomass``.
         """
 
-        if not isinstance(self.bio_calc.param_ds, xr.Dataset):
+        if not isinstance(self.bio_calc.bin_ds, xr.Dataset):
             raise RuntimeError(
-                "self.bio_calc.param_ds is not a Dataset, the routine "
+                "self.bio_calc.bin_ds is not a Dataset, the routine "
                 "self.compute_transect_results must be ran first."
             )
 
@@ -633,7 +633,7 @@ class Survey:
                 self.bio_calc.transect_len_age_abundance,
             ) = get_len_age_abundance(
                 gdf=self.bio_calc.transect_results_gdf,
-                ds=self.bio_calc.param_ds,
+                ds=self.bio_calc.bin_ds,
                 kriging_vals=False,
             )
 
@@ -646,7 +646,7 @@ class Survey:
                 gdf_all=self.bio_calc.transect_results_gdf,
                 gdf_male=self.bio_calc.transect_results_male_gdf,
                 gdf_female=self.bio_calc.transect_results_female_gdf,
-                ds=self.bio_calc.param_ds,
+                ds=self.bio_calc.bin_ds,
                 kriging_vals=False,
             )
 
@@ -661,7 +661,7 @@ class Survey:
                 )
 
             # get_len_age_abundance(gdf=self.bio_calc.kriging_results_gdf,
-            #                       ds=self.bio_calc.param_ds, kriging=True)
+            #                       ds=self.bio_calc.bin_ds, kriging=True)
 
             raise NotImplementedError(
                 "Creating abundance and biomass over each length and "
