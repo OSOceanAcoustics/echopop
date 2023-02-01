@@ -72,11 +72,11 @@ def test_transect_based_length_age():
                                     skiprows=[0, 42, 43, 44, 45, 46], usecols="A:W")
 
     # compare known and produced values for biomass
-    assert np.all(np.isclose(df_known.to_numpy(), 1e-9*biomass_df.to_numpy()))
+    assert np.all(np.isclose(1e9 * df_known.to_numpy(), biomass_df.to_numpy()))
 
-    assert np.all(np.isclose(male_df_known.to_numpy(), 1e-9*male_biomass_df.to_numpy()))
+    assert np.all(np.isclose(1e9 * male_df_known.to_numpy(), male_biomass_df.to_numpy()))
 
-    assert np.all(np.isclose(female_df_known.to_numpy(), 1e-9*female_biomass_df.to_numpy()))
+    assert np.all(np.isclose(1e9 * female_df_known.to_numpy(), female_biomass_df.to_numpy()))
 
 
 def test_kriging_based_length_age():
@@ -162,19 +162,19 @@ def test_kriging_based_length_age():
 
     # obtain file_path pointing to the known biomass data
     # TODO: replace this with input in the future
-    file_path_abundance = "/Users/brandonreyes/UW_work/EchoPro_work/UW_EchoProMatlab_Repackaged/outputs/EchoPro_matlab_output_brandon_age_22_end_bin/kriged_len_age_biomass_table.xlsx"
+    file_path_biomass = "/Users/brandonreyes/UW_work/EchoPro_work/UW_EchoProMatlab_Repackaged/outputs/EchoPro_matlab_output_brandon_age_22_end_bin/kriged_len_age_biomass_table.xlsx"
 
     # gather known solution data produced by the Matlab version of EchoPro
-    df_known = pd.read_excel(file_path_abundance, index_col=0, sheet_name=sheet_name,
+    df_known = pd.read_excel(file_path_biomass, index_col=0, sheet_name=sheet_name,
                              skiprows=[0, 42, 43, 44, 45, 46], usecols="A:W")
-    male_df_known = pd.read_excel(file_path_abundance, index_col=0, sheet_name=sheet_name_male,
+    male_df_known = pd.read_excel(file_path_biomass, index_col=0, sheet_name=sheet_name_male,
                                   skiprows=[0, 42, 43, 44, 45, 46], usecols="A:W")
-    female_df_known = pd.read_excel(file_path_abundance, index_col=0, sheet_name=sheet_name_female,
+    female_df_known = pd.read_excel(file_path_biomass, index_col=0, sheet_name=sheet_name_female,
                                     skiprows=[0, 42, 43, 44, 45, 46], usecols="A:W")
 
     # compare known and produced values for biomass
-    assert np.all(np.isclose(df_known.to_numpy(), 1e-9 * biomass_df.to_numpy()[:, :-1]))
+    assert np.all(np.isclose(1e9 * df_known.to_numpy(), biomass_df.to_numpy()[:, :-1]))
 
-    assert np.all(np.isclose(male_df_known.to_numpy(), 1e-9 * male_biomass_df.to_numpy()[:, :-1]))
+    assert np.all(np.isclose(1e9 * male_df_known.to_numpy(), male_biomass_df.to_numpy()[:, :-1]))
 
-    assert np.all(np.isclose(female_df_known.to_numpy(), 1e-9 * female_biomass_df.to_numpy()[:, :-1]))
+    assert np.all(np.isclose(1e9 * female_df_known.to_numpy(), female_biomass_df.to_numpy()[:, :-1]))
