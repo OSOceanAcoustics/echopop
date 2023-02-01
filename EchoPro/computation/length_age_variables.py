@@ -7,7 +7,7 @@ import xarray as xr
 
 def _compute_len_age_abundance(
     abundance_df: pd.DataFrame, ds: xr.Dataset, sex: str, kriging_vals: bool
-) -> Tuple[xr.DataArray, xr.DataArray]:
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
     Computes the abundance at each length and age bin for a specified
     gender using the input abundance DataFrame and parameter Dataset.
@@ -30,11 +30,11 @@ def _compute_len_age_abundance(
 
     Returns
     -------
-    Len_Age_Matrix_Acoust: xr.DataArray
-        A DataArray representing the abundance at each length and age
+    Len_Age_Matrix_Acoust: pd.DataFrame
+        A DataFrame representing the abundance at each length and age
         bin for the specified gender
-    Len_Age_Matrix_Acoust_unaged: xr.DataArray
-        A DatArray representing the abundance for the unaged data
+    Len_Age_Matrix_Acoust_unaged: pd.DataFrame
+        A DataFrame representing the abundance for the unaged data
         at each length bin
     """
 
@@ -89,12 +89,12 @@ def _compute_len_age_abundance(
     # if exclude_age1 and kriging_vals:
     #     self._redistribute_age1_data(Len_Age_Matrix_Acoust)
 
-    return Len_Age_Matrix_Acoust, Len_Age_Matrix_Acoust_unaged
+    return Len_Age_Matrix_Acoust.to_pandas(), Len_Age_Matrix_Acoust_unaged.to_pandas()
 
 
 def _compute_len_age_biomass(
     biomass_df: pd.DataFrame, ds: xr.Dataset, kriging_vals: bool
-) -> xr.DataArray:
+) -> pd.DataFrame:
     """
     Computes the biomass at each length and age bin using the
     input biomass DataFrame and parameter Dataset.
@@ -115,8 +115,8 @@ def _compute_len_age_biomass(
 
     Returns
     -------
-    Len_Age_Matrix_biomass: xr.DataArray
-        A DataArray representing the biomass at each length and age
+    Len_Age_Matrix_biomass: pd.DataFrame
+        A DataFrame representing the biomass at each length and age
         bin for provided biomass data
     """
 
@@ -143,7 +143,7 @@ def _compute_len_age_biomass(
     # if exclude_age1 and kriging_vals:
     #     self._redistribute_age1_data(Len_Age_Matrix_biomass)
 
-    return Len_Age_Matrix_biomass
+    return Len_Age_Matrix_biomass.to_pandas()
 
 
 def get_len_age_abundance(
@@ -190,15 +190,12 @@ def get_len_age_abundance(
     for sex in ["M", "F"]:
 
         # compute the abundance at each length and age bin for a gender
-        aged_da, unaged_da = _compute_len_age_abundance(
+        aged_df, unaged_df = _compute_len_age_abundance(
             abundance_df, ds, sex=sex, kriging_vals=kriging_vals
         )
 
-        # convert returned DataArray to a DataFrame
-        aged_df = aged_da.to_pandas()
-
         # combine the aged and unaged abundance data
-        final_df = pd.concat([aged_df, unaged_da.to_pandas()], axis=1)
+        final_df = pd.concat([aged_df, unaged_df], axis=1)
 
         # create and assign column names
         final_df.columns = ["age_bin_" + str(column) for column in aged_df.columns] + [
@@ -276,9 +273,7 @@ def get_len_age_biomass(
         biomass_df = biomass_df.reset_index(drop=True).set_index("stratum_num")
 
         # obtain the biomass at the length and age bins
-        final_df = _compute_len_age_biomass(
-            biomass_df, ds, kriging_vals=kriging_vals
-        ).to_pandas()
+        final_df = _compute_len_age_biomass(biomass_df, ds, kriging_vals=kriging_vals)
 
         # remove column and row header produced by xarray
         final_df.columns.name = ""
