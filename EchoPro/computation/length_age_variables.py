@@ -336,7 +336,7 @@ def _compute_kriging_len_age_biomass(
     defined_stratum: np.ndarray
         The unique strata used to create ``sum_bio_area``
     ds: xr.Dataset
-        A Dataset produced by the module ``parameters_dataset.py``, which
+        A Dataset produced by the module ``bin_dataset.py``, which
         contains all parameters necessary for computation
     sex: {"M", ""f}
         The gender to compute the results for
@@ -528,7 +528,7 @@ def get_kriging_len_age_biomass(
         A GeoDataFrame with column ``stratum_num`` and column corresponding
         to the biomass produced by including all genders.
     ds: xr.Dataset
-        A Dataset produced by the module ``parameters_dataset.py``, which
+        A Dataset produced by the module ``bin_dataset.py``, which
         contains all parameters necessary for computation
     exclude_age1: bool
         If True, exclude age 1 data, else do not
