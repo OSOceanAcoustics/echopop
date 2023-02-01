@@ -56,14 +56,10 @@ def _compute_len_age_abundance(
     )
 
     # sum together all abundance values in each stratum
-    if kriging_vals:
-        abundance_sum_stratum = (
-            abundance_df.groupby(level=0).sum()["abundance_adult"].to_xarray()
-        )
-    else:
-        abundance_sum_stratum = (
-            abundance_df.groupby(level=0).sum()["abundance"].to_xarray()
-        )
+    abundance_var_name = "abundance_adult" if kriging_vals else "abundance"    
+    abundance_sum_stratum = (
+        abundance_df.groupby(level=0).sum()[abundance_var_name].to_xarray()
+    )
 
     # get the abundance for the sex for each stratum (station 1)
     N_len = abundance_sum_stratum * Len_sex_proportion.sel(stratum_num=defined_stratum)
