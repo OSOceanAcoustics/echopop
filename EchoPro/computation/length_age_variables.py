@@ -56,7 +56,7 @@ def _compute_len_age_abundance(
     )
 
     # sum together all abundance values in each stratum
-    abundance_var_name = "abundance_adult" if kriging_vals else "abundance"    
+    abundance_var_name = "abundance_adult" if kriging_vals else "abundance"
     abundance_sum_stratum = (
         abundance_df.groupby(level=0).sum()[abundance_var_name].to_xarray()
     )
@@ -119,13 +119,11 @@ def _compute_len_age_biomass(
     # obtain only those strata that are defined in biomass_df
     defined_stratum = biomass_df.index.unique().values
 
-    # obtain the total biomass for each stratum
-    if kriging_vals:
-        biomass_sum_stratum = (
-            biomass_df.groupby(level=0).sum()["biomass_adult"].to_xarray()
-        )
-    else:
-        biomass_sum_stratum = biomass_df.groupby(level=0).sum()["biomass"].to_xarray()
+    # sum together all biomass values in each stratum
+    biomass_var_name = "biomass_adult" if kriging_vals else "biomass"
+    biomass_sum_stratum = (
+        biomass_df.groupby(level=0).sum()[biomass_var_name].to_xarray()
+    )
 
     # get the biomass for the sex at each length and age bin
     Len_Age_Matrix_biomass = (
