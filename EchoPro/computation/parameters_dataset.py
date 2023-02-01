@@ -1,8 +1,8 @@
 """
-Constructs a Dataset filled with parameters that are
-useful for downstream processes, such as calculating
-variables over the Kriging mesh points, length-age
-defined variables, and creating variables for reports.
+Constructs an xarray Dataset filled with binned parameters 
+from survey data which are useful for downstream processes, 
+such as calculating variables over the Kriging mesh points, 
+length-age defined variables, and creating variables for reports.
 """
 
 from typing import List, Tuple
