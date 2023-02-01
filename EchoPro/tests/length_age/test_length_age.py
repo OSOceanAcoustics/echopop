@@ -31,12 +31,12 @@ def test_transect_based_length_age():
     survey_2019.compute_length_age_variables(data="transect")
 
     # set variables to improve readability
-    abundance_df = survey_2019.bio_calc.transect_len_age_abundance
-    male_abundance_df = survey_2019.bio_calc.transect_len_age_abundance_male
-    female_abundance_df = survey_2019.bio_calc.transect_len_age_abundance_female
-    biomass_df = survey_2019.bio_calc.transect_len_age_biomass
-    male_biomass_df = survey_2019.bio_calc.transect_len_age_biomass_male
-    female_biomass_df = survey_2019.bio_calc.transect_len_age_biomass_female
+    abundance_df = survey_2019.bio_calc.transect_bin_abundance_df
+    male_abundance_df = survey_2019.bio_calc.transect_bin_abundance_male_df
+    female_abundance_df = survey_2019.bio_calc.transect_bin_abundance_female_df
+    biomass_df = survey_2019.bio_calc.transect_bin_biomass_df
+    male_biomass_df = survey_2019.bio_calc.transect_bin_biomass_male_df
+    female_biomass_df = survey_2019.bio_calc.transect_bin_biomass_female_df
 
     # obtain file_path pointing to the known abundance data
     # TODO: replace this with input in the future
@@ -61,14 +61,14 @@ def test_transect_based_length_age():
 
     # obtain file_path pointing to the known biomass data
     # TODO: replace this with input in the future
-    file_path_abundance = "/Users/brandonreyes/UW_work/EchoPro_work/UW_EchoProMatlab_Repackaged/outputs/EchoPro_matlab_output_brandon_age_22_end_bin/un-kriged_len_age_biomass_table.xlsx"
+    file_path_biomass = "/Users/brandonreyes/UW_work/EchoPro_work/UW_EchoProMatlab_Repackaged/outputs/EchoPro_matlab_output_brandon_age_22_end_bin/un-kriged_len_age_biomass_table.xlsx"
 
     # gather known solution data produced by the Matlab version of EchoPro
-    df_known = pd.read_excel(file_path_abundance, index_col=0, sheet_name=sheet_name,
+    df_known = pd.read_excel(file_path_biomass, index_col=0, sheet_name=sheet_name,
                              skiprows=[0, 42, 43, 44, 45, 46], usecols="A:W")
-    male_df_known = pd.read_excel(file_path_abundance, index_col=0, sheet_name=sheet_name_male,
+    male_df_known = pd.read_excel(file_path_biomass, index_col=0, sheet_name=sheet_name_male,
                                   skiprows=[0, 42, 43, 44, 45, 46], usecols="A:W")
-    female_df_known = pd.read_excel(file_path_abundance, index_col=0, sheet_name=sheet_name_female,
+    female_df_known = pd.read_excel(file_path_biomass, index_col=0, sheet_name=sheet_name_female,
                                     skiprows=[0, 42, 43, 44, 45, 46], usecols="A:W")
 
     # compare known and produced values for biomass

@@ -12,7 +12,7 @@ from .computation import (
     ComputeTransectVariables,
     Kriging,
     SemiVariogram,
-    generate_parameter_ds,
+    generate_bin_ds,
     get_kriging_len_age_biomass,
     get_len_age_abundance,
     get_transect_len_age_biomass,
@@ -322,7 +322,7 @@ class Survey:
         self.bio_calc.get_transect_results_gdf(selected_transects)
 
         # create Dataset containing useful distributions and variables over length and age
-        self.bio_calc.param_ds = generate_parameter_ds(self)
+        self.bio_calc.bin_ds = generate_bin_ds(self)
 
     def run_cv_analysis(
         self,
@@ -593,30 +593,28 @@ class Survey:
         The computed DataFrames containing the specified data are assigned
         to class variables within ``self.biocalc``.
         Transect based results
-            - ``self.bio_calc.transect_len_age_abundance_male`` -> abundance at
+            - ``self.bio_calc.transect_bin_abundance_male_df`` -> abundance at
              each length and age bin for males
-            - ``self.bio_calc.transect_len_age_abundance_female`` -> abundance at
+            - ``self.bio_calc.transect_bin_abundance_female_df`` -> abundance at
              each length and age bin for females
-            - ``self.bio_calc.transect_len_age_abundance`` -> abundance at
+            - ``self.bio_calc.transect_bin_abundance_df`` -> abundance at
              each length and age bin, when using all genders
             - A similar set of variables are created for biomass results with
              'abundance' replaced with 'biomass'. For example, biomass at each
              length and age bin when using all genders will be stored in the
-             class variable ``self.bio_calc.transect_len_age_biomass``.
+             class variable ``self.bio_calc.transect_bin_biomass_df``.
         Kriging based results
             - An analogous set of variables are created for the Kriging based
              results with 'transect' replaced with 'kriging'. For example,
              biomass at each length and age bin when using all genders will
-             be stored in ``self.bio_calc.kriging_len_age_biomass``.
+             be stored in ``self.bio_calc.kriging_bin_biomass_df``.
         """
 
-        if not isinstance(self.bio_calc.param_ds, xr.Dataset):
+        if not isinstance(self.bio_calc.bin_ds, xr.Dataset):
             raise RuntimeError(
-                "self.bio_calc.param_ds is not a Dataset, the routine "
+                "self.bio_calc.bin_ds is not a Dataset, the routine "
                 "self.compute_transect_results must be ran first."
             )
-
-        # TODO: can we think of a shorter name than transect_len_age_abundance_male?
 
         if data in ["transect", "all"]:
 
@@ -629,26 +627,26 @@ class Survey:
 
             # obtain and assign abundance DataFrames for transect data
             (
-                self.bio_calc.transect_len_age_abundance_male,
-                self.bio_calc.transect_len_age_abundance_female,
-                self.bio_calc.transect_len_age_abundance,
+                self.bio_calc.transect_bin_abundance_male_df,
+                self.bio_calc.transect_bin_abundance_female_df,
+                self.bio_calc.transect_bin_abundance_df,
             ) = get_len_age_abundance(
                 gdf=self.bio_calc.transect_results_gdf,
-                ds=self.bio_calc.param_ds,
+                ds=self.bio_calc.bin_ds,
                 kriging_vals=False,
                 exclude_age1=self.params["exclude_age1"],
             )
 
             # obtain and assign biomass DataFrames for transect data
             (
-                self.bio_calc.transect_len_age_biomass_male,
-                self.bio_calc.transect_len_age_biomass_female,
-                self.bio_calc.transect_len_age_biomass,
+                self.bio_calc.transect_bin_biomass_male_df,
+                self.bio_calc.transect_bin_biomass_female_df,
+                self.bio_calc.transect_bin_biomass_df,
             ) = get_transect_len_age_biomass(
                 gdf_all=self.bio_calc.transect_results_gdf,
                 gdf_male=self.bio_calc.transect_results_male_gdf,
                 gdf_female=self.bio_calc.transect_results_female_gdf,
-                ds=self.bio_calc.param_ds,
+                ds=self.bio_calc.bin_ds,
             )
 
         elif data in ["kriging", "all"]:
@@ -668,7 +666,7 @@ class Survey:
                 self.bio_calc.kriging_bin_abundance_df,
             ) = get_len_age_abundance(
                 gdf=self.bio_calc.kriging_results_gdf,
-                ds=self.bio_calc.param_ds,
+                ds=self.bio_calc.bin_ds,
                 kriging_vals=True,
                 exclude_age1=self.params["exclude_age1"],
             )
@@ -680,7 +678,7 @@ class Survey:
                 self.bio_calc.kriging_bin_biomass_df,
             ) = get_kriging_len_age_biomass(
                 gdf_all=self.bio_calc.kriging_results_gdf,
-                ds=self.bio_calc.param_ds,
+                ds=self.bio_calc.bin_ds,
                 exclude_age1=self.params["exclude_age1"],
             )
 

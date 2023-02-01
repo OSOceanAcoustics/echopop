@@ -1,8 +1,8 @@
 """
-Constructs a Dataset filled with parameters that are
-useful for downstream processes, such as calculating
-variables over the Kriging mesh points, length-age
-defined variables, and creating variables for reports.
+Constructs an xarray Dataset filled with binned parameters
+from survey data which are useful for downstream processes,
+such as calculating variables over the Kriging mesh points,
+length-age defined variables, and creating variables for reports.
 """
 
 from typing import List, Tuple
@@ -602,11 +602,12 @@ def _set_proportion_parameters(
     )
 
 
-def generate_parameter_ds(survey) -> xr.Dataset:
+def generate_bin_ds(survey) -> xr.Dataset:
     """
     Creates a Dataset containing parameters that are
     necessary to compute Kriging result variables at
-    each mesh point.
+    each mesh point. The parameters created are associated
+    with the binning of data over length, age, and weight.
 
     Parameters
     ----------

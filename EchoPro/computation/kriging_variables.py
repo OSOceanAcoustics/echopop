@@ -180,7 +180,7 @@ class ComputeKrigingVariables:
         """
 
         # calculate and add the male and female biomass to Kriging results
-        self._set_gender_biomass(self.krig.survey.bio_calc.param_ds)
+        self._set_gender_biomass(self.krig.survey.bio_calc.bin_ds)
 
         # calculate and add abundance variables to Kriging results
         self._set_abundance()

@@ -169,11 +169,8 @@ def _redistribute_unaged_kriged_biomass(
 
 
 def _compute_len_age_abundance(
-    abundance_df: pd.DataFrame,
-    ds: xr.Dataset,
-    sex: str,
-    kriging_vals: bool,
-) -> Tuple[xr.DataArray, xr.DataArray]:
+    abundance_df: pd.DataFrame, ds: xr.Dataset, sex: str, kriging_vals: bool
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
     Computes the abundance at each length and age bin for a specified
     gender using the input abundance DataFrame and parameter Dataset.
@@ -186,7 +183,7 @@ def _compute_len_age_abundance(
         should be named ``abundance_adult``, else it should be named
         ``abundance``.
     ds: xr.Dataset
-        A Dataset produced by the module ``parameters_dataset.py``, which
+        A Dataset produced by the module ``bin_dataset.py``, which
         contains all parameters necessary for computation
     sex: {'M', 'F'}
         A string specifying the gender for the abundance computation
@@ -196,11 +193,11 @@ def _compute_len_age_abundance(
 
     Returns
     -------
-    Len_Age_Matrix_Acoust: xr.DataArray
-        A DataArray representing the abundance at each length and age
+    Len_Age_Matrix_Acoust: pd.DataFrame
+        A DataFrame representing the abundance at each length and age
         bin for the specified gender
-    Len_Age_Matrix_Acoust_unaged: xr.DataArray
-        A DatArray representing the abundance for the unaged data
+    Len_Age_Matrix_Acoust_unaged: pd.DataFrame
+        A DataFrame representing the abundance for the unaged data
         at each length bin
     """
 
@@ -222,14 +219,10 @@ def _compute_len_age_abundance(
     )
 
     # sum together all abundance values in each stratum
-    if kriging_vals:
-        abundance_sum_stratum = (
-            abundance_df.groupby(level=0).sum()["abundance_adult"].to_xarray()
-        )
-    else:
-        abundance_sum_stratum = (
-            abundance_df.groupby(level=0).sum()["abundance"].to_xarray()
-        )
+    abundance_var_name = "abundance_adult" if kriging_vals else "abundance"
+    abundance_sum_stratum = (
+        abundance_df.groupby(level=0).sum()[abundance_var_name].to_xarray()
+    )
 
     # get the abundance for the sex for each stratum (station 1)
     N_len = abundance_sum_stratum * Len_sex_proportion.sel(stratum_num=defined_stratum)
@@ -250,12 +243,12 @@ def _compute_len_age_abundance(
         N_len_age * Len_Age_key_sex_norm.sel(stratum_num=defined_stratum)
     ).sum("stratum_num")
 
-    return Len_Age_Matrix_Acoust, Len_Age_Matrix_Acoust_unaged
+    return Len_Age_Matrix_Acoust.to_pandas(), Len_Age_Matrix_Acoust_unaged.to_pandas()
 
 
 def _compute_transect_len_age_biomass(
     biomass_df: pd.DataFrame, ds: xr.Dataset
-) -> xr.DataArray:
+) -> pd.DataFrame:
     """
     Computes the biomass at each length and age bin using the
     input biomass DataFrame and parameter Dataset, for the transect
@@ -269,13 +262,13 @@ def _compute_transect_len_age_biomass(
         should be named ``biomass_adult``, else it should be named
         ``biomass``.
     ds: xr.Dataset
-        A Dataset produced by the module ``parameters_dataset.py``, which
+        A Dataset produced by the module ``bin_dataset.py``, which
         contains all parameters necessary for computation
 
     Returns
     -------
-    Len_Age_Matrix_biomass: xr.DataArray
-        A DataArray representing the biomass at each length and age
+    Len_Age_Matrix_biomass: pd.DataFrame
+        A DataFrame representing the biomass at each length and age
         bin for provided biomass data
     """
 
@@ -287,9 +280,11 @@ def _compute_transect_len_age_biomass(
 
     # get the biomass for the sex at each length and age bin
     Len_Age_Matrix_biomass = (
-        biomass_sum_stratum
-        * ds.len_age_weight_dist_all_normalized.sel(stratum_num=defined_stratum)
-    ).sum("stratum_num")
+        (
+            biomass_sum_stratum
+            * ds.len_age_weight_dist_all_normalized.sel(stratum_num=defined_stratum)
+        ).sum("stratum_num")
+    ).to_pandas()
 
     return Len_Age_Matrix_biomass
 
@@ -392,7 +387,7 @@ def get_len_age_abundance(
         abundance column should be named ``abundance_adult``, else it should
         be named ``abundance``.
     ds: xr.Dataset
-        A Dataset produced by the module ``parameters_dataset.py``, which
+        A Dataset produced by the module ``bin_dataset.py``, which
         contains all parameters necessary for computation
     kriging_vals: bool
         If True, the abundance data was produced by Kriging, else
@@ -422,18 +417,12 @@ def get_len_age_abundance(
     for sex in ["M", "F"]:
 
         # compute the abundance at each length and age bin for a gender
-        aged_da, unaged_da = _compute_len_age_abundance(
-            abundance_df,
-            ds,
-            sex=sex,
-            kriging_vals=kriging_vals,
+        aged_df, unaged_df = _compute_len_age_abundance(
+            abundance_df, ds, sex=sex, kriging_vals=kriging_vals
         )
 
-        # convert returned DataArray to a DataFrame
-        aged_df = aged_da.to_pandas()
-
         # combine the aged and unaged abundance data
-        final_df = pd.concat([aged_df, unaged_da.to_pandas()], axis=1)
+        final_df = pd.concat([aged_df, unaged_df], axis=1)
 
         # create and assign column names
         final_df.columns = ["age_bin_" + str(column) for column in aged_df.columns] + [
@@ -483,7 +472,7 @@ def get_transect_len_age_biomass(
         A GeoDataFrame with column ``stratum_num`` and column corresponding
         to the biomass produced by including only females.
     ds: xr.Dataset
-        A Dataset produced by the module ``parameters_dataset.py``, which
+        A Dataset produced by the module ``bin_dataset.py``, which
         contains all parameters necessary for computation
 
     Returns
@@ -505,7 +494,7 @@ def get_transect_len_age_biomass(
         biomass_df = biomass_df.reset_index(drop=True).set_index("stratum_num")
 
         # obtain the biomass at the length and age bins
-        final_df = _compute_transect_len_age_biomass(biomass_df, ds).to_pandas()
+        final_df = _compute_transect_len_age_biomass(biomass_df, ds)
 
         # remove column and row header produced by xarray
         final_df.columns.name = ""
