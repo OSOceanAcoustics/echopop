@@ -24,6 +24,7 @@ class Reports:
     def __init__(self, survey):
 
         self.survey = survey
+        self.eps = 2.22044604925031e-16
 
     def _get_bin_count(
         self, df: pd.DataFrame, haul: int, len_cnt_exists: bool
@@ -442,7 +443,7 @@ class Reports:
             should be saved
         output_excel_path_non_zero: pathlib.Path
             The output Excel file path where all reports that include non-zero
-            NASC should be saved
+            biomass should be saved
         NASC_adult: pd.Series
             A Series defining the NASC values corresponding to the adult population
             at each transect number defined in ``self.survey.bio_calc.nasc_df``
@@ -573,7 +574,7 @@ class Reports:
         self._write_dfs_to_excel(df_list, sheet_names, output_excel_path_all)
 
         # write only output corresponding to non-zero NASC values
-        df_list = [final_df[final_df["NASC_adult"] != 0.0][ordered_columns]]
+        df_list = [final_df[final_df["biomass_adult"] > self.eps][ordered_columns]]
         self._write_dfs_to_excel(df_list, sheet_names, output_excel_path_non_zero)
 
     def _len_haul_count_reports(
@@ -724,7 +725,7 @@ class Reports:
             should be saved
         output_excel_path_non_zero: pathlib.Path
             The output Excel file path where all reports that include non-zero
-            NASC should be saved
+            biomass should be saved
         """
 
         # set variables to improve readability
@@ -787,7 +788,7 @@ class Reports:
         )
 
         # write only output corresponding to non-zero NASC values
-        df_list = [final_df[final_df["NASC"] != 0.0][ordered_columns]]
+        df_list = [final_df[final_df["biomass_adult"] > self.eps][ordered_columns]]
         self._write_dfs_to_excel(
             df_list, sheet_names, output_excel_path_non_zero, include_index=False
         )

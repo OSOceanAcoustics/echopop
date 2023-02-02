@@ -71,7 +71,7 @@ def test_generate_reports():
 def _compare_truth_produced_files(truth_base_path, produced_base_path, file_names_truth,
                                   file_names_produced, sheet_names_truth,
                                   sheet_names_produced, skiprows_truth, skiprows_produced,
-                                  usecols, sortby = None):
+                                  usecols, index_col_truth, index_col_produced, sortby = None):
 
     # TODO: document
 
@@ -86,16 +86,16 @@ def _compare_truth_produced_files(truth_base_path, produced_base_path, file_name
         for sheet_ind in range(len(sheet_names_truth[file_ind])):
 
             # gather known solution data produced by the Matlab version of EchoPro
-            df_truth = pd.read_excel(file_path_truth, index_col=0,
+            df_truth = pd.read_excel(file_path_truth, index_col=index_col_truth[file_ind],
                                      sheet_name=sheet_names_truth[file_ind][sheet_ind],
                                      skiprows=skiprows_truth[file_ind], usecols=usecols[file_ind])
 
             # gather produced solution
-            df_produced = pd.read_excel(file_path_produced, index_col=0,
+            df_produced = pd.read_excel(file_path_produced, index_col=index_col_produced[file_ind],
                                         sheet_name=sheet_names_produced[file_ind][sheet_ind],
                                         skiprows=skiprows_produced[file_ind], usecols=usecols[file_ind])
 
-            if sortby:
+            if sortby[file_ind]:
                 # sort produced and truth results, so they can be compared
                 df_truth = df_truth.sort_values(by=sortby[file_ind][0])
                 df_produced = df_produced.sort_values(by=sortby[file_ind][1])
@@ -128,41 +128,167 @@ def test_length_age_reports():
     # specify usecols
     usecols = ["A:X"]*2 + ["A:W"]*2
 
+    # specify sortby columns
+    sortby = [None] * 4
+
+    # specify the index column
+    index_col_truth = [0] * 4
+    index_col_produced = [0] * 4
+
     produced_base_path = pathlib.Path("./EchoPro_python_output")
 
     _compare_truth_produced_files(matlab_output_base_path, produced_base_path, file_names_truth,
                                   file_names_produced, sheet_names_truth, sheet_names_produced,
-                                  skiprows_truth, skiprows_produced, usecols)
+                                  skiprows_truth, skiprows_produced, usecols, index_col_truth,
+                                  index_col_produced, sortby)
 
 
-# def test_biomass_ages_reports():
-#     # TODO: document
-#
-#     matlab_output_base_path = pathlib.Path(
-#         "/Users/brandonreyes/UW_work/EchoPro_work/UW_EchoProMatlab_Repackaged/outputs/EchoPro_matlab_output_brandon_age_22_end_bin")
-#
-#     # specify file names
-#     file_names_truth = ["EchoPro_un-kriged_aged_output-2019_0.xlsx", "EchoPro_kriged_aged_output-2019_0.xlsx",
-#                         "EchoPro_un-kriged_aged_output-2019_1.xlsx", "EchoPro_kriged_aged_output-2019_1.xlsx"]
-#     file_names_produced = ["transect_based_aged_output_all.xlsx", "kriging_based_aged_output_all.xlsx",
-#                            "transect_based_aged_output_non_zero.xlsx", "kriging_based_aged_output_non_zero.xlsx"]
-#
-#     # specify sheet names
-#     sheet_names_truth = [["Sheet1", "Sheet2", "Sheet3"]] * 4
-#     sheet_names_produced = [["all genders", "male", "female"]] * 4
-#
-#     # specify skiprows
-#     skiprows_truth = [[0]] * 4
-#     skiprows_produced = [None] * 4
-#
-#     # specify usecols
-#     usecols = ["A:AA"] * 4
-#
-#     # specify sortby columns
-#     sortby = [[["Lat", "Lon"], ["centroid_latitude", "centroid_longitude"]]] * 4
-#
-#     produced_base_path = pathlib.Path("./EchoPro_python_output")
-#
-#     _compare_truth_produced_files(matlab_output_base_path, produced_base_path, file_names_truth,
-#                                   file_names_produced, sheet_names_truth, sheet_names_produced,
-#                                   skiprows_truth, skiprows_produced, usecols, sortby)
+def test_biomass_ages_reports():
+    # TODO: document
+
+    matlab_output_base_path = pathlib.Path(
+        "/Users/brandonreyes/UW_work/EchoPro_work/UW_EchoProMatlab_Repackaged/outputs/EchoPro_matlab_output_brandon_age_22_end_bin")
+
+    # specify file names
+    file_names_truth = ["EchoPro_un-kriged_aged_output-2019_0.xlsx", "EchoPro_kriged_aged_output-2019_0.xlsx",
+                        "EchoPro_un-kriged_aged_output-2019_1.xlsx", "EchoPro_kriged_aged_output-2019_1.xlsx"]
+    file_names_produced = ["transect_based_aged_output_all.xlsx", "kriging_based_aged_output_all.xlsx",
+                           "transect_based_aged_output_non_zero.xlsx", "kriging_based_aged_output_non_zero.xlsx"]
+
+    # specify sheet names
+    sheet_names_truth = [["Sheet1", "Sheet2", "Sheet3"]] * 4
+    sheet_names_produced = [["all genders", "male", "female"]] * 4
+
+    # specify skiprows
+    skiprows_truth = [[0]] * 4
+    skiprows_produced = [None] * 4
+
+    # specify usecols
+    usecols = ["A:AA"] * 4
+
+    # specify sortby columns
+    sortby = [[["Lat", "Lon"], ["latitude", "longitude"]],
+              [["Lat", "Lon"], ["centroid_latitude", "centroid_longitude"]]] * 2
+
+    # specify the index column
+    index_col_truth = [0, None] * 2
+    index_col_produced = [0, 0] * 2
+
+    produced_base_path = pathlib.Path("./EchoPro_python_output")
+
+    _compare_truth_produced_files(matlab_output_base_path, produced_base_path, file_names_truth,
+                                  file_names_produced, sheet_names_truth, sheet_names_produced,
+                                  skiprows_truth, skiprows_produced, usecols, index_col_truth,
+                                  index_col_produced, sortby)
+
+
+def test_core_variables_reports():
+    # TODO: document
+
+    matlab_output_base_path = pathlib.Path(
+        "/Users/brandonreyes/UW_work/EchoPro_work/UW_EchoProMatlab_Repackaged/outputs/EchoPro_matlab_output_brandon_age_22_end_bin")
+
+    # specify file names
+    file_names_truth = ["EchoPro_un-kriged_output-26-Jan-2023_0.xlsx", "EchoPro_kriged_output-26-Jan-2023_0.xlsx",
+                        "EchoPro_un-kriged_output-26-Jan-2023_1.xlsx", "EchoPro_kriged_output-26-Jan-2023_1.xlsx"]
+    file_names_produced = ["transect_based_core_output_all.xlsx", "kriging_based_core_output_all.xlsx",
+                           "transect_based_core_output_non_zero.xlsx", "kriging_based_core_output_non_zero.xlsx"]
+
+    # specify sheet names
+    sheet_names_truth = [["Sheet1"]] * 4
+    sheet_names_produced = [["Sheet1"]] * 4
+
+    # specify skiprows
+    skiprows_truth = [None] * 4
+    skiprows_produced = [None] * 4
+
+    # specify usecols
+    usecols = ["A:L"] * 4
+
+    # specify sortby columns
+    sortby = [[["Lat", "Lon"], ["latitude", "longitude"]],
+              [["Lat", "Lon"], ["centroid_latitude", "centroid_longitude"]]] * 2
+
+    # specify the index column
+    index_col_truth = [None] * 4
+    index_col_produced = [None] * 4
+
+    produced_base_path = pathlib.Path("./EchoPro_python_output")
+
+    _compare_truth_produced_files(matlab_output_base_path, produced_base_path, file_names_truth,
+                                  file_names_produced, sheet_names_truth, sheet_names_produced,
+                                  skiprows_truth, skiprows_produced, usecols, index_col_truth,
+                                  index_col_produced, sortby)
+
+
+def test_kriging_input_report():
+    # TODO: document
+
+    matlab_output_base_path = pathlib.Path(
+        "/Users/brandonreyes/UW_work/EchoPro_work/UW_EchoProMatlab_Repackaged/outputs/EchoPro_matlab_output_brandon_age_22_end_bin")
+
+    # specify file names
+    file_names_truth = ["kriging_input.xlsx"]
+    file_names_produced = ["kriging_input.xlsx"]
+
+    # specify sheet names
+    sheet_names_truth = [["Sheet1"]]
+    sheet_names_produced = [["Sheet1"]]
+
+    # specify skiprows
+    skiprows_truth = [None]
+    skiprows_produced = [None]
+
+    # specify usecols
+    usecols = ["A:E"]
+
+    # specify sortby columns
+    sortby = [[["Lat", "Lon"], ["latitude", "longitude"]]]
+
+    # specify the index column
+    index_col_truth = [None]
+    index_col_produced = [None]
+
+    produced_base_path = pathlib.Path("./EchoPro_python_output")
+
+    _compare_truth_produced_files(matlab_output_base_path, produced_base_path, file_names_truth,
+                                  file_names_produced, sheet_names_truth, sheet_names_produced,
+                                  skiprows_truth, skiprows_produced, usecols, index_col_truth,
+                                  index_col_produced, sortby)
+
+
+def test_len_haul_count_reports():
+    # TODO: document
+
+    matlab_output_base_path = pathlib.Path(
+        "/Users/brandonreyes/UW_work/EchoPro_work/UW_EchoProMatlab_Repackaged/outputs/EchoPro_matlab_output_brandon_age_22_end_bin")
+
+    # specify file names
+    file_names_truth = ["aged_len_haul_counts_table.xlsx", "total_len_haul_counts_table.xlsx"]
+    file_names_produced = ["specimen_length_counts_haul.xlsx", "total_length_counts_haul.xlsx"]
+
+    # specify sheet names
+    sheet_names_truth = [["Sheet3", "Sheet1", "Sheet2"]] * 2
+    sheet_names_produced = [["all genders", "male", "female"]] * 2
+
+    # specify skiprows
+    skiprows_truth = [[0, 42, 43, 44, 45, 46]]*2
+    skiprows_produced = [[41]] * 2
+
+    # specify usecols
+    usecols = ["A:BX"] * 2
+
+    # specify sortby columns
+    sortby = [None] * 2
+
+    # specify the index column
+    index_col_truth = [None] * 2
+    index_col_produced = [None] * 2
+
+    produced_base_path = pathlib.Path("./EchoPro_python_output")
+
+    _compare_truth_produced_files(matlab_output_base_path, produced_base_path, file_names_truth,
+                                  file_names_produced, sheet_names_truth, sheet_names_produced,
+                                  skiprows_truth, skiprows_produced, usecols, index_col_truth,
+                                  index_col_produced, sortby)
+
