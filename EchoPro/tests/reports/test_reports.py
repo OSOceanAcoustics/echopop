@@ -8,6 +8,8 @@ import pathlib
 
 def test_generate_reports():
 
+    # TODO: should this be put in conftest.py?
+
     config_base_path = pathlib.Path("../../../example_notebooks")
     reports_path = "../EchoPro/tests/reports/EchoPro_python_output"
 

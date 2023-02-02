@@ -6,13 +6,13 @@ import numpy as np
 import EchoPro
 
 
-def test_biomass_age_output():
+def test_biomass_age_output(config_base_path, matlab_output_base_path):
 
     # TODO: formalize this test
 
     # change working directory so no initialization files need to be modified
     # TODO: this may not be necessary in the future
-    os.chdir("../../../example_notebooks")
+    os.chdir(config_base_path)
 
     # initialize Survey object
     survey_2019 = EchoPro.Survey(init_file_path='../config_files/initialization_config.yml',
@@ -31,8 +31,8 @@ def test_biomass_age_output():
     transect_results_male = survey_2019.bio_calc.transect_results_male_gdf
     transect_results_female = survey_2019.bio_calc.transect_results_female_gdf
 
-    # TODO: replace this with input in the future
-    file_path = "/Users/brandonreyes/UW_work/EchoPro_work/UW_EchoProMatlab_Repackaged/outputs/EchoPro_matlab_output_brandon_age_22_end_bin/EchoPro_un-kriged_aged_output-2019_0.xlsx"
+    # obtain file_path pointing to the known output and associated sheet names
+    file_path = matlab_output_base_path / "EchoPro_un-kriged_aged_output-2019_0.xlsx"
     sheet_name = "Sheet1"
     sheet_name_male = "Sheet2"
     sheet_name_female = "Sheet3"
@@ -68,12 +68,12 @@ def test_biomass_age_output():
     assert np.all(np.isclose(female_df_known.to_numpy(), female_df_produced.to_numpy()))
 
 
-def test_core_output():
+def test_core_output(config_base_path, matlab_output_base_path):
     # TODO: formalize this test
 
     # change working directory so no initialization files need to be modified
     # TODO: this may not be necessary in the future
-    os.chdir("../../../example_notebooks")
+    os.chdir(config_base_path)
 
     # initialize Survey object
     survey_2019 = EchoPro.Survey(init_file_path='../config_files/initialization_config.yml',
@@ -92,8 +92,8 @@ def test_core_output():
     transect_results_male = survey_2019.bio_calc.transect_results_male_gdf
     transect_results_female = survey_2019.bio_calc.transect_results_female_gdf
 
-    # TODO: replace this with input in the future
-    file_path = "/Users/brandonreyes/UW_work/EchoPro_work/UW_EchoProMatlab_Repackaged/outputs/EchoPro_matlab_output_brandon_age_22_end_bin/EchoPro_un-kriged_output-26-Jan-2023_0.xlsx"
+    # obtain file_path pointing to the known output and associated sheet name
+    file_path = matlab_output_base_path / "EchoPro_un-kriged_output-26-Jan-2023_0.xlsx"
     sheet_name = "Sheet1"
 
     # gather known solution data produced by the Matlab version of EchoPro

@@ -17,7 +17,7 @@ def _redistribute_age1_data(df: pd.DataFrame, unaged_column: bool):
         A DataFrame with rows corresponding to length bins and columns
         corresponding to age bins
     unaged_column: bool
-        If True, ``df`` corresponds to data that has an ``Un-aged`` column
+        If True, ``df`` corresponds to data that has an ``un-aged`` column
         (that needs to be ignored), else does not have the column
     """
 
@@ -101,7 +101,7 @@ def _redistribute_unaged_kriged_biomass(
                 ind_sel_F = ind_sel_F + min(ind_F) - 1
 
                 if ind_sel_F < ind_sel_M:
-                    # closet length bin has no aged female, using the smaller
+                    # closest length bin has no aged female, using the smaller
                     # length bin aged female data
                     while sum(female_arr[ind_sel_F - 1, :-1]) == 0:
                         ind_sel_F = ind_sel_F - 1
@@ -116,7 +116,7 @@ def _redistribute_unaged_kriged_biomass(
                         / sum(female_arr[ind_sel_F - 1, :-1])
                     )
                 else:
-                    # closet length bin has no aged male, using the smaller
+                    # closest length bin has no aged male, using the smaller
                     # length bin aged male data
                     while sum(male_arr[ind_sel_M - 1, :-1]) == 0:
                         ind_sel_M = ind_sel_M - 1
@@ -132,7 +132,7 @@ def _redistribute_unaged_kriged_biomass(
                     )
         elif (sum(male_arr[i, :-1]) < threshold) and (male_arr[i, -1] > threshold):
             # no male hake at ith length bin for aged hake (bio-sample station 2)
-            # but has for unaged hake (bio-sample station 1)
+            # but has samples for unaged hake (bio-sample station 1)
             Uaged2aged_mat_M[i, :] = (
                 male_arr[i, -1] * female_arr[i, :-1] / sum(female_arr[i, :-1])
             )
@@ -141,7 +141,7 @@ def _redistribute_unaged_kriged_biomass(
             )
         elif (sum(female_arr[i, :-1]) < threshold) and (female_arr[i, -1] > threshold):
             # no female hake at ith length bin for aged hake (bio-sample station 2)
-            # but has for unaged hake (bio-sample station 1)
+            # but has samples for unaged hake (bio-sample station 1)
             Uaged2aged_mat_M[i, :] = (
                 male_arr[i, -1] * male_arr[i, :-1] / sum(male_arr[i, :-1])
             )
@@ -426,7 +426,7 @@ def get_len_age_abundance(
 
         # create and assign column names
         final_df.columns = ["age_bin_" + str(column) for column in aged_df.columns] + [
-            "Un-aged"
+            "un-aged"
         ]
 
         # remove row header produced by xarray
@@ -572,7 +572,7 @@ def get_kriging_len_age_biomass(
 
         # create and assign column names
         final_df.columns = ["age_bin_" + str(column) for column in aged_df.columns] + [
-            "Un-aged"
+            "un-aged"
         ]
 
         # create and assign index names
