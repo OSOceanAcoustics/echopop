@@ -632,72 +632,81 @@ class Reports:
         df_list = [total_haul_all_df, total_haul_male_df, total_haul_female_df]
         self._write_dfs_to_excel(df_list, sheet_names, output_excel_path_total)
 
-    def _transect_based_len_age_abundance_report(self):
+    def _len_age_abundance_report(
+        self, output_excel_path: pathlib.Path, kriging_based: bool
+    ) -> None:
         """
-        Generates a report that is a 40 x 21 matrix, with 40 length bins (1st column)
-        (L =2, 4, 6, … 80 cm, and ith length bin include length i-1 and i cm) and 21
-        age bins (1st row), 1, 2, 3, … 20 year old, and the 21st age bin is un-aged
-        abundance. The abundance values are based on the transect results. There are
-        three tabs with male, female, and all (male+female). Additionally, writes this
-        report to an Excel file.
+        Generates a report containing the Transect or Kriging based abundance
+        at each length and age bin, and the unaged abundance for each length
+        bin. The report will have three tabs with male, female, and all
+        (male+female). Additionally, writes this report to an Excel file.
 
-        Returns
-        -------
-
-        """
-
-        # abundance_df = survey_2019.bio_calc.transect_results_gdf[["abundance", "stratum_num"]]
-
-        # TODO: for Kriging
-        # abundance_df = survey_2019.bio_calc.kriging_results_gdf[
-        # ["abundance_adult", "stratum_num"]]
-
-        # temp_M, temp_unaged_M = self._get_len_age_abundance(abundance_df, krig.ds, sex="M",
-        # kriging_vals=False)
-        # temp_F, temp_unaged_F = self._get_len_age_abundance(abundance_df, krig.ds, sex="F",
-        # kriging_vals=False)
-
-        # temp_F.to_pandas()
-
-        # temp_total = temp_M + temp_F
-
-        # TODO: Take note that EchoPro Matlab does not correctly account for age bins, thus
-        #  the output produced for ``Un-aged`` column is not correct when an age bin end is not 20!
-
-        pass
-
-    def _transect_based_len_age_biomass_report(self):
-        """
-        Generates a report that is a 40 x 21 matrix, with 40 length bins (1st column)
-        (L =2, 4, 6, … 80 cm, and ith length bin include length i-1 and i cm) and 21
-        age bins (1st row), 1, 2, 3, … 20 year old. The biomass values are based on the
-        transect results. There are three tabs with male, female, and all (male+female).
-        Additionally, writes this report to an Excel file.
-
-        Returns
-        -------
-
+        Parameters
+        ----------
+        output_excel_path: pathlib.Path
+            The output Excel file path where the report should be saved
+        kriging_based: bool
+            If True, Kriging based abundance reports should be written, else
+            the Transect based abundance reports will be written
         """
 
-        # biomass_df = survey_2019.bio_calc.transect_results_male_gdf[["biomass", "stratum_num"]]
-        # biomass_df = biomass_df.reset_index(drop=True).set_index("stratum_num")
-        #
-        # temp_biomass_M = reports._get_len_age_biomass(biomass_df, krig.ds, kriging_vals=False)
-        # temp_biomass_M = temp_biomass_M * 1e-9
+        # define list of DataFrames to write
+        if kriging_based:
+            df_list = [
+                self.survey.bio_calc.kriging_bin_abundance_df,
+                self.survey.bio_calc.kriging_bin_abundance_male_df,
+                self.survey.bio_calc.kriging_bin_abundance_female_df,
+            ]
+        else:
+            df_list = [
+                self.survey.bio_calc.transect_bin_abundance_df,
+                self.survey.bio_calc.transect_bin_abundance_male_df,
+                self.survey.bio_calc.transect_bin_abundance_female_df,
+            ]
 
-        # biomass_df = survey_2019.bio_calc.transect_results_female_gdf[["biomass", "stratum_num"]]
-        # biomass_df = biomass_df.reset_index(drop=True).set_index("stratum_num")
-        #
-        # temp_biomass_F = reports._get_len_age_biomass(biomass_df, krig.ds, kriging_vals=False)
-        # temp_biomass_F = temp_biomass_F * 1e-9
-        #
-        # biomass_df = survey_2019.bio_calc.transect_results_gdf[["biomass", "stratum_num"]]
-        # biomass_df = biomass_df.reset_index(drop=True).set_index("stratum_num")
-        #
-        # temp_biomass_all = reports._get_len_age_biomass(biomass_df, krig.ds, kriging_vals=False)
-        # temp_biomass_all = temp_biomass_all * 1e-9
+        # define sheet names for results
+        sheet_names = ["all genders", "male", "female"]
 
-        pass
+        # write the reports corresponding to the specimen data to Excel file
+        self._write_dfs_to_excel(df_list, sheet_names, output_excel_path)
+
+    def _len_age_biomass_report(
+        self, output_excel_path: pathlib.Path, kriging_based: bool
+    ) -> None:
+        """
+        Generates a report containing the Transect or Kriging based biomass
+        at each length and age bin. The report will have three tabs with male,
+        female, and all (male+female). Additionally, writes this report to an
+        Excel file.
+
+        Parameters
+        ----------
+        output_excel_path: pathlib.Path
+            The output Excel file path where the report should be saved
+        kriging_based: bool
+            If True, Kriging based biomass reports should be written, else
+            the Transect based biomass reports will be written
+        """
+
+        # define list of DataFrames to write
+        if kriging_based:
+            df_list = [
+                self.survey.bio_calc.kriging_bin_biomass_df * 1e-9,
+                self.survey.bio_calc.kriging_bin_biomass_male_df * 1e-9,
+                self.survey.bio_calc.kriging_bin_biomass_female_df * 1e-9,
+            ]
+        else:
+            df_list = [
+                self.survey.bio_calc.transect_bin_biomass_df * 1e-9,
+                self.survey.bio_calc.transect_bin_biomass_male_df * 1e-9,
+                self.survey.bio_calc.transect_bin_biomass_female_df * 1e-9,
+            ]
+
+        # define sheet names for results
+        sheet_names = ["all genders", "male", "female"]
+
+        # write the reports corresponding to the specimen data to Excel file
+        self._write_dfs_to_excel(df_list, sheet_names, output_excel_path)
 
     def _kriging_based_core_variables_report(
         self,
@@ -843,49 +852,66 @@ class Reports:
 
         # TODO: perform a check that all necessary DataFrames have been constructed
 
-        self._write_biomass_ages_report(
-            output_excel_path_all=output_path / "transect_based_aged_output_all.xlsx",
-            output_excel_path_non_zero=output_path
-            / "transect_based_aged_output_non_zero.xlsx",
-            results=self.survey.bio_calc.transect_results_gdf,
-            results_male=self.survey.bio_calc.transect_results_male_gdf,
-            results_female=self.survey.bio_calc.transect_results_female_gdf,
-            krig_result=False,
+        # self._write_biomass_ages_report(
+        #     output_excel_path_all=output_path / "transect_based_aged_output_all.xlsx",
+        #     output_excel_path_non_zero=output_path
+        #     / "transect_based_aged_output_non_zero.xlsx",
+        #     results=self.survey.bio_calc.transect_results_gdf,
+        #     results_male=self.survey.bio_calc.transect_results_male_gdf,
+        #     results_female=self.survey.bio_calc.transect_results_female_gdf,
+        #     krig_result=False,
+        # )
+        #
+        # self._write_biomass_ages_report(
+        #     output_excel_path_all=output_path / "kriging_based_aged_output_all.xlsx",
+        #     output_excel_path_non_zero=output_path
+        #     / "kriging_based_aged_output_non_zero.xlsx",
+        #     results=self.survey.bio_calc.kriging_results_gdf,
+        #     results_male=self.survey.bio_calc.kriging_results_male_gdf,
+        #     results_female=self.survey.bio_calc.kriging_results_female_gdf,
+        #     krig_result=True,
+        # )
+        #
+        # NASC_adult = self._get_adult_NASC(self.survey.bio_calc.nasc_df.stratum_num)
+        #
+        # self._transect_based_core_variables_report(
+        #     output_excel_path_all=output_path / "transect_based_core_output_all.xlsx",
+        #     output_excel_path_non_zero=output_path
+        #     / "transect_based_core_output_non_zero.xlsx",
+        #     NASC_adult=NASC_adult,
+        # )
+
+        # self._kriging_based_core_variables_report(
+        #     output_excel_path_all=output_path / "kriging_based_core_output_all.xlsx",
+        #     output_excel_path_non_zero=output_path
+        #     / "kriging_based_core_output_non_zero.xlsx",
+        # )
+        #
+        # self._kriging_input_report(
+        #     NASC_adult=NASC_adult, output_excel_path=output_path / "kriging_input.xlsx"
+        # )
+        #
+        # self._len_haul_count_reports(
+        #     output_excel_path_specimen=output_path / "specimen_length_counts_haul.xlsx",
+        #     output_excel_path_total=output_path / "total_length_counts_haul.xlsx",
+        # )
+
+        self._len_age_abundance_report(
+            output_excel_path=output_path / "transect_based_len_age_abundance.xlsx",
+            kriging_based=False,
         )
 
-        self._write_biomass_ages_report(
-            output_excel_path_all=output_path / "kriging_based_aged_output_all.xlsx",
-            output_excel_path_non_zero=output_path
-            / "kriging_based_aged_output_non_zero.xlsx",
-            results=self.survey.bio_calc.kriging_results_gdf,
-            results_male=self.survey.bio_calc.kriging_results_male_gdf,
-            results_female=self.survey.bio_calc.kriging_results_female_gdf,
-            krig_result=True,
+        self._len_age_abundance_report(
+            output_excel_path=output_path / "kriging_based_len_age_abundance.xlsx",
+            kriging_based=True,
         )
 
-        NASC_adult = self._get_adult_NASC(self.survey.bio_calc.nasc_df.stratum_num)
-
-        self._transect_based_core_variables_report(
-            output_excel_path_all=output_path / "transect_based_core_output_all.xlsx",
-            output_excel_path_non_zero=output_path
-            / "transect_based_core_output_non_zero.xlsx",
-            NASC_adult=NASC_adult,
+        self._len_age_biomass_report(
+            output_excel_path=output_path / "transect_based_len_age_biomass.xlsx",
+            kriging_based=False,
         )
 
-        # self._transect_based_len_age_abundance_report()
-        # self._transect_based_len_age_biomass_report()
-
-        self._kriging_based_core_variables_report(
-            output_excel_path_all=output_path / "kriging_based_core_output_all.xlsx",
-            output_excel_path_non_zero=output_path
-            / "kriging_based_core_output_non_zero.xlsx",
-        )
-
-        self._kriging_input_report(
-            NASC_adult=NASC_adult, output_excel_path=output_path / "kriging_input.xlsx"
-        )
-
-        self._len_haul_count_reports(
-            output_excel_path_specimen=output_path / "specimen_length_counts_haul.xlsx",
-            output_excel_path_total=output_path / "total_length_counts_haul.xlsx",
+        self._len_age_biomass_report(
+            output_excel_path=output_path / "kriging_based_len_age_biomass.xlsx",
+            kriging_based=True,
         )

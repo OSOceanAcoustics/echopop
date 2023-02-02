@@ -669,7 +669,7 @@ class Survey:
                 ds=self.bio_calc.bin_ds,
             )
 
-        elif data in ["kriging", "all"]:
+        if data in ["kriging", "all"]:
 
             # ensure that the appropriate data exists
             if not isinstance(self.bio_calc.kriging_results_gdf, gpd.GeoDataFrame):
@@ -702,7 +702,7 @@ class Survey:
                 exclude_age1=self.params["exclude_age1"],
             )
 
-        else:
+        if data not in ["transect", "kriging", "all"]:
             raise RuntimeError(
                 "The input variable data must be 'all', 'transect', or 'kriging'!"
             )
