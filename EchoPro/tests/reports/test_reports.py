@@ -6,12 +6,9 @@ from EchoPro.computation import SemiVariogram as SV
 import pathlib
 
 
-def test_generate_reports():
+def generate_reports(config_base_path, reports_base_path):
 
     # TODO: should this be put in conftest.py?
-
-    config_base_path = pathlib.Path("../../../example_notebooks")
-    reports_path = "../EchoPro/tests/reports/EchoPro_python_output"
 
     # TODO: formalize this test
 
@@ -67,7 +64,7 @@ def test_generate_reports():
     reports = survey_2019.get_reports()
 
     # generate and write reports
-    reports.create_and_write_reports(output_path=reports_path)
+    reports.create_and_write_reports(output_path=reports_base_path)
 
 
 def _compare_truth_produced_files(truth_base_path, produced_base_path, file_names_truth,
@@ -106,12 +103,13 @@ def _compare_truth_produced_files(truth_base_path, produced_base_path, file_name
             assert np.all(np.isclose(df_truth.to_numpy(), df_produced.to_numpy()))
 
 
-def test_length_age_reports():
+def test_length_age_reports(config_base_path, matlab_output_base_path, reports_base_path):
 
     # TODO: document
 
-    matlab_output_base_path = pathlib.Path(
-        "/Users/brandonreyes/UW_work/EchoPro_work/UW_EchoProMatlab_Repackaged/outputs/EchoPro_matlab_output_brandon_age_22_end_bin")
+    # change working directory so no initialization files need to be modified
+    # TODO: this may not be necessary in the future
+    os.chdir(config_base_path)
 
     # specify file names
     file_names_truth = ["un-kriged_len_age_abundance_table.xlsx", "kriged_len_age_abundance_table.xlsx",
@@ -137,19 +135,18 @@ def test_length_age_reports():
     index_col_truth = [0] * 4
     index_col_produced = [0] * 4
 
-    produced_base_path = pathlib.Path("./EchoPro_python_output")
-
-    _compare_truth_produced_files(matlab_output_base_path, produced_base_path, file_names_truth,
+    _compare_truth_produced_files(matlab_output_base_path, reports_base_path, file_names_truth,
                                   file_names_produced, sheet_names_truth, sheet_names_produced,
                                   skiprows_truth, skiprows_produced, usecols, index_col_truth,
                                   index_col_produced, sortby)
 
 
-def test_biomass_ages_reports():
+def test_biomass_ages_reports(config_base_path, matlab_output_base_path, reports_base_path):
     # TODO: document
 
-    matlab_output_base_path = pathlib.Path(
-        "/Users/brandonreyes/UW_work/EchoPro_work/UW_EchoProMatlab_Repackaged/outputs/EchoPro_matlab_output_brandon_age_22_end_bin")
+    # change working directory so no initialization files need to be modified
+    # TODO: this may not be necessary in the future
+    os.chdir(config_base_path)
 
     # specify file names
     file_names_truth = ["EchoPro_un-kriged_aged_output-2019_0.xlsx", "EchoPro_kriged_aged_output-2019_0.xlsx",
@@ -176,19 +173,18 @@ def test_biomass_ages_reports():
     index_col_truth = [0, None] * 2
     index_col_produced = [0, 0] * 2
 
-    produced_base_path = pathlib.Path("./EchoPro_python_output")
-
-    _compare_truth_produced_files(matlab_output_base_path, produced_base_path, file_names_truth,
+    _compare_truth_produced_files(matlab_output_base_path, reports_base_path, file_names_truth,
                                   file_names_produced, sheet_names_truth, sheet_names_produced,
                                   skiprows_truth, skiprows_produced, usecols, index_col_truth,
                                   index_col_produced, sortby)
 
 
-def test_core_variables_reports():
+def test_core_variables_reports(config_base_path, matlab_output_base_path, reports_base_path):
     # TODO: document
 
-    matlab_output_base_path = pathlib.Path(
-        "/Users/brandonreyes/UW_work/EchoPro_work/UW_EchoProMatlab_Repackaged/outputs/EchoPro_matlab_output_brandon_age_22_end_bin")
+    # change working directory so no initialization files need to be modified
+    # TODO: this may not be necessary in the future
+    os.chdir(config_base_path)
 
     # specify file names
     file_names_truth = ["EchoPro_un-kriged_output-26-Jan-2023_0.xlsx", "EchoPro_kriged_output-26-Jan-2023_0.xlsx",
@@ -215,19 +211,18 @@ def test_core_variables_reports():
     index_col_truth = [None] * 4
     index_col_produced = [None] * 4
 
-    produced_base_path = pathlib.Path("./EchoPro_python_output")
-
-    _compare_truth_produced_files(matlab_output_base_path, produced_base_path, file_names_truth,
+    _compare_truth_produced_files(matlab_output_base_path, reports_base_path, file_names_truth,
                                   file_names_produced, sheet_names_truth, sheet_names_produced,
                                   skiprows_truth, skiprows_produced, usecols, index_col_truth,
                                   index_col_produced, sortby)
 
 
-def test_kriging_input_report():
+def test_kriging_input_report(config_base_path, matlab_output_base_path, reports_base_path):
     # TODO: document
 
-    matlab_output_base_path = pathlib.Path(
-        "/Users/brandonreyes/UW_work/EchoPro_work/UW_EchoProMatlab_Repackaged/outputs/EchoPro_matlab_output_brandon_age_22_end_bin")
+    # change working directory so no initialization files need to be modified
+    # TODO: this may not be necessary in the future
+    os.chdir(config_base_path)
 
     # specify file names
     file_names_truth = ["kriging_input.xlsx"]
@@ -251,19 +246,18 @@ def test_kriging_input_report():
     index_col_truth = [None]
     index_col_produced = [None]
 
-    produced_base_path = pathlib.Path("./EchoPro_python_output")
-
-    _compare_truth_produced_files(matlab_output_base_path, produced_base_path, file_names_truth,
+    _compare_truth_produced_files(matlab_output_base_path, reports_base_path, file_names_truth,
                                   file_names_produced, sheet_names_truth, sheet_names_produced,
                                   skiprows_truth, skiprows_produced, usecols, index_col_truth,
                                   index_col_produced, sortby)
 
 
-def test_len_haul_count_reports():
+def test_len_haul_count_reports(config_base_path, matlab_output_base_path, reports_base_path):
     # TODO: document
 
-    matlab_output_base_path = pathlib.Path(
-        "/Users/brandonreyes/UW_work/EchoPro_work/UW_EchoProMatlab_Repackaged/outputs/EchoPro_matlab_output_brandon_age_22_end_bin")
+    # change working directory so no initialization files need to be modified
+    # TODO: this may not be necessary in the future
+    os.chdir(config_base_path)
 
     # specify file names
     file_names_truth = ["aged_len_haul_counts_table.xlsx", "total_len_haul_counts_table.xlsx"]
@@ -287,10 +281,7 @@ def test_len_haul_count_reports():
     index_col_truth = [None] * 2
     index_col_produced = [None] * 2
 
-    produced_base_path = pathlib.Path("./EchoPro_python_output")
-
-    _compare_truth_produced_files(matlab_output_base_path, produced_base_path, file_names_truth,
+    _compare_truth_produced_files(matlab_output_base_path, reports_base_path, file_names_truth,
                                   file_names_produced, sheet_names_truth, sheet_names_produced,
                                   skiprows_truth, skiprows_produced, usecols, index_col_truth,
                                   index_col_produced, sortby)
-
