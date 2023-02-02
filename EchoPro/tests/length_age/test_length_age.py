@@ -6,13 +6,13 @@ import numpy as np
 import EchoPro
 
 
-def test_transect_based_length_age():
+def test_transect_based_length_age(config_base_path, matlab_output_base_path):
 
     # TODO: formalize this test
 
     # change working directory so no initialization files need to be modified
     # TODO: this may not be necessary in the future
-    os.chdir("../../../example_notebooks")
+    os.chdir(config_base_path)
 
     # initialize Survey object
     survey_2019 = EchoPro.Survey(init_file_path='../config_files/initialization_config.yml',
@@ -38,8 +38,7 @@ def test_transect_based_length_age():
     female_biomass_df = survey_2019.bio_calc.transect_bin_biomass_female_df
 
     # obtain file_path pointing to the known abundance data
-    # TODO: replace this with input in the future
-    file_path_abundance = "/Users/brandonreyes/UW_work/EchoPro_work/UW_EchoProMatlab_Repackaged/outputs/EchoPro_matlab_output_brandon_age_22_end_bin/un-kriged_len_age_abundance_table.xlsx"
+    file_path_abundance = matlab_output_base_path / "un-kriged_len_age_abundance_table.xlsx"
     sheet_name = "Sheet3"
     sheet_name_male = "Sheet1"
     sheet_name_female = "Sheet2"
@@ -59,8 +58,7 @@ def test_transect_based_length_age():
     assert np.all(np.isclose(female_df_known.to_numpy(), female_abundance_df.to_numpy()))
 
     # obtain file_path pointing to the known biomass data
-    # TODO: replace this with input in the future
-    file_path_biomass = "/Users/brandonreyes/UW_work/EchoPro_work/UW_EchoProMatlab_Repackaged/outputs/EchoPro_matlab_output_brandon_age_22_end_bin/un-kriged_len_age_biomass_table.xlsx"
+    file_path_biomass = matlab_output_base_path / "un-kriged_len_age_biomass_table.xlsx"
 
     # gather known solution data produced by the Matlab version of EchoPro
     df_known = pd.read_excel(file_path_biomass, index_col=0, sheet_name=sheet_name,
