@@ -101,7 +101,7 @@ def _redistribute_unaged_kriged_biomass(
                 ind_sel_F = ind_sel_F + min(ind_F) - 1
 
                 if ind_sel_F < ind_sel_M:
-                    # closet length bin has no aged female, using the smaller
+                    # closest length bin has no aged female, using the smaller
                     # length bin aged female data
                     while sum(female_arr[ind_sel_F - 1, :-1]) == 0:
                         ind_sel_F = ind_sel_F - 1
@@ -116,7 +116,7 @@ def _redistribute_unaged_kriged_biomass(
                         / sum(female_arr[ind_sel_F - 1, :-1])
                     )
                 else:
-                    # closet length bin has no aged male, using the smaller
+                    # closest length bin has no aged male, using the smaller
                     # length bin aged male data
                     while sum(male_arr[ind_sel_M - 1, :-1]) == 0:
                         ind_sel_M = ind_sel_M - 1
