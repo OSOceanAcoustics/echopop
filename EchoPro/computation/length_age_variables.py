@@ -17,7 +17,7 @@ def _redistribute_age1_data(df: pd.DataFrame, unaged_column: bool):
         A DataFrame with rows corresponding to length bins and columns
         corresponding to age bins
     unaged_column: bool
-        If True, ``df`` corresponds to data that has an ``Un-aged`` column
+        If True, ``df`` corresponds to data that has an ``un-aged`` column
         (that needs to be ignored), else does not have the column
     """
 
@@ -426,7 +426,7 @@ def get_len_age_abundance(
 
         # create and assign column names
         final_df.columns = ["age_bin_" + str(column) for column in aged_df.columns] + [
-            "Un-aged"
+            "un-aged"
         ]
 
         # remove row header produced by xarray
@@ -572,7 +572,7 @@ def get_kriging_len_age_biomass(
 
         # create and assign column names
         final_df.columns = ["age_bin_" + str(column) for column in aged_df.columns] + [
-            "Un-aged"
+            "un-aged"
         ]
 
         # create and assign index names
