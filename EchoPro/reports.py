@@ -852,49 +852,49 @@ class Reports:
 
         # TODO: perform a check that all necessary DataFrames have been constructed
 
-        # self._write_biomass_ages_report(
-        #     output_excel_path_all=output_path / "transect_based_aged_output_all.xlsx",
-        #     output_excel_path_non_zero=output_path
-        #     / "transect_based_aged_output_non_zero.xlsx",
-        #     results=self.survey.bio_calc.transect_results_gdf,
-        #     results_male=self.survey.bio_calc.transect_results_male_gdf,
-        #     results_female=self.survey.bio_calc.transect_results_female_gdf,
-        #     krig_result=False,
-        # )
-        #
-        # self._write_biomass_ages_report(
-        #     output_excel_path_all=output_path / "kriging_based_aged_output_all.xlsx",
-        #     output_excel_path_non_zero=output_path
-        #     / "kriging_based_aged_output_non_zero.xlsx",
-        #     results=self.survey.bio_calc.kriging_results_gdf,
-        #     results_male=self.survey.bio_calc.kriging_results_male_gdf,
-        #     results_female=self.survey.bio_calc.kriging_results_female_gdf,
-        #     krig_result=True,
-        # )
-        #
-        # NASC_adult = self._get_adult_NASC(self.survey.bio_calc.nasc_df.stratum_num)
-        #
-        # self._transect_based_core_variables_report(
-        #     output_excel_path_all=output_path / "transect_based_core_output_all.xlsx",
-        #     output_excel_path_non_zero=output_path
-        #     / "transect_based_core_output_non_zero.xlsx",
-        #     NASC_adult=NASC_adult,
-        # )
+        self._write_biomass_ages_report(
+            output_excel_path_all=output_path / "transect_based_aged_output_all.xlsx",
+            output_excel_path_non_zero=output_path
+            / "transect_based_aged_output_non_zero.xlsx",
+            results=self.survey.bio_calc.transect_results_gdf,
+            results_male=self.survey.bio_calc.transect_results_male_gdf,
+            results_female=self.survey.bio_calc.transect_results_female_gdf,
+            krig_result=False,
+        )
 
-        # self._kriging_based_core_variables_report(
-        #     output_excel_path_all=output_path / "kriging_based_core_output_all.xlsx",
-        #     output_excel_path_non_zero=output_path
-        #     / "kriging_based_core_output_non_zero.xlsx",
-        # )
-        #
-        # self._kriging_input_report(
-        #     NASC_adult=NASC_adult, output_excel_path=output_path / "kriging_input.xlsx"
-        # )
-        #
-        # self._len_haul_count_reports(
-        #     output_excel_path_specimen=output_path / "specimen_length_counts_haul.xlsx",
-        #     output_excel_path_total=output_path / "total_length_counts_haul.xlsx",
-        # )
+        self._write_biomass_ages_report(
+            output_excel_path_all=output_path / "kriging_based_aged_output_all.xlsx",
+            output_excel_path_non_zero=output_path
+            / "kriging_based_aged_output_non_zero.xlsx",
+            results=self.survey.bio_calc.kriging_results_gdf,
+            results_male=self.survey.bio_calc.kriging_results_male_gdf,
+            results_female=self.survey.bio_calc.kriging_results_female_gdf,
+            krig_result=True,
+        )
+
+        NASC_adult = self._get_adult_NASC(self.survey.bio_calc.nasc_df.stratum_num)
+
+        self._transect_based_core_variables_report(
+            output_excel_path_all=output_path / "transect_based_core_output_all.xlsx",
+            output_excel_path_non_zero=output_path
+            / "transect_based_core_output_non_zero.xlsx",
+            NASC_adult=NASC_adult,
+        )
+
+        self._kriging_based_core_variables_report(
+            output_excel_path_all=output_path / "kriging_based_core_output_all.xlsx",
+            output_excel_path_non_zero=output_path
+            / "kriging_based_core_output_non_zero.xlsx",
+        )
+
+        self._kriging_input_report(
+            NASC_adult=NASC_adult, output_excel_path=output_path / "kriging_input.xlsx"
+        )
+
+        self._len_haul_count_reports(
+            output_excel_path_specimen=output_path / "specimen_length_counts_haul.xlsx",
+            output_excel_path_total=output_path / "total_length_counts_haul.xlsx",
+        )
 
         self._len_age_abundance_report(
             output_excel_path=output_path / "transect_based_len_age_abundance.xlsx",
