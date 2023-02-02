@@ -132,7 +132,7 @@ def _redistribute_unaged_kriged_biomass(
                     )
         elif (sum(male_arr[i, :-1]) < threshold) and (male_arr[i, -1] > threshold):
             # no male hake at ith length bin for aged hake (bio-sample station 2)
-            # but has for unaged hake (bio-sample station 1)
+            # but has samples for unaged hake (bio-sample station 1)
             Uaged2aged_mat_M[i, :] = (
                 male_arr[i, -1] * female_arr[i, :-1] / sum(female_arr[i, :-1])
             )
@@ -141,7 +141,7 @@ def _redistribute_unaged_kriged_biomass(
             )
         elif (sum(female_arr[i, :-1]) < threshold) and (female_arr[i, -1] > threshold):
             # no female hake at ith length bin for aged hake (bio-sample station 2)
-            # but has for unaged hake (bio-sample station 1)
+            # but has samples for unaged hake (bio-sample station 1)
             Uaged2aged_mat_M[i, :] = (
                 male_arr[i, -1] * male_arr[i, :-1] / sum(male_arr[i, :-1])
             )
