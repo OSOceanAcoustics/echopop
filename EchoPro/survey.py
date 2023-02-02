@@ -13,8 +13,9 @@ from .computation import (
     Kriging,
     SemiVariogram,
     generate_bin_ds,
+    get_kriging_len_age_biomass,
     get_len_age_abundance,
-    get_len_age_biomass,
+    get_transect_len_age_biomass,
     krig_param_type,
     krig_type_dict,
     run_jolly_hampton,
@@ -633,6 +634,7 @@ class Survey:
                 gdf=self.bio_calc.transect_results_gdf,
                 ds=self.bio_calc.bin_ds,
                 kriging_vals=False,
+                exclude_age1=self.params["exclude_age1"],
             )
 
             # obtain and assign biomass DataFrames for transect data
@@ -640,12 +642,11 @@ class Survey:
                 self.bio_calc.transect_bin_biomass_male_df,
                 self.bio_calc.transect_bin_biomass_female_df,
                 self.bio_calc.transect_bin_biomass_df,
-            ) = get_len_age_biomass(
+            ) = get_transect_len_age_biomass(
                 gdf_all=self.bio_calc.transect_results_gdf,
                 gdf_male=self.bio_calc.transect_results_male_gdf,
                 gdf_female=self.bio_calc.transect_results_female_gdf,
                 ds=self.bio_calc.bin_ds,
-                kriging_vals=False,
             )
 
         elif data in ["kriging", "all"]:
@@ -658,12 +659,27 @@ class Survey:
                     "ran first."
                 )
 
-            # get_len_age_abundance(gdf=self.bio_calc.kriging_results_gdf,
-            #                       ds=self.bio_calc.bin_ds, kriging=True)
+            # obtain and assign abundance DataFrames for Kriging data
+            (
+                self.bio_calc.kriging_bin_abundance_male_df,
+                self.bio_calc.kriging_bin_abundance_female_df,
+                self.bio_calc.kriging_bin_abundance_df,
+            ) = get_len_age_abundance(
+                gdf=self.bio_calc.kriging_results_gdf,
+                ds=self.bio_calc.bin_ds,
+                kriging_vals=True,
+                exclude_age1=self.params["exclude_age1"],
+            )
 
-            raise NotImplementedError(
-                "Creating abundance and biomass over each length and "
-                "age bin has not been implemented for Kriging data."
+            # obtain and assign biomass DataFrames for kriging data
+            (
+                self.bio_calc.kriging_bin_biomass_male_df,
+                self.bio_calc.kriging_bin_biomass_female_df,
+                self.bio_calc.kriging_bin_biomass_df,
+            ) = get_kriging_len_age_biomass(
+                gdf_all=self.bio_calc.kriging_results_gdf,
+                ds=self.bio_calc.bin_ds,
+                exclude_age1=self.params["exclude_age1"],
             )
 
         else:
