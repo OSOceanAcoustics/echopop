@@ -1,0 +1,23 @@
+name: echopro
+channels:
+  - conda-forge
+dependencies:
+  - python=3.9
+  - pip
+  # Jupyter stack
+  - ipympl
+  - ipywidgets<8
+  - jupyter_contrib_nbextensions
+  - nb_conda_kernels
+  - notebook<6.5
+  # Computational stack
+  - geopandas
+  - geopy
+  - numba
+  - openpyxl
+  - PyYAML
+  - shapely<2
+  - xarray
+  # Uncomment these lines to also install the latest EchoPro
+  # - pip:
+  #   - https://uw-echospace.github.io/EchoPro/EchoPro-latest-py3-none-any.whl
