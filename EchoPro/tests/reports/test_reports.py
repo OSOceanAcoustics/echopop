@@ -75,11 +75,8 @@ def generate_reports(config_base_path: pathlib.Path,
     # compute Transect and Kriging based variables at each length and age bin
     survey_2019.compute_length_age_variables(data="all")
 
-    # initialize Reports object
-    reports = survey_2019.get_reports()
-
     # generate and write reports
-    reports.create_and_write_reports(output_path=reports_base_path)
+    survey_2019.create_and_write_reports(output_path=reports_base_path)
 
 
 def _compare_truth_produced_files(truth_base_path: pathlib.Path, produced_base_path: pathlib.Path,

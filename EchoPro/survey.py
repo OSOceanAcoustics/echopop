@@ -578,22 +578,22 @@ class Survey:
 
         return boot
 
-    def get_reports(self) -> Reports:
+    def create_and_write_reports(self, output_path: Union[str, Path]) -> None:
         """
-        Initializes a ``Reports`` object.
+        Constructs Kriging mesh and Transect report DataFrames and writes
+        them to Excel files.
 
-        Returns
-        -------
-        report: Reports
-            An initialized ``Reports`` object that provides users with
-            access to the routine ``create_and_write_reports``, which
-            generates various transect and Kriging based reports and
-            writes these reports to Excel files.
+        Parameters
+        ----------
+        output_path: str or pathlib.Path
+            The output path where all Excel files should be saved
         """
 
+        # create Reports object
         report = Reports(self)
 
-        return report
+        # create and write reports to output_path
+        report.create_and_write_reports(output_path)
 
     def compute_length_age_variables(self, data: str = "transect") -> None:
         """
