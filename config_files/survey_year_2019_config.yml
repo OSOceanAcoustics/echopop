@@ -1,16 +1,16 @@
 # This YAML file is a configuration file specifying
-# input filenames & some process parameter settings
+# input filenames & some process parameter settings.
+# Relative file paths defined below are concatenated 
+# with the data_root_dir path also set below.
 
 ---
 
   # directory path that contains all data needed
   data_root_dir: ../../2019_consolidated_files/
 
-  #####################################################################################################################
-  # Biological data filenames #
+  ##############################################################################
+  # Paths to biological files #
   #############################
-
-  # The paths defined below are concatenated with the data_root_dir set above
 
   # File names and associated sheet name for the US section
   length_US_filename: Biological/US/2019_biodata_length.xlsx
@@ -28,22 +28,22 @@
   specimen_CAN_sheet: biodata_specimen_CAN
   catch_CAN_filename: Biological/CAN/2019_biodata_catch_CAN.xlsx
   catch_CAN_sheet: biodata_catch_CAN
-  #####################################################################################################################
+  ##############################################################################
 
 
-  #####################################################################################################################
+  ##############################################################################
   # Paths to stratification files #
   #################################
 
-  # The paths defined below are concatenated with the data_root_dir set above
-
   # file that relates the stratification to the Haul
+  # The two stratification types are found in two sheets: "Base KS" and "INPFC"
   strata_filename: Stratification/US&CAN strata 2019_final.xlsx
-  strata_sheetname: Base KS  # INPFC
+  strata_sheetname: Base KS
 
   # file that defines the geographic definition of strata
+  # The two stratification types are found in two sheets: "stratification1" and "INPFC"
   geo_strata_filename: Stratification/Stratification_geographic_Lat_2019_final.xlsx
-  geo_strata_sheetname: stratification1  # INPFC
+  geo_strata_sheetname: stratification1
 
   # file that provides NASC values, which do not include age1 values
   nasc_no_age1_filename: Exports/US&CAN_detailsa_2019_table2y+_ALL_final - updated.xlsx
@@ -52,14 +52,12 @@
   # file that provides NASC values, which include all ages
   nasc_all_ages_filename: Exports/US&CAN_detailsa_2019_table1y+_ALL_final - updated.xlsx
   nasc_all_ages_sheetname: Sheet1
-  #####################################################################################################################
+  ##############################################################################
 
 
-  #####################################################################################################################
+  ##############################################################################
   # Paths to Kriging files #
   ##########################
-
-  # The below variables are the path from data_root_dir set above
 
   # Mesh filename representing the centroids of the Kriging grid
   mesh_filename: Kriging_files/Kriging_grid_files/krig_grid2_5nm_cut_centroids_2013.xlsx
@@ -71,10 +69,10 @@
   smoothed_contour_sheetname: Smoothing_EasyKrig
 
   vario_krig_para_filename: Kriging_files/default_vario_krig_settings_2019_US&CAN.xlsx
-  #####################################################################################################################
+  ##############################################################################
 
 
-  #####################################################################################################################
+  ##############################################################################
   # Path to mapping between hauls and transects #
   ###############################################
 
@@ -85,21 +83,21 @@
   # File names for the Canada section
   filename_haul_to_transect_CAN: Biological/CAN/haul_to_transect_mapping_2019_CAN.xlsx
   haul_to_transect_CAN_sheetname: Sheet1
-  #####################################################################################################################
+  ##############################################################################
 
 
-  #####################################################################################################################
+  ##############################################################################
   # Additional Parameters for Survey Year #
   #########################################
-  survey_year: 2019                     # survey year being considered
+  survey_year: 2019                # survey year being considered
 
   species_id: 22500                # target species ID for the survey year
 
-  CAN_haul_offset: 200                  # The value to be added to the Canadian's haul number
-  #####################################################################################################################
+  CAN_haul_offset: 200             # The value to be added to the Canadian's haul number
+  ##############################################################################
 
 
-  #####################################################################################################################
+  ##############################################################################
   # Parameters used for generating reports #
   #########################################
 
@@ -117,6 +115,6 @@
 
   filename_Transect_region_haul_age2: Stratification/US&CAN_2019_transect_region_haul_age2+ auto_20191205.xlsx
   filename_Transect_region_haul_age1: Stratification/US&CAN_2019_transect_region_haul_age1+ auto_final.xlsx
-  #####################################################################################################################
+  ##############################################################################
 
 ...
