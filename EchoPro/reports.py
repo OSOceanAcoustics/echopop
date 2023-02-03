@@ -902,6 +902,8 @@ class Reports:
         # ensure all variables are correctly defined
         output_path = self._preliminary_report_checks(output_path)
 
+        # Matlab file names: EchoPro_un-kriged_aged_output-2019_0.xlsx
+        # and EchoPro_un-kriged_aged_output-2019_1.xlsx
         self._write_biomass_ages_report(
             output_excel_path_all=output_path / "transect_based_aged_output_all.xlsx",
             output_excel_path_non_zero=output_path
@@ -912,6 +914,8 @@ class Reports:
             krig_result=False,
         )
 
+        # Matlab file names: EchoPro_kriged_aged_output-2019_0.xlsx
+        # and EchoPro_kriged_aged_output-2019_1.xlsx
         self._write_biomass_ages_report(
             output_excel_path_all=output_path / "kriging_based_aged_output_all.xlsx",
             output_excel_path_non_zero=output_path
@@ -924,6 +928,8 @@ class Reports:
 
         NASC_adult = self._get_adult_NASC(self.survey.bio_calc.nasc_df.stratum_num)
 
+        # Matlab file names: EchoPro_un-kriged_output-26-Jan-2023_0.xlsx
+        # and EchoPro_un-kriged_output-26-Jan-2023_1.xlsx
         self._transect_based_core_variables_report(
             output_excel_path_all=output_path / "transect_based_core_output_all.xlsx",
             output_excel_path_non_zero=output_path
@@ -931,36 +937,45 @@ class Reports:
             NASC_adult=NASC_adult,
         )
 
+        # Matlab file names: EchoPro_kriged_output-26-Jan-2023_0.xlsx
+        # and EchoPro_kriged_output-26-Jan-2023_1.xlsx
         self._kriging_based_core_variables_report(
             output_excel_path_all=output_path / "kriging_based_core_output_all.xlsx",
             output_excel_path_non_zero=output_path
             / "kriging_based_core_output_non_zero.xlsx",
         )
 
+        # Matlab file name: kriging_input.xlsx
         self._kriging_input_report(
             NASC_adult=NASC_adult, output_excel_path=output_path / "kriging_input.xlsx"
         )
 
+        # Matlab file names: aged_len_haul_counts_table.xlsx
+        # and total_len_haul_counts_table.xlsx
         self._len_haul_count_reports(
             output_excel_path_specimen=output_path / "specimen_length_counts_haul.xlsx",
             output_excel_path_total=output_path / "total_length_counts_haul.xlsx",
         )
 
+        # Matlab file name: un-kriged_len_age_abundance_table.xlsx
         self._len_age_abundance_report(
             output_excel_path=output_path / "transect_based_len_age_abundance.xlsx",
             kriging_based=False,
         )
 
+        # Matlab file name:kriged_len_age_abundance_table.xlsx
         self._len_age_abundance_report(
             output_excel_path=output_path / "kriging_based_len_age_abundance.xlsx",
             kriging_based=True,
         )
 
+        # Matlab file name: un-kriged_len_age_biomass_table.xlsx
         self._len_age_biomass_report(
             output_excel_path=output_path / "transect_based_len_age_biomass.xlsx",
             kriging_based=False,
         )
 
+        # Matlab file name: kriged_len_age_biomass_table.xlsx
         self._len_age_biomass_report(
             output_excel_path=output_path / "kriging_based_len_age_biomass.xlsx",
             kriging_based=True,
