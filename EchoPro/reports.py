@@ -5,6 +5,7 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 
+from .computation import ComputeTransectVariables
 from .data_loader.nasc_data import _process_nasc_data
 from .utils.binning import get_bin_ind
 
@@ -826,19 +827,29 @@ class Reports:
             df_list, sheet_names, output_excel_path, include_index=False
         )
 
-    def create_and_write_reports(self, output_path: Union[str, pathlib.Path]) -> None:
+    def _preliminary_report_checks(
+        self, output_path: Union[str, pathlib.Path]
+    ) -> pathlib.Path:
         """
-        Constructs Kriging mesh and Transect report DataFrames and writes
-        them to Excel files.
+        This function performs various checks for the function
+        ``create_and_write_reports``, such as ensuring the input
+        is of the correct type, paths exist, and that all variables
+        needed to create reports exist.
 
         Parameters
         ----------
         output_path: str or pathlib.Path
             The output path where all Excel files should be saved
 
-        # TODO: maybe include an option to overwrite files (default to False)
+        Returns
+        -------
+        output_path: pathlib.Path
+            A verified output path, which is converted to a pathlib.Path,
+            if it was a string.
 
-        # TODO: should we include an option that allows you to generate a specific report?
+        Notes
+        -----
+        If ``output_path`` does not exist, then the directory will be created.
         """
 
         if not isinstance(output_path, (str, pathlib.Path)):
@@ -851,7 +862,45 @@ class Reports:
         # check if path exists, if it doesn't create it
         output_path.mkdir(parents=True, exist_ok=True)
 
-        # TODO: perform a check that all necessary DataFrames have been constructed
+        # ensure that the bio_calc object and all Transect based data exist
+        if not isinstance(self.survey.bio_calc, ComputeTransectVariables):
+            raise RuntimeError("Survey.compute_transect_results must be ran first!")
+
+        # make sure that Kriging results have been produced
+        if not isinstance(self.survey.bio_calc.kriging_results_gdf, gpd.GeoDataFrame):
+            raise RuntimeError("Kriging.run_biomass_kriging must be ran first!")
+
+        # make sure that additional kriging variables have been created
+        if "sig_b" not in self.survey.bio_calc.kriging_results_gdf:
+            raise RuntimeError("Kriging.compute_kriging_variables must be ran first!")
+
+        if (
+            not isinstance(self.survey.bio_calc.transect_bin_abundance_df, pd.DataFrame)
+        ) or (
+            not isinstance(self.survey.bio_calc.kriging_bin_abundance_df, pd.DataFrame)
+        ):
+            raise RuntimeError(
+                "Survey.compute_length_age_variables for Kriging "
+                "and Transect based data must be ran first!"
+            )
+
+        return output_path
+
+    def create_and_write_reports(self, output_path: Union[str, pathlib.Path]) -> None:
+        """
+        Constructs Kriging mesh and Transect report DataFrames and writes
+        them to Excel files.
+
+        Parameters
+        ----------
+        output_path: str or pathlib.Path
+            The output path where all Excel files should be saved
+        """
+
+        # TODO: should we include an option that allows you to generate a specific report?
+
+        # ensure all variables are correctly defined
+        output_path = self._preliminary_report_checks(output_path)
 
         self._write_biomass_ages_report(
             output_excel_path_all=output_path / "transect_based_aged_output_all.xlsx",

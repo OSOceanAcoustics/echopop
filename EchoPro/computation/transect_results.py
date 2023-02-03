@@ -45,6 +45,18 @@ class ComputeTransectVariables:
         self.weight_fraction_all_ages_male_df = None
         self.num_fraction_adult_df = None
         self.strata_sig_b = None
+        self.transect_bin_abundance_male_df = None
+        self.transect_bin_abundance_female_df = None
+        self.transect_bin_abundance_df = None
+        self.transect_bin_biomass_male_df = None
+        self.transect_bin_biomass_female_df = None
+        self.transect_bin_biomass_df = None
+        self.kriging_bin_abundance_male_df = None
+        self.kriging_bin_abundance_female_df = None
+        self.kriging_bin_abundance_df = None
+        self.kriging_bin_biomass_male_df = None
+        self.kriging_bin_biomass_female_df = None
+        self.kriging_bin_biomass_df = None
 
     def _get_strata_sig_b(self) -> None:
         """
