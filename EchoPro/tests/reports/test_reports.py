@@ -4,13 +4,28 @@ import numpy as np
 import EchoPro
 from EchoPro.computation import SemiVariogram as SV
 import pathlib
+from typing import List, Optional
+
+# TODO: formalize all tests
 
 
-def generate_reports(config_base_path, reports_base_path):
+def generate_reports(config_base_path: pathlib.Path,
+                     reports_base_path: pathlib.Path) -> None:
+    """
+    The purpose of this function is to generate all reports
+    and write them into the ``reports_base_path`` directory.
+    Once this is done, all tests constructed in this script
+    can be run using the generated reports.
+
+    Parameters
+    ----------
+    config_base_path: pathlib.Path
+        The base directory path for the configuration files
+    reports_base_path: pathlib.Path
+        The base directory path for the reports
+    """
 
     # TODO: should this be put in conftest.py?
-
-    # TODO: formalize this test
 
     # change working directory so no initialization files need to be modified
     # TODO: this may not be necessary in the future
@@ -67,12 +82,53 @@ def generate_reports(config_base_path, reports_base_path):
     reports.create_and_write_reports(output_path=reports_base_path)
 
 
-def _compare_truth_produced_files(truth_base_path, produced_base_path, file_names_truth,
-                                  file_names_produced, sheet_names_truth,
-                                  sheet_names_produced, skiprows_truth, skiprows_produced,
-                                  usecols, index_col_truth, index_col_produced, sortby = None):
+def _compare_truth_produced_files(truth_base_path: pathlib.Path, produced_base_path: pathlib.Path,
+                                  file_names_truth: List[str], file_names_produced: List[str],
+                                  sheet_names_truth: List[List[str]], sheet_names_produced: List[List[str]],
+                                  skiprows_truth: List[Optional[List[int]]],
+                                  skiprows_produced: List[Optional[List[int]]],
+                                  usecols: List[str], index_col_truth: List[Optional[int]],
+                                  index_col_produced: List[Optional[int]],
+                                  sortby: List[Optional[List[List[str]]]]) -> None:
+    """
+    This function reads in the true data (i.e. Matlab EchoPro generated files) and
+    compares it against the produced (i.e. Python generated) data. This function
+    is utilized by all tests within this script.
 
-    # TODO: document
+    Parameters
+    ----------
+    truth_base_path: pathlib.Path
+        The base directory path for the Matlab output files
+    produced_base_path: pathlib.Path
+        The base directory path for the Python generated reports
+    file_names_truth: list of str
+        The names of the files for the true data
+    file_names_produced: list of str
+        The names of the files for the produced data
+    sheet_names_truth: list of lists of str
+        The sheet names for each true data file
+    sheet_names_produced: list of lists of str
+        The sheet names for each produced data file
+    skiprows_truth: list of lists of int
+        The rows to skip when reading in file for true data
+    skiprows_produced: list of lists of int
+        The rows to skip when reading in file for produced data
+    usecols: list of str
+        The columns that should be read in the data
+    index_col_truth: list of int
+        The column that should be used as the index for the true data
+    index_col_produced: list of int
+        The column that should be used as the index for the produced data
+    sortby: list of lists of list of str
+        The column(s) that should be used to sort both the true and produced
+        data, where the first list element corresponds to the true data
+        and the second corresponds to the produced data
+
+    Notes
+    -----
+    If the true and produced data do not match, then an assert statement will
+    be triggered.
+    """
 
     for file_ind in range(len(file_names_truth)):
 
@@ -103,9 +159,21 @@ def _compare_truth_produced_files(truth_base_path, produced_base_path, file_name
             assert np.all(np.isclose(df_truth.to_numpy(), df_produced.to_numpy()))
 
 
-def test_length_age_reports(config_base_path, matlab_output_base_path, reports_base_path):
+def test_length_age_reports(config_base_path: pathlib.Path, matlab_output_base_path: pathlib.Path,
+                            reports_base_path: pathlib.Path):
+    """
+    Ensures that the length age reports for Kriging and Transect based data
+    produced match the Matlab generated output.
 
-    # TODO: document
+    Parameters
+    ----------
+    config_base_path: pathlib.Path
+        The base directory path for the configuration files
+    matlab_output_base_path: pathlib.Path
+        The base directory path for the Matlab output files
+    reports_base_path: pathlib.Path
+        The base directory path for the reports
+    """
 
     # change working directory so no initialization files need to be modified
     # TODO: this may not be necessary in the future
@@ -141,8 +209,21 @@ def test_length_age_reports(config_base_path, matlab_output_base_path, reports_b
                                   index_col_produced, sortby)
 
 
-def test_biomass_ages_reports(config_base_path, matlab_output_base_path, reports_base_path):
-    # TODO: document
+def test_biomass_ages_reports(config_base_path: pathlib.Path, matlab_output_base_path: pathlib.Path,
+                              reports_base_path: pathlib.Path):
+    """
+    Ensures that the biomass at different age bins reports for Kriging and Transect based data
+    produced match the Matlab generated output.
+
+    Parameters
+    ----------
+    config_base_path: pathlib.Path
+        The base directory path for the configuration files
+    matlab_output_base_path: pathlib.Path
+        The base directory path for the Matlab output files
+    reports_base_path: pathlib.Path
+        The base directory path for the reports
+    """
 
     # change working directory so no initialization files need to be modified
     # TODO: this may not be necessary in the future
@@ -179,8 +260,21 @@ def test_biomass_ages_reports(config_base_path, matlab_output_base_path, reports
                                   index_col_produced, sortby)
 
 
-def test_core_variables_reports(config_base_path, matlab_output_base_path, reports_base_path):
-    # TODO: document
+def test_core_variables_reports(config_base_path: pathlib.Path, matlab_output_base_path: pathlib.Path,
+                                reports_base_path: pathlib.Path):
+    """
+    Ensures that the core variable reports for Kriging and Transect based data
+    produced match the Matlab generated output.
+
+    Parameters
+    ----------
+    config_base_path: pathlib.Path
+        The base directory path for the configuration files
+    matlab_output_base_path: pathlib.Path
+        The base directory path for the Matlab output files
+    reports_base_path: pathlib.Path
+        The base directory path for the reports
+    """
 
     # change working directory so no initialization files need to be modified
     # TODO: this may not be necessary in the future
@@ -217,8 +311,20 @@ def test_core_variables_reports(config_base_path, matlab_output_base_path, repor
                                   index_col_produced, sortby)
 
 
-def test_kriging_input_report(config_base_path, matlab_output_base_path, reports_base_path):
-    # TODO: document
+def test_kriging_input_report(config_base_path: pathlib.Path, matlab_output_base_path: pathlib.Path,
+                              reports_base_path: pathlib.Path):
+    """
+    Ensures that the Kriging input report produced matches the Matlab generated output.
+
+    Parameters
+    ----------
+    config_base_path: pathlib.Path
+        The base directory path for the configuration files
+    matlab_output_base_path: pathlib.Path
+        The base directory path for the Matlab output files
+    reports_base_path: pathlib.Path
+        The base directory path for the reports
+    """
 
     # change working directory so no initialization files need to be modified
     # TODO: this may not be necessary in the future
@@ -252,8 +358,21 @@ def test_kriging_input_report(config_base_path, matlab_output_base_path, reports
                                   index_col_produced, sortby)
 
 
-def test_len_haul_count_reports(config_base_path, matlab_output_base_path, reports_base_path):
-    # TODO: document
+def test_len_haul_count_reports(config_base_path: pathlib.Path, matlab_output_base_path: pathlib.Path,
+                                reports_base_path: pathlib.Path):
+    """
+    Ensures that the length count at each haul reports
+    produced match the Matlab generated output.
+
+    Parameters
+    ----------
+    config_base_path: pathlib.Path
+        The base directory path for the configuration files
+    matlab_output_base_path: pathlib.Path
+        The base directory path for the Matlab output files
+    reports_base_path: pathlib.Path
+        The base directory path for the reports
+    """
 
     # change working directory so no initialization files need to be modified
     # TODO: this may not be necessary in the future
