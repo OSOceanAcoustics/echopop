@@ -1,7 +1,7 @@
 # This YAML file is a configuration file specifying
 # input filenames & some process parameter settings.
 # Relative file paths defined below are concatenated 
-# with the data_root_dir set path set below.
+# with the data_root_dir path also set below.
 
 ---
 
