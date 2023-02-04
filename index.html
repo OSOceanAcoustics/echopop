@@ -50,8 +50,6 @@ const thebe_selector_input = "pre"
 const thebe_selector_output = ".output, .cell_output"
 </script>
     <script async="async" src="_static/sphinx-thebe.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.20.1/dist/embed-amd.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="EchoPro Python Workflow" href="example_notebooks/echopro_workflow.html" />
@@ -295,12 +293,36 @@ title="Print to PDF"
     </ul>
   </div>
 </div>
+<label for="__page-toc"
+  class="headerbtn headerbtn-page-toc"
+  
+>
+  
+
+<span class="headerbtn__icon-container">
+  <i class="fas fa-list"></i>
+  </span>
+
+</label>
 
     </div>
 </div>
 
 <!-- Table of contents -->
 <div class="col-md-3 bd-toc show noprint">
+    <div class="tocsection onthispage pt-5 pb-3">
+        <i class="fas fa-list"></i> Contents
+    </div>
+    <nav id="bd-toc-nav" aria-label="Page">
+        <ul class="visible nav section-nav flex-column">
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#installation">
+   Installation
+  </a>
+ </li>
+</ul>
+
+    </nav>
 </div>
     </div>
     <div class="article row">
@@ -312,6 +334,19 @@ title="Print to PDF"
                 <div id="print-main-content">
                     <div id="jb-print-toc">
                         
+                        <div>
+                            <h2> Contents </h2>
+                        </div>
+                        <nav aria-label="Page">
+                            <ul class="visible nav section-nav flex-column">
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#installation">
+   Installation
+  </a>
+ </li>
+</ul>
+
+                        </nav>
                     </div>
                 </div>
             </div>
@@ -321,11 +356,11 @@ title="Print to PDF"
                 
   <section class="tex2jax_ignore mathjax_ignore" id="echopro-documentation-and-example-notebooks">
 <h1>EchoPro documentation and example notebooks<a class="headerlink" href="#echopro-documentation-and-example-notebooks" title="Permalink to this headline">#</a></h1>
-<p>This site currently hosts example Jupyter notebooks for the new Python EchoPro package (<a class="reference external" href="https://github.com/uw-echospace/EchoPro/">https://github.com/uw-echospace/EchoPro/</a>). Over time, the documentation for this package will be added here too.</p>
+<p>This site currently hosts example Jupyter notebooks for the new Python EchoPro package (<a class="reference external" href="https://github.com/uw-echospace/EchoPro/">https://github.com/uw-echospace/EchoPro/</a>) (But note that the repository is private and only previously approved users can access it). Over time, the documentation for this package will be added here too.</p>
 <p>The Jupyter notebooks are shown in a “rendered”, executed form.</p>
-<div class="admonition-glitches-with-some-visualization-elements admonition">
-<p class="admonition-title">Glitches with some visualization elements</p>
-<p>While the notebooks are rendered, there are some glitches we’re still working out. In particular, some <code class="docutils literal notranslate"><span class="pre">ipywidgets</span></code> elements (especially in the semivariogram widget) don’t display correctly, and some simple plots are not displaying at all.</p>
+<div class="admonition-glitches-with-some-interactive-graphical-elements admonition">
+<p class="admonition-title">Glitches with some interactive graphical elements</p>
+<p>While the notebooks in this site are rendered, there are some glitches we’re still working out. In particular, an <a class="reference external" href="https://ipywidgets.readthedocs.io/en/stable/">ipywidgets</a> interactive graphical element in the semivariogram widget doesn’t display correctly.</p>
 </div>
 <p>Go to the individual example notebooks below or in the table of content on the left.</p>
 <div class="toctree-wrapper compound">
@@ -338,6 +373,10 @@ title="Print to PDF"
 <li class="toctree-l1"><a class="reference internal" href="example_notebooks/kriging_mesh_walkthrough.html">EchoPro Kriging mesh Workflow</a></li>
 </ul>
 </div>
+<section id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">#</a></h2>
+<p>See the <a class="reference external" href="https://github.com/uw-echospace/EchoPro/blob/master/README.md">README.md</a> in the EchoPro repository for installation and execution instructions.</p>
+</section>
 </section>
 
     <script type="text/x-thebe-config">
