@@ -13,6 +13,7 @@ execute:
 parse:
   myst_enable_extensions:
   - colon_fence
+  - dollarmath
   - linkify
   # nb_number_source_lines: true
 
