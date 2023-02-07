@@ -284,11 +284,12 @@ class ComputeTransectVariables:
         self.specimen_df["stratum_num"] = strata_haul_df.loc[self.specimen_df.index]
         self.specimen_df.set_index("stratum_num", inplace=True)
 
-        # TODO: this is necessary to mimic the Matlab code (may be able to optimize this)
-        self.specimen_df_all["stratum_num"] = strata_haul_df.loc[
-            self.specimen_df_all.index
-        ]
-        self.specimen_df_all.set_index("stratum_num", inplace=True)
+        if self.percentage_transects_selected is not None:
+            # TODO: this is necessary to mimic the Matlab code (may be able to optimize this)
+            self.specimen_df_all["stratum_num"] = strata_haul_df.loc[
+                self.specimen_df_all.index
+            ]
+            self.specimen_df_all.set_index("stratum_num", inplace=True)
 
         # add stratum_num column to length_df and set it as the index
         self.length_df["stratum_num"] = strata_haul_df.loc[self.length_df.index]
