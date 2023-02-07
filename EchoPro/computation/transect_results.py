@@ -173,51 +173,37 @@ class ComputeTransectVariables:
 
             self.stratum_choices[stratum] = stratum_choice
 
-    def initial_fill_missing_strata(self):
+    def _fill_missing_strata_sig_b(self):
 
         # TODO: document!
-        # TODO: replace with reduced form
 
-        dfs_to_fill = [self.strata_sig_b]  # , self.weight_fraction_adult_df,
-        # self.weight_fraction_all_ages_df, self.weight_fraction_all_ages_female_df,
-        # self.weight_fraction_all_ages_male_df, self.num_fraction_adult_df, self.haul_age_df]
-
-        known_strata = [i for i in self.all_strata if i not in self.missing_strata]
-
-        # determine the strata that should replace the missing strata
         for m_strat in self.missing_strata:
 
-            known_strata_arr = np.array(known_strata)
+            less_than_m_strat, greater_than_m_strat = self.sel_tran_strata_choice[
+                m_strat
+            ]
 
-            # get bool array of values less than m_strat
-            less_than_m_strat = known_strata_arr < m_strat
-            greater_than_m_strat = known_strata_arr > m_strat
+            if (less_than_m_strat is None) and (greater_than_m_strat is not None):
 
-            if not any(less_than_m_strat):
+                # replace missing value with value at next filled stratum greater than m_strat
+                self.strata_sig_b.loc[m_strat] = self.strata_sig_b.loc[
+                    greater_than_m_strat
+                ]
 
-                new_stratum = min(known_strata_arr[greater_than_m_strat])
+            elif (less_than_m_strat is not None) and (greater_than_m_strat is None):
 
-                for df in dfs_to_fill:
-                    df.loc[m_strat] = df.loc[new_stratum]
-
-            elif not any(greater_than_m_strat):
-
-                new_stratum = max(known_strata_arr[less_than_m_strat])
-
-                for df in dfs_to_fill:
-                    df.loc[m_strat] = df.loc[new_stratum]
+                # replace missing value with value at next filled stratum less than m_strat
+                self.strata_sig_b.loc[m_strat] = self.strata_sig_b.loc[
+                    less_than_m_strat
+                ]
 
             else:
 
-                new_stratum_g = min(known_strata_arr[greater_than_m_strat])
-                new_stratum_l = max(known_strata_arr[less_than_m_strat])
-
-                for df in dfs_to_fill:
-                    df.loc[m_strat] = (
-                        df.loc[new_stratum_l] + df.loc[new_stratum_g]
-                    ) / 2.0
-
-            known_strata.append(m_strat)
+                # replace missing value with average of two closest filled strata
+                self.strata_sig_b.loc[m_strat] = (
+                    self.strata_sig_b.loc[less_than_m_strat]
+                    + self.strata_sig_b.loc[greater_than_m_strat]
+                ) / 2.0
 
     @staticmethod
     def _get_bin_ind(
@@ -1344,12 +1330,12 @@ class ComputeTransectVariables:
 
         self.set_stratum_choice()
 
+        self._fill_missing_strata_sig_b()
+
         self._get_biomass_parameters()
 
         self._get_weight_num_fraction_adult()
 
         self._get_weight_fraction_all_ages()
-
-        self.initial_fill_missing_strata()
 
         self._construct_results_gdf()
