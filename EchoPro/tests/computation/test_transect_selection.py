@@ -60,3 +60,30 @@ def test_transect_selection_output(config_base_path):
 
     # compare known and produced values for kriging results
     assert np.isclose(survey_2019.bio_calc.kriging_results_gdf.biomass_adult.sum(), 1422611645.1972983)
+
+
+def test_all_transects_selected_output(config_base_path):
+
+    # The biomass produced should be the same as the case where no transects are selected
+
+    # change working directory so no initialization files need to be modified
+    # TODO: this may not be necessary in the future
+    os.chdir(config_base_path)
+
+    # initialize Survey object
+    survey_2019 = EchoPro.Survey(init_file_path='../config_files/initialization_config.yml',
+                                 survey_year_file_path='../config_files/survey_year_2019_config.yml',
+                                 source=3,
+                                 exclude_age1=True)
+
+    # load all data
+    survey_2019.load_survey_data()
+
+    # hard code a selection of transects to test output
+    selected_transects = list(survey_2019.nasc_df.index.unique())
+
+    # compute all transect variables
+    survey_2019.compute_transect_results(selected_transects=selected_transects)
+
+    # compare known and produced values for transect results
+    assert np.isclose(survey_2019.bio_calc.transect_results_gdf.biomass_adult.sum(), 1643221106.9632864)

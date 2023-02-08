@@ -939,13 +939,26 @@ class ComputeTransectVariables:
         be copied, else all ``survey`` Dataframes except ``nasc_df`` will be copied.
         """
 
-        # TODO: see if all selected
+        # set flag to determine if all transects have been selected
+        all_transects_selected = True
+
+        # list containing all unique transects present in NASC data
+        all_transects = list(self.survey.nasc_df.index.unique())
 
         if selected_transects is not None:
 
+            # sort list of transects so they can be compared
+            selected_transects.sort()
+            all_transects.sort()
+
+            # compare transects
+            all_transects_selected = selected_transects == all_transects
+
+        if (selected_transects is not None) and (not all_transects_selected):
+
             # calculate the percentage of transects selected
             self.percentage_transects_selected = len(selected_transects) / len(
-                self.survey.nasc_df.index.unique()
+                all_transects
             )
 
             transect_vs_haul = (
@@ -984,12 +997,9 @@ class ComputeTransectVariables:
             # so we do not select a stratum that is not in length/specimen data
             self.nasc_df = self.survey.nasc_df.loc[selected_transects].copy()
 
-            self.strata_df = (
-                self.survey.strata_df.copy()
-            )  # TODO: for some reason we need this
-            self.specimen_df_all = (
-                self.survey.specimen_df.copy()
-            )  # TODO: for some reason we need this
+            # TODO: set variables containing all data to match Matlab output
+            self.strata_df = self.survey.strata_df.copy()
+            self.specimen_df_all = self.survey.specimen_df.copy()
 
         else:
             self.percentage_transects_selected = None
