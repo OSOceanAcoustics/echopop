@@ -125,14 +125,14 @@ class ComputeTransectVariables:
 
         # TODO: document!
 
-        known_strata = [i for i in self.all_strata if i not in self.missing_strata]
+        known_strata_arr = np.array(
+            [i for i in self.all_strata if i not in self.missing_strata]
+        )
 
         self.sel_tran_strata_choice = dict()
 
         # determine the strata that should replace the missing strata
         for m_strat in self.missing_strata:
-
-            known_strata_arr = np.array(known_strata)
 
             # get bool array of values less than m_strat
             less_than_m_strat = known_strata_arr < m_strat
@@ -154,7 +154,6 @@ class ComputeTransectVariables:
                 new_stratum_l = max(known_strata_arr[less_than_m_strat])
 
             self.sel_tran_strata_choice[m_strat] = [new_stratum_l, new_stratum_g]
-            known_strata.append(m_strat)
 
     def set_stratum_choice(self):
 
