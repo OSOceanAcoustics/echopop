@@ -46,6 +46,10 @@ class ComputeTransectVariables:
         self.all_strata = None
         self.missing_strata = None
         self.percentage_transects_selected = None
+        self.sel_tran_strata_choice = dict()
+        self.stratum_choices = dict()
+        self.strata_df_sig_b = None
+        self.specimen_df_all = None
 
     def _get_strata_sig_b(self) -> None:
         """
@@ -119,17 +123,19 @@ class ComputeTransectVariables:
                 self.missing_strata.append(stratum)
                 self.strata_sig_b[stratum] = np.nan
 
-        # TODO: fill empty strata here?
+    def set_strata_for_missing_strata(self) -> None:
+        """
+        Constructs and sets the dictionary ``self.sel_tran_strata_choice``
+        with keys as values in ``self.missing_strata`` and values
+        as a list with the first and second element corresponding
+        to the stratum that are closest and less than or greater
+        than the missing stratum, respectively.
+        """
 
-    def set_strata_for_missing_strata(self):
-
-        # TODO: document!
-
+        # construct array of all known strata
         known_strata_arr = np.array(
             [i for i in self.all_strata if i not in self.missing_strata]
         )
-
-        self.sel_tran_strata_choice = dict()
 
         # determine the strata that should replace the missing strata
         for m_strat in self.missing_strata:
@@ -138,29 +144,32 @@ class ComputeTransectVariables:
             less_than_m_strat = known_strata_arr < m_strat
             greater_than_m_strat = known_strata_arr > m_strat
 
+            # assign stratum values
             if not any(less_than_m_strat):
-
                 new_stratum_g = min(known_strata_arr[greater_than_m_strat])
                 new_stratum_l = None
 
             elif not any(greater_than_m_strat):
-
                 new_stratum_l = max(known_strata_arr[less_than_m_strat])
                 new_stratum_g = None
 
             else:
-
                 new_stratum_g = min(known_strata_arr[greater_than_m_strat])
                 new_stratum_l = max(known_strata_arr[less_than_m_strat])
 
+            # store stratum values for m_strat
             self.sel_tran_strata_choice[m_strat] = [new_stratum_l, new_stratum_g]
 
-    def set_stratum_choice(self):
+    def set_stratum_choice(self) -> None:
+        """
+        Constructs and set the dictionary ``self.stratum_choices``,
+        which is a dictionary the specifies what strata or stratum
+        should be used to select data (e.g. specimen, length DataFrames).
+        This routine is necessary to ensure that transect selection can
+        be done easily.
+        """
 
-        # TODO: document
-
-        self.stratum_choices = dict()
-
+        # fill in strata or stratum that should be used for all strata
         for stratum in self.all_strata:
 
             if stratum not in self.missing_strata:
@@ -170,34 +179,36 @@ class ComputeTransectVariables:
                     s for s in self.sel_tran_strata_choice[stratum] if s is not None
                 ]
 
+            # assign stratum choices for stratum value
             self.stratum_choices[stratum] = stratum_choice
 
-    def _fill_missing_strata_sig_b(self):
-
-        # TODO: document!
+    def _fill_missing_strata_sig_b(self) -> None:
+        """
+        Fills in missing strata data for the DataFrame
+        ``self.strata_sig_b`` using criteria established
+        in EchoPro Matlab.
+        """
 
         for m_strat in self.missing_strata:
 
+            # obtain less and greater than stratum with respect to missing stratum
             less_than_m_strat, greater_than_m_strat = self.sel_tran_strata_choice[
                 m_strat
             ]
 
             if (less_than_m_strat is None) and (greater_than_m_strat is not None):
-
                 # replace missing value with value at next filled stratum greater than m_strat
                 self.strata_sig_b.loc[m_strat] = self.strata_sig_b.loc[
                     greater_than_m_strat
                 ]
 
             elif (less_than_m_strat is not None) and (greater_than_m_strat is None):
-
                 # replace missing value with value at next filled stratum less than m_strat
                 self.strata_sig_b.loc[m_strat] = self.strata_sig_b.loc[
                     less_than_m_strat
                 ]
 
             else:
-
                 # replace missing value with average of two closest filled strata
                 self.strata_sig_b.loc[m_strat] = (
                     self.strata_sig_b.loc[less_than_m_strat]
@@ -960,6 +971,7 @@ class ComputeTransectVariables:
                 all_transects
             )
 
+            # get mapping between transects and hauls
             transect_vs_haul = (
                 self.survey.haul_to_transect_mapping_df["transect_num"]
                 .dropna()
@@ -970,11 +982,13 @@ class ComputeTransectVariables:
 
             # TODO: do a check that all hauls are mapped to a transect
 
+            # get transects and hauls based off of mapping and selected transects
             sel_transects = (
                 transect_vs_haul.index.unique().intersection(selected_transects).values
             )
             sel_hauls = transect_vs_haul.loc[sel_transects]["haul_num"].unique()
 
+            # obtain the hauls to use for the length, strata, and specimen DataFrames
             sel_hauls_length = self.survey.length_df.index.intersection(
                 sel_hauls
             ).unique()
@@ -987,15 +1001,15 @@ class ComputeTransectVariables:
                 sel_hauls
             ).unique()
 
-            # TODO: document
+            # select a subset of length, strata, and specimen data
             self.length_df = self.survey.length_df.loc[sel_hauls_length].copy()
             self.strata_df_sig_b = self.survey.strata_df.loc[sel_haul_strata].copy()
             self.specimen_df = self.survey.specimen_df.loc[sel_haul_specimen].copy()
 
-            # select nasc data based on haul_num,
-            # so we do not select a stratum that is not in length/specimen data
+            # select nasc data using the user provided selected transects
             self.nasc_df = self.survey.nasc_df.loc[selected_transects].copy()
 
+            # set strata and specimen DataFrames that contain the full set of Data
             # TODO: set variables containing all data to match Matlab output
             self.strata_df = self.survey.strata_df.copy()
             self.specimen_df_all = self.survey.specimen_df.copy()
@@ -1256,6 +1270,7 @@ class ComputeTransectVariables:
         self.transect_results_female_gdf = self.transect_results_gdf.copy(deep=True)
 
         # calculate proportion coefficient for mixed species
+        # TODO: note we use all strata_df data every time to match Matlab output
         wgt_vals = self.strata_df.reset_index().set_index("haul_num")["fraction_hake"]
         wgt_vals_ind = wgt_vals.index
         self.mix_sa_ratio = self.nasc_df.apply(
@@ -1317,7 +1332,7 @@ class ComputeTransectVariables:
             The subset of transects used in the calculations
         """
 
-        # store the unique strata values so they can be used later
+        # store the unique strata values, so they can be used later
         self.all_strata = (
             self.survey.strata_df.index.get_level_values(1).unique().values
         )
@@ -1335,10 +1350,9 @@ class ComputeTransectVariables:
         # add stratum_num column to length and specimen df and set it as the index
         self._add_stratum_column()
 
+        # identify missing strata, assign strata to missing stratum, fill missing data
         self.set_strata_for_missing_strata()
-
         self.set_stratum_choice()
-
         self._fill_missing_strata_sig_b()
 
         self._get_biomass_parameters()
