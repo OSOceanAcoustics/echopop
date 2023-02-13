@@ -24,7 +24,7 @@ Computational routines
 
 
 Kriging Mesh
-++++++++++++
+------------
 
 .. automodule:: EchoPro.data_loader
     :members: KrigingMesh
