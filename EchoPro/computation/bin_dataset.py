@@ -634,9 +634,9 @@ def generate_bin_ds(survey) -> xr.Dataset:
     length_df_M = survey.length_df[survey.length_df["sex"] == 1]
     length_df_F = survey.length_df[survey.length_df["sex"] == 2]
 
-    # get all unique stratum values
+    # get all unique stratum values that are contained in spec_drop, spec_drop_M, and spec_drop_F
     stratum_ind = np.intersect1d(spec_drop.index.unique(), spec_drop_M.index.unique())
-    stratum_ind = np.intersect1d(stratum_ind, spec_drop_F.index.unique())   # TODO: we may need to change this for transect selection!!!!!
+    stratum_ind = np.intersect1d(stratum_ind, spec_drop_F.index.unique())
 
     # get age and length bins (created to reduce clutter)
     len_bin = survey.params["bio_hake_len_bin"]
