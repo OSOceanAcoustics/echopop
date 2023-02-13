@@ -48,8 +48,8 @@ class ComputeTransectVariables:
         self.percentage_transects_selected = None
         self.sel_tran_strata_choice = dict()
         self.stratum_choices = dict()
-        self.strata_df_sig_b = None
-        self.specimen_df_all = None
+        self.strata_sig_b_df = None
+        self.specimen_all_df = None
 
     def _get_strata_sig_b(self) -> None:
         """
@@ -61,8 +61,8 @@ class ComputeTransectVariables:
 
         # TODO: the target strength functions are specific to Hake, replace with input in the future
 
-        # initialize sig_bs_haul column in strata_df_sig_b
-        self.strata_df_sig_b["sig_bs_haul"] = np.nan
+        # initialize sig_bs_haul column in strata_sig_b_df
+        self.strata_sig_b_df["sig_bs_haul"] = np.nan
 
         # select the indices that do not have nan in either length or weight
         spec_df = self.specimen_df[["length", "weight"]].copy()
@@ -105,7 +105,7 @@ class ComputeTransectVariables:
             sum_TS0j_spec = np.nansum(10.0 ** (TS0j_spec / 10.0))
 
             # mean differential backscattering cross-section for each haul
-            self.strata_df_sig_b.loc[haul_num, "sig_bs_haul"] = (
+            self.strata_sig_b_df.loc[haul_num, "sig_bs_haul"] = (
                 sum_TS0j_spec + sum_TS0j_length
             ) / (num_length + TS0j_spec.size)
 
@@ -113,7 +113,7 @@ class ComputeTransectVariables:
         self.strata_sig_b = (
             4.0
             * np.pi
-            * self.strata_df_sig_b["sig_bs_haul"].groupby("stratum_num").mean()
+            * self.strata_sig_b_df["sig_bs_haul"].groupby("stratum_num").mean()
         )
 
         # include placeholder for strata without values
@@ -282,10 +282,10 @@ class ComputeTransectVariables:
 
         if self.percentage_transects_selected is not None:
             # TODO: this is necessary to mimic the Matlab code (may be able to optimize this)
-            self.specimen_df_all["stratum_num"] = strata_haul_df.loc[
-                self.specimen_df_all.index
+            self.specimen_all_df["stratum_num"] = strata_haul_df.loc[
+                self.specimen_all_df.index
             ]
-            self.specimen_df_all.set_index("stratum_num", inplace=True)
+            self.specimen_all_df.set_index("stratum_num", inplace=True)
 
         # add stratum_num column to length_df and set it as the index
         self.length_df["stratum_num"] = strata_haul_df.loc[self.length_df.index]
@@ -618,9 +618,9 @@ class ComputeTransectVariables:
 
         # obtain the length-to-weight conversion for all specimen data
         # TODO: to match Matlab version of selection of transects we use
-        #  self.specimen_df_all instead of self.specimen_df
+        #  self.specimen_all_df instead of self.specimen_df
         length_to_weight_conversion_spec = self._generate_length_val_conversion(
-            len_name="length", val_name="weight", df=self.specimen_df_all
+            len_name="length", val_name="weight", df=self.specimen_all_df
         )
 
         # select the indices that do not have nan in either Length or Weight
@@ -1003,7 +1003,7 @@ class ComputeTransectVariables:
 
             # select a subset of length, strata, and specimen data
             self.length_df = self.survey.length_df.loc[sel_hauls_length].copy()
-            self.strata_df_sig_b = self.survey.strata_df.loc[sel_haul_strata].copy()
+            self.strata_sig_b_df = self.survey.strata_df.loc[sel_haul_strata].copy()
             self.specimen_df = self.survey.specimen_df.loc[sel_haul_specimen].copy()
 
             # select nasc data using the user provided selected transects
@@ -1012,7 +1012,7 @@ class ComputeTransectVariables:
             # set strata and specimen DataFrames that contain the full set of Data
             # TODO: set variables containing all data to match Matlab output
             self.strata_df = self.survey.strata_df.copy()
-            self.specimen_df_all = self.survey.specimen_df.copy()
+            self.specimen_all_df = self.survey.specimen_df.copy()
 
         else:
             self.percentage_transects_selected = None
@@ -1020,8 +1020,8 @@ class ComputeTransectVariables:
             self.strata_df = self.survey.strata_df.copy()
             self.specimen_df = self.survey.specimen_df.copy()
             self.nasc_df = self.survey.nasc_df
-            self.strata_df_sig_b = self.strata_df
-            self.specimen_df_all = self.specimen_df
+            self.strata_sig_b_df = self.strata_df
+            self.specimen_all_df = self.specimen_df
 
     def _set_numerical_density(self, bc_expanded_df: pd.DataFrame) -> None:
         """
