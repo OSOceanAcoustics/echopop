@@ -57,6 +57,13 @@ class ComputeTransectVariables:
         self.kriging_bin_biomass_male_df = None
         self.kriging_bin_biomass_female_df = None
         self.kriging_bin_biomass_df = None
+        self.all_strata = None
+        self.missing_strata = None
+        self.percentage_transects_selected = None
+        self.sel_tran_strata_choice = dict()
+        self.stratum_choices = dict()
+        self.strata_sig_b_df = None
+        self.specimen_all_df = None
 
     def _get_strata_sig_b(self) -> None:
         """
@@ -68,8 +75,8 @@ class ComputeTransectVariables:
 
         # TODO: the target strength functions are specific to Hake, replace with input in the future
 
-        # initialize sig_bs_haul column in strata_df
-        self.strata_df["sig_bs_haul"] = np.nan
+        # initialize sig_bs_haul column in strata_sig_b_df
+        self.strata_sig_b_df["sig_bs_haul"] = np.nan
 
         # select the indices that do not have nan in either length or weight
         spec_df = self.specimen_df[["length", "weight"]].copy()
@@ -112,99 +119,164 @@ class ComputeTransectVariables:
             sum_TS0j_spec = np.nansum(10.0 ** (TS0j_spec / 10.0))
 
             # mean differential backscattering cross-section for each haul
-            self.strata_df.loc[haul_num, "sig_bs_haul"] = (
+            self.strata_sig_b_df.loc[haul_num, "sig_bs_haul"] = (
                 sum_TS0j_spec + sum_TS0j_length
             ) / (num_length + TS0j_spec.size)
 
         # mean backscattering cross-section for each stratum
         self.strata_sig_b = (
-            4.0 * np.pi * self.strata_df["sig_bs_haul"].groupby("stratum_num").mean()
+            4.0
+            * np.pi
+            * self.strata_sig_b_df["sig_bs_haul"].groupby("stratum_num").mean()
         )
 
-    def _fill_missing_strata_indices(self, df: pd.DataFrame) -> pd.DataFrame:
+        # include placeholder for strata without values
+        self.missing_strata = []
+        for stratum in self.all_strata:
+            if stratum not in self.strata_sig_b.index:
+                self.missing_strata.append(stratum)
+                self.strata_sig_b[stratum] = np.nan
+
+    def set_strata_for_missing_strata(self) -> None:
         """
-        When selecting a subset of the transects, it is possible that some
-        strata do not have important parameters defined. This function fills in these
-        missing values with artificial data. This is done as follows for
-        each missing stratum:
-        - If the value is only known for 1 stratum, then all missing stratum will be
-        filled with the value of the known stratum, otherwise the below items
-        will determine how the value is filled:
-            - If the missing stratum index is less than the minimum known stratum index,
-            then the missing stratum value will be set to the value of the minimum known
-            stratum index.
-            - If the missing stratum index is greater than the maximum known stratum index,
-            then the missing stratum value will be set to the value of the maximum known
-            stratum index.
-            - If the missing stratum index is between the minimum and maximum known stratum
-            indices, then the missing value will be set to the average of the values provided
-            by the two closest known stratum indices.
+        Constructs and sets the dictionary ``self.sel_tran_strata_choice``
+        with keys as values in ``self.missing_strata`` and values
+        as a list with the first and second element corresponding
+        to the stratum that are closest and less than or greater
+        than the missing stratum, respectively.
+        """
+
+        # construct array of all known strata
+        known_strata_arr = np.array(
+            [i for i in self.all_strata if i not in self.missing_strata]
+        )
+
+        # determine the strata that should replace the missing strata
+        for m_strat in self.missing_strata:
+
+            # get bool array of values less than m_strat
+            less_than_m_strat = known_strata_arr < m_strat
+            greater_than_m_strat = known_strata_arr > m_strat
+
+            # assign stratum values
+            if not any(less_than_m_strat):
+                new_stratum_g = min(known_strata_arr[greater_than_m_strat])
+                new_stratum_l = None
+
+            elif not any(greater_than_m_strat):
+                new_stratum_l = max(known_strata_arr[less_than_m_strat])
+                new_stratum_g = None
+
+            else:
+                new_stratum_g = min(known_strata_arr[greater_than_m_strat])
+                new_stratum_l = max(known_strata_arr[less_than_m_strat])
+
+            # store stratum values for m_strat
+            self.sel_tran_strata_choice[m_strat] = [new_stratum_l, new_stratum_g]
+
+    def set_stratum_choice(self) -> None:
+        """
+        Constructs and set the dictionary ``self.stratum_choices``,
+        which is a dictionary the specifies what strata or stratum
+        should be used to select data (e.g. specimen, length DataFrames).
+        This routine is necessary to ensure that transect selection can
+        be done easily.
+        """
+
+        # fill in strata or stratum that should be used for all strata
+        for stratum in self.all_strata:
+
+            if stratum not in self.missing_strata:
+                stratum_choice = stratum
+            else:
+                stratum_choice = [
+                    s for s in self.sel_tran_strata_choice[stratum] if s is not None
+                ]
+
+            # assign stratum choices for stratum value
+            self.stratum_choices[stratum] = stratum_choice
+
+    def _fill_missing_strata_sig_b(self) -> None:
+        """
+        Fills in missing strata data for the DataFrame
+        ``self.strata_sig_b`` using criteria established
+        in EchoPro Matlab.
+        """
+
+        for m_strat in self.missing_strata:
+
+            # obtain less and greater than stratum with respect to missing stratum
+            less_than_m_strat, greater_than_m_strat = self.sel_tran_strata_choice[
+                m_strat
+            ]
+
+            if (less_than_m_strat is None) and (greater_than_m_strat is not None):
+                # replace missing value with value at next filled stratum greater than m_strat
+                self.strata_sig_b.loc[m_strat] = self.strata_sig_b.loc[
+                    greater_than_m_strat
+                ]
+
+            elif (less_than_m_strat is not None) and (greater_than_m_strat is None):
+                # replace missing value with value at next filled stratum less than m_strat
+                self.strata_sig_b.loc[m_strat] = self.strata_sig_b.loc[
+                    less_than_m_strat
+                ]
+
+            else:
+                # replace missing value with average of two closest filled strata
+                self.strata_sig_b.loc[m_strat] = (
+                    self.strata_sig_b.loc[less_than_m_strat]
+                    + self.strata_sig_b.loc[greater_than_m_strat]
+                ) / 2.0
+
+    @staticmethod
+    def _get_bin_ind(
+        input_data: np.ndarray, centered_bins: np.ndarray
+    ) -> List[np.ndarray]:
+        """
+        This function manually computes bin counts given ``input_data``. This
+        function is computing the histogram of ``input_data`` using
+        bins that are centered, rather than bins that are on the edge.
+        The first value is between negative infinity and the first bin
+        center plus the bin width divided by two. The last value is
+        between the second to last bin center plus the bin width
+        divided by two to infinity.
 
         Parameters
         ----------
-        df: pd.DataFrame
-            A Dataframe with stratum as its index
+        input_data: np.ndarray
+            The data to create a histogram of.
+        centered_bins: np.ndarray
+            An array that specifies the bin centers.
 
         Returns
         -------
-        df: pd.DataFrame
-            ``df`` with all missing strata data filled in
+        hist_ind: list
+            The index values of input_data corresponding to the histogram
         """
 
-        # all strata indices that are missing
-        missing_strata = set(self.nasc_df["stratum_num"].unique()) - set(
-            df.index.values
+        # get the distance between bin centers
+        bin_diff = np.diff(centered_bins) / 2.0
+
+        # fill the first bin
+        hist_ind = [np.argwhere(input_data <= centered_bins[0] + bin_diff[0]).flatten()]
+
+        for i in range(len(centered_bins) - 2):
+            # get values greater than lower bound
+            g_lb = centered_bins[i] + bin_diff[i] < input_data
+
+            # get values less than or equal to the upper bound
+            le_ub = input_data <= centered_bins[i + 1] + bin_diff[i + 1]
+
+            # fill bin
+            hist_ind.append(np.argwhere(g_lb & le_ub).flatten())
+
+        # fill in the last bin
+        hist_ind.append(
+            np.argwhere(input_data > centered_bins[-2] + bin_diff[-1]).flatten()
         )
 
-        # if there are no missing strata then do nothing
-        if len(missing_strata) == 0:
-            return df
-
-        max_known_strata = df.index.max()
-        min_known_strata = df.index.min()
-
-        # if there is only 1 stratum with a value, fill all missing
-        # strata with the only known value
-        fill_w_one_val = False
-        if len(df.index) == 1:
-            fill_w_one_val = True
-
-        for strata in missing_strata:
-
-            if fill_w_one_val:
-
-                # fill all missing strata with the only known value
-                df.loc[strata] = df.loc[max_known_strata]
-
-            else:
-
-                if strata > max_known_strata:
-
-                    # fill value with the value at the largest known stratum
-                    df.loc[strata] = df.loc[max_known_strata]
-
-                elif strata < min_known_strata:
-
-                    # fill value with the value at the smallest known stratum
-                    df.loc[strata] = df.loc[min_known_strata]
-
-                else:
-
-                    # get the two indices of strata_sig_b.index that are closest to strata
-                    strata_ind_diff = np.abs(strata - df.index)
-                    idx = np.argpartition(strata_ind_diff, 2)
-
-                    # get values at two smallest indices
-                    val_1 = df.iloc[idx[0]]
-                    val_2 = df.iloc[idx[1]]
-
-                    # average two closest values
-                    average_vals = (val_1 + val_2) / 2.0
-
-                    # fill in value with the average value of the two closest known strata
-                    df.loc[strata] = average_vals
-
-        return df
+        return hist_ind
 
     def _add_stratum_column(self) -> None:
         """
@@ -221,6 +293,13 @@ class ComputeTransectVariables:
         # add stratum_num column to specimen_df and set it as the index
         self.specimen_df["stratum_num"] = strata_haul_df.loc[self.specimen_df.index]
         self.specimen_df.set_index("stratum_num", inplace=True)
+
+        if self.percentage_transects_selected is not None:
+            # TODO: this is necessary to mimic the Matlab code (may be able to optimize this)
+            self.specimen_all_df["stratum_num"] = strata_haul_df.loc[
+                self.specimen_all_df.index
+            ]
+            self.specimen_all_df.set_index("stratum_num", inplace=True)
 
         # add stratum_num column to length_df and set it as the index
         self.length_df["stratum_num"] = strata_haul_df.loc[self.length_df.index]
@@ -462,9 +541,9 @@ class ComputeTransectVariables:
         stratum : int
             Stratum to fill
         spec_drop_df : pd.DataFrame
-            specimen_df with NaN values dropped
+            specimen_df with NaN values dropped, corresponding to ``stratum``
         length_drop_df : pd.DataFrame
-            length_df with NaN values dropped
+            length_df with NaN values dropped, corresponding to ``stratum``
         length_to_weight_conversion : np.array
             length-to-weight conversion (i.e. an array that contains the corresponding
             weight of the length bins) for all specimen data
@@ -476,12 +555,12 @@ class ComputeTransectVariables:
         """
 
         # get specimen in the stratum and split into males and females
-        spec_stratum = spec_drop_df.loc[stratum]
+        spec_stratum = spec_drop_df
         spec_strata_m = spec_stratum[spec_stratum["sex"] == 1]
         spec_strata_f = spec_stratum[spec_stratum["sex"] == 2]
 
         # get lengths in the stratum and split into males and females
-        len_strata = length_drop_df.loc[stratum]
+        len_strata = length_drop_df
         len_strata_m = len_strata[len_strata["sex"] == 1]
         len_strata_f = len_strata[len_strata["sex"] == 2]
 
@@ -551,14 +630,11 @@ class ComputeTransectVariables:
             above.
         """
 
-        # determine the strata that are in both specimen_df and length_df
-        spec_strata_ind = self.specimen_df.index.unique()
-        len_strata_ind = self.length_df.index.unique()
-        strata_ind = spec_strata_ind.intersection(len_strata_ind).values
-
         # obtain the length-to-weight conversion for all specimen data
+        # TODO: to match Matlab version of selection of transects we use
+        #  self.specimen_all_df instead of self.specimen_df
         length_to_weight_conversion_spec = self._generate_length_val_conversion(
-            len_name="length", val_name="weight", df=self.specimen_df
+            len_name="length", val_name="weight", df=self.specimen_all_df
         )
 
         # select the indices that do not have nan in either Length or Weight
@@ -576,17 +652,22 @@ class ComputeTransectVariables:
                 "averaged_weight_M",
                 "averaged_weight_F",
             ],
-            index=strata_ind,
+            index=self.all_strata,
             dtype=np.float64,
         )
 
         # for each stratum compute the necessary parameters
-        for stratum in strata_ind:
+        for stratum in self.all_strata:
+
+            # appropriately select data for stratum
+            spec_in = spec_drop.loc[self.stratum_choices[stratum]]
+            length_in = length_drop_df.loc[self.stratum_choices[stratum]]
+
             bio_param_df = self._fill_averaged_weight(
                 bio_param_df,
                 stratum,
-                spec_drop,
-                length_drop_df,
+                spec_in,
+                length_in,
                 length_to_weight_conversion_spec,
             )
 
@@ -788,22 +869,22 @@ class ComputeTransectVariables:
         spec_drop = self.specimen_df.dropna(how="any")
 
         # each stratum's multiplier once areal biomass density has been calculated
-        stratum_ind = spec_drop.index.unique()
         self.weight_fraction_adult_df = pd.DataFrame(
-            columns=["val"], index=stratum_ind, dtype=np.float64
+            columns=["val"], index=self.all_strata, dtype=np.float64
         )
         self.num_fraction_adult_df = pd.DataFrame(
-            columns=["val"], index=stratum_ind, dtype=np.float64
+            columns=["val"], index=self.all_strata, dtype=np.float64
         )
 
-        for i in stratum_ind:
+        for stratum in self.all_strata:
 
-            age_len_prop, age_wgt_prop = self._get_age_weight_num_proportions(
-                spec_drop.loc[i]
-            )
+            # select specimen data
+            spec_in = spec_drop.loc[self.stratum_choices[stratum]]
 
-            self.weight_fraction_adult_df.loc[i].val = abs(1.0 - age_wgt_prop)
-            self.num_fraction_adult_df.loc[i].val = abs(1.0 - age_len_prop)
+            age_len_prop, age_wgt_prop = self._get_age_weight_num_proportions(spec_in)
+
+            self.weight_fraction_adult_df.loc[stratum].val = abs(1.0 - age_wgt_prop)
+            self.num_fraction_adult_df.loc[stratum].val = abs(1.0 - age_len_prop)
 
     def _get_weight_fraction_all_ages(self) -> None:
         """
@@ -824,43 +905,43 @@ class ComputeTransectVariables:
         bin_length = len(self.bio_hake_age_bin)
 
         # each stratum's multiplier once areal biomass density has been calculated
-        stratum_ind = spec_drop.index.unique()
         self.weight_fraction_all_ages_df = pd.DataFrame(
             columns=["age_bin_" + str(i + 1) for i in range(bin_length)],
-            index=stratum_ind,
+            index=self.all_strata,
             dtype=np.float64,
         )
         self.weight_fraction_all_ages_male_df = pd.DataFrame(
             columns=["age_bin_" + str(i + 1) for i in range(bin_length)],
-            index=stratum_ind,
+            index=self.all_strata,
             dtype=np.float64,
         )
         self.weight_fraction_all_ages_female_df = pd.DataFrame(
             columns=["age_bin_" + str(i + 1) for i in range(bin_length)],
-            index=stratum_ind,
+            index=self.all_strata,
             dtype=np.float64,
         )
 
-        for i in stratum_ind:
+        for stratum in self.all_strata:
+
+            # select specimen data
+            spec_in = spec_drop.loc[self.stratum_choices[stratum]]
+            spec_in_M = spec_drop_M.loc[self.stratum_choices[stratum]]
+            spec_in_F = spec_drop_F.loc[self.stratum_choices[stratum]]
 
             # obtain the weight fraction for all age bins and a given stratum
             for j in range(bin_length):
-                age_wgt_prop = self._get_all_age_weight_proportions(spec_drop.loc[i], j)
-                self.weight_fraction_all_ages_df.loc[i][
+                age_wgt_prop = self._get_all_age_weight_proportions(spec_in, j)
+                self.weight_fraction_all_ages_df.loc[stratum][
                     "age_bin_" + str(j + 1)
                 ] = age_wgt_prop
 
-                age_wgt_prop_M = self._get_all_age_weight_proportions(
-                    spec_drop_M.loc[i], j
-                )
-                self.weight_fraction_all_ages_male_df.loc[i][
+                age_wgt_prop_M = self._get_all_age_weight_proportions(spec_in_M, j)
+                self.weight_fraction_all_ages_male_df.loc[stratum][
                     "age_bin_" + str(j + 1)
                 ] = age_wgt_prop_M
 
-                age_wgt_prop_F = self._get_all_age_weight_proportions(
-                    spec_drop_F.loc[i], j
-                )
-                self.weight_fraction_all_ages_female_df.loc[i][
+                age_wgt_prop_F = self._get_all_age_weight_proportions(spec_in_F, j)
+                self.weight_fraction_all_ages_female_df.loc[stratum][
                     "age_bin_" + str(j + 1)
                 ] = age_wgt_prop_F
 
@@ -880,8 +961,29 @@ class ComputeTransectVariables:
         be copied, else all ``survey`` Dataframes except ``nasc_df`` will be copied.
         """
 
+        # set flag to determine if all transects have been selected
+        all_transects_selected = True
+
+        # list containing all unique transects present in NASC data
+        all_transects = list(self.survey.nasc_df.index.unique())
+
         if selected_transects is not None:
 
+            # sort list of transects so they can be compared
+            selected_transects.sort()
+            all_transects.sort()
+
+            # compare transects
+            all_transects_selected = selected_transects == all_transects
+
+        if (selected_transects is not None) and (not all_transects_selected):
+
+            # calculate the percentage of transects selected
+            self.percentage_transects_selected = len(selected_transects) / len(
+                all_transects
+            )
+
+            # get mapping between transects and hauls
             transect_vs_haul = (
                 self.survey.haul_to_transect_mapping_df["transect_num"]
                 .dropna()
@@ -892,11 +994,13 @@ class ComputeTransectVariables:
 
             # TODO: do a check that all hauls are mapped to a transect
 
+            # get transects and hauls based off of mapping and selected transects
             sel_transects = (
                 transect_vs_haul.index.unique().intersection(selected_transects).values
             )
             sel_hauls = transect_vs_haul.loc[sel_transects]["haul_num"].unique()
 
+            # obtain the hauls to use for the length, strata, and specimen DataFrames
             sel_hauls_length = self.survey.length_df.index.intersection(
                 sel_hauls
             ).unique()
@@ -909,19 +1013,27 @@ class ComputeTransectVariables:
                 sel_hauls
             ).unique()
 
+            # select a subset of length, strata, and specimen data
             self.length_df = self.survey.length_df.loc[sel_hauls_length].copy()
-            self.strata_df = self.survey.strata_df.loc[sel_haul_strata].copy()
+            self.strata_sig_b_df = self.survey.strata_df.loc[sel_haul_strata].copy()
             self.specimen_df = self.survey.specimen_df.loc[sel_haul_specimen].copy()
 
-            # select nasc data based on haul_num,
-            # so we do not select a stratum that is not in length/specimen data
-            self.nasc_df = self.survey.nasc_df.loc[sel_transects]
+            # select nasc data using the user provided selected transects
+            self.nasc_df = self.survey.nasc_df.loc[selected_transects].copy()
+
+            # set strata and specimen DataFrames that contain the full set of Data
+            # TODO: set variables containing all data to match Matlab output
+            self.strata_df = self.survey.strata_df.copy()
+            self.specimen_all_df = self.survey.specimen_df.copy()
 
         else:
+            self.percentage_transects_selected = None
             self.length_df = self.survey.length_df.copy()
             self.strata_df = self.survey.strata_df.copy()
             self.specimen_df = self.survey.specimen_df.copy()
             self.nasc_df = self.survey.nasc_df
+            self.strata_sig_b_df = self.strata_df
+            self.specimen_all_df = self.specimen_df
 
     def _set_numerical_density(self, bc_expanded_df: pd.DataFrame) -> None:
         """
@@ -1030,6 +1142,14 @@ class ComputeTransectVariables:
             * self.nasc_df.NASC
             * self.transect_results_gdf["interval_area_nmi2"]
         ) / self.strata_sig_b.loc[self.nasc_df.stratum_num].values
+
+        # Account for removed transects
+        # TODO: this is done in the Matlab code (might be worth investigating)
+        if self.percentage_transects_selected is not None:
+            self.transect_results_gdf["abundance"] = (
+                self.transect_results_gdf["abundance"]
+                / self.percentage_transects_selected
+            )
 
         # compute the abundance of males and females
         self.transect_results_male_gdf["abundance"] = (
@@ -1162,6 +1282,7 @@ class ComputeTransectVariables:
         self.transect_results_female_gdf = self.transect_results_gdf.copy(deep=True)
 
         # calculate proportion coefficient for mixed species
+        # TODO: note we use all strata_df data every time to match Matlab output
         wgt_vals = self.strata_df.reset_index().set_index("haul_num")["fraction_hake"]
         wgt_vals_ind = wgt_vals.index
         self.mix_sa_ratio = self.nasc_df.apply(
@@ -1224,6 +1345,16 @@ class ComputeTransectVariables:
             The subset of transects used in the calculations
         """
 
+        # store the unique strata values, so they can be used later
+        self.all_strata = (
+            self.survey.strata_df.index.get_level_values(1).unique().values
+        )
+
+        # remove strata index 0 (always done in Matlab version)
+        self.all_strata = np.delete(
+            self.all_strata, np.argwhere(self.all_strata == 0)[0, 0]
+        )
+
         self.set_class_variables(selected_transects)
 
         # get the backscattering cross-section for each stratum
@@ -1232,37 +1363,15 @@ class ComputeTransectVariables:
         # add stratum_num column to length and specimen df and set it as the index
         self._add_stratum_column()
 
+        # identify missing strata, assign strata to missing stratum, fill missing data
+        self.set_strata_for_missing_strata()
+        self.set_stratum_choice()
+        self._fill_missing_strata_sig_b()
+
         self._get_biomass_parameters()
 
         self._get_weight_num_fraction_adult()
 
         self._get_weight_fraction_all_ages()
-
-        # fill in missing strata parameters
-        self.strata_sig_b = self._fill_missing_strata_indices(
-            df=self.strata_sig_b.copy()
-        )
-        self.bio_param_df = self._fill_missing_strata_indices(
-            df=self.bio_param_df.copy()
-        )
-        self.weight_fraction_adult_df = self._fill_missing_strata_indices(
-            df=self.weight_fraction_adult_df.copy()
-        )
-
-        self.weight_fraction_all_ages_df = self._fill_missing_strata_indices(
-            df=self.weight_fraction_all_ages_df.copy()
-        )
-
-        self.weight_fraction_all_ages_female_df = self._fill_missing_strata_indices(
-            df=self.weight_fraction_all_ages_female_df.copy()
-        )
-
-        self.weight_fraction_all_ages_male_df = self._fill_missing_strata_indices(
-            df=self.weight_fraction_all_ages_male_df.copy()
-        )
-
-        self.num_fraction_adult_df = self._fill_missing_strata_indices(
-            df=self.num_fraction_adult_df.copy()
-        )
 
         self._construct_results_gdf()
