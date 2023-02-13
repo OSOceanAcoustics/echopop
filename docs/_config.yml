@@ -45,6 +45,5 @@ sphinx:
     'sphinx.ext.intersphinx',
     'sphinx.ext.mathjax',
     'sphinx.ext.ifconfig',
-    'sphinx.ext.githubpages',
-    'sphinxcontrib.mermaid'
+    'sphinx.ext.githubpages'
   ]
