@@ -4,11 +4,13 @@ API reference
 **Content**
 
 * `Survey`_
-* Computational routines
-    * :py:class:`Kriging <EchoPro.computation.Kriging>`
-        * :py:class:`Kriging Mesh <EchoPro.data_loader.KrigingMesh>`
-        * :py:class:`Semi-variogram <EchoPro.computation.SemiVariogram>`
+* `Computational routines`_
     * :py:class:`Bootstrapping <EchoPro.computation.Bootstrapping>`
+    * :py:class:`Kriging <EchoPro.computation.Kriging>`
+    * :py:class:`Semi-variogram <EchoPro.computation.SemiVariogram>`
+* `Data loading`_
+    * :py:class:`Kriging Mesh <EchoPro.data_loader.KrigingMesh>`
+
 
 Survey
 ------
@@ -23,7 +25,7 @@ Computational routines
     :members: Kriging, SemiVariogram, Bootstrapping
 
 
-Kriging Mesh
+Data loading
 ------------
 
 .. automodule:: EchoPro.data_loader
