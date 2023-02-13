@@ -61,7 +61,7 @@ class ComputeTransectVariables:
 
         # TODO: the target strength functions are specific to Hake, replace with input in the future
 
-        # initialize sig_bs_haul column in strata_df
+        # initialize sig_bs_haul column in strata_df_sig_b
         self.strata_df_sig_b["sig_bs_haul"] = np.nan
 
         # select the indices that do not have nan in either length or weight
