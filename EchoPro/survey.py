@@ -327,6 +327,9 @@ class Survey:
         # create Dataset containing useful distributions and variables over length and age
         self.bio_calc.bin_ds = generate_bin_ds(self)
 
+        # add NASC_adult to transect_results_gdf (needs to occur after generate_bin_ds)
+        self.bio_calc.set_adult_NASC()
+
     def run_cv_analysis(
         self,
         lat_inpfc: Tuple[float] = (np.NINF, 36, 40.5, 43.000, 45.7667, 48.5, 55.0000),

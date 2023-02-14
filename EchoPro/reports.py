@@ -277,62 +277,6 @@ class Reports:
             df["length_bin_total"] = bin_total
             df.loc["length_haul_total"] = haul_total
 
-    def _get_adult_NASC(self, stratum_vals: np.ndarray) -> pd.Series:
-        """
-        Computes NASC values corresponding to the adult animal population.
-
-        Parameters
-        ----------
-        stratum_vals: np.ndarray
-            The ``stratum_num`` column of the NASC DataFrame
-
-        Returns
-        -------
-        pd.Series
-            A Series representing the NASC for the adult animal population
-        """
-
-        # get the normalized length-age distribution
-        len_age_dist_all_norm = (
-            self.survey.bio_calc.bin_ds.len_age_dist_all
-            / self.survey.bio_calc.bin_ds.len_age_dist_all.sum(
-                dim=["len_bin", "age_bin"]
-            )
-        )
-
-        # create adult NASC proportion coefficient
-        nasc_fraction_adult_df = pd.DataFrame(
-            columns=["val"], index=len_age_dist_all_norm.stratum_num, dtype=np.float64
-        )
-
-        for i in len_age_dist_all_norm.stratum_num.values:
-            sig_bs_aged_ave = np.sum(
-                self.survey.params["sig_b_coef"]
-                * np.matmul(
-                    (self.survey.params["bio_hake_len_bin"] ** 2),
-                    len_age_dist_all_norm.sel(stratum_num=i).values,
-                )
-            )
-
-            temp = self.survey.params["sig_b_coef"] * np.matmul(
-                (self.survey.params["bio_hake_len_bin"] ** 2),
-                len_age_dist_all_norm.sel(stratum_num=i).isel(age_bin=0).values,
-            )
-
-            age1_nasc_proportion = temp / sig_bs_aged_ave
-
-            nasc_fraction_adult_df.loc[i] = abs(1.0 - age1_nasc_proportion)
-
-        # obtain the adult NASC proportion coefficient for each stratum value
-        fraction_adult_stratum_df = nasc_fraction_adult_df.loc[
-            stratum_vals
-        ].values.flatten()
-
-        # obtain the NASC for adults
-        NASC_adult = self.survey.bio_calc.nasc_df["NASC"] * fraction_adult_stratum_df
-        NASC_adult.name = "NASC_adult"
-        return NASC_adult
-
     @staticmethod
     def _write_dfs_to_excel(
         df_list: List[pd.DataFrame],
@@ -431,7 +375,6 @@ class Reports:
         self,
         output_excel_path_all: pathlib.Path,
         output_excel_path_non_zero: pathlib.Path,
-        NASC_adult: pd.Series,
     ) -> None:
         """
         Generates a report containing core transect based variables
@@ -445,9 +388,6 @@ class Reports:
         output_excel_path_non_zero: pathlib.Path
             The output Excel file path where all reports that include non-zero
             biomass should be saved
-        NASC_adult: pd.Series
-            A Series defining the NASC values corresponding to the adult population
-            at each transect number defined in ``self.survey.bio_calc.nasc_df``
         """
 
         # specify column names to grab and their corresponding type
@@ -530,7 +470,7 @@ class Reports:
                 female_df,
                 extra_nasc_df,
                 self.survey.bio_calc.nasc_df[["vessel_log_start", "vessel_log_end"]],
-                NASC_adult,
+                self.survey.bio_calc.transect_results_gdf["NASC_adult"],
                 self.survey.bio_calc.mix_sa_ratio,
                 sig_b,
                 avg_wgt,
@@ -794,31 +734,26 @@ class Reports:
             df_list, sheet_names, output_excel_path_non_zero, include_index=False
         )
 
-    def _kriging_input_report(
-        self, NASC_adult: pd.Series, output_excel_path: pathlib.Path
-    ) -> None:
+    def _kriging_input_report(self, output_excel_path: pathlib.Path) -> None:
         """
         Creates a report that contains input used for Kriging.
 
         Parameters
         ----------
-        NASC_adult: pd.Series
-            A Series defining the NASC values corresponding to the adult population
-            at each transect number defined in ``self.survey.bio_calc.nasc_df``
         output_excel_path: pathlib.Path
             The output Excel file path where the report should be saved
         """
 
         # put together all wanted results
-        final_df = pd.concat(
+        final_df = self.survey.bio_calc.transect_results_gdf[
             [
-                self.survey.bio_calc.transect_results_gdf[["latitude", "longitude"]],
-                self.survey.bio_calc.transect_results_gdf["biomass_density_adult"],
-                NASC_adult,
-                self.survey.bio_calc.transect_results_gdf["numerical_density_adult"],
-            ],
-            axis=1,
-        )
+                "latitude",
+                "longitude",
+                "biomass_density_adult",
+                "NASC_adult",
+                "numerical_density_adult",
+            ]
+        ]
 
         # write all results to Excel file
         df_list = [final_df]
@@ -926,15 +861,12 @@ class Reports:
             krig_result=True,
         )
 
-        NASC_adult = self._get_adult_NASC(self.survey.bio_calc.nasc_df.stratum_num)
-
         # Matlab file names: EchoPro_un-kriged_output-26-Jan-2023_0.xlsx
         # and EchoPro_un-kriged_output-26-Jan-2023_1.xlsx
         self._transect_based_core_variables_report(
             output_excel_path_all=output_path / "transect_based_core_output_all.xlsx",
             output_excel_path_non_zero=output_path
             / "transect_based_core_output_non_zero.xlsx",
-            NASC_adult=NASC_adult,
         )
 
         # Matlab file names: EchoPro_kriged_output-26-Jan-2023_0.xlsx
@@ -946,9 +878,7 @@ class Reports:
         )
 
         # Matlab file name: kriging_input.xlsx
-        self._kriging_input_report(
-            NASC_adult=NASC_adult, output_excel_path=output_path / "kriging_input.xlsx"
-        )
+        self._kriging_input_report(output_excel_path=output_path / "kriging_input.xlsx")
 
         # Matlab file names: aged_len_haul_counts_table.xlsx
         # and total_len_haul_counts_table.xlsx

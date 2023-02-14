@@ -64,6 +64,7 @@ class ComputeTransectVariables:
         self.stratum_choices = dict()
         self.strata_sig_b_df = None
         self.specimen_all_df = None
+        self.bin_ds = None
 
     def _get_strata_sig_b(self) -> None:
         """
@@ -1214,6 +1215,52 @@ class ComputeTransectVariables:
             results_gdf["biomass_" + bin_str] = (
                 expanded_age_bin * results_gdf["biomass_adult"]
             )
+
+    def set_adult_NASC(self) -> None:
+        """
+        Computes NASC values corresponding to the adult animal population
+        and assigns them to `self.transect_results_gdf``
+        """
+
+        # get the normalized length-age distribution
+        len_age_dist_all_norm = (
+            self.bin_ds.len_age_dist_all
+            / self.bin_ds.len_age_dist_all.sum(dim=["len_bin", "age_bin"])
+        )
+
+        # create adult NASC proportion coefficient
+        nasc_fraction_adult_df = pd.DataFrame(
+            columns=["val"], index=len_age_dist_all_norm.stratum_num, dtype=np.float64
+        )
+
+        for i in len_age_dist_all_norm.stratum_num.values:
+            sig_bs_aged_ave = np.sum(
+                self.survey.params["sig_b_coef"]
+                * np.matmul(
+                    (self.survey.params["bio_hake_len_bin"] ** 2),
+                    len_age_dist_all_norm.sel(stratum_num=i).values,
+                )
+            )
+
+            temp = self.survey.params["sig_b_coef"] * np.matmul(
+                (self.survey.params["bio_hake_len_bin"] ** 2),
+                len_age_dist_all_norm.sel(stratum_num=i).isel(age_bin=0).values,
+            )
+
+            age1_nasc_proportion = temp / sig_bs_aged_ave
+
+            nasc_fraction_adult_df.loc[i] = abs(1.0 - age1_nasc_proportion)
+
+        # obtain the adult NASC proportion coefficient for each stratum value
+        fraction_adult_stratum_df = nasc_fraction_adult_df.loc[
+            self.nasc_df.stratum_num
+        ].values.flatten()
+
+        # obtain the NASC for adults
+        NASC_adult = self.nasc_df["NASC"] * fraction_adult_stratum_df
+
+        # assign values to results gdf
+        self.transect_results_gdf["NASC_adult"] = NASC_adult
 
     def _construct_results_gdf(self) -> None:
         """
