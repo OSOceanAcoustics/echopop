@@ -487,10 +487,12 @@ class KrigingMesh:
         coord_type : str
             The type of coordinate points to transform.
             Possible options:
+
             - ``'transect'`` specifies that one should
-            copy and transform ``survey.bio_calc.transect_results_gdf``
+              copy and transform ``survey.bio_calc.transect_results_gdf``
             - ``'mesh'`` specifies that one should copy '
-            and transform `self.mesh_gdf``
+              and transform `self.mesh_gdf``
+
         lon_ref : float
             An arbitrary scalar, or a reference longitude
             (e.g., the mean longitude of the 200m isobath)
@@ -511,21 +513,24 @@ class KrigingMesh:
 
         This function constructs the following class variables
         for each ``coord_type``:
+
         - If ``coord_type='transect'``
             - ``transformed_transect_df`` DataFrame representing the
-            transformed transect data
+              transformed transect data
             - ``transect_d_x`` the distance between the maximum longitude
-            value and the minimum longitude value (after aligning the
-            longitude) for transect data
+              value and the minimum longitude value (after aligning the
+              longitude) for transect data
             - ``transect_d_y`` the distance between the maximum latitude
-            value and the minimum latitude value (after aligning the
-            longitude) for the transect data
+              value and the minimum latitude value (after aligning the
+              longitude) for the transect data
+
         - If ``coord_type='mesh'``
             - ``transformed_mesh_df`` DataFrame representing the
-            transformed mesh data
+              transformed mesh data
             - Additionally, if ``coord_type='transect'`` has not been
-            run, this function will create all class variables associated
-            with this input.
+              run, this function will create all class variables associated
+              with this input.
+
         """
 
         if coord_type == "transect":

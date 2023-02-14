@@ -1,7 +1,3 @@
-"""
-This sub-package contains all routines that either load
-or transform data.
-"""
 from .biological_data import LoadBioData
 from .kriging_mesh import KrigingMesh
 from .nasc_data import load_nasc_df

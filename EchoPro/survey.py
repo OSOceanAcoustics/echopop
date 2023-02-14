@@ -30,7 +30,7 @@ class Survey:
     """
     EchoPro base class that imports and prepares parameters for
     a survey. Additionally, it includes functions for accessing
-    the modules associated with the transect and kriging variable
+    the modules associated with the transect and Kriging variable
     calculations, CV analysis, semi-variogram algorithm, and Kriging.
 
     Parameters
@@ -41,9 +41,11 @@ class Survey:
         A string specifying the path to the survey year YAML file
     source : int
         The region of data to use.
-        1 = US
-        2 = Canada
-        3 = US and Canada
+
+        - 1 = US
+        - 2 = Canada
+        - 3 = US and Canada
+
     exclude_age1 : bool
         States whether age 1 hake should be included in analysis.
     """
@@ -161,9 +163,11 @@ class Survey:
         ----------
         source : int
             The region of data to use.
-            1 = US
-            2 = Canada
-            3 = US and Canada
+
+            - 1 = US
+            - 2 = Canada
+            - 3 = US and Canada
+
         init_params : dict
             Parameters obtained from the initialization file
 
@@ -264,6 +268,7 @@ class Survey:
         file_type : str
             Specifies what survey data should be loaded.
             Possible options:
+
             - 'all' -> loads all survey data
             - 'biological' -> only loads the biological data
             - 'strata' -> only loads the stratification data
@@ -274,14 +279,17 @@ class Survey:
         This function assigns class variables obtained from loading the
         data. Specifically, the following class variables are created
         for the file_type:
+
         - ``file_type='biological'``
             - ``self.length_df``
             - ``self.specimen_df``
+
         - ``file_type='strata'``
             - ``self.strata_df``
             - ``self.geo_strata_df``
             - ``self.strata_sig_b``
-        - `file_type='nasc'``
+
+        - ``file_type='nasc'``
             - ``self.nasc_df``
         """
 
@@ -305,8 +313,8 @@ class Survey:
         self, selected_transects: Optional[List] = None
     ) -> None:
         """
-        Constructs ``self.bio_calc.transect_results_gdf``, `
-        `self.bio_calc.transect_results_male_gdf``, and
+        Constructs ``self.bio_calc.transect_results_gdf``,
+        ``self.bio_calc.transect_results_male_gdf``, and
         ``self.bio_calc.transect_results_female_gdf``, which are
         GeoDataFrames that contain variables over the transect
         points (e.g. abundance, biomass).
@@ -347,7 +355,8 @@ class Survey:
 
         Returns
         -------
-        The mean Jolly-Hampton CV value.
+        float
+            The mean Jolly-Hampton CV value.
 
         Notes
         -----
@@ -394,9 +403,10 @@ class Survey:
         -----
         This function assigns class variables to the returned object.
         Specifically, the following class variables are created:
+
         - ``mesh_gdf`` a GeoPandas Dataframe representing the full mesh
         - ``smoothed_contour_gdf`` a GeoPandas Dataframe representing
-        the smoothed contour (e.g. 200m isobath)
+          the smoothed contour (e.g. 200m isobath)
         """
 
         return KrigingMesh(self)
@@ -406,7 +416,7 @@ class Survey:
         krig_mesh: KrigingMesh = None,
         params: vario_param_type = {},
         warning: bool = True,
-    ):
+    ) -> SemiVariogram:
         """
         Initializes a ``SemiVariogram`` object based on the provided
         ``KrigingMesh`` object, the calculated areal biomass density,
@@ -419,8 +429,10 @@ class Survey:
         params : dict
             Semi-variogram specific parameters. Contains the following
             parameters:
+
             - ``nlag: int`` -- The total number of lag centers
             - ``lag_res: float`` -- The spacing between lag centers
+
         warning : bool
             If True all warnings are printed to the terminal, otherwise
             they are silenced.
@@ -512,15 +524,16 @@ class Survey:
         ----------
         params : dict
             Kriging specific parameters. Contains the following parameters:
+
             - ``k_max: int`` -- the maximum number of data points within the
-            search radius.
+              search radius.
             - ``k_min: int`` -- the minimum number of data points within the
-            search radius.
+              search radius.
             - ``R: float`` -- search radius for Kriging
             - ``ratio: float`` -- acceptable ratio for the singular values
-            divided by the largest singular value.
+              divided by the largest singular value.
             - ``s_v_params: dict`` -- dictionary specifying the parameter values
-            for the semi-variogram model.
+              for the semi-variogram model.
             - ``s_v_model: Callable`` -- a Semi-variogram model from the ``SemiVariogram`` class
 
         Returns
@@ -584,6 +597,7 @@ class Survey:
         ----------
         data : str
             Specifies the results produced:
+
             - 'all' -> Both Kriging and transect based variables
             - 'transect' -> only produces transect based variables
             - 'kriging' -> only produces Kriging variables
@@ -593,21 +607,25 @@ class Survey:
         The computed DataFrames containing the specified data are assigned
         to class variables within ``self.biocalc``.
         Transect based results
-            - ``self.bio_calc.transect_bin_abundance_male_df`` -> abundance at
-             each length and age bin for males
-            - ``self.bio_calc.transect_bin_abundance_female_df`` -> abundance at
-             each length and age bin for females
-            - ``self.bio_calc.transect_bin_abundance_df`` -> abundance at
-             each length and age bin, when using all genders
-            - A similar set of variables are created for biomass results with
-             'abundance' replaced with 'biomass'. For example, biomass at each
-             length and age bin when using all genders will be stored in the
-             class variable ``self.bio_calc.transect_bin_biomass_df``.
+
+        - ``self.bio_calc.transect_bin_abundance_male_df`` -> abundance at
+          each length and age bin for males
+        - ``self.bio_calc.transect_bin_abundance_female_df`` -> abundance at
+          each length and age bin for females
+        - ``self.bio_calc.transect_bin_abundance_df`` -> abundance at
+          each length and age bin, when using all genders
+        - A similar set of variables are created for biomass results with
+          'abundance' replaced with 'biomass'. For example, biomass at each
+          length and age bin when using all genders will be stored in the
+          class variable ``self.bio_calc.transect_bin_biomass_df``.
+
         Kriging based results
-            - An analogous set of variables are created for the Kriging based
-             results with 'transect' replaced with 'kriging'. For example,
-             biomass at each length and age bin when using all genders will
-             be stored in ``self.bio_calc.kriging_bin_biomass_df``.
+
+        - An analogous set of variables are created for the Kriging based
+          results with 'transect' replaced with 'kriging'. For example,
+          biomass at each length and age bin when using all genders will
+          be stored in ``self.bio_calc.kriging_bin_biomass_df``.
+
         """
 
         if not isinstance(self.bio_calc.bin_ds, xr.Dataset):

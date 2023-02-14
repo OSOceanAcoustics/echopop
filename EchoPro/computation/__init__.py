@@ -1,6 +1,3 @@
-"""
-This sub-package contains all routines that perform computation.
-"""
 from .bin_dataset import generate_bin_ds
 from .bootstrapping import Bootstrapping
 from .cv import run_jolly_hampton

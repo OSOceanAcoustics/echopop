@@ -380,8 +380,8 @@ class SemiVariogram:
         -----
         This function uses a pre-defined set of boundaries for
         the fitting.
-        # TODO: allow for user specification of boundaries
         """
+        # TODO: allow for user specification of boundaries
 
         func, model_keys = self.get_model_info_from_str(model)
 
