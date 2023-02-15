@@ -23,6 +23,7 @@ from .computation import (
     vario_type_dict,
 )
 from .data_loader import KrigingMesh, LoadBioData, LoadStrataData, load_nasc_df
+from .reports import Reports
 from .utils.input_checks import check_existence_of_file
 
 
@@ -195,6 +196,8 @@ class Survey:
 
         init_params["source"] = source
 
+        init_params["sig_b_coef"] = 10 ** init_params["sig_b_coeff_power"]
+
         return init_params
 
     @staticmethod
@@ -331,6 +334,9 @@ class Survey:
 
         # create Dataset containing useful distributions and variables over length and age
         self.bio_calc.bin_ds = generate_bin_ds(self)
+
+        # add NASC_adult to transect_results_gdf (needs to occur after generate_bin_ds)
+        self.bio_calc.set_adult_NASC()
 
     def run_cv_analysis(
         self,
@@ -588,6 +594,23 @@ class Survey:
 
         return boot
 
+    def create_and_write_reports(self, output_path: Union[str, Path]) -> None:
+        """
+        Constructs Kriging mesh and Transect report DataFrames and writes
+        them to Excel files.
+
+        Parameters
+        ----------
+        output_path: str or pathlib.Path
+            The output path where all Excel files should be saved
+        """
+
+        # create Reports object
+        report = Reports(self)
+
+        # create and write reports to output_path
+        report.create_and_write_reports(output_path)
+
     def compute_length_age_variables(self, data: str = "transect") -> None:
         """
         Computes abundance and biomass over each length and age bin,
@@ -667,7 +690,7 @@ class Survey:
                 ds=self.bio_calc.bin_ds,
             )
 
-        elif data in ["kriging", "all"]:
+        if data in ["kriging", "all"]:
 
             # ensure that the appropriate data exists
             if not isinstance(self.bio_calc.kriging_results_gdf, gpd.GeoDataFrame):
@@ -700,7 +723,7 @@ class Survey:
                 exclude_age1=self.params["exclude_age1"],
             )
 
-        else:
+        if data not in ["transect", "kriging", "all"]:
             raise RuntimeError(
                 "The input variable data must be 'all', 'transect', or 'kriging'!"
             )

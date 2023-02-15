@@ -1,5 +1,6 @@
 .DS_Store
 
+# ignore output reports, if they were produced
 EchoPro/tests/reports/EchoPro_python_output
 
 # Created by .ignore support plugin (hsz.mobi)

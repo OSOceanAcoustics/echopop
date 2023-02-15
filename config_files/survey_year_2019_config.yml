@@ -1,6 +1,6 @@
 # This YAML file is a configuration file specifying
 # input filenames & some process parameter settings.
-# Relative file paths defined below are concatenated 
+# Relative file paths defined below are concatenated
 # with the data_root_dir path also set below.
 
 ---
@@ -102,19 +102,5 @@
   #########################################
 
   hemisphere: NW                        # north/south and west/east hemispheres
-
-  database_type: 'Oracle'               # biodata format: 'Oracle' or 'FSCS'
-
-  # File names for the US section, these variables can be left blank
-  filename_trawl_US: Biological/US/2019_biodata_haul.xlsx
-  filename_gear_US: Biological/US/2019_biodata_gear.xlsx
-
-  # File names for the Canada section, these variables can be left blank
-  filename_trawl_CAN: Biological/CAN/2019_biodata_haul_CAN.xlsx
-  filename_gear_CAN: Biological/CAN/2019_biodata_gear_CAN.xlsx
-
-  filename_Transect_region_haul_age2: Stratification/US&CAN_2019_transect_region_haul_age2+ auto_20191205.xlsx
-  filename_Transect_region_haul_age1: Stratification/US&CAN_2019_transect_region_haul_age1+ auto_final.xlsx
-  ##############################################################################
-
+  #####################################################################################################################
 ...
