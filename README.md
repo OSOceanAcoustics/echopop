@@ -12,21 +12,17 @@ There are [different ways of installing `conda`](https://oceanhackweek.org/resou
 
 ### Installation as a user
 
-This simpler installation method is recommended if you don't intend to work on developing the EchoPro code base itself.
+This simpler installation method is recommended if you don't intend to work on developing the EchoPro code base itself. It'll install both EchoPro and its dependencies in one step.
 
 1. Download the `condaenvironment.yaml` file. In https://github.com/uw-echospace/EchoPro/blob/master/condaenvironment.yaml, click on "Raw" (on the right) then save the file.
 2. At the terminal (shell), change directory to where you've placed the `condaenvironment.yaml` file.
-3. Install the dependencies and create a new conda environment called "echopro": 
+3. Install EchoPro and its dependencies, creating a new conda environment called "echopro": 
     ```bash
     conda env create -f condaenvironment.yaml
     ```
-4. Activate the environment: 
+4. To use this new conda environment, simply activate it: 
     ```bash
     conda activate echopro
-    ```
-5. Install EchoPro from its wheel file:
-    ```bash
-    pip install https://uw-echospace.github.io/EchoPro/EchoPro-latest-py3-none-any.whl
     ```
 
 In order to run EchoPro you will also need to download the EchoPro configuration files. To run the example Jupyter notebooks for the sample 2019 inputs, you will also need to download the notebooks and the input data files.
