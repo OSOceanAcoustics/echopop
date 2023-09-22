@@ -25,17 +25,13 @@ def generate_reports(config_base_path: pathlib.Path,
         The base directory path for the reports
     """
 
-    # TODO: should this be put in conftest.py?
-
-    # change working directory so no initialization files need to be modified
-    # TODO: this may not be necessary in the future
-    os.chdir(config_base_path)
-
     # initialize Survey object
-    survey_2019 = EchoPro.Survey(init_file_path='../config_files/initialization_config.yml',
-                                 survey_year_file_path='../config_files/survey_year_2019_config.yml',
-                                 source=3,
-                                 exclude_age1=True)
+    survey_2019 = EchoPro.Survey(
+        init_file_path=config_base_path / 'initialization_config.yml',
+        survey_year_file_path=config_base_path / 'survey_year_2019_config.yml',
+        source=3,
+        exclude_age1=True
+    )
 
     # load all data
     survey_2019.load_survey_data()
@@ -128,7 +124,6 @@ def _compare_truth_produced_files(truth_base_path: pathlib.Path, produced_base_p
     """
 
     for file_ind in range(len(file_names_truth)):
-
         # obtain file_path pointing to the known data
         file_path_truth = truth_base_path / file_names_truth[file_ind]
 
@@ -136,7 +131,6 @@ def _compare_truth_produced_files(truth_base_path: pathlib.Path, produced_base_p
         file_path_produced = produced_base_path / file_names_produced[file_ind]
 
         for sheet_ind in range(len(sheet_names_truth[file_ind])):
-
             # gather known solution data produced by the Matlab version of EchoPro
             df_truth = pd.read_excel(file_path_truth, index_col=index_col_truth[file_ind],
                                      sheet_name=sheet_names_truth[file_ind][sheet_ind],
@@ -171,10 +165,6 @@ def test_length_age_reports(config_base_path: pathlib.Path, matlab_output_base_p
     reports_base_path: pathlib.Path
         The base directory path for the reports
     """
-
-    # change working directory so no initialization files need to be modified
-    # TODO: this may not be necessary in the future
-    os.chdir(config_base_path)
 
     # specify file names
     file_names_truth = ["un-kriged_len_age_abundance_table.xlsx", "kriged_len_age_abundance_table.xlsx",
@@ -221,10 +211,6 @@ def test_biomass_ages_reports(config_base_path: pathlib.Path, matlab_output_base
     reports_base_path: pathlib.Path
         The base directory path for the reports
     """
-
-    # change working directory so no initialization files need to be modified
-    # TODO: this may not be necessary in the future
-    os.chdir(config_base_path)
 
     # specify file names
     file_names_truth = ["EchoPro_un-kriged_aged_output-2019_0.xlsx", "EchoPro_kriged_aged_output-2019_0.xlsx",
@@ -273,10 +259,6 @@ def test_core_variables_reports(config_base_path: pathlib.Path, matlab_output_ba
         The base directory path for the reports
     """
 
-    # change working directory so no initialization files need to be modified
-    # TODO: this may not be necessary in the future
-    os.chdir(config_base_path)
-
     # specify file names
     file_names_truth = ["EchoPro_un-kriged_output-26-Jan-2023_0.xlsx", "EchoPro_kriged_output-26-Jan-2023_0.xlsx",
                         "EchoPro_un-kriged_output-26-Jan-2023_1.xlsx", "EchoPro_kriged_output-26-Jan-2023_1.xlsx"]
@@ -323,10 +305,6 @@ def test_kriging_input_report(config_base_path: pathlib.Path, matlab_output_base
         The base directory path for the reports
     """
 
-    # change working directory so no initialization files need to be modified
-    # TODO: this may not be necessary in the future
-    os.chdir(config_base_path)
-
     # specify file names
     file_names_truth = ["kriging_input.xlsx"]
     file_names_produced = ["kriging_input.xlsx"]
@@ -370,10 +348,6 @@ def test_len_haul_count_reports(config_base_path: pathlib.Path, matlab_output_ba
     reports_base_path: pathlib.Path
         The base directory path for the reports
     """
-
-    # change working directory so no initialization files need to be modified
-    # TODO: this may not be necessary in the future
-    os.chdir(config_base_path)
 
     # specify file names
     file_names_truth = ["aged_len_haul_counts_table.xlsx", "total_len_haul_counts_table.xlsx"]

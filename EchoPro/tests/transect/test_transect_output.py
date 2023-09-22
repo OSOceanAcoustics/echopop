@@ -1,24 +1,20 @@
 import pytest
 
-import os
 import pandas as pd
 import numpy as np
 import EchoPro
 
 
 def test_biomass_age_output(config_base_path, matlab_output_base_path):
-
     # TODO: formalize this test
 
-    # change working directory so no initialization files need to be modified
-    # TODO: this may not be necessary in the future
-    os.chdir(config_base_path)
-
     # initialize Survey object
-    survey_2019 = EchoPro.Survey(init_file_path='../config_files/initialization_config.yml',
-                                 survey_year_file_path='../config_files/survey_year_2019_config.yml',
-                                 source=3,
-                                 exclude_age1=True)
+    survey_2019 = EchoPro.Survey(
+        init_file_path=config_base_path / 'initialization_config.yml',
+        survey_year_file_path=config_base_path / 'survey_year_2019_config.yml',
+        source=3,
+        exclude_age1=True
+    )
 
     # load all data
     survey_2019.load_survey_data()
@@ -38,27 +34,37 @@ def test_biomass_age_output(config_base_path, matlab_output_base_path):
     sheet_name_female = "Sheet3"
 
     # gather known solution data produced by the Matlab version of EchoPro
-    df_known = pd.read_excel(file_path, sheet_name=sheet_name, skiprows=1, usecols="A:AA").drop(columns=["stratum", "Transect"])
-    male_df_known = pd.read_excel(file_path, sheet_name=sheet_name_male, skiprows=1, usecols="A:AA").drop(
-        columns=["stratum", "Transect"])
-    female_df_known = pd.read_excel(file_path, sheet_name=sheet_name_female, skiprows=1, usecols="A:AA").drop(
-        columns=["stratum", "Transect"])
+    def _read_transform_biomass_age(sheet_name):
+        df = (
+            pd.read_excel(
+                file_path,
+                sheet_name=sheet_name,
+                skiprows=1,
+                usecols="A:AA"
+            )
+            .drop(columns=["stratum", "Transect"])
+            # sort known solution dfs by latitude and longitude
+            .sort_values(by=["Lat", "Lon"])
+        )
+        return df
 
-    # sort known solution dfs by latitude and longitude
-    df_known.sort_values(by=["Lat", "Lon"], inplace=True)
-    male_df_known.sort_values(by=["Lat", "Lon"], inplace=True)
-    female_df_known.sort_values(by=["Lat", "Lon"], inplace=True)
+    df_known = _read_transform_biomass_age(sheet_name)
+    male_df_known = _read_transform_biomass_age(sheet_name_male)
+    female_df_known = _read_transform_biomass_age(sheet_name_female)
 
     # define columns to compare in the produced solution
     produced_wanted_columns = ["latitude", "longitude", "biomass_adult"] + [
         "biomass_age_bin_" + str(i + 1) for i in range(22)]
 
-    df_produced = transect_results.sort_values(by=["latitude",
-                                                   "longitude"])[produced_wanted_columns]
-    male_df_produced = transect_results_male.sort_values(by=["latitude",
-                                                             "longitude"])[produced_wanted_columns]
-    female_df_produced = transect_results_female.sort_values(by=["latitude",
-                                                                 "longitude"])[produced_wanted_columns]
+    df_produced = transect_results.sort_values(
+        by=["latitude", "longitude"]
+    )[produced_wanted_columns]
+    male_df_produced = transect_results_male.sort_values(
+        by=["latitude", "longitude"]
+    )[produced_wanted_columns]
+    female_df_produced = transect_results_female.sort_values(
+        by=["latitude", "longitude"]
+    )[produced_wanted_columns]
 
     # compare known and produced values
     assert np.all(np.isclose(df_known.to_numpy(), df_produced.to_numpy()))
@@ -71,15 +77,13 @@ def test_biomass_age_output(config_base_path, matlab_output_base_path):
 def test_core_output(config_base_path, matlab_output_base_path):
     # TODO: formalize this test
 
-    # change working directory so no initialization files need to be modified
-    # TODO: this may not be necessary in the future
-    os.chdir(config_base_path)
-
     # initialize Survey object
-    survey_2019 = EchoPro.Survey(init_file_path='../config_files/initialization_config.yml',
-                                 survey_year_file_path='../config_files/survey_year_2019_config.yml',
-                                 source=3,
-                                 exclude_age1=True)
+    survey_2019 = EchoPro.Survey(
+        init_file_path=config_base_path / 'initialization_config.yml',
+        survey_year_file_path=config_base_path / 'survey_year_2019_config.yml',
+        source=3,
+        exclude_age1=True
+    )
 
     # load all data
     survey_2019.load_survey_data()
