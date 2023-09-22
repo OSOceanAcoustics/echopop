@@ -42,4 +42,4 @@ def matlab_output_base_path() -> pathlib.Path:
     pathlib.Path
         The base directory path for the Matlab output files
     """
-    return pathlib.Path("/usr/mayorgadat/workmain/acoustics/2021-NWFSC-EchoPro-HakeIGP/EchoPro/EchoProPython/outputs/EchoPro_matlab_output_brandon_age_22_end_bin/")
+    return pathlib.Path("<YOUR-OUTPUTS-BASEPATH>/EchoProPython/outputs/EchoPro_matlab_output_brandon_age_22_end_bin/")
