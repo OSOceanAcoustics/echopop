@@ -1233,34 +1233,48 @@ class ComputeTransectVariables:
             columns=["val"], index=len_age_dist_all_norm.stratum_num, dtype=np.float64
         )
 
-        for i in len_age_dist_all_norm.stratum_num.values:
+        # for stratum in self.all_strata:
+        for stratum in len_age_dist_all_norm.stratum_num.values:
             sig_bs_aged_ave = np.sum(
                 self.survey.params["sig_b_coef"]
                 * np.matmul(
                     (self.survey.params["bio_hake_len_bin"] ** 2),
-                    len_age_dist_all_norm.sel(stratum_num=i).values,
+                    len_age_dist_all_norm.sel(stratum_num=stratum).values,
                 )
             )
 
             temp = self.survey.params["sig_b_coef"] * np.matmul(
                 (self.survey.params["bio_hake_len_bin"] ** 2),
-                len_age_dist_all_norm.sel(stratum_num=i).isel(age_bin=0).values,
+                len_age_dist_all_norm.sel(stratum_num=stratum).isel(age_bin=0).values,
             )
 
             age1_nasc_proportion = temp / sig_bs_aged_ave
 
-            nasc_fraction_adult_df.loc[i] = abs(1.0 - age1_nasc_proportion)
+            nasc_fraction_adult_df.loc[stratum] = abs(1.0 - age1_nasc_proportion)
 
-        # obtain the adult NASC proportion coefficient for each stratum value
+        # Identify and populate strata missing in nasc_fraction_adult_df
+        # (and therefore in self.bin_ds.len_age_dist_all)
+        # based on surrounding strata as pre-allocated in stratum_choices
+        # TODO: This scheme actually reflects the simpler implementation from v0.1.0-alpha.
+        #   Revisit the Matlab code and related missing-stratum handling in this module
+        #   https://github.com/uw-echospace/EchoPro_matlab/blob/26b939c9c7c0ccbf8828d402e249e1fdf6ed2b5a/general/load_files_parameters/get_historical_strata_data.m#L731-L795 # noqa
+        missing_stratum_num = (
+            set(self.nasc_df.stratum_num.values) - set(len_age_dist_all_norm.stratum_num.values)
+        )
+        for stratum in missing_stratum_num:
+            nasc_fraction_adult_df.loc[stratum] = (
+                nasc_fraction_adult_df.loc[self.stratum_choices[stratum]]['val'].mean()
+            )
+        # Storing nasc_fraction_adult_df is not required but will be very useful
+        # in the interim for ongoing development and testing
+        self.nasc_fraction_adult_df = nasc_fraction_adult_df
+
         fraction_adult_stratum_df = nasc_fraction_adult_df.loc[
             self.nasc_df.stratum_num
         ].values.flatten()
 
-        # obtain the NASC for adults
-        NASC_adult = self.nasc_df["NASC"] * fraction_adult_stratum_df
-
-        # assign values to results gdf
-        self.transect_results_gdf["NASC_adult"] = NASC_adult
+        # Calculate NASC for adults and assign values to results gdf
+        self.transect_results_gdf["NASC_adult"] = self.nasc_df["NASC"] * fraction_adult_stratum_df
 
     def _construct_results_gdf(self) -> None:
         """
