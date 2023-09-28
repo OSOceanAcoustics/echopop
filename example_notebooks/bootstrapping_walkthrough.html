@@ -26,6 +26,7 @@
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css" />
     <link rel="stylesheet" type="text/css" href="../_static/mystnb.css" />
     <link rel="stylesheet" type="text/css" href="../_static/sphinx-thebe.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
     <link rel="stylesheet" type="text/css" href="../_static/design-style.b7bb847fb20b106c3d81b95245e65545.min.css" />
     
   <!-- Pre-loaded scripts that we'll load fully later -->
@@ -54,7 +55,7 @@ const thebe_selector_output = ".output, .cell_output"
     <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.20.1/dist/embed-amd.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="EchoPro Semi-variogram Workflow" href="semi_variogram_workflow.html" />
+    <link rel="next" title="API reference" href="../api.html" />
     <link rel="prev" title="EchoPro Transect Subset Workflow" href="transect_selection_workflow.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="None">
@@ -122,13 +123,8 @@ const thebe_selector_output = ".output, .cell_output"
   </a>
  </li>
  <li class="toctree-l1">
-  <a class="reference internal" href="transect_selection_workflow.html">
-   EchoPro Transect Subset Workflow
-  </a>
- </li>
- <li class="toctree-l1 current active">
-  <a class="current reference internal" href="#">
-   EchoPro Bootstrapping Workflow
+  <a class="reference internal" href="reports_workflow.html">
+   EchoPro Python Generating Reports Workflow
   </a>
  </li>
  <li class="toctree-l1">
@@ -139,6 +135,28 @@ const thebe_selector_output = ".output, .cell_output"
  <li class="toctree-l1">
   <a class="reference internal" href="kriging_mesh_walkthrough.html">
    EchoPro Kriging mesh Workflow
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="transect_selection_workflow.html">
+   EchoPro Transect Subset Workflow
+  </a>
+ </li>
+ <li class="toctree-l1 current active">
+  <a class="current reference internal" href="#">
+   EchoPro Bootstrapping Workflow
+  </a>
+ </li>
+</ul>
+<p aria-level="2" class="caption" role="heading">
+ <span class="caption-text">
+  Help &amp; reference
+ </span>
+</p>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="../api.html">
+   API reference
   </a>
  </li>
 </ul>
@@ -476,8 +494,8 @@ title="Print to PDF"
 <div class="cell_output docutils container">
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>A full check of the initialization file contents needs to be done!
 A check of the survey year file contents needs to be done!
-CPU times: user 2.67 ms, sys: 3.35 ms, total: 6.02 ms
-Wall time: 6.15 ms
+CPU times: user 4.42 ms, sys: 174 µs, total: 4.59 ms
+Wall time: 4.61 ms
 </pre></div>
 </div>
 </div>
@@ -490,8 +508,8 @@ Wall time: 6.15 ms
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>CPU times: user 1.55 s, sys: 5.56 ms, total: 1.55 s
-Wall time: 1.55 s
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>CPU times: user 1.47 s, sys: 9.18 ms, total: 1.48 s
+Wall time: 1.49 s
 </pre></div>
 </div>
 </div>
@@ -515,17 +533,13 @@ Wall time: 1.55 s
 <p>In EchoPro we can perform bootstrapping on a reduced number of transects and obtain the areal biomass density for each iteration of bootstrapping as well as the associated mean Jolly-Hampton CV value.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%%time</span>
-<span class="n">boot_results_no_krig</span> <span class="o">=</span> <span class="n">boot_obj</span><span class="o">.</span><span class="n">run_bootstrapping</span><span class="p">(</span><span class="n">run_kriging</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                                                  <span class="n">removal_percentage</span><span class="o">=</span><span class="mf">50.0</span><span class="p">,</span>
-                                                  <span class="n">num_iterations</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
-                                                  <span class="n">seed</span><span class="o">=</span><span class="mi">1234</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>CPU times: user 9.74 s, sys: 33.4 ms, total: 9.77 s
-Wall time: 9.77 s
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># %%time</span>
+<span class="n">boot_results_no_krig</span> <span class="o">=</span> <span class="n">boot_obj</span><span class="o">.</span><span class="n">run_bootstrapping</span><span class="p">(</span>
+    <span class="n">run_kriging</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">removal_percentage</span><span class="o">=</span><span class="mf">28.0</span><span class="p">,</span>  <span class="c1"># 60.0,</span>
+    <span class="n">num_iterations</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+    <span class="n">seed</span><span class="o">=</span><span class="mi">1234</span>
+<span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -567,28 +581,28 @@ Wall time: 9.77 s
   <tbody>
     <tr>
       <th>1</th>
-      <td>4.823803e+08</td>
-      <td>0.259509</td>
+      <td>1.760122e+09</td>
+      <td>0.157517</td>
     </tr>
     <tr>
       <th>2</th>
-      <td>6.287572e+08</td>
-      <td>0.299433</td>
+      <td>1.765738e+09</td>
+      <td>0.162523</td>
     </tr>
     <tr>
       <th>3</th>
-      <td>4.268084e+08</td>
-      <td>0.277257</td>
+      <td>1.614304e+09</td>
+      <td>0.162167</td>
     </tr>
     <tr>
       <th>4</th>
-      <td>6.319543e+08</td>
-      <td>0.260371</td>
+      <td>1.807980e+09</td>
+      <td>0.155896</td>
     </tr>
     <tr>
       <th>5</th>
-      <td>5.654719e+08</td>
-      <td>0.281114</td>
+      <td>1.482937e+09</td>
+      <td>0.174824</td>
     </tr>
   </tbody>
 </table>
@@ -596,12 +610,12 @@ Wall time: 9.77 s
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Mean total biomass without Kriging: </span><span class="si">{</span><span class="mf">1e-6</span> <span class="o">*</span> <span class="n">boot_results_no_krig</span><span class="p">[</span><span class="s1">&#39;tot_biomass_no_kriging&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> kmt&quot;</span><span class="p">)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Mean total biomass without Kriging: </span><span class="si">{</span><span class="mf">1e-6</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">boot_results_no_krig</span><span class="p">[</span><span class="s1">&#39;tot_biomass_no_kriging&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> kmt&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Mean total biomass without Kriging: 547.074 kmt
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Mean total biomass without Kriging: 1686.216 kmt
 </pre></div>
 </div>
 </div>
@@ -649,17 +663,19 @@ Wall time: 9.77 s
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%%time</span>
-<span class="n">boot_results_krig</span> <span class="o">=</span> <span class="n">boot_obj</span><span class="o">.</span><span class="n">run_bootstrapping</span><span class="p">(</span><span class="n">run_kriging</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                                               <span class="n">kriging_params</span><span class="o">=</span><span class="n">bootstrap_kriging_params</span><span class="p">,</span>
-                                               <span class="n">removal_percentage</span><span class="o">=</span><span class="mf">50.0</span><span class="p">,</span>
-                                               <span class="n">num_iterations</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
-                                               <span class="n">seed</span><span class="o">=</span><span class="mi">1234</span><span class="p">)</span>
+<span class="n">boot_results_krig</span> <span class="o">=</span> <span class="n">boot_obj</span><span class="o">.</span><span class="n">run_bootstrapping</span><span class="p">(</span>
+    <span class="n">run_kriging</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">kriging_params</span><span class="o">=</span><span class="n">bootstrap_kriging_params</span><span class="p">,</span>
+    <span class="n">removal_percentage</span><span class="o">=</span><span class="mf">60.0</span><span class="p">,</span>
+    <span class="n">num_iterations</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+    <span class="n">seed</span><span class="o">=</span><span class="mi">1234</span>
+<span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>CPU times: user 31.9 s, sys: 4.39 s, total: 36.3 s
-Wall time: 28.4 s
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>CPU times: user 30.3 s, sys: 6.55 s, total: 36.8 s
+Wall time: 27.4 s
 </pre></div>
 </div>
 </div>
@@ -705,38 +721,38 @@ Wall time: 28.4 s
   <tbody>
     <tr>
       <th>1</th>
-      <td>4.823803e+08</td>
-      <td>0.259458</td>
-      <td>1.060860e+09</td>
-      <td>0.135964</td>
+      <td>1.253618e+09</td>
+      <td>0.277415</td>
+      <td>1.218500e+09</td>
+      <td>0.149868</td>
     </tr>
     <tr>
       <th>2</th>
-      <td>6.287572e+08</td>
-      <td>0.299280</td>
-      <td>1.687877e+09</td>
-      <td>0.150531</td>
+      <td>1.477359e+09</td>
+      <td>0.223805</td>
+      <td>1.371196e+09</td>
+      <td>0.131175</td>
     </tr>
     <tr>
       <th>3</th>
-      <td>4.268084e+08</td>
-      <td>0.277408</td>
-      <td>1.056840e+09</td>
-      <td>0.140598</td>
+      <td>2.003946e+09</td>
+      <td>0.275839</td>
+      <td>1.757508e+09</td>
+      <td>0.159848</td>
     </tr>
     <tr>
       <th>4</th>
-      <td>6.319543e+08</td>
-      <td>0.260353</td>
-      <td>1.594250e+09</td>
-      <td>0.135785</td>
+      <td>1.393173e+09</td>
+      <td>0.230566</td>
+      <td>1.620391e+09</td>
+      <td>0.152921</td>
     </tr>
     <tr>
       <th>5</th>
-      <td>5.654719e+08</td>
-      <td>0.281390</td>
-      <td>1.470527e+09</td>
-      <td>0.155058</td>
+      <td>1.650924e+09</td>
+      <td>0.229959</td>
+      <td>1.614687e+09</td>
+      <td>0.135550</td>
     </tr>
   </tbody>
 </table>
@@ -744,12 +760,12 @@ Wall time: 28.4 s
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Mean total biomass with Kriging: </span><span class="si">{</span><span class="mf">1e-6</span> <span class="o">*</span> <span class="n">boot_results_krig</span><span class="p">[</span><span class="s1">&#39;tot_biomass_kriging&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> kmt&quot;</span><span class="p">)</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Mean total biomass with Kriging: </span><span class="si">{</span><span class="mf">1e-6</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">boot_results_krig</span><span class="p">[</span><span class="s1">&#39;tot_biomass_kriging&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> kmt&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Mean total biomass with Kriging: 1374.071 kmt
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Mean total biomass with Kriging: 1516.456 kmt
 </pre></div>
 </div>
 </div>
@@ -767,16 +783,16 @@ Wall time: 28.4 s
         },
         codeMirrorConfig: {
             theme: "abcdef",
-            mode: "echopro_conda"
+            mode: "python"
         },
         kernelOptions: {
-            kernelName: "echopro_conda",
+            name: "python3",
             path: "./example_notebooks"
         },
         predefinedOutput: true
     }
     </script>
-    <script>kernelName = 'echopro_conda'</script>
+    <script>kernelName = 'python3'</script>
 
               </div>
               
@@ -792,10 +808,10 @@ Wall time: 28.4 s
             <p class="prev-next-title">EchoPro Transect Subset Workflow</p>
         </div>
     </a>
-    <a class='right-next' id="next-link" href="semi_variogram_workflow.html" title="next page">
+    <a class='right-next' id="next-link" href="../api.html" title="next page">
     <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">EchoPro Semi-variogram Workflow</p>
+        <p class="prev-next-title">API reference</p>
     </div>
     <i class="fas fa-angle-right"></i>
     </a>

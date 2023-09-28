@@ -1,0 +1,1408 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>API reference &#8212; EchoPro</title>
+    
+  <!-- Loaded before other Sphinx assets -->
+  <link href="_static/styles/theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
+<link href="_static/styles/pydata-sphinx-theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
+
+    
+  <link rel="stylesheet"
+    href="_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" href="_static/styles/sphinx-book-theme.css?digest=5115cc725059bd94278eecd172e13a965bf8f5a9" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="_static/togglebutton.css" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="_static/mystnb.css" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-thebe.css" />
+    <link rel="stylesheet" type="text/css" href="_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="_static/design-style.b7bb847fb20b106c3d81b95245e65545.min.css" />
+    
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=1999514e3f237ded88cf">
+
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/clipboard.min.js"></script>
+    <script src="_static/copybutton.js"></script>
+    <script src="_static/scripts/sphinx-book-theme.js?digest=9c920249402e914e316237a7dbc6769907cce411"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="_static/togglebutton.js"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown, .tag_hide_input div.cell_input, .tag_hide-input div.cell_input, .tag_hide_output div.cell_output, .tag_hide-output div.cell_output, .tag_hide_cell.cell, .tag_hide-cell.cell';</script>
+    <script src="_static/design-tabs.js"></script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"
+const thebe_selector = ".thebe,.cell"
+const thebe_selector_input = "pre"
+const thebe_selector_output = ".output, .cell_output"
+</script>
+    <script async="async" src="_static/sphinx-thebe.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.20.1/dist/embed-amd.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="EchoPro Bootstrapping Workflow" href="example_notebooks/bootstrapping_walkthrough.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="None">
+    
+
+    <!-- Google Analytics -->
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="60">
+<!-- Checkboxes to toggle the left sidebar -->
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle navigation sidebar">
+<label class="overlay overlay-navbar" for="__navigation">
+    <div class="visually-hidden">Toggle navigation sidebar</div>
+</label>
+<!-- Checkboxes to toggle the in-page toc -->
+<input type="checkbox" class="sidebar-toggle" name="__page-toc" id="__page-toc" aria-label="Toggle in-page Table of Contents">
+<label class="overlay overlay-pagetoc" for="__page-toc">
+    <div class="visually-hidden">Toggle in-page Table of Contents</div>
+</label>
+<!-- Headers at the top -->
+<div class="announcement header-item noprint"></div>
+<div class="header header-item noprint"></div>
+
+    
+    <div class="container-fluid" id="banner"></div>
+
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+<!-- Sidebar -->
+<div class="bd-sidebar noprint" id="site-navigation">
+    <div class="bd-sidebar__content">
+        <div class="bd-sidebar__top"><div class="navbar-brand-box">
+    <a class="navbar-brand text-wrap" href="index.html">
+      
+      
+      
+      <h1 class="site-logo" id="site-title">EchoPro</h1>
+      
+    </a>
+</div><form class="bd-search d-flex align-items-center" action="search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search this book..." aria-label="Search this book..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item active">
+        
+        <ul class="nav bd-sidenav bd-sidenav__home-link">
+            <li class="toctree-l1">
+                <a class="reference internal" href="index.html">
+                    EchoPro documentation and example notebooks
+                </a>
+            </li>
+        </ul>
+        <p aria-level="2" class="caption" role="heading">
+ <span class="caption-text">
+  Notebooks
+ </span>
+</p>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="example_notebooks/echopro_workflow.html">
+   EchoPro Python Workflow
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="example_notebooks/reports_workflow.html">
+   EchoPro Python Generating Reports Workflow
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="example_notebooks/semi_variogram_workflow.html">
+   EchoPro Semi-variogram Workflow
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="example_notebooks/kriging_mesh_walkthrough.html">
+   EchoPro Kriging mesh Workflow
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="example_notebooks/transect_selection_workflow.html">
+   EchoPro Transect Subset Workflow
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="example_notebooks/bootstrapping_walkthrough.html">
+   EchoPro Bootstrapping Workflow
+  </a>
+ </li>
+</ul>
+<p aria-level="2" class="caption" role="heading">
+ <span class="caption-text">
+  Help &amp; reference
+ </span>
+</p>
+<ul class="current nav bd-sidenav">
+ <li class="toctree-l1 current active">
+  <a class="current reference internal" href="#">
+   API reference
+  </a>
+ </li>
+</ul>
+
+    </div>
+</nav></div>
+        <div class="bd-sidebar__bottom">
+             <!-- To handle the deprecated key -->
+            
+            <div class="navbar_extra_footer">
+            Powered by <a href="https://jupyterbook.org">Jupyter Book</a>
+            </div>
+            
+        </div>
+    </div>
+    <div id="rtd-footer-container"></div>
+</div>
+
+
+          
+
+
+          
+<!-- A tiny helper pixel to detect if we've scrolled -->
+<div class="sbt-scroll-pixel-helper"></div>
+<!-- Main content -->
+<div class="col py-0 content-container">
+    
+    <div class="header-article row sticky-top noprint">
+        
+
+
+
+<div class="col py-1 d-flex header-article-main">
+    <div class="header-article__left">
+        
+        <label for="__navigation"
+  class="headerbtn"
+  data-toggle="tooltip"
+data-placement="right"
+title="Toggle navigation"
+>
+  
+
+<span class="headerbtn__icon-container">
+  <i class="fas fa-bars"></i>
+  </span>
+
+</label>
+
+        
+    </div>
+    <div class="header-article__right">
+<button onclick="toggleFullScreen()"
+  class="headerbtn"
+  data-toggle="tooltip"
+data-placement="bottom"
+title="Fullscreen mode"
+>
+  
+
+<span class="headerbtn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+<div class="menu-dropdown menu-dropdown-repository-buttons">
+  <button class="headerbtn menu-dropdown__trigger"
+      aria-label="Source repositories">
+      <i class="fab fa-github"></i>
+  </button>
+  <div class="menu-dropdown__content">
+    <ul>
+      <li>
+        <a href="https://github.com/uw-echospace/EchoPro"
+   class="headerbtn"
+   data-toggle="tooltip"
+data-placement="left"
+title="Source repository"
+>
+  
+
+<span class="headerbtn__icon-container">
+  <i class="fab fa-github"></i>
+  </span>
+<span class="headerbtn__text-container">repository</span>
+</a>
+
+      </li>
+      
+      <li>
+        <a href="https://github.com/uw-echospace/EchoPro/issues/new?title=Issue%20on%20page%20%2Fapi.html&body=Your%20issue%20content%20here."
+   class="headerbtn"
+   data-toggle="tooltip"
+data-placement="left"
+title="Open an issue"
+>
+  
+
+<span class="headerbtn__icon-container">
+  <i class="fas fa-lightbulb"></i>
+  </span>
+<span class="headerbtn__text-container">open issue</span>
+</a>
+
+      </li>
+      
+    </ul>
+  </div>
+</div>
+
+<div class="menu-dropdown menu-dropdown-download-buttons">
+  <button class="headerbtn menu-dropdown__trigger"
+      aria-label="Download this page">
+      <i class="fas fa-download"></i>
+  </button>
+  <div class="menu-dropdown__content">
+    <ul>
+      <li>
+        <a href="_sources/api.rst"
+   class="headerbtn"
+   data-toggle="tooltip"
+data-placement="left"
+title="Download source file"
+>
+  
+
+<span class="headerbtn__icon-container">
+  <i class="fas fa-file"></i>
+  </span>
+<span class="headerbtn__text-container">.rst</span>
+</a>
+
+      </li>
+      
+      <li>
+        
+<button onclick="printPdf(this)"
+  class="headerbtn"
+  data-toggle="tooltip"
+data-placement="left"
+title="Print to PDF"
+>
+  
+
+<span class="headerbtn__icon-container">
+  <i class="fas fa-file-pdf"></i>
+  </span>
+<span class="headerbtn__text-container">.pdf</span>
+</button>
+
+      </li>
+      
+    </ul>
+  </div>
+</div>
+<label for="__page-toc"
+  class="headerbtn headerbtn-page-toc"
+  
+>
+  
+
+<span class="headerbtn__icon-container">
+  <i class="fas fa-list"></i>
+  </span>
+
+</label>
+
+    </div>
+</div>
+
+<!-- Table of contents -->
+<div class="col-md-3 bd-toc show noprint">
+    <div class="tocsection onthispage pt-5 pb-3">
+        <i class="fas fa-list"></i> Contents
+    </div>
+    <nav id="bd-toc-nav" aria-label="Page">
+        <ul class="visible nav section-nav flex-column">
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#module-EchoPro">
+   Survey
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#module-EchoPro.computation">
+   Computational routines
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#module-EchoPro.data_loader">
+   Data loading
+  </a>
+ </li>
+</ul>
+
+    </nav>
+</div>
+    </div>
+    <div class="article row">
+        <div class="col pl-md-3 pl-lg-5 content-container">
+            <!-- Table of contents that is only displayed when printing the page -->
+            <div id="jb-print-docs-body" class="onlyprint">
+                <h1>API reference</h1>
+                <!-- Table of contents -->
+                <div id="print-main-content">
+                    <div id="jb-print-toc">
+                        
+                        <div>
+                            <h2> Contents </h2>
+                        </div>
+                        <nav aria-label="Page">
+                            <ul class="visible nav section-nav flex-column">
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#module-EchoPro">
+   Survey
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#module-EchoPro.computation">
+   Computational routines
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#module-EchoPro.data_loader">
+   Data loading
+  </a>
+ </li>
+</ul>
+
+                        </nav>
+                    </div>
+                </div>
+            </div>
+            <main id="main-content" role="main">
+                
+              <div>
+                
+  <section id="api-reference">
+<h1>API reference<a class="headerlink" href="#api-reference" title="Permalink to this headline">#</a></h1>
+<p><strong>Content</strong></p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#survey">Survey</a></p></li>
+<li><dl class="simple">
+<dt><a class="reference internal" href="#computational-routines">Computational routines</a></dt><dd><ul>
+<li><p><a class="reference internal" href="#EchoPro.computation.Bootstrapping" title="EchoPro.computation.Bootstrapping"><code class="xref py py-class docutils literal notranslate"><span class="pre">Bootstrapping</span></code></a></p></li>
+<li><p><a class="reference internal" href="#EchoPro.computation.Kriging" title="EchoPro.computation.Kriging"><code class="xref py py-class docutils literal notranslate"><span class="pre">Kriging</span></code></a></p></li>
+<li><p><a class="reference internal" href="#EchoPro.computation.SemiVariogram" title="EchoPro.computation.SemiVariogram"><code class="xref py py-class docutils literal notranslate"><span class="pre">Semi-variogram</span></code></a></p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><a class="reference internal" href="#data-loading">Data loading</a></dt><dd><ul>
+<li><p><a class="reference internal" href="#EchoPro.data_loader.KrigingMesh" title="EchoPro.data_loader.KrigingMesh"><code class="xref py py-class docutils literal notranslate"><span class="pre">Kriging</span> <span class="pre">Mesh</span></code></a></p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+<section id="module-EchoPro">
+<span id="survey"></span><h2>Survey<a class="headerlink" href="#module-EchoPro" title="Permalink to this headline">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="EchoPro.Survey">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">EchoPro.</span></span><span class="sig-name descname"><span class="pre">Survey</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">init_file_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">pathlib.Path</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">survey_year_file_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">pathlib.Path</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exclude_age1</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#EchoPro.Survey" title="Permalink to this definition">#</a></dt>
+<dd><p>EchoPro base class that imports and prepares parameters for
+a survey. Additionally, it includes functions for accessing
+the modules associated with the transect and Kriging variable
+calculations, CV analysis, semi-variogram algorithm, and Kriging.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>init_file_path</strong><span class="classifier">str or pathlib.Path</span></dt><dd><p>A string specifying the path to the initialization YAML file</p>
+</dd>
+<dt><strong>survey_year_file_path</strong><span class="classifier">str or pathlib.Path</span></dt><dd><p>A string specifying the path to the survey year YAML file</p>
+</dd>
+<dt><strong>source</strong><span class="classifier">int</span></dt><dd><p>The region of data to use.</p>
+<ul class="simple">
+<li><p>1 = US</p></li>
+<li><p>2 = Canada</p></li>
+<li><p>3 = US and Canada</p></li>
+</ul>
+</dd>
+<dt><strong>exclude_age1</strong><span class="classifier">bool</span></dt><dd><p>States whether age 1 hake should be included in analysis.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="EchoPro.Survey.compute_length_age_variables">
+<span class="sig-name descname"><span class="pre">compute_length_age_variables</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'transect'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#EchoPro.Survey.compute_length_age_variables" title="Permalink to this definition">#</a></dt>
+<dd><p>Computes abundance and biomass over each length and age bin,
+for males, females, and all genders.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>data</strong><span class="classifier">str</span></dt><dd><p>Specifies the results produced:</p>
+<ul class="simple">
+<li><p>‘all’ -&gt; Both Kriging and transect based variables</p></li>
+<li><p>‘transect’ -&gt; only produces transect based variables</p></li>
+<li><p>‘kriging’ -&gt; only produces Kriging variables</p></li>
+</ul>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>The computed DataFrames containing the specified data are assigned
+to class variables within <code class="docutils literal notranslate"><span class="pre">self.biocalc</span></code>.
+Transect based results</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">self.bio_calc.transect_bin_abundance_male_df</span></code> -&gt; abundance at
+each length and age bin for males</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">self.bio_calc.transect_bin_abundance_female_df</span></code> -&gt; abundance at
+each length and age bin for females</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">self.bio_calc.transect_bin_abundance_df</span></code> -&gt; abundance at
+each length and age bin, when using all genders</p></li>
+<li><p>A similar set of variables are created for biomass results with
+‘abundance’ replaced with ‘biomass’. For example, biomass at each
+length and age bin when using all genders will be stored in the
+class variable <code class="docutils literal notranslate"><span class="pre">self.bio_calc.transect_bin_biomass_df</span></code>.</p></li>
+</ul>
+<p>Kriging based results</p>
+<ul class="simple">
+<li><p>An analogous set of variables are created for the Kriging based
+results with ‘transect’ replaced with ‘kriging’. For example,
+biomass at each length and age bin when using all genders will
+be stored in <code class="docutils literal notranslate"><span class="pre">self.bio_calc.kriging_bin_biomass_df</span></code>.</p></li>
+</ul>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="EchoPro.Survey.compute_transect_results">
+<span class="sig-name descname"><span class="pre">compute_transect_results</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">selected_transects</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#EchoPro.Survey.compute_transect_results" title="Permalink to this definition">#</a></dt>
+<dd><p>Constructs <code class="docutils literal notranslate"><span class="pre">self.bio_calc.transect_results_gdf</span></code>,
+<code class="docutils literal notranslate"><span class="pre">self.bio_calc.transect_results_male_gdf</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">self.bio_calc.transect_results_female_gdf</span></code>, which are
+GeoDataFrames that contain variables over the transect
+points (e.g. abundance, biomass).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>selected_transects</strong><span class="classifier">list or None</span></dt><dd><p>The subset of transects used in the calculations</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="EchoPro.Survey.create_and_write_reports">
+<span class="sig-name descname"><span class="pre">create_and_write_reports</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">pathlib.Path</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#EchoPro.Survey.create_and_write_reports" title="Permalink to this definition">#</a></dt>
+<dd><p>Constructs Kriging mesh and Transect report DataFrames and writes
+them to Excel files.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>output_path: str or pathlib.Path</strong></dt><dd><p>The output path where all Excel files should be saved</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="EchoPro.Survey.get_bootstrapping">
+<span class="sig-name descname"><span class="pre">get_bootstrapping</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#EchoPro.computation.Bootstrapping" title="EchoPro.computation.bootstrapping.Bootstrapping"><span class="pre">EchoPro.computation.bootstrapping.Bootstrapping</span></a></span></span><a class="headerlink" href="#EchoPro.Survey.get_bootstrapping" title="Permalink to this definition">#</a></dt>
+<dd><p>Initializes a <code class="docutils literal notranslate"><span class="pre">Bootstrapping</span></code> object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><dl class="simple">
+<dt>boot: Bootstrapping</dt><dd><p>An initialized <code class="docutils literal notranslate"><span class="pre">Bootstrapping</span></code> object that provides users with
+access to the routine <code class="docutils literal notranslate"><span class="pre">run_bootstrapping</span></code>, which runs bootstrapping
+for data with Kriging and data without Kriging.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="EchoPro.Survey.get_kriging">
+<span class="sig-name descname"><span class="pre">get_kriging</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">EchoPro.computation.kriging.krig_param_type</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#EchoPro.computation.Kriging" title="EchoPro.computation.kriging.Kriging"><span class="pre">EchoPro.computation.kriging.Kriging</span></a></span></span><a class="headerlink" href="#EchoPro.Survey.get_kriging" title="Permalink to this definition">#</a></dt>
+<dd><p>Initializes a <code class="docutils literal notranslate"><span class="pre">Kriging</span></code> object using the
+provided parameters</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>params</strong><span class="classifier">dict</span></dt><dd><p>Kriging specific parameters. Contains the following parameters:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">k_max:</span> <span class="pre">int</span></code> – the maximum number of data points within the
+search radius.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">k_min:</span> <span class="pre">int</span></code> – the minimum number of data points within the
+search radius.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">R:</span> <span class="pre">float</span></code> – search radius for Kriging</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ratio:</span> <span class="pre">float</span></code> – acceptable ratio for the singular values
+divided by the largest singular value.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">s_v_params:</span> <span class="pre">dict</span></code> – dictionary specifying the parameter values
+for the semi-variogram model.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">s_v_model:</span> <span class="pre">Callable</span></code> – a Semi-variogram model from the <code class="docutils literal notranslate"><span class="pre">SemiVariogram</span></code> class</p></li>
+</ul>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>krig</strong><span class="classifier">Kriging</span></dt><dd><p>An initialized <code class="docutils literal notranslate"><span class="pre">Kriging</span></code> object that provides users with
+access to routines that run Ordinary Kriging and routines
+that plot final Kriging results</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="EchoPro.Survey.get_kriging_mesh">
+<span class="sig-name descname"><span class="pre">get_kriging_mesh</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#EchoPro.data_loader.KrigingMesh" title="EchoPro.data_loader.kriging_mesh.KrigingMesh"><span class="pre">EchoPro.data_loader.kriging_mesh.KrigingMesh</span></a></span></span><a class="headerlink" href="#EchoPro.Survey.get_kriging_mesh" title="Permalink to this definition">#</a></dt>
+<dd><p>Initializes a <code class="docutils literal notranslate"><span class="pre">KrigingMesh</span></code> object using
+parameters obtained from the configuration
+files.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><dl class="simple">
+<dt>KrigingMesh</dt><dd><p>An initialized object that contains the mesh
+data, functions to transform the mesh, and
+functions to plot the mesh.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>This function assigns class variables to the returned object.
+Specifically, the following class variables are created:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">mesh_gdf</span></code> a GeoPandas Dataframe representing the full mesh</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">smoothed_contour_gdf</span></code> a GeoPandas Dataframe representing
+the smoothed contour (e.g. 200m isobath)</p></li>
+</ul>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="EchoPro.Survey.get_semi_variogram">
+<span class="sig-name descname"><span class="pre">get_semi_variogram</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">krig_mesh</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#EchoPro.data_loader.KrigingMesh" title="EchoPro.data_loader.kriging_mesh.KrigingMesh"><span class="pre">EchoPro.data_loader.kriging_mesh.KrigingMesh</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">EchoPro.computation.semivariogram.vario_param_type</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">warning</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#EchoPro.computation.SemiVariogram" title="EchoPro.computation.semivariogram.SemiVariogram"><span class="pre">EchoPro.computation.semivariogram.SemiVariogram</span></a></span></span><a class="headerlink" href="#EchoPro.Survey.get_semi_variogram" title="Permalink to this definition">#</a></dt>
+<dd><p>Initializes a <code class="docutils literal notranslate"><span class="pre">SemiVariogram</span></code> object based on the provided
+<code class="docutils literal notranslate"><span class="pre">KrigingMesh</span></code> object, the calculated areal biomass density,
+and user provided semi-variogram parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>krig_mesh</strong><span class="classifier">KrigingMesh</span></dt><dd><p>Object representing the Kriging mesh</p>
+</dd>
+<dt><strong>params</strong><span class="classifier">dict</span></dt><dd><p>Semi-variogram specific parameters. Contains the following
+parameters:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">nlag:</span> <span class="pre">int</span></code> – The total number of lag centers</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">lag_res:</span> <span class="pre">float</span></code> – The spacing between lag centers</p></li>
+</ul>
+</dd>
+<dt><strong>warning</strong><span class="classifier">bool</span></dt><dd><p>If True all warnings are printed to the terminal, otherwise
+they are silenced.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>semi_vario</strong><span class="classifier">SemiVariogram</span></dt><dd><p>An initialized object, which provides users with access
+to a routine that calculates the normalized
+semi-variogram and routines for obtaining the best
+semi-variogram model for the estimated semi-variogram.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><dl class="simple">
+<dt>ValueError</dt><dd><p>If <code class="docutils literal notranslate"><span class="pre">krig_mesh</span></code> is not a <code class="docutils literal notranslate"><span class="pre">KrigingMesh</span></code> object</p>
+</dd>
+<dt>ValueError</dt><dd><p>If <code class="docutils literal notranslate"><span class="pre">params</span></code> is empty</p>
+</dd>
+<dt>ValueError</dt><dd><p>If <code class="docutils literal notranslate"><span class="pre">params</span></code> does not contain all required parameters</p>
+</dd>
+<dt>TypeError</dt><dd><p>If the values of <code class="docutils literal notranslate"><span class="pre">params</span></code> are not the expected type</p>
+</dd>
+<dt>ValueError</dt><dd><p>If the areal biomass density has not been calculated</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<dl class="simple">
+<dt>UserWarning</dt><dd><p>If the final biomass table being used was created from a subset
+of the full data</p>
+</dd>
+</dl>
+</div>
+<p class="rubric">Notes</p>
+<p>To run this routine, one must first compute the areal biomass density
+using <code class="docutils literal notranslate"><span class="pre">compute_transect_results</span></code>. It is standard to compute the biomass
+density from the full set of data (i.e. not from a subset of the data).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="EchoPro.Survey.load_survey_data">
+<span class="sig-name descname"><span class="pre">load_survey_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'all'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#EchoPro.Survey.load_survey_data" title="Permalink to this definition">#</a></dt>
+<dd><p>Loads the biological, NASC, and stratification
+data using parameters obtained from the configuration
+files.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>file_type</strong><span class="classifier">str</span></dt><dd><p>Specifies what survey data should be loaded.
+Possible options:</p>
+<ul class="simple">
+<li><p>‘all’ -&gt; loads all survey data</p></li>
+<li><p>‘biological’ -&gt; only loads the biological data</p></li>
+<li><p>‘strata’ -&gt; only loads the stratification data</p></li>
+<li><p>‘nasc’ -&gt; only loads the NASC data</p></li>
+</ul>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>This function assigns class variables obtained from loading the
+data. Specifically, the following class variables are created
+for the file_type:</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">file_type='biological'</span></code></dt><dd><ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">self.length_df</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">self.specimen_df</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">file_type='strata'</span></code></dt><dd><ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">self.strata_df</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">self.geo_strata_df</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">self.strata_sig_b</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">file_type='nasc'</span></code></dt><dd><ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">self.nasc_df</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="EchoPro.Survey.run_cv_analysis">
+<span class="sig-name descname"><span class="pre">run_cv_analysis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lat_inpfc</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">(-</span> <span class="pre">inf,</span> <span class="pre">36,</span> <span class="pre">40.5,</span> <span class="pre">43.0,</span> <span class="pre">45.7667,</span> <span class="pre">48.5,</span> <span class="pre">55.0)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kriged_data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#EchoPro.Survey.run_cv_analysis" title="Permalink to this definition">#</a></dt>
+<dd><p>Performs CV analysis by running the Jolly-Hampton
+algorithm.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>lat_inpfc</strong><span class="classifier">Tuple[float]</span></dt><dd><p>Bin values which represent the latitude bounds for
+each region within a survey (established by INPFC)</p>
+</dd>
+<dt><strong>kriged_data</strong><span class="classifier">bool</span></dt><dd><p>If True, perform CV analysis on Kriged data, otherwise
+perform CV analysis on data that has not been Kriged</p>
+</dd>
+<dt><strong>seed</strong><span class="classifier">int</span></dt><dd><p>Seed value for the random number generator</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt>float</dt><dd><p>The mean Jolly-Hampton CV value.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>The format of <code class="docutils literal notranslate"><span class="pre">lat_inpfc</span></code> should be such that it can be
+used by Pandas.cut.</p>
+<p>If the initialization parameter <code class="docutils literal notranslate"><span class="pre">JH_fac</span></code> is 1, then only
+1 realization is run, otherwise 10,000 realizations of the
+algorithm are run.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-EchoPro.computation">
+<span id="computational-routines"></span><h2>Computational routines<a class="headerlink" href="#module-EchoPro.computation" title="Permalink to this headline">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="EchoPro.computation.Bootstrapping">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">EchoPro.computation.</span></span><span class="sig-name descname"><span class="pre">Bootstrapping</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">survey</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#EchoPro.computation.Bootstrapping" title="Permalink to this definition">#</a></dt>
+<dd><p>A Class that performs bootstrapping for data that has been
+Kriged and data that has not been Kriged.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>survey</strong><span class="classifier">Survey</span></dt><dd><p>An initialized Survey object.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="EchoPro.computation.Bootstrapping.run_bootstrapping">
+<span class="sig-name descname"><span class="pre">run_bootstrapping</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">run_kriging</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kriging_params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">removal_percentage</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">50.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_iterations</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">pandas.core.frame.DataFrame</span></span></span><a class="headerlink" href="#EchoPro.computation.Bootstrapping.run_bootstrapping" title="Permalink to this definition">#</a></dt>
+<dd><p>A routine for running bootstrapping on a reduced number of
+transects within a survey. The bootstrapping performed can
+be completed for data that has been Kriged and data that
+has no Kriging. Each bootstrapping iteration is obtained
+by randomly selecting a subset of transects based on the
+<code class="docutils literal notranslate"><span class="pre">removal_percentage</span></code> input.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>run_kriging: bool</strong></dt><dd><p>If True, Kriging will be run (this requires that one provide the
+input <code class="docutils literal notranslate"><span class="pre">kriging_params</span></code>), otherwise Kriging will not be run</p>
+</dd>
+<dt><strong>kriging_params: dict or None</strong></dt><dd><p>All parameters needed to initialize the kriging routine via
+<code class="docutils literal notranslate"><span class="pre">survey.get_kriging()</span></code> in addition to the parameter <code class="docutils literal notranslate"><span class="pre">krig_mesh</span></code>,
+which is an initialized <code class="docutils literal notranslate"><span class="pre">KrigingMesh</span></code> object</p>
+</dd>
+<dt><strong>removal_percentage: float</strong></dt><dd><p>The percentage of transects that should be removed.</p>
+</dd>
+<dt><strong>num_iterations: int</strong></dt><dd><p>The number of bootstrapping iterations to run</p>
+</dd>
+<dt><strong>seed: int or None</strong></dt><dd><p>The seed for the random number generator used to select the transects. If
+no seed is provided the random number generator will not be seeded.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt>boot_final_results: pd.Dataframe</dt><dd><p>A Dataframe corresponding to the results for each bootstrap iteration.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>If one wants to remove 30% of the transects and then run bootstrapping,
+<code class="docutils literal notranslate"><span class="pre">removal_percentage</span></code> should be set to <code class="docutils literal notranslate"><span class="pre">30.0</span></code>.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">removal_percentage</span></code> multiplied by the number of unique transects in
+<code class="docutils literal notranslate"><span class="pre">survey.nasc_df</span></code> is not an integer, then the ceiling of the result will
+be used for the number of transects to be removed.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">run_kriging=False</span></code> then the Dataframe will have the columns
+<code class="docutils literal notranslate"><span class="pre">tot_biomass_no_kriging</span></code> and <code class="docutils literal notranslate"><span class="pre">CV_JH_mean_no_kriging</span></code>, which correspond to
+the total biomass density with no Kriging and the mean of the Jolly-Hampton CV value
+for the associated data, respectively.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">run_kriging=True</span></code> then the Dataframe will have the same columns as when
+<code class="docutils literal notranslate"><span class="pre">run_kriging=False</span></code> in addition to the columns <code class="docutils literal notranslate"><span class="pre">tot_biomass_kriging</span></code> and
+<code class="docutils literal notranslate"><span class="pre">CV_JH_mean_kriging</span></code>, which correspond to the total biomass density produced by the Kriged
+data and the mean of the Jolly-Hampton CV value for the associated data, respectively.</p>
+<p>The number of Jolly-Hampton realizations is determined by an initialization parameter,
+see <code class="docutils literal notranslate"><span class="pre">Survey.run_cv_analysis</span></code> for more details.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="EchoPro.computation.Kriging">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">EchoPro.computation.</span></span><span class="sig-name descname"><span class="pre">Kriging</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">survey</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k_max</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k_min</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">R</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ratio</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">s_v_params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">s_v_model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Callable</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#EchoPro.computation.Kriging" title="Permalink to this definition">#</a></dt>
+<dd><p>This class constructs all data necessary
+for Kriging and performs Kriging</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>survey</strong><span class="classifier">Survey</span></dt><dd><p>An initialized Survey object. Note that any change to
+<code class="docutils literal notranslate"><span class="pre">self.survey</span></code> will also change this object.</p>
+</dd>
+<dt><strong>k_max: int</strong></dt><dd><p>The maximum number of data points within the search radius</p>
+</dd>
+<dt><strong>k_min: int</strong></dt><dd><p>The minimum number of data points within the search radius</p>
+</dd>
+<dt><strong>R: float</strong></dt><dd><p>Search radius for Kriging</p>
+</dd>
+<dt><strong>ratio: float</strong></dt><dd><p>Acceptable ratio for the singular values divided by the largest
+singular value.</p>
+</dd>
+<dt><strong>s_v_params: dict</strong></dt><dd><p>Dictionary specifying the parameter values for the semi-variogram model.</p>
+</dd>
+<dt><strong>s_v_model: Callable</strong></dt><dd><p>a Semi-variogram model from the <code class="docutils literal notranslate"><span class="pre">SemiVariogram</span></code> class</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="EchoPro.computation.Kriging.compute_kriging_variables">
+<span class="sig-name descname"><span class="pre">compute_kriging_variables</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#EchoPro.computation.Kriging.compute_kriging_variables" title="Permalink to this definition">#</a></dt>
+<dd><p>Computes useful variables corresponding to values at each
+Kriging mesh point and assigns them to the GeoDataFrame
+<code class="docutils literal notranslate"><span class="pre">self.survey.bio_calc.kriging_results_gdf</span></code>. For example,
+computes the <code class="docutils literal notranslate"><span class="pre">abundance</span></code> at each Kriging mesh point.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="EchoPro.computation.Kriging.run_biomass_kriging">
+<span class="sig-name descname"><span class="pre">run_biomass_kriging</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">krig_mesh</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#EchoPro.data_loader.KrigingMesh" title="EchoPro.data_loader.kriging_mesh.KrigingMesh"><span class="pre">EchoPro.data_loader.kriging_mesh.KrigingMesh</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#EchoPro.computation.Kriging.run_biomass_kriging" title="Permalink to this definition">#</a></dt>
+<dd><p>A high-level interface that sets up and runs
+Kriging using the areal biomass density.
+The results are then stored in the <code class="docutils literal notranslate"><span class="pre">Survey</span></code>
+object as <code class="docutils literal notranslate"><span class="pre">kriging_results_gdf</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>krig_mesh</strong><span class="classifier">KrigingMesh</span></dt><dd><p>Object representing the Kriging mesh</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>To run this routine, one must first compute the areal biomass
+density using <code class="docutils literal notranslate"><span class="pre">compute_transect_results</span></code>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="EchoPro.computation.Kriging.run_kriging">
+<span class="sig-name descname"><span class="pre">run_kriging</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_mesh</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_mesh</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">field_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#EchoPro.computation.Kriging.run_kriging" title="Permalink to this definition">#</a></dt>
+<dd><p>A low-level interface that runs Kriging using the provided
+mesh and data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>x_mesh</strong><span class="classifier">np.ndarray</span></dt><dd><p>1D array denoting the x coordinates of the mesh</p>
+</dd>
+<dt><strong>x_data</strong><span class="classifier">np.ndarray</span></dt><dd><p>1D array denoting the x coordinates of the data</p>
+</dd>
+<dt><strong>y_mesh</strong><span class="classifier">np.ndarray</span></dt><dd><p>1D array denoting the y coordinates of the mesh</p>
+</dd>
+<dt><strong>y_data</strong><span class="classifier">np.ndarray</span></dt><dd><p>1D array denoting the y coordinates of the data</p>
+</dd>
+<dt><strong>field_data</strong><span class="classifier">np.ndarray</span></dt><dd><p>1D array denoting the field values at the (x ,y)
+coordinates of the data (e.g. biomass density).</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>field_var_arr</strong><span class="classifier">np.ndarray</span></dt><dd><p>1D array representing the Kriging variance for each mesh coordinate</p>
+</dd>
+<dt><strong>field_samplevar_arr</strong><span class="classifier">np.ndarray</span></dt><dd><p>1D array representing the Kriging sample variance for each mesh coordinate</p>
+</dd>
+<dt><strong>field_mean_arr</strong><span class="classifier">np.ndarray</span></dt><dd><p>1D array representing the Kriged mean value for each mesh coordinate</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Currently, this routine only runs Ordinary Kriging.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="EchoPro.computation.SemiVariogram">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">EchoPro.computation.</span></span><span class="sig-name descname"><span class="pre">SemiVariogram</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">field</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lag_res</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nlag</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#EchoPro.computation.SemiVariogram" title="Permalink to this definition">#</a></dt>
+<dd><p>This class contains a routine that calculates a
+normalized semi-variogram and routines for
+obtaining the best semi-variogram model for the
+estimated semi-variogram.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>x</strong><span class="classifier">np.ndarray</span></dt><dd><p>A 1D array representing the x coordinate for
+the semi-variogram calculation</p>
+</dd>
+<dt><strong>y</strong><span class="classifier">np.ndarray</span></dt><dd><p>A 1D array representing the y coordinate for
+the semi-variogram calculation</p>
+</dd>
+<dt><strong>field</strong><span class="classifier">np.ndarray</span></dt><dd><p>A 1D array representing the field for the
+semi-variogram calculation (e.g. biomass density)</p>
+</dd>
+<dt><strong>lag_res</strong><span class="classifier">float</span></dt><dd><p>The spacing between lag centers</p>
+</dd>
+<dt><strong>nlag</strong><span class="classifier">int</span></dt><dd><p>The total number of lag centers</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>The variables <code class="docutils literal notranslate"><span class="pre">lag_res</span></code> and <code class="docutils literal notranslate"><span class="pre">nlag</span></code> determine
+the center of bins used to calculate the
+semi-variogram. For example, if <cite>lag_res=3`</cite> and
+<code class="docutils literal notranslate"><span class="pre">nlag=0.1</span></code> then we would obtain the bin centers
+<code class="docutils literal notranslate"><span class="pre">[0.0,</span> <span class="pre">0.1,</span> <span class="pre">0.2]</span></code>.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="EchoPro.computation.SemiVariogram.apply_lsq_fit">
+<span class="sig-name descname"><span class="pre">apply_lsq_fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#EchoPro.computation.SemiVariogram.apply_lsq_fit" title="Permalink to this definition">#</a></dt>
+<dd><p>Obtains the set of model parameters that minimize the sum
+of the squared residuals. The residual is defined as the
+difference between the normalized semi-variogram and
+the semi-variogram model selected.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>model</strong><span class="classifier">str</span></dt><dd><p>The name of the model to use</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt>Dict[str, float]</dt><dd><p>Dictionary with the model parameters as keys and
+the parameters that minimize the residual as values</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>This function uses a pre-defined set of boundaries for
+the fitting.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="EchoPro.computation.SemiVariogram.calculate_semi_variogram">
+<span class="sig-name descname"><span class="pre">calculate_semi_variogram</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">center_bins</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#EchoPro.computation.SemiVariogram.calculate_semi_variogram" title="Permalink to this definition">#</a></dt>
+<dd><p>Calculates the semi-variogram normalized by the
+standard deviation of the head multiplied by
+the standard deviation of the tail for each
+lag. This calculation assumes that the mesh
+points (x,y) are isotropic and the search
+area is omnidirectional.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>center_bins: np.ndarray</strong></dt><dd><p>A 1D array representing the center of the bins used
+to calculate the semi-variogram</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>The calculated normalized semi-variogram values are
+stored in the class variable <code class="docutils literal notranslate"><span class="pre">gamma_normalized</span></code>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="EchoPro.computation.SemiVariogram.exponential">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">exponential</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lag_vec</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sill</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ls</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nugget</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">numpy.ndarray</span></span></span><a class="headerlink" href="#EchoPro.computation.SemiVariogram.exponential" title="Permalink to this definition">#</a></dt>
+<dd><p>Applies an function to the provided input.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>lag_vec</strong><span class="classifier">np.ndarray</span></dt><dd><p>A 1D array where the elements correspond to the lag</p>
+</dd>
+<dt><strong>sill</strong><span class="classifier">float</span></dt><dd><p>Sill of model</p>
+</dd>
+<dt><strong>ls</strong><span class="classifier">float</span></dt><dd><p>Length scale for the main lobe</p>
+</dd>
+<dt><strong>nugget</strong><span class="classifier">float</span></dt><dd><p>Nugget effect</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt>np.ndarray</dt><dd><p>1D array of values obtained from evaluating the function</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="EchoPro.computation.SemiVariogram.generalized_exp_bessel">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">generalized_exp_bessel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lag_vec</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sill</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ls</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exp_pow</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ls_hole_eff</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nugget</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">numpy.ndarray</span></span></span><a class="headerlink" href="#EchoPro.computation.SemiVariogram.generalized_exp_bessel" title="Permalink to this definition">#</a></dt>
+<dd><p>Applies a generalized exponential bessel function
+to the provided input.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>lag_vec</strong><span class="classifier">np.ndarray</span></dt><dd><p>A 1D array where the elements correspond to the lag</p>
+</dd>
+<dt><strong>sill</strong><span class="classifier">float</span></dt><dd><p>Sill of model</p>
+</dd>
+<dt><strong>ls</strong><span class="classifier">float</span></dt><dd><p>Length scale for the main lobe</p>
+</dd>
+<dt><strong>exp_pow</strong><span class="classifier">float</span></dt><dd><p>Power for the exponential arguments</p>
+</dd>
+<dt><strong>ls_hole_eff</strong><span class="classifier">float</span></dt><dd><p>Length scale for hole effect</p>
+</dd>
+<dt><strong>nugget</strong><span class="classifier">float</span></dt><dd><p>Nugget effect</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt>np.ndarray</dt><dd><p>1D array of values obtained from evaluating the function</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="EchoPro.computation.SemiVariogram.get_model_info_from_str">
+<span class="sig-name descname"><span class="pre">get_model_info_from_str</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Callable</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#EchoPro.computation.SemiVariogram.get_model_info_from_str" title="Permalink to this definition">#</a></dt>
+<dd><p>Selects the appropriate model and model
+kwargs needed, based on the provided model
+name.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>model</strong><span class="classifier">str</span></dt><dd><p>The name of the model</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt>Tuple[Callable, tuple]</dt><dd><p>The first element is a callable representing
+the model and the second is the required kwargs
+for that model</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="EchoPro.computation.SemiVariogram.get_params_for_kriging">
+<span class="sig-name descname"><span class="pre">get_params_for_kriging</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#EchoPro.computation.SemiVariogram.get_params_for_kriging" title="Permalink to this definition">#</a></dt>
+<dd><p>Collects all semi-variogram specific parameters
+needed for Kriging and returns them.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><dl class="simple">
+<dt>dict</dt><dd><p>Dictionary with all parameters needed for Kriging.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>This will return all parameters set by the <code class="docutils literal notranslate"><span class="pre">get_widget</span></code>
+function, thus this function must be run first.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="EchoPro.computation.SemiVariogram.get_widget">
+<span class="sig-name descname"><span class="pre">get_widget</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ipywidgets.widgets.widget_templates.GridspecLayout</span></span></span><a class="headerlink" href="#EchoPro.computation.SemiVariogram.get_widget" title="Permalink to this definition">#</a></dt>
+<dd><p>Collects and returns a widget that allows one to
+plot the normalized semi-variogram values, apply
+a Least Squares fit to the normalized semi-variogram
+values (for a given model), and interactively plot a
+model for a given set of parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><dl class="simple">
+<dt>ipywidgets.GridspecLayout</dt><dd><p>An interactive layout for plotting and fitting.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>If one would like a dictionary of all semi-variogram
+parameters needed for Kriging, one should consider
+using <code class="docutils literal notranslate"><span class="pre">get_params_for_kriging</span></code>, after this function.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-EchoPro.data_loader">
+<span id="data-loading"></span><h2>Data loading<a class="headerlink" href="#module-EchoPro.data_loader" title="Permalink to this headline">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="EchoPro.data_loader.KrigingMesh">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">EchoPro.data_loader.</span></span><span class="sig-name descname"><span class="pre">KrigingMesh</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">survey</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#EchoPro.data_loader.KrigingMesh" title="Permalink to this definition">#</a></dt>
+<dd><p>This class loads the mesh data, provides
+functions to manipulate the mesh, and
+provides functions to plot the mesh.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>survey</strong><span class="classifier">Survey</span></dt><dd><p>An initialized <code class="docutils literal notranslate"><span class="pre">Survey</span></code> object.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Any change to <code class="docutils literal notranslate"><span class="pre">self.survey</span></code> will also change
+the input survey object.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="EchoPro.data_loader.KrigingMesh.align_longitude">
+<span class="sig-name descname"><span class="pre">align_longitude</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gdf</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">geopandas.geodataframe.GeoDataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lon_ref</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">-</span> <span class="pre">124.78338</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">geopandas.geodataframe.GeoDataFrame</span></span></span><a class="headerlink" href="#EchoPro.data_loader.KrigingMesh.align_longitude" title="Permalink to this definition">#</a></dt>
+<dd><p>This function applies a transformation to the
+longitude column of the provided Dataframe so that
+the anisotropic signature of the animal biomass
+distribution can be approximately characterized by two
+perpendicular (principal) correlation scales: one is
+along the isobaths and the other is across the isobaths.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>gdf</strong><span class="classifier">gpd.GeoDataFrame</span></dt><dd><p>Dataframe with columns specifying Latitude, Longitude,
+and geometry.</p>
+</dd>
+<dt><strong>lon_ref</strong><span class="classifier">float</span></dt><dd><p>An arbitrary scalar, or a reference longitude
+(e.g., the mean longitude of the 200m isobath)</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt>transformed_gdf: gpd.GeoDataFrame</dt><dd><p>A copy of <code class="docutils literal notranslate"><span class="pre">gdf</span></code> with the Longitude column transformed
+according to the interpolated (Latitude, Longitude) values
+pulled from the file specified by the parameter
+<code class="docutils literal notranslate"><span class="pre">smoothed_contour_filename</span></code>.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Extreme caution should be used here. This transformation
+was specifically designed for a NWFSC application!</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="EchoPro.data_loader.KrigingMesh.apply_coordinate_transformation">
+<span class="sig-name descname"><span class="pre">apply_coordinate_transformation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coord_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'transect'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lon_ref</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">-</span> <span class="pre">124.78338</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_offset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">-</span> <span class="pre">124.78338</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_offset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">45.0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#EchoPro.data_loader.KrigingMesh.apply_coordinate_transformation" title="Permalink to this definition">#</a></dt>
+<dd><p>Applies a coordinate transformation to either <code class="docutils literal notranslate"><span class="pre">survey.bio_calc.transect_results_gdf</span></code>
+or <code class="docutils literal notranslate"><span class="pre">self.mesh_gdf</span></code> by first aligning the longitude along the
+smoothed contour data specified by the configuration
+parameter <code class="docutils literal notranslate"><span class="pre">'smoothed_contour_filename'</span></code> and then
+transforming the input coordinates from degrees to distance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>coord_type</strong><span class="classifier">str</span></dt><dd><p>The type of coordinate points to transform.
+Possible options:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">'transect'</span></code> specifies that one should
+copy and transform <code class="docutils literal notranslate"><span class="pre">survey.bio_calc.transect_results_gdf</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'mesh'</span></code> specifies that one should copy ‘
+and transform <cite>self.mesh_gdf`</cite></p></li>
+</ul>
+</dd>
+<dt><strong>lon_ref</strong><span class="classifier">float</span></dt><dd><p>An arbitrary scalar, or a reference longitude
+(e.g., the mean longitude of the 200m isobath)
+used in aligning the longitude</p>
+</dd>
+<dt><strong>x_offset</strong><span class="classifier">float</span></dt><dd><p>An arbitrary scalar, or a reference longitude
+(e.g., the mean longitude of the 200m isobath)
+used in transforming from degrees to distance</p>
+</dd>
+<dt><strong>y_offset</strong><span class="classifier">float</span></dt><dd><p>An arbitrary scalar, or a reference latitude
+(e.g., the mean latitude of the 200m isobath)
+used in transforming from degrees to distance</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Extreme caution should be used here. This transformation
+was specifically designed for a NWFSC application!</p>
+<p>This function constructs the following class variables
+for each <code class="docutils literal notranslate"><span class="pre">coord_type</span></code>:</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt>If <code class="docutils literal notranslate"><span class="pre">coord_type='transect'</span></code></dt><dd><ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">transformed_transect_df</span></code> DataFrame representing the
+transformed transect data</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">transect_d_x</span></code> the distance between the maximum longitude
+value and the minimum longitude value (after aligning the
+longitude) for transect data</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">transect_d_y</span></code> the distance between the maximum latitude
+value and the minimum latitude value (after aligning the
+longitude) for the transect data</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>If <code class="docutils literal notranslate"><span class="pre">coord_type='mesh'</span></code></dt><dd><ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">transformed_mesh_df</span></code> DataFrame representing the
+transformed mesh data</p></li>
+<li><p>Additionally, if <code class="docutils literal notranslate"><span class="pre">coord_type='transect'</span></code> has not been
+run, this function will create all class variables associated
+with this input.</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="EchoPro.data_loader.KrigingMesh.apply_distance_transformation">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">apply_distance_transformation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gdf</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">geopandas.geodataframe.GeoDataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d_x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d_y</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_offset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">-</span> <span class="pre">124.78338</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_offset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">45.0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#EchoPro.data_loader.KrigingMesh.apply_distance_transformation" title="Permalink to this definition">#</a></dt>
+<dd><p>Transforms the input coordinates from degrees
+to distance i.e. puts them into a distance
+coordinate system.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>gdf</strong><span class="classifier">gpd.GeoDataFrame</span></dt><dd><p>Dataframe with geometry column.</p>
+</dd>
+<dt><strong>d_x</strong><span class="classifier">float</span></dt><dd><p>the distance between the maximum longitude
+value and the minimum longitude value.</p>
+</dd>
+<dt><strong>d_y</strong><span class="classifier">float</span></dt><dd><p>the distance between the maximum latitude
+value and the minimum latitude value</p>
+</dd>
+<dt><strong>x_offset</strong><span class="classifier">float</span></dt><dd><p>An arbitrary scalar, or a reference longitude
+(e.g., the mean longitude of the 200m isobath)</p>
+</dd>
+<dt><strong>y_offset</strong><span class="classifier">float</span></dt><dd><p>An arbitrary scalar, or a reference latitude
+(e.g., the mean latitude of the 200m isobath)</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>x</strong><span class="classifier">np.ndarray</span></dt><dd><p>1D array representing the x coordinate of the distance
+coordinate system</p>
+</dd>
+<dt><strong>y</strong><span class="classifier">np.ndarray</span></dt><dd><p>1D array representing the y coordinate of the distance
+coordinate system</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Extreme caution should be used here. This transformation
+was specifically designed for a NWFSC application!</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="EchoPro.data_loader.KrigingMesh.get_polygon_of_transects">
+<span class="sig-name descname"><span class="pre">get_polygon_of_transects</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gdf</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">geopandas.geodataframe.GeoDataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_close</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nm_to_buffer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.25</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">shapely.geometry.polygon.Polygon</span></span></span><a class="headerlink" href="#EchoPro.data_loader.KrigingMesh.get_polygon_of_transects" title="Permalink to this definition">#</a></dt>
+<dd><p>This function constructs a polygon that contains
+all transects.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>gdf</strong><span class="classifier">gpd.GeoDataFrame</span></dt><dd><p>All transect points with index transect and
+columns: Latitude, Longitude, and geometry</p>
+</dd>
+<dt><strong>n_close</strong><span class="classifier">int</span></dt><dd><p>The number of closest transects to include in the Polygon.
+This value includes the transect under consideration. Thus,
+n_close should be greater than or equal to 2.</p>
+</dd>
+<dt><strong>nm_to_buffer</strong><span class="classifier">float</span></dt><dd><p>The number of nautical miles to buffer the constructed Polygon</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt>Polygon</dt><dd><p>Constructed Polygon that contains all transect data</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>How it works: Using the mean (latitude, longitude)
+point of each transect, we find the <code class="docutils literal notranslate"><span class="pre">n_close</span></code> closest
+transects to each transect and construct a Polygon
+of these transects. Then, we compute the convex
+hull of this Polygon, which creates the smallest
+convex Polygon containing all the points in the object.
+Lastly, we take the unary union of all constructed
+convex Polygons.</p>
+<p>The connectivity of this polygon is determined by <code class="docutils literal notranslate"><span class="pre">n_close</span></code>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="EchoPro.data_loader.KrigingMesh.reduce_grid_points">
+<span class="sig-name descname"><span class="pre">reduce_grid_points</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transect_polygon</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">shapely.geometry.polygon.Polygon</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">geopandas.geodataframe.GeoDataFrame</span></span></span><a class="headerlink" href="#EchoPro.data_loader.KrigingMesh.reduce_grid_points" title="Permalink to this definition">#</a></dt>
+<dd><p>Reduces the full mesh points provided to the <code class="docutils literal notranslate"><span class="pre">KrigingMesh</span></code>
+class by selecting those points that are within the
+transect polygon.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>transect_polygon</strong><span class="classifier">Polygon</span></dt><dd><p>A Polygon that contains all transect data.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt>gpd.GeoDataFrame</dt><dd><p>Dataframe representing the reduced mesh points</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+    <script type="text/x-thebe-config">
+    {
+        requestKernel: true,
+        binderOptions: {
+            repo: "binder-examples/jupyter-stacks-datascience",
+            ref: "master",
+        },
+        codeMirrorConfig: {
+            theme: "abcdef",
+            mode: "python"
+        },
+        kernelOptions: {
+            name: "python3",
+            path: "./."
+        },
+        predefinedOutput: true
+    }
+    </script>
+    <script>kernelName = 'python3'</script>
+
+              </div>
+              
+            </main>
+            <footer class="footer-article noprint">
+                
+    <!-- Previous / next buttons -->
+<div class='prev-next-area'>
+    <a class='left-prev' id="prev-link" href="example_notebooks/bootstrapping_walkthrough.html" title="previous page">
+        <i class="fas fa-angle-left"></i>
+        <div class="prev-next-info">
+            <p class="prev-next-subtitle">previous</p>
+            <p class="prev-next-title">EchoPro Bootstrapping Workflow</p>
+        </div>
+    </a>
+</div>
+            </footer>
+        </div>
+    </div>
+    <div class="footer-content row">
+        <footer class="col footer"><p>
+  
+    By The UW Echospace Group<br/>
+  
+      &copy; Copyright 2022.<br/>
+</p>
+        </footer>
+    </div>
+    
+</div>
+
+
+      </div>
+    </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="_static/scripts/pydata-sphinx-theme.js?digest=1999514e3f237ded88cf"></script>
+
+
+  </body>
+</html>

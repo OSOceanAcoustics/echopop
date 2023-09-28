@@ -25,6 +25,7 @@
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css" />
     <link rel="stylesheet" type="text/css" href="_static/mystnb.css" />
     <link rel="stylesheet" type="text/css" href="_static/sphinx-thebe.css" />
+    <link rel="stylesheet" type="text/css" href="_static/graphviz.css" />
     <link rel="stylesheet" type="text/css" href="_static/design-style.b7bb847fb20b106c3d81b95245e65545.min.css" />
     
   <!-- Pre-loaded scripts that we'll load fully later -->
@@ -50,6 +51,8 @@ const thebe_selector_input = "pre"
 const thebe_selector_output = ".output, .cell_output"
 </script>
     <script async="async" src="_static/sphinx-thebe.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.20.1/dist/embed-amd.js"></script>
     <script src="_static/searchtools.js"></script>
     <script src="_static/language_data.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -123,13 +126,8 @@ const thebe_selector_output = ".output, .cell_output"
   </a>
  </li>
  <li class="toctree-l1">
-  <a class="reference internal" href="example_notebooks/transect_selection_workflow.html">
-   EchoPro Transect Subset Workflow
-  </a>
- </li>
- <li class="toctree-l1">
-  <a class="reference internal" href="example_notebooks/bootstrapping_walkthrough.html">
-   EchoPro Bootstrapping Workflow
+  <a class="reference internal" href="example_notebooks/reports_workflow.html">
+   EchoPro Python Generating Reports Workflow
   </a>
  </li>
  <li class="toctree-l1">
@@ -140,6 +138,28 @@ const thebe_selector_output = ".output, .cell_output"
  <li class="toctree-l1">
   <a class="reference internal" href="example_notebooks/kriging_mesh_walkthrough.html">
    EchoPro Kriging mesh Workflow
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="example_notebooks/transect_selection_workflow.html">
+   EchoPro Transect Subset Workflow
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="example_notebooks/bootstrapping_walkthrough.html">
+   EchoPro Bootstrapping Workflow
+  </a>
+ </li>
+</ul>
+<p aria-level="2" class="caption" role="heading">
+ <span class="caption-text">
+  Help &amp; reference
+ </span>
+</p>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="api.html">
+   API reference
   </a>
  </li>
 </ul>

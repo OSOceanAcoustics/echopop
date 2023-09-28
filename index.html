@@ -26,6 +26,7 @@
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css" />
     <link rel="stylesheet" type="text/css" href="_static/mystnb.css" />
     <link rel="stylesheet" type="text/css" href="_static/sphinx-thebe.css" />
+    <link rel="stylesheet" type="text/css" href="_static/graphviz.css" />
     <link rel="stylesheet" type="text/css" href="_static/design-style.b7bb847fb20b106c3d81b95245e65545.min.css" />
     
   <!-- Pre-loaded scripts that we'll load fully later -->
@@ -50,6 +51,8 @@ const thebe_selector_input = "pre"
 const thebe_selector_output = ".output, .cell_output"
 </script>
     <script async="async" src="_static/sphinx-thebe.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.20.1/dist/embed-amd.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="EchoPro Python Workflow" href="example_notebooks/echopro_workflow.html" />
@@ -119,13 +122,8 @@ const thebe_selector_output = ".output, .cell_output"
   </a>
  </li>
  <li class="toctree-l1">
-  <a class="reference internal" href="example_notebooks/transect_selection_workflow.html">
-   EchoPro Transect Subset Workflow
-  </a>
- </li>
- <li class="toctree-l1">
-  <a class="reference internal" href="example_notebooks/bootstrapping_walkthrough.html">
-   EchoPro Bootstrapping Workflow
+  <a class="reference internal" href="example_notebooks/reports_workflow.html">
+   EchoPro Python Generating Reports Workflow
   </a>
  </li>
  <li class="toctree-l1">
@@ -136,6 +134,28 @@ const thebe_selector_output = ".output, .cell_output"
  <li class="toctree-l1">
   <a class="reference internal" href="example_notebooks/kriging_mesh_walkthrough.html">
    EchoPro Kriging mesh Workflow
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="example_notebooks/transect_selection_workflow.html">
+   EchoPro Transect Subset Workflow
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="example_notebooks/bootstrapping_walkthrough.html">
+   EchoPro Bootstrapping Workflow
+  </a>
+ </li>
+</ul>
+<p aria-level="2" class="caption" role="heading">
+ <span class="caption-text">
+  Help &amp; reference
+ </span>
+</p>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="api.html">
+   API reference
   </a>
  </li>
 </ul>
@@ -356,21 +376,28 @@ title="Print to PDF"
                 
   <section class="tex2jax_ignore mathjax_ignore" id="echopro-documentation-and-example-notebooks">
 <h1>EchoPro documentation and example notebooks<a class="headerlink" href="#echopro-documentation-and-example-notebooks" title="Permalink to this headline">#</a></h1>
-<p>This site currently hosts example Jupyter notebooks for the new Python EchoPro package (<a class="reference external" href="https://github.com/uw-echospace/EchoPro/">https://github.com/uw-echospace/EchoPro/</a>) (But note that the repository is private and only previously approved users can access it). Over time, the documentation for this package will be added here too.</p>
+<p>This site currently hosts example Jupyter notebooks for the new Python EchoPro package (<a class="reference external" href="https://github.com/uw-echospace/EchoPro/">https://github.com/uw-echospace/EchoPro/</a>). Over time, the documentation for this package will be added here too.</p>
 <p>The Jupyter notebooks are shown in a “rendered”, executed form.</p>
 <div class="admonition-glitches-with-some-interactive-graphical-elements admonition">
 <p class="admonition-title">Glitches with some interactive graphical elements</p>
-<p>While the notebooks in this site are rendered, there are some glitches we’re still working out. In particular, an <a class="reference external" href="https://ipywidgets.readthedocs.io/en/stable/">ipywidgets</a> interactive graphical element in the semivariogram widget doesn’t display correctly.</p>
+<p>While the notebooks in this site are rendered, there are some glitches in the display we’re still working out. In particular, an <a class="reference external" href="https://ipywidgets.readthedocs.io/en/stable/">ipywidgets</a> interactive graphical element in the semivariogram widget doesn’t display correctly. The notebooks do run correctly when executed with Jupyter Notebook (“classic”, not JupyterLab).</p>
 </div>
 <p>Go to the individual example notebooks below or in the table of content on the left.</p>
 <div class="toctree-wrapper compound">
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Notebooks</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="example_notebooks/echopro_workflow.html">EchoPro Python Workflow</a></li>
-<li class="toctree-l1"><a class="reference internal" href="example_notebooks/transect_selection_workflow.html">EchoPro Transect Subset Workflow</a></li>
-<li class="toctree-l1"><a class="reference internal" href="example_notebooks/bootstrapping_walkthrough.html">EchoPro Bootstrapping Workflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="example_notebooks/reports_workflow.html">EchoPro Python Generating Reports Workflow</a></li>
 <li class="toctree-l1"><a class="reference internal" href="example_notebooks/semi_variogram_workflow.html">EchoPro Semi-variogram Workflow</a></li>
 <li class="toctree-l1"><a class="reference internal" href="example_notebooks/kriging_mesh_walkthrough.html">EchoPro Kriging mesh Workflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="example_notebooks/transect_selection_workflow.html">EchoPro Transect Subset Workflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="example_notebooks/bootstrapping_walkthrough.html">EchoPro Bootstrapping Workflow</a></li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Help &amp; reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API reference</a></li>
 </ul>
 </div>
 <section id="installation">
@@ -391,7 +418,7 @@ title="Print to PDF"
             mode: "python"
         },
         kernelOptions: {
-            kernelName: "python3",
+            name: "python3",
             path: "./."
         },
         predefinedOutput: true

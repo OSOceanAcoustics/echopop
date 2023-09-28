@@ -25,6 +25,7 @@
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css" />
     <link rel="stylesheet" type="text/css" href="_static/mystnb.css" />
     <link rel="stylesheet" type="text/css" href="_static/sphinx-thebe.css" />
+    <link rel="stylesheet" type="text/css" href="_static/graphviz.css" />
     <link rel="stylesheet" type="text/css" href="_static/design-style.b7bb847fb20b106c3d81b95245e65545.min.css" />
     
   <!-- Pre-loaded scripts that we'll load fully later -->
@@ -49,6 +50,8 @@ const thebe_selector_input = "pre"
 const thebe_selector_output = ".output, .cell_output"
 </script>
     <script async="async" src="_static/sphinx-thebe.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.20.1/dist/embed-amd.js"></script>
     <link rel="index" title="Index" href="#" />
     <link rel="search" title="Search" href="search.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -117,13 +120,8 @@ const thebe_selector_output = ".output, .cell_output"
   </a>
  </li>
  <li class="toctree-l1">
-  <a class="reference internal" href="example_notebooks/transect_selection_workflow.html">
-   EchoPro Transect Subset Workflow
-  </a>
- </li>
- <li class="toctree-l1">
-  <a class="reference internal" href="example_notebooks/bootstrapping_walkthrough.html">
-   EchoPro Bootstrapping Workflow
+  <a class="reference internal" href="example_notebooks/reports_workflow.html">
+   EchoPro Python Generating Reports Workflow
   </a>
  </li>
  <li class="toctree-l1">
@@ -134,6 +132,28 @@ const thebe_selector_output = ".output, .cell_output"
  <li class="toctree-l1">
   <a class="reference internal" href="example_notebooks/kriging_mesh_walkthrough.html">
    EchoPro Kriging mesh Workflow
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="example_notebooks/transect_selection_workflow.html">
+   EchoPro Transect Subset Workflow
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="example_notebooks/bootstrapping_walkthrough.html">
+   EchoPro Bootstrapping Workflow
+  </a>
+ </li>
+</ul>
+<p aria-level="2" class="caption" role="heading">
+ <span class="caption-text">
+  Help &amp; reference
+ </span>
+</p>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="api.html">
+   API reference
   </a>
  </li>
 </ul>
@@ -273,8 +293,184 @@ title="Open an issue"
 <h1 id="index">Index</h1>
 
 <div class="genindex-jumpbox">
+ <a href="#A"><strong>A</strong></a>
+ | <a href="#B"><strong>B</strong></a>
+ | <a href="#C"><strong>C</strong></a>
+ | <a href="#E"><strong>E</strong></a>
+ | <a href="#G"><strong>G</strong></a>
+ | <a href="#K"><strong>K</strong></a>
+ | <a href="#L"><strong>L</strong></a>
+ | <a href="#M"><strong>M</strong></a>
+ | <a href="#R"><strong>R</strong></a>
+ | <a href="#S"><strong>S</strong></a>
  
 </div>
+<h2 id="A">A</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api.html#EchoPro.data_loader.KrigingMesh.align_longitude">align_longitude() (EchoPro.data_loader.KrigingMesh method)</a>
+</li>
+      <li><a href="api.html#EchoPro.data_loader.KrigingMesh.apply_coordinate_transformation">apply_coordinate_transformation() (EchoPro.data_loader.KrigingMesh method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api.html#EchoPro.data_loader.KrigingMesh.apply_distance_transformation">apply_distance_transformation() (EchoPro.data_loader.KrigingMesh static method)</a>
+</li>
+      <li><a href="api.html#EchoPro.computation.SemiVariogram.apply_lsq_fit">apply_lsq_fit() (EchoPro.computation.SemiVariogram method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="B">B</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api.html#EchoPro.computation.Bootstrapping">Bootstrapping (class in EchoPro.computation)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="C">C</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api.html#EchoPro.computation.SemiVariogram.calculate_semi_variogram">calculate_semi_variogram() (EchoPro.computation.SemiVariogram method)</a>
+</li>
+      <li><a href="api.html#EchoPro.computation.Kriging.compute_kriging_variables">compute_kriging_variables() (EchoPro.computation.Kriging method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api.html#EchoPro.Survey.compute_length_age_variables">compute_length_age_variables() (EchoPro.Survey method)</a>
+</li>
+      <li><a href="api.html#EchoPro.Survey.compute_transect_results">compute_transect_results() (EchoPro.Survey method)</a>
+</li>
+      <li><a href="api.html#EchoPro.Survey.create_and_write_reports">create_and_write_reports() (EchoPro.Survey method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="E">E</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li>
+    EchoPro
+
+      <ul>
+        <li><a href="api.html#module-EchoPro">module</a>
+</li>
+      </ul></li>
+      <li>
+    EchoPro.computation
+
+      <ul>
+        <li><a href="api.html#module-EchoPro.computation">module</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li>
+    EchoPro.data_loader
+
+      <ul>
+        <li><a href="api.html#module-EchoPro.data_loader">module</a>
+</li>
+      </ul></li>
+      <li><a href="api.html#EchoPro.computation.SemiVariogram.exponential">exponential() (EchoPro.computation.SemiVariogram static method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="G">G</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api.html#EchoPro.computation.SemiVariogram.generalized_exp_bessel">generalized_exp_bessel() (EchoPro.computation.SemiVariogram static method)</a>
+</li>
+      <li><a href="api.html#EchoPro.Survey.get_bootstrapping">get_bootstrapping() (EchoPro.Survey method)</a>
+</li>
+      <li><a href="api.html#EchoPro.Survey.get_kriging">get_kriging() (EchoPro.Survey method)</a>
+</li>
+      <li><a href="api.html#EchoPro.Survey.get_kriging_mesh">get_kriging_mesh() (EchoPro.Survey method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api.html#EchoPro.computation.SemiVariogram.get_model_info_from_str">get_model_info_from_str() (EchoPro.computation.SemiVariogram method)</a>
+</li>
+      <li><a href="api.html#EchoPro.computation.SemiVariogram.get_params_for_kriging">get_params_for_kriging() (EchoPro.computation.SemiVariogram method)</a>
+</li>
+      <li><a href="api.html#EchoPro.data_loader.KrigingMesh.get_polygon_of_transects">get_polygon_of_transects() (EchoPro.data_loader.KrigingMesh method)</a>
+</li>
+      <li><a href="api.html#EchoPro.Survey.get_semi_variogram">get_semi_variogram() (EchoPro.Survey method)</a>
+</li>
+      <li><a href="api.html#EchoPro.computation.SemiVariogram.get_widget">get_widget() (EchoPro.computation.SemiVariogram method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="K">K</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api.html#EchoPro.computation.Kriging">Kriging (class in EchoPro.computation)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api.html#EchoPro.data_loader.KrigingMesh">KrigingMesh (class in EchoPro.data_loader)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="L">L</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api.html#EchoPro.Survey.load_survey_data">load_survey_data() (EchoPro.Survey method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="M">M</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li>
+    module
+
+      <ul>
+        <li><a href="api.html#module-EchoPro">EchoPro</a>
+</li>
+        <li><a href="api.html#module-EchoPro.computation">EchoPro.computation</a>
+</li>
+        <li><a href="api.html#module-EchoPro.data_loader">EchoPro.data_loader</a>
+</li>
+      </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="R">R</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api.html#EchoPro.data_loader.KrigingMesh.reduce_grid_points">reduce_grid_points() (EchoPro.data_loader.KrigingMesh method)</a>
+</li>
+      <li><a href="api.html#EchoPro.computation.Kriging.run_biomass_kriging">run_biomass_kriging() (EchoPro.computation.Kriging method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api.html#EchoPro.computation.Bootstrapping.run_bootstrapping">run_bootstrapping() (EchoPro.computation.Bootstrapping method)</a>
+</li>
+      <li><a href="api.html#EchoPro.Survey.run_cv_analysis">run_cv_analysis() (EchoPro.Survey method)</a>
+</li>
+      <li><a href="api.html#EchoPro.computation.Kriging.run_kriging">run_kriging() (EchoPro.computation.Kriging method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="S">S</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api.html#EchoPro.computation.SemiVariogram">SemiVariogram (class in EchoPro.computation)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api.html#EchoPro.Survey">Survey (class in EchoPro)</a>
+</li>
+  </ul></td>
+</tr></table>
+
 
 
               </div>
