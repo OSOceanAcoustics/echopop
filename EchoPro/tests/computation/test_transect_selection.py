@@ -1,8 +1,53 @@
 import pytest
 
+import math
+
 import numpy as np
 import EchoPro
 from EchoPro.computation import SemiVariogram as SV
+
+
+@pytest.mark.parametrize(["removal_percentage"], [
+    [38.0], [50.0], [60.0]
+])
+def test_transects_selection_success(removal_percentage, config_base_path):
+    # initialize Survey object
+    survey_2019 = EchoPro.Survey(
+        init_file_path=config_base_path / 'initialization_config.yml',
+        survey_year_file_path=config_base_path / 'survey_year_2019_config.yml',
+        source=3,
+        exclude_age1=True
+    )
+
+    # load all data
+    survey_2019.load_survey_data()
+
+    # obtain all unique transects in nasc_df
+    unique_transects = survey_2019.nasc_df.index.unique().values
+
+    # determine the number of transects that should be selected
+    num_sel_transects = math.floor(len(unique_transects) * (1.0 - removal_percentage / 100.0))
+
+    # initialize the random number generator object and fix the seed
+    rng = np.random.default_rng(seed=1234)
+
+    num_iterations = 5
+    for iteration in range(num_iterations):
+        # randomly select transects without replacement
+        selected_transects = list(rng.choice(unique_transects, num_sel_transects, replace=False))
+
+        print("Iteration #", iteration, len(selected_transects))
+
+        # compute all transect variables
+        survey_2019.compute_transect_results(selected_transects=selected_transects)
+
+        nasc_fraction_adult_df_set = set(survey_2019.bio_calc.nasc_fraction_adult_df.index)
+        nasc_stratum_num_set = set(survey_2019.bio_calc.nasc_df.stratum_num.unique())
+
+        # This test is intended mainly to verify that survey_2019.compute_transect_results
+        # runs successfully. Not sure what other assertion test would be better
+        assert nasc_stratum_num_set <= nasc_fraction_adult_df_set
+        # assert nasc_stratum_num_set <= nasc_fraction_adult_df_set | {0}
 
 
 def test_transect_selection_output(config_base_path):
