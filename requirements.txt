@@ -3,10 +3,14 @@ ipywidgets<8
 jupyter_contrib_nbextensions
 nb_conda_kernels
 notebook<6.5
+# 9/27/23. See https://github.com/microsoft/azuredatastudio/issues/24436#issuecomment-1723328100
+traitlets<5.10
 geopandas
 geopy
 numba
 openpyxl
+# 9/27/23: Pin to <2 to avoid new warning occurring in several cases
+pandas<2
 PyYAML
 shapely<2
 xarray
