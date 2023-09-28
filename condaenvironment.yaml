@@ -22,6 +22,5 @@ dependencies:
   - PyYAML
   - shapely<2
   - xarray
-  # Uncomment these lines to also install the latest EchoPro
-  # - pip:
-  #   - https://uw-echospace.github.io/EchoPro/EchoPro-latest-py3-none-any.whl
+  - pip:
+    - git+https://github.com/uw-echospace/EchoPro.git
