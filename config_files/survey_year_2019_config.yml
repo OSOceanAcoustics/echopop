@@ -37,7 +37,7 @@
 
   # file that relates the stratification to the Haul
   # The two stratification types are found in two sheets: "Base KS" and "INPFC"
-  strata_filename: Stratification/US&CAN strata 2019_final.xlsx
+  strata_filename: Stratification/US_CAN strata 2019_final.xlsx
   strata_sheetname: Base KS
 
   # file that defines the geographic definition of strata
@@ -46,11 +46,11 @@
   geo_strata_sheetname: stratification1
 
   # file that provides NASC values, which do not include age1 values
-  nasc_no_age1_filename: Exports/US&CAN_detailsa_2019_table2y+_ALL_final - updated.xlsx
+  nasc_no_age1_filename: Exports/US_CAN_detailsa_2019_table2y+_ALL_final - updated.xlsx
   nasc_no_age1_sheetname: Sheet1
 
   # file that provides NASC values, which include all ages
-  nasc_all_ages_filename: Exports/US&CAN_detailsa_2019_table1y+_ALL_final - updated.xlsx
+  nasc_all_ages_filename: Exports/US_CAN_detailsa_2019_table1y+_ALL_final - updated.xlsx
   nasc_all_ages_sheetname: Sheet1
   ##############################################################################
 
@@ -68,7 +68,7 @@
   #  smoothed_contour_filename: Kriging_files/Kriging_grid_files/Smoothing_EasyKrig.xlsx
   smoothed_contour_sheetname: Smoothing_EasyKrig
 
-  vario_krig_para_filename: Kriging_files/default_vario_krig_settings_2019_US&CAN.xlsx
+  vario_krig_para_filename: Kriging_files/default_vario_krig_settings_2019_US_CAN.xlsx
   ##############################################################################
 
 
