@@ -91,3 +91,7 @@ jupyter-notebook
 Select the notebook you'd like to run. Once the notebook is open, set the "kernel" (conda environment) to "echopro" by going to the menu item `Kernel > Change kernel` and selecting "Python [conda env:echopro]".
 
 Note that an interactive widget used for exploring and selecting the semi-variogram currently does not work correctly with **JupyterLab**. This wil be addressed in a future release.
+
+## Tests
+
+Python EchoPro contains several tests to continuously verify functionality as changes are implemented. These tests are found in [EchoPro/tests](https://github.com/uw-echospace/EchoPro/tree/master/EchoPro/tests). They are not currently set up to run automatically in the GitHub Actions Continuous Integration system. Instead, they must be run locally. They require a set of Excel output files from Matlab EchoPro for comparison of restults, available in [this Google Drive folder](https://drive.google.com/drive/folders/1_sUDUJY_e6M9cB3n5uibWeoukPqFP8ZO?usp=drive_link). This link has restricted access and the folder can only be downloaded by approved parties. After downloading the files, please set the file path to the containing folder in `tests/conftest.py`, [here](https://github.com/uw-echospace/EchoPro/blob/master/EchoPro/tests/conftest.py#L45).
