@@ -88,6 +88,8 @@ class Survey:
         self.specimen_df = None
         self.nasc_df = None
         self.bio_calc = None
+        self.kriging_mesh = None
+        self.kriging = None
 
     @staticmethod
     def _check_init_file(init_file_path: Path) -> None:
@@ -391,6 +393,17 @@ class Survey:
                 )
 
         return run_jolly_hampton(self, nr, lat_inpfc, seed, kriged_data)
+
+    def load_transform_mesh(self):
+        """
+
+        :return:
+        """
+
+        self.kriging_mesh = self.get_kriging_mesh()
+
+        self.kriging_mesh.apply_coordinate_transformation(coord_type='transect')
+        self.kriging_mesh.apply_coordinate_transformation(coord_type='mesh')
 
     def get_kriging_mesh(self) -> KrigingMesh:
         """
