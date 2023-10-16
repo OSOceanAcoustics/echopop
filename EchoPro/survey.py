@@ -340,6 +340,12 @@ class Survey:
         # add NASC_adult to transect_results_gdf (needs to occur after generate_bin_ds)
         self.bio_calc.set_adult_NASC()
 
+        # calculate Jolly-Hampton CV
+        self.bio_calc.jollyhampton_cv = self.run_cv_analysis(kriged_data=False)
+
+        # compute abundance and biomass for each length and age bin
+        self.compute_length_age_variables(data="transect")
+
     def run_cv_analysis(
         self,
         lat_inpfc: Tuple[float] = (np.NINF, 36, 40.5, 43.000, 45.7667, 48.5, 55.0000),
@@ -589,6 +595,34 @@ class Survey:
         )
 
         return krig
+
+    def compute_kriging_results(self, kriging_params: dict) -> None:
+        """
+        Constructs ``self.kriging.kriging_results_gdf``,
+        ``self.kriging.kriging_results_male_gdf``, and
+        ``self.kriging.kriging_results_female_gdf``, which are
+        GeoDataFrames that contain variables over the kriging
+        points (e.g. abundance, biomass).
+
+        Parameters
+        ----------
+        kriging_params : dict
+            xyz
+        """
+
+        # TODO: This is leading to an apparent duplication and confusion
+        #   between self.kriging and self.kriging.krig_bio_calc.krig
+        self.kriging = self.get_kriging(kriging_params)
+
+        self.kriging.run_biomass_kriging(self.kriging_mesh)
+
+        self.kriging.compute_kriging_variables()
+
+        # calculate Jolly-Hampton CV
+        self.kriging.krig_bio_calc.jollyhampton_cv = self.run_cv_analysis(kriged_data=True)
+
+        # compute abundance and biomass for each length and age bin
+        self.compute_length_age_variables(data="kriging")
 
     def get_bootstrapping(self) -> Bootstrapping:
         """

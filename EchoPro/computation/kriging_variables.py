@@ -20,6 +20,7 @@ class ComputeKrigingVariables:
     def __init__(self, krig=None):
 
         self.krig = krig
+        self.jollyhampton_cv = None
 
     def _set_gender_biomass(self, ds: xr.Dataset) -> None:
         """
