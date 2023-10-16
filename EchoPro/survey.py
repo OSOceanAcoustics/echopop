@@ -109,9 +109,9 @@ class Survey:
         # make sure the configuration file exists
         check_existence_of_file(init_file_path)
 
-        # TODO: create this function that checks the contents of the initialization config file
-        # TODO: it should make sure that certain variables are defined too
-        print("A full check of the initialization file contents needs to be done!")
+        # TODO: Create this function that checks the contents of the initialization config file
+        #   It should make sure that certain variables are defined too
+        # print("A full check of the initialization file contents needs to be done!")
 
     @staticmethod
     def _check_survey_year_file(survey_year_file_path: Path) -> None:
@@ -133,9 +133,9 @@ class Survey:
         # make sure the survey year file exists
         check_existence_of_file(survey_year_file_path)
 
-        # TODO: create this function that checks the contents of the survey year config file
-        # TODO: it should make sure that certain variables are defined and all paths exist
-        print("A check of the survey year file contents needs to be done!")
+        # TODO: Create this function that checks the contents of the survey year config file
+        #   It should make sure that certain variables are defined and all paths exist
+        # print("A check of the survey year file contents needs to be done!")
 
     @staticmethod
     def _read_config(file_path: Path) -> dict:
