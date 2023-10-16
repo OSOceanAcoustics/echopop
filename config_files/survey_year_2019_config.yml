@@ -4,6 +4,16 @@
 # with the data_root_dir path also set below.
 
 ---
+  ##############################################################################
+  # Parameters
+  #########################################
+  survey_year: 2019            # survey year being considered
+  species_id: 22500            # target species ID for the survey year
+  CAN_haul_offset: 200         # The value to be added to the Canadian's haul number
+
+  hemisphere: NW               # north/south and west/east hemispheres, used for the reports
+  ##############################################################################
+
 
   # directory path that contains all data needed
   data_root_dir: ../../2019_consolidated_files/
@@ -84,23 +94,4 @@
   filename_haul_to_transect_CAN: Biological/CAN/haul_to_transect_mapping_2019_CAN.xlsx
   haul_to_transect_CAN_sheetname: Sheet1
   ##############################################################################
-
-
-  ##############################################################################
-  # Additional Parameters for Survey Year #
-  #########################################
-  survey_year: 2019                # survey year being considered
-
-  species_id: 22500                # target species ID for the survey year
-
-  CAN_haul_offset: 200             # The value to be added to the Canadian's haul number
-  ##############################################################################
-
-
-  ##############################################################################
-  # Parameters used for generating reports #
-  #########################################
-
-  hemisphere: NW                        # north/south and west/east hemispheres
-  #####################################################################################################################
 ...
