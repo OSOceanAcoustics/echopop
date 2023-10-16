@@ -65,6 +65,7 @@ class ComputeTransectVariables:
         self.strata_sig_b_df = None
         self.specimen_all_df = None
         self.bin_ds = None
+        self.jollyhampton_cv = None
 
     def _get_strata_sig_b(self) -> None:
         """
