@@ -112,6 +112,28 @@ const thebe_selector_output = ".output, .cell_output"
         </ul>
         <p aria-level="2" class="caption" role="heading">
  <span class="caption-text">
+  Documentation
+ </span>
+</p>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="classes-datastructures.html">
+   Classes and data structures
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="workflow_minimal.html">
+   Processing Workflow
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="input-files.html">
+   Input files
+  </a>
+ </li>
+</ul>
+<p aria-level="2" class="caption" role="heading">
+ <span class="caption-text">
   Notebooks
  </span>
 </p>
@@ -445,6 +467,24 @@ calculations, CV analysis, semi-variogram algorithm, and Kriging.</p>
 </dd>
 </dl>
 <dl class="py method">
+<dt class="sig sig-object py" id="EchoPro.Survey.compute_kriging_results">
+<span class="sig-name descname"><span class="pre">compute_kriging_results</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kriging_params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#EchoPro.Survey.compute_kriging_results" title="Permalink to this definition">#</a></dt>
+<dd><p>Constructs <code class="docutils literal notranslate"><span class="pre">self.kriging.kriging_results_gdf</span></code>,
+<code class="docutils literal notranslate"><span class="pre">self.kriging.kriging_results_male_gdf</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">self.kriging.kriging_results_female_gdf</span></code>, which are
+GeoDataFrames that contain variables over the kriging
+points (e.g. abundance, biomass).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>kriging_params</strong><span class="classifier">dict</span></dt><dd><p>xyz</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="EchoPro.Survey.compute_length_age_variables">
 <span class="sig-name descname"><span class="pre">compute_length_age_variables</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'transect'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#EchoPro.Survey.compute_length_age_variables" title="Permalink to this definition">#</a></dt>
 <dd><p>Computes abundance and biomass over each length and age bin,
@@ -709,6 +749,16 @@ for the file_type:</p>
 </dl>
 </li>
 </ul>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="EchoPro.Survey.load_transform_mesh">
+<span class="sig-name descname"><span class="pre">load_transform_mesh</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#EchoPro.Survey.load_transform_mesh" title="Permalink to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
