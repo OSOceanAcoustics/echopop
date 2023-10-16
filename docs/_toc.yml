@@ -5,6 +5,11 @@ format: jb-book
 root: index
 parts:
 # - file: markdown
+- caption: Documentation
+  chapters:
+  - file: classes-datastructures
+  - file: workflow_minimal.ipynb
+  - file: input-files
 - caption: Notebooks
   chapters:
   - file: example_notebooks/echopro_workflow.ipynb
