@@ -65,10 +65,10 @@ The EchoPro configuration files and example Jupyter notebooks are available in t
 
 ## Download 2019 sample input files
 
-Download the folder [2019_consolidated_files](https://drive.google.com/drive/folders/13o1z5ebn3G05kAmfAVYJ3QqNEgxL8xxw?usp=sharing),
+Download the folder [Matlab_UWfiles/2019_consolidated_files](https://drive.google.com/drive/folders/13o1z5ebn3G05kAmfAVYJ3QqNEgxL8xxw?usp=sharing),
 which contains all input files necessary to run the example notebooks. Note that this link has restricted access and the folder can only be downloaded by approved parties.
 
-Note that these files incorporate modifications from the original input files provided the NWFSC FEAT team (Chu). These changes involve primarily column names, some file names, and the source of mappings between haul numbers and transects numbers.
+These files incorporate modifications from the original input files provided the NWFSC FEAT team (Chu). The changes involve primarily column names, some file names, and the source of mappings between haul numbers and transects numbers.
 
 ## Running EchoPro
 
