@@ -1,140 +1,154 @@
 # Input files
 
+Input files used in a Python EchoPro run, grouped by data type. The tables below describe the data columns required by Python EchoPro; other columns will be ignored. All input files are in Excel format. File paths, names, and Excel tab names are specified in the survey year configuration file (e.g., `survey_year_2019_config.yml`)
+
+Biological data are always separated into US vs Canada files. All other data files combine US and Canadian data.
+
+To minimize duplication in the data file description tables below, additional definitions and information for some variables (column names) found in multiple files is provided here:
+
+- `haul_num`: Haul number. Identifies the haul the collected data come from. A haul is usally described as a collection of trawls for a certain section of the survey.
+- `transect_num`: Transect number.
+- `species_id`: Species identification code (ID). Identifies what species is associated with the collected data. Pacific hake is 22500.
+
+```{contents}
+:local:
+:depth: 3
+```
+
 
 ## Biological (trawl) data
 
+**Current base directory** used with the sample files: `Biological`
+
+Data files from the US and Canada are found in subdirectories `US` and `CAN`, respectively.
+
 ### Length
 
-**Current sample file (US data):** `Biological/US/2019_biodata_length.xls`, sheet `biodata_length`
+**Current sample file (US data)** relative to base directory: `US/2019_biodata_length.xls`, sheet `biodata_length`
 
 Column name | Data type | Units | Empty value | Description
 --- | --- | --- | --- | --- 
-haul_num | integer | | | Describes what haul the collected data comes from. A haul is usally described as a collection of trawls for a certain section of the survey.
-species_id | string | | | Identifies what species is associated with the collected data.
-sex | string | | | The sex of the animal. This is put into three categories: male, female, and  unsexed.
-length | float | cm | | The length of the animal.
-length_count | integer | | | The number of animals in the haul, of a particular species, and of a certain sex and length. For example, we have 5 Hake from haul 1 that are males with length 20cm.
+haul_num | integer | | | Haul number
+species_id | string | | | Species identification code (ID)
+sex | string | | | Sex of the animal. This is put into three categories: male, female, and unsexed
+length | float | cm | | Length of the animal
+length_count | integer | | | Number of animals in the haul, of a particular species, and of a certain sex and length. For example, we have 5 Hake from haul 1 that are males with length 20cm
 
 ### Specimen
 
-**Current sample file (US data):** `Biological/US/2019_biodata_specimen_AGES.xls`, sheet `biodata_specimen`
+**Current sample file (US data)** relative to base directory: `US/2019_biodata_specimen_AGES.xls`, sheet `biodata_specimen`
 
 Column name | Data type | Units | Empty value | Description
 --- | --- | --- | --- | --- 
-haul_num | integer | | | Describes what haul the collected data comes from. A haul is usally described as a collection of trawls for a certain section of the survey.
-species_id | string | | | Identifies what species is associated with the collected data.
-sex | string | | | The sex of the animal. This is put into three categories: male, female, and unsexed.
-length | float | cm | | The length of the animal. 
-weight | float | kg | | The weight of the animal.
-age | float | years | | The age of the animal. I believe that this is usually based on the length.
+haul_num | integer | | | Haul number
+species_id | string | | | Species identification code (ID)
+sex | string | | | The sex of the animal. 1=Male, 2=Female, 3=Unknown/Not determined ("unsexed")
+length | float | cm | | Length of the animal
+weight | float | kg | | Weight of the animal
+age | float | years | | Age of the animal
 
 ### Catch
 
-**Current sample file (US data):** `Biological/US/2019_biodata_catch.xls`, sheet `biodata_catch`
+**Current sample file (US data)** relative to base directory: `US/2019_biodata_catch.xls`, sheet `biodata_catch`
 
-**Note:** We are currently assessing which columns are actually being used. The original column names were not modified previously, but will be revisited.
+Column name | Data type | Units | Empty value | Description
+--- | --- | --- | --- | --- 
+haul_num | integer | | | Haul number
+species_id | string | | | Species identification code (ID)
+haul_weight | integer | kg | | Haul weight
 
 ### Haul vs transect
 
-File containing the mapping between hauls and transects. **This is a new file that replaces the sole information that was being used from the gear file.**
+File containing the mapping between hauls and transects. This is a new file that replaces the sole information that was being used from the gear file.
 
-**Current sample file (US data):** `Biological/US/haul_to_transect_mapping_2019.xls`, single sheet
+**Current sample file (US data)** relative to base directory: `US/haul_to_transect_mapping_2019.xls`, single sheet
 Column name | Data type | Units | Empty value | Description
 --- | --- | --- | --- | --- 
-haul_num | integer | | | Describes what haul the collected data comes from. A haul is usally described as a collection of trawls for a certain section of the survey.
-transect_num | integer | | | Transect number (From Net Configuration Form?)
+haul_num | integer | | | Haul number
+transect_num | integer | | | Transect number
 
 
 ## Stratification
 
+**Current base directory** used with the sample files: `Stratification`
+
+Strata may be based on age-length (`KS`, Kolmogorov-Smirnov test) or regional (`INPFC`, International North Pacific Fisheries Commission) stratifications. Each file contains two tabs, one for each strata type.
+
 ### Strata
 
-The "Strata" file relates the stratification to the haul.
+File that relates the stratification to the haul.
 
-**Current sample file:** `Stratification/US_CAN strata 2019_final.xlsx`, sheet `Base KS`
+**Current sample file (US data)** relative to base directory: `US_CAN strata 2019_final.xlsx`, sheets `Base KS` and `INPC`
 
 Column name | Data type | Units | Empty value | Description
 --- | --- | --- | --- | --- 
-year | integer | | |
-stratum_num | integer | | |
-*strata name* | string | | |
-haul_num | integer | | |
-fraction_hake | float | 0-1 | |
+stratum_num | integer | | | Stratum number for KS or INPC strata (`Base KS` or `INPC` tab, respectively)
+haul_num | integer | | | Haul number
+fraction_hake | float | 0-1 | | Fraction of the haul weight that is hake
 
 ### Geo-strata
 
-The "Geo-strata" file defines the geographic definition of strata.
+File that defines the geographic definition of strata.
 
-**Current sample file:** `Stratification/Stratification_geographic_Lat_2019_final.xlsx`, `stratification1` sheet
+**Current sample file (US data)** relative to base directory: `Stratification_geographic_Lat_2019_final.xlsx`, sheets `stratification1` and `INPC`
 
 Column name | Data type | Units | Empty value | Description
 --- | --- | --- | --- | --- 
-stratum_num | integer | | |
-Latitude (upper limit) | float | decimal degrees | |
-*haul start* | integer | | |
-*haul end* | integer | | |
-*Strata Name* | string | | |
+stratum_num | integer | | | Stratum number for KS or INPC strata (`stratification1` or `INPC` tab, respectively)
+Latitude (upper limit) | float | decimal degrees | | Northern limit of stratum
 
 
 ## NASC
 
+**Current base directory** used with the sample files: `Exports`
+
 ### No Age 1
 
-NASC values that do not include age1 values.
+NASC (Nautical Area Scattering Coefficient) values that do not include age1 values. Values are defined along transects at cells with an approximately 0.5 nmi spacing, 
 
-**Current sample file:**  `Exports/US_CAN_detailsa_2019_table2y+_ALL_final - updated.xlsx`, single sheet
+**Current sample file (US data)** relative to base directory: `US_CAN_detailsa_2019_table2y+_ALL_final - updated.xlsx`, single sheet
 
 Column name | Data type | Units | Empty value | Description
 --- | --- | --- | --- | --- 
-transect_num | integer | | |
-vessel_log_start | float | | |
-vessel_log_end | float | | |
-latitude | float | decimal degrees | |
-longitude | float | decimal degrees | |
-stratum_num | integer | | |
-transect_spacing | float | nmi? | |
-NASC | float | | |
+transect_num | integer | | | Transect number
+vessel_log_start | float | nmi (nautical miles) | | Vessel log cumulative distance at start of transect cell
+vessel_log_end | float | nmi (nautical miles) | | Vessel log cumulative distance at end of transect cell
+latitude | float | decimal degrees | | Transect cell center latitude
+longitude | float | decimal degrees | | Transect cell center longitude
+stratum_num | integer | | | Base KS stratum number
+transect_spacing | float | nmi (nautical miles) | | Distance (spacing) between transects
+NASC | float | m<sup>2</sup> nmi<sup>-2</sup> | | Nautical Area Scattering Coefficient
 
 ### All ages
 
-NASC values that include all ages.
+NASC values that include all ages. The file structure is the same as for the "No Age 1" file.
 
-**Current sample file:**  `Exports/US_CAN_detailsa_2019_table1y+_ALL_final - updated.xlsx`, single sheet
-
-Column name | Data type | Units | Empty value | Description
---- | --- | --- | --- | --- 
-transect_num | integer | | |
-vessel_log_start | float | nmi? | |
-vessel_log_end | float | | nmi? |
-latitude | float | decimal degrees | |
-longitude | float | decimal degrees | |
-stratum_num | integer | | |
-transect_spacing | float | | |
-NASC | float | | |
+**Current sample file (US data)** relative to base directory: `US_CAN_detailsa_2019_table1y+_ALL_final - updated.xlsx`, single sheet
 
 
 ## Kriging
 
+**Current base directory** used with the sample files: `Kriging_files`
+
 ### Mesh
 
-The "Mesh" file contains the centroids of the Kriging grid.
+The "Mesh" file containing the centroids of the Kriging grid cells. Grid size is 2.5 nmi by 2.5 nmi.
 
-**Current sample file:** `Kriging_files/Kriging_grid_files/krig_grid2_5nm_cut_centroids_2013.xlsx`, sheet `krigedgrid2_5nm_forChu`
-
-Column name | Data type | Units | Empty value | Description
---- | --- | --- | --- | --- 
-centroid_latitude | float | decimal degrees | |
-centroid_longitude | float | decimal degrees | |
-fraction_cell_in_polygon | float | 0-1? | |
-
-
-### Smoothed contours
-
-Smoothed isobath (shelf break, 200 meters?) contour used to transform the mesh points.
-
-**Current sample file:** `Kriging_files/Kriging_grid_files/transformation_isobath_coordinates.xlsx`, sheet `Smoothing_EasyKrig`
+**Current sample file (US data)** relative to base directory: `Kriging_grid_files/krig_grid2_5nm_cut_centroids_2013.xlsx`, sheet `krigedgrid2_5nm_forChu`
 
 Column name | Data type | Units | Empty value | Description
 --- | --- | --- | --- | --- 
-latitude | float | decimal degrees | |
-longitude | float | decimal degrees | |
+centroid_latitude | float | decimal degrees | | Cell centroid latitude
+centroid_longitude | float | decimal degrees | | Cell centroid longitude
+fraction_cell_in_polygon | float | 0-1 | | Fraction of mesh cell that is within the interpolation polygon that delineates the mesh
+
+### Smoothed shelf-break contour
+
+Smoothed isobath contour used to transform the mesh points. A set of point locations delineating the 200 meter bathymetric contour that represents the shelf break.
+
+**Current sample file (US data)** relative to base directory: `Kriging_grid_files/transformation_isobath_coordinates.xlsx`, sheet `Smoothing_EasyKrig`
+
+Column name | Data type | Units | Empty value | Description
+--- | --- | --- | --- | --- 
+latitude | float | decimal degrees | | Point latitude
+longitude | float | decimal degrees | | Point longitude
