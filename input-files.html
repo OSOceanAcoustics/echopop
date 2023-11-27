@@ -428,8 +428,8 @@ title="Print to PDF"
     </a>
    </li>
    <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#smoothed-contours">
-     Smoothed contours
+    <a class="reference internal nav-link" href="#smoothed-shelf-break-contour">
+     Smoothed shelf-break contour
     </a>
    </li>
   </ul>
@@ -525,8 +525,8 @@ title="Print to PDF"
     </a>
    </li>
    <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#smoothed-contours">
-     Smoothed contours
+    <a class="reference internal nav-link" href="#smoothed-shelf-break-contour">
+     Smoothed shelf-break contour
     </a>
    </li>
   </ul>
@@ -543,11 +543,51 @@ title="Print to PDF"
                 
   <section class="tex2jax_ignore mathjax_ignore" id="input-files">
 <h1>Input files<a class="headerlink" href="#input-files" title="Permalink to this headline">#</a></h1>
+<p>Input files used in a Python EchoPro run, grouped by data type. The tables below describe the data columns required by Python EchoPro; other columns will be ignored. All input files are in Excel format. File paths, names, and Excel tab names are specified in the survey year configuration file (e.g., <code class="docutils literal notranslate"><span class="pre">survey_year_2019_config.yml</span></code>)</p>
+<p>Biological data are always separated into US vs Canada files. All other data files combine US and Canadian data.</p>
+<p>To minimize duplication in the data file description tables below, additional definitions and information for some variables (column names) found in multiple files is provided here:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">haul_num</span></code>: Haul number. Identifies the haul the collected data come from. A haul is usally described as a collection of trawls for a certain section of the survey.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">transect_num</span></code>: Transect number.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">species_id</span></code>: Species identification code (ID). Identifies what species is associated with the collected data. Pacific hake is 22500.</p></li>
+</ul>
+<div class="contents local topic" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#biological-trawl-data" id="id1">Biological (trawl) data</a></p>
+<ul>
+<li><p><a class="reference internal" href="#length" id="id2">Length</a></p></li>
+<li><p><a class="reference internal" href="#specimen" id="id3">Specimen</a></p></li>
+<li><p><a class="reference internal" href="#catch" id="id4">Catch</a></p></li>
+<li><p><a class="reference internal" href="#haul-vs-transect" id="id5">Haul vs transect</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#stratification" id="id6">Stratification</a></p>
+<ul>
+<li><p><a class="reference internal" href="#strata" id="id7">Strata</a></p></li>
+<li><p><a class="reference internal" href="#geo-strata" id="id8">Geo-strata</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#nasc" id="id9">NASC</a></p>
+<ul>
+<li><p><a class="reference internal" href="#no-age-1" id="id10">No Age 1</a></p></li>
+<li><p><a class="reference internal" href="#all-ages" id="id11">All ages</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#kriging" id="id12">Kriging</a></p>
+<ul>
+<li><p><a class="reference internal" href="#mesh" id="id13">Mesh</a></p></li>
+<li><p><a class="reference internal" href="#smoothed-shelf-break-contour" id="id14">Smoothed shelf-break contour</a></p></li>
+</ul>
+</li>
+</ul>
+</div>
 <section id="biological-trawl-data">
-<h2>Biological (trawl) data<a class="headerlink" href="#biological-trawl-data" title="Permalink to this headline">#</a></h2>
+<h2><a class="toc-backref" href="#id1">Biological (trawl) data</a><a class="headerlink" href="#biological-trawl-data" title="Permalink to this headline">#</a></h2>
+<p><strong>Current base directory</strong> used with the sample files: <code class="docutils literal notranslate"><span class="pre">Biological</span></code></p>
+<p>Data files from the US and Canada are found in subdirectories <code class="docutils literal notranslate"><span class="pre">US</span></code> and <code class="docutils literal notranslate"><span class="pre">CAN</span></code>, respectively.</p>
 <section id="length">
-<h3>Length<a class="headerlink" href="#length" title="Permalink to this headline">#</a></h3>
-<p><strong>Current sample file (US data):</strong> <code class="docutils literal notranslate"><span class="pre">Biological/US/2019_biodata_length.xls</span></code>, sheet <code class="docutils literal notranslate"><span class="pre">biodata_length</span></code></p>
+<h3><a class="toc-backref" href="#id2">Length</a><a class="headerlink" href="#length" title="Permalink to this headline">#</a></h3>
+<p><strong>Current sample file (US data)</strong> relative to base directory: <code class="docutils literal notranslate"><span class="pre">US/2019_biodata_length.xls</span></code>, sheet <code class="docutils literal notranslate"><span class="pre">biodata_length</span></code></p>
 <table class="colwidths-auto table">
 <thead>
 <tr class="row-odd"><th class="head"><p>Column name</p></th>
@@ -562,38 +602,38 @@ title="Print to PDF"
 <td><p>integer</p></td>
 <td><p></p></td>
 <td><p></p></td>
-<td><p>Describes what haul the collected data comes from. A haul is usally described as a collection of trawls for a certain section of the survey.</p></td>
+<td><p>Haul number</p></td>
 </tr>
 <tr class="row-odd"><td><p>species_id</p></td>
 <td><p>string</p></td>
 <td><p></p></td>
 <td><p></p></td>
-<td><p>Identifies what species is associated with the collected data.</p></td>
+<td><p>Species identification code (ID)</p></td>
 </tr>
 <tr class="row-even"><td><p>sex</p></td>
 <td><p>string</p></td>
 <td><p></p></td>
 <td><p></p></td>
-<td><p>The sex of the animal. This is put into three categories: male, female, and  unsexed.</p></td>
+<td><p>Sex of the animal. This is put into three categories: male, female, and unsexed</p></td>
 </tr>
 <tr class="row-odd"><td><p>length</p></td>
 <td><p>float</p></td>
 <td><p>cm</p></td>
 <td><p></p></td>
-<td><p>The length of the animal.</p></td>
+<td><p>Length of the animal</p></td>
 </tr>
 <tr class="row-even"><td><p>length_count</p></td>
 <td><p>integer</p></td>
 <td><p></p></td>
 <td><p></p></td>
-<td><p>The number of animals in the haul, of a particular species, and of a certain sex and length. For example, we have 5 Hake from haul 1 that are males with length 20cm.</p></td>
+<td><p>Number of animals in the haul, of a particular species, and of a certain sex and length. For example, we have 5 Hake from haul 1 that are males with length 20cm</p></td>
 </tr>
 </tbody>
 </table>
 </section>
 <section id="specimen">
-<h3>Specimen<a class="headerlink" href="#specimen" title="Permalink to this headline">#</a></h3>
-<p><strong>Current sample file (US data):</strong> <code class="docutils literal notranslate"><span class="pre">Biological/US/2019_biodata_specimen_AGES.xls</span></code>, sheet <code class="docutils literal notranslate"><span class="pre">biodata_specimen</span></code></p>
+<h3><a class="toc-backref" href="#id3">Specimen</a><a class="headerlink" href="#specimen" title="Permalink to this headline">#</a></h3>
+<p><strong>Current sample file (US data)</strong> relative to base directory: <code class="docutils literal notranslate"><span class="pre">US/2019_biodata_specimen_AGES.xls</span></code>, sheet <code class="docutils literal notranslate"><span class="pre">biodata_specimen</span></code></p>
 <table class="colwidths-auto table">
 <thead>
 <tr class="row-odd"><th class="head"><p>Column name</p></th>
@@ -608,50 +648,44 @@ title="Print to PDF"
 <td><p>integer</p></td>
 <td><p></p></td>
 <td><p></p></td>
-<td><p>Describes what haul the collected data comes from. A haul is usally described as a collection of trawls for a certain section of the survey.</p></td>
+<td><p>Haul number</p></td>
 </tr>
 <tr class="row-odd"><td><p>species_id</p></td>
 <td><p>string</p></td>
 <td><p></p></td>
 <td><p></p></td>
-<td><p>Identifies what species is associated with the collected data.</p></td>
+<td><p>Species identification code (ID)</p></td>
 </tr>
 <tr class="row-even"><td><p>sex</p></td>
 <td><p>string</p></td>
 <td><p></p></td>
 <td><p></p></td>
-<td><p>The sex of the animal. This is put into three categories: male, female, and unsexed.</p></td>
+<td><p>The sex of the animal. 1=Male, 2=Female, 3=Unknown/Not determined (“unsexed”)</p></td>
 </tr>
 <tr class="row-odd"><td><p>length</p></td>
 <td><p>float</p></td>
 <td><p>cm</p></td>
 <td><p></p></td>
-<td><p>The length of the animal.</p></td>
+<td><p>Length of the animal</p></td>
 </tr>
 <tr class="row-even"><td><p>weight</p></td>
 <td><p>float</p></td>
 <td><p>kg</p></td>
 <td><p></p></td>
-<td><p>The weight of the animal.</p></td>
+<td><p>Weight of the animal</p></td>
 </tr>
 <tr class="row-odd"><td><p>age</p></td>
 <td><p>float</p></td>
 <td><p>years</p></td>
 <td><p></p></td>
-<td><p>The age of the animal. I believe that this is usually based on the length.</p></td>
+<td><p>Age of the animal</p></td>
 </tr>
 </tbody>
 </table>
 </section>
 <section id="catch">
-<h3>Catch<a class="headerlink" href="#catch" title="Permalink to this headline">#</a></h3>
-<p><strong>Current sample file (US data):</strong> <code class="docutils literal notranslate"><span class="pre">Biological/US/2019_biodata_catch.xls</span></code>, sheet <code class="docutils literal notranslate"><span class="pre">biodata_catch</span></code></p>
-<p><strong>Note:</strong> We are currently assessing which columns are actually being used. The original column names were not modified previously, but will be revisited.</p>
-</section>
-<section id="haul-vs-transect">
-<h3>Haul vs transect<a class="headerlink" href="#haul-vs-transect" title="Permalink to this headline">#</a></h3>
-<p>File containing the mapping between hauls and transects. <strong>This is a new file that replaces the sole information that was being used from the gear file.</strong></p>
-<p><strong>Current sample file (US data):</strong> <code class="docutils literal notranslate"><span class="pre">Biological/US/haul_to_transect_mapping_2019.xls</span></code>, single sheet</p>
+<h3><a class="toc-backref" href="#id4">Catch</a><a class="headerlink" href="#catch" title="Permalink to this headline">#</a></h3>
+<p><strong>Current sample file (US data)</strong> relative to base directory: <code class="docutils literal notranslate"><span class="pre">US/2019_biodata_catch.xls</span></code>, sheet <code class="docutils literal notranslate"><span class="pre">biodata_catch</span></code></p>
 <table class="colwidths-auto table">
 <thead>
 <tr class="row-odd"><th class="head"><p>Column name</p></th>
@@ -666,71 +700,61 @@ title="Print to PDF"
 <td><p>integer</p></td>
 <td><p></p></td>
 <td><p></p></td>
-<td><p>Describes what haul the collected data comes from. A haul is usally described as a collection of trawls for a certain section of the survey.</p></td>
+<td><p>Haul number</p></td>
+</tr>
+<tr class="row-odd"><td><p>species_id</p></td>
+<td><p>string</p></td>
+<td><p></p></td>
+<td><p></p></td>
+<td><p>Species identification code (ID)</p></td>
+</tr>
+<tr class="row-even"><td><p>haul_weight</p></td>
+<td><p>integer</p></td>
+<td><p>kg</p></td>
+<td><p></p></td>
+<td><p>Haul weight</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="haul-vs-transect">
+<h3><a class="toc-backref" href="#id5">Haul vs transect</a><a class="headerlink" href="#haul-vs-transect" title="Permalink to this headline">#</a></h3>
+<p>File containing the mapping between hauls and transects. This is a new file that replaces the sole information that was being used from the gear file.</p>
+<p><strong>Current sample file (US data)</strong> relative to base directory: <code class="docutils literal notranslate"><span class="pre">US/haul_to_transect_mapping_2019.xls</span></code>, single sheet</p>
+<table class="colwidths-auto table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Column name</p></th>
+<th class="head"><p>Data type</p></th>
+<th class="head"><p>Units</p></th>
+<th class="head"><p>Empty value</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>haul_num</p></td>
+<td><p>integer</p></td>
+<td><p></p></td>
+<td><p></p></td>
+<td><p>Haul number</p></td>
 </tr>
 <tr class="row-odd"><td><p>transect_num</p></td>
 <td><p>integer</p></td>
 <td><p></p></td>
 <td><p></p></td>
-<td><p>Transect number (From Net Configuration Form?)</p></td>
+<td><p>Transect number</p></td>
 </tr>
 </tbody>
 </table>
 </section>
 </section>
 <section id="stratification">
-<h2>Stratification<a class="headerlink" href="#stratification" title="Permalink to this headline">#</a></h2>
+<h2><a class="toc-backref" href="#id6">Stratification</a><a class="headerlink" href="#stratification" title="Permalink to this headline">#</a></h2>
+<p><strong>Current base directory</strong> used with the sample files: <code class="docutils literal notranslate"><span class="pre">Stratification</span></code></p>
+<p>Strata may be based on age-length (<code class="docutils literal notranslate"><span class="pre">KS</span></code>, Kolmogorov-Smirnov test) or regional (<code class="docutils literal notranslate"><span class="pre">INPFC</span></code>, International North Pacific Fisheries Commission) stratifications. Each file contains two tabs, one for each strata type.</p>
 <section id="strata">
-<h3>Strata<a class="headerlink" href="#strata" title="Permalink to this headline">#</a></h3>
-<p>The “Strata” file relates the stratification to the haul.</p>
-<p><strong>Current sample file:</strong> <code class="docutils literal notranslate"><span class="pre">Stratification/US_CAN</span> <span class="pre">strata</span> <span class="pre">2019_final.xlsx</span></code>, sheet <code class="docutils literal notranslate"><span class="pre">Base</span> <span class="pre">KS</span></code></p>
-<table class="colwidths-auto table">
-<thead>
-<tr class="row-odd"><th class="head"><p>Column name</p></th>
-<th class="head"><p>Data type</p></th>
-<th class="head"><p>Units</p></th>
-<th class="head"><p>Empty value</p></th>
-<th class="head"><p>Description</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p>year</p></td>
-<td><p>integer</p></td>
-<td><p></p></td>
-<td><p></p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-odd"><td><p>stratum_num</p></td>
-<td><p>integer</p></td>
-<td><p></p></td>
-<td><p></p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-even"><td><p><em>strata name</em></p></td>
-<td><p>string</p></td>
-<td><p></p></td>
-<td><p></p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-odd"><td><p>haul_num</p></td>
-<td><p>integer</p></td>
-<td><p></p></td>
-<td><p></p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-even"><td><p>fraction_hake</p></td>
-<td><p>float</p></td>
-<td><p>0-1</p></td>
-<td><p></p></td>
-<td><p></p></td>
-</tr>
-</tbody>
-</table>
-</section>
-<section id="geo-strata">
-<h3>Geo-strata<a class="headerlink" href="#geo-strata" title="Permalink to this headline">#</a></h3>
-<p>The “Geo-strata” file defines the geographic definition of strata.</p>
-<p><strong>Current sample file:</strong> <code class="docutils literal notranslate"><span class="pre">Stratification/Stratification_geographic_Lat_2019_final.xlsx</span></code>, <code class="docutils literal notranslate"><span class="pre">stratification1</span></code> sheet</p>
+<h3><a class="toc-backref" href="#id7">Strata</a><a class="headerlink" href="#strata" title="Permalink to this headline">#</a></h3>
+<p>File that relates the stratification to the haul.</p>
+<p><strong>Current sample file (US data)</strong> relative to base directory: <code class="docutils literal notranslate"><span class="pre">US_CAN</span> <span class="pre">strata</span> <span class="pre">2019_final.xlsx</span></code>, sheets <code class="docutils literal notranslate"><span class="pre">Base</span> <span class="pre">KS</span></code> and <code class="docutils literal notranslate"><span class="pre">INPC</span></code></p>
 <table class="colwidths-auto table">
 <thead>
 <tr class="row-odd"><th class="head"><p>Column name</p></th>
@@ -745,42 +769,60 @@ title="Print to PDF"
 <td><p>integer</p></td>
 <td><p></p></td>
 <td><p></p></td>
+<td><p>Stratum number for KS or INPC strata (<code class="docutils literal notranslate"><span class="pre">Base</span> <span class="pre">KS</span></code> or <code class="docutils literal notranslate"><span class="pre">INPC</span></code> tab, respectively)</p></td>
+</tr>
+<tr class="row-odd"><td><p>haul_num</p></td>
+<td><p>integer</p></td>
 <td><p></p></td>
+<td><p></p></td>
+<td><p>Haul number</p></td>
+</tr>
+<tr class="row-even"><td><p>fraction_hake</p></td>
+<td><p>float</p></td>
+<td><p>0-1</p></td>
+<td><p></p></td>
+<td><p>Fraction of the haul weight that is hake</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="geo-strata">
+<h3><a class="toc-backref" href="#id8">Geo-strata</a><a class="headerlink" href="#geo-strata" title="Permalink to this headline">#</a></h3>
+<p>File that defines the geographic definition of strata.</p>
+<p><strong>Current sample file (US data)</strong> relative to base directory: <code class="docutils literal notranslate"><span class="pre">Stratification_geographic_Lat_2019_final.xlsx</span></code>, sheets <code class="docutils literal notranslate"><span class="pre">stratification1</span></code> and <code class="docutils literal notranslate"><span class="pre">INPC</span></code></p>
+<table class="colwidths-auto table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Column name</p></th>
+<th class="head"><p>Data type</p></th>
+<th class="head"><p>Units</p></th>
+<th class="head"><p>Empty value</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>stratum_num</p></td>
+<td><p>integer</p></td>
+<td><p></p></td>
+<td><p></p></td>
+<td><p>Stratum number for KS or INPC strata (<code class="docutils literal notranslate"><span class="pre">stratification1</span></code> or <code class="docutils literal notranslate"><span class="pre">INPC</span></code> tab, respectively)</p></td>
 </tr>
 <tr class="row-odd"><td><p>Latitude (upper limit)</p></td>
 <td><p>float</p></td>
 <td><p>decimal degrees</p></td>
 <td><p></p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-even"><td><p><em>haul start</em></p></td>
-<td><p>integer</p></td>
-<td><p></p></td>
-<td><p></p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-odd"><td><p><em>haul end</em></p></td>
-<td><p>integer</p></td>
-<td><p></p></td>
-<td><p></p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-even"><td><p><em>Strata Name</em></p></td>
-<td><p>string</p></td>
-<td><p></p></td>
-<td><p></p></td>
-<td><p></p></td>
+<td><p>Northern limit of stratum</p></td>
 </tr>
 </tbody>
 </table>
 </section>
 </section>
 <section id="nasc">
-<h2>NASC<a class="headerlink" href="#nasc" title="Permalink to this headline">#</a></h2>
+<h2><a class="toc-backref" href="#id9">NASC</a><a class="headerlink" href="#nasc" title="Permalink to this headline">#</a></h2>
+<p><strong>Current base directory</strong> used with the sample files: <code class="docutils literal notranslate"><span class="pre">Exports</span></code></p>
 <section id="no-age-1">
-<h3>No Age 1<a class="headerlink" href="#no-age-1" title="Permalink to this headline">#</a></h3>
-<p>NASC values that do not include age1 values.</p>
-<p><strong>Current sample file:</strong>  <code class="docutils literal notranslate"><span class="pre">Exports/US_CAN_detailsa_2019_table2y+_ALL_final</span> <span class="pre">-</span> <span class="pre">updated.xlsx</span></code>, single sheet</p>
+<h3><a class="toc-backref" href="#id10">No Age 1</a><a class="headerlink" href="#no-age-1" title="Permalink to this headline">#</a></h3>
+<p>NASC (Nautical Area Scattering Coefficient) values that do not include age1 values. Values are defined along transects at cells with an approximately 0.5 nmi spacing,</p>
+<p><strong>Current sample file (US data)</strong> relative to base directory: <code class="docutils literal notranslate"><span class="pre">US_CAN_detailsa_2019_table2y+_ALL_final</span> <span class="pre">-</span> <span class="pre">updated.xlsx</span></code>, single sheet</p>
 <table class="colwidths-auto table">
 <thead>
 <tr class="row-odd"><th class="head"><p>Column name</p></th>
@@ -795,125 +837,66 @@ title="Print to PDF"
 <td><p>integer</p></td>
 <td><p></p></td>
 <td><p></p></td>
-<td><p></p></td>
+<td><p>Transect number</p></td>
 </tr>
 <tr class="row-odd"><td><p>vessel_log_start</p></td>
 <td><p>float</p></td>
+<td><p>nmi (nautical miles)</p></td>
 <td><p></p></td>
-<td><p></p></td>
-<td><p></p></td>
+<td><p>Vessel log cumulative distance at start of transect cell</p></td>
 </tr>
 <tr class="row-even"><td><p>vessel_log_end</p></td>
 <td><p>float</p></td>
+<td><p>nmi (nautical miles)</p></td>
 <td><p></p></td>
-<td><p></p></td>
-<td><p></p></td>
+<td><p>Vessel log cumulative distance at end of transect cell</p></td>
 </tr>
 <tr class="row-odd"><td><p>latitude</p></td>
 <td><p>float</p></td>
 <td><p>decimal degrees</p></td>
 <td><p></p></td>
-<td><p></p></td>
+<td><p>Transect cell center latitude</p></td>
 </tr>
 <tr class="row-even"><td><p>longitude</p></td>
 <td><p>float</p></td>
 <td><p>decimal degrees</p></td>
 <td><p></p></td>
-<td><p></p></td>
+<td><p>Transect cell center longitude</p></td>
 </tr>
 <tr class="row-odd"><td><p>stratum_num</p></td>
 <td><p>integer</p></td>
 <td><p></p></td>
 <td><p></p></td>
-<td><p></p></td>
+<td><p>Base KS stratum number</p></td>
 </tr>
 <tr class="row-even"><td><p>transect_spacing</p></td>
 <td><p>float</p></td>
-<td><p>nmi?</p></td>
+<td><p>nmi (nautical miles)</p></td>
 <td><p></p></td>
-<td><p></p></td>
+<td><p>Distance (spacing) between transects</p></td>
 </tr>
 <tr class="row-odd"><td><p>NASC</p></td>
 <td><p>float</p></td>
+<td><p>m<sup>2</sup> nmi<sup>-2</sup></p></td>
 <td><p></p></td>
-<td><p></p></td>
-<td><p></p></td>
+<td><p>Nautical Area Scattering Coefficient</p></td>
 </tr>
 </tbody>
 </table>
 </section>
 <section id="all-ages">
-<h3>All ages<a class="headerlink" href="#all-ages" title="Permalink to this headline">#</a></h3>
-<p>NASC values that include all ages.</p>
-<p><strong>Current sample file:</strong>  <code class="docutils literal notranslate"><span class="pre">Exports/US_CAN_detailsa_2019_table1y+_ALL_final</span> <span class="pre">-</span> <span class="pre">updated.xlsx</span></code>, single sheet</p>
-<table class="colwidths-auto table">
-<thead>
-<tr class="row-odd"><th class="head"><p>Column name</p></th>
-<th class="head"><p>Data type</p></th>
-<th class="head"><p>Units</p></th>
-<th class="head"><p>Empty value</p></th>
-<th class="head"><p>Description</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p>transect_num</p></td>
-<td><p>integer</p></td>
-<td><p></p></td>
-<td><p></p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-odd"><td><p>vessel_log_start</p></td>
-<td><p>float</p></td>
-<td><p>nmi?</p></td>
-<td><p></p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-even"><td><p>vessel_log_end</p></td>
-<td><p>float</p></td>
-<td><p></p></td>
-<td><p>nmi?</p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-odd"><td><p>latitude</p></td>
-<td><p>float</p></td>
-<td><p>decimal degrees</p></td>
-<td><p></p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-even"><td><p>longitude</p></td>
-<td><p>float</p></td>
-<td><p>decimal degrees</p></td>
-<td><p></p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-odd"><td><p>stratum_num</p></td>
-<td><p>integer</p></td>
-<td><p></p></td>
-<td><p></p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-even"><td><p>transect_spacing</p></td>
-<td><p>float</p></td>
-<td><p></p></td>
-<td><p></p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-odd"><td><p>NASC</p></td>
-<td><p>float</p></td>
-<td><p></p></td>
-<td><p></p></td>
-<td><p></p></td>
-</tr>
-</tbody>
-</table>
+<h3><a class="toc-backref" href="#id11">All ages</a><a class="headerlink" href="#all-ages" title="Permalink to this headline">#</a></h3>
+<p>NASC values that include all ages. The file structure is the same as for the “No Age 1” file.</p>
+<p><strong>Current sample file (US data)</strong> relative to base directory: <code class="docutils literal notranslate"><span class="pre">US_CAN_detailsa_2019_table1y+_ALL_final</span> <span class="pre">-</span> <span class="pre">updated.xlsx</span></code>, single sheet</p>
 </section>
 </section>
 <section id="kriging">
-<h2>Kriging<a class="headerlink" href="#kriging" title="Permalink to this headline">#</a></h2>
+<h2><a class="toc-backref" href="#id12">Kriging</a><a class="headerlink" href="#kriging" title="Permalink to this headline">#</a></h2>
+<p><strong>Current base directory</strong> used with the sample files: <code class="docutils literal notranslate"><span class="pre">Kriging_files</span></code></p>
 <section id="mesh">
-<h3>Mesh<a class="headerlink" href="#mesh" title="Permalink to this headline">#</a></h3>
-<p>The “Mesh” file contains the centroids of the Kriging grid.</p>
-<p><strong>Current sample file:</strong> <code class="docutils literal notranslate"><span class="pre">Kriging_files/Kriging_grid_files/krig_grid2_5nm_cut_centroids_2013.xlsx</span></code>, sheet <code class="docutils literal notranslate"><span class="pre">krigedgrid2_5nm_forChu</span></code></p>
+<h3><a class="toc-backref" href="#id13">Mesh</a><a class="headerlink" href="#mesh" title="Permalink to this headline">#</a></h3>
+<p>The “Mesh” file containing the centroids of the Kriging grid cells. Grid size is 2.5 nmi by 2.5 nmi.</p>
+<p><strong>Current sample file (US data)</strong> relative to base directory: <code class="docutils literal notranslate"><span class="pre">Kriging_grid_files/krig_grid2_5nm_cut_centroids_2013.xlsx</span></code>, sheet <code class="docutils literal notranslate"><span class="pre">krigedgrid2_5nm_forChu</span></code></p>
 <table class="colwidths-auto table">
 <thead>
 <tr class="row-odd"><th class="head"><p>Column name</p></th>
@@ -928,27 +911,27 @@ title="Print to PDF"
 <td><p>float</p></td>
 <td><p>decimal degrees</p></td>
 <td><p></p></td>
-<td><p></p></td>
+<td><p>Cell centroid latitude</p></td>
 </tr>
 <tr class="row-odd"><td><p>centroid_longitude</p></td>
 <td><p>float</p></td>
 <td><p>decimal degrees</p></td>
 <td><p></p></td>
-<td><p></p></td>
+<td><p>Cell centroid longitude</p></td>
 </tr>
 <tr class="row-even"><td><p>fraction_cell_in_polygon</p></td>
 <td><p>float</p></td>
-<td><p>0-1?</p></td>
+<td><p>0-1</p></td>
 <td><p></p></td>
-<td><p></p></td>
+<td><p>Fraction of mesh cell that is within the interpolation polygon that delineates the mesh</p></td>
 </tr>
 </tbody>
 </table>
 </section>
-<section id="smoothed-contours">
-<h3>Smoothed contours<a class="headerlink" href="#smoothed-contours" title="Permalink to this headline">#</a></h3>
-<p>Smoothed isobath (shelf break, 200 meters?) contour used to transform the mesh points.</p>
-<p><strong>Current sample file:</strong> <code class="docutils literal notranslate"><span class="pre">Kriging_files/Kriging_grid_files/transformation_isobath_coordinates.xlsx</span></code>, sheet <code class="docutils literal notranslate"><span class="pre">Smoothing_EasyKrig</span></code></p>
+<section id="smoothed-shelf-break-contour">
+<h3><a class="toc-backref" href="#id14">Smoothed shelf-break contour</a><a class="headerlink" href="#smoothed-shelf-break-contour" title="Permalink to this headline">#</a></h3>
+<p>Smoothed isobath contour used to transform the mesh points. A set of point locations delineating the 200 meter bathymetric contour that represents the shelf break.</p>
+<p><strong>Current sample file (US data)</strong> relative to base directory: <code class="docutils literal notranslate"><span class="pre">Kriging_grid_files/transformation_isobath_coordinates.xlsx</span></code>, sheet <code class="docutils literal notranslate"><span class="pre">Smoothing_EasyKrig</span></code></p>
 <table class="colwidths-auto table">
 <thead>
 <tr class="row-odd"><th class="head"><p>Column name</p></th>
@@ -963,13 +946,13 @@ title="Print to PDF"
 <td><p>float</p></td>
 <td><p>decimal degrees</p></td>
 <td><p></p></td>
-<td><p></p></td>
+<td><p>Point latitude</p></td>
 </tr>
 <tr class="row-odd"><td><p>longitude</p></td>
 <td><p>float</p></td>
 <td><p>decimal degrees</p></td>
 <td><p></p></td>
-<td><p></p></td>
+<td><p>Point longitude</p></td>
 </tr>
 </tbody>
 </table>
