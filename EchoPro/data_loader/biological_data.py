@@ -197,6 +197,40 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
 
         return df
 
+    def _process_haul_to_transect_mapping_data(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Processes the haul to transect mapping data by
+        * selecting the haul and transect columns
+        * ensuring the dataframe has the appropriate data types
+        * setting the ``haul_num`` column as the Dataframe index
+        * sorting the ``haul_num`` index in ascending order
+
+        Parameters
+        ----------
+        df : pd. Dataframe
+            Dataframe holding the haul to transect mapping data
+
+        Returns
+        -------
+        pd.DataFrame
+            Processed haul to transect mapping Dataframe
+        """
+
+        # obtain those columns necessary for core downstream processes
+        df = df[list(self.haul_to_transect_mapping_cols_types.keys())].copy()
+
+        # set data types of dataframe
+        df = df.astype(self.haul_to_transect_mapping_cols_types)
+
+        if self.survey.params["exclude_age1"] is False:
+            raise NotImplementedError("Including age 1 data has not been implemented!")
+
+        # set haul_num as index and sort it
+        df.set_index("haul_num", inplace=True)
+        df.sort_index(inplace=True)
+
+        return df
+
     def _load_length_data(self) -> None:
         """
         Loads and prepares data associated with a station
@@ -362,40 +396,6 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
             raise NotImplementedError(
                 f"Source of {self.survey.params['source']} not implemented yet."
             )
-
-    def _process_haul_to_transect_mapping_data(self, df: pd.DataFrame) -> pd.DataFrame:
-        """
-        Processes the haul to transect mapping data by
-        * selecting the haul and transect columns
-        * ensuring the dataframe has the appropriate data types
-        * setting the ``haul_num`` column as the Dataframe index
-        * sorting the ``haul_num`` index in ascending order
-
-        Parameters
-        ----------
-        df : pd. Dataframe
-            Dataframe holding the haul to transect mapping data
-
-        Returns
-        -------
-        pd.DataFrame
-            Processed haul to transect mapping Dataframe
-        """
-
-        # obtain those columns necessary for core downstream processes
-        df = df[list(self.haul_to_transect_mapping_cols_types.keys())].copy()
-
-        # set data types of dataframe
-        df = df.astype(self.haul_to_transect_mapping_cols_types)
-
-        if self.survey.params["exclude_age1"] is False:
-            raise NotImplementedError("Including age 1 data has not been implemented!")
-
-        # set haul_num as index and sort it
-        df.set_index("haul_num", inplace=True)
-        df.sort_index(inplace=True)
-
-        return df
 
     def _load_haul_to_transect_mapping_data(self) -> None:
         """
