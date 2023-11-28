@@ -231,6 +231,34 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
 
         return df
 
+    def _check_and_read(self, param_filename: str, param_sheetname: str, cols_types: dict):
+        """
+        For input data table, check file path and column names, and read into DataFrame.
+
+        Parameters
+        ----------
+        param_filename : str
+            Name of configuration parameter specifying the file path
+        param_sheetname : str
+            Name of configuration parameter specifying the Excel file sheet name
+        cols_types : dict
+            Dictionary specifying the column names and types for the target input data
+
+        Returns
+        -------
+        pd.DataFrame
+            Read and checked Dataframe
+        """
+        # check existence of the files
+        file_path = self.survey.params["data_root_dir"] / self.survey.params[param_filename]
+        check_existence_of_file(file_path)
+
+        # read in and check Excel file
+        df = pd.read_excel(file_path, sheet_name=self.survey.params[param_sheetname])
+        check_column_names(df=df, expected_names=set(cols_types.keys()), path_for_df=file_path)
+
+        return df
+
     def _load_length_data(self) -> None:
         """
         Loads and prepares data associated with a station
@@ -240,36 +268,16 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         """
 
         if self.survey.params["source"] == 3:
-
-            # check existence of the files
-            file_path_us = (
-                self.survey.params["data_root_dir"]
-                / self.survey.params["length_US_filename"]
-            )
-            file_path_can = (
-                self.survey.params["data_root_dir"]
-                / self.survey.params["length_CAN_filename"]
-            )
-            check_existence_of_file(file_path_us)
-            check_existence_of_file(file_path_can)
-
-            # read in and check US and Canada Excel files
-            df_us = pd.read_excel(
-                file_path_us, sheet_name=self.survey.params["length_US_sheet"]
-            )
-            check_column_names(
-                df=df_us,
-                expected_names=set(self.len_cols_types.keys()),
-                path_for_df=file_path_us
+            df_us = self._check_and_read(
+                "length_US_filename",
+                "length_US_sheet",
+                self.len_cols_types
             )
 
-            df_can = pd.read_excel(
-                file_path_can, sheet_name=self.survey.params["length_CAN_sheet"]
-            )
-            check_column_names(
-                df=df_can,
-                expected_names=set(self.len_cols_types.keys()),
-                path_for_df=file_path_can
+            df_can = self._check_and_read(
+                "length_CAN_filename",
+                "length_CAN_sheet",
+                self.len_cols_types
             )
 
             # process US and Canada dataframes
@@ -280,7 +288,6 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
 
             # Construct full length dataframe from US and Canada sections
             self.survey.length_df = pd.concat([length_us_df, length_can_df])
-
         else:
             raise NotImplementedError(
                 f"Source of {self.survey.params['source']} not implemented yet."
@@ -295,47 +302,26 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         """
 
         if self.survey.params["source"] == 3:
-
-            # check existence of the files
-            file_path_us = (
-                self.survey.params["data_root_dir"]
-                / self.survey.params["specimen_US_filename"]
-            )
-            file_path_can = (
-                self.survey.params["data_root_dir"]
-                / self.survey.params["specimen_CAN_filename"]
-            )
-            check_existence_of_file(file_path_us)
-            check_existence_of_file(file_path_can)
-
-            # read in and check US and Canada Excel files
-            specimen_us_df = pd.read_excel(
-                file_path_us, sheet_name=self.survey.params["specimen_US_sheet"]
-            )
-            check_column_names(
-                df=specimen_us_df,
-                expected_names=set(self.spec_cols_types.keys()),
-                path_for_df=file_path_us
+            df_us = self._check_and_read(
+                "specimen_US_filename",
+                "specimen_US_sheet",
+                self.spec_cols_types
             )
 
-            specimen_can_df = pd.read_excel(
-                file_path_can, sheet_name=self.survey.params["specimen_CAN_sheet"]
-            )
-            check_column_names(
-                df=specimen_can_df,
-                expected_names=set(self.spec_cols_types.keys()),
-                path_for_df=file_path_can
+            df_can = self._check_and_read(
+                "specimen_CAN_filename",
+                "specimen_CAN_sheet",
+                self.spec_cols_types
             )
 
             # process US and Canada dataframes
-            specimen_us_df = self._process_specimen_data(specimen_us_df, 0)
+            specimen_us_df = self._process_specimen_data(df_us, 0)
             specimen_can_df = self._process_specimen_data(
-                specimen_can_df, self.survey.params["CAN_haul_offset"]
+                df_can, self.survey.params["CAN_haul_offset"]
             )
 
             # Construct full specimen dataframe from US and Canada sections
             self.survey.specimen_df = pd.concat([specimen_us_df, specimen_can_df])
-
         else:
             raise NotImplementedError(
                 f"Source of {self.survey.params['source']} not implemented yet."
@@ -350,47 +336,26 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         """
 
         if self.survey.params["source"] == 3:
-
-            # check existence of the files
-            file_path_us = (
-                self.survey.params["data_root_dir"]
-                / self.survey.params["catch_US_filename"]
-            )
-            file_path_can = (
-                self.survey.params["data_root_dir"]
-                / self.survey.params["catch_CAN_filename"]
-            )
-            check_existence_of_file(file_path_us)
-            check_existence_of_file(file_path_can)
-
-            # read in and check US and Canada Excel files
-            catch_us_df = pd.read_excel(
-                file_path_us, sheet_name=self.survey.params["catch_US_sheet"]
-            )
-            check_column_names(
-                df=catch_us_df,
-                expected_names=set(self.catch_cols_types.keys()),
-                path_for_df=file_path_us
+            df_us = self._check_and_read(
+                "catch_US_filename",
+                "catch_US_sheet",
+                self.catch_cols_types
             )
 
-            catch_can_df = pd.read_excel(
-                file_path_can, sheet_name=self.survey.params["catch_CAN_sheet"]
-            )
-            check_column_names(
-                df=catch_can_df,
-                expected_names=set(self.catch_cols_types.keys()),
-                path_for_df=file_path_can
+            df_can = self._check_and_read(
+                "catch_CAN_filename",
+                "catch_CAN_sheet",
+                self.catch_cols_types
             )
 
             # process US and Canada dataframes
-            catch_us_df = self._process_catch_data(catch_us_df, 0)
+            catch_us_df = self._process_catch_data(df_us, 0)
             catch_can_df = self._process_catch_data(
-                catch_can_df, self.survey.params["CAN_haul_offset"]
+                df_can, self.survey.params["CAN_haul_offset"]
             )
 
             # Construct full catch dataframe from US and Canada sections
             self.survey.catch_df = pd.concat([catch_us_df, catch_can_df])
-
         else:
 
             raise NotImplementedError(
@@ -409,50 +374,20 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         """
 
         if self.survey.params["source"] == 3:
-
-            # check existence of the files
-            file_path_us = (
-                self.survey.params["data_root_dir"]
-                / self.survey.params["filename_haul_to_transect_US"]
-            )
-            file_path_can = (
-                self.survey.params["data_root_dir"]
-                / self.survey.params["filename_haul_to_transect_CAN"]
-            )
-            check_existence_of_file(file_path_us)
-            check_existence_of_file(file_path_can)
-
-            # read in, check, and process the US haul to transect mapping file
-            haul_to_transect_mapping_us_df = pd.read_excel(
-                file_path_us,
-                sheet_name=self.survey.params["haul_to_transect_US_sheetname"],
-            )
-            check_column_names(
-                df=haul_to_transect_mapping_us_df,
-                expected_names=set(self.haul_to_transect_mapping_cols_types.keys()),
-                path_for_df=file_path_us,
-            )
-            haul_to_transect_mapping_us_df = (
-                self._process_haul_to_transect_mapping_data(
-                    haul_to_transect_mapping_us_df
-                )
+            df_us = self._check_and_read(
+                "filename_haul_to_transect_US",
+                "haul_to_transect_US_sheetname",
+                self.haul_to_transect_mapping_cols_types
             )
 
-            # read in, check, and process the Canada haul to transect mapping file
-            haul_to_transect_mapping_can_df = pd.read_excel(
-                file_path_can,
-                sheet_name=self.survey.params["haul_to_transect_CAN_sheetname"],
+            df_can = self._check_and_read(
+                "filename_haul_to_transect_CAN",
+                "haul_to_transect_CAN_sheetname",
+                self.haul_to_transect_mapping_cols_types
             )
-            check_column_names(
-                df=haul_to_transect_mapping_can_df,
-                expected_names=set(self.haul_to_transect_mapping_cols_types.keys()),
-                path_for_df=file_path_can,
-            )
-            haul_to_transect_mapping_can_df = (
-                self._process_haul_to_transect_mapping_data(
-                    haul_to_transect_mapping_can_df
-                )
-            )
+
+            haul_to_transect_mapping_us_df = self._process_haul_to_transect_mapping_data(df_us)
+            haul_to_transect_mapping_can_df = self._process_haul_to_transect_mapping_data(df_can)
 
             # transect offset is set to zero since we will not have overlapping transects
             # TODO: Is this a necessary variable? If so, we should make it an input to the function.
@@ -471,7 +406,6 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
             self.survey.haul_to_transect_mapping_df = pd.concat(
                 [haul_to_transect_mapping_us_df, haul_to_transect_mapping_can_df]
             )
-
         else:
             raise NotImplementedError(
                 f"Source of {self.survey.params['source']} not implemented yet."
