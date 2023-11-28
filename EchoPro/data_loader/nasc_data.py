@@ -7,26 +7,6 @@ import pandas as pd
 from ..utils.input_checks import check_column_names, check_existence_of_file
 
 
-def _check_nasc_df(nasc_df: pd.DataFrame, df_path: Path, nasc_cols: Set[str]) -> None:
-    """
-    Ensures that the appropriate columns are
-    contained in the NASC Dataframe.
-
-    Parameters
-    ----------
-    nasc_df: pd.DataFrame
-        The constructed NASC DataFrame
-    df_path: Path
-        The path to the Excel file used to construct the DataFrame
-    nasc_cols: set of str
-        A set of strings specifying the NASC columns to grab
-    """
-
-    # TODO: should we add more in-depth checks here?
-
-    check_column_names(df=nasc_df, expected_names=nasc_cols, path_for_df=df_path)
-
-
 def _process_nasc_data(survey, nasc_var_types: dict) -> pd.DataFrame:
     """
     Loads in NASC data from the appropriate Excel file using the
@@ -49,7 +29,6 @@ def _process_nasc_data(survey, nasc_var_types: dict) -> pd.DataFrame:
 
     # select and check the appropriate nasc data file
     if survey.params["exclude_age1"]:
-
         # check existence of the file
         file_path = (
             survey.params["data_root_dir"] / survey.params["nasc_no_age1_filename"]
@@ -60,7 +39,6 @@ def _process_nasc_data(survey, nasc_var_types: dict) -> pd.DataFrame:
             file_path, sheet_name=survey.params["nasc_no_age1_sheetname"]
         )
     else:
-
         # check existence of the file
         file_path = (
             survey.params["data_root_dir"] / survey.params["nasc_all_ages_filename"]
@@ -71,7 +49,7 @@ def _process_nasc_data(survey, nasc_var_types: dict) -> pd.DataFrame:
             file_path, sheet_name=survey.params["nasc_all_ages_sheetname"]
         )
 
-    _check_nasc_df(df, file_path, set(nasc_var_types.keys()))
+    check_column_names(df=df, expected_names=set(nasc_var_types.keys()), path_for_df=file_path)
 
     # obtaining those columns that are required
     df = df[nasc_var_types.keys()]

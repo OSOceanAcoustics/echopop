@@ -33,25 +33,6 @@ class LoadStrataData:  # TODO: Does it make sense for this to be a class?
         self._load_stratification_file()
         self._load_geographic_stratification()
 
-    def _check_strata_df(self, strata_df: pd.DataFrame, df_path: Path) -> None:
-        """
-        Ensures that the appropriate columns are
-        contained in the stratification Dataframe.
-
-        Parameters
-        ----------
-        strata_df: pd.DataFrame
-            The constructed Strata DataFrame
-        df_path: Path
-            The path to the Excel file used to construct the DataFrame
-        """
-
-        # TODO: should we add more in-depth checks here?
-
-        check_column_names(
-            df=strata_df, expected_names=self.strata_cols, path_for_df=df_path
-        )
-
     def _load_stratification_file(self) -> None:
         """
         Loads and checks the stratification file associated
@@ -76,7 +57,7 @@ class LoadStrataData:  # TODO: Does it make sense for this to be a class?
             strata_df = pd.read_excel(
                 file_path, sheet_name=self.survey.params["strata_sheetname"]
             )
-            self._check_strata_df(strata_df, file_path)
+            check_column_names(df=strata_df, expected_names=self.strata_cols, path_for_df=file_path)
 
             # extract only those columns that are necessary
             strata_df = strata_df[["stratum_num", "haul_num", "fraction_hake"]].copy()

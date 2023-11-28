@@ -39,84 +39,6 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         self._load_catch_data()
         self._load_haul_to_transect_mapping_data()
 
-    def _check_length_df(self, len_df: pd.DataFrame, df_path: Path) -> None:
-        """
-        Ensures that the appropriate columns are
-        contained in the length Dataframe.
-
-        Parameters
-        ----------
-        len_df: pd.DataFrame
-            The constructed Length DataFrame
-        df_path: Path
-            The path to the Excel file used to construct the DataFrame
-        """
-
-        # TODO: should we add more in-depth checks here?
-
-        check_column_names(df=len_df, expected_names=self.len_cols, path_for_df=df_path)
-
-    def _check_specimen_df(self, spec_df: pd.DataFrame, df_path: Path) -> None:
-        """
-        Ensures that the appropriate columns are
-        contained in the specimen Dataframe.
-
-        Parameters
-        ----------
-        spec_df: pd.DataFrame
-            The constructed Specimen DataFrame
-        df_path: Path
-            The path to the Excel file used to construct the DataFrame
-        """
-
-        # TODO: should we add more in-depth checks here?
-
-        check_column_names(
-            df=spec_df, expected_names=self.spec_cols, path_for_df=df_path
-        )
-
-    def _check_catch_df(self, catch_df: pd.DataFrame, df_path: Path) -> None:
-        """
-        Ensures that the appropriate columns are
-        contained in the Catch Dataframe.
-
-        Parameters
-        ----------
-        catch_df: pd.DataFrame
-            The constructed Catch DataFrame
-        df_path: Path
-            The path to the Excel file used to construct the DataFrame
-        """
-
-        # TODO: should we add more in-depth checks here?
-
-        check_column_names(
-            df=catch_df, expected_names=self.catch_cols, path_for_df=df_path
-        )
-
-    def _check_haul_to_transect_mapping_df(
-        self, haul_to_transect_mapping_df: pd.DataFrame, df_path: Path
-    ) -> None:
-        """
-        Ensures that the appropriate columns are
-        contained in the haul to transect mapping Dataframe.
-
-        Parameters
-        ----------
-        haul_to_transect_mapping_df: pd.DataFrame
-            The constructed haul to transect mapping DataFrame
-        df_path: Path
-            The path to the Excel file used to construct the DataFrame
-        """
-
-        # TODO: should we add more in-depth checks here?
-
-        check_column_names(
-            df=haul_to_transect_mapping_df,
-            expected_names=self.haul_to_transect_mapping_cols,
-            path_for_df=df_path,
-        )
-
     def _process_length_data_df(
         self, df: pd.DataFrame, haul_num_offset: int
     ) -> pd.DataFrame:
@@ -307,12 +229,12 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
             df_us = pd.read_excel(
                 file_path_us, sheet_name=self.survey.params["length_US_sheet"]
             )
-            self._check_length_df(df_us, file_path_us)
+            check_column_names(df=df_us, expected_names=self.len_cols, path_for_df=file_path_us)
 
             df_can = pd.read_excel(
                 file_path_can, sheet_name=self.survey.params["length_CAN_sheet"]
             )
-            self._check_length_df(df_can, file_path_can)
+            check_column_names(df=df_can, expected_names=self.len_cols, path_for_df=file_path_can)
 
             # process US and Canada dataframes
             length_us_df = self._process_length_data_df(df_us, 0)
@@ -354,12 +276,16 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
             specimen_us_df = pd.read_excel(
                 file_path_us, sheet_name=self.survey.params["specimen_US_sheet"]
             )
-            self._check_specimen_df(specimen_us_df, file_path_us)
+            check_column_names(
+                df=specimen_us_df, expected_names=self.spec_cols, path_for_df=file_path_us
+            )
 
             specimen_can_df = pd.read_excel(
                 file_path_can, sheet_name=self.survey.params["specimen_CAN_sheet"]
             )
-            self._check_specimen_df(specimen_can_df, file_path_can)
+            check_column_names(
+                df=specimen_can_df, expected_names=self.spec_cols, path_for_df=file_path_can
+            )
 
             # process US and Canada dataframes
             specimen_us_df = self._process_specimen_data(specimen_us_df, 0)
@@ -401,12 +327,16 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
             catch_us_df = pd.read_excel(
                 file_path_us, sheet_name=self.survey.params["catch_US_sheet"]
             )
-            self._check_catch_df(catch_us_df, file_path_us)
+            check_column_names(
+                df=catch_us_df, expected_names=self.catch_cols, path_for_df=file_path_us
+            )
 
             catch_can_df = pd.read_excel(
                 file_path_can, sheet_name=self.survey.params["catch_CAN_sheet"]
             )
-            self._check_catch_df(catch_can_df, file_path_can)
+            check_column_names(
+                df=catch_can_df, expected_names=self.catch_cols, path_for_df=file_path_can
+            )
 
             # process US and Canada dataframes
             catch_us_df = self._process_catch_data(catch_us_df, 0)
@@ -487,8 +417,10 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
                 file_path_us,
                 sheet_name=self.survey.params["haul_to_transect_US_sheetname"],
             )
-            self._check_haul_to_transect_mapping_df(
-                haul_to_transect_mapping_us_df, file_path_us
+            check_column_names(
+                df=haul_to_transect_mapping_us_df,
+                expected_names=self.haul_to_transect_mapping_cols,
+                path_for_df=file_path_us,
             )
             haul_to_transect_mapping_us_df = (
                 self._process_haul_to_transect_mapping_data(
@@ -501,8 +433,10 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
                 file_path_can,
                 sheet_name=self.survey.params["haul_to_transect_CAN_sheetname"],
             )
-            self._check_haul_to_transect_mapping_df(
-                haul_to_transect_mapping_can_df, file_path_can
+            check_column_names(
+                df=haul_to_transect_mapping_can_df,
+                expected_names=self.haul_to_transect_mapping_cols,
+                path_for_df=file_path_can,
             )
             haul_to_transect_mapping_can_df = (
                 self._process_haul_to_transect_mapping_data(

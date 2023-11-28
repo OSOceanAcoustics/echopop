@@ -51,46 +51,6 @@ class KrigingMesh:
         self._load_mesh()
         self._load_smoothed_contour()
 
-    def _check_mesh_df(self, mesh_df: pd.DataFrame, df_path: Path) -> None:
-        """
-        Ensures that the appropriate columns are
-        contained in the mesh Dataframe.
-
-        Parameters
-        ----------
-        mesh_df: pd.DataFrame
-            The constructed Mesh DataFrame
-        df_path: Path
-            The path to the Excel file used to construct the DataFrame
-        """
-
-        # TODO: should we add more in-depth checks here?
-
-        check_column_names(
-            df=mesh_df, expected_names=self.mesh_cols, path_for_df=df_path
-        )
-
-    def _check_smoothed_contour_df(
-        self, contour_df: pd.DataFrame, df_path: Path
-    ) -> None:
-        """
-        Ensures that the appropriate columns are
-        contained in the smoothed contour Dataframe.
-
-        Parameters
-        ----------
-        contour_df: pd.DataFrame
-            The constructed Contour DataFrame
-        df_path: Path
-            The path to the Excel file used to construct the DataFrame
-        """
-
-        # TODO: should we add more in-depth checks here?
-
-        check_column_names(
-            df=contour_df, expected_names=self.contour_cols, path_for_df=df_path
-        )
-
     def _load_mesh(self) -> None:
         """
         Loads the full mesh of the region being considered.
@@ -107,7 +67,7 @@ class KrigingMesh:
         check_existence_of_file(file_path)
 
         df = pd.read_excel(file_path, sheet_name=self.survey.params["mesh_sheetname"])
-        self._check_mesh_df(df, file_path)
+        check_column_names(df=df, expected_names=self.mesh_cols, path_for_df=file_path)
 
         # obtaining those columns that are required
         df = df[
@@ -154,7 +114,7 @@ class KrigingMesh:
         df = pd.read_excel(
             file_path, sheet_name=self.survey.params["smoothed_contour_sheetname"]
         )
-        self._check_smoothed_contour_df(df, file_path)
+        check_column_names(df=df, expected_names=self.contour_cols, path_for_df=file_path)
 
         # obtaining those columns that are required
         df = df[["latitude", "longitude"]].copy()
