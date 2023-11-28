@@ -23,16 +23,34 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         self.survey = survey
 
         # expected columns for length Dataframe
-        self.len_cols = {"haul_num", "species_id", "sex", "length", "length_count"}
+        self.len_cols_types = {
+            "haul_num": int,
+            "species_id": int,
+            "sex": int,
+            "length": np.float64,
+            "length_count": np.float64,
+        }
 
         # expected columns for specimen Dataframe
-        self.spec_cols = {"haul_num", "species_id", "sex", "length", "weight", "age"}
+        self.spec_cols_types = {
+            "haul_num": int,
+            "species_id": int,
+            "sex": int,
+            "length": np.float64,
+            "weight": np.float64,
+            "age": np.float64,
+        }
 
         # expected columns for catch Dataframe
-        self.catch_cols = {"haul_num", "species_id", "haul_count", "haul_weight"}
+        self.catch_cols_types = {
+            "haul_num": int,
+            "species_id": int,
+            "haul_count": np.float64,
+            "haul_weight": np.float64,
+        }
 
         # expected columns for haul_to_transect_mapping Dataframe
-        self.haul_to_transect_mapping_cols = {"haul_num", "transect_num"}
+        self.haul_to_transect_mapping_cols_types = {"haul_num": int, "transect_num": np.float64}
 
         self._load_length_data()
         self._load_specimen_data()
@@ -63,18 +81,10 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         """
 
         # obtaining those columns that are required
-        df = df[["haul_num", "species_id", "sex", "length", "length_count"]].copy()
+        df = df[list(self.len_cols_types.keys())].copy()
 
         # set data types of dataframe
-        df = df.astype(
-            {
-                "haul_num": int,
-                "species_id": int,
-                "sex": int,
-                "length": np.float64,
-                "length_count": np.float64,
-            }
-        )
+        df = df.astype(self.len_cols_types)
 
         # extract target species
         df = df.loc[df["species_id"] == self.survey.params["species_id"]]
@@ -116,19 +126,10 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         """
 
         # obtaining those columns that are required
-        df = df[["haul_num", "species_id", "sex", "length", "weight", "age"]].copy()
+        df = df[list(self.spec_cols_types.keys())].copy()
 
         # set data types of dataframe
-        df = df.astype(
-            {
-                "haul_num": int,
-                "species_id": int,
-                "sex": int,
-                "length": np.float64,
-                "weight": np.float64,
-                "age": np.float64,
-            }
-        )
+        df = df.astype(self.spec_cols_types)
 
         # extract target species
         df = df.loc[df["species_id"] == self.survey.params["species_id"]]
@@ -176,17 +177,10 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         """
 
         # obtaining those columns that are required
-        df = df[["haul_num", "species_id", "haul_count", "haul_weight"]].copy()
+        df = df[list(self.catch_cols_types.keys())].copy()
 
         # set data types of dataframe
-        df = df.astype(
-            {
-                "haul_num": int,
-                "species_id": int,
-                "haul_count": np.float64,
-                "haul_weight": np.float64,
-            }
-        )
+        df = df.astype(self.catch_cols_types)
 
         # extract target species
         df = df.loc[df["species_id"] == self.survey.params["species_id"]]
@@ -229,12 +223,20 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
             df_us = pd.read_excel(
                 file_path_us, sheet_name=self.survey.params["length_US_sheet"]
             )
-            check_column_names(df=df_us, expected_names=self.len_cols, path_for_df=file_path_us)
+            check_column_names(
+                df=df_us,
+                expected_names=set(self.len_cols_types.keys()),
+                path_for_df=file_path_us
+            )
 
             df_can = pd.read_excel(
                 file_path_can, sheet_name=self.survey.params["length_CAN_sheet"]
             )
-            check_column_names(df=df_can, expected_names=self.len_cols, path_for_df=file_path_can)
+            check_column_names(
+                df=df_can,
+                expected_names=set(self.len_cols_types.keys()),
+                path_for_df=file_path_can
+            )
 
             # process US and Canada dataframes
             length_us_df = self._process_length_data_df(df_us, 0)
@@ -277,14 +279,18 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
                 file_path_us, sheet_name=self.survey.params["specimen_US_sheet"]
             )
             check_column_names(
-                df=specimen_us_df, expected_names=self.spec_cols, path_for_df=file_path_us
+                df=specimen_us_df,
+                expected_names=set(self.spec_cols_types.keys()),
+                path_for_df=file_path_us
             )
 
             specimen_can_df = pd.read_excel(
                 file_path_can, sheet_name=self.survey.params["specimen_CAN_sheet"]
             )
             check_column_names(
-                df=specimen_can_df, expected_names=self.spec_cols, path_for_df=file_path_can
+                df=specimen_can_df,
+                expected_names=set(self.spec_cols_types.keys()),
+                path_for_df=file_path_can
             )
 
             # process US and Canada dataframes
@@ -328,14 +334,18 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
                 file_path_us, sheet_name=self.survey.params["catch_US_sheet"]
             )
             check_column_names(
-                df=catch_us_df, expected_names=self.catch_cols, path_for_df=file_path_us
+                df=catch_us_df,
+                expected_names=set(self.catch_cols_types.keys()),
+                path_for_df=file_path_us
             )
 
             catch_can_df = pd.read_excel(
                 file_path_can, sheet_name=self.survey.params["catch_CAN_sheet"]
             )
             check_column_names(
-                df=catch_can_df, expected_names=self.catch_cols, path_for_df=file_path_can
+                df=catch_can_df,
+                expected_names=set(self.catch_cols_types.keys()),
+                path_for_df=file_path_can
             )
 
             # process US and Canada dataframes
@@ -373,10 +383,10 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         """
 
         # obtain those columns necessary for core downstream processes
-        df = df[["haul_num", "transect_num"]].copy()
+        df = df[list(self.haul_to_transect_mapping_cols_types.keys())].copy()
 
         # set data types of dataframe
-        df = df.astype({"haul_num": int, "transect_num": np.float64})
+        df = df.astype(self.haul_to_transect_mapping_cols_types)
 
         if self.survey.params["exclude_age1"] is False:
             raise NotImplementedError("Including age 1 data has not been implemented!")
@@ -419,7 +429,7 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
             )
             check_column_names(
                 df=haul_to_transect_mapping_us_df,
-                expected_names=self.haul_to_transect_mapping_cols,
+                expected_names=set(self.haul_to_transect_mapping_cols_types.keys()),
                 path_for_df=file_path_us,
             )
             haul_to_transect_mapping_us_df = (
@@ -435,7 +445,7 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
             )
             check_column_names(
                 df=haul_to_transect_mapping_can_df,
-                expected_names=self.haul_to_transect_mapping_cols,
+                expected_names=set(self.haul_to_transect_mapping_cols_types.keys()),
                 path_for_df=file_path_can,
             )
             haul_to_transect_mapping_can_df = (
