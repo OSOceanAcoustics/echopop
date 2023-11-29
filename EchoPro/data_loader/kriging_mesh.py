@@ -83,7 +83,7 @@ class KrigingMesh:
         """
 
         df = check_and_read(
-            "kriging/smoothed_contour",
+            "kriging/isobath_200m",
             self.contour_cols_types,
             self.survey.params
         )
