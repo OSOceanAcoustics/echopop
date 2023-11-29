@@ -66,7 +66,7 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
 
         Parameters
         ----------
-        df : Pandas Dataframe
+        df : pd.Dataframe
             Dataframe holding the length data
         haul_num_offset : int
             The offset that should be applied to the ``haul_num`` column
@@ -76,17 +76,15 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         Processed Dataframe
         """
 
-        # extract target species
+        # extract target species and remove species_id column
         df = df.loc[df["species_id"] == self.survey.params["species_id"]]
+        df.drop(columns=["species_id"], inplace=True)
 
         # Apply haul offset
         df["haul_num"] = df["haul_num"] + haul_num_offset
 
         if self.survey.params["exclude_age1"] is False:
             raise NotImplementedError("Including age 1 data has not been implemented!")
-
-        # remove species_id column
-        df.drop(columns=["species_id"], inplace=True)
 
         df.set_index("haul_num", inplace=True)
 
@@ -103,7 +101,7 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
 
         Parameters
         ----------
-        df : Pandas Dataframe
+        df : pd.Dataframe
             Dataframe holding the specimen data
         haul_num_offset : int
             The offset that should be applied to the ``haul_num`` column
@@ -113,17 +111,15 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         Processed Dataframe
         """
 
-        # extract target species
+        # extract target species and remove species_id column
         df = df.loc[df["species_id"] == self.survey.params["species_id"]]
+        df.drop(columns=["species_id"], inplace=True)
 
         # Apply haul_num_offset
         df["haul_num"] = df["haul_num"] + haul_num_offset
 
         if self.survey.params["exclude_age1"] is False:
             raise NotImplementedError("Including age 1 data has not been implemented!")
-
-        # remove species_id column
-        df.drop(columns=["species_id"], inplace=True)
 
         # set and organize index
         df.set_index("haul_num", inplace=True)
@@ -146,7 +142,7 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
 
         Parameters
         ----------
-        df : Pandas Dataframe
+        df : pd.Dataframe
             Dataframe holding the catch data
         haul_num_offset : int
             The offset that should be applied to the ``haul_num`` column
@@ -156,17 +152,14 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         Processed Dataframe
         """
 
-        # extract target species
+        # extract target species and remove species_id column
         df = df.loc[df["species_id"] == self.survey.params["species_id"]]
+        df.drop(columns=["species_id"], inplace=True)
 
         # Apply haul offset
         df["haul_num"] = df["haul_num"] + haul_num_offset
 
-        # remove species_id column
-        df.drop(columns=["species_id"], inplace=True)
-
         df.set_index("haul_num", inplace=True)
-
         df.sort_index(inplace=True)
 
         return df
@@ -179,7 +172,7 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
 
         Parameters
         ----------
-        df : pd. Dataframe
+        df : pd.Dataframe
             Dataframe holding the haul to transect mapping data
 
         Returns
