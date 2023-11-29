@@ -1,9 +1,7 @@
-from pathlib import Path
-
 import numpy as np
 import pandas as pd
 
-from ..utils.input_checks import check_column_names, check_existence_of_file
+from ..utils.input_checks_read import check_and_read
 
 
 class LoadBioData:  # TODO: Does it make sense for this to be a class?
@@ -62,9 +60,7 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
     ) -> pd.DataFrame:
         """
         Processes the length dataframe by:
-        * Obtaining the required columns from the dataframe
         * Extracting only the target species
-        * Setting the data type of each column
         * Applying a haul offset, if necessary
         * Setting the index required for downstream processes
 
@@ -79,12 +75,6 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         -------
         Processed Dataframe
         """
-
-        # obtaining those columns that are required
-        df = df[list(self.len_cols_types.keys())].copy()
-
-        # set data types of dataframe
-        df = df.astype(self.len_cols_types)
 
         # extract target species
         df = df.loc[df["species_id"] == self.survey.params["species_id"]]
@@ -107,9 +97,7 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
     ) -> pd.DataFrame:
         """
         Processes the specimen dataframe by:
-        * Obtaining the required columns from the dataframe
         * Extracting only the target species
-        * Setting the data type of each column
         * Applying a haul offset, if necessary
         * Setting the index required for downstream processes
 
@@ -124,12 +112,6 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         -------
         Processed Dataframe
         """
-
-        # obtaining those columns that are required
-        df = df[list(self.spec_cols_types.keys())].copy()
-
-        # set data types of dataframe
-        df = df.astype(self.spec_cols_types)
 
         # extract target species
         df = df.loc[df["species_id"] == self.survey.params["species_id"]]
@@ -158,9 +140,7 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
     ) -> pd.DataFrame:
         """
         Processes the catch dataframe by:
-        * Obtaining the required columns from the dataframe
         * Extracting only the target species
-        * Setting the data type of each column
         * Applying a haul offset, if necessary
         * Setting the index required for downstream processes
 
@@ -175,12 +155,6 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         -------
         Processed Dataframe
         """
-
-        # obtaining those columns that are required
-        df = df[list(self.catch_cols_types.keys())].copy()
-
-        # set data types of dataframe
-        df = df.astype(self.catch_cols_types)
 
         # extract target species
         df = df.loc[df["species_id"] == self.survey.params["species_id"]]
@@ -200,8 +174,6 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
     def _process_haul_to_transect_mapping_data(self, df: pd.DataFrame) -> pd.DataFrame:
         """
         Processes the haul to transect mapping data by
-        * selecting the haul and transect columns
-        * ensuring the dataframe has the appropriate data types
         * setting the ``haul_num`` column as the Dataframe index
         * sorting the ``haul_num`` index in ascending order
 
@@ -216,46 +188,12 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
             Processed haul to transect mapping Dataframe
         """
 
-        # obtain those columns necessary for core downstream processes
-        df = df[list(self.haul_to_transect_mapping_cols_types.keys())].copy()
-
-        # set data types of dataframe
-        df = df.astype(self.haul_to_transect_mapping_cols_types)
-
         if self.survey.params["exclude_age1"] is False:
             raise NotImplementedError("Including age 1 data has not been implemented!")
 
         # set haul_num as index and sort it
         df.set_index("haul_num", inplace=True)
         df.sort_index(inplace=True)
-
-        return df
-
-    def _check_and_read(self, param_filename: str, param_sheetname: str, cols_types: dict):
-        """
-        For input data table, check file path and column names, and read into DataFrame.
-
-        Parameters
-        ----------
-        param_filename : str
-            Name of configuration parameter specifying the file path
-        param_sheetname : str
-            Name of configuration parameter specifying the Excel file sheet name
-        cols_types : dict
-            Dictionary specifying the column names and types for the target input data
-
-        Returns
-        -------
-        pd.DataFrame
-            Read and checked Dataframe
-        """
-        # check existence of the files
-        file_path = self.survey.params["data_root_dir"] / self.survey.params[param_filename]
-        check_existence_of_file(file_path)
-
-        # read in and check Excel file
-        df = pd.read_excel(file_path, sheet_name=self.survey.params[param_sheetname])
-        check_column_names(df=df, expected_names=set(cols_types.keys()), path_for_df=file_path)
 
         return df
 
@@ -268,16 +206,18 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         """
 
         if self.survey.params["source"] == 3:
-            df_us = self._check_and_read(
+            df_us = check_and_read(
                 "length_US_filename",
                 "length_US_sheet",
-                self.len_cols_types
+                self.len_cols_types,
+                self.survey.params
             )
 
-            df_can = self._check_and_read(
+            df_can = check_and_read(
                 "length_CAN_filename",
                 "length_CAN_sheet",
-                self.len_cols_types
+                self.len_cols_types,
+                self.survey.params
             )
 
             # process US and Canada dataframes
@@ -302,16 +242,18 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         """
 
         if self.survey.params["source"] == 3:
-            df_us = self._check_and_read(
+            df_us = check_and_read(
                 "specimen_US_filename",
                 "specimen_US_sheet",
-                self.spec_cols_types
+                self.spec_cols_types,
+                self.survey.params
             )
 
-            df_can = self._check_and_read(
+            df_can = check_and_read(
                 "specimen_CAN_filename",
                 "specimen_CAN_sheet",
-                self.spec_cols_types
+                self.spec_cols_types,
+                self.survey.params
             )
 
             # process US and Canada dataframes
@@ -336,16 +278,18 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         """
 
         if self.survey.params["source"] == 3:
-            df_us = self._check_and_read(
+            df_us = check_and_read(
                 "catch_US_filename",
                 "catch_US_sheet",
-                self.catch_cols_types
+                self.catch_cols_types,
+                self.survey.params
             )
 
-            df_can = self._check_and_read(
+            df_can = check_and_read(
                 "catch_CAN_filename",
                 "catch_CAN_sheet",
-                self.catch_cols_types
+                self.catch_cols_types,
+                self.survey.params
             )
 
             # process US and Canada dataframes
@@ -374,16 +318,18 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         """
 
         if self.survey.params["source"] == 3:
-            df_us = self._check_and_read(
+            df_us = check_and_read(
                 "filename_haul_to_transect_US",
                 "haul_to_transect_US_sheetname",
-                self.haul_to_transect_mapping_cols_types
+                self.haul_to_transect_mapping_cols_types,
+                self.survey.params
             )
 
-            df_can = self._check_and_read(
+            df_can = check_and_read(
                 "filename_haul_to_transect_CAN",
                 "haul_to_transect_CAN_sheetname",
-                self.haul_to_transect_mapping_cols_types
+                self.haul_to_transect_mapping_cols_types,
+                self.survey.params
             )
 
             haul_to_transect_mapping_us_df = self._process_haul_to_transect_mapping_data(df_us)

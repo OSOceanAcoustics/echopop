@@ -1,4 +1,3 @@
-from pathlib import Path
 from typing import Tuple, Union
 
 import geopandas as gpd
@@ -8,7 +7,7 @@ from scipy import interpolate
 from shapely.geometry import Polygon
 from shapely.ops import unary_union
 
-from ..utils.input_checks import check_column_names, check_existence_of_file
+from ..utils.input_checks_read import check_and_read
 
 
 class KrigingMesh:
@@ -60,24 +59,12 @@ class KrigingMesh:
         the full mesh and assigns it as the class variable ``mesh_gdf``.
         """
 
-        # check existence of the file
-        file_path = (
-            self.survey.params["data_root_dir"] / self.survey.params["mesh_filename"]
+        df = check_and_read(
+            "mesh_filename",
+            "mesh_sheetname",
+            self.mesh_cols_types,
+            self.survey.params
         )
-        check_existence_of_file(file_path)
-
-        df = pd.read_excel(file_path, sheet_name=self.survey.params["mesh_sheetname"])
-        check_column_names(
-            df=df,
-            expected_names=set(self.mesh_cols_types.keys()),
-            path_for_df=file_path
-        )
-
-        # obtaining those columns that are required
-        df = df[list(self.mesh_cols_types.keys())].copy()
-
-        # set data types of dataframe
-        df = df.astype(self.mesh_cols_types)
 
         # construct geopandas DataFrame to simplify downstream processes
         gdf = gpd.GeoDataFrame(
@@ -100,27 +87,12 @@ class KrigingMesh:
         ``smoothed_contour_gdf``.
         """
 
-        # check existence of the file
-        file_path = (
-            self.survey.params["data_root_dir"]
-            / self.survey.params["smoothed_contour_filename"]
+        df = check_and_read(
+            "smoothed_contour_filename",
+            "smoothed_contour_sheetname",
+            self.contour_cols_types,
+            self.survey.params
         )
-        check_existence_of_file(file_path)
-
-        df = pd.read_excel(
-            file_path, sheet_name=self.survey.params["smoothed_contour_sheetname"]
-        )
-        check_column_names(
-            df=df,
-            expected_names=set(self.contour_cols_types.keys()),
-            path_for_df=file_path
-        )
-
-        # obtaining those columns that are required
-        df = df[list(self.contour_cols_types.keys())].copy()
-
-        # set data types of dataframe
-        df = df.astype(self.contour_cols_types)
 
         # construct geopandas DataFrame to simplify downstream processes
         df = gpd.GeoDataFrame(

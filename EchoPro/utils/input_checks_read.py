@@ -34,7 +34,7 @@ def check_column_names(
         )
 
 
-def check_existence_of_file(file_path: Path):
+def check_existence_of_file(file_path: Path) -> None:
     """
     Makes sure that the input ``file_path`` exists.
 
@@ -53,3 +53,46 @@ def check_existence_of_file(file_path: Path):
         raise FileNotFoundError(
             f"The file '{str(file_path.absolute())}' does not exist."
         )
+
+
+def check_and_read(
+        param_filename: str,
+        param_sheetname: str,
+        cols_types: dict,
+        params: dict
+) -> pd.DataFrame:
+    """
+    For input data table, check file path and column names, read into DataFrame,
+    retain only the target columns, and set the target column data types.
+
+    Parameters
+    ----------
+    param_filename : str
+        Name of configuration parameter specifying the file path
+    param_sheetname : str
+        Name of configuration parameter specifying the Excel file sheet name
+    cols_types : dict
+        Dictionary specifying the column names and types for the target input data
+    params: dict
+        Survey parameter dictionary
+
+    Returns
+    -------
+    pd.DataFrame
+        Read and checked Dataframe
+    """
+    # check existence of the files
+    file_path = params["data_root_dir"] / params[param_filename]
+    check_existence_of_file(file_path)
+
+    # read in and check Excel file
+    df = pd.read_excel(file_path, sheet_name=params[param_sheetname])
+    check_column_names(df=df, expected_names=set(cols_types.keys()), path_for_df=file_path)
+
+    # obtaining those columns that are required
+    df = df[list(cols_types.keys())].copy()
+
+    # set data types of dataframe
+    df = df.astype(cols_types)
+
+    return df
