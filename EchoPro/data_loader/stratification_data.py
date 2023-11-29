@@ -21,14 +21,17 @@ class LoadStrataData:  # TODO: Does it make sense for this to be a class?
     """
 
     def __init__(self, survey=None):
-
         self.survey = survey
 
         # expected columns for strata Dataframe
-        self.strata_cols = {"stratum_num", "haul_num", "fraction_hake"}
+        self.strata_cols_types = {
+            "stratum_num": int,
+            "haul_num": int,
+            "fraction_hake": np.float64
+        }
 
         # expected columns for geo strata Dataframe
-        self.geo_strata_cols = {"stratum_num", "Latitude (upper limit)"}
+        self.geo_strata_cols_types = {"stratum_num": int, "Latitude (upper limit)": np.float64}
 
         self._load_stratification_file()
         self._load_geographic_stratification()
@@ -57,43 +60,25 @@ class LoadStrataData:  # TODO: Does it make sense for this to be a class?
             strata_df = pd.read_excel(
                 file_path, sheet_name=self.survey.params["strata_sheetname"]
             )
-            check_column_names(df=strata_df, expected_names=self.strata_cols, path_for_df=file_path)
+            check_column_names(
+                df=strata_df,
+                expected_names=set(self.strata_cols_types.keys()),
+                path_for_df=file_path
+            )
 
             # extract only those columns that are necessary
-            strata_df = strata_df[["stratum_num", "haul_num", "fraction_hake"]].copy()
+            strata_df = strata_df[list(self.strata_cols_types.keys())].copy()
 
             # set data types of dataframe
-            strata_df = strata_df.astype(
-                {"stratum_num": int, "haul_num": int, "fraction_hake": np.float64}
-            )
+            strata_df = strata_df.astype(self.strata_cols_types)
 
             # set index of dataframe
             strata_df.set_index(["haul_num", "stratum_num"], inplace=True)
             strata_df.sort_index(inplace=True)
 
             self.survey.strata_df = strata_df
-
         else:
             raise NotImplementedError("strata_filename has unknown sheet name!")
-
-    def _check_geo_strata_df(self, geo_strata_df: pd.DataFrame, df_path: Path) -> None:
-        """
-        Ensures that the appropriate columns are
-        contained in the geographic stratification Dataframe.
-
-        Parameters
-        ----------
-        geo_strata_df: pd.DataFrame
-            The constructed Geo Strata DataFrame
-        df_path: Path
-            The path to the Excel file used to construct the DataFrame
-        """
-
-        # TODO: should we add more in-depth checks here?
-
-        check_column_names(
-            df=geo_strata_df, expected_names=self.geo_strata_cols, path_for_df=df_path
-        )
 
     def _load_geographic_stratification(self) -> None:
         """
@@ -120,19 +105,18 @@ class LoadStrataData:  # TODO: Does it make sense for this to be a class?
             geo_strata_df = pd.read_excel(
                 file_path, sheet_name=self.survey.params["geo_strata_sheetname"]
             )
-            self._check_geo_strata_df(geo_strata_df, file_path)
-
-            # extract only those columns that are necessary
-            geo_strata_df = geo_strata_df[
-                ["stratum_num", "Latitude (upper limit)"]
-            ].copy()
-
-            # set data types of dataframe
-            geo_strata_df = geo_strata_df.astype(
-                {"stratum_num": int, "Latitude (upper limit)": np.float64}
+            check_column_names(
+                df=geo_strata_df,
+                expected_names=set(self.geo_strata_cols_types.keys()),
+                path_for_df=file_path
             )
 
-            self.survey.geo_strata_df = geo_strata_df
+            # extract only those columns that are necessary
+            geo_strata_df = geo_strata_df[list(self.geo_strata_cols_types.keys())].copy()
 
+            # set data types of dataframe
+            geo_strata_df = geo_strata_df.astype(self.geo_strata_cols_types)
+
+            self.survey.geo_strata_df = geo_strata_df
         else:
             raise NotImplementedError("geo_strata_filename has unknown sheet name!")
