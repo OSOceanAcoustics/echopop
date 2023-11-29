@@ -10,13 +10,11 @@
 survey_year: 2019            # survey year being considered
 species_id: 22500            # target species ID for the survey year
 CAN_haul_offset: 200         # The value to be added to the Canadian's haul number
-hemisphere: NW               # north/south and west/east hemispheres, used for the reports
 
 ##############################################################################
 # Directory path that contains all input data needed
 
-data_root_dir: /usr/mayorgadat/workmain/acoustics/2021-NWFSC-EchoPro-HakeIGP/EchoPro/EchoProPython/2019_consolidated_files
-#  data_root_dir: ../../2019_consolidated_files/
+data_root_dir: ../../2019_consolidated_files/
 
 ##############################################################################
 # Input data files
