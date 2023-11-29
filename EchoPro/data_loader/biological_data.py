@@ -200,15 +200,13 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
 
         if self.survey.params["source"] == 3:
             df_us = check_and_read(
-                "length_US_filename",
-                "length_US_sheet",
+                "biological/length/US",
                 self.len_cols_types,
                 self.survey.params
             )
 
             df_can = check_and_read(
-                "length_CAN_filename",
-                "length_CAN_sheet",
+                "biological/length/CAN",
                 self.len_cols_types,
                 self.survey.params
             )
@@ -236,15 +234,13 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
 
         if self.survey.params["source"] == 3:
             df_us = check_and_read(
-                "specimen_US_filename",
-                "specimen_US_sheet",
+                "biological/specimen/US",
                 self.spec_cols_types,
                 self.survey.params
             )
 
             df_can = check_and_read(
-                "specimen_CAN_filename",
-                "specimen_CAN_sheet",
+                "biological/specimen/CAN",
                 self.spec_cols_types,
                 self.survey.params
             )
@@ -272,15 +268,13 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
 
         if self.survey.params["source"] == 3:
             df_us = check_and_read(
-                "catch_US_filename",
-                "catch_US_sheet",
+                "biological/catch/US",
                 self.catch_cols_types,
                 self.survey.params
             )
 
             df_can = check_and_read(
-                "catch_CAN_filename",
-                "catch_CAN_sheet",
+                "biological/catch/CAN",
                 self.catch_cols_types,
                 self.survey.params
             )
@@ -312,15 +306,13 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
 
         if self.survey.params["source"] == 3:
             df_us = check_and_read(
-                "filename_haul_to_transect_US",
-                "haul_to_transect_US_sheetname",
+                "biological/haul_to_transect/US",
                 self.haul_to_transect_mapping_cols_types,
                 self.survey.params
             )
 
             df_can = check_and_read(
-                "filename_haul_to_transect_CAN",
-                "haul_to_transect_CAN_sheetname",
+                "biological/haul_to_transect/CAN",
                 self.haul_to_transect_mapping_cols_types,
                 self.survey.params
             )

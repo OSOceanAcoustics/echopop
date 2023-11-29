@@ -59,12 +59,7 @@ class KrigingMesh:
         the full mesh and assigns it as the class variable ``mesh_gdf``.
         """
 
-        df = check_and_read(
-            "mesh_filename",
-            "mesh_sheetname",
-            self.mesh_cols_types,
-            self.survey.params
-        )
+        df = check_and_read("kriging/mesh", self.mesh_cols_types, self.survey.params)
 
         # construct geopandas DataFrame to simplify downstream processes
         gdf = gpd.GeoDataFrame(
@@ -88,8 +83,7 @@ class KrigingMesh:
         """
 
         df = check_and_read(
-            "smoothed_contour_filename",
-            "smoothed_contour_sheetname",
+            "kriging/smoothed_contour",
             self.contour_cols_types,
             self.survey.params
         )
