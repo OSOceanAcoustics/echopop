@@ -1,4 +1,3 @@
-from pathlib import Path
 from typing import Tuple, Union
 
 import geopandas as gpd
@@ -8,7 +7,7 @@ from scipy import interpolate
 from shapely.geometry import Polygon
 from shapely.ops import unary_union
 
-from ..utils.input_checks import check_column_names, check_existence_of_file
+from ..utils.input_checks_read import check_and_read
 
 
 class KrigingMesh:
@@ -33,14 +32,14 @@ class KrigingMesh:
         self.survey = survey
 
         # expected columns for the mesh Dataframe
-        self.mesh_cols = {
-            "centroid_latitude",
-            "centroid_longitude",
-            "fraction_cell_in_polygon",
+        self.mesh_cols_types = {
+            "centroid_latitude": float,
+            "centroid_longitude": float,
+            "fraction_cell_in_polygon": np.float64,
         }
 
         # expected columns for the smoothed contour Dataframe
-        self.contour_cols = {"latitude", "longitude"}
+        self.contour_cols_types = {"latitude": float, "longitude": float}
 
         # initialize mesh parameters
         self.transformed_transect_df = None
@@ -51,46 +50,6 @@ class KrigingMesh:
         self._load_mesh()
         self._load_smoothed_contour()
 
-    def _check_mesh_df(self, mesh_df: pd.DataFrame, df_path: Path) -> None:
-        """
-        Ensures that the appropriate columns are
-        contained in the mesh Dataframe.
-
-        Parameters
-        ----------
-        mesh_df: pd.DataFrame
-            The constructed Mesh DataFrame
-        df_path: Path
-            The path to the Excel file used to construct the DataFrame
-        """
-
-        # TODO: should we add more in-depth checks here?
-
-        check_column_names(
-            df=mesh_df, expected_names=self.mesh_cols, path_for_df=df_path
-        )
-
-    def _check_smoothed_contour_df(
-        self, contour_df: pd.DataFrame, df_path: Path
-    ) -> None:
-        """
-        Ensures that the appropriate columns are
-        contained in the smoothed contour Dataframe.
-
-        Parameters
-        ----------
-        contour_df: pd.DataFrame
-            The constructed Contour DataFrame
-        df_path: Path
-            The path to the Excel file used to construct the DataFrame
-        """
-
-        # TODO: should we add more in-depth checks here?
-
-        check_column_names(
-            df=contour_df, expected_names=self.contour_cols, path_for_df=df_path
-        )
-
     def _load_mesh(self) -> None:
         """
         Loads the full mesh of the region being considered.
@@ -100,27 +59,11 @@ class KrigingMesh:
         the full mesh and assigns it as the class variable ``mesh_gdf``.
         """
 
-        # check existence of the file
-        file_path = (
-            self.survey.params["data_root_dir"] / self.survey.params["mesh_filename"]
-        )
-        check_existence_of_file(file_path)
-
-        df = pd.read_excel(file_path, sheet_name=self.survey.params["mesh_sheetname"])
-        self._check_mesh_df(df, file_path)
-
-        # obtaining those columns that are required
-        df = df[
-            ["centroid_latitude", "centroid_longitude", "fraction_cell_in_polygon"]
-        ].copy()
-
-        # set data types of dataframe
-        df = df.astype(
-            {
-                "centroid_latitude": float,
-                "centroid_longitude": float,
-                "fraction_cell_in_polygon": np.float64,
-            }
+        df = check_and_read(
+            "mesh_filename",
+            "mesh_sheetname",
+            self.mesh_cols_types,
+            self.survey.params
         )
 
         # construct geopandas DataFrame to simplify downstream processes
@@ -144,23 +87,12 @@ class KrigingMesh:
         ``smoothed_contour_gdf``.
         """
 
-        # check existence of the file
-        file_path = (
-            self.survey.params["data_root_dir"]
-            / self.survey.params["smoothed_contour_filename"]
+        df = check_and_read(
+            "smoothed_contour_filename",
+            "smoothed_contour_sheetname",
+            self.contour_cols_types,
+            self.survey.params
         )
-        check_existence_of_file(file_path)
-
-        df = pd.read_excel(
-            file_path, sheet_name=self.survey.params["smoothed_contour_sheetname"]
-        )
-        self._check_smoothed_contour_df(df, file_path)
-
-        # obtaining those columns that are required
-        df = df[["latitude", "longitude"]].copy()
-
-        # set data types of dataframe
-        df = df.astype({"latitude": float, "longitude": float})
 
         # construct geopandas DataFrame to simplify downstream processes
         df = gpd.GeoDataFrame(

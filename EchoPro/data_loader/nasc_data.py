@@ -1,30 +1,7 @@
-from pathlib import Path
-from typing import Set
-
 import numpy as np
 import pandas as pd
 
-from ..utils.input_checks import check_column_names, check_existence_of_file
-
-
-def _check_nasc_df(nasc_df: pd.DataFrame, df_path: Path, nasc_cols: Set[str]) -> None:
-    """
-    Ensures that the appropriate columns are
-    contained in the NASC Dataframe.
-
-    Parameters
-    ----------
-    nasc_df: pd.DataFrame
-        The constructed NASC DataFrame
-    df_path: Path
-        The path to the Excel file used to construct the DataFrame
-    nasc_cols: set of str
-        A set of strings specifying the NASC columns to grab
-    """
-
-    # TODO: should we add more in-depth checks here?
-
-    check_column_names(df=nasc_df, expected_names=nasc_cols, path_for_df=df_path)
+from ..utils.input_checks_read import check_and_read
 
 
 def _process_nasc_data(survey, nasc_var_types: dict) -> pd.DataFrame:
@@ -49,35 +26,19 @@ def _process_nasc_data(survey, nasc_var_types: dict) -> pd.DataFrame:
 
     # select and check the appropriate nasc data file
     if survey.params["exclude_age1"]:
-
-        # check existence of the file
-        file_path = (
-            survey.params["data_root_dir"] / survey.params["nasc_no_age1_filename"]
-        )
-        check_existence_of_file(file_path)
-
-        df = pd.read_excel(
-            file_path, sheet_name=survey.params["nasc_no_age1_sheetname"]
+        df = check_and_read(
+            "nasc_no_age1_filename",
+            "nasc_no_age1_sheetname",
+            nasc_var_types,
+            survey.params
         )
     else:
-
-        # check existence of the file
-        file_path = (
-            survey.params["data_root_dir"] / survey.params["nasc_all_ages_filename"]
+        df = check_and_read(
+            "nasc_all_ages_filename",
+            "nasc_all_ages_sheetname",
+            nasc_var_types,
+            survey.params
         )
-        check_existence_of_file(file_path)
-
-        df = pd.read_excel(
-            file_path, sheet_name=survey.params["nasc_all_ages_sheetname"]
-        )
-
-    _check_nasc_df(df, file_path, set(nasc_var_types.keys()))
-
-    # obtaining those columns that are required
-    df = df[nasc_var_types.keys()]
-
-    # set data types of dataframe
-    df = df.astype(nasc_var_types)
 
     if survey.params["survey_year"] < 2003:
         # TODO: it may be the case that we need to include lines 35-61 of

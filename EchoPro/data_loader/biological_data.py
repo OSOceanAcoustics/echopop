@@ -1,9 +1,7 @@
-from pathlib import Path
-
 import numpy as np
 import pandas as pd
 
-from ..utils.input_checks import check_column_names, check_existence_of_file
+from ..utils.input_checks_read import check_and_read
 
 
 class LoadBioData:  # TODO: Does it make sense for this to be a class?
@@ -23,108 +21,46 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         self.survey = survey
 
         # expected columns for length Dataframe
-        self.len_cols = {"haul_num", "species_id", "sex", "length", "length_count"}
+        self.len_cols_types = {
+            "haul_num": int,
+            "species_id": int,
+            "sex": int,
+            "length": np.float64,
+            "length_count": np.float64,
+        }
 
         # expected columns for specimen Dataframe
-        self.spec_cols = {"haul_num", "species_id", "sex", "length", "weight", "age"}
+        self.spec_cols_types = {
+            "haul_num": int,
+            "species_id": int,
+            "sex": int,
+            "length": np.float64,
+            "weight": np.float64,
+            "age": np.float64,
+        }
 
         # expected columns for catch Dataframe
-        self.catch_cols = {"haul_num", "species_id", "haul_count", "haul_weight"}
+        self.catch_cols_types = {
+            "haul_num": int,
+            "species_id": int,
+            "haul_count": np.float64,
+            "haul_weight": np.float64,
+        }
 
         # expected columns for haul_to_transect_mapping Dataframe
-        self.haul_to_transect_mapping_cols = {"haul_num", "transect_num"}
+        self.haul_to_transect_mapping_cols_types = {"haul_num": int, "transect_num": np.float64}
 
         self._load_length_data()
         self._load_specimen_data()
         self._load_catch_data()
         self._load_haul_to_transect_mapping_data()
 
-    def _check_length_df(self, len_df: pd.DataFrame, df_path: Path) -> None:
-        """
-        Ensures that the appropriate columns are
-        contained in the length Dataframe.
-
-        Parameters
-        ----------
-        len_df: pd.DataFrame
-            The constructed Length DataFrame
-        df_path: Path
-            The path to the Excel file used to construct the DataFrame
-        """
-
-        # TODO: should we add more in-depth checks here?
-
-        check_column_names(df=len_df, expected_names=self.len_cols, path_for_df=df_path)
-
-    def _check_specimen_df(self, spec_df: pd.DataFrame, df_path: Path) -> None:
-        """
-        Ensures that the appropriate columns are
-        contained in the specimen Dataframe.
-
-        Parameters
-        ----------
-        spec_df: pd.DataFrame
-            The constructed Specimen DataFrame
-        df_path: Path
-            The path to the Excel file used to construct the DataFrame
-        """
-
-        # TODO: should we add more in-depth checks here?
-
-        check_column_names(
-            df=spec_df, expected_names=self.spec_cols, path_for_df=df_path
-        )
-
-    def _check_catch_df(self, catch_df: pd.DataFrame, df_path: Path) -> None:
-        """
-        Ensures that the appropriate columns are
-        contained in the Catch Dataframe.
-
-        Parameters
-        ----------
-        catch_df: pd.DataFrame
-            The constructed Catch DataFrame
-        df_path: Path
-            The path to the Excel file used to construct the DataFrame
-        """
-
-        # TODO: should we add more in-depth checks here?
-
-        check_column_names(
-            df=catch_df, expected_names=self.catch_cols, path_for_df=df_path
-        )
-
-    def _check_haul_to_transect_mapping_df(
-        self, haul_to_transect_mapping_df: pd.DataFrame, df_path: Path
-    ) -> None:
-        """
-        Ensures that the appropriate columns are
-        contained in the haul to transect mapping Dataframe.
-
-        Parameters
-        ----------
-        haul_to_transect_mapping_df: pd.DataFrame
-            The constructed haul to transect mapping DataFrame
-        df_path: Path
-            The path to the Excel file used to construct the DataFrame
-        """
-
-        # TODO: should we add more in-depth checks here?
-
-        check_column_names(
-            df=haul_to_transect_mapping_df,
-            expected_names=self.haul_to_transect_mapping_cols,
-            path_for_df=df_path,
-        )
-
     def _process_length_data_df(
         self, df: pd.DataFrame, haul_num_offset: int
     ) -> pd.DataFrame:
         """
         Processes the length dataframe by:
-        * Obtaining the required columns from the dataframe
         * Extracting only the target species
-        * Setting the data type of each column
         * Applying a haul offset, if necessary
         * Setting the index required for downstream processes
 
@@ -139,20 +75,6 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         -------
         Processed Dataframe
         """
-
-        # obtaining those columns that are required
-        df = df[["haul_num", "species_id", "sex", "length", "length_count"]].copy()
-
-        # set data types of dataframe
-        df = df.astype(
-            {
-                "haul_num": int,
-                "species_id": int,
-                "sex": int,
-                "length": np.float64,
-                "length_count": np.float64,
-            }
-        )
 
         # extract target species
         df = df.loc[df["species_id"] == self.survey.params["species_id"]]
@@ -175,9 +97,7 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
     ) -> pd.DataFrame:
         """
         Processes the specimen dataframe by:
-        * Obtaining the required columns from the dataframe
         * Extracting only the target species
-        * Setting the data type of each column
         * Applying a haul offset, if necessary
         * Setting the index required for downstream processes
 
@@ -192,21 +112,6 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         -------
         Processed Dataframe
         """
-
-        # obtaining those columns that are required
-        df = df[["haul_num", "species_id", "sex", "length", "weight", "age"]].copy()
-
-        # set data types of dataframe
-        df = df.astype(
-            {
-                "haul_num": int,
-                "species_id": int,
-                "sex": int,
-                "length": np.float64,
-                "weight": np.float64,
-                "age": np.float64,
-            }
-        )
 
         # extract target species
         df = df.loc[df["species_id"] == self.survey.params["species_id"]]
@@ -235,9 +140,7 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
     ) -> pd.DataFrame:
         """
         Processes the catch dataframe by:
-        * Obtaining the required columns from the dataframe
         * Extracting only the target species
-        * Setting the data type of each column
         * Applying a haul offset, if necessary
         * Setting the index required for downstream processes
 
@@ -252,19 +155,6 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         -------
         Processed Dataframe
         """
-
-        # obtaining those columns that are required
-        df = df[["haul_num", "species_id", "haul_count", "haul_weight"]].copy()
-
-        # set data types of dataframe
-        df = df.astype(
-            {
-                "haul_num": int,
-                "species_id": int,
-                "haul_count": np.float64,
-                "haul_weight": np.float64,
-            }
-        )
 
         # extract target species
         df = df.loc[df["species_id"] == self.survey.params["species_id"]]
@@ -281,153 +171,9 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
 
         return df
 
-    def _load_length_data(self) -> None:
-        """
-        Loads and prepares data associated with a station
-        that records the length and sex of the animal.
-        Additionally, it sets survey.length_df using the
-        final processed dataframe.
-        """
-
-        if self.survey.params["source"] == 3:
-
-            # check existence of the files
-            file_path_us = (
-                self.survey.params["data_root_dir"]
-                / self.survey.params["length_US_filename"]
-            )
-            file_path_can = (
-                self.survey.params["data_root_dir"]
-                / self.survey.params["length_CAN_filename"]
-            )
-            check_existence_of_file(file_path_us)
-            check_existence_of_file(file_path_can)
-
-            # read in and check US and Canada Excel files
-            df_us = pd.read_excel(
-                file_path_us, sheet_name=self.survey.params["length_US_sheet"]
-            )
-            self._check_length_df(df_us, file_path_us)
-
-            df_can = pd.read_excel(
-                file_path_can, sheet_name=self.survey.params["length_CAN_sheet"]
-            )
-            self._check_length_df(df_can, file_path_can)
-
-            # process US and Canada dataframes
-            length_us_df = self._process_length_data_df(df_us, 0)
-            length_can_df = self._process_length_data_df(
-                df_can, self.survey.params["CAN_haul_offset"]
-            )
-
-            # Construct full length dataframe from US and Canada sections
-            self.survey.length_df = pd.concat([length_us_df, length_can_df])
-
-        else:
-            raise NotImplementedError(
-                f"Source of {self.survey.params['source']} not implemented yet."
-            )
-
-    def _load_specimen_data(self) -> None:
-        """
-        Loads and prepares data associated with a station
-        that records the length, weight, age, and sex of
-        the animal. Additionally, it sets survey.specimen_df
-        using the final processed dataframe.
-        """
-
-        if self.survey.params["source"] == 3:
-
-            # check existence of the files
-            file_path_us = (
-                self.survey.params["data_root_dir"]
-                / self.survey.params["specimen_US_filename"]
-            )
-            file_path_can = (
-                self.survey.params["data_root_dir"]
-                / self.survey.params["specimen_CAN_filename"]
-            )
-            check_existence_of_file(file_path_us)
-            check_existence_of_file(file_path_can)
-
-            # read in and check US and Canada Excel files
-            specimen_us_df = pd.read_excel(
-                file_path_us, sheet_name=self.survey.params["specimen_US_sheet"]
-            )
-            self._check_specimen_df(specimen_us_df, file_path_us)
-
-            specimen_can_df = pd.read_excel(
-                file_path_can, sheet_name=self.survey.params["specimen_CAN_sheet"]
-            )
-            self._check_specimen_df(specimen_can_df, file_path_can)
-
-            # process US and Canada dataframes
-            specimen_us_df = self._process_specimen_data(specimen_us_df, 0)
-            specimen_can_df = self._process_specimen_data(
-                specimen_can_df, self.survey.params["CAN_haul_offset"]
-            )
-
-            # Construct full specimen dataframe from US and Canada sections
-            self.survey.specimen_df = pd.concat([specimen_us_df, specimen_can_df])
-
-        else:
-            raise NotImplementedError(
-                f"Source of {self.survey.params['source']} not implemented yet."
-            )
-
-    def _load_catch_data(self):
-        """
-        Loads and prepares data associated with a station
-        that records the catch data of a particular haul.
-        Additionally, it sets survey.catch_df using the
-        final processed dataframe.
-        """
-
-        if self.survey.params["source"] == 3:
-
-            # check existence of the files
-            file_path_us = (
-                self.survey.params["data_root_dir"]
-                / self.survey.params["catch_US_filename"]
-            )
-            file_path_can = (
-                self.survey.params["data_root_dir"]
-                / self.survey.params["catch_CAN_filename"]
-            )
-            check_existence_of_file(file_path_us)
-            check_existence_of_file(file_path_can)
-
-            # read in and check US and Canada Excel files
-            catch_us_df = pd.read_excel(
-                file_path_us, sheet_name=self.survey.params["catch_US_sheet"]
-            )
-            self._check_catch_df(catch_us_df, file_path_us)
-
-            catch_can_df = pd.read_excel(
-                file_path_can, sheet_name=self.survey.params["catch_CAN_sheet"]
-            )
-            self._check_catch_df(catch_can_df, file_path_can)
-
-            # process US and Canada dataframes
-            catch_us_df = self._process_catch_data(catch_us_df, 0)
-            catch_can_df = self._process_catch_data(
-                catch_can_df, self.survey.params["CAN_haul_offset"]
-            )
-
-            # Construct full catch dataframe from US and Canada sections
-            self.survey.catch_df = pd.concat([catch_us_df, catch_can_df])
-
-        else:
-
-            raise NotImplementedError(
-                f"Source of {self.survey.params['source']} not implemented yet."
-            )
-
     def _process_haul_to_transect_mapping_data(self, df: pd.DataFrame) -> pd.DataFrame:
         """
         Processes the haul to transect mapping data by
-        * selecting the haul and transect columns
-        * ensuring the dataframe has the appropriate data types
         * setting the ``haul_num`` column as the Dataframe index
         * sorting the ``haul_num`` index in ascending order
 
@@ -442,12 +188,6 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
             Processed haul to transect mapping Dataframe
         """
 
-        # obtain those columns necessary for core downstream processes
-        df = df[["haul_num", "transect_num"]].copy()
-
-        # set data types of dataframe
-        df = df.astype({"haul_num": int, "transect_num": np.float64})
-
         if self.survey.params["exclude_age1"] is False:
             raise NotImplementedError("Including age 1 data has not been implemented!")
 
@@ -456,6 +196,115 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         df.sort_index(inplace=True)
 
         return df
+
+    def _load_length_data(self) -> None:
+        """
+        Loads and prepares data associated with a station
+        that records the length and sex of the animal.
+        Additionally, it sets survey.length_df using the
+        final processed dataframe.
+        """
+
+        if self.survey.params["source"] == 3:
+            df_us = check_and_read(
+                "length_US_filename",
+                "length_US_sheet",
+                self.len_cols_types,
+                self.survey.params
+            )
+
+            df_can = check_and_read(
+                "length_CAN_filename",
+                "length_CAN_sheet",
+                self.len_cols_types,
+                self.survey.params
+            )
+
+            # process US and Canada dataframes
+            length_us_df = self._process_length_data_df(df_us, 0)
+            length_can_df = self._process_length_data_df(
+                df_can, self.survey.params["CAN_haul_offset"]
+            )
+
+            # Construct full length dataframe from US and Canada sections
+            self.survey.length_df = pd.concat([length_us_df, length_can_df])
+        else:
+            raise NotImplementedError(
+                f"Source of {self.survey.params['source']} not implemented yet."
+            )
+
+    def _load_specimen_data(self) -> None:
+        """
+        Loads and prepares data associated with a station
+        that records the length, weight, age, and sex of
+        the animal. Additionally, it sets survey.specimen_df
+        using the final processed dataframe.
+        """
+
+        if self.survey.params["source"] == 3:
+            df_us = check_and_read(
+                "specimen_US_filename",
+                "specimen_US_sheet",
+                self.spec_cols_types,
+                self.survey.params
+            )
+
+            df_can = check_and_read(
+                "specimen_CAN_filename",
+                "specimen_CAN_sheet",
+                self.spec_cols_types,
+                self.survey.params
+            )
+
+            # process US and Canada dataframes
+            specimen_us_df = self._process_specimen_data(df_us, 0)
+            specimen_can_df = self._process_specimen_data(
+                df_can, self.survey.params["CAN_haul_offset"]
+            )
+
+            # Construct full specimen dataframe from US and Canada sections
+            self.survey.specimen_df = pd.concat([specimen_us_df, specimen_can_df])
+        else:
+            raise NotImplementedError(
+                f"Source of {self.survey.params['source']} not implemented yet."
+            )
+
+    def _load_catch_data(self):
+        """
+        Loads and prepares data associated with a station
+        that records the catch data of a particular haul.
+        Additionally, it sets survey.catch_df using the
+        final processed dataframe.
+        """
+
+        if self.survey.params["source"] == 3:
+            df_us = check_and_read(
+                "catch_US_filename",
+                "catch_US_sheet",
+                self.catch_cols_types,
+                self.survey.params
+            )
+
+            df_can = check_and_read(
+                "catch_CAN_filename",
+                "catch_CAN_sheet",
+                self.catch_cols_types,
+                self.survey.params
+            )
+
+            # process US and Canada dataframes
+            catch_us_df = self._process_catch_data(df_us, 0)
+            catch_can_df = self._process_catch_data(
+                df_can, self.survey.params["CAN_haul_offset"]
+            )
+
+            # Construct full catch dataframe from US and Canada sections
+            self.survey.catch_df = pd.concat([catch_us_df, catch_can_df])
+        else:
+
+            raise NotImplementedError(
+                f"Source of {self.survey.params['source']} not implemented yet."
+            )
 
     def _load_haul_to_transect_mapping_data(self) -> None:
         """
@@ -469,46 +318,22 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         """
 
         if self.survey.params["source"] == 3:
-
-            # check existence of the files
-            file_path_us = (
-                self.survey.params["data_root_dir"]
-                / self.survey.params["filename_haul_to_transect_US"]
-            )
-            file_path_can = (
-                self.survey.params["data_root_dir"]
-                / self.survey.params["filename_haul_to_transect_CAN"]
-            )
-            check_existence_of_file(file_path_us)
-            check_existence_of_file(file_path_can)
-
-            # read in, check, and process the US haul to transect mapping file
-            haul_to_transect_mapping_us_df = pd.read_excel(
-                file_path_us,
-                sheet_name=self.survey.params["haul_to_transect_US_sheetname"],
-            )
-            self._check_haul_to_transect_mapping_df(
-                haul_to_transect_mapping_us_df, file_path_us
-            )
-            haul_to_transect_mapping_us_df = (
-                self._process_haul_to_transect_mapping_data(
-                    haul_to_transect_mapping_us_df
-                )
+            df_us = check_and_read(
+                "filename_haul_to_transect_US",
+                "haul_to_transect_US_sheetname",
+                self.haul_to_transect_mapping_cols_types,
+                self.survey.params
             )
 
-            # read in, check, and process the Canada haul to transect mapping file
-            haul_to_transect_mapping_can_df = pd.read_excel(
-                file_path_can,
-                sheet_name=self.survey.params["haul_to_transect_CAN_sheetname"],
+            df_can = check_and_read(
+                "filename_haul_to_transect_CAN",
+                "haul_to_transect_CAN_sheetname",
+                self.haul_to_transect_mapping_cols_types,
+                self.survey.params
             )
-            self._check_haul_to_transect_mapping_df(
-                haul_to_transect_mapping_can_df, file_path_can
-            )
-            haul_to_transect_mapping_can_df = (
-                self._process_haul_to_transect_mapping_data(
-                    haul_to_transect_mapping_can_df
-                )
-            )
+
+            haul_to_transect_mapping_us_df = self._process_haul_to_transect_mapping_data(df_us)
+            haul_to_transect_mapping_can_df = self._process_haul_to_transect_mapping_data(df_can)
 
             # transect offset is set to zero since we will not have overlapping transects
             # TODO: Is this a necessary variable? If so, we should make it an input to the function.
@@ -527,7 +352,6 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
             self.survey.haul_to_transect_mapping_df = pd.concat(
                 [haul_to_transect_mapping_us_df, haul_to_transect_mapping_can_df]
             )
-
         else:
             raise NotImplementedError(
                 f"Source of {self.survey.params['source']} not implemented yet."

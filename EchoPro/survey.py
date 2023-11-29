@@ -24,7 +24,7 @@ from .computation import (
 )
 from .data_loader import KrigingMesh, LoadBioData, LoadStrataData, load_nasc_df
 from .reports import Reports
-from .utils.input_checks import check_existence_of_file
+from .utils.input_checks_read import check_existence_of_file
 
 
 class Survey:
