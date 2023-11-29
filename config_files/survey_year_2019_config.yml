@@ -8,7 +8,7 @@
 # Parameters
 
 survey_year: 2019            # survey year being considered
-species_id: 22500            # target species ID for the survey year
+species: pacific_hake        # target species for the survey year
 CAN_haul_offset: 200         # The value to be added to the Canadian's haul number
 
 ##############################################################################
@@ -79,4 +79,10 @@ kriging:
     # NOTE: This file is not currently used
     filename: Kriging_files/default_vario_krig_settings_2019_US_CAN.xlsx
     sheetname: Sheet1
+
+
+# Species mapping from short species name to species_id
+species_id_mapping:
+  pacific_hake: 22500
+  krill: 1234
 ...

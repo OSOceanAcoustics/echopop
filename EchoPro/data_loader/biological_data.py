@@ -55,6 +55,28 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         self._load_catch_data()
         self._load_haul_to_transect_mapping_data()
 
+    def _extract_target_species(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Extract target species data by using the species to species_id mapping,
+        then remove species_id column from the target Dataframe
+
+        Parameters
+        ----------
+        df : pd.Dataframe
+            Target Dataframe
+
+        Returns
+        -------
+        Processed Dataframe
+        """
+
+        species_id = self.survey.params["species_id_mapping"][
+            self.survey.params["species"]
+        ]
+        df = df.loc[df["species_id"] == species_id]
+
+        return df.drop(columns=["species_id"])
+
     def _process_length_data_df(
         self, df: pd.DataFrame, haul_num_offset: int
     ) -> pd.DataFrame:
@@ -76,13 +98,12 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         Processed Dataframe
         """
 
-        # extract target species and remove species_id column
-        df = df.loc[df["species_id"] == self.survey.params["species_id"]]
-        df.drop(columns=["species_id"], inplace=True)
+        df = self._extract_target_species(df)
 
         # Apply haul offset
         df["haul_num"] = df["haul_num"] + haul_num_offset
 
+        # TODO: Implement processing of all-age data (including age 1)
         if self.survey.params["exclude_age1"] is False:
             raise NotImplementedError("Including age 1 data has not been implemented!")
 
@@ -111,13 +132,12 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         Processed Dataframe
         """
 
-        # extract target species and remove species_id column
-        df = df.loc[df["species_id"] == self.survey.params["species_id"]]
-        df.drop(columns=["species_id"], inplace=True)
+        df = self._extract_target_species(df)
 
         # Apply haul_num_offset
         df["haul_num"] = df["haul_num"] + haul_num_offset
 
+        # TODO: Implement processing of all-age data (including age 1)
         if self.survey.params["exclude_age1"] is False:
             raise NotImplementedError("Including age 1 data has not been implemented!")
 
@@ -152,9 +172,7 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         Processed Dataframe
         """
 
-        # extract target species and remove species_id column
-        df = df.loc[df["species_id"] == self.survey.params["species_id"]]
-        df.drop(columns=["species_id"], inplace=True)
+        df = self._extract_target_species(df)
 
         # Apply haul offset
         df["haul_num"] = df["haul_num"] + haul_num_offset
@@ -181,6 +199,8 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
             Processed haul to transect mapping Dataframe
         """
 
+        # TODO: Implement processing of all-age data (including age 1)
+        #    Though I (EM) don't think it applies to the haul-to-transect data files
         if self.survey.params["exclude_age1"] is False:
             raise NotImplementedError("Including age 1 data has not been implemented!")
 
