@@ -29,10 +29,10 @@ Data files from the US and Canada are found in subdirectories `US` and `CAN`, re
 Column name | Data type | Units | Empty value | Description
 --- | --- | --- | --- | --- 
 haul_num | integer | | | Haul number
-species_id | string | | | Species identification code (ID)
-sex | string | | | Sex of the animal. This is put into three categories: male, female, and unsexed
+species_id | integer | | | Species identification code (ID)
+sex | integer | | | Sex of the animal. 1=Male, 2=Female, 3=Unknown/Not determined ("unsexed")
 length | float | cm | | Length of the animal
-length_count | integer | | | Number of animals in the haul, of a particular species, and of a certain sex and length. For example, we have 5 Hake from haul 1 that are males with length 20cm
+length_count | float | | | Number of animals in the haul, of a particular species, and of a certain sex and length. For example, we have 5 Hake from haul 1 that are males with length 20cm
 
 ### Specimen
 
@@ -41,8 +41,8 @@ length_count | integer | | | Number of animals in the haul, of a particular spec
 Column name | Data type | Units | Empty value | Description
 --- | --- | --- | --- | --- 
 haul_num | integer | | | Haul number
-species_id | string | | | Species identification code (ID)
-sex | string | | | The sex of the animal. 1=Male, 2=Female, 3=Unknown/Not determined ("unsexed")
+species_id | integer | | | Species identification code (ID)
+sex | integer | | | Sex of the animal. 1=Male, 2=Female, 3=Unknown/Not determined ("unsexed")
 length | float | cm | | Length of the animal
 weight | float | kg | | Weight of the animal
 age | float | years | | Age of the animal
@@ -54,8 +54,8 @@ age | float | years | | Age of the animal
 Column name | Data type | Units | Empty value | Description
 --- | --- | --- | --- | --- 
 haul_num | integer | | | Haul number
-species_id | string | | | Species identification code (ID)
-haul_weight | integer | kg | | Haul weight
+species_id | integer | | | Species identification code (ID)
+haul_weight | float | kg | empty (blank) | Haul weight
 
 ### Haul vs transect
 
@@ -65,7 +65,7 @@ File containing the mapping between hauls and transects. This is a new file that
 Column name | Data type | Units | Empty value | Description
 --- | --- | --- | --- | --- 
 haul_num | integer | | | Haul number
-transect_num | integer | | | Transect number
+transect_num | integer | | empty (blank) | Transect number
 
 
 ## Stratification
@@ -118,6 +118,7 @@ longitude | float | decimal degrees | | Transect cell center longitude
 stratum_num | integer | | | Base KS stratum number
 transect_spacing | float | nmi (nautical miles) | | Distance (spacing) between transects
 NASC | float | m<sup>2</sup> nmi<sup>-2</sup> | | Nautical Area Scattering Coefficient
+haul_num | integer | | | Haul number
 
 ### All ages
 
