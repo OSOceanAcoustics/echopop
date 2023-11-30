@@ -605,16 +605,16 @@ title="Print to PDF"
 <td><p>Haul number</p></td>
 </tr>
 <tr class="row-odd"><td><p>species_id</p></td>
-<td><p>string</p></td>
+<td><p>integer</p></td>
 <td><p></p></td>
 <td><p></p></td>
 <td><p>Species identification code (ID)</p></td>
 </tr>
 <tr class="row-even"><td><p>sex</p></td>
-<td><p>string</p></td>
+<td><p>integer</p></td>
 <td><p></p></td>
 <td><p></p></td>
-<td><p>Sex of the animal. This is put into three categories: male, female, and unsexed</p></td>
+<td><p>Sex of the animal. 1=Male, 2=Female, 3=Unknown/Not determined (“unsexed”)</p></td>
 </tr>
 <tr class="row-odd"><td><p>length</p></td>
 <td><p>float</p></td>
@@ -623,7 +623,7 @@ title="Print to PDF"
 <td><p>Length of the animal</p></td>
 </tr>
 <tr class="row-even"><td><p>length_count</p></td>
-<td><p>integer</p></td>
+<td><p>float</p></td>
 <td><p></p></td>
 <td><p></p></td>
 <td><p>Number of animals in the haul, of a particular species, and of a certain sex and length. For example, we have 5 Hake from haul 1 that are males with length 20cm</p></td>
@@ -651,16 +651,16 @@ title="Print to PDF"
 <td><p>Haul number</p></td>
 </tr>
 <tr class="row-odd"><td><p>species_id</p></td>
-<td><p>string</p></td>
+<td><p>integer</p></td>
 <td><p></p></td>
 <td><p></p></td>
 <td><p>Species identification code (ID)</p></td>
 </tr>
 <tr class="row-even"><td><p>sex</p></td>
-<td><p>string</p></td>
+<td><p>integer</p></td>
 <td><p></p></td>
 <td><p></p></td>
-<td><p>The sex of the animal. 1=Male, 2=Female, 3=Unknown/Not determined (“unsexed”)</p></td>
+<td><p>Sex of the animal. 1=Male, 2=Female, 3=Unknown/Not determined (“unsexed”)</p></td>
 </tr>
 <tr class="row-odd"><td><p>length</p></td>
 <td><p>float</p></td>
@@ -703,15 +703,15 @@ title="Print to PDF"
 <td><p>Haul number</p></td>
 </tr>
 <tr class="row-odd"><td><p>species_id</p></td>
-<td><p>string</p></td>
+<td><p>integer</p></td>
 <td><p></p></td>
 <td><p></p></td>
 <td><p>Species identification code (ID)</p></td>
 </tr>
 <tr class="row-even"><td><p>haul_weight</p></td>
-<td><p>integer</p></td>
+<td><p>float</p></td>
 <td><p>kg</p></td>
-<td><p></p></td>
+<td><p>empty (blank)</p></td>
 <td><p>Haul weight</p></td>
 </tr>
 </tbody>
@@ -740,7 +740,7 @@ title="Print to PDF"
 <tr class="row-odd"><td><p>transect_num</p></td>
 <td><p>integer</p></td>
 <td><p></p></td>
-<td><p></p></td>
+<td><p>empty (blank)</p></td>
 <td><p>Transect number</p></td>
 </tr>
 </tbody>
@@ -880,6 +880,12 @@ title="Print to PDF"
 <td><p>m<sup>2</sup> nmi<sup>-2</sup></p></td>
 <td><p></p></td>
 <td><p>Nautical Area Scattering Coefficient</p></td>
+</tr>
+<tr class="row-even"><td><p>haul_num</p></td>
+<td><p>integer</p></td>
+<td><p></p></td>
+<td><p></p></td>
+<td><p>Haul number</p></td>
 </tr>
 </tbody>
 </table>
