@@ -33,13 +33,13 @@ class KrigingMesh:
 
         # expected columns for the mesh Dataframe
         self.mesh_cols_types = {
-            "centroid_latitude": float,
-            "centroid_longitude": float,
+            "centroid_latitude": np.float64,
+            "centroid_longitude": np.float64,
             "fraction_cell_in_polygon": np.float64,
         }
 
         # expected columns for the smoothed contour Dataframe
-        self.contour_cols_types = {"latitude": float, "longitude": float}
+        self.contour_cols_types = {"latitude": np.float64, "longitude": np.float64}
 
         # initialize mesh parameters
         self.transformed_transect_df = None
