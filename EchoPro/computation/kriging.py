@@ -458,7 +458,7 @@ class Kriging:
         results_gdf["stratum_num"] = pd.cut(
             results_gdf["centroid_latitude"],
             bins=[0.0]
-            + list(self.survey.geo_strata_df["Latitude (upper limit)"])
+            + list(self.survey.geo_strata_df["northlimit_latitude"])
             + [90.0],
             labels=list(self.survey.geo_strata_df["stratum_num"]) + [1],
             ordered=False,

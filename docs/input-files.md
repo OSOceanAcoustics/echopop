@@ -95,7 +95,7 @@ File that defines the geographic definition of strata.
 Column name | Data type | Units | Empty value | Description
 --- | --- | --- | --- | --- 
 stratum_num | integer | | | Stratum number for KS or INPC strata (`stratification1` or `INPC` tab, respectively)
-Latitude (upper limit) | float | decimal degrees | | Northern limit of stratum
+northlimit_latitude | float | decimal degrees | | Northern limit of stratum
 
 
 ## NASC
