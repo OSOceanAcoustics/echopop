@@ -24,7 +24,7 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         self.len_cols_types = {
             "haul_num": int,
             "species_id": int,
-            "sex": int,
+            "sex": np.int8,
             "length": np.float64,
             "length_count": np.float64,
         }
@@ -33,7 +33,7 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         self.spec_cols_types = {
             "haul_num": int,
             "species_id": int,
-            "sex": int,
+            "sex": np.int8,
             "length": np.float64,
             "weight": np.float64,
             "age": np.float64,
@@ -43,7 +43,6 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         self.catch_cols_types = {
             "haul_num": int,
             "species_id": int,
-            "haul_count": np.float64,
             "haul_weight": np.float64,
         }
 
