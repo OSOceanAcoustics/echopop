@@ -47,7 +47,7 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         }
 
         # expected columns for haul_to_transect_mapping Dataframe
-        self.haul_to_transect_mapping_cols_types = {"haul_num": int, "transect_num": np.float64}
+        self.haul_to_transect_mapping_cols_types = {"haul_num": int, "transect_num": int}
 
         self._load_length_data()
         self._load_specimen_data()

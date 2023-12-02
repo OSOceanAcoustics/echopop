@@ -64,8 +64,8 @@ File containing the mapping between hauls and transects. This is a new file that
 **Current sample file (US data)** relative to base directory: `US/haul_to_transect_mapping_2019.xls`, single sheet
 Column name | Data type | Units | Empty value | Description
 --- | --- | --- | --- | --- 
-haul_num | integer | | | Haul number
-transect_num | integer | | empty (blank) | Transect number
+haul_num | integer | | N/P | Haul number
+transect_num | integer | | N/P | Transect number
 
 
 ## Stratification
