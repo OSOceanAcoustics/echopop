@@ -76,10 +76,10 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         """
 
         # extract target species
-        df = df.loc[df["species_id"] == self.survey.params["species_id"]]
+        df = df.loc[df["species_id"] == self.survey.params["species_id"]].copy()
 
         # Apply haul offset
-        df["haul_num"] = df["haul_num"] + haul_num_offset
+        df.loc[:, "haul_num"] = df["haul_num"] + haul_num_offset
 
         if self.survey.params["exclude_age1"] is False:
             raise NotImplementedError("Including age 1 data has not been implemented!")
@@ -113,10 +113,10 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         """
 
         # extract target species
-        df = df.loc[df["species_id"] == self.survey.params["species_id"]]
+        df = df.loc[df["species_id"] == self.survey.params["species_id"]].copy()
 
         # Apply haul_num_offset
-        df["haul_num"] = df["haul_num"] + haul_num_offset
+        df.loc[:, "haul_num"] = df["haul_num"] + haul_num_offset
 
         if self.survey.params["exclude_age1"] is False:
             raise NotImplementedError("Including age 1 data has not been implemented!")
@@ -156,10 +156,10 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         """
 
         # extract target species
-        df = df.loc[df["species_id"] == self.survey.params["species_id"]]
+        df = df.loc[df["species_id"] == self.survey.params["species_id"]].copy()
 
         # Apply haul offset
-        df["haul_num"] = df["haul_num"] + haul_num_offset
+        df.loc[:, "haul_num"] = df["haul_num"] + haul_num_offset
 
         # remove species_id column
         df.drop(columns=["species_id"], inplace=True)
