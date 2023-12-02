@@ -56,8 +56,7 @@ def check_existence_of_file(file_path: Path) -> None:
 
 
 def check_and_read(
-        param_filename: str,
-        param_sheetname: str,
+        param_path_str: str,
         cols_types: dict,
         params: dict
 ) -> pd.DataFrame:
@@ -67,10 +66,9 @@ def check_and_read(
 
     Parameters
     ----------
-    param_filename : str
-        Name of configuration parameter specifying the file path
-    param_sheetname : str
-        Name of configuration parameter specifying the Excel file sheet name
+    param_path_str : str
+        Parameter "path" for the input data file, using "/" as a delimiter.
+        eg, biological/length/US
     cols_types : dict
         Dictionary specifying the column names and types for the target input data
     params: dict
@@ -81,12 +79,19 @@ def check_and_read(
     pd.DataFrame
         Read and checked Dataframe
     """
+
+    # Construct parameter "path" for accessing filename and sheetname
+    param_elements = param_path_str.split("/")
+    param_path = params[param_elements[0]][param_elements[1]]
+    if len(param_elements) == 3:
+        param_path = param_path[param_elements[2]]
+
     # check existence of the files
-    file_path = params["data_root_dir"] / params[param_filename]
+    file_path = params["data_root_dir"] / param_path["filename"]
     check_existence_of_file(file_path)
 
     # read in and check Excel file
-    df = pd.read_excel(file_path, sheet_name=params[param_sheetname])
+    df = pd.read_excel(file_path, sheet_name=param_path["sheetname"])
     check_column_names(df=df, expected_names=set(cols_types.keys()), path_for_df=file_path)
 
     # obtaining those columns that are required

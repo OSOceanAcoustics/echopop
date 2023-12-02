@@ -55,6 +55,28 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         self._load_catch_data()
         self._load_haul_to_transect_mapping_data()
 
+    def _extract_target_species(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Extract target species data by using the species to species_id mapping,
+        then remove species_id column from the target Dataframe
+
+        Parameters
+        ----------
+        df : pd.Dataframe
+            Target Dataframe
+
+        Returns
+        -------
+        Processed Dataframe
+        """
+
+        species_id = self.survey.params["species_id_mapping"][
+            self.survey.params["species"]
+        ]
+        df = df.loc[df["species_id"] == species_id]
+
+        return df.drop(columns=["species_id"])
+
     def _process_length_data_df(
         self, df: pd.DataFrame, haul_num_offset: int
     ) -> pd.DataFrame:
@@ -66,7 +88,7 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
 
         Parameters
         ----------
-        df : Pandas Dataframe
+        df : pd.Dataframe
             Dataframe holding the length data
         haul_num_offset : int
             The offset that should be applied to the ``haul_num`` column
@@ -76,17 +98,14 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         Processed Dataframe
         """
 
-        # extract target species
-        df = df.loc[df["species_id"] == self.survey.params["species_id"]]
+        df = self._extract_target_species(df)
 
         # Apply haul offset
         df["haul_num"] = df["haul_num"] + haul_num_offset
 
+        # TODO: Implement processing of all-age data (including age 1)
         if self.survey.params["exclude_age1"] is False:
             raise NotImplementedError("Including age 1 data has not been implemented!")
-
-        # remove species_id column
-        df.drop(columns=["species_id"], inplace=True)
 
         df.set_index("haul_num", inplace=True)
 
@@ -103,7 +122,7 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
 
         Parameters
         ----------
-        df : Pandas Dataframe
+        df : pd.Dataframe
             Dataframe holding the specimen data
         haul_num_offset : int
             The offset that should be applied to the ``haul_num`` column
@@ -113,17 +132,14 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         Processed Dataframe
         """
 
-        # extract target species
-        df = df.loc[df["species_id"] == self.survey.params["species_id"]]
+        df = self._extract_target_species(df)
 
         # Apply haul_num_offset
         df["haul_num"] = df["haul_num"] + haul_num_offset
 
+        # TODO: Implement processing of all-age data (including age 1)
         if self.survey.params["exclude_age1"] is False:
             raise NotImplementedError("Including age 1 data has not been implemented!")
-
-        # remove species_id column
-        df.drop(columns=["species_id"], inplace=True)
 
         # set and organize index
         df.set_index("haul_num", inplace=True)
@@ -146,7 +162,7 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
 
         Parameters
         ----------
-        df : Pandas Dataframe
+        df : pd.Dataframe
             Dataframe holding the catch data
         haul_num_offset : int
             The offset that should be applied to the ``haul_num`` column
@@ -156,17 +172,12 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         Processed Dataframe
         """
 
-        # extract target species
-        df = df.loc[df["species_id"] == self.survey.params["species_id"]]
+        df = self._extract_target_species(df)
 
         # Apply haul offset
         df["haul_num"] = df["haul_num"] + haul_num_offset
 
-        # remove species_id column
-        df.drop(columns=["species_id"], inplace=True)
-
         df.set_index("haul_num", inplace=True)
-
         df.sort_index(inplace=True)
 
         return df
@@ -179,7 +190,7 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
 
         Parameters
         ----------
-        df : pd. Dataframe
+        df : pd.Dataframe
             Dataframe holding the haul to transect mapping data
 
         Returns
@@ -188,6 +199,8 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
             Processed haul to transect mapping Dataframe
         """
 
+        # TODO: Implement processing of all-age data (including age 1)
+        #    Though I (EM) don't think it applies to the haul-to-transect data files
         if self.survey.params["exclude_age1"] is False:
             raise NotImplementedError("Including age 1 data has not been implemented!")
 
@@ -207,15 +220,13 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
 
         if self.survey.params["source"] == 3:
             df_us = check_and_read(
-                "length_US_filename",
-                "length_US_sheet",
+                "biological/length/US",
                 self.len_cols_types,
                 self.survey.params
             )
 
             df_can = check_and_read(
-                "length_CAN_filename",
-                "length_CAN_sheet",
+                "biological/length/CAN",
                 self.len_cols_types,
                 self.survey.params
             )
@@ -243,15 +254,13 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
 
         if self.survey.params["source"] == 3:
             df_us = check_and_read(
-                "specimen_US_filename",
-                "specimen_US_sheet",
+                "biological/specimen/US",
                 self.spec_cols_types,
                 self.survey.params
             )
 
             df_can = check_and_read(
-                "specimen_CAN_filename",
-                "specimen_CAN_sheet",
+                "biological/specimen/CAN",
                 self.spec_cols_types,
                 self.survey.params
             )
@@ -279,15 +288,13 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
 
         if self.survey.params["source"] == 3:
             df_us = check_and_read(
-                "catch_US_filename",
-                "catch_US_sheet",
+                "biological/catch/US",
                 self.catch_cols_types,
                 self.survey.params
             )
 
             df_can = check_and_read(
-                "catch_CAN_filename",
-                "catch_CAN_sheet",
+                "biological/catch/CAN",
                 self.catch_cols_types,
                 self.survey.params
             )
@@ -319,15 +326,13 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
 
         if self.survey.params["source"] == 3:
             df_us = check_and_read(
-                "filename_haul_to_transect_US",
-                "haul_to_transect_US_sheetname",
+                "biological/haul_to_transect/US",
                 self.haul_to_transect_mapping_cols_types,
                 self.survey.params
             )
 
             df_can = check_and_read(
-                "filename_haul_to_transect_CAN",
-                "haul_to_transect_CAN_sheetname",
+                "biological/haul_to_transect/CAN",
                 self.haul_to_transect_mapping_cols_types,
                 self.survey.params
             )

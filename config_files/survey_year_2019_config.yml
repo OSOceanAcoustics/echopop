@@ -4,94 +4,85 @@
 # with the data_root_dir path also set below.
 
 ---
-  ##############################################################################
-  # Parameters
-  #########################################
-  survey_year: 2019            # survey year being considered
-  species_id: 22500            # target species ID for the survey year
-  CAN_haul_offset: 200         # The value to be added to the Canadian's haul number
+##############################################################################
+# Parameters
 
-  hemisphere: NW               # north/south and west/east hemispheres, used for the reports
-  ##############################################################################
+survey_year: 2019            # survey year being considered
+species: pacific_hake        # target species for the survey year
+CAN_haul_offset: 200         # The value to be added to the Canadian's haul number
+
+##############################################################################
+# Directory path that contains all input data needed
+
+data_root_dir: ../../2019_consolidated_files/
+
+##############################################################################
+# Input data files
+
+biological:
+  length:
+    US:
+      filename: Biological/US/2019_biodata_length.xlsx
+      sheetname: biodata_length
+    CAN:
+      filename: Biological/CAN/2019_biodata_length_CAN.xlsx
+      sheetname: biodata_length_CAN
+  specimen:
+    US:
+      filename: Biological/US/2019_biodata_specimen_AGES.xlsx
+      sheetname: biodata_specimen
+    CAN:
+      filename: Biological/CAN/2019_biodata_specimen_CAN_AGES.xlsx
+      sheetname: biodata_specimen_CAN
+  catch:
+    US:
+      filename: Biological/US/2019_biodata_catch.xlsx
+      sheetname: biodata_catch
+    CAN:
+      filename: Biological/CAN/2019_biodata_catch_CAN.xlsx
+      sheetname: biodata_catch_CAN
+  haul_to_transect:
+    US:
+      filename: Biological/US/haul_to_transect_mapping_2019.xlsx
+      sheetname: Sheet1
+    CAN:
+      filename: Biological/CAN/haul_to_transect_mapping_2019_CAN.xlsx
+      sheetname: Sheet1
+stratification:
+  strata:
+    # The two stratification types are found in two sheets: "Base KS" and "INPFC"
+    filename: Stratification/US_CAN strata 2019_final.xlsx
+    sheetname: Base KS
+  geo_strata:
+    # The two stratification types are found in two sheets: "stratification1" and "INPFC"
+    filename: Stratification/Stratification_geographic_Lat_2019_final.xlsx
+    sheetname: stratification1
+NASC:
+  # NASC values
+  no_age1:
+    # file that excludes age1 values
+    filename: Exports/US_CAN_detailsa_2019_table2y+_ALL_final - updated.xlsx
+    sheetname: Sheet1
+  all_ages:
+    # file that includes all ages
+    filename: Exports/US_CAN_detailsa_2019_table1y+_ALL_final - updated.xlsx
+    sheetname: Sheet1
+kriging:
+  mesh:
+    filename: Kriging_files/Kriging_grid_files/krig_grid2_5nm_cut_centroids_2013.xlsx
+    sheetname: krigedgrid2_5nm_forChu
+  isobath_200m:
+    # filename: Kriging_files/Kriging_grid_files/Smoothing_EasyKrig.xlsx
+    filename: Kriging_files/Kriging_grid_files/transformation_isobath_coordinates.xlsx
+    sheetname: Smoothing_EasyKrig
+  vario_krig_para:
+    # NOTE: This file is not currently used
+    filename: Kriging_files/default_vario_krig_settings_2019_US_CAN.xlsx
+    sheetname: Sheet1
 
 
-  # directory path that contains all data needed
-  data_root_dir: ../../2019_consolidated_files/
-
-  ##############################################################################
-  # Paths to biological files #
-  #############################
-
-  # File names and associated sheet name for the US section
-  length_US_filename: Biological/US/2019_biodata_length.xlsx
-  length_US_sheet: biodata_length
-  specimen_US_filename: Biological/US/2019_biodata_specimen_AGES.xlsx
-  specimen_US_sheet: biodata_specimen
-  catch_US_filename: Biological/US/2019_biodata_catch.xlsx
-  catch_US_sheet: biodata_catch
-
-
-  # File names for the Canada section
-  length_CAN_filename: Biological/CAN/2019_biodata_length_CAN.xlsx
-  length_CAN_sheet: biodata_length_CAN
-  specimen_CAN_filename: Biological/CAN/2019_biodata_specimen_CAN_AGES.xlsx
-  specimen_CAN_sheet: biodata_specimen_CAN
-  catch_CAN_filename: Biological/CAN/2019_biodata_catch_CAN.xlsx
-  catch_CAN_sheet: biodata_catch_CAN
-  ##############################################################################
-
-
-  ##############################################################################
-  # Paths to stratification files #
-  #################################
-
-  # file that relates the stratification to the Haul
-  # The two stratification types are found in two sheets: "Base KS" and "INPFC"
-  strata_filename: Stratification/US_CAN strata 2019_final.xlsx
-  strata_sheetname: Base KS
-
-  # file that defines the geographic definition of strata
-  # The two stratification types are found in two sheets: "stratification1" and "INPFC"
-  geo_strata_filename: Stratification/Stratification_geographic_Lat_2019_final.xlsx
-  geo_strata_sheetname: stratification1
-
-  # file that provides NASC values, which do not include age1 values
-  nasc_no_age1_filename: Exports/US_CAN_detailsa_2019_table2y+_ALL_final - updated.xlsx
-  nasc_no_age1_sheetname: Sheet1
-
-  # file that provides NASC values, which include all ages
-  nasc_all_ages_filename: Exports/US_CAN_detailsa_2019_table1y+_ALL_final - updated.xlsx
-  nasc_all_ages_sheetname: Sheet1
-  ##############################################################################
-
-
-  ##############################################################################
-  # Paths to Kriging files #
-  ##########################
-
-  # Mesh filename representing the centroids of the Kriging grid
-  mesh_filename: Kriging_files/Kriging_grid_files/krig_grid2_5nm_cut_centroids_2013.xlsx
-  mesh_sheetname: krigedgrid2_5nm_forChu
-
-  # smoothed contour used to transform the mesh points
-  smoothed_contour_filename: Kriging_files/Kriging_grid_files/transformation_isobath_coordinates.xlsx
-  #  smoothed_contour_filename: Kriging_files/Kriging_grid_files/Smoothing_EasyKrig.xlsx
-  smoothed_contour_sheetname: Smoothing_EasyKrig
-
-  vario_krig_para_filename: Kriging_files/default_vario_krig_settings_2019_US_CAN.xlsx
-  ##############################################################################
-
-
-  ##############################################################################
-  # Path to mapping between hauls and transects #
-  ###############################################
-
-  # File names for the US section
-  filename_haul_to_transect_US: Biological/US/haul_to_transect_mapping_2019.xlsx
-  haul_to_transect_US_sheetname: Sheet1
-
-  # File names for the Canada section
-  filename_haul_to_transect_CAN: Biological/CAN/haul_to_transect_mapping_2019_CAN.xlsx
-  haul_to_transect_CAN_sheetname: Sheet1
-  ##############################################################################
+# Species mapping from short species name to species_id
+species_id_mapping:
+  pacific_hake: 22500
+  krill: 1234
 ...
