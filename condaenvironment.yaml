@@ -22,5 +22,3 @@ dependencies:
   - PyYAML
   - shapely<2
   - xarray
-  - pip:
-    - git+https://github.com/uw-echospace/EchoPro.git

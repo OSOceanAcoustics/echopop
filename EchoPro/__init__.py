@@ -3,5 +3,4 @@ from .survey import Survey
 
 __all__ = ["Survey", "SemiVariogram"]
 
-__version__ = "0.3.2dev"
-
+from _echopype_version import version as __version__  # noqa
