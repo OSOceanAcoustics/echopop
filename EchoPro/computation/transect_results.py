@@ -937,15 +937,12 @@ class ComputeTransectVariables:
             )
 
             # get mapping between transects and hauls
+            # note: the index will have duplicates
             transect_vs_haul = (
-                self.survey.haul_to_transect_mapping_df["transect_num"]
-                .dropna()
-                .astype(int)
+                self.survey.haul_to_transect_mapping_df
                 .reset_index()
                 .set_index("transect_num")
             )
-
-            # TODO: do a check that all hauls are mapped to a transect
 
             # get transects and hauls based off of mapping and selected transects
             sel_transects = (

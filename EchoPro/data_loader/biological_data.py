@@ -24,7 +24,7 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         self.len_cols_types = {
             "haul_num": int,
             "species_id": int,
-            "sex": int,
+            "sex": np.int8,
             "length": np.float64,
             "length_count": np.float64,
         }
@@ -33,7 +33,7 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         self.spec_cols_types = {
             "haul_num": int,
             "species_id": int,
-            "sex": int,
+            "sex": np.int8,
             "length": np.float64,
             "weight": np.float64,
             "age": np.float64,
@@ -43,12 +43,11 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         self.catch_cols_types = {
             "haul_num": int,
             "species_id": int,
-            "haul_count": np.float64,
             "haul_weight": np.float64,
         }
 
         # expected columns for haul_to_transect_mapping Dataframe
-        self.haul_to_transect_mapping_cols_types = {"haul_num": int, "transect_num": np.float64}
+        self.haul_to_transect_mapping_cols_types = {"haul_num": int, "transect_num": int}
 
         self._load_length_data()
         self._load_specimen_data()
@@ -77,10 +76,10 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         """
 
         # extract target species
-        df = df.loc[df["species_id"] == self.survey.params["species_id"]]
+        df = df.loc[df["species_id"] == self.survey.params["species_id"]].copy()
 
         # Apply haul offset
-        df["haul_num"] = df["haul_num"] + haul_num_offset
+        df.loc[:, "haul_num"] = df["haul_num"] + haul_num_offset
 
         if self.survey.params["exclude_age1"] is False:
             raise NotImplementedError("Including age 1 data has not been implemented!")
@@ -114,10 +113,10 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         """
 
         # extract target species
-        df = df.loc[df["species_id"] == self.survey.params["species_id"]]
+        df = df.loc[df["species_id"] == self.survey.params["species_id"]].copy()
 
         # Apply haul_num_offset
-        df["haul_num"] = df["haul_num"] + haul_num_offset
+        df.loc[:, "haul_num"] = df["haul_num"] + haul_num_offset
 
         if self.survey.params["exclude_age1"] is False:
             raise NotImplementedError("Including age 1 data has not been implemented!")
@@ -157,10 +156,10 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         """
 
         # extract target species
-        df = df.loc[df["species_id"] == self.survey.params["species_id"]]
+        df = df.loc[df["species_id"] == self.survey.params["species_id"]].copy()
 
         # Apply haul offset
-        df["haul_num"] = df["haul_num"] + haul_num_offset
+        df.loc[:, "haul_num"] = df["haul_num"] + haul_num_offset
 
         # remove species_id column
         df.drop(columns=["species_id"], inplace=True)

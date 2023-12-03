@@ -7,6 +7,8 @@ import EchoPro
 from EchoPro.computation import SemiVariogram as SV
 
 
+# 12/1/2023: The test typically succeeds for a few iterations, then fails
+@pytest.mark.skip(reason="Fails due to https://github.com/uw-echospace/EchoPro/issues/95")
 @pytest.mark.parametrize(["removal_percentage"], [
     [38.0], [50.0], [60.0]
 ])

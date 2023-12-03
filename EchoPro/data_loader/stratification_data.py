@@ -28,7 +28,7 @@ class LoadStrataData:  # TODO: Does it make sense for this to be a class?
         }
 
         # expected columns for geo strata Dataframe
-        self.geo_strata_cols_types = {"stratum_num": int, "Latitude (upper limit)": np.float64}
+        self.geo_strata_cols_types = {"stratum_num": int, "northlimit_latitude": np.float64}
 
         self._load_stratification_file()
         self._load_geographic_stratification()
