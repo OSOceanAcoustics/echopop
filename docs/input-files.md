@@ -1,14 +1,16 @@
 # Input files
 
-Input files used in a Python EchoPro run, grouped by data type. The tables below describe the data columns required by Python EchoPro; other columns will be ignored. All input files are in Excel format. File paths, names, and Excel tab names are specified in the survey year configuration file (e.g., `survey_year_2019_config.yml`)
+Input files used in a Python EchoPro run, grouped by data type. The tables below describe the data columns required by Python EchoPro; other columns will be ignored. All input files are in Excel format. File paths, names, and Excel tab names are specified in the survey year configuration file (e.g., `survey_year_2019_config.yml`).
 
 Biological data are always separated into US vs Canada files. All other data files combine US and Canadian data.
 
-To minimize duplication in the data file description tables below, additional definitions and information for some variables (column names) found in multiple files is provided here:
+To minimize duplication in the data file description tables below, additional definitions and information for some variables found in multiple files is provided here, especiallly for column names:
 
 - `haul_num`: Haul number. Identifies the haul the collected data come from. A haul is usally described as a collection of trawls for a certain section of the survey.
 - `transect_num`: Transect number.
 - `species_id`: Species identification code (ID). Identifies what species is associated with the collected data. Pacific hake is 22500.
+- `N/P`: Empty value Not Permitted.
+- `nmi`: Nautical miles.
 
 ```{contents}
 :local:
@@ -28,9 +30,9 @@ Data files from the US and Canada are found in subdirectories `US` and `CAN`, re
 
 Column name | Data type | Units | Empty value | Description
 --- | --- | --- | --- | --- 
-haul_num | integer | | | Haul number
-species_id | integer | | | Species identification code (ID)
-sex | integer | | | Sex of the animal. 1=Male, 2=Female, 3=Unknown/Not determined ("unsexed")
+haul_num | integer | | N/P | Haul number
+species_id | integer | | N/P | Species identification code (ID)
+sex | integer | | N/P | Sex of the animal. 1=Male, 2=Female, 3=Unknown/Not determined ("unsexed")
 length | float | cm | | Length of the animal
 length_count | float | | | Number of animals in the haul, of a particular species, and of a certain sex and length. For example, we have 5 Hake from haul 1 that are males with length 20cm
 
@@ -40,12 +42,12 @@ length_count | float | | | Number of animals in the haul, of a particular specie
 
 Column name | Data type | Units | Empty value | Description
 --- | --- | --- | --- | --- 
-haul_num | integer | | | Haul number
-species_id | integer | | | Species identification code (ID)
-sex | integer | | | Sex of the animal. 1=Male, 2=Female, 3=Unknown/Not determined ("unsexed")
+haul_num | integer | | N/P | Haul number
+species_id | integer | | N/P | Species identification code (ID)
+sex | integer | | N/P | Sex of the animal. 1=Male, 2=Female, 3=Unknown/Not determined ("unsexed")
 length | float | cm | | Length of the animal
-weight | float | kg | | Weight of the animal
-age | float | years | | Age of the animal
+weight | float | kg | empty (blank) | Weight of the animal
+age | float | years | empty (blank) | Age of the animal
 
 ### Catch
 
@@ -53,9 +55,9 @@ age | float | years | | Age of the animal
 
 Column name | Data type | Units | Empty value | Description
 --- | --- | --- | --- | --- 
-haul_num | integer | | | Haul number
-species_id | integer | | | Species identification code (ID)
-haul_weight | float | kg | empty (blank) | Haul weight
+haul_num | integer | | N/P | Haul number
+species_id | integer | | N/P | Species identification code (ID)
+haul_weight | float | kg | N/P | Haul weight
 
 ### Haul vs transect
 
@@ -64,8 +66,8 @@ File containing the mapping between hauls and transects. This is a new file that
 **Current sample file (US data)** relative to base directory: `US/haul_to_transect_mapping_2019.xls`, single sheet
 Column name | Data type | Units | Empty value | Description
 --- | --- | --- | --- | --- 
-haul_num | integer | | | Haul number
-transect_num | integer | | empty (blank) | Transect number
+haul_num | integer | | N/P | Haul number
+transect_num | integer | | N/P | Transect number
 
 
 ## Stratification
@@ -82,9 +84,9 @@ File that relates the stratification to the haul.
 
 Column name | Data type | Units | Empty value | Description
 --- | --- | --- | --- | --- 
-stratum_num | integer | | | Stratum number for KS or INPC strata (`Base KS` or `INPC` tab, respectively)
-haul_num | integer | | | Haul number
-fraction_hake | float | 0-1 | | Fraction of the haul weight that is hake
+stratum_num | integer | | N/P | Stratum number for KS or INPC strata (`Base KS` or `INPC` tab, respectively). For `Base KS`, 0 = Low sample size.
+haul_num | integer | | N/P | Haul number
+fraction_hake | float | 0-1 | N/P | Fraction of the haul weight that is hake
 
 ### Geo-strata
 
@@ -94,8 +96,8 @@ File that defines the geographic definition of strata.
 
 Column name | Data type | Units | Empty value | Description
 --- | --- | --- | --- | --- 
-stratum_num | integer | | | Stratum number for KS or INPC strata (`stratification1` or `INPC` tab, respectively)
-Latitude (upper limit) | float | decimal degrees | | Northern limit of stratum
+stratum_num | integer | | N/P | Stratum number for KS or INPC strata (`stratification1` or `INPC` tab, respectively)
+northlimit_latitude | float | decimal degrees | N/P | Northern limit of stratum
 
 
 ## NASC
@@ -110,15 +112,15 @@ NASC (Nautical Area Scattering Coefficient) values that do not include age1 valu
 
 Column name | Data type | Units | Empty value | Description
 --- | --- | --- | --- | --- 
-transect_num | integer | | | Transect number
-vessel_log_start | float | nmi (nautical miles) | | Vessel log cumulative distance at start of transect cell
-vessel_log_end | float | nmi (nautical miles) | | Vessel log cumulative distance at end of transect cell
-latitude | float | decimal degrees | | Transect cell center latitude
-longitude | float | decimal degrees | | Transect cell center longitude
-stratum_num | integer | | | Base KS stratum number
-transect_spacing | float | nmi (nautical miles) | | Distance (spacing) between transects
-NASC | float | m<sup>2</sup> nmi<sup>-2</sup> | | Nautical Area Scattering Coefficient
-haul_num | integer | | | Haul number
+transect_num | integer | | N/P | Transect number
+vessel_log_start | float | nmi | N/P | Vessel log cumulative distance at start of transect cell
+vessel_log_end | float | nmi | N/P | Vessel log cumulative distance at end of transect cell
+latitude | float | decimal degrees | N/P | Transect cell center latitude
+longitude | float | decimal degrees | N/P | Transect cell center longitude
+stratum_num | integer | | N/P | Base KS stratum number
+transect_spacing | float | nmi | N/P | Distance (spacing) between transects
+NASC | float | m<sup>2</sup> nmi<sup>-2</sup> | N/P | Nautical Area Scattering Coefficient
+haul_num | integer | | N/P | Haul number. A value of 0 is used for transect cells where a haul was not present or used.
 
 ### All ages
 
@@ -139,9 +141,9 @@ The "Mesh" file containing the centroids of the Kriging grid cells. Grid size is
 
 Column name | Data type | Units | Empty value | Description
 --- | --- | --- | --- | --- 
-centroid_latitude | float | decimal degrees | | Cell centroid latitude
-centroid_longitude | float | decimal degrees | | Cell centroid longitude
-fraction_cell_in_polygon | float | 0-1 | | Fraction of mesh cell that is within the interpolation polygon that delineates the mesh
+centroid_latitude | float | decimal degrees | N/P | Cell centroid latitude
+centroid_longitude | float | decimal degrees | N/P | Cell centroid longitude
+fraction_cell_in_polygon | float | 0-1 | N/P | Fraction of mesh cell that is within the interpolation polygon that delineates the mesh
 
 ### Smoothed shelf-break contour
 
@@ -151,5 +153,5 @@ Smoothed isobath contour used to transform the mesh points. A set of point locat
 
 Column name | Data type | Units | Empty value | Description
 --- | --- | --- | --- | --- 
-latitude | float | decimal degrees | | Point latitude
-longitude | float | decimal degrees | | Point longitude
+latitude | float | decimal degrees | N/P | Point latitude
+longitude | float | decimal degrees | N/P | Point longitude

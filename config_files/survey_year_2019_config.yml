@@ -79,10 +79,4 @@ kriging:
     # NOTE: This file is not currently used
     filename: Kriging_files/default_vario_krig_settings_2019_US_CAN.xlsx
     sheetname: Sheet1
-
-
-# Species mapping from short species name to species_id
-species_id_mapping:
-  pacific_hake: 22500
-  krill: 1234
 ...
