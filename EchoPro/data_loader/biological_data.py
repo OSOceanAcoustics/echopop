@@ -24,7 +24,7 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         self.len_cols_types = {
             "haul_num": int,
             "species_id": int,
-            "sex": int,
+            "sex": np.int8,
             "length": np.float64,
             "length_count": np.float64,
         }
@@ -33,7 +33,7 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         self.spec_cols_types = {
             "haul_num": int,
             "species_id": int,
-            "sex": int,
+            "sex": np.int8,
             "length": np.float64,
             "weight": np.float64,
             "age": np.float64,
@@ -43,12 +43,11 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         self.catch_cols_types = {
             "haul_num": int,
             "species_id": int,
-            "haul_count": np.float64,
             "haul_weight": np.float64,
         }
 
         # expected columns for haul_to_transect_mapping Dataframe
-        self.haul_to_transect_mapping_cols_types = {"haul_num": int, "transect_num": np.float64}
+        self.haul_to_transect_mapping_cols_types = {"haul_num": int, "transect_num": int}
 
         self._load_length_data()
         self._load_specimen_data()
@@ -73,7 +72,7 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         species_id = self.survey.params["species_id_mapping"][
             self.survey.params["species"]
         ]
-        df = df.loc[df["species_id"] == species_id]
+        df = df.loc[df["species_id"] == species_id].copy()
 
         return df.drop(columns=["species_id"])
 
@@ -101,7 +100,7 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         df = self._extract_target_species(df)
 
         # Apply haul offset
-        df["haul_num"] = df["haul_num"] + haul_num_offset
+        df.loc[:, "haul_num"] = df["haul_num"] + haul_num_offset
 
         # TODO: Implement processing of all-age data (including age 1)
         if self.survey.params["exclude_age1"] is False:
@@ -135,7 +134,7 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         df = self._extract_target_species(df)
 
         # Apply haul_num_offset
-        df["haul_num"] = df["haul_num"] + haul_num_offset
+        df.loc[:, "haul_num"] = df["haul_num"] + haul_num_offset
 
         # TODO: Implement processing of all-age data (including age 1)
         if self.survey.params["exclude_age1"] is False:
@@ -175,7 +174,7 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         df = self._extract_target_species(df)
 
         # Apply haul offset
-        df["haul_num"] = df["haul_num"] + haul_num_offset
+        df.loc[:, "haul_num"] = df["haul_num"] + haul_num_offset
 
         df.set_index("haul_num", inplace=True)
         df.sort_index(inplace=True)
