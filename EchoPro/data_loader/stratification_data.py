@@ -44,10 +44,9 @@ class LoadStrataData:  # TODO: Does it make sense for this to be a class?
             Dataframe representation of stratification file.
         """
 
-        if self.survey.params["strata_sheetname"] in ["Base KS", "INPFC"]:
+        if self.survey.params["stratification"]["strata"]["sheetname"] in ["Base KS", "INPFC"]:
             strata_df = check_and_read(
-                "strata_filename",
-                "strata_sheetname",
+                "stratification/strata",
                 self.strata_cols_types,
                 self.survey.params
             )
@@ -72,10 +71,9 @@ class LoadStrataData:  # TODO: Does it make sense for this to be a class?
             Dataframe representation of geographic stratification file.
         """
 
-        if self.survey.params["geo_strata_sheetname"] in ["stratification1", "INPFC"]:
+        if self.survey.params["stratification"]["geo_strata"]["sheetname"] in ["stratification1", "INPFC"]: # noqa
             geo_strata_df = check_and_read(
-                "geo_strata_filename",
-                "geo_strata_sheetname",
+                "stratification/geo_strata",
                 self.geo_strata_cols_types,
                 self.survey.params
             )

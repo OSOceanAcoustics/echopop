@@ -26,19 +26,9 @@ def _process_nasc_data(survey, nasc_var_types: dict) -> pd.DataFrame:
 
     # select and check the appropriate nasc data file
     if survey.params["exclude_age1"]:
-        df = check_and_read(
-            "nasc_no_age1_filename",
-            "nasc_no_age1_sheetname",
-            nasc_var_types,
-            survey.params
-        )
+        df = check_and_read("NASC/no_age1", nasc_var_types, survey.params)
     else:
-        df = check_and_read(
-            "nasc_all_ages_filename",
-            "nasc_all_ages_sheetname",
-            nasc_var_types,
-            survey.params
-        )
+        df = check_and_read("NASC/all_ages", nasc_var_types, survey.params)
 
     if survey.params["survey_year"] < 2003:
         # TODO: it may be the case that we need to include lines 35-61 of
