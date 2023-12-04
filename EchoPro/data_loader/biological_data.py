@@ -46,6 +46,12 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
             "haul_weight": np.float64,
         }
 
+        # Species mapping from short species name to species_id
+        self._species_id_mapping = {
+            "pacific_hake": 22500,
+            # "krill": 1234  # placeholder
+        }
+
         # expected columns for haul_to_transect_mapping Dataframe
         self.haul_to_transect_mapping_cols_types = {"haul_num": int, "transect_num": int}
 
@@ -69,9 +75,7 @@ class LoadBioData:  # TODO: Does it make sense for this to be a class?
         Processed Dataframe
         """
 
-        species_id = self.survey.params["species_id_mapping"][
-            self.survey.params["species"]
-        ]
+        species_id = self._species_id_mapping[self.survey.params["species"]]
         df = df.loc[df["species_id"] == species_id].copy()
 
         return df.drop(columns=["species_id"])
