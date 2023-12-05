@@ -8,218 +8,68 @@ msgstr ""
 "Language: hr\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-msgid "repository"
-msgstr "spremište"
-
-msgid "open issue"
-msgstr "otvoreno izdanje"
-
-msgid "Contents"
-msgstr "Sadržaj"
-
-msgid "Fullscreen mode"
-msgstr "Način preko cijelog zaslona"
-
-msgid "Download this page"
-msgstr "Preuzmite ovu stranicu"
-
-msgid "Download source file"
-msgstr "Preuzmi izvornu datoteku"
-
-msgid "Launch"
-msgstr "Pokrenite"
-
-msgid "Edit this page"
-msgstr "Uredite ovu stranicu"
-
-msgid "Toggle navigation"
-msgstr "Uključi / isključi navigaciju"
-
-msgid "Theme by the"
-msgstr "Tema autora"
-
-msgid "Source repository"
-msgstr "Izvorno spremište"
+msgid "suggest edit"
+msgstr "predloži uređivanje"
 
 msgid "Last updated on"
 msgstr "Posljednje ažuriranje:"
 
-msgid "By the"
-msgstr "Od strane"
-
-msgid "Sphinx Book Theme"
-msgstr "Tema knjige Sphinx"
-
-msgid "Open an issue"
-msgstr "Otvorite izdanje"
-
-msgid "next page"
-msgstr "sljedeća stranica"
-
-msgid "Copyright"
-msgstr "Autorska prava"
-
-msgid "Search this book..."
-msgstr "Pretražite ovu knjigu ..."
-
-msgid "Print to PDF"
-msgstr "Ispis u PDF"
-
-msgid "By"
-msgstr "Po"
-
-msgid "previous page"
-msgstr "Prethodna stranica"
-
-msgid "Search the docs ..."
-msgstr "Pretražite dokumente ..."
-
-msgid "Download notebook file"
-msgstr "Preuzmi datoteku bilježnice"
-
-msgid "suggest edit"
-msgstr "predloži uređivanje"
-
-msgid "By the"
-msgstr "Od strane"
-
-msgid "Last updated on"
-msgstr "Posljednje ažuriranje:"
-
-msgid "Toggle navigation"
-msgstr "Uključi / isključi navigaciju"
-
-msgid "next page"
-msgstr "sljedeća stranica"
-
-msgid "open issue"
-msgstr "otvoreno izdanje"
-
-msgid "suggest edit"
-msgstr "predloži uređivanje"
+msgid "Edit this page"
+msgstr "Uredite ovu stranicu"
 
 msgid "Launch"
 msgstr "Pokrenite"
 
-msgid "Contents"
-msgstr "Sadržaj"
-
-msgid "Edit this page"
-msgstr "Uredite ovu stranicu"
-
-msgid "Open an issue"
-msgstr "Otvorite izdanje"
-
-msgid "Sphinx Book Theme"
-msgstr "Tema knjige Sphinx"
-
-msgid "Source repository"
-msgstr "Izvorno spremište"
-
-msgid "Search the docs ..."
-msgstr "Pretražite dokumente ..."
-
-msgid "Download source file"
-msgstr "Preuzmi izvornu datoteku"
-
-msgid "previous page"
-msgstr "Prethodna stranica"
-
-msgid "repository"
-msgstr "spremište"
-
-msgid "Theme by the"
-msgstr "Tema autora"
-
-msgid "Search this book..."
-msgstr "Pretražite ovu knjigu ..."
-
 msgid "Print to PDF"
 msgstr "Ispis u PDF"
-
-msgid "By"
-msgstr "Po"
-
-msgid "Download notebook file"
-msgstr "Preuzmi datoteku bilježnice"
-
-msgid "Fullscreen mode"
-msgstr "Način preko cijelog zaslona"
-
-msgid "Download this page"
-msgstr "Preuzmite ovu stranicu"
-
-msgid "Copyright"
-msgstr "Autorska prava"
-
-msgid "By the"
-msgstr "Od strane"
-
-msgid "Last updated on"
-msgstr "Posljednje ažuriranje:"
-
-msgid "Toggle navigation"
-msgstr "Uključi / isključi navigaciju"
-
-msgid "next page"
-msgstr "sljedeća stranica"
 
 msgid "open issue"
 msgstr "otvoreno izdanje"
 
-msgid "suggest edit"
-msgstr "predloži uređivanje"
+msgid "Download notebook file"
+msgstr "Preuzmi datoteku bilježnice"
 
-msgid "Launch"
-msgstr "Pokrenite"
-
-msgid "Contents"
-msgstr "Sadržaj"
-
-msgid "Edit this page"
-msgstr "Uredite ovu stranicu"
-
-msgid "Open an issue"
-msgstr "Otvorite izdanje"
-
-msgid "Sphinx Book Theme"
-msgstr "Tema knjige Sphinx"
+msgid "Toggle navigation"
+msgstr "Uključi / isključi navigaciju"
 
 msgid "Source repository"
 msgstr "Izvorno spremište"
 
-msgid "Search the docs ..."
-msgstr "Pretražite dokumente ..."
+msgid "By the"
+msgstr "Od strane"
 
-msgid "Download source file"
-msgstr "Preuzmi izvornu datoteku"
-
-msgid "previous page"
-msgstr "Prethodna stranica"
+msgid "next page"
+msgstr "sljedeća stranica"
 
 msgid "repository"
 msgstr "spremište"
 
-msgid "Theme by the"
-msgstr "Tema autora"
+msgid "Sphinx Book Theme"
+msgstr "Tema knjige Sphinx"
 
-msgid "Search this book..."
-msgstr "Pretražite ovu knjigu ..."
+msgid "Download source file"
+msgstr "Preuzmi izvornu datoteku"
 
-msgid "Print to PDF"
-msgstr "Ispis u PDF"
+msgid "Contents"
+msgstr "Sadržaj"
 
 msgid "By"
 msgstr "Po"
 
-msgid "Download notebook file"
-msgstr "Preuzmi datoteku bilježnice"
+msgid "Copyright"
+msgstr "Autorska prava"
 
 msgid "Fullscreen mode"
 msgstr "Način preko cijelog zaslona"
 
+msgid "Open an issue"
+msgstr "Otvorite izdanje"
+
+msgid "previous page"
+msgstr "Prethodna stranica"
+
 msgid "Download this page"
 msgstr "Preuzmite ovu stranicu"
 
-msgid "Copyright"
-msgstr "Autorska prava"
+msgid "Theme by the"
+msgstr "Tema autora"

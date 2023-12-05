@@ -8,218 +8,68 @@ msgstr ""
 "Language: ru\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-msgid "repository"
-msgstr "хранилище"
-
-msgid "open issue"
-msgstr "открытый вопрос"
-
-msgid "Contents"
-msgstr "Содержание"
-
-msgid "Fullscreen mode"
-msgstr "Полноэкранный режим"
-
-msgid "Download this page"
-msgstr "Загрузите эту страницу"
-
-msgid "Download source file"
-msgstr "Скачать исходный файл"
-
-msgid "Launch"
-msgstr "Запуск"
-
-msgid "Edit this page"
-msgstr "Редактировать эту страницу"
-
-msgid "Toggle navigation"
-msgstr "Переключить навигацию"
-
-msgid "Theme by the"
-msgstr "Тема от"
-
-msgid "Source repository"
-msgstr "Исходный репозиторий"
+msgid "suggest edit"
+msgstr "предложить редактировать"
 
 msgid "Last updated on"
 msgstr "Последнее обновление"
 
-msgid "By the"
-msgstr "Посредством"
-
-msgid "Sphinx Book Theme"
-msgstr "Тема книги Сфинкс"
-
-msgid "Open an issue"
-msgstr "Открыть вопрос"
-
-msgid "next page"
-msgstr "Следующая страница"
-
-msgid "Copyright"
-msgstr "авторское право"
-
-msgid "Search this book..."
-msgstr "Искать в этой книге ..."
-
-msgid "Print to PDF"
-msgstr "Распечатать в PDF"
-
-msgid "By"
-msgstr "По"
-
-msgid "previous page"
-msgstr "Предыдущая страница"
-
-msgid "Search the docs ..."
-msgstr "Искать в документах ..."
-
-msgid "Download notebook file"
-msgstr "Скачать файл записной книжки"
-
-msgid "suggest edit"
-msgstr "предложить редактировать"
-
-msgid "By the"
-msgstr "Посредством"
-
-msgid "Last updated on"
-msgstr "Последнее обновление"
-
-msgid "Toggle navigation"
-msgstr "Переключить навигацию"
-
-msgid "next page"
-msgstr "Следующая страница"
-
-msgid "open issue"
-msgstr "открытый вопрос"
-
-msgid "suggest edit"
-msgstr "предложить редактировать"
+msgid "Edit this page"
+msgstr "Редактировать эту страницу"
 
 msgid "Launch"
 msgstr "Запуск"
 
-msgid "Contents"
-msgstr "Содержание"
-
-msgid "Edit this page"
-msgstr "Редактировать эту страницу"
-
-msgid "Open an issue"
-msgstr "Открыть вопрос"
-
-msgid "Sphinx Book Theme"
-msgstr "Тема книги Сфинкс"
-
-msgid "Source repository"
-msgstr "Исходный репозиторий"
-
-msgid "Search the docs ..."
-msgstr "Искать в документах ..."
-
-msgid "Download source file"
-msgstr "Скачать исходный файл"
-
-msgid "previous page"
-msgstr "Предыдущая страница"
-
-msgid "repository"
-msgstr "хранилище"
-
-msgid "Theme by the"
-msgstr "Тема от"
-
-msgid "Search this book..."
-msgstr "Искать в этой книге ..."
-
 msgid "Print to PDF"
 msgstr "Распечатать в PDF"
-
-msgid "By"
-msgstr "По"
-
-msgid "Download notebook file"
-msgstr "Скачать файл записной книжки"
-
-msgid "Fullscreen mode"
-msgstr "Полноэкранный режим"
-
-msgid "Download this page"
-msgstr "Загрузите эту страницу"
-
-msgid "Copyright"
-msgstr "авторское право"
-
-msgid "By the"
-msgstr "Посредством"
-
-msgid "Last updated on"
-msgstr "Последнее обновление"
-
-msgid "Toggle navigation"
-msgstr "Переключить навигацию"
-
-msgid "next page"
-msgstr "Следующая страница"
 
 msgid "open issue"
 msgstr "открытый вопрос"
 
-msgid "suggest edit"
-msgstr "предложить редактировать"
+msgid "Download notebook file"
+msgstr "Скачать файл записной книжки"
 
-msgid "Launch"
-msgstr "Запуск"
-
-msgid "Contents"
-msgstr "Содержание"
-
-msgid "Edit this page"
-msgstr "Редактировать эту страницу"
-
-msgid "Open an issue"
-msgstr "Открыть вопрос"
-
-msgid "Sphinx Book Theme"
-msgstr "Тема книги Сфинкс"
+msgid "Toggle navigation"
+msgstr "Переключить навигацию"
 
 msgid "Source repository"
 msgstr "Исходный репозиторий"
 
-msgid "Search the docs ..."
-msgstr "Искать в документах ..."
+msgid "By the"
+msgstr "Посредством"
 
-msgid "Download source file"
-msgstr "Скачать исходный файл"
-
-msgid "previous page"
-msgstr "Предыдущая страница"
+msgid "next page"
+msgstr "Следующая страница"
 
 msgid "repository"
 msgstr "хранилище"
 
-msgid "Theme by the"
-msgstr "Тема от"
+msgid "Sphinx Book Theme"
+msgstr "Тема книги Сфинкс"
 
-msgid "Search this book..."
-msgstr "Искать в этой книге ..."
+msgid "Download source file"
+msgstr "Скачать исходный файл"
 
-msgid "Print to PDF"
-msgstr "Распечатать в PDF"
+msgid "Contents"
+msgstr "Содержание"
 
 msgid "By"
 msgstr "По"
 
-msgid "Download notebook file"
-msgstr "Скачать файл записной книжки"
+msgid "Copyright"
+msgstr "авторское право"
 
 msgid "Fullscreen mode"
 msgstr "Полноэкранный режим"
 
+msgid "Open an issue"
+msgstr "Открыть вопрос"
+
+msgid "previous page"
+msgstr "Предыдущая страница"
+
 msgid "Download this page"
 msgstr "Загрузите эту страницу"
 
-msgid "Copyright"
-msgstr "авторское право"
+msgid "Theme by the"
+msgstr "Тема от"

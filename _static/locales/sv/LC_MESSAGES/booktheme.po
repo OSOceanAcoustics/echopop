@@ -8,218 +8,68 @@ msgstr ""
 "Language: sv\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-msgid "repository"
-msgstr "förvar"
-
-msgid "open issue"
-msgstr "öppet problem"
-
-msgid "Contents"
-msgstr "Innehåll"
-
-msgid "Fullscreen mode"
-msgstr "Fullskärmsläge"
-
-msgid "Download this page"
-msgstr "Ladda ner den här sidan"
-
-msgid "Download source file"
-msgstr "Ladda ner källfil"
-
-msgid "Launch"
-msgstr "Lansera"
-
-msgid "Edit this page"
-msgstr "Redigera den här sidan"
-
-msgid "Toggle navigation"
-msgstr "Växla navigering"
-
-msgid "Theme by the"
-msgstr "Tema av"
-
-msgid "Source repository"
-msgstr "Källförvar"
+msgid "suggest edit"
+msgstr "föreslå redigering"
 
 msgid "Last updated on"
 msgstr "Senast uppdaterad den"
 
-msgid "By the"
-msgstr "Vid"
-
-msgid "Sphinx Book Theme"
-msgstr "Sphinx boktema"
-
-msgid "Open an issue"
-msgstr "Öppna ett problem"
-
-msgid "next page"
-msgstr "nästa sida"
-
-msgid "Copyright"
-msgstr "upphovsrätt"
-
-msgid "Search this book..."
-msgstr "Sök i den här boken ..."
-
-msgid "Print to PDF"
-msgstr "Skriv ut till PDF"
-
-msgid "By"
-msgstr "Förbi"
-
-msgid "previous page"
-msgstr "föregående sida"
-
-msgid "Search the docs ..."
-msgstr "Sök i dokumenten ..."
-
-msgid "Download notebook file"
-msgstr "Ladda ner anteckningsbokfilen"
-
-msgid "suggest edit"
-msgstr "föreslå redigering"
-
-msgid "By the"
-msgstr "Vid"
-
-msgid "Last updated on"
-msgstr "Senast uppdaterad den"
-
-msgid "Toggle navigation"
-msgstr "Växla navigering"
-
-msgid "next page"
-msgstr "nästa sida"
-
-msgid "open issue"
-msgstr "öppet problem"
-
-msgid "suggest edit"
-msgstr "föreslå redigering"
+msgid "Edit this page"
+msgstr "Redigera den här sidan"
 
 msgid "Launch"
 msgstr "Lansera"
 
-msgid "Contents"
-msgstr "Innehåll"
-
-msgid "Edit this page"
-msgstr "Redigera den här sidan"
-
-msgid "Open an issue"
-msgstr "Öppna ett problem"
-
-msgid "Sphinx Book Theme"
-msgstr "Sphinx boktema"
-
-msgid "Source repository"
-msgstr "Källförvar"
-
-msgid "Search the docs ..."
-msgstr "Sök i dokumenten ..."
-
-msgid "Download source file"
-msgstr "Ladda ner källfil"
-
-msgid "previous page"
-msgstr "föregående sida"
-
-msgid "repository"
-msgstr "förvar"
-
-msgid "Theme by the"
-msgstr "Tema av"
-
-msgid "Search this book..."
-msgstr "Sök i den här boken ..."
-
 msgid "Print to PDF"
 msgstr "Skriv ut till PDF"
-
-msgid "By"
-msgstr "Förbi"
-
-msgid "Download notebook file"
-msgstr "Ladda ner anteckningsbokfilen"
-
-msgid "Fullscreen mode"
-msgstr "Fullskärmsläge"
-
-msgid "Download this page"
-msgstr "Ladda ner den här sidan"
-
-msgid "Copyright"
-msgstr "upphovsrätt"
-
-msgid "By the"
-msgstr "Vid"
-
-msgid "Last updated on"
-msgstr "Senast uppdaterad den"
-
-msgid "Toggle navigation"
-msgstr "Växla navigering"
-
-msgid "next page"
-msgstr "nästa sida"
 
 msgid "open issue"
 msgstr "öppet problem"
 
-msgid "suggest edit"
-msgstr "föreslå redigering"
+msgid "Download notebook file"
+msgstr "Ladda ner anteckningsbokfilen"
 
-msgid "Launch"
-msgstr "Lansera"
-
-msgid "Contents"
-msgstr "Innehåll"
-
-msgid "Edit this page"
-msgstr "Redigera den här sidan"
-
-msgid "Open an issue"
-msgstr "Öppna ett problem"
-
-msgid "Sphinx Book Theme"
-msgstr "Sphinx boktema"
+msgid "Toggle navigation"
+msgstr "Växla navigering"
 
 msgid "Source repository"
 msgstr "Källförvar"
 
-msgid "Search the docs ..."
-msgstr "Sök i dokumenten ..."
+msgid "By the"
+msgstr "Vid"
 
-msgid "Download source file"
-msgstr "Ladda ner källfil"
-
-msgid "previous page"
-msgstr "föregående sida"
+msgid "next page"
+msgstr "nästa sida"
 
 msgid "repository"
 msgstr "förvar"
 
-msgid "Theme by the"
-msgstr "Tema av"
+msgid "Sphinx Book Theme"
+msgstr "Sphinx boktema"
 
-msgid "Search this book..."
-msgstr "Sök i den här boken ..."
+msgid "Download source file"
+msgstr "Ladda ner källfil"
 
-msgid "Print to PDF"
-msgstr "Skriv ut till PDF"
+msgid "Contents"
+msgstr "Innehåll"
 
 msgid "By"
 msgstr "Förbi"
 
-msgid "Download notebook file"
-msgstr "Ladda ner anteckningsbokfilen"
+msgid "Copyright"
+msgstr "upphovsrätt"
 
 msgid "Fullscreen mode"
 msgstr "Fullskärmsläge"
 
+msgid "Open an issue"
+msgstr "Öppna ett problem"
+
+msgid "previous page"
+msgstr "föregående sida"
+
 msgid "Download this page"
 msgstr "Ladda ner den här sidan"
 
-msgid "Copyright"
-msgstr "upphovsrätt"
+msgid "Theme by the"
+msgstr "Tema av"
