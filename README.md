@@ -6,30 +6,30 @@ Go to https://uw-echospace.github.io/EchoPro/ to view Jupyter notebooks that dem
 
 ## Installation
 
-Python EchoPro is not yet available for installation as a package on [PyPI](https://pypi.org/) or [conda-forge](https://conda-forge.org/). Until then, it must be installed either as a **"user"** from the GitHub repository or from the code (mainly for continued development purposes, as a **"developer"**) after "cloning" the GitHub repository using `git`. See the instructions below. Either way, we'll use [conda](https://docs.conda.io) to install EchoPro dependencies using the conda environment file [condaenvironment.yaml](https://github.com/uw-echospace/EchoPro/blob/master/condaenvironment.yaml) from the repository. Installation of EchoPro dependencies has been tested extensively with `conda`. 
+Python EchoPro is not yet available for installation as a package on [PyPI](https://pypi.org/) or [conda-forge](https://conda-forge.org/). Until then, it must be installed either as a **"user"** from the GitHub repository or from the code (mainly for continued development purposes, as a **"developer"**) after "cloning" the GitHub repository using `git`. See the instructions below. Either way, we'll use [conda](https://docs.conda.io) to install EchoPro dependencies from conda packages on `conda-forge`. Installation of these dependencies has been tested extensively with `conda`. 
 
-There are [different ways of installing `conda`](https://oceanhackweek.org/resources/prep/conda.html#installing-conda), but we recommend the use of [Miniconda](https://docs.conda.io/en/latest/miniconda.html). `conda` can be used without administrative privileges.
+There are different ways of installing `conda`, but we recommend the use of [Miniconda with the conda libmamba solver](https://echospace-group-docs.readthedocs.io/en/latest/compute-conda-jupyter.html). `conda` can be used without administrative privileges.
 
 ### Installation as a user
 
-This simpler installation method is recommended if you don't intend to work on developing the EchoPro code base itself. It'll install both EchoPro and its dependencies in one step.
+This simpler installation method is recommended if you don't intend to work on developing the EchoPro code base itself.
 
 1. Download the `condaenvironment.yaml` file. In https://github.com/uw-echospace/EchoPro/blob/master/condaenvironment.yaml, click on "Raw" (on the right) then save the file.
 2. At the terminal (shell), change directory to where you've placed the `condaenvironment.yaml` file.
-3. Install EchoPro and its dependencies, creating a new conda environment called "echopro": 
+3. Install EchoPro dependencies, creating a new conda environment called "echopro": 
     ```bash
     conda env create -f condaenvironment.yaml
     ```
-4. To use this new conda environment, simply activate it: 
+4. Activate this new conda environment: 
     ```bash
     conda activate echopro
     ```
 5. Install EchoPro from the GitHub repository:
-    - To install the latest release using the [Python wheel](https://realpython.com/python-wheels/) file:
+    - To install the latest release using a [Python wheel](https://realpython.com/python-wheels/) file:
         ```bash
         pip install https://uw-echospace.github.io/EchoPro/EchoPro-latest-py3-none-any.whl
         ```
-    - To intall the latest development version:
+    - To install the latest development version:
         ```bash
         pip install git+https://github.com/uw-echospace/EchoPro.git
         ```
@@ -48,9 +48,9 @@ Follow these steps if you intend to make code contributions to EchoPro:
     ```bash
     cd EchoPro
     ```
-3. Install the dependencies and create a new conda environment called "echopro": 
+3. Install the dependencies, including dependencies used for development, and create a new conda environment called "echopro": 
     ```bash
-    conda env create -f condaenvironment.yaml
+    conda create -c conda-forge -n echopro python=3.9 --file requirements.txt --file requirements-dev.txt
     ```
 4. Activate the environment: 
     ```bash
