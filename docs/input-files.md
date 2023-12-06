@@ -34,7 +34,7 @@ haul_num | integer | | N/P | Haul number
 species_id | integer | | N/P | Species identification code (ID)
 sex | integer | | N/P | Sex of the animal. 1=Male, 2=Female, 3=Unknown/Not determined ("unsexed")
 length | float | cm | | Length of the animal
-length_count | float | | | Number of animals in the haul, of a particular species, and of a certain sex and length. For example, we have 5 Hake from haul 1 that are males with length 20cm
+length_count | float | | empty (blank) | Number of animals in the haul, of a particular species, and of a certain sex and length. For example, we have 5 Hake from haul 1 that are males with length 20cm
 
 ### Specimen
 
@@ -61,7 +61,7 @@ haul_weight | float | kg | N/P | Haul weight
 
 ### Haul vs transect
 
-File containing the mapping between hauls and transects. This is a new file that replaces the sole information that was being used from the gear file.
+File containing the mapping between hauls and transects. This is a new file that replaces the sole information that was being used from the gear file. Note that rows with empty `transect_num` must be omitted.
 
 **Current sample file (US data)** relative to base directory: `US/haul_to_transect_mapping_2019.xls`, single sheet
 Column name | Data type | Units | Empty value | Description
