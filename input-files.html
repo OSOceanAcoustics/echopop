@@ -495,7 +495,7 @@ document.write(`
 <tr class="row-even"><td><p>length_count</p></td>
 <td><p>float</p></td>
 <td><p></p></td>
-<td><p></p></td>
+<td><p>empty (blank)</p></td>
 <td><p>Number of animals in the haul, of a particular species, and of a certain sex and length. For example, we have 5 Hake from haul 1 that are males with length 20cm</p></td>
 </tr>
 </tbody>
@@ -589,7 +589,7 @@ document.write(`
 </section>
 <section id="haul-vs-transect">
 <h3><a class="toc-backref" href="#id5">Haul vs transect</a><a class="headerlink" href="#haul-vs-transect" title="Permalink to this heading">#</a></h3>
-<p>File containing the mapping between hauls and transects. This is a new file that replaces the sole information that was being used from the gear file.</p>
+<p>File containing the mapping between hauls and transects. This is a new file that replaces the sole information that was being used from the gear file. Note that rows with empty <code class="docutils literal notranslate"><span class="pre">transect_num</span></code> must be omitted.</p>
 <p><strong>Current sample file (US data)</strong> relative to base directory: <code class="docutils literal notranslate"><span class="pre">US/haul_to_transect_mapping_2019.xls</span></code>, single sheet</p>
 <table class="colwidths-auto table">
 <thead>
