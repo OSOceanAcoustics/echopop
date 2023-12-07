@@ -420,6 +420,7 @@ document.write(`
 <li><p><code class="docutils literal notranslate"><span class="pre">species_id</span></code>: Species identification code (ID). Identifies what species is associated with the collected data. Pacific hake is 22500.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">N/P</span></code>: Empty value Not Permitted.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">nmi</span></code>: Nautical miles.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Old</span> <span class="pre">name</span></code>: Column name used previously with Matlab EchoPro</p></li>
 </ul>
 <div class="contents local topic" id="contents">
 <ul class="simple">
@@ -461,6 +462,7 @@ document.write(`
 <table class="colwidths-auto table">
 <thead>
 <tr class="row-odd"><th class="head"><p>Column name</p></th>
+<th class="head"><p>Old name</p></th>
 <th class="head"><p>Data type</p></th>
 <th class="head"><p>Units</p></th>
 <th class="head"><p>Empty value</p></th>
@@ -469,30 +471,35 @@ document.write(`
 </thead>
 <tbody>
 <tr class="row-even"><td><p>haul_num</p></td>
+<td><p>Haul</p></td>
 <td><p>integer</p></td>
 <td><p></p></td>
 <td><p>N/P</p></td>
 <td><p>Haul number</p></td>
 </tr>
 <tr class="row-odd"><td><p>species_id</p></td>
+<td><p>Species_Code</p></td>
 <td><p>integer</p></td>
 <td><p></p></td>
 <td><p>N/P</p></td>
 <td><p>Species identification code (ID)</p></td>
 </tr>
 <tr class="row-even"><td><p>sex</p></td>
+<td><p>Sex</p></td>
 <td><p>integer</p></td>
 <td><p></p></td>
 <td><p>N/P</p></td>
 <td><p>Sex of the animal. 1=Male, 2=Female, 3=Unknown/Not determined (“unsexed”)</p></td>
 </tr>
 <tr class="row-odd"><td><p>length</p></td>
+<td><p>Length</p></td>
 <td><p>float</p></td>
 <td><p>cm</p></td>
 <td><p></p></td>
 <td><p>Length of the animal</p></td>
 </tr>
 <tr class="row-even"><td><p>length_count</p></td>
+<td><p>Frequency</p></td>
 <td><p>float</p></td>
 <td><p></p></td>
 <td><p>empty (blank)</p></td>
@@ -507,6 +514,7 @@ document.write(`
 <table class="colwidths-auto table">
 <thead>
 <tr class="row-odd"><th class="head"><p>Column name</p></th>
+<th class="head"><p>Old name</p></th>
 <th class="head"><p>Data type</p></th>
 <th class="head"><p>Units</p></th>
 <th class="head"><p>Empty value</p></th>
@@ -515,36 +523,42 @@ document.write(`
 </thead>
 <tbody>
 <tr class="row-even"><td><p>haul_num</p></td>
+<td><p>Haul</p></td>
 <td><p>integer</p></td>
 <td><p></p></td>
 <td><p>N/P</p></td>
 <td><p>Haul number</p></td>
 </tr>
 <tr class="row-odd"><td><p>species_id</p></td>
+<td><p>Species_Code</p></td>
 <td><p>integer</p></td>
 <td><p></p></td>
 <td><p>N/P</p></td>
 <td><p>Species identification code (ID)</p></td>
 </tr>
 <tr class="row-even"><td><p>sex</p></td>
+<td><p>Sex</p></td>
 <td><p>integer</p></td>
 <td><p></p></td>
 <td><p>N/P</p></td>
 <td><p>Sex of the animal. 1=Male, 2=Female, 3=Unknown/Not determined (“unsexed”)</p></td>
 </tr>
 <tr class="row-odd"><td><p>length</p></td>
+<td><p>Length</p></td>
 <td><p>float</p></td>
 <td><p>cm</p></td>
 <td><p></p></td>
 <td><p>Length of the animal</p></td>
 </tr>
 <tr class="row-even"><td><p>weight</p></td>
+<td><p>Weight</p></td>
 <td><p>float</p></td>
 <td><p>kg</p></td>
 <td><p>empty (blank)</p></td>
 <td><p>Weight of the animal</p></td>
 </tr>
 <tr class="row-odd"><td><p>age</p></td>
+<td><p>Age</p></td>
 <td><p>float</p></td>
 <td><p>years</p></td>
 <td><p>empty (blank)</p></td>
@@ -559,6 +573,7 @@ document.write(`
 <table class="colwidths-auto table">
 <thead>
 <tr class="row-odd"><th class="head"><p>Column name</p></th>
+<th class="head"><p>Old name</p></th>
 <th class="head"><p>Data type</p></th>
 <th class="head"><p>Units</p></th>
 <th class="head"><p>Empty value</p></th>
@@ -567,18 +582,21 @@ document.write(`
 </thead>
 <tbody>
 <tr class="row-even"><td><p>haul_num</p></td>
+<td><p>Haul</p></td>
 <td><p>integer</p></td>
 <td><p></p></td>
 <td><p>N/P</p></td>
 <td><p>Haul number</p></td>
 </tr>
 <tr class="row-odd"><td><p>species_id</p></td>
+<td><p>Species_Code</p></td>
 <td><p>integer</p></td>
 <td><p></p></td>
 <td><p>N/P</p></td>
 <td><p>Species identification code (ID)</p></td>
 </tr>
 <tr class="row-even"><td><p>haul_weight</p></td>
+<td><p>Weight_In_Haul</p></td>
 <td><p>float</p></td>
 <td><p>kg</p></td>
 <td><p>N/P</p></td>
@@ -594,6 +612,7 @@ document.write(`
 <table class="colwidths-auto table">
 <thead>
 <tr class="row-odd"><th class="head"><p>Column name</p></th>
+<th class="head"><p>Old name</p></th>
 <th class="head"><p>Data type</p></th>
 <th class="head"><p>Units</p></th>
 <th class="head"><p>Empty value</p></th>
@@ -602,12 +621,14 @@ document.write(`
 </thead>
 <tbody>
 <tr class="row-even"><td><p>haul_num</p></td>
+<td><p>Haul</p></td>
 <td><p>integer</p></td>
 <td><p></p></td>
 <td><p>N/P</p></td>
 <td><p>Haul number</p></td>
 </tr>
 <tr class="row-odd"><td><p>transect_num</p></td>
+<td><p>Transect</p></td>
 <td><p>integer</p></td>
 <td><p></p></td>
 <td><p>N/P</p></td>
@@ -628,6 +649,7 @@ document.write(`
 <table class="colwidths-auto table">
 <thead>
 <tr class="row-odd"><th class="head"><p>Column name</p></th>
+<th class="head"><p>Old name</p></th>
 <th class="head"><p>Data type</p></th>
 <th class="head"><p>Units</p></th>
 <th class="head"><p>Empty value</p></th>
@@ -636,18 +658,21 @@ document.write(`
 </thead>
 <tbody>
 <tr class="row-even"><td><p>stratum_num</p></td>
+<td><p>Cluster name / INPFC</p></td>
 <td><p>integer</p></td>
 <td><p></p></td>
 <td><p>N/P</p></td>
-<td><p>Stratum number for KS or INPC strata (<code class="docutils literal notranslate"><span class="pre">Base</span> <span class="pre">KS</span></code> or <code class="docutils literal notranslate"><span class="pre">INPC</span></code> tab, respectively). For <code class="docutils literal notranslate"><span class="pre">Base</span> <span class="pre">KS</span></code>, 0 = Low sample size.</p></td>
+<td><p>Stratum number for KS or INPC strata (<code class="docutils literal notranslate"><span class="pre">Base</span> <span class="pre">KS</span></code> or <code class="docutils literal notranslate"><span class="pre">INPC</span></code> tab, respectively). For <code class="docutils literal notranslate"><span class="pre">Base</span> <span class="pre">KS</span></code>, 0 = Low sample size. The Old names listed are for the <code class="docutils literal notranslate"><span class="pre">Base</span> <span class="pre">KS</span></code> and <code class="docutils literal notranslate"><span class="pre">INPFC</span></code> tabs, respectively</p></td>
 </tr>
 <tr class="row-odd"><td><p>haul_num</p></td>
+<td><p>Haul</p></td>
 <td><p>integer</p></td>
 <td><p></p></td>
 <td><p>N/P</p></td>
 <td><p>Haul number</p></td>
 </tr>
 <tr class="row-even"><td><p>fraction_hake</p></td>
+<td><p>wt</p></td>
 <td><p>float</p></td>
 <td><p>0-1</p></td>
 <td><p>N/P</p></td>
@@ -663,6 +688,7 @@ document.write(`
 <table class="colwidths-auto table">
 <thead>
 <tr class="row-odd"><th class="head"><p>Column name</p></th>
+<th class="head"><p>Old name</p></th>
 <th class="head"><p>Data type</p></th>
 <th class="head"><p>Units</p></th>
 <th class="head"><p>Empty value</p></th>
@@ -671,12 +697,14 @@ document.write(`
 </thead>
 <tbody>
 <tr class="row-even"><td><p>stratum_num</p></td>
+<td><p>Strata index</p></td>
 <td><p>integer</p></td>
 <td><p></p></td>
 <td><p>N/P</p></td>
 <td><p>Stratum number for KS or INPC strata (<code class="docutils literal notranslate"><span class="pre">stratification1</span></code> or <code class="docutils literal notranslate"><span class="pre">INPC</span></code> tab, respectively)</p></td>
 </tr>
 <tr class="row-odd"><td><p>northlimit_latitude</p></td>
+<td><p>Latitude (upper limit)</p></td>
 <td><p>float</p></td>
 <td><p>decimal degrees</p></td>
 <td><p>N/P</p></td>
@@ -696,6 +724,7 @@ document.write(`
 <table class="colwidths-auto table">
 <thead>
 <tr class="row-odd"><th class="head"><p>Column name</p></th>
+<th class="head"><p>Old name</p></th>
 <th class="head"><p>Data type</p></th>
 <th class="head"><p>Units</p></th>
 <th class="head"><p>Empty value</p></th>
@@ -704,54 +733,63 @@ document.write(`
 </thead>
 <tbody>
 <tr class="row-even"><td><p>transect_num</p></td>
+<td><p>Transect</p></td>
 <td><p>integer</p></td>
 <td><p></p></td>
 <td><p>N/P</p></td>
 <td><p>Transect number</p></td>
 </tr>
 <tr class="row-odd"><td><p>vessel_log_start</p></td>
+<td><p>VL start</p></td>
 <td><p>float</p></td>
 <td><p>nmi</p></td>
 <td><p>N/P</p></td>
 <td><p>Vessel log cumulative distance at start of transect cell</p></td>
 </tr>
 <tr class="row-even"><td><p>vessel_log_end</p></td>
+<td><p>VL end</p></td>
 <td><p>float</p></td>
 <td><p>nmi</p></td>
 <td><p>N/P</p></td>
 <td><p>Vessel log cumulative distance at end of transect cell</p></td>
 </tr>
 <tr class="row-odd"><td><p>latitude</p></td>
+<td><p>Latitude</p></td>
 <td><p>float</p></td>
 <td><p>decimal degrees</p></td>
 <td><p>N/P</p></td>
 <td><p>Transect cell center latitude</p></td>
 </tr>
 <tr class="row-even"><td><p>longitude</p></td>
+<td><p>Longitude</p></td>
 <td><p>float</p></td>
 <td><p>decimal degrees</p></td>
 <td><p>N/P</p></td>
 <td><p>Transect cell center longitude</p></td>
 </tr>
 <tr class="row-odd"><td><p>stratum_num</p></td>
+<td><p>Stratum</p></td>
 <td><p>integer</p></td>
 <td><p></p></td>
 <td><p>N/P</p></td>
 <td><p>Base KS stratum number</p></td>
 </tr>
 <tr class="row-even"><td><p>transect_spacing</p></td>
+<td><p>Spacing</p></td>
 <td><p>float</p></td>
 <td><p>nmi</p></td>
 <td><p>N/P</p></td>
 <td><p>Distance (spacing) between transects</p></td>
 </tr>
 <tr class="row-odd"><td><p>NASC</p></td>
+<td><p>NASC</p></td>
 <td><p>float</p></td>
 <td><p>m<sup>2</sup> nmi<sup>-2</sup></p></td>
 <td><p>N/P</p></td>
 <td><p>Nautical Area Scattering Coefficient</p></td>
 </tr>
 <tr class="row-even"><td><p>haul_num</p></td>
+<td><p>Assigned haul</p></td>
 <td><p>integer</p></td>
 <td><p></p></td>
 <td><p>N/P</p></td>
@@ -776,6 +814,7 @@ document.write(`
 <table class="colwidths-auto table">
 <thead>
 <tr class="row-odd"><th class="head"><p>Column name</p></th>
+<th class="head"><p>Old name</p></th>
 <th class="head"><p>Data type</p></th>
 <th class="head"><p>Units</p></th>
 <th class="head"><p>Empty value</p></th>
@@ -784,18 +823,21 @@ document.write(`
 </thead>
 <tbody>
 <tr class="row-even"><td><p>centroid_latitude</p></td>
+<td><p>Latitude of centroid</p></td>
 <td><p>float</p></td>
 <td><p>decimal degrees</p></td>
 <td><p>N/P</p></td>
 <td><p>Cell centroid latitude</p></td>
 </tr>
 <tr class="row-odd"><td><p>centroid_longitude</p></td>
+<td><p>Longitude of centroid</p></td>
 <td><p>float</p></td>
 <td><p>decimal degrees</p></td>
 <td><p>N/P</p></td>
 <td><p>Cell centroid longitude</p></td>
 </tr>
 <tr class="row-even"><td><p>fraction_cell_in_polygon</p></td>
+<td><p>Cell portion</p></td>
 <td><p>float</p></td>
 <td><p>0-1</p></td>
 <td><p>N/P</p></td>
@@ -811,6 +853,7 @@ document.write(`
 <table class="colwidths-auto table">
 <thead>
 <tr class="row-odd"><th class="head"><p>Column name</p></th>
+<th class="head"><p>Old name</p></th>
 <th class="head"><p>Data type</p></th>
 <th class="head"><p>Units</p></th>
 <th class="head"><p>Empty value</p></th>
@@ -819,12 +862,14 @@ document.write(`
 </thead>
 <tbody>
 <tr class="row-even"><td><p>latitude</p></td>
+<td><p>Latitude</p></td>
 <td><p>float</p></td>
 <td><p>decimal degrees</p></td>
 <td><p>N/P</p></td>
 <td><p>Point latitude</p></td>
 </tr>
 <tr class="row-odd"><td><p>longitude</p></td>
+<td><p>Longitude</p></td>
 <td><p>float</p></td>
 <td><p>decimal degrees</p></td>
 <td><p>N/P</p></td>
