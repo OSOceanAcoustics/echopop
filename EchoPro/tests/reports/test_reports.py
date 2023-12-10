@@ -1,14 +1,15 @@
-import os
-import pandas as pd
-import numpy as np
-import EchoPro
-from EchoPro.computation import SemiVariogram as SV
 import pathlib
 from typing import List, Optional
 
-# TODO: formalize all tests
+import pandas as pd
+import pytest
+import numpy as np
+
+import EchoPro
+from EchoPro.computation import SemiVariogram as SV
 
 
+@pytest.fixture(scope="module")
 def generate_reports(config_base_path: pathlib.Path,
                      reports_base_path: pathlib.Path) -> None:
     """
@@ -150,6 +151,7 @@ def _compare_truth_produced_files(truth_base_path: pathlib.Path, produced_base_p
             assert np.all(np.isclose(df_truth.to_numpy(), df_produced.to_numpy()))
 
 
+@pytest.mark.usefixtures("generate_reports")
 def test_length_age_reports(config_base_path: pathlib.Path, matlab_output_base_path: pathlib.Path,
                             reports_base_path: pathlib.Path):
     """
@@ -196,6 +198,7 @@ def test_length_age_reports(config_base_path: pathlib.Path, matlab_output_base_p
                                   index_col_produced, sortby)
 
 
+@pytest.mark.usefixtures("generate_reports")
 def test_biomass_ages_reports(config_base_path: pathlib.Path, matlab_output_base_path: pathlib.Path,
                               reports_base_path: pathlib.Path):
     """
@@ -243,6 +246,7 @@ def test_biomass_ages_reports(config_base_path: pathlib.Path, matlab_output_base
                                   index_col_produced, sortby)
 
 
+@pytest.mark.usefixtures("generate_reports")
 def test_core_variables_reports(config_base_path: pathlib.Path, matlab_output_base_path: pathlib.Path,
                                 reports_base_path: pathlib.Path):
     """
@@ -290,6 +294,7 @@ def test_core_variables_reports(config_base_path: pathlib.Path, matlab_output_ba
                                   index_col_produced, sortby)
 
 
+@pytest.mark.usefixtures("generate_reports")
 def test_kriging_input_report(config_base_path: pathlib.Path, matlab_output_base_path: pathlib.Path,
                               reports_base_path: pathlib.Path):
     """
@@ -333,6 +338,7 @@ def test_kriging_input_report(config_base_path: pathlib.Path, matlab_output_base
                                   index_col_produced, sortby)
 
 
+@pytest.mark.usefixtures("generate_reports")
 def test_len_haul_count_reports(config_base_path: pathlib.Path, matlab_output_base_path: pathlib.Path,
                                 reports_base_path: pathlib.Path):
     """
