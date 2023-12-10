@@ -123,6 +123,15 @@ transect_spacing | Spacing | float | nmi | N/P | Distance (spacing) between tran
 NASC | NASC | float | m<sup>2</sup> nmi<sup>-2</sup> | N/P | Nautical Area Scattering Coefficient
 haul_num | Assigned haul | integer | | N/P | Haul number. A value of 0 is used for transect cells where a haul was not present or used.
 
+The following columns are currently not used in core computations. They are used in reports and in some plots (plots not implemented yet). The column names are the original names and have not been "sanitized".
+
+Column name | Old name | Data type | Units | Empty value | Description
+--- | --- | --- | --- | --- | --- 
+Region ID | Region ID | int | | | 
+Bottom depth | Bottom depth | float | meters? | | 
+Layer mean depth | Layer mean depth | float | meters? | | 
+Layer height | Layer height | float | meters? | | 
+
 ### All ages
 
 NASC values that include all ages. The file structure is the same as for the "No Age 1" file.
