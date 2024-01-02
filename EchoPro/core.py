@@ -1,6 +1,7 @@
 """
 Core API/components for class structures, class methods, and utility/helper methods
 """
+
 import numpy as np
 
 CONFIG_MAP = {
