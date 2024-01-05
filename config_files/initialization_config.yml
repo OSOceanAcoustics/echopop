@@ -3,10 +3,16 @@
 
 ---
   #####################################################################################################################
-  # Processing Parameters#
+  # Survey data processing#
   ########################
-  JH_fac: 0.75                          # percent of Jolly-Hampton transects in each stratum
+  # Jolly and Hampton (1990) stratified mean calculation
+  stratified_survey_mean_parameters:
+    strata_transect_proportion: 0.75                          # percent of Jolly-Hampton transects in each stratum
 
+  #####################################################################################################################
+  # Biological data processing#
+  ########################
+  # Jolly and Hampton (1990) stratified mean calculation
   bio_hake_len_bin: [                   # length sequence array 2 - 80 cm. This specifies the bin centers!
                   2,                    # start of bin centers
                   80,                   # end of bin centers
@@ -19,10 +25,20 @@
                   22                    # number of points in the sequence
   ]
 
-  sig_b_coeff_power: -6.8               # the power for the coefficient of the sigma_bs = coef *L^2,
-                                        # will give coef = 10^(sig_b_coeff_power)
   #####################################################################################################################
 
+  #####################################################################################################################
+  # Log-linear regression#
+  ########################
+  # Target strenth (TS) - length (L) regression: TS=m*log10(L)+b
+  TS_length_regression_parameters:
+    pacific_hake:                         # corresponding species text code
+      number_code: 22500                  # species number code
+      TS_L_slope: 20.0                    # the 'm' or 'slope' parameter
+      TS_L_intercept: -68.0               # the 'b' or 'y-intercept'
+      length_units: cm                    # units for L used in regression/relationship
+
+  #####################################################################################################################
 
   #####################################################################################################################
   # kriging parameters#
