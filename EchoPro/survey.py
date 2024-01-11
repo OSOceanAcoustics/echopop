@@ -1,17 +1,15 @@
-from pathlib import Path
 from typing import List, Union
 from pathlib import Path
 import pandas as pd
 import numpy as np
 import yaml
 import os
-from openpyxl import load_workbook
-from .computation.acoustics import ts_length_regression, to_linear
 from .core import CONFIG_MAP, LAYER_NAME_MAP
 ### !!! TODO : This is a temporary import call -- this will need to be changed to 
 # the correct relative structure (i.e. '.core' instead of 'EchoPro.core' at a future testing step)
 import pprint
-from .utils.data_structure_utils import pull_nested_dict, push_nested_dict
+from .utils.data_structure_utils import push_nested_dict
+from .utils.data_file_validation import validate_data_columns
 ### !!! TODO : This is a temporary import call -- this will need to be changed to 
 # the correct relative structure (i.e. '.utils.data_structure_utils' instead of 
 # 'EchoPro.utils.data_structure_utils' at a future testing step)
@@ -54,7 +52,7 @@ class Survey:
         ### Loading the configuration settings and definitions that are used to 
         # initialize the Survey class object
         # ATTRIBUTE ADDITIONS: `config`
-        self.config = self.load_configuration(init_config_path, survey_year_config_path)
+        self.config = self.load_configuration( init_config_path , survey_year_config_path )
 
         ### Loading the datasets defined in the configuration files
         # EXAMPLE ATTRIBUTE ADDITIONS: `biology`, `spatial`, `acoustics`
@@ -63,20 +61,14 @@ class Survey:
         # Define length and age distributions
         self.biometric_distributions()
 
+        ### !!! THIS IS TEMPORARY FOR DEBUGGING / TRACKING DATA ATTRIBUTE ASSIGNMENT 
         ### A utility function that helps to map the datasets currently present
         # within Survey object via the `___.summary` property. This also initializes
         # the `meta` attribute
         # ATTRIBUTE ADDITIONS: `meta`
         ##
-        # TODO: Fix bug associated with `load_survey_data()` that results in the 
-        # 'dict_tree' key within the `___.config` attribute overwriting previous
-        # entries when multiple datasets of the same layer name are present, such as
-        # 'US' versus 'CAN' for biological data. At present, it defaults to listing 
-        # only 'CAN' -- this is not reflected in the actual data attribute structure where
-        # both 'US' and 'CAN' are present, denoted by the 'index' column in relevant dataframes.
         self.populate_tree()
 
-        
     @staticmethod
     def load_configuration( init_config_path: Path , 
                             survey_year_config_path: Path ):
@@ -87,6 +79,7 @@ class Survey:
 
         Parameters
         ----------
+        self : EchoPro.Survey
         init_config_path : pathlib.Path
             A string specifying the path to the initialization YAML file
         survey_year_config_path : pathlib.Path
@@ -102,100 +95,36 @@ class Survey:
         # Retreive the module directory to begin mapping the configuration file location
         current_directory = os.path.dirname(os.path.abspath(__file__))
 
-        # Build the full configuration file paths
+        # Build the full configuration file paths and verify they exist
         config_files = [init_config_path, survey_year_config_path]
-        config_file_paths = [os.path.join(current_directory, '..', 'config_files', file_name) for file_name in config_files]
-
-        # Check files to ensure they exist
-        config_existence = [os.path.exists(file_path) for file_path in config_file_paths]
-
-        # Assign the existence status to each configuration file for error evaluation
-        config_status = dict(zip(config_files, config_existence))
+        config_paths = [ Path(current_directory + '/../config_files/' + file) for file in config_files ]
+        config_existence = [path.exists() for path in config_paths]
 
         # Error evaluation and print message (if applicable)
-        if not all(config_status.values()):
-            missing_config = [config_file for config_file, exists in config_status.items() if not exists]
+        if not all(config_existence):
+            missing_config = [ files for files, exists in zip( config_files, config_existence ) if not exists ]
             raise FileNotFoundError(f"The following configuration files do not exist: {missing_config}")
 
         ### Read configuration files
         # If configuration file existence is confirmed, proceed to reading in the actual files
         ## !!! TODO: Incorporate a configuration file validator that enforces required variables and formatting
-        init_config_params = yaml.safe_load(Path(config_file_paths[0]).read_text())
-        survey_year_config_params = yaml.safe_load(Path(config_file_paths[1]).read_text())        
+        init_config_params = yaml.safe_load(config_paths[0].read_text())
+        survey_year_config_params = yaml.safe_load(config_paths[1].read_text())        
 
         # Validate that initialization and survey year configuration parameters do not intersect
-        param_intersect = set(init_config_params.keys()).intersection(set(survey_year_config_params.keys()))
+        config_intersect = set(init_config_params.keys()).intersection(set(survey_year_config_params.keys()))
 
         # Error evaluation, if applicable
-        if param_intersect:
+        if config_intersect:
             raise RuntimeError(
-                f"The initialization and survey year configuration files comprise the following intersecting variables: {param_intersect}"
+                f"The initialization and survey year configuration files comprise the following intersecting variables: {config_intersect}"
             )
 
         ### Format dictionary that will parameterize the `config` class attribute
         # Join the initialization and survey year parameters into a single dictionary
-        full_params = {**init_config_params, **survey_year_config_params}
+        # Pass 'full_params' to the class instance
+        return {**init_config_params, **survey_year_config_params}
 
-        # ??? TODO: Since this is a static method, this carriage return may not be the most appropriate way to pass 
-        # 'full_params' to the class instance
-        return full_params
-    
-    def search_nested_dict( self ,
-                            config: dict ,
-                            filename: str ,
-                            current_path: list = [] ):
-        """
-        Recursive utility function that searches the configuration attribute
-        (a nested dictionary) for a specific 
-
-        Parameters
-        ----------
-        self
-            Survey class object.
-        config : dict
-            Survey class configuration ('self.config') dictionary.
-        filename : str
-            Target filename that is being searched within the configuration dictionary.
-        current_path : list
-            List that records previously evaluated levels/layers of the configuration
-        dictionary and steps forward to the next nested level within the dictionary.
-
-        Returns
-        -----
-        data_layer_names : list
-            List comprising the names of nested dictionary layers.
-        reference_path : str
-            A string representing the configuration tag that is referenced in the 
-        CONFIG_MAP API. 
-        sheet_name : str
-            References the correct sheet name containing the data that is defined
-        in the configuration files.
-        """
-        ### Initialize 'current_path' if not already defined/initialized
-        if current_path is None:
-                current_path = []
-
-        ### Recursive function 
-        # Step forward through the configuration dictionary until the filename input
-        # is located.
-        for key, value in config.items():
-            # Not located ? Keep searching
-            if isinstance(value, dict):
-                result = self.search_nested_dict(value, filename, current_path + [key])
-                if result is not None:
-                    return result
-            # Located ? Provide the outputs
-            elif key == 'filename' and value in filename:
-                return current_path,'/'.join(current_path[0:2]),config.get('sheetname')
-            
-        ### Never present !? 
-        ## !!! TODO : In theory, the 'load_configuration' function should validate that 
-        # the information required for the output is present. However, if that leaks through
-        # any cracks, then this becomes an unchecked recursive function. Consequently, this
-        # should be leashed so that it can only dig for so long until it yields some sort of 
-        # Value or Runtime Error. 
-        return None     
-    
     def load_survey_data( self ):
         """
         Loads the biological, NASC, and stratification
@@ -207,196 +136,219 @@ class Survey:
 
         ### Check whether data files defined from the configuration file exists
         # Generate flat JSON table comprising all configuration parameter names
-        flat_configuration_table = pd.json_normalize(self.config)
+        flat_configuration_table = pd.json_normalize(self.config).filter(regex="filename")
 
         # Parse the flattened configuration table to identify data file names and paths
-        parsed_filenames = flat_configuration_table.filter(regex="filename").values.flatten()
+        parsed_filenames = flat_configuration_table.values.flatten()
 
         # Append the root directory to the parsed data file names
-        data_file_paths = [os.path.join(self.config['data_root_dir'], filename) for filename in parsed_filenames]
+        data_paths = [Path(self.config['data_root_dir'] + '/' + file) for file in parsed_filenames]
 
         # Evaluate whether either file is missing
-        data_existence = [os.path.exists(file_path) for file_path in data_file_paths]
+        data_existence = [path.exists() for path in data_paths]
 
         # Assign the existence status to each configuration file for error evaluation
-        data_status = dict(zip(data_file_paths, data_existence))
-
         # Error evaluation and print message (if applicable)
-        if not all(data_status.values()):
-            missing_data = [data_file for data_file, exists in data_status.items() if not exists]
+        if not all(data_existence):
+            missing_data = [ files for files, exists in zip( parsed_filenames, data_existence ) if not exists ]
             raise FileNotFoundError(f"The following data files do not exist: {missing_data}")
         
+        # Initialize data attributes ! 
+        setattr( self , 'acoustics' , { } )
+        setattr( self , 'biology' , { } )
+        setattr( self , 'spatial' , { } )
+        setattr( self , 'statistics' , { } )
+
         ### Data validation and import
-        # Iterate through each file defined/detected in 'data_file_paths'
-        for file in data_file_paths:
+        # Iterate through each file defined/detected in 'data_paths' and 'parsed_filenames'
 
-            # Parse data layers, associated configuration key tag, and the Excel sheet name associated
-            # with the data
-            data_layers, reference_path, sheet_name = self.search_nested_dict(self.config, file)
+        for file , path in zip(parsed_filenames, data_paths):
 
-            # Reference LAYER_NAME_MAP to update 'self.config' -- this is necessary for both mapping
-            # the data attribute structures and reorganizing the dictionary organization within each
-            # class attribute later on
-            # Pull LAYER_NAME_MAP reference information
-            layer_config = LAYER_NAME_MAP.get(data_layers[0])
+            # Parse config to find appropriate settings
+            config_name = flat_configuration_table.apply(lambda row: row[row == file].index, axis=1)
+            
+            # Convert to string
+            config_identifier = config_name[0].tolist()[0].lower()
 
-            # Determine how deep 'data_layers' is represented within the dictionary
-            # This is required for mapping dataframes with an appropriately named
-            # data layer name appended with '_df' (e.g. 'length' -> 'length_df')
-            data_name_bool = set(data_layers).intersection(layer_config['data'])
-            data_layer_index = data_layers.index(''.join(data_name_bool))
+            # Extract appropriate dataset name from the file path
+            # -- Based on tail-end of file path string to avoid potential 
+            # -- directory name issues
+            dataset = [x for x in [*CONFIG_MAP.keys()] if x.lower() in config_identifier][0]
+            
+            # Determine data layer name
+            datalayer = [x for x in [*CONFIG_MAP.get(dataset)] if x in config_identifier.split('.')][0]
 
-            #pull_nested_dict(CONFIG_MAP, data_layers)
-            # Retrieve/access CONFIG_MAP values defining the expected column names and data types
-            validation_settings = pull_nested_dict(CONFIG_MAP, data_layers[:data_layer_index+1])
-
-            ## ??? TODO: Remove Try-Exception ? Or may need more informative error message construction
-            # Validate column names
-            try:
-                # Open connection with the workbook and specific sheet 
-                # This is useful for not calling the workbook into memory and allows for parsing
-                # only the necessary rows/column names
-                workbook = load_workbook(file, read_only=True)
-                sheet = workbook[sheet_name]
-
-                # Validate that the expected columns are contained within the parsed 
-                # column names of the workbook   
-                if reference_path == "kriging/vario_krig_para":
-                    data_columns = [list(row) for row in zip(*sheet.iter_rows(values_only=True))][0]
-                else:   
-                    data_columns = {col.value for col in sheet[1]}
-
-                # Close connection to the work book
-                workbook.close()
-
-                # Error evaluation and print message (if applicable)
-                if not set(validation_settings.keys()).issubset(set(data_columns)):
-                    missing_columns = set(validation_settings.keys()) - set(data_columns)
-                    raise ValueError(f"Missing columns in the Excel file: {missing_columns}")
-                
-            except Exception as e:
-                print(f"Error reading file '{file}': {e}")
-                continue
-
-            # Based on the configuration settings, read the Excel files into memory. A format
-            # exception is made for 'kriging.vario_krig_para' since it requires additional
-            # data wrangling (i.e. transposing) to resemble the same dataframe format applied
-            # to all other data attributes.
-            if reference_path == "kriging/vario_krig_para":
-                    
-                # Read Excel file into memory and then transpose
-                df_initial = pd.read_excel(file, header=None).T
-
-                # Take the values from the first row and redfine them as the column headers
-                df_initial.columns = df_initial.iloc[0]
-                df_initial = df_initial.drop(0)
-
-                # Slice only the columns that are relevant to the EchoPro module functionality
-                valid_columns = list(set(validation_settings.keys()).intersection(set(df_initial.columns)))
-                df_filtered = df_initial[valid_columns]
-
-                # Ensure the order of columns in df_filtered matches df_initial
-                df_filtered = df_filtered[df_initial.columns]
-
-                # Apply data types from validation_settings to the filtered DataFrame
-                df = df_filtered.apply(lambda col: col.astype(validation_settings.get(col.name, type(df_filtered.iloc[0][col.name]))))
-
+            # Define the data layer name 
+            # -- Based on the lattermost portion of the file path string
+            # Create list for parsing the hard-coded API dictionary
+            if dataset == 'biological':                
+                region_id = [x for x in ['US', 'CAN'] if x.lower() in config_identifier][0]
+                sheet_name = self.config.get(dataset).get(datalayer).get(region_id).get('sheetname')
+                config_map = [dataset, datalayer, region_id]
             else:
+                config_map = [dataset, datalayer]
+                sheet_name = self.config.get(dataset).get(datalayer).get('sheetname')
 
-                # Read Excel file into memory -- this only reads in the required columns
-                df = pd.read_excel(file, sheet_name=sheet_name, usecols=validation_settings.keys())
+            validation_settings = CONFIG_MAP.get(dataset).get(datalayer)
 
-                # Apply data types from validation_settings to the filtered DataFrame
-                df = df.apply(lambda col: col.astype(validation_settings.get(col.name, type(col[0]))))
+            # Validate column names of this iterated file
+            validate_data_columns( path , sheet_name , datalayer , validation_settings )
 
-                # This is a goofy way of accounting for the 'CAN' and 'US' format -- if these are present,
-                # they are added as an 'index' column that can be referenced later on.
-                ## ??? TODO : This janky boolean chunk can be replaced with something more efficient
-                # such as adding a key to the original configuration files that explicitly state datasets
-                # from multiple sources/regions/etc. are present, or automatically merge layers with shared 
-                # data tree structures in a later function/step
-                if len(data_layers) > 2:
-                    df['index'] = data_layers[2]
-
-            ### CONFIGURATION : Map the imported data and save within the 'config' attribute
-            # Initialize temporary attribute object
-            ## TODO : This can probably be moved to the "IMPORT" section of this function below
-            internal_object = self
-
-            # Create a shallow copy of the data layers
-            ## ??? TODO : This seems unnecessary, but some issues seemed to arise when this line is excluded.
-            # This is probably due to some issue in the local environment where tests were evaluated. 
-            dict_tree_names = data_layers.copy()
-
-            # From LAYER_NAME_MAP, rename the original top layer (e.g. 'stratification' -> 'spatial')
-            dict_tree_names[0] = layer_config['name']
-
-            # From LAYER_NAME_MAP, add the 'superlayer', if defined, that adjusts the intended dictionary
-            # nested tree structure (e.g. 'kriging/vars' -> 'statistics/kriging/vars')
-            updated_layers = layer_config['superlayer'] + dict_tree_names
-
-            # Determine how deep 'data_layers' is represented within the dictionary
-            # This is required for mapping dataframes with an appropriately named
-            # data layer name appended with '_df' (e.g. 'length' -> 'length_df')
-            updated_name_bool = set(updated_layers).intersection(layer_config['data'])
-            updated_layer_index = updated_layers.index(''.join(updated_name_bool))
-
-            # Append '_df' to the correct data layer name. This will change the name located within the 
-            # configuration to provide context of the datatype (in this case, as dataframe).
-            updated_layers[updated_layer_index] = ''.join(updated_name_bool)+'_df'
-
-            # Push the new nested tree data path to the config under the key: 'dict_tree'
-            push_nested_dict(self.config, data_layers + ['dict_tree'], updated_layers)
-            ### IMPORT : Assign the imported data to their intended data attributes that have now been 
-            # explicitly defined from the configuration files, validated via 'CONFIG_MAP', reorganized and 
-            # saved within 'self.config' via 'LAYER_NAME_MAP'
-
-            # Index the data tree layers: (surface_layer, data_layer] -- so this should exclude the 
-            # surface layer and exclude any detected layers beyond those appended with '_df'
-            nested_layers = updated_layers[1:updated_layer_index+1]
-
-            # Evaluate whether the surface layer is present -- if it is, then this means the data 
-            # attribute already exists.
-            if not hasattr(internal_object, updated_layers[0]):
-                # Initialize empty dictionary
-                d = {}
-
-                # Push the formated nested dictionary to the temporary dictionary -- this will now
-                # contain the data dataframe at the appropriate nested layer/level
-                push_nested_dict(d, nested_layers, df) 
-
-                # Initialize the attribute and set the value using the temporary dictionary
-                setattr(internal_object, updated_layers[0], d)
-
-            # If it is present, then the next step is to enter the data attribute itself to begin
-            # amending the dictionary entries
-            else:
-                # Enter attribute
-                internal_object = getattr(internal_object, updated_layers[0])
-
-                # Does the labeled dataframe (e.g. 'length_df') already exist ? If not, then the
-                # full data branch is initialized in case more values will be appended later on
-                if pull_nested_dict(internal_object, nested_layers) is None:                    
-                    # Push the formated nested dictionary to the temporary dictionary -- this will now
-                    # contain the data dataframe at the appropriate nested layer/level
-                    push_nested_dict(internal_object, nested_layers, df)
-
-                # If it is present, then the 'index' column (e.g. 'US' vs 'CAN') will be required. Otherwise,
-                # the pre-existing and proposed/to-be-added dataframes are simply concatenated.    
-                else:
-                    # Pull the dataframe located within the defined nested dictionary layers/levels
-                    pre_df = pull_nested_dict(internal_object, nested_layers)
-
-                    # Push the concatenated dataframe to the appropriate nested layer/level 
-                    push_nested_dict(internal_object, nested_layers, pd.concat([pre_df , df])) 
-        
+            # Validate datatypes within dataset and make appropriate changes to dtypes (if necessary)
+            # -- This first enforces the correct dtype for each imported column
+            # -- This then assigns the imported data to the correct class attribute
+            self.read_validated_data( path , sheet_name , config_map , validation_settings )
+            
         ### Merge haul numbers and regional indices across biological variables
         # Also add strata values/indices here alongside transect numbers 
-        ### !!! TODO: rename 'index' column name to 'country' or 'region'
-        self.biology['specimen_df'] = self.biology['haul_to_transect_df'].merge(self.biology['specimen_df'], on=['haul_num', 'index'])
-        self.biology['length_df'] = self.biology['haul_to_transect_df'].merge(self.biology['length_df'], on=['haul_num', 'index'])
-        self.biology['catch_df'] = self.biology['haul_to_transect_df'].merge(self.biology['catch_df'], on=['haul_num', 'index'])
+        # -- Step 1: Consolidate information linking haul-transect-stratum
+        self.biology['haul_to_transect_df'] = (
+            self.biology['haul_to_transect_df']
+            .merge(self.spatial['strata_df'], on =['haul_num'] , how = 'outer' )
+        )
+        # -- Step 2: Distribute this information to the other biological variables
+        # ---- Specimen 
+        self.biology['specimen_df'] = (
+            self.biology['specimen_df']
+            .merge( self.biology['haul_to_transect_df'] , on = ['haul_num'] )
+        )
+        # ---- Length
+        self.biology['length_df'] = (
+            self.biology['length_df']
+            .merge( self.biology['haul_to_transect_df'] , on = ['haul_num' , 'region'] )
+        )
+        # ---- Catch
+        self.biology['catch_df'] = (
+            self.biology['catch_df']
+            .merge( self.biology['haul_to_transect_df'] , on = ['haul_num' , 'region'] )
+        )
 
+    def read_validated_data( self ,
+                             path: Path ,
+                             sheet_name: str ,
+                             config_map: list ,
+                             validation_settings: dict ):
+        """
+        Reads in data and validates the data type of each column/variable
+
+        Parameters
+        ----------
+        self: EchoPro.Survey
+        file: Path
+            The file name without the prepended file path
+        sheet_name: str
+            The Excel sheet name containing the target data
+        config_map: list
+            A list parsed from the file name that indicates how data attributes
+            within `self` are organized
+        validation_settings: dict
+            The subset CONFIG_MAP settings that contain the target column names
+        """
+    
+        # Based on the configuration settings, read the Excel files into memory. A format
+        # exception is made for 'kriging.vario_krig_para' since it requires additional
+        # data wrangling (i.e. transposing) to resemble the same dataframe format applied
+        # to all other data attributes.
+        if 'vario_krig_para' in config_map:
+            # Read Excel file into memory and then transpose
+            df_initial = pd.read_excel(path, header=None).T
+
+            # Take the values from the first row and redfine them as the column headers
+            df_initial.columns = df_initial.iloc[0]
+            df_initial = df_initial.drop(0)
+
+            # Slice only the columns that are relevant to the EchoPro module functionality
+            valid_columns = list(set(validation_settings.keys()).intersection(set(df_initial.columns)))
+            df_filtered = df_initial[valid_columns]
+
+            # Ensure the order of columns in df_filtered matches df_initial
+            df_filtered = df_filtered[df_initial.columns]
+
+            # Apply data types from validation_settings to the filtered DataFrame
+            df = df_filtered.apply(lambda col: col.astype(validation_settings.get(col.name, type(df_filtered.iloc[0][col.name]))))
+        
+        else:
+            # Read Excel file into memory -- this only reads in the required columns
+            df = pd.read_excel(path, sheet_name=sheet_name, usecols=validation_settings.keys())
+
+            # Apply data types from validation_settings to the filtered DataFrame
+            df = df.apply(lambda col: col.astype(validation_settings.get(col.name, type(col[0])))) 
+
+        # Assign the data to their correct data attributes
+        # As of now this entails:
+        # -- biology --> biology
+        # -- stratification --> spatial
+        # -- kriging --> statistics
+        # -- NASC --> acoustics
+        # Step 1: Step into the data attribute 
+        if LAYER_NAME_MAP.get(config_map[0])['superlayer'] == []:
+            attribute_name  = LAYER_NAME_MAP.get(config_map[0])['name']
+            internal = getattr( self , attribute_name )
+
+        else:
+            attribute_name = LAYER_NAME_MAP.get(config_map[0])['superlayer'][0]
+            layer_name = LAYER_NAME_MAP.get(config_map[0])['name']
+            internal = getattr( self , attribute_name )
+
+            # Add original data layer (e.g. stratification, kriging, etc.) if needed
+            if config_map[0] not in internal.keys():
+                internal = internal.setdefault(layer_name, {})
+        # ------------------------------------------------------------------------------------------------
+        # Step 2: Determine whether the dataframe already exists -- this only applies to some datasets
+        # such as length that comprise multiple region indices (i.e. 'US', 'CAN')
+        if attribute_name == "biology":
+
+            # Add US / CAN as a region index 
+            df['region'] = config_map[2] 
+
+            # Apply CAN haul number offset 
+            if config_map[2] == 'CAN':
+                df['haul_num'] += self.config['CAN_haul_offset']
+
+            # If previous layer already exists, then concatenate 
+            if config_map[1] + '_df' not in internal.keys():
+                internal[config_map[1] + '_df'] = df 
+
+            else:
+                # Append pre-existing dataframe with new one in the same list
+                df_list = [internal[config_map[1] + '_df'] , df]
+
+                # Update the data layer dataframe
+                internal[config_map[1] + '_df'] = pd.concat(df_list)
+        
+        elif attribute_name in [ 'spatial' , 'statistics' ]:
+            
+            # A single dataframe per entry is expected, so no other fancy operations are needed
+            internal[config_map[1] + '_df'] = df
+
+        ### Note: if these aren't smashed together into the same dataframe, then this could be incorporated
+        ### into the above statement alongside 'spatial' and 'statistics' as a single line call
+        elif attribute_name == 'acoustics':
+
+            # Toggle through including and excluding age-1
+            # -- This is required for merging the NASC dataframes together
+            if config_map[1] == 'no_age1':
+                df = df.rename(columns={'NASC': 'NASC_no_age1'})
+            else:
+                df = df.rename(columns={'NASC': 'NASC_all_ages'})
+
+            # Although there will be two separate dataframes, they will be collated and merged 
+            # -- This will trigger upon the second entry and therefore all fall under "nasc_df"
+            if 'nasc_df' not in internal.keys():
+                internal['nasc_df'] = df
+            else:
+                column_to_add = df.columns.difference(internal['nasc_df'].columns).tolist()[0]
+                internal['nasc_df'][column_to_add] = df[column_to_add]
+        
+        else:
+            raise ValueError('Unexpected data attribute structure. Check API settings located in the configuration YAML and core.py')
+        
+         # ------------------------------------------------------------------------------------------------
+        # THIS IS A TEMPORARY FUNCTION
+        # -- This PARASITIC_TREE function is temporarily here to continue validating data attributes are
+        # -- being organized in an expected manner
+        self.PARASITIC_TREE( config_map )
+        
     def biometric_distributions( self ):
         """
         Expand bin parameters into actual bins for length and age distributions
@@ -409,8 +361,8 @@ class Survey:
                                         self.config['bio_hake_len_bin'][2] ,
                                         dtype = np.int64 ) ,
             'age_bins': np.linspace( self.config['bio_hake_age_bin'][0] ,
-                                     self.config['bio_hake_age_bin'][1] , 
-                                     self.config['bio_hake_age_bin'][2] ) ,
+                                    self.config['bio_hake_age_bin'][1] , 
+                                    self.config['bio_hake_age_bin'][2] ) ,
         }
 
         # Update the configuration so these variables are mappable
@@ -419,12 +371,41 @@ class Survey:
                 'bio_hake_len_bin': self.config['bio_hake_len_bin'] ,
                 'bio_hake_age_bin': self.config['bio_hake_age_bin']
             } ,
+
+            # THIS LINE IS SOLELY RELATED TO THE PARASITIC TREE FUNCTIONALITY
             'dict_tree': ['biology', 'distributions', ['age_bins', 'length_bins']]
         }
         del self.config['bio_hake_len_bin'], self.config['bio_hake_age_bin']
 
         # Push to biology attribute 
         self.biology['distributions'] = biometrics
+
+    ##############################################################################
+    # EVERYTHING BELOW HERE IS PRIMARILY FOR JUST TESTING 
+    # THESE FUNCTIONS ARE NOT APPLIED ELSEWHERE
+    # These are all wrapped within PARASITIC_TREE(...)
+    ##############################################################################
+    def PARASITIC_TREE( self ,
+                        config_map ):
+        # From LAYER_NAME_MAP, rename the original top layer (e.g. 'stratification' -> 'spatial')
+        LAYER_KEY = LAYER_NAME_MAP.get(config_map[0])
+
+        # From LAYER_NAME_MAP, add the 'superlayer', if defined, that adjusts the intended dictionary
+        # nested tree structure (e.g. 'kriging/vars' -> 'statistics/kriging/vars')
+        updated_layers = LAYER_KEY['superlayer'] + [LAYER_KEY['name']] + config_map[1:]
+
+        # Determine how deep 'data_layers' is represented within the dictionary
+        # This is required for mapping dataframes with an appropriately named
+        # data layer name appended with '_df' (e.g. 'length' -> 'length_df')
+        updated_name_bool = set(updated_layers).intersection(LAYER_KEY['data'])
+        updated_layer_index = updated_layers.index(''.join(updated_name_bool))
+
+        # Append '_df' to the correct data layer name. This will change the name located within the 
+        # configuration to provide context of the datatype (in this case, as dataframe).
+        updated_layers[updated_layer_index] = ''.join(updated_name_bool)+'_df'
+
+        # Push the new nested tree data path to the config under the key: 'dict_tree'
+        push_nested_dict(self.config, config_map + ['dict_tree'], updated_layers)
     
     @staticmethod
     def add_to_tree( current_layer: dict , 

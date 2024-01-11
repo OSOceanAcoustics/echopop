@@ -188,3 +188,15 @@ LAYER_NAME_MAP = {
         'superlayer': ['statistics']
     } 
 }
+
+SEX_CODE_MAP = {
+    '1': {
+        'name': 'male' ,
+        'abbr': 'M' 
+    } ,
+    '2': {
+        'name': 'female' ,
+        'abbr': 'F'
+    }
+}
+
