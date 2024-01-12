@@ -2,6 +2,7 @@
 Core API/components for class structures, class methods, and utility/helper methods
 '''
 import numpy as np
+import pandas as pd
 
 #
 # ``CONFIG_MAP`` defines the expected column names for all datasets defined within both
@@ -171,21 +172,47 @@ LAYER_NAME_MAP = {
         'name': 'biology' ,
         'data': ['length' , 'specimen' , 'catch' , 'haul_to_transect' ] ,
         'superlayer': [] ,
+        'data_tree': {
+            'catch_df': pd.DataFrame() ,
+            'distributions': {
+                'length_bins_arr':  np.array([]) ,
+                'age_bins_arr':  np.array([]) ,
+            } ,
+            'length_df': pd.DataFrame() ,
+            'haul_to_transect_df': pd.DataFrame() ,
+            'specimen_df': pd.DataFrame()
+        } ,
     } ,
     'stratification': {
         'name': 'spatial' ,
         'data': ['strata' , 'geo_strata'] ,
         'superlayer': [] ,
+        'data_tree': {
+            'strata_df': pd.DataFrame() ,
+            'geo_strata_df': pd.DataFrame() ,
+        } ,
     } ,
     'NASC': {
         'name': 'nasc' ,
         'data': ['no_age1' , 'all_ages'] ,
         'superlayer': ['acoustics'] ,
+        'data_tree': {
+            'nasc': {
+                'nasc_df': pd.DataFrame() ,
+            } ,
+        } ,
     } ,
     'kriging': {
         'name': 'kriging' ,
         'data': ['mesh' , 'isobath_200m' , 'vario_krig_para'] ,
-        'superlayer': ['statistics']
+        'superlayer': ['statistics'] ,
+        'data_tree': {
+            'kriging': {
+                'mesh_df': pd.DataFrame() ,
+                'isobath_200m_df': pd.DataFrame() ,
+                'vario_krig_para_df': pd.DataFrame() ,
+            }
+        } ,
     } 
 }
 
