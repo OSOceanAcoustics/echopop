@@ -1,31 +1,18 @@
+from typing import List, Union
 from pathlib import Path
-from typing import List, Optional, Tuple, Union
-from warnings import warn
-
-import geopandas as gpd
+import pandas as pd
 import numpy as np
-import xarray as xr
 import yaml
-
-from .computation import (
-    Bootstrapping,
-    ComputeTransectVariables,
-    Kriging,
-    SemiVariogram,
-    generate_bin_ds,
-    get_kriging_len_age_biomass,
-    get_len_age_abundance,
-    get_transect_len_age_biomass,
-    krig_param_type,
-    krig_type_dict,
-    run_jolly_hampton,
-    vario_param_type,
-    vario_type_dict,
-)
-from .data_loader import KrigingMesh, LoadBioData, LoadStrataData, load_nasc_df
-from .reports import Reports
-from .utils.input_checks_read import check_existence_of_file
-
+import copy
+from .core import CONFIG_MAP, LAYER_NAME_MAP
+### !!! TODO : This is a temporary import call -- this will need to be changed to 
+# the correct relative structure (i.e. '.core' instead of 'EchoPro.core' at a future testing step)
+import pprint
+from .utils.data_structure_utils import push_nested_dict
+from .utils.data_file_validation import validate_data_columns
+### !!! TODO : This is a temporary import call -- this will need to be changed to 
+# the correct relative structure (i.e. '.utils.data_structure_utils' instead of 
+# 'EchoPro.utils.data_structure_utils' at a future testing step)
 
 class Survey:
     """
@@ -36,233 +23,61 @@ class Survey:
 
     Parameters
     ----------
-    init_file_path : str or pathlib.Path
+    init_config_path : str or pathlib.Path
         A string specifying the path to the initialization YAML file
-    survey_year_file_path : str or pathlib.Path
+    survey_year_config_path : str or pathlib.Path
         A string specifying the path to the survey year YAML file
-    source : int
-        The region of data to use.
 
-        - 1 = US
-        - 2 = Canada
-        - 3 = US and Canada
-
-    exclude_age1 : bool
-        States whether age 1 hake should be included in analysis.
+    Attributes
+    ----------
+    meta : dict 
+        Metadata variable that provides summary information concerning the
+        data contained within the class object (e.g. 'self.summary').
+    config : dict 
+        Configuration settings and parameters that can be referenced for
+        various downstream and internal functions.
+    data : dict
+        Various dictionaries are incorporated into the Survey class object that 
+        are directly referenced for various downstream and internal functions. This
+        includes attributes such as 'biology', 'acoustics', and 'spatial' that represent
+        various nested biological, acoustic, and spatial/stratification datasets imported
+        based on the input files defined via the configuration settings.
+    
     """
-
     def __init__(
         self,
-        init_file_path: Union[str, Path],
-        survey_year_file_path: Union[str, Path],
-        source: int = 3,
-        exclude_age1: bool = True,
+        init_config_path: Union[str, Path] ,
+        survey_year_config_path: Union[str, Path] ,
     ):
+        ### Loading the configuration settings and definitions that are used to 
+        # initialize the Survey class object
+        # ATTRIBUTE ADDITIONS: `config`
+        self.config = self.load_configuration( Path( init_config_path ) , Path( survey_year_config_path ) )
 
-        # convert configuration paths to Path objects, if necessary
-        init_file_path = Path(init_file_path)
-        survey_year_file_path = Path(survey_year_file_path)
+        # Initialize data attributes ! 
+        self.acoustics = copy.deepcopy(LAYER_NAME_MAP['NASC']['data_tree'])
+        self.biology = copy.deepcopy(LAYER_NAME_MAP['biological']['data_tree'])
+        self.spatial = copy.deepcopy(LAYER_NAME_MAP['stratification']['data_tree'])
+        self.statistics = copy.deepcopy(LAYER_NAME_MAP['kriging']['data_tree'])
 
-        self._check_init_file(init_file_path)
-        self._check_survey_year_file(survey_year_file_path)
+        ### Loading the datasets defined in the configuration files
+        # EXAMPLE ATTRIBUTE ADDITIONS: `biology`, `spatial`, `acoustics`
+        self.load_survey_data()
 
-        # read initialization configuration file
-        init_params = self._read_config(init_file_path)
-        init_params = self._set_params_from_init(source, init_params)
+        # Define length and age distributions
+        self.biometric_distributions()
 
-        # read survey year configuration file
-        survey_year_params = self._read_config(survey_year_file_path)
-
-        # assign parameters from configuration files and init params
-        self.params = self._collect_parameters(init_params, survey_year_params)
-        self.params["exclude_age1"] = exclude_age1
-
-        # convert all string paths to Path objects in params
-        self._convert_str_to_path_obj()
-
-        # initialize all class variables
-        self.strata_df = None
-        self.geo_strata_df = None
-        self.strata_sig_b = None
-        self.length_df = None
-        self.specimen_df = None
-        self.nasc_df = None
-        self.bio_calc = None
-        self.kriging_mesh = None
-        self.kriging = None
+        ### !!! THIS IS TEMPORARY FOR DEBUGGING / TRACKING DATA ATTRIBUTE ASSIGNMENT 
+        ### A utility function that helps to map the datasets currently present
+        # within Survey object via the `___.summary` property. This also initializes
+        # the `meta` attribute
+        # ATTRIBUTE ADDITIONS: `meta`
+        ##
+        # self.populate_tree()
 
     @staticmethod
-    def _check_init_file(init_file_path: Path) -> None:
-        """
-        Ensures that the initialization configuration file
-        exists and contains the appropriate contents.
-
-        Parameters
-        ----------
-        init_file_path: Path
-            The path to the initialization configuration file
-
-        Raises
-        ------
-        FileNotFoundError
-            If the file does not exist
-        """
-
-        # make sure the configuration file exists
-        check_existence_of_file(init_file_path)
-
-        # TODO: Create this function that checks the contents of the initialization config file
-        #   It should make sure that certain variables are defined too
-        # print("A full check of the initialization file contents needs to be done!")
-
-    @staticmethod
-    def _check_survey_year_file(survey_year_file_path: Path) -> None:
-        """
-        Ensures that the survey year configuration file
-        exists and contains the appropriate contents.
-
-        Parameters
-        ----------
-        survey_year_file_path: Path
-            The path to the survey year configuration file
-
-        Raises
-        ------
-        FileNotFoundError
-            If the file does not exist
-        """
-
-        # make sure the survey year file exists
-        check_existence_of_file(survey_year_file_path)
-
-        # TODO: Create this function that checks the contents of the survey year config file
-        #   It should make sure that certain variables are defined and all paths exist
-        # print("A check of the survey year file contents needs to be done!")
-
-    @staticmethod
-    def _read_config(file_path: Path) -> dict:
-        """
-        Reads configuration files and returns a dictionary
-        with the parameters specified in the file.
-
-        Parameters
-        ----------
-        file_path: str
-            Path to configuration file.
-        """
-
-        with open(file_path) as f:
-            params = yaml.load(f, Loader=yaml.SafeLoader)
-
-        return params
-
-    @staticmethod
-    def _set_params_from_init(source: int, init_params: dict) -> dict:
-        """
-        Constructs and assigns important variables using
-        parameters from the initialization configuration file.
-
-        Parameters
-        ----------
-        source : int
-            The region of data to use.
-
-            - 1 = US
-            - 2 = Canada
-            - 3 = US and Canada
-
-        init_params : dict
-            Parameters obtained from the initialization file
-
-        Returns
-        -------
-        init_params : dict
-            The input ``init_params`` with additional variables
-        """
-
-        # setting bio_hake_lin_bin variable to a numpy array
-        init_params["bio_hake_len_bin"] = np.linspace(
-            init_params["bio_hake_len_bin"][0],
-            init_params["bio_hake_len_bin"][1],
-            num=init_params["bio_hake_len_bin"][2],
-            dtype=np.int64,
-        )
-
-        # setting bio_hake_age_bin variable to a numpy array
-        init_params["bio_hake_age_bin"] = np.linspace(
-            init_params["bio_hake_age_bin"][0],
-            init_params["bio_hake_age_bin"][1],
-            num=init_params["bio_hake_age_bin"][2],
-            dtype=np.int64,
-        )
-
-        init_params["source"] = source
-
-        init_params["sig_b_coef"] = 10 ** init_params["sig_b_coeff_power"]
-
-        return init_params
-
-    @staticmethod
-    def _collect_parameters(init_params: dict, survey_params: dict) -> dict:
-        """
-        Collects all parameters defined in the initialization
-        and survey year configuration files  into one variable.
-
-        Parameters
-        ----------
-        init_params : dict
-            Parameters obtained from the initialization file
-        survey_params : dict
-            Parameters obtained from the survey year file
-
-        Returns
-        -------
-        full_params : dict
-            All parameters obtained from both the survey year
-            and initialization configuration files
-        """
-
-        # check to make sure no survey year and initialization parameters are the same
-        param_intersect = set(init_params.keys()).intersection(
-            set(survey_params.keys())
-        )
-
-        # if no parameters are the same, then run process, else return error
-        if not param_intersect:
-
-            # combine survey year and initialization parameters into one dictionary
-            full_params = {}
-            full_params.update(init_params)
-            full_params.update(survey_params)
-
-        else:
-            raise RuntimeError(
-                "The initialization and survey year configuration files define the same variable! "
-                + f"\n These variables are: {param_intersect}"
-            )
-
-        return full_params
-
-    def _convert_str_to_path_obj(self) -> None:
-        """
-        Converts all string paths to pathlib.Path objects in the
-        class variable ``params``.
-
-        Notes
-        -----
-        The class variable ``params`` will be directly modified.
-        """
-
-        # convert the root directory to a Path object
-        self.params["data_root_dir"] = Path(self.params["data_root_dir"])
-
-        for param_name, param_val in self.params.items():
-
-            # convert each filename path to a Path object
-            if "filename" in param_name:
-                self.params[param_name] = Path(param_val)
-
-    def load_survey_data(self, file_type: str = "all") -> None:
+    def load_configuration( init_config_path: Path , 
+                            survey_year_config_path: Path ):
         """
         Loads the biological, NASC, and stratification
         data using parameters obtained from the configuration
@@ -270,507 +85,361 @@ class Survey:
 
         Parameters
         ----------
-        file_type : str
-            Specifies what survey data should be loaded.
-            Possible options:
-
-            - 'all' -> loads all survey data
-            - 'biological' -> only loads the biological data
-            - 'strata' -> only loads the stratification data
-            - 'nasc' -> only loads the NASC data
+        init_config_path : pathlib.Path
+            A string specifying the path to the initialization YAML file
+        survey_year_config_path : pathlib.Path
+            A string specifying the path to the survey year YAML file
 
         Notes
         -----
-        This function assigns class variables obtained from loading the
-        data. Specifically, the following class variables are created
-        for the file_type:
-
-        - ``file_type='biological'``
-            - ``self.length_df``
-            - ``self.specimen_df``
-
-        - ``file_type='strata'``
-            - ``self.strata_df``
-            - ``self.geo_strata_df``
-            - ``self.strata_sig_b``
-
-        - ``file_type='nasc'``
-            - ``self.nasc_df``
+        This function parses the configuration files and incorporates them into
+        the Survey class object. This initializes the `config` attribute that 
+        becomes available for future reference and functions.
         """
+        ### Validate configuration files
+        # Retreive the module directory to begin mapping the configuration file location
+        #current_directory = os.path.dirname(os.path.abspath(__file__))
 
-        if file_type not in ["all", "biological", "strata", "nasc"]:
-            raise ValueError(
-                "file_type must be 'all', 'biological', 'strata', or 'nasc'!"
+        # Build the full configuration file paths and verify they exist
+        config_files = [init_config_path, survey_year_config_path]
+        config_existence = [init_config_path.exists(), survey_year_config_path.exists()] 
+
+        # Error evaluation and print message (if applicable)
+        if not all(config_existence):
+            missing_config = [ files for files, exists in zip( config_files, config_existence ) if not exists ]
+            raise FileNotFoundError(f"The following configuration files do not exist: {missing_config}")
+
+        ### Read configuration files
+        # If configuration file existence is confirmed, proceed to reading in the actual files
+        ## !!! TODO: Incorporate a configuration file validator that enforces required variables and formatting
+        init_config_params = yaml.safe_load(init_config_path.read_text())
+        survey_year_config_params = yaml.safe_load(survey_year_config_path.read_text())        
+
+        # Validate that initialization and survey year configuration parameters do not intersect
+        config_intersect = set(init_config_params.keys()).intersection(set(survey_year_config_params.keys()))
+
+        # Error evaluation, if applicable
+        if config_intersect:
+            raise RuntimeError(
+                f"The initialization and survey year configuration files comprise the following intersecting variables: {config_intersect}"
             )
 
-        # load specimen and length data
-        if file_type in ("biological", "all"):
-            LoadBioData(self)
+        ### Format dictionary that will parameterize the `config` class attribute
+        # Join the initialization and survey year parameters into a single dictionary
+        # Pass 'full_params' to the class instance
+        return {**init_config_params, **survey_year_config_params}
 
-        # load all associated stratification data
-        if file_type in ("strata", "all"):
-            LoadStrataData(self)
-
-        if file_type in ("nasc", "all"):
-            self.nasc_df = load_nasc_df(self)
-
-    def compute_transect_results(
-        self, selected_transects: Optional[List] = None
-    ) -> None:
+    def load_survey_data( self ):
         """
-        Constructs ``self.bio_calc.transect_results_gdf``,
-        ``self.bio_calc.transect_results_male_gdf``, and
-        ``self.bio_calc.transect_results_female_gdf``, which are
-        GeoDataFrames that contain variables over the transect
-        points (e.g. abundance, biomass).
-
-        Parameters
-        ----------
-        selected_transects : list or None
-            The subset of transects used in the calculations
+        Loads the biological, NASC, and stratification
+        data using parameters obtained from the configuration
+        files. This will generate data attributes associated with the tags
+        defined in both the configuration yml files and the reference CONFIG_MAP
+        and LAYER_NAME_MAP dictionaries.
         """
 
-        self.bio_calc = None
-        self.bio_calc = ComputeTransectVariables(self)
-        self.bio_calc.get_transect_results_gdf(selected_transects)
+        ### Check whether data files defined from the configuration file exists
+        # Generate flat JSON table comprising all configuration parameter names
+        flat_configuration_table = pd.json_normalize(self.config).filter(regex="filename")
 
-        # create Dataset containing useful distributions and variables over length and age
-        self.bio_calc.bin_ds = generate_bin_ds(self)
+        # Parse the flattened configuration table to identify data file names and paths
+        parsed_filenames = flat_configuration_table.values.flatten()
 
-        # add NASC_adult to transect_results_gdf (needs to occur after generate_bin_ds)
-        self.bio_calc.set_adult_NASC()
+        # Evaluate whether either file is missing
+        data_existence = [(Path(self.config['data_root_dir']) / file).exists() for file in parsed_filenames]
 
-        # calculate Jolly-Hampton CV
-        self.bio_calc.jollyhampton_cv = self.run_cv_analysis(kriged_data=False)
+        # Assign the existence status to each configuration file for error evaluation
+        # Error evaluation and print message (if applicable)
+        if not all(data_existence):
+            missing_data = parsed_filenames[ ~ np.array( data_existence ) ]
+            raise FileNotFoundError(f"The following data files do not exist: {missing_data}")
+        
+        ### Data validation and import
+        # Iterate through known datasets and datalayers
+        for dataset in [*CONFIG_MAP.keys()]:
 
-        # compute abundance and biomass for each length and age bin
-        self.compute_length_age_variables(data="transect")
+            for datalayer in [*self.config[dataset].keys()]:
 
-    def run_cv_analysis(
-        self,
-        lat_inpfc: Tuple[float] = (np.NINF, 36, 40.5, 43.000, 45.7667, 48.5, 55.0000),
-        kriged_data=False,
-        seed=None,
-    ) -> float:
-        """
-        Performs CV analysis by running the Jolly-Hampton
-        algorithm.
+                # Define validation settings from CONFIG_MAP
+                validation_settings = CONFIG_MAP[dataset][datalayer]
 
-        Parameters
-        ----------
-        lat_inpfc : Tuple[float]
-            Bin values which represent the latitude bounds for
-            each region within a survey (established by INPFC)
-        kriged_data : bool
-            If True, perform CV analysis on Kriged data, otherwise
-            perform CV analysis on data that has not been Kriged
-        seed : int
-            Seed value for the random number generator
+                # Define configuration settings w/ file + sheet names
+                config_settings = self.config[dataset][datalayer]
 
-        Returns
-        -------
-        float
-            The mean Jolly-Hampton CV value.
+                # Create reference index of the dictionary path
+                config_map = [dataset, datalayer]
 
-        Notes
-        -----
-        The format of ``lat_inpfc`` should be such that it can be
-        used by Pandas.cut.
+                # Define the data layer name 
+                # -- Based on the lattermost portion of the file path string
+                # Create list for parsing the hard-coded API dictionary
+                if dataset == 'biological':
+                    for region_id in [*self.config[dataset][datalayer].keys()]:
 
-        If the initialization parameter ``JH_fac`` is 1, then only
-        1 realization is run, otherwise 10,000 realizations of the
-        algorithm are run.
-        """
+                        # Get file and sheet name
+                        file_name = Path(self.config['data_root_dir']) / config_settings[region_id]['filename']
+                        sheet_name = config_settings[region_id]['sheetname']
+                        config_map = config_map + ['region']
+                        config_map[2] = region_id
 
-        if self.params["JH_fac"] == 1:
-            nr = 1  # number of realizations
-        else:
-            nr = 10000  # number of realizations
+                        # Validate column names of this iterated file
+                        validate_data_columns( file_name , sheet_name , config_map , validation_settings )
 
-        if kriged_data:
-            if self.bio_calc.kriging_results_gdf is None:
-                raise RuntimeError(
-                    "Kriging must be ran before performing CV analysis on Kriged data!"
-                )
-        else:
-            if self.bio_calc.transect_results_gdf is None:
-                raise RuntimeError(
-                    "The biomass density must be calculated before performing CV analysis on data!"
-                )
+                        # Validate datatypes within dataset and make appropriate changes to dtypes (if necessary)
+                        # -- This first enforces the correct dtype for each imported column
+                        # -- This then assigns the imported data to the correct class attribute
+                        self.read_validated_data( file_name , sheet_name , config_map , validation_settings )
+                else:
+                    file_name = Path(self.config['data_root_dir']) / config_settings['filename']
+                    sheet_name = config_settings['sheetname']
 
-        return run_jolly_hampton(self, nr, lat_inpfc, seed, kriged_data)
+                    # Validate column names of this iterated file
+                    validate_data_columns( file_name , sheet_name , config_map , validation_settings )
 
-    def load_transform_mesh(self):
-        """
+                    # Validate datatypes within dataset and make appropriate changes to dtypes (if necessary)
+                    # -- This first enforces the correct dtype for each imported column
+                    # -- This then assigns the imported data to the correct class attribute
+                    self.read_validated_data( file_name , sheet_name , config_map , validation_settings )
 
-        :return:
-        """
-
-        self.kriging_mesh = self.get_kriging_mesh()
-
-        self.kriging_mesh.apply_coordinate_transformation(coord_type='transect')
-        self.kriging_mesh.apply_coordinate_transformation(coord_type='mesh')
-
-    def get_kriging_mesh(self) -> KrigingMesh:
-        """
-        Initializes a ``KrigingMesh`` object using
-        parameters obtained from the configuration
-        files.
-
-        Returns
-        -------
-        KrigingMesh
-            An initialized object that contains the mesh
-            data, functions to transform the mesh, and
-            functions to plot the mesh.
-
-        Notes
-        -----
-        This function assigns class variables to the returned object.
-        Specifically, the following class variables are created:
-
-        - ``mesh_gdf`` a GeoPandas Dataframe representing the full mesh
-        - ``smoothed_contour_gdf`` a GeoPandas Dataframe representing
-          the smoothed contour (e.g. 200m isobath)
-        """
-
-        return KrigingMesh(self)
-
-    def get_semi_variogram(
-        self,
-        krig_mesh: KrigingMesh = None,
-        params: vario_param_type = {},
-        warning: bool = True,
-    ) -> SemiVariogram:
-        """
-        Initializes a ``SemiVariogram`` object based on the provided
-        ``KrigingMesh`` object, the calculated areal biomass density,
-        and user provided semi-variogram parameters.
-
-        Parameters
-        ----------
-        krig_mesh : KrigingMesh
-            Object representing the Kriging mesh
-        params : dict
-            Semi-variogram specific parameters. Contains the following
-            parameters:
-
-            - ``nlag: int`` -- The total number of lag centers
-            - ``lag_res: float`` -- The spacing between lag centers
-
-        warning : bool
-            If True all warnings are printed to the terminal, otherwise
-            they are silenced.
-
-        Returns
-        -------
-        semi_vario : SemiVariogram
-            An initialized object, which provides users with access
-            to a routine that calculates the normalized
-            semi-variogram and routines for obtaining the best
-            semi-variogram model for the estimated semi-variogram.
-
-        Warnings
-        --------
-        UserWarning
-            If the final biomass table being used was created from a subset
-            of the full data
-
-        Raises
-        ------
-        ValueError
-            If ``krig_mesh`` is not a ``KrigingMesh`` object
-        ValueError
-            If ``params`` is empty
-        ValueError
-            If ``params`` does not contain all required parameters
-        TypeError
-            If the values of ``params`` are not the expected type
-        ValueError
-            If the areal biomass density has not been calculated
-
-        Notes
-        -----
-        To run this routine, one must first compute the areal biomass density
-        using ``compute_transect_results``. It is standard to compute the biomass
-        density from the full set of data (i.e. not from a subset of the data).
-        """
-
-        if not isinstance(krig_mesh, KrigingMesh):
-            raise ValueError("You must provide a KrigingMesh object!")
-
-        if not params:
-            raise ValueError("You must provide parameters for the semi-variogram!")
-
-        # make sure all parameters are included
-        if set(vario_type_dict.keys()).difference(set(params.keys())):
-            raise ValueError("Some required parameters where not provided!")
-
-        # check that all types are correct for params
-        for key, val in params.items():
-            expected_type = vario_type_dict.get(key)
-            if not isinstance(val, expected_type):
-                raise TypeError(f"{key} is not of type {expected_type}")
-
-        # provide a warning if the transect_results_gdf being used was
-        # created from a subset of the full data
-        if (len(self.bio_calc.transect_results_gdf) != len(self.nasc_df)) and warning:
-            warn(
-                "The biomass data being used is a subset of the full dataset. "
-                "It is recommended that you use the biomass data created from the full dataset. "
-                "To silence this warning set the warning argument to False."
-            )
-
-        if (not isinstance(self.bio_calc.transect_results_gdf, gpd.GeoDataFrame)) and (
-            "biomass_density_adult" not in self.bio_calc.transect_results_gdf
-        ):
-            raise ValueError(
-                "The areal biomass density must be calculated before running this routine!"
-            )
-
-        semi_vario = SemiVariogram(
-            krig_mesh.transformed_transect_df.x_transect.values,
-            krig_mesh.transformed_transect_df.y_transect.values,
-            self.bio_calc.transect_results_gdf[
-                "biomass_density_adult"
-            ].values.flatten(),
-            params["lag_res"],
-            params["nlag"],
+        ### Merge haul numbers and regional indices across biological variables
+        # Also add strata values/indices here alongside transect numbers 
+        # -- Step 1: Consolidate information linking haul-transect-stratum
+        self.biology['haul_to_transect_df'] = (
+            self.biology['haul_to_transect_df']
+            .merge(self.spatial['strata_df'], on =['haul_num'] , how = 'outer' )
+        )
+        # -- Step 2: Distribute this information to the other biological variables
+        # ---- Specimen 
+        self.biology['specimen_df'] = (
+            self.biology['specimen_df']
+            .merge( self.biology['haul_to_transect_df'] , on = ['haul_num' , 'region' ] )
+        )
+        # ---- Length
+        self.biology['length_df'] = (
+            self.biology['length_df']
+            .merge( self.biology['haul_to_transect_df'] , on = ['haul_num' , 'region'] )
+        )
+        # ---- Catch
+        self.biology['catch_df'] = (
+            self.biology['catch_df']
+            .merge( self.biology['haul_to_transect_df'] , on = ['haul_num' , 'region'] )
         )
 
-        return semi_vario
-
-    def get_kriging(self, params: krig_param_type) -> Kriging:
+    def read_validated_data( self ,
+                             file_name: Path ,
+                             sheet_name: str ,
+                             config_map: list ,
+                             validation_settings: dict ):
         """
-        Initializes a ``Kriging`` object using the
-        provided parameters
+        Reads in data and validates the data type of each column/variable
 
         Parameters
         ----------
-        params : dict
-            Kriging specific parameters. Contains the following parameters:
+        file_name: Path
+            The file name without the prepended file path
+        sheet_name: str
+            The Excel sheet name containing the target data
+        config_map: list
+            A list parsed from the file name that indicates how data attributes
+            within `self` are organized
+        validation_settings: dict
+            The subset CONFIG_MAP settings that contain the target column names
+        """
+    
+        # Based on the configuration settings, read the Excel files into memory. A format
+        # exception is made for 'kriging.vario_krig_para' since it requires additional
+        # data wrangling (i.e. transposing) to resemble the same dataframe format applied
+        # to all other data attributes.
+        # TODO : REVISIT THIS LATER
+        if 'vario_krig_para' in config_map:
+            # Read Excel file into memory and then transpose
+            df_initial = pd.read_excel(file_name, header=None).T
 
-            - ``k_max: int`` -- the maximum number of data points within the
-              search radius.
-            - ``k_min: int`` -- the minimum number of data points within the
-              search radius.
-            - ``R: float`` -- search radius for Kriging
-            - ``ratio: float`` -- acceptable ratio for the singular values
-              divided by the largest singular value.
-            - ``s_v_params: dict`` -- dictionary specifying the parameter values
-              for the semi-variogram model.
-            - ``s_v_model: Callable`` -- a Semi-variogram model from the ``SemiVariogram`` class
+            # Take the values from the first row and redfine them as the column headers
+            df_initial.columns = df_initial.iloc[0]
+            df_initial = df_initial.drop(0)
 
-        Returns
-        -------
-        krig : Kriging
-            An initialized ``Kriging`` object that provides users with
-            access to routines that run Ordinary Kriging and routines
-            that plot final Kriging results
+            # Slice only the columns that are relevant to the EchoPro module functionality
+            valid_columns = list(set(validation_settings.keys()).intersection(set(df_initial.columns)))
+            df_filtered = df_initial[valid_columns]
+
+            # Ensure the order of columns in df_filtered matches df_initial
+            df_filtered = df_filtered[df_initial.columns]
+
+            # Apply data types from validation_settings to the filtered DataFrame
+            df = df_filtered.apply(lambda col: col.astype(validation_settings.get(col.name, type(df_filtered.iloc[0][col.name]))))
+        
+        else:
+            # Read Excel file into memory -- this only reads in the required columns
+            df = pd.read_excel(file_name, sheet_name=sheet_name, usecols=validation_settings.keys())
+
+            # Apply data types from validation_settings to the filtered DataFrame
+            df = df.apply(lambda col: col.astype(validation_settings.get(col.name, type(col[0])))) 
+
+        # Assign the data to their correct data attributes
+        # As of now this entails:
+        # -- biology --> biology
+        # -- stratification --> spatial
+        # -- kriging --> statistics
+        # -- NASC --> acoustics
+        # Step 1: Step into the data attribute 
+        if LAYER_NAME_MAP[config_map[0]]['superlayer'] == []:
+            attribute_name  = LAYER_NAME_MAP[config_map[0]]['name']
+            internal = getattr( self , attribute_name )
+        else:
+            attribute_name = LAYER_NAME_MAP[config_map[0]]['superlayer'][0]
+            internal = getattr( self , attribute_name )
+        # ------------------------------------------------------------------------------------------------
+        # Step 2: Determine whether the dataframe already exists -- this only applies to some datasets
+        # such as length that comprise multiple region indices (i.e. 'US', 'CAN')
+        if attribute_name in ['biology' , 'statistics' , 'spatial']:
+            if attribute_name == 'biology':
+                # Add US / CAN as a region index 
+                df['region'] = config_map[2] 
+
+                # Apply CAN haul number offset 
+                if config_map[2] == 'CAN':
+                    df['haul_num'] += self.config['CAN_haul_offset']
+            
+            # If kriging dataset, then step one layer deeper into dictionary
+            elif config_map[0] == 'kriging':
+                internal = internal['kriging']    
+            
+            # A single dataframe per entry is expected, so no other fancy operations are needed
+            df_list = [internal[config_map[1] + '_df'] , df]
+            internal[config_map[1] + '_df'] = pd.concat(df_list)
+
+        elif attribute_name == 'acoustics':
+            
+            # Step forward into 'acoustics' attribute
+            internal = internal['nasc']
+
+            # Toggle through including and excluding age-1
+            # -- This is required for merging the NASC dataframes together
+            if config_map[1] == 'no_age1':
+                df = df.rename(columns={'NASC': 'NASC_no_age1'})
+            else:
+                df = df.rename(columns={'NASC': 'NASC_all_ages'})
+            
+            column_to_add = df.columns.difference(internal['nasc_df'].columns).tolist()
+            internal['nasc_df'][column_to_add] = df[column_to_add]
+        
+        else:
+            raise ValueError('Unexpected data attribute structure. Check API settings located in the configuration YAML and core.py')
+        
+        # ------------------------------------------------------------------------------------------------
+        # THIS IS A TEMPORARY FUNCTION
+        # -- This PARASITIC_TREE function is temporarily here to continue validating data attributes are
+        # -- being organized in an expected manner
+        # self.PARASITIC_TREE( config_map )
+        
+    def biometric_distributions( self ):
+        """
+        Expand bin parameters into actual bins for length and age distributions
         """
 
-        if not params:
-            raise ValueError("You must provide parameters for the Kriging routine!")
+        # Pull the relevant age and length bins and output a dictionary
+        biometrics = {
+            'length_bins_arr': np.linspace( self.config['bio_hake_len_bin'][0] ,
+                                        self.config['bio_hake_len_bin'][1] ,
+                                        self.config['bio_hake_len_bin'][2] ,
+                                        dtype = np.int64 ) ,
+            'age_bins_arr': np.linspace( self.config['bio_hake_age_bin'][0] ,
+                                    self.config['bio_hake_age_bin'][1] , 
+                                    self.config['bio_hake_age_bin'][2] ) ,
+        }
 
-        # make sure all parameters are included
-        if set(krig_type_dict.keys()).difference(set(params.keys())):
-            raise ValueError("Some required parameters where not provided!")
+        # Update the configuration so these variables are mappable
+        self.config['biometrics'] = {
+            'parameters': {
+                'bio_hake_len_bin': self.config['bio_hake_len_bin'] ,
+                'bio_hake_age_bin': self.config['bio_hake_age_bin']
+            } ,
 
-        # check that all types are correct for params
-        for key, val in params.items():
-            expected_type = krig_type_dict.get(key)
-            if not isinstance(val, expected_type):
-                raise TypeError(
-                    f"The Kriging parameter {key} is not of type {expected_type}"
-                )
+            # THIS LINE IS SOLELY RELATED TO THE PARASITIC TREE FUNCTIONALITY
+            'dict_tree': ['biology', 'distributions', ['age_bins', 'length_bins']]
+        }
+        del self.config['bio_hake_len_bin'], self.config['bio_hake_age_bin']
 
-        krig = Kriging(
-            self,
-            params["k_max"],
-            params["k_min"],
-            params["R"],
-            params["ratio"],
-            params["s_v_params"],
-            params["s_v_model"],
-        )
+        # Push to biology attribute 
+        self.biology['distributions'] = biometrics
 
-        return krig
+    ##############################################################################
+    # EVERYTHING BELOW HERE IS PRIMARILY FOR JUST TESTING 
+    # THESE FUNCTIONS ARE NOT APPLIED ELSEWHERE
+    # These are all wrapped within PARASITIC_TREE(...)
+    ##############################################################################
+    # def PARASITIC_TREE( self ,
+    #                     config_map ):
+    #     # From LAYER_NAME_MAP, rename the original top layer (e.g. 'stratification' -> 'spatial')
+    #     LAYER_KEY = LAYER_NAME_MAP.get(config_map[0])
 
-    def compute_kriging_results(self, kriging_params: dict) -> None:
-        """
-        Constructs ``self.kriging.kriging_results_gdf``,
-        ``self.kriging.kriging_results_male_gdf``, and
-        ``self.kriging.kriging_results_female_gdf``, which are
-        GeoDataFrames that contain variables over the kriging
-        points (e.g. abundance, biomass).
+    #     # From LAYER_NAME_MAP, add the 'superlayer', if defined, that adjusts the intended dictionary
+    #     # nested tree structure (e.g. 'kriging/vars' -> 'statistics/kriging/vars')
+    #     updated_layers = LAYER_KEY['superlayer'] + [LAYER_KEY['name']] + config_map[1:]
 
-        Parameters
-        ----------
-        kriging_params : dict
-            xyz
-        """
+    #     # Determine how deep 'data_layers' is represented within the dictionary
+    #     # This is required for mapping dataframes with an appropriately named
+    #     # data layer name appended with '_df' (e.g. 'length' -> 'length_df')
+    #     updated_name_bool = set(updated_layers).intersection(LAYER_KEY['data'])
+    #     updated_layer_index = updated_layers.index(''.join(updated_name_bool))
 
-        # TODO: This is leading to an apparent duplication and confusion
-        #   between self.kriging and self.kriging.krig_bio_calc.krig
-        self.kriging = self.get_kriging(kriging_params)
+    #     # Append '_df' to the correct data layer name. This will change the name located within the 
+    #     # configuration to provide context of the datatype (in this case, as dataframe).
+    #     updated_layers[updated_layer_index] = ''.join(updated_name_bool)+'_df'
 
-        self.kriging.run_biomass_kriging(self.kriging_mesh)
+    #     # Push the new nested tree data path to the config under the key: 'dict_tree'
+    #     push_nested_dict(self.config, config_map + ['dict_tree'], updated_layers)
+    
+    # @staticmethod
+    # def add_to_tree( current_layer: dict , 
+    #                 data_layers: np.ndarray , 
+    #                 value: list ):
+    #     """
+    #     Map out the data path/structure of a specific branch within a nested
+    #     data tree/dictionary.
+    #     """
 
-        self.kriging.compute_kriging_variables()
+    #     # Iterate through the next branch that represent the 
+    #     # nested data tree structure of each data attribute
+    #     for i, layer in enumerate(data_layers):
+    #         if i < len(data_layers) - 1:
+    #             if layer not in current_layer:
+    #                 current_layer[layer] = {}
+    #             current_layer = current_layer[layer]
+    #         else:
+    #             if i == len(data_layers) - 1:
+    #                 current_layer.setdefault(layer, []).append(value)
+    #             else:
+    #                 current_layer = current_layer.setdefault(layer, [])
 
-        # calculate Jolly-Hampton CV
-        self.kriging.krig_bio_calc.jollyhampton_cv = self.run_cv_analysis(kriged_data=True)
+    # def populate_tree( self ):
+    #     """
+    #     Construct and populate the data structure tree and append it to the metadata attribute.
+    #     """
 
-        # compute abundance and biomass for each length and age bin
-        self.compute_length_age_variables(data="kriging")
+    #     # Initialize the 'self.meta' attribute and the dictionary 'tree'.
+    #     self.meta = {'tree': {}}
 
-    def get_bootstrapping(self) -> Bootstrapping:
-        """
-        Initializes a ``Bootstrapping`` object.
+    #     # 'Normalize' the dictionary into a dataframe
+    #     flat_configuration_table = pd.json_normalize(self.config)
 
-        Returns
-        -------
-        boot: Bootstrapping
-            An initialized ``Bootstrapping`` object that provides users with
-            access to the routine ``run_bootstrapping``, which runs bootstrapping
-            for data with Kriging and data without Kriging.
-        """
+    #     # Parse only the configuration values labeled 'dict_tree' -- then flatten
+    #     tree_map = flat_configuration_table.filter(regex="dict_tree").values.flatten()
 
-        # initialize bootstrapping class
-        boot = Bootstrapping(self)
+    #     # Iterate through all of the possible values in 'tree_map' to iteratively construct
+    #     # a tree-like map of the various layers/levels/nodes contained within each of the 
+    #     # class data attributes. This enables everything to be viewed in the console via the
+    #     # 'summary' property function defined below.
+    #     for data_layers in tree_map:
+    #         self.add_to_tree(self.meta['tree'], data_layers[:-1], data_layers[-1])
 
-        return boot
-
-    def create_and_write_reports(self, output_path: Union[str, Path]) -> None:
-        """
-        Constructs Kriging mesh and Transect report DataFrames and writes
-        them to Excel files.
-
-        Parameters
-        ----------
-        output_path: str or pathlib.Path
-            The output path where all Excel files should be saved
-        """
-
-        # create Reports object
-        report = Reports(self)
-
-        # create and write reports to output_path
-        report.create_and_write_reports(output_path)
-
-    def compute_length_age_variables(self, data: str = "transect") -> None:
-        """
-        Computes abundance and biomass over each length and age bin,
-        for males, females, and all genders.
-
-        Parameters
-        ----------
-        data : str
-            Specifies the results produced:
-
-            - 'all' -> Both Kriging and transect based variables
-            - 'transect' -> only produces transect based variables
-            - 'kriging' -> only produces Kriging variables
-
-        Notes
-        -----
-        The computed DataFrames containing the specified data are assigned
-        to class variables within ``self.biocalc``.
-        Transect based results
-
-        - ``self.bio_calc.transect_bin_abundance_male_df`` -> abundance at
-          each length and age bin for males
-        - ``self.bio_calc.transect_bin_abundance_female_df`` -> abundance at
-          each length and age bin for females
-        - ``self.bio_calc.transect_bin_abundance_df`` -> abundance at
-          each length and age bin, when using all genders
-        - A similar set of variables are created for biomass results with
-          'abundance' replaced with 'biomass'. For example, biomass at each
-          length and age bin when using all genders will be stored in the
-          class variable ``self.bio_calc.transect_bin_biomass_df``.
-
-        Kriging based results
-
-        - An analogous set of variables are created for the Kriging based
-          results with 'transect' replaced with 'kriging'. For example,
-          biomass at each length and age bin when using all genders will
-          be stored in ``self.bio_calc.kriging_bin_biomass_df``.
-
-        """
-
-        if not isinstance(self.bio_calc.bin_ds, xr.Dataset):
-            raise RuntimeError(
-                "self.bio_calc.bin_ds is not a Dataset, the routine "
-                "self.compute_transect_results must be ran first."
-            )
-
-        if data in ["transect", "all"]:
-
-            # ensure that the appropriate data exists
-            if not isinstance(self.bio_calc.transect_results_gdf, gpd.GeoDataFrame):
-                raise RuntimeError(
-                    "self.bio_calc does not contain transect based results, "
-                    "self.compute_transect_results must be ran first."
-                )
-
-            # obtain and assign abundance DataFrames for transect data
-            (
-                self.bio_calc.transect_bin_abundance_male_df,
-                self.bio_calc.transect_bin_abundance_female_df,
-                self.bio_calc.transect_bin_abundance_df,
-            ) = get_len_age_abundance(
-                gdf=self.bio_calc.transect_results_gdf,
-                ds=self.bio_calc.bin_ds,
-                kriging_vals=False,
-                exclude_age1=self.params["exclude_age1"],
-            )
-
-            # obtain and assign biomass DataFrames for transect data
-            (
-                self.bio_calc.transect_bin_biomass_male_df,
-                self.bio_calc.transect_bin_biomass_female_df,
-                self.bio_calc.transect_bin_biomass_df,
-            ) = get_transect_len_age_biomass(
-                gdf_all=self.bio_calc.transect_results_gdf,
-                gdf_male=self.bio_calc.transect_results_male_gdf,
-                gdf_female=self.bio_calc.transect_results_female_gdf,
-                ds=self.bio_calc.bin_ds,
-            )
-
-        if data in ["kriging", "all"]:
-
-            # ensure that the appropriate data exists
-            if not isinstance(self.bio_calc.kriging_results_gdf, gpd.GeoDataFrame):
-                raise RuntimeError(
-                    "self.bio_calc does not contain kriging based results, "
-                    "The Kriging routine compute_kriging_variables must be "
-                    "ran first."
-                )
-
-            # obtain and assign abundance DataFrames for Kriging data
-            (
-                self.bio_calc.kriging_bin_abundance_male_df,
-                self.bio_calc.kriging_bin_abundance_female_df,
-                self.bio_calc.kriging_bin_abundance_df,
-            ) = get_len_age_abundance(
-                gdf=self.bio_calc.kriging_results_gdf,
-                ds=self.bio_calc.bin_ds,
-                kriging_vals=True,
-                exclude_age1=self.params["exclude_age1"],
-            )
-
-            # obtain and assign biomass DataFrames for kriging data
-            (
-                self.bio_calc.kriging_bin_biomass_male_df,
-                self.bio_calc.kriging_bin_biomass_female_df,
-                self.bio_calc.kriging_bin_biomass_df,
-            ) = get_kriging_len_age_biomass(
-                gdf_all=self.bio_calc.kriging_results_gdf,
-                ds=self.bio_calc.bin_ds,
-                exclude_age1=self.params["exclude_age1"],
-            )
-
-        if data not in ["transect", "kriging", "all"]:
-            raise RuntimeError(
-                "The input variable data must be 'all', 'transect', or 'kriging'!"
-            )
+    # Note : This function isn't necessary, but it is certainly helpful for debugging code along the way
+    # So it may be worth removing in the future, or may be a helpful QOL utility for users. ¯\_(ツ)_/¯ 
+    # @property
+    # def summary( self ):
+    #     """
+    #     This provides a 'summary' property that can be used to quickly reference how the
+    #     data attributes (and their respective nested trees) are organized within the Survey
+    #     class object.
+    #     """
+    #     return pprint.pprint(self.meta.get('tree',{}))
