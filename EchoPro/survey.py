@@ -10,6 +10,7 @@ from .core import CONFIG_MAP, LAYER_NAME_MAP
 import pprint
 from .utils.data_structure_utils import push_nested_dict
 from .utils.data_file_validation import validate_data_columns
+from .computation.acoustics import to_linear , ts_length_regression
 ### !!! TODO : This is a temporary import call -- this will need to be changed to 
 # the correct relative structure (i.e. '.utils.data_structure_utils' instead of 
 # 'EchoPro.utils.data_structure_utils' at a future testing step)
@@ -363,6 +364,155 @@ class Survey:
         # Push to biology attribute 
         self.biology['distributions'] = biometrics
 
+    @staticmethod
+    def transect_analysis():
+        # INPUTS
+        # This is where the users can designate specific transect numbers,
+        # stratum numbers, species, etc. These would be applied to the functions
+        # below
+        
+        # Initialize new attribute
+        self.results = {}
+        #### TODO: THIS SHOULD BE ADDED TO THE ORIGINAL SURVEY OBJECT CREATION
+        #### THIS IS INCLUDED HERE FOR NOW FOR TESTING PURPOSES -- ALL CAPS IS CRUISE
+        #### CONTROL FOR "REMEMBER TO MAKE THIS CHANGE BRANDYN !!!"
+                
+        # Calculate sigma_bs per stratum        
+        self.strata_mean_sigma_bs()
+        # OUTPUT: self.acoustics['sigma_df'] (pd.DataFrame)
+        
+        # Fill in missing strata data 
+        ### TODO: This does not necessarily need to be its own function
+        ### It also does not need to resemble the original source code (ie for loop)
+        missing_strata = []
+        for stratum in self.spatial['strata_df']['stratum_num']:
+            if stratum not in self.acoustics['sigma_df']['stratum_num']:
+                missing_strata.append(stratum)
+        # OR 
+        self.impute_missing_strata()
+        
+        # Fill in missing sigma_bs values
+        self.impute_missing_sigma_bs()
+        
+        # Fit length-weight regression required for biomass calculation
+        self.fit_length_weight_relationship()
+        # OUTPUT: self.statistics['length_weight_arr'] (np.ndarray)
+        
+        # Apply length-weight regression to biological data
+        ### This will largely resemble the sigma_bs calculation
+        ### since it also follows the "use regression to calculate value"
+        ### workflow. So it may be more parsimonious to bundle these 
+        ### under a shared regression function
+        #### This also subsume the original '_get_weight_num_fraction_adult'
+        #### INPUT: 'group' = 'all_ages', 'adult'
+        self.strata_sex_weight_all( ... , group = ...)
+        # OUTPUT: self.biology['weight_df'] (pd.DataFrame)
+        
+        # Synthesize all of the above steps to begin the conversion from 
+        # integrated acoustic backscatter (ala NASC) to estimates of biological
+        # relevance 
+        self.nasc_to_biomass_conversion()
+        # OUTPUT: self.biology['population'] (dict)
+        ### Or something 'general' that encapsulates all of the calculated
+        ### acoustic-derived biometrics
+        # OUTPUT: self.biology['population']['areal_density_df'] (pd.DataFrame)
+        # OUTPUT: self.biology['population']['abundance_df'] (pd.DataFrame)
+        # OUTPUT: self.biology['population']['biomass_df'] (pd.DataFrame)
+        ### This would stitch together "all_ages" w/ age and sex as separate columns
+        ### resulting a melted dataframe rather than 22+ columns (with one column assigned to
+        ### a single age-class)
+        
+        # Calculate stratified mean
+        ### This applies the Jolly and Hampton (1990) stratified mean for transect survey designs
+        ### that provides a weighted mean and variance estimate for specified spatial regions (or other
+        ### similar strata definitions).
+        self.stratified_survey_statistics()
+        # NEW ATTRIBUTE: self.results
+        # OUTPUT: self.results['transect_results'] (dict)
+        ## self.results['transect_results']: {'mean': np.float64, 'cv': np.float64}
+        ### These may be pd.DataFrame instead of np.float64 to allow for grouped calculations (e.g. 
+        ### by sex, age, etc)
+        ## this would provide the coefficient of variation, but the actual variance output 
+        ## is largely arbitrary since it is simply normalized by the mean
+        ### The name of this may be different -- it should be differentiated from the kriged 
+        ### results -- perhaps something like "nominal_results" or something
+        
+    @staticmethod
+    def kriging_analysis():
+        
+        # Organize semivariogram and kriging parameters 
+        ... = self.statistics['kriging']['vario_krig_para_df']
+        ### TODO: Perhaps separate 'vario.__' and 'krig.__' ?
+        
+        # Prepare kriging mesh parameterization
+        ### This is necessary for ensuring that all required parameters
+        ### are mapped to each node within the kriging mesh
+        ### This would replace 'bin_dataset()' in the previous implementation
+        self.initialize_kriging_mesh()    
+        
+        # Fit semivariogram 
+        self.fit_semiovariogram_model()
+        # OUTPUT: self.statistics['semivariogram'] (dict)
+        ### Keys represent each specific model parameter such as the 
+        ### range, sill, nugget, etc.
+        
+        # Apply semiovariogram to interpolate data over the defined kriging mesh
+        self.kriging_interpolation()
+        # OUTPUT: self.statistics['kriging']['modeled_biomass'] (df)
+        ## Or perhaps this would also be appropriate under the 'biology' attribute
+                
+        # Calculate similar stratified survey analysis but this time using
+        # kriged values
+        self.stratified_kriging_statistics()
+        # OUTPUT: self.results['kriging_results'] (dict)
+        ## self.results['kriging_results']: {'mean': np.float64, 'cv': np.float64}
+        ### These may be pd.DataFrame instead of np.float64 to allow for grouped calculations (e.g. 
+        ### by sex, age, etc)
+        
+    @staticmethod
+    def strata_mean_sigma_bs():
+        
+        # Calculate sigma_bs from TS-length regression
+        self.TS_L_regression( self.biology['length_df'] , self.biology['specimen_df'])
+        
+        # Calculate mean value per stratum here 
+        
+    def impute_missing_strata():
+        
+    def fit_length_weight_relationship( length_df , specimen_df ):
+        
+    
+        
+    @staticmethod
+    def TS_L_regression( length_df , specimen_df ):
+        
+        # Import parameters from configuration
+        ts_length_parameters = self.config['TS_length_regression_parameters']['pacific_hake']
+        slope = ts_length_parameters['TS_L_slope']
+        intercept = ts_length_parameters['TS_L_intercept']
+        
+        # Repeat this function for both specimen_df and length_df
+        out = (
+            pd.concat([specimen_df_reframed,
+                    length_df[['haul_num', 'species_id', 'region', 'length', 'length_count']]] ,
+                        ignore_index = True)
+            .groupby(['haul_num', 'species_id', 'region', 'length_count'])
+            .apply(lambda x: to_linear(ts_length_regression(x['length'], slope, intercept)))
+            .reset_index(name='sigma_bs')
+            .drop('level_3', axis=1)
+            )
+        
+        # Create acoustics variable
+        self.acoustics['sigma_bs_df'] = out
+        
+    @staticmethod
+    def initialize_kriging_mesh():
+        
+        # Read in mesh and isobath elements
+        
+        # Standardize coordinates by longitude from isobath
+        self.standardize_coordinates()
+        
     ##############################################################################
     # EVERYTHING BELOW HERE IS PRIMARILY FOR JUST TESTING 
     # THESE FUNCTIONS ARE NOT APPLIED ELSEWHERE
