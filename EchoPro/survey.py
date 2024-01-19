@@ -364,154 +364,218 @@ class Survey:
         # Push to biology attribute 
         self.biology['distributions'] = biometrics
 
-    @staticmethod
-    def transect_analysis():
-        # INPUTS
-        # This is where the users can designate specific transect numbers,
-        # stratum numbers, species, etc. These would be applied to the functions
-        # below
+    def transect_analysis(self ,
+                          species_id: np.float64 = 22500 ):
+    #     # INPUTS
+    #     # This is where the users can designate specific transect numbers,
+    #     # stratum numbers, species, etc. These would be applied to the functions
+    #     # below
         
-        # Initialize new attribute
-        self.results = {}
-        #### TODO: THIS SHOULD BE ADDED TO THE ORIGINAL SURVEY OBJECT CREATION
-        #### THIS IS INCLUDED HERE FOR NOW FOR TESTING PURPOSES -- ALL CAPS IS CRUISE
-        #### CONTROL FOR "REMEMBER TO MAKE THIS CHANGE BRANDYN !!!"
+    #     # Initialize new attribute
+    #     self.results = {}
+    #     #### TODO: THIS SHOULD BE ADDED TO THE ORIGINAL SURVEY OBJECT CREATION
+    #     #### THIS IS INCLUDED HERE FOR NOW FOR TESTING PURPOSES -- ALL CAPS IS CRUISE
+    #     #### CONTROL FOR "REMEMBER TO MAKE THIS CHANGE BRANDYN !!!"
                 
-        # Calculate sigma_bs per stratum        
-        self.strata_mean_sigma_bs()
-        # OUTPUT: self.acoustics['sigma_df'] (pd.DataFrame)
+        # Calculate sigma_bs per stratum 
+        ### This will also provide dataframes for the length-binned, mean haul, and mean strata sigma_bs       
+        self.strata_mean_sigma_bs( species_id )
         
-        # Fill in missing strata data 
-        ### TODO: This does not necessarily need to be its own function
-        ### It also does not need to resemble the original source code (ie for loop)
-        missing_strata = []
-        for stratum in self.spatial['strata_df']['stratum_num']:
-            if stratum not in self.acoustics['sigma_df']['stratum_num']:
-                missing_strata.append(stratum)
-        # OR 
-        self.impute_missing_strata()
+        # Fill in missing strata sigma_bs values
+        # self.impute_missing_sigma_bs()
+    #     ### TODO: This does not necessarily need to be its own function
+    #     ### It also does not need to resemble the original source code (ie for loop)
+    #     missing_strata = []
+    #     for stratum in self.spatial['strata_df']['stratum_num']:
+    #         if stratum not in self.acoustics['sigma_df']['stratum_num']:
+    #             missing_strata.append(stratum)
+    #     # OR 
+    #     self.impute_missing_strata()
         
         # Fill in missing sigma_bs values
         self.impute_missing_sigma_bs()
         
-        # Fit length-weight regression required for biomass calculation
-        self.fit_length_weight_relationship()
-        # OUTPUT: self.statistics['length_weight_arr'] (np.ndarray)
+    #     # Fit length-weight regression required for biomass calculation
+    #     self.fit_length_weight_relationship()
+    #     # OUTPUT: self.statistics['length_weight_arr'] (np.ndarray)
         
-        # Apply length-weight regression to biological data
-        ### This will largely resemble the sigma_bs calculation
-        ### since it also follows the "use regression to calculate value"
-        ### workflow. So it may be more parsimonious to bundle these 
-        ### under a shared regression function
-        #### This also subsume the original '_get_weight_num_fraction_adult'
-        #### INPUT: 'group' = 'all_ages', 'adult'
-        self.strata_sex_weight_all( ... , group = ...)
-        # OUTPUT: self.biology['weight_df'] (pd.DataFrame)
+    #     # Apply length-weight regression to biological data
+    #     ### This will largely resemble the sigma_bs calculation
+    #     ### since it also follows the "use regression to calculate value"
+    #     ### workflow. So it may be more parsimonious to bundle these 
+    #     ### under a shared regression function
+    #     #### This also subsume the original '_get_weight_num_fraction_adult'
+    #     #### INPUT: 'group' = 'all_ages', 'adult'
+    #     self.strata_sex_weight_all( ... , group = ...)
+    #     # OUTPUT: self.biology['weight_df'] (pd.DataFrame)
         
-        # Synthesize all of the above steps to begin the conversion from 
-        # integrated acoustic backscatter (ala NASC) to estimates of biological
-        # relevance 
-        self.nasc_to_biomass_conversion()
-        # OUTPUT: self.biology['population'] (dict)
-        ### Or something 'general' that encapsulates all of the calculated
-        ### acoustic-derived biometrics
-        # OUTPUT: self.biology['population']['areal_density_df'] (pd.DataFrame)
-        # OUTPUT: self.biology['population']['abundance_df'] (pd.DataFrame)
-        # OUTPUT: self.biology['population']['biomass_df'] (pd.DataFrame)
-        ### This would stitch together "all_ages" w/ age and sex as separate columns
-        ### resulting a melted dataframe rather than 22+ columns (with one column assigned to
-        ### a single age-class)
+    #     # Synthesize all of the above steps to begin the conversion from 
+    #     # integrated acoustic backscatter (ala NASC) to estimates of biological
+    #     # relevance 
+    #     self.nasc_to_biomass_conversion()
+    #     # OUTPUT: self.biology['population'] (dict)
+    #     ### Or something 'general' that encapsulates all of the calculated
+    #     ### acoustic-derived biometrics
+    #     # OUTPUT: self.biology['population']['areal_density_df'] (pd.DataFrame)
+    #     # OUTPUT: self.biology['population']['abundance_df'] (pd.DataFrame)
+    #     # OUTPUT: self.biology['population']['biomass_df'] (pd.DataFrame)
+    #     ### This would stitch together "all_ages" w/ age and sex as separate columns
+    #     ### resulting a melted dataframe rather than 22+ columns (with one column assigned to
+    #     ### a single age-class)
         
-        # Calculate stratified mean
-        ### This applies the Jolly and Hampton (1990) stratified mean for transect survey designs
-        ### that provides a weighted mean and variance estimate for specified spatial regions (or other
-        ### similar strata definitions).
-        self.stratified_survey_statistics()
-        # NEW ATTRIBUTE: self.results
-        # OUTPUT: self.results['transect_results'] (dict)
-        ## self.results['transect_results']: {'mean': np.float64, 'cv': np.float64}
-        ### These may be pd.DataFrame instead of np.float64 to allow for grouped calculations (e.g. 
-        ### by sex, age, etc)
-        ## this would provide the coefficient of variation, but the actual variance output 
-        ## is largely arbitrary since it is simply normalized by the mean
-        ### The name of this may be different -- it should be differentiated from the kriged 
-        ### results -- perhaps something like "nominal_results" or something
+    #     # Calculate stratified mean
+    #     ### This applies the Jolly and Hampton (1990) stratified mean for transect survey designs
+    #     ### that provides a weighted mean and variance estimate for specified spatial regions (or other
+    #     ### similar strata definitions).
+    #     self.stratified_survey_statistics()
+    #     # NEW ATTRIBUTE: self.results
+    #     # OUTPUT: self.results['transect_results'] (dict)
+    #     ## self.results['transect_results']: {'mean': np.float64, 'cv': np.float64}
+    #     ### These may be pd.DataFrame instead of np.float64 to allow for grouped calculations (e.g. 
+    #     ### by sex, age, etc)
+    #     ## this would provide the coefficient of variation, but the actual variance output 
+    #     ## is largely arbitrary since it is simply normalized by the mean
+    #     ### The name of this may be different -- it should be differentiated from the kriged 
+    #     ### results -- perhaps something like "nominal_results" or something
         
-    @staticmethod
-    def kriging_analysis():
+    # @staticmethod
+    # def kriging_analysis():
         
-        # Organize semivariogram and kriging parameters 
-        ... = self.statistics['kriging']['vario_krig_para_df']
-        ### TODO: Perhaps separate 'vario.__' and 'krig.__' ?
+    #     # Organize semivariogram and kriging parameters 
+    #     ... = self.statistics['kriging']['vario_krig_para_df']
+    #     ### TODO: Perhaps separate 'vario.__' and 'krig.__' ?
         
-        # Prepare kriging mesh parameterization
-        ### This is necessary for ensuring that all required parameters
-        ### are mapped to each node within the kriging mesh
-        ### This would replace 'bin_dataset()' in the previous implementation
-        self.initialize_kriging_mesh()    
+    #     # Prepare kriging mesh parameterization
+    #     ### This is necessary for ensuring that all required parameters
+    #     ### are mapped to each node within the kriging mesh
+    #     ### This would replace 'bin_dataset()' in the previous implementation
+    #     self.initialize_kriging_mesh()    
         
-        # Fit semivariogram 
-        self.fit_semiovariogram_model()
-        # OUTPUT: self.statistics['semivariogram'] (dict)
-        ### Keys represent each specific model parameter such as the 
-        ### range, sill, nugget, etc.
+    #     # Fit semivariogram 
+    #     self.fit_semiovariogram_model()
+    #     # OUTPUT: self.statistics['semivariogram'] (dict)
+    #     ### Keys represent each specific model parameter such as the 
+    #     ### range, sill, nugget, etc.
         
-        # Apply semiovariogram to interpolate data over the defined kriging mesh
-        self.kriging_interpolation()
-        # OUTPUT: self.statistics['kriging']['modeled_biomass'] (df)
-        ## Or perhaps this would also be appropriate under the 'biology' attribute
+    #     # Apply semiovariogram to interpolate data over the defined kriging mesh
+    #     self.kriging_interpolation()
+    #     # OUTPUT: self.statistics['kriging']['modeled_biomass'] (df)
+    #     ## Or perhaps this would also be appropriate under the 'biology' attribute
                 
-        # Calculate similar stratified survey analysis but this time using
-        # kriged values
-        self.stratified_kriging_statistics()
-        # OUTPUT: self.results['kriging_results'] (dict)
-        ## self.results['kriging_results']: {'mean': np.float64, 'cv': np.float64}
-        ### These may be pd.DataFrame instead of np.float64 to allow for grouped calculations (e.g. 
-        ### by sex, age, etc)
+    #     # Calculate similar stratified survey analysis but this time using
+    #     # kriged values
+    #     self.stratified_kriging_statistics()
+    #     # OUTPUT: self.results['kriging_results'] (dict)
+    #     ## self.results['kriging_results']: {'mean': np.float64, 'cv': np.float64}
+    #     ### These may be pd.DataFrame instead of np.float64 to allow for grouped calculations (e.g. 
+    #     ### by sex, age, etc)
         
-    @staticmethod
-    def strata_mean_sigma_bs():
+    def strata_mean_sigma_bs( self ,
+                              species_id: np.float64 = 22500 ):
         
-        # Calculate sigma_bs from TS-length regression
-        self.TS_L_regression( self.biology['length_df'] , self.biology['specimen_df'])
+        # Reformat 'specimen_df' to match the same format as 'len_df'
+        ### First make copies of each
+        specimen_df_copy = self.biology['specimen_df'].copy()
+        length_df_copy = self.biology['length_df'].copy()
         
-        # Calculate mean value per stratum here 
+        ### Iterate through 'specimen_df_copy' to grab 'length' and the number of values in that bin
+        ### Indexed by 'haul_num' , 'species_id' , 'region' , 'length'
+        spec_df_reframed = (
+            specimen_df_copy
+            .groupby(['haul_num', 'species_id', 'region', 'length'])
+            .apply(lambda x: len(x['length']))
+            .reset_index(name='length_count')
+            )
         
-    def impute_missing_strata():
+        ### Concatenate the two dataframes
+        all_length_df = pd.concat( [ spec_df_reframed , length_df_copy ] , join = 'inner' )
         
-    def fit_length_weight_relationship( length_df , specimen_df ):
-        
-    
-        
-    @staticmethod
-    def TS_L_regression( length_df , specimen_df ):
+        ### Filter out the correct species
+        all_length_df = all_length_df[ all_length_df.species_id == species_id ]
         
         # Import parameters from configuration
         ts_length_parameters = self.config['TS_length_regression_parameters']['pacific_hake']
         slope = ts_length_parameters['TS_L_slope']
         intercept = ts_length_parameters['TS_L_intercept']
         
-        # Repeat this function for both specimen_df and length_df
-        out = (
-            pd.concat([specimen_df_reframed,
-                    length_df[['haul_num', 'species_id', 'region', 'length', 'length_count']]] ,
-                        ignore_index = True)
-            .groupby(['haul_num', 'species_id', 'region', 'length_count'])
-            .apply(lambda x: to_linear(ts_length_regression(x['length'], slope, intercept)))
-            .reset_index(name='sigma_bs')
-            .drop('level_3', axis=1)
-            )
+        # Convert length values into TS
+        ### ??? TODO: Not necessary for this operation, but may be useful to store for future use ?
+        all_length_df[ 'TS' ] = ts_length_regression( all_length_df[ 'length' ] , slope , intercept )
         
-        # Create acoustics variable
-        self.acoustics['sigma_bs_df'] = out
+        # Convert TS into sigma_bs
+        all_length_df[ 'sigma_bs' ] = to_linear( all_length_df[ 'TS' ] )
         
-    @staticmethod
-    def initialize_kriging_mesh():
+        # Calculate the weighted mean sigma_bs per haul
+        ### This will track both the mean sigma_bs and sample size since this will propagate as a
+        ### grouped mean contained with a shared stratum
+        mean_haul_sigma_bs = (
+            all_length_df
+            .groupby(['haul_num' , 'species_id' , 'region'])[['sigma_bs' , 'length_count']]
+            .apply(lambda x: np.average( x['sigma_bs'] , weights=x['length_count']))
+            .to_frame('mean_sigma_bs')
+            .reset_index()
+        )
+                
+        # Now these values can be re-merged with stratum information and averaged over strata
+        mean_strata_sigma_bs = (
+            mean_haul_sigma_bs
+            .merge( self.spatial['strata_df'].copy() , on = 'haul_num' , how='left' )
+            .groupby(['stratum_num' , 'species_id'])['mean_sigma_bs']
+            .mean()
+            .reset_index()
+        )
         
-        # Read in mesh and isobath elements
+        # Add back into object
+        self.acoustics['sigma_bs'] = {
+            'length_binned': all_length_df ,
+            'haul_mean': mean_haul_sigma_bs ,
+            'strata_mean': mean_strata_sigma_bs
+        }
+    
+    def impute_missing_sigma_bs(self):
         
-        # Standardize coordinates by longitude from isobath
-        self.standardize_coordinates()
+        # Collect all possible strata values
+        strata_options = np.unique(self.spatial['strata_df'].copy().stratum_num)
+        
+        #
+        strata_mean = self.acoustics['sigma_bs']['strata_mean'].copy()
+        
+        # impute missing strata values
+        present_strata = np.unique(strata_mean['stratum_num']).astype(int)
+        missing_strata = strata_options[~(np.isin(strata_options, present_strata))]
+        
+        if len(missing_strata) > 0:            
+            sigma_bs_impute = pd.concat([strata_mean , 
+                                            pd.DataFrame({'stratum_num': missing_strata ,
+                                                        'species_id': np.unique( strata_mean.species_id ) ,
+                                                        'mean_sigma_bs': np.nan})]).sort_values('stratum_num')        
+            
+            # Find strata intervals to impute over        
+            for i in missing_strata:
+                strata_floor = present_strata[present_strata < i]
+                strata_ceil = present_strata[present_strata > i]
+
+                new_stratum_below = np.max(strata_floor) if strata_floor.size > 0 else None
+                new_stratum_above = np.min(strata_ceil) if strata_ceil.size > 0 else None      
+                
+                sigma_bs_indexed = sigma_bs_impute[sigma_bs_impute['stratum_num'].isin([new_stratum_below, new_stratum_above])]
+                
+                sigma_bs_impute.loc[sigma_bs_impute.stratum_num==i , 'mean_sigma_bs'] = sigma_bs_indexed['mean_sigma_bs'].mean()
+                
+            self.acoustics['sigma_bs']['strata_mean'] = sigma_bs_impute
+
+        
+   
+        
+    # def fit_length_weight_relationship( length_df , specimen_df ):
+ 
+    # @staticmethod
+    # def initialize_kriging_mesh():
+        
+    #     # Read in mesh and isobath elements
+        
+    #     # Standardize coordinates by longitude from isobath
+    #     self.standardize_coordinates()
         
     ##############################################################################
     # EVERYTHING BELOW HERE IS PRIMARILY FOR JUST TESTING 
