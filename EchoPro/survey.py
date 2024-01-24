@@ -8,7 +8,7 @@ from .core import CONFIG_MAP, LAYER_NAME_MAP
 ### !!! TODO : This is a temporary import call -- this will need to be changed to 
 # the correct relative structure (i.e. '.core' instead of 'EchoPro.core' at a future testing step)
 import pprint
-from .utils.data_structure_utils import push_nested_dict
+from .computation.operations import quantize_variables , count_variable
 from .utils.data_file_validation import validate_data_columns
 from .computation.acoustics import to_linear , ts_length_regression
 ### !!! TODO : This is a temporary import call -- this will need to be changed to 
@@ -199,20 +199,21 @@ class Survey:
                     # Validate datatypes within dataset and make appropriate changes to dtypes (if necessary)
                     # -- This first enforces the correct dtype for each imported column
                     # -- This then assigns the imported data to the correct class attribute
-                    self.read_validated_data( file_name , sheet_name , config_map , validation_settings )
+                    self.read_validated_data( file_name , sheet_name , config_map , validation_settings )     
+        
 
         ### Merge haul numbers and regional indices across biological variables
         # Also add strata values/indices here alongside transect numbers 
         # -- Step 1: Consolidate information linking haul-transect-stratum
         self.biology['haul_to_transect_df'] = (
             self.biology['haul_to_transect_df']
-            .merge(self.spatial['strata_df'], on =['haul_num'] , how = 'outer' )
+            .merge(self.spatial['strata_df'], on ='haul_num' , how = 'outer' )
         )
         # -- Step 2: Distribute this information to the other biological variables
         # ---- Specimen 
         self.biology['specimen_df'] = (
             self.biology['specimen_df']
-            .merge( self.biology['haul_to_transect_df'] , on = ['haul_num' , 'region' ] )
+            .merge( self.biology['haul_to_transect_df'] , on = ['haul_num' , 'region' ] ) 
         )
         # ---- Length
         self.biology['length_df'] = (
@@ -327,42 +328,56 @@ class Survey:
         else:
             raise ValueError('Unexpected data attribute structure. Check API settings located in the configuration YAML and core.py')
         
-        # ------------------------------------------------------------------------------------------------
-        # THIS IS A TEMPORARY FUNCTION
-        # -- This PARASITIC_TREE function is temporarily here to continue validating data attributes are
-        # -- being organized in an expected manner
-        # self.PARASITIC_TREE( config_map )
-        
     def biometric_distributions( self ):
         """
         Expand bin parameters into actual bins for length and age distributions
         """
 
         # Pull the relevant age and length bins and output a dictionary
-        biometrics = {
-            'length_bins_arr': np.linspace( self.config['bio_hake_len_bin'][0] ,
-                                        self.config['bio_hake_len_bin'][1] ,
-                                        self.config['bio_hake_len_bin'][2] ,
-                                        dtype = np.int64 ) ,
-            'age_bins_arr': np.linspace( self.config['bio_hake_age_bin'][0] ,
-                                    self.config['bio_hake_age_bin'][1] , 
-                                    self.config['bio_hake_age_bin'][2] ) ,
-        }
+        length_bins = np.linspace( self.config['bio_hake_len_bin'][0] ,
+                           self.config['bio_hake_len_bin'][1] ,
+                           self.config['bio_hake_len_bin'][2] ,
+                           dtype = np.float64 )
 
-        # Update the configuration so these variables are mappable
+        age_bins = np.linspace( self.config['bio_hake_age_bin'][0] ,
+                                self.config['bio_hake_age_bin'][1] , 
+                                self.config['bio_hake_age_bin'][2] ,
+                                dtype = np.float64 )
+
+        ### Discretize parameters into arrays of binned values that will be used to 
+        ### quantize the distributions in calculations downstream
+        # Determine bin widths
+        length_binwidth = np.mean( np.diff( length_bins / 2.0 ) )
+        age_binwidth = np.mean( np.diff( age_bins / 2.0 ) )
+
+        # Now the bins are centered with the first and last elements properly appended
+        # These create an along-array interval such that values can be cut/discretized into
+        # bins that fall between each value/element of the array
+        length_centered_bins = np.concatenate( ( [ length_bins[0] - length_binwidth ] ,
+                                                length_bins + length_binwidth ) )
+        age_centered_bins = np.concatenate( ( [ age_bins[0] - age_binwidth ] ,
+                                            age_bins + age_binwidth ) ) 
+
+        # Construct dictionary that will be move values within the configuration file 
         self.config['biometrics'] = {
-            'parameters': {
-                'bio_hake_len_bin': self.config['bio_hake_len_bin'] ,
-                'bio_hake_age_bin': self.config['bio_hake_age_bin']
-            } ,
-
-            # THIS LINE IS SOLELY RELATED TO THE PARASITIC TREE FUNCTIONALITY
-            'dict_tree': ['biology', 'distributions', ['age_bins', 'length_bins']]
+                    'parameters': {
+                        'bio_hake_len_bin': self.config['bio_hake_len_bin'] ,
+                        'bio_hake_age_bin': self.config['bio_hake_age_bin']
+                    }
         }
         del self.config['bio_hake_len_bin'], self.config['bio_hake_age_bin']
 
-        # Push to biology attribute 
-        self.biology['distributions'] = biometrics
+        # Add to the biological data attribute so it can be accessed downstream
+        self.biology['distributions'] = {
+            'length': {
+                'length_bins_arr': length_bins ,
+                'length_interval_arr': length_centered_bins ,
+            } ,
+            'age': {
+                'age_bins_arr': age_bins ,
+                'age_interval_arr': age_centered_bins ,
+            } ,
+        }
 
     def transect_analysis(self ,
                           species_id: np.float64 = 22500 ):
@@ -376,38 +391,21 @@ class Survey:
     #     #### TODO: THIS SHOULD BE ADDED TO THE ORIGINAL SURVEY OBJECT CREATION
     #     #### THIS IS INCLUDED HERE FOR NOW FOR TESTING PURPOSES -- ALL CAPS IS CRUISE
     #     #### CONTROL FOR "REMEMBER TO MAKE THIS CHANGE BRANDYN !!!"
+    
+        # Initialize major data structures that will be added (**tentative names**)
+        self.acoustics['sigma_bs'] = {}
+        self.biology['weight'] = {}
+        self.statistics['length_weight'] = {}
                 
         # Calculate sigma_bs per stratum 
         ### This will also provide dataframes for the length-binned, mean haul, and mean strata sigma_bs       
-        self.strata_mean_sigma_bs( species_id )
+        self.strata_mean_sigma_bs( species_id )        
         
-        # Fill in missing strata sigma_bs values
-        # self.impute_missing_sigma_bs()
-    #     ### TODO: This does not necessarily need to be its own function
-    #     ### It also does not need to resemble the original source code (ie for loop)
-    #     missing_strata = []
-    #     for stratum in self.spatial['strata_df']['stratum_num']:
-    #         if stratum not in self.acoustics['sigma_df']['stratum_num']:
-    #             missing_strata.append(stratum)
-    #     # OR 
-    #     self.impute_missing_strata()
-        
-        # Fill in missing sigma_bs values
-        self.impute_missing_sigma_bs()
-        
-    #     # Fit length-weight regression required for biomass calculation
-    #     self.fit_length_weight_relationship()
-    #     # OUTPUT: self.statistics['length_weight_arr'] (np.ndarray)
-        
-    #     # Apply length-weight regression to biological data
-    #     ### This will largely resemble the sigma_bs calculation
-    #     ### since it also follows the "use regression to calculate value"
-    #     ### workflow. So it may be more parsimonious to bundle these 
-    #     ### under a shared regression function
-    #     #### This also subsume the original '_get_weight_num_fraction_adult'
-    #     #### INPUT: 'group' = 'all_ages', 'adult'
-    #     self.strata_sex_weight_all( ... , group = ...)
-    #     # OUTPUT: self.biology['weight_df'] (pd.DataFrame)
+        # Fit length-weight regression required for biomass calculation
+        self.fit_binned_length_weight_relationship( species_id )
+    
+        # Calculate the average sex-distributed weight and proportion per stratum
+        self.strata_sex_weight_proportions( species_id )
         
     #     # Synthesize all of the above steps to begin the conversion from 
     #     # integrated acoustic backscatter (ala NASC) to estimates of biological
@@ -471,27 +469,43 @@ class Survey:
     #     ### by sex, age, etc)
         
     def strata_mean_sigma_bs( self ,
-                              species_id: np.float64 = 22500 ):
+                              species_id: np.float64 ):
+        """
+        Calculates the stratified mean sigma_bs for each stratum
+
+        Parameters
+        ----------
+        species_id : np.float64
+            Numeric code representing a particular species of interest
+
+        Notes
+        -----
+        This function iterates through eahc stratum to fit acoustic target 
+        strength (TS, dB re. 1 m^2) values based on length distributions recorded for each
+        stratum. These fitted values are then convereted from the logarithmic
+        to linear domain (sigma_bs, m^2) and subsequently averaged. These are required for 
+        later functions that will convert vertically integrated backscatter (e.g. the nautical
+        area scattering coefficient, or NASC, m^2 nmi^-2) to estimates of areal density (animals nmi^-2).
+        """
         
         # Reformat 'specimen_df' to match the same format as 'len_df'
         ### First make copies of each
         specimen_df_copy = self.biology['specimen_df'].copy()
+        specimen_df_copy = specimen_df_copy[ specimen_df_copy.species_id == species_id ]
         length_df_copy = self.biology['length_df'].copy()
+        length_df_copy = length_df_copy[ length_df_copy.species_id == species_id ]
         
         ### Iterate through 'specimen_df_copy' to grab 'length' and the number of values in that bin
-        ### Indexed by 'haul_num' , 'species_id' , 'region' , 'length'
+        ### Indexed by 'haul_num' , 'stratum_num' , 'species_id' , 'region' , 'length'
         spec_df_reframed = (
             specimen_df_copy
-            .groupby(['haul_num', 'species_id', 'region', 'length'])
+            .groupby(['haul_num', 'stratum_num' , 'species_id', 'length'])
             .apply(lambda x: len(x['length']))
             .reset_index(name='length_count')
             )
         
         ### Concatenate the two dataframes
         all_length_df = pd.concat( [ spec_df_reframed , length_df_copy ] , join = 'inner' )
-        
-        ### Filter out the correct species
-        all_length_df = all_length_df[ all_length_df.species_id == species_id ]
         
         # Import parameters from configuration
         ts_length_parameters = self.config['TS_length_regression_parameters']['pacific_hake']
@@ -510,7 +524,7 @@ class Survey:
         ### grouped mean contained with a shared stratum
         mean_haul_sigma_bs = (
             all_length_df
-            .groupby(['haul_num' , 'species_id' , 'region'])[['sigma_bs' , 'length_count']]
+            .groupby(['haul_num' , 'stratum_num' , 'species_id' ])[['sigma_bs' , 'length_count']]
             .apply(lambda x: np.average( x['sigma_bs'] , weights=x['length_count']))
             .to_frame('mean_sigma_bs')
             .reset_index()
@@ -519,7 +533,6 @@ class Survey:
         # Now these values can be re-merged with stratum information and averaged over strata
         mean_strata_sigma_bs = (
             mean_haul_sigma_bs
-            .merge( self.spatial['strata_df'].copy() , on = 'haul_num' , how='left' )
             .groupby(['stratum_num' , 'species_id'])['mean_sigma_bs']
             .mean()
             .reset_index()
@@ -531,9 +544,27 @@ class Survey:
             'haul_mean': mean_haul_sigma_bs ,
             'strata_mean': mean_strata_sigma_bs
         }
-    
-    def impute_missing_sigma_bs(self):
         
+        # Fill in missing sigma_bs values
+        self.impute_missing_sigma_bs( species_id )
+    
+    def impute_missing_sigma_bs( self ,
+                                 species_id: np.float64 ):
+        """
+        Imputes sigma_bs for strata without measurements or values
+
+        Parameters
+        ----------
+        species_id : np.float64
+            Numeric code representing a particular species of interest
+
+        Notes
+        -----
+        This function iterates through all stratum layers to impute either the
+        nearest neighbor or mean sigma_bs for strata that are missing values.
+        """    
+        #### TODO: CURRENTLY : species_id is unused since only hake are being processed, but this will need
+        ### to actually be parameterized in the future
         # Collect all possible strata values
         strata_options = np.unique(self.spatial['strata_df'].copy().stratum_num)
         
@@ -547,8 +578,8 @@ class Survey:
         if len(missing_strata) > 0:            
             sigma_bs_impute = pd.concat([strata_mean , 
                                             pd.DataFrame({'stratum_num': missing_strata ,
-                                                        'species_id': np.unique( strata_mean.species_id ) ,
-                                                        'mean_sigma_bs': np.nan})]).sort_values('stratum_num')        
+                                                         'species_id': np.unique( strata_mean.species_id ) ,
+                                                         'mean_sigma_bs': np.nan})]).sort_values('stratum_num')        
             
             # Find strata intervals to impute over        
             for i in missing_strata:
@@ -562,13 +593,233 @@ class Survey:
                 
                 sigma_bs_impute.loc[sigma_bs_impute.stratum_num==i , 'mean_sigma_bs'] = sigma_bs_indexed['mean_sigma_bs'].mean()
                 
-            self.acoustics['sigma_bs']['strata_mean'] = sigma_bs_impute
-
-        
+            self.acoustics['sigma_bs']['strata_mean'] = sigma_bs_impute        
    
+    
+    def fit_binned_length_weight_relationship( self ,
+                                               species_id: np.float64 ):
+        """
+        Fit a length-weight relationship across discrete bins
+
+        Parameters
+        ----------
+        species_id : np.float64
+            Numeric code representing a particular species of interest
+
+        Notes
+        -----
+        This function first fits a length-weight regression based on measured 
+        values and then produces an array of fitted weight values (based on 
+        binned length values) that are used for later biomass calculations, 
+        weighting, and apportionment.
+        """    
         
-    # def fit_length_weight_relationship( length_df , specimen_df ):
- 
+        ### First make copies of each
+        specimen_df_spp = self.biology['specimen_df'].copy().pipe( lambda df: df.loc[ df.species_id == species_id ] )
+        length_weight_df = specimen_df_spp[['length', 'weight']].dropna(how='any')
+        
+        # pull distribution values
+        length_bins = self.biology['distributions']['length']['length_bins_arr']
+        length_intervals = self.biology['distributions']['length']['length_interval_arr']
+        
+        # length-weight regression
+        [ rate , initial ] = np.polyfit(np.log10(length_weight_df['length']), np.log10(length_weight_df['weight']), 1)
+        
+        # predict weight (fit equation)
+        fitted_weight = 10 ** initial * length_bins ** rate
+               
+        # add to object        
+        self.statistics['length_weight']['regression'] = {
+            'rate': rate ,
+            'initial': initial ,
+        }
+        
+        # summarize mean/samples of length and weight values (binned statistics)
+        length_bin_stats = length_weight_df.quantize_variables( bin_variable = 'length' ,
+                                                                bin_values = length_intervals )
+        
+        # fill bins where n_length < 5 w/ regressed weight values
+        length_bin_stats['modeled_weight'] = length_bin_stats['mean_weight'].copy()
+        low_n_indices = np.where(length_bin_stats['n_weight'].values < 5)[0].copy()   
+        length_bin_stats.loc[low_n_indices, 'modeled_weight'] = fitted_weight[low_n_indices].copy()
+            
+        self.statistics['length_weight']['length_weight_df'] = length_bin_stats
+        
+    def strata_sex_weight_proportions( self ,
+                                       species_id: np.float64 ):
+        """
+        Calculate the total and sex-specific mean weight for each stratum
+
+        Parameters
+        ----------
+        species_id : np.float64
+            Numeric code representing a particular species of interest
+
+        Notes
+        -----
+        This function uses the previously fitted length-weight relationship that, 
+        alongside the measured male-female proportions with predicted weight values,
+        is used to calculate the mean weight for males, females, and total animals 
+        for each strata.
+        """ 
+        
+        ### Reformat 'specimen_df' to match the same format as 'len_df'
+        # First make copies of each
+        specimen_df_copy = self.biology['specimen_df'].copy().pipe( lambda df: df.loc[ df.species_id == species_id ] )
+        length_df_copy = self.biology['length_df'].copy().pipe( lambda df: df.loc[ df.species_id == species_id ] )
+        
+        ### Pull length distribution values
+        length_intervals = self.biology['distributions']['length']['length_interval_arr']   
+        
+        ### Calculate the sex proportions/frequencies for station 1 (length_df) across all strata        
+        length_grouped = (   
+            length_df_copy
+            .discretize_variable( length_intervals , 'length' ) # appends `length_bin` column
+            .assign( group = lambda x: np.where( x['sex'] == int(1) , 'male' , 'female' ) ) # assigns str variable for comprehension
+            .pipe( lambda df: pd.concat( [ df.loc[ df[ 'sex' ] != 3 ] , df.assign( group = 'all' ) ] ) ) # appends male-female to an 'all' dataframe
+            .assign( station = 1 ) # assign station number for later functions
+            )
+        
+        ### Calculate the sex proportions/frequencies for station 2 (specimen_df) across all strata
+        specimen_grouped = (
+            specimen_df_copy
+            .discretize_variable( length_intervals , 'length' ) # appends `length_bin` column
+            .assign( group = lambda x: np.where( x['sex'] == int(1) , 'male' , 'female' ) ) # assigns str variable for comprehension
+            .pipe( lambda df: pd.concat( [ df.loc[ df[ 'sex' ] != 3 ] , df.assign( group = 'all' ) ] ) ) # appends male-female to an 'all' dataframe
+            .assign( station = 2 ) # assign station number for later functions
+        )
+        
+        ### "Meld" the two datasets together to keep downstream code tidy
+        station_sex_length = (
+            specimen_grouped # begin reformatting specimen_grouped so it resembles same structure as length_grouped
+            .meld( length_grouped ) # "meld": reformats specimen_grouped and then concatenates length_grouped 
+            # sum up all of the length values with respect to each length bin
+            .count_variable( contrasts = [ 'group' , 'station' , 'stratum_num' , 'length_bin' ] , # grouping variables
+                             variable = 'length_count' , # target value to apply a function
+                             fun = 'sum' ) # function to apply
+        )
+        
+        ### Calculate total sample size ('group' == 'all') that will convert 'counts' into 'frequency/proportion'
+        total_n = (
+            station_sex_length 
+            .loc[ station_sex_length.group.isin( [ 'all' ] ) ] # filter out to get to just 'all': this is where sex = [ 1 , 2 , 3]
+            .groupby( [ 'stratum_num' ] )[ 'count' ] # group by each stratum with 'count' being the target variable
+            .sum( ) # sum up counts per stratum
+            .reset_index( name = 'n_total' ) # rename index
+        )
+        
+        ### Convert counts in station_sex_length into frequency/proportion
+        station_length_aggregate = (
+            station_sex_length
+            # calculate the within-sample sum and proportions (necessary for the downstream dot product calculation)
+            .pipe( lambda x: x.assign( n_within_station = x.groupby( [ 'group' , 'station' , 'stratum_num' ] )[ 'count' ].transform( sum ) ,
+                                       p_within_station = lambda x: x[ 'count' ] / x[ 'n_within_station' ] ) )
+            .replace( np.nan, 0 ) # remove erroneous NaN (divide by 0 or invalid values)
+            .merge( total_n , on = 'stratum_num' ) # merge station_sex_length with total_n
+            # proportion of each count indexed by each length_bin relative to the stratum total
+            .assign( p_overall_length = lambda x: x[ 'count' ] / x[ 'n_total' ] ,
+                     p_overall_station = lambda x: x[ 'n_within_station' ] / x[ 'n_total' ] )
+            .replace( np.nan, 0 ) # remove erroneous NaN (divide by 0 or invalid values)
+        )
+        
+        ### Calculate the sex distribution across strata
+        sex_proportions = (
+            station_length_aggregate
+            .loc[ station_length_aggregate.group.isin( ['male' , 'female'] ) ] # only parse 'male' and 'female'
+            # create a pivot that will reorient data to the desired shape
+            .pivot_table( index = [ 'group' , 'station' ] , 
+                          columns = [ 'stratum_num' ] , 
+                          values = [ 'p_overall_station' ] )
+            .groupby( 'group' )
+            .sum()
+        )
+        
+        ### Calculate the the proportions each dataset / station contributed within each stratum
+        station_proportions = (
+            station_length_aggregate
+            .loc[ station_length_aggregate.group.isin( [ 'all' ] ) ] # only parse 'all'
+            # create a pivot that will reorient data to the desired shape
+            .pivot_table( index = [ 'group' , 'station' ] , 
+                        columns = 'stratum_num' , 
+                        values = 'p_overall_station' )
+            .groupby( 'station' )
+            .sum()
+        )
+        
+        ### Calculate the sex distribution within each station across strata
+        sex_station_proportions = (
+            station_length_aggregate
+            .loc[ station_length_aggregate.group.isin( ['male' , 'female'] ) ] # only parse 'male' and 'female'
+            # create a pivot that will reorient data to the desired shape
+            .pivot_table( index = [ 'group' , 'station' ] , 
+                        columns = 'stratum_num' , 
+                        values = 'p_overall_station' )
+            .groupby( [ 'group' , 'station' ] )
+            .sum()
+        )
+        
+        ### Merge the station and sex-station indexed proportions to calculate the combined dataset mean fractions
+        sex_stn_prop_merged = (
+            sex_station_proportions
+            .stack( )
+            .reset_index( name = 'p_sex_stn')
+            .merge( station_proportions
+                .stack()
+                .reset_index( name = 'p_stn' ) , on = [ 'stratum_num' , 'station' ] )
+            .pivot_table( columns = 'stratum_num' ,
+                        index = [ 'station' , 'group' ] ,
+                        values = [ 'p_stn' , 'p_sex_stn' ] )    
+        )
+        
+        ### Format the length bin proportions so they resemble a similar table/matrix shape as the above metrics
+        # Indexed / organized by sex , station, and stratum
+        length_proportion_table = (
+            station_length_aggregate
+            .pivot_table( columns = [ 'group' , 'station' , 'stratum_num' ] , 
+                         index = [ 'length_bin' ] ,
+                         values = [ 'p_within_station' ] )[ 'p_within_station' ]
+        )
+        
+        ### Calculate combined station fraction means
+        # Station 1 
+        stn_1_fraction = ( sex_stn_prop_merged.loc[ 1 , ( 'p_stn' ) ]                           
+                          / ( sex_stn_prop_merged.loc[ 1 , ( 'p_stn' ) ] 
+                            + sex_stn_prop_merged.loc[ 2 , ( 'p_sex_stn' ) ] ) )
+        
+        # Station 2
+        stn_2_fraction = ( sex_stn_prop_merged.loc[ 2 , ( 'p_sex_stn' ) ]                          
+                          / ( stn_1_fraction
+                            + sex_stn_prop_merged.loc[ 2 , ( 'p_sex_stn' ) ] ) )
+        
+        ### Calculate the average weight across all animals, males, and females
+        # Pull fitted weight values
+        fitted_weight = self.statistics['length_weight']['length_weight_df']
+        
+        # Total
+        total_weighted_values = ( length_proportion_table.loc[ : , ( 'all' , 1 ) ] * station_proportions.loc[ 1 , ] +
+                                  length_proportion_table.loc[ : , ( 'all' , 2 ) ] * station_proportions.loc[ 2 , ] )
+        total_weight = fitted_weight[ 'modeled_weight' ].dot( total_weighted_values.reset_index( drop = True ) )
+        
+        # Male
+        male_weighted_values = ( length_proportion_table.loc[ : , ( 'male' , 1 ) ] * stn_1_fraction.loc[ 'male' ] +
+                                 length_proportion_table.loc[ : , ( 'male' , 2 ) ] * stn_2_fraction.loc[ 'male' ] )
+        male_weight = fitted_weight[ 'modeled_weight' ].dot( male_weighted_values.reset_index( drop = True ) )
+        
+        # Female
+        female_weighted_values = ( length_proportion_table.loc[ : , ( 'female' , 1 ) ] * stn_1_fraction.loc[ 'female' ] +
+                                   length_proportion_table.loc[ : , ( 'female' , 2 ) ] * stn_2_fraction.loc[ 'female' ] )
+        female_weight = fitted_weight[ 'modeled_weight' ].dot( female_weighted_values.reset_index( drop = True ) )
+        
+        ### Store the data frame in an accessible location
+        self.biology[ 'weight' ][ 'weight_strata_df' ] = pd.DataFrame( {
+            'stratum': total_weight.index ,
+            'female_proportion': sex_proportions.loc[ 'female' , : ][ 'p_overall_station' ].reset_index(drop=True) ,
+            'male_proportion': sex_proportions.loc[ 'male' , : ][ 'p_overall_station' ].reset_index(drop=True) ,
+            'female_average_weight': female_weight ,            
+            'male_average_weight': male_weight ,
+            'total_average_weight': total_weight
+        } )
+        
     # @staticmethod
     # def initialize_kriging_mesh():
         
@@ -576,84 +827,3 @@ class Survey:
         
     #     # Standardize coordinates by longitude from isobath
     #     self.standardize_coordinates()
-        
-    ##############################################################################
-    # EVERYTHING BELOW HERE IS PRIMARILY FOR JUST TESTING 
-    # THESE FUNCTIONS ARE NOT APPLIED ELSEWHERE
-    # These are all wrapped within PARASITIC_TREE(...)
-    ##############################################################################
-    # def PARASITIC_TREE( self ,
-    #                     config_map ):
-    #     # From LAYER_NAME_MAP, rename the original top layer (e.g. 'stratification' -> 'spatial')
-    #     LAYER_KEY = LAYER_NAME_MAP.get(config_map[0])
-
-    #     # From LAYER_NAME_MAP, add the 'superlayer', if defined, that adjusts the intended dictionary
-    #     # nested tree structure (e.g. 'kriging/vars' -> 'statistics/kriging/vars')
-    #     updated_layers = LAYER_KEY['superlayer'] + [LAYER_KEY['name']] + config_map[1:]
-
-    #     # Determine how deep 'data_layers' is represented within the dictionary
-    #     # This is required for mapping dataframes with an appropriately named
-    #     # data layer name appended with '_df' (e.g. 'length' -> 'length_df')
-    #     updated_name_bool = set(updated_layers).intersection(LAYER_KEY['data'])
-    #     updated_layer_index = updated_layers.index(''.join(updated_name_bool))
-
-    #     # Append '_df' to the correct data layer name. This will change the name located within the 
-    #     # configuration to provide context of the datatype (in this case, as dataframe).
-    #     updated_layers[updated_layer_index] = ''.join(updated_name_bool)+'_df'
-
-    #     # Push the new nested tree data path to the config under the key: 'dict_tree'
-    #     push_nested_dict(self.config, config_map + ['dict_tree'], updated_layers)
-    
-    # @staticmethod
-    # def add_to_tree( current_layer: dict , 
-    #                 data_layers: np.ndarray , 
-    #                 value: list ):
-    #     """
-    #     Map out the data path/structure of a specific branch within a nested
-    #     data tree/dictionary.
-    #     """
-
-    #     # Iterate through the next branch that represent the 
-    #     # nested data tree structure of each data attribute
-    #     for i, layer in enumerate(data_layers):
-    #         if i < len(data_layers) - 1:
-    #             if layer not in current_layer:
-    #                 current_layer[layer] = {}
-    #             current_layer = current_layer[layer]
-    #         else:
-    #             if i == len(data_layers) - 1:
-    #                 current_layer.setdefault(layer, []).append(value)
-    #             else:
-    #                 current_layer = current_layer.setdefault(layer, [])
-
-    # def populate_tree( self ):
-    #     """
-    #     Construct and populate the data structure tree and append it to the metadata attribute.
-    #     """
-
-    #     # Initialize the 'self.meta' attribute and the dictionary 'tree'.
-    #     self.meta = {'tree': {}}
-
-    #     # 'Normalize' the dictionary into a dataframe
-    #     flat_configuration_table = pd.json_normalize(self.config)
-
-    #     # Parse only the configuration values labeled 'dict_tree' -- then flatten
-    #     tree_map = flat_configuration_table.filter(regex="dict_tree").values.flatten()
-
-    #     # Iterate through all of the possible values in 'tree_map' to iteratively construct
-    #     # a tree-like map of the various layers/levels/nodes contained within each of the 
-    #     # class data attributes. This enables everything to be viewed in the console via the
-    #     # 'summary' property function defined below.
-    #     for data_layers in tree_map:
-    #         self.add_to_tree(self.meta['tree'], data_layers[:-1], data_layers[-1])
-
-    # Note : This function isn't necessary, but it is certainly helpful for debugging code along the way
-    # So it may be worth removing in the future, or may be a helpful QOL utility for users. ¯\_(ツ)_/¯ 
-    # @property
-    # def summary( self ):
-    #     """
-    #     This provides a 'summary' property that can be used to quickly reference how the
-    #     data attributes (and their respective nested trees) are organized within the Survey
-    #     class object.
-    #     """
-    #     return pprint.pprint(self.meta.get('tree',{}))
