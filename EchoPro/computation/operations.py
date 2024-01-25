@@ -5,9 +5,9 @@ from typing import Union , List
 from typing import Callable
     
 @patch_method_to_DataFrame( pd.DataFrame )
-def discretize_variable( dataframe: pd.DataFrame , 
-                         bin_values: np.ndarray ,
-                         bin_variable: str ):
+def bin_variable( dataframe: pd.DataFrame , 
+                  bin_values: np.ndarray ,
+                  bin_variable: str ):
     """
     Discretizes the target variable into user-defined bins
 
@@ -32,12 +32,12 @@ def discretize_variable( dataframe: pd.DataFrame ,
     )
     
 @patch_method_to_DataFrame( pd.DataFrame )
-def quantize_variables( dataframe: pd.DataFrame ,
-                        bin_variable: str ,
-                        bin_values: np.ndarray,
-                        contrasts: Union[str, List[str]] = [] ,
-                        variables: Union[str, List[str]] = ['length', 'weight'] ,
-                        functions: Union[str, List[str]] = ['mean', 'size'] ):
+def bin_stats( dataframe: pd.DataFrame ,
+               bin_variable: str ,
+               bin_values: np.ndarray,
+               contrasts: Union[str, List[str]] = [] ,
+               variables: Union[str, List[str]] = ['length', 'weight'] ,
+               functions: Union[str, List[str]] = ['mean', 'size'] ):
     """
     Quantizes dataset given user-defined intervals/bins
 
@@ -90,7 +90,7 @@ def quantize_variables( dataframe: pd.DataFrame ,
        
     return (
         dataframe # input dataframe 
-        .discretize_variable( bin_values , bin_variable ) # discretize variable into bins )
+        .bin_variable( bin_values , bin_variable ) # discretize variable into bins )
         .groupby( [f'{bin_variable}_bin'] + con_lst ) # group by these variables/contrasts
         .agg( aggregation_dict ) # apply specified functions
         .replace( np.nan , 0 ) # replace NaN w/ 0's

@@ -8,7 +8,7 @@ from .core import CONFIG_MAP, LAYER_NAME_MAP
 ### !!! TODO : This is a temporary import call -- this will need to be changed to 
 # the correct relative structure (i.e. '.core' instead of 'EchoPro.core' at a future testing step)
 import pprint
-from .computation.operations import quantize_variables , count_variable
+from .computation.operations import bin_variable , bin_stats , count_variable
 from .utils.data_file_validation import validate_data_columns
 from .computation.acoustics import to_linear , ts_length_regression
 ### !!! TODO : This is a temporary import call -- this will need to be changed to 
@@ -641,7 +641,7 @@ class Survey:
         }
         
         # summarize mean/samples of length and weight values (binned statistics)
-        length_bin_stats = length_weight_df.quantize_variables( bin_variable = 'length' ,
+        length_bin_stats = length_weight_df.bin_stats( bin_variable = 'length' ,
                                                                 bin_values = length_intervals )
         
         # fill bins where n_length < 5 w/ regressed weight values
@@ -680,7 +680,7 @@ class Survey:
         ### Calculate the sex proportions/frequencies for station 1 (length_df) across all strata        
         length_grouped = (   
             length_df_copy
-            .discretize_variable( length_intervals , 'length' ) # appends `length_bin` column
+            .bin_variable( length_intervals , 'length' ) # appends `length_bin` column
             .assign( group = lambda x: np.where( x['sex'] == int(1) , 'male' , 'female' ) ) # assigns str variable for comprehension
             .pipe( lambda df: pd.concat( [ df.loc[ df[ 'sex' ] != 3 ] , df.assign( group = 'all' ) ] ) ) # appends male-female to an 'all' dataframe
             .assign( station = 1 ) # assign station number for later functions
@@ -689,7 +689,7 @@ class Survey:
         ### Calculate the sex proportions/frequencies for station 2 (specimen_df) across all strata
         specimen_grouped = (
             specimen_df_copy
-            .discretize_variable( length_intervals , 'length' ) # appends `length_bin` column
+            .bin_variable( length_intervals , 'length' ) # appends `length_bin` column
             .assign( group = lambda x: np.where( x['sex'] == int(1) , 'male' , 'female' ) ) # assigns str variable for comprehension
             .pipe( lambda df: pd.concat( [ df.loc[ df[ 'sex' ] != 3 ] , df.assign( group = 'all' ) ] ) ) # appends male-female to an 'all' dataframe
             .assign( station = 2 ) # assign station number for later functions
