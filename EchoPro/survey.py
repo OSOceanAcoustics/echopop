@@ -580,11 +580,21 @@ class Survey:
         present_strata = np.unique(strata_mean['stratum_num']).astype(int)
         missing_strata = strata_options[~(np.isin(strata_options, present_strata))]
         
-        if len(missing_strata) > 0:            
-            sigma_bs_impute = pd.concat([strata_mean , 
-                                            pd.DataFrame({'stratum_num': missing_strata ,
-                                                         'species_id': np.unique( strata_mean.species_id ) ,
-                                                         'mean_sigma_bs': np.nan})]).sort_values('stratum_num')        
+        if len(missing_strata) > 0:
+            
+            # Concatenate the existing data with a DataFrame including the missing strata 
+            # with NaN placeholders for 'mean_sigma_bs'            
+            sigma_bs_impute = (
+                pd.concat( [ strata_mean , 
+                             pd.DataFrame( {
+                                 'stratum_num': missing_strata , 
+                                 'species_id': np.repeat( np.unique( strata_mean.species_id ) ,
+                                                         len( missing_strata ) ) ,
+                                 'mean_sigma_bs': np.repeat( np.nan ,
+                                                             len( missing_strata ) )
+                             } ) ] )
+                .sort_values( 'stratum_num' )        
+            )
             
             # Find strata intervals to impute over        
             for i in missing_strata:
