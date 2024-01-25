@@ -118,7 +118,7 @@ class Survey:
 
         # Validate that initialization and survey year configuration parameters do not intersect
         config_intersect = set(init_config_params.keys()).intersection(set(survey_year_config_params.keys()))
-
+        
         # Error evaluation, if applicable
         if config_intersect:
             raise RuntimeError(
@@ -127,8 +127,20 @@ class Survey:
 
         ### Format dictionary that will parameterize the `config` class attribute
         # Join the initialization and survey year parameters into a single dictionary
+        config_to_add = { **init_config_params , **survey_year_config_params }
+        
+        # Amend length/age distribution locations within the configuration attribute
+        config_to_add[ 'biometrics' ] = { 
+                                         'parameters': {
+                                            'bio_hake_len_bin': init_config_params[ 'bio_hake_len_bin' ] ,
+                                            'bio_hake_age_bin': init_config_params[ 'bio_hake_age_bin' ]
+                                         } 
+        }
+        
+        del config_to_add['bio_hake_len_bin'] , config_to_add['bio_hake_age_bin']
+        
         # Pass 'full_params' to the class instance
-        return {**init_config_params, **survey_year_config_params}
+        return config_to_add
 
     def load_survey_data( self ):
         """
@@ -357,15 +369,6 @@ class Survey:
                                                 length_bins + length_binwidth ) )
         age_centered_bins = np.concatenate( ( [ age_bins[0] - age_binwidth ] ,
                                             age_bins + age_binwidth ) ) 
-
-        # Construct dictionary that will be move values within the configuration file 
-        self.config['biometrics'] = {
-                    'parameters': {
-                        'bio_hake_len_bin': self.config['bio_hake_len_bin'] ,
-                        'bio_hake_age_bin': self.config['bio_hake_age_bin']
-                    }
-        }
-        del self.config['bio_hake_len_bin'], self.config['bio_hake_age_bin']
 
         # Add to the biological data attribute so it can be accessed downstream
         self.biology['distributions'] = {
