@@ -356,8 +356,8 @@ class Survey:
                                 self.config['bio_hake_age_bin'][2] ,
                                 dtype = np.float64 )
 
-        ### Discretize parameters into arrays of binned values that will be used to 
-        ### quantize the distributions in calculations downstream
+        ### Discretize the age and length arrays into user-defined bins that will be used later on
+        ### to calculate various length- and age-weighted statistics
         # Determine bin widths
         length_binwidth = np.mean( np.diff( length_bins / 2.0 ) )
         age_binwidth = np.mean( np.diff( age_bins / 2.0 ) )
@@ -483,7 +483,7 @@ class Survey:
 
         Notes
         -----
-        This function iterates through eahc stratum to fit acoustic target 
+        This function iterates through each stratum to fit acoustic target 
         strength (TS, dB re. 1 m^2) values based on length distributions recorded for each
         stratum. These fitted values are then convereted from the logarithmic
         to linear domain (sigma_bs, m^2) and subsequently averaged. These are required for 
@@ -517,6 +517,8 @@ class Survey:
         
         # Convert length values into TS
         ### ??? TODO: Not necessary for this operation, but may be useful to store for future use ?
+        ### ??? TODO: May need functions later on that estimate TS based on length using other methods,
+        ### ??? TODO: so that would need to be tested/triaged at this step of the code
         all_length_df[ 'TS' ] = ts_length_regression( all_length_df[ 'length' ] , slope , intercept )
         
         # Convert TS into sigma_bs
@@ -612,9 +614,10 @@ class Survey:
         Notes
         -----
         This function first fits a length-weight regression based on measured 
-        values and then produces an array of fitted weight values (based on 
-        binned length values) that are used for later biomass calculations, 
-        weighting, and apportionment.
+        values and then produces an array of fitted weight values based on 
+        binned length values.  
+        The length-weight relationship produced here are used for later 
+        biomass calculations and apportionment.
         """    
         
         ### First make copies of each
@@ -660,10 +663,10 @@ class Survey:
 
         Notes
         -----
-        This function uses the previously fitted length-weight relationship that, 
-        alongside the measured male-female proportions with predicted weight values,
-        is used to calculate the mean weight for males, females, and total animals 
-        for each strata.
+        This function produces the proportion of male and female, 
+        and the average weight of male, female, and total (male, female, and unsexed fish).  
+        The average weight is estimated using the length-weight relationship 
+        fitted in ``fit_binned_length_weight_relationship``.  
         """ 
         
         ### Reformat 'specimen_df' to match the same format as 'len_df'
@@ -737,7 +740,7 @@ class Survey:
             .sum()
         )
         
-        ### Calculate the the proportions each dataset / station contributed within each stratum
+        ### Calculate the proportions each dataset / station contributed within each stratum
         station_proportions = (
             station_length_aggregate
             .loc[ station_length_aggregate.group.isin( [ 'all' ] ) ] # only parse 'all'
