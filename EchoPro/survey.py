@@ -345,9 +345,9 @@ class Survey:
 
         # Pull the relevant age and length bins and output a dictionary
         length_bins = np.linspace( self.config[ 'biometrics' ]['bio_hake_len_bin'][0] ,
-                           self.config[ 'biometrics' ]['bio_hake_len_bin'][1] ,
-                           self.config[ 'biometrics' ]['bio_hake_len_bin'][2] ,
-                           dtype = np.float64 )
+                                   self.config[ 'biometrics' ]['bio_hake_len_bin'][1] ,
+                                   self.config[ 'biometrics' ]['bio_hake_len_bin'][2] ,
+                                   dtype = np.float64 )
 
         age_bins = np.linspace( self.config[ 'biometrics' ]['bio_hake_age_bin'][0] ,
                                 self.config[ 'biometrics' ]['bio_hake_age_bin'][1] , 
@@ -407,6 +407,9 @@ class Survey:
     
         # Calculate the average sex-distributed weight and proportion per stratum
         self.strata_sex_weight_proportions( species_id )
+
+        # Calculate the age-binned weight per sex per stratum when both considering and ignoring age-0 and age-1 fish
+        self.strata_age_binned_weight_proportions( species_id )
         
     #     # Synthesize all of the above steps to begin the conversion from 
     #     # integrated acoustic backscatter (ala NASC) to estimates of biological
@@ -529,7 +532,7 @@ class Survey:
             all_length_df
             .groupby(['haul_num' , 'stratum_num' , 'species_id' ])[['sigma_bs' , 'length_count']]
             .apply(lambda x: np.average( x[ 'sigma_bs' ] , weights=x[ 'length_count' ]))
-            .to_frame('mean_sigma_bs')
+            .to_frame( 'sigma_bs_mean' )
             .reset_index()
         )
                 
@@ -650,11 +653,14 @@ class Survey:
         
         # summarize mean/samples of length and weight values (binned statistics)
         length_bin_stats = length_weight_df.bin_stats( bin_variable = 'length' ,
-                                                                bin_values = length_intervals )
+                                                       bin_values = length_intervals )
         
         # fill bins where n_length < 5 w/ regressed weight values
-        length_bin_stats[ 'weight_modeled' ] = length_bin_stats[ 'weight_mean' ].copy()
-        low_n_indices = np.where(length_bin_stats[ 'weight_n' ].values < 5)[0].copy()   
+        # TODO : the `bin_stats` function defaults to prepending 'mean' and 'n' -- this will
+        # TODO : need to be changed to comport with the same name formatting as the rest of 
+        # TODO : the module
+        length_bin_stats[ 'weight_modeled' ] = length_bin_stats[ 'mean_weight' ].copy()
+        low_n_indices = np.where(length_bin_stats[ 'n_weight' ].values < 5)[0].copy()   
         length_bin_stats.loc[low_n_indices, 'weight_modeled'] = fitted_weight[low_n_indices].copy()
             
         self.statistics[ 'length_weight' ][ 'length_weight_df' ] = length_bin_stats
@@ -767,7 +773,7 @@ class Survey:
             # create a pivot that will reorient data to the desired shape
             .pivot_table( index = [ 'group' , 'station' ] , 
                           columns = 'stratum_num' , 
-                          values = 'p_overall_station' )
+                          values = 'overall_station_p' )
             .groupby( [ 'group' , 'station' ] )
             .sum()
         )
@@ -833,7 +839,108 @@ class Survey:
             'average_weight_male': male_weight ,
             'average_weight_total': total_weight
         } )
+
+    #!!! TODO : Provide argument that will exclude age-0 and age-1 fish when flagged
+    def strata_age_binned_weight_proportions( species_id: np.float64 ):
+        """
+        Calculates the age- and sex-binned proportions across all strata
+        with respect to specimen counts and weights
+
+        Parameters
+        ----------
+        species_id : np.float64
+            Numeric code representing a particular species of interest
+
+        Notes
+        -----
+        The sex-stratified proportions for both counts and weights currently 
+        incorporate age-0 and age-1 fish without an option to exclude. 
         
+        """ 
+
+        ### Reformat 'specimen_df' to match the same format as 'len_df'
+        # First make copies of each
+        specimen_df_copy = self.biology['specimen_df'].copy().pipe( lambda df: df.loc[ df.species_id == species_id ] )
+
+        # Import length bins
+        length_intervals = self.biology[ 'distributions' ][ 'length' ][ 'length_interval_arr' ]
+
+        ### Calculate age bin proportions when explicitly excluding age-0 and age-1 fish
+        # Calculate age proportions across all strata and age-bins
+        age_proportions = (
+            specimen_df_copy
+            .dropna( how = 'any' )
+            .count_variable( variable = 'length' ,
+                            contrasts = [ 'stratum_num' , 'age' ] ,
+                            fun = 'size' )
+            .pipe( lambda x: x.assign( stratum_count = x.groupby( [ 'stratum_num' ] )[ 'count' ].transform( sum ) ,
+                                    stratum_proportion = lambda x: x[ 'count' ] / x[ 'stratum_count' ] ) )               
+        )
+
+        # Calculate adult proportions/contributions (in terms of summed presence) for each stratum
+        age_2_and_over_proportions = (
+            age_proportions
+            .pipe( lambda df: df
+                .groupby( 'stratum_num' )
+                .apply( lambda x: 1 - x.loc[ x[ 'age' ] <= 1 ][ 'count' ].sum() / x[ 'count' ].sum( ) ) ) 
+            .reset_index( name = 'number_proportion' )
+        )
+
+        ### Calculate proportional contributions of each age-bin to the summed weight of each stratum
+        ### when explicitly excluding age-0 and age-1 fish
+        # Calculate the weight proportions across all strata and age-bins
+        age_weight_proportions = (
+            specimen_df_copy
+            .dropna( how = 'any' )
+            .pipe( lambda x: x.assign( weight_age = x.groupby( [ 'stratum_num' , 'age' ] )[ 'weight' ].transform( sum ) ,
+                                    weight_stratum = x.groupby( [ 'stratum_num' ] )[ 'weight' ].transform( sum ) ) )
+            .groupby( [ 'stratum_num' , 'age' ] )
+            .apply( lambda x: x[ 'weight_age' ].sum( ) / x[ 'weight_stratum' ].sum ( ) )
+            .reset_index( name = 'weight_stratum_proportion' )
+        )
+        
+        # Calculate adult proportions/contributions (in terms of summed weight) for each stratum
+        age_2_and_over_weight_proportions = (
+            age_weight_proportions
+            .pipe( lambda df: df
+                .groupby( 'stratum_num' )
+                .apply( lambda x: 1 - x.loc[ x[ 'age' ] <= 1 ][ 'weight_stratum_proportion' ].sum()) ) 
+                .reset_index( name = 'weight_proportion' ) 
+        )
+
+        ### Now this process will be repeated but adding "sex" as an additional contrast and considering
+        ### all age-bins
+        age_sex_weight_proportions = (
+            specimen_df_copy
+            .dropna( how = 'any' )
+            .bin_variable( bin_values = length_intervals ,
+                        bin_variable = 'length' )
+            .count_variable( contrasts = [ 'stratum_num' , 'age' , 'length_bin' , 'sex' ] ,
+                            variable = 'weight' ,
+                            fun = 'sum' )
+            .pipe( lambda df: df.assign( total = df.groupby( [ 'stratum_num' , 'sex' ] )[ 'count' ].transform( sum ) ) )
+            .groupby( [ 'stratum_num' , 'age' , 'sex' ] )
+            .apply( lambda x: ( x[ 'count' ] / x[ 'total' ] ).sum() ) 
+            .reset_index( name = 'weight_sex_stratum_proportion' )
+        )
+
+        ### Add these dataframes to the appropriate data attribute
+        self.biology[ 'weight' ].update( {
+            'sex_stratified': {
+                'weight_proportions': age_sex_weight_proportions ,
+            } ,
+            'age_stratified': {
+                'age_1_excluded': {
+                    'number_proportions': age_2_and_over_proportions ,
+                    'weight_proportions': age_2_and_over_weight_proportions ,
+                } ,
+                'age_1_included': {
+                    'number_proportions': age_proportions ,
+                    'weight_proportions': age_weight_proportions
+                }
+            }
+        } )
+
     # @staticmethod
     # def initialize_kriging_mesh():
         
