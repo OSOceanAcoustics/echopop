@@ -404,10 +404,12 @@ class Survey:
         
         # Fit length-weight regression required for biomass calculation
         self.fit_binned_length_weight_relationship( species_id )
-    
+
         # Calculate the average sex-distributed weight and proportion per stratum
         self.strata_sex_weight_proportions( species_id )
 
+        ### TODO : REMOVE AGE-0 !! -- OR separate into a separete bin
+        ### Keep in mind -- NASC exports are age-2+
         # Calculate the age-binned weight per sex per stratum when both considering and ignoring age-0 and age-1 fish
         self.strata_age_binned_weight_proportions( species_id )
         
@@ -841,7 +843,8 @@ class Survey:
         } )
 
     #!!! TODO : Provide argument that will exclude age-0 and age-1 fish when flagged
-    def strata_age_binned_weight_proportions( species_id: np.float64 ):
+    def strata_age_binned_weight_proportions( self , 
+                                              species_id: np.float64 ):
         """
         Calculates the age- and sex-binned proportions across all strata
         with respect to specimen counts and weights
