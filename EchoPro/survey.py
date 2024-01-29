@@ -131,10 +131,8 @@ class Survey:
         
         # Amend length/age distribution locations within the configuration attribute
         config_to_add[ 'biometrics' ] = { 
-                                         'parameters': {
-                                            'bio_hake_len_bin': init_config_params[ 'bio_hake_len_bin' ] ,
-                                            'bio_hake_age_bin': init_config_params[ 'bio_hake_age_bin' ]
-                                         } 
+            'bio_hake_len_bin': init_config_params[ 'bio_hake_len_bin' ] ,
+            'bio_hake_age_bin': init_config_params[ 'bio_hake_age_bin' ]
         }
         
         del config_to_add['bio_hake_len_bin'] , config_to_add['bio_hake_age_bin']
@@ -346,14 +344,14 @@ class Survey:
         """
 
         # Pull the relevant age and length bins and output a dictionary
-        length_bins = np.linspace( self.config['bio_hake_len_bin'][0] ,
-                           self.config['bio_hake_len_bin'][1] ,
-                           self.config['bio_hake_len_bin'][2] ,
+        length_bins = np.linspace( self.config[ 'biometrics' ]['bio_hake_len_bin'][0] ,
+                           self.config[ 'biometrics' ]['bio_hake_len_bin'][1] ,
+                           self.config[ 'biometrics' ]['bio_hake_len_bin'][2] ,
                            dtype = np.float64 )
 
-        age_bins = np.linspace( self.config['bio_hake_age_bin'][0] ,
-                                self.config['bio_hake_age_bin'][1] , 
-                                self.config['bio_hake_age_bin'][2] ,
+        age_bins = np.linspace( self.config[ 'biometrics' ]['bio_hake_age_bin'][0] ,
+                                self.config[ 'biometrics' ]['bio_hake_age_bin'][1] , 
+                                self.config[ 'biometrics' ]['bio_hake_age_bin'][2] ,
                                 dtype = np.float64 )
 
         ### Discretize the age and length arrays into user-defined bins that will be used later on
@@ -504,16 +502,16 @@ class Survey:
             specimen_df_copy
             .groupby(['haul_num', 'stratum_num' , 'species_id', 'length'])
             .apply(lambda x: len(x['length']))
-            .reset_index(name='length_count')
+            .reset_index(name= 'length_count' )
             )
         
         ### Concatenate the two dataframes
         all_length_df = pd.concat( [ spec_df_reframed , length_df_copy ] , join = 'inner' )
         
         # Import parameters from configuration
-        ts_length_parameters = self.config['TS_length_regression_parameters']['pacific_hake']
-        slope = ts_length_parameters['TS_L_slope']
-        intercept = ts_length_parameters['TS_L_intercept']
+        ts_length_parameters = self.config[ 'TS_length_regression_parameters' ]['pacific_hake']
+        slope = ts_length_parameters[ 'TS_L_slope' ]
+        intercept = ts_length_parameters[ 'TS_L_intercept' ]
         
         # Convert length values into TS
         ### ??? TODO: Not necessary for this operation, but may be useful to store for future use ?
@@ -530,7 +528,7 @@ class Survey:
         mean_haul_sigma_bs = (
             all_length_df
             .groupby(['haul_num' , 'stratum_num' , 'species_id' ])[['sigma_bs' , 'length_count']]
-            .apply(lambda x: np.average( x['sigma_bs'] , weights=x['length_count']))
+            .apply(lambda x: np.average( x[ 'sigma_bs' ] , weights=x[ 'length_count' ]))
             .to_frame('mean_sigma_bs')
             .reset_index()
         )
@@ -538,7 +536,7 @@ class Survey:
         # Now these values can be re-merged with stratum information and averaged over strata
         mean_strata_sigma_bs = (
             mean_haul_sigma_bs
-            .groupby(['stratum_num' , 'species_id'])['mean_sigma_bs']
+            .groupby(['stratum_num' , 'species_id'])[ 'sigma_bs_mean' ]
             .mean()
             .reset_index()
         )
@@ -571,13 +569,13 @@ class Survey:
         #### TODO: CURRENTLY : species_id is unused since only hake are being processed, but this will need
         ### to actually be parameterized in the future
         # Collect all possible strata values
-        strata_options = np.unique(self.spatial['strata_df'].copy().stratum_num)
+        strata_options = np.unique( self.spatial[ 'strata_df' ].copy().stratum_num )
         
         #
-        strata_mean = self.acoustics['sigma_bs']['strata_mean'].copy()
+        strata_mean = self.acoustics[ 'sigma_bs' ][ 'strata_mean' ].copy()
         
         # impute missing strata values
-        present_strata = np.unique(strata_mean['stratum_num']).astype(int)
+        present_strata = np.unique(strata_mean[ 'stratum_num' ]).astype(int)
         missing_strata = strata_options[~(np.isin(strata_options, present_strata))]
         
         if len(missing_strata) > 0:
@@ -590,7 +588,7 @@ class Survey:
                                  'stratum_num': missing_strata , 
                                  'species_id': np.repeat( np.unique( strata_mean.species_id ) ,
                                                          len( missing_strata ) ) ,
-                                 'mean_sigma_bs': np.repeat( np.nan ,
+                                 'sigma_bs_mean': np.repeat( np.nan ,
                                                              len( missing_strata ) )
                              } ) ] )
                 .sort_values( 'stratum_num' )        
@@ -606,9 +604,9 @@ class Survey:
                 
                 sigma_bs_indexed = sigma_bs_impute[sigma_bs_impute['stratum_num'].isin([new_stratum_below, new_stratum_above])]
                 
-                sigma_bs_impute.loc[sigma_bs_impute.stratum_num==i , 'mean_sigma_bs'] = sigma_bs_indexed['mean_sigma_bs'].mean()
+                sigma_bs_impute.loc[sigma_bs_impute.stratum_num==i , 'sigma_bs_mean' ] = sigma_bs_indexed[ 'sigma_bs_mean' ].mean()
                 
-            self.acoustics['sigma_bs']['strata_mean'] = sigma_bs_impute        
+            self.acoustics[ 'sigma_bs' ][ 'strata_mean' ] = sigma_bs_impute        
    
     
     def fit_binned_length_weight_relationship( self ,
@@ -655,11 +653,11 @@ class Survey:
                                                                 bin_values = length_intervals )
         
         # fill bins where n_length < 5 w/ regressed weight values
-        length_bin_stats['modeled_weight'] = length_bin_stats['mean_weight'].copy()
-        low_n_indices = np.where(length_bin_stats['n_weight'].values < 5)[0].copy()   
-        length_bin_stats.loc[low_n_indices, 'modeled_weight'] = fitted_weight[low_n_indices].copy()
+        length_bin_stats[ 'weight_modeled' ] = length_bin_stats[ 'weight_mean' ].copy()
+        low_n_indices = np.where(length_bin_stats[ 'weight_n' ].values < 5)[0].copy()   
+        length_bin_stats.loc[low_n_indices, 'weight_modeled'] = fitted_weight[low_n_indices].copy()
             
-        self.statistics['length_weight']['length_weight_df'] = length_bin_stats
+        self.statistics[ 'length_weight' ][ 'length_weight_df' ] = length_bin_stats
         
     def strata_sex_weight_proportions( self ,
                                        species_id: np.float64 ):
@@ -728,13 +726,13 @@ class Survey:
         station_length_aggregate = (
             station_sex_length
             # calculate the within-sample sum and proportions (necessary for the downstream dot product calculation)
-            .pipe( lambda x: x.assign( n_within_station = x.groupby( [ 'group' , 'station' , 'stratum_num' ] )[ 'count' ].transform( sum ) ,
-                                       p_within_station = lambda x: x[ 'count' ] / x[ 'n_within_station' ] ) )
+            .pipe( lambda x: x.assign( within_station_n = x.groupby( [ 'group' , 'station' , 'stratum_num' ] )[ 'count' ].transform( sum ) ,
+                                       within_station_p = lambda x: x[ 'count' ] / x[ 'within_station_n' ] ) )
             .replace( np.nan, 0 ) # remove erroneous NaN (divide by 0 or invalid values)
             .merge( total_n , on = 'stratum_num' ) # merge station_sex_length with total_n
             # proportion of each count indexed by each length_bin relative to the stratum total
-            .assign( p_overall_length = lambda x: x[ 'count' ] / x[ 'n_total' ] ,
-                     p_overall_station = lambda x: x[ 'n_within_station' ] / x[ 'n_total' ] )
+            .assign( overall_length_p = lambda x: x[ 'count' ] / x[ 'n_total' ] ,
+                     overall_station_p = lambda x: x[ 'within_station_n' ] / x[ 'n_total' ] )
             .replace( np.nan, 0 ) # remove erroneous NaN (divide by 0 or invalid values)
         )
         
@@ -745,7 +743,7 @@ class Survey:
             # create a pivot that will reorient data to the desired shape
             .pivot_table( index = [ 'group' , 'station' ] , 
                           columns = [ 'stratum_num' ] , 
-                          values = [ 'p_overall_station' ] )
+                          values = [ 'overall_station_p' ] )
             .groupby( 'group' )
             .sum()
         )
@@ -757,7 +755,7 @@ class Survey:
             # create a pivot that will reorient data to the desired shape
             .pivot_table( index = [ 'group' , 'station' ] , 
                         columns = 'stratum_num' , 
-                        values = 'p_overall_station' )
+                        values = 'overall_station_p' )
             .groupby( 'station' )
             .sum()
         )
@@ -768,8 +766,8 @@ class Survey:
             .loc[ station_length_aggregate.group.isin( ['male' , 'female'] ) ] # only parse 'male' and 'female'
             # create a pivot that will reorient data to the desired shape
             .pivot_table( index = [ 'group' , 'station' ] , 
-                        columns = 'stratum_num' , 
-                        values = 'p_overall_station' )
+                          columns = 'stratum_num' , 
+                          values = 'p_overall_station' )
             .groupby( [ 'group' , 'station' ] )
             .sum()
         )
@@ -778,13 +776,13 @@ class Survey:
         sex_stn_prop_merged = (
             sex_station_proportions
             .stack( )
-            .reset_index( name = 'p_sex_stn')
+            .reset_index( name = 'sex_stn_p')
             .merge( station_proportions
                 .stack()
-                .reset_index( name = 'p_stn' ) , on = [ 'stratum_num' , 'station' ] )
+                .reset_index( name = 'stn_p' ) , on = [ 'stratum_num' , 'station' ] )
             .pivot_table( columns = 'stratum_num' ,
                         index = [ 'station' , 'group' ] ,
-                        values = [ 'p_stn' , 'p_sex_stn' ] )    
+                        values = [ 'stn_p' , 'sex_stn_p' ] )    
         )
         
         ### Format the length bin proportions so they resemble a similar table/matrix shape as the above metrics
@@ -793,19 +791,19 @@ class Survey:
             station_length_aggregate
             .pivot_table( columns = [ 'group' , 'station' , 'stratum_num' ] , 
                          index = [ 'length_bin' ] ,
-                         values = [ 'p_within_station' ] )[ 'p_within_station' ]
+                         values = [ 'within_station_p' ] )[ 'within_station_p' ]
         )
         
         ### Calculate combined station fraction means
         # Station 1 
-        stn_1_fraction = ( sex_stn_prop_merged.loc[ 1 , ( 'p_stn' ) ]                           
-                          / ( sex_stn_prop_merged.loc[ 1 , ( 'p_stn' ) ] 
-                            + sex_stn_prop_merged.loc[ 2 , ( 'p_sex_stn' ) ] ) )
+        stn_1_fraction = ( sex_stn_prop_merged.loc[ 1 , ( 'stn_p' ) ]                           
+                          / ( sex_stn_prop_merged.loc[ 1 , ( 'stn_p' ) ] 
+                            + sex_stn_prop_merged.loc[ 2 , ( 'sex_stn_p' ) ] ) )
         
         # Station 2
-        stn_2_fraction = ( sex_stn_prop_merged.loc[ 2 , ( 'p_sex_stn' ) ]                          
+        stn_2_fraction = ( sex_stn_prop_merged.loc[ 2 , ( 'sex_stn_p' ) ]                          
                           / ( stn_1_fraction
-                            + sex_stn_prop_merged.loc[ 2 , ( 'p_sex_stn' ) ] ) )
+                            + sex_stn_prop_merged.loc[ 2 , ( 'sex_stn_p' ) ] ) )
         
         ### Calculate the average weight across all animals, males, and females
         # Pull fitted weight values
@@ -814,26 +812,26 @@ class Survey:
         # Total
         total_weighted_values = ( length_proportion_table.loc[ : , ( 'all' , 1 ) ] * station_proportions.loc[ 1 , ] +
                                   length_proportion_table.loc[ : , ( 'all' , 2 ) ] * station_proportions.loc[ 2 , ] )
-        total_weight = fitted_weight[ 'modeled_weight' ].dot( total_weighted_values.reset_index( drop = True ) )
+        total_weight = fitted_weight[ 'weight_modeled' ].dot( total_weighted_values.reset_index( drop = True ) )
         
         # Male
         male_weighted_values = ( length_proportion_table.loc[ : , ( 'male' , 1 ) ] * stn_1_fraction.loc[ 'male' ] +
                                  length_proportion_table.loc[ : , ( 'male' , 2 ) ] * stn_2_fraction.loc[ 'male' ] )
-        male_weight = fitted_weight[ 'modeled_weight' ].dot( male_weighted_values.reset_index( drop = True ) )
+        male_weight = fitted_weight[ 'weight_modeled' ].dot( male_weighted_values.reset_index( drop = True ) )
         
         # Female
         female_weighted_values = ( length_proportion_table.loc[ : , ( 'female' , 1 ) ] * stn_1_fraction.loc[ 'female' ] +
                                    length_proportion_table.loc[ : , ( 'female' , 2 ) ] * stn_2_fraction.loc[ 'female' ] )
-        female_weight = fitted_weight[ 'modeled_weight' ].dot( female_weighted_values.reset_index( drop = True ) )
+        female_weight = fitted_weight[ 'weight_modeled' ].dot( female_weighted_values.reset_index( drop = True ) )
         
         ### Store the data frame in an accessible location
         self.biology[ 'weight' ][ 'weight_strata_df' ] = pd.DataFrame( {
             'stratum': total_weight.index ,
-            'female_proportion': sex_proportions.loc[ 'female' , : ][ 'p_overall_station' ].reset_index(drop=True) ,
-            'male_proportion': sex_proportions.loc[ 'male' , : ][ 'p_overall_station' ].reset_index(drop=True) ,
-            'female_average_weight': female_weight ,            
-            'male_average_weight': male_weight ,
-            'total_average_weight': total_weight
+            'proportion_female': sex_proportions.loc[ 'female' , : ][ 'overall_station_p' ].reset_index(drop=True) ,
+            'proportion_male': sex_proportions.loc[ 'male' , : ][ 'overall_station_p' ].reset_index(drop=True) ,
+            'average_weight_female': female_weight ,            
+            'average_weight_male': male_weight ,
+            'average_weight_total': total_weight
         } )
         
     # @staticmethod
