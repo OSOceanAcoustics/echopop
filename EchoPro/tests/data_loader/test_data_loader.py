@@ -2,7 +2,7 @@ import yaml
 from pathlib import Path
 from EchoPro.survey import Survey
 
-def test_load_configuration(test_path):
+def test_load_configuration(test_path, tmp_path):
     init_params = yaml.safe_load(
         Path(test_path["CONFIG"] / "config_init.yml").read_text()
     )
@@ -14,7 +14,7 @@ def test_load_configuration(test_path):
     survey_params["data_root_dir"] = str(test_path["INPUT"])
 
     # Write a new temp yaml file with correct data path
-    temp_config_survey_path = Path(test_path["TEMP"] / "config_survey_local.yaml")
+    temp_config_survey_path = tmp_path / "config_survey_local.yaml"
     with open(temp_config_survey_path, "w") as yf:
         yaml.safe_dump(survey_params, yf)
 

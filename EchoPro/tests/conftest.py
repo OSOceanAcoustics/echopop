@@ -6,16 +6,12 @@ from pathlib import Path
 HERE = Path(__file__).parent.absolute()
 TEST_DATA_ROOT = HERE.parent / "test_data"
 
-# Create test_data/temp if not already exists
-(TEST_DATA_ROOT / "temp").mkdir(exist_ok=True)
-
 @pytest.fixture(scope="session")
 def test_path():
     return {
         "ROOT": TEST_DATA_ROOT,
         "CONFIG": TEST_DATA_ROOT / "config_files",
         "INPUT": TEST_DATA_ROOT / "input_files",
-        "TEMP": TEST_DATA_ROOT / "temp",
     }
 
 

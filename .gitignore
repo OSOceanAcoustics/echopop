@@ -1,6 +1,5 @@
 .DS_Store
 _echopro_version.py
-EchoPro/test_data/temp
 
 # ignore output reports, if they were produced
 EchoPro/tests/reports/EchoPro_python_output*
