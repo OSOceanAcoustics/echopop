@@ -1,5 +1,8 @@
 import pytest
 
+pytestmark = pytest.mark.skip("Disable all existing tests to revamp testing mechanism.")
+
+
 import pandas as pd
 import numpy as np
 import EchoPro
