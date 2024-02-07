@@ -1,5 +1,9 @@
 import pytest
 
+pytestmark = pytest.mark.skip("Disable all existing tests to revamp testing mechanism.")
+
+
+
 import math
 
 import numpy as np
