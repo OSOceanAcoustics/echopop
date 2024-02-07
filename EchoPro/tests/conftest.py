@@ -4,9 +4,20 @@ from pathlib import Path
 
 # Set up path to test_data folder
 HERE = Path(__file__).parent.absolute()
-TEST_DATA_FOLDER = HERE / "../test_data"
+TEST_DATA_ROOT = HERE.parent / "test_data"
 
 
+@pytest.fixture(scope="session")
+def test_path():
+    return {
+        "ROOT": TEST_DATA_ROOT,
+        "CONFIG": TEST_DATA_ROOT / "config_files",
+        "INPUT": TEST_DATA_ROOT / "input_files",
+        "TEMP": TEST_DATA_ROOT / "temp",
+    }
+
+
+# ============ below from previous version, remove after revamping is complete ============
 @pytest.fixture(scope="session")
 def config_base_path() -> Path:
     """
@@ -44,4 +55,4 @@ def matlab_output_base_path() -> Path:
     pathlib.Path
         The base directory path for the Matlab output files
     """
-    return pathlib.Path("<YOUR-MATLAB-OUTPUTS-BASEPATH>")
+    return Path("<YOUR-MATLAB-OUTPUTS-BASEPATH>")
