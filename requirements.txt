@@ -11,5 +11,6 @@ openpyxl
 # 9/27/23: Pin to <2 to avoid new warning occurring in several cases
 pandas
 PyYAML
+scipy
 shapely
 xarray
