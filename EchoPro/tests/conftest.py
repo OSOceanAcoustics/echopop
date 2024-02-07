@@ -11,7 +11,7 @@ def test_path():
     return {
         "ROOT": TEST_DATA_ROOT,
         "CONFIG": TEST_DATA_ROOT / "config_files",
-        "INPUT": TEST_DATA_ROOT / "input_files",
+        "INPUT": TEST_DATA_ROOT / "input_files",  # this doesn't exist yet
     }
 
 
