@@ -2,7 +2,7 @@ import yaml
 from pathlib import Path
 from EchoPro.survey import Survey
 
-def test_load_init(test_path):
+def test_load_configuration(test_path):
     init_params = yaml.safe_load(
         Path(test_path["CONFIG"] / "config_init.yml").read_text()
     )
