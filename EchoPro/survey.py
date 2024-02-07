@@ -2,15 +2,18 @@ from typing import List, Union
 from pathlib import Path
 import pandas as pd
 import numpy as np
+
 import yaml
 import copy
 from .core import CONFIG_MAP, LAYER_NAME_MAP
 ### !!! TODO : This is a temporary import call -- this will need to be changed to 
 # the correct relative structure (i.e. '.core' instead of 'EchoPro.core' at a future testing step)
-import pprint
 from .computation.operations import bin_variable , bin_stats , count_variable
 from .utils.data_file_validation import validate_data_columns
 from .computation.acoustics import to_linear , ts_length_regression
+from .computation.spatial import calculate_transect_distance
+from .computation.statistics import stratified_transect_statistic
+
 ### !!! TODO : This is a temporary import call -- this will need to be changed to 
 # the correct relative structure (i.e. '.utils.data_structure_utils' instead of 
 # 'EchoPro.utils.data_structure_utils' at a future testing step)
@@ -396,6 +399,7 @@ class Survey:
         # Initialize major data structures that will be added (**tentative names**)
         self.acoustics['sigma_bs'] = {}
         self.biology['weight'] = {}
+        self.biology['population'] = {}
         self.statistics['length_weight'] = {}
                 
         # Calculate sigma_bs per stratum 
@@ -413,66 +417,10 @@ class Survey:
         # Calculate the age-binned weight per sex per stratum when both considering and ignoring age-0 and age-1 fish
         self.strata_age_binned_weight_proportions( species_id )
         
-    #     # Synthesize all of the above steps to begin the conversion from 
-    #     # integrated acoustic backscatter (ala NASC) to estimates of biological
-    #     # relevance 
-    #     self.nasc_to_biomass_conversion()
-    #     # OUTPUT: self.biology['population'] (dict)
-    #     ### Or something 'general' that encapsulates all of the calculated
-    #     ### acoustic-derived biometrics
-    #     # OUTPUT: self.biology['population']['areal_density_df'] (pd.DataFrame)
-    #     # OUTPUT: self.biology['population']['abundance_df'] (pd.DataFrame)
-    #     # OUTPUT: self.biology['population']['biomass_df'] (pd.DataFrame)
-    #     ### This would stitch together "all_ages" w/ age and sex as separate columns
-    #     ### resulting a melted dataframe rather than 22+ columns (with one column assigned to
-    #     ### a single age-class)
-        
-    #     # Calculate stratified mean
-    #     ### This applies the Jolly and Hampton (1990) stratified mean for transect survey designs
-    #     ### that provides a weighted mean and variance estimate for specified spatial regions (or other
-    #     ### similar strata definitions).
-    #     self.stratified_survey_statistics()
-    #     # NEW ATTRIBUTE: self.results
-    #     # OUTPUT: self.results['transect_results'] (dict)
-    #     ## self.results['transect_results']: {'mean': np.float64, 'cv': np.float64}
-    #     ### These may be pd.DataFrame instead of np.float64 to allow for grouped calculations (e.g. 
-    #     ### by sex, age, etc)
-    #     ## this would provide the coefficient of variation, but the actual variance output 
-    #     ## is largely arbitrary since it is simply normalized by the mean
-    #     ### The name of this may be different -- it should be differentiated from the kriged 
-    #     ### results -- perhaps something like "nominal_results" or something
-        
-    # @staticmethod
-    # def kriging_analysis():
-        
-    #     # Organize semivariogram and kriging parameters 
-    #     ... = self.statistics['kriging']['vario_krig_para_df']
-    #     ### TODO: Perhaps separate 'vario.__' and 'krig.__' ?
-        
-    #     # Prepare kriging mesh parameterization
-    #     ### This is necessary for ensuring that all required parameters
-    #     ### are mapped to each node within the kriging mesh
-    #     ### This would replace 'bin_dataset()' in the previous implementation
-    #     self.initialize_kriging_mesh()    
-        
-    #     # Fit semivariogram 
-    #     self.fit_semiovariogram_model()
-    #     # OUTPUT: self.statistics['semivariogram'] (dict)
-    #     ### Keys represent each specific model parameter such as the 
-    #     ### range, sill, nugget, etc.
-        
-    #     # Apply semiovariogram to interpolate data over the defined kriging mesh
-    #     self.kriging_interpolation()
-    #     # OUTPUT: self.statistics['kriging']['modeled_biomass'] (df)
-    #     ## Or perhaps this would also be appropriate under the 'biology' attribute
-                
-    #     # Calculate similar stratified survey analysis but this time using
-    #     # kriged values
-    #     self.stratified_kriging_statistics()
-    #     # OUTPUT: self.results['kriging_results'] (dict)
-    #     ## self.results['kriging_results']: {'mean': np.float64, 'cv': np.float64}
-    #     ### These may be pd.DataFrame instead of np.float64 to allow for grouped calculations (e.g. 
-    #     ### by sex, age, etc)
+        # Synthesize all of the above steps to begin the conversion from 
+        # integrated acoustic backscatter (ala NASC) to estimates of biological
+        # relevance 
+        self.nasc_to_biomass_conversion( species_id )
         
     def strata_mean_sigma_bs( self ,
                               species_id: np.float64 ):
@@ -762,8 +710,8 @@ class Survey:
             .loc[ station_length_aggregate.group.isin( [ 'all' ] ) ] # only parse 'all'
             # create a pivot that will reorient data to the desired shape
             .pivot_table( index = [ 'group' , 'station' ] , 
-                        columns = 'stratum_num' , 
-                        values = 'overall_station_p' )
+                          columns = 'stratum_num' , 
+                          values = 'overall_station_p' )
             .groupby( 'station' )
             .sum()
         )
@@ -789,8 +737,8 @@ class Survey:
                 .stack()
                 .reset_index( name = 'stn_p' ) , on = [ 'stratum_num' , 'station' ] )
             .pivot_table( columns = 'stratum_num' ,
-                        index = [ 'station' , 'group' ] ,
-                        values = [ 'stn_p' , 'sex_stn_p' ] )    
+                          index = [ 'station' , 'group' ] ,
+                          values = [ 'stn_p' , 'sex_stn_p' ] )    
         )
         
         ### Format the length bin proportions so they resemble a similar table/matrix shape as the above metrics
@@ -798,8 +746,8 @@ class Survey:
         length_proportion_table = (
             station_length_aggregate
             .pivot_table( columns = [ 'group' , 'station' , 'stratum_num' ] , 
-                         index = [ 'length_bin' ] ,
-                         values = [ 'within_station_p' ] )[ 'within_station_p' ]
+                          index = [ 'length_bin' ] ,
+                          values = [ 'within_station_p' ] )[ 'within_station_p' ]
         )
         
         ### Calculate combined station fraction means
@@ -874,10 +822,10 @@ class Survey:
             specimen_df_copy
             .dropna( how = 'any' )
             .count_variable( variable = 'length' ,
-                            contrasts = [ 'stratum_num' , 'age' ] ,
-                            fun = 'size' )
+                             contrasts = [ 'stratum_num' , 'age' ] ,
+                             fun = 'size' )
             .pipe( lambda x: x.assign( stratum_count = x.groupby( [ 'stratum_num' ] )[ 'count' ].transform( sum ) ,
-                                    stratum_proportion = lambda x: x[ 'count' ] / x[ 'stratum_count' ] ) )               
+                                       stratum_proportion = lambda x: x[ 'count' ] / x[ 'stratum_count' ] ) )               
         )
 
         # Calculate adult proportions/contributions (in terms of summed presence) for each stratum
@@ -925,6 +873,7 @@ class Survey:
             .groupby( [ 'stratum_num' , 'age' , 'sex' ] )
             .apply( lambda x: ( x[ 'count' ] / x[ 'total' ] ).sum() ) 
             .reset_index( name = 'weight_sex_stratum_proportion' )
+            .assign( sex = lambda x: np.where( x[ 'sex' ] == 1 , 'male' , np.where( x[ 'sex' ] == 2 , 'female' , 'unsexed' ) ) )
         )
 
         ### Add these dataframes to the appropriate data attribute
@@ -944,10 +893,323 @@ class Survey:
             }
         } )
 
-    # @staticmethod
-    # def initialize_kriging_mesh():
+    #!!! TODO : Provide argument that will exclude age-0 and age-1 fish when flagged
+    def nasc_to_biomass_conversion( self , 
+                                    species_id: np.float64  ):
+        """
+        Converts integrated acoustic backscatter (NASC) into estimates of 
+        areal number/biomass densities, total abundance, and total biomass
+
+        Parameters
+        ----------
+        species_id : np.float64
+            Numeric code representing a particular species of interest
+
+        Notes
+        -----
+        This function converts NASC into estimates of population-level metrics 
+        (abundance, biomass, areal densities) stratified by transects, sex, 
+        length-based strata, and age.
+        """ 
         
-    #     # Read in mesh and isobath elements
+        ### Prepare initial dataframes used for calculation population statistics
+        # Construct georeferenced dataframe containing NASC data
+        nasc_df = self.acoustics[ 'nasc' ][ 'nasc_df' ]        
+
+        ### Calculate transect interval lengths and areas, plus impute/replace possible 'erroneous' 
+        ### values at the end of each transect line
+        nasc_interval_df = (
+            nasc_df
+            # Calculate along-transect interval distances
+            .pipe( lambda df: df.assign( interval = df[ 'vessel_log_start' ].diff( periods = -1 ).abs( ) ) 
+                                .replace( np.nan , df[ 'vessel_log_end' ].iloc[ -1 ] - df[ 'vessel_log_start' ].iloc[ -1 ] ) )
+            # Replace likely erroneous interval lengths associated with the edges of each transect
+            .pipe( lambda df: df.assign( median_interval = np.median( df[ 'interval' ] ) )
+                                .assign( interval = lambda x: np.where( np.abs( x[ 'interval' ] - x[ 'median_interval' ] > 0.05 ) ,
+                                                                        x.vessel_log_end - x.vessel_log_start ,
+                                                                        x.interval ) ) )
+            # Calculate interval area
+            .pipe( lambda df: df.assign( interval_area = df[ 'interval' ] * df[ 'transect_spacing' ] ) )                            
+            # Keep dataframe tidy by only retaining the necessary columns/variables
+            .loc[ : , [ 'latitude' , 'longitude' , 'transect_num' , 'stratum_num' , 'haul_num' , 'interval_area' , 'NASC_all_ages' , 'NASC_no_age1' ] ]
+        )
+
+        ### Call additional dataframes needed to merge with the NASC data and subsequently calculate
+        ### population-level metrics (and later statistics)
+        # Sex-stratum-indexed proportions and average weight
+        weight_sex_strata = (
+            self.biology[ 'weight' ][ 'weight_strata_df' ]
+            .copy()
+            .rename( columns = { 'stratum': 'stratum_num' } )
+        )
+
+        # Stratum information
+        info_strata = self.spatial[ 'strata_df' ].copy()
+
+        # Stratum-averaged sigma_bs
+        sigma_bs_strata = self.acoustics[ 'sigma_bs' ][ 'strata_mean' ]
+
+        # Adult NASC proportions for each stratum (number)
+        # !!! TODO: Currently only uses 'age_1_excluded' -- this should become an argument that toggles
+        ## This is not a major issue since both 'NASC_*' columns can be pivoted to create a single 
+        ## NASC column so the column name does not have to be hard-coded. This could then correspond to
+        ## the configuration settings in some way, or this may be where the argument comes into play where
+        ## the dataframe can be simply filtered based on the input/selection.
+        # between excluding and including age-1 fish
+        nasc_adult_number_proportions = (
+            self.biology[ 'weight' ][ 'age_stratified' ][ 'age_1_excluded' ][ 'number_proportions' ]
+            .rename( columns = { 'number_proportion': 'adult_number_proportion' } )
+        )
+
+        # Adult NASC proportions for each stratum (weight)
+        nasc_adult_weight_proportions = (
+            self.biology[ 'weight' ][ 'age_stratified' ][ 'age_1_excluded' ][ 'weight_proportions' ]
+            .rename( columns = { 'weight_proportion': 'adult_weight_proportion' } )
+        )
+
+        # Age-stratified weight proportions
+        age_stratified_proportions = self.biology[ 'weight' ][ 'age_stratified' ][ 'age_1_included' ][ 'weight_proportions' ]
+
+        # Age-stratified & sex-indexed weight proportions
+        age_sex_stratified_proportions = self.biology[ 'weight' ][ 'sex_stratified' ][ 'weight_proportions' ]
+
+        # Concatenate the two to add a 'total' category
+        sex_indexed_weight_proportions = pd.concat(
+             [ age_sex_stratified_proportions.rename( columns = { 'weight_sex_stratum_proportion': 'weight_proportion' } ) ,
+               age_stratified_proportions.assign( sex = 'total' ).rename( columns = { 'weight_stratum_proportion': 'weight_proportion' } ) ]
+        )
+
+        ### Prepare dataframe to calculate areal number densities (animals / nmi^2)
+        # ??? TODO: Should the area units be editable as an argument in the future via the config ?
+        # Merge georeferenced NASC with sigma_bs measurements and the relative fraction of animals
+        # represented in the NASC exports
+        # calculate proportion coefficient for mixed species values
+        nasc_fraction_total_df = (
+            nasc_interval_df
+            # Merge stratum information ( join = 'outer' since missing values will be filled later on)
+            .merge( info_strata , on = [ 'stratum_num' , 'haul_num' ] , how = 'outer' )
+            # Drop unused hauls
+            .dropna( subset = 'transect_num' )
+            # Fill NaN w/ 0's for 'fraction_hake'
+            .assign( fraction_hake = lambda x: x[ 'fraction_hake' ].fillna( 0 ) )
+            # Merge stratum-averaged sigma_bs
+            .merge( sigma_bs_strata , on = [ 'stratum_num' ] )
+            # Merge sex-stratum-indexed weight and proportions
+            .merge( weight_sex_strata , on = [ 'stratum_num' ] )
+            # Merge adult proportions (number)
+            .merge( nasc_adult_number_proportions , on = [ 'stratum_num' ] )
+            # Merge adult proportions (weight)
+            .merge( nasc_adult_weight_proportions , on = [ 'stratum_num' ] )
+        )
+
+        ### Calculate the areal number densities (rho_a)
+        # rho_a = animals / nmi^-2
+        nasc_to_areal_number_density_df = (
+            nasc_fraction_total_df
+            # Calculate areal number density (rho_a) for the total sample
+            .assign( rho_a_total = lambda x: np.round(
+                x[ 'fraction_hake' ] * x[ 'NASC_no_age1' ] / ( 4 * np.pi * x[ 'sigma_bs_mean' ] ) ) )
+            # Apportion rho_a based on sex and general age categorization (adult versus not adult)
+            .pipe( lambda df: 
+                   df.assign( 
+                       rho_a_male = np.round( df[ 'rho_a_total' ] * df[ 'proportion_male' ] ) ,
+                       rho_a_female = np.round( df[ 'rho_a_total' ] * df[ 'proportion_female' ] ) )
+                   .assign( rho_a_unsexed = lambda x: np.round( x[ 'rho_a_total' ] - x[ 'rho_a_male' ] - x[ 'rho_a_female' ] ) ) )             
+        )
+
+        # Create dataframe to save it to Survey object
+        areal_number_density_df = (
+            pd.wide_to_long(
+                nasc_to_areal_number_density_df[ [ 'transect_num' , 'latitude' , 'longitude' , 'stratum_num' , 'rho_a_total' , 'rho_a_male' , 'rho_a_female' , 'rho_a_unsexed' ] ] ,
+                stubnames = [ 'rho_a' ] ,
+                i = [ 'transect_num' , 'latitude' , 'longitude' , 'stratum_num' ] ,
+                j = 'sex' ,
+                sep = "_" ,
+                suffix = '\\w+'
+            )
+            .reset_index( )
+            .merge( nasc_adult_number_proportions , on = [ 'stratum_num' ] )
+            .assign( rho_a_adult = lambda x: x[ 'rho_a' ] * x[ 'adult_number_proportion' ] )
+        )
+
+        ### Calculate the areal biomass densitiies (B_a)
+        # B_a = kg / nmi^-2
+        nasc_to_areal_biomass_density_df = (
+            nasc_to_areal_number_density_df
+            # Convert rho_a into biomass densities
+            .assign( B_a_total = lambda x: x[ 'rho_a_total' ] * x[ 'average_weight_total' ] ,
+                     B_a_male = lambda x: x[ 'rho_a_male' ] * x[ 'average_weight_male' ] ,
+                     B_a_female = lambda x: x[ 'rho_a_female' ] * x[ 'average_weight_female' ] ,
+                     B_a_unsexed = lambda x: x[ 'rho_a_unsexed' ] * x[ 'average_weight_total' ] )           
+        )
+
+        # Create dataframe to save it to Survey object
+        areal_biomass_density_df = (
+            pd.wide_to_long(
+                nasc_to_areal_biomass_density_df[ [ 'transect_num' , 'latitude' , 'longitude' , 'stratum_num' , 'B_a_total' , 'B_a_male' , 'B_a_female' , 'B_a_unsexed' ] ] ,
+                stubnames = [ 'B_a' ] ,
+                i = [ 'transect_num' , 'latitude' , 'longitude' , 'stratum_num' ] ,
+                j = 'sex' ,
+                sep = "_" ,
+                suffix = '\\w+'
+            )
+            .reset_index( )
+            .merge( nasc_adult_number_proportions , on = [ 'stratum_num' ] )
+            .assign( B_a_adult = lambda x: x[ 'B_a' ] * x[ 'adult_number_proportion' ] )
+        )
+
+        ### Calculate abundances (N)
+        # N = # animals
+        nasc_to_abundance_df = (
+            nasc_to_areal_biomass_density_df
+            # Convert to abundances (N)
+            .assign( N_total = lambda x: x[ 'rho_a_total' ] * x[ 'interval_area' ] ,
+                     N_male = lambda x: x[ 'rho_a_male' ] * x[ 'interval_area' ] ,
+                     N_female = lambda x: x[ 'rho_a_female' ] * x[ 'interval_area' ] ,
+                     N_unsexed = lambda x: x[ 'rho_a_unsexed' ] * x[ 'interval_area' ] )                     
+        )
+
+        # Create dataframe to save it to Survey object
+        abundance_df = (
+            pd.wide_to_long(
+                nasc_to_abundance_df[ [ 'transect_num' , 'latitude' , 'longitude' , 'stratum_num' , 'N_total' , 'N_male' , 'N_female' , 'N_unsexed' ] ] ,
+                stubnames = [ 'N' ] ,
+                i = [ 'transect_num' , 'latitude' , 'longitude' , 'stratum_num' ] ,
+                j = 'sex' ,
+                sep = "_" ,
+                suffix = '\\w+'
+            )
+            .reset_index( )
+            .merge( nasc_adult_number_proportions , on = [ 'stratum_num' ] )
+            .assign( N_adult = lambda x: x[ 'N' ] * x[ 'adult_number_proportion' ] )
+        )
+     
+        ### Calculate biomass (B)
+        # B = kg animals
+        nasc_to_biomass_df = (
+            nasc_to_areal_biomass_density_df
+            # Convert to biomasses
+            .assign( B_total = lambda x: x[ 'B_a_total' ] * x[ 'interval_area' ] ,
+                     B_male = lambda x: x[ 'B_a_male' ] * x[ 'interval_area' ] ,
+                     B_female = lambda x: x[ 'B_a_female' ] * x[ 'interval_area' ] ,
+                     B_unsexed = lambda x: x[ 'B_a_unsexed' ] * x[ 'interval_area' ] )
+        ) 
+
+        # Create datafrane to save it to Survey object
+        biomass_df = (
+            pd.wide_to_long(
+                nasc_to_biomass_df[ [ 'transect_num' , 'latitude' , 'longitude' , 'stratum_num' , 'B_total' , 'B_male' , 'B_female' , 'B_unsexed' ] ] ,
+                stubnames = [ 'B' ] ,
+                i = [ 'transect_num' , 'latitude' , 'longitude' , 'stratum_num' ] ,
+                j = 'sex' ,
+                sep = "_" ,
+                suffix = '\\w+'
+            )
+            .reset_index( )
+            .merge( nasc_adult_number_proportions , on = [ 'stratum_num' ] )
+            .assign( B_adult = lambda x: x[ 'B' ] * x[ 'adult_number_proportion' ] )
+        )
+
+        ### Expand biomass by age ! 
+        age_biomass_df = (
+            biomass_df
+            .merge( sex_indexed_weight_proportions , on = [ 'stratum_num' , 'sex' ] )
+            .assign( B_age = lambda x: x[ 'B_adult' ] * x[ 'weight_proportion' ] )[ [ 'transect_num' , 'latitude' , 'longitude' , 'stratum_num' , 'age' , 'sex' , 'weight_proportion' , 'B_age' ] ]
+            .rename( columns = { 'weight_proportion': 'age_proportion' } )
+        )
+
+        ### Update Survey object 
+        self.biology[ 'population' ].update(
+            {
+                'areal_density': {
+                    'number_density_df': areal_number_density_df ,
+                    'biomass_density_df': areal_biomass_density_df ,
+                } ,
+                'abundance': {
+                    'abundance_df': abundance_df ,
+                } ,
+                'biomass': {
+                    'biomass_df': biomass_df ,
+                    'biomass_age_df': age_biomass_df ,
+                } ,
+            }
+        )
+
+    #!!! TODO : Provide argument that will exclude age-0 and age-1 fish when flagged
+    def stratified_summary( self ):
+        """
+        Calculates the stratified summary statistics for biomass
+
+        Notes
+        -----
+        This function calculates estimates and confidence intervals (95%) for biomass mean,
+        variance, and coefficients of variation (CVs). This currently only calculates this
+        metric for adult animals (age-2+) and is not calculated for other contrasts such as 
+        age-class and sex. This also only applies to the transect results and is not currently 
+        designed to be compatible with other derived population-level statistics (e.g. kriging).
+        """ 
+        ### Call in NASC dataframe
+        nasc_df = self.acoustics[ 'nasc' ][ 'nasc_df' ].copy( deep = True )
+
+        ### Call in other parameters for stratified statistic calculation
+        # Transect sample faction
+        transect_sample = self.config[ 'stratified_survey_mean_parameters' ][ 'strata_transect_proportion' ]
+
+        # Number of replicates
+        transect_replicates = self.config[ 'stratified_survey_mean_parameters' ][ 'replicates' ]
+
+        ### Call in biomass
+        adult_biomass = (
+            self.biology[ 'population' ][ 'biomass' ][ 'biomass_df' ]
+            .pipe( lambda df: df.loc[ df.sex == 'total' ] )
+            .groupby('transect_num')[ [ 'B_adult' ] ]
+            .agg( sum )
+            .reset_index()
+        )        
+
+        ### Call in INPFC stratification
+        ### TODO: THIS IS CURRENTLY HARD-CODED -- THIS WILL BE REPLACED WITH THE READ-IN VERSION
+        INPFC_df = pd.DataFrame(
+            {
+                'stratum_inpfc': np.array( [ 1 , 2 , 3 , 4 , 5 , 6 ] , dtype = int ) ,
+                'latitude_limits': np.array( [ 36.0 , 40.5 , 43.0 , 45.7667 , 48.5 , 55.0 ] ) ,
+                'haul_start': np.array( [ 1 , 8 , 35 , 47 , 62 , 201 ] , dtype = int ) ,
+                'haul_end': np.array( [ 7 , 33 , 46 , 61 , 73 , 222 ] , dtype = int )
+            }
+        )
+
+        # Bin the strata based on latitude limits 
+        latitude_bins = np.concatenate( [ [ -90 ] , INPFC_df.latitude_limits ] )
+
+        ### Summarize transect features
+        transect_summary = (
+                    nasc_df
+                    .pipe( lambda df: calculate_transect_distance( df ) )
+                    .merge( adult_biomass , on = [ 'transect_num' ] )
+                    .assign( **{ 'stratum_inpfc': lambda x: pd.cut( x[ 'center_latitude' ] , 
+                                                                    latitude_bins , 
+                                                                    right = False , 
+                                                                    labels=range( len( latitude_bins ) - 1 ) ) } ) # assign bin
+                    .assign( stratum_inpfc = lambda x: x[ 'stratum_inpfc' ].astype( int ) + 1 )
+                )
+
+        ### Summarize strata features
+        strata_summary = (
+                    transect_summary
+                    .loc[ : , [ 'stratum_inpfc' , 'transect_area' ] ]
+                    .groupby( 'stratum_inpfc' )
+                    .agg( [ 'count' , 'sum' ] )
+                    .rename( columns= { "count": "num_transects" , "sum": "total_transect_area" } )
+                    .droplevel( 0 , axis = 1 )
+                    .reset_index( )
+                )
         
-    #     # Standardize coordinates by longitude from isobath
-    #     self.standardize_coordinates()
+        ### Combine the above parameters and data to calculate the stratified statistics
+        stratified_results = stratified_transect_statistic( transect_summary , strata_summary , transect_sample , transect_replicates )
+        
+        ###
+        self.biology[ 'population' ].update(
+            {
+                'stratified_results': stratified_results
+            }
+        )
