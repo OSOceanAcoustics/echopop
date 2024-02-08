@@ -162,13 +162,25 @@ def stretch( dataframe ,
              index_variables = [ 'transect_num' , 'latitude' , 'longitude' , 'stratum_num' ] ,
              sep = "_" ,
              suffix = "\\w+" ):
-    """_summary_
+    """
+    Melts dataframe into a parseable format
 
-    Args:
-        dataframe (_type_): _description_
-
-    Returns:
-        _type_: _description_
+    Parameters
+    ----------
+    dataframe: pd.DataFrame
+        A DataFrame object containing pertinent biological data
+    variable: str
+        Data variable name
+    variable_contrast: str
+        The name of the column that will be used to index the data variable
+    index_variables: str or List
+        A list or string of additional indexing/metadata variables that will be joined to the
+        data-of-interest
+    sep: str
+        A character indicating the separation of the variable names in the wide format, to be stripped 
+        from the names in the long format
+    suffix: str
+        A regular expression capturing the wanted suffixes
     """
     ### Ensure variables are a list in case input is just a str
     idx_lst = [ index_variables ] if isinstance( index_variables , str) else index_variables
