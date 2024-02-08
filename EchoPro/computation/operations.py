@@ -3,6 +3,7 @@ import pandas as pd
 from ..utils.monkey_patch_dataframe import patch_method_to_DataFrame
 from typing import Union , List
 from typing import Callable
+from functools import reduce
     
 @patch_method_to_DataFrame( pd.DataFrame )
 def bin_variable( dataframe: pd.DataFrame , 
