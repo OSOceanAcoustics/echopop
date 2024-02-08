@@ -154,4 +154,41 @@ def meld( specimen_dataframe: pd.DataFrame ,
     return pd.concat( [ specimen_stacked ,
                         length_dataframe ] ,
                         join = 'inner' )
-    
+
+@patch_method_to_DataFrame( pd.DataFrame )    
+def stretch( dataframe ,             
+             variable ,
+             variable_contrast = 'sex' ,
+             index_variables = [ 'transect_num' , 'latitude' , 'longitude' , 'stratum_num' ] ,
+             sep = "_" ,
+             suffix = "\\w+" ):
+    """_summary_
+
+    Args:
+        dataframe (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    ### Ensure variables are a list in case input is just a str
+    idx_lst = [ index_variables ] if isinstance( index_variables , str) else index_variables
+
+    ### Prepare the dataframe for pivoting from wide to long
+    # Filter out the dataframe columns with the target index variables
+    dataframe_reduced = (
+        # Select the index variables
+        dataframe.filter( items = idx_lst ) 
+        # Join with the target variable
+        .join( dataframe.filter( regex = variable ) )
+    )
+
+    ### Pivot from wide to long
+    return (
+       pd.wide_to_long( df = dataframe_reduced , 
+                        stubnames = variable , 
+                        i = idx_lst , 
+                        j = variable_contrast , 
+                        sep = sep , 
+                        suffix = suffix ) 
+        .reset_index( )
+    )

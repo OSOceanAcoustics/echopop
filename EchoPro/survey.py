@@ -1019,17 +1019,10 @@ class Survey:
 
         # Create dataframe to save it to Survey object
         areal_number_density_df = (
-            pd.wide_to_long(
-                nasc_to_areal_number_density_df[ [ 'transect_num' , 'latitude' , 'longitude' , 'stratum_num' , 'rho_a_total' , 'rho_a_male' , 'rho_a_female' , 'rho_a_unsexed' ] ] ,
-                stubnames = [ 'rho_a' ] ,
-                i = [ 'transect_num' , 'latitude' , 'longitude' , 'stratum_num' ] ,
-                j = 'sex' ,
-                sep = "_" ,
-                suffix = '\\w+'
-            )
-            .reset_index( )
-            .merge( nasc_adult_number_proportions , on = [ 'stratum_num' ] )
-            .assign( rho_a_adult = lambda x: x[ 'rho_a' ] * x[ 'adult_number_proportion' ] )
+           nasc_to_areal_number_density_df
+           .stretch( variable = 'rho_a' )
+           .merge( nasc_adult_number_proportions , on = [ 'stratum_num' ] )
+           .assign( rho_a_adult = lambda x: x[ 'rho_a' ] * x[ 'adult_number_proportion' ] )
         )
 
         ### Calculate the areal biomass densitiies (B_a)
@@ -1045,15 +1038,8 @@ class Survey:
 
         # Create dataframe to save it to Survey object
         areal_biomass_density_df = (
-            pd.wide_to_long(
-                nasc_to_areal_biomass_density_df[ [ 'transect_num' , 'latitude' , 'longitude' , 'stratum_num' , 'B_a_total' , 'B_a_male' , 'B_a_female' , 'B_a_unsexed' ] ] ,
-                stubnames = [ 'B_a' ] ,
-                i = [ 'transect_num' , 'latitude' , 'longitude' , 'stratum_num' ] ,
-                j = 'sex' ,
-                sep = "_" ,
-                suffix = '\\w+'
-            )
-            .reset_index( )
+            nasc_to_areal_biomass_density_df
+            .stretch( variable = 'B_a' )
             .merge( nasc_adult_number_proportions , on = [ 'stratum_num' ] )
             .assign( B_a_adult = lambda x: x[ 'B_a' ] * x[ 'adult_number_proportion' ] )
         )
@@ -1071,15 +1057,8 @@ class Survey:
 
         # Create dataframe to save it to Survey object
         abundance_df = (
-            pd.wide_to_long(
-                nasc_to_abundance_df[ [ 'transect_num' , 'latitude' , 'longitude' , 'stratum_num' , 'N_total' , 'N_male' , 'N_female' , 'N_unsexed' ] ] ,
-                stubnames = [ 'N' ] ,
-                i = [ 'transect_num' , 'latitude' , 'longitude' , 'stratum_num' ] ,
-                j = 'sex' ,
-                sep = "_" ,
-                suffix = '\\w+'
-            )
-            .reset_index( )
+            nasc_to_abundance_df
+            .stretch( variable = 'N' )
             .merge( nasc_adult_number_proportions , on = [ 'stratum_num' ] )
             .assign( N_adult = lambda x: x[ 'N' ] * x[ 'adult_number_proportion' ] )
         )
@@ -1097,15 +1076,8 @@ class Survey:
 
         # Create datafrane to save it to Survey object
         biomass_df = (
-            pd.wide_to_long(
-                nasc_to_biomass_df[ [ 'transect_num' , 'latitude' , 'longitude' , 'stratum_num' , 'B_total' , 'B_male' , 'B_female' , 'B_unsexed' ] ] ,
-                stubnames = [ 'B' ] ,
-                i = [ 'transect_num' , 'latitude' , 'longitude' , 'stratum_num' ] ,
-                j = 'sex' ,
-                sep = "_" ,
-                suffix = '\\w+'
-            )
-            .reset_index( )
+            nasc_to_biomass_df
+            .stretch( variable = 'B' )
             .merge( nasc_adult_number_proportions , on = [ 'stratum_num' ] )
             .assign( B_adult = lambda x: x[ 'B' ] * x[ 'adult_number_proportion' ] )
         )
