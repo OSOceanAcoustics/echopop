@@ -91,21 +91,27 @@ def validate_data_columns( file_name: Path ,
     # only the necessary rows/column names 
     try:
         workbook = load_workbook(file_name, read_only=True)
-        sheet = workbook[sheet_name]
-        # Validate that the expected columns are contained within the parsed 
-        # column names of the workbook   
-        if 'vario_krig_para' in config_map:
-            data_columns = [list(row) for row in zip(*sheet.iter_rows(values_only=True))][0]
-        else:   
-            data_columns = {col.value for col in sheet[1]}
 
+        # If multiple sheets, iterate through
+        sheet_name = [ sheet_name ] if isinstance( sheet_name , str ) else sheet_name
+
+        for sheets in sheet_name:
+            sheet = workbook[ sheets ]
+            
+            # Validate that the expected columns are contained within the parsed
+            # column names of the workbook   
+            if 'vario_krig_para' in config_map:
+                data_columns = [list(row) for row in zip(*sheet.iter_rows(values_only=True))][0]
+            else:   
+                data_columns = {col.value for col in sheet[1]}
+
+            # Error evaluation and print message (if applicable)
+            if not set(validation_settings.keys()).issubset(set(data_columns)):
+                missing_columns = set(validation_settings.keys()) - set(data_columns)
+                raise ValueError(f"Missing columns in the Excel file: {missing_columns}")
+            
         # Close connection to the work book
         workbook.close()
-
-        # Error evaluation and print message (if applicable)
-        if not set(validation_settings.keys()).issubset(set(data_columns)):
-            missing_columns = set(validation_settings.keys()) - set(data_columns)
-            raise ValueError(f"Missing columns in the Excel file: {missing_columns}")
 
     except Exception as e:
         print(f"Error reading file '{str(file_name)}': {e}")

@@ -146,7 +146,13 @@ class Survey:
                     # Validate datatypes within dataset and make appropriate changes to dtypes (if necessary)
                     # -- This first enforces the correct dtype for each imported column
                     # -- This then assigns the imported data to the correct class attribute
-                    self.read_validated_data( file_name , sheet_name , config_map , validation_settings )     
+                    
+                    ## If multiple sheets, iterate through
+                    # If multiple sheets, then this needs to be converted accordingly
+                    sheet_name = [ sheet_name ] if isinstance( sheet_name , str ) else sheet_name
+
+                    for sheets in sheet_name:
+                        self.read_validated_data( file_name , sheets , config_map , validation_settings )     
         
 
         ### Merge haul numbers and regional indices across biological variables
@@ -252,10 +258,17 @@ class Survey:
             # If kriging dataset, then step one layer deeper into dictionary
             elif config_map[0] == 'kriging':
                 internal = internal['kriging']    
-            
+
             # A single dataframe per entry is expected, so no other fancy operations are needed
-            df_list = [internal[config_map[1] + '_df'] , df]
-            internal[config_map[1] + '_df'] = pd.concat(df_list)
+            # If geo_strata, differentiate between inpfc and stratification1 sheets
+            ### TODO: Temporary approach for incorporating the inpfc dataset. An improved approach
+            ### can be incorporated later on.
+            if sheet_name.lower() == 'inpfc':
+                df_list = [ internal[ 'inpfc_strata_df' ] , df ]
+                internal[ 'inpfc_strata_df' ] = pd.concat( df_list )
+            else: 
+                df_list = [ internal[ config_map[1] + '_df' ] , df ]
+                internal[ config_map[1] + '_df' ] = pd.concat(df_list)
 
         elif attribute_name == 'acoustics':
             
@@ -1074,18 +1087,10 @@ class Survey:
         )        
 
         ### Call in INPFC stratification
-        ### TODO: THIS IS CURRENTLY HARD-CODED -- THIS WILL BE REPLACED WITH THE READ-IN VERSION
-        INPFC_df = pd.DataFrame(
-            {
-                'stratum_inpfc': np.array( [ 1 , 2 , 3 , 4 , 5 , 6 ] , dtype = int ) ,
-                'latitude_limits': np.array( [ 36.0 , 40.5 , 43.0 , 45.7667 , 48.5 , 55.0 ] ) ,
-                'haul_start': np.array( [ 1 , 8 , 35 , 47 , 62 , 201 ] , dtype = int ) ,
-                'haul_end': np.array( [ 7 , 33 , 46 , 61 , 73 , 222 ] , dtype = int )
-            }
-        )
+        inpfc_df = self.spatial[ 'inpfc_strata_df' ].rename( { 'stratum_num': 'stratum_inpfc' } , axis = 1 )
 
         # Bin the strata based on latitude limits 
-        latitude_bins = np.concatenate( [ [ -90 ] , INPFC_df.latitude_limits ] )
+        latitude_bins = np.concatenate( [ [ -90 ] , inpfc_df.northlimit_latitude ] )
 
         ### Summarize transect features
         transect_summary = (
