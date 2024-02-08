@@ -204,3 +204,34 @@ def stretch( dataframe ,
                         suffix = suffix ) 
         .reset_index( )
     )
+
+@patch_method_to_DataFrame( pd.DataFrame ) 
+def group_merge( dataframe ,
+                 dataframes_to_add ,
+                 on ,
+                 how = 'outer' ,
+                 drop_na = True ):
+
+    ### Ensure that both the 'dataframes' and 'on' arguments are lists
+    # dataframes
+    df_lst = [ dataframes_to_add ] if isinstance( dataframes_to_add , str) else dataframes_to_add
+
+    # on
+    on_lst = [ on ] if isinstance( on , str) else on
+
+    ### Merge the dataframes that will be joined to the original dataframe
+    frames_to_add = reduce( lambda left, right: pd.merge( left , right , on = on_lst , how = how ) , df_lst )
+
+    ### Find union of column names that will be used to join everything
+    union_lst = dataframe.filter( items = frames_to_add.columns ).columns.tolist()
+
+    ### Merge together and remove NaN values depending on argument 'drop_na'
+    if drop_na: 
+        merged_frame = dataframe.dropna().merge( frames_to_add.dropna() , 
+                                                 on = union_lst , how = 'outer' )
+    else:
+        merged_frame = dataframe.merge( frames_to_add, 
+                                        on = union_lst , how = 'outer' )
+
+    ### Carriage return
+    return merged_frame

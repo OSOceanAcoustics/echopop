@@ -980,10 +980,16 @@ class Survey:
         )
 
         ### Prepare dataframe to calculate areal number densities (animals / nmi^2)
-        # ??? TODO: Should the area units be editable as an argument in the future via the config ?
-        # Merge georeferenced NASC with sigma_bs measurements and the relative fraction of animals
-        # represented in the NASC exports
-        # calculate proportion coefficient for mixed species values
+        ### ??? TODO: Should the area units be editable as an argument in the future via the config ?
+        ### Merge georeferenced NASC with sigma_bs measurements and the relative fraction of animals
+        ### represented in the NASC exports
+        ### calculate proportion coefficient for mixed species values
+
+        # Consolidate dataframes that will be added into a list
+        dataframes_to_add = [ nasc_interval_df , sigma_bs_strata , weight_sex_strata , nasc_adult_number_proportions , 
+                              nasc_adult_weight_proportions ]
+        
+        # Merge the relevant dataframes
         nasc_fraction_total_df = (
             nasc_interval_df
             # Merge stratum information ( join = 'outer' since missing values will be filled later on)
@@ -992,14 +998,8 @@ class Survey:
             .dropna( subset = 'transect_num' )
             # Fill NaN w/ 0's for 'fraction_hake'
             .assign( fraction_hake = lambda x: x[ 'fraction_hake' ].fillna( 0 ) )
-            # Merge stratum-averaged sigma_bs
-            .merge( sigma_bs_strata , on = [ 'stratum_num' ] )
-            # Merge sex-stratum-indexed weight and proportions
-            .merge( weight_sex_strata , on = [ 'stratum_num' ] )
-            # Merge adult proportions (number)
-            .merge( nasc_adult_number_proportions , on = [ 'stratum_num' ] )
-            # Merge adult proportions (weight)
-            .merge( nasc_adult_weight_proportions , on = [ 'stratum_num' ] )
+            # Group merge
+            .group_merge( dataframes_to_add = dataframes_to_add , on = 'stratum_num' )
         )
 
         ### Calculate the areal number densities (rho_a)
