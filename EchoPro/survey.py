@@ -2,14 +2,12 @@ from typing import List, Union
 from pathlib import Path
 import pandas as pd
 import numpy as np
-
-import yaml
 import copy
 from .core import CONFIG_MAP, LAYER_NAME_MAP
 ### !!! TODO : This is a temporary import call -- this will need to be changed to 
 # the correct relative structure (i.e. '.core' instead of 'EchoPro.core' at a future testing step)
-from .computation.operations import bin_variable , bin_stats , count_variable
-from .utils.data_file_validation import validate_data_columns
+from .computation.operations import bin_variable , bin_stats , count_variable , stretch
+from .utils.data_file_validation import load_configuration , validate_data_columns
 from .computation.acoustics import to_linear , ts_length_regression
 from .computation.spatial import calculate_transect_distance
 from .computation.statistics import stratified_transect_statistic
@@ -56,7 +54,7 @@ class Survey:
         ### Loading the configuration settings and definitions that are used to 
         # initialize the Survey class object
         # ATTRIBUTE ADDITIONS: `config`
-        self.config = self.load_configuration( Path( init_config_path ) , Path( survey_year_config_path ) )
+        self.config = load_configuration( Path( init_config_path ) , Path( survey_year_config_path ) )
 
         # Initialize data attributes ! 
         self.acoustics = copy.deepcopy(LAYER_NAME_MAP['NASC']['data_tree'])
@@ -78,70 +76,6 @@ class Survey:
         # ATTRIBUTE ADDITIONS: `meta`
         ##
         # self.populate_tree()
-
-    @staticmethod
-    def load_configuration( init_config_path: Path , 
-                            survey_year_config_path: Path ):
-        """
-        Loads the biological, NASC, and stratification
-        data using parameters obtained from the configuration
-        files.
-
-        Parameters
-        ----------
-        init_config_path : pathlib.Path
-            A string specifying the path to the initialization YAML file
-        survey_year_config_path : pathlib.Path
-            A string specifying the path to the survey year YAML file
-
-        Notes
-        -----
-        This function parses the configuration files and incorporates them into
-        the Survey class object. This initializes the `config` attribute that 
-        becomes available for future reference and functions.
-        """
-        ### Validate configuration files
-        # Retreive the module directory to begin mapping the configuration file location
-        #current_directory = os.path.dirname(os.path.abspath(__file__))
-
-        # Build the full configuration file paths and verify they exist
-        config_files = [init_config_path, survey_year_config_path]
-        config_existence = [init_config_path.exists(), survey_year_config_path.exists()] 
-
-        # Error evaluation and print message (if applicable)
-        if not all(config_existence):
-            missing_config = [ files for files, exists in zip( config_files, config_existence ) if not exists ]
-            raise FileNotFoundError(f"The following configuration files do not exist: {missing_config}")
-
-        ### Read configuration files
-        # If configuration file existence is confirmed, proceed to reading in the actual files
-        ## !!! TODO: Incorporate a configuration file validator that enforces required variables and formatting
-        init_config_params = yaml.safe_load(init_config_path.read_text())
-        survey_year_config_params = yaml.safe_load(survey_year_config_path.read_text())        
-
-        # Validate that initialization and survey year configuration parameters do not intersect
-        config_intersect = set(init_config_params.keys()).intersection(set(survey_year_config_params.keys()))
-        
-        # Error evaluation, if applicable
-        if config_intersect:
-            raise RuntimeError(
-                f"The initialization and survey year configuration files comprise the following intersecting variables: {config_intersect}"
-            )
-
-        ### Format dictionary that will parameterize the `config` class attribute
-        # Join the initialization and survey year parameters into a single dictionary
-        config_to_add = { **init_config_params , **survey_year_config_params }
-        
-        # Amend length/age distribution locations within the configuration attribute
-        config_to_add[ 'biometrics' ] = { 
-            'bio_hake_len_bin': init_config_params[ 'bio_hake_len_bin' ] ,
-            'bio_hake_age_bin': init_config_params[ 'bio_hake_age_bin' ]
-        }
-        
-        del config_to_add['bio_hake_len_bin'] , config_to_add['bio_hake_age_bin']
-        
-        # Pass 'full_params' to the class instance
-        return config_to_add
 
     def load_survey_data( self ):
         """
