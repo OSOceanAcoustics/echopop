@@ -1,16 +1,27 @@
-"""``pytest`` configuration."""
-
 import pytest
-import pathlib
+from pathlib import Path
 
-from EchoPro._testing import HERE
 
+# Set up path to test_data folder
+HERE = Path(__file__).parent.absolute()
+TEST_DATA_ROOT = HERE.parent / "test_data"
 
 @pytest.fixture(scope="session")
-def config_base_path() -> pathlib.Path:
+def test_path():
+    return {
+        "ROOT": TEST_DATA_ROOT,
+        "CONFIG": TEST_DATA_ROOT / "config_files",
+        "INPUT": TEST_DATA_ROOT / "input_files",  # this doesn't exist yet
+    }
+
+
+# ============ below from previous version, remove after revamping is complete ============
+@pytest.fixture(scope="session")
+def config_base_path() -> Path:
     """
     Defines the base directory path for the
     configuration files.
+    
     Returns
     -------
     pathlib.Path
@@ -20,7 +31,7 @@ def config_base_path() -> pathlib.Path:
 
 
 @pytest.fixture(scope="session")
-def reports_base_path() -> pathlib.Path:
+def reports_base_path() -> Path:
     """
     Defines the base directory path were all reports
     generated should be saved.
@@ -33,7 +44,7 @@ def reports_base_path() -> pathlib.Path:
 
 
 @pytest.fixture(scope="session")
-def matlab_output_base_path() -> pathlib.Path:
+def matlab_output_base_path() -> Path:
     """
     Defines the base directory path for the
     Matlab output files.
@@ -42,4 +53,4 @@ def matlab_output_base_path() -> pathlib.Path:
     pathlib.Path
         The base directory path for the Matlab output files
     """
-    return pathlib.Path("<YOUR-MATLAB-OUTPUTS-BASEPATH>")
+    return Path("<YOUR-MATLAB-OUTPUTS-BASEPATH>")
