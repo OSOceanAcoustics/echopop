@@ -1,8 +1,8 @@
 import pandas as pd
 import geopy.distance
 
-def calculate_bounds( group ,
-                      contrast ):
+def calculate_start_end_coordinates( group ,
+                                     contrast ):
     """
     Calculates latitude/longitude boundary box    
 
@@ -47,15 +47,17 @@ def calculate_transect_distance( dataframe ,
     relative to each transect, and the distance for each transect
     """ 
     
-    transect_spacing_area = dataframe.groupby( contrast )[ 'transect_spacing' ].mean().reset_index()
+    ### Calculate mean transect spacinge
+    transect_spacing = dataframe.groupby( contrast )[ 'transect_spacing' ].mean().reset_index()
     
+    ### Calculate minimum/maximum longitude, mean latitude, spacing, and area
     return (
             dataframe
-            .pipe( lambda df: calculate_bounds( df , [ contrast ] ) )
+            .pipe( lambda df: calculate_start_end_coordinates( df , [ contrast ] ) )
             .assign(transect_distance=lambda x: x.apply( lambda row: geopy.distance.distance( 
                     ( row[ 'center_latitude' ] , row[ 'minimum_longitude' ] ) , 
                     ( row[ 'center_latitude' ] , row[ 'maximum_longitude' ] ) ).nm , 
                     axis=1 ) )
-            .merge( transect_spacing_area , on = [ contrast ] )
+            .merge( transect_spacing , on = [ contrast ] )
             .assign( transect_area = lambda x: x.transect_distance * x.transect_spacing )
     )
