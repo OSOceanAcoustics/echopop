@@ -729,7 +729,7 @@ class Survey:
         
         ### Store the data frame in an accessible location
         self.biology[ 'weight' ][ 'weight_strata_df' ] = pd.DataFrame( {
-            'stratum': total_weight.index ,
+            'stratum_num': total_weight.index ,
             'proportion_female': sex_proportions.loc[ 'female' , : ][ 'overall_station_p' ].reset_index(drop=True) ,
             'proportion_male': sex_proportions.loc[ 'male' , : ][ 'overall_station_p' ].reset_index(drop=True) ,
             'average_weight_female': female_weight ,            
@@ -884,11 +884,7 @@ class Survey:
         ### Call additional dataframes needed to merge with the NASC data and subsequently calculate
         ### population-level metrics (and later statistics)
         # Sex-stratum-indexed proportions and average weight
-        weight_sex_strata = (
-            self.biology[ 'weight' ][ 'weight_strata_df' ]
-            .copy()
-            .rename( columns = { 'stratum': 'stratum_num' } )
-        )
+        weight_sex_strata = self.biology[ 'weight' ][ 'weight_strata_df' ].copy( )
 
         # Stratum information
         info_strata = self.spatial[ 'strata_df' ].copy()
