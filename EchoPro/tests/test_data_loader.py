@@ -1,6 +1,5 @@
 import yaml
 from pathlib import Path
-from EchoPro.survey import Survey
 from EchoPro.utils.data_file_validation import load_configuration , validate_data_columns
 
 def test_load_configuration(test_path, tmp_path):
