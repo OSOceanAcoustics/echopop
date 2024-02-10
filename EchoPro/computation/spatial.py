@@ -1,6 +1,41 @@
 import pandas as pd
 import geopy.distance
 
+def correct_transect_intervals( dataframe: pd.DataFrame ,
+                                threshold: np.float64 = 0.05 ):
+    """
+    Calculate along-transect intervals and impute erroneous values
+
+    Parameters
+    ----------
+    dataframe: pd.DataFrame
+        DataFrame
+
+    Notes
+    -----
+    This function calculates the along-track transect interval length and areas.
+    It then 'searches' for possible erroneous values at the end of each line 
+    and replaces/imputes with alternative lengths/areas.
+    """
+    return (
+            dataframe
+                        # Calculate along-transect interval distances
+                .pipe( lambda df: df.assign( interval = df[ 'vessel_log_start' ].diff( periods = -1 ).abs( ) ) 
+                                    .replace( np.nan , df[ 'vessel_log_end' ].iloc[ -1 ] - df[ 'vessel_log_start' ].iloc[ -1 ] ) )
+                # Replace likely erroneous interval lengths associated with the edges of each transect
+                .pipe
+                ( lambda df: df.assign( median_interval = np.median( df[ 'interval' ] ) )
+                                    .assign( interval = lambda x: np.where( np.abs( x[ 'interval' ] - x[ 'median_interval' ] > threshold ) ,
+                                                                            x.vessel_log_end - x.vessel_log_start ,
+                                                                            x.interval ) ) )
+                # Calculate interval area
+                .pipe( lambda df: df.assign( interval_area = df[ 'interval' ] * df[ 'transect_spacing' ] ) )                            
+                # Keep dataframe tidy by only retaining the necessary columns/variables
+                .loc[ : , [ 'latitude' , 'longitude' , 'transect_num' , 'stratum_num' , 'haul_num' , 
+                            'interval' , 'interval_area' , 'NASC_all_ages' , 'NASC_no_age1' ] ]
+            )
+
+
 def calculate_start_end_coordinates( group ,
                                      contrast ):
     """

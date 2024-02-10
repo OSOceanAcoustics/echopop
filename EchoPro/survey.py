@@ -858,92 +858,15 @@ class Survey:
         (abundance, biomass, areal densities) stratified by transects, sex, 
         length-based strata, and age.
         """ 
-        
-        ### Prepare initial dataframes used for calculation population statistics
-        # Construct georeferenced dataframe containing NASC data
-        nasc_df = self.acoustics[ 'nasc' ][ 'nasc_df' ]        
+        ### Calculate sex-indexed weight proportions for each stratum
+        sex_indexed_weight_proportions = index_sex_weight_proportions( copy.deepcopy( self.biology ) )
 
-        ### Calculate transect interval lengths and areas, plus impute/replace possible 'erroneous' 
-        ### values at the end of each transect line
-        nasc_interval_df = (
-            nasc_df
-            # Calculate along-transect interval distances
-            .pipe( lambda df: df.assign( interval = df[ 'vessel_log_start' ].diff( periods = -1 ).abs( ) ) 
-                                .replace( np.nan , df[ 'vessel_log_end' ].iloc[ -1 ] - df[ 'vessel_log_start' ].iloc[ -1 ] ) )
-            # Replace likely erroneous interval lengths associated with the edges of each transect
-            .pipe( lambda df: df.assign( median_interval = np.median( df[ 'interval' ] ) )
-                                .assign( interval = lambda x: np.where( np.abs( x[ 'interval' ] - x[ 'median_interval' ] > 0.05 ) ,
-                                                                        x.vessel_log_end - x.vessel_log_start ,
-                                                                        x.interval ) ) )
-            # Calculate interval area
-            .pipe( lambda df: df.assign( interval_area = df[ 'interval' ] * df[ 'transect_spacing' ] ) )                            
-            # Keep dataframe tidy by only retaining the necessary columns/variables
-            .loc[ : , [ 'latitude' , 'longitude' , 'transect_num' , 'stratum_num' , 'haul_num' , 'interval_area' , 'NASC_all_ages' , 'NASC_no_age1' ] ]
-        )
-
-        ### Call additional dataframes needed to merge with the NASC data and subsequently calculate
-        ### population-level metrics (and later statistics)
-        # Sex-stratum-indexed proportions and average weight
-        weight_sex_strata = self.biology[ 'weight' ][ 'weight_strata_df' ].copy( )
-
-        # Stratum information
-        info_strata = self.spatial[ 'strata_df' ].copy()
-
-        # Stratum-averaged sigma_bs
-        sigma_bs_strata = self.acoustics[ 'sigma_bs' ][ 'strata_mean' ]
-
-        # Adult NASC proportions for each stratum (number)
-        # !!! TODO: Currently only uses 'age_1_excluded' -- this should become an argument that toggles
-        ## This is not a major issue since both 'NASC_*' columns can be pivoted to create a single 
-        ## NASC column so the column name does not have to be hard-coded. This could then correspond to
-        ## the configuration settings in some way, or this may be where the argument comes into play where
-        ## the dataframe can be simply filtered based on the input/selection.
-        # between excluding and including age-1 fish
-        nasc_adult_number_proportions = (
-            self.biology[ 'weight' ][ 'age_stratified' ][ 'age_1_excluded' ][ 'number_proportions' ]
-            .rename( columns = { 'number_proportion': 'adult_number_proportion' } )
-        )
-
-        # Adult NASC proportions for each stratum (weight)
-        nasc_adult_weight_proportions = (
-            self.biology[ 'weight' ][ 'age_stratified' ][ 'age_1_excluded' ][ 'weight_proportions' ]
-            .rename( columns = { 'weight_proportion': 'adult_weight_proportion' } )
-        )
-
-        # Age-stratified weight proportions
-        age_stratified_proportions = self.biology[ 'weight' ][ 'age_stratified' ][ 'age_1_included' ][ 'weight_proportions' ]
-
-        # Age-stratified & sex-indexed weight proportions
-        age_sex_stratified_proportions = self.biology[ 'weight' ][ 'sex_stratified' ][ 'weight_proportions' ]
-
-        # Concatenate the two to add a 'total' category
-        sex_indexed_weight_proportions = pd.concat(
-             [ age_sex_stratified_proportions.rename( columns = { 'weight_sex_stratum_proportion': 'weight_proportion' } ) ,
-               age_stratified_proportions.assign( sex = 'total' ).rename( columns = { 'weight_stratum_proportion': 'weight_proportion' } ) ]
-        )
-
-        ### Prepare dataframe to calculate areal number densities (animals / nmi^2)
-        ### ??? TODO: Should the area units be editable as an argument in the future via the config ?
-        ### Merge georeferenced NASC with sigma_bs measurements and the relative fraction of animals
-        ### represented in the NASC exports
-        ### calculate proportion coefficient for mixed species values
-
-        # Consolidate dataframes that will be added into a list
-        dataframes_to_add = [ nasc_interval_df , sigma_bs_strata , weight_sex_strata , nasc_adult_number_proportions , 
-                              nasc_adult_weight_proportions ]
-        
-        # Merge the relevant dataframes
-        nasc_fraction_total_df = (
-            nasc_interval_df
-            # Merge stratum information ( join = 'outer' since missing values will be filled later on)
-            .merge( info_strata , on = [ 'stratum_num' , 'haul_num' ] , how = 'outer' )
-            # Drop unused hauls
-            .dropna( subset = 'transect_num' )
-            # Fill NaN w/ 0's for 'fraction_hake'
-            .assign( fraction_hake = lambda x: x[ 'fraction_hake' ].fillna( 0 ) )
-            # Group merge
-            .group_merge( dataframes_to_add = dataframes_to_add , on = 'stratum_num' )
-        )
+        ### Join acoustic and biological dataframes that incorporate the fractions of integrated 
+        ### acoustic backscatter specific to target organisms with adult-specific number and weight
+        ### proportions needed to estimate the convers from NASC to biomass
+        nasc_fraction_total_df = index_transect_age_sex_proportions( copy.deepcopy( self.acoustics ) ,
+                                                                     copy.deepcopy( self.biology ) , 
+                                                                     self.spatial[ 'strata_df' ].copy() )
 
         ### Calculate the areal number densities (rho_a)
         # rho_a = animals / nmi^-2
