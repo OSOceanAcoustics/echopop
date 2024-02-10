@@ -1,9 +1,18 @@
 import numpy as np
 import pandas as pd
 from ..computation.spatial import correct_transect_intervals
+from ..computation.operations import group_merge
 
 def index_sex_weight_proportions( biology_dict: dict ):
+    """
+    Generate dataframe containing sex-stratified weight proportions    
 
+    Parameters
+    ----------
+    biology_dict: dict
+        Biology data attribute dictionary 
+    """     
+    
     # Age-stratified weight proportions
     age_stratified_proportions = biology_dict[ 'weight' ][ 'age_stratified' ][ 'age_1_included' ][ 'weight_proportions' ]
 
@@ -23,6 +32,18 @@ def index_sex_weight_proportions( biology_dict: dict ):
 def index_transect_age_sex_proportions( acoustics_dict: dict ,
                                         biology_dict: dict ,
                                         info_strata: pd.DataFrame ):
+    """
+    Prepares the age- and sex-stratified dataframe for biomass calculation    
+
+    Parameters
+    ----------
+    acoustics_dict: dict
+        Acoustic data attribute dictionary 
+    biology_dict: dict
+        Biology data attribute dictionary 
+    infra_strata: pd.DataFrame
+        Dataframe containing strata definitions
+    """     
     
     ### Prepare initial dataframes used for calculation population statistics
     # Construct georeferenced dataframe containing NASC data

@@ -883,6 +883,12 @@ class Survey:
                    .assign( rho_a_unsexed = lambda x: np.round( x[ 'rho_a_total' ] - x[ 'rho_a_male' ] - x[ 'rho_a_female' ] ) ) )             
         )
 
+        # Adult number proportions
+        nasc_adult_number_proportions = (
+            self.biology[ 'weight' ][ 'age_stratified' ][ 'age_1_excluded' ][ 'number_proportions' ]
+            .rename( columns = { 'number_proportion': 'adult_number_proportion' } )
+        )
+
         # Create dataframe to save it to Survey object
         areal_number_density_df = (
            nasc_to_areal_number_density_df
