@@ -11,6 +11,7 @@ from .utils.data_file_validation import load_configuration , validate_data_colum
 from .computation.acoustics import to_linear , ts_length_regression
 from .computation.spatial import calculate_transect_distance
 from .computation.statistics import stratified_transect_statistic
+from .computation.biology import index_sex_weight_proportions , index_transect_age_sex_proportions
 
 ### !!! TODO : This is a temporary import call -- this will need to be changed to 
 # the correct relative structure (i.e. '.utils.data_structure_utils' instead of 
