@@ -1,6 +1,7 @@
 import pandas as pd
+import numpy as np
 import geopy.distance
-
+                                
 def correct_transect_intervals( dataframe: pd.DataFrame ,
                                 threshold: np.float64 = 0.05 ):
     """
