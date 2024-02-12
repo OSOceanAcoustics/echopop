@@ -40,7 +40,7 @@ def correct_transect_intervals( dataframe: pd.DataFrame ,
 def calculate_start_end_coordinates( group ,
                                      contrast ):
     """
-    Calculates latitude/longitude boundary box    
+    Calculates start and end latitude/longitude   
 
     Parameters
     ----------
