@@ -4,10 +4,11 @@ import scipy.stats as st
 def stratified_transect_statistic( transects , 
                                    strata , 
                                    sample_fraction , 
-                                   replicates ):
+                                   num_replicates ,
+                                   parameter: str ):
     
     """
-    Calculates stratified mean statistics for a given transect
+    Calculates stratified mean statistics for a set of transects
     
 
     Parameters
@@ -17,10 +18,12 @@ def stratified_transect_statistic( transects ,
     strata: pd.DataFrame
         DataFrame comprising summary features of latitude (INPFC) delimited strata
     sample_fraction: np.float64
-        Value representing the proportion of ftransects that are resampled from the
+        Value representing the proportion of transects that are resampled from the
         overall dataset within each strata
-    replicates: int
+    num_replicates: int
         The number of iterations/realizations used for bootstrapping
+    parameter: str
+        Parameter-of-interest that will be summarized (e.g. biomass)
 
     Notes
     -----
@@ -30,7 +33,7 @@ def stratified_transect_statistic( transects ,
     
     ### Convert specific DataFrame columns to arrays for speed
     distance = transects[ 'transect_distance' ].values
-    value = transects[ 'B_adult' ].values
+    value = transects[ parameter ].values
     num_transects = strata[ 'num_transects' ].values
     total_transect_area = strata.set_index( 'stratum_inpfc' )[ 'total_transect_area' ]
 
@@ -50,11 +53,11 @@ def stratified_transect_statistic( transects ,
     cum_num_transects = np.concatenate( ( [ 0 ] , np.cumsum( num_transects ) ) )
 
     # Stratified statistics
-    mean_arr = np.empty( replicates )
-    variance_arr = np.empty( replicates )
+    mean_arr = np.empty( num_replicates )
+    variance_arr = np.empty( num_replicates )
     
     ### Iterate across all replicate iterations/realizations
-    for i in range( replicates ):
+    for i in range( num_replicates ):
 
         # Pre-allocate the stratum-specific means and variances
         rho_j = np.empty_like( total_transect_area ) # mean

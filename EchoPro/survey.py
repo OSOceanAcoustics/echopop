@@ -1001,7 +1001,7 @@ class Survey:
         transect_sample = self.config[ 'stratified_survey_mean_parameters' ][ 'strata_transect_proportion' ]
 
         # Number of replicates
-        transect_replicates = self.config[ 'stratified_survey_mean_parameters' ][ 'replicates' ]
+        transect_replicates = self.config[ 'stratified_survey_mean_parameters' ][ 'num_replicates' ]
 
         ### Call in biomass
         adult_biomass = (
@@ -1042,7 +1042,7 @@ class Survey:
                 )
         
         ### Combine the above parameters and data to calculate the stratified statistics
-        stratified_results = stratified_transect_statistic( transect_summary , strata_summary , transect_sample , transect_replicates )
+        stratified_results = stratified_transect_statistic( transect_summary , strata_summary , transect_sample , transect_replicates , parameter = 'B_adult' )
         
         ###
         self.biology[ 'population' ].update(
