@@ -58,7 +58,7 @@ stratification:
   geo_strata:
     # The two stratification types are found in two sheets: "stratification1" and "INPFC"
     filename: Stratification/Stratification_geographic_Lat_2019_final.xlsx
-    sheetname: stratification1
+    sheetname: [ INPFC , stratification1 ]
 NASC:
   # NASC values
   no_age1:

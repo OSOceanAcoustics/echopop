@@ -3,6 +3,7 @@ import pandas as pd
 from ..utils.monkey_patch_dataframe import patch_method_to_DataFrame
 from typing import Union , List
 from typing import Callable
+from functools import reduce
     
 @patch_method_to_DataFrame( pd.DataFrame )
 def bin_variable( dataframe: pd.DataFrame , 
@@ -154,4 +155,84 @@ def meld( specimen_dataframe: pd.DataFrame ,
     return pd.concat( [ specimen_stacked ,
                         length_dataframe ] ,
                         join = 'inner' )
-    
+
+@patch_method_to_DataFrame( pd.DataFrame )    
+def stretch( dataframe ,             
+             variable ,
+             variable_contrast = 'sex' ,
+             index_variables = [ 'transect_num' , 'latitude' , 'longitude' , 'stratum_num' ] ,
+             sep = "_" ,
+             suffix = "\\w+" ):
+    """
+    Melts dataframe into a parseable format
+
+    Parameters
+    ----------
+    dataframe: pd.DataFrame
+        A DataFrame object containing pertinent biological data
+    variable: str
+        Data variable name
+    variable_contrast: str
+        The name of the column that will be used to index the data variable
+    index_variables: str or List
+        A list or string of additional indexing/metadata variables that will be joined to the
+        data-of-interest
+    sep: str
+        A character indicating the separation of the variable names in the wide format, to be stripped 
+        from the names in the long format
+    suffix: str
+        A regular expression capturing the wanted suffixes
+    """
+    ### Ensure variables are a list in case input is just a str
+    idx_lst = [ index_variables ] if isinstance( index_variables , str) else index_variables
+
+    ### Prepare the dataframe for pivoting from wide to long
+    # Filter out the dataframe columns with the target index variables
+    dataframe_reduced = (
+        # Select the index variables
+        dataframe.filter( items = idx_lst ) 
+        # Join with the target variable
+        .join( dataframe.filter( regex = variable ) )
+    )
+
+    ### Pivot from wide to long
+    return (
+       pd.wide_to_long( df = dataframe_reduced , 
+                        stubnames = variable , 
+                        i = idx_lst , 
+                        j = variable_contrast , 
+                        sep = sep , 
+                        suffix = suffix ) 
+        .reset_index( )
+    )
+
+@patch_method_to_DataFrame( pd.DataFrame ) 
+def group_merge( dataframe ,
+                 dataframes_to_add ,
+                 on ,
+                 how = 'outer' ,
+                 drop_na = True ):
+
+    ### Ensure that both the 'dataframes' and 'on' arguments are lists
+    # dataframes
+    df_lst = [ dataframes_to_add ] if isinstance( dataframes_to_add , str) else dataframes_to_add
+
+    # on
+    on_lst = [ on ] if isinstance( on , str) else on
+
+    ### Merge the dataframes that will be joined to the original dataframe
+    frames_to_add = reduce( lambda left, right: pd.merge( left , right , on = on_lst , how = how ) , df_lst )
+
+    ### Find union of column names that will be used to join everything
+    union_lst = dataframe.filter( items = frames_to_add.columns ).columns.tolist()
+
+    ### Merge together and remove NaN values depending on argument 'drop_na'
+    if drop_na: 
+        merged_frame = dataframe.dropna().merge( frames_to_add.dropna() , 
+                                                 on = union_lst , how = 'outer' )
+    else:
+        merged_frame = dataframe.merge( frames_to_add, 
+                                        on = union_lst , how = 'outer' )
+
+    ### Carriage return
+    return merged_frame

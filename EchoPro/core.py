@@ -56,6 +56,12 @@ CONFIG_MAP = {
             'stratum_num': int ,
             'northlimit_latitude': np.float64 ,
         } ,
+        'inpfc_strata': {
+            'stratum_num': int ,
+            'northlimit_latitude': np.float64 ,
+            'haul_start': int ,
+            'haul_end': int ,
+        } ,
     } ,
     'NASC': {
         # ACOUSTIC DATASET -- NASC EXCLUDING AGE-1
@@ -185,11 +191,12 @@ LAYER_NAME_MAP = {
     } ,
     'stratification': {
         'name': 'spatial' ,
-        'data': ['strata' , 'geo_strata'] ,
+        'data': [ 'strata' , 'geo_strata' , 'inpfc_strata' ] ,
         'superlayer': [] ,
         'data_tree': {
             'strata_df': pd.DataFrame() ,
             'geo_strata_df': pd.DataFrame() ,
+            'inpfc_strata_df': pd.DataFrame() ,
         } ,
     } ,
     'NASC': {

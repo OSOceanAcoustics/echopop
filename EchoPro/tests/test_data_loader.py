@@ -1,6 +1,6 @@
 import yaml
 from pathlib import Path
-from EchoPro.survey import Survey
+from EchoPro.utils.data_file_validation import load_configuration , validate_data_columns
 
 def test_load_configuration(test_path, tmp_path):
     init_params = yaml.safe_load(
@@ -19,7 +19,7 @@ def test_load_configuration(test_path, tmp_path):
         yaml.safe_dump(survey_params, yf)
 
     # Use class method
-    config = Survey.load_configuration(
+    config = load_configuration(
         init_config_path=Path(test_path["CONFIG"] / "config_init.yml"),
         survey_year_config_path=temp_config_survey_path,
     )

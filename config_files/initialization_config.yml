@@ -8,6 +8,7 @@
   # Jolly and Hampton (1990) stratified mean calculation
   stratified_survey_mean_parameters:
     strata_transect_proportion: 0.75                          # percent of Jolly-Hampton transects in each stratum
+    num_replicates: 10000                                         # number of resample replicates
 
   #####################################################################################################################
   # Biological data processing#
@@ -26,8 +27,6 @@
   ]
 
   #####################################################################################################################
-
-  #####################################################################################################################
   # Log-linear regression#
   ########################
   # Target strenth (TS) - length (L) regression: TS=m*log10(L)+b
@@ -39,10 +38,15 @@
       length_units: cm                    # units for L used in regression/relationship
 
   #####################################################################################################################
+  # Geospatial settings#
+  ########################
+  geospatial:
+    init: epsg:4326 # EPSG integer code for geodetic parameter dataset
 
   #####################################################################################################################
   # kriging parameters#
   #####################
   kriging_A0: 6.25                        # base area of the grid cell
+
   #####################################################################################################################
 ...
