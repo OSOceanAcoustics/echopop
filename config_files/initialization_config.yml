@@ -41,12 +41,16 @@
   # Geospatial settings#
   ########################
   geospatial:
-    init: epsg:4326 # EPSG integer code for geodetic parameter dataset
+    init: epsg:4326                       # EPSG integer code for geodetic parameter dataset
 
   #####################################################################################################################
   # kriging parameters#
   #####################
-  kriging_A0: 6.25                        # base area of the grid cell
+  kriging_parameters:
+    A0: 6.25                              # base area of the grid cell
+    longitude_reference: -124.78338       # longitude reference for kriging mesh adjustment
+    longitude_offset: -124.78338          # longitudinal offset for kriging mesh adjustment
+    latitude_offset: 45.0                 # latitudinal offset for kriging mesh adjustment 
 
   #####################################################################################################################
 ...
