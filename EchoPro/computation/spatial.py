@@ -101,7 +101,7 @@ def calculate_transect_distance( dataframe ,
             .assign( transect_area = lambda x: x.transect_distance * x.transect_spacing )
     )
 
-def georeference( dataframe: pd.DataFrame ,
+def georeference( dataframe: pd.DataFrame ,                 
                   projection: str = 'epsg:4326' ):
     """
     Converts a DataFrame to a GeoDataFrame
@@ -124,24 +124,54 @@ def georeference( dataframe: pd.DataFrame ,
     lat_col = [ col for col in dataframe.columns if 'latitude' in col.lower( ) ][ 0 ]
     lon_col = [ col for col in dataframe.columns if 'longitude' in col.lower( ) ][ 0 ]
     
-    ### Create GeoDataFrame
-    gdf = gpd.GeoDataFrame( dataframe.copy( ) , 
-                            geometry = gpd.points_from_xy( dataframe.copy( )[ lon_col ] , 
-                                                           dataframe.copy( )[ lat_col ] ) ,
-                            crs = projection )
+    ### Reduce coordinates to prevent issues with unwieldly dataframes
+    dataframe_geometry = (
+        # dataframe.loc[ : , [ lon_col , lat_col ] ]
+        dataframe[ [ lon_col , lat_col ] ]
+        .drop_duplicates( )
+        .assign( geometry = lambda x: gpd.points_from_xy( x[ lon_col ] , x[ lat_col ] ) )
+    )
     
-    ### Carriage return
-    return gdf
+    ### Convert to GeoDataFrame
+    geodataframe_geometry = gpd.GeoDataFrame( dataframe_geometry ,
+                                              geometry = 'geometry' ,
+                                              crs = projection )
+    
+    ### Merge back with original input data in case of reduction
+    return geodataframe_geometry.merge( dataframe , on = [ lon_col , lat_col ] )
 
-def transform_geometry( geodataframe: gpd.GeoDataFrame ,
+def transform_geometry( dataframe: gpd.GeoDataFrame ,
                         geodataframe_reference: gpd.GeoDataFrame ,
                         longitude_reference: np.float64 ,
                         longitude_offset: np.float64 ,
                         latitude_offset: np.float64 ,
+                        projection: str = 'epsg:4326' ,
                         d_longitude: Optional[ np.float64 ] = None ,
                         d_latitude: Optional[ np.float64 ] = None , ) -> Tuple[ pd.DataFrame , 
                                                                                 np.float64 , 
                                                                                 np.float64 ]:
+    """
+    Transforms the geometry of a GeoDataFrame to reference coordinates
+
+    Parameters
+    ----------
+    dataframe: pd.DataFrame
+        DataFrame
+    geodataframe_reference: gpd.GeoDataFrame
+        Reference GeoDataFrame
+    longitude_reference: np.float64
+        Reference longitude used to 'center' all coordinates
+    longitude_offset: np.float64
+        Longitude value used to shift longitude coordinates
+    latitude_offset: np.float64
+        Latitude value used to shift latitude coordinates
+    projection: str
+        Projection (EPSG) string
+    d_longitude: np.float64
+        Total longitudinal distance (degrees) used for standardizing coordinates
+    d_latitude: np.float64
+        Total longitudinal distance (degrees) used for standardizing coordinates   
+    """
     
     ### Interpolate coordinates
     # This transformation will be applied the appropriate datasets
@@ -151,12 +181,30 @@ def transform_geometry( geodataframe: gpd.GeoDataFrame ,
         kind = 'linear' ,
         bounds_error = False
     )
+    
+    ### Parse longitude and latitude column names
+    lat_col = [ col for col in dataframe.columns if 'latitude' in col.lower( ) ][ 0 ]
+    lon_col = [ col for col in dataframe.columns if 'longitude' in col.lower( ) ][ 0 ]
+    
+    ### Reduce coordinates to prevent issues with unwieldly dataframes
+    dataframe_geometry = (
+        # dataframe.loc[ : , [ lon_col , lat_col ] ]
+        dataframe[ [ lon_col , lat_col ] ]
+        .drop_duplicates( )
+        .assign( geometry = lambda x: gpd.points_from_xy( x[ lon_col ] , x[ lat_col ] ) )
+    )
+    
+    ### Convert to GeoDataFrame
+    geodataframe_geometry = gpd.GeoDataFrame( dataframe_geometry ,
+                                              geometry = 'geometry' ,
+                                              crs = projection )
 
     ### Apply transformation to pre-existing coordinates
     geodataframe_transformed = (
-        geodataframe
-        .copy( )
-        .assign( longitude_transformed = lambda df: df.geometry.x - coordinate_interp( df.geometry.y ) + longitude_reference )
+        geodataframe_geometry
+        .assign( longitude_transformed = lambda df: ( 
+                    df.geometry.x - coordinate_interp( df.geometry.y ) + longitude_reference ) 
+                )
         .pipe( lambda df: df.assign( geometry = gpd.points_from_xy( df.longitude_transformed , df.geometry.y ) ) )
     )
 
@@ -167,21 +215,111 @@ def transform_geometry( geodataframe: gpd.GeoDataFrame ,
         d_longitude = geodataframe_transformed.geometry.x.max( ) - geodataframe_transformed.geometry.x.min( )
         d_latitude = geodataframe_transformed.geometry.y.max( ) - geodataframe_transformed.geometry.y.min( )
 
-    ### Transform coordinates from longitude/latitude to distance
-    # Generate copies
-    x_copy = geodataframe_transformed.geometry.x 
-    y_copy = geodataframe_transformed.geometry.y 
+    ### Apply transformation to coordinates and assign to reduced geodataframe
+    geodataframe_result = (
+        geodataframe_transformed
+        .assign(  x_transformed = lambda dfs: (
+                                                    np.cos( np.pi / 180.0 * dfs.geometry.y ) *
+                                                    ( dfs.geometry.x - longitude_offset ) /
+                                                    d_longitude ) ,
+                                    y_transformed = lambda dfs: (
+                                                    ( dfs.geometry.y - latitude_offset ) /
+                                                    d_latitude
+                                    ) ) )
+    #     .pipe( lambda df: df.assign( x_transformed = lambda dfs: (
+    #                                                 np.cos( np.pi / 180.0 * dfs.geometry.y ) *
+    #                                                 ( dfs.geometry.x - longitude_offset ) /
+    #                                                 d_longitude ) ,
+    #                                 y_transformed = lambda dfs: (
+    #                                                 ( dfs.geometry.y - latitude_offset ) /
+    #                                                 d_latitude
+    #                                 ) ) )
+    # )
 
-    # Apply transformation
-    x = np.cos( np.pi / 180.0 * y_copy ) * ( x_copy - longitude_offset ) / d_longitude
-    y = ( y_copy - latitude_offset ) / d_latitude
+    ### Merge back with original input data in case of reduction
+    return geodataframe_result.merge( dataframe , on = [ lon_col , lat_col ] )
 
-    ### Assign columns to original geodataframe
-    geodataframe_transformed[ 'x_transformed' ] = x
-    geodataframe_transformed[ 'y_transformed' ] = y 
+from scipy import spatial
 
-    ### Carriage return
-    return geodataframe_transformed
+def transform_geometry1(dataframe: gpd.GeoDataFrame,
+                       geodataframe_reference: gpd.GeoDataFrame,
+                       longitude_reference: np.float64,
+                       longitude_offset: np.float64,
+                       latitude_offset: np.float64,
+                       projection: str = 'epsg:4326',
+                       d_longitude: Optional[np.float64] = None,
+                       d_latitude: Optional[np.float64] = None) -> Tuple[pd.DataFrame,
+                                                                          np.float64,
+                                                                          np.float64]:
+    """
+    Transforms the geometry of a GeoDataFrame to reference coordinates
+
+    Parameters
+    ----------
+    dataframe: gpd.GeoDataFrame
+        DataFrame
+    geodataframe_reference: gpd.GeoDataFrame
+        Reference GeoDataFrame
+    longitude_reference: np.float64
+        Reference longitude used to 'center' all coordinates
+    longitude_offset: np.float64
+        Longitude value used to shift longitude coordinates
+    latitude_offset: np.float64
+        Latitude value used to shift latitude coordinates
+    projection: str
+        Projection (EPSG) string
+    d_longitude: np.float64
+        Total longitudinal distance (degrees) used for standardizing coordinates
+    d_latitude: np.float64
+        Total longitudinal distance (degrees) used for standardizing coordinates
+    """
+
+    # Build a spatial index for the reference GeoDataFrame
+    reference_tree = spatial.cKDTree(geodataframe_reference.geometry.apply(lambda x: (x.x, x.y)).tolist())
+
+    # Parse longitude and latitude column names
+    lat_col = next(col for col in dataframe.columns if 'latitude' in col.lower())
+    lon_col = next(col for col in dataframe.columns if 'longitude' in col.lower())
+
+    # Reduce coordinates to prevent issues with unwieldly dataframes
+    unique_coordinates = dataframe[[lon_col, lat_col]].drop_duplicates()
+
+    # Create geometry column using Numpy
+    unique_coordinates['geometry'] = gpd.points_from_xy(unique_coordinates[lon_col], unique_coordinates[lat_col])
+
+    # Convert to GeoDataFrame
+    geodataframe_geometry = gpd.GeoDataFrame(unique_coordinates,
+                                              geometry='geometry',
+                                              crs=projection)
+
+    # Query the spatial index to interpolate coordinates
+    _, indices = reference_tree.query(geodataframe_geometry.geometry.apply(lambda x: (x.x, x.y)).tolist())
+
+    interpolated_lon = geodataframe_reference.geometry.x.iloc[indices].values
+    interpolated_lat = geodataframe_reference.geometry.y.iloc[indices].values
+
+    # Apply transformation to pre-existing coordinates
+    geodataframe_transformed = geodataframe_geometry.assign(
+        longitude_transformed=lambda df: df.geometry.x - interpolated_lon + longitude_reference
+    )
+
+    # Transform coordinates from longitude/latitude to distance using Numpy operations
+    if (d_longitude is None) & (d_latitude is None):
+        d_longitude = geodataframe_transformed.geometry.x.max() - geodataframe_transformed.geometry.x.min()
+        d_latitude = geodataframe_transformed.geometry.y.max() - geodataframe_transformed.geometry.y.min()
+
+    geodataframe_transformed['x_transformed'] = (
+        np.cos(np.radians(geodataframe_transformed.geometry.y)) *
+        (geodataframe_transformed.geometry.x - longitude_offset) / d_longitude
+    )
+
+    geodataframe_transformed['y_transformed'] = (
+        (geodataframe_transformed.geometry.y - latitude_offset) / d_latitude
+    )
+
+    # Merge back with original input data in case of reduction
+    return geodataframe_transformed.merge(dataframe, on=[lon_col, lat_col])
+
 
 #################################
 ### variogram models
@@ -221,7 +359,7 @@ def transform_geometry( geodataframe: gpd.GeoDataFrame ,
 # decay_power = decay function exponent
 
 
-def composite_family( family: list = [ 'bessel' , 'exponential' ] , **kwargs ):
+def composite_family( models: list = [ 'bessel' , 'exponential' ] , **kwargs ):
     ### Allowed family combinations
     composite_options = {
         ( 'bessel' , 'exponential' ): bessel_exponential ,
@@ -230,14 +368,14 @@ def composite_family( family: list = [ 'bessel' , 'exponential' ] , **kwargs ):
     }
 
     ###
-    families = [ model.lower( ) for model in family ]
+    families = [ model.lower( ) for model in models ]
 
     ### Sort -- alphabetical
     families.sort( )
 
     ###
     if tuple( families ) in composite_options:
-        model_name = composite_options[ tuple( families ) ]
+        model_name = composite_options[ tuple( families ) ] 
 
         return model_name( **kwargs )
 
@@ -316,7 +454,7 @@ def linear( **kwargs ):
     ###
     return partial_sill * kwargs[ 'distance_lags' ] + kwargs[ 'nugget' ]
 
-def sinusoid( **kwargs ):
+def sine( **kwargs ):
 
     ###
     partial_sill = kwargs[ 'sill' ] - kwargs[ 'nugget' ]
@@ -337,3 +475,27 @@ def bessel( **kwargs ):
 
     ###
     return partial_sill * decay_function + kwargs[ 'nugget' ]
+
+
+
+
+
+def composite_family( models: list = [ 'bessel' , 'exponential' ] , **kwargs ):
+    ### Allowed family combinations
+    composite_options = {
+        ( 'bessel' , 'exponential' ): bessel_exponential ,
+        ( 'cosine', 'exponential' ): cosine_exponential ,
+        ( 'exponential' , 'linear' ): exponential_linear ,
+    }
+
+    ###
+    families = [ model.lower( ) for model in models ]
+
+    ### Sort -- alphabetical
+    families.sort( )
+
+    ###
+    if tuple( families ) in composite_options:
+        model_name = composite_options[ tuple( families ) ]
+
+        return model_name( **kwargs )
