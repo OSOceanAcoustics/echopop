@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import geopandas as gpd
 import geopy.distance
+from typing import Union
 from typing import Optional , Tuple
 from scipy import interpolate , special
                                 
@@ -101,55 +102,18 @@ def calculate_transect_distance( dataframe ,
             .assign( transect_area = lambda x: x.transect_distance * x.transect_spacing )
     )
 
-def georeference( dataframe: pd.DataFrame ,                 
-                  projection: str = 'epsg:4326' ):
-    """
-    Converts a DataFrame to a GeoDataFrame
-
-    Parameters
-    ----------
-    dataframe: pd.DataFrame
-        DataFrame
-    projection: str
-        Projection (EPSG) string
-
-    Notes
-    -----
-    This function converts a DataFrame into a GeoDataFrame by searching the column
-    names for 'longitude' and 'latitude'. It then converts these two columns into a
-    geometry Point string that can be used for geospatial operations
-    """
-
-    ### Parse longitude and latitude column names
-    lat_col = [ col for col in dataframe.columns if 'latitude' in col.lower( ) ][ 0 ]
-    lon_col = [ col for col in dataframe.columns if 'longitude' in col.lower( ) ][ 0 ]
-    
-    ### Reduce coordinates to prevent issues with unwieldly dataframes
-    dataframe_geometry = (
-        # dataframe.loc[ : , [ lon_col , lat_col ] ]
-        dataframe[ [ lon_col , lat_col ] ]
-        .drop_duplicates( )
-        .assign( geometry = lambda x: gpd.points_from_xy( x[ lon_col ] , x[ lat_col ] ) )
-    )
-    
-    ### Convert to GeoDataFrame
-    geodataframe_geometry = gpd.GeoDataFrame( dataframe_geometry ,
-                                              geometry = 'geometry' ,
-                                              crs = projection )
-    
-    ### Merge back with original input data in case of reduction
-    return geodataframe_geometry.merge( dataframe , on = [ lon_col , lat_col ] )
-
-def transform_geometry( dataframe: gpd.GeoDataFrame ,
-                        geodataframe_reference: gpd.GeoDataFrame ,
+def transform_geometry( dataframe: pd.DataFrame ,
+                        dataframe_reference: pd.DataFrame ,
                         longitude_reference: np.float64 ,
                         longitude_offset: np.float64 ,
                         latitude_offset: np.float64 ,
                         projection: str = 'epsg:4326' ,
+                        range_output: bool = True ,
                         d_longitude: Optional[ np.float64 ] = None ,
-                        d_latitude: Optional[ np.float64 ] = None , ) -> Tuple[ pd.DataFrame , 
-                                                                                np.float64 , 
-                                                                                np.float64 ]:
+                        d_latitude: Optional[ np.float64 ] = None , ) -> Union[ Tuple[ pd.DataFrame , 
+                                                                                       np.float64 ,
+                                                                                       np.float64 ] ,
+                                                                                pd.DataFrame ]:
     """
     Transforms the geometry of a GeoDataFrame to reference coordinates
 
@@ -172,12 +136,16 @@ def transform_geometry( dataframe: gpd.GeoDataFrame ,
     d_latitude: np.float64
         Total longitudinal distance (degrees) used for standardizing coordinates   
     """
+
+    ### Parse longitude and latitude column names
+    ref_lat_col = [ col for col in dataframe_reference.columns if 'latitude' in col.lower( ) ][ 0 ]
+    ref_lon_col = [ col for col in dataframe_reference.columns if 'longitude' in col.lower( ) ][ 0 ]
     
     ### Interpolate coordinates
     # This transformation will be applied the appropriate datasets
     coordinate_interp = interpolate.interp1d(
-        geodataframe_reference.geometry.y ,
-        geodataframe_reference.geometry.x ,
+        dataframe_reference[ ref_lat_col ] ,
+        dataframe_reference[ ref_lon_col ] ,
         kind = 'linear' ,
         bounds_error = False
     )
@@ -218,38 +186,29 @@ def transform_geometry( dataframe: gpd.GeoDataFrame ,
     ### Apply transformation to coordinates and assign to reduced geodataframe
     geodataframe_result = (
         geodataframe_transformed
-        .assign(  x_transformed = lambda dfs: (
-                                                    np.cos( np.pi / 180.0 * dfs.geometry.y ) *
-                                                    ( dfs.geometry.x - longitude_offset ) /
-                                                    d_longitude ) ,
-                                    y_transformed = lambda dfs: (
-                                                    ( dfs.geometry.y - latitude_offset ) /
-                                                    d_latitude
-                                    ) ) )
-    #     .pipe( lambda df: df.assign( x_transformed = lambda dfs: (
-    #                                                 np.cos( np.pi / 180.0 * dfs.geometry.y ) *
-    #                                                 ( dfs.geometry.x - longitude_offset ) /
-    #                                                 d_longitude ) ,
-    #                                 y_transformed = lambda dfs: (
-    #                                                 ( dfs.geometry.y - latitude_offset ) /
-    #                                                 d_latitude
-    #                                 ) ) )
-    # )
+        .assign( x_transformed = lambda dfs: ( np.cos( np.pi / 180.0 * dfs.geometry.y ) *
+                                               ( dfs.geometry.x - longitude_offset ) /
+                                               d_longitude ) ,
+                 y_transformed = lambda dfs: ( dfs.geometry.y - latitude_offset ) /
+                                               d_latitude ) )  
 
     ### Merge back with original input data in case of reduction
-    return geodataframe_result.merge( dataframe , on = [ lon_col , lat_col ] )
-
+    if range_output:
+        return geodataframe_result.merge( dataframe , on = [ lon_col , lat_col ] ) , d_longitude , d_latitude
+    else:
+        return geodataframe_result.merge( dataframe , on = [ lon_col , lat_col ] )
+     
 from scipy import spatial
 
-def transform_geometry1(dataframe: gpd.GeoDataFrame,
-                       geodataframe_reference: gpd.GeoDataFrame,
-                       longitude_reference: np.float64,
-                       longitude_offset: np.float64,
-                       latitude_offset: np.float64,
-                       projection: str = 'epsg:4326',
-                       d_longitude: Optional[np.float64] = None,
-                       d_latitude: Optional[np.float64] = None) -> Tuple[pd.DataFrame,
-                                                                          np.float64,
+def transform_geometry1( dataframe: gpd.GeoDataFrame ,
+                         geodataframe_reference: gpd.GeoDataFrame ,
+                         longitude_reference: np.float64 ,
+                         longitude_offset: np.float64 ,
+                         latitude_offset: np.float64 ,
+                         projection: str = 'epsg:4326' ,
+                         d_longitude: Optional[ np.float64 ] = None ,
+                         d_latitude: Optional[ np.float64 ] = None ) -> Tuple[ pd.DataFrame,
+                                                                               np.float64,
                                                                           np.float64]:
     """
     Transforms the geometry of a GeoDataFrame to reference coordinates

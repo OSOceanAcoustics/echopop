@@ -9,7 +9,7 @@ from .core import CONFIG_MAP, LAYER_NAME_MAP
 from .computation.operations import bin_variable , bin_stats , count_variable , stretch
 from .utils.data_file_validation import load_configuration , validate_data_columns
 from .computation.acoustics import to_linear , ts_length_regression
-from .computation.spatial import calculate_transect_distance
+from .computation.spatial import calculate_transect_distance , transform_geometry
 from .computation.statistics import stratified_transect_statistic
 from .computation.biology import index_sex_weight_proportions , index_transect_age_sex_proportions
 
@@ -69,14 +69,6 @@ class Survey:
 
         # Define length and age distributions
         self.biometric_distributions()
-
-        ### !!! THIS IS TEMPORARY FOR DEBUGGING / TRACKING DATA ATTRIBUTE ASSIGNMENT 
-        ### A utility function that helps to map the datasets currently present
-        # within Survey object via the `___.summary` property. This also initializes
-        # the `meta` attribute
-        # ATTRIBUTE ADDITIONS: `meta`
-        ##
-        # self.populate_tree()
 
     def load_survey_data( self ):
         """
@@ -1050,3 +1042,38 @@ class Survey:
                 'stratified_results': stratified_results
             }
         )
+
+    def standardize_coordinates( self ,
+                                 adjust_mesh = True ):
+        
+        ### Collect necessary parameter values
+        # !!! TODO: This only currently applies to age-sex-indexed biomass
+        transect_trans_df , d_x , d_y = transform_geometry( self.biology[ 'population' ][ 'biomass' ][ 'biomass_age_df' ] , 
+                                                            self.statistics[ 'kriging' ][ 'isobath_200m_df' ] , 
+                                                            self.config[ 'kriging_parameters' ][ 'longitude_reference' ] , 
+                                                            self.config[ 'kriging_parameters' ][ 'longitude_offset' ] , 
+                                                            self.config[ 'kriging_parameters' ][ 'latitude_offset' ] ,
+                                                            self.config[ 'geospatial' ][ 'init' ] )
+        
+        ### Update Survey object with transformed coordinates
+        self.biology[ 'population' ][ 'biomass' ][ 'biomass_age_df' ] = transect_trans_df
+
+        ### Adjust coordinates if flagged
+        if adjust_mesh:
+
+            ### Transform mesh
+            mesh_trans_df = transform_geometry( self.statistics[ 'kriging' ][ 'mesh_df' ] , 
+                                                self.statistics[ 'kriging' ][ 'isobath_200m_df' ] , 
+                                                self.config[ 'kriging_parameters' ][ 'longitude_reference' ] , 
+                                                self.config[ 'kriging_parameters' ][ 'longitude_offset' ] , 
+                                                self.config[ 'kriging_parameters' ][ 'latitude_offset' ] ,
+                                                self.config[ 'geospatial' ][ 'init' ] ,
+                                                range_output = False ,
+                                                d_longitude = d_x , d_latitude = d_y )
+            
+            ### Update Survey object with transformed coordinates
+            self.statistics[ 'kriging' ].update(
+                {
+                    'transformed_mesh_geodf': mesh_trans_df
+                }
+            )
