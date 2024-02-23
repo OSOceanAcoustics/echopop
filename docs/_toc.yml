@@ -8,7 +8,7 @@ parts:
 - caption: Documentation
   chapters:
   - file: classes-datastructures
-  - file: workflow_minimal.ipynb
+  - file: example_notebooks/workflow_minimal.ipynb
   - file: input-files
 - caption: Notebooks
   chapters:

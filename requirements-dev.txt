@@ -3,7 +3,3 @@ flake8
 isort
 pre-commit
 pytest
-sphinx-automodapi
-jupyter-book
-numpydoc
-docutils<0.18
