@@ -197,3 +197,26 @@ def transform_geometry( dataframe: pd.DataFrame ,
         return geodataframe_result.merge( dataframe , on = [ lon_col , lat_col ] ) , d_longitude , d_latitude
     else:
         return geodataframe_result.merge( dataframe , on = [ lon_col , lat_col ] )
+    
+def lag_distance_griddify( dataframe1 ,
+                           dataframe2 ):
+    
+    ### 
+    x_distance = np.subtract.outer( dataframe1.x_transformed.values ,
+                                    dataframe2.x_transformed.values )
+    y_distance = np.subtract.outer( dataframe1.y_transformed.values ,
+                                    dataframe2.y_transformed.values )
+    
+    return np.sqrt( x_distance * x_distance + y_distance * y_distance )
+
+def local_search_index( dataframe ,
+                        dataframe_mesh ,
+                        k_max ):
+    
+    ###
+    distance_matrix = lag_distance_griddify( dataframe_mesh , dataframe )
+    
+    ###
+    sorted_distance_matrix = np.argpartition( distance_matrix , k_max , axis = 1 )
+
+    return distance_matrix , sorted_distance_matrix[ : , : k_max ]
