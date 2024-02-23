@@ -29,7 +29,7 @@ latex:
 # Information about where the book exists on the web
 repository:
   url: https://github.com/uw-echospace/EchoPro  # Online location of your book
-  # path_to_book: docs  # Optional path to your book, relative to the repository root
+  path_to_book: docs  # Optional path to your book, relative to the repository root
   branch: master  # Which branch of the repository should be used when creating links (optional)
 
 # Add GitHub buttons to your book
@@ -48,3 +48,5 @@ sphinx:
     'sphinx.ext.ifconfig',
     'sphinx.ext.githubpages'
   ]
+  config:
+    bibtex_reference_style: label
