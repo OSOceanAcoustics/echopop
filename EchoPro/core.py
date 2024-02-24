@@ -143,8 +143,8 @@ CONFIG_MAP = {
             'krig.blk_ny': np.float64 ,
             'krig.blk_nz': np.float64 ,
             'krig.srad': np.float64 ,
-            'krig.kmin': np.float64 ,
-            'krig.kmax': np.float64 ,
+            'krig.kmin': int ,
+            'krig.kmax': int ,
             'krig.elim': np.float64 ,
             'krig.eps': np.float64 ,
             'krig.ratio': np.float64 ,
@@ -218,6 +218,10 @@ LAYER_NAME_MAP = {
                 'mesh_df': pd.DataFrame() ,
                 'isobath_200m_df': pd.DataFrame() ,
                 'vario_krig_para_df': pd.DataFrame() ,
+                'model_config': dict() ,
+            } ,
+            'variogram': {
+                'model_config': dict() ,
             }
         } ,
     } 

@@ -3,6 +3,182 @@ import numpy as np
 from scipy import special
 from typing import Union
 
+#################################################################
+# Single-family models
+#################################################################
+def bessel( distance_lags: np.ndarray ,
+            variogram_parameters ,
+            **kwargs ):
+
+    ###
+    partial_sill = variogram_parameters[ 'sill' ] - variogram_parameters[ 'nugget' ]
+
+    ###
+    decay = 1.0 - special.j0( variogram_parameters[ 'hole_effect_range' ] * distance_lags )
+
+    ###
+    return partial_sill * decay + variogram_parameters[ 'nugget' ]
+
+def exponential( distance_lags: np.ndarray ,
+                 variogram_parameters ,
+                 **kwargs ):
+
+    ###
+    partial_sill = variogram_parameters[ 'sill' ] - variogram_parameters[ 'nugget' ]
+
+    ###
+    decay= 1.0 - np.exp( - ( distance_lags / variogram_parameters[ 'correlation_range' ] ) )
+    ###
+    return partial_sill * decay + variogram_parameters[ 'nugget' ]
+
+def gaussian( distance_lags: np.ndarray ,
+              variogram_parameters ,
+              **kwargs ):
+
+    ###
+    partial_sill = variogram_parameters[ 'sill' ] - variogram_parameters[ 'nugget' ]
+
+    ###
+    decay = 1.0 - np.exp( - ( distance_lags ** 2 / variogram_parameters[ 'correlation_range' ] ** 2.0 ) )
+
+    ###
+    return partial_sill * decay + variogram_parameters[ 'nugget' ]
+
+def linear( distance_lags: np.ndarray ,
+            variogram_parameters ,
+            **kwargs ):
+
+    ###
+    partial_sill = variogram_parameters[ 'sill' ] - variogram_parameters[ 'nugget' ]
+
+    ###
+    return partial_sill * distance_lags + variogram_parameters[ 'nugget' ]
+
+def spherical( distance_lags: np.ndarray ,
+               variogram_parameters ,
+               **kwargs ):
+
+    ###
+    partial_sill = variogram_parameters[ 'sill' ] - variogram_parameters[ 'nugget' ]
+
+    ###
+    decay = (
+        ( 3.0 * distance_lags ) / ( 2.0 * variogram_parameters[ 'correlation_range' ] ) -
+        distance_lags ** 3.0 / ( 2.0 * variogram_parameters[ 'correlation_range' ] ** 3.0 )        
+    )
+
+    ###
+    return np.where( distance_lags <= variogram_parameters[ 'correlation_range' ] ,
+                     partial_sill * decay + variogram_parameters[ 'nugget' ] ,
+                     partial_sill )
+
+#################################################################
+# Composite-family models
+#################################################################
+def bessel_gaussian( distance_lags: np.ndarray ,
+                     variogram_parameters ,
+                     **kwargs ):
+    
+    ###
+    partial_sill = variogram_parameters[ 'sill' ] - variogram_parameters[ 'nugget' ]
+
+    ###
+    decay = 1.0 - np.exp( - ( ( distance_lags / variogram_parameters[ 'correlation_range' ] ) ** 2 ) )
+
+    ### 
+    hole_effect = special.j0( variogram_parameters[ 'hole_effect_range' ] *  distance_lags )
+
+    ###
+    return partial_sill * ( decay * hole_effect ) + variogram_parameters[ 'nugget' ]
+
+def bessel_exponential( distance_lags: np.ndarray ,
+                        variogram_parameters ,
+                        decay_power: np.float64 = 1.0 , 
+                        **kwargs ):
+    
+    ###
+    partial_sill = variogram_parameters[ 'sill' ] - variogram_parameters[ 'nugget' ]
+
+    ###
+    decay = 1.0 - np.exp( - ( ( distance_lags / variogram_parameters[ 'correlation_range' ] ) ** decay_power ) )
+
+    ### 
+    hole_effect = special.j0( variogram_parameters[ 'hole_effect_range' ] *  distance_lags )
+
+    ###
+    return partial_sill * ( decay * hole_effect ) + variogram_parameters[ 'nugget' ]
+
+def cosine_exponential( distance_lags: np.ndarray ,
+                        variogram_parameters ,
+                        enhance_semivariance = False ,
+                        **kwargs ):   
+
+    ###
+    partial_sill = variogram_parameters[ 'sill' ] - variogram_parameters[ 'nugget' ]
+
+    ###
+    decay_modifier = - 1.0 if enhance_semivariance else 1.0
+    decay = (
+        decay_modifier *        
+        np.exp( - ( distance_lags / variogram_parameters[ 'correlation_range' ] ) )
+    )
+
+    ### 
+    hole_effect = np.cos( variogram_parameters[ 'hole_effect_range' ] *  distance_lags )
+
+    ###
+    return partial_sill * ( 1.0 - decay * hole_effect ) + variogram_parameters[ 'nugget' ]
+
+def cosine_gaussian( distance_lags: np.ndarray ,
+                     variogram_parameters ,
+                     **kwargs ):   
+
+    ###
+    partial_sill = variogram_parameters[ 'sill' ] - variogram_parameters[ 'nugget' ]
+
+    ###
+    decay = (
+        np.exp( - ( distance_lags / variogram_parameters[ 'correlation_range' ] ) ** 2 )
+    )
+
+    ### 
+    hole_effect = np.cos( variogram_parameters[ 'hole_effect_range' ] *  distance_lags )
+
+    ###
+    return partial_sill * ( decay * hole_effect ) + variogram_parameters[ 'nugget' ]
+
+def exponential_linear( distance_lags: np.ndarray ,
+                        variogram_parameters ,
+                        decay_power: np.float64 = 1.0 , 
+                        **kwargs ):
+    ###
+    partial_sill = variogram_parameters[ 'sill' ] - variogram_parameters[ 'nugget' ]
+
+    ###
+    decay_function = 1.0 - np.exp( - ( distance_lags / variogram_parameters[ 'correlation_range' ] ) ** decay_power )
+ 
+    ### 
+    hole_effect = 1.0 - variogram_parameters[ 'hole_effect_range' ] * distance_lags ** decay_power
+
+    ###
+    return partial_sill * ( decay_function * hole_effect ) + variogram_parameters[ 'nugget' ]
+
+def gaussian_linear( distance_lags: np.ndarray ,
+                     variogram_parameters ,
+                     decay_power: np.float64 = 1.0 ,                      
+                     **kwargs ):
+    ###
+    partial_sill = variogram_parameters[ 'sill' ] - variogram_parameters[ 'nugget' ]
+
+    ###
+    decay = 1.0 - np.exp( - ( distance_lags / variogram_parameters[ 'correlation_range' ] ) ** 2 )
+ 
+    ### 
+    hole_effect = 1.0 - variogram_parameters[ 'hole_effect_range' ] * distance_lags ** decay_power
+
+    ###
+    return partial_sill * ( decay * hole_effect ) + variogram_parameters[ 'nugget' ]
+
 ### Dictionary containing available variogram models for user input
 VARIOGRAM_MODELS = {
     'single': {
@@ -22,7 +198,9 @@ VARIOGRAM_MODELS = {
     }
 }
 
-def variogram( model: Union[ str , list ] = [ 'bessel' , 'exponential' ] , 
+def variogram( distance_lags ,
+               variogram_parameters ,
+               model: Union[ str , list ] = [ 'bessel' , 'exponential' ] , 
                **kwargs ):
 
     ### Convert to lowercase to match reference model dictionary
@@ -34,7 +212,7 @@ def variogram( model: Union[ str , list ] = [ 'bessel' , 'exponential' ] ,
     else:
         model_input = [ name.lower( ) for name in model ]
 
-         ### Alphabetic sort 
+        ### Alphabetic sort 
         model_input.sort( )   
 
     ### Parse user input from reference model dictionary
@@ -50,154 +228,4 @@ def variogram( model: Union[ str , list ] = [ 'bessel' , 'exponential' ] ,
         model_function = VARIOGRAM_MODELS[ 'single' ][ model_input ]
     
     ### Pass the additional user arguments (kwargs) to the child function
-    return model_function( **kwargs )
-
-#################################################################
-# Single-family models
-#################################################################
-def bessel( **kwargs ):
-
-    ###
-    partial_sill = kwargs[ 'sill' ] - kwargs[ 'nugget' ]
-
-    ###
-    decay = 1.0 - special.j0( kwargs[ 'hole_effect_range' ] *  kwargs[ 'distance_lags' ] )
-
-    ###
-    return partial_sill * decay + kwargs[ 'nugget' ]
-
-def exponential( **kwargs ):
-
-    ###
-    partial_sill = kwargs[ 'sill' ] - kwargs[ 'nugget' ]
-
-    ###
-    decay= 1.0 - np.exp( - ( kwargs[ 'distance_lags' ] / kwargs[ 'correlation_range' ] ) )
-    ###
-    return partial_sill * decay + kwargs[ 'nugget' ]
-
-def gaussian( **kwargs ):
-
-    ###
-    partial_sill = kwargs[ 'sill' ] - kwargs[ 'nugget' ]
-
-    ###
-    decay = 1.0 - np.exp( - ( kwargs[ 'distance_lags' ] ** 2 / kwargs[ 'correlation_range' ] ** 2.0 ) )
-
-    ###
-    return partial_sill * decay + kwargs[ 'nugget' ]
-
-def linear( **kwargs ):
-
-    ###
-    partial_sill = kwargs[ 'sill' ] - kwargs[ 'nugget' ]
-
-    ###
-    return partial_sill * kwargs[ 'distance_lags' ] + kwargs[ 'nugget' ]
-
-def spherical( **kwargs ):
-
-    ###
-    partial_sill = kwargs[ 'sill' ] - kwargs[ 'nugget' ]
-
-    ###
-    decay = (
-        ( 3.0 * kwargs[ 'distance_lags' ] ) / ( 2.0 * kwargs[ 'correlation_range' ] ) -
-        kwargs[ 'distance_lags' ] ** 3.0 / ( 2.0 * kwargs[ 'correlation_range' ] ** 3.0 )        
-    )
-
-    ###
-    return np.where( kwargs[ 'distance_lags' ] <= kwargs[ 'correlation_range' ] ,
-                     partial_sill * decay + kwargs[ 'nugget' ] ,
-                     partial_sill )
-
-#################################################################
-# Composite-family models
-#################################################################
-def bessel_gaussian( **kwargs ):
-    
-    ###
-    partial_sill = kwargs[ 'sill' ] - kwargs[ 'nugget' ]
-
-    ###
-    decay = 1.0 - np.exp( - ( ( kwargs[ 'distance_lags' ] / kwargs[ 'correlation_range' ] ) ** 2 ) )
-
-    ### 
-    hole_effect = special.j0( kwargs[ 'hole_effect_range' ] *  kwargs[ 'distance_lags' ] )
-
-    ###
-    return partial_sill * ( decay * hole_effect ) + kwargs[ 'nugget' ]
-
-def bessel_exponential( decay_power: np.float64 = 1.0 , **kwargs ):
-    
-    ###
-    partial_sill = kwargs[ 'sill' ] - kwargs[ 'nugget' ]
-
-    ###
-    decay = 1.0 - np.exp( - ( ( kwargs[ 'distance_lags' ] / kwargs[ 'correlation_range' ] ) ** decay_power ) )
-
-    ### 
-    hole_effect = special.j0( kwargs[ 'hole_effect_range' ] *  kwargs[ 'distance_lags' ] )
-
-    ###
-    return partial_sill * ( decay * hole_effect ) + kwargs[ 'nugget' ]
-
-def cosine_exponential( enhance_semivariance = False , **kwargs ):   
-
-    ###
-    partial_sill = kwargs[ 'sill' ] - kwargs[ 'nugget' ]
-
-    ###
-    decay_modifier = - 1.0 if enhance_semivariance else 1.0
-    decay = (
-        decay_modifier *        
-        np.exp( - ( kwargs[ 'distance_lags' ] / kwargs[ 'correlation_range' ] ) )
-    )
-
-    ### 
-    hole_effect = np.cos( kwargs[ 'hole_effect_range' ] *  kwargs[ 'distance_lags' ] )
-
-    ###
-    return partial_sill * ( 1.0 - decay * hole_effect ) + kwargs[ 'nugget' ]
-
-def cosine_gaussian(  **kwargs ):   
-
-    ###
-    partial_sill = kwargs[ 'sill' ] - kwargs[ 'nugget' ]
-
-    ###
-    decay = (
-        np.exp( - ( kwargs[ 'distance_lags' ] / kwargs[ 'correlation_range' ] ) ** 2 )
-    )
-
-    ### 
-    hole_effect = np.cos( kwargs[ 'hole_effect_range' ] *  kwargs[ 'distance_lags' ] )
-
-    ###
-    return partial_sill * ( decay * hole_effect ) + kwargs[ 'nugget' ]
-
-def exponential_linear( decay_power: np.float64 = 1.0 , **kwargs ):
-    ###
-    partial_sill = kwargs[ 'sill' ] - kwargs[ 'nugget' ]
-
-    ###
-    decay_function = 1.0 - np.exp( - ( kwargs[ 'distance_lags' ] / kwargs[ 'correlation_range' ] ) ** decay_power )
- 
-    ### 
-    hole_effect = 1.0 - kwargs[ 'hole_effect_range' ] * kwargs[ 'distance_lags' ] ** decay_power
-
-    ###
-    return partial_sill * ( decay_function * hole_effect ) + kwargs[ 'nugget' ]
-
-def gaussian_linear( decay_power: np.float64 = 1.0 , **kwargs ):
-    ###
-    partial_sill = kwargs[ 'sill' ] - kwargs[ 'nugget' ]
-
-    ###
-    decay = 1.0 - np.exp( - ( kwargs[ 'distance_lags' ] / kwargs[ 'correlation_range' ] ) ** 2 )
- 
-    ### 
-    hole_effect = 1.0 - kwargs[ 'hole_effect_range' ] * kwargs[ 'distance_lags' ] ** decay_power
-
-    ###
-    return partial_sill * ( decay * hole_effect ) + kwargs[ 'nugget' ]
+    return model_function( distance_lags , variogram_parameters = variogram_parameters , **kwargs )

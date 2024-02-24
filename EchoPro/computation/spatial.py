@@ -5,7 +5,7 @@ import geopy.distance
 from typing import Union
 from typing import Optional , Tuple
 from scipy import interpolate , special
-                                
+                        
 def correct_transect_intervals( dataframe: pd.DataFrame ,
                                 threshold: np.float64 = 0.05 ):
     """
@@ -198,19 +198,25 @@ def transform_geometry( dataframe: pd.DataFrame ,
     else:
         return geodataframe_result.merge( dataframe , on = [ lon_col , lat_col ] )
     
-def lag_distance_griddify( dataframe1 ,
-                           dataframe2 ):
+def lag_distance_griddify( dataset1 ,
+                           dataset2 ):
     
-    ### 
-    x_distance = np.subtract.outer( dataframe1.x_transformed.values ,
-                                    dataframe2.x_transformed.values )
-    y_distance = np.subtract.outer( dataframe1.y_transformed.values ,
-                                    dataframe2.y_transformed.values )
+    ###
+    if all( isinstance( dataset , pd.DataFrame ) for dataset in ( dataset1 , dataset2 ) ):
+        ### 
+        x_distance = np.subtract.outer( dataset1.x_transformed.values ,
+                                        dataset2.x_transformed.values )
+        y_distance = np.subtract.outer( dataset1.y_transformed.values ,
+                                        dataset2.y_transformed.values )
+    elif all( isinstance( dataset , np.ndarray ) for dataset in ( dataset1 , dataset2 ) ):
+        ###
+        x_distance = np.subtract.outer( dataset1 , dataset1 )
+        y_distance = np.subtract.outer( dataset2 , dataset2 )    
     
     return np.sqrt( x_distance * x_distance + y_distance * y_distance )
 
-def local_search_index( dataframe ,
-                        dataframe_mesh ,
+def local_search_index( dataframe_mesh ,
+                        dataframe ,
                         k_max ):
     
     ###

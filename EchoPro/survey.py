@@ -145,8 +145,7 @@ class Survey:
                     sheet_name = [ sheet_name ] if isinstance( sheet_name , str ) else sheet_name
 
                     for sheets in sheet_name:
-                        self.read_validated_data( file_name , sheets , config_map , validation_settings )     
-        
+                        self.read_validated_data( file_name , sheets , config_map , validation_settings )             
 
         ### Merge haul numbers and regional indices across biological variables
         # Also add strata values/indices here alongside transect numbers 
@@ -171,6 +170,40 @@ class Survey:
             self.biology['catch_df']
             .merge( self.biology['haul_to_transect_df'] , on = ['haul_num' , 'region'] )
         )
+
+        ### Reorganize kriging/variogram parameters
+        # ---- Kriging
+        # Initial parameters from loaded data
+        kriging_params = (
+            self.statistics[ 'kriging' ][ 'vario_krig_para_df' ]
+            .filter( regex = 'krig[.]' )
+            .rename( columns = lambda x: x.replace( 'krig.' , '' ) )
+            .rename( columns = { 'ratio': 'anisotropy' ,
+                                 'srad': 'search_radius' } )
+            .to_dict( orient = 'records' )[ 0 ]
+        )
+
+        # Incorporate configuration settings
+        kriging_params.update( self.config[ 'kriging_parameters' ] )
+
+        # ---- Variogram
+        # Initial parameters from loaded data
+        variogram_params = (
+            self.statistics[ 'kriging' ][ 'vario_krig_para_df' ]
+            .filter( regex = 'vario[.]' )
+            .rename( columns = lambda x: x.replace( 'vario.' , '' ) )
+            .rename( columns = { 'lscl': 'correlation_range' ,
+                                 'powr': 'decay_power' ,
+                                 'hole': 'hole_effect_range' ,
+                                 'res': 'lag_resolution' ,
+                                 'nugt': 'nugget' } )
+            .to_dict( orient = 'records' )[ 0 ]
+        )
+
+        # Save both parameter sets to new location and delete the original dictionary
+        self.statistics[ 'variogram' ].update( { 'model_config': variogram_params } )
+        self.statistics[ 'kriging' ].update( { 'model_config': kriging_params } )
+        del self.statistics[ 'kriging' ][ 'vario_krig_para_df' ]
 
     def read_validated_data( self ,
                              file_name: Path ,
