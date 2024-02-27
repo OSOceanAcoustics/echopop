@@ -204,11 +204,21 @@ def kriging_interpolation( dataframe ,
                                                        latitude_bins ,
                                                        labels = list( dataframe_geostrata.stratum_num ) + [ 1 ] ,
                                                        ordered = False )
-    (
-        dataframe_original_mesh
-        .assign( stratum_num = lambda df: pd.cut( df.centroid_latitude ,
-                                    latitude_bins ,
-                                    labels = list( dataframe_geostrata.stratum_num ) + [1] ,
-                                    ordered = False ) )
-    )
     
+    ### Run kriging
+    kriged_results = ordinary_kriging( dataframe , dataframe_mesh , variogram_parameters , kriging_parameters )
+
+    ### Append results to the mesh dataframe
+    dataframe_original_mesh[ 'B_a_adult_mean' ] = kriged_results[ 0 ]
+    dataframe_original_mesh[ 'B_a_adult_prediction_variance' ] = kriged_results[ 1 ]
+    dataframe_original_mesh[ 'B_a_adult_sample_variance' ] = kriged_results[ 2 ]
+
+    ### Calculate cell area
+    kriged_result_df = (
+        dataframe_original_mesh
+        .assign( cell_area_nmi2 = lambda x: kriging_parameters[ 'A0' ] * x.fraction_cell_in_polygon ,
+                 B_adult_kriged = lambda x: x.B_a_adult_mean * x.cell_area_nmi2 )
+    )
+
+    ### Carriage return
+    return kriged_result_df

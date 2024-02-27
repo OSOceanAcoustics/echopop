@@ -11,6 +11,7 @@ from .utils.data_file_validation import load_configuration , validate_data_colum
 from .computation.acoustics import to_linear , ts_length_regression
 from .computation.spatial import calculate_transect_distance , transform_geometry
 from .computation.statistics import stratified_transect_statistic
+from .computation.kriging_methods import kriging_interpolation
 from .computation.biology import index_sex_weight_proportions , index_transect_age_sex_proportions
 
 ### !!! TODO : This is a temporary import call -- this will need to be changed to 
@@ -1110,3 +1111,54 @@ class Survey:
                     'transformed_mesh_geodf': mesh_trans_df
                 }
             )
+    
+    def krige( self ,
+               variable: str = 'B_a_adult' ):
+
+        ### TODO : Need to relocate the transformed coordinates to an external location
+        ### Import georeferenced data
+        dataframe = (
+            self.biology
+            [ 'population' ][ 'areal_density' ][ 'biomass_density_df' ]
+            .copy()
+            .loc[ lambda x: x.sex == 'total' , : ]
+        )
+
+        ### Import updated/transformed coordinates
+        updated_coordinates = (
+            self.biology
+            [ 'population' ][ 'biomass' ][ 'biomass_age_df' ]
+            .copy()
+            .drop_duplicates( subset = [ 'longitude' , 'latitude' ] )
+        )
+
+        ### Merge with input dataframe
+        dataframe = (
+            dataframe
+            .copy()
+            .merge( updated_coordinates , on = [ 'longitude' , 'latitude' ] )
+        )
+
+        ### Import additional parameters/dataframes necessary for kriging
+        transformed_mesh = self.statistics[ 'kriging' ][ 'transformed_mesh_geodf' ].copy()
+        dataframe_mesh = self.statistics[ 'kriging' ][ 'mesh_df' ].copy()
+        dataframe_geostrata = self.spatial[ 'geo_strata_df' ].copy()
+
+        ### Import semivariogram and kriging parameters
+        kriging_parameters = self.statistics[ 'kriging' ][ 'model_config' ].copy()
+        variogram_parameters = self.statistics[ 'variogram' ][ 'model_config' ].copy()
+
+        ### Run kriging algorithm
+        kriged_dataframe = kriging_interpolation( dataframe ,
+                                                  transformed_mesh ,
+                                                  dataframe_mesh ,
+                                                  dataframe_geostrata ,
+                                                  variogram_parameters ,
+                                                  kriging_parameters )
+        
+        ### Assign results to an attribute
+        self.statistics[ 'kriging' ].update(
+            {
+                'kriged_biomass_df': kriged_dataframe
+            }
+        )
