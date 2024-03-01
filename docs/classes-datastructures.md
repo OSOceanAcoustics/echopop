@@ -1,3 +1,4 @@
+(data-structure)=
 # Classes and data structures
 
 ## Classes

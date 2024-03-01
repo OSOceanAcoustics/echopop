@@ -12,7 +12,8 @@ parts:
   - file: example_notebooks/workflow_minimal.ipynb
   - file: input_files
   - file: theory
-  - title: Algorithmic implementation
+  - file: algo
+    title: Algorithmic implementation
     sections:
     - file: algo1
     - file: algo2
