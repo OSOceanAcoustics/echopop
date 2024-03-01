@@ -13,12 +13,12 @@ parts:
   - file: glossary
     title: theory
     sections: 
-      - file: theory/ts_length_conversion
-      - file: theory/acoustics_to_biomass_conversion
-      - file: theory/semivariograms
-      - file: theory/kriging
-      - file: theory/stratified_statistics
-      - file: theory/general_equations
+    - file: theory/ts_length_conversion
+    - file: theory/acoustics_to_biomass_conversion
+    - file: theory/semivariograms
+    - file: theory/kriging
+    - file: theory/stratified_statistics
+    - file: theory/general_equations
 - caption: Notebooks
   chapters:
   - file: example_notebooks/echopro_workflow.ipynb
