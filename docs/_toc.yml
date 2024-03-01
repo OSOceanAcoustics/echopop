@@ -9,7 +9,6 @@ parts:
   chapters:
   - file: quick_start
   - file: classes-datastructures
-  - file: example_notebooks/workflow_minimal.ipynb
   - file: input_files
   - file: theory
   - file: algo
@@ -17,14 +16,6 @@ parts:
     sections:
     - file: algo1
     - file: algo2
-# - caption: Notebooks
-#   chapters:
-#   - file: example_notebooks/echopro_workflow.ipynb
-#   - file: example_notebooks/reports_workflow.ipynb
-#   - file: example_notebooks/semi_variogram_workflow.ipynb
-#   - file: example_notebooks/kriging_mesh_walkthrough.ipynb
-#   - file: example_notebooks/transect_selection_workflow.ipynb
-#   - file: example_notebooks/bootstrapping_walkthrough.ipynb
 - caption: Help & reference
   chapters:
   - file: api
