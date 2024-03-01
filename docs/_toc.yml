@@ -4,7 +4,6 @@
 format: jb-book
 root: index
 parts:
-# - file: markdown
 - caption: Documentation
   chapters:
   - file: quick_start
@@ -16,6 +15,6 @@ parts:
     sections:
     - file: algo1
     - file: algo2
-# - caption: Help & reference
-#   chapters:
-#   - file: api
+- caption: Help & reference
+  chapters:
+  - file: api

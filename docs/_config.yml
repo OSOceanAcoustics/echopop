@@ -18,9 +18,9 @@ parse:
   # nb_number_source_lines: true
 
 # Define the name of the latex output file for PDF builds
-latex:
-  latex_documents:
-    targetname: book.tex
+# latex:
+#   latex_documents:
+#     targetname: book.tex
 
 # Add a bibtex file so that we can create citations
 # bibtex_bibfiles:
@@ -35,12 +35,14 @@ repository:
 # Add GitHub buttons to your book
 # See https://jupyterbook.org/customize/config.html#add-a-link-to-your-repository
 html:
+  home_page_in_navbar: false
   use_issues_button: true
   use_repository_button: true
+  use_edit_page_button: true
 
 sphinx:
   extra_extensions: [
-    # 'sphinx_automodapi.automodapi',
+    'sphinx_automodapi.automodapi',
     'numpydoc',
     # 'sphinx.ext.autodoc',
     'sphinx.ext.intersphinx',
@@ -50,3 +52,5 @@ sphinx:
   ]
   config:
     bibtex_reference_style: label
+
+exclude_patterns: [example_notebooks/*]
