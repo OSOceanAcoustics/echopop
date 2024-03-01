@@ -160,11 +160,17 @@ class Survey:
         self.biology['specimen_df'] = (
             self.biology['specimen_df']
             .merge( self.biology['haul_to_transect_df'] , on = ['haul_num' , 'region' ] ) 
+            # .assign( sex = lambda x: np.where( x[ 'sex' ] == int( 1 ) , 'male' , 
+            #                          np.where( x[ 'sex' ] == int( 2 ) , 'female' , 'other' ) ) ,
+            #  group = lambda x: np.where( x[ 'sex' ].isin( [ 'male' , 'female' ] ) , 'sexed' , 'unsexed' ) )            
         )
         # ---- Length
         self.biology['length_df'] = (
             self.biology['length_df']
             .merge( self.biology['haul_to_transect_df'] , on = ['haul_num' , 'region'] )
+            # .assign( sex = lambda x: np.where( x[ 'sex' ] == int( 1 ) , 'male' , 
+            #                          np.where( x[ 'sex' ] == int( 2 ) , 'female' , 'other' ) ) ,
+            #  group = lambda x: np.where( x[ 'sex' ].isin( [ 'male' , 'female' ] ) , 'sexed' , 'unsexed' ) )     
         )
         # ---- Catch
         self.biology['catch_df'] = (
@@ -556,14 +562,25 @@ class Survey:
         """    
         
         ### First make copies of each
-        specimen_df_spp = self.biology['specimen_df'].copy().pipe( lambda df: df.loc[ df.species_id == species_id ] )
-        length_weight_df = specimen_df_spp[['length', 'weight']].dropna(how='any')
-        
+        specimen_df_spp = self.biology[ 'specimen_df' ].copy().loc[ lambda x: x.species_id == species_id ]
+                
         # pull distribution values
         length_bins = self.biology['distributions']['length']['length_bins_arr']
         length_intervals = self.biology['distributions']['length']['length_interval_arr']
         
-        # length-weight regression
+        ### Grouped length-weight regressions
+        # outputs: rate | initial
+        self.statistics['length_weight']['regression_parameters'] = (
+            specimen_df_spp
+            .assign( group = lambda x: np.where( x[ 'sex' ] == int( 1 ) , 'male' , 
+                                       np.where( x[ 'sex' ] == int( 2 ) , 'female' , 'unsexed' ) ) ) # assigns str variable for comprehension
+            .pipe( lambda df: pd.concat( [ df.loc[ df[ 'group' ] != 'unsexed'  ] , df.assign( group = 'all' ) ] ) ) # appends male-female to an 'all' dataframe
+            .dropna( how = 'any' )
+            .groupby( 'group' )
+            .apply( lambda x: pd.Series( np.polyfit( np.log10( x[ 'length' ] ) , np.log10( x[ 'weight' ] ) , 1 ) ,
+                                        index = [ 'rate' , 'initial' ] ) )
+            .reset_index()
+        )
         [ rate , initial ] = np.polyfit(np.log10(length_weight_df['length']), np.log10(length_weight_df['weight']), 1)
         
         # predict weight (fit equation)

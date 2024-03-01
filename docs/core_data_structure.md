@@ -1,5 +1,7 @@
 # Classes and data structures
 
+![ text ](images/core_data_structure.jpg)
+
 ## Classes
 
 Python EchoPro is designed using an object-oriented approach where data are stored in core classes and computations are called as methods (functions) on those classes.
