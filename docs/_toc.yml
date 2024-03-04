@@ -7,14 +7,23 @@ parts:
 - caption: Documentation
   chapters:
   - file: quick_start
-  - file: classes-datastructures
+  - file: core_data_structure
   - file: input_files
   - file: theory
+    title: Underlying theory
+    sections:
+    - file: theory/ts_length_conversion
+    - file: theory/acoustics_to_biomass_conversion
+    - file: theory/semivariograms
+    - file: theory/kriging
+    - file: theory/stratified_statistics
+    - file: theory/general_equations
   - file: algo
     title: Algorithmic implementation
     sections:
     - file: algo1
     - file: algo2
+  - file: glossary
 - caption: Help & reference
   chapters:
   - file: api
