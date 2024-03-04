@@ -18,8 +18,8 @@ parts:
     sections:
   - file: algo1
   - file: algo2
-  title: Equations and theoretical explanation
-  sections: 
+    title: Equations and theoretical explanation
+    sections: 
   - file: theory/ts_length_conversion
   - file: theory/acoustics_to_biomass_conversion
   - file: theory/semivariograms
