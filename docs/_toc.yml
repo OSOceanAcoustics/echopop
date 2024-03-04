@@ -10,7 +10,7 @@ parts:
   - file: core_data_structure
   - file: input_files
   - file: theory
-    title: Mathematical implementation
+    title: Underlying theory
     sections:
     - file: theory/ts_length_conversion
     - file: theory/acoustics_to_biomass_conversion
