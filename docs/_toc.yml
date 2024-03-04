@@ -7,7 +7,7 @@ parts:
 - caption: Documentation
   chapters:
   - file: quick_start
-  - file: classes-datastructures
+  - file: core_data_structure
   - file: input_files
   - file: algo
   - file: glossary
