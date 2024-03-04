@@ -1,3 +1,3 @@
-![ text ](../images/example_indexing.jpg)
+# Kriging equations
 
-Kriging equations
+![ text ](../images/example_indexing.jpg)
