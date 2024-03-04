@@ -9,6 +9,7 @@ parts:
   - file: quick_start
   - file: core_data_structure
   - file: input_files
+  - file: theory
     title: Mathematical implementation
     sections:
     - file: theory/ts_length_conversion
