@@ -7,17 +7,26 @@ parts:
 # - file: markdown
 - caption: Documentation
   chapters:
+  - file: quick_start
   - file: classes-datastructures
   - file: example_notebooks/workflow_minimal.ipynb
-  - file: input-files
+  - file: input_files
+  - file: theory_implementation
+  - file: algo
+  - file: glossary
+    title: Algorithmic implementation
+    sections:
+  - file: algo1
+  - file: algo2
+  title: Equations and theoretical explanation
+  sections: 
+  - file: theory/ts_length_conversion
+  - file: theory/acoustics_to_biomass_conversion
+  - file: theory/semivariograms
+  - file: theory/kriging
+  - file: theory/stratified_statistics
+  - file: theory/general_equations
 - caption: Notebooks
-  chapters:
-  - file: example_notebooks/echopro_workflow.ipynb
-  - file: example_notebooks/reports_workflow.ipynb
-  - file: example_notebooks/semi_variogram_workflow.ipynb
-  - file: example_notebooks/kriging_mesh_walkthrough.ipynb
-  - file: example_notebooks/transect_selection_workflow.ipynb
-  - file: example_notebooks/bootstrapping_walkthrough.ipynb
 - caption: Help & reference
   chapters:
   - file: api
