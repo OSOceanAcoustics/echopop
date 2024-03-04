@@ -11,18 +11,18 @@ parts:
   - file: input_files
   - file: algo
   - file: glossary
-    title: Algorithmic implementation
+  - caption: Algorithmic implementation
     sections:
-  - file: algo1
-  - file: algo2
+    - file: algo1
+    - file: algo2
     title: Theoretical implementation and mathematical equations
     sections: 
-  - file: theory/ts_length_conversion
-  - file: theory/acoustics_to_biomass_conversion
-  - file: theory/semivariograms
-  - file: theory/kriging
-  - file: theory/stratified_statistics
-  - file: theory/general_equations
+    - file: theory/ts_length_conversion
+    - file: theory/acoustics_to_biomass_conversion
+    - file: theory/semivariograms
+    - file: theory/kriging
+    - file: theory/stratified_statistics
+    - file: theory/general_equations
 - caption: Help & reference
   chapters:
   - file: api
