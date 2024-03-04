@@ -15,7 +15,7 @@ parts:
     sections:
     - file: algo1
     - file: algo2
-    title: Theoretical implementation and mathematical equations
+  - caption: Theoretical implementation and mathematical equations
     sections: 
     - file: theory/ts_length_conversion
     - file: theory/acoustics_to_biomass_conversion
