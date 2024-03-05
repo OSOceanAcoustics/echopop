@@ -115,13 +115,13 @@ def compute_kriging_statistics( point_values ,
     return local_mean , local_prediction_variance , local_sample_variance
 
 def ordinary_kriging( dataframe ,
-                      dataframe_mesh ,
+                      transformed_mesh ,
                       variogram_parameters ,
                       kriging_parameters ,                      
                       variable = 'B_a_adult' ):
     
     ### Calculate the kriging distance matrix and corresponding indices
-    distance_matrix , local_point_grid  = local_search_index( dataframe_mesh , 
+    distance_matrix , local_point_grid  = local_search_index( transformed_mesh , 
                                                               dataframe , 
                                                               kriging_parameters[ 'kmax' ] )
     
@@ -189,8 +189,8 @@ def ordinary_kriging( dataframe ,
     return kriging_mean , kriging_prediction_variance , kriging_sample_variance
 
 def kriging_interpolation( dataframe ,
+                           transformed_mesh ,
                            dataframe_mesh ,
-                           dataframe_original_mesh ,
                            dataframe_geostrata ,
                            variogram_parameters ,
                            kriging_parameters ,                      
@@ -200,22 +200,22 @@ def kriging_interpolation( dataframe ,
     latitude_bins = np.concatenate( [ [ -90.0 ] , dataframe_geostrata.northlimit_latitude , [ 90.0 ] ] )
 
     ### Discretize mesh data into the same strata
-    dataframe_original_mesh[ 'stratum_num' ] = pd.cut( dataframe_original_mesh.centroid_latitude ,
-                                                       latitude_bins ,
-                                                       labels = list( dataframe_geostrata.stratum_num ) + [ 1 ] ,
-                                                       ordered = False )
+    dataframe_mesh[ 'stratum_num' ] = pd.cut( dataframe_mesh.centroid_latitude ,
+                                              latitude_bins ,
+                                              labels = list( dataframe_geostrata.stratum_num ) + [ 1 ] ,
+                                              ordered = False )
     
     ### Run kriging
-    kriged_results = ordinary_kriging( dataframe , dataframe_mesh , variogram_parameters , kriging_parameters )
+    kriged_results = ordinary_kriging( dataframe , transformed_mesh , variogram_parameters , kriging_parameters )
 
     ### Append results to the mesh dataframe
-    dataframe_original_mesh[ 'B_a_adult_mean' ] = kriged_results[ 0 ]
-    dataframe_original_mesh[ 'B_a_adult_prediction_variance' ] = kriged_results[ 1 ]
-    dataframe_original_mesh[ 'B_a_adult_sample_variance' ] = kriged_results[ 2 ]
+    dataframe_mesh[ 'B_a_adult_mean' ] = kriged_results[ 0 ]
+    dataframe_mesh[ 'B_a_adult_prediction_variance' ] = kriged_results[ 1 ]
+    dataframe_mesh[ 'B_a_adult_sample_variance' ] = kriged_results[ 2 ]
 
     ### Calculate cell area
     kriged_result_df = (
-        dataframe_original_mesh
+        dataframe_mesh
         .assign( cell_area_nmi2 = lambda x: kriging_parameters[ 'A0' ] * x.fraction_cell_in_polygon ,
                  B_adult_kriged = lambda x: x.B_a_adult_mean * x.cell_area_nmi2 )
     )

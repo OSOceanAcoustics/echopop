@@ -704,7 +704,7 @@ class Survey:
             station_length_aggregate
             .loc[ station_length_aggregate.sex.isin( [ 'all' ] ) ] # only parse 'all'
             # create a pivot that will reorient data to the desired shape
-            .pivot_table( index = [ 'group' , 'station' ] , 
+            .pivot_table( index = [ 'sex' , 'station' ] , 
                           columns = 'stratum_num' , 
                           values = 'overall_station_p' )
             .groupby( 'station' )
@@ -714,12 +714,12 @@ class Survey:
         ### Calculate the sex distribution within each station across strata
         sex_station_proportions = (
             station_length_aggregate
-            .loc[ station_length_aggregate.group.isin( ['male' , 'female'] ) ] # only parse 'male' and 'female'
+            .loc[ station_length_aggregate.sex.isin( ['male' , 'female'] ) ] # only parse 'male' and 'female'
             # create a pivot that will reorient data to the desired shape
-            .pivot_table( index = [ 'group' , 'station' ] , 
+            .pivot_table( index = [ 'sex' , 'station' ] , 
                           columns = 'stratum_num' , 
                           values = 'overall_station_p' )
-            .groupby( [ 'group' , 'station' ] )
+            .groupby( [ 'sex' , 'station' ] )
             .sum()
         )
         
@@ -740,7 +740,7 @@ class Survey:
         # Indexed / organized by sex , station, and stratum
         length_proportion_table = (
             station_length_aggregate
-            .pivot_table( columns = [ 'group' , 'station' , 'stratum_num' ] , 
+            .pivot_table( columns = [ 'sex' , 'station' , 'stratum_num' ] , 
                           index = [ 'length_bin' ] ,
                           values = [ 'within_station_p' ] )[ 'within_station_p' ]
         )
@@ -959,8 +959,7 @@ class Survey:
 
         # Adult number proportions
         nasc_adult_number_proportions = (
-            self.biology[ 'weight' ][ 'age_stratified' ][ 'age_1_excluded' ][ 'number_proportions' ]
-            .rename( columns = { 'number_proportion': 'adult_number_proportion' } )
+            self.biology[ 'weight' ][ 'proportions' ][ 'age_proportions_df' ]
         )
 
         # Create dataframe to save it to Survey object
@@ -968,7 +967,7 @@ class Survey:
            nasc_to_areal_number_density_df
            .stretch( variable = 'rho_a' )
            .merge( nasc_adult_number_proportions , on = [ 'stratum_num' ] )
-           .assign( rho_a_adult = lambda x: x[ 'rho_a' ] * x[ 'adult_number_proportion' ] )
+           .assign( rho_a_adult = lambda x: x[ 'rho_a' ] * x[ 'count_age_proportion_adult' ] )
         )
 
         ### Calculate the areal biomass densitiies (B_a)
@@ -976,7 +975,7 @@ class Survey:
         nasc_to_areal_biomass_density_df = (
             nasc_to_areal_number_density_df
             # Convert rho_a into biomass densities
-            .assign( B_a_total = lambda x: x[ 'rho_a_total' ] * x[ 'average_weight_total' ] ,
+            .assign( B_a_all = lambda x: x[ 'rho_a_total' ] * x[ 'average_weight_total' ] ,
                      B_a_male = lambda x: x[ 'rho_a_male' ] * x[ 'average_weight_male' ] ,
                      B_a_female = lambda x: x[ 'rho_a_female' ] * x[ 'average_weight_female' ] ,
                      B_a_unsexed = lambda x: x[ 'rho_a_unsexed' ] * x[ 'average_weight_total' ] )           
@@ -987,7 +986,7 @@ class Survey:
             nasc_to_areal_biomass_density_df
             .stretch( variable = 'B_a' )
             .merge( nasc_adult_number_proportions , on = [ 'stratum_num' ] )
-            .assign( B_a_adult = lambda x: x[ 'B_a' ] * x[ 'adult_number_proportion' ] )
+            .assign( B_a_adult = lambda x: x[ 'B_a' ] * x[ 'count_age_proportion_adult' ] )
         )
 
         ### Calculate abundances (N)
@@ -995,7 +994,7 @@ class Survey:
         nasc_to_abundance_df = (
             nasc_to_areal_biomass_density_df
             # Convert to abundances (N)
-            .assign( N_total = lambda x: x[ 'rho_a_total' ] * x[ 'interval_area' ] ,
+            .assign( N_all = lambda x: x[ 'rho_a_total' ] * x[ 'interval_area' ] ,
                      N_male = lambda x: x[ 'rho_a_male' ] * x[ 'interval_area' ] ,
                      N_female = lambda x: x[ 'rho_a_female' ] * x[ 'interval_area' ] ,
                      N_unsexed = lambda x: x[ 'rho_a_unsexed' ] * x[ 'interval_area' ] )                     
@@ -1006,7 +1005,7 @@ class Survey:
             nasc_to_abundance_df
             .stretch( variable = 'N' )
             .merge( nasc_adult_number_proportions , on = [ 'stratum_num' ] )
-            .assign( N_adult = lambda x: x[ 'N' ] * x[ 'adult_number_proportion' ] )
+            .assign( N_adult = lambda x: x[ 'N' ] * x[ 'count_age_proportion_adult' ] )
         )
      
         ### Calculate biomass (B)
@@ -1014,7 +1013,7 @@ class Survey:
         nasc_to_biomass_df = (
             nasc_to_areal_biomass_density_df
             # Convert to biomasses
-            .assign( B_total = lambda x: x[ 'B_a_total' ] * x[ 'interval_area' ] ,
+            .assign( B_all = lambda x: x[ 'B_a_total' ] * x[ 'interval_area' ] ,
                      B_male = lambda x: x[ 'B_a_male' ] * x[ 'interval_area' ] ,
                      B_female = lambda x: x[ 'B_a_female' ] * x[ 'interval_area' ] ,
                      B_unsexed = lambda x: x[ 'B_a_unsexed' ] * x[ 'interval_area' ] )
@@ -1023,17 +1022,18 @@ class Survey:
         # Create datafrane to save it to Survey object
         biomass_df = (
             nasc_to_biomass_df
+            .filter( regex = '^((?!B_a|rho_a).)*$' )
             .stretch( variable = 'B' )
             .merge( nasc_adult_number_proportions , on = [ 'stratum_num' ] )
-            .assign( B_adult = lambda x: x[ 'B' ] * x[ 'adult_number_proportion' ] )
+            .assign( B_adult = lambda x: x[ 'B' ] * x[ 'count_age_proportion_adult' ] )
         )
 
         ### Expand biomass by age ! 
         age_biomass_df = (
             biomass_df
-            .merge( sex_indexed_weight_proportions , on = [ 'stratum_num' , 'sex' ] )
-            .assign( B_age = lambda x: x[ 'B_adult' ] * x[ 'weight_proportion' ] )[ [ 'transect_num' , 'latitude' , 'longitude' , 'stratum_num' , 'age' , 'sex' , 'weight_proportion' , 'B_age' ] ]
-            .rename( columns = { 'weight_proportion': 'age_proportion' } )
+            .merge( sex_indexed_weight_proportions , on = [ 'stratum_num' , 'sex' , 'age' ] )
+            .assign( B_age = lambda x: x[ 'B_adult' ] * x[ 'weight_sex_proportion_adult' ] ) [ [ 'transect_num' , 'latitude' , 'longitude' , 'stratum_num' , 'age' , 'sex' , 'weight_sex_proportion_adult' , 'B_age' ] ]
+            .rename( columns = { 'weight_sex_proportion_adult': 'age_proportion' } )
         )
 
         ### Update Survey object 
@@ -1079,7 +1079,7 @@ class Survey:
         ### Call in biomass
         adult_biomass = (
             self.biology[ 'population' ][ 'biomass' ][ 'biomass_df' ]
-            .pipe( lambda df: df.loc[ df.sex == 'total' ] )
+            .pipe( lambda df: df.loc[ df.sex == 'all' ] )
             .groupby('transect_num')[ [ 'B_adult' ] ]
             .agg( sum )
             .reset_index()
@@ -1164,26 +1164,31 @@ class Survey:
 
         ### TODO : Need to relocate the transformed coordinates to an external location
         ### Import georeferenced data
-        dataframe = (
+        dataframe_input = (
             self.biology
             [ 'population' ][ 'areal_density' ][ 'biomass_density_df' ]
             .copy()
-            .loc[ lambda x: x.sex == 'total' , : ]
+            .loc[ lambda x: x.sex == 'all' , : ]
         )
 
-        ### Import updated/transformed coordinates
+        ### Import updated/transformed coordinates     
+           
         updated_coordinates = (
             self.biology
             [ 'population' ][ 'biomass' ][ 'biomass_age_df' ]
             .copy()
-            .drop_duplicates( subset = [ 'longitude' , 'latitude' ] )
+            .loc[ lambda x: x.sex == 'all' , : ]
+            # .drop_duplicates( subset = [ 'longitude' , 'latitude' ] )
         )
 
+        ### Find union of column names that will be used to join everything
+        union_lst = dataframe_input.filter( items = updated_coordinates.columns ).columns.tolist()
+        
         ### Merge with input dataframe
         dataframe = (
-            dataframe
+            dataframe_input
             .copy()
-            .merge( updated_coordinates , on = [ 'longitude' , 'latitude' ] )
+            .merge( updated_coordinates , on = union_lst , how = 'outer' )
         )
 
         ### Import additional parameters/dataframes necessary for kriging

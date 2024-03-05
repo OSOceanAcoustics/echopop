@@ -193,6 +193,7 @@ def stretch( dataframe ,
         dataframe.filter( items = idx_lst ) 
         # Join with the target variable
         .join( dataframe.filter( regex = variable ) )
+        .drop_duplicates( )
     )
 
     ### Pivot from wide to long

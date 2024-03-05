@@ -88,5 +88,5 @@ def index_transect_age_sex_proportions( acoustics_dict: dict ,
         # Fill NaN w/ 0's for 'fraction_hake'
         .assign( fraction_hake = lambda x: x[ 'fraction_hake' ].fillna( 0 ) )
         # Group merge
-        .group_merge( dataframes_to_add = dataframes_to_add , on = 'stratum_num' )
+        .group_merge( dataframes_to_add = dataframes_to_add , inner_on = 'age' , outer_on = 'stratum_num' )
         )

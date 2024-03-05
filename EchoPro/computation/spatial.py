@@ -101,7 +101,7 @@ def calculate_transect_distance( dataframe ,
             .merge( transect_spacing , on = [ contrast ] )
             .assign( transect_area = lambda x: x.transect_distance * x.transect_spacing )
     )
-
+    
 def transform_geometry( dataframe: pd.DataFrame ,
                         dataframe_reference: pd.DataFrame ,
                         longitude_reference: np.float64 ,
