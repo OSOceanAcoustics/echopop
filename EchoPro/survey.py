@@ -830,10 +830,10 @@ class Survey:
         ### Reformat 'specimen_df' to match the same format as 'len_df'
         # First make copies of each
         specimen_df_copy = self.biology['specimen_df'].copy().pipe( lambda df: df.loc[ df.species_id == species_id ] )
-
+        
         # Import length bins
         length_intervals = self.biology[ 'distributions' ][ 'length' ][ 'length_interval_arr' ]
-
+        
         ### Calculate age bin proportions when explicitly excluding age-0 and age-1 fish
         # Calculate age proportions across all strata and age-bins
         age_proportions = (
@@ -889,12 +889,12 @@ class Survey:
                                                 df.assign( sex = 'all' ) ] ) )
             .dropna( how = 'any' )
             .bin_variable( bin_values = length_intervals ,
-                        bin_variable = 'length' )
+                           bin_variable = 'length' )
             .count_variable( contrasts = [ 'stratum_num' , 'age' , 'length_bin' , 'sex' ] ,
                             variable = 'weight' ,
                             fun = 'sum' )
             .pipe( lambda df: df.assign( weight_total_all = df.groupby( [ 'stratum_num' , 'sex' ] )[ 'count' ].transform( sum ) ,
-                                        weight_total_adult = df.loc[ df.age > 1 ].groupby( [ 'stratum_num' , 'sex' ] )[ 'count' ].transform( sum ) ) )
+                                         weight_total_adult = df.loc[ df.age > 1 ].groupby( [ 'stratum_num' , 'sex' ] )[ 'count' ].transform( sum ) ) )
             .groupby( [ 'stratum_num' , 'age' , 'sex' ] )
             .apply( lambda x: pd.Series( {
                 'weight_sex_proportion_all': ( x[ 'count' ] / x.weight_total_all ).sum() ,
@@ -902,7 +902,23 @@ class Survey:
             } ) )
             .reset_index( )
         )
-
+        
+        length_sex_age_weight_proportions = (
+            specimen_df_copy
+            .pipe( lambda df: pd.concat( [ df.loc[ df[ 'group' ] == 'sexed'  ] , 
+                                                df.assign( sex = 'all' ) ] ) )
+            .dropna( how = 'any' )
+            .bin_variable( bin_values = length_intervals ,
+                           bin_variable = 'length' )
+            .count_variable( contrasts = [ 'stratum_num' , 'age' , 'length_bin' , 'sex' ] ,
+                            variable = 'weight' ,
+                            fun = 'sum' )
+            .pipe( lambda df: df.assign( weight_total_all = df.groupby( [ 'stratum_num' , 'sex' ] )[ 'count' ].transform( sum ) ,
+                                         weight_total_adult = df.loc[ df.age > 1 ].groupby( [ 'stratum_num' , 'sex' ] )[ 'count' ].transform( sum ) ) )
+            .assign( weight_length_sex_proportion_all = lambda x: x[ 'count' ] / x.weight_total_all ,
+                     weight_length_sex_proportion_adult = lambda x: x[ 'count' ] / x.weight_total_adult )
+        )
+        
         ### Add these dataframes to the appropriate data attribute
         self.biology[ 'weight' ].update( {
             'proportions': {
@@ -910,6 +926,7 @@ class Survey:
                 # 'adult_proportions_df': adult_proportions ,
                 'age_weight_proportions_df': age_weight_proportions ,
                 'sex_age_weight_proportions_df': sex_age_weight_proportions ,
+                'length_sex_age_weight_proportions_df': length_sex_age_weight_proportions ,
             } ,
         } )
 
