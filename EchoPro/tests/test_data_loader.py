@@ -29,3 +29,7 @@ def test_load_configuration(test_path, tmp_path):
         config["stratified_survey_mean_parameters"]["strata_transect_proportion"]
         == init_params["stratified_survey_mean_parameters"]["strata_transect_proportion"]
     )
+
+
+def test_init(mock_survey):
+    objS = mock_survey

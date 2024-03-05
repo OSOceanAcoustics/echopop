@@ -7,7 +7,7 @@
 ##############################################################################
 # Parameters
 
-survey_year: 2019            # survey year being considered
+survey_year: 2000            # survey year being considered
 species:
   text_code: pacific_hake    # target species for the survey year -- species name
   number_code: 22500         # target species for the survey year -- numeric code
@@ -16,7 +16,7 @@ CAN_haul_offset: 200         # The value to be added to the Canadian's haul numb
 ##############################################################################
 # Directory path that contains all input data needed
 
-data_root_dir: for_tests
+data_root_dir: EchoPro/test_data/input_files
 
 ##############################################################################
 # Input data files
@@ -79,6 +79,6 @@ kriging:
     sheetname: Smoothing_EasyKrig
   vario_krig_para:
     # NOTE: This file is not currently used
-    filename: Kriging_files/default_vario_krig_settings_2019_US_CAN.xlsx
+    filename: Kriging_files/default_vario_krig_settings_US_CAN.xlsx
     sheetname: Sheet1
 ...
