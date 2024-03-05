@@ -842,18 +842,24 @@ class Survey:
             .count_variable( variable = 'length' ,
                              contrasts = [ 'stratum_num' , 'age' ] ,
                              fun = 'size' )
-            .pipe( lambda x: x.assign( stratum_count = x.groupby( [ 'stratum_num' ] )[ 'count' ].transform( sum ) ,
-                                       stratum_proportion = lambda x: x[ 'count' ] / x[ 'stratum_count' ] ) )               
+            .pipe( lambda x: x.assign( stratum_count_all = x.groupby( [ 'stratum_num' ] )[ 'count' ].transform( sum ) ,
+                                       stratum_count_total  = x.loc[ x.age > 1 ].groupby( [ 'stratum_num' ] )[ 'count' ].transform( sum ) ) )
+            .groupby( [ 'stratum_num' , 'age' ] )
+            .apply( lambda df: pd.Series( {
+                'count_age_proportion_all': ( df[ 'count' ] / df.stratum_count_all ).sum() ,
+                'count_age_proportion_adult': ( df.loc[ df.age > 1 ][ 'count' ] / df.stratum_count_total ).sum( )
+            } ) )
+            .reset_index( )
         )
 
-        # Calculate adult proportions/contributions (in terms of summed presence) for each stratum
-        adult_proportions = (
-            age_proportions
-            .pipe( lambda df: df
-                .groupby( 'stratum_num' )
-                .apply( lambda x: 1 - x.loc[ x[ 'age' ] <= 1 ][ 'count' ].sum() / x[ 'count' ].sum( ) ) ) 
-            .reset_index( name = 'number_proportion' )
-        )
+        # # Calculate adult proportions/contributions (in terms of summed presence) for each stratum
+        # adult_proportions = (
+        #     age_proportions
+        #     .pipe( lambda df: df
+        #         .groupby( 'stratum_num' )
+        #         .apply( lambda x: 1 - x.loc[ x[ 'age' ] <= 1 ][ 'count' ].sum() / x[ 'count' ].sum( ) ) ) 
+        #     .reset_index( name = 'number_proportion' )
+        # )
 
         ### Calculate proportional contributions of each age-bin to the summed weight of each stratum
         ### when explicitly excluding age-0 and age-1 fish
@@ -901,7 +907,7 @@ class Survey:
         self.biology[ 'weight' ].update( {
             'proportions': {
                 'age_proportions_df': age_proportions ,
-                'adult_proportions_df': adult_proportions ,
+                # 'adult_proportions_df': adult_proportions ,
                 'age_weight_proportions_df': age_weight_proportions ,
                 'sex_age_weight_proportions_df': sex_age_weight_proportions ,
             } ,
@@ -926,7 +932,8 @@ class Survey:
         length-based strata, and age.
         """ 
         ### Calculate sex-indexed weight proportions for each stratum
-        sex_indexed_weight_proportions = index_sex_weight_proportions( copy.deepcopy( self.biology ) )
+        # sex_indexed_weight_proportions = index_sex_weight_proportions( copy.deepcopy( self.biology ) )
+        sex_indexed_weight_proportions = copy.deepcopy( self.biology )[ 'weight' ][ 'proportions' ][ 'sex_age_weight_proportions_df' ]
 
         ### Join acoustic and biological dataframes that incorporate the fractions of integrated 
         ### acoustic backscatter specific to target organisms with adult-specific number and weight

@@ -14,10 +14,10 @@ def index_sex_weight_proportions( biology_dict: dict ):
     """     
     
     # Age-stratified weight proportions
-    age_stratified_proportions = biology_dict[ 'weight' ][ 'age_stratified' ][ 'age_1_included' ][ 'weight_proportions' ]
+    age_stratified_proportions = biology_dict[ 'weight' ][ 'proportions' ][ 'age_weight_proportions_df' ]
 
     # Age-stratified & sex-indexed weight proportions
-    age_sex_stratified_proportions = biology_dict[ 'weight' ][ 'sex_stratified' ][ 'weight_proportions' ]
+    age_sex_stratified_proportions = biology_dict[ 'weight' ][ 'proportions' ][ 'sex_age_weight_proportions_df' ]
 
     # Concatenate the two to add a 'total' category
     return (
@@ -64,21 +64,20 @@ def index_transect_age_sex_proportions( acoustics_dict: dict ,
     ## the configuration settings in some way, or this may be where the argument comes into play where
     ## the dataframe can be simply filtered based on the input/selection.
     # between excluding and including age-1 fish
-    nasc_adult_number_proportions = (
-        biology_dict[ 'weight' ][ 'age_stratified' ][ 'age_1_excluded' ][ 'number_proportions' ]
-        .rename( columns = { 'number_proportion': 'adult_number_proportion' } )
+    nasc_number_proportions = (
+        biology_dict[ 'weight' ][ 'proportions' ][ 'age_proportions_df' ]
     )
 
     # Adult NASC proportions for each stratum (weight)
-    nasc_adult_weight_proportions = (
-        biology_dict[ 'weight' ][ 'age_stratified' ][ 'age_1_excluded' ][ 'weight_proportions' ]
-        .rename( columns = { 'weight_proportion': 'adult_weight_proportion' } )
+    nasc_weight_proportions = (
+        biology_dict[ 'weight' ][ 'proportions' ][ 'age_weight_proportions_df' ]
     )
 
     ### Consolidate dataframes that will be added into a list
-    dataframes_to_add = [ nasc_interval_df , sigma_bs_strata , weight_sex_strata , nasc_adult_number_proportions , 
-                          nasc_adult_weight_proportions ]
+    dataframes_to_add = [ nasc_interval_df , sigma_bs_strata , weight_sex_strata , nasc_number_proportions , 
+                          nasc_weight_proportions ]
     
+
     ## Merge the relevant dataframes
     return (
         nasc_interval_df

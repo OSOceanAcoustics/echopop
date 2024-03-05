@@ -209,7 +209,8 @@ def stretch( dataframe ,
 @patch_method_to_DataFrame( pd.DataFrame ) 
 def group_merge( dataframe ,
                  dataframes_to_add ,
-                 on ,
+                 inner_on ,
+                 outer_on ,
                  how = 'outer' ,
                  drop_na = True ):
 
@@ -218,20 +219,31 @@ def group_merge( dataframe ,
     df_lst = [ dataframes_to_add ] if isinstance( dataframes_to_add , str) else dataframes_to_add
 
     # on
-    on_lst = [ on ] if isinstance( on , str) else on
+    inner_on_lst = [ inner_on ] if isinstance( inner_on , str) else inner_on
+    outer_on_lst = [ outer_on ] if isinstance( outer_on , str) else outer_on
 
     ### Merge the dataframes that will be joined to the original dataframe
-    frames_to_add = reduce( lambda left, right: pd.merge( left , right , on = on_lst , how = how ) , df_lst )
+    filtered_dataframes = [ df for df in df_lst if any( col in df.columns for col in inner_on_lst ) ]
+
+    ### Excluded dataframes
+    excluded_dataframes = [ df for df in df_lst if any( col not in df.columns for col in inner_on_lst ) ]
+
+    ### Begin inner merge
+    innermost_frames_to_add = reduce( lambda left, right: pd.merge( left , right , on = inner_on_lst + outer_on_lst , how = how ) , filtered_dataframes )
+    inner_frames_to_add = (
+        reduce( lambda left, right: pd.merge( left , right , on = outer_on_lst , how = how ) ,
+                excluded_dataframes + [ innermost_frames_to_add ] )
+    )
 
     ### Find union of column names that will be used to join everything
-    union_lst = dataframe.filter( items = frames_to_add.columns ).columns.tolist()
+    union_lst = dataframe.filter( items = inner_frames_to_add.columns ).columns.tolist()
 
     ### Merge together and remove NaN values depending on argument 'drop_na'
     if drop_na: 
-        merged_frame = dataframe.dropna().merge( frames_to_add.dropna() , 
+        merged_frame = dataframe.dropna().merge( inner_frames_to_add.dropna() , 
                                                  on = union_lst , how = 'outer' )
     else:
-        merged_frame = dataframe.merge( frames_to_add, 
+        merged_frame = dataframe.merge( inner_frames_to_add , 
                                         on = union_lst , how = 'outer' )
 
     ### Carriage return
