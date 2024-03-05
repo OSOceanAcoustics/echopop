@@ -160,17 +160,17 @@ class Survey:
         self.biology['specimen_df'] = (
             self.biology['specimen_df']
             .merge( self.biology['haul_to_transect_df'] , on = ['haul_num' , 'region' ] ) 
-            # .assign( sex = lambda x: np.where( x[ 'sex' ] == int( 1 ) , 'male' , 
-            #                          np.where( x[ 'sex' ] == int( 2 ) , 'female' , 'other' ) ) ,
-            #  group = lambda x: np.where( x[ 'sex' ].isin( [ 'male' , 'female' ] ) , 'sexed' , 'unsexed' ) )            
+            .assign( sex = lambda x: np.where( x[ 'sex' ] == int( 1 ) , 'male' , 
+                                     np.where( x[ 'sex' ] == int( 2 ) , 'female' , 'unsexed' ) ) ,
+             group = lambda x: np.where( x[ 'sex' ].isin( [ 'male' , 'female' ] ) , 'sexed' , 'unsexed' ) )            
         )
         # ---- Length
         self.biology['length_df'] = (
             self.biology['length_df']
             .merge( self.biology['haul_to_transect_df'] , on = ['haul_num' , 'region'] )
-            # .assign( sex = lambda x: np.where( x[ 'sex' ] == int( 1 ) , 'male' , 
-            #                          np.where( x[ 'sex' ] == int( 2 ) , 'female' , 'other' ) ) ,
-            #  group = lambda x: np.where( x[ 'sex' ].isin( [ 'male' , 'female' ] ) , 'sexed' , 'unsexed' ) )     
+            .assign( sex = lambda x: np.where( x[ 'sex' ] == int( 1 ) , 'male' , 
+                                     np.where( x[ 'sex' ] == int( 2 ) , 'female' , 'unsexed' ) ) ,
+             group = lambda x: np.where( x[ 'sex' ].isin( [ 'male' , 'female' ] ) , 'sexed' , 'unsexed' ) )          
         )
         # ---- Catch
         self.biology['catch_df'] = (
@@ -570,41 +570,46 @@ class Survey:
         
         ### Grouped length-weight regressions
         # outputs: rate | initial
-        self.statistics['length_weight']['regression_parameters'] = (
+        self.statistics[ 'length_weight' ][ 'regression_parameters' ] = (
             specimen_df_spp
-            .assign( group = lambda x: np.where( x[ 'sex' ] == int( 1 ) , 'male' , 
-                                       np.where( x[ 'sex' ] == int( 2 ) , 'female' , 'unsexed' ) ) ) # assigns str variable for comprehension
-            .pipe( lambda df: pd.concat( [ df.loc[ df[ 'group' ] != 'unsexed'  ] , df.assign( group = 'all' ) ] ) ) # appends male-female to an 'all' dataframe
+            .pipe( lambda df: pd.concat( [ df.loc[ df[ 'group' ] == 'sexed'  ] , 
+                                           df.assign( sex = 'all' ) ] ) ) # appends male-female to an 'all' dataframe
             .dropna( how = 'any' )
-            .groupby( 'group' )
+            .groupby( [ 'sex' ] )
             .apply( lambda x: pd.Series( np.polyfit( np.log10( x[ 'length' ] ) , np.log10( x[ 'weight' ] ) , 1 ) ,
-                                        index = [ 'rate' , 'initial' ] ) )
+                                         index = [ 'rate' , 'initial' ] ) )
             .reset_index()
         )
-        [ rate , initial ] = np.polyfit(np.log10(length_weight_df['length']), np.log10(length_weight_df['weight']), 1)
-        
-        # predict weight (fit equation)
-        fitted_weight = 10 ** initial * length_bins ** rate
-               
-        # add to object        
-        self.statistics['length_weight']['regression'] = {
-            'rate': rate ,
-            'initial': initial ,
-        }
-        
-        # summarize mean/samples of length and weight values (binned statistics)
-        length_bin_stats = length_weight_df.bin_stats( bin_variable = 'length' ,
-                                                       bin_values = length_intervals )
-        
+
+        # predict weight (fit equation)       
+        fitted_weight = (
+            pd.DataFrame( { 'length_binned': length_bins } )
+            .bin_variable( length_intervals , 'length_binned' )
+            .rename( columns = { 'length_binned_bin': 'length_bin' } )
+            .merge( self.statistics[ 'length_weight' ][ 'regression_parameters' ] ,
+                    how = 'cross' )
+            .assign( weight_fitted = lambda x: 10 ** x.initial * x.length_binned ** x.rate )
+            .drop( 'length_binned' , axis = 1 )
+        )
+
         # fill bins where n_length < 5 w/ regressed weight values
         # TODO : the `bin_stats` function defaults to prepending 'mean' and 'n' -- this will
         # TODO : need to be changed to comport with the same name formatting as the rest of 
         # TODO : the module
-        length_bin_stats[ 'weight_modeled' ] = length_bin_stats[ 'mean_weight' ].copy()
-        low_n_indices = np.where(length_bin_stats[ 'n_weight' ].values < 5)[0].copy()   
-        length_bin_stats.loc[low_n_indices, 'weight_modeled'] = fitted_weight[low_n_indices].copy()
-            
-        self.statistics[ 'length_weight' ][ 'length_weight_df' ] = length_bin_stats
+        self.statistics[ 'length_weight' ][ 'length_weight_df' ] = (
+            specimen_df_spp
+            .pipe( lambda df: pd.concat( [ df.loc[ df[ 'group' ] == 'sexed'  ] , 
+                                           df.assign( sex = 'all' ) ] ) )
+            .bin_variable( length_intervals , 'length' )
+            .bin_stats( bin_variable = 'length' ,
+                        contrasts = [ 'sex' ] ,
+                        bin_values = length_intervals )
+            .merge( fitted_weight ,
+                    on = [ 'length_bin' , 'sex' ] )
+            .assign( weight_modeled = lambda df: np.where( df.n_weight < 5 ,
+                                                           df.weight_fitted ,
+                                                           df.mean_weight ) )
+        )
         
     def strata_sex_weight_proportions( self ,
                                        species_id: np.float64 ):
@@ -636,17 +641,14 @@ class Survey:
         length_grouped = (   
             length_df_copy
             .bin_variable( length_intervals , 'length' ) # appends `length_bin` column
-            .assign( group = lambda x: np.where( x['sex'] == int(1) , 'male' , 'female' ) ) # assigns str variable for comprehension
-            .pipe( lambda df: pd.concat( [ df.loc[ df[ 'sex' ] != 3 ] , df.assign( group = 'all' ) ] ) ) # appends male-female to an 'all' dataframe
             .assign( station = 1 ) # assign station number for later functions
-            )
+        )
         
         ### Calculate the sex proportions/frequencies for station 2 (specimen_df) across all strata
         specimen_grouped = (
             specimen_df_copy
             .bin_variable( length_intervals , 'length' ) # appends `length_bin` column
-            .assign( group = lambda x: np.where( x['sex'] == int(1) , 'male' , 'female' ) ) # assigns str variable for comprehension
-            .pipe( lambda df: pd.concat( [ df.loc[ df[ 'sex' ] != 3 ] , df.assign( group = 'all' ) ] ) ) # appends male-female to an 'all' dataframe
+            .dropna( subset = [ 'weight' , 'length' ] )
             .assign( station = 2 ) # assign station number for later functions
         )
         
@@ -654,8 +656,10 @@ class Survey:
         station_sex_length = (
             specimen_grouped # begin reformatting specimen_grouped so it resembles same structure as length_grouped
             .meld( length_grouped ) # "meld": reformats specimen_grouped and then concatenates length_grouped 
+            .pipe( lambda df: pd.concat( [ df.loc[ df[ 'group' ] == 'sexed'  ] , 
+                                           df.assign( sex = 'all' ) ] ) )
             # sum up all of the length values with respect to each length bin
-            .count_variable( contrasts = [ 'group' , 'station' , 'stratum_num' , 'length_bin' ] , # grouping variables
+            .count_variable( contrasts = [ 'sex' , 'station' , 'stratum_num' , 'length_bin' ] , # grouping variables
                              variable = 'length_count' , # target value to apply a function
                              fun = 'sum' ) # function to apply
         )
@@ -663,7 +667,7 @@ class Survey:
         ### Calculate total sample size ('group' == 'all') that will convert 'counts' into 'frequency/proportion'
         total_n = (
             station_sex_length 
-            .loc[ station_sex_length.group.isin( [ 'all' ] ) ] # filter out to get to just 'all': this is where sex = [ 1 , 2 , 3]
+            .loc[ station_sex_length.sex.isin( [ 'all' ] ) ] # filter out to get to just 'all': this is where sex = [ 1 , 2 , 3]
             .groupby( [ 'stratum_num' ] )[ 'count' ] # group by each stratum with 'count' being the target variable
             .sum( ) # sum up counts per stratum
             .reset_index( name = 'n_total' ) # rename index
@@ -673,32 +677,32 @@ class Survey:
         station_length_aggregate = (
             station_sex_length
             # calculate the within-sample sum and proportions (necessary for the downstream dot product calculation)
-            .pipe( lambda x: x.assign( within_station_n = x.groupby( [ 'group' , 'station' , 'stratum_num' ] )[ 'count' ].transform( sum ) ,
-                                       within_station_p = lambda x: x[ 'count' ] / x[ 'within_station_n' ] ) )
+            .pipe( lambda x: x.assign( within_station_n = x.groupby( [ 'sex' , 'station' , 'stratum_num' ] )[ 'count' ].transform( sum ) ,
+                                        within_station_p = lambda x: x[ 'count' ] / x[ 'within_station_n' ] ) )
             .replace( np.nan, 0 ) # remove erroneous NaN (divide by 0 or invalid values)
             .merge( total_n , on = 'stratum_num' ) # merge station_sex_length with total_n
             # proportion of each count indexed by each length_bin relative to the stratum total
             .assign( overall_length_p = lambda x: x[ 'count' ] / x[ 'n_total' ] ,
-                     overall_station_p = lambda x: x[ 'within_station_n' ] / x[ 'n_total' ] )
+                    overall_station_p = lambda x: x[ 'within_station_n' ] / x[ 'n_total' ] )
             .replace( np.nan, 0 ) # remove erroneous NaN (divide by 0 or invalid values)
         )
         
         ### Calculate the sex distribution across strata
         sex_proportions = (
             station_length_aggregate
-            .loc[ station_length_aggregate.group.isin( ['male' , 'female'] ) ] # only parse 'male' and 'female'
+            .loc[ station_length_aggregate.sex.isin( [ 'male' , 'female' ] ) ] # only parse 'male' and 'female'
             # create a pivot that will reorient data to the desired shape
-            .pivot_table( index = [ 'group' , 'station' ] , 
-                          columns = [ 'stratum_num' ] , 
-                          values = [ 'overall_station_p' ] )
-            .groupby( 'group' )
-            .sum()
+            .pivot_table( index = [ 'sex' , 'station' ] , 
+                        columns = [ 'stratum_num' ] , 
+                        values = [ 'overall_station_p' ] )
+            .groupby( 'sex' )
+            .sum( )
         )
         
         ### Calculate the proportions each dataset / station contributed within each stratum
         station_proportions = (
             station_length_aggregate
-            .loc[ station_length_aggregate.group.isin( [ 'all' ] ) ] # only parse 'all'
+            .loc[ station_length_aggregate.sex.isin( [ 'all' ] ) ] # only parse 'all'
             # create a pivot that will reorient data to the desired shape
             .pivot_table( index = [ 'group' , 'station' ] , 
                           columns = 'stratum_num' , 
@@ -728,7 +732,7 @@ class Survey:
                 .stack()
                 .reset_index( name = 'stn_p' ) , on = [ 'stratum_num' , 'station' ] )
             .pivot_table( columns = 'stratum_num' ,
-                          index = [ 'station' , 'group' ] ,
+                          index = [ 'station' , 'sex' ] ,
                           values = [ 'stn_p' , 'sex_stn_p' ] )    
         )
         
@@ -744,38 +748,61 @@ class Survey:
         ### Calculate combined station fraction means
         # Station 1 
         stn_1_fraction = ( sex_stn_prop_merged.loc[ 1 , ( 'stn_p' ) ]                           
-                          / ( sex_stn_prop_merged.loc[ 1 , ( 'stn_p' ) ] 
+                            / ( sex_stn_prop_merged.loc[ 1 , ( 'stn_p' ) ] 
                             + sex_stn_prop_merged.loc[ 2 , ( 'sex_stn_p' ) ] ) )
-        
+
         # Station 2
         stn_2_fraction = ( sex_stn_prop_merged.loc[ 2 , ( 'sex_stn_p' ) ]                          
-                          / ( stn_1_fraction
+                            / ( stn_1_fraction
                             + sex_stn_prop_merged.loc[ 2 , ( 'sex_stn_p' ) ] ) )
         
         ### Calculate the average weight across all animals, males, and females
         # Pull fitted weight values
-        fitted_weight = self.statistics['length_weight']['length_weight_df']
+        fitted_weight = self.statistics[ 'length_weight' ][ 'length_weight_df' ]
         
         # Total
-        total_weighted_values = ( length_proportion_table.loc[ : , ( 'all' , 1 ) ] * station_proportions.loc[ 1 , ] +
-                                  length_proportion_table.loc[ : , ( 'all' , 2 ) ] * station_proportions.loc[ 2 , ] )
-        total_weight = fitted_weight[ 'weight_modeled' ].dot( total_weighted_values.reset_index( drop = True ) )
+        total_weight = (
+            fitted_weight
+            .loc[ lambda x: x.sex == 'all' , 'weight_modeled' ]
+            .values
+            .dot(
+                ( length_proportion_table.loc[ : , ( 'all' , 1 ) ] * station_proportions.loc[ 1 , ] + 
+                    length_proportion_table.loc[ : , ( 'all' , 2 ) ] * station_proportions.loc[ 2 , ] )
+                .reset_index( drop = True ) 
+                )    
+        ) 
         
         # Male
-        male_weighted_values = ( length_proportion_table.loc[ : , ( 'male' , 1 ) ] * stn_1_fraction.loc[ 'male' ] +
-                                 length_proportion_table.loc[ : , ( 'male' , 2 ) ] * stn_2_fraction.loc[ 'male' ] )
-        male_weight = fitted_weight[ 'weight_modeled' ].dot( male_weighted_values.reset_index( drop = True ) )
+        male_weight = (
+            fitted_weight
+            .loc[ lambda x: x.sex == 'male' , 'weight_modeled' ]
+            .values
+            .dot(
+                ( length_proportion_table.loc[ : , ( 'male' , 1 ) ] * stn_1_fraction.loc[ 'male' ] + 
+                    length_proportion_table.loc[ : , ( 'male' , 2 ) ] * stn_2_fraction.loc[ 'male' ] )
+                .reset_index( drop = True ) 
+                )    
+        )
         
         # Female
-        female_weighted_values = ( length_proportion_table.loc[ : , ( 'female' , 1 ) ] * stn_1_fraction.loc[ 'female' ] +
-                                   length_proportion_table.loc[ : , ( 'female' , 2 ) ] * stn_2_fraction.loc[ 'female' ] )
-        female_weight = fitted_weight[ 'weight_modeled' ].dot( female_weighted_values.reset_index( drop = True ) )
+        female_weight = (
+            fitted_weight
+            .loc[ lambda x: x.sex == 'female' , 'weight_modeled' ]
+            .values
+            .dot(
+                ( length_proportion_table.loc[ : , ( 'female' , 1 ) ] * stn_1_fraction.loc[ 'female' ] + 
+                    length_proportion_table.loc[ : , ( 'female' , 2 ) ] * stn_2_fraction.loc[ 'female' ] )
+                .reset_index( drop = True ) 
+                )    
+        )
         
         ### Store the data frame in an accessible location
         self.biology[ 'weight' ][ 'weight_strata_df' ] = pd.DataFrame( {
-            'stratum_num': total_weight.index ,
-            'proportion_female': sex_proportions.loc[ 'female' , : ][ 'overall_station_p' ].reset_index(drop=True) ,
-            'proportion_male': sex_proportions.loc[ 'male' , : ][ 'overall_station_p' ].reset_index(drop=True) ,
+            'stratum_num': station_proportions.columns.values.astype( int ) ,
+            'proportion_female': sex_proportions.loc[ 'female' , : ][ 'overall_station_p' ].reset_index( drop = True ) ,
+            'proportion_male': sex_proportions.loc[ 'male' , : ][ 'overall_station_p' ].reset_index( drop = True ) ,
+            'proportion_station_1': station_proportions.loc[ 1 , : ] ,
+            'proportion_station_2': station_proportions.loc[ 2 , : ] ,
             'average_weight_female': female_weight ,            
             'average_weight_male': male_weight ,
             'average_weight_total': total_weight
@@ -820,7 +847,7 @@ class Survey:
         )
 
         # Calculate adult proportions/contributions (in terms of summed presence) for each stratum
-        age_2_and_over_proportions = (
+        adult_proportions = (
             age_proportions
             .pipe( lambda df: df
                 .groupby( 'stratum_num' )
@@ -834,54 +861,50 @@ class Survey:
         age_weight_proportions = (
             specimen_df_copy
             .dropna( how = 'any' )
-            .pipe( lambda x: x.assign( weight_age = x.groupby( [ 'stratum_num' , 'age' ] )[ 'weight' ].transform( sum ) ,
-                                    weight_stratum = x.groupby( [ 'stratum_num' ] )[ 'weight' ].transform( sum ) ) )
+            .pipe( lambda df: df.assign( weight_stratum_all = df
+                                                        .groupby( [ 'stratum_num' ] )[ 'weight' ]
+                                                        .transform( sum ) ,
+                                        weight_stratum_adult = df
+                                                            .loc[ lambda x: x.age > 1 ]
+                                                            .groupby( [ 'stratum_num' ] )[ 'weight' ]
+                                                            .transform( sum ) ) )
             .groupby( [ 'stratum_num' , 'age' ] )
-            .apply( lambda x: x[ 'weight_age' ].sum( ) / x[ 'weight_stratum' ].sum ( ) )
-            .reset_index( name = 'weight_stratum_proportion' )
+            .apply( lambda df: pd.Series( {
+                'weight_age_proportion_all': ( df.weight / df.weight_stratum_all ).sum( ) ,
+                'weight_age_proportion_adult': ( df.weight / df.weight_stratum_adult ).sum( )
+            } ) )
+            .reset_index()
         )
         
         # Calculate adult proportions/contributions (in terms of summed weight) for each stratum
-        age_2_and_over_weight_proportions = (
-            age_weight_proportions
-            .pipe( lambda df: df
-                .groupby( 'stratum_num' )
-                .apply( lambda x: 1 - x.loc[ x[ 'age' ] <= 1 ][ 'weight_stratum_proportion' ].sum()) ) 
-                .reset_index( name = 'weight_proportion' ) 
-        )
-
-        ### Now this process will be repeated but adding "sex" as an additional contrast and considering
-        ### all age-bins
-        age_sex_weight_proportions = (
+        sex_age_weight_proportions = (
             specimen_df_copy
+            .pipe( lambda df: pd.concat( [ df.loc[ df[ 'group' ] == 'sexed'  ] , 
+                                                df.assign( sex = 'all' ) ] ) )
             .dropna( how = 'any' )
             .bin_variable( bin_values = length_intervals ,
                         bin_variable = 'length' )
             .count_variable( contrasts = [ 'stratum_num' , 'age' , 'length_bin' , 'sex' ] ,
                             variable = 'weight' ,
                             fun = 'sum' )
-            .pipe( lambda df: df.assign( total = df.groupby( [ 'stratum_num' , 'sex' ] )[ 'count' ].transform( sum ) ) )
+            .pipe( lambda df: df.assign( weight_total_all = df.groupby( [ 'stratum_num' , 'sex' ] )[ 'count' ].transform( sum ) ,
+                                        weight_total_adult = df.loc[ df.age > 1 ].groupby( [ 'stratum_num' , 'sex' ] )[ 'count' ].transform( sum ) ) )
             .groupby( [ 'stratum_num' , 'age' , 'sex' ] )
-            .apply( lambda x: ( x[ 'count' ] / x[ 'total' ] ).sum() ) 
-            .reset_index( name = 'weight_sex_stratum_proportion' )
-            .assign( sex = lambda x: np.where( x[ 'sex' ] == 1 , 'male' , np.where( x[ 'sex' ] == 2 , 'female' , 'unsexed' ) ) )
+            .apply( lambda x: pd.Series( {
+                'weight_sex_proportion_all': ( x[ 'count' ] / x.weight_total_all ).sum() ,
+                'weight_sex_proportion_adult': ( x[ 'count' ] / x.weight_total_adult ).sum()
+            } ) )
+            .reset_index( )
         )
 
         ### Add these dataframes to the appropriate data attribute
         self.biology[ 'weight' ].update( {
-            'sex_stratified': {
-                'weight_proportions': age_sex_weight_proportions ,
+            'proportions': {
+                'age_proportions_df': age_proportions ,
+                'adult_proportions_df': adult_proportions ,
+                'age_weight_proportions_df': age_weight_proportions ,
+                'sex_age_weight_proportions_df': sex_age_weight_proportions ,
             } ,
-            'age_stratified': {
-                'age_1_excluded': {
-                    'number_proportions': age_2_and_over_proportions ,
-                    'weight_proportions': age_2_and_over_weight_proportions ,
-                } ,
-                'age_1_included': {
-                    'number_proportions': age_proportions ,
-                    'weight_proportions': age_weight_proportions
-                }
-            }
         } )
 
     #!!! TODO : Provide argument that will exclude age-0 and age-1 fish when flagged
