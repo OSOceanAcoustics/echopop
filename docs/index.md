@@ -1,6 +1,6 @@
 # EchoPro
 
-This site currently hosts example Jupyter notebooks for the new Python EchoPro package (https://github.com/uw-echospace/EchoPro/). Over time, the documentation for this package will be added here too.
+This site currently hosts example Jupyter notebooks for the Echopop package (https://github.com/uw-echospace/EchoPro/). Over time, the documentation for this package will be added here too.
 
 The Jupyter notebooks are shown in a "rendered", executed form.
 

@@ -4,7 +4,7 @@
 
 ## Classes
 
-Python EchoPro is designed using an object-oriented approach where data are stored in core classes and computations are called as methods (functions) on those classes.
+Echopop is designed using an object-oriented approach where data are stored in core classes and computations are called as methods (functions) on those classes.
 
 - Core class
   - survey.Survey

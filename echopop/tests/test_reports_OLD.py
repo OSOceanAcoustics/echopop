@@ -9,8 +9,8 @@ from typing import List, Optional
 import pandas as pd
 import numpy as np
 
-import EchoPro
-from EchoPro.computation import SemiVariogram as SV
+import echopop
+from echopop.computation import SemiVariogram as SV
 
 
 @pytest.fixture(scope="module")
@@ -31,7 +31,7 @@ def generate_reports(config_base_path: pathlib.Path,
     """
 
     # initialize Survey object
-    survey_2019 = EchoPro.Survey(
+    survey_2019 = echopop.Survey(
         init_file_path=config_base_path / 'initialization_config.yml',
         survey_year_file_path=config_base_path / 'survey_year_2019_config.yml',
         source=3,
