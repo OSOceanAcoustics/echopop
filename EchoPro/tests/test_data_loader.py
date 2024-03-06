@@ -1,5 +1,6 @@
 import yaml
 from pathlib import Path
+from EchoPro import Survey
 from EchoPro.utils.data_file_validation import load_configuration , validate_data_columns
 
 def test_load_configuration(test_path, tmp_path):
@@ -29,3 +30,8 @@ def test_load_configuration(test_path, tmp_path):
         config["stratified_survey_mean_parameters"]["strata_transect_proportion"]
         == init_params["stratified_survey_mean_parameters"]["strata_transect_proportion"]
     )
+
+
+def test_init(mock_survey):
+    objS = mock_survey
+    assert isinstance(objS, Survey)
