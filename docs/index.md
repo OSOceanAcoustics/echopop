@@ -1,18 +1,54 @@
-# EchoPro
+# Echopop
 
-This site currently hosts example Jupyter notebooks for the Echopop package (https://github.com/uw-echospace/EchoPro/). Over time, the documentation for this package will be added here too.
+Echopop combines acoustic data collected by echosounders with biological "ground truth" information from trawls to produce biological estimates, such as biomass  and abundance. 
 
-The Jupyter notebooks are shown in a "rendered", executed form.
+Current the processing is configured to work with Acoustic-Trawl survey data for Pacific hake, but we will soon add components to include Pacific krill into the package. The majority of the computational implementation is applicable for other fish and zooplankton species, and we plan to expand the package for general support in the near future.
 
-```{admonition} Glitches with some interactive graphical elements
+
+<!-- ```{admonition} Glitches with some interactive graphical elements
 While the notebooks in this site are rendered, there are some glitches in the display we're still working out. In particular, an [ipywidgets](https://ipywidgets.readthedocs.io/en/stable/) interactive graphical element in the semivariogram widget doesn't display correctly. The notebooks do run correctly when executed with Jupyter Notebook ("classic", not JupyterLab).
-```
+``` -->
 
-Go to the individual example notebooks below or in the table of content on the left.
+<!-- Go to the individual example notebooks below or in the table of content on the left.
 
 ```{tableofcontents}
-```
+``` -->
 
-## Installation
 
-See the [README.md](https://github.com/uw-echospace/EchoPro/blob/master/README.md) in the EchoPro repository for installation and execution instructions. 
+## Acknowledgement
+
+We thank Dezhang Chu (@DezhangChu) of the NOAA Northwest Fisheries Science Center
+for providing the Matlab EchoPro program he developed
+that many elements of Echopop is based on,
+as well as his detailed consultation for implementations specific to Pacific hake.
+
+We also thank Rebecca Thomas (@rebeccathomas-NOAA),
+Beth Phillips (@ElizabethMPhillips),
+Alicia Billings (@aliciabillings-noaa),
+and Julia Clemons (@JuliaClemons-NOAA)
+of the Fisheries Engineering and Acoustics Team (FEAT)
+of the NOAA Northwest Fisheries Science Center for continuing discussions
+that make Echopop better.
+
+We also thank funding from NOAA Fisheries to support this work.
+
+<div>
+  <a>
+    <img src="./images/noaa_fisheries_logo.png" alt="NOAA_fisheries_logo" width="200">
+  </a>
+</div>
+
+
+
+## Contributors
+
+Echopop development is currently co-led by Wu-Jung Lee (@leewujung) and Brandyn Lucca (@brandynluca). Brandon Reyes (@b-reyes) and Emilio Mayorga (@emiliom) contributed significantly to a previous version of Echopop.
+
+
+## License
+
+Echopop is licensed under the open source [Apache 2.0 license](https://opensource.org/licenses/Apache-2.0).
+
+---------------
+
+Copyright (c) 2022-2024, Echopop Developers.
