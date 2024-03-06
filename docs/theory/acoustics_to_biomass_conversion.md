@@ -1,3 +1,3 @@
-![ text ](../images/example_indexing.jpg)
+# Acoustic backscatter to biomass conversion
 
-Acoustic backscatter to biomass conversion
+![ text ](../images/example_indexing.jpg)

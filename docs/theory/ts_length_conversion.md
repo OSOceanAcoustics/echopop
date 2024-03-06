@@ -1,3 +1,3 @@
-![ text ](../images/example_indexing.jpg)
+# Fundamental acoustic equations
 
-Fundamental acoustic equations
+![ text ](../images/example_indexing.jpg)

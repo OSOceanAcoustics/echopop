@@ -1,3 +1,3 @@
-![ text ](../images/example_indexing.jpg)
+# Other summary statistics
 
-Other summary statistics
+![ text ](../images/example_indexing.jpg)

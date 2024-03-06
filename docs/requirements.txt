@@ -1,0 +1,4 @@
+sphinx-automodapi
+jupyter-book
+numpydoc
+docutils<0.18

@@ -1,4 +1,4 @@
-# EchoPro documentation and example notebooks
+# EchoPro
 
 This site currently hosts example Jupyter notebooks for the new Python EchoPro package (https://github.com/uw-echospace/EchoPro/). Over time, the documentation for this package will be added here too.
 
