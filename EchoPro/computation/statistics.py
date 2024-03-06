@@ -28,7 +28,7 @@ def stratified_transect_statistic( transects ,
     Notes
     -----
     This function calculates the stratified summary statistics for biomass within 
-    `EchoPro.survey.stratified_summary()`.
+    `echopop.survey.stratified_summary()`.
     """ 
     
     ### Convert specific DataFrame columns to arrays for speed

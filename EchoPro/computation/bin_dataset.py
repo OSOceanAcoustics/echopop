@@ -33,7 +33,7 @@ def _get_bin_ind(input_data: np.ndarray, bin_edges: np.ndarray) -> List[np.ndarr
     -----
     The construction of the bin counts differs from the method
     produced in `transect_results.py`. This is because the Matlab
-    version of EchoPro is inconsistent in how it is binning.
+    version of echopop is inconsistent in how it is binning.
     """
 
     # initialize list that will hold the indices
@@ -78,7 +78,7 @@ def _get_bin_ind_age(input_data: np.ndarray, age_bins: np.ndarray) -> List[np.nd
     -----
     The construction of the bin counts differs from the method
     produced in `transect_results.py`. This is because the Matlab
-    version of EchoPro is inconsistent in how it is binning ages.
+    version of echopop is inconsistent in how it is binning ages.
     """
 
     # initialize list that will hold indices
