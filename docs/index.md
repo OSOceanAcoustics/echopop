@@ -17,7 +17,7 @@ While the notebooks in this site are rendered, there are some glitches in the di
 
 ## Acknowledgement
 
-We thank Dezhang Chu (@DezhangChu) of the NOAA Northwest Fisheries Science Center
+We thank Dezhang Chu (@DezhangChu) of the NOAA Northwest Fisheries Science Center (NWFSC)
 for providing the Matlab EchoPro program he developed
 that many elements of Echopop is based on,
 as well as his detailed consultation for implementations specific to Pacific hake.
@@ -26,11 +26,10 @@ We thank Rebecca Thomas (@rebeccathomas-NOAA),
 Beth Phillips (@ElizabethMPhillips),
 Alicia Billings (@aliciabillings-noaa),
 and Julia Clemons (@JuliaClemons-NOAA)
-of the Fisheries Engineering and Acoustics Team (FEAT)
-of the NOAA Northwest Fisheries Science Center for continuing discussions
-that make Echopop better.
+of the NWFSC Fisheries Engineering and Acoustics Team (FEAT)
+for continuing discussions that make Echopop better.
 
-We also thank funding from NOAA Fisheries in support of this work.
+This project is financially supported by NOAA Fisheries.
 
 <img src="./images/noaa_fisheries_logo.png" alt="NOAA_fisheries_logo" width="200">
 
