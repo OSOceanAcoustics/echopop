@@ -34,6 +34,9 @@ We also thank funding from NOAA Fisheries to support this work.
 </div>
 
 
+## Contributors
+
+Echopop development is currently co-led by Wu-Jung Lee (@leewujung) and Brandyn Lucca (@brandynluca). Brandon Reyes (@b-reyes) and Emilio Mayorga (@emiliom) contributed significantly to a previous version of Echopop.
 
 
 
