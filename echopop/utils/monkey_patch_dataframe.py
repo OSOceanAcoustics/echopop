@@ -14,7 +14,7 @@ def patch_method_to_DataFrame( cls: Callable = pd.DataFrame ) -> Callable[[Calla
     -----
     This is primarily a support function that modifies the pandas.DataFrame object to
     extend usage for various utility functions used throughout the calculations embedded 
-    within the EchoPro.survey object. This only modifies the pandas.DataFrame class 
+    within the echopop.survey object. This only modifies the pandas.DataFrame class 
     definitions within the instance and therefore does not affect the actual installation.
     This allows for modifying the class during runtime when only necessary and enables a 
     '@patch_method_to_DataFrame' decorator to be associated with defined methods that are

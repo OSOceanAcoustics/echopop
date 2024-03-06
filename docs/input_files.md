@@ -1,4 +1,4 @@
-# Input files
+ipynb# Input files
 
 Input files used in an Echopop run, grouped by data type. The tables below describe the data columns required by Echopop; other columns will be ignored. All input files are in Excel format. File paths, names, and Excel tab names are specified in the survey year configuration file (e.g., `survey_year_2019_config.yml`).
 

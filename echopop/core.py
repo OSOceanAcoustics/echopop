@@ -172,7 +172,7 @@ CONFIG_MAP = {
 # included in the ``Survey`` class initialization and parameterization (when the object is generated).
 #
 # TODO: This is a hard-coded feature and therefore is not particularly helpful for more dynamic
-# use of this Python module (and the overall use of the EchoPro package).
+# use of this Python module (and the overall use of the echopop package).
 LAYER_NAME_MAP = {
     'biological': {
         'name': 'biology' ,
@@ -237,4 +237,3 @@ SEX_CODE_MAP = {
         'abbr': 'F'
     }
 }
-

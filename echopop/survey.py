@@ -5,7 +5,7 @@ import numpy as np
 import copy
 from .core import CONFIG_MAP, LAYER_NAME_MAP
 ### !!! TODO : This is a temporary import call -- this will need to be changed to 
-# the correct relative structure (i.e. '.core' instead of 'EchoPro.core' at a future testing step)
+# the correct relative structure (i.e. '.core' instead of 'echopop.core' at a future testing step)
 from .computation.operations import bin_variable , bin_stats , count_variable , stretch
 from .utils.data_file_validation import load_configuration , validate_data_columns
 from .computation.acoustics import to_linear , ts_length_regression
@@ -16,11 +16,11 @@ from .computation.biology import index_sex_weight_proportions , index_transect_a
 
 ### !!! TODO : This is a temporary import call -- this will need to be changed to 
 # the correct relative structure (i.e. '.utils.data_structure_utils' instead of 
-# 'EchoPro.utils.data_structure_utils' at a future testing step)
+# 'echopop.utils.data_structure_utils' at a future testing step)
 
 class Survey:
     """
-    EchoPro base class that imports and prepares parameters for
+    echopop base class that imports and prepares parameters for
     a survey. Additionally, it includes functions for accessing
     the modules associated with the transect and Kriging variable
     calculations, CV analysis, semi-variogram algorithm, and Kriging.
@@ -246,7 +246,7 @@ class Survey:
             df_initial.columns = df_initial.iloc[0]
             df_initial = df_initial.drop(0)
 
-            # Slice only the columns that are relevant to the EchoPro module functionality
+            # Slice only the columns that are relevant to the echopop module functionality
             valid_columns = list(set(validation_settings.keys()).intersection(set(df_initial.columns)))
             df_filtered = df_initial[valid_columns]
 

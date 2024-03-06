@@ -1,4 +1,4 @@
-name: echopro
+name: echopop
 channels:
   - conda-forge
 dependencies:
