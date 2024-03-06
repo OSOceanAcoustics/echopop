@@ -5,13 +5,13 @@ pytestmark = pytest.mark.skip("Disable all existing tests to revamp testing mech
 
 import pandas as pd
 import numpy as np
-import EchoPro
-from EchoPro.computation import SemiVariogram as SV
+import echopop
+from echopop.computation import SemiVariogram as SV
 
 
 def test_biomass_age_output(config_base_path, matlab_output_base_path):
     # initialize Survey object
-    survey_2019 = EchoPro.Survey(
+    survey_2019 = echopop.Survey(
         init_file_path=config_base_path / 'initialization_config.yml',
         survey_year_file_path=config_base_path / 'survey_year_2019_config.yml',
         source=3,
@@ -96,7 +96,7 @@ def test_biomass_age_output(config_base_path, matlab_output_base_path):
 
 def test_core_output(config_base_path, matlab_output_base_path):
     # initialize Survey object
-    survey_2019 = EchoPro.Survey(
+    survey_2019 = echopop.Survey(
         init_file_path=config_base_path / 'initialization_config.yml',
         survey_year_file_path=config_base_path / 'survey_year_2019_config.yml',
         source=3,

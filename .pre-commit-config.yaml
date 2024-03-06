@@ -1,6 +1,6 @@
 exclude: |
   (?x)^(
-    EchoPro/tests/|
+    echopop/tests/|
     docs/|
     example_notebooks/|
     project_docs
@@ -37,4 +37,4 @@ repos:
     rev: v2.2.2
     hooks:
       - id: codespell
-        args: ["--skip=*.ipynb", "-w", "docs/source", "echopype", "EchoPro", "echopro"]
+        args: ["--skip=*.ipynb", "-w", "docs/source", "echopype", "echopop", "echopop"]

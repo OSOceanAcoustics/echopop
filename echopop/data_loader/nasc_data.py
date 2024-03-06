@@ -32,7 +32,7 @@ def _process_nasc_data(survey, nasc_var_types: dict) -> pd.DataFrame:
 
     if survey.params["survey_year"] < 2003:
         # TODO: it may be the case that we need to include lines 35-61 of
-        #  EchoPro/general/load_files_parameters/get_NASC_data.m
+        #  EchoPro_matlab/general/load_files_parameters/get_NASC_data.m
         raise NotImplementedError(
             "Loading the NASC table for survey years less than 2003 has not been implemented!"
         )
