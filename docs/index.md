@@ -31,8 +31,10 @@ for continuing discussions that make Echopop better.
 
 This project is financially supported by NOAA Fisheries.
 
-<img src="images/noaa_fisheries_logo.png" alt="NOAA_fisheries_logo" width="200">
-
+```{image} images/noaa_fisheries_logo.png
+:alt: NOAA_fisheries_logo
+:width: 300px
+```
 
 
 ## Contributors
