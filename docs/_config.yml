@@ -18,9 +18,9 @@ parse:
   # nb_number_source_lines: true
 
 # Define the name of the latex output file for PDF builds
-latex:
-  latex_documents:
-    targetname: book.tex
+# latex:
+#   latex_documents:
+#     targetname: book.tex
 
 # Add a bibtex file so that we can create citations
 # bibtex_bibfiles:
@@ -29,14 +29,16 @@ latex:
 # Information about where the book exists on the web
 repository:
   url: https://github.com/uw-echospace/EchoPro  # Online location of your book
-  # path_to_book: docs  # Optional path to your book, relative to the repository root
+  path_to_book: docs  # Optional path to your book, relative to the repository root
   branch: master  # Which branch of the repository should be used when creating links (optional)
 
 # Add GitHub buttons to your book
 # See https://jupyterbook.org/customize/config.html#add-a-link-to-your-repository
 html:
+  home_page_in_navbar: false
   use_issues_button: true
   use_repository_button: true
+  use_edit_page_button: true
 
 sphinx:
   extra_extensions: [
@@ -48,3 +50,7 @@ sphinx:
     'sphinx.ext.ifconfig',
     'sphinx.ext.githubpages'
   ]
+  config:
+    bibtex_reference_style: label
+
+exclude_patterns: [example_notebooks/*]

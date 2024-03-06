@@ -1,3 +1,3 @@
-![ text ](../images/example_indexing.jpg)
+# Semivariogram equations
 
-Semivariogram equations
+![ text ](../images/example_indexing.jpg)

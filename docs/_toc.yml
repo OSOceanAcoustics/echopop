@@ -4,29 +4,26 @@
 format: jb-book
 root: index
 parts:
-# - file: markdown
 - caption: Documentation
   chapters:
+  - file: quick_start
   - file: core_data_structure
-  - file: input-files
-  - file: workflow_minimal.ipynb
+  - file: input_files
+  - file: theory
+    title: Underlying theory
+    sections:
+    - file: theory/ts_length_conversion
+    - file: theory/acoustics_to_biomass_conversion
+    - file: theory/semivariograms
+    - file: theory/kriging
+    - file: theory/stratified_statistics
+    - file: theory/general_equations
+  - file: algo
+    title: Algorithmic implementation
+    sections:
+    - file: algo1
+    - file: algo2
   - file: glossary
-    title: theory
-    sections: 
-      - file: theory/ts_length_conversion
-      - file: theory/acoustics_to_biomass_conversion
-      - file: theory/semivariograms
-      - file: theory/kriging
-      - file: theory/stratified_statistics
-      - file: theory/general_equations
-- caption: Notebooks
-  chapters:
-  - file: example_notebooks/echopro_workflow.ipynb
-  - file: example_notebooks/reports_workflow.ipynb
-  - file: example_notebooks/semi_variogram_workflow.ipynb
-  - file: example_notebooks/kriging_mesh_walkthrough.ipynb
-  - file: example_notebooks/transect_selection_workflow.ipynb
-  - file: example_notebooks/bootstrapping_walkthrough.ipynb
 - caption: Help & reference
   chapters:
   - file: api
