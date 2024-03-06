@@ -33,7 +33,7 @@ This project is financially supported by NOAA Fisheries.
 
 ```{image} images/noaa_fisheries_logo.png
 :alt: NOAA_fisheries_logo
-:width: 300px
+:width: 240px
 ```
 
 
