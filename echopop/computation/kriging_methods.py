@@ -4,7 +4,18 @@ from ..computation.spatial import lag_distance_griddify , local_search_index
 from ..computation.variogram_models import variogram
 
 def compute_kriging_weights( ratio , M2 , K ):
+    """
+    Apply singular value decomposition (SVD) to compute kriging (lambda) weights    
 
+    Parameters
+    ----------
+    ratio: np.float64
+        Anisotropy ratio.
+    M2: np.array
+        Lagged semivariogram
+    K: np.array
+        Kriging matrix.
+    """
     ### Singular value decomposition (SVD)
     # U: left singular vectors (directions of maximum variance)
     # Sigma: singular values (amount of variance captured by each singular vector, U)
@@ -110,7 +121,6 @@ def range_index_threshold( local_point_grid ,
     ### Carriage return
     return inside_indices , outside_indices , out_of_sample_weights
 
-
 def compute_kriging_statistics( point_values ,
                                 lagged_semivariogram ,
                                 kriging_weights , 
@@ -118,7 +128,7 @@ def compute_kriging_statistics( point_values ,
                                 outside_indices ,
                                 out_of_sample_weights ):
     """
-    Calculate the kriging covariance matrix
+    Calculate the mean and variance of kriged values
 
     Parameters
     ----------
