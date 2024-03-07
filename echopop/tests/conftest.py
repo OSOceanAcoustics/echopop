@@ -1,5 +1,6 @@
 import pytest
 from pathlib import Path
+from echopop import Survey
 
 
 # Set up path to test_data folder
@@ -13,6 +14,14 @@ def test_path():
         "CONFIG": TEST_DATA_ROOT / "config_files",
         "INPUT": TEST_DATA_ROOT / "input_files",  # this doesn't exist yet
     }
+
+
+@pytest.fixture(scope="session")
+def mock_survey(test_path) -> Survey:
+    return Survey(
+        init_config_path=Path(test_path["CONFIG"] / "config_init.yml"),
+        survey_year_config_path=Path(test_path["CONFIG"] / "config_survey.yml"),
+    )
 
 
 # ============ below from previous version, remove after revamping is complete ============
@@ -40,7 +49,7 @@ def reports_base_path() -> Path:
     pathlib.Path
         The base directory path for the reports
     """
-    return HERE / "tests/reports/echopop_python_output"
+    return HERE / "tests/reports/EchoPro_python_output"
 
 
 @pytest.fixture(scope="session")
