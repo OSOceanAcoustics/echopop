@@ -1,6 +1,6 @@
 # Installation
 
-Echopop is not yet available to be installed on PyPI or conda. We plan to enable these distributions at release v0.4.2 after the current refacotring code is completed.
+Echopop is not yet available to be installed on PyPI or conda. We plan to enable these distributions at release v0.4.2 after the current code refactoring is completed.
 
 Until then, you can install Echopop from the repository following the steps below:
 
