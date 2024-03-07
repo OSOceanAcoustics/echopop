@@ -29,7 +29,18 @@ def compute_kriging_weights( ratio , M2 , K ):
 def compute_kriging_matrix( x_coordinates ,
                             y_coordinates ,
                             variogram_parameters ):
-    
+    """
+    Calculate the kriging covariance matrix
+
+    Parameters
+    ----------
+    x_coordinates: np.array
+        The x-axis coordinates
+    y_coordinates: np.array
+        The y-axis coordinates
+    variogram_parameters: dict
+        Dictionary containing variogram model parameters
+    """    
     ### Calculate local distance matrix of within-range samples
     local_distance_matrix = lag_distance_griddify( x_coordinates , y_coordinates )
     
@@ -60,7 +71,20 @@ def range_index_threshold( local_point_grid ,
                            distance_matrix ,
                            R ,
                            k_min ):
-    
+    """
+    Calculate the kriging covariance matrix
+
+    Parameters
+    ----------
+    local_point_grid: np.array
+        Gridded coordinate values
+    distance_matrix: np.array
+        Gridded distance matrix
+    R: np.float64
+        Semivariogram range parameter value
+    k_min: int
+        Minimum number of 'k'-nearest neighbors
+    """
     ### Calculate the within-sample grid indices
     inside_indices = np.where( distance_matrix[ local_point_grid ] <= R )[ 0 ]
 
@@ -93,7 +117,24 @@ def compute_kriging_statistics( point_values ,
                                 inside_indices ,
                                 outside_indices ,
                                 out_of_sample_weights ):
-    
+    """
+    Calculate the kriging covariance matrix
+
+    Parameters
+    ----------
+    point_values: np.array
+        Values from variable being kriged
+    lagged_semivariogram: np.array
+        Lagged semivariogram
+    kriging_weights: np.array
+        Kriging (lambda) weights
+    inside_indices: np.array
+        Values found within the search window
+    outside_indices: np.array
+        Values found outside the search window
+    out_of_sample_weights: np.array
+        Weights applied to values outside of the search window
+    """
     ### Remove any extrapolation
     if len( outside_indices ) > 0:
         point_values[ outside_indices ] = 0.0
@@ -119,7 +160,22 @@ def ordinary_kriging( dataframe ,
                       variogram_parameters ,
                       kriging_parameters ,                      
                       variable = 'B_a_adult' ):
+    """
+    Use ordinary kriging to interpolate values
     
+    Parameters
+    ----------
+    dataframe: pd.DataFrame
+        Dataframe including georeferenced data
+    transformed_mesh: pd.DataFrame
+        Grid data that has been transformed
+    variogram_parameters: dict
+        Semivariogram model parameters
+    kriging_parameters: dict
+        Kriging model parameters
+    variable: str
+        Variable that will be kriged
+    """
     ### Calculate the kriging distance matrix and corresponding indices
     distance_matrix , local_point_grid  = local_search_index( transformed_mesh , 
                                                               dataframe , 
@@ -195,7 +251,27 @@ def kriging_interpolation( dataframe ,
                            variogram_parameters ,
                            kriging_parameters ,                      
                            variable = 'B_a_adult' ):
+    """
+    Use kriging to interoplate data
     
+    Parameters
+    ----------
+    dataframe: pd.DataFrame
+        Dataframe including georeferenced data
+    transformed_mesh: pd.DataFrame
+        Grid data that has been transformed
+    dataframe_mesh: pd.DataFrame
+        Untransformed grid data
+    dataframe_geostrata: pd.DataFrame
+        Dataframe that includes spatial definitions that 
+        demarcate different strata
+    variogram_parameters: dict
+        Semivariogram model parameters
+    kriging_parameters: dict
+        Kriging model parameters
+    variable: str
+        Variable that will be kriged
+    """
     ### Discretize latitudinal bins
     latitude_bins = np.concatenate( [ [ -90.0 ] , dataframe_geostrata.northlimit_latitude , [ 90.0 ] ] )
 

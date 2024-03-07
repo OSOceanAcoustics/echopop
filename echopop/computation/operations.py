@@ -214,7 +214,30 @@ def group_merge( dataframe ,
                  outer_on ,
                  how = 'outer' ,
                  drop_na = True ):
+    """
+    Group merge operation
 
+    Parameters
+    ----------
+    dataframe: pd.DataFrame
+        Parent dataframe
+    dataframes_to_add: list
+        Dataframes that will be added to the parent dataframe
+    inner_on: str or list
+        Index/column name that is used for an inner merge of dataframes 
+        within `dataframes_to_add`
+    outer_on: str or List
+        Index/column name that is used for an outer merge of both the parent 
+        and to-be-added dataframes
+    how: str
+        Merge method
+    drop_na: boolean
+        Flag determing whether np.nan values are removed
+        
+    Notes
+    ----------
+    This is a lazy method for recursively merging multiple dataframes at once
+    """
     ### Ensure that both the 'dataframes' and 'on' arguments are lists
     # dataframes
     df_lst = [ dataframes_to_add ] if isinstance( dataframes_to_add , str) else dataframes_to_add
