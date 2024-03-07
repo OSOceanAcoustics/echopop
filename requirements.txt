@@ -1,7 +1,6 @@
 ipympl
 ipywidgets
 jupyter_contrib_nbextensions
-notebook
 # 9/27/23. See https://github.com/microsoft/azuredatastudio/issues/24436#issuecomment-1723328100
 traitlets<5.10
 geopandas
