@@ -365,17 +365,9 @@ class Survey:
 
     def transect_analysis(self ,
                           species_id: np.float64 = 22500 ):
-    #     # INPUTS
-    #     # This is where the users can designate specific transect numbers,
-    #     # stratum numbers, species, etc. These would be applied to the functions
-    #     # below
-        
-    #     # Initialize new attribute
-    #     self.results = {}
-    #     #### TODO: THIS SHOULD BE ADDED TO THE ORIGINAL SURVEY OBJECT CREATION
-    #     #### THIS IS INCLUDED HERE FOR NOW FOR TESTING PURPOSES -- ALL CAPS IS CRUISE
-    #     #### CONTROL FOR "REMEMBER TO MAKE THIS CHANGE BRANDYN !!!"
-    
+        """
+        Calculate population-level metrics from acoustic transect measurements
+        """    
         # Initialize major data structures that will be added (**tentative names**)
         self.acoustics['sigma_bs'] = {}
         self.biology['weight'] = {}
@@ -1143,7 +1135,15 @@ class Survey:
 
     def standardize_coordinates( self ,
                                  adjust_mesh = True ):
+        """
+        Standardizes spatial coordinates based on reference positions
         
+        Parameters
+        ----------
+        adjust_mesh
+            Boolean value that determines whether a defined mesh is also standardized
+            alongside the transect values
+        """         
         ### Collect necessary parameter values
         # !!! TODO: This only currently applies to age-sex-indexed biomass
         transect_trans_df , d_x , d_y = transform_geometry( self.biology[ 'population' ][ 'biomass' ][ 'biomass_age_df' ] , 
@@ -1177,8 +1177,16 @@ class Survey:
             )
     
     def krige( self ,
+               species_id ,
                variable: str = 'B_a_adult' ):
-
+        """
+        Interpolates biomass data using ordinary kriging
+        
+        Parameters
+        ----------
+        variable
+            Biological variable that will be interpolated via kriging
+        """  
         ### TODO : Need to relocate the transformed coordinates to an external location
         ### Import georeferenced data
         dataframe_input = (
@@ -1216,6 +1224,14 @@ class Survey:
         kriging_parameters = self.statistics[ 'kriging' ][ 'model_config' ].copy()
         variogram_parameters = self.statistics[ 'variogram' ][ 'model_config' ].copy()
 
+        ### ---------------------------------------------------------------
+        ### !!! TODO: 
+        ### This is related to a later issue found within the sex-age 
+        ### apportionment method, but the resulting areal biomass density 
+        ### estimates produced via `kriging_interpolation` are consistently
+        ### much lower than values produced using previous implementations. 
+        ### This therefore relates to Issue #202.
+        ### ---------------------------------------------------------------
         ### Run kriging algorithm
         kriged_dataframe = kriging_interpolation( dataframe ,
                                                   transformed_mesh ,
@@ -1230,10 +1246,26 @@ class Survey:
                 'kriged_biomass_df': kriged_dataframe
             }
         )
+        
+        ### TODO: This should be refactored out as an external function 
+        ###### rather than a Survey-class method.
+        ### Apportion biomass based on age and sex
+        self.apportion_kriged_biomass( species_id )
 
     def apportion_kriged_biomass( self ,
                                   species_id ):
-
+        """
+        Apportion kriged biomass based on sex, age, and other proportions
+        
+        Notes
+        -----
+        This function apportions the kriged biomass values (interpolated along
+        a user-defined mesh) based on sex and age. This provides biomass estimates
+        for aged and unaged fish, total biomass inferred from the biological and 
+        kriged bioamss estimates, the coefficient of variation within each cell, 
+        and georeferenced biomass estimates for specific paired values of sex 
+        and age-class.
+        """  
         ### Length data (Station 1 - Unaged - Sexxed )
         length_df_copy = self.biology[ 'length_df' ].copy( ).pipe( lambda df: df.loc[ df.species_id == species_id ] )
 
@@ -1245,8 +1277,7 @@ class Survey:
 
         ### Import length bins & intervals
         length_intervals = self.biology[ 'distributions' ][ 'length' ][ 'length_interval_arr' ]
-        length_bins = self.biology[ 'distributions' ][ 'length' ][ 'length_bins_arr' ]
-
+        
         ### Age bins
         age_intervals = self.biology[ 'distributions' ][ 'age' ][ 'age_interval_arr' ]
  
@@ -1286,6 +1317,8 @@ class Survey:
             specimen_df_copy
             .dropna( how = 'any' )
             .loc[ lambda x: x.sex != 'unsexed' ]
+            .pipe( lambda df: pd.concat( [ df , 
+                                           df.copy( ).assign( sex = 'all' ) ] ) )
             .bin_variable( age_intervals , 'age' )
             .bin_variable( length_intervals , 'length' )      
             .groupby( [ 'stratum_num' , 'age_bin' , 'length_bin' , 'sex' ] )
@@ -1296,7 +1329,7 @@ class Survey:
             .assign( total_weight_sex_all = lambda df: df.groupby( [ 'stratum_num' , 'sex' ] )[ 'summed_weight_all' ].transform( sum ) ,
                      total_weight_sex_adult = lambda df: df.groupby( [ 'stratum_num' , 'sex' ] )[ 'summed_weight_adult' ].transform( sum ) ,
                      proportion_weight_all = lambda df: df.summed_weight_all / df.total_weight_sex_all ,
-                     proportion_weight_adult = lambda df: df.summed_weight_adult / df.total_weight_sex_adult )
+                     proportion_weight_adult = lambda df: df.summed_weight_adult / df.total_weight_sex_adult )            
         )
 
         ### Normalize the age-length-sex indexed proportions
@@ -1313,6 +1346,7 @@ class Survey:
         ### Calculate aged / unaged proportions
         aged_proportions = (
             length_age_sex_stratum_weight
+            .loc[ lambda df: df.sex != 'all' ]
             .groupby( [ 'stratum_num' ] )
             .apply( lambda df: pd.Series( { 'weight_aged_total': df.summed_weight_all.sum( ) } ) ) 
             .reset_index( )
@@ -1348,7 +1382,6 @@ class Survey:
         ### Normalize haul weights (Station 1)
         haul_sex_weights_normalized = (
             haul_weights
-            .loc[ lambda x: x.sex != 'all' , : ]
             .merge( weight_strata_station.loc[ lambda x: x.station == 1 ] , 
                     on = 'stratum_num' )
             .assign( weight_normalized_station_1 = lambda df: (
@@ -1408,15 +1441,43 @@ class Survey:
             .drop_duplicates( subset = [ 'transect_num' , 'latitude' , 'longitude' , 'stratum_num' ] )
         )
 
+        ### ---------------------------------------------------------------
+        ### !!! TODO: 
+        ### While `C0` produces a similar standard deviation as the original
+        ### code, `Bn` does not. This discrepancy results in an order of 
+        ### magnitude change in the resulting `biomass_adult_cell_CV` estimate.
+        ### The source of this error stems from `kriged_results.B_a_adult_mean`
+        ### whereby the right-tail of the `B_a_adult_mean` distribution is 
+        ### substantially shorter than from values (`biomass_density_adult_mean`)
+        ### produced in the original code. This therefore relates to Issue #202.
+        ### ---------------------------------------------------------------
         C0 = np.std( biomass_density_adult.B_a , ddof = 1 ) ** 2
         Bn = np.nansum( kriged_results.B_a_adult_mean * kriged_results.cell_area_nmi2 ) * 1e-9
         kriged_results = (
             kriged_results
             .assign( biomass_adult_cell_CV = lambda df: (
                 self.statistics[ 'kriging' ][ 'model_config' ][ 'A0' ] *
-                np.sqrt( kriged_results.B_a_adult_sample_variance * C0 ) *
+                np.sqrt( kriged_results.B_a_adult_prediction_variance * C0 ) *
                 1e-9 /
                 Bn *
-                np.sqrt( len( kriged_results.B_a_adult_sample_variance ) )
+                np.sqrt( len( kriged_results.B_a_adult_prediction_variance ) )
             ) )
+        )
+        
+        ### Add biomass values to all ages for kriged biomass results
+        kriged_results_output = (
+            kriged_results
+            .merge( self.biology[ 'weight' ][ 'proportions' ][ 'sex_age_weight_proportions_df' ] , 
+                    on = [ 'stratum_num' , 'sex' ] )
+            .assign( biomass_sex_age = lambda x: x.weight_sex_proportion_all * x.biomass_total )
+            .loc[ : , [ 'centroid_latitude' , 'centroid_longitude' , 'stratum_num' , 
+                        'cell_area_nmi2' , 'sex' , 'age' , 'biomass_unaged' , 'biomass_aged' ,
+                        'biomass_total' , 'biomass_adult_cell_CV' , 'biomass_sex_age' ] ]
+        )
+        
+        ### Assign results to an attribute
+        self.statistics[ 'kriging' ].update(
+            {
+                'apportioned_kriged_biomass_df': kriged_results_output ,
+            }
         )
