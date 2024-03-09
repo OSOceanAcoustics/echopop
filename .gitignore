@@ -1,5 +1,6 @@
 .DS_Store
 _echopop_version.py
+.vscode
 
 # ignore output reports, if they were produced
 echopop/tests/reports/echopop_python_output*

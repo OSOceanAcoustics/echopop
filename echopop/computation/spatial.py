@@ -200,7 +200,22 @@ def transform_geometry( dataframe: pd.DataFrame ,
     
 def lag_distance_griddify( dataset1 ,
                            dataset2 ):
-    
+    """
+    Calculate point-to-point distances between two gridded dataframes
+
+    Parameters
+    ----------
+    dataframe1: pd.DataFrame
+        Background dataframe mesh that represents the "complete" field 
+        of values
+    dataframe2: pd.DataFrame
+        Georeferenced dataframe
+        
+    Notes
+    ----------
+    This is used to effectively create a matrix comprising gridded 
+    distance values (i.e. 'griddify').
+    """
     ###
     if all( isinstance( dataset , pd.DataFrame ) for dataset in ( dataset1 , dataset2 ) ):
         ### 
@@ -218,6 +233,23 @@ def lag_distance_griddify( dataset1 ,
 def local_search_index( dataframe_mesh ,
                         dataframe ,
                         k_max ):
+    """
+    Search for the closest georeferenced values
+
+    Parameters
+    ----------
+    dataframe_mesh: pd.DataFrame
+        Background dataframe mesh that represents the "complete" field 
+        of values
+    dataframe: pd.DataFrame
+        Georeferenced dataframe
+    k_max: int
+        Maximum number of nearest neighbors allowed
+        
+    Notes
+    ----------
+    This finds the 'k' number of nearest neighboring geoferenced values.
+    """
     
     ###
     distance_matrix = lag_distance_griddify( dataframe_mesh , dataframe )
