@@ -12,7 +12,6 @@ parts:
   - file: theory
     title: Underlying theory
     sections:
-    - file: theory/ts_length_conversion
     - file: theory/apportioning_biological_variables
     - file: theory/acoustics_to_biomass_conversion
     - file: theory/semivariograms
