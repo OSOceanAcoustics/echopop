@@ -1,12 +1,24 @@
 # Apportioning biological variables
 
-<img src="../images/length_stratification.jpg" width="200"/>
+```{image} ../images/length_stratification.jpg
+:alt: length - stratification
+:width: 200px
+```
 
-<img src="../images/length_sex_stratification.jpg" width="200"/>
+```{image} ../images/length_sex_stratification.jpg
+:alt: length - sex - stratification
+:width: 200px
+```
 
-<img src="../images/length_age_stratification.jpg" width="200"/>
+```{image} ../images/length_age_stratification.jpg
+:alt: length - age - stratification
+:width: 200px
+```
 
-<img src="../images/length_age_sex_stratification.jpg" width="200"/>
+```{image} ../images/length_age_sex_stratification.jpg
+:alt: length - age- sex - stratification
+:width: 200px
+```
 
 
 Both weight ($w_{\alpha, \ell, s}^{i}$) and individual counts ($n_{\alpha, \ell, s}^{i}$) are apportioned in different ways to account for differences among sexes, ages, length, and strata. This also includes slightly different calculations depending on station ($\vartheta$) where animals were either unaged (Station 1, $\vartheta = 1$) or aged (Staion 2, $\vartheta = 2$). In the case of Station 1 where animals are unaged:
@@ -171,6 +183,3 @@ $$
 \hat{B}_{s}^{i,j,k} =
     \hat{B}_{s, \hat{\vartheta}=\mathrm{T}}^{i,j,k} + \hat{B}_{s, \hat{\vartheta}=\mathrm{F}}^{i,j,k}
 $$
-
-
-
