@@ -12,8 +12,8 @@ parts:
   - file: theory
     title: Underlying theory
     sections:
-    - file: theory/apportioning_biological_variables
     - file: theory/acoustics_to_biomass_conversion
+    - file: theory/apportioning_biological_variables
     - file: theory/semivariograms
     - file: theory/kriging
     - file: theory/stratified_statistics
