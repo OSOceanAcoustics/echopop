@@ -18,11 +18,11 @@ parts:
     - file: theory/kriging
     - file: theory/stratified_statistics
     # - file: theory/other
-  - file: algo
-    title: Algorithmic implementation
-    sections:
-    - file: algo1
-    - file: algo2
+  # - file: algo
+  #   title: Algorithmic implementation
+  #   sections:
+  #   - file: algo1
+  #   - file: algo2
   - file: glossary
 - caption: Help & reference
   chapters:
