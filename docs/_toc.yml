@@ -12,13 +12,12 @@ parts:
   - file: theory
     title: Underlying theory
     sections:
-    - file: theory/ts_length_conversion
+    - file: theory/acoustics_to_bio
     - file: theory/apportioning_biological_variables
-    - file: theory/acoustics_to_biomass_conversion
     - file: theory/semivariograms
     - file: theory/kriging
     - file: theory/stratified_statistics
-    - file: theory/general_equations
+    # - file: theory/other
   - file: algo
     title: Algorithmic implementation
     sections:

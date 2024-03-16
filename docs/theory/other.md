@@ -1,23 +1,30 @@
-# Other summary statistics
+# Other
 
-![ text ](../images/example_indexing.jpg)
+## Length and age binning
 
-
-Length binning/quantization:
-
-Given a distribution of length measurements:
+Given length measurements
 
 $$
-L = [ L_{1}, L_{2} , \dots , L_{n}]
+\mathbf{L} = [ L_1, L_2 , \dots , L_n]
 $$
 
-Given a distribution of age measurements:
+and age measurements
 
 $$
-\delta = [ \delta_{1}, \delta_{2} , \dots , \delta_{n} ]
+\mathbf{a} = [ a_1, a_2 , \dots , a_n ]
 $$
 
-where $n$ is $n$<sup>th</sup> measurement. 
+from $n$ fish. 
+
+To derive the distribution of the number of fish across length and age bins, we use
+
+$$
+\phi_{\alpha, \ell} = 
+\begin{cases} 
+    \varphi_{m} & \text{if } \iota_{a,m} \leq x_{n} \leq \iota_{b,m} \text{ for some } m \text{ where } 1 \leq m \leq m_{\mathrm{max}} \\
+    \text{undefined} & \text{otherwise}
+\end{cases}
+$$
 
 Given the case where both $L_{\mathrm{cm}}$ and $\delta$ are binned:
 
@@ -39,6 +46,8 @@ $$
 where $Q(x)_{n}$ represents the quantization function applied to the $n$<sup>th</sup> values of either $L$ or $\delta$, $k$ denotes the indexed $\varphi$ interval.
 The quantized age ($\alpha$) and length ($\ell$) measurements are then used to index biomass calculations.
 
-Length-weight regression
 
-$$L_{n} = \left( \frac{w_{n}}{b} \right) ^{\frac{1}{a}}$$
+## Length-weight regression
+
+To be added!
+<!-- $$L_{n} = \left( \frac{w_{n}}{b} \right) ^{\frac{1}{a}}$$ -->
