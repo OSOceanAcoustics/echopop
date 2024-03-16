@@ -1,6 +1,6 @@
 # Apportioning biological variables
 
-```{image} ../images/length_stratification.jpg
+<!-- ```{image} ../images/length_stratification.jpg
 :alt: length - stratification
 :width: 200px
 ```
@@ -18,7 +18,7 @@
 ```{image} ../images/length_age_sex_stratification.jpg
 :alt: length - age- sex - stratification
 :width: 200px
-```
+``` -->
 
 
 Both weight ($w_{\alpha, \ell, s}^{i}$) and individual counts ($n_{\alpha, \ell, s}^{i}$) are apportioned in different ways to account for differences among sexes, ages, length, and strata. This also includes slightly different calculations depending on station ($\vartheta$) where animals were either unaged (Station 1, $\vartheta = 1$) or aged (Staion 2, $\vartheta = 2$). In the case of Station 1 where animals are unaged:
