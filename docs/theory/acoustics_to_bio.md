@@ -45,30 +45,30 @@ $$
 
 where $\text{NASC}^k$ is the nautical areal scattering coefficient in the along-transect segment $k$, with the transect being in stratum $i$.
 
-To convert the areal number density to areal _biomass_ density $\rho_W^k$: 
+To convert the areal number density to areal biomass density $\rho_B^k$: 
 
 $$
-\rho_W^k = \rho_N^k W^i ,
+\rho_B^k = \rho_N^k w^i ,
 $$
 
-where $W^i$ is the length-weight conversion in stratum $i$.
+where $w^i$ is the mean animal weight in stratum $i$.
 
-Using the above quantities, for the along-transect segment $k$, the animal abundance $N$:
+Using the above quantities, for the along-transect segment $k$, the animal abundance $N$ is:
 
 $$
 N^k = \rho_N^k A^k . 
 $$
 
-The biomass $W^k$ is:
+The biomass $B^k$ is:
 
 $$
-W^k = \rho_W^k A^k
+B^k = \rho_B^k A^k
 $$
 
 And the apportioned biomass is:
 
 $$
-W_{\alpha, s, \ell}^k = W^k p_{\alpha, s, \ell}^i ,
+B_{\alpha, s, \ell}^k = B^k p_{\alpha, s, \ell}^i ,
 $$
 
 where $A^k$ is the area of along-transect segment $k$, and $p^i_{\alpha, s, \ell}$ is the fraction of the animal of age $\alpha$, length $\ell$, and sex $s$ in stratum $i$. Recall that the along-transect segment $k$ is in stratum $i$.
