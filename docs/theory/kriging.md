@@ -1,7 +1,5 @@
 # Kriging equations
 
-![ text ](../images/example_indexing.jpg)
-
 Intrinsic model 
 
 $$
@@ -149,5 +147,3 @@ $$
 $$
 \sum\limits_{i=1}^{n} \lambda_{i} = 1
 $$
-
-
