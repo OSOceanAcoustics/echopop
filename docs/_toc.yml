@@ -12,11 +12,11 @@ parts:
   - file: theory
     title: Underlying theory
     sections:
-    - file: theory/acoustics_to_bio
-    - file: theory/apportioning_biological_variables
-    - file: theory/semivariograms
-    - file: theory/kriging
-    - file: theory/stratified_statistics
+    - file: theory/01_acoustics
+    - file: theory/02_bio_estimates
+    - file: theory/03_stratification
+    - file: theory/05_kriging_eq
+    - file: theory/06_semivariograms
     # - file: theory/other
   # - file: algo
   #   title: Algorithmic implementation
