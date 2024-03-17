@@ -10,6 +10,12 @@ Current the processing is configured to work with Acoustic-Trawl survey data for
 Learn more about Echopop in the documentation at https://echopop.readthedocs.io.
 
 
+## Contributors
+
+Echopop development is currently co-led by Wu-Jung Lee (@leewujung) and Brandyn Lucca (@brandynluca). Brandon Reyes (@b-reyes) and Emilio Mayorga (@emiliom) contributed significantly to a previous version of Echopop.
+
+
+
 ## Acknowledgement
 
 We thank Dezhang Chu (@DezhangChu) of the NOAA Northwest Fisheries Science Center (NWFSC)
@@ -27,12 +33,6 @@ for continuing discussions that make Echopop better.
 This project is supported by NOAA Fisheries.
 
 <img src="docs/images/noaa_fisheries_logo.png" alt="NOAA_fisheries_logo" width="200">
-
-
-## Contributors
-
-Echopop development is currently co-led by Wu-Jung Lee (@leewujung) and Brandyn Lucca (@brandynluca). Brandon Reyes (@b-reyes) and Emilio Mayorga (@emiliom) contributed significantly to a previous version of Echopop.
-
 
 
 ## License
