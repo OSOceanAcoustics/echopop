@@ -29,11 +29,11 @@ and Julia Clemons (@JuliaClemons-NOAA)
 of the NWFSC Fisheries Engineering and Acoustics Team (FEAT)
 for continuing discussions that make Echopop better.
 
-This project is financially supported by NOAA Fisheries.
+This project is supported by NOAA Fisheries.
 
 ```{image} images/noaa_fisheries_logo.png
 :alt: NOAA_fisheries_logo
-:width: 240px
+:width: 230px
 ```
 
 
