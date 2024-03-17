@@ -5,6 +5,12 @@ Echopop combines acoustic data collected by echosounders with biological "ground
 Current the processing is configured to work with Acoustic-Trawl survey data for Pacific hake, but we will soon add components to include Pacific krill into the package. The majority of the computational implementation is applicable for other fish and zooplankton species, and we plan to expand the package for general support in the near future.
 
 
+## Contributors
+
+Echopop development is currently co-led by Wu-Jung Lee (@leewujung) and Brandyn Lucca (@brandynluca). Brandon Reyes (@b-reyes) and Emilio Mayorga (@emiliom) contributed significantly to a previous version of Echopop.
+
+
+
 <!-- ```{admonition} Glitches with some interactive graphical elements
 While the notebooks in this site are rendered, there are some glitches in the display we're still working out. In particular, an [ipywidgets](https://ipywidgets.readthedocs.io/en/stable/) interactive graphical element in the semivariogram widget doesn't display correctly. The notebooks do run correctly when executed with Jupyter Notebook ("classic", not JupyterLab).
 ``` -->
@@ -35,11 +41,6 @@ This project is supported by NOAA Fisheries.
 :alt: NOAA_fisheries_logo
 :width: 230px
 ```
-
-
-## Contributors
-
-Echopop development is currently co-led by Wu-Jung Lee (@leewujung) and Brandyn Lucca (@brandynluca). Brandon Reyes (@b-reyes) and Emilio Mayorga (@emiliom) contributed significantly to a previous version of Echopop.
 
 
 ## License
