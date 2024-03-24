@@ -24,11 +24,11 @@ The following symbols and notation will be used in the sections below:
     - The superscript describes whether the samples are from all fish samples ($\textrm{all}$), the aged fish samples ($\textrm{aged}$), or unaged fish samples ($\textrm{unaged}$) fish samples. If $h$ is added, it indicates the haul the samples are from.
     - The subscript describes the biometric parameters
     - For example:
-        - $J^{\textrm{aged}, h}$ is the set of aged fish samples from haul $h$
+        - $J^{\textrm{all}, h}$ is the set of all fish samples from haul $h$
         - $J^\textrm{aged}_{s,\ell,\alpha}$ is the set of aged fish samples of sex $s$, length $\ell$, and age $\alpha$
 - $W^i_s(\ell)$ describes the length-weight relationship for a population of fish of sex $s$ in stratum $i$. For example:
     - $W^i_\textrm{male}(\ell)$ is the length-weight relationship for male fish in stratum $i$
-    - $W^i_\textrm{male+female}(\ell)$ is the length-weight relationship for all fish in stratum $i$
+    - $W^i(\ell)$ is the length-weight relationship for all fish in stratum $i$
 
 ### Weight and weight proportion
 - $w_j$ is the weight of fish sample $j$
@@ -36,8 +36,8 @@ The following symbols and notation will be used in the sections below:
     - The superscript describes the sample population and the reference population, both of which can be the aged fish samples ($\textrm{aged}$), the unaged fish samples ($\textrm{unaged}$), or all fish samples ($\textrm{all}$)
     - The subscript describes the biometric parameters of the samples
     - For example:
-        - $r^\textrm{aged:all}$ is the weight proportion of aged fish with reference to all fish samples
-        - $r^\textrm{aged:aged}_{s,\ell}$ is the weight propotion of aged fish of sex $s$ and length $\ell$ with reference to all aged fish samples
+        - $r^\textrm{aged/all}$ is the weight proportion of aged fish with reference to all fish samples
+        - $r^\textrm{aged/aged}_{s,\ell}$ is the weight propotion of aged fish of sex $s$ and length $\ell$ with reference to all aged fish samples
 
 ### Acoustically derived quantities
 - $\rho^k_B$ is the biomass density in transect interval $k$
@@ -84,13 +84,13 @@ $$
 The overall weight propotion of aged and unaged fish are then
 
 $$
-r^\textrm{aged:total} = \frac{ w^\textrm{aged} }{ w^\textrm{aged} + w^\textrm{unaged} } 
+r^\textrm{aged/total} = \frac{ w^\textrm{aged} }{ w^\textrm{aged} + w^\textrm{unaged} } 
 $$
 
 and
 
 $$
-r^\textrm{unaged:total} = \frac{ w^\textrm{unaged} }{ w^\textrm{aged} + w^\textrm{unaged} } 
+r^\textrm{unaged/total} = \frac{ w^\textrm{unaged} }{ w^\textrm{aged} + w^\textrm{unaged} } 
 $$
 
 respectively.
@@ -101,9 +101,36 @@ respectively.
 
 (apportion-aged)=
 ## Apportioning within aged fish samples
-The weight proportions of aged fish samples of sex $s$, length $\ell$, and age $\alpha$ with respect to all aged fish samples are used to apportion the aged component of the total biomass.
 
+The weight proportions of aged fish samples of sex $s$, length $\ell$, and age $\alpha$ with respect to all aged _and_ unaged fish samples are used to apportion the aged component of the total biomass.
 
+The weight propotions are:
+
+$$
+r^\textrm{aged/all}_{s,\ell,\alpha} = \frac{ \sum_{j \in J^\textrm{aged}_{s,\ell,\alpha}} w_j }{ \sum_{j \in J^\textrm{all}} w_j }
+$$
+
+The apportioned biomass for transect interval $k$ is
+
+$$
+B^{k, \textrm{aged}}_{s,\ell,\alpha} = \rho^k_B A^k r^\textrm{aged/all}_{s,\ell,\alpha}
+$$
+
+The apportioned biomass over all transect intervals is then
+
+$$
+B^\textrm{total,aged}_{s,\ell,\alpha} = \sum_k B^{k, \textrm{aged}}_{s,\ell,\alpha}
+$$
+
+It follows naturally that the combined biomass quantities for male and female fish are:
+
+$$
+B^{k, \textrm{aged}}_{\ell,\alpha} = B^{k, \textrm{aged}}_{\textrm{M},\ell,\alpha} + B^{k, \textrm{aged}}_{\textrm{F},\ell,\alpha}
+$$
+
+$$
+B^\textrm{total,aged}_{\ell,\alpha} = B^\textrm{total,aged}_{\textrm{M},\ell,\alpha} + B^\textrm{total,aged}_{\textrm{F},\ell,\alpha} 
+$$
 
 
 
