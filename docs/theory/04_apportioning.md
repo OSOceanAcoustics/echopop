@@ -1,4 +1,4 @@
-# Apportioning kriged outputs
+# Apportioning kriged biomass density
 
 The challenges associated with apportioning the kriged biomass is to properly combine the various pieces of information to distribute the biomass into different sex, length, and age groups. This is because fish samples obtained from a haul (trawl) are processed at two different stations that report different biometric data:
 - Station 1 (the "unaged" fish samples):

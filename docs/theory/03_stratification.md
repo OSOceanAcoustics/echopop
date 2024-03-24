@@ -1,11 +1,11 @@
-# Stratification and apportioning of biological estimates
+# Stratification to obtain biomass density
 
 
 ## Stratification
 In practice, the acoustic quantities and biological estimates discussed in previous sections can vary depending on geospatial variation of the biological aggregations themselves. For example, the size and age of fish can vary depending on the survey location, as well as the sex of the fish. Therefore, the acoustic measurements and biological samples are typically stratified to account for these variations, and the biomass density is a function of the stratum (which depends on the geospatial locations) and sex, i.e.
 
 $$
-\rho_{w; s} = \rho^i_{w; s}(x,y) = \rho_A(x,y) (\mathbf{L}^i_s)^\top \mathbf{w}^i_s,
+\rho_{B; s} = \rho^i_{B; s}(x,y) = \rho_A(x,y) (\mathbf{L}^i_s)^\top \mathbf{w}^i_s,
 $$
 
 where $i$ is the stratum, $\rho_A(x,y)$ is the nautical areal number density at location $(x, y)$, and $\mathbf{L}^i_s$ and $\mathbf{w}^i_s$ are the vectors characterizing the number frequency of fish length and the corresponding weight in stratum $i$, for fish of sex $s$:
@@ -42,7 +42,7 @@ $$
 In the case when fish age is measured and binned, the biomass density is a function of the stratum (which depends on the geospatial locations), sex, and age:
 
 $$
-\rho_{w; s,\alpha} = \rho^i_{w; s,\alpha}(x,y) = \rho_A(x,y) (\mathbf{L}^i_{s,\alpha})^\top \mathbf{w}^i_{s,\alpha},
+\rho_{B; s,\alpha} = \rho^i_{B; s,\alpha}(x,y) = \rho_A(x,y) (\mathbf{L}^i_{s,\alpha})^\top \mathbf{w}^i_{s,\alpha},
 $$
 
 where $\alpha$ is the age bin,
@@ -75,21 +75,6 @@ Note that the number frequency of fish length here is normalized across all age 
 $$
 \sum_{s,\ell,\alpha} L^i_{s,\alpha,\ell} = 1
 $$
-
-
-
-## Apportioning of kriged biomass
-
-In Echopop, the kringing procedure interpolates the biomass density $\rho_w$ derived based on $NASC$ to finer grids where acoustic data are not collected. Let $\hat{\rho}_w$ be the kriged biomass density. The biomass of fish of sex $s$, length $\ell$, and age $\alpha$ at the kriging grid $(x_k, y_k)$ can be obtained by
-
-$$
-W_{s,\alpha,\ell}(x_k, y_k) = A(x_k, y_k) \; L^i_{s, \alpha, \ell} \; \hat{\rho}_w(x_k, y_k),
-$$
-
-where $A(x_k, y_k)$ and $\hat{\rho}_w(x_k, y_k)$ are the area and biomass density at the kriging grid $(x_k, y_k)$.
-
-Note that the kriging grids can only be stratified with the INPFC straficiation (see below) based on the grid location, which also determins the stratum $i$ of the grid. The grid stratum in turn determins the number frequency of fish length $L^i_{s, \alpha, \ell}$ used in the apportioning.
-
 
 
 
@@ -128,20 +113,8 @@ $$
 $$ -->
 
 
-
-
-
-## Hake survey specifics
-
-### Stratification
+## Stratification schemes used in the hake survey
 For Pacific hake, two types of stratifications are used:
 
 - **INPFC**: Stratification set by the International North Pacific Fisheries Commission (INFPC) that is based solely on latitude. The US-Canada bienniel hake survey region encompasses 6 strata.
 - **KS**: Stratification determined based on the Kolomogorov-Smirnov test for differences of the fish length distributions across survey hauls.
-
-### Haul sample measurements
-
-After each haul, the hake samples are processed at two stations:
-
-- Station 1: the length, weight, sex, and age of each fish are measured, and additional tissue samples are collected
-- Station 2: only the length, weight, and sex of each fish are measured
