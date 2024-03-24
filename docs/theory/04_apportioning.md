@@ -67,31 +67,25 @@ The sex, length, and age distributions of fish vary across strata. Therefore, th
 ## Overall weight proportion of aged and unaged fish samples
 
 ### Aged fish samples
-The summed weight of aged fish samples is $\sum_{j \in J^\textrm{aged}} w_j$. The data is given in the form of individual fish samples with sex, length, and age information (in `specimen_df`). Therefore, the summed weight is computed by summing over both male and female aged fish samples of all length and age bins:
+For aged fish samples, the data is given in the form of individual fish samples with sex, length, and age information (in `specimen_df`). Therefore, the summed weight is computed by summing over both male and female aged fish samples of all length and age bins:
 
 $$
 \begin{split}
-w^\textrm{aged}_\textrm{s}
-&= \sum_{\ell,\alpha} w^\textrm{aged}_{\textrm{s},\ell,\alpha} \\
-&= \sum_{\ell,\alpha} \sum_{j \in J^\textrm{aged}_{\textrm{s},\ell,\alpha}} w_j
+w^\textrm{aged}
+&= w^\textrm{aged}_\textrm{M} + w^\textrm{aged}_\textrm{F} \\
+&= \sum_{\ell,\alpha} w^\textrm{aged}_{\textrm{M},\ell,\alpha} + \sum_{\ell,\alpha} w^\textrm{aged}_{\textrm{F},\ell,\alpha} \\
+&= \sum_{\ell,\alpha} \sum_{j \in J^\textrm{aged}_{\textrm{M},\ell,\alpha}} w_j + \sum_{\ell,\alpha} \sum_{j \in J^\textrm{aged}_{\textrm{F},\ell,\alpha}} w_j
 \end{split}
-$$
-where $s$ can be $\textrm{M}$ or $\textrm{F}$.
-
-The total summed weight of aged fish is then
-
-$$
-w^\textrm{aged} = w^\textrm{aged}_\textrm{M} + w^\textrm{aged}_\textrm{F}
 $$
 
 ### Unaged fish samples
-The summed weight of unaged fish samples is $\sum_{j \in J^\textrm{unaged}} w_j$. The data is given in the form of haul catch weight (in `haul_df`). Therefore, the total summed weight of unaged fish is
+For unaged fish samples, the data is given in the form of haul catch weight (in `haul_df`) and no individual weight information is available. Therefore, the total summed weight of unaged fish is
 
 $$
 w^\textrm{unaged} = \sum_{j \in J^{\textrm{unaged},h}} w_j
 $$
 
-### Weight proportion
+### Overall weight proportion
 The overall weight propotion of aged and unaged fish are then
 
 $$
@@ -177,7 +171,7 @@ $$
 
 
 ### Unaged weight proportions of different sexes
-However, the weight proportions of male and female within the unaged fish samples are still needed. These are derived similarly by calculating the weight porpotion using number proportion of a given sex and the sex-specific length-weight relationship.
+Separately, the weight proportions of male and female within the unaged fish samples can similarly be calculated by using the number proportion of a given sex and the sex-specific length-weight relationship.
 
 The inferred total weights of male and female unaged fish are
 
@@ -218,7 +212,7 @@ $$
 
 ### Unaged biomass apportioned with sex and length
 
-The biomass of unaged fish of sex $s$, length $\ell$ in transect interval $k$ therefore can be expressed as
+The biomass of unaged fish of sex $s$, length $\ell$ in transect interval $k$ can then be expressed as
 
 $$
 B^{k, \textrm{unaged}}_{\textrm{M}, \ell} = \rho^k_B \, A^k \, r^\textrm{unaged/all}_\textrm{M} \, r^\textrm{unaged/unaged}_\ell
