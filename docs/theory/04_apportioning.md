@@ -1,21 +1,27 @@
 # Apportioning kriged outputs
 
-The fish samples from a trawl (haul) are processed at two stations. At station 1 the sex, length, and weight of the fish samples are measured in a more crude sense. At station 2 the sex, length, weight, and age of each fish are measured, and additional tissue samples are collected.
+The challenges associated with apportioning the kriged biomass is to properly combine the various pieces of information to distribute the biomass into different sex, length, and age groups. This is because fish samples obtained from a haul (trawl) are processed at two different stations that report different biometric data:
+- Station 1 (the "unaged" fish samples):
+    - The fish samples are first sorted according to sex. The length of fish samples of the same sex are measured and binned into a length distribution. Only the total weight of all unaged fish samples from a haul is reported.
+    - `length_df`: contains the length distribution of unaged fish of different sexes
+    - `haul_df`: contains the total weight of all unaged fish samples in each haul
+- Station 2 (the "aged" fish samples):
+    - The sex, length, and weight of each fish sample are measured at sea, and the age of each fish samples is measured in the lab on shore after the survey.
+    - `specimen_df`: contains the sex, length, weight, and age information for each aged fish sample
 
-The challenges associated with apportioning the kriged biomass is to properly combine the various pieces of information to distribute the biomass into different sex, length, and age groups. Importantly, the sex, length, and age distributions of fish vary across strata, which needs to be accounted for in the apportioning procedure.
+Therefore, to apportion the total biomass into different sexes, length bins, and age bins, weight of the aged fish samples can be used directly (see [](apportion-aged)), but weight of the unaged fish samples needs to be further partitioned according to information obtained from the aged fish samples (see [](apportion-unaged)).
 
-The apportioning involves different steps for the aged and unaged fish samples, which are described separately in [](apportion-aged) and [](apportion-unaged).
+
+
 
 
 ## Symbols and notation
 
-The following symbols and notation will be used in the sections below:
-
 ### Transect-related parameters
 
 - $i$ denotes a specific stratum
-- $h$ denotes a specific haul
-- $k$ denotes a specific transect interval, which belongs to a particular stratum depending on the stratification scheme
+- $h$ denotes a specific haul, which belongs to a particular stratum
+- $k$ denotes a specific transect interval, which belongs to a particular stratum
 
 These transec-related parameters will appear as superscript of a given quantity.
 
@@ -27,7 +33,7 @@ These transec-related parameters will appear as superscript of a given quantity.
 These biometric parameters will appear as subscript of a given quantity.
 
 ### Aged and unaged samples
-A superscript is used to denote the set of fish sample:
+A superscript is used to denote the set of fish samples:
 - $\textrm{all}$: all aged and unaged fish samples
 - $\textrm{aged}$: all aged fish samples
 - $\textrm{unaged}$: all unaged fish samples
@@ -35,7 +41,7 @@ A superscript is used to denote the set of fish sample:
 ### Quantities
 - $w_j$ is the weight of fish sample $j$
 - $J$ denotes a set of fish samples. For example:
-    - $J^\textrm{all}$ is the set of all fish samples, including both aged and unaged fish samples
+    - $J^\textrm{all}$ is the set of all aged _and_ unaged fish samples
     - $J^{\textrm{unaged}, h}$ is the set of unaged fish samples from haul $h$
     - $J^\textrm{aged}_{s,\ell,\alpha}$ is the set of aged fish samples of sex $s$, length $\ell$, and age $\alpha$
 - $N$ denotes the number of fish samples. For example:
@@ -51,6 +57,9 @@ A superscript is used to denote the set of fish sample:
 - $A^k$ is the area covered by transect interval $k$
 - $B^k$ is the biomass in transect interval $k$
 
+```{attention}
+The sex, length, and age distributions of fish vary across strata. Therefore, the specific strata is implicit in the description below. Most quantities can be annotated with an additional superscript $i$ to indicate the stratum the sample or quantity belongs to. Exceptions arise when the quantity is specific for a transect interval ($k$) or a haul ($k$), since a transect interval or a haul only belongs to one stratum.
+```
 
 
 
