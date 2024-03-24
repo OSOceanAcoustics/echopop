@@ -26,9 +26,14 @@ The following symbols and notation will be used in the sections below:
     - For example:
         - $J^{\textrm{all}, h}$ is the set of all fish samples from haul $h$
         - $J^\textrm{aged}_{s,\ell,\alpha}$ is the set of aged fish samples of sex $s$, length $\ell$, and age $\alpha$
-- $W^i_s(\ell)$ describes the length-weight relationship for a population of fish of sex $s$ in stratum $i$. For example:
-    - $W^i_\textrm{male}(\ell)$ is the length-weight relationship for male fish in stratum $i$
-    - $W^i(\ell)$ is the length-weight relationship for all fish in stratum $i$
+- $N$ denotes the number of fish samples
+    - The superscript and subscript follow the same convention as the above
+    - For example:
+        - $N^\textrm{unaged}$ is the total number of unaged fish samples
+        - $N^\textrm{unaged}_\ell$ is the number of unaged fish samples of length $\ell$
+- $W_s(\ell)$ describes the length-weight relationship for a population of fish of sex $s$. For example:
+    - $W_\textrm{male}(\ell)$ is the length-weight relationship for male fish
+    - $W(\ell)$ is the length-weight relationship for all fish (male and female combined)
 
 ### Weight and weight proportion
 - $w_j$ is the weight of fish sample $j$
@@ -45,9 +50,7 @@ The following symbols and notation will be used in the sections below:
 - $B^k$ is the biomass in transect interval $k$
 
 ### Others
-- The superscript $\textrm{total}$ denotes a summation over all fish samples or all survey intervals. For example:
-    - $w^\textrm{total}$ is the total weight of all fish samples
-    - $B^\textrm{total}_{s,\ell}$ is the total apportioned biomass of fish of sex $s$ and length $\ell$
+- The superscript $\textrm{all}$ denotes all fish samples, including both male and female of aged and unaged fish samples
 
 
 
@@ -84,13 +87,13 @@ $$
 The overall weight propotion of aged and unaged fish are then
 
 $$
-r^\textrm{aged/total} = \frac{ w^\textrm{aged} }{ w^\textrm{aged} + w^\textrm{unaged} } 
+r^\textrm{aged/all} = \frac{ w^\textrm{aged} }{ w^\textrm{aged} + w^\textrm{unaged} } 
 $$
 
 and
 
 $$
-r^\textrm{unaged/total} = \frac{ w^\textrm{unaged} }{ w^\textrm{aged} + w^\textrm{unaged} } 
+r^\textrm{unaged/all} = \frac{ w^\textrm{unaged} }{ w^\textrm{aged} + w^\textrm{unaged} } 
 $$
 
 respectively.
@@ -119,7 +122,7 @@ $$
 The apportioned biomass over all transect intervals is then
 
 $$
-B^\textrm{total,aged}_{s,\ell,\alpha} = \sum_k B^{k, \textrm{aged}}_{s,\ell,\alpha}
+B^\textrm{aged}_{s,\ell,\alpha} = \sum_k B^{k, \textrm{aged}}_{s,\ell,\alpha}
 $$
 
 It follows naturally that the combined biomass quantities for male and female fish are:
@@ -129,11 +132,135 @@ B^{k, \textrm{aged}}_{\ell,\alpha} = B^{k, \textrm{aged}}_{\textrm{M},\ell,\alph
 $$
 
 $$
-B^\textrm{total,aged}_{\ell,\alpha} = B^\textrm{total,aged}_{\textrm{M},\ell,\alpha} + B^\textrm{total,aged}_{\textrm{F},\ell,\alpha} 
+B^\textrm{aged}_{\ell,\alpha} = B^\textrm{aged}_{\textrm{M},\ell,\alpha} + B^\textrm{aged}_{\textrm{F},\ell,\alpha} 
 $$
+
+
 
 
 
 
 (apportion-unaged)=
 ## Apportioning within unaged fish sampless
+
+For unaged fish, the procedure is more complicated, because the samples are not weighed individually, but are weighed only for each sex separately. Therefore, the length-weight relationship derived from aged fish samples (which are weighed individually) is used to partition the total weight into different length bins. Within each length bin, the age distribution of aged fish samples of that length is further used to partition the weight into different length-age bins.
+
+### Unaged weight proportions of different length bins
+
+The number proportion of unaged fish samples of length $\ell$ with respect to all unaged fish samples is
+
+$$
+P(L=\ell \,\vert\, \textrm{unaged}) = \frac{ N^\textrm{unaged}_\ell }{ N^\textrm{unaged} }
+$$
+
+The number proportion of unaged fish samples of sex $s$ and length $\ell$ with respect to all unaged fish samples is
+
+$$
+P(S=s, L=\ell \,\vert\, \textrm{unaged}) = \frac{ N^\textrm{unaged}_{s,\ell} }{ N^\textrm{unaged} }
+$$
+
+Here the number proportions are expressed as empirical probability mass function derived from the unaged fish samples.
+
+Using the length-weight relationship derived from all aged fish samples (both male and female), the weight proportion of unaged fish samples of length $\ell$ with respect to all unaged fish samples is
+
+$$
+r^\textrm{unaged/unaged}_\ell = \frac{ P(L=\ell \,\vert\, \textrm{unaged}) W(\ell) }{ \sum_\ell P(L=\ell \,\vert\, \textrm{unaged}) W(\ell) }
+$$
+
+
+### Unaged weight proportions of different sexes
+However, the weight proportions of male and female within the unaged fish samples are still needed. These are derived similarly by calculating the weight porpotion using number proportion of a given sex and the sex-specific length-weight relationship.
+
+The inferred total weights of male and female unaged fish are
+
+$$
+w^\textrm{unaged}_\textrm{M} = \sum_\ell P(S=\textrm{M}, L=\ell) \, N^\textrm{unaged}_\textrm{M} \, W_\textrm{M}(\ell)
+$$
+
+and
+
+$$
+w^\textrm{unaged}_\textrm{F} = \sum_\ell P(S=\textrm{F}, L=\ell) \, N^\textrm{unaged}_\textrm{F} \, W_\textrm{F}(\ell)
+$$
+
+The weight proportions of male and female unaged fish with respect to all unaged fish samples are then
+
+$$
+r^\textrm{unaged/unaged}_\textrm{M} = \frac{ w^\textrm{unaged}_\textrm{M} }{ w^\textrm{unaged}_\textrm{M} + w^\textrm{unaged}_\textrm{F} }
+$$
+
+and 
+
+$$
+r^\textrm{unaged/unaged}_\textrm{F} = \frac{ w^\textrm{unaged}_\textrm{M} }{ w^\textrm{unaged}_\textrm{M} + w^\textrm{unaged}_\textrm{F} }
+$$
+
+The weight proportions of unaged male and female fish with respect to all fish samples (aged _and_ unaged) are then
+
+$$
+r^\textrm{unaged/all}_\textrm{M} = r^\textrm{unaged/unaged}_\textrm{M} \, r^\textrm{unaged/all}
+$$
+
+and 
+
+$$
+r^\textrm{unaged/all}_\textrm{F} = r^\textrm{unaged/unaged}_\textrm{F} \, r^\textrm{unaged/all}
+$$
+
+
+### Unaged biomass apportioned with sex and length
+
+The biomass of unaged fish of sex $s$, length $\ell$ in transect interval $k$ therefore can be expressed as
+
+$$
+B^{k, \textrm{unaged}}_{\textrm{M}, \ell} = \rho^k_B \, A^k \, r^\textrm{unaged/all}_\textrm{M} \, r^\textrm{unaged/unaged}_\ell
+$$
+
+and the biomass of unaged fish of length $\ell$ in transect interval $k$ can be expressed as
+
+$$
+B^{k, \textrm{unaged}}_\ell = \rho^k_B \, A^k \, r^\textrm{unaged/all} \, r^\textrm{unaged/unaged}_\ell
+$$
+
+Summing across all transect intervals, the total apportioned biomass of unaged fish of sex $s$, length $\ell$ is then
+
+$$
+B^\textrm{unaged}_{\textrm{M}, \ell} = \sum_k B^{k, \textrm{unaged}}_{\textrm{M}, \ell} 
+$$
+
+and the total apportioned biomass of unaged fish of length $\ell$ is
+
+$$
+B^\textrm{unaged}_\ell = \sum_k B^{k, \textrm{unaged}}_\ell
+$$
+
+
+### Unaged biomass apportioned with sex, length, and age
+
+To further partition the biomass of different length bins into different age bins, the weight proportion of fish samples of age $\alpha$ with respect to all aged fish samples of length $\ell$ is used. The calculation is carried out for male and female fish separately before the estimates are combined.
+
+The total apportioned biomass of unaged male and female fish of length $\ell$ and age $\alpha$ is
+
+$$
+B^\textrm{unaged}_{\textrm{M},\ell,\alpha} = B^\textrm{unaged}_{\textrm{M},\ell} \times \frac{ B^\textrm{aged}_{\textrm{M},\ell,\alpha} }{ \sum_\alpha B^\textrm{aged}_{\textrm{M},\ell,\alpha} }
+$$
+
+$$
+B^\textrm{unaged}_{\textrm{F},\ell,\alpha} = B^\textrm{unaged}_{\textrm{F},\ell} \times \frac{ B^\textrm{aged}_{\textrm{F},\ell,\alpha} }{ \sum_\alpha B^\textrm{aged}_{\textrm{F},\ell,\alpha} }
+$$
+
+The total apportioned biomass of unaged fish of length $\ell$ and age $\alpha$ is then
+
+$$
+B^\textrm{unaged}_{\ell,\alpha} = B^\textrm{unaged}_{\textrm{M},\ell,\alpha} + B^\textrm{unaged}_{\textrm{F},\ell,\alpha}
+$$
+
+
+
+## Total biomass apportioned with length and age
+
+Using the quantities from above, the total apportioned biomass of all (aged _and_ unaged) fish of length $\ell$ and age $\alpha$ is then
+
+$$
+B^\textrm{all}_{\ell,\alpha} = B^\textrm{aged}_{\ell,\alpha} + B^\textrm{unaged}_{\ell,\alpha}
+$$
