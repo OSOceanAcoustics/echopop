@@ -58,7 +58,7 @@ A superscript is used to denote the set of fish samples:
 - $B^k$ is the biomass in transect interval $k$
 
 ```{attention}
-The sex, length, and age distributions of fish vary across strata. Therefore, the specific strata is implicit in the description below. Most quantities can be annotated with an additional superscript $i$ to indicate the stratum the sample or quantity belongs to. Exceptions arise when the quantity is specific for a transect interval ($k$) or a haul ($k$), since a transect interval or a haul only belongs to one stratum.
+The sex, length, and age distributions of fish vary across strata (see [](stratification)). Therefore, the specific strata is implicit in the description below. Most quantities can be annotated with an additional superscript $i$ to indicate the stratum the sample or quantity belongs to. Exceptions arise when the quantity is specific for a transect interval ($k$) or a haul ($k$), since a transect interval or a haul only belongs to one stratum.
 ```
 
 
