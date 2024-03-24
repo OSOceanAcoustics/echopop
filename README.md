@@ -1,6 +1,6 @@
 # Echopop
 
-Echopop combines acoustic data collected by echosounders with biological "ground truth" information from trawls to produce biological estimates, such as biomass and abundance. 
+Echopop combines acoustic data collected by echosounders with biological "ground truth" information from trawls to produce biological estimates, such as biomass and abundance. Here, "pop" stands for the animal "population."
 
 Current the processing is configured to work with Acoustic-Trawl survey data for Pacific hake, but we will soon add components to include Pacific krill into the package. The majority of the computational implementation is applicable for other fish and zooplankton species, and we plan to expand the package for general support in the near future.
 

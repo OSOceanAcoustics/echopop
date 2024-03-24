@@ -1,3 +1,4 @@
+(kriging-eq)=
 # Kriging equations
 
 Intrinsic model 

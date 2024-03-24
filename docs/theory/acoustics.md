@@ -1,3 +1,4 @@
+(acoustics-basics)=
 # Acoustics basics
 
 ## Backscattering cross-section and target strength
@@ -13,13 +14,13 @@ $$
 TS = 10 \log_{10} \sigma_{bs}
 $$
 
-For a group of $N$ animals, the mean backscattering cross-section is
+For a group of $N$ animals, the mean differential backscattering cross-section is
 
 $$
 \left< \sigma_{bs} \right> = \frac{\sum_{j=1}^N \sigma_{bs,j} }{ N },
 $$
 
-where $\sigma_{bs,j}$ is the backscattering cross-section of animal $j$, which often varies as a function of its length $L_j$:
+where $\sigma_{bs,j}$ is the differential backscattering cross-section of animal $j$, which often varies as a function of its length $L_j$:
 
 $$
 \sigma_{bs,j} = \sigma_{bs,j}(L_j)

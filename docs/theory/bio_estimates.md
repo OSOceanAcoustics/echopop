@@ -1,3 +1,4 @@
+(bio-estimates)=
 # Biological estimates
 
 
@@ -25,6 +26,7 @@ $$
 
 where $H$ is the integration height in meter, and the corresponding nautical areal scattering coefficient ($NASC$, or $s_A$, units: m<sup>2</sup>nmi<sup>-2</sup>)
 
+(NASC)=
 $$
 NASC = s_A = 4 \pi \times 1852^2 \times s_a,
 $$
@@ -58,7 +60,7 @@ $$
 then
 
 $$
-s_A = NASC = \rho_A \left< \sigma_{bs} \right>.
+s_A = NASC = 4 \pi \rho_A \left< \sigma_{bs} \right>.
 $$
 
 Note that $NASC$ is the typical output from software packages such as Echoview for biological estimates.
@@ -69,10 +71,10 @@ Note that $NASC$ is the typical output from software packages such as Echoview f
 
 ## Biomass estimates
 
-We can obtain an estimate of biomass density ($\rho_w$, units: kg nmi<sup>-2</sup>) by multiplying the areal number density of animals by the average weight ($\left< w \right>$, units: kg)
+We can obtain an estimate of biomass density ($\rho_B$, units: kg nmi<sup>-2</sup>) by multiplying the areal number density of animals by the average weight ($\left< w \right>$, units: kg)
 
 $$
-\rho_w = \rho_A \left< w \right>.
+\rho_B = \rho_A \left< w \right>.
 $$
 
 The average weight is
@@ -119,10 +121,10 @@ $$
 
 The $w_\ell$ values can be estimated by the regressed length-weight relationship derived from trawl samples.
 
-With the above quantities, the biomass ($W$, units: kg) can then be estimated by
+With the above quantities, the biomass ($B$, units: kg) can then be estimated by
 
 $$
-W = A \rho_w,
+B = \rho_B A = \rho_A \left< w \right> A,
 $$
 
 where $A$ is the unit area associated with the density measure.
