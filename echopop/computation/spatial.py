@@ -258,3 +258,39 @@ def local_search_index( dataframe_mesh ,
     sorted_distance_matrix = np.argpartition( distance_matrix , k_max , axis = 1 )
 
     return distance_matrix , sorted_distance_matrix[ : , : k_max ]
+
+def grid_cv( biomass_density_df: pd.DataFrame ,
+             kriged_results: pd.DataFrame ,
+             kriging_config: dict ):
+     ### Calculate grid CV  
+    biomass_density_adult = ( 
+        biomass_density_df
+        .loc[ lambda df: df.sex == 'all' ] 
+        .drop_duplicates( subset = [ 'transect_num' , 'latitude' , 'longitude' , 'stratum_num' ] ) 
+    ) 
+    
+    ### --------------------------------------------------------------- 
+    ### !!! TODO:  
+    ### While `C0` produces a similar standard deviation as the original 
+    ### code, `Bn` does not. This discrepancy results in an order of  
+    ### magnitude change in the resulting `biomass_adult_cell_CV` estimate. 
+    ### The source of this error stems from `kriged_results.B_a_adult_mean` 
+    ### whereby the right-tail of the `B_a_adult_mean` distribution is  
+    ### substantially shorter than from values (`biomass_density_adult_mean`) 
+    ### produced in the original code. This therefore relates to Issue #202. 
+    ### --------------------------------------------------------------- 
+    C0 = np.std( biomass_density_adult.B_a , ddof = 1 ) ** 2 
+    Bn = np.nansum( kriged_results.B_a_adult_mean * kriged_results.cell_area_nmi2 ) * 1e-9 
+    kriged_results = ( 
+        kriged_results 
+        .assign( biomass_adult_cell_CV = lambda df: ( 
+            kriging_config[ 'A0' ] * 
+            np.sqrt( kriged_results.B_a_adult_prediction_variance * C0 ) * 
+            1e-9 / 
+            Bn * 
+            np.sqrt( len( kriged_results.B_a_adult_prediction_variance ) ) 
+        ) ) 
+    ) 
+
+    ### Carriage return
+    return kriged_results

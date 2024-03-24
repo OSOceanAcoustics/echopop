@@ -17,7 +17,7 @@ $$
 
 where $\rho_V$ is the number density of scatterers (fish) per unit volume (units: m<sup>-3</sup>).
 
-In fisheries acoustics, we are often interested in quantities per unit area. Therefore, we define the areal backscattering coefficient (ABC, or $s_a$, units: m<sup>2</sup>m<sup>-2</sup>)
+In fisheries acoustics, we are often interested in quantities per unit area. Therefore, we define the areal backscattering coefficient ($ABC$, or $s_a$, units: m<sup>2</sup>m<sup>-2</sup>)
 
 $$
 s_a = s_V H,
