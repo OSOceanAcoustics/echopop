@@ -12,45 +12,44 @@ The apportioning involves different steps for the aged and unaged fish samples, 
 The following symbols and notation will be used in the sections below:
 
 ### Transect-related parameters
+
 - $i$ denotes a specific stratum
 - $h$ denotes a specific haul
 - $k$ denotes a specific transect interval, which belongs to a particular stratum depending on the stratification scheme
 
+These transec-related parameters will appear as superscript of a given quantity.
+
 ### Biometric parameters
-- $s$ is the sex of the fish sample and can take values $\textrm{M}$ (male) or $\textrm{F}$ (female)
-- $\ell$ is the length of the fish sample
-- $\alpha$ is the age of the fish sample
-- $J$ denotes the set of fish samples:
-    - The superscript describes whether the samples are from all fish samples ($\textrm{all}$), the aged fish samples ($\textrm{aged}$), or unaged fish samples ($\textrm{unaged}$) fish samples. If $h$ is added, it indicates the haul the samples are from.
-    - The subscript describes the biometric parameters
-    - For example:
-        - $J^{\textrm{all}, h}$ is the set of all fish samples from haul $h$
-        - $J^\textrm{aged}_{s,\ell,\alpha}$ is the set of aged fish samples of sex $s$, length $\ell$, and age $\alpha$
-- $N$ denotes the number of fish samples
-    - The superscript and subscript follow the same convention as the above
-    - For example:
-        - $N^\textrm{unaged}$ is the total number of unaged fish samples
-        - $N^\textrm{unaged}_\ell$ is the number of unaged fish samples of length $\ell$
-- $W_s(\ell)$ describes the length-weight relationship for a population of fish of sex $s$. For example:
-    - $W_\textrm{male}(\ell)$ is the length-weight relationship for male fish
-    - $W(\ell)$ is the length-weight relationship for all fish (male and female combined)
+- $s$ is the sex of fish sample and can take values $\textrm{M}$ (male) or $\textrm{F}$ (female)
+- $\ell$ is the length of fish sample
+- $\alpha$ is the age of fish sample
 
-### Weight and weight proportion
+These biometric parameters will appear as subscript of a given quantity.
+
+### Aged and unaged samples
+A superscript is used to denote the set of fish sample:
+- $\textrm{all}$: all aged and unaged fish samples
+- $\textrm{aged}$: all aged fish samples
+- $\textrm{unaged}$: all unaged fish samples
+
+### Quantities
 - $w_j$ is the weight of fish sample $j$
+- $J$ denotes a set of fish samples. For example:
+    - $J^\textrm{all}$ is the set of all fish samples, including both aged and unaged fish samples
+    - $J^{\textrm{unaged}, h}$ is the set of unaged fish samples from haul $h$
+    - $J^\textrm{aged}_{s,\ell,\alpha}$ is the set of aged fish samples of sex $s$, length $\ell$, and age $\alpha$
+- $N$ denotes the number of fish samples. For example:
+    - $N^\textrm{unaged}$ is the total number of unaged fish samples
+    - $N^\textrm{unaged}_\ell$ is the number of unaged fish samples of length $\ell$
+- $W_s(\ell)$ describes the length-weight relationship for a population of fish of sex $s$. For example:
+    - $W_\textrm{M}(\ell)$ is the length-weight relationship for male fish
+    - $W(\ell)$ is the length-weight relationship for all fish (male and female combined)
 - $r$ denotes the weight proportion
-    - The superscript describes the sample population and the reference population, both of which can be the aged fish samples ($\textrm{aged}$), the unaged fish samples ($\textrm{unaged}$), or all fish samples ($\textrm{all}$)
-    - The subscript describes the biometric parameters of the samples
-    - For example:
-        - $r^\textrm{aged/all}$ is the weight proportion of aged fish with reference to all fish samples
-        - $r^\textrm{aged/aged}_{s,\ell}$ is the weight propotion of aged fish of sex $s$ and length $\ell$ with reference to all aged fish samples
-
-### Acoustically derived quantities
+    - $r^\textrm{aged/all}$ is the weight proportion of aged fish with reference to all fish samples
+    - $r^\textrm{aged/aged}_{s,\ell}$ is the weight propotion of aged fish of sex $s$ and length $\ell$ with reference to all aged fish samples
 - $\rho^k_B$ is the biomass density in transect interval $k$
 - $A^k$ is the area covered by transect interval $k$
 - $B^k$ is the biomass in transect interval $k$
-
-### Others
-- The superscript $\textrm{all}$ denotes all fish samples, including both male and female of aged and unaged fish samples
 
 
 
