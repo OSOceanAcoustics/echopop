@@ -13,11 +13,11 @@
 | $s_a$ or $ABC$ | areal backscattering coefficient | m<sup>2</sup>m<sup>-2</sup> |  |
 | $\rho_a$ | number density of animals | m<sup>-2</sup> |  |
 | $\rho_A$ | nautical areal number density | nmi<sup>-2</sup> |  |
-| $\rho_w$ | biomass density | kg nmi<sup>-2</sup> |  |
-| $W$ | biomass estimates | kg |  |
+| $\rho_B$ | biomass density | kg nmi<sup>-2</sup> |  |
+| $B$ | biomass estimates | kg |  |
 | $i$ | stratum | |  |
 | $\alpha$ | age | year |  |
-| $L$ | length of animal | m or cm |  |
+| $L$ or $\ell$ | length of animal | m or cm |  |
 | $s$ | sex of animal | |  |
 | $w$ | weight of animal | kg |  |
 | $N$ | number of animal samples | |  |
