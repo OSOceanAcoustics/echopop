@@ -1,3 +1,4 @@
+(semivariogram_eq)=
 # Semivariogram equations
 
 

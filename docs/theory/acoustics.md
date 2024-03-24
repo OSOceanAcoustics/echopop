@@ -1,3 +1,4 @@
+(acoustics-basics)=
 # Acoustics basics
 
 ## Backscattering cross-section and target strength

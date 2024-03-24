@@ -1,3 +1,4 @@
+(bio-estimates)=
 # Biological estimates
 
 
@@ -25,6 +26,7 @@ $$
 
 where $H$ is the integration height in meter, and the corresponding nautical areal scattering coefficient ($NASC$, or $s_A$, units: m<sup>2</sup>nmi<sup>-2</sup>)
 
+(NASC)=
 $$
 NASC = s_A = 4 \pi \times 1852^2 \times s_a,
 $$
