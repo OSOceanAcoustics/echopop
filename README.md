@@ -1,6 +1,6 @@
 # Echopop
 
-Echopop combines acoustic data collected by echosounders with biological "ground truth" information from trawls to produce biological estimates, such as biomass and abundance. 
+Echopop combines acoustic data collected by echosounders with biological "ground truth" information from trawls to produce biological estimates, such as biomass and abundance. Here, "pop" stands for the animal "population."
 
 Current the processing is configured to work with Acoustic-Trawl survey data for Pacific hake, but we will soon add components to include Pacific krill into the package. The majority of the computational implementation is applicable for other fish and zooplankton species, and we plan to expand the package for general support in the near future.
 
@@ -8,6 +8,12 @@ Current the processing is configured to work with Acoustic-Trawl survey data for
 ## Documentation
 
 Learn more about Echopop in the documentation at https://echopop.readthedocs.io.
+
+
+## Contributors
+
+Echopop development is currently co-led by Wu-Jung Lee (@leewujung) and Brandyn Lucca (@brandynluca). Brandon Reyes (@b-reyes) and Emilio Mayorga (@emiliom) contributed significantly to a previous version of Echopop.
+
 
 
 ## Acknowledgement
@@ -24,15 +30,9 @@ and Julia Clemons (@JuliaClemons-NOAA)
 of the NWFSC Fisheries Engineering and Acoustics Team (FEAT)
 for continuing discussions that make Echopop better.
 
-This project is financially supported by NOAA Fisheries.
+This project is supported by NOAA Fisheries.
 
 <img src="docs/images/noaa_fisheries_logo.png" alt="NOAA_fisheries_logo" width="200">
-
-
-## Contributors
-
-Echopop development is currently co-led by Wu-Jung Lee (@leewujung) and Brandyn Lucca (@brandynluca). Brandon Reyes (@b-reyes) and Emilio Mayorga (@emiliom) contributed significantly to a previous version of Echopop.
-
 
 
 ## License

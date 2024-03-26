@@ -90,3 +90,174 @@ def index_transect_age_sex_proportions( acoustics_dict: dict ,
         # Group merge
         .group_merge( dataframes_to_add = dataframes_to_add , inner_on = 'age' , outer_on = 'stratum_num' )
         )
+
+def sum_strata_weight( haul_data: pd.DataFrame ,
+                       specimen_data: pd.DataFrame ):
+    """
+    Sum haul weights from different datasets    
+
+    Parameters
+    ----------
+    haul_data: pd.DataFrame
+        Dataframe containing haul catch weight data
+    specimen_data: pd.DataFrame
+        Dataframe containing specimen weights
+    """ 
+
+    ### Calculate station weights -- stratified by strata
+    weight_strata_station = pd.concat(
+         [
+              # Haul data 
+              haul_data
+              .groupby( [ 'stratum_num' ] )
+              .apply( lambda df: pd.Series( { 'stratum_weight': df.haul_weight.sum( ) } ) )
+              .reset_index( )
+              .assign( station = 1 ) ,
+              # Specimen data
+              specimen_data 
+              .groupby( [ 'stratum_num' ] )
+              .apply( lambda df: pd.Series( { 'stratum_weight': df.weight.sum( ) } ) )
+              .reset_index()
+              .assign( station = 2 )
+         ]
+    )
+
+    ### Sum weights for each stratum
+    weight_strata = (
+            weight_strata_station
+            .groupby( [ 'stratum_num' ] )
+            .apply( lambda x: pd.Series( { 'weight_stratum_total': x.stratum_weight.sum( ) } ) )            
+            .reset_index( )
+        )
+    
+    ### Carriage return
+    return weight_strata_station , weight_strata
+
+def sum_strata_length_age_sex_weight( haul_data: pd.DataFrame ,
+                                      specimen_data: pd.DataFrame ,
+                                      length_intervals: np.ndarray ,
+                                      age_intervals: np.ndarray ):
+    
+    ### Sum weights from each station and strata 
+    weight_strata_station , weight_strata = sum_strata_weight( haul_data ,
+                                                               specimen_data )
+    
+    ### Calculate summed length-age-sex weight bins across strata
+    weight_length_age_sex_stratum = (
+        specimen_data
+        .dropna( how = 'any' )
+        .loc[ lambda x: x.sex != 'unsexed' ]
+        .pipe( lambda df: pd.concat( [ df , 
+                                       df.copy( ).assign( sex = 'all' ) ] ) )
+        .bin_variable( age_intervals , 'age' )
+        .bin_variable( length_intervals , 'length' )      
+        .groupby( [ 'stratum_num' , 'age_bin' , 'length_bin' , 'sex' ] )
+        .apply( lambda df: pd.Series( { 'summed_weight_all': df.weight.sum( ) ,
+                                        'summed_weight_adult': df.loc[ df.age > 1 ].weight.sum( ) } ) ) 
+        .reset_index( )
+        .replace( np.nan , 0 )
+        .assign( total_weight_sex_all = lambda df: df.groupby( [ 'stratum_num' , 'sex' ] )[ 'summed_weight_all' ].transform( sum ) ,
+                 total_weight_sex_adult = lambda df: df.groupby( [ 'stratum_num' , 'sex' ] )[ 'summed_weight_adult' ].transform( sum ) ,
+                 proportion_weight_all = lambda df: df.summed_weight_all / df.total_weight_sex_all ,
+                 proportion_weight_adult = lambda df: df.summed_weight_adult / df.total_weight_sex_adult )            
+    )
+
+    ### Carriage return
+    return weight_strata , weight_strata_station , weight_length_age_sex_stratum
+
+def normalize_length_age_sex_weight_proportions( weight_length_age_sex_stratum: pd.DataFrame ,
+                                                 weight_strata: pd.DataFrame ):
+    
+    ### Normalize the age-length-sex indexed proportions
+    dist_weight_sum = ( 
+       weight_length_age_sex_stratum 
+        .merge( weight_strata , on = [ 'stratum_num' ] ) 
+        .groupby( [ 'stratum_num' , 'sex' ] ) 
+        .apply( lambda df: pd.Series( {  
+            'proportion_normalized': ( df.proportion_weight_all * ( df.summed_weight_all / df.weight_stratum_total ).sum( ) ).sum( ) 
+        } ) ) 
+        .reset_index( ) 
+    ) 
+
+    ### Carriage return
+    return dist_weight_sum
+
+def calculate_aged_proportions( weight_length_age_sex_stratum: pd.DataFrame ,
+                                weight_strata: pd.DataFrame ):
+    
+    ### Calculate aged / unaged proportions 
+    aged_proportions = ( 
+        weight_length_age_sex_stratum
+        .loc[ lambda df: df.sex != 'all' ] 
+        .groupby( [ 'stratum_num' ] ) 
+        .apply( lambda df: pd.Series( { 'weight_aged_total': df.summed_weight_all.sum( ) } ) )  
+        .reset_index( ) 
+        .merge( weight_strata , on = [ 'stratum_num' ] )  
+        .assign( proportion_aged_total = lambda x: x.weight_aged_total / x.weight_stratum_total , 
+                 proportion_unaged_total = lambda x: np.round( 1.0 - x.proportion_aged_total , decimals = 10 ) ) 
+    ) 
+
+    ### Carriage return
+    return aged_proportions
+
+def normalize_haul_sex_weights( length_weight_df: pd.DataFrame ,
+                                length_df: pd.DataFrame ,
+                                weight_strata: pd.DataFrame ,
+                                weight_strata_station: pd.DataFrame ,
+                                aged_proportions: pd.DataFrame ,
+                                length_intervals: np.ndarray ):
+    
+    ### Calculate interpolated weights based on length bins for each sex per haul 
+    length_weight_fit = (
+        length_weight_df
+        .copy( )
+        .assign( length_bin_value  = lambda x: x[ 'length_bin' ].apply( lambda y: y.mid ) )
+    )
+
+     # Sum haul weights per sex per stratum 
+    haul_weights = ( 
+        length_df 
+        .bin_variable( length_intervals , 'length' ) 
+        .loc[ lambda x: x.group == 'sexed' ] 
+        .pipe( lambda df: pd.concat( [ df , df.assign( sex = 'all' ) ] ) )   
+        .merge( length_weight_fit , on = [ 'sex' , 'length_bin' ] ) 
+        .groupby( [ 'stratum_num' , 'haul_num' , 'sex' ] ) 
+        .apply( lambda df: pd.Series( { 'weight_interp': ( np.interp( df.length,  
+                                                                    length_weight_fit.loc[ lambda x: x.sex.isin( df.sex ) ][ 'length_bin_value' ] ,  
+                                                                    length_weight_fit.loc[ lambda x: x.sex.isin( df.sex ) ][ 'weight_modeled' ] ) * 
+                                                            df.length_count ).sum( ) } ) ) 
+        .groupby( [ 'stratum_num' , 'sex' ] ) 
+        .apply( lambda df: pd.Series( { 'summed_haul_weights': df.weight_interp.sum( ) } ) ) 
+        .reset_index( ) 
+    ) 
+  
+    ### Normalize haul weights (Station 1) 
+    haul_sex_weights_normalized = ( 
+        haul_weights 
+        .merge( weight_strata_station.loc[ lambda x: x.station == 1 ] ,  
+                on = 'stratum_num' ) 
+        .assign( weight_normalized_station_1 = lambda df: ( 
+            df 
+            .groupby( [ 'stratum_num' ] ) 
+            .apply( lambda strata: strata[ 'stratum_weight' ] * strata[ 'summed_haul_weights' ] / 
+                                    ( df[ ( df.stratum_num == strata.name ) & ( df.sex == 'male' ) ][ 'summed_haul_weights' ].iloc[ 0 ] + 
+                                      df[ ( df.stratum_num == strata.name ) & ( df.sex == 'female' ) ][ 'summed_haul_weights' ].iloc[ 0 ] ) ) 
+            .reset_index( drop = True ) ) ) 
+        .merge( weight_strata , on = [ 'stratum_num' ] ) 
+        .assign( proportion_normalized_station_1 = lambda df: ( 
+            df.weight_normalized_station_1 / df.weight_stratum_total 
+        ) ) 
+        .assign( sex_proportion = lambda df: ( 
+            df 
+            .groupby( [ 'stratum_num' ] ) 
+            .apply( lambda strata: strata[ 'proportion_normalized_station_1' ] / 
+                                    ( df[ ( df.stratum_num == strata.name ) & ( df.sex == 'male' ) ][ 'proportion_normalized_station_1' ].iloc[ 0 ] + 
+                                      df[ ( df.stratum_num == strata.name ) & ( df.sex == 'female' ) ][ 'proportion_normalized_station_1' ].iloc[ 0 ] ) ) 
+            .reset_index( drop = True ) ) ) 
+        .merge( aged_proportions.loc[ : , [ 'stratum_num' , 'proportion_unaged_total' ] ] ,  
+                on = [ 'stratum_num' ] )         
+        .assign( proportion_unaged_sex = lambda x: x.sex_proportion * x.proportion_unaged_total ) 
+    ) 
+
+    ### Carriage return
+    return haul_sex_weights_normalized

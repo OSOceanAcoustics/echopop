@@ -1,3 +1,4 @@
-# Kriging equations
+(kriging)=
+# Kriging biomass density
 
-![ text ](../images/example_indexing.jpg)
+To be added!
