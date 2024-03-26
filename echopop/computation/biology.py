@@ -220,6 +220,8 @@ def compute_index_aged_weight_proportions( specimen_data: pd.DataFrame ,
         # ---- Calculate the weight proportions within each sex: from Matlab --> Len_age_key_wgt_*n
         .assign( proportion_weight_sex_all = lambda df: df.weight_all / df.total_weight_sex_all ,
                  proportion_weight_sex_adult = lambda df: df.weight_adult / df.total_weight_sex_adult )
+        # ---- Fill empty/non-existent values with 0's
+        .fillna( 0 )
     )
 
     ### Return output
@@ -256,6 +258,8 @@ def compute_summed_aged_proportions( proportions_weight_length_age_sex: pd.DataF
         # ---- relative to the total weight of each stratum: from Matlab --> Len_Age_*_wgt_proportion
         .assign( proportion_weight_all = lambda df: df.weight_aged_sex_all / df.weight_stratum_all ,
                  proportion_weight_adult = lambda df: df.weight_aged_sex_adult / df.weight_stratum_all )
+        # ---- Fill empty/non-existent values with 0's
+        .fillna( 0 )
         # ---- Drop unused columns
         .filter( regex = '^(?!weight_).*')
     )
