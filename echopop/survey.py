@@ -1335,15 +1335,17 @@ class Survey:
         )
 
         ### Calculate number proportion
+        length_weight_df = self.statistics[ 'length_weight' ][ 'length_weight_df' ]
+
         number_unaged_length_proportions = (
-        length_df
-        .loc[ lambda df: df.group == 'sexed' ] 
-        .bin_variable( length_intervals , 'length' ) 
-        .groupby( [ 'stratum_num' , 'length_bin' ] )
-        .agg( number_all = ( 'length_count' , 'sum' ) ) 
-        .reset_index( )
-        .assign( total_number_all = lambda df: df.groupby( [ 'stratum_num' ] )[ 'number_all' ].transform( sum ) ,
-                    proportion_number_all = lambda df: df.number_all / df.total_number_all )
+            length_spp
+            .loc[ lambda df: df.group == 'sexed' ] 
+            .bin_variable( length_intervals , 'length' ) 
+            .groupby( [ 'stratum_num' , 'length_bin' ] )
+            .agg( number_all = ( 'length_count' , 'sum' ) ) 
+            .reset_index( )
+            .assign( total_number_all = lambda df: df.groupby( [ 'stratum_num' ] )[ 'number_all' ].transform( sum ) ,
+                        proportion_number_all = lambda df: df.number_all / df.total_number_all )
         )
 
         w_ln_all_array = (
