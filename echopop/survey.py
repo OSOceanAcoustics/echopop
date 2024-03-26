@@ -1177,7 +1177,6 @@ class Survey:
             )
     
     def krige( self ,
-               species_id ,
                variable: str = 'B_a_adult' ):
         """
         Interpolates biomass data using ordinary kriging
@@ -1245,6 +1244,7 @@ class Survey:
             {
                 'kriged_biomass_df': kriged_dataframe
             }
+        )
         
         ### TODO: This should be refactored out as an external function 
         ###### rather than a Survey-class method.
