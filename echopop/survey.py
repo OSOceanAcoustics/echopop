@@ -13,7 +13,7 @@ from .computation.spatial import calculate_transect_distance , transform_geometr
 from .computation.statistics import stratified_transect_statistic
 from .computation.kriging_methods import kriging_interpolation
 from .computation.biology import index_sex_weight_proportions , index_transect_age_sex_proportions , filter_species 
-from .computation.biology import sum_strata_weight , compute_aged_weight_proportions
+from .computation.biology import sum_strata_weight , compute_aged_weight_proportions , distribute_aged_weight_proportions
 
 ### !!! TODO : This is a temporary import call -- this will need to be changed to 
 # the correct relative structure (i.e. '.utils.data_structure_utils' instead of 
@@ -1294,11 +1294,13 @@ class Survey:
         proportions_weight_length_age_sex = compute_aged_weight_proportions( specimen_spp ,
                                                                              length_intervals ,
                                                                              age_intervals )
-
-        ### Normalize the age-length-sex indexed proportions
-        dist_weight_sum = normalize_length_age_sex_weight_proportions( weight_length_age_sex_stratum ,
-                                                                       weight_strata )
         
+        ### Calculate weight proportions of aged fish distributed over age-length bins
+        # ---- for each sex within each stratum relative to the summed weights of each
+        # ---- stratum (i.e. aged + unaged weights)
+        distributed_aged_weight_proportions = distribute_aged_weight_proportions( proportions_weight_length_age_sex ,
+                                                                                  weight_strata )
+
         ### Calculate aged / unaged proportions
         aged_proportions = calculate_aged_proportions( weight_length_age_sex_stratum ,
                                                        weight_strata )

@@ -180,6 +180,7 @@ def compute_aged_weight_proportions( specimen_data: pd.DataFrame ,
     age_intervals: np.ndarray
         Array containing age bins/intervals
     """ 
+    
     ### Process the specimen data 
     specimen_binned = (
         specimen_data
@@ -216,7 +217,7 @@ def compute_aged_weight_proportions( specimen_data: pd.DataFrame ,
         # ---- Calculate total sex-specific weights for each stratum
         .assign( total_weight_sex_all = lambda df: df.groupby( [ 'stratum_num' , 'sex' ] )[ 'weight_all' ].transform( sum ) ,
                  total_weight_sex_adult = lambda df: df.groupby( [ 'stratum_num' , 'sex' ] )[ 'weight_adult' ].transform( sum ) )
-        # ---- Calculate the weight proportions
+        # ---- Calculate the weight proportions within each sex: from Matlab --> Len_age_key_wgt_*n
         .assign( proportion_weight_sex_all = lambda df: df.weight_all / df.total_weight_sex_all ,
                  proportion_weight_sex_adult = lambda df: df.weight_adult / df.total_weight_sex_adult )
     )
@@ -224,22 +225,41 @@ def compute_aged_weight_proportions( specimen_data: pd.DataFrame ,
     ### Return output
     return proportions_weight_length_age_sex
 
-def normalize_length_age_sex_weight_proportions( weight_length_age_sex_stratum: pd.DataFrame ,
-                                                 weight_strata: pd.DataFrame ):
-    
-    ### Normalize the age-length-sex indexed proportions
-    dist_weight_sum = ( 
-       weight_length_age_sex_stratum 
-        .merge( weight_strata , on = [ 'stratum_num' ] ) 
-        .groupby( [ 'stratum_num' , 'sex' ] ) 
-        .apply( lambda df: pd.Series( {  
-            'proportion_normalized': ( df.proportion_weight_all * ( df.summed_weight_all / df.weight_stratum_total ).sum( ) ).sum( ) 
-        } ) ) 
-        .reset_index( ) 
-    ) 
+def distribute_aged_weight_proportions( proportions_weight_length_age_sex: pd.DataFrame ,
+                                        weight_strata: pd.DataFrame ):
+    """
+    Distribute overall weight proportions across each sex and age/length bins   
 
-    ### Carriage return
-    return dist_weight_sum
+    Parameters
+    ----------
+    proportions_weight_length_age_sex: pd.DataFrame
+        Dataframe containing sexed weight proportions distributed across
+        each age and length bin
+    weight_strata: pd.DataFrame
+        Dataframe contained summed weights of both aged and unaged fish
+    """     
+
+    ### Normalize the age-length-sex proportions of aged fish
+    # ---- Distribute the proportions calculated for age-length-sex 
+    # ---- binned weights from aged fish and recalculate the proportions
+    # ---- relative to the total weights including both aged and unaged
+    # ---- fish
+    distributed_aged_weight_proportions = (
+            proportions_weight_length_age_sex
+            # ---- Merge with summed weights for each stratum
+            .merge( weight_strata , on = [ 'stratum_num' ] )
+            # ---- Calculate the relative weight proportion of aged fish of each sex
+            # ---- relative to the total weight of each stratum: from Matlab --> Len_Age_*_wgt_proportion
+            .assign( proportion_weight_all = lambda df: df.weight_all / df.weight_stratum_all ,
+                    proportion_weight_adult = lambda df: df.weight_adult / df.weight_stratum_all )
+            # ---- Normalize the proportions by multiplying the proportions within each sex 
+            # ---- across the proportions relative to the total weights (i.e. aged + unaged), not just each sex 
+            .assign( normalized_proportion_weight_sex_all = lambda df: df.proportion_weight_sex_all * df.proportion_weight_all ,
+                     normalized_proportion_weight_sex_adult = lambda df: df.proportion_weight_sex_adult * df.proportion_weight_adult )
+        )
+    
+    ### Return output
+    return distributed_aged_weight_proportions
 
 def calculate_aged_proportions( weight_length_age_sex_stratum: pd.DataFrame ,
                                 weight_strata: pd.DataFrame ):
