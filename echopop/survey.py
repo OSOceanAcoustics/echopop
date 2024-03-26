@@ -12,7 +12,8 @@ from .computation.acoustics import to_linear , ts_length_regression
 from .computation.spatial import calculate_transect_distance , transform_geometry
 from .computation.statistics import stratified_transect_statistic
 from .computation.kriging_methods import kriging_interpolation
-from .computation.biology import index_sex_weight_proportions , index_transect_age_sex_proportions , filter_species
+from .computation.biology import index_sex_weight_proportions , index_transect_age_sex_proportions , filter_species 
+from .computation.biology import sum_strata_weight , compute_aged_weight_proportions
 
 ### !!! TODO : This is a temporary import call -- this will need to be changed to 
 # the correct relative structure (i.e. '.utils.data_structure_utils' instead of 
@@ -1286,11 +1287,13 @@ class Survey:
         # Remove haul numbers not found within `length_spp`
         haul_spp_matched = haul_spp[ haul_spp.haul_num.isin( length_spp.haul_num ) ]
 
+        ### Sum weights for aged/unaged and all within each stratum
+        weight_strata_aged_unaged , weight_strata = sum_strata_weight( haul_spp_matched ,
+                                                                       specimen_spp )
         ### Calculate summed weights
-        weight_strata , weight_strata_station , weight_length_age_sex_stratum = sum_strata_length_age_sex_weight( haul_catch_filtered ,
-                                                                                                                  specimen_df_copy ,
-                                                                                                                  length_intervals ,
-                                                                                                                  age_intervals )
+        proportions_weight_length_age_sex = compute_aged_weight_proportions( specimen_spp ,
+                                                                             length_intervals ,
+                                                                             age_intervals )
 
         ### Normalize the age-length-sex indexed proportions
         dist_weight_sum = normalize_length_age_sex_weight_proportions( weight_length_age_sex_stratum ,
