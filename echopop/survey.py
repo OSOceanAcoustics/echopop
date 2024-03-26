@@ -1275,18 +1275,16 @@ class Survey:
                                                                  self.biology[ 'catch_df' ] ] ,
                                                                species_id )
 
-        ### Import length bins & intervals
+        ### Import discrete distribution bins
+        # ---- Length
         length_intervals = self.biology[ 'distributions' ][ 'length' ][ 'length_interval_arr' ]
         
-        ### Age bins
+        # ---- Age
         age_intervals = self.biology[ 'distributions' ][ 'age' ][ 'age_interval_arr' ]
  
-        ### Process `haul_catch_df`
-        # Remove haul numbers not found within `length_df_copy`
-        haul_catch_filtered = (
-            haul_catch_df
-            .loc[ lambda x: x.haul_num.isin( length_df_copy.haul_num ) ]
-        )
+        ### Process `haul_spp`
+        # Remove haul numbers not found within `length_spp`
+        haul_spp_matched = haul_spp[ haul_spp.haul_num.isin( length_spp.haul_num ) ]
 
         ### Calculate summed weights
         weight_strata , weight_strata_station , weight_length_age_sex_stratum = sum_strata_length_age_sex_weight( haul_catch_filtered ,
