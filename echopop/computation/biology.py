@@ -165,9 +165,9 @@ def sum_strata_weight( haul_data: pd.DataFrame ,
     ### Carriage return
     return weight_strata_aged_unaged , weight_strata
 
-def compute_aged_weight_proportions( specimen_data: pd.DataFrame ,
-                                     length_intervals: np.ndarray ,
-                                     age_intervals: np.ndarray ):
+def compute_index_aged_weight_proportions( specimen_data: pd.DataFrame ,
+                                           length_intervals: np.ndarray ,
+                                           age_intervals: np.ndarray ):
     """
     Calculate length-age binned weight proportions    
 
@@ -180,7 +180,7 @@ def compute_aged_weight_proportions( specimen_data: pd.DataFrame ,
     age_intervals: np.ndarray
         Array containing age bins/intervals
     """ 
-    
+
     ### Process the specimen data 
     specimen_binned = (
         specimen_data
@@ -225,10 +225,11 @@ def compute_aged_weight_proportions( specimen_data: pd.DataFrame ,
     ### Return output
     return proportions_weight_length_age_sex
 
-def distribute_aged_weight_proportions( proportions_weight_length_age_sex: pd.DataFrame ,
-                                        weight_strata: pd.DataFrame ):
+def compute_summed_aged_proportions( proportions_weight_length_age_sex: pd.DataFrame ,
+                                     weight_strata: pd.DataFrame ):
     """
-    Distribute overall weight proportions across each sex and age/length bins   
+   Compute the aged proportions across all fish and specific sexes for each
+   length and age bin  
 
     Parameters
     ----------
@@ -237,6 +238,58 @@ def distribute_aged_weight_proportions( proportions_weight_length_age_sex: pd.Da
         each age and length bin
     weight_strata: pd.DataFrame
         Dataframe contained summed weights of both aged and unaged fish
+    """   
+
+    ### Calculate the aged proportions for each sex for all and just adult fish
+    aged_sex_proportions = (
+        proportions_weight_length_age_sex
+        .groupby( [ 'stratum_num' , 'sex' ] )
+        # ---- Sum all/adult fish weights for each sex and stratum
+        .apply( lambda df: pd.Series( {
+            'weight_aged_sex_all': df.weight_all.sum( ) ,
+            'weight_aged_sex_adult': df.weight_adult.sum( )
+        } ) )
+        .reset_index( )
+        # ---- Merge with summed weights for each stratum
+        .merge( weight_strata , on = [ 'stratum_num' ] )
+        # ---- Calculate the relative weight proportion of aged fish of each sex
+        # ---- relative to the total weight of each stratum: from Matlab --> Len_Age_*_wgt_proportion
+        .assign( proportion_weight_all = lambda df: df.weight_aged_sex_all / df.weight_stratum_all ,
+                 proportion_weight_adult = lambda df: df.weight_aged_sex_adult / df.weight_stratum_all )
+        # ---- Drop unused columns
+        .filter( regex = '^(?!weight_).*')
+    )
+
+    ### Calculate aged proportions
+    aged_proportions = (
+        aged_sex_proportions
+        .groupby( [ 'stratum_num' ] )
+        # ---- Sum proportions from each sex for each stratum
+        .agg(
+            proportion_weight_all = ( 'proportion_weight_all' , 'sum' ) ,
+            proportion_weight_adult = ( 'proportion_weight_adult' , 'sum' )
+        )
+        .reset_index( )
+        # ---- Drop unused columns
+        .filter( regex = '^(?!weight_).*')
+    )
+
+    ### Return output
+    return aged_sex_proportions , aged_proportions
+
+
+def distribute_aged_weight_proportions( proportions_weight_length_age_sex: pd.DataFrame ,
+                                        aged_sex_proportions: pd.DataFrame ):
+    """
+    Distribute overall weight proportions across each sex and age/length bins   
+
+    Parameters
+    ----------
+    proportions_weight_length_age_sex: pd.DataFrame
+        Dataframe containing sexed weight proportions distributed across
+        each age and length bin
+    aged_sex_proportions: pd.DataFrame
+        Dataframe contained weight proportions of sexed fish for aged fish
     """     
 
     ### Normalize the age-length-sex proportions of aged fish
@@ -245,18 +298,17 @@ def distribute_aged_weight_proportions( proportions_weight_length_age_sex: pd.Da
     # ---- relative to the total weights including both aged and unaged
     # ---- fish
     distributed_aged_weight_proportions = (
-            proportions_weight_length_age_sex
-            # ---- Merge with summed weights for each stratum
-            .merge( weight_strata , on = [ 'stratum_num' ] )
-            # ---- Calculate the relative weight proportion of aged fish of each sex
-            # ---- relative to the total weight of each stratum: from Matlab --> Len_Age_*_wgt_proportion
-            .assign( proportion_weight_all = lambda df: df.weight_all / df.weight_stratum_all ,
-                    proportion_weight_adult = lambda df: df.weight_adult / df.weight_stratum_all )
-            # ---- Normalize the proportions by multiplying the proportions within each sex 
-            # ---- across the proportions relative to the total weights (i.e. aged + unaged), not just each sex 
-            .assign( normalized_proportion_weight_sex_all = lambda df: df.proportion_weight_sex_all * df.proportion_weight_all ,
-                     normalized_proportion_weight_sex_adult = lambda df: df.proportion_weight_sex_adult * df.proportion_weight_adult )
-        )
+        proportions_weight_length_age_sex
+        # ---- Merge with sexed age proportions of all fish
+        .merge( aged_sex_proportions , on = [ 'stratum_num' , 'sex' ] )
+        # ---- Normalize the proportions by multiplying the proportions within each sex 
+        # ---- across the proportions relative to the total weights (i.e. aged + unaged), 
+        # ---- not just each sex
+        .assign( normalized_proportion_weight_sex_all = lambda df: df.proportion_weight_sex_all * df.proportion_weight_all ,
+                 normalized_proportion_weight_sex_adult = lambda df: df.proportion_weight_sex_adult * df.proportion_weight_adult )
+        # ---- Drop unused columns
+        .filter( regex = '^(?!weight_|total_weight_|proportion_).*' )
+    )
     
     ### Return output
     return distributed_aged_weight_proportions

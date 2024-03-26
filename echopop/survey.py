@@ -13,7 +13,7 @@ from .computation.spatial import calculate_transect_distance , transform_geometr
 from .computation.statistics import stratified_transect_statistic
 from .computation.kriging_methods import kriging_interpolation
 from .computation.biology import index_sex_weight_proportions , index_transect_age_sex_proportions , filter_species 
-from .computation.biology import sum_strata_weight , compute_aged_weight_proportions , distribute_aged_weight_proportions
+from .computation.biology import sum_strata_weight , compute_index_aged_weight_proportions , distribute_aged_weight_proportions
 
 ### !!! TODO : This is a temporary import call -- this will need to be changed to 
 # the correct relative structure (i.e. '.utils.data_structure_utils' instead of 
@@ -1291,19 +1291,20 @@ class Survey:
         weight_strata_aged_unaged , weight_strata = sum_strata_weight( haul_spp_matched ,
                                                                        specimen_spp )
         ### Calculate summed weights
-        proportions_weight_length_age_sex = compute_aged_weight_proportions( specimen_spp ,
-                                                                             length_intervals ,
-                                                                             age_intervals )
+        proportions_weight_length_age_sex = compute_index_aged_weight_proportions( specimen_spp ,
+                                                                                   length_intervals ,
+                                                                                   age_intervals )
+        
+        ### Calculate the summed aged proportions for all aged fish, and for aged fish 
+        # ---- belonging to each sex
+        aged_sex_proportions , aged_proportions = compute_summed_aged_proportions( proportions_weight_length_age_sex ,
+                                                                                   weight_strata )
         
         ### Calculate weight proportions of aged fish distributed over age-length bins
         # ---- for each sex within each stratum relative to the summed weights of each
         # ---- stratum (i.e. aged + unaged weights)
         distributed_aged_weight_proportions = distribute_aged_weight_proportions( proportions_weight_length_age_sex ,
-                                                                                  weight_strata )
-
-        ### Calculate aged / unaged proportions
-        aged_proportions = calculate_aged_proportions( weight_length_age_sex_stratum ,
-                                                       weight_strata )
+                                                                                  aged_sex_proportions )
 
         ### Calculate interpolated weights based on length bins for each sex per haul
         haul_sex_weights_normalized = normalize_haul_sex_weights( self.statistics[ 'length_weight' ][ 'length_weight_df' ] ,
