@@ -1,7 +1,31 @@
 import numpy as np
 import pandas as pd
+from typing import Union, List
 from ..computation.spatial import correct_transect_intervals
 from ..computation.operations import group_merge
+
+def filter_species( dataframe_list: Union[List[pd.DataFrame], pd.DataFrame] , 
+                    species_id: np.float64 ):
+    """
+    Filter species in one or multiple biological datasets
+
+    Parameters
+    ----------
+    dataframe_list: Union[List[pd.DataFrame], pd.DataFrame]
+        A list of dataframes or a single dataframe containing biological data/measurements
+    species_id: np.float64
+        Numeric code representing a particular species of interest
+    """   
+    
+    ### If a single dataframe, convert to a list 
+    if isinstance( dataframe_list , pd.DataFrame ):
+        dataframe_list = [ dataframe_list ]
+
+    ### Filter out the species-of-interest
+    filtered_dataframes = tuple( df[ df.species_id == species_id ] for df in dataframe_list )
+
+    ### Return output
+    return filtered_dataframes
 
 def index_sex_weight_proportions( biology_dict: dict ):
     """

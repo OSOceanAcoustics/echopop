@@ -12,7 +12,7 @@ from .computation.acoustics import to_linear , ts_length_regression
 from .computation.spatial import calculate_transect_distance , transform_geometry
 from .computation.statistics import stratified_transect_statistic
 from .computation.kriging_methods import kriging_interpolation
-from .computation.biology import index_sex_weight_proportions , index_transect_age_sex_proportions
+from .computation.biology import index_sex_weight_proportions , index_transect_age_sex_proportions , filter_species
 
 ### !!! TODO : This is a temporary import call -- this will need to be changed to 
 # the correct relative structure (i.e. '.utils.data_structure_utils' instead of 
@@ -1263,16 +1263,17 @@ class Survey:
         for aged and unaged fish, total biomass inferred from the biological and 
         kriged bioamss estimates, the coefficient of variation within each cell, 
         and georeferenced biomass estimates for specific paired values of sex 
-        and age-class.
+        and age-class. Binned length data (`length_df`) represent sexed, but
+        unaged fish measured at Station 1. Specimen data (`specimen_data`) represen
+        sexed and aged fish measured at Station 2. Total haul weights (`catch_df`) 
+        represent the bulk weights of unaged and unsexed fish measured in Station 1.
         """  
-        ### Length data (Station 1 - Unaged - Sexxed )
-        length_df_copy = self.biology[ 'length_df' ].copy( ).pipe( lambda df: df.loc[ df.species_id == species_id ] )
-
-        ### Length-weight data (Station 2 - Aged - Sexed)
-        specimen_df_copy = self.biology[ 'specimen_df' ].copy( ).pipe( lambda df: df.loc[ df.species_id == species_id ] )
-
-        ### Haul data 
-        haul_catch_df = self.biology[ 'catch_df' ].copy( ).pipe( lambda df: df.loc[ df.species_id == species_id ] )
+        
+        ### Import biological data and filter out non-target species
+        length_spp , specimen_spp , haul_spp = filter_species( [ self.biology[ 'length_df' ] ,
+                                                                 self.biology[ 'specimen_df' ] ,
+                                                                 self.biology[ 'catch_df' ] ] ,
+                                                               species_id )
 
         ### Import length bins & intervals
         length_intervals = self.biology[ 'distributions' ][ 'length' ][ 'length_interval_arr' ]
