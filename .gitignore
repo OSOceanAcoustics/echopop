@@ -1,8 +1,9 @@
 .DS_Store
-_echopro_version.py
+_echopop_version.py
+.vscode
 
 # ignore output reports, if they were produced
-EchoPro/tests/reports/EchoPro_python_output*
+echopop/tests/reports/echopop_python_output*
 
 # Created by .ignore support plugin (hsz.mobi)
 ### Python template
