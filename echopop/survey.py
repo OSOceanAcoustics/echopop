@@ -1245,6 +1245,7 @@ class Survey:
             {
                 'kriged_biomass_df': kriged_dataframe
             }
+        )
         
         ### TODO: This should be refactored out as an external function 
         ###### rather than a Survey-class method.
