@@ -49,7 +49,7 @@ def reports_base_path() -> Path:
     pathlib.Path
         The base directory path for the reports
     """
-    return HERE / "tests/reports/EchoPro_python_output"
+    return HERE / "tests/reports/echopop_python_output"
 
 
 @pytest.fixture(scope="session")
