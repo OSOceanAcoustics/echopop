@@ -1245,7 +1245,6 @@ class Survey:
             {
                 'kriged_biomass_df': kriged_dataframe
             }
-        )
         
         ### TODO: This should be refactored out as an external function 
         ###### rather than a Survey-class method.
@@ -1288,124 +1287,27 @@ class Survey:
             .loc[ lambda x: x.haul_num.isin( length_df_copy.haul_num ) ]
         )
 
-        ### Calculate station weights -- stratified by strata
-        weight_strata_station = (
-            pd.concat( [
-                haul_catch_filtered 
-                .groupby( 'stratum_num' )
-                .apply( lambda df: pd.Series( { 'stratum_weight': df.haul_weight.sum( ) } ) )
-                .reset_index( )
-                .assign( station = 1 ) , 
-                specimen_df_copy
-                .groupby( [ 'stratum_num' ] )
-                .apply( lambda df: pd.Series( { 'stratum_weight': df.weight.sum( ) } ) )
-                .reset_index()
-                .assign( station = 2 )
-            ] )
-        )
-
-        ### Calculate stratum weights
-        weight_strata = (
-            weight_strata_station
-            .groupby( [ 'stratum_num' ] )
-            .apply( lambda x: pd.Series( { 'weight_stratum_total': x.stratum_weight.sum( ) } ) )            
-            .reset_index()
-        )
-
-        ### Calculate summed length-age-sex weight bins across strata
-        length_age_sex_stratum_weight = (
-            specimen_df_copy
-            .dropna( how = 'any' )
-            .loc[ lambda x: x.sex != 'unsexed' ]
-            .pipe( lambda df: pd.concat( [ df , 
-                                           df.copy( ).assign( sex = 'all' ) ] ) )
-            .bin_variable( age_intervals , 'age' )
-            .bin_variable( length_intervals , 'length' )      
-            .groupby( [ 'stratum_num' , 'age_bin' , 'length_bin' , 'sex' ] )
-            .apply( lambda df: pd.Series( { 'summed_weight_all': df.weight.sum( ) ,
-                                            'summed_weight_adult': df.loc[ df.age > 1 ].weight.sum( ) } ) ) 
-            .reset_index( )
-            .replace( np.nan , 0 )
-            .assign( total_weight_sex_all = lambda df: df.groupby( [ 'stratum_num' , 'sex' ] )[ 'summed_weight_all' ].transform( sum ) ,
-                     total_weight_sex_adult = lambda df: df.groupby( [ 'stratum_num' , 'sex' ] )[ 'summed_weight_adult' ].transform( sum ) ,
-                     proportion_weight_all = lambda df: df.summed_weight_all / df.total_weight_sex_all ,
-                     proportion_weight_adult = lambda df: df.summed_weight_adult / df.total_weight_sex_adult )            
-        )
+        ### Calculate summed weights
+        weight_strata , weight_strata_station , weight_length_age_sex_stratum = sum_strata_length_age_sex_weight( haul_catch_filtered ,
+                                                                                                                  specimen_df_copy ,
+                                                                                                                  length_intervals ,
+                                                                                                                  age_intervals )
 
         ### Normalize the age-length-sex indexed proportions
-        dist_weight_sum = (
-            length_age_sex_stratum_weight
-            .merge( weight_strata , on = [ 'stratum_num' ] )
-            .groupby( [ 'stratum_num' , 'sex' ] )
-            .apply( lambda df: pd.Series( { 
-                'proportion_normalized': ( df.proportion_weight_all * ( df.summed_weight_all / df.weight_stratum_total ).sum( ) ).sum( )
-            } ) )
-            .reset_index( )
-        )
+        dist_weight_sum = normalize_length_age_sex_weight_proportions( weight_length_age_sex_stratum ,
+                                                                       weight_strata )
         
         ### Calculate aged / unaged proportions
-        aged_proportions = (
-            length_age_sex_stratum_weight
-            .loc[ lambda df: df.sex != 'all' ]
-            .groupby( [ 'stratum_num' ] )
-            .apply( lambda df: pd.Series( { 'weight_aged_total': df.summed_weight_all.sum( ) } ) ) 
-            .reset_index( )
-            .merge( weight_strata , on = [ 'stratum_num' ] ) 
-            .assign( proportion_aged_total = lambda x: x.weight_aged_total / x.weight_stratum_total ,
-                     proportion_unaged_total = lambda x: np.round( 1.0 - x.proportion_aged_total , decimals = 10 ) )
-        )
+        aged_proportions = calculate_aged_proportions( weight_length_age_sex_stratum ,
+                                                       weight_strata )
 
         ### Calculate interpolated weights based on length bins for each sex per haul
-        # Pull length-weight fitted values
-        length_weight_fit = (
-            self.statistics[ 'length_weight' ][ 'length_weight_df' ]
-            .assign( length_bin_value  = lambda x: x[ 'length_bin' ].apply( lambda y: y.mid ) )
-        )
-
-        # Sum haul weights per sex per stratum
-        haul_weights = (
-            length_df_copy
-            .bin_variable( length_intervals , 'length' )
-            .loc[ lambda x: x.group == 'sexed' ]
-            .pipe( lambda df: pd.concat( [ df , df.assign( sex = 'all' ) ] ) )  
-            .merge( length_weight_fit , on = [ 'sex' , 'length_bin' ] )
-            .groupby( [ 'stratum_num' , 'haul_num' , 'sex' ] )
-            .apply( lambda df: pd.Series( { 'weight_interp': ( np.interp( df.length, 
-                                                                          length_weight_fit.loc[ lambda x: x.sex.isin( df.sex ) ][ 'length_bin_value' ] , 
-                                                                          length_weight_fit.loc[ lambda x: x.sex.isin( df.sex ) ][ 'weight_modeled' ] ) *
-                                                                df.length_count ).sum( ) } ) )
-            .groupby( [ 'stratum_num' , 'sex' ] )
-            .apply( lambda df: pd.Series( { 'summed_haul_weights': df.weight_interp.sum( ) } ) )
-            .reset_index( )
-        )
-
-        ### Normalize haul weights (Station 1)
-        haul_sex_weights_normalized = (
-            haul_weights
-            .merge( weight_strata_station.loc[ lambda x: x.station == 1 ] , 
-                    on = 'stratum_num' )
-            .assign( weight_normalized_station_1 = lambda df: (
-                df
-                .groupby( [ 'stratum_num' ] )
-                .apply( lambda strata: strata[ 'stratum_weight' ] * strata[ 'summed_haul_weights' ] /
-                                       ( df[ ( df.stratum_num == strata.name ) & ( df.sex == 'male' ) ][ 'summed_haul_weights' ].iloc[ 0 ] +
-                                         df[ ( df.stratum_num == strata.name ) & ( df.sex == 'female' ) ][ 'summed_haul_weights' ].iloc[ 0 ] ) )
-                .reset_index( drop = True ) ) )
-            .merge( weight_strata , on = [ 'stratum_num' ] )
-            .assign( proportion_normalized_station_1 = lambda df: (
-                df.weight_normalized_station_1 / df.weight_stratum_total
-            ) )
-            .assign( sex_proportion = lambda df: (
-                df
-                .groupby( [ 'stratum_num' ] )
-                .apply( lambda strata: strata[ 'proportion_normalized_station_1' ] /
-                                       ( df[ ( df.stratum_num == strata.name ) & ( df.sex == 'male' ) ][ 'proportion_normalized_station_1' ].iloc[ 0 ] +
-                                         df[ ( df.stratum_num == strata.name ) & ( df.sex == 'female' ) ][ 'proportion_normalized_station_1' ].iloc[ 0 ] ) )
-                .reset_index( drop = True ) ) )
-            .merge( aged_proportions.loc[ : , [ 'stratum_num' , 'proportion_unaged_total' ] ] , 
-                    on = [ 'stratum_num' ] )        
-            .assign( proportion_unaged_sex = lambda x: x.sex_proportion * x.proportion_unaged_total )
-        )
+        haul_sex_weights_normalized = normalize_haul_sex_weights( self.statistics[ 'length_weight' ][ 'length_weight_df' ] ,
+                                                                  length_df_copy ,
+                                                                  weight_strata ,
+                                                                  weight_strata_station ,
+                                                                  aged_proportions ,
+                                                                  length_intervals )
 
         ### Parse kriged biomass (areal density) values
         kriged_results = self.statistics[ 'kriging' ][ 'kriged_biomass_df' ]
@@ -1434,35 +1336,10 @@ class Survey:
             .assign( NASC_kriged = lambda df: df.N_adult_kriged * df.sigma_bs_mean )
         )
 
-        ### Calculate grid CV 
-        biomass_density_adult = (
-            self.biology[ 'population' ][ 'areal_density' ][ 'biomass_density_df' ]
-            .loc[ lambda df: df.sex == 'all' ]
-            .drop_duplicates( subset = [ 'transect_num' , 'latitude' , 'longitude' , 'stratum_num' ] )
-        )
-
-        ### ---------------------------------------------------------------
-        ### !!! TODO: 
-        ### While `C0` produces a similar standard deviation as the original
-        ### code, `Bn` does not. This discrepancy results in an order of 
-        ### magnitude change in the resulting `biomass_adult_cell_CV` estimate.
-        ### The source of this error stems from `kriged_results.B_a_adult_mean`
-        ### whereby the right-tail of the `B_a_adult_mean` distribution is 
-        ### substantially shorter than from values (`biomass_density_adult_mean`)
-        ### produced in the original code. This therefore relates to Issue #202.
-        ### ---------------------------------------------------------------
-        C0 = np.std( biomass_density_adult.B_a , ddof = 1 ) ** 2
-        Bn = np.nansum( kriged_results.B_a_adult_mean * kriged_results.cell_area_nmi2 ) * 1e-9
-        kriged_results = (
-            kriged_results
-            .assign( biomass_adult_cell_CV = lambda df: (
-                self.statistics[ 'kriging' ][ 'model_config' ][ 'A0' ] *
-                np.sqrt( kriged_results.B_a_adult_prediction_variance * C0 ) *
-                1e-9 /
-                Bn *
-                np.sqrt( len( kriged_results.B_a_adult_prediction_variance ) )
-            ) )
-        )
+        ### Calculate grid CV
+        kriged_results = grid_cv( self.biology[ 'population' ][ 'areal_density' ][ 'biomass_density_df' ] ,
+                                  kriged_results ,
+                                  self.statistics[ 'kriging' ][ 'model_config' ] )
         
         ### Add biomass values to all ages for kriged biomass results
         kriged_results_output = (
