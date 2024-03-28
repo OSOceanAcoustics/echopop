@@ -1330,15 +1330,19 @@ class Survey:
             self.statistics[ 'kriging' ][ 'kriged_biomass_df' ]
             .copy( )
             .merge( distributed_aged_weight_proportions , on = [ 'stratum_num' ] )
-            # ---- Distribute biomass estimates for each sexed bin among aged fish
-            # !!! TODO: this current used `B_a_adult_mean` for both calculations
-            .assign( biomass_sexed_aged_all = lambda df: ( df.B_a_adult_mean * 
-                                                     df.cell_area_nmi2 * 
-                                                     df.normalized_proportion_weight_sex_all ) ,
-                     biomass_sexed_aged_adult = lambda df: ( df.B_a_adult_mean * 
-                                                       df.cell_area_nmi2 * 
-                                                       df.normalized_proportion_weight_sex_adult )
-            )
+        )
+        
+        # ---- Distribute biomass estimates for each sexed bin among aged fish
+        # ==== !!! TODO: this current used `B_a_adult_mean` for both calculations
+        aged_sexed_biomass[ 'biomass_sexed_aged_all' ] = (  
+            aged_sexed_biomass.B_a_adult_mean  
+            * aged_sexed_biomass.cell_area_nmi2 
+            * aged_sexed_biomass.normalized_proportion_weight_sex_all
+        )  
+        aged_sexed_biomass[ 'biomass_sexed_aged_adult' ] = (  
+            aged_sexed_biomass.B_a_adult_mean  
+            * aged_sexed_biomass.cell_area_nmi2 
+            * aged_sexed_biomass.normalized_proportion_weight_sex_adult
         )
 
         ### Sum biomass across all bins for aged biomass
