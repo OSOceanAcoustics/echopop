@@ -4,7 +4,18 @@ from ..utils.monkey_patch_dataframe import patch_method_to_DataFrame
 from typing import Union , List
 from typing import Callable
 from functools import reduce
-    
+   
+### !!! TODO: Assess whether `bin_variable` is necessary
+# ==== Currently works with dataframes as a whole, but 
+# ==== it is probably more efficient/sensible to refit 
+# ==== this function to create an array of bin intervals that 
+# ==== can then be used to define a dataframe column. It may 
+# ==== also make more sense to simply remove this function entirely
+# ==== since it's not particularly onerous to directly use 
+# ==== `pd.cut(...)`. If this function were to stay, it'd probably 
+# ==== be usefule to enable multiple `bin_values` and `bin_variable`
+# ==== inputs so that the function doesn't need to be repeated for 
+# ==== multiple bin variables like age and length
 @patch_method_to_DataFrame( pd.DataFrame )
 def bin_variable( dataframe: pd.DataFrame , 
                   bin_values: np.ndarray ,
@@ -27,10 +38,10 @@ def bin_variable( dataframe: pd.DataFrame ,
     This will add a column to defined dataframes that groups length and age values
     into each bin that is explicitly defined in the function arguments
     """
-    return (
-        dataframe # input dataframe
-        .assign( **{f'{bin_variable}_bin': lambda x: pd.cut(x[bin_variable], bin_values)} ) # assign bin
-    )
+    
+    dataframe[ f'{ bin_variable }_bin' ] = pd.cut( dataframe[ bin_variable ] , bin_values )
+    
+    return dataframe
     
 @patch_method_to_DataFrame( pd.DataFrame )
 def bin_stats( dataframe: pd.DataFrame ,

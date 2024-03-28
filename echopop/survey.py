@@ -2,6 +2,7 @@ from typing import List, Union
 from pathlib import Path
 import pandas as pd
 import numpy as np
+from itertools import product
 import copy
 from .core import CONFIG_MAP, LAYER_NAME_MAP
 ### !!! TODO : This is a temporary import call -- this will need to be changed to 
@@ -1279,11 +1280,25 @@ class Survey:
 
         ### Import discrete distribution bins
         # ---- Length
+        # length_bins = self.biology[ 'distributions' ][ 'length' ][ 'length_bins_arr' ]
         length_intervals = self.biology[ 'distributions' ][ 'length' ][ 'length_interval_arr' ]
         
         # ---- Age
+        # age_bins = self.biology[ 'distributions' ][ 'age' ][ 'age_bins_arr' ]
         age_intervals = self.biology[ 'distributions' ][ 'age' ][ 'age_interval_arr' ]
- 
+        
+        # ---- Construct the complete dataframe containing all possible
+        # ---- strata, sexes, lengths, and ages
+        # full_biological_indices = pd.DataFrame(
+        #     list( product( np.unique( specimen_spp.stratum_num ) ,
+        #                    np.unique( specimen_spp.species_id ) ,
+        #                    np.unique( specimen_spp.sex ) ,
+        #                    pd.cut( length_bins , length_intervals ) ,
+        #                    pd.cut( age_bins , age_intervals ) ) ) ,
+        #     columns = [ 'stratum_num' , 'species_id' , 'sex' , 
+        #                 'length_bin' , 'age_bin' ]
+        # )
+
         ### Process `haul_spp`
         # Remove haul numbers not found within `length_spp`
         haul_spp_matched = haul_spp[ haul_spp.haul_num.isin( length_spp.haul_num ) ]
