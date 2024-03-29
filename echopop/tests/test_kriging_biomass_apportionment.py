@@ -309,4 +309,4 @@ def test_compute_index_unaged_number_proportions( mock_survey ):
     # ---- Datatypes
     assert np.all( obj_proportions_unaged_length_sex.dtypes == expected_output.dtypes )
     # ---- Dataframe equality
-    obj_proportions_unaged_length_sex.equals( expected_output )
+    assert obj_proportions_unaged_length_sex.equals( expected_output )
