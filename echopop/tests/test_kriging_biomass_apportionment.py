@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from echopop.computation.biology import sum_strata_weight , compute_index_aged_weight_proportions
+from echopop.computation.biology import sum_strata_weight , compute_index_aged_weight_proportions , compute_summed_aged_proportions
 
 def test_sum_strata_weight( mock_survey ):
 
@@ -145,10 +145,7 @@ def test_compute_index_aged_weight_proportions( mock_survey ):
     ### Check data value equality
     assert np.all( obj_props_wgt_len_age_sex.dtypes == expected_output.dtypes )
 
-def test_compute_summed_aged_proportions( mock_survey ):
-    #### Pull in mock Survey object
-    objS = mock_survey
-
+def test_compute_summed_aged_proportions( ):
     ### Mock data for `proportions_weight_length_age_sex`
     test_proportions_weight_length_age_sex = pd.DataFrame(
         {
