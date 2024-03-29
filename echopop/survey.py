@@ -1337,12 +1337,12 @@ class Survey:
         aged_sexed_biomass[ 'biomass_sexed_aged_all' ] = (  
             aged_sexed_biomass.B_a_adult_mean  
             * aged_sexed_biomass.cell_area_nmi2 
-            * aged_sexed_biomass.normalized_proportion_weight_sex_all
+            * aged_sexed_biomass.normalized_proportion_weight_all
         )  
         aged_sexed_biomass[ 'biomass_sexed_aged_adult' ] = (  
             aged_sexed_biomass.B_a_adult_mean  
             * aged_sexed_biomass.cell_area_nmi2 
-            * aged_sexed_biomass.normalized_proportion_weight_sex_adult
+            * aged_sexed_biomass.normalized_proportion_weight_adult
         )
 
         ### Sum biomass across all bins for aged biomass
