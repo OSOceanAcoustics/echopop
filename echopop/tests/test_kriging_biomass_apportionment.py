@@ -41,7 +41,7 @@ def test_sum_strata_weight( mock_survey ):
 
     ### Evaluate object for later comparison 
     object_weight_strata_aged_unaged , object_weight_strata = sum_strata_weight( objS.biology[ 'catch_df' ] ,
-                                                                                objS.biology[ 'specimen_df' ] )
+                                                                                 objS.biology[ 'specimen_df' ] )
 
     #----------------------------------
     ### Run tests: `sum_strata_weight`
@@ -74,9 +74,9 @@ def test_compute_index_aged_weight_proportions( mock_survey ):
             'sex': np.tile( [ 'male' , 'female' ] , 4 ) ,
             'haul_num': np.tile( [ 1 , 2 ] , 4 ) ,
             'species_id': np.repeat( [ 19350 ] , 8 ) ,
-            'length': [ 10 , 20 , 19 , 11 , 12 , 18 , 17 , 13 ] ,
-            'weight': np.linspace( 1 , 5 , 8 ) ,
-            'age': [ 1 , 2 , 1 , 2 , 1 , 2 , 1 , 2 ]    
+            'length': [ 12 , 12 , 19 , 19 , 12 , 12 , 19 , 19 ] ,
+            'weight': [ 2 , 3 , 8 , 7 , 1 , 4 , 9 , 6 ] ,
+            'age': [ 1 , 1 , 2 , 2 , 1 , 1 , 2 , 2 ]    
         }
     )
 
@@ -100,31 +100,25 @@ def test_compute_index_aged_weight_proportions( mock_survey ):
     expected_output = pd.DataFrame( {
         'stratum_num': np.repeat( [ 0 , 1 ] , 8 ).astype( np.int64 ) ,
         'species_id': np.repeat( 19350 , 16 ).astype( np.int64 ) ,
-        'sex': np.tile( [ 'female' , 'male' ] , 8 ).astype( object ) ,
-        'length_bin': pd.IntervalIndex.from_arrays( np.tile( [9.0 , 15.0 ] , 8 ) , 
-                                                    np.tile( [ 15.0 , 21.0 ] , 8 ) , 
-                                                    closed = 'right' ) ,
-        'age_bin': pd.IntervalIndex.from_arrays( np.tile( [ 0.5, 1.5 ] , 8 ) , 
-                                                 np.tile( [ 1.5 , 2.5 ] , 8 ) , 
-                                                 closed = 'right' ) ,
-        'weight_all': [ 0.0, 2.714286, 0.0, 1.571429, 1.0, 0.0, 2.142857, 0.0, 0.0, 
-                        5.0, 0.0, 3.857143, 3.285714, 0.0, 4.428571, 0.0 ] ,
-        'weight_adult': [ 0.0, 2.714286, 0.0, 1.571429, 0.0, 0.0, 0.0, 0.0, 0.0, 5.0, 
-                          0.0, 3.857143, 0.0, 0.0, 0.0, 0.0 ] ,
-        'total_weight_sex_all': [ 4.285714, 4.285714, 4.285714, 4.285714, 3.142857, 
-                                  3.142857, 3.142857, 3.142857, 8.857143, 8.857143, 
-                                  8.857143, 8.857143, 7.714286, 7.714286, 7.714286, 
-                                  7.714286 ] ,
-        'total_weight_sex_adult': [ 4.285714, 4.285714, 4.285714, 4.285714, 0.0, 0.0, 
-                                   0.0, 0.0, 8.857143, 8.857143, 8.857143, 8.857143, 
-                                   0.0, 0.0, 0.0, 0.0 ] ,
-        'proportion_weight_sex_all': [ 0.0, 0.633333, 0.0, 0.366667, 0.318182, 0.0, 
-                                      0.681818, 0.0, 0.0, 0.564516, 0.0, 0.435484, 
-                                      0.425926, 0.0, 0.574074, 0.0 ] ,
-        'proportion_weight_sex_adult': [ 0.0, 0.633333, 0.0, 0.366667, 0.0, 0.0, 0.0, 
-                                        0.0, 0.0, 0.564516, 0.0, 0.435484, 0.0, 0.0, 
-                                        0.0, 0.0 ]
-    } )
+        'sex': np.tile( [ 'female' , 'female' , 'female' , 'female' ,
+                          'male' , 'male' , 'male' , 'male' ] , 2 ).astype( object ) ,
+        'length_bin': pd.cut( [ 12 , 12 , 19 , 19 , 12 , 12 , 19 , 19 ,
+                                12 , 12 , 19 , 19 , 12 , 12 , 19 , 19 ] ,
+                             np.linspace( 9 , 21 , 3 ) ) ,
+        'age_bin': pd.cut( [ 1 , 2 , 1 , 2 , 1 , 2 , 1 , 2 ,
+                              1 , 2 , 1 , 2 , 1 , 2 , 1 , 2 ] ,
+                          np.array( [ 0.5 , 1.5 , 2.5 ] ) ) ,
+        'weight_all': [ 3.0 , 0.0 , 0.0 , 7.0 , 2.0 , 0.0 , 0.0 , 8.0 ,
+                        4.0 , 0.0 , 0.0 , 6.0 , 1.0 , 0.0 , 0.0 , 9.0 ] ,
+        'weight_adult': [ 0.0 , 0.0 , 0.0 , 7.0 , 0.0 , 0.0 , 0.0 , 8.0 ,
+                          0.0 , 0.0 , 0.0 , 6.0 , 0.0 , 0.0 , 0.0 , 9.0 ] ,
+        'total_weight_sex_all': np.repeat( 10.0 , 16 ) ,
+        'total_weight_sex_adult': [ 7.0 , 7.0 , 7.0 , 7.0 , 8.0 , 8.0 , 8.0 , 8.0 ,
+                                    6.0 , 6.0 , 6.0 , 6.0 , 9.0 , 9.0 , 9.0 , 9.0 ] ,
+        'proportion_weight_sex_all': [ 0.3 , 0.0 , 0.0 , 0.7 , 0.2 , 0.0 , 0.0 , 0.8 ,
+                                       0.4 , 0.0 , 0.0 , 0.6 , 0.1 , 0.0 , 0.0 , 0.9 ] ,
+        'proportion_weight_sex_adult': [ 0.0 , 0.0 , 0.0 , 1.0 , 0.0 , 0.0 , 0.0 , 1.0 ,
+                                         0.0 , 0.0 , 0.0 , 1.0 , 0.0 , 0.0 , 0.0 , 1.0 ] } )
     expected_output[ 'length_bin' ] = pd.IntervalIndex( expected_output[ 'length_bin' ] )
     expected_output[ 'length_bin' ] = pd.Categorical( expected_output[ 'length_bin' ] , 
                                                       categories =  expected_output[ 'length_bin' ].unique( ) , 
@@ -145,7 +139,8 @@ def test_compute_index_aged_weight_proportions( mock_survey ):
     assert np.all( obj_props_wgt_len_age_sex.dtypes == expected_output.dtypes )
     
     ### Check data value equality
-    assert np.all( obj_props_wgt_len_age_sex.dtypes == expected_output.dtypes )
+    assert expected_output.equals( obj_props_wgt_len_age_sex )
+    
 
 def test_compute_summed_aged_proportions( ):
 
