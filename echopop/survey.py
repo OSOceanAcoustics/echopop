@@ -15,7 +15,8 @@ from .computation.statistics import stratified_transect_statistic
 from .computation.kriging_methods import kriging_interpolation
 from .computation.biology import index_sex_weight_proportions , index_transect_age_sex_proportions , filter_species 
 from .computation.biology import sum_strata_weight , compute_index_aged_weight_proportions , distribute_aged_weight_proportions
-from .computation.biology import compute_summed_aged_proportions , compute_index_unaged_number_proportions
+from .computation.biology import compute_summed_aged_proportions , compute_index_unaged_number_proportions 
+from .computation.biology import compute_summed_unaged_proportions
 
 ### !!! TODO : This is a temporary import call -- this will need to be changed to 
 # the correct relative structure (i.e. '.utils.data_structure_utils' instead of 
@@ -1359,26 +1360,10 @@ class Survey:
 
         ### Import length-weight relationship calculated for all animals
         length_weight_df = self.statistics[ 'length_weight' ][ 'length_weight_df' ]
-        w_ln_all_array = (
-            number_unaged_length_proportions
-            .merge( length_weight_df.loc[ lambda df: df.sex == 'all' ] , on = [ 'length_bin' ] )  
-            .assign( proportion_weight_all = lambda df: df.weight_modeled * df.proportion_number_all )
-        )
 
-        w_ln_array_sum = (
-            w_ln_all_array 
-            .groupby( [ 'stratum_num' ] )
-            .agg( summed_proportion_weight_all = ( 'proportion_weight_all' , 'sum' ) )
-            .reset_index( )
-        )
-
-        w_ln_all_N = (
-            w_ln_all_array
-            .merge( w_ln_array_sum , on = [ 'stratum_num' ] )
-            .assign( weight_per_length_dist = lambda df: df.proportion_weight_all / df.summed_proportion_weight_all )
-            .loc[ : , [ 'stratum_num' , 'length_bin' , 'weight_modeled' , 'proportion_weight_all' , 
-                        'summed_proportion_weight_all' , 'weight_per_length_dist' ] ]
-        )
+        ### Calculate the normalized weight per unit length distribution (W_Ln_ALL in the original Matlab code)
+        proportions_unaged_weight_length = compute_summed_unaged_weight_proportions( proportions_unaged_length ,
+                                                                                     length_weight_df )
 
         sex_wgt = (
             length_df
