@@ -251,40 +251,49 @@ def compute_summed_aged_proportions( proportions_weight_length_age_sex: pd.DataF
         Dataframe contained summed weights of both aged and unaged fish
     """   
 
-    ### Calculate the aged proportions for each sex for all and just adult fish
-    aged_sex_proportions = (
+    ### Caclulate the summed weights for all and adult fish 
+    # ---- Group by `stratum_num` and `sex` and sum
+    # ---- Also initializes the correct shape for the output dataframe
+    aged_sex_weights = (
         proportions_weight_length_age_sex
         .groupby( [ 'stratum_num' , 'sex' ] )
-        # ---- Sum all/adult fish weights for each sex and stratum
-        .apply( lambda df: pd.Series( {
-            'weight_aged_sex_all': df.weight_all.sum( ) ,
-            'weight_aged_sex_adult': df.weight_adult.sum( )
-        } ) )
+        .agg(
+            weight_aged_sex_all = ( 'weight_all' , 'sum' ) ,
+            weight_aged_sex_adult = ( 'weight_adult' , 'sum' )
+        )
         .reset_index( )
-        # ---- Merge with summed weights for each stratum
-        .merge( weight_strata , on = [ 'stratum_num' ] )
-        # ---- Calculate the relative weight proportion of aged fish of each sex
-        # ---- relative to the total weight of each stratum: from Matlab --> Len_Age_*_wgt_proportion
-        .assign( proportion_weight_all = lambda df: df.weight_aged_sex_all / df.weight_stratum_all ,
-                 proportion_weight_adult = lambda df: df.weight_aged_sex_adult / df.weight_stratum_all )
-        # ---- Fill empty/non-existent values with 0's
-        .fillna( 0 )
-        # ---- Drop unused columns
-        .filter( regex = '^(?!weight_).*')
     )
+
+    ### Calculate the weight proportions
+    # ---- Merge `aged_sex_weights` with `weight_strata` to get strata weights
+    aged_sex_proportions = pd.merge( aged_sex_weights , 
+                                     weight_strata , 
+                                     on = [ 'stratum_num' ] , 
+                                     how = 'left' )
+
+    # ---- Proportions for all fish
+    aged_sex_proportions[ 'proportion_weight_all' ] = (
+        aged_sex_proportions.weight_aged_sex_all / aged_sex_proportions.weight_stratum_all
+    )
+
+    # ---- Proportions for adult fish
+    aged_sex_proportions[ 'proportion_weight_adult' ] = (
+        aged_sex_proportions.weight_aged_sex_adult / aged_sex_proportions.weight_stratum_all
+    )
+
+    # ---- Fill empty/NaN values with 0's and drop unused columns
+    aged_sex_proportions = aged_sex_proportions.fillna( 0 ).filter( regex = '^(?!weight_).*' )
 
     ### Calculate aged proportions
     aged_proportions = (
         aged_sex_proportions
         .groupby( [ 'stratum_num' ] )
         # ---- Sum proportions from each sex for each stratum
-        .agg(
-            proportion_weight_all = ( 'proportion_weight_all' , 'sum' ) ,
-            proportion_weight_adult = ( 'proportion_weight_adult' , 'sum' )
-        )
+        .agg( {
+            'proportion_weight_all': 'sum' ,
+            'proportion_weight_adult': 'sum'
+        } )
         .reset_index( )
-        # ---- Drop unused columns
-        .filter( regex = '^(?!weight_).*')
     )
 
     ### Return output
