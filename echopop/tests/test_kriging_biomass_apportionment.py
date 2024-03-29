@@ -144,3 +144,71 @@ def test_compute_index_aged_weight_proportions( mock_survey ):
     
     ### Check data value equality
     assert np.all( obj_props_wgt_len_age_sex.dtypes == expected_output.dtypes )
+
+def test_compute_summed_aged_proportions( mock_survey ):
+    #### Pull in mock Survey object
+    objS = mock_survey
+
+    ### Mock data for `proportions_weight_length_age_sex`
+    test_proportions_weight_length_age_sex = pd.DataFrame(
+        {
+            'stratum_num': np.repeat( [ 0.0 , 1.0 ] , 4 ) ,
+            'sex': np.tile( [ 'male' , 'female' ] , 4 ) ,
+            'weight_all': [ 1.0 , 3.0 , 2.0 , 4.0 , 0.0 , 6.0 , 3.0 , 3.0 ] ,
+            'weight_adult': [ 0.0 , 1.5, 2.0 , 4.0 , 0.0 , 4.0 , 3.0 , 3.0 ]
+        }
+    )
+
+    ### Mock data for `weight_strata`
+    test_weight_strata = pd.DataFrame(
+        {
+            'stratum_num': [ 0.0 , 1.0 ] ,
+            'weight_stratum_all': [ 10.0 , 100.0 ]
+        }
+    )
+    
+    ### Evaluate for later comparison 
+    eval_aged_sex_proportions , eval_aged_proportions = compute_summed_aged_proportions( test_proportions_weight_length_age_sex ,
+                                                                                         test_weight_strata )
+    ###--------------------------------
+    ### Expected outcomes
+    ###--------------------------------
+    ### `eval_aged_sex_proportions`
+    # ---- Expected dimensions
+    expected_dimensions_aged_sex_proportions = tuple( [ 4 , 4 ] )
+    # ---- Expected dataframe output
+    expected_output_aged_sex_proportions = pd.DataFrame( {
+        'stratum_num': np.repeat( [ 0.0 , 1.0 ] , 2 ) ,
+        'sex': np.tile( [ 'female' , 'male' ] , 2 ) ,
+        'proportion_weight_all': [ 0.70 , 0.30 , 0.09 , 0.03 ] ,
+        'proportion_weight_adult': [ 0.55 , 0.20 , 0.07 , 0.03 ]
+    } )
+
+    ### `eval_aged_proportions`
+    # ---- Expected dimensions
+    expected_dimensions_aged_proportions = tuple( [ 2 , 3 ] )
+    # ---- Expected dataframe output
+    expected_output_aged_proportions = pd.DataFrame( {
+        'stratum_num': [ 0.0 , 1.0 ] ,
+        'proportion_weight_all': [ 1.00 , 0.12 ] ,
+        'proportion_weight_adult': [ 0.75 , 0.10 ]
+    } )
+
+    #----------------------------------
+    ### Run tests: `compute_index_aged_weight_proportions`
+    #----------------------------------
+    ### `eval_aged_sex_proportions`
+    # ---- Shape
+    assert eval_aged_sex_proportions.shape == expected_dimensions_aged_sex_proportions
+    # ---- Datatypes
+    assert np.all( eval_aged_sex_proportions.dtypes == expected_output_aged_sex_proportions.dtypes )
+    # ---- Dataframe equality
+    assert np.all( eval_aged_sex_proportions == expected_output_aged_sex_proportions )
+
+    ### `eval_aged_proportions`
+    # ---- Shape
+    assert eval_aged_proportions.shape == expected_dimensions_aged_proportions
+    # ---- Datatypes
+    assert np.all( eval_aged_proportions.dtypes == expected_output_aged_proportions.dtypes )
+    # ---- Dataframe equality
+    assert np.all( eval_aged_proportions == expected_output_aged_proportions )
