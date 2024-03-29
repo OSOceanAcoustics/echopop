@@ -268,7 +268,7 @@ def test_compute_index_unaged_number_proportions( mock_survey ):
             'stratum_num': np.repeat( [ 0 , 1 ] , 4 ) ,
             'sex': np.tile( [ 'male' , 'female' ] , 4 ) ,
             'species_id': np.repeat( [ 19350 ] , 8 ) ,
-            'length': [ 10 , 12 , 20 , 18 , 12 , 16 , 18 , 14 ] ,
+            'length': [ 12 , 12 , 19 , 19 , 12 , 12 , 19 , 19 ] ,
             'length_count': [ 5 , 10 , 15 , 20 , 20 , 15 , 10 , 5 ]
         }
     )
@@ -285,16 +285,15 @@ def test_compute_index_unaged_number_proportions( mock_survey ):
     ###--------------------------------
     ### `eval_aged_sex_proportions`
     # ---- Expected dimensions
-    expected_dimensions_proportions_unaged_length_sex = tuple( [ 8 , 5 ] )
+    expected_dimensions_proportions_unaged_length_sex = tuple( [ 4 , 4 ] )
     # ---- Expected dataframe output
     expected_output = pd.DataFrame( {
-        'stratum_num': np.repeat( [ 0 , 1 ] , 4 ).astype( np.int64 ) ,
-        'species_id': np.repeat( [ 19350 ] , 8 ).astype( np.int64 ) ,
-        'sex': [ 'female' , 'female' , 'male' , 'male' , 'female' , 'female' , 'male' , 'male' ] ,
-        'length_bin': pd.IntervalIndex.from_arrays( np.tile( [9.0 , 15.0 ] , 4 ) , 
-                                                    np.tile( [ 15.0 , 21.0 ] , 4 ) , 
+        'stratum_num': np.repeat( [ 0 , 1 ] , 2 ).astype( np.int64 ) ,
+        'species_id': np.repeat( [ 19350 ] , 4 ).astype( np.int64 ) ,
+        'length_bin': pd.IntervalIndex.from_arrays( np.tile( [9.0 , 15.0 ] , 2 ) , 
+                                                    np.tile( [ 15.0 , 21.0 ] , 2 ) , 
                                                     closed = 'right' ) ,
-        'proportion_number_sex_all': [ 0.2 , 0.4 , 0.1 , 0.3 , 0.1 , 0.3 , 0.4 , 0.2 ]
+        'proportion_number_sex_all': [ 0.3 , 0.7 , 0.7 , 0.3 ]
     } )
     expected_output[ 'length_bin' ] = pd.IntervalIndex( expected_output[ 'length_bin' ] )
     expected_output[ 'length_bin' ] = pd.Categorical( expected_output[ 'length_bin' ] , 

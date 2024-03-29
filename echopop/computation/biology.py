@@ -438,10 +438,10 @@ def compute_index_unaged_number_proportions( length_data: pd.DataFrame ,
     )
 
     # ---- Sum the number of individuals within each bin 
-    proportions_unaged_length_sex = (
+    proportions_unaged_length = (
         length_data_filtered
         # ---- Group number summations across stratum/species/sex/length
-        .groupby( [ 'stratum_num' , 'species_id' , 'sex' , 'length_bin' ] )
+        .groupby( [ 'stratum_num' , 'species_id' , 'length_bin' ] )
         # ---- Sum count
         .agg( number_all = ( 'length_count' , 'sum' ) )
         # ---- Fill empty/non-existent values with 0's
@@ -451,8 +451,8 @@ def compute_index_unaged_number_proportions( length_data: pd.DataFrame ,
 
     ### Calculate the number proportions
     # --- Stratum total counts
-    proportions_unaged_length_sex[ 'stratum_number_all' ] = (
-        proportions_unaged_length_sex.groupby( [ 'stratum_num' ] )[ 'number_all' ].transform( sum )
+    proportions_unaged_length[ 'stratum_number_all' ] = (
+        proportions_unaged_length.groupby( [ 'stratum_num' ] )[ 'number_all' ].transform( sum )
     )
 
     # ---- Proportions of each sex-length bin pair relative to `stratum_number_all`
