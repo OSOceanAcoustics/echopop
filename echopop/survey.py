@@ -1354,9 +1354,10 @@ class Survey:
         )
 
         ### Calculate number proportion
-        proportions_unaged_length_sex = compute_index_unaged_number_proportions( length_spp ,
-                                                                                 length_intervals )
+        proportions_unaged_length = compute_index_unaged_number_proportions( length_spp ,
+                                                                             length_intervals )
 
+        ### Import length-weight relationship calculated for all animals
         length_weight_df = self.statistics[ 'length_weight' ][ 'length_weight_df' ]
         w_ln_all_array = (
             number_unaged_length_proportions

@@ -456,8 +456,48 @@ def compute_index_unaged_number_proportions( length_data: pd.DataFrame ,
     )
 
     # ---- Proportions of each sex-length bin pair relative to `stratum_number_all`
-    proportions_unaged_length_sex[ 'proportion_number_sex_all' ] = (
-        proportions_unaged_length_sex.number_all / proportions_unaged_length_sex.stratum_number_all
+    proportions_unaged_length[ 'proportion_number_sex_all' ] = (
+        proportions_unaged_length.number_all / proportions_unaged_length.stratum_number_all
+    ).fillna( 0 )
+
+    ### Filter out unnecessary columns and return output
+    return proportions_unaged_length.filter( regex = '^(?!number_|stratum_number_).*' )
+
+def compute_summed_unaged_proportions( proportions_unaged_length_sex: pd.DataFrame ,
+                                       length_weight_df: pd.DataFrame):
+    """
+   Compute the unaged weight proportions across all fish and specific sexes for each
+   length bin  
+
+    Parameters
+    ----------
+    proportions_unaged_length_sex: pd.DataFrame
+        Dataframe containing sexed weight proportions distributed across
+        each length bin
+    length_weight_df: pd.DataFrame
+        Dataframe containing the modeled weights for each sex and length bin
+        fit from the length-weight regression (fit for all animals)
+    """   
+
+    ### Extract length-weight regression results calculated for all animals
+    length_weight_all = length_weight_df[ length_weight_df.sex == 'all' ][ [ 'length_bin' , 'weight_modeled' ] ]
+
+    ### Calculate the weight proportion of each length bin that is 'weighted' by the number proportions
+    # ---- Merge `proportions_unaged_length_sex` and `length_weight_all`
+    proportions_unaged_weight_length_sex = pd.merge( proportions_unaged_length_sex ,
+                                                     length_weight_all ,
+                                                     on = [ 'length_bin' ] ,
+                                                     how = 'left' )
+    
+    # ---- Calculate the weight proportion (`w_ln_all_array` in the original Matlab code)
+    proportions_unaged_weight_length_sex[ 'proportion_weight_all' ] = (
+        proportions_unaged_weight_length_sex.weight_modeled * proportions_unaged_weight_length_sex.proportion_number_sex_all
+    )
+
+    ### Sum weight proportions for each strata to get the weight per length bin
+    # ---- Calculate the summed weights per stratum (`w_ln_array_sum` in the original Matlab code)
+    proportions_unaged_weight_length_sex[ 'proportion_weight_stratum' ] = (
+        proportions_unaged_weight_length_sex.groupby( [ 'stratum_num' ] )[ 'proportion_weight_all' ].transform( sum )
     )
 
     ### Filter out unnecessary columns and return output
