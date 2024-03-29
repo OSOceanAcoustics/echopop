@@ -39,9 +39,10 @@ def bin_variable( dataframe: pd.DataFrame ,
     into each bin that is explicitly defined in the function arguments
     """
     
-    dataframe.loc[ f'{ bin_variable }_bin' ] = pd.cut( dataframe.loc[ : , bin_variable ] , bin_values )
-    
-    return dataframe
+    return (
+        dataframe # input dataframe
+        .assign( **{f'{bin_variable}_bin': lambda x: pd.cut(x[bin_variable], bin_values)} ) # assign bin
+    )
     
 @patch_method_to_DataFrame( pd.DataFrame )
 def bin_stats( dataframe: pd.DataFrame ,
