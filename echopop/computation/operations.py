@@ -39,7 +39,7 @@ def bin_variable( dataframe: pd.DataFrame ,
     into each bin that is explicitly defined in the function arguments
     """
     
-    dataframe[ f'{ bin_variable }_bin' ] = pd.cut( dataframe[ bin_variable ] , bin_values )
+    dataframe.loc[ f'{ bin_variable }_bin' ] = pd.cut( dataframe.loc[ : , bin_variable ] , bin_values )
     
     return dataframe
     

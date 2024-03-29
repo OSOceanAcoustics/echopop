@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from echopop.computation.biology import sum_strata_weight , compute_index_aged_weight_proportions , compute_summed_aged_proportions
+from echopop.computation.biology import compute_index_unaged_number_proportions , distribute_aged_weight_proportions
 
 def test_sum_strata_weight( mock_survey ):
 
@@ -62,6 +63,7 @@ def test_sum_strata_weight( mock_survey ):
     assert np.allclose( check_values , object_weight_strata_aged_unaged.stratum_weight )
 
 def test_compute_index_aged_weight_proportions( mock_survey ):
+    
     #### Pull in mock Survey object
     objS = mock_survey
 
@@ -250,7 +252,7 @@ def test_distribute_aged_weight_proportions( ):
     } )
 
     #----------------------------------
-    ### Run tests: `compute_index_aged_weight_proportions`
+    ### Run tests: `distribute_aged_weight_proportions`
     #----------------------------------
     ### `eval_aged_sex_proportions`
     # ---- Shape
@@ -259,3 +261,57 @@ def test_distribute_aged_weight_proportions( ):
     assert np.all( eval_distributed_aged_weight_proportions.dtypes == expected_output_distributed_aged_weight_proportions.dtypes )
     # ---- Dataframe equality
     eval_distributed_aged_weight_proportions.equals( expected_output_distributed_aged_weight_proportions )
+
+def test_compute_index_unaged_number_proportions( mock_survey ):
+
+    #### Pull in mock Survey object
+    objS = mock_survey
+
+    ### Re-parameterize `length_df` with dummy data 
+    objS.biology[ 'length_df' ] = pd.DataFrame(
+        {
+            'stratum_num': np.repeat( [ 0 , 1 ] , 4 ) ,
+            'sex': np.tile( [ 'male' , 'female' ] , 4 ) ,
+            'species_id': np.repeat( [ 19350 ] , 8 ) ,
+            'length': [ 10 , 12 , 20 , 18 , 12 , 16 , 18 , 14 ] ,
+            'length_count': [ 5 , 10 , 15 , 20 , 20 , 15 , 10 , 5 ]
+        }
+    )
+
+    ### Length interval
+    objS.biology[ 'distributions' ][ 'length' ][ 'length_interval_arr' ] = np.linspace( 9 , 21 , 3 )
+
+    ### Evaluate object for later comparison 
+    obj_proportions_unaged_length_sex = compute_index_unaged_number_proportions( objS.biology[ 'length_df' ] ,
+                                                                                 objS.biology[ 'distributions' ][ 'length' ][ 'length_interval_arr' ] )
+    
+    ###--------------------------------
+    ### Expected outcomes
+    ###--------------------------------
+    ### `eval_aged_sex_proportions`
+    # ---- Expected dimensions
+    expected_dimensions_proportions_unaged_length_sex = tuple( [ 8 , 5 ] )
+    # ---- Expected dataframe output
+    expected_output = pd.DataFrame( {
+        'stratum_num': np.repeat( [ 0 , 1 ] , 4 ).astype( np.int64 ) ,
+        'species_id': np.repeat( [ 19350 ] , 8 ).astype( np.int64 ) ,
+        'sex': [ 'female' , 'female' , 'male' , 'male' , 'female' , 'female' , 'male' , 'male' ] ,
+        'length_bin': pd.IntervalIndex.from_arrays( np.tile( [9.0 , 15.0 ] , 4 ) , 
+                                                    np.tile( [ 15.0 , 21.0 ] , 4 ) , 
+                                                    closed = 'right' ) ,
+        'proportion_number_sex_all': [ 0.2 , 0.4 , 0.1 , 0.3 , 0.1 , 0.3 , 0.4 , 0.2 ]
+    } )
+    expected_output[ 'length_bin' ] = pd.IntervalIndex( expected_output[ 'length_bin' ] )
+    expected_output[ 'length_bin' ] = pd.Categorical( expected_output[ 'length_bin' ] , 
+                                                      categories =  expected_output[ 'length_bin' ].unique( ) , 
+                                                      ordered = True )
+    #----------------------------------
+    ### Run tests: `compute_index_unaged_number_proportions`
+    #----------------------------------
+    ### `eval_aged_sex_proportions`
+    # ---- Shape
+    assert obj_proportions_unaged_length_sex.shape == expected_dimensions_proportions_unaged_length_sex
+    # ---- Datatypes
+    assert np.all( obj_proportions_unaged_length_sex.dtypes == expected_output.dtypes )
+    # ---- Dataframe equality
+    obj_proportions_unaged_length_sex.equals( expected_output )

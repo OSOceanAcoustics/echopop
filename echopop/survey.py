@@ -15,7 +15,7 @@ from .computation.statistics import stratified_transect_statistic
 from .computation.kriging_methods import kriging_interpolation
 from .computation.biology import index_sex_weight_proportions , index_transect_age_sex_proportions , filter_species 
 from .computation.biology import sum_strata_weight , compute_index_aged_weight_proportions , distribute_aged_weight_proportions
-from .computation.biology import compute_summed_aged_proportions
+from .computation.biology import compute_summed_aged_proportions , compute_index_unaged_number_proportions
 
 ### !!! TODO : This is a temporary import call -- this will need to be changed to 
 # the correct relative structure (i.e. '.utils.data_structure_utils' instead of 
@@ -1354,19 +1354,10 @@ class Survey:
         )
 
         ### Calculate number proportion
+        proportions_unaged_length_sex = compute_index_unaged_number_proportions( length_spp ,
+                                                                                 length_intervals )
+
         length_weight_df = self.statistics[ 'length_weight' ][ 'length_weight_df' ]
-
-        number_unaged_length_proportions = (
-            length_spp
-            .loc[ lambda df: df.group == 'sexed' ] 
-            .bin_variable( length_intervals , 'length' ) 
-            .groupby( [ 'stratum_num' , 'length_bin' ] )
-            .agg( number_all = ( 'length_count' , 'sum' ) ) 
-            .reset_index( )
-            .assign( total_number_all = lambda df: df.groupby( [ 'stratum_num' ] )[ 'number_all' ].transform( sum ) ,
-                        proportion_number_all = lambda df: df.number_all / df.total_number_all )
-        )
-
         w_ln_all_array = (
             number_unaged_length_proportions
             .merge( length_weight_df.loc[ lambda df: df.sex == 'all' ] , on = [ 'length_bin' ] )  

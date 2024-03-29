@@ -412,3 +412,53 @@ def normalize_haul_sex_weights( length_weight_df: pd.DataFrame ,
 
     ### Carriage return
     return haul_sex_weights_normalized
+
+def compute_index_unaged_number_proportions( length_data: pd.DataFrame ,
+                                             length_intervals: np.ndarray ):
+    """
+    Calculate length binned weight proportions among unaged fish  
+
+    Parameters
+    ----------
+    length_data: pd.DataFrame
+        Dataframe containing length data measured from unaged fish
+    length_intervals: np.ndarray
+        Array containing length bins/intervals
+    """ 
+
+    ### Calculate number proportion
+    # ---- Remove unsexed 
+    length_data_filtered = length_data[ length_data.sex != 'unsexed' ].copy( )
+
+    # ---- Bin length measurements
+    length_data_filtered = (
+        length_data_filtered
+        # ---- Bin length
+        .bin_variable( length_intervals , 'length' ) 
+    )
+
+    # ---- Sum the number of individuals within each bin 
+    proportions_unaged_length_sex = (
+        length_data_filtered
+        # ---- Group number summations across stratum/species/sex/length
+        .groupby( [ 'stratum_num' , 'species_id' , 'sex' , 'length_bin' ] )
+        # ---- Sum count
+        .agg( number_all = ( 'length_count' , 'sum' ) )
+        # ---- Fill empty/non-existent values with 0's
+        .fillna( 0 )
+        .reset_index( )
+    )
+
+    ### Calculate the number proportions
+    # --- Stratum total counts
+    proportions_unaged_length_sex[ 'stratum_number_all' ] = (
+        proportions_unaged_length_sex.groupby( [ 'stratum_num' ] )[ 'number_all' ].transform( sum )
+    )
+
+    # ---- Proportions of each sex-length bin pair relative to `stratum_number_all`
+    proportions_unaged_length_sex[ 'proportion_number_sex_all' ] = (
+        proportions_unaged_length_sex.number_all / proportions_unaged_length_sex.stratum_number_all
+    )
+
+    ### Filter out unnecessary columns and return output
+    return proportions_unaged_length_sex.filter( regex = '^(?!number_|stratum_number_).*' )
