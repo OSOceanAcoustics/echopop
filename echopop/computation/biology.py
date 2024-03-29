@@ -313,26 +313,25 @@ def distribute_aged_weight_proportions( proportions_weight_length_age_sex: pd.Da
         Dataframe contained weight proportions of sexed fish for aged fish
     """     
 
-    ### Normalize the age-length-sex proportions of aged fish
-    # ---- Distribute the proportions calculated for age-length-sex 
-    # ---- binned weights from aged fish and recalculate the proportions
-    # ---- relative to the total weights including both aged and unaged
-    # ---- fish
-    distributed_aged_weight_proportions = (
-        proportions_weight_length_age_sex
-        # ---- Merge with sexed age proportions of all fish
-        .merge( aged_sex_proportions , on = [ 'stratum_num' , 'sex' ] )
-        # ---- Normalize the proportions by multiplying the proportions within each sex 
-        # ---- across the proportions relative to the total weights (i.e. aged + unaged), 
-        # ---- not just each sex
-        .assign( normalized_proportion_weight_sex_all = lambda df: df.proportion_weight_sex_all * df.proportion_weight_all ,
-                 normalized_proportion_weight_sex_adult = lambda df: df.proportion_weight_sex_adult * df.proportion_weight_adult )
-        # ---- Drop unused columns
-        .filter( regex = '^(?!weight_|total_weight_|proportion_).*' )
-    )
+    ### Calculate the normalized age-length-sex aged fish weight proportions
+    # ---- Merge `proportions_weight_length_age_sex` with `aged_sex_proportions`
+    distributed_aged_weight_proportions = pd.merge( proportions_weight_length_age_sex , 
+                                                    aged_sex_proportions , 
+                                                    on = [ 'stratum_num' , 'sex' ] , 
+                                                    how = 'left' )
     
-    ### Return output
-    return distributed_aged_weight_proportions
+    # ---- Normalized weight proportions for all fish
+    distributed_aged_weight_proportions[ 'normalized_proportion_weight_all' ] = (
+        distributed_aged_weight_proportions.proportion_weight_sex_all * distributed_aged_weight_proportions.proportion_weight_all
+    )
+
+    # ---- Normalized weight proportions for jus adult fish
+    distributed_aged_weight_proportions[ 'normalized_proportion_weight_adult' ] = (
+        distributed_aged_weight_proportions.proportion_weight_sex_all * distributed_aged_weight_proportions.proportion_weight_adult
+    )
+
+    # ---- Remove unnecessary columns and return the dataframe
+    return distributed_aged_weight_proportions.filter( regex = '^(?!weight_|total_weight_|proportion_).*' )
 
 def calculate_aged_proportions( weight_length_age_sex_stratum: pd.DataFrame ,
                                 weight_strata: pd.DataFrame ):
