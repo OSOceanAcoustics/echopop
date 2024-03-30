@@ -1417,7 +1417,7 @@ class Survey:
         )
 
         ### Calculate total biomass
-        total_unaged_sexed_biomass = (
+        total_unaged_biomass = (
             unaged_sexed_biomass
             .groupby( [ 'length_bin' , 'sex' ] )
             .agg( total_unaged_biomass_all = ( 'biomass_sexed_unaged_all' , 'sum' ) ,
@@ -1425,12 +1425,13 @@ class Survey:
             .reset_index( )
         )
 
+        ### Re-distribute unaged biomass so it is compatible with aged biomass to calculate the overall summed biomass
         unaged2aged_mat = (
             total_aged_sexed_biomass
-            .merge( total_unaged_sexed_biomass , on = [ 'length_bin' , 'sex' ] )    
-            .assign( Summed_Wgt_Len_age = lambda df: df.groupby( [ 'sex' , 'length_bin' ] )[ 'total_sexed_aged_biomass_adult' ].transform( sum ) + df.total_sexed_unaged_biomass_adult )
-            .assign( Final_wgt_len_age = lambda df: df.total_sexed_unaged_biomass_adult * df.total_sexed_aged_biomass_adult / df.Summed_Wgt_Len_age )
-            .replace( np.nan , 0 )
+            .merge( total_unaged_biomass , on = [ 'length_bin' , 'sex' ] ) 
+            .assign( Summed_Wgt_Len_age = lambda df: df.groupby( [ 'sex' , 'length_bin' ] )[ 'total_sexed_aged_biomass_adult' ].transform( sum ) + df.total_unaged_biomass_adult )
+            .assign( Final_wgt_len_age = lambda df: df.total_unaged_biomass_adult * df.total_sexed_aged_biomass_adult / df.Summed_Wgt_Len_age )
+            .replace( np.nan , 0 )  
         )
 
         # ### Calculate interpolated weights based on length bins for each sex per haul
