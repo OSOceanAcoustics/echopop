@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from echopop.computation.biology import sum_strata_weight , compute_index_aged_weight_proportions , compute_summed_aged_proportions
 from echopop.computation.biology import compute_index_unaged_number_proportions , distribute_aged_weight_proportions
-from echopop.computation.biology import compute_summed_unaged_weight_proportions
+from echopop.computation.biology import compute_summed_unaged_weight_proportions , compute_unaged_sex_proportions
 
 def test_sum_strata_weight( mock_survey ):
 
@@ -365,3 +365,88 @@ def test_compute_summed_unaged_weight_proportions( ):
     assert np.all( eval_proportions_unaged_weight_length.dtypes == expected_output.dtypes )
     # ---- Dataframe equality
     assert eval_proportions_unaged_weight_length.equals( expected_output )
+
+def test_compute_unaged_sex_proportions( ):
+
+    ### Mock data for `length_data`
+    test_length_data = pd.DataFrame(
+        {
+            'stratum_num': np.repeat( [ 0 , 1 ] , 4 ) ,
+            'sex': np.tile( [ 'male' , 'female' ] , 4 ) ,
+            'species_id': np.repeat( [ 19350 ] , 8 ) ,
+            'length': [ 12 , 12 , 19 , 19 , 12 , 12 , 19 , 19 ] ,
+            'length_count': [ 5 , 10 , 15 , 20 , 20 , 15 , 10 , 5 ]
+        }
+    )
+
+    ### Mock data for `length_intervals`
+    test_length_intervals = np.linspace( 9 , 21 , 3 )
+
+    ### Mock data for `length_weight_df`
+    test_length_weight_df = pd.DataFrame(
+        {
+            'length_bin': pd.cut( [ 12 , 12 , 12 , 19 , 19 , 19 ,
+                                    12 , 12 , 12 , 19 , 19 , 19 ] ,
+                             np.linspace( 9 , 21 , 3 ) ) ,
+            'sex': [ 'male' , 'female' , 'all' , 'male' , 'female' , 'all' ,
+                     'male' , 'female' , 'all' , 'male' , 'female' , 'all' ] ,
+            'weight_modeled': [ 1 , 3 , 2 , 6 , 8 , 7 ,
+                                4 , 2 , 3 , 9 , 11 , 10 ]
+        }
+    )
+    test_length_weight_df[ 'length_bin' ] = pd.IntervalIndex( test_length_weight_df[ 'length_bin' ] )
+    test_length_weight_df[ 'length_bin' ] = pd.Categorical( test_length_weight_df[ 'length_bin' ] , 
+                                                            categories =  test_length_weight_df[ 'length_bin' ].unique( ) , 
+                                                            ordered = True )
+
+    ### Mock data for `weight_strata`
+    test_weight_strata = pd.DataFrame(
+        {
+            'stratum_num': [ 0 , 1 ] ,
+            'weight_stratum_all': [ 50 , 100 ] ,
+        }
+    )
+
+    ### Mock data for `weight_strata_aged_unaged`
+    test_weight_strata_aged_unaged = pd.DataFrame(
+        {
+            'stratum_num': [ 0 , 1 , 0 , 1 ] ,
+            'stratum_weight': [ 500 , 400 , 50 , 100 ] ,
+            'group': [ 'unaged' , 'unaged' , 'aged' , 'aged' ] ,
+        }
+    )
+
+    ### Evaluate for later comparison 
+    eval_proportions_unaged_weight_sex = compute_unaged_sex_proportions( test_length_data , 
+                                                                         test_length_intervals ,
+                                                                         test_length_weight_df ,
+                                                                         test_weight_strata ,
+                                                                         test_weight_strata_aged_unaged )  
+    
+    ###--------------------------------
+    ### Expected outcomes
+    ###--------------------------------
+    # ---- Expected dimensions of `obj_props_wgt_len_age_sex`   
+    expected_dimensions = tuple( [ 4 , 3 ] )
+    
+    # ---- Expected dataframe output
+    expected_output = pd.DataFrame( {
+        'stratum_num': [ 0 , 0 , 1 , 1 ] ,
+        'sex': [ 'female' , 'male' , 'female' , 'male' ] ,
+        'proportion_weight_sex': [ 0.607595 , 0.392405 , 0.333333 , 0.666667 ]
+    } )
+
+    #----------------------------------
+    ### Run tests: `compute_index_aged_weight_proportions`
+    #----------------------------------
+    ### Process the specimen data 
+    ### Check shape 
+    assert eval_proportions_unaged_weight_sex.shape == expected_dimensions
+
+    ### Check datatypes
+    assert np.all( eval_proportions_unaged_weight_sex.dtypes == expected_output.dtypes )
+    
+    ### Check data value equality
+    # ---- `stratum_num`
+    assert np.all( eval_proportions_unaged_weight_sex.stratum_num == expected_output.stratum_num )
+    assert np.allclose( eval_proportions_unaged_weight_sex.proportion_weight_sex , expected_output.proportion_weight_sex )
