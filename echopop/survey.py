@@ -16,7 +16,7 @@ from .computation.kriging_methods import kriging_interpolation
 from .computation.biology import index_sex_weight_proportions , index_transect_age_sex_proportions , filter_species 
 from .computation.biology import sum_strata_weight , compute_index_aged_weight_proportions , distribute_aged_weight_proportions
 from .computation.biology import compute_summed_aged_proportions , compute_index_unaged_number_proportions 
-from .computation.biology import compute_summed_unaged_proportions
+from .computation.biology import compute_summed_unaged_weight_proportions , compute_unaged_sex_proportions
 
 ### !!! TODO : This is a temporary import call -- this will need to be changed to 
 # the correct relative structure (i.e. '.utils.data_structure_utils' instead of 
@@ -1365,66 +1365,63 @@ class Survey:
         proportions_unaged_weight_length = compute_summed_unaged_weight_proportions( proportions_unaged_length ,
                                                                                      length_weight_df )
 
-        sex_wgt = (
-            length_df
-            .loc[ lambda df: df.group == 'sexed' ]   
-            .bin_variable( length_intervals , 'length' ) 
-            .merge( length_weight_df.loc[ lambda df: df.sex != 'all' ] , on = [ 'sex' , 'length_bin' ] )
-            .assign( length_bin_value  = lambda x: x[ 'length_bin' ].apply( lambda y: y.mid ) )
-            .groupby( [ 'stratum_num' , 'sex' ] ) 
-            .apply( lambda df: pd.Series( {
-                'weight_interp': ( np.interp( df.length ,
-                                                df.length_bin_value ,
-                                                df.weight_modeled ) * df.length_count ).sum( )
-            } ) )
-            .reset_index( )
+        ### Calculate sex-specific weight proportions for unaged fish (within unaged fish)
+        proportions_unaged_weight_sex = compute_unaged_sex_proportions( length_spp ,
+                                                                        length_intervals ,
+                                                                        length_weight_df ,
+                                                                        weight_strata ,
+                                                                        weight_strata_aged_unaged )
+
+        ### Calculate the unaged proportions
+        unaged_proportions = pd.DataFrame( {
+            'stratum_num': aged_proportions.stratum_num ,
+            'proportion_weight_all': 1.0 - aged_proportions.proportion_weight_all ,
+            'proportion_weight_adult': 1.0 - aged_proportions.proportion_weight_adult ,
+        } )
+        
+        ### Calculate sex-specific weight proportions for unaged fish (across all fish, aged and unaged)
+        # ---- Merge `proportions_unaged_weight_sex` and `unaged_proportions`
+        proportions_unaged_weight_sex_overall = pd.merge( proportions_unaged_weight_sex ,
+                                                          unaged_proportions ,
+                                                          on = [ 'stratum_num' ] ,
+                                                          how = 'left' )
+        
+        # ---- Calculate the overall sexed proportions taking into account aged and unaged fish (all age class)
+        proportions_unaged_weight_sex_overall[ 'proportion_sexed_weight_all' ] = (
+            proportions_unaged_weight_sex_overall.proportion_weight_sex *
+            proportions_unaged_weight_sex_overall.proportion_weight_all
         )
 
-        norm_sex_wgt = (
-            weight_strata_aged_unaged 
-            .loc[ lambda df: df.group == 'unaged' ]
-            .merge( sex_wgt , on = [ 'stratum_num' ] )
-            .assign( summed_sex_wgt = lambda df: df.groupby( [ 'stratum_num' ] )[ 'weight_interp' ].transform( sum ) ,
-                    norm_sex_wgt = lambda df: df.stratum_weight * df.weight_interp / df.summed_sex_wgt )
-            .assign( summed_norm_sex_wgt = lambda df: df.groupby( [ 'stratum_num' ] )[ 'norm_sex_wgt' ].transform( sum ) ,
-                    sex_proportion = lambda df: df.norm_sex_wgt / df.summed_norm_sex_wgt )
+        # ---- Calculate the overall sexed proportions taking into account aged and unaged fish (adults)
+        proportions_unaged_weight_sex_overall[ 'proportion_sexed_weight_adult' ] = (
+            proportions_unaged_weight_sex_overall.proportion_weight_sex *
+            proportions_unaged_weight_sex_overall.proportion_weight_adult
         )
 
-        unaged_proportions = (
-            aged_proportions
-            .assign( proportion_weight_all = lambda df: 1.0 - df.proportion_weight_all ,
-                    proportion_weight_adult = lambda df: 1.0 - df.proportion_weight_adult )
-        )
-
-        unaged_sex_proportions = (
-            norm_sex_wgt
-            .merge( unaged_proportions , on = [ 'stratum_num' ] )
-            .assign( proportion_sexed_weight_all = lambda df: df.proportion_weight_all * df.sex_proportion ,
-                    proportion_sexed_weight_adult = lambda df: df.proportion_weight_adult * df.sex_proportion )
-            .loc[ : , [ 'stratum_num' , 'sex' , 'proportion_sexed_weight_all' , 'proportion_sexed_weight_adult' ] ]
-        )
-
+        ### Calculate unaged biomass for each sex
         unaged_sexed_biomass = (
             # ---- Parse kriged biomass (areal density) values
             self.statistics[ 'kriging' ][ 'kriged_biomass_df' ]
             .copy( )
-            .merge( w_ln_all_N , on = [ 'stratum_num' ] )
-            .merge( unaged_sex_proportions , on = [ 'stratum_num' ] )
+            .merge( proportions_unaged_weight_length , on = [ 'stratum_num' ] )
+            .merge( proportions_unaged_weight_sex_overall , on = [ 'stratum_num' ] )
             .assign( biomass_sexed_unaged_all = lambda df: ( df.B_a_adult_mean * 
                                                     df.cell_area_nmi2 * 
-                                                    df.weight_per_length_dist *
+                                                    df.proportion_weight_length *
                                                     df.proportion_sexed_weight_all ) ,
-                    biomass_sexed_unaged_adult = lambda df: ( df.B_a_adult_mean * 
-                                                        df.cell_area_nmi2 * 
-                                                    df.weight_per_length_dist *
-                                                    df.proportion_sexed_weight_adult )
+                     biomass_sexed_unaged_adult = lambda df: ( df.B_a_adult_mean * 
+                                                         df.cell_area_nmi2 * 
+                                                         df.proportion_weight_length *
+                                                         df.proportion_sexed_weight_adult )
                     )
         )
 
+        ### Calculate total biomass
         total_unaged_sexed_biomass = (
             unaged_sexed_biomass
             .groupby( [ 'length_bin' , 'sex' ] )
-            .agg( total_sexed_unaged_biomass_adult = ( 'biomass_sexed_unaged_adult' , 'sum' ) )
+            .agg( total_unaged_biomass_all = ( 'biomass_sexed_unaged_all' , 'sum' ) ,
+                  total_unaged_biomass_adult = ( 'biomass_sexed_unaged_adult' , 'sum' ) )
             .reset_index( )
         )
 
