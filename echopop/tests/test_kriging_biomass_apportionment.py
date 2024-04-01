@@ -165,13 +165,20 @@ def test_compute_summed_aged_proportions( ):
     ### Mock data for `proportions_weight_length_age_sex`
     test_proportions_weight_length_age_sex = pd.DataFrame(
         {
-            'stratum_num': np.repeat( [ 0.0 , 1.0 ] , 4 ) ,
-            'sex': np.tile( [ 'male' , 'female' ] , 4 ) ,
-            'weight_all': [ 1.0 , 3.0 , 2.0 , 4.0 , 0.0 , 6.0 , 3.0 , 3.0 ] ,
-            'weight_adult': [ 0.0 , 1.5, 2.0 , 4.0 , 0.0 , 4.0 , 3.0 , 3.0 ]
+            'stratum_num': np.repeat( [ 0.0 , 1.0 ] , 6 ) ,
+            'sex': np.tile( [ 'male' , 'female' , 'all' ] , 4 ) ,
+            'group': np.tile( [ 'sexed' , 'sexed' , 'all' ] , 4 ) ,
+            'weight_all': [ 1.0 , 3.0 , 4.0 ,
+                            2.0 , 4.0 , 6.0 ,
+                            0.0 , 6.0 , 6.0 ,
+                            3.0 , 3.0 , 6.0 ] ,
+            'weight_adult': [ 0.0 , 1.5, 1.5 ,
+                             2.0 , 4.0 , 6.0 ,
+                             0.0 , 4.0 , 4.0 ,
+                             3.0 , 3.0 , 6.0 ]
         }
     )
-
+    
     ### Mock data for `weight_strata`
     test_weight_strata = pd.DataFrame(
         {
@@ -221,7 +228,7 @@ def test_compute_summed_aged_proportions( ):
     ### `eval_aged_proportions`
     # ---- Shape
     assert eval_aged_proportions.shape == expected_dimensions_aged_proportions
-    # ---- Datatypes
+    # ---- Datatypesd
     assert np.all( eval_aged_proportions.dtypes == expected_output_aged_proportions.dtypes )
     # ---- Dataframe equality
     assert np.all( eval_aged_proportions == expected_output_aged_proportions )
