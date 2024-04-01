@@ -182,14 +182,11 @@ def compute_index_aged_weight_proportions( specimen_data: pd.DataFrame ,
     """ 
 
     ### Process the specimen data 
-    # ---- Drop unaged and unsexed fish
+    # ---- Drop unaged fish
     # ==== !!! TODO: pending what FEAT says, weights associated with 
     # ==== missing ages should be added into the 'unaged' category. 
     # ==== This would further mean apportioning these into `weight_strata_aged_uanged`
-    specimen_data_filtered = (
-        specimen_data[ specimen_data.sex != 'unsexed' ]
-        .dropna( how = 'any' , subset = 'age' )
-    ) 
+    specimen_data_filtered = specimen_data[ specimen_data.sex != 'unsexed' ].dropna( how = 'any' , subset = 'age' )
     
     # ---- Bin length and age measurements
     specimen_data_filtered = (
@@ -201,24 +198,46 @@ def compute_index_aged_weight_proportions( specimen_data: pd.DataFrame ,
     )
 
     ### Sum weights within each length and age bin for each sex within each stratum
+    # ---- Create separate 'weight_adult' column
+    specimen_data_filtered[ 'weight_adult' ] = (
+        np.where( specimen_data_filtered.age > 1 , specimen_data_filtered.weight , 0.0 )
+    )
+    
+    # ---- Calculate aggregate sums of fish weights
     specimen_binned_weight = (
         specimen_data_filtered
         # ---- Group weight summations across stratum/species/sex/length/age
         .groupby( [ 'stratum_num' , 'species_id' , 'sex' , 'length_bin' , 'age_bin' ] )
         # ---- Sum the weights 
-        .apply( lambda df: pd.Series( { 'weight_all': df.weight.sum( ) ,
-                                        'weight_adult': df.loc[ df.age > 1 ].weight.sum( ) } ) ) 
+        .agg( weight_all =( 'weight' , 'sum' )  , weight_adult =( 'weight_adult' , 'sum' ) ) 
         # ---- Fill empty/non-existent values with 0's
         .fillna( 0 )
         .reset_index( )
     )
 
+    ### Calculate the total (i.e. across sex)
+    specimen_binned_weight_total = (
+        specimen_binned_weight
+        # ---- Group weight summations across stratum/species/length/age
+        .groupby( [ 'stratum_num' , 'species_id' , 'length_bin' , 'age_bin' ] )
+        # ---- Sum the weights using agg function
+        .agg( { 'weight_all': 'sum' , 'weight_adult': 'sum' } )
+        .reset_index( )
+    )
+    
+    # ---- Add sex = 'all' 
+    specimen_binned_weight_total[ 'sex' ] = 'all'
+    
+    # ---- Concatenate with `specimen_binned_weight``
+    specimen_binned_weight_all = pd.concat( [ specimen_binned_weight.assign( group = 'sexed' ) ,
+                                              specimen_binned_weight_total.assign( group = 'all' ) ] )
+    
     ### Calculate the relative weight proportions of each length-age bin for each sex within each stratum
     proportions_weight_length_age_sex = (
-        specimen_binned_weight
+        specimen_binned_weight_all
         # ---- Calculate total sex-specific weights for each stratum
-        .assign( total_weight_sex_all = lambda df: df.groupby( [ 'stratum_num' , 'species_id' , 'sex' ] )[ 'weight_all' ].transform( sum ) ,
-                 total_weight_sex_adult = lambda df: df.groupby( [ 'stratum_num' , 'species_id' , 'sex' ] )[ 'weight_adult' ].transform( sum ) )
+        .assign( total_weight_sex_all = lambda df: df.groupby( [ 'stratum_num' , 'species_id' , 'sex' , 'group' ] )[ 'weight_all' ].transform( sum ) ,
+                 total_weight_sex_adult = lambda df: df.groupby( [ 'stratum_num' , 'species_id' , 'sex' , 'group' ] )[ 'weight_adult' ].transform( sum ) )
         # ---- Calculate the weight proportions within each sex: from Matlab --> Len_age_key_wgt_*n
         .assign( proportion_weight_sex_all = lambda df: df.weight_all / df.total_weight_sex_all ,
                  proportion_weight_sex_adult = lambda df: df.weight_adult / df.total_weight_sex_adult )
@@ -256,6 +275,7 @@ def compute_summed_aged_proportions( proportions_weight_length_age_sex: pd.DataF
     # ---- Also initializes the correct shape for the output dataframe
     aged_sex_weights = (
         proportions_weight_length_age_sex
+        [ proportions_weight_length_age_sex.group != 'all' ]
         .groupby( [ 'stratum_num' , 'sex' ] )
         .agg(
             weight_aged_sex_all = ( 'weight_all' , 'sum' ) ,
@@ -283,7 +303,7 @@ def compute_summed_aged_proportions( proportions_weight_length_age_sex: pd.DataF
 
     # ---- Fill empty/NaN values with 0's and drop unused columns
     aged_sex_proportions = aged_sex_proportions.fillna( 0 ).filter( regex = '^(?!weight_).*' )
-
+    
     ### Calculate aged proportions
     aged_proportions = (
         aged_sex_proportions
@@ -614,48 +634,270 @@ def compute_unaged_sex_proportions( length_data: pd.DataFrame ,
     ### Remove unnecessary columns and return output
     return proportions_unaged_weight_sex[ [ 'stratum_num' , 'sex' , 'proportion_weight_sex' ] ]
 
-def apply_age_bins( aged_biomass_df: pd.DataFrame ,
-                    unaged_biomass_df: pd.DataFrame ):
+def calculate_aged_biomass( kriging_biomass_df: pd.DataFrame ,
+                            distributed_sex_proportions_df: pd.DataFrame ,
+                            distributed_total_proportions_df: pd.DataFrame ,
+                            aged_proportions: pd.DataFrame ):
+    """
+    Calculate the kriged biomass distributed over length and age for each sex and among
+    all fish (sexed)
+
+    Parameters
+    ----------
+    kriging_biomass_df: pd.DataFrame
+        Dataframe containing kriged biomass estimates
+    distributed_sex_proportions: pd.DataFrame
+        Dataframe containing the normalized weight proportions for each length and age bin
+        for each sex
+    distributed_total_proportions: pd.DataFrame
+        Dataframe containing the weight proportions for each length and age bin computed for all fish
+    aged_proportions: pd.DataFrame
+        Dataframe containing the weight proportions of aged fish within each stratum
+    """
+    
+    ### Distribute the biomass estimates for each transect interval
+    ### the calculated proportions for age and length bins for each 
+    ### sex among aged-only fish
+    # ---- Merge `kriging_biomass_df` with `age_proportions_df`
+    # ---- Sexed
+    biomass_sex_proportion_df = (
+        # ---- Parse kriged biomass (areal density) values
+        kriging_biomass_df
+        .merge( distributed_sex_proportions_df , on = [ 'stratum_num' ] )
+    )
+    
+    # ---- All  
+    biomass_proportion_total_df = pd.merge( kriging_biomass_df ,
+                                            distributed_total_proportions_df ,
+                                            on = [ 'stratum_num' ] ,
+                                            how = 'left' ).set_index( 'stratum_num' )
+    
+    # ---- Set index for `aged_proportions` in lieu of using another merge 
+    aged_proportions = aged_proportions.copy( ).set_index( 'stratum_num' )
+    
+    # ---- Assign 'proportion_weight_adult'
+    biomass_proportion_total_df[ 'proportion_weight_adult' ] = aged_proportions.proportion_weight_adult
+    
+    # ---- Assign 'proportion_weight_all'
+    biomass_proportion_total_df[ 'proportion_weight_all' ] = aged_proportions.proportion_weight_adult
+    
+    # ---- Distribute biomass estimates for each sexed bin among aged fish
+    # ==== !!! TODO: this current used `B_a_adult_mean` for both calculations
+    # ---- Sexed
+    # ---- All
+    biomass_sex_proportion_df[ 'biomass_sexed_aged_all' ] = (  
+        biomass_sex_proportion_df.B_a_adult_mean  
+        * biomass_sex_proportion_df.cell_area_nmi2 
+        * biomass_sex_proportion_df.normalized_proportion_weight_all
+    )  
+    
+    # ---- Adult
+    biomass_sex_proportion_df[ 'biomass_sexed_aged_adult' ] = (  
+        biomass_sex_proportion_df.B_a_adult_mean  
+        * biomass_sex_proportion_df.cell_area_nmi2 
+        * biomass_sex_proportion_df.normalized_proportion_weight_adult
+    )
+    
+    # ---- All
+    # ---- All
+    biomass_proportion_total_df[ 'biomass_sexed_aged_all' ] = (  
+        biomass_proportion_total_df.B_a_adult_mean  
+        * biomass_proportion_total_df.cell_area_nmi2 
+        * biomass_proportion_total_df.proportion_weight_sex_all
+        * biomass_proportion_total_df.proportion_weight_adult
+    )
+    
+    # ---- Adult
+    biomass_proportion_total_df[ 'biomass_sexed_aged_adult' ] = (  
+        biomass_proportion_total_df.B_a_adult_mean  
+        * biomass_proportion_total_df.cell_area_nmi2 
+        * biomass_proportion_total_df.proportion_weight_sex_adult
+        * biomass_proportion_total_df.proportion_weight_adult
+    )
+    
+    ### Sum biomass across all bins for aged biomass
+    # ---- Sexed 
+    total_aged_sexed_biomass = (
+        biomass_sex_proportion_df
+        .groupby( [ 'length_bin' , 'age_bin' , 'sex' ] )
+        .agg( total_sexed_aged_biomass_adult = ( 'biomass_sexed_aged_adult' , 'sum' ) )
+        .reset_index( )
+    )
+    
+    # ---- All
+    total_aged_biomass = (
+        biomass_proportion_total_df
+        .groupby( [ 'length_bin' , 'age_bin' ] )
+        .agg( total_aged_biomass_adult = ( 'biomass_sexed_aged_adult' , 'sum' ) )
+        .reset_index( )
+    )
+    
+    ### Return output (tuple)
+    return total_aged_sexed_biomass , total_aged_biomass
+    
+def calculate_unaged_biomass( kriging_biomass_df: pd.DataFrame ,
+                              distributed_sex_proportions_df: pd.DataFrame ,
+                              distributed_length_proportions_df: pd.DataFrame ,
+                              unaged_proportions: pd.DataFrame ):
+    """
+    Calculate the kriged biomass distributed over length and age for each sex and among
+    all fish (sexed)
+
+    Parameters
+    ----------
+    kriging_biomass_df: pd.DataFrame
+        Dataframe containing kriged biomass estimates
+    distributed_sex_proportions: pd.DataFrame
+        Dataframe containing the normalized weight proportions for each length and age bin
+        for each sex
+    distributed_total_proportions: pd.DataFrame
+        Dataframe containing the weight proportions for each length and age bin computed for all fish
+    aged_proportions: pd.DataFrame
+        Dataframe containing the weight proportions of aged fish within each stratum
+    """
+    ### Calculate sex-specific weight proportions for unaged fish (across all fish, aged and unaged)
+    # ---- Merge `proportions_unaged_weight_sex` and `unaged_proportions`
+    proportions_unaged_weight_sex_overall = pd.merge( distributed_sex_proportions_df ,
+                                                      unaged_proportions ,
+                                                      on = [ 'stratum_num' ] ,
+                                                      how = 'left' )
+    
+    # ---- Calculate the overall sexed proportions taking into account aged and unaged fish (all age class)
+    proportions_unaged_weight_sex_overall[ 'proportion_sexed_weight_all' ] = (
+        proportions_unaged_weight_sex_overall.proportion_weight_sex *
+        proportions_unaged_weight_sex_overall.proportion_weight_all
+    )
+
+    # ---- Calculate the overall sexed proportions taking into account aged and unaged fish (adults)
+    proportions_unaged_weight_sex_overall[ 'proportion_sexed_weight_adult' ] = (
+        proportions_unaged_weight_sex_overall.proportion_weight_sex *
+        proportions_unaged_weight_sex_overall.proportion_weight_adult
+    )
+    
+    ### Merge kriging dataframe with calculated proportions
+    # ---- Sexed 
+    unaged_sexed_biomass = (
+        # ---- Parse kriged biomass (areal density) values
+        kriging_biomass_df
+        .merge( distributed_length_proportions_df , on = [ 'stratum_num' ] )
+        .merge( proportions_unaged_weight_sex_overall , on = [ 'stratum_num' ] )
+    )
+    
+    # ---- All 
+    unaged_biomass = (
+        # ---- Parse kriged biomass (areal density) values
+        kriging_biomass_df
+        .merge( distributed_length_proportions_df , on = [ 'stratum_num' ] )
+        .merge( unaged_proportions , on = [ 'stratum_num' ] )
+    )
+    
+    ### Calculate biomasses
+    # ---- Sexed
+    # ---- All
+    unaged_sexed_biomass[ 'biomass_sexed_unaged_all' ] = (
+        unaged_sexed_biomass.B_a_adult_mean *
+        unaged_sexed_biomass.cell_area_nmi2 *
+        unaged_sexed_biomass.proportion_weight_length * 
+        unaged_sexed_biomass.proportion_sexed_weight_all
+    )
+    
+    # ---- Adult
+    unaged_sexed_biomass[ 'biomass_sexed_unaged_adult' ] = (
+        unaged_sexed_biomass.B_a_adult_mean *
+        unaged_sexed_biomass.cell_area_nmi2 *
+        unaged_sexed_biomass.proportion_weight_length * 
+        unaged_sexed_biomass.proportion_sexed_weight_adult
+    )
+    
+    # ---- All
+    # ---- All
+    unaged_biomass[ 'biomass_unaged_all' ] = (
+        unaged_biomass.B_a_adult_mean *
+        unaged_biomass.cell_area_nmi2 *
+        unaged_biomass.proportion_weight_length * 
+        unaged_biomass.proportion_weight_all
+    )
+    
+    # ---- Adult
+    unaged_biomass[ 'biomass_unaged_adult' ] = (
+        unaged_biomass.B_a_adult_mean *
+        unaged_biomass.cell_area_nmi2 *
+        unaged_biomass.proportion_weight_length * 
+        unaged_biomass.proportion_weight_adult
+    )
+    
+    ### Sum biomass across all bins for unaged biomass
+    # ---- Sexed 
+    total_unaged_sexed_biomass = (
+        unaged_sexed_biomass
+        .groupby( [ 'length_bin' , 'sex' ] )
+        .agg( total_sexed_unaged_biomass_adult = ( 'biomass_sexed_unaged_adult' , 'sum' ) )
+        .reset_index( )
+    )
+    
+    # ---- All
+    total_unaged_biomass = (
+        unaged_biomass
+        .groupby( [ 'length_bin' ] )
+        .agg( total_unaged_biomass_adult = ( 'biomass_unaged_adult' , 'sum' ) )
+        .reset_index( )
+    )
+    
+    ### Return output (tuple)
+    return total_unaged_sexed_biomass , total_unaged_biomass
+    
+def apply_age_bins( aged_biomass_sexed_df: pd.DataFrame ,
+                    unaged_biomass_sexed_df: pd.DataFrame ):
     """
     Redistribute unaged biomass over the defined age distribution
 
     Parameters
     ----------
-    aged_biomass_df: pd.DataFrame
-        Dataframe containing biomass data of aged fish
-    unaged_biomass_df: pd.DataFrame
-        Dataframe containing biomass data of unaged fish
+    aged_biomass_sexed_df: pd.DataFrame
+        Dataframe containing biomass data of sexed aged fish
+    unaged_biomass_sexed_df: pd.DataFrame
+        Dataframe containing biomass data of sexed unaged fish
+    aged_biomass_total_df: pd.DataFrame
+        Dataframe containing biomass data of all aged fish
+    aged_biomass_total_df: pd.DataFrame
+        Dataframe containing biomass data of all unaged fish
     """ 
     
     ### Merge unaged biomass length bins with aged bioamss length-age bins
-    aged_unaged_biomass = pd.merge( aged_biomass_df , 
-                                    unaged_biomass_df ,
-                                    on = [ 'length_bin' , 'sex' ] ,
-                                    how = 'left' )
+    aged_unaged_sexed_biomass = pd.merge( aged_biomass_sexed_df , 
+                                          unaged_biomass_sexed_df ,
+                                          on = [ 'length_bin' , 'sex' ] ,
+                                          how = 'left' )
 
     ### Calculate the total biomass for each sexed length bin (i.e. sum across age bins)
     # ---- Adult fish
-    aged_unaged_biomass[ 'total_length_bin_biomass_adult' ] = (
-        aged_unaged_biomass.groupby( [ 'sex' , 'length_bin' ] )[ 'total_sexed_aged_biomass_adult' ].transform( sum ) + 
-        aged_unaged_biomass.total_unaged_biomass_adult
+    aged_unaged_sexed_biomass[ 'sum_length_bin_biomass_sexed_adult' ] = (
+        aged_unaged_sexed_biomass.groupby( [ 'sex' , 'length_bin' ] )[ 'total_sexed_aged_biomass_adult' ].transform( sum ) + 
+        aged_unaged_sexed_biomass.total_sexed_unaged_biomass_adult
     )
 
     ### Redistribute unaged biomass over the length-age bins for each sex
     # ---- Adult fish
-    aged_unaged_biomass[ 'total_unaged_biomass' ] = (
-        aged_unaged_biomass.total_unaged_biomass_adult * 
-        aged_unaged_biomass.total_sexed_aged_biomass_adult /
-        aged_unaged_biomass.total_length_bin_biomass_adult
-    )
+    aged_unaged_sexed_biomass[ 'total_sexed_unaged_biomass_adult' ] = (
+        aged_unaged_sexed_biomass.total_sexed_unaged_biomass_adult * 
+        aged_unaged_sexed_biomass.total_sexed_aged_biomass_adult /
+        aged_unaged_sexed_biomass.sum_length_bin_biomass_sexed_adult
+    ).fillna( 0 )
 
     ### Remove unnecessary columns 
-    aged_unaged_biomass.drop( [ 'total_sexed_aged_biomass_adult' , 
-                                'total_unaged_biomass_all' ,
-                                'total_unaged_biomass_adult' ,
-                                'total_length_bin_biomass_adult' ,
-                                'total_length_bin_biomass_adult' ] ,
-                            axis = 1 ,
-                            inplace = True )
+    aged_unaged_sexed_biomass.drop( [ 'total_sexed_aged_biomass_adult' , 
+                                      'sum_length_bin_biomass_sexed_adult' ] ,
+                                    axis = 1 ,
+                                    inplace = True )
+    
+    ### Sum sexes together to retrieve the total biomass 
+    aged_unaged_biomass = (
+        aged_unaged_sexed_biomass
+        .groupby( [ 'length_bin' , 'age_bin' ] )
+        .agg( total_unaged_biomass_adult = ( 'total_sexed_unaged_biomass_adult' , 'sum' ) )
+        .reset_index( )
+    )
+    
 
-    ### Replace NaN with 0's and return output
-    return aged_unaged_biomass.fillna( 0 )
+    ### Return output (tuple)
+    return aged_unaged_sexed_biomass , aged_unaged_biomass
