@@ -253,7 +253,7 @@ def compute_index_aged_weight_proportions( specimen_data: pd.DataFrame ,
     )
 
     ### Return output
-    return proportions_weight_length_age_sex
+    return proportions_weight_length_age_sex.reset_index( drop = True )
 
 def compute_summed_aged_proportions( proportions_weight_length_age_sex: pd.DataFrame ,
                                      weight_strata: pd.DataFrame ):
