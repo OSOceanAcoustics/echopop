@@ -613,3 +613,49 @@ def compute_unaged_sex_proportions( length_data: pd.DataFrame ,
 
     ### Remove unnecessary columns and return output
     return proportions_unaged_weight_sex[ [ 'stratum_num' , 'sex' , 'proportion_weight_sex' ] ]
+
+def apply_age_bins( aged_biomass_df: pd.DataFrame ,
+                    unaged_biomass_df: pd.DataFrame ):
+    """
+    Redistribute unaged biomass over the defined age distribution
+
+    Parameters
+    ----------
+    aged_biomass_df: pd.DataFrame
+        Dataframe containing biomass data of aged fish
+    unaged_biomass_df: pd.DataFrame
+        Dataframe containing biomass data of unaged fish
+    """ 
+    
+    ### Merge unaged biomass length bins with aged bioamss length-age bins
+    aged_unaged_biomass = pd.merge( aged_biomass_df , 
+                                    unaged_biomass_df ,
+                                    on = [ 'length_bin' , 'sex' ] ,
+                                    how = 'left' )
+
+    ### Calculate the total biomass for each sexed length bin (i.e. sum across age bins)
+    # ---- Adult fish
+    aged_unaged_biomass[ 'total_length_bin_biomass_adult' ] = (
+        aged_unaged_biomass.groupby( [ 'sex' , 'length_bin' ] )[ 'total_sexed_aged_biomass_adult' ].transform( sum ) + 
+        aged_unaged_biomass.total_unaged_biomass_adult
+    )
+
+    ### Redistribute unaged biomass over the length-age bins for each sex
+    # ---- Adult fish
+    aged_unaged_biomass[ 'total_unaged_biomass' ] = (
+        aged_unaged_biomass.total_unaged_biomass_adult * 
+        aged_unaged_biomass.total_sexed_aged_biomass_adult /
+        aged_unaged_biomass.total_length_bin_biomass_adult
+    )
+
+    ### Remove unnecessary columns 
+    aged_unaged_biomass.drop( [ 'total_sexed_aged_biomass_adult' , 
+                                'total_unaged_biomass_all' ,
+                                'total_unaged_biomass_adult' ,
+                                'total_length_bin_biomass_adult' ,
+                                'total_length_bin_biomass_adult' ] ,
+                            axis = 1 ,
+                            inplace = True )
+
+    ### Replace NaN with 0's and return output
+    return aged_unaged_biomass.fillna( 0 )

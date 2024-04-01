@@ -16,7 +16,7 @@ from .computation.kriging_methods import kriging_interpolation
 from .computation.biology import index_sex_weight_proportions , index_transect_age_sex_proportions , filter_species 
 from .computation.biology import sum_strata_weight , compute_index_aged_weight_proportions , distribute_aged_weight_proportions
 from .computation.biology import compute_summed_aged_proportions , compute_index_unaged_number_proportions 
-from .computation.biology import compute_summed_unaged_weight_proportions , compute_unaged_sex_proportions
+from .computation.biology import compute_summed_unaged_weight_proportions , compute_unaged_sex_proportions , apply_age_bins
 
 ### !!! TODO : This is a temporary import call -- this will need to be changed to 
 # the correct relative structure (i.e. '.utils.data_structure_utils' instead of 
@@ -1253,7 +1253,7 @@ class Survey:
         ### TODO: This should be refactored out as an external function 
         ###### rather than a Survey-class method.
         ### Apportion biomass based on age and sex
-        self.apportion_kriged_biomass( species_id )
+        # self.apportion_kriged_biomass( species_id )
 
     def apportion_kriged_biomass( self ,
                                   species_id ):
@@ -1426,13 +1426,8 @@ class Survey:
         )
 
         ### Re-distribute unaged biomass so it is compatible with aged biomass to calculate the overall summed biomass
-        unaged2aged_mat = (
-            total_aged_sexed_biomass
-            .merge( total_unaged_biomass , on = [ 'length_bin' , 'sex' ] ) 
-            .assign( Summed_Wgt_Len_age = lambda df: df.groupby( [ 'sex' , 'length_bin' ] )[ 'total_sexed_aged_biomass_adult' ].transform( sum ) + df.total_unaged_biomass_adult )
-            .assign( Final_wgt_len_age = lambda df: df.total_unaged_biomass_adult * df.total_sexed_aged_biomass_adult / df.Summed_Wgt_Len_age )
-            .replace( np.nan , 0 )  
-        )
+        redistributed_unaged_biomass = apply_age_bins( total_aged_sexed_biomass , 
+                                                       total_unaged_biomass )
 
         # ### Calculate interpolated weights based on length bins for each sex per haul
         # haul_sex_weights_normalized = normalize_haul_sex_weights( self.statistics[ 'length_weight' ][ 'length_weight_df' ] ,
