@@ -15,8 +15,8 @@ from .computation.statistics import stratified_transect_statistic
 from .computation.kriging_methods import kriging_interpolation
 from .computation.biology import index_transect_age_sex_proportions , filter_species 
 from .computation.biology import sum_strata_weight , compute_aged_unaged_proportions
-from .computation.biology import compute_index_unaged_number_proportions , calculate_aged_biomass
-from .computation.biology import compute_summed_unaged_weight_proportions , compute_unaged_sex_proportions , apply_age_bins , calculate_unaged_biomass
+from .computation.biology import  calculate_aged_biomass , calculate_unaged_biomass
+from .computation.biology import apply_age_bins , filter_species 
 
 ### !!! TODO : This is a temporary import call -- this will need to be changed to 
 # the correct relative structure (i.e. '.utils.data_structure_utils' instead of 
@@ -1333,36 +1333,12 @@ class Survey:
         ### Import length-weight relationship calculated for all animals
         length_weight_df = self.statistics[ 'length_weight' ][ 'length_weight_df' ]
 
-        ### Calculate number proportion
-        proportions_unaged_length = compute_index_unaged_number_proportions( length_spp ,
-                                                                             length_intervals )
-
-        
-
-        ### Calculate the normalized weight per unit length distribution (W_Ln_ALL in the original Matlab code)
-        proportions_unaged_weight_length = compute_summed_unaged_weight_proportions( proportions_unaged_length ,
-                                                                                     length_weight_df )
-
-        ### Calculate sex-specific weight proportions for unaged fish (within unaged fish)
-        proportions_unaged_weight_sex = compute_unaged_sex_proportions( length_spp ,
+        ### Calculate unaged biomass for each sex and all animals
+        unaged_sex_biomass , unaged_biomass = calculate_unaged_biomass( self.statistics[ 'kriging' ][ 'kriged_biomass_df' ] ,
+                                                                        length_spp_filtered ,
                                                                         length_intervals ,
                                                                         length_weight_df ,
-                                                                        weight_strata ,
-                                                                        weight_strata_aged_unaged )
-
-        ### Calculate the unaged proportions
-        unaged_proportions = pd.DataFrame( {
-            'stratum_num': aged_proportions.stratum_num ,
-            'proportion_weight_all': 1.0 - aged_proportions.proportion_aged_weight_all ,
-            'proportion_weight_adult': 1.0 - aged_proportions.proportion_aged_weight_adult ,
-        } )
- 
-        ### Calculate unaged biomass for each sex and all animals
-        unaged_sex_biomass , unaged_biomass = compute_unaged_biomass( self.statistics[ 'kriging' ][ 'kriged_biomass_df' ] ,
-                                                                      length_spp_filtered ,
-                                                                      length_intervals ,
-                                                                      length_weight_df ,
-                                                                      unaged_proportions )
+                                                                        aged_unaged_weight_proportions )
         
         ### Re-distribute unaged biomass so it is compatible with aged biomass to calculate the overall summed biomass
         redistributed_unaged_sex_biomass , redistributed_unaged_biomass = apply_age_bins( aged_sex_biomass , 
@@ -1371,24 +1347,32 @@ class Survey:
         ### Sum the grand total by combining the aged and unaged biomass estimates post-apportionment
         # ---- Merge sexed
         overall_sexed_biomass = redistributed_unaged_sex_biomass.merge( aged_sex_biomass ,
-                                                                        on = [ 'length_bin' , 'age_bin' , 'sex' ] ,
+                                                                        on = [ 'length_bin' , 'age_bin' , 'sex' , 'species_id' ] ,
                                                                         how = 'left' )
         
         # ---- Aggregate (sum)
+        overall_sexed_biomass[ 'total_sexed_biomass_all' ] = (
+            overall_sexed_biomass.biomass_sexed_unaged_all + 
+            overall_sexed_biomass.biomass_sexed_aged_all
+        )
         overall_sexed_biomass[ 'total_sexed_biomass_adult' ] = (
-            overall_sexed_biomass.total_sexed_unaged_biomass_adult + 
-            overall_sexed_biomass.total_sexed_aged_biomass_adult
+            overall_sexed_biomass.biomass_sexed_unaged_adult + 
+            overall_sexed_biomass.biomass_sexed_aged_adult
         )
         
         # ---- Merge total
-        overall_biomass  = redistributed_unaged_biomass.merge( aged_biomass ,
-                                                               on = [ 'length_bin' , 'age_bin' ] ,
-                                                               how = 'left' )
+        overall_biomass = redistributed_unaged_biomass.merge( aged_biomass ,
+                                                              on = [ 'length_bin' , 'age_bin' , 'species_id' ] ,
+                                                              how = 'left' )
         
         # ---- Aggregate (sum)
+        overall_biomass[ 'total_biomass_all' ] = (
+            overall_biomass.biomass_unaged_all + 
+            overall_biomass.biomass_aged_all
+        )
         overall_biomass[ 'total_biomass_adult' ] = (
-            overall_biomass.total_unaged_biomass_adult + 
-            overall_biomass.total_aged_biomass_adult
+            overall_biomass.biomass_unaged_adult + 
+            overall_biomass.biomass_aged_adult
         )
 
         # ### Assign results to an attribute

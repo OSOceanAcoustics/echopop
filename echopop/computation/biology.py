@@ -691,11 +691,11 @@ def compute_unaged_sex_proportions( length_data: pd.DataFrame ,
     ### Remove unnecessary columns and return output
     return proportions_unaged_weight_sex[ [ 'stratum_num' , 'sex' , 'proportion_weight_sex' ] ]
 
-def compute_unaged_biomass( kriging_biomass_df: pd.DataFrame ,
-                            length_data: pd.DataFrame ,
-                            length_distribution: np.ndarray ,
-                            length_weight_df: pd.DataFrame ,
-                            aged_proportions: pd.DataFrame ):
+def calculate_unaged_biomass( kriging_biomass_df: pd.DataFrame ,
+                              length_data: pd.DataFrame ,
+                              length_distribution: np.ndarray ,
+                              length_weight_df: pd.DataFrame ,
+                              aged_proportions: pd.DataFrame ):
     """
     Calculate the kriged biomass distributed over length and age for each sex and among
     all fish (sexed)
@@ -814,46 +814,56 @@ def compute_unaged_biomass( kriging_biomass_df: pd.DataFrame ,
     ### Return output (tuple)
     return apportioned_sexed_kriged_biomass , apportioned_kriged_biomass
     
-def apply_age_bins( aged_biomass_sexed_df: pd.DataFrame ,
-                    unaged_biomass_sexed_df: pd.DataFrame ):
+def apply_age_bins( aged_sex_biomass: pd.DataFrame ,
+                    unaged_sex_biomass: pd.DataFrame ):
     """
     Redistribute unaged biomass over the defined age distribution
 
     Parameters
     ----------
-    aged_biomass_sexed_df: pd.DataFrame
+    aged_sex_biomass: pd.DataFrame
         Dataframe containing biomass data of sexed aged fish
-    unaged_biomass_sexed_df: pd.DataFrame
+    unaged_sex_biomass: pd.DataFrame
         Dataframe containing biomass data of sexed unaged fish
-    aged_biomass_total_df: pd.DataFrame
-        Dataframe containing biomass data of all aged fish
-    aged_biomass_total_df: pd.DataFrame
-        Dataframe containing biomass data of all unaged fish
     """ 
     
     ### Merge unaged biomass length bins with aged bioamss length-age bins
-    aged_unaged_sexed_biomass = pd.merge( aged_biomass_sexed_df , 
-                                          unaged_biomass_sexed_df ,
-                                          on = [ 'length_bin' , 'sex' ] ,
-                                          how = 'left' )
+    aged_unaged_sexed_biomass = aged_sex_biomass.merge( unaged_sex_biomass ,
+                                                        on = [ 'length_bin' , 'sex' , 'species_id' ] ,
+                                                        how = 'left' )
 
     ### Calculate the total biomass for each sexed length bin (i.e. sum across age bins)
+    # ---- All fish
+    aged_unaged_sexed_biomass[ 'sum_length_bin_biomass_sexed_all' ] = (
+        aged_unaged_sexed_biomass.groupby( [ 'sex' , 'length_bin' ] )[ 'biomass_sexed_aged_all' ].transform( sum ) + 
+        aged_unaged_sexed_biomass.biomass_sexed_unaged_all
+    )
+
     # ---- Adult fish
     aged_unaged_sexed_biomass[ 'sum_length_bin_biomass_sexed_adult' ] = (
-        aged_unaged_sexed_biomass.groupby( [ 'sex' , 'length_bin' ] )[ 'total_sexed_aged_biomass_adult' ].transform( sum ) + 
-        aged_unaged_sexed_biomass.total_sexed_unaged_biomass_adult
+        aged_unaged_sexed_biomass.groupby( [ 'sex' , 'length_bin' ] )[ 'biomass_sexed_aged_adult' ].transform( sum ) + 
+        aged_unaged_sexed_biomass.biomass_sexed_unaged_adult
     )
 
     ### Redistribute unaged biomass over the length-age bins for each sex
+    # ---- All fish
+    aged_unaged_sexed_biomass[ 'biomass_sexed_unaged_all' ] = (
+        aged_unaged_sexed_biomass.biomass_sexed_unaged_all * 
+        aged_unaged_sexed_biomass.biomass_sexed_aged_all /
+        aged_unaged_sexed_biomass.sum_length_bin_biomass_sexed_all
+    ).fillna( 0 )
+
     # ---- Adult fish
-    aged_unaged_sexed_biomass[ 'total_sexed_unaged_biomass_adult' ] = (
-        aged_unaged_sexed_biomass.total_sexed_unaged_biomass_adult * 
-        aged_unaged_sexed_biomass.total_sexed_aged_biomass_adult /
+    aged_unaged_sexed_biomass[ 'biomass_sexed_unaged_adult' ] = (
+        aged_unaged_sexed_biomass.biomass_sexed_unaged_adult * 
+        aged_unaged_sexed_biomass.biomass_sexed_aged_adult /
         aged_unaged_sexed_biomass.sum_length_bin_biomass_sexed_adult
     ).fillna( 0 )
 
     ### Remove unnecessary columns 
-    aged_unaged_sexed_biomass.drop( [ 'total_sexed_aged_biomass_adult' , 
+    aged_unaged_sexed_biomass.drop( [ 'biomass_sexed_aged_all' , 
+                                      'biomass_sexed_aged_adult' ,
+                                      'sum_length_bin_biomass_sexed_all' ,
                                       'sum_length_bin_biomass_sexed_adult' ] ,
                                     axis = 1 ,
                                     inplace = True )
@@ -861,11 +871,11 @@ def apply_age_bins( aged_biomass_sexed_df: pd.DataFrame ,
     ### Sum sexes together to retrieve the total biomass 
     aged_unaged_biomass = (
         aged_unaged_sexed_biomass
-        .groupby( [ 'length_bin' , 'age_bin' ] )
-        .agg( total_unaged_biomass_adult = ( 'total_sexed_unaged_biomass_adult' , 'sum' ) )
+        .groupby( [ 'length_bin' , 'age_bin' , 'species_id' ] )
+        .agg( biomass_unaged_all = ( 'biomass_sexed_unaged_all' , 'sum' ) ,
+              biomass_unaged_adult = ( 'biomass_sexed_unaged_adult' , 'sum' ) )
         .reset_index( )
-    )
-    
+    )    
 
     ### Return output (tuple)
     return aged_unaged_sexed_biomass , aged_unaged_biomass
