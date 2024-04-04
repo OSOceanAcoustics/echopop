@@ -1,6 +1,6 @@
 # Input files
 
-Input files used in a Python EchoPro run, grouped by data type. The tables below describe the data columns required by Python EchoPro; other columns will be ignored. All input files are in Excel format. File paths, names, and Excel tab names are specified in the survey year configuration file (e.g., `survey_year_2019_config.yml`).
+Input files used in an Echopop run, grouped by data type. The tables below describe the data columns required by Echopop; other columns will be ignored. All input files are in Excel format. File paths, names, and Excel tab names are specified in the survey year configuration file (e.g., `survey_year_2019_config.yml`).
 
 Biological data are always separated into US vs Canada files. All other data files combine US and Canadian data.
 
@@ -11,7 +11,7 @@ To minimize duplication in the data file description tables below, additional de
 - `species_id`: Species identification code (ID). Identifies what species is associated with the collected data. Pacific hake is 22500.
 - `N/P`: Empty value Not Permitted.
 - `nmi`: Nautical miles.
-- `Old name`: Column name used previously with Matlab EchoPro
+- `Old name`: Column name used previously in the Matlab EchoPro program
 
 ```{contents}
 :local:

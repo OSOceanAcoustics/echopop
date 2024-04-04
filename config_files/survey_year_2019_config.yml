@@ -8,13 +8,15 @@
 # Parameters
 
 survey_year: 2019            # survey year being considered
-species: pacific_hake        # target species for the survey year
+species:
+  text_code: pacific_hake    # target species for the survey year -- species name
+  number_code: 22500         # target species for the survey year -- numeric code
 CAN_haul_offset: 200         # The value to be added to the Canadian's haul number
 
 ##############################################################################
 # Directory path that contains all input data needed
 
-data_root_dir: ../../2019_consolidated_files/
+data_root_dir: ROOT_DIRECTORY_CONTAINING_DATA_SUBFOLDERS
 
 ##############################################################################
 # Input data files
@@ -56,7 +58,7 @@ stratification:
   geo_strata:
     # The two stratification types are found in two sheets: "stratification1" and "INPFC"
     filename: Stratification/Stratification_geographic_Lat_2019_final.xlsx
-    sheetname: stratification1
+    sheetname: [ INPFC , stratification1 ]
 NASC:
   # NASC values
   no_age1:
