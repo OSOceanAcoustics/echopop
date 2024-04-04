@@ -123,11 +123,40 @@ def test_strata_sex_weight_proportions( mock_survey ):
             'haul_num': np.tile( [ 1 , 2 ] , 4 ) ,
             'species_id': np.repeat( [ 8675309 ] , 8 ) ,
             'length': [ 12.0 , 12.0 , 19.0 , 19.0 , 12.0 , 12.0 , 19.0 , 19.0 ] ,
-            'weight': [ 2.0 , 3.0 , 8.0 , 7.0 , 1.0 , 4.0 , 9.0 , 6.0 ] ,
+            'weight': [ 2.0 , 3.0 , 3.0 , 2.0 , 2.0 , 3.0 , 2.0 , 3.0 ] ,
             'age': [ 1 , 1 , 2 , 2 , 1 , 1 , 2 , 2 ]    
+        }
+    )    
+    
+    ### Re-parameterize `length_df` with dummy data 
+    objS.biology[ 'length_df' ] = pd.DataFrame(
+        {
+            'stratum_num': np.repeat( [ 0 , 1 ] , 4 ) ,
+            'sex': np.tile( [ 'male' , 'female' ] , 4 ) ,
+            'group': np.repeat( 'sexed' , 8 ) ,
+            'species_id': np.repeat( [ 8675309 ] , 8 ) ,
+            'length': [ 12 , 12 , 19 , 19 , 12 , 12 , 19 , 19 ] ,
+            'length_count': [ 5 , 10 , 15 , 20 , 20 , 15 , 10 , 5 ]
         }
     )
     
+    ### Re-parameterize `fitted_weight` with dummy data 
+    objS.statistics[ 'length_weight' ][ 'length_weight_df' ] = pd.DataFrame(
+        {
+            'length_bin': pd.cut( np.repeat( [ 12 , 18 ] , 3 ) ,
+                                  np.linspace( 9 , 21 , 3 ) ) ,
+            'sex': np.repeat( [ 'all' , 'female' , 'male' ] , 2 ) ,
+            'n_length': [ 4 , 2 , 2 , 4 , 2 , 2 ] ,
+            'mean_weight': [ 2.5 , 3.5 , 1.5 , 7.5 , 6.5 , 8.5 ] ,
+            'n_weight': [ 4 , 2 , 2 , 4 , 2 , 2 ] ,
+            'rate': [ 2.63 , 1.36 , 3.90 , 2.63 , 1.36 , 3.90 ] ,
+            'initial': [ -2.49 , -0.93 , -4.06 , -2.49 , -0.93 , -4.06 ] ,
+            'weight_fitted': [ 2.21 , 3.46 , 1.41 , 6.43 , 6.02 , 6.87 ] ,
+            'weight_modeled': [ 2.21 , 3.46 , 1.41 , 6.43 , 6.02 , 6.87 ]
+        }
+    )
+
+
     ### Re-parameterize `length_df` with dummy data 
     objS.biology[ 'length_df' ] = pd.DataFrame(
         {
@@ -190,3 +219,113 @@ def test_strata_sex_weight_proportions( mock_survey ):
     assert np.all( eval_weight_strata_df.dtypes == expected_output.dtypes )
     ### Dataframe equality
     assert np.allclose( eval_weight_strata_df , expected_output , rtol = 1e-1 )
+    
+def test_strata_age_binned_weight_proportions( mock_survey ):
+    
+    #### Pull in mock Survey object
+    objS = mock_survey
+    
+    ### Initialize objS for `weight`
+    objS.biology[ 'weight' ] = { }
+    
+    ### Re-parameterize `specimen_df` with dummy data 
+    objS.biology[ 'specimen_df' ] = pd.DataFrame(
+        {
+            'stratum_num': np.repeat( [ 0 , 1 ] , 4 ) ,
+            'sex': np.tile( [ 'male' , 'female' ] , 4 ) ,
+            'group': np.repeat( 'sexed' , 8 ) ,
+            'haul_num': np.tile( [ 1 , 2 ] , 4 ) ,
+            'species_id': np.repeat( [ 8675309 ] , 8 ) ,
+            'length': [ 12.0 , 12.0 , 19.0 , 19.0 , 12.0 , 12.0 , 19.0 , 19.0 ] ,
+            'weight': [ 2.0 , 3.0 , 3.0 , 2.0 , 2.0 , 3.0 , 2.0 , 3.0 ] ,
+            'age': [ 1 , 1 , 2 , 2 , 1 , 1 , 2 , 2 ]    
+        }
+    )
+
+    ### Re-parameterize `length_bins` with dummy data
+    objS.biology[ 'distributions' ][ 'length' ][ 'length_interval_arr' ] = np.linspace( 9 , 21 , 3 )
+
+    ### Evaluate object for later comparison 
+    objS.strata_age_binned_weight_proportions( species_id = 8675309 )
+    
+    ###--------------------------------
+    ### Expected outcomes
+    ###--------------------------------
+    # ---- Expected dimensions
+    expected_dimensions = { 'age_proportions': tuple( [ 4 , 4 ] ) ,
+                            'age_weight_proportions': tuple( [ 4 , 4 ] ) ,
+                            'sex_age_weight_proportions': tuple( [ 12 , 5 ] ) ,
+                            'length_sex_age_weight_proportions': tuple( [ 24 , 9 ] ) }
+    
+    # ---- Expected output
+    expected_output = {
+        'age_proportions': pd.DataFrame( {
+           'stratum_num': np.repeat( [ 0 , 1 ] , 2 ).astype( np.int64 ) ,
+           'age': np.tile( [ 1 , 2 ] , 2 ).astype( np.int64 ) ,
+           'count_age_proportion_all': np.repeat( 0.5 , 4 ) ,
+           'count_age_proportion_adult': [ 0.0 , 1.0 , 0.0 , 1.0 ]
+        } ) ,
+        'age_weight_proportions': pd.DataFrame( {
+           'stratum_num': np.repeat( [ 0 , 1 ] , 2 ).astype( np.int64 ) ,
+           'age': np.tile( [ 1 , 2 ] , 2 ).astype( np.int64 ) ,
+           'weight_age_proportion_all': [ 0.50 , 0.50 , 0.50 , 0.50 ] ,
+           'weight_age_proportion_adult': [ 0.0 , 1.0 , 0.0 , 1.0 ]
+        } ) ,
+        'sex_age_weight_proportions': pd.DataFrame( {
+            'stratum_num': np.repeat( [ 0 , 1 ] , 6 ).astype( np.int64 ) ,
+            'age': np.tile( [ 1 , 1 , 1 , 2 , 2 , 2 ] , 2 ).astype( np.int64 ) ,
+            'sex': np.tile( [ 'all' , 'female' , 'male' ] , 4 ) ,
+            'weight_sex_proportion_all': [ 0.5 , 0.6 , 0.4 , 0.5 , 0.4 , 0.6 ,
+                                           0.5 , 0.5 , 0.5 , 0.5 , 0.5 , 0.5 ] ,
+            'weight_sex_proportion_adult': np.tile( [ 0.0 , 0.0 , 0.0 , 1.0 , 1.0 , 1.0 ] , 2 ) 
+        } ) ,
+        'length_sex_age_weight_proportions': pd.DataFrame( {
+            'stratum_num': np.repeat( [ 0 , 1 ] , 12 ).astype( np.int64 ) ,
+            'age': np.tile( [ 1 , 1 , 1 , 1 , 1 , 1 , 
+                              2 , 2 , 2 , 2 , 2 , 2 ] , 2 ).astype( np.int64 ) ,
+            'length_bin': pd.cut( np.tile( [ 12.0 , 12.0 , 12.0 , 18.0 , 18.0 , 18.0 ] , 4 ) ,
+                                  np.linspace( 9 , 21 , 3 ) ) ,
+            'sex': np.tile( [ 'all' , 'female' , 'male' ] , 8 ) ,
+            'count': [ 5.0 , 3.0 , 2.0 , 0.0 , 0.0 , 0.0 ,
+                       0.0 , 0.0 , 0.0 , 5.0 , 2.0 , 3.0 ,
+                       5.0 , 3.0 , 2.0 , 0.0 , 0.0 , 0.0 ,
+                       0.0 , 0.0 , 0.0 , 5.0 , 3.0 , 2.0 ] ,
+            'weight_total_all': [ 10.0 , 5.0 , 5.0 , 10.0 , 5.0 , 5.0 ,
+                                  10.0 , 5.0 , 5.0 , 10.0 , 5.0 , 5.0 ,
+                                  10.0 , 6.0 , 4.0 , 10.0 , 6.0 , 4.0 ,
+                                  10.0 , 6.0 , 4.0 , 10.0 , 6.0 , 4.0 ] ,
+            'weight_total_adult': [ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 ,
+                                    5.0 , 2.0 , 3.0 , 5.0 , 2.0 , 3.0 ,
+                                    0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 ,
+                                    5.0 , 3.0 , 2.0 , 5.0 , 3.0 , 2.0 ] ,
+            'weight_length_sex_proportion_all': [ 0.5 , 0.6 , 0.4 , 0.0 , 0.0 , 0.0 ,
+                                                  0.0 , 0.0 , 0.0 , 0.5 , 0.4 , 0.6 ,
+                                                  0.5 , 0.5 , 0.5 , 0.0 , 0.0 , 0.0 ,
+                                                  0.0 , 0.0 , 0.0 , 0.5 , 0.5 , 0.5 ] ,
+            'weight_length_sex_proportion_adult': np.tile( [ 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 ,
+                                                             0.0 , 0.0 , 0.0 , 1.0 , 1.0 , 1.0 ] , 2 )            
+        } )
+    }
+
+    #----------------------------------
+    ### Run tests: `strata_age_binned_weight_proportions`
+    #----------------------------------
+    eval_age_proportions_df = objS.biology[ 'weight' ][ 'proportions' ][ 'age_proportions_df' ]
+    eval_age_weight_proportions_df = objS.biology[ 'weight' ][ 'proportions' ][ 'age_weight_proportions_df' ]
+    eval_sex_age_weight_proportions_df = objS.biology[ 'weight' ][ 'proportions' ][ 'sex_age_weight_proportions_df' ]
+    eval_length_sex_age_weight_proportions_df = objS.biology[ 'weight' ][ 'proportions' ][ 'length_sex_age_weight_proportions_df' ]
+    ### Check shape 
+    assert eval_age_proportions_df.shape == expected_dimensions[ 'age_proportions' ]
+    assert eval_age_weight_proportions_df.shape == expected_dimensions[ 'age_weight_proportions' ]
+    assert eval_sex_age_weight_proportions_df.shape == expected_dimensions[ 'sex_age_weight_proportions' ]
+    assert eval_length_sex_age_weight_proportions_df.shape == expected_dimensions[ 'length_sex_age_weight_proportions' ]
+    ### Check datatypes
+    assert np.all( eval_age_proportions_df.dtypes == expected_output[ 'age_proportions' ].dtypes )
+    assert np.all( eval_age_weight_proportions_df.dtypes == expected_output[ 'age_weight_proportions' ].dtypes )
+    assert np.all( eval_sex_age_weight_proportions_df.dtypes == expected_output[ 'sex_age_weight_proportions' ].dtypes )
+    assert np.all( eval_length_sex_age_weight_proportions_df.dtypes == expected_output[ 'length_sex_age_weight_proportions' ].dtypes )
+    ### Dataframe equality
+    assert eval_age_proportions_df.equals( expected_output[ 'age_proportions' ] )    
+    assert eval_age_weight_proportions_df.equals( expected_output[ 'age_weight_proportions' ] )    
+    assert eval_sex_age_weight_proportions_df.equals( expected_output[ 'sex_age_weight_proportions' ] )
+    assert eval_length_sex_age_weight_proportions_df.equals( expected_output[ 'length_sex_age_weight_proportions' ] )
