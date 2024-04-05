@@ -167,7 +167,7 @@ def test_correct_transect_intervals( ):
     ### Create mock data for `nasc_df`
     test_nasc_dataframe = pd.DataFrame(
         {
-            'transect_num': [ 1 , 2 , 3 , 4] ,
+            'transect_num': [ 1 , 2 , 3 , 4 ] ,
             'stratum_num': [ 0 , 0 , 1 , 1 ] ,
             'vessel_log_start': [ 0.0 , 10.1 , 20.1 , 30.1 ] ,
             'vessel_log_end': [ 10.0 , 20.0 , 30.0 , 40.0  ] ,
@@ -212,3 +212,50 @@ def test_correct_transect_intervals( ):
     assert np.all( eval_nasc_interval.dtypes == expected_output.dtypes )
     ### Dataframe equality
     assert np.allclose( eval_nasc_interval , expected_output )
+
+def test_calculate_start_end_coordinates( ):
+
+    ### Create mock data for `nasc_df`
+    test_nasc_df = pd.DataFrame(
+        {
+            'transect_num': [ 1 , 1 , 2 , 2 ] ,
+            'stratum_num': [ 0 , 0 , 1 , 1 ] ,
+            'vessel_log_start': [ 0.0 , 10.1 , 20.1 , 30.1 ] ,
+            'vessel_log_end': [ 10.0 , 20.0 , 30.0 , 40.0  ] ,
+            'latitude': [ 20.0 , 30.0 , 40.0 , 50.0 ] ,
+            'longitude': [ -180.0 , -120.0 , -170.0 , -110.0 ] ,
+            'transect_spacing': np.repeat( 1.0 , 4 ) ,
+            'NASC_no_age1': [ 0.0 , 1e1 , 1e2 , 1e3 ] ,
+            'haul_num': [ 1 , 1 , 2 , 2 ] ,
+            'NASC_all_ages': [ 1e1 , 1e2 , 1e2 , 1e3 ]
+        }
+    )
+
+    ### Evaluate for later comparison
+    eval_test_nasc_df = calculate_start_end_coordinates( test_nasc_df , 
+                                                         'transect_num' )
+    
+    ###--------------------------------
+    ### Expected outcomes
+    ###--------------------------------
+    # ---- Expected dimensions
+    expected_dimensions = tuple( [ 2 , 4 ] )
+    # ---- Expected output
+    expected_output = pd.DataFrame(
+        {
+            'transect_num': [ 1 , 2 ] ,
+            'minimum_longitude': [ -180.0 , -170.0 ] ,
+            'maximum_longitude': [ -120.0 , -110.0 ] ,
+            'center_latitude': [ 25.0 , 45.0 ]
+        }
+    )
+
+    #----------------------------------
+    ### Run tests: `calculate_start_end_coordinates`
+    #----------------------------------
+    ### Check shape 
+    assert eval_test_nasc_df.shape == expected_dimensions
+    ### Check datatypes
+    assert np.all( eval_test_nasc_df.dtypes == expected_output.dtypes )
+    ### Dataframe equality
+    assert eval_test_nasc_df.equals( expected_output )
