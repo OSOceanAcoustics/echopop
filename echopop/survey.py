@@ -910,7 +910,7 @@ class Survey:
                                          weight_total_adult = df.loc[ df.age > 1 ].groupby( [ 'stratum_num' , 'sex' ] )[ 'count' ].transform( sum ) ) )
             .assign( weight_length_sex_proportion_all = lambda x: x[ 'count' ] / x.weight_total_all ,
                      weight_length_sex_proportion_adult = lambda x: x[ 'count' ] / x.weight_total_adult )
-            .fillna( 0 )
+            .replace( np.nan , 0 )
         )
         
         ### Add these dataframes to the appropriate data attribute
