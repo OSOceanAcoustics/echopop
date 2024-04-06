@@ -147,3 +147,55 @@ def test_bin_stats( ):
     assert eval_dataframe_function_lncm.equals( expected_output_lncm )
     assert eval_dataframe_monkey_lwc.equals( expected_output_lwc )
     assert eval_dataframe_function_lwc.equals( expected_output_lwc )
+
+def test_count_variable( ):
+
+    ### Mock dataframe
+    test_dataframe = pd.DataFrame( 
+        {
+            'animal': [ 'pretty pink pony' , 'big blue bass' , 'silly silver silkworm' ,
+                        'gnarly green grouse' , 'roudy red rabbit' , 'magenta mad manatee' ,
+                        'pretty pink pony' , 'big blue bass' , 'silly silver silkworm' ,
+                        'gnarly green grouse' , 'roudy red rabbit' , 'magenta mad manatee' ] ,
+            'length': [ 2.0 , 4.0 , 8.0 , 3.0 , 6.0 , 7.0 ,
+                        2.0 , 4.0 , 8.0 , 3.0 , 6.0 , 7.0 ] ,            
+            'location': [ 'timbuktu' , 'timbuktu' , 'timbuktu' ,
+                         'timbuktu' , 'timbuktu' , 'timbuktu' ,
+                         'lost city of z' , 'lost city of z' , 'lost city of z' ,
+                         'lost city of z' , 'lost city of z' , 'lost city of z' ] ,
+            'length_count': [ 10 , 20 , 30 , 40 , 50 , 60 ,
+                              60 , 50 , 40 , 30 , 20 , 10 ] ,
+        } ,
+    )
+
+    ### Evaluate for later comparison
+    # ---- Monkey patch method (TEMPORARY)
+    eval_dataframe_monkey = test_dataframe.count_variable( [ 'location' , 'animal' ] , 'length_count' , 'sum' )
+    # ---- Normal function
+    eval_dataframe_function = count_variable( test_dataframe , [ 'location' , 'animal' ] , 'length_count' , 'sum' )
+
+    ###--------------------------------
+    ### Expected outcomes
+    ###--------------------------------
+    # ---- Expected dimensions
+    expected_dimensions = tuple( [ 12 , 3 ] )
+    # ---- Expected output
+    expected_output = pd.DataFrame(
+        {
+            'location': np.repeat( [ 'lost city of z' , 'timbuktu'  ] , 6 ) ,
+            'animal': np.tile( [ 'big blue bass' , 'gnarly green grouse' , 'magenta mad manatee' ,
+                                 'pretty pink pony' , 'roudy red rabbit' , 'silly silver silkworm' ] , 2 ) ,
+            'count': [ 50 , 30 , 10 , 60 , 20 , 40 ,
+                       20 , 40 , 60 , 10 , 50 , 30 ] ,
+        } ,
+    )
+
+    #----------------------------------
+    ### Run tests: `count_variable`
+    #----------------------------------
+    ### Check shape
+    assert eval_dataframe_monkey.shape == expected_dimensions
+    assert eval_dataframe_function.shape == expected_dimensions
+    ### Check dataframe equality
+    assert eval_dataframe_monkey.equals( expected_output )
+    assert eval_dataframe_function.equals( expected_output )
