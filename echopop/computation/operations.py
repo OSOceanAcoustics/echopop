@@ -154,7 +154,7 @@ def meld( specimen_dataframe: pd.DataFrame ,
     # Concatenate the data frames and return
     return pd.concat( [ specimen_stacked ,
                         length_dataframe ] ,
-                        join = 'inner' )
+                        join = 'inner' ).reset_index( drop = True )
 
 @patch_method_to_DataFrame( pd.DataFrame )    
 def stretch( dataframe ,             

@@ -199,3 +199,81 @@ def test_count_variable( ):
     ### Check dataframe equality
     assert eval_dataframe_monkey.equals( expected_output )
     assert eval_dataframe_function.equals( expected_output )
+
+def test_meld( ):
+
+    ### Mock specimen dataframe
+    test_specimen_dataframe = pd.DataFrame(
+        {
+            'stratum_num': np.repeat( 1 , 12 ) ,
+            'species_id': np.tile( [ 'big blue bass' , 'pretty pink pony' , 'silly silver silkworm' ] , 4 ) ,
+            'sex': np.tile( [ 'male' , 'female' ] , 6 ) ,
+            'group': np.repeat( 'sexed' , 12 ) ,
+            'station': np.repeat( 'clouds' , 12 ) ,
+            'length': [ 5.0 , 4.0 , 6.0 , 5.0 , 5.0 , 4.0 ,
+                        5.0 , 5.0 , 7.0 , 4.0 , 5.0 , 6.0 ] ,
+            'length_bin': pd.cut( [ 5.0 , 4.0 , 6.0 , 5.0 , 5.0 , 4.0 ,
+                        5.0 , 5.0 , 7.0 , 4.0 , 5.0 , 6.0 ] ,
+                                  np.array( [ 1.0 , 3.0 , 5.0 , 7.0 , 9.0 ] ) ) ,
+        } ,
+    )
+
+    ### Mock length dataframe
+    test_length_dataframe = pd.DataFrame(
+        {
+            'stratum_num': np.repeat( 1 , 6 ) ,
+            'species_id': np.tile( [ 'big blue bass' , 'pretty pink pony' , 'silly silver silkworm' ] , 2 ) ,
+            'sex': np.tile( [ 'male' , 'female' ] , 3 ) ,
+            'group': np.repeat( 'sexed' , 6 ) ,
+            'station': np.repeat( 'waves' , 6 ) ,
+            'length': [ 2.0 , 4.0 , 3.0 , 2.0 , 4.0 , 3.0 ] ,
+            'length_bin': pd.cut(  [ 2.0 , 4.0 , 3.0 , 2.0 , 4.0 , 3.0 ] ,
+                                  np.array( [ 1.0 , 3.0 , 5.0 , 7.0 , 9.0 ] ) ) ,
+            'length_count': [ 10 , 20 , 30 , 30 , 20 , 10 ] ,
+        } ,
+    ) 
+
+    ### Evaluate for later comparison
+    # ---- Monkey patch method (TEMPORARY)
+    eval_dataframe_monkey = test_specimen_dataframe.meld( test_length_dataframe )
+    # ---- Normal function
+    eval_dataframe_function = meld( test_specimen_dataframe , test_length_dataframe )
+
+    ###--------------------------------
+    ### Expected outcomes
+    ###--------------------------------
+    # ---- Expected dimensions
+    expected_dimensions = tuple( [ 16 , 8 ] )
+    # ---- Expected output 
+    expected_output = pd.DataFrame(
+        {
+            'stratum_num': np.repeat( 1 , 16 ) ,
+            'species_id': np.concatenate( [ np.repeat( 'big blue bass' , 3 ) ,
+                                            np.repeat( 'pretty pink pony' , 3 ) ,
+                                            np.repeat( 'silly silver silkworm' , 4 ) ,
+                                            np.tile( [ 'big blue bass' , 'pretty pink pony' , 
+                                                       'silly silver silkworm' ] , 2 ) ] ) ,
+            'sex': [ 'female' , 'female' , 'male' , 'female' , 'female' , 'male' , 'female' , 'female' ,
+                     'male' , 'male' , 'male' , 'female' , 'male' , 'female' , 'male' , 'female' ] ,
+            'group': np.repeat( 'sexed' , 16 ) ,
+            'station': np.concatenate( [ np.repeat( 'clouds' , 10 ) ,
+                                         np.repeat( 'waves' , 6 ) ] ) ,
+            'length': [ 4.0 , 5.0 , 5.0 , 4.0 , 5.0 , 5.0 , 4.0 , 6.0 , 
+                        6.0 , 7.0 , 2.0 , 4.0 , 3.0 , 2.0 , 4.0 , 3.0 ] ,
+            'length_bin': pd.cut( [ 4.0 , 5.0 , 5.0 , 4.0 , 5.0 , 5.0 , 4.0 , 6.0 , 
+                                    6.0 , 7.0 , 2.0 , 4.0 , 3.0 , 2.0 , 4.0 , 3.0 ] ,
+                                 np.array( [ 1.0 , 3.0 , 5.0 , 7.0 , 9.0 ] ) ) ,
+            'length_count': [ 1 , 1 , 2 , 1 , 1 , 2 , 1 , 1 , 1 , 1 ,
+                              10 , 20 , 30 , 30 , 20 , 10 ] ,
+        } ,
+    )
+
+    #----------------------------------
+    ### Run tests: `count_variable`
+    #----------------------------------
+    ### Check shape
+    assert eval_dataframe_monkey.shape == expected_dimensions
+    assert eval_dataframe_function.shape == expected_dimensions
+    ### Check output
+    assert np.all( eval_dataframe_monkey == expected_output )
+    assert np.all( eval_dataframe_function == expected_output )
