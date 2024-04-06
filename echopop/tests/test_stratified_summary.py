@@ -206,5 +206,8 @@ def test_confidence_interval( ):
     #----------------------------------
     ### Run tests: `confidence_interval`
     #----------------------------------
+    ### Check shape
+    assert eval_ci_values.shape == expected_dimensions
+    ### Check output
     assert np.allclose( eval_ci_values , expected_output , rtol = 1e-2 )
 
