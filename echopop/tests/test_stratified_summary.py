@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from echopop.tests.utility_testing_functions import dictionary_shape_equal
-from echopop.computation.statistics import stratified_transect_statistic
+from echopop.computation.statistics import stratified_transect_statistic , confidence_interval
 
 def test_stratified_transect_statistic( ):
 
@@ -187,5 +187,24 @@ def test_stratified_transect_statistic( ):
                         np.array( [ 0.904 , 1.038 ] ) ,
                         rtol = 1e-2 )
     
+def test_confidence_interval( ):
 
+    ### Mock values
+    test_values = [ 1.0 , 2.0 , 3.0 , 4.0 , 5.0 , 4.0 , 3.0 , 2.0 , 1.0 ]
+
+    ### Evaluate for comparison later
+    eval_ci_values = confidence_interval( test_values )
     
+    ###--------------------------------
+    ### Expected outcomes
+    ###--------------------------------
+    # ---- Expected dimensions
+    expected_dimensions = tuple( [ 2 , ] )
+    # ---- Expected output
+    expected_output = np.array( [ 0.201 , 5.355 ] )
+
+    #----------------------------------
+    ### Run tests: `confidence_interval`
+    #----------------------------------
+    assert np.allclose( eval_ci_values , expected_output , rtol = 1e-2 )
+
