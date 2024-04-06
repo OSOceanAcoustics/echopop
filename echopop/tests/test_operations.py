@@ -325,3 +325,122 @@ def test_stretch( ):
     ### Check output
     assert np.all( eval_dataframe_monkey == expected_output )
     assert np.all( eval_dataframe_function == expected_output )
+
+def test_group_merge( ):
+
+    ### Create mock dataframe 1
+    test_dataframe_a = pd.DataFrame(
+        {
+            'stratum_num': np.repeat( [ 1 , 2 ] , 6 ) ,
+            'animal': np.tile( [ 'big blue bass' , 'gnarly green grouse' , 'magenta mad manatee' ,
+                                 'pretty pink pony' , 'roudy red rabbit' , 'silly silver silkworm' ] , 2 ) ,
+            'insert_metric_here': [ 1.00 , 1.00 , 1.00 , 0.75 , 0.75 , 0.75 ,
+                                    0.50 , 0.50 , 0.50 , 0.75 , 0.75 , 1.00 ] ,
+
+        } ,
+    )
+
+    ### Create mock dataframe 2
+    test_dataframe_b = pd.DataFrame(
+        {
+            'stratum_num': np.repeat( [ 1 , 2 ] , 6 ) ,
+            'animal': np.tile( [ 'big blue bass' , 'gnarly green grouse' , 'magenta mad manatee' ,
+                                 'pretty pink pony' , 'roudy red rabbit' , 'silly silver silkworm' ] , 2 ) ,
+            'group': np.repeat( [ 'sleepy' , 'alert' ] , 6 ) ,
+            'new_metric_here': [ 0.1 , 0.1 , 0.2 , 0.2 , 0.3 , 0.3 ,
+                                 0.5 , 0.2 , 0.2 , 0.4 , 0.4 , 0.5 ] ,
+
+        } ,
+    )
+
+    ### Create mock dataframe 3
+    test_dataframe_c = pd.DataFrame(
+        {   
+            'stratum_num': np.repeat( [ 1 , 2 ] , 2 ) ,
+            'group': np.tile( [ 'sleepy' , 'alert' ] , 2 ) ,
+            'categorical_metric': np.tile( [ 'zippity' , 'doo' ] , 2 ) ,
+        } ,
+    )
+
+    ### Evaluate for later comparison
+    # ++++ Drop NA
+    # ---- Monkey patch method (TEMPORARY)
+    eval_dataframe_monkey_dropna = test_dataframe_a.group_merge( [ test_dataframe_b , test_dataframe_c ] , 
+                                                                 inner_on = 'group' , 
+                                                                 outer_on = [ 'stratum_num' ] ,
+                                                                 drop_na = True )
+    # ---- Normal function
+    eval_dataframe_function_dropna = group_merge( test_dataframe_a ,
+                                                  [ test_dataframe_b , test_dataframe_c ] , 
+                                                  inner_on = 'group' , 
+                                                  outer_on = [ 'stratum_num' ] ,
+                                                  drop_na = True )
+    # ++++ Don't drop NA
+    # ---- Monkey patch method (TEMPORARY)
+    eval_dataframe_monkey_keepna = test_dataframe_a.group_merge( [ test_dataframe_b , test_dataframe_c ] , 
+                                                                 inner_on = 'group' , 
+                                                                 outer_on = [ 'stratum_num' ] ,
+                                                                 drop_na = False )
+    # ---- Normal function
+    eval_dataframe_function_keepna = group_merge( test_dataframe_a ,
+                                                  [ test_dataframe_b , test_dataframe_c ] , 
+                                                  inner_on = 'group' , 
+                                                  outer_on = [ 'stratum_num' ] ,
+                                                  drop_na = False )
+
+    ###--------------------------------
+    ### Expected outcomes
+    ###--------------------------------
+    # ---- Expected dimensions
+    expected_dimensions_dropna = tuple( [ 12 , 6 ] )
+    expected_dimensions_keepna = tuple( [ 14 , 6 ] )
+    # ---- Expected output
+    expected_output_dropna = pd.DataFrame(
+        {
+            'stratum_num': np.repeat( [ 1 , 2 ] , 6 ) ,
+            'animal': np.tile( [ 'big blue bass' , 'gnarly green grouse' , 'magenta mad manatee' ,
+                                 'pretty pink pony' , 'roudy red rabbit' , 'silly silver silkworm' ] , 2 ) ,
+            'insert_metric_here': [ 1.00 , 1.00 , 1.00 , 0.75 , 0.75 , 0.75 ,
+                                    0.50 , 0.50 , 0.50 , 0.75 , 0.75 , 1.00 ] ,
+            'group': np.repeat( [ 'sleepy' , 'alert' ] , 6 ) ,
+            'new_metric_here': [ 0.1 , 0.1 , 0.2 , 0.2 , 0.3 , 0.3 ,
+                                 0.5 , 0.2 , 0.2 , 0.4 , 0.4 , 0.5 ] ,
+            'categorical_metric': np.repeat( [ 'zippity' , 'doo' ] , 6 ) ,
+        } ,
+    )
+    expected_output_keepna = pd.DataFrame(
+        {
+            'stratum_num': np.concatenate( [ np.repeat( [ 1 , 2 ] , 6 ) , [ 1 , 2 ] ] ) ,
+            'animal': np.concatenate( [ np.tile( [ 'big blue bass' , 'gnarly green grouse' , 'magenta mad manatee' ,
+                                                  'pretty pink pony' , 'roudy red rabbit' , 'silly silver silkworm' ] , 2 ) ,
+                                      np.repeat( np.nan , 2 ).astype( 'object' ) ] ) ,
+            'insert_metric_here': [ 1.00 , 1.00 , 1.00 , 0.75 , 0.75 , 0.75 ,
+                                    0.50 , 0.50 , 0.50 , 0.75 , 0.75 , 1.00 ,
+                                    np.nan , np.nan ] ,
+            'group': np.concatenate( [ np.repeat( [ 'sleepy' , 'alert' ] , 6 ) ,
+                                     [ 'alert' , 'sleepy' ] ] ) ,
+            'new_metric_here': [ 0.1 , 0.1 , 0.2 , 0.2 , 0.3 , 0.3 ,
+                                 0.5 , 0.2 , 0.2 , 0.4 , 0.4 , 0.5 , 
+                                 np.nan , np.nan ] ,
+            'categorical_metric': np.concatenate( [ np.repeat( [ 'zippity' , 'doo' ] , 6 ) ,
+                                                  [ 'doo' , 'zippity' ] ] ) ,
+        } ,
+    )
+
+    #----------------------------------
+    ### Run tests: `count_variable`
+    #----------------------------------
+    ### Check shape
+    # ++++ NaN removed
+    assert eval_dataframe_monkey_dropna.shape == expected_dimensions_dropna
+    assert eval_dataframe_function_dropna.shape == expected_dimensions_dropna
+    # ++++ NaN kept
+    assert eval_dataframe_monkey_keepna.shape == expected_dimensions_keepna
+    assert eval_dataframe_function_keepna.shape == expected_dimensions_keepna
+    ### Check output
+    # ++++ NaN removed
+    assert np.all( eval_dataframe_monkey_dropna == expected_output_dropna )
+    assert np.all( eval_dataframe_function_dropna == expected_output_dropna )
+    # ++++ NaN kept
+    assert eval_dataframe_function_keepna.equals( expected_output_keepna )
+    assert eval_dataframe_function_keepna.equals( expected_output_keepna )
