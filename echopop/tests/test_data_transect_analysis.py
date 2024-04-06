@@ -117,7 +117,7 @@ def test_strata_sex_weight_proportions( mock_survey ):
     ### Re-parameterize `specimen_df` with dummy data 
     objS.biology[ 'specimen_df' ] = pd.DataFrame(
         {
-            'stratum_num': np.repeat( [ 0 , 1 ] , 4 ) ,
+            'stratum_num': np.repeat( [ 0 , 1 ] , 4 ).astype( np.int64 ) ,
             'sex': np.tile( [ 'male' , 'female' ] , 4 ) ,
             'group': np.repeat( 'sexed' , 8 ) ,
             'haul_num': np.tile( [ 1 , 2 ] , 4 ) ,
@@ -131,7 +131,7 @@ def test_strata_sex_weight_proportions( mock_survey ):
     ### Re-parameterize `length_df` with dummy data 
     objS.biology[ 'length_df' ] = pd.DataFrame(
         {
-            'stratum_num': np.repeat( [ 0 , 1 ] , 4 ) ,
+            'stratum_num': np.repeat( [ 0 , 1 ] , 4 ).astype( np.int64 ) ,
             'haul_num': [ 1 , 1 , 2 , 2 , 3 , 3 , 4 , 4 ] ,
             'sex': np.tile( [ 'male' , 'female' ] , 4 ) ,
             'group': np.repeat( 'sexed' , 8 ) ,
@@ -161,7 +161,7 @@ def test_strata_sex_weight_proportions( mock_survey ):
     ### Re-parameterize `length_df` with dummy data 
     objS.biology[ 'length_df' ] = pd.DataFrame(
         {
-            'stratum_num': np.repeat( [ 0 , 1 ] , 4 ) ,
+            'stratum_num': np.repeat( [ 0 , 1 ] , 4 ).astype( np.int64 ) ,
             'sex': np.tile( [ 'male' , 'female' ] , 4 ) ,
             'group': np.repeat( 'sexed' , 8 ) ,
             'species_id': np.repeat( [ 8675309 ] , 8 ) ,
@@ -200,7 +200,7 @@ def test_strata_sex_weight_proportions( mock_survey ):
     # ---- Expected output
     expected_output = pd.DataFrame(
         {
-            'stratum_num': np.array( [ 0 , 1 ] ).astype( np.int32 ) ,
+            'stratum_num': np.array( [ 0 , 1 ] ).astype( int ) ,
             'proportion_female': [ 0.59 , 0.41 ] ,
             'proportion_male': [ 0.41 , 0.59 ] ,
             'proportion_station_1': [ 0.93 , 0.93 ] ,
