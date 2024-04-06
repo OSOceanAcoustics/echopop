@@ -277,3 +277,51 @@ def test_meld( ):
     ### Check output
     assert np.all( eval_dataframe_monkey == expected_output )
     assert np.all( eval_dataframe_function == expected_output )
+
+def test_stretch( ):
+
+    ### Create mock dataframe
+    test_dataframe = pd.DataFrame(
+        {
+            'stratum_num': [ 1 , 1 , 2 , 2 ] ,
+            'transect_num': [ 1 , 2 , 3 , 4 ] ,
+            'latitude': [ 0.0 , 1.0 , 3.0 , 4.0 ] ,
+            'longitude': [ -1.0 , 0.0 , 1.0 , 2.0 ] ,
+            'load_a_male': [ 5.0 , 4.0 , 2.0 , 1.0 ] ,
+            'load_a_female': [ 10.0 , 3.0 , 5.0 , 6.0 ] ,
+        } ,
+    )
+
+    ### Eval for later comparison 
+    # ---- Monkey patch method (TEMPORARY)
+    eval_dataframe_monkey = test_dataframe.stretch( variable = 'load_a' )
+    # ---- Normal function
+    eval_dataframe_function = stretch( test_dataframe , variable = 'load_a' )
+
+    ###--------------------------------
+    ### Expected outcomes
+    ###--------------------------------
+    # ---- Expected dimensions
+    expected_dimensions = tuple( [ 8 , 6 ] )
+    # ---- Expected output
+    expected_output = pd.DataFrame(
+        {
+            'transect_num': np.repeat( [ 1 , 2 , 3 , 4 ] , 2 ) ,
+            'latitude': np.repeat( [ 0.0 , 1.0 , 3.0 , 4.0 ] , 2 ) ,
+            'longitude': np.repeat( [ -1.0 , 0.0 , 1.0 , 2.0 ] , 2 ) ,
+            'stratum_num': np.repeat( [ 1 , 2 ] , 4 ) ,
+            'sex': np.tile( [ 'male' , 'female' ] , 4 ) ,
+            'load_a': [ 5.0 , 10.0 , 4.0 , 3.0 ,
+                        2.0 , 5.0 , 1.0 , 6.0 ] ,
+        } ,
+    )
+
+    #----------------------------------
+    ### Run tests: `count_variable`
+    #----------------------------------
+    ### Check shape
+    assert eval_dataframe_monkey.shape == expected_dimensions
+    assert eval_dataframe_function.shape == expected_dimensions
+    ### Check output
+    assert np.all( eval_dataframe_monkey == expected_output )
+    assert np.all( eval_dataframe_function == expected_output )
