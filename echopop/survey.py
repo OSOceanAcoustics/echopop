@@ -1247,11 +1247,12 @@ class Survey:
             {
                 'kriged_biomass_df': kriged_dataframe
             }
+        )
         
         ### TODO: This should be refactored out as an external function 
         ###### rather than a Survey-class method.
         ### Apportion biomass based on age and sex
-        self.apportion_kriged_biomass( species_id )
+        # self.apportion_kriged_biomass( species_id )
 
     def apportion_kriged_biomass( self ,
                                   species_id ):
