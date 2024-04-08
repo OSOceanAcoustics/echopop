@@ -198,17 +198,17 @@ def transform_geometry( dataframe: pd.DataFrame ,
     else:
         return geodataframe_result.merge( dataframe , on = [ lon_col , lat_col ] )
     
-def lag_distance_griddify( dataset1 ,
-                           dataset2 ):
+def griddify_lag_distances( mesh_grid ,
+                            spatial_data ):
     """
     Calculate point-to-point distances between two gridded dataframes
 
     Parameters
     ----------
-    dataframe1: pd.DataFrame
+    mesh_grid: pd.DataFrame
         Background dataframe mesh that represents the "complete" field 
         of values
-    dataframe2: pd.DataFrame
+    spatial_data: pd.DataFrame
         Georeferenced dataframe
         
     Notes
@@ -216,32 +216,33 @@ def lag_distance_griddify( dataset1 ,
     This is used to effectively create a matrix comprising gridded 
     distance values (i.e. 'griddify').
     """
+
     ###
-    if all( isinstance( dataset , pd.DataFrame ) for dataset in ( dataset1 , dataset2 ) ):
+    if isinstance( mesh_grid , pd.DataFrame ) and isinstance( spatial_data , pd.DataFrame ):
         ### 
-        x_distance = np.subtract.outer( dataset1.x_transformed.values ,
-                                        dataset2.x_transformed.values )
-        y_distance = np.subtract.outer( dataset1.y_transformed.values ,
-                                        dataset2.y_transformed.values )
-    elif all( isinstance( dataset , np.ndarray ) for dataset in ( dataset1 , dataset2 ) ):
+        x_distance = np.subtract.outer( mesh_grid.x_transformed.values ,
+                                        spatial_data.x_transformed.values )
+        y_distance = np.subtract.outer( mesh_grid.y_transformed.values ,
+                                        spatial_data.y_transformed.values )
+    elif isinstance( mesh_grid , np.ndarray ) and isinstance( spatial_data , np.ndarray ):
         ###
-        x_distance = np.subtract.outer( dataset1 , dataset1 )
-        y_distance = np.subtract.outer( dataset2 , dataset2 )    
+        x_distance = np.subtract.outer( mesh_grid , mesh_grid )
+        y_distance = np.subtract.outer( spatial_data , spatial_data )    
     
     return np.sqrt( x_distance * x_distance + y_distance * y_distance )
 
-def local_search_index( dataframe_mesh ,
-                        dataframe ,
+def local_search_index( mesh_grid ,
+                        spatial_data ,
                         k_max ):
     """
     Search for the closest georeferenced values
 
     Parameters
     ----------
-    dataframe_mesh: pd.DataFrame
+    mesh_grid: pd.DataFrame
         Background dataframe mesh that represents the "complete" field 
         of values
-    dataframe: pd.DataFrame
+    spatial_data: pd.DataFrame
         Georeferenced dataframe
     k_max: int
         Maximum number of nearest neighbors allowed
@@ -252,7 +253,7 @@ def local_search_index( dataframe_mesh ,
     """
     
     ###
-    distance_matrix = lag_distance_griddify( dataframe_mesh , dataframe )
+    distance_matrix = griddify_lag_distances( mesh_grid , spatial_data )
     
     ###
     sorted_distance_matrix = np.argpartition( distance_matrix , k_max , axis = 1 )

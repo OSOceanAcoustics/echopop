@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from ..computation.spatial import lag_distance_griddify , local_search_index
+from ..computation.spatial import griddify_lag_distances , local_search_index
 from ..computation.variogram_models import variogram
 
 def compute_kriging_weights( ratio , M2 , K ):
@@ -53,7 +53,7 @@ def compute_kriging_matrix( x_coordinates ,
         Dictionary containing variogram model parameters
     """    
     ### Calculate local distance matrix of within-range samples
-    local_distance_matrix = lag_distance_griddify( x_coordinates , y_coordinates )
+    local_distance_matrix = griddify_lag_distances( x_coordinates , y_coordinates )
     
     ### Calculate the covariance/kriging matrix (without the constant term)
     kriging_matrix_initial = variogram( distance_lags = local_distance_matrix , 
@@ -148,7 +148,7 @@ def compute_kriging_statistics( point_values ,
     ### Remove any extrapolation
     if len( outside_indices ) > 0:
         point_values[ outside_indices ] = 0.0
-    
+
     ### Calculate locally weighted kriging mean
     local_mean = np.nansum( kriging_weights[: len( inside_indices ) ] * point_values ) * out_of_sample_weights
 
@@ -165,7 +165,7 @@ def compute_kriging_statistics( point_values ,
     ### Carriage return
     return local_mean , local_prediction_variance , local_sample_variance
 
-def ordinary_kriging( dataframe ,
+def ordinary_kriging( spatial_data ,
                       transformed_mesh ,
                       variogram_parameters ,
                       kriging_parameters ,                      
@@ -175,7 +175,7 @@ def ordinary_kriging( dataframe ,
     
     Parameters
     ----------
-    dataframe: pd.DataFrame
+    spatial_data: pd.DataFrame
         Dataframe including georeferenced data
     transformed_mesh: pd.DataFrame
         Grid data that has been transformed
@@ -186,9 +186,10 @@ def ordinary_kriging( dataframe ,
     variable: str
         Variable that will be kriged
     """
+
     ### Calculate the kriging distance matrix and corresponding indices
     distance_matrix , local_point_grid  = local_search_index( transformed_mesh , 
-                                                              dataframe , 
+                                                              spatial_data , 
                                                               kriging_parameters[ 'kmax' ] )
     
     ### Initialize kriging grid, weights, and results prior to loop    
@@ -197,7 +198,9 @@ def ordinary_kriging( dataframe ,
     kriging_mean = np.empty( local_point_grid.shape[ 0 ] ) # Mean
 
     ### Pull target data variable
-    variable_data = dataframe.loc[ : , variable ].values
+    variable_data = spatial_data[ variable ].values
+    variable_x = spatial_data.x_transformed.values
+    variable_y = spatial_data.y_transformed.values
 
     ### Iterate through the local point grid to evaluate the kriged/interpolated results
     for row in range( local_point_grid.shape[ 0 ] ):
@@ -209,7 +212,7 @@ def ordinary_kriging( dataframe ,
                                    variogram_parameters[ 'range' ] , 
                                    kriging_parameters[ 'kmin' ] )
             )
-        
+    
         ### Index the within-sample distance indices
         distance_within_indices = local_point_grid[ row , : ][ inside_indices ]
 
@@ -222,8 +225,8 @@ def ordinary_kriging( dataframe ,
         lagged_semivariogram = np.concatenate( [ modeled_semivariogram , [ 1.0 ] ] )
 
         ### Calculate the covariance/kriging matrix
-        kriging_matrix = compute_kriging_matrix( dataframe.x_transformed[ distance_within_indices ].values ,
-                                                 dataframe.y_transformed[ distance_within_indices ].values , 
+        kriging_matrix = compute_kriging_matrix( variable_x[ distance_within_indices ] ,
+                                                 variable_y[ distance_within_indices ] , 
                                                  variogram_parameters = variogram_parameters )
 
         ### Use singular value decomposition (SVD) to solve for the 
@@ -235,18 +238,18 @@ def ordinary_kriging( dataframe ,
         point_values = variable_data[ distance_within_indices ]
         
         ### Calculate the kriged mean, predication variance, and sample variance
-        kriged_stats = compute_kriging_statistics( point_values , 
-                                                   lagged_semivariogram , 
-                                                   kriging_weights , 
-                                                   inside_indices , 
-                                                   outside_indices ,
-                                                   out_of_sample_weights )
+        estimate , pred_variance , samp_variance = compute_kriging_statistics( point_values , 
+                                                                               lagged_semivariogram , 
+                                                                               kriging_weights , 
+                                                                               inside_indices , 
+                                                                               outside_indices ,
+                                                                               out_of_sample_weights )
         
         ### Fill in the iterable values from the output (tuple) of 
         ### `compute_kriging_statistics()`
-        kriging_mean[ row ] = kriged_stats[ 0 ]
-        kriging_prediction_variance[ row ] = kriged_stats[ 1 ]
-        kriging_sample_variance[ row ] = kriged_stats[ 2 ]
+        kriging_mean[ row ] = estimate
+        kriging_prediction_variance[ row ] = pred_variance
+        kriging_sample_variance[ row ] = samp_variance
 
     ### Remove nonsense values (NaN, negative)
     kriging_mean = np.where( ( kriging_mean < 0 ) | np.isnan( kriging_mean ) , 0.0 , kriging_mean )
@@ -254,7 +257,7 @@ def ordinary_kriging( dataframe ,
     ### Carriage return
     return kriging_mean , kriging_prediction_variance , kriging_sample_variance
 
-def kriging_interpolation( dataframe ,
+def kriging_interpolation( spatial_data ,
                            transformed_mesh ,
                            dataframe_mesh ,
                            dataframe_geostrata ,
@@ -266,7 +269,7 @@ def kriging_interpolation( dataframe ,
     
     Parameters
     ----------
-    dataframe: pd.DataFrame
+    spatial_data: pd.DataFrame
         Dataframe including georeferenced data
     transformed_mesh: pd.DataFrame
         Grid data that has been transformed
@@ -282,6 +285,7 @@ def kriging_interpolation( dataframe ,
     variable: str
         Variable that will be kriged
     """
+    
     ### Discretize latitudinal bins
     latitude_bins = np.concatenate( [ [ -90.0 ] , dataframe_geostrata.northlimit_latitude , [ 90.0 ] ] )
 
@@ -292,19 +296,25 @@ def kriging_interpolation( dataframe ,
                                               ordered = False )
     
     ### Run kriging
-    kriged_results = ordinary_kriging( dataframe , transformed_mesh , variogram_parameters , kriging_parameters )
+    estimate , pred_variance , samp_variance  = ordinary_kriging( spatial_data , 
+                                                                  transformed_mesh , 
+                                                                  variogram_parameters , 
+                                                                  kriging_parameters )
 
     ### Append results to the mesh dataframe
-    dataframe_mesh[ 'B_a_adult_mean' ] = kriged_results[ 0 ]
-    dataframe_mesh[ 'B_a_adult_prediction_variance' ] = kriged_results[ 1 ]
-    dataframe_mesh[ 'B_a_adult_sample_variance' ] = kriged_results[ 2 ]
+    dataframe_mesh[ 'B_a_adult_mean' ] = estimate
+    dataframe_mesh[ 'B_a_adult_prediction_variance' ] = pred_variance
+    dataframe_mesh[ 'B_a_adult_sample_variance' ] = samp_variance
 
     ### Calculate cell area
-    kriged_result_df = (
-        dataframe_mesh
-        .assign( cell_area_nmi2 = lambda x: kriging_parameters[ 'A0' ] * x.fraction_cell_in_polygon ,
-                 B_adult_kriged = lambda x: x.B_a_adult_mean * x.cell_area_nmi2 )
+    dataframe_mesh[ 'cell_area_nmi2' ] = (
+        dataframe_mesh.fraction_cell_in_polygon * kriging_parameters[ 'A0' ]
     )
 
+    ### Calculate the kriged biomass estimate
+    dataframe_mesh[ 'B_adult_kriged' ] = (
+        dataframe_mesh.B_a_adult_mean * dataframe_mesh.cell_area_nmi2
+    )
+    dataframe_mesh[ np.isnan( dataframe_mesh.B_a_adult_sample_variance ) & ( dataframe_mesh.B_a_adult_mean > 0 ) ]
     ### Carriage return
-    return kriged_result_df
+    return dataframe_mesh
