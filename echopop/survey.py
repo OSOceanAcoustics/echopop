@@ -1148,9 +1148,7 @@ class Survey:
         # !!! TODO: This only currently applies to age-sex-indexed biomass
         transect_trans_df , d_x , d_y = transform_geometry( self.biology[ 'population' ][ 'biomass' ][ 'biomass_age_df' ] , 
                                                             self.statistics[ 'kriging' ][ 'isobath_200m_df' ] , 
-                                                            self.config[ 'kriging_parameters' ][ 'longitude_reference' ] , 
-                                                            self.config[ 'kriging_parameters' ][ 'longitude_offset' ] , 
-                                                            self.config[ 'kriging_parameters' ][ 'latitude_offset' ] ,
+                                                            self.config[ 'kriging_parameters' ] ,
                                                             self.config[ 'geospatial' ][ 'init' ] )
         
         ### Update Survey object with transformed coordinates
@@ -1162,19 +1160,13 @@ class Survey:
             ### Transform mesh
             mesh_trans_df = transform_geometry( self.statistics[ 'kriging' ][ 'mesh_df' ] , 
                                                 self.statistics[ 'kriging' ][ 'isobath_200m_df' ] , 
-                                                self.config[ 'kriging_parameters' ][ 'longitude_reference' ] , 
-                                                self.config[ 'kriging_parameters' ][ 'longitude_offset' ] , 
-                                                self.config[ 'kriging_parameters' ][ 'latitude_offset' ] ,
+                                                self.config[ 'kriging_parameters' ] ,
                                                 self.config[ 'geospatial' ][ 'init' ] ,
                                                 range_output = False ,
                                                 d_longitude = d_x , d_latitude = d_y )
             
             ### Update Survey object with transformed coordinates
-            self.statistics[ 'kriging' ].update(
-                {
-                    'transformed_mesh_geodf': mesh_trans_df
-                }
-            )
+            self.statistics[ 'kriging' ][ 'mesh_df' ] =  mesh_trans_df
     
     def krige( self ,
                species_id ,

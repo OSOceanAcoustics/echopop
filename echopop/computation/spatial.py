@@ -4,7 +4,7 @@ import geopandas as gpd
 import geopy.distance
 from typing import Union
 from typing import Optional , Tuple
-from scipy import interpolate , special
+from scipy import interpolate
                         
 def correct_transect_intervals( dataframe: pd.DataFrame ,
                                 threshold: np.float64 = 0.05 ):
@@ -103,10 +103,8 @@ def calculate_transect_distance( dataframe ,
     )
     
 def transform_geometry( dataframe: pd.DataFrame ,
-                        dataframe_reference: pd.DataFrame ,
-                        longitude_reference: np.float64 ,
-                        longitude_offset: np.float64 ,
-                        latitude_offset: np.float64 ,
+                        reference_grid: pd.DataFrame ,
+                        kriging_grid_parameters: dict ,
                         projection: str = 'epsg:4326' ,
                         range_output: bool = True ,
                         d_longitude: Optional[ np.float64 ] = None ,
@@ -121,14 +119,11 @@ def transform_geometry( dataframe: pd.DataFrame ,
     ----------
     dataframe: pd.DataFrame
         DataFrame
-    geodataframe_reference: gpd.GeoDataFrame
+    reference_grid: gpd.GeoDataFrame
         Reference GeoDataFrame
-    longitude_reference: np.float64
-        Reference longitude used to 'center' all coordinates
-    longitude_offset: np.float64
-        Longitude value used to shift longitude coordinates
-    latitude_offset: np.float64
-        Latitude value used to shift latitude coordinates
+    kriging_grid_parameters: dict
+        Dictionary containing parameters defining longitudinal and latitudinal 
+        reference and offset values
     projection: str
         Projection (EPSG) string
     d_longitude: np.float64
@@ -137,66 +132,79 @@ def transform_geometry( dataframe: pd.DataFrame ,
         Total longitudinal distance (degrees) used for standardizing coordinates   
     """
 
-    ### Parse longitude and latitude column names
-    ref_lat_col = [ col for col in dataframe_reference.columns if 'latitude' in col.lower( ) ][ 0 ]
-    ref_lon_col = [ col for col in dataframe_reference.columns if 'longitude' in col.lower( ) ][ 0 ]
+    ### Parse longitude and latitude column 
+    # ---- Primary dataframe input
+    lat_col = [ col for col in dataframe.columns if 'latitude' in col.lower( ) ][ 0 ]
+    lon_col = [ col for col in dataframe.columns if 'longitude' in col.lower( ) ][ 0 ]
+
+    # ---- Reference grid dataframe input
+    ref_lat_col = [ col for col in reference_grid.columns if 'latitude' in col.lower( ) ][ 0 ]
+    ref_lon_col = [ col for col in reference_grid.columns if 'longitude' in col.lower( ) ][ 0 ]
     
     ### Interpolate coordinates
-    # This transformation will be applied the appropriate datasets
+    # ---- This transformation will be applied the appropriate datasets
     coordinate_interp = interpolate.interp1d(
-        dataframe_reference[ ref_lat_col ] ,
-        dataframe_reference[ ref_lon_col ] ,
+        reference_grid[ ref_lat_col ] ,
+        reference_grid[ ref_lon_col ] ,
         kind = 'linear' ,
         bounds_error = False
     )
-    
-    ### Parse longitude and latitude column names
-    lat_col = [ col for col in dataframe.columns if 'latitude' in col.lower( ) ][ 0 ]
-    lon_col = [ col for col in dataframe.columns if 'longitude' in col.lower( ) ][ 0 ]
-    
+
     ### Reduce coordinates to prevent issues with unwieldly dataframes
-    dataframe_geometry = (
-        # dataframe.loc[ : , [ lon_col , lat_col ] ]
-        dataframe[ [ lon_col , lat_col ] ]
-        .drop_duplicates( )
-        .assign( geometry = lambda x: gpd.points_from_xy( x[ lon_col ] , x[ lat_col ] ) )
+    # ---- Reduce to minimum dimensions for coordinates
+    dataframe_geometry = dataframe[ [ lon_col , lat_col ] ].drop_duplicates( )
+
+    # ---- Convert coordinates to Points
+    dataframe_geometry[ 'geometry' ] = (
+        gpd.points_from_xy( dataframe_geometry[ lon_col ] , 
+                            dataframe_geometry[ lat_col ] )
     )
-    
+
     ### Convert to GeoDataFrame
     geodataframe_geometry = gpd.GeoDataFrame( dataframe_geometry ,
                                               geometry = 'geometry' ,
                                               crs = projection )
 
-    ### Apply transformation to pre-existing coordinates
-    geodataframe_transformed = (
-        geodataframe_geometry
-        .assign( longitude_transformed = lambda df: ( 
-                    df.geometry.x - coordinate_interp( df.geometry.y ) + longitude_reference ) 
-                )
-        .pipe( lambda df: df.assign( geometry = gpd.points_from_xy( df.longitude_transformed , df.geometry.y ) ) )
+    ### Apply transformation
+    # ---- Calculate new referenced coordinates
+    geodataframe_geometry[ 'longitude_transformed' ] = (
+        geodataframe_geometry.geometry.x 
+        - coordinate_interp( geodataframe_geometry.geometry.y )
+        + kriging_grid_parameters[ 'longitude_reference' ]
+    )
+
+    # ---- Convert coordinates to Points
+    geodataframe_geometry[ 'geometry_transformed' ] = (
+        gpd.points_from_xy( geodataframe_geometry.longitude_transformed , 
+                            geodataframe_geometry.geometry.y )
     )
 
     ### Calculate geospatial distances in longitudinal and latitudinal axes
-    # Based on 'd_longitude' and 'd_latitude' inputs
-    # If 'd_longitude' and 'd_latitude' is not defined
+    ### based on 'd_longitude' and 'd_latitude' inputs
+    # ---- If 'd_longitude' and 'd_latitude' are not defined
     if ( d_longitude is None ) & ( d_latitude is None ):
-        d_longitude = geodataframe_transformed.geometry.x.max( ) - geodataframe_transformed.geometry.x.min( )
-        d_latitude = geodataframe_transformed.geometry.y.max( ) - geodataframe_transformed.geometry.y.min( )
+        d_longitude = geodataframe_geometry.geometry.x.max( ) - geodataframe_geometry.geometry.x.min( )
+        d_latitude = geodataframe_geometry.geometry.y.max( ) - geodataframe_geometry.geometry.y.min( )
 
-    ### Apply transformation to coordinates and assign to reduced geodataframe
-    geodataframe_result = (
-        geodataframe_transformed
-        .assign( x_transformed = lambda dfs: ( np.cos( np.pi / 180.0 * dfs.geometry.y ) *
-                                               ( dfs.geometry.x - longitude_offset ) /
-                                               d_longitude ) ,
-                 y_transformed = lambda dfs: ( dfs.geometry.y - latitude_offset ) /
-                                               d_latitude ) )  
+    ### Standardize x- and y-coordinates
+    # ---- x
+    geodataframe_geometry[ 'x_transformed' ] = (
+        np.cos( np.pi / 180.0 * geodataframe_geometry.geometry.y )
+        * ( geodataframe_geometry.geometry.x - kriging_grid_parameters[ 'longitude_offset' ] )
+        / d_longitude
+    )
+
+    # ---- y
+    geodataframe_geometry[ 'y_transformed' ] = (
+        ( geodataframe_geometry.geometry.x - kriging_grid_parameters[ 'latitude_offset' ] )
+        / d_longitude
+    )    
 
     ### Merge back with original input data in case of reduction
     if range_output:
-        return geodataframe_result.merge( dataframe , on = [ lon_col , lat_col ] ) , d_longitude , d_latitude
+        return geodataframe_geometry.merge( dataframe , on = [ lon_col , lat_col ] ) , d_longitude , d_latitude
     else:
-        return geodataframe_result.merge( dataframe , on = [ lon_col , lat_col ] )
+        return geodataframe_geometry.merge( dataframe , on = [ lon_col , lat_col ] )
     
 def lag_distance_griddify( dataset1 ,
                            dataset2 ):
