@@ -1191,40 +1191,42 @@ class Survey:
         """  
         ### TODO : Need to relocate the transformed coordinates to an external location
         ### Import georeferenced data
-        dataframe_input = (
+        spatial_data = (
             self.biology
             [ 'population' ][ 'areal_density' ][ 'biomass_density_df' ]
-            .copy()
-            .loc[ lambda x: x.sex == 'all' , : ]
+        )
+
+        ### Remove sexed data -- only use 'all' for this portion
+        spatial_data = (
+            spatial_data[ spatial_data.sex == 'all' ]
+            .drop_duplicates( subset = [ 'longitude' , 'latitude' ] )
+            [ [ 'transect_num' , 'latitude' , 'longitude' , 'stratum_num' , 
+                'B_a' , 'B_a_adult' ] ]
         )
 
         ### Import updated/transformed coordinates                
         updated_coordinates = (
             self.biology
             [ 'population' ][ 'biomass' ][ 'biomass_age_df' ]
-            .copy()
-            .loc[ lambda x: x.sex == 'all' , : ]
-            .drop_duplicates( subset = [ 'longitude' , 'latitude' ] )
+            .drop_duplicates( subset = [ 'x_transformed' , 'y_transformed' ] )
+            [ [ 'longitude' , 'latitude' , 'longitude_transformed' , 'geometry' , 
+                'x_transformed' , 'y_transformed' , 'transect_num' , 'stratum_num' ] ]
         )
 
         ### Find union of column names that will be used to join everything
-        union_lst = dataframe_input.filter( items = updated_coordinates.columns ).columns.tolist()
+        union_lst = spatial_data.filter( items = updated_coordinates.columns ).columns.tolist( )
         
         ### Merge with input dataframe
-        dataframe = (
-            dataframe_input
-            .copy()
-            .merge( updated_coordinates , on = union_lst )
-        )
+        spatial_data_transformed =  spatial_data.merge( updated_coordinates , on = union_lst )
 
         ### Import additional parameters/dataframes necessary for kriging
-        transformed_mesh = self.statistics[ 'kriging' ][ 'transformed_mesh_geodf' ].copy()
-        dataframe_mesh = self.statistics[ 'kriging' ][ 'mesh_df' ].copy()
-        dataframe_geostrata = self.spatial[ 'geo_strata_df' ].copy()
+        transformed_mesh = self.statistics[ 'kriging' ][ 'transformed_mesh_geodf' ].copy( )
+        dataframe_mesh = self.statistics[ 'kriging' ][ 'mesh_df' ].copy( )
+        dataframe_geostrata = self.spatial[ 'geo_strata_df' ].copy( )
 
         ### Import semivariogram and kriging parameters
-        kriging_parameters = self.statistics[ 'kriging' ][ 'model_config' ].copy()
-        variogram_parameters = self.statistics[ 'variogram' ][ 'model_config' ].copy()
+        kriging_parameters = self.statistics[ 'kriging' ][ 'model_config' ].copy( )
+        variogram_parameters = self.statistics[ 'variogram' ][ 'model_config' ].copy( )
 
         ### ---------------------------------------------------------------
         ### !!! TODO: 
@@ -1235,7 +1237,7 @@ class Survey:
         ### This therefore relates to Issue #202.
         ### ---------------------------------------------------------------
         ### Run kriging algorithm
-        kriged_dataframe = kriging_interpolation( dataframe ,
+        kriged_dataframe = kriging_interpolation( spatial_data_transformed ,
                                                   transformed_mesh ,
                                                   dataframe_mesh ,
                                                   dataframe_geostrata ,
