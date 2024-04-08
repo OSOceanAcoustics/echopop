@@ -183,20 +183,20 @@ def transform_geometry( dataframe: pd.DataFrame ,
     ### based on 'd_longitude' and 'd_latitude' inputs
     # ---- If 'd_longitude' and 'd_latitude' are not defined
     if ( d_longitude is None ) & ( d_latitude is None ):
-        d_longitude = geodataframe_geometry.geometry.x.max( ) - geodataframe_geometry.geometry.x.min( )
-        d_latitude = geodataframe_geometry.geometry.y.max( ) - geodataframe_geometry.geometry.y.min( )
+        d_longitude = geodataframe_geometry.geometry_transformed.x.max( ) - geodataframe_geometry.geometry_transformed.x.min( )
+        d_latitude = geodataframe_geometry.geometry_transformed.y.max( ) - geodataframe_geometry.geometry_transformed.y.min( )
 
     ### Standardize x- and y-coordinates
     # ---- x
     geodataframe_geometry[ 'x_transformed' ] = (
         np.cos( np.pi / 180.0 * geodataframe_geometry.geometry.y )
-        * ( geodataframe_geometry.geometry.x - kriging_grid_parameters[ 'longitude_offset' ] )
+        * ( geodataframe_geometry.geometry_transformed.x - kriging_grid_parameters[ 'longitude_offset' ] )
         / d_longitude
     )
 
     # ---- y
     geodataframe_geometry[ 'y_transformed' ] = (
-        ( geodataframe_geometry.geometry.x - kriging_grid_parameters[ 'latitude_offset' ] )
+        ( geodataframe_geometry.geometry_transformed.x - kriging_grid_parameters[ 'latitude_offset' ] )
         / d_longitude
     )    
 

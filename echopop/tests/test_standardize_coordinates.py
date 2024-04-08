@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from echopop.survey import Survey
 from echopop.computation.spatial import transform_geometry
 
 def test_transform_geometry( ):
@@ -132,3 +133,129 @@ def test_transform_geometry( ):
                         rtol = 1e-1 )
     assert output22 == 60.0
     assert output33 == 5.0
+
+def test_standardize_coordinates( mock_survey ):
+
+    ### Initialize Survey object
+    objS = mock_survey
+    objS.biology[ 'population' ] = { }
+    objS.biology[ 'population' ].update( { 'biomass': { } } )
+    
+    ### Mock data for `dataframe`
+    objS.biology[ 'population' ][ 'biomass' ][ 'biomass_age_df' ] = pd.DataFrame(
+        {
+            'transect_num': [ 1 , 2 , 3 , 4 , 5 ] ,
+            'latitude': [ -5.0 , -2.5 , 0 , 2.5 , 5.0 ] ,
+            'longitude': [ -180.0 , -120.0 , -60.0 , 0.0 , 60.0 ] ,
+            'stratum_num': [ 1 , 1 , 1 , 2 , 2 ] ,
+            'metric_value': [ 0.0 , 1.0 , 2.0 , 3.0 , 4.0 ] ,
+        } ,
+    )
+
+    ### Mock data for `reference_grid`
+    objS.statistics[ 'kriging' ][ 'isobath_200m_df' ] = pd.DataFrame(
+        {
+            'latitude': [ -3.0 , -1.0 , 1.0 , 3.0 ] ,
+            'longitude': [ -20.0 , -10.0 , 10.0 , 20.0 ] ,
+        } ,
+    )
+
+    ### Mock data for kriging `mesh_df`
+    objS.statistics[ 'kriging' ][ 'mesh_df' ] = pd.DataFrame(
+        {
+            'centroid_longitude': [ -10.0 , -5.0 , 0.0 , 5.0 , 10.0 ] ,
+            'centroid_latitude': [ -10.0 , -5.0 , 0.0 , 5.0 , 10.0 ] ,
+        }
+    )
+
+    ### Mock data for `kriging_grid_parameters`
+    objS.config[ 'kriging_parameters' ] = {
+        'longitude_reference': 10.0 , 
+        'longitude_offset': 10.0 ,
+        'latitude_offset': 1.0 ,
+    }
+
+    ### Mock data for `projection`
+    objS.config[ 'geospatial' ][ 'init' ] = 'epsg:4326'
+
+    ### Evaluate when `adjust_mesh = True` (default)
+    objS.standardize_coordinates( adjust_mesh = True )
+    # ---- Check outputs
+    output1 = objS.biology[ 'population' ][ 'biomass' ][ 'biomass_age_df' ]
+    output2 = objS.statistics[ 'kriging' ][ 'mesh_df' ]
+    # ---- Check output type
+    assert isinstance( output1 , pd.DataFrame )
+    assert isinstance( output2 , pd.DataFrame )
+    # ---- Check output shape
+    assert output1.shape == tuple( [ 5 , 10 ] )
+    assert output2.shape == tuple( [ 5 , 7 ] )
+    # ---- Check data value equality
+    # ++++ Output 1
+    non_na_values = ~np.isnan( output1.longitude_transformed )
+    assert np.all( output1.longitude_transformed[ non_na_values ] == np.array( [ -92.5 , -50.0 , -7.5 ] ) )
+    assert np.isnan( output1.longitude_transformed[ 0 ] ) & np.isnan( output1.longitude_transformed[ 4 ] )
+    assert np.allclose( output1.x_transformed.values[ non_na_values ] , 
+                        np.array( [ -1.205 , -0.706 , -0.206 ] ) ,
+                        rtol = 1e-1 )
+    assert np.allclose( output1.y_transformed.values[ non_na_values ] , 
+                        np.array( [ -1.1 , -0.6 , -0.1 ] ) ,
+                        rtol = 1e-1 )
+    # ++++ Output 2
+    non_na_values = ~np.isnan( output2.longitude_transformed )
+    assert np.all( output2.longitude_transformed[ non_na_values ] == np.array( [ 10.0 ] ) )
+    assert np.all( np.isnan( output2.longitude_transformed[ [ 0 , 1 , 3 , 4 ] ] ) )
+    assert np.allclose( output2.x_transformed.values[ non_na_values ] , 
+                        np.array( [ 0.000 ] ) ,
+                        rtol = 1e-1 )
+    assert np.allclose( output2.y_transformed.values[ non_na_values ] , 
+                        np.array( [ 0.106 ] ) ,
+                        rtol = 1e-1 )
+    
+    ### Evaluate when `adjust_mesh = False`
+    # ---- Reset object
+    objS.biology[ 'population' ][ 'biomass' ][ 'biomass_age_df' ] = pd.DataFrame(
+        {
+            'transect_num': [ 1 , 2 , 3 , 4 , 5 ] ,
+            'latitude': [ -5.0 , -2.5 , 0 , 2.5 , 5.0 ] ,
+            'longitude': [ -180.0 , -120.0 , -60.0 , 0.0 , 60.0 ] ,
+            'stratum_num': [ 1 , 1 , 1 , 2 , 2 ] ,
+            'metric_value': [ 0.0 , 1.0 , 2.0 , 3.0 , 4.0 ] ,
+        } ,
+    )
+
+    ### Mock data for kriging `mesh_df`
+    objS.statistics[ 'kriging' ][ 'mesh_df' ] = pd.DataFrame(
+        {
+            'centroid_longitude': [ -10.0 , -5.0 , 0.0 , 5.0 , 10.0 ] ,
+            'centroid_latitude': [ -10.0 , -5.0 , 0.0 , 5.0 , 10.0 ] ,
+        }
+    )
+
+    objS.standardize_coordinates( adjust_mesh = False )
+
+    # ---- Check outputs
+    output1 = objS.biology[ 'population' ][ 'biomass' ][ 'biomass_age_df' ]
+    output2 = objS.statistics[ 'kriging' ][ 'mesh_df' ]
+    # ---- Check output type
+    assert isinstance( output1 , pd.DataFrame )
+    assert isinstance( output2 , pd.DataFrame )
+    # ---- Check output shape
+    assert output1.shape == tuple( [ 5 , 10 ] )
+    assert output2.shape == tuple( [ 5 , 2 ] ) # should be unchanged from original
+    # ---- Check data value equality
+    # ++++ Output 1
+    non_na_values = ~np.isnan( output1.longitude_transformed )
+    assert np.all( output1.longitude_transformed[ non_na_values ] == np.array( [ -92.5 , -50.0 , -7.5 ] ) )
+    assert np.isnan( output1.longitude_transformed[ 0 ] ) & np.isnan( output1.longitude_transformed[ 4 ] )
+    assert np.allclose( output1.x_transformed.values[ non_na_values ] , 
+                        np.array( [ -1.205 , -0.706 , -0.206 ] ) ,
+                        rtol = 1e-1 )
+    assert np.allclose( output1.y_transformed.values[ non_na_values ] , 
+                        np.array( [ -1.1 , -0.6 , -0.1 ] ) ,
+                        rtol = 1e-1 )
+    # ++++ Output 2
+    assert output2.equals( pd.DataFrame( {
+                'centroid_longitude': [ -10.0 , -5.0 , 0.0 , 5.0 , 10.0 ] ,
+                'centroid_latitude': [ -10.0 , -5.0 , 0.0 , 5.0 , 10.0 ] ,
+            } ) )
+ 
