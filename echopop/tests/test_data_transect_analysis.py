@@ -503,13 +503,13 @@ def test_nasc_to_biomass_conversion( mock_survey ):
                 'stratum_num': np.repeat( [ 0 , 1 ] , 16 ).astype( np.int64 ) ,
                 'sex': np.tile( [ 'all' , 'all' , 'male' , 'male' , 
                                   'female' , 'female' , 'unsexed' , 'unsexed' ] , 4 ) ,
-                'NASC_all_ages': np.concatenate( [ np.repeat( 1e1 , 8 ) ,
-                                                   np.repeat( 1e2 , 16 ) ,
-                                                   np.repeat( 1e3 , 8 ) ] ) ,
                 'NASC_no_age1': np.concatenate( [ np.repeat( 0 , 8 ) ,
                                                   np.repeat( 1e1 , 8 ) ,
                                                   np.repeat( 1e2 , 8 ) ,
                                                   np.repeat( 1e3 , 8 ) ] ) ,
+                'NASC_all_ages': np.concatenate( [ np.repeat( 1e1 , 8 ) ,
+                                                   np.repeat( 1e2 , 16 ) ,
+                                                   np.repeat( 1e3 , 8 ) ] ) ,
                 'N': np.concatenate( [ np.repeat( 0.0 , 8 ) ,
                                         [ 4.88e8 , 4.88e8 , 1.99e8 , 1.99e8 , 2.90e8 , 2.90e8 , 0.0 , 0.0 ,
                                         2.44e9 , 2.44e9 , 1.45e9 , 1.45e9 , 9.94e8 , 9.94e8 , 0.0 , 0.0 ,
@@ -567,11 +567,33 @@ def test_nasc_to_biomass_conversion( mock_survey ):
     #----------------------------------
     ### Run tests: `test_nasc_to_biomass_conversion`
     #----------------------------------
+    # ---- Set evaluated dataframes from function 
     eval_number_density_df = objS.biology[ 'population' ][ 'areal_density' ][ 'number_density_df' ]
     eval_biomass_density_df = objS.biology[ 'population' ][ 'areal_density' ][ 'biomass_density_df' ]
     eval_abundance_df = objS.biology[ 'population' ][ 'abundance' ][ 'abundance_df' ]
     eval_biomass_df = objS.biology[ 'population' ][ 'biomass' ][ 'biomass_df' ]
     eval_biomass_age_df = objS.biology[ 'population' ][ 'biomass' ][ 'biomass_age_df' ]
+    # ---- Extract expected dataframes to appropriately set indices
+    expected_number_density_df = (
+        expected_output[ 'areal_density' ][ 'number_density' ]
+        .set_index( pd.Index( list( expected_output[ 'areal_density' ][ 'number_density' ].index ) ) )
+    )
+    expected_biomass_density_df = (
+        expected_output[ 'areal_density' ][ 'biomass_density' ]
+        .set_index( pd.Index( list( expected_output[ 'areal_density' ][ 'biomass_density' ].index ) ) )
+    )
+    expected_abundance_df = (
+        expected_output[ 'abundance' ][ 'abundance' ]
+        .set_index( pd.Index( list( expected_output[ 'abundance' ][ 'abundance' ].index ) ) )
+    )
+    expected_biomass_df = (
+        expected_output[ 'biomass' ][ 'biomass' ]
+        .set_index( pd.Index( list( expected_output[ 'biomass' ][ 'biomass' ].index ) ) )
+    )
+    expected_biomass_age_df = (
+        expected_output[ 'biomass' ][ 'biomass_age' ]
+        .set_index( pd.Index( list( expected_output[ 'biomass' ][ 'biomass_age' ].index ) ) )
+    )
     ### Check shape 
     assert eval_number_density_df.shape == expected_dimensions[ 'areal_density' ][ 'number_density' ]
     assert eval_biomass_density_df.shape == expected_dimensions[ 'areal_density' ][ 'biomass_density' ]
@@ -579,31 +601,31 @@ def test_nasc_to_biomass_conversion( mock_survey ):
     assert eval_biomass_df.shape == expected_dimensions[ 'biomass' ][ 'biomass' ]
     assert eval_biomass_age_df.shape == expected_dimensions[ 'biomass' ][ 'biomass_age' ]
     ### Check datatypes
-    assert np.all( eval_number_density_df.dtypes == expected_output[ 'areal_density' ][ 'number_density' ].dtypes )
-    assert np.all( eval_biomass_density_df.dtypes == expected_output[ 'areal_density' ][ 'biomass_density' ].dtypes )
-    assert np.all( eval_abundance_df.dtypes == expected_output[ 'abundance' ][ 'abundance' ].dtypes )
-    assert np.all( eval_biomass_df.dtypes == expected_output[ 'biomass' ][ 'biomass' ].dtypes )
-    assert np.all( eval_biomass_age_df.dtypes == expected_output[ 'biomass' ][ 'biomass_age' ].dtypes )
+    assert np.all( eval_number_density_df.dtypes == expected_number_density_df.dtypes )
+    assert np.all( eval_biomass_density_df.dtypes == expected_biomass_density_df.dtypes )
+    assert np.all( eval_abundance_df.dtypes == expected_abundance_df.dtypes )
+    assert np.all( eval_biomass_df.dtypes == expected_biomass_df.dtypes )
+    assert np.all( eval_biomass_age_df.dtypes == expected_biomass_age_df.dtypes )
     ### Check dataframe equality
-    assert np.all( eval_number_density_df.sex == expected_output[ 'areal_density' ][ 'number_density' ].sex )
+    assert np.all( eval_number_density_df.sex == expected_number_density_df.sex )
     assert np.allclose( eval_number_density_df[ [ 'rho_a' , 'rho_a_adult' ] ] ,
-                        expected_output[ 'areal_density' ][ 'number_density' ][ [ 'rho_a' , 'rho_a_adult' ] ] ,
+                        expected_number_density_df[ [ 'rho_a' , 'rho_a_adult' ] ] ,
                         rtol = 1e-1 )
-    assert np.all( eval_biomass_density_df.sex == expected_output[ 'areal_density' ][ 'biomass_density' ].sex ) 
+    assert np.all( eval_biomass_density_df.sex == expected_biomass_density_df.sex ) 
     assert np.allclose( eval_biomass_density_df[ [ 'B_a' , 'B_a_adult' ] ] ,
-                        expected_output[ 'areal_density' ][ 'biomass_density' ][ [ 'B_a' , 'B_a_adult' ] ] ,
+                        expected_biomass_density_df[ [ 'B_a' , 'B_a_adult' ] ] ,
                         rtol = 1e-1 )
-    assert np.all( eval_abundance_df.sex == expected_output[ 'abundance' ][ 'abundance' ].sex ) 
+    assert np.all( eval_abundance_df.sex == expected_abundance_df.sex ) 
     assert np.allclose( eval_abundance_df[ [ 'N' , 'N_adult' ] ] ,
-                        expected_output[ 'abundance' ][ 'abundance' ][ [ 'N' , 'N_adult' ] ] ,
+                        expected_abundance_df[ [ 'N' , 'N_adult' ] ] ,
                         rtol = 1e-1 )
-    assert np.all( eval_biomass_df.sex == expected_output[ 'biomass' ][ 'biomass' ].sex ) 
+    assert np.all( eval_biomass_df.sex == expected_biomass_df.sex ) 
     assert np.allclose( eval_biomass_df[ [ 'B' , 'B_adult' ] ] ,
-                        expected_output[ 'biomass' ][ 'biomass' ][ [ 'B' , 'B_adult' ] ] ,
+                        expected_biomass_df[ [ 'B' , 'B_adult' ] ] ,
                         rtol = 1e-1 )
-    assert np.all( eval_biomass_age_df.sex == expected_output[ 'biomass' ][ 'biomass_age' ].sex ) 
+    assert np.all( eval_biomass_age_df.sex == expected_biomass_age_df.sex ) 
     assert np.allclose( eval_biomass_age_df[ [ 'B_age' ] ] ,
-                        expected_output[ 'biomass' ][ 'biomass_age' ][ [ 'B_age' ] ] ,
+                        expected_biomass_age_df[ [ 'B_age' ] ] ,
                         rtol = 1e-1 )
 
     
