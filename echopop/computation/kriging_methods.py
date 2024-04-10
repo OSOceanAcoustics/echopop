@@ -285,7 +285,7 @@ def kriging_interpolation( spatial_data ,
     variable: str
         Variable that will be kriged
     """
-    
+
     ### Discretize latitudinal bins
     latitude_bins = np.concatenate( [ [ -90.0 ] , dataframe_geostrata.northlimit_latitude , [ 90.0 ] ] )
 
@@ -315,6 +315,6 @@ def kriging_interpolation( spatial_data ,
     dataframe_mesh[ 'B_adult_kriged' ] = (
         dataframe_mesh.B_a_adult_mean * dataframe_mesh.cell_area_nmi2
     )
-    dataframe_mesh[ np.isnan( dataframe_mesh.B_a_adult_sample_variance ) & ( dataframe_mesh.B_a_adult_mean > 0 ) ]
+
     ### Carriage return
     return dataframe_mesh
