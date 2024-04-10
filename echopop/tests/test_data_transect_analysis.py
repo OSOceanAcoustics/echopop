@@ -261,19 +261,19 @@ def test_strata_age_binned_weight_proportions( mock_survey ):
     # ---- Expected output
     expected_output = {
         'age_proportions': pd.DataFrame( {
-           'stratum_num': np.repeat( [ 0 , 1 ] , 2 ).astype( np.int64 ) ,
+           'stratum_num': np.repeat( [ 0 , 1 ] , 2 ).astype( np.int32 ) ,
            'age': np.tile( [ 1 , 2 ] , 2 ).astype( np.int64 ) ,
            'count_age_proportion_all': np.repeat( 0.5 , 4 ) ,
            'count_age_proportion_adult': [ 0.0 , 1.0 , 0.0 , 1.0 ]
         } ) ,
         'age_weight_proportions': pd.DataFrame( {
-           'stratum_num': np.repeat( [ 0 , 1 ] , 2 ).astype( np.int64 ) ,
+           'stratum_num': np.repeat( [ 0 , 1 ] , 2 ).astype( np.int32 ) ,
            'age': np.tile( [ 1 , 2 ] , 2 ).astype( np.int64 ) ,
            'weight_age_proportion_all': [ 0.50 , 0.50 , 0.50 , 0.50 ] ,
            'weight_age_proportion_adult': [ 0.0 , 1.0 , 0.0 , 1.0 ]
         } ) ,
         'sex_age_weight_proportions': pd.DataFrame( {
-            'stratum_num': np.repeat( [ 0 , 1 ] , 6 ).astype( np.int64 ) ,
+            'stratum_num': np.repeat( [ 0 , 1 ] , 6 ).astype( np.int32 ) ,
             'age': np.tile( [ 1 , 1 , 1 , 2 , 2 , 2 ] , 2 ).astype( np.int64 ) ,
             'sex': np.tile( [ 'all' , 'female' , 'male' ] , 4 ) ,
             'weight_sex_proportion_all': [ 0.5 , 0.6 , 0.4 , 0.5 , 0.4 , 0.6 ,
@@ -281,7 +281,7 @@ def test_strata_age_binned_weight_proportions( mock_survey ):
             'weight_sex_proportion_adult': np.tile( [ 0.0 , 0.0 , 0.0 , 1.0 , 1.0 , 1.0 ] , 2 ) 
         } ) ,
         'length_sex_age_weight_proportions': pd.DataFrame( {
-            'stratum_num': np.repeat( [ 0 , 1 ] , 12 ).astype( np.int64 ) ,
+            'stratum_num': np.repeat( [ 0 , 1 ] , 12 ).astype( np.int32 ) ,
             'age': np.tile( [ 1 , 1 , 1 , 1 , 1 , 1 , 
                               2 , 2 , 2 , 2 , 2 , 2 ] , 2 ).astype( np.int64 ) ,
             'length_bin': pd.cut( np.tile( [ 12.0 , 12.0 , 12.0 , 18.0 , 18.0 , 18.0 ] , 4 ) ,
@@ -503,13 +503,14 @@ def test_nasc_to_biomass_conversion( mock_survey ):
                 'stratum_num': np.repeat( [ 0 , 1 ] , 16 ).astype( np.int64 ) ,
                 'sex': np.tile( [ 'all' , 'all' , 'male' , 'male' , 
                                   'female' , 'female' , 'unsexed' , 'unsexed' ] , 4 ) ,
+                'NASC_all_ages': np.concatenate( [ np.repeat( 1e1 , 8 ) ,
+                                                   np.repeat( 1e2 , 16 ) ,
+                                                   np.repeat( 1e3 , 8 ) ] ) ,
                 'NASC_no_age1': np.concatenate( [ np.repeat( 0 , 8 ) ,
                                                   np.repeat( 1e1 , 8 ) ,
                                                   np.repeat( 1e2 , 8 ) ,
                                                   np.repeat( 1e3 , 8 ) ] ) ,
-                'NASC_all_ages': np.concatenate( [ np.repeat( 1e1 , 8 ) ,
-                                                   np.repeat( 1e2 , 16 ) ,
-                                                   np.repeat( 1e3 , 8 ) ] ) ,
+
                 'N': np.concatenate( [ np.repeat( 0.0 , 8 ) ,
                                         [ 4.88e8 , 4.88e8 , 1.99e8 , 1.99e8 , 2.90e8 , 2.90e8 , 0.0 , 0.0 ,
                                         2.44e9 , 2.44e9 , 1.45e9 , 1.45e9 , 9.94e8 , 9.94e8 , 0.0 , 0.0 ,
@@ -544,22 +545,17 @@ def test_nasc_to_biomass_conversion( mock_survey ):
                                               6.29e10 , 0.0 , 9.02e10 , 0.0 , 2.67e10 , 0.0 , 0.0] ] ) ,
             } ) ,
             'biomass_age': pd.DataFrame( {
-                'transect_num': np.tile( [ 1 , 2 ] , 12 ).astype( np.int64 ) ,
-                'latitude': np.concatenate( [ np.tile( [ 20.0 , 30.0 ] , 6 ) ,
-                                              np.tile( [ 40.0 , 50.0 ] , 6 ) ] ) ,
-                'longitude': np.concatenate( [ np.tile( [ -180.0 , -120.0 ] , 6 ) ,
-                                               np.tile( [ -170.0 , -110.0 ] , 6 ) ] ) ,
+                'transect_num': np.repeat( [ 1 , 2 , 3 , 4 ] , 6 ).astype( np.int64 ) ,
+                'latitude': np.repeat( [ 20.0 , 30.0 , 40.0 , 50.0 ] , 6 ) ,
+                'longitude': np.repeat( [ -180.0 , -120.0 , -170.0 , -110.0 ] , 6 ) ,
                 'stratum_num': np.repeat( [ 0 , 1 ] , 12 ).astype( np.int64 ) ,
-                'age': np.tile( [ 1 , 1 , 2 , 2 ] , 6 ).astype( np.int64 ) ,
-                'sex': np.concatenate( [ np.repeat( [ 'all' , 'male' , 'female' ] , 4 ) ,
-                                         np.repeat( [ 'all' , 'male' , 'female' ] , 4 ) ] ) ,
-                'age_proportion': np.tile( [ 0.0 , 0.0 , 1.0 , 1.0 ] , 6 ) ,
-                'B_age': np.concatenate( [ np.repeat( 0.0 , 3 ) , [ 1.50e9 ] ,
-                                           np.repeat( 0.0 , 3 ) , [ 1.32e9 ] ,
-                                           np.repeat( 0.0 , 3 ) , [ 1.37e9 ] ,
-                                           np.repeat( 0.0 , 2 ) , [ 6.35e9 ] ,
-                                           [ 6.29e10 , 0.00 , 0.00 , 9.11e9 , 9.02e10 ,
-                                             0.00 , 0.00 , 2.69e9 , 2.67e10 ] ] ) ,
+                'age': np.tile( [ 1 , 2 ] , 12 ).astype( np.int64 ) ,
+                'sex': np.tile( [ 'all' , 'all' , 'male' , 'male' , 'female' , 'female' ] , 4 ) ,
+                'age_proportion': np.tile( [ 0.0 , 1.0 ] , 12 ) ,
+                'B_age': np.concatenate( [ np.repeat( 0.0 , 7 ) , 
+                                           [ 1.497e9 , 0.000 , 1.321e9 ,  0.000 , 1.365e9 , 0.000 ,
+                                             6.354e9 , 0.000 , 9.111e9 , 0.000 , 2.693e9 , 0.000 ,
+                                             6.291e10 , 0.000 , 9.020e10 , 0.000 , 2.666e10 ] ] ) ,
             } ) ,
         }
     }
@@ -569,15 +565,15 @@ def test_nasc_to_biomass_conversion( mock_survey ):
     #----------------------------------
     # ---- Set evaluated dataframes from function 
     eval_number_density_df = objS.biology[ 'population' ][ 'areal_density' ][ 'number_density_df' ]
-    eval_number_density_df.reset_index( drop = True , inplace = True )
+    # eval_number_density_df.reset_index( drop = True , inplace = True )
     eval_biomass_density_df = objS.biology[ 'population' ][ 'areal_density' ][ 'biomass_density_df' ]
-    eval_biomass_density_df.reset_index( drop = True , inplace = True )
+    # eval_biomass_density_df.reset_index( drop = True , inplace = True )
     eval_abundance_df = objS.biology[ 'population' ][ 'abundance' ][ 'abundance_df' ]
-    eval_abundance_df.reset_index( drop = True , inplace = True )
+    # eval_abundance_df.reset_index( drop = True , inplace = True )
     eval_biomass_df = objS.biology[ 'population' ][ 'biomass' ][ 'biomass_df' ]
-    eval_biomass_df.reset_index( drop = True , inplace = True )
+    # eval_biomass_df.reset_index( drop = True , inplace = True )
     eval_biomass_age_df = objS.biology[ 'population' ][ 'biomass' ][ 'biomass_age_df' ]
-    eval_biomass_age_df.reset_index( drop = True , inplace = True )
+    # eval_biomass_age_df.reset_index( drop = True , inplace = True )
 
     # ---- Extract expected dataframes to appropriately set indices
     expected_number_density_df = (
