@@ -569,30 +569,36 @@ def test_nasc_to_biomass_conversion( mock_survey ):
     #----------------------------------
     # ---- Set evaluated dataframes from function 
     eval_number_density_df = objS.biology[ 'population' ][ 'areal_density' ][ 'number_density_df' ]
+    eval_number_density_df.reset_index( drop = True , inplace = True )
     eval_biomass_density_df = objS.biology[ 'population' ][ 'areal_density' ][ 'biomass_density_df' ]
+    eval_biomass_density_df.reset_index( drop = True , inplace = True )
     eval_abundance_df = objS.biology[ 'population' ][ 'abundance' ][ 'abundance_df' ]
+    eval_abundance_df.reset_index( drop = True , inplace = True )
     eval_biomass_df = objS.biology[ 'population' ][ 'biomass' ][ 'biomass_df' ]
+    eval_biomass_df.reset_index( drop = True , inplace = True )
     eval_biomass_age_df = objS.biology[ 'population' ][ 'biomass' ][ 'biomass_age_df' ]
+    eval_biomass_age_df.reset_index( drop = True , inplace = True )
+
     # ---- Extract expected dataframes to appropriately set indices
     expected_number_density_df = (
         expected_output[ 'areal_density' ][ 'number_density' ]
-        .set_index( pd.Index( list( expected_output[ 'areal_density' ][ 'number_density' ].index ) ) )
+        # .set_index( pd.Index( list( expected_output[ 'areal_density' ][ 'number_density' ].index ) ) )
     )
     expected_biomass_density_df = (
         expected_output[ 'areal_density' ][ 'biomass_density' ]
-        .set_index( pd.Index( list( expected_output[ 'areal_density' ][ 'biomass_density' ].index ) ) )
+        # .set_index( pd.Index( list( expected_output[ 'areal_density' ][ 'biomass_density' ].index ) ) )
     )
     expected_abundance_df = (
         expected_output[ 'abundance' ][ 'abundance' ]
-        .set_index( pd.Index( list( expected_output[ 'abundance' ][ 'abundance' ].index ) ) )
+        # .set_index( pd.Index( list( expected_output[ 'abundance' ][ 'abundance' ].index ) ) )
     )
     expected_biomass_df = (
         expected_output[ 'biomass' ][ 'biomass' ]
-        .set_index( pd.Index( list( expected_output[ 'biomass' ][ 'biomass' ].index ) ) )
+        # .set_index( pd.Index( list( expected_output[ 'biomass' ][ 'biomass' ].index ) ) )
     )
     expected_biomass_age_df = (
         expected_output[ 'biomass' ][ 'biomass_age' ]
-        .set_index( pd.Index( list( expected_output[ 'biomass' ][ 'biomass_age' ].index ) ) )
+        # .set_index( pd.Index( list( expected_output[ 'biomass' ][ 'biomass_age' ].index ) ) )
     )
     ### Check shape 
     assert eval_number_density_df.shape == expected_dimensions[ 'areal_density' ][ 'number_density' ]

@@ -1,7 +1,13 @@
 import pytest
 from pathlib import Path
 from echopop import Survey
+from _pytest.assertion.util import assertrepr_compare
 
+def pytest_assertrepr_compare( config , op , left , right ):
+    # hack the verbosity so we always show full diffs on assertion failures,
+    # even if we're otherwise not fully verbose
+    config.option.verbose = 2
+    return assertrepr_compare( config , op , left , right) 
 
 # Set up path to test_data folder
 HERE = Path(__file__).parent.absolute()

@@ -135,7 +135,7 @@ def test_index_transect_age_sex_proportions( mock_survey ):
             'NASC_all_ages': np.repeat( [ 1e1 , 1e2 , 1e2 , 1e3 ] , 2 ) ,
             'NASC_no_age1': np.repeat( [ 0.0 , 1e1 , 1e2 , 1e3 ] , 2 ) ,
             'fraction_hake': np.repeat( [ 1.0 , 0.5 ] , 4 ) ,
-            'species_id': np.repeat( 8675309 , 8 ).astype( np.int64 ) ,
+            'species_id': np.repeat( 8675309 , 8 ).astype( np.int32 ) ,
             'sigma_bs_mean': np.repeat( 1.630277e-8 , 8 ) ,
             'proportion_female': np.repeat( [ 0.592593 , 0.407407 ] , 4 ) ,
             'proportion_male': np.repeat( [ 0.407407 , 0.592593 ] , 4 ) ,
