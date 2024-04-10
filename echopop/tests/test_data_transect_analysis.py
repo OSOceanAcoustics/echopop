@@ -267,13 +267,13 @@ def test_strata_age_binned_weight_proportions( mock_survey ):
            'count_age_proportion_adult': [ 0.0 , 1.0 , 0.0 , 1.0 ]
         } ) ,
         'age_weight_proportions': pd.DataFrame( {
-           'stratum_num': np.repeat( [ 0 , 1 ] , 2 ).astype( np.int32 ) ,
+           'stratum_num': np.repeat( [ 0 , 1 ] , 2 ).astype( np.int64 ) ,
            'age': np.tile( [ 1 , 2 ] , 2 ).astype( np.int64 ) ,
            'weight_age_proportion_all': [ 0.50 , 0.50 , 0.50 , 0.50 ] ,
            'weight_age_proportion_adult': [ 0.0 , 1.0 , 0.0 , 1.0 ]
         } ) ,
         'sex_age_weight_proportions': pd.DataFrame( {
-            'stratum_num': np.repeat( [ 0 , 1 ] , 6 ).astype( np.int32 ) ,
+            'stratum_num': np.repeat( [ 0 , 1 ] , 6 ).astype( np.int64 ) ,
             'age': np.tile( [ 1 , 1 , 1 , 2 , 2 , 2 ] , 2 ).astype( np.int64 ) ,
             'sex': np.tile( [ 'all' , 'female' , 'male' ] , 4 ) ,
             'weight_sex_proportion_all': [ 0.5 , 0.6 , 0.4 , 0.5 , 0.4 , 0.6 ,
@@ -281,7 +281,7 @@ def test_strata_age_binned_weight_proportions( mock_survey ):
             'weight_sex_proportion_adult': np.tile( [ 0.0 , 0.0 , 0.0 , 1.0 , 1.0 , 1.0 ] , 2 ) 
         } ) ,
         'length_sex_age_weight_proportions': pd.DataFrame( {
-            'stratum_num': np.repeat( [ 0 , 1 ] , 12 ).astype( np.int32 ) ,
+            'stratum_num': np.repeat( [ 0 , 1 ] , 12 ).astype( np.int64 ) ,
             'age': np.tile( [ 1 , 1 , 1 , 1 , 1 , 1 , 
                               2 , 2 , 2 , 2 , 2 , 2 ] , 2 ).astype( np.int64 ) ,
             'length_bin': pd.cut( np.tile( [ 12.0 , 12.0 , 12.0 , 18.0 , 18.0 , 18.0 ] , 4 ) ,
