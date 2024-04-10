@@ -261,7 +261,7 @@ def test_strata_age_binned_weight_proportions( mock_survey ):
     # ---- Expected output
     expected_output = {
         'age_proportions': pd.DataFrame( {
-           'stratum_num': np.repeat( [ 0 , 1 ] , 2 ).astype( np.int32 ) ,
+           'stratum_num': np.repeat( [ 0 , 1 ] , 2 ).astype( np.int64 ) ,
            'age': np.tile( [ 1 , 2 ] , 2 ).astype( np.int64 ) ,
            'count_age_proportion_all': np.repeat( 0.5 , 4 ) ,
            'count_age_proportion_adult': [ 0.0 , 1.0 , 0.0 , 1.0 ]
