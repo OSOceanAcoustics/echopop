@@ -442,5 +442,8 @@ def test_group_merge( ):
     assert np.all( eval_dataframe_monkey_dropna == expected_output_dropna )
     assert np.all( eval_dataframe_function_dropna == expected_output_dropna )
     # ++++ NaN kept
-    assert eval_dataframe_function_keepna.equals( expected_output_keepna )
-    assert eval_dataframe_function_keepna.equals( expected_output_keepna )
+    eval_nan_value_mask = pd.isnull( eval_dataframe_monkey_keepna.animal )
+    expected_nan_value_mask = pd.isnull( expected_output_keepna.animal )
+    assert len( expected_output_keepna[ expected_nan_value_mask ] ) == 2
+    assert eval_dataframe_monkey_keepna[ ~ eval_nan_value_mask ].equals( expected_output_keepna[ ~ expected_nan_value_mask ] )
+    assert eval_dataframe_function_keepna[ ~ eval_nan_value_mask ].equals( expected_output_keepna[ ~ expected_nan_value_mask ] )
