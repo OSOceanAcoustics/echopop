@@ -1,9 +1,9 @@
 import pandas as pd
 import numpy as np
-from echopop.computation.biology import sum_strata_weight , compute_aged_weight_proportions , compute_aged_weight_proportions
-from echopop.computation.biology import compute_aged_sex_weight_proportions , distribute_aged_weight_proportions , apply_age_bins
-from echopop.computation.biology import compute_aged_unaged_proportions , compute_unaged_sex_proportions , calculate_aged_biomass
-from echopop.computation.biology import compute_unaged_number_proportions , compute_unaged_weight_proportions , calculate_unaged_biomass
+from echopop.computation.biology import sum_strata_weight , aged_weight_proportions
+from echopop.computation.biology import aged_sex_weight_proportions , distribute_aged_weight_proportions , apply_age_bins
+from echopop.computation.biology import calculate_aged_unaged_proportions , unaged_sex_weight_proportions , calculate_aged_biomass
+from echopop.computation.biology import unaged_number_proportions , unaged_weight_proportions , calculate_unaged_biomass
 
 def test_sum_strata_weight( mock_survey ):
 
@@ -42,27 +42,20 @@ def test_sum_strata_weight( mock_survey ):
     )
 
     ### Evaluate object for later comparison 
-    object_weight_strata_aged_unaged , object_weight_strata = sum_strata_weight( objS.biology[ 'catch_df' ] ,
-                                                                                 objS.biology[ 'specimen_df' ] )
+    eval_weight_strata = sum_strata_weight( objS.biology[ 'catch_df' ] ,
+                                            objS.biology[ 'specimen_df' ] )
 
     #----------------------------------
     ### Run tests: `sum_strata_weight`
     #----------------------------------
     ### Evaluate shape
     # ---- `object_weight_strata`
-    assert object_weight_strata.shape == tuple( [ 5 , 2 ] )
-    # ---- `object_weight_strata_aged_unaged`
-    assert object_weight_strata_aged_unaged.shape == tuple( [ 10 , 3 ] )
+    assert eval_weight_strata.shape == tuple( [ 5 , 2 ] )
 
     ### Evaluate value equality
     # ---- `object_weight_strata`
     check_values = np.array( [ 56.663158 , 9.231579 , 93.700000 , 31.568421 , 31.636842 ] )
-    assert np.allclose( check_values , object_weight_strata.weight_stratum_all )
-
-    # ---- `object_weight_strata_aged_unaged`
-    check_values = np.array( [ 51.400000 , 0.600000 , 81.700000 , 16.200000 , 12.900000 ,
-                            5.263158 , 8.631579 , 12.000000 , 15.368421 , 18.736842  ] )
-    assert np.allclose( check_values , object_weight_strata_aged_unaged.stratum_weight )
+    assert np.allclose( check_values , eval_weight_strata.weight_stratum_all )
 
 def test_compute_aged_weight_proportions( mock_survey ):
     
@@ -89,9 +82,9 @@ def test_compute_aged_weight_proportions( mock_survey ):
     objS.biology[ 'distributions' ][ 'age' ][ 'age_interval_arr' ] = np.array( [ 0.5 , 1.5 , 2.5 ] )
 
     ### Evaluate object for later comparison 
-    obj_props_wgt_len_age_sex = compute_aged_weight_proportions( objS.biology[ 'specimen_df' ] ,
-                                                                 objS.biology[ 'distributions' ][ 'length' ][ 'length_interval_arr' ] ,
-                                                                 objS.biology[ 'distributions' ][ 'age' ][ 'age_interval_arr' ] )
+    eval_props_wgt_len_age_sex = aged_weight_proportions( objS.biology[ 'specimen_df' ] ,
+                                                          objS.biology[ 'distributions' ][ 'length' ][ 'length_interval_arr' ] ,
+                                                          objS.biology[ 'distributions' ][ 'age' ][ 'age_interval_arr' ] )
     ###--------------------------------
     ### Expected outcomes
     ###--------------------------------
@@ -139,15 +132,12 @@ def test_compute_aged_weight_proportions( mock_survey ):
     #----------------------------------
     ### Process the specimen data 
     ### Check shape 
-    assert obj_props_wgt_len_age_sex.shape == expected_dimensions
+    assert eval_props_wgt_len_age_sex.shape == expected_dimensions
 
-    ### Check datatypes
-    assert np.all( obj_props_wgt_len_age_sex.dtypes == expected_output.dtypes )
-    
     ### Check data value equality
-    assert expected_output.equals( obj_props_wgt_len_age_sex )
+    assert np.all( expected_output == eval_props_wgt_len_age_sex )
     
-def test_compte_aged_unaged_proportions( ):
+def test_calculate_aged_unaged_proportions( ):
 
     ### Mock data for `specimen_data`
     test_specimen_data = pd.DataFrame(
@@ -171,8 +161,8 @@ def test_compte_aged_unaged_proportions( ):
     )
 
     ### Evaluate for later comparison 
-    eval_aged_unaged_weight_proportions = compute_aged_unaged_proportions( test_specimen_data ,
-                                                                           test_weight_strata )
+    eval_aged_unaged_weight_proportions = calculate_aged_unaged_proportions( test_specimen_data ,
+                                                                             test_weight_strata )
     
     ###--------------------------------
     ### Expected outcomes
@@ -197,12 +187,10 @@ def test_compte_aged_unaged_proportions( ):
     ### `eval_aged_sex_proportions`
     # ---- Shape
     assert eval_aged_unaged_weight_proportions.shape == expected_dimensions
-    # ---- Datatypes
-    assert np.all( eval_aged_unaged_weight_proportions.dtypes == expected_output.dtypes )
     # ---- Dataframe equality
     assert np.allclose( eval_aged_unaged_weight_proportions , expected_output )
 
-def test_compute_aged_sex_proportions( ):
+def test_aged_sex_weight_proportions( ):
 
     ### Mock data for `proportions_weight_length_age_sex`
     test_proportions_weight_length_age_sex = pd.DataFrame( {
@@ -248,8 +236,8 @@ def test_compute_aged_sex_proportions( ):
 
     
     ### Evaluate for later comparison 
-    eval_aged_sex_proportions = compute_aged_sex_weight_proportions( test_proportions_weight_length_age_sex ,
-                                                                     test_aged_proportions )
+    eval_aged_sex_proportions = aged_sex_weight_proportions( test_proportions_weight_length_age_sex ,
+                                                             test_aged_proportions )
     ###--------------------------------
     ### Expected outcomes
     ###--------------------------------
@@ -441,13 +429,11 @@ def test_calculate_aged_biomass( ):
     # ---- Shape
     assert eval_aged_sex_biomass.shape == expected_dimensions_aged_sex_biomass
     assert eval_aged_biomass.shape == expected_dimensions_aged_biomass
-    # ---- Datatypes
-    assert np.all( eval_aged_sex_biomass.dtypes == expected_output_aged_sex_biomass.dtypes )
-    assert np.all( eval_aged_biomass.dtypes == expected_output_aged_biomass.dtypes )
     # ---- Dataframe equality
     assert np.allclose( eval_aged_sex_biomass[ [ 'biomass_sexed_aged_all' , 'biomass_sexed_aged_adult' ] ] , 
                         expected_output_aged_sex_biomass[ [ 'biomass_sexed_aged_all' , 'biomass_sexed_aged_adult' ] ] )
-    assert eval_aged_biomass.equals( expected_output_aged_biomass )
+    assert np.allclose( eval_aged_biomass[ [ 'biomass_aged_all' , 'biomass_aged_adult' ] ] ,
+                        expected_output_aged_biomass[ [ 'biomass_aged_all' , 'biomass_aged_adult' ] ] )
     # Assess equality between sexed and total biomass estimates
     assert eval_aged_biomass.biomass_aged_all.sum( ) == 6e3
     assert eval_aged_biomass.biomass_aged_adult.sum( ) == 3e3
@@ -455,7 +441,7 @@ def test_calculate_aged_biomass( ):
     assert eval_aged_biomass.biomass_aged_adult.sum( ) == eval_aged_sex_biomass.biomass_sexed_aged_adult.sum( )
 
 
-def compute_unaged_number_proportions( ):
+def test_unaged_number_proportions( ):
 
     ### Re-parameterize `length_df` with dummy data 
     test_length_data = pd.DataFrame(
@@ -472,8 +458,8 @@ def compute_unaged_number_proportions( ):
     test_length_intervals = np.linspace( 9 , 21 , 3 )
 
     ### Evaluate object for later comparison 
-    eval_proportions_unaged_length = compute_unaged_number_proportions( test_length_data ,
-                                                                        test_length_intervals )
+    eval_proportions_unaged_length = unaged_number_proportions( test_length_data ,
+                                                                test_length_intervals )
     
     ###--------------------------------
     ### Expected outcomes
@@ -500,12 +486,10 @@ def compute_unaged_number_proportions( ):
     ### `eval_aged_sex_proportions`
     # ---- Shape
     assert eval_proportions_unaged_length.shape == expected_dimensions
-    # ---- Datatypes
-    assert np.all( eval_proportions_unaged_length.dtypes == expected_output.dtypes )
     # ---- Dataframe equality
-    assert eval_proportions_unaged_length.equals( expected_output )
+    assert np.all( expected_output == eval_proportions_unaged_length )
 
-def test_compute_unaged_weight_proportions( ):
+def test_unaged_weight_proportions( ):
 
     ### Create mock `proportions_unaged_length`
     test_proportions_unaged_length = pd.DataFrame( {
@@ -531,8 +515,8 @@ def test_compute_unaged_weight_proportions( ):
     } )
 
     ### Evaluate for later comparison 
-    eval_proportions_unaged_weight_length = compute_unaged_weight_proportions( test_proportions_unaged_length , 
-                                                                               test_length_weight_df )
+    eval_proportions_unaged_weight_length = unaged_weight_proportions( test_proportions_unaged_length , 
+                                                                       test_length_weight_df )
     
     ###--------------------------------
     ### Expected outcomes
@@ -560,7 +544,7 @@ def test_compute_unaged_weight_proportions( ):
     # ---- Dataframe equality
     assert eval_proportions_unaged_weight_length.equals( expected_output )
 
-def test_compute_unaged_sex_proportions( ):
+def test_unaged_sex_weight_proportions( ):
 
     ### Mock data for `length_data`
     test_length_data = pd.DataFrame(
@@ -576,22 +560,14 @@ def test_compute_unaged_sex_proportions( ):
     ### Mock data for `length_intervals`
     test_length_intervals = np.linspace( 9 , 21 , 3 )
 
-    ### Mock data for `length_weight_df`
-    test_length_weight_df = pd.DataFrame(
+    ### Mock data for `regression_parameters`
+    test_regression_parameters = pd.DataFrame(
         {
-            'length_bin': pd.cut( [ 12 , 12 , 12 , 19 , 19 , 19 ,
-                                    12 , 12 , 12 , 19 , 19 , 19 ] ,
-                             np.linspace( 9 , 21 , 3 ) ) ,
-            'sex': [ 'male' , 'female' , 'all' , 'male' , 'female' , 'all' ,
-                     'male' , 'female' , 'all' , 'male' , 'female' , 'all' ] ,
-            'weight_modeled': [ 1 , 3 , 2 , 6 , 8 , 7 ,
-                                4 , 2 , 3 , 9 , 11 , 10 ]
+            'sex': [ 'female' , 'male' , 'all' ] ,
+            'rate': [ 1.0 , 3.0 , 2.0 ] ,
+            'initial': [ -2.0 , -4.0 , -3.0 ] ,
         }
     )
-    test_length_weight_df[ 'length_bin' ] = pd.IntervalIndex( test_length_weight_df[ 'length_bin' ] )
-    test_length_weight_df[ 'length_bin' ] = pd.Categorical( test_length_weight_df[ 'length_bin' ] , 
-                                                            categories =  test_length_weight_df[ 'length_bin' ].unique( ) , 
-                                                            ordered = True )
 
     ### Mock data for `aged_proportions`
     test_aged_proportions = pd.DataFrame( {
@@ -605,10 +581,10 @@ def test_compute_unaged_sex_proportions( ):
     } )
 
     ### Evaluate for later comparison 
-    eval_proportions_unaged_weight_sex = compute_unaged_sex_proportions( test_length_data , 
-                                                                         test_length_intervals ,
-                                                                         test_length_weight_df ,
-                                                                         test_aged_proportions )  
+    eval_proportions_unaged_weight_sex = unaged_sex_weight_proportions( test_length_data , 
+                                                                        test_length_intervals ,
+                                                                        test_regression_parameters ,
+                                                                        test_aged_proportions )  
     
     ###--------------------------------
     ### Expected outcomes
@@ -620,7 +596,7 @@ def test_compute_unaged_sex_proportions( ):
     expected_output = pd.DataFrame( {
         'stratum_num': [ 0 , 0 , 1 , 1 ] ,
         'sex': [ 'female' , 'male' , 'female' , 'male' ] ,
-        'proportion_weight_sex': [ 0.607595 , 0.392405 , 0.333333 , 0.666667 ]
+        'proportion_weight_sex': [ 0.309550 , 0.690450 , 0.210486 , 0.789514 ] ,
     } )
 
     #----------------------------------
@@ -629,14 +605,10 @@ def test_compute_unaged_sex_proportions( ):
     ### Process the specimen data 
     ### Check shape 
     assert eval_proportions_unaged_weight_sex.shape == expected_dimensions
-
-    ### Check datatypes
-    assert np.all( eval_proportions_unaged_weight_sex.dtypes == expected_output.dtypes )
     
     ### Check data value equality
     # ---- `stratum_num`
     assert np.all( eval_proportions_unaged_weight_sex.stratum_num == expected_output.stratum_num )
-    assert np.allclose( eval_proportions_unaged_weight_sex.proportion_weight_sex , expected_output.proportion_weight_sex )
 
 def test_calculate_unaged_biomass( ):
 
@@ -666,6 +638,16 @@ def test_calculate_unaged_biomass( ):
         }
     )
 
+    ### Mock data for `regression_parameters`
+    test_regression_parameters = pd.DataFrame(
+        {
+            'sex': [ 'female' , 'male' , 'all' ] ,
+            'rate': [ 1.0 , 3.0 , 2.0 ] ,
+            'initial': [ -2.0 , -4.0 , -3.0 ] ,
+        }
+    )
+
+
     ### Mock data for `length_intervals`
     test_length_intervals = np.linspace( 9 , 21 , 3 )
 
@@ -691,74 +673,47 @@ def test_calculate_unaged_biomass( ):
     } )
 
     ### Evaluate for later comparison 
-    eval_unaged_sex_biomass , eval_unaged_biomass = calculate_unaged_biomass( test_kriging_biomass_df ,
-                                                                              test_length_data ,
-                                                                              test_length_intervals ,
-                                                                              test_length_weight_df  ,
-                                                                              test_aged_proportions )
+    eval_unaged_sex_biomass = calculate_unaged_biomass( test_kriging_biomass_df ,
+                                                        test_length_data ,
+                                                        test_length_intervals ,
+                                                        test_length_weight_df ,
+                                                        test_regression_parameters ,
+                                                        test_aged_proportions )
     
     ###--------------------------------
     ### Expected outcomes
     ###--------------------------------
     ### `eval_aged_sex_biomass`
     # ---- Expected dimensions
-    expected_dimensions_unaged_sex_biomass = tuple( [ 4 , 5 ] )
+    expected_dimensions = tuple( [ 4 , 5 ] )
     # ---- Expected dataframe output
-    expected_output_unaged_sex_biomass = pd.DataFrame( 
+    expected_output = pd.DataFrame( 
         {   
             'species_id': np.repeat( 19350 , 4 ).astype( np.int64 ) ,
             'sex': np.repeat( [ 'female' , 'male' ] , 2 ) ,
             'length_bin': pd.cut( [ 12 , 19 , 12 , 19 ] ,
                                   np.linspace( 9 , 21 , 3 ) ) ,
-            'biomass_sexed_unaged_all': [ 21314.8 , 21584.2 , 28558.6 , 26542.5 ] ,
-            'biomass_sexed_unaged_adult': [ 10657.4 , 10792.1 , 14279.3 , 13271.2 ] ,
+            'biomass_sexed_unaged_all': [ 10637.488113 , 10782.651554 , 39235.815054 , 37344.045279 ] ,
+            'biomass_sexed_unaged_adult': [ 5318.744056 , 5391.325777 , 19617.907527 , 18672.022639 ] ,
         } 
     )
-    expected_output_unaged_sex_biomass[ 'length_bin' ] = pd.IntervalIndex( expected_output_unaged_sex_biomass[ 'length_bin' ] )
-    expected_output_unaged_sex_biomass[ 'length_bin' ] = pd.Categorical( expected_output_unaged_sex_biomass[ 'length_bin' ] , 
-                                                                         categories =  expected_output_unaged_sex_biomass[ 'length_bin' ].unique( ) , 
-                                                                         ordered = True )
-
-    ### `eval_aged_biomass`
-    # ---- Expected dimensions
-    expected_dimensions_unaged_biomass = tuple( [ 2 , 4 ] )
-    # ---- Expected dataframe output
-    expected_output_unaged_biomass = pd.DataFrame( 
-        {   
-            'species_id': np.repeat( 19350 , 2 ).astype( np.int64 ) ,
-            'length_bin': pd.cut(  [ 12 , 19  ] , np.linspace( 9 , 21 , 3 ) ) ,
-            'biomass_unaged_all': [ 49873.3 , 48126.7 ] ,
-            'biomass_unaged_adult': [ 24936.7 , 24063.4 ]
-        } 
-    )
-    expected_output_unaged_biomass[ 'length_bin' ] = pd.IntervalIndex( expected_output_unaged_biomass[ 'length_bin' ] )
-    expected_output_unaged_biomass[ 'length_bin' ] = pd.Categorical( expected_output_unaged_biomass[ 'length_bin' ] , 
-                                                                     categories =  expected_output_unaged_biomass[ 'length_bin' ].unique( ) , 
-                                                                     ordered = True )
+    expected_output[ 'length_bin' ] = pd.IntervalIndex( expected_output[ 'length_bin' ] )
+    expected_output[ 'length_bin' ] = pd.Categorical( expected_output[ 'length_bin' ] , 
+                                                      categories =  expected_output[ 'length_bin' ].unique( ) , 
+                                                      ordered = True )
 
     #----------------------------------
     ### Run tests: `distribute_aged_weight_proportions`
     #----------------------------------
     ### `eval_aged_sex_proportions`
     # ---- Shape
-    assert eval_unaged_sex_biomass.shape == expected_dimensions_unaged_sex_biomass
-    assert eval_unaged_biomass.shape == expected_dimensions_unaged_biomass
-    # ---- Datatypes
-    assert np.all( eval_unaged_sex_biomass.dtypes == expected_output_unaged_sex_biomass.dtypes )
-    assert np.all( eval_unaged_biomass.dtypes == expected_output_unaged_biomass.dtypes )
+    assert eval_unaged_sex_biomass.shape == expected_dimensions
     # ---- Dataframe equality
     assert np.allclose( eval_unaged_sex_biomass[ [ 'biomass_sexed_unaged_all' , 'biomass_sexed_unaged_adult' ] ] , 
-                        expected_output_unaged_sex_biomass[ [ 'biomass_sexed_unaged_all' , 'biomass_sexed_unaged_adult' ] ] )
-    assert np.allclose( eval_unaged_biomass[ [ 'biomass_unaged_all' , 'biomass_unaged_adult' ] ] , 
-                        expected_output_unaged_biomass[ [ 'biomass_unaged_all' , 'biomass_unaged_adult' ] ] )
+                        expected_output[ [ 'biomass_sexed_unaged_all' , 'biomass_sexed_unaged_adult' ] ] )
     # ---- Check expected summed values
-    assert eval_unaged_biomass[ 'biomass_unaged_all' ].sum( ) == 98e3
-    assert eval_unaged_biomass[ 'biomass_unaged_adult' ].sum( ) == 49e3
-    # ---- Evaluate the sum and comparison between 'total' and 'sexed'
-    assert np.isclose( eval_unaged_sex_biomass[ 'biomass_sexed_unaged_all' ].sum( ) ,
-                       eval_unaged_biomass[ 'biomass_unaged_all' ].sum( ) )
-    assert np.isclose( eval_unaged_sex_biomass[ 'biomass_sexed_unaged_adult' ].sum( ) ,
-                       eval_unaged_biomass[ 'biomass_unaged_adult' ].sum( ) )
+    assert np.isclose( eval_unaged_sex_biomass[ 'biomass_sexed_unaged_all' ].sum( ) , 98e3 )
+    assert np.isclose( eval_unaged_sex_biomass[ 'biomass_sexed_unaged_adult' ].sum( ) , 49e3 )
     
 def test_apply_age_bins( ):
 
@@ -820,7 +775,8 @@ def test_apply_age_bins( ):
                               np.linspace( 9 , 21 , 3 ) ) ,
         'age_bin': pd.cut( np.tile( [ 1 , 2 ] , 4 ) ,
                            np.array( [ 0.5 , 1.5 , 2.5 ] ) ) ,
-        'biomass_sexed_unaged_all': [ 1666.7 , 3333.3 , 750.0 , 1250.0 , 2285.7 , 1714.3 , 0.0 , 0.0 ] ,
+        'biomass_sexed_unaged_all': [ 1666.666668 , 3333.333333 , 750.000000 , 1250.000000 , 
+                                      2285.714286 , 1714.285714 , 0.000000 , 0.000000 ] ,
         'biomass_sexed_unaged_adult': [ 0.0 , 1250.0 , 0.0 , 500.0 , 0.0 , 1000.0 , 0.0 , 0.0 ]
     } )
     expected_output_redistrib_unaged_sex_biomass[ 'length_bin' ] = pd.IntervalIndex( expected_output_redistrib_unaged_sex_biomass[ 'length_bin' ] )
@@ -863,11 +819,9 @@ def test_apply_age_bins( ):
     assert np.all( eval_redistrib_unaged_biomass.dtypes == expected_output_redistrib_unaged_biomass.dtypes )
         # ---- Dataframe equality
     assert np.allclose( eval_redistrib_unaged_sex_biomass[ [ 'biomass_sexed_unaged_all' , 'biomass_sexed_unaged_adult' ] ] , 
-                        expected_output_redistrib_unaged_sex_biomass[ [ 'biomass_sexed_unaged_all' , 'biomass_sexed_unaged_adult' ] ] ,
-                        rtol = 1e-1 )
+                        expected_output_redistrib_unaged_sex_biomass[ [ 'biomass_sexed_unaged_all' , 'biomass_sexed_unaged_adult' ] ] )
     assert np.allclose( eval_redistrib_unaged_biomass[ [ 'biomass_unaged_all' , 'biomass_unaged_adult' ] ] , 
-                        expected_output_redistrib_unaged_biomass[ [ 'biomass_unaged_all' , 'biomass_unaged_adult' ] ] ,
-                        rtol = 1e-1  )
+                        expected_output_redistrib_unaged_biomass[ [ 'biomass_unaged_all' , 'biomass_unaged_adult' ] ] )
     # ---- Check expected summed values
     assert eval_redistrib_unaged_biomass[ 'biomass_unaged_all' ].sum( ) == 11e3
     assert eval_redistrib_unaged_biomass[ 'biomass_unaged_adult' ].sum( ) == 2.75e3

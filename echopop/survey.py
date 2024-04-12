@@ -14,7 +14,7 @@ from .computation.spatial import calculate_transect_distance , transform_geometr
 from .computation.statistics import stratified_transect_statistic
 from .computation.kriging_methods import kriging_interpolation
 from .computation.biology import index_transect_age_sex_proportions , filter_species 
-from .computation.biology import sum_strata_weight , compute_aged_unaged_proportions
+from .computation.biology import sum_strata_weight , calculate_aged_unaged_proportions
 from .computation.biology import  calculate_aged_biomass , calculate_unaged_biomass
 from .computation.biology import apply_age_bins , filter_species 
 
@@ -1298,6 +1298,13 @@ class Survey:
         
         # ---- Age
         age_intervals = self.biology[ 'distributions' ][ 'age' ][ 'age_interval_arr' ]
+
+        ### Import length-weight regression parameters
+        regression_parameters = self.statistics[ 'length_weight' ][ 'regression_parameters' ]
+        regression_parameters = regression_parameters[ regression_parameters.sex != 'all' ]
+
+        ### Import length-weight relationship
+        length_weight_df = self.statistics[ 'length_weight' ][ 'length_weight_df' ]
         
         # ---- Construct the complete dataframe containing all possible
         # ---- strata, sexes, lengths, and ages
@@ -1316,12 +1323,12 @@ class Survey:
         haul_spp_matched = haul_spp[ haul_spp.haul_num.isin( length_spp.haul_num ) ]
 
         ### Sum weights for aged/unaged and all within each stratum
-        weight_strata_aged_unaged , weight_strata = sum_strata_weight( haul_spp_matched ,
-                                                                       specimen_spp )
+        weight_strata = sum_strata_weight( haul_spp_matched ,
+                                           specimen_spp )
         
-        ### Calculate the summed aged proportions for all aged fish, and for aged fish        
-        aged_unaged_weight_proportions = compute_aged_unaged_proportions( specimen_spp_filtered ,
-                                                                          weight_strata )
+        ### Calculate the summed aged proportions for age-1+ (*_all) and age-2+ (*_adult) fish      
+        aged_unaged_weight_proportions = calculate_aged_unaged_proportions( specimen_spp_filtered ,
+                                                                            weight_strata )
 
         # !!! TODO: This does end up chewing up * a ton * of memory since the output dataframes are quite large
         aged_sex_biomass , aged_biomass = calculate_aged_biomass( self.statistics[ 'kriging' ][ 'kriged_biomass_df' ] ,
@@ -1329,16 +1336,14 @@ class Survey:
                                                                   length_intervals ,
                                                                   age_intervals ,
                                                                   aged_unaged_weight_proportions )
-        
-        ### Import length-weight relationship calculated for all animals
-        length_weight_df = self.statistics[ 'length_weight' ][ 'length_weight_df' ]
 
         ### Calculate unaged biomass for each sex and all animals
-        unaged_sex_biomass , unaged_biomass = calculate_unaged_biomass( self.statistics[ 'kriging' ][ 'kriged_biomass_df' ] ,
-                                                                        length_spp_filtered ,
-                                                                        length_intervals ,
-                                                                        length_weight_df ,
-                                                                        aged_unaged_weight_proportions )
+        unaged_sex_biomass = calculate_unaged_biomass( self.statistics[ 'kriging' ][ 'kriged_biomass_df' ] ,
+                                                       length_spp_filtered ,
+                                                       length_intervals ,
+                                                       length_weight_df ,
+                                                       regression_parameters ,
+                                                       aged_unaged_weight_proportions )
         
         ### Re-distribute unaged biomass so it is compatible with aged biomass to calculate the overall summed biomass
         redistributed_unaged_sex_biomass , redistributed_unaged_biomass = apply_age_bins( aged_sex_biomass , 
@@ -1375,7 +1380,14 @@ class Survey:
             overall_biomass.biomass_aged_adult
         )
 
-        # ### Assign results to an attribute
+        ### Drop unnecessary columns
+        # ---- Overall sexed biomass 
+        overall_sexed_biomass.drop( [ 'summed_aged_biomass_all' ,
+                                      'summed_aged_biomass_adult' ] ,
+                                    axis = 1 ,
+                                    inplace = True )
+
+        ### Assign results to an attribute
         self.statistics[ 'kriging' ].update(
             {
                 'apportioned_kriged_total_biomass_df': overall_biomass ,
