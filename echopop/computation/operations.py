@@ -104,7 +104,8 @@ def bin_stats( dataframe: pd.DataFrame ,
     return (
         dataframe # input dataframe 
         .bin_variable( bin_values , bin_variable ) # discretize variable into bins )
-        .groupby( [f'{bin_variable}_bin'] + con_lst ) # group by these variables/contrasts
+        .groupby( [f'{bin_variable}_bin'] + con_lst ,
+                  observed = False ) # group by these variables/contrasts
         .agg( aggregation_dict ) # apply specified functions
         .replace( np.nan , 0 ) # replace NaN w/ 0's
         .droplevel( level = 0 , axis = 1 ) # drop the column indices 
@@ -132,7 +133,7 @@ def count_variable( dataframe: pd.DataFrame ,
     return (
         dataframe # input dataframe
         .reset_index( drop=True )
-        .groupby( contrasts ) 
+        .groupby( contrasts , observed = False ) 
         .agg({variable: [('count' , fun)]})
         .replace(np.nan, 0 )
         .droplevel( level = 0 , axis = 1 )
@@ -158,15 +159,16 @@ def meld( specimen_dataframe: pd.DataFrame ,
     specimen_stacked = (
         specimen_dataframe 
         .copy()
-        .groupby(['stratum_num' , 'species_id' , 'sex' , 'group' , 'station' , 'length' , 'length_bin' ])
-        .apply(lambda x: len(x['length']))
+        .groupby( ['stratum_num' , 'species_id' , 'sex' , 'group' , 'station' , 'length' , 'length_bin' ] ,
+                  observed = False )[ [ 'length' ] ]
+        .apply(lambda x: len( x ) , include_groups = True )
         .reset_index(name='length_count')
     )
     
     # Concatenate the data frames and return
     return pd.concat( [ specimen_stacked ,
                         length_dataframe ] ,
-                        join = 'inner' )
+                        join = 'inner' ).reset_index( drop = True )
 
 @patch_method_to_DataFrame( pd.DataFrame )    
 def stretch( dataframe ,             
