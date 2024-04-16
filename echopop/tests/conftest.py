@@ -72,7 +72,7 @@ def dataframe_shape( input: Union[ pd.DataFrame , dict ] ):
             if isinstance( value , pd.DataFrame ) :
                 dataframe_shapes[ key ] = value.shape
             elif isinstance( value , dict ) :
-                dataframe_shapes[ key ] = extract_dataframe_shape( value )
+                dataframe_shapes[ key ] = dataframe_shape( value )
 
         return dataframe_shapes
 
@@ -152,7 +152,7 @@ def assert_dataframe_shape_equal( input: Union[ pd.DataFrame , dict ] ,
     
     ### Dictionary
     elif ( isinstance( input , dict ) ) & ( isinstance( reference , dict ) ):
-        assert extract_dataframe_shape( input ) == extract_dataframe_shape( reference )
+        assert dataframe_shape( input ) == dataframe_shape( reference )
 # ---- dtypes
 # ~~~~ !!!! ATTN: this is a nested function within `assert_dataframe_dtypes_equal`!
 def _assert_dataframe_dtypes_equal( dataframe: pd.DataFrame ,

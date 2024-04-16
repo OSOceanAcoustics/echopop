@@ -83,7 +83,72 @@ def test_stratified_transect_statistic( ):
     ### Expected outcomes
     ###--------------------------------
     # ---- Expected dtypes
-
+    expected_dtypes = {
+        'single': {
+            'biomass': {
+                'mean': {
+                    'estimate': np.floating ,
+                    'confidence_interval': np.array( [ 54947653.27600001 , 54947653.27600001 ] ) ,
+                } ,
+                'variance': {
+                    'estimate': 54846534.456292756 ,
+                    'confidence_interval': np.array( [ 54846534.45629276 , 54846534.45629276 ] ) ,
+                } ,
+                'CV': {
+                    'estimate': 0.9981597245072626 ,
+                    'confidence_interval': np.array( [ 0.99815972 , 0.99815972 ] ) ,
+                } ,            
+            } ,
+        } ,
+        'single_rep': {
+            'biomass': {
+                'mean': {
+                    'estimate': 54947653.27600001 ,
+                    'confidence_interval': np.array( [ 54947653.27600001 , 54947653.27600001 ] ) ,
+                } ,
+                'variance': {
+                    'estimate': 54846534.45629276 ,
+                    'confidence_interval': np.array( [ 54846534.45629275 , 54846534.45629278 ] ) ,
+                } ,
+                'CV': {
+                    'estimate': 0.9981597245072626 ,
+                    'confidence_interval': np.array( [ 0.99815972 , 0.99815972 ] ) ,
+                } ,            
+            } ,
+        } ,
+        'single_sub': {
+            'biomass': {
+                'mean': {
+                    'estimate': 117230560.28860001 ,
+                    'confidence_interval': np.array( [ 1.1723056e08 , 1.1723056e8 ] ) ,
+                } ,
+                'variance': {
+                    'estimate': 116601900.95605445 ,
+                    'confidence_interval': np.array( [ 1.16601901e8 , 1.16601901e8 ] ) ,
+                } ,
+                'CV': {
+                    'estimate': 0.994637410833848 ,
+                    'confidence_interval': np.array( [ 0.99463741 , 0.99463741 ] ) ,
+                } ,            
+            } ,
+        } ,
+        'single_rep_sub': {
+            'biomass': {
+                'mean': {
+                    'estimate': 54463985.68756001 ,
+                    'confidence_interval': np.array( [ -4.69233576e7 , 1.55851329e8 ] ) ,
+                } ,
+                'variance': {
+                    'estimate': 53662832.43264915 ,
+                    'confidence_interval': np.array( [ -4.70645276e7 , 1.54390192e8 ] ) ,
+                } ,
+                'CV': {
+                    'estimate': 0.9710233886235905 ,
+                    'confidence_interval': np.array( [ 0.90408889 , 1.03795788 ] ) ,
+                } ,            
+            } ,
+        } ,
+    }
     # ---- Expected output
     expected_output = {
         'single': {
@@ -155,7 +220,7 @@ def test_stratified_transect_statistic( ):
     #----------------------------------
     ### Run tests: `stratified_transect_statistic`
     #----------------------------------
-    assert_dictionary_equal( eval_dictionary , expected_output )
+    assert_dictionary_equal( eval_dictionary , expected_dtypes , expected_output )
     
 def test_confidence_interval( ):
 
