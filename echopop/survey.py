@@ -672,7 +672,7 @@ class Survey:
         station_length_aggregate = (
             station_sex_length
             # calculate the within-sample sum and proportions (necessary for the downstream dot product calculation)
-            .pipe( lambda x: x.assign( within_station_n = x.groupby( [ 'sex' , 'station' , 'stratum_num' ] )[ 'count' ].transform( sum ) ,
+            .pipe( lambda x: x.assign( within_station_n = x.groupby( [ 'sex' , 'station' , 'stratum_num' ] )[ 'count' ].transform( 'sum' ) ,
                                         within_station_p = lambda x: x[ 'count' ] / x[ 'within_station_n' ] ) )
             .replace( np.nan, 0 ) # remove erroneous NaN (divide by 0 or invalid values)
             .merge( total_n , on = 'stratum_num' ) # merge station_sex_length with total_n
@@ -688,8 +688,9 @@ class Survey:
             .loc[ station_length_aggregate.sex.isin( [ 'male' , 'female' ] ) ] # only parse 'male' and 'female'
             # create a pivot that will reorient data to the desired shape
             .pivot_table( index = [ 'sex' , 'station' ] , 
-                        columns = [ 'stratum_num' ] , 
-                        values = [ 'overall_station_p' ] )
+                          columns = [ 'stratum_num' ] , 
+                          values = [ 'overall_station_p' ] ,
+                          observed = False )
             .groupby( 'sex' )
             .sum( )
         )
@@ -701,7 +702,8 @@ class Survey:
             # create a pivot that will reorient data to the desired shape
             .pivot_table( index = [ 'sex' , 'station' ] , 
                           columns = 'stratum_num' , 
-                          values = 'overall_station_p' )
+                          values = 'overall_station_p' ,
+                          observed = False )
             .groupby( 'station' )
             .sum()
         )
@@ -713,7 +715,8 @@ class Survey:
             # create a pivot that will reorient data to the desired shape
             .pivot_table( index = [ 'sex' , 'station' ] , 
                           columns = 'stratum_num' , 
-                          values = 'overall_station_p' )
+                          values = 'overall_station_p'  ,
+                          observed = False )
             .groupby( [ 'sex' , 'station' ] )
             .sum()
         )
@@ -728,7 +731,8 @@ class Survey:
                 .reset_index( name = 'stn_p' ) , on = [ 'stratum_num' , 'station' ] )
             .pivot_table( columns = 'stratum_num' ,
                           index = [ 'station' , 'sex' ] ,
-                          values = [ 'stn_p' , 'sex_stn_p' ] )    
+                          values = [ 'stn_p' , 'sex_stn_p' ] ,
+                          observed = False )    
         )
         
         ### Format the length bin proportions so they resemble a similar table/matrix shape as the above metrics
@@ -737,7 +741,8 @@ class Survey:
             station_length_aggregate
             .pivot_table( columns = [ 'sex' , 'station' , 'stratum_num' ] , 
                           index = [ 'length_bin' ] ,
-                          values = [ 'within_station_p' ] )[ 'within_station_p' ]
+                          values = [ 'within_station_p' ] ,
+                          observed = False )[ 'within_station_p' ]
         )
         
         ### Calculate combined station fraction means
@@ -837,13 +842,13 @@ class Survey:
             .count_variable( variable = 'length' ,
                              contrasts = [ 'stratum_num' , 'age' ] ,
                              fun = 'size' )
-            .pipe( lambda x: x.assign( stratum_count_all = x.groupby( [ 'stratum_num' ] )[ 'count' ].transform( sum ) ,
-                                       stratum_count_total  = x.loc[ x.age > 1 ].groupby( [ 'stratum_num' ] )[ 'count' ].transform( sum ) ) )
-            .groupby( [ 'stratum_num' , 'age' ] )
+            .pipe( lambda x: x.assign( stratum_count_all = x.groupby( [ 'stratum_num' ] )[ 'count' ].transform( 'sum' ) ,
+                                       stratum_count_total  = x.loc[ x.age > 1 ].groupby( [ 'stratum_num' ] )[ 'count' ].transform( 'sum' ) ) )
+            .groupby( [ 'stratum_num' , 'age' ] , observed = False )[ [ 'age' , 'count' , 'stratum_count_all' , 'stratum_count_total' ] ]
             .apply( lambda df: pd.Series( {
                 'count_age_proportion_all': ( df[ 'count' ] / df.stratum_count_all ).sum() ,
                 'count_age_proportion_adult': ( df.loc[ df.age > 1 ][ 'count' ] / df.stratum_count_total ).sum( )
-            } ) )
+            } ) , include_groups = True )
             .reset_index( )
         )
 
@@ -864,17 +869,17 @@ class Survey:
             .dropna( how = 'any' )
             .pipe( lambda df: df.assign( weight_stratum_all = df
                                                         .groupby( [ 'stratum_num' ] )[ 'weight' ]
-                                                        .transform( sum ) ,
+                                                        .transform( 'sum' ) ,
                                         weight_stratum_adult = df
                                                             .loc[ lambda x: x.age > 1 ]
                                                             .groupby( [ 'stratum_num' ] )[ 'weight' ]
-                                                            .transform( sum ) ) )
+                                                            .transform( 'sum' ) ) )
             .groupby( [ 'stratum_num' , 'age' ] )
             .apply( lambda df: pd.Series( {
                 'weight_age_proportion_all': ( df.weight / df.weight_stratum_all ).sum( ) ,
                 'weight_age_proportion_adult': ( df.weight / df.weight_stratum_adult ).sum( )
-            } ) )
-            .reset_index()
+            } ) , include_groups = False )
+            .reset_index( )
         )
         
         # Calculate adult proportions/contributions (in terms of summed weight) for each stratum
@@ -888,14 +893,15 @@ class Survey:
             .count_variable( contrasts = [ 'stratum_num' , 'age' , 'length_bin' , 'sex' ] ,
                             variable = 'weight' ,
                             fun = 'sum' )
-            .pipe( lambda df: df.assign( weight_total_all = df.groupby( [ 'stratum_num' , 'sex' ] )[ 'count' ].transform( sum ) ,
-                                         weight_total_adult = df.loc[ df.age > 1 ].groupby( [ 'stratum_num' , 'sex' ] )[ 'count' ].transform( sum ) ) )
+            .pipe( lambda df: df.assign( weight_total_all = df.groupby( [ 'stratum_num' , 'sex' ] )[ 'count' ].transform( 'sum' ) ,
+                                         weight_total_adult = df.loc[ df.age > 1 ].groupby( [ 'stratum_num' , 'sex' ] )[ 'count' ].transform( 'sum' ) ) )
             .groupby( [ 'stratum_num' , 'age' , 'sex' ] )
             .apply( lambda x: pd.Series( {
                 'weight_sex_proportion_all': ( x[ 'count' ] / x.weight_total_all ).sum() ,
                 'weight_sex_proportion_adult': ( x[ 'count' ] / x.weight_total_adult ).sum()
-            } ) )
+            } ) , include_groups = False )
             .reset_index( )
+            .fillna( 0 )
         )
         
         length_sex_age_weight_proportions = (
@@ -908,10 +914,11 @@ class Survey:
             .count_variable( contrasts = [ 'stratum_num' , 'age' , 'length_bin' , 'sex' ] ,
                             variable = 'weight' ,
                             fun = 'sum' )
-            .pipe( lambda df: df.assign( weight_total_all = df.groupby( [ 'stratum_num' , 'sex' ] )[ 'count' ].transform( sum ) ,
-                                         weight_total_adult = df.loc[ df.age > 1 ].groupby( [ 'stratum_num' , 'sex' ] )[ 'count' ].transform( sum ) ) )
+            .pipe( lambda df: df.assign( weight_total_all = df.groupby( [ 'stratum_num' , 'sex' ] )[ 'count' ].transform( 'sum' ) ,
+                                         weight_total_adult = df.loc[ df.age > 1 ].groupby( [ 'stratum_num' , 'sex' ] )[ 'count' ].transform( 'sum' ) ) )
             .assign( weight_length_sex_proportion_all = lambda x: x[ 'count' ] / x.weight_total_all ,
                      weight_length_sex_proportion_adult = lambda x: x[ 'count' ] / x.weight_total_adult )
+            .replace( np.nan , 0 )
         )
         
         ### Add these dataframes to the appropriate data attribute
@@ -1137,47 +1144,51 @@ class Survey:
         )
 
     def standardize_coordinates( self ,
-                                 adjust_mesh = True ):
+                                 dataset: str = 'biomass_density' ):
         """
         Standardizes spatial coordinates based on reference positions
-        
-        Parameters
-        ----------
-        adjust_mesh
-            Boolean value that determines whether a defined mesh is also standardized
-            alongside the transect values
         """         
+
+        ### Parse which dataset will be adjusted
+        if dataset == 'biomass_density' :
+            data_regrid = self.biology[ 'population' ][ 'areal_density' ][ 'biomass_density_df' ]
+        elif dataset == 'number_density' :
+            data_regrid = self.biology[ 'population' ][ 'areal_density' ][ 'number_density_df' ]
+        elif dataset == 'abundance' :
+            data_regrid = self.biology[ 'population' ][ 'abundance' ][ 'abundance_df' ]
+        elif dataset == 'biomass' :
+            data_regrid = self.biology[ 'population' ][ 'biomass' ][ 'biomass_df' ]
+        elif dataset == 'biomass_age' :
+            data_regrid = self.biology[ 'population' ][ 'biomass' ][ 'biomass_age_df' ]
+
         ### Collect necessary parameter values
         # !!! TODO: This only currently applies to age-sex-indexed biomass
-        transect_trans_df , d_x , d_y = transform_geometry( self.biology[ 'population' ][ 'biomass' ][ 'biomass_age_df' ] , 
+        transect_trans_df , d_x , d_y = transform_geometry( data_regrid , 
                                                             self.statistics[ 'kriging' ][ 'isobath_200m_df' ] , 
-                                                            self.config[ 'kriging_parameters' ][ 'longitude_reference' ] , 
-                                                            self.config[ 'kriging_parameters' ][ 'longitude_offset' ] , 
-                                                            self.config[ 'kriging_parameters' ][ 'latitude_offset' ] ,
+                                                            self.config[ 'kriging_parameters' ] ,
                                                             self.config[ 'geospatial' ][ 'init' ] )
         
         ### Update Survey object with transformed coordinates
-        self.biology[ 'population' ][ 'biomass' ][ 'biomass_age_df' ] = transect_trans_df
+        if dataset == 'biomass_density' :
+            self.biology[ 'population' ][ 'areal_density' ][ 'biomass_density_df' ] = transect_trans_df
+        elif dataset == 'number_density' :
+            self.biology[ 'population' ][ 'areal_density' ][ 'number_density_df' ] = transect_trans_df
+        elif dataset == 'abundance' :
+            self.biology[ 'population' ][ 'abundance' ][ 'abundance_df' ] = transect_trans_df
+        elif dataset == 'biomass' :
+            self.biology[ 'population' ][ 'biomass' ][ 'biomass_df' ] = transect_trans_df
+        elif dataset == 'biomass_age' :
+            self.biology[ 'population' ][ 'biomass' ][ 'biomass_age_df' ] = transect_trans_df
 
-        ### Adjust coordinates if flagged
-        if adjust_mesh:
-
-            ### Transform mesh
-            mesh_trans_df = transform_geometry( self.statistics[ 'kriging' ][ 'mesh_df' ] , 
-                                                self.statistics[ 'kriging' ][ 'isobath_200m_df' ] , 
-                                                self.config[ 'kriging_parameters' ][ 'longitude_reference' ] , 
-                                                self.config[ 'kriging_parameters' ][ 'longitude_offset' ] , 
-                                                self.config[ 'kriging_parameters' ][ 'latitude_offset' ] ,
-                                                self.config[ 'geospatial' ][ 'init' ] ,
-                                                range_output = False ,
-                                                d_longitude = d_x , d_latitude = d_y )
-            
-            ### Update Survey object with transformed coordinates
-            self.statistics[ 'kriging' ].update(
-                {
-                    'transformed_mesh_geodf': mesh_trans_df
-                }
-            )
+        ### Transform mesh
+        mesh_trans_df , _ , _ = transform_geometry( self.statistics[ 'kriging' ][ 'mesh_df' ] , 
+                                                    self.statistics[ 'kriging' ][ 'isobath_200m_df' ] , 
+                                                    self.config[ 'kriging_parameters' ] ,
+                                                    self.config[ 'geospatial' ][ 'init' ] ,
+                                                    d_longitude = d_x , d_latitude = d_y )
+        
+        ### Update Survey object with transformed coordinates
+        self.statistics[ 'kriging' ][ 'mesh_df' ] =  mesh_trans_df
     
     def krige( self ,
                variable: str = 'B_a_adult' ):
