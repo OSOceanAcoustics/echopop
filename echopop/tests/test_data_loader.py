@@ -5,7 +5,7 @@ import copy
 from echopop import Survey
 from echopop.core import LAYER_NAME_MAP
 from echopop.utils.data_file_validation import load_configuration
-from echopop.tests.utility_testing_functions import dictionary_shape_equal
+from echopop.tests.conftest import dictionary_shape_equal
 
 def test_load_configuration(test_path, tmp_path):
     init_params = yaml.safe_load(
