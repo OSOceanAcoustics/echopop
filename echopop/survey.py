@@ -669,7 +669,7 @@ class Survey:
         station_length_aggregate = (
             station_sex_length
             # calculate the within-sample sum and proportions (necessary for the downstream dot product calculation)
-            .pipe( lambda x: x.assign( within_station_n = x.groupby( [ 'sex' , 'station' , 'stratum_num' ] )[ 'count' ].transform( sum ) ,
+            .pipe( lambda x: x.assign( within_station_n = x.groupby( [ 'sex' , 'station' , 'stratum_num' ] )[ 'count' ].transform( 'sum' ) ,
                                         within_station_p = lambda x: x[ 'count' ] / x[ 'within_station_n' ] ) )
             .replace( np.nan, 0 ) # remove erroneous NaN (divide by 0 or invalid values)
             .merge( total_n , on = 'stratum_num' ) # merge station_sex_length with total_n
@@ -685,8 +685,9 @@ class Survey:
             .loc[ station_length_aggregate.sex.isin( [ 'male' , 'female' ] ) ] # only parse 'male' and 'female'
             # create a pivot that will reorient data to the desired shape
             .pivot_table( index = [ 'sex' , 'station' ] , 
-                        columns = [ 'stratum_num' ] , 
-                        values = [ 'overall_station_p' ] )
+                          columns = [ 'stratum_num' ] , 
+                          values = [ 'overall_station_p' ] ,
+                          observed = False )
             .groupby( 'sex' )
             .sum( )
         )
@@ -698,7 +699,8 @@ class Survey:
             # create a pivot that will reorient data to the desired shape
             .pivot_table( index = [ 'sex' , 'station' ] , 
                           columns = 'stratum_num' , 
-                          values = 'overall_station_p' )
+                          values = 'overall_station_p' ,
+                          observed = False )
             .groupby( 'station' )
             .sum()
         )
@@ -710,7 +712,8 @@ class Survey:
             # create a pivot that will reorient data to the desired shape
             .pivot_table( index = [ 'sex' , 'station' ] , 
                           columns = 'stratum_num' , 
-                          values = 'overall_station_p' )
+                          values = 'overall_station_p'  ,
+                          observed = False )
             .groupby( [ 'sex' , 'station' ] )
             .sum()
         )
@@ -725,7 +728,8 @@ class Survey:
                 .reset_index( name = 'stn_p' ) , on = [ 'stratum_num' , 'station' ] )
             .pivot_table( columns = 'stratum_num' ,
                           index = [ 'station' , 'sex' ] ,
-                          values = [ 'stn_p' , 'sex_stn_p' ] )    
+                          values = [ 'stn_p' , 'sex_stn_p' ] ,
+                          observed = False )    
         )
         
         ### Format the length bin proportions so they resemble a similar table/matrix shape as the above metrics
@@ -734,7 +738,8 @@ class Survey:
             station_length_aggregate
             .pivot_table( columns = [ 'sex' , 'station' , 'stratum_num' ] , 
                           index = [ 'length_bin' ] ,
-                          values = [ 'within_station_p' ] )[ 'within_station_p' ]
+                          values = [ 'within_station_p' ] ,
+                          observed = False )[ 'within_station_p' ]
         )
         
         ### Calculate combined station fraction means
@@ -834,13 +839,13 @@ class Survey:
             .count_variable( variable = 'length' ,
                              contrasts = [ 'stratum_num' , 'age' ] ,
                              fun = 'size' )
-            .pipe( lambda x: x.assign( stratum_count_all = x.groupby( [ 'stratum_num' ] )[ 'count' ].transform( sum ) ,
-                                       stratum_count_total  = x.loc[ x.age > 1 ].groupby( [ 'stratum_num' ] )[ 'count' ].transform( sum ) ) )
-            .groupby( [ 'stratum_num' , 'age' ] )
+            .pipe( lambda x: x.assign( stratum_count_all = x.groupby( [ 'stratum_num' ] )[ 'count' ].transform( 'sum' ) ,
+                                       stratum_count_total  = x.loc[ x.age > 1 ].groupby( [ 'stratum_num' ] )[ 'count' ].transform( 'sum' ) ) )
+            .groupby( [ 'stratum_num' , 'age' ] , observed = False )[ [ 'age' , 'count' , 'stratum_count_all' , 'stratum_count_total' ] ]
             .apply( lambda df: pd.Series( {
                 'count_age_proportion_all': ( df[ 'count' ] / df.stratum_count_all ).sum() ,
                 'count_age_proportion_adult': ( df.loc[ df.age > 1 ][ 'count' ] / df.stratum_count_total ).sum( )
-            } ) )
+            } ) , include_groups = True )
             .reset_index( )
         )
 
@@ -861,17 +866,17 @@ class Survey:
             .dropna( how = 'any' )
             .pipe( lambda df: df.assign( weight_stratum_all = df
                                                         .groupby( [ 'stratum_num' ] )[ 'weight' ]
-                                                        .transform( sum ) ,
+                                                        .transform( 'sum' ) ,
                                         weight_stratum_adult = df
                                                             .loc[ lambda x: x.age > 1 ]
                                                             .groupby( [ 'stratum_num' ] )[ 'weight' ]
-                                                            .transform( sum ) ) )
+                                                            .transform( 'sum' ) ) )
             .groupby( [ 'stratum_num' , 'age' ] )
             .apply( lambda df: pd.Series( {
                 'weight_age_proportion_all': ( df.weight / df.weight_stratum_all ).sum( ) ,
                 'weight_age_proportion_adult': ( df.weight / df.weight_stratum_adult ).sum( )
-            } ) )
-            .reset_index()
+            } ) , include_groups = False )
+            .reset_index( )
         )
         
         # Calculate adult proportions/contributions (in terms of summed weight) for each stratum
@@ -885,13 +890,13 @@ class Survey:
             .count_variable( contrasts = [ 'stratum_num' , 'age' , 'length_bin' , 'sex' ] ,
                             variable = 'weight' ,
                             fun = 'sum' )
-            .pipe( lambda df: df.assign( weight_total_all = df.groupby( [ 'stratum_num' , 'sex' ] )[ 'count' ].transform( sum ) ,
-                                         weight_total_adult = df.loc[ df.age > 1 ].groupby( [ 'stratum_num' , 'sex' ] )[ 'count' ].transform( sum ) ) )
+            .pipe( lambda df: df.assign( weight_total_all = df.groupby( [ 'stratum_num' , 'sex' ] )[ 'count' ].transform( 'sum' ) ,
+                                         weight_total_adult = df.loc[ df.age > 1 ].groupby( [ 'stratum_num' , 'sex' ] )[ 'count' ].transform( 'sum' ) ) )
             .groupby( [ 'stratum_num' , 'age' , 'sex' ] )
             .apply( lambda x: pd.Series( {
                 'weight_sex_proportion_all': ( x[ 'count' ] / x.weight_total_all ).sum() ,
                 'weight_sex_proportion_adult': ( x[ 'count' ] / x.weight_total_adult ).sum()
-            } ) )
+            } ) , include_groups = False )
             .reset_index( )
             .fillna( 0 )
         )
@@ -906,8 +911,8 @@ class Survey:
             .count_variable( contrasts = [ 'stratum_num' , 'age' , 'length_bin' , 'sex' ] ,
                             variable = 'weight' ,
                             fun = 'sum' )
-            .pipe( lambda df: df.assign( weight_total_all = df.groupby( [ 'stratum_num' , 'sex' ] )[ 'count' ].transform( sum ) ,
-                                         weight_total_adult = df.loc[ df.age > 1 ].groupby( [ 'stratum_num' , 'sex' ] )[ 'count' ].transform( sum ) ) )
+            .pipe( lambda df: df.assign( weight_total_all = df.groupby( [ 'stratum_num' , 'sex' ] )[ 'count' ].transform( 'sum' ) ,
+                                         weight_total_adult = df.loc[ df.age > 1 ].groupby( [ 'stratum_num' , 'sex' ] )[ 'count' ].transform( 'sum' ) ) )
             .assign( weight_length_sex_proportion_all = lambda x: x[ 'count' ] / x.weight_total_all ,
                      weight_length_sex_proportion_adult = lambda x: x[ 'count' ] / x.weight_total_adult )
             .replace( np.nan , 0 )

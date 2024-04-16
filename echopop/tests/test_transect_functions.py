@@ -1,24 +1,22 @@
 import pandas as pd
 import numpy as np
 import copy
-from echopop.survey import Survey
+from echopop.tests.conftest import dictionary_equality , dataframe_equality
+from echopop.tests.conftest import dataframe_shape_equal , dataframe_dtypes_equality
 from echopop.computation.biology import index_transect_age_sex_proportions
 from echopop.computation.spatial import correct_transect_intervals , calculate_start_end_coordinates , calculate_transect_distance
 
 def test_index_transect_age_sex_proportions( mock_survey ):
 
-    #### Pull in mock Survey object
-    objS = mock_survey
-    
     ### Initialize various attributes
-    objS.acoustics[ 'sigma_bs' ] = { }
-    objS.statistics[ 'length_weight' ] = { }
-    objS.biology[ 'weight' ] = { }
-    objS.biology[ 'population' ] = { }
+    mock_survey.acoustics[ 'sigma_bs' ] = { }
+    mock_survey.statistics[ 'length_weight' ] = { }
+    mock_survey.biology[ 'weight' ] = { }
+    mock_survey.biology[ 'population' ] = { }
     
     ### Create mock data for `age_proportions_df`
-    objS.biology[ 'weight' ][ 'proportions' ] = { }
-    objS.biology[ 'weight' ][ 'proportions' ][ 'age_proportions_df' ] = pd.DataFrame( {
+    mock_survey.biology[ 'weight' ][ 'proportions' ] = { }
+    mock_survey.biology[ 'weight' ][ 'proportions' ][ 'age_proportions_df' ] = pd.DataFrame( {
            'stratum_num': np.repeat( [ 0 , 1 ] , 2 ).astype( np.int64 ) ,
            'age': np.tile( [ 1 , 2 ] , 2 ).astype( np.int64 ) ,
            'count_age_proportion_all': np.repeat( 0.5 , 4 ) ,
@@ -26,7 +24,7 @@ def test_index_transect_age_sex_proportions( mock_survey ):
         } )
     
     ### Create mock data for `age_weight_proportions_df`
-    objS.biology[ 'weight' ][ 'proportions' ][ 'age_weight_proportions_df' ] = pd.DataFrame( {
+    mock_survey.biology[ 'weight' ][ 'proportions' ][ 'age_weight_proportions_df' ] = pd.DataFrame( {
            'stratum_num': np.repeat( [ 0 , 1 ] , 2 ).astype( np.int64 ) ,
            'age': np.tile( [ 1 , 2 ] , 2 ).astype( np.int64 ) ,
            'weight_age_proportion_all': [ 0.50 , 0.50 , 0.50 , 0.50 ] ,
@@ -34,7 +32,7 @@ def test_index_transect_age_sex_proportions( mock_survey ):
         } )
     
     ### Create mock data for `sex_age_weight_proportions_df`
-    objS.biology[ 'weight' ][ 'proportions' ][ 'sex_age_weight_proportions_df' ] = pd.DataFrame( {
+    mock_survey.biology[ 'weight' ][ 'proportions' ][ 'sex_age_weight_proportions_df' ] = pd.DataFrame( {
         'stratum_num': np.repeat( [ 0 , 1 ] , 6 ).astype( np.int64 ) ,
         'age': np.tile( [ 1 , 1 , 1 , 2 , 2 , 2 ] , 2 ).astype( np.int64 ) ,
         'sex': np.tile( [ 'all' , 'female' , 'male' ] , 4 ) ,
@@ -44,7 +42,7 @@ def test_index_transect_age_sex_proportions( mock_survey ):
     } )
     
     ### Create mock data for 'length_weight_df'
-    objS.statistics[ 'length_weight' ][ 'length_weight_df' ] = pd.DataFrame(
+    mock_survey.statistics[ 'length_weight' ][ 'length_weight_df' ] = pd.DataFrame(
         {
             'length_bin': pd.cut( np.repeat( [ 12 , 18 ] , 3 ) ,
                                   np.linspace( 9 , 21 , 3 ) ) ,
@@ -60,7 +58,7 @@ def test_index_transect_age_sex_proportions( mock_survey ):
     )
     
     ### Create mock data for `weight_strata_df`
-    objS.biology[ 'weight' ][ 'weight_strata_df' ] = pd.DataFrame(
+    mock_survey.biology[ 'weight' ][ 'weight_strata_df' ] = pd.DataFrame(
         {
             'stratum_num': [ 0 , 1 ] ,
             'proportion_female': [ 0.592593 , 0.407407 ] ,
@@ -74,7 +72,7 @@ def test_index_transect_age_sex_proportions( mock_survey ):
     )
     
     ### Create mock data for `strata_mean` (sigma_bs)
-    objS.acoustics[ 'sigma_bs' ][ 'strata_mean' ] = pd.DataFrame(
+    mock_survey.acoustics[ 'sigma_bs' ][ 'strata_mean' ] = pd.DataFrame(
         {
             'stratum_num': [ 0 , 1 ] ,
             'species_id': np.repeat( 8675309 , 2 ) ,
@@ -83,7 +81,7 @@ def test_index_transect_age_sex_proportions( mock_survey ):
     )    
     
     ### Create mock data for `nasc_df`
-    objS.acoustics[ 'nasc' ][ 'nasc_df' ] = pd.DataFrame(
+    mock_survey.acoustics[ 'nasc' ][ 'nasc_df' ] = pd.DataFrame(
         {
             'transect_num': [ 1 , 2 , 3 , 4] ,
             'stratum_num': [ 0 , 0 , 1 , 1 ] ,
@@ -99,7 +97,7 @@ def test_index_transect_age_sex_proportions( mock_survey ):
     )
     
     ### Create mock data for `strata_df`
-    objS.spatial[ 'strata_df' ] = pd.DataFrame(
+    mock_survey.spatial[ 'strata_df' ] = pd.DataFrame(
         {
             'stratum_num': [ 0 , 1 ] ,
             'haul_num': [ 1 , 2 ] ,
@@ -108,9 +106,9 @@ def test_index_transect_age_sex_proportions( mock_survey ):
     )
 
     ### Bundle the mocked data into their respective inputs for `index_transect_age_sex_proportions`
-    test_acoustics_dict = copy.deepcopy( objS.acoustics )
-    test_biology_dict = copy.deepcopy( objS.biology ) 
-    test_info_strata = objS.spatial[ 'strata_df' ].copy( )
+    test_acoustics_dict = copy.deepcopy( mock_survey.acoustics )
+    test_biology_dict = copy.deepcopy( mock_survey.biology ) 
+    test_info_strata = mock_survey.spatial[ 'strata_df' ].copy( )
 
     ### Evaluate object for later comparison 
     eval_nasc_fraction_total_df = index_transect_age_sex_proportions( test_acoustics_dict ,
@@ -120,8 +118,33 @@ def test_index_transect_age_sex_proportions( mock_survey ):
     ###--------------------------------
     ### Expected outcomes
     ###--------------------------------
-    # ---- Expected dimensions
-    expected_dimensions = tuple( [ 8 , 24 ] )
+    # ---- Expected dtypes     
+    expected_dtypes = {
+            'latitude': np.floating ,
+            'longitude': np.floating ,
+            'transect_num': np.integer ,
+            'stratum_num': np.integer ,
+            'haul_num': np.integer ,
+            'interval': np.floating ,
+            'interval_area': np.floating ,
+            'NASC_all_ages': np.floating ,
+            'NASC_no_age1': np.floating ,
+            'fraction_hake': np.floating ,
+            'species_id': np.integer ,
+            'sigma_bs_mean': np.floating ,
+            'proportion_female': np.floating ,
+            'proportion_male': np.floating ,
+            'proportion_station_1': np.floating ,
+            'proportion_station_2': np.floating ,
+            'average_weight_female': np.floating ,
+            'average_weight_male': np.floating ,
+            'average_weight_total': np.floating ,
+            'age': np.integer ,
+            'count_age_proportion_all': np.floating ,
+            'count_age_proportion_adult': np.floating ,
+            'weight_age_proportion_all': np.floating ,
+            'weight_age_proportion_adult': np.floating ,
+        }
     # ---- Expected output
     expected_output = pd.DataFrame(
         {
@@ -148,19 +171,19 @@ def test_index_transect_age_sex_proportions( mock_survey ):
             'count_age_proportion_all': np.repeat( 0.5 , 8 ) ,
             'count_age_proportion_adult': np.tile( [ 0.0 , 1.0 ] , 4 ) ,
             'weight_age_proportion_all': np.repeat( 0.5 , 8 ) ,
-            'weight_age_proportion_adult': np.tile( [ 0.0 , 1.0 ] , 4 )
-        }
+            'weight_age_proportion_adult': np.tile( [ 0.0 , 1.0 ] , 4 ) ,
+        } ,
     )
 
     #----------------------------------
     ### Run tests: `index_transect_age_sex_proportions`
     #----------------------------------
     ### Check shape 
-    assert eval_nasc_fraction_total_df.shape == expected_dimensions
+    dataframe_shape_equal( eval_nasc_fraction_total_df , expected_output )
     ### Check datatypes
-    assert np.all( eval_nasc_fraction_total_df.dtypes == expected_output.dtypes )
+    dataframe_dtypes_equality( eval_nasc_fraction_total_df , expected_dtypes )
     ### Dataframe equality
-    assert np.allclose( eval_nasc_fraction_total_df , expected_output , rtol = 1e-1 )
+    dataframe_equality( eval_nasc_fraction_total_df , expected_output )
     
 def test_correct_transect_intervals( ):
 
@@ -176,8 +199,8 @@ def test_correct_transect_intervals( ):
             'transect_spacing': np.repeat( 1.0 , 4 ) ,
             'NASC_no_age1': [ 0.0 , 1e1 , 1e2 , 1e3 ] ,
             'haul_num': [ 1 , 1 , 2 , 2 ] ,
-            'NASC_all_ages': [ 1e1 , 1e2 , 1e2 , 1e3 ]
-        }
+            'NASC_all_ages': [ 1e1 , 1e2 , 1e2 , 1e3 ] ,
+        } ,
     )
 
     ### Evaluate object for later comparison
@@ -186,8 +209,18 @@ def test_correct_transect_intervals( ):
     ###--------------------------------
     ### Expected outcomes
     ###--------------------------------
-    # ---- Expected dimensions
-    expected_dimensions = tuple( [ 4 , 9 ] )
+    # ---- Expected dtypes
+    expected_dtypes = {
+            'latitude': np.floating ,
+            'longitude': np.floating ,
+            'transect_num': np.integer ,
+            'stratum_num': np.integer ,
+            'haul_num': np.integer ,
+            'interval': np.floating ,
+            'interval_area': np.floating ,
+            'NASC_all_ages': np.floating ,
+            'NASC_no_age1': np.floating ,
+    } 
     # ---- Expected output
     expected_output = pd.DataFrame(
         {
@@ -200,23 +233,23 @@ def test_correct_transect_intervals( ):
             'interval_area': [ 10.0 , 10.0 , 10.0 , 9.9 ] ,
             'NASC_all_ages': [ 1e1 , 1e2 , 1e2 , 1e3 ] ,
             'NASC_no_age1': [ 0.0 , 1e1 , 1e2 , 1e3 ] ,
-        }
+        } ,
     )
 
     #----------------------------------
     ### Run tests: `correct_transect_intervals`
     #----------------------------------
     ### Check shape 
-    assert eval_nasc_interval.shape == expected_dimensions
+    dataframe_shape_equal( eval_nasc_interval , expected_output )
     ### Check datatypes
-    assert np.all( eval_nasc_interval.dtypes == expected_output.dtypes )
+    dataframe_dtypes_equality( eval_nasc_interval , expected_dtypes )
     ### Dataframe equality
-    assert np.allclose( eval_nasc_interval , expected_output )
+    dataframe_equality( eval_nasc_interval , expected_output )
 
 def test_calculate_start_end_coordinates( ):
 
     ### Create mock data for `nasc_df`
-    test_nasc_df = pd.DataFrame(
+    test_nasc_dataframe = pd.DataFrame(
         {
             'transect_num': [ 1 , 1 , 2 , 2 ] ,
             'stratum_num': [ 0 , 0 , 1 , 1 ] ,
@@ -227,43 +260,48 @@ def test_calculate_start_end_coordinates( ):
             'transect_spacing': np.repeat( 1.0 , 4 ) ,
             'NASC_no_age1': [ 0.0 , 1e1 , 1e2 , 1e3 ] ,
             'haul_num': [ 1 , 1 , 2 , 2 ] ,
-            'NASC_all_ages': [ 1e1 , 1e2 , 1e2 , 1e3 ]
+            'NASC_all_ages': [ 1e1 , 1e2 , 1e2 , 1e3 ] ,
         }
     )
 
     ### Evaluate for later comparison
-    eval_test_nasc_df = calculate_start_end_coordinates( test_nasc_df , 
+    eval_test_nasc_df = calculate_start_end_coordinates( test_nasc_dataframe , 
                                                          'transect_num' )
     
     ###--------------------------------
     ### Expected outcomes
     ###--------------------------------
-    # ---- Expected dimensions
-    expected_dimensions = tuple( [ 2 , 4 ] )
+    # ---- Expected dtypes
+    expected_dtypes = {
+            'transect_num': np.integer ,
+            'minimum_longitude': np.floating ,
+            'maximum_longitude': np.floating ,
+            'center_latitude': np.floating ,
+    }
     # ---- Expected output
     expected_output = pd.DataFrame(
         {
             'transect_num': [ 1 , 2 ] ,
             'minimum_longitude': [ -180.0 , -170.0 ] ,
             'maximum_longitude': [ -120.0 , -110.0 ] ,
-            'center_latitude': [ 25.0 , 45.0 ]
-        }
+            'center_latitude': [ 25.0 , 45.0 ] ,
+        } ,
     )
 
     #----------------------------------
     ### Run tests: `calculate_start_end_coordinates`
     #----------------------------------
     ### Check shape 
-    assert eval_test_nasc_df.shape == expected_dimensions
+    dataframe_shape_equal( eval_test_nasc_df , expected_output )
     ### Check datatypes
-    assert np.all( eval_test_nasc_df.dtypes == expected_output.dtypes )
+    dataframe_dtypes_equality( eval_test_nasc_df , expected_dtypes )
     ### Dataframe equality
-    assert eval_test_nasc_df.equals( expected_output )
+    dataframe_equality( eval_test_nasc_df , expected_output )
 
 def test_calculate_transect_distance( ):
 
     ### Create mock data for `nasc_df`
-    test_nasc_df = pd.DataFrame(
+    test_nasc_dataframe = pd.DataFrame(
         {
             'transect_num': [ 1 , 1 , 2 , 2 ] ,
             'stratum_num': [ 0 , 0 , 1 , 1 ] ,
@@ -274,19 +312,26 @@ def test_calculate_transect_distance( ):
             'transect_spacing': np.repeat( 2.0 , 4 ) ,
             'NASC_no_age1': [ 0.0 , 1e1 , 1e2 , 1e3 ] ,
             'haul_num': [ 1 , 1 , 2 , 2 ] ,
-            'NASC_all_ages': [ 1e1 , 1e2 , 1e2 , 1e3 ]
-        }
+            'NASC_all_ages': [ 1e1 , 1e2 , 1e2 , 1e3 ] ,
+        } ,
     )
-
     ### Evaluate for later comparison
-    eval_test_nasc_df = calculate_transect_distance( test_nasc_df , 
+    eval_test_nasc_df = calculate_transect_distance( test_nasc_dataframe , 
                                                      'transect_num' )
     
     ###--------------------------------
     ### Expected outcomes
     ###--------------------------------
-    # ---- Expected dimensions
-    expected_dimensions = tuple( [ 2 , 7 ] )
+    # ---- Expected dtypes
+    expected_dtypes= {
+            'transect_num': np.integer ,
+            'minimum_longitude': np.floating ,
+            'maximum_longitude': np.floating ,
+            'center_latitude': np.floating ,
+            'transect_distance': np.floating ,
+            'transect_spacing': np.floating ,
+            'transect_area': np.floating ,
+    }
     # ---- Expected output
     expected_output = pd.DataFrame(
         {
@@ -296,16 +341,16 @@ def test_calculate_transect_distance( ):
             'center_latitude': [ 25.0 , 45.0 ] ,
             'transect_distance': [ 3241.273891 , 2493.203304 ] ,
             'transect_spacing': [ 2.0 , 2.0 ] ,
-            'transect_area': [ 6482.547781 , 4986.406609 ]
-        }
+            'transect_area': [ 6482.547781 , 4986.406609 ] ,
+        } ,
     )
 
     #----------------------------------
     ### Run tests: `calculate_start_end_coordinates`
     #----------------------------------
     ### Check shape 
-    assert eval_test_nasc_df.shape == expected_dimensions
+    dataframe_shape_equal( eval_test_nasc_df , expected_output )
     ### Check datatypes
-    assert np.all( eval_test_nasc_df.dtypes == expected_output.dtypes )
+    dataframe_dtypes_equality( eval_test_nasc_df , expected_dtypes )
     ### Dataframe equality
-    assert np.allclose( eval_test_nasc_df , expected_output )
+    dataframe_equality( eval_test_nasc_df , expected_output )

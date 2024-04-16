@@ -120,7 +120,7 @@ def count_variable( dataframe: pd.DataFrame ,
     return (
         dataframe # input dataframe
         .reset_index( drop=True )
-        .groupby( contrasts ) 
+        .groupby( contrasts , observed = False ) 
         .agg({variable: [('count' , fun)]})
         .replace(np.nan, 0 )
         .droplevel( level = 0 , axis = 1 )
@@ -146,8 +146,9 @@ def meld( specimen_dataframe: pd.DataFrame ,
     specimen_stacked = (
         specimen_dataframe 
         .copy()
-        .groupby(['stratum_num' , 'species_id' , 'sex' , 'group' , 'station' , 'length' , 'length_bin' ])
-        .apply(lambda x: len(x['length']))
+        .groupby( ['stratum_num' , 'species_id' , 'sex' , 'group' , 'station' , 'length' , 'length_bin' ] ,
+                  observed = False )[ [ 'length' ] ]
+        .apply(lambda x: len( x ) , include_groups = True )
         .reset_index(name='length_count')
     )
     
