@@ -106,12 +106,8 @@ def transform_geometry( dataframe: pd.DataFrame ,
                         reference_grid: pd.DataFrame ,
                         kriging_grid_parameters: dict ,
                         projection: str = 'epsg:4326' ,
-                        range_output: bool = True ,
                         d_longitude: Optional[ np.float64 ] = None ,
-                        d_latitude: Optional[ np.float64 ] = None , ) -> Union[ Tuple[ pd.DataFrame , 
-                                                                                       np.float64 ,
-                                                                                       np.float64 ] ,
-                                                                                pd.DataFrame ]:
+                        d_latitude: Optional[ np.float64 ] = None , ) -> Tuple[ pd.DataFrame , np.float64 , np.float64 ] :
     """
     Transforms the geometry of a GeoDataFrame to reference coordinates
 
@@ -200,11 +196,8 @@ def transform_geometry( dataframe: pd.DataFrame ,
         / d_longitude
     )    
 
-    ### Merge back with original input data in case of reduction
-    if range_output:
-        return geodataframe_geometry.merge( dataframe , on = [ lon_col , lat_col ] ) , d_longitude , d_latitude
-    else:
-        return geodataframe_geometry.merge( dataframe , on = [ lon_col , lat_col ] )
+    ### Return output Tuple
+    return geodataframe_geometry.merge( dataframe , on = [ lon_col , lat_col ] ) , d_longitude , d_latitude
     
 def lag_distance_griddify( dataset1 ,
                            dataset2 ):

@@ -1134,39 +1134,51 @@ class Survey:
         )
 
     def standardize_coordinates( self ,
-                                 adjust_mesh = True ):
+                                 dataset: str = 'biomass_density' ):
         """
         Standardizes spatial coordinates based on reference positions
-        
-        Parameters
-        ----------
-        adjust_mesh
-            Boolean value that determines whether a defined mesh is also standardized
-            alongside the transect values
         """         
+
+        ### Parse which dataset will be adjusted
+        if dataset == 'biomass_density' :
+            data_regrid = self.biology[ 'population' ][ 'areal_density' ][ 'biomass_density_df' ]
+        elif dataset == 'number_density' :
+            data_regrid = self.biology[ 'population' ][ 'areal_density' ][ 'number_density_df' ]
+        elif dataset == 'abundance' :
+            data_regrid = self.biology[ 'population' ][ 'abundance' ][ 'abundance_df' ]
+        elif dataset == 'biomass' :
+            data_regrid = self.biology[ 'population' ][ 'biomass' ][ 'biomass_df' ]
+        elif dataset == 'biomass_age' :
+            data_regrid = self.biology[ 'population' ][ 'biomass' ][ 'biomass_age_df' ]
+
         ### Collect necessary parameter values
         # !!! TODO: This only currently applies to age-sex-indexed biomass
-        transect_trans_df , d_x , d_y = transform_geometry( self.biology[ 'population' ][ 'biomass' ][ 'biomass_age_df' ] , 
+        transect_trans_df , d_x , d_y = transform_geometry( data_regrid , 
                                                             self.statistics[ 'kriging' ][ 'isobath_200m_df' ] , 
                                                             self.config[ 'kriging_parameters' ] ,
                                                             self.config[ 'geospatial' ][ 'init' ] )
         
         ### Update Survey object with transformed coordinates
-        self.biology[ 'population' ][ 'biomass' ][ 'biomass_age_df' ] = transect_trans_df
+        if dataset == 'biomass_density' :
+            self.biology[ 'population' ][ 'areal_density' ][ 'biomass_density_df' ] = transect_trans_df
+        elif dataset == 'number_density' :
+            self.biology[ 'population' ][ 'areal_density' ][ 'number_density_df' ] = transect_trans_df
+        elif dataset == 'abundance' :
+            self.biology[ 'population' ][ 'abundance' ][ 'abundance_df' ] = transect_trans_df
+        elif dataset == 'biomass' :
+            self.biology[ 'population' ][ 'biomass' ][ 'biomass_df' ] = transect_trans_df
+        elif dataset == 'biomass_age' :
+            self.biology[ 'population' ][ 'biomass' ][ 'biomass_age_df' ] = transect_trans_df
 
-        ### Adjust coordinates if flagged
-        if adjust_mesh:
-
-            ### Transform mesh
-            mesh_trans_df = transform_geometry( self.statistics[ 'kriging' ][ 'mesh_df' ] , 
-                                                self.statistics[ 'kriging' ][ 'isobath_200m_df' ] , 
-                                                self.config[ 'kriging_parameters' ] ,
-                                                self.config[ 'geospatial' ][ 'init' ] ,
-                                                range_output = False ,
-                                                d_longitude = d_x , d_latitude = d_y )
-            
-            ### Update Survey object with transformed coordinates
-            self.statistics[ 'kriging' ][ 'mesh_df' ] =  mesh_trans_df
+        ### Transform mesh
+        mesh_trans_df , _ , _ = transform_geometry( self.statistics[ 'kriging' ][ 'mesh_df' ] , 
+                                                    self.statistics[ 'kriging' ][ 'isobath_200m_df' ] , 
+                                                    self.config[ 'kriging_parameters' ] ,
+                                                    self.config[ 'geospatial' ][ 'init' ] ,
+                                                    d_longitude = d_x , d_latitude = d_y )
+        
+        ### Update Survey object with transformed coordinates
+        self.statistics[ 'kriging' ][ 'mesh_df' ] =  mesh_trans_df
     
     def krige( self ,
                species_id ,
