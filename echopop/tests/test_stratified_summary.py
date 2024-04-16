@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from echopop.tests.utility_testing_functions import dictionary_shape_equal
+from echopop.tests.conftest import dictionary_shape_equal
 from echopop.computation.statistics import stratified_transect_statistic , confidence_interval
 
 def test_stratified_transect_statistic( ):
