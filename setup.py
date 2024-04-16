@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 # Dynamically read dependencies from requirements file
 with open("requirements.txt") as f:
