@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from echopop.tests.conftest import dictionary_shape_equal
+from echopop.tests.conftest import assert_dictionary_equal
 from echopop.computation.statistics import stratified_transect_statistic , confidence_interval
 
 def test_stratified_transect_statistic( ):
@@ -16,8 +16,8 @@ def test_stratified_transect_statistic( ):
             'transect_spacing': [ 2.0 , 2.0 , 2.0 , 2.0 ] ,
             'transect_area': [ 355.201900 , 944.140986 , 469.532550 , 701.473710 ] ,
             'B_adult': [ 1e2 , 1e3 , 1e5 , 1e4 ] ,
-            'stratum_inpfc': [ 1 , 1 , 2 , 2 ]
-        }
+            'stratum_inpfc': [ 1 , 1 , 2 , 2 ] ,
+        } ,
     )
 
     ### Create mock data for `strata_summary`
@@ -26,7 +26,7 @@ def test_stratified_transect_statistic( ):
             'stratum_inpfc': [ 1 , 2 ] ,
             'num_transects': [ 2 , 2 ] ,
             'total_transect_area': [ 1299.342886 , 1171.006260 ] ,
-        }
+        } ,
     )
 
     ### Evaluate for later comparison
@@ -71,121 +71,91 @@ def test_stratified_transect_statistic( ):
                                                                             test_transect_replicates ,
                                                                             parameter = 'B_adult' )
     
+    # ++++ Bundle! 
+    eval_dictionary = {
+        'single': eval_single_stratified_results ,
+        'single_rep': eval_single_rep_stratified_results ,
+        'single_sub': eval_single_sub_stratified_results ,
+        'single_rep_sub': eval_single_sub_rep_stratified_results ,
+    }
+    
     ###--------------------------------
     ### Expected outcomes
     ###--------------------------------
+    # ---- Expected dtypes
+
+    # ---- Expected output
     expected_output = {
-        'biomass': {
-            'mean': {
-                'estimate': 1 ,
-                'confidence_interval': np.array( [ 1 , 1 ] ) ,
+        'single': {
+            'biomass': {
+                'mean': {
+                    'estimate': 54947653.27600001 ,
+                    'confidence_interval': np.array( [ 54947653.27600001 , 54947653.27600001 ] ) ,
+                } ,
+                'variance': {
+                    'estimate': 54846534.456292756 ,
+                    'confidence_interval': np.array( [ 54846534.45629276 , 54846534.45629276 ] ) ,
+                } ,
+                'CV': {
+                    'estimate': 0.9981597245072626 ,
+                    'confidence_interval': np.array( [ 0.99815972 , 0.99815972 ] ) ,
+                } ,            
             } ,
-            'variance': {
-                'estimate': 1 ,
-                'confidence_interval': np.array( [ 1 , 1 ] ) ,
+        } ,
+        'single_rep': {
+            'biomass': {
+                'mean': {
+                    'estimate': 54947653.27600001 ,
+                    'confidence_interval': np.array( [ 54947653.27600001 , 54947653.27600001 ] ) ,
+                } ,
+                'variance': {
+                    'estimate': 54846534.45629276 ,
+                    'confidence_interval': np.array( [ 54846534.45629275 , 54846534.45629278 ] ) ,
+                } ,
+                'CV': {
+                    'estimate': 0.9981597245072626 ,
+                    'confidence_interval': np.array( [ 0.99815972 , 0.99815972 ] ) ,
+                } ,            
             } ,
-            'CV': {
-                'estimate': 1 ,
-                'confidence_interval': np.array( [ 1 , 1 ] ) ,
-            } ,            
-        }
+        } ,
+        'single_sub': {
+            'biomass': {
+                'mean': {
+                    'estimate': 117230560.28860001 ,
+                    'confidence_interval': np.array( [ 1.1723056e08 , 1.1723056e8 ] ) ,
+                } ,
+                'variance': {
+                    'estimate': 116601900.95605445 ,
+                    'confidence_interval': np.array( [ 1.16601901e8 , 1.16601901e8 ] ) ,
+                } ,
+                'CV': {
+                    'estimate': 0.994637410833848 ,
+                    'confidence_interval': np.array( [ 0.99463741 , 0.99463741 ] ) ,
+                } ,            
+            } ,
+        } ,
+        'single_rep_sub': {
+            'biomass': {
+                'mean': {
+                    'estimate': 54463985.68756001 ,
+                    'confidence_interval': np.array( [ -4.69233576e7 , 1.55851329e8 ] ) ,
+                } ,
+                'variance': {
+                    'estimate': 53662832.43264915 ,
+                    'confidence_interval': np.array( [ -4.70645276e7 , 1.54390192e8 ] ) ,
+                } ,
+                'CV': {
+                    'estimate': 0.9710233886235905 ,
+                    'confidence_interval': np.array( [ 0.90408889 , 1.03795788 ] ) ,
+                } ,            
+            } ,
+        } ,
     }
 
     #----------------------------------
     ### Run tests: `stratified_transect_statistic`
     #----------------------------------
-    ### Dictionary structure
-    # !!! TODO: based on the original data structure -- will need to be updated once the core data structure is also updated 
-    # ---- Check attributes
-    assert set( eval_single_stratified_results[ 'biomass' ].keys( ) ) == ( set( [ 'mean' , 'variance' , 'CV' ] ) )
-    assert set( eval_single_rep_stratified_results[ 'biomass' ].keys( ) ) == ( set( [ 'mean' , 'variance' , 'CV' ] ) )
-    assert set( eval_single_sub_stratified_results[ 'biomass' ].keys( ) ) == ( set( [ 'mean' , 'variance' , 'CV' ] ) )
-    assert set( eval_single_sub_rep_stratified_results[ 'biomass' ].keys( ) ) == ( set( [ 'mean' , 'variance' , 'CV' ] ) )
-    # ---- Check sub-directory keys and structure
-    assert dictionary_shape_equal( eval_single_stratified_results , expected_output )
-    assert dictionary_shape_equal( eval_single_rep_stratified_results , expected_output )
-    assert dictionary_shape_equal( eval_single_sub_stratified_results , expected_output )
-    assert dictionary_shape_equal( eval_single_sub_rep_stratified_results , expected_output )
-    ### Data outputs
-    # ++++ mean
-    # ---- > estimate
-    assert np.isclose( eval_single_stratified_results[ 'biomass' ][ 'mean' ][ 'estimate' ] , 
-                       54947653.0 ,
-                       rtol = 1e-2 )
-    assert np.isclose( eval_single_rep_stratified_results[ 'biomass' ][ 'mean' ][ 'estimate' ] , 
-                       54947653.0 ,
-                       rtol = 1e-2 )
-    assert np.isclose( eval_single_sub_stratified_results[ 'biomass' ][ 'mean' ][ 'estimate' ] , 
-                       117230560.0 ,
-                       rtol = 1e-2 )
-    assert np.isclose( eval_single_sub_rep_stratified_results[ 'biomass' ][ 'mean' ][ 'estimate' ] , 
-                       54463985.0 ,
-                       rtol = 1e-2 )
-    # ---- > confidence interval
-    assert np.allclose( eval_single_stratified_results[ 'biomass' ][ 'mean' ][ 'confidence_interval' ] ,
-                        np.array( [ 54947653.28 , 54947653.28 ] ) ,
-                        rtol = 1e-2 )
-    assert np.allclose( eval_single_rep_stratified_results[ 'biomass' ][ 'mean' ][ 'confidence_interval' ] ,
-                        np.array( [ 54947653.28 , 54947653.28 ] ) ,
-                        rtol = 1e-2 )
-    assert np.allclose( eval_single_sub_stratified_results[ 'biomass' ][ 'mean' ][ 'confidence_interval' ] ,
-                        np.array( [ 1.17e8 , 1.172e8 ] ) ,
-                        rtol = 1e-2 )
-    assert np.allclose( eval_single_sub_rep_stratified_results[ 'biomass' ][ 'mean' ][ 'confidence_interval' ] ,
-                        np.array( [ -4.69e7 , 1.57e8 ] ) ,
-                        rtol = 1e-2 )
-    # ++++ variance
-    assert np.isclose( eval_single_stratified_results[ 'biomass' ][ 'variance' ][ 'estimate' ] , 
-                       54846534.0 ,
-                       rtol = 1e-2 )
-    assert np.isclose( eval_single_rep_stratified_results[ 'biomass' ][ 'variance' ][ 'estimate' ] , 
-                       54846534.0 ,
-                       rtol = 1e-2 )
-    assert np.isclose( eval_single_sub_stratified_results[ 'biomass' ][ 'variance' ][ 'estimate' ] , 
-                       116601900.0 ,
-                       rtol = 1e-2 )
-    assert np.isclose( eval_single_sub_rep_stratified_results[ 'biomass' ][ 'variance' ][ 'estimate' ] , 
-                       53662832.0 ,
-                       rtol = 1e-2 )
-    # ---- > confidence interval
-    assert np.allclose( eval_single_stratified_results[ 'biomass' ][ 'variance' ][ 'confidence_interval' ] ,
-                        np.array( [ 54846534.0 , 54846534.0 ] ) ,
-                        rtol = 1e-2 )
-    assert np.allclose( eval_single_rep_stratified_results[ 'biomass' ][ 'variance' ][ 'confidence_interval' ] ,
-                        np.array( [ 54846534.0 , 54846534.0 ] ) ,
-                        rtol = 1e-2 )
-    assert np.allclose( eval_single_sub_stratified_results[ 'biomass' ][ 'variance' ][ 'confidence_interval' ] ,
-                        np.array( [ 1.17e8 , 1.17e8] ) ,
-                        rtol = 1e-2 )
-    assert np.allclose( eval_single_sub_rep_stratified_results[ 'biomass' ][ 'variance' ][ 'confidence_interval' ] ,
-                        np.array( [ -4.71e7 , 1.53e8 ] ) ,
-                        rtol = 1e-2 )
-    # ++++ CV
-    assert np.isclose( eval_single_stratified_results[ 'biomass' ][ 'CV' ][ 'estimate' ] , 
-                       0.998 ,
-                       rtol = 1e-2 )
-    assert np.isclose( eval_single_rep_stratified_results[ 'biomass' ][ 'CV' ][ 'estimate' ] , 
-                       0.998 ,
-                       rtol = 1e-2 )
-    assert np.isclose( eval_single_sub_stratified_results[ 'biomass' ][ 'CV' ][ 'estimate' ] , 
-                       0.995 ,
-                       rtol = 1e-2 )
-    assert np.isclose( eval_single_sub_rep_stratified_results[ 'biomass' ][ 'CV' ][ 'estimate' ] , 
-                       0.971 ,
-                       rtol = 1e-2 )
-    # ---- > confidence interval
-    assert np.allclose( eval_single_stratified_results[ 'biomass' ][ 'CV' ][ 'confidence_interval' ] ,
-                        np.array( [ 0.998 , 0.998 ] ) ,
-                        rtol = 1e-2 )
-    assert np.allclose( eval_single_rep_stratified_results[ 'biomass' ][ 'CV' ][ 'confidence_interval' ] ,
-                        np.array( [ 0.998 , 0.998 ] ) ,
-                        rtol = 1e-2 )
-    assert np.allclose( eval_single_sub_stratified_results[ 'biomass' ][ 'CV' ][ 'confidence_interval' ] ,
-                        np.array( [ 0.995 , 0.995 ] ) ,
-                        rtol = 1e-2 )
-    assert np.allclose( eval_single_sub_rep_stratified_results[ 'biomass' ][ 'CV' ][ 'confidence_interval' ] ,
-                        np.array( [ 0.904 , 1.038 ] ) ,
-                        rtol = 1e-2 )
+    assert_dictionary_equal( eval_dictionary , expected_output )
     
 def test_confidence_interval( ):
 
@@ -200,14 +170,17 @@ def test_confidence_interval( ):
     ###--------------------------------
     # ---- Expected dimensions
     expected_dimensions = tuple( [ 2 , ] )
+    # --- Expected dtype
     # ---- Expected output
-    expected_output = np.array( [ 0.201 , 5.355 ] )
+    expected_output = np.array( [ 0.20104371 , 5.35451185 ] )
 
     #----------------------------------
     ### Run tests: `confidence_interval`
     #----------------------------------
     ### Check shape
     assert eval_ci_values.shape == expected_dimensions
+    ### Check dtype
+    assert np.issubdtype( eval_ci_values.dtype , np.floating )
     ### Check output
-    assert np.allclose( eval_ci_values , expected_output , rtol = 1e-2 )
+    assert np.allclose( eval_ci_values , expected_output )
 

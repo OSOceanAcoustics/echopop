@@ -43,7 +43,8 @@ def pytest_assertrepr_compare( config , op , left , right ):
     return assertrepr_compare( config , op , left , right) 
 
 ### Utility functions
-# ---- Dictionary shape comparison utility function
+# ---- DICTIONARY
+# ++++ Shape and structure
 def dictionary_shape( dictionary: dict ) :
     """
     A utility test function that extracts the shape of a nested dictionary
@@ -53,69 +54,17 @@ def dictionary_shape( dictionary: dict ) :
         return( { i: dictionary_shape( dictionary[ i ] ) for i in dictionary } )
     else: 
         return None
-
-# ---- Test for comparing Dictionary shapes/dimensions
-def dictionary_shape_equal( dictionary1: dict ,
-                            dictionary2: dict ):
-    """
-    Tests equality between the shapes of two nested dictionaries
-    """
-    result = dictionary_shape( dictionary1 ) == dictionary_shape( dictionary2 )
     
-    if result :
-        return result 
-    else:
-        if set( dictionary_shape( dictionary1 ) ) <= set( dictionary_shape( dictionary2 ) ) :
-            tracked_true = [ ]
-            
-            for j in dictionary2.keys( ) :
-                test = set( dictionary1[ j ].keys( ) ) <= ( dictionary2[ j ].keys( ) )
-                tracked_true.append( test )
-                
-            if np.all( tracked_true ) :
-                return True 
-            else : 
-                return result 
-        else :  
-            return result
-
-# ---- Test for dataframe shape equality
-def dataframe_shape_equal( input: Union[ pd.DataFrame , dict ] ,
-                           reference: Union[ tuple , dict ] ):
-
-    ### DataFrame
-    if ( isinstance( input , pd.DataFrame ) ) & ( isinstance( reference , tuple ) ) :
-        assert input.shape == reference
-    
-    ### Dictionary
-    elif ( isinstance( input , dict ) ) & ( isinstance( reference , dict ) ):
-        assert extract_dataframe_shape( input ) == extract_dataframe_shape( reference )
-
-
-# ---- Test for comparing Dictionary equality (including nested DataFrames)
-def dictionary_equality( dictionary1: dict , 
-                         dictionary2: dict ):
-    
-    ### Iterate through nested DataFrames within each dictionary
-    for key , expected_df in dictionary2.items( ) :
-
-        if isinstance( dictionary1[ key ] , pd.DataFrame ) :
-            dataframe_equality( dictionary1[ key ] , expected_df )
-        
-        else :
-            for sub_key , _ in dictionary2[ key ].items( ):
-                dataframe_equality( dictionary1[ key ][ sub_key ] , 
-                                    expected_df[ sub_key ] )
-
-# ---- Extract dataframe shape
-def extract_dataframe_shape( input: Union[ pd.DataFrame , dict ] ):
+# ---- DATAFRAME
+# ++++ Shape
+def dataframe_shape( input: Union[ pd.DataFrame , dict ] ):
 
     ### DataFrame
     if isinstance( input , pd.DataFrame ) :
 
         return input.shape
     
-    ### Dictionary
+    ### Dictionary (bundled dataframes)
     elif isinstance( input , dict ) :
         dataframe_shapes = { }
 
@@ -127,9 +76,87 @@ def extract_dataframe_shape( input: Union[ pd.DataFrame , dict ] ):
 
         return dataframe_shapes
 
-# ---- Extract dataframe dtypes
-def dataframe_dtypes_equal( dataframe: pd.DataFrame ,
-                            reference_dictionary: dict ):
+### Assertion functions
+# ---- DICTIONARY
+# ---- Shape and dimensions
+def assert_dictionary_structure_equal( dictionary1: dict ,
+                                       dictionary2: dict ) :
+    """
+    Tests equality between the shapes of two nested dictionaries
+    """
+
+    result = dictionary_shape( dictionary1 ) == dictionary_shape( dictionary2 )
+    
+    if result :
+        assert result 
+    else:
+        if set( dictionary_shape( dictionary1 ) ) <= set( dictionary_shape( dictionary2 ) ) :
+            tracked_true = [ ]
+            
+            for j in dictionary2.keys( ) :
+                test = set( dictionary1[ j ].keys( ) ) <= ( dictionary2[ j ].keys( ) )
+                tracked_true.append( test )
+                
+            if np.all( tracked_true ) :
+                assert True 
+            else : 
+                assert result 
+        else :  
+            assert result
+# ---- dtypes
+def assert_dictionary_dtypes_equal( dictionary , 
+                                    reference_dictionary ) :
+    
+    for key in reference_dictionary :
+        if isinstance( reference_dictionary[ key ] , dict ) :
+            assert isinstance( dictionary[ key ] , dict ) , \
+                    f"Key '{ key }' has different types in the dictionaries."
+            assert_dictionary_dtypes_equal( dictionary[ key ] , 
+                                            reference_dictionary[ key ] )
+        elif isinstance( dictionary[ key ] , type ) :
+            assert np.issubdtype( type( dictionary[ key ] ) , 
+                                  reference_dictionary[ key ] ) , \
+                                    f"Datatype for key '{ key }' is not a subdtype of the reference datatype."
+        elif isinstance( reference_dictionary[ key ] , np.ndarray ) :
+            assert isinstance( dictionary[ key ] , np.ndarray ) , \
+                    f"Datatype for key '{ key }' is not the same as in reference dictionary."
+            assert np.issubdtype( dictionary[ key ].dtype , 
+                                  reference_dictionary[ key ].dtype ) , \
+                                    f"Dtype for key '{ key }' is not a subdtype of the reference dtype."
+# ---- Values
+def assert_dictionary_values_equal( dictionary ,
+                                    reference_dictionary ) :
+    for key in dictionary :
+        if isinstance( dictionary[ key ] , dict ) :
+            assert isinstance( reference_dictionary[ key ] , dict ) , \
+                    f"Key '{ key }' has different types in the dictionaries."
+            assert_dictionary_values_equal( dictionary[ key ] , 
+                                            reference_dictionary[ key ] )
+        elif isinstance( dictionary[ key ] , np.ndarray ) :
+            assert np.allclose( dictionary[ key ] , 
+                                reference_dictionary[ key ] ) , \
+                                    f"Arrays for key '{key}' are not close."
+        else:
+            assert np.isclose( dictionary[ key ] , 
+                               reference_dictionary[ key ] ) , \
+                                    f"Values for key '{key}' are not close."    
+
+# ---- DATAFRAME
+# ---- Shape and dimensions
+def assert_dataframe_shape_equal( input: Union[ pd.DataFrame , dict ] ,
+                                  reference: Union[ tuple , dict ] ):
+
+    ### DataFrame
+    if ( isinstance( input , pd.DataFrame ) ) & ( isinstance( reference , tuple ) ) :
+        assert input.shape == reference
+    
+    ### Dictionary
+    elif ( isinstance( input , dict ) ) & ( isinstance( reference , dict ) ):
+        assert extract_dataframe_shape( input ) == extract_dataframe_shape( reference )
+# ---- dtypes
+# ~~~~ !!!! ATTN: this is a nested function within `assert_dataframe_dtypes_equal`!
+def _assert_dataframe_dtypes_equal( dataframe: pd.DataFrame ,
+                                    reference_dictionary: dict ):
     
     ### Separate evaluation for categorical-type
     # ---- Parse expected categorical variables
@@ -147,15 +174,13 @@ def dataframe_dtypes_equal( dataframe: pd.DataFrame ,
     for column , dtype in dataframe.dtypes.items( ):
         assert np.issubdtype( dtype , reference_dictionary.get( column , object ) ) , \
             f"Data type mismatch for column '{ column }'" 
-
-
-# ---- Test for evaluating differences in DataFrame `dtypes`
-def dataframe_dtypes_equality( input: Union[ pd.DataFrame , dict ] ,
-                               reference: dict ):
+# ~~~~ dtypes --> compatible with direct DataFrame or bundled DataFrames within a dictionary
+def assert_dataframe_dtypes_equal( input: Union[ pd.DataFrame , dict ] ,
+                                   reference: dict ):
     
     ### DataFrame
     if isinstance( input , pd.DataFrame ) :
-        dataframe_dtypes_equal( input , reference )
+        _assert_dataframe_dtypes_equal( input , reference )
 
     ### Dictionary
     elif isinstance( input , dict ) :
@@ -163,21 +188,71 @@ def dataframe_dtypes_equality( input: Union[ pd.DataFrame , dict ] ,
 
             # ---- Single Dictionary layer
             if isinstance( input[ category ] , pd.DataFrame ):
-                dataframe_dtypes_equal( input[ category ] , 
-                                        reference[ category ] )
+                _assert_dataframe_dtypes_equal( input[ category ] , 
+                                                reference[ category ] )
             
             # ---- Nested Dictionary layers
             else:
                 for df_name , _ in data.items( ):
-                    dataframe_dtypes_equal( input[ category ][ df_name ] , reference[ category ][ df_name ] )
-
-# ---- Test for evaluating equality between two dataframes
-def dataframe_equality( dataframe1: pd.DataFrame ,
-                        dataframe2: pd.DataFrame ):
+                    _assert_dataframe_dtypes_equal( input[ category ][ df_name ] , reference[ category ][ df_name ] )
+# ---- Values
+# ~~~~ !!!! ATTN: this is a nested function within `assert_dataframe_equal`!
+def _aassert_dataframe_values_equal( dataframe1: pd.DataFrame ,
+                                     dataframe2: pd.DataFrame ):
 
     ### Evaluate equality between numerical values
     assert np.allclose( dataframe1.select_dtypes( include = [ 'number' ] ) ,
-                        dataframe2.select_dtypes( include = [ 'number' ] ) )
+                        dataframe2.select_dtypes( include = [ 'number' ] ) ,
+                        equal_nan = True )
     
     ### Evaluate equality between non-numerical values
-    assert np.all( dataframe1.select_dtypes( exclude = [ 'number' ] ) == dataframe2.select_dtypes( exclude = [ 'number' ] ) )
+    # ---- Mask out "NaN" 
+    dataframe1_nan_mask = dataframe1.isna( ).any( axis = 1 )
+    dataframe2_nan_mask = dataframe2.isna( ).any( axis = 1 )
+    # ---- Evaluate equality
+    dataframe1_nan_mask == dataframe2_nan_mask
+    # ---- Evaluate equality among "real" values
+    dataframe1_masked = dataframe1[ ~ dataframe1_nan_mask ]
+    dataframe2_masked = dataframe2[ ~ dataframe2_nan_mask ]
+    assert np.all( dataframe1_masked.select_dtypes( exclude = [ 'number' ] ) == dataframe2_masked.select_dtypes( exclude = [ 'number' ] ) )
+# ~~~~ Values --> compatible with direct DataFrame or bundled DataFrames within a dictionary
+def assert_dataframe_values_equal( input: Union[ pd.DataFrame , dict ] , 
+                                   reference: Union[ pd.DataFrame , dict ]):
+    
+    ### Direct DataFrame
+    if ( isinstance( input , pd.DataFrame ) & ( isinstance( reference , pd.DataFrame ) ) ) :
+        _aassert_dataframe_values_equal( input , reference )
+    
+    ### Iterate through nested DataFrames within each dictionary
+    else :
+        for key , expected_df in reference.items( ) :
+
+            if isinstance( input[ key ] , pd.DataFrame ) :
+                _aassert_dataframe_values_equal( input[ key ] , expected_df )
+            
+            else :
+                for sub_key , _ in reference[ key ].items( ):
+                    _aassert_dataframe_values_equal( input[ key ][ sub_key ] , 
+                                                     expected_df[ sub_key ] )
+# ++++ DICTIONARY + DATAFRAME BUNDLING
+# ---> Dictionary
+def assert_dictionary_equal( input: dict , 
+                             reference_dtypes: dict ,
+                             reference_values: dict , ) :
+    
+    ### Shape
+    assert_dictionary_structure_equal( input , reference_values )
+    ### dtypes
+    assert_dictionary_dtypes_equal( input , reference_dtypes )
+    ### Values
+    assert_dictionary_values_equal( input , reference_values )
+# ---> DataFrame
+def assert_dataframe_equal( input: Union[ pd.DataFrame , dict ] ,
+                            reference_dtypes: dict ,
+                            reference_values: Union[ pd.DataFrame , dict ] , ) :
+    ### Shape
+    assert_dataframe_shape_equal( input , reference_values )
+    ### dtypes
+    assert_dataframe_dtypes_equal( input , reference_dtypes )
+    ### Values
+    assert_dataframe_values_equal( input , reference_values )

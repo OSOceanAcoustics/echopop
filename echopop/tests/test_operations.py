@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from echopop.computation.operations import bin_variable , bin_stats , count_variable , meld , stretch , group_merge
+from echopop.tests.conftest import assert_dataframe_equal
 
 def test_bin_variable( ):
 
@@ -24,8 +25,12 @@ def test_bin_variable( ):
     ###--------------------------------
     ### Expected outcomes
     ###--------------------------------
-    # ---- Expected dimensions
-    expected_dimensions = tuple( [ 3 , 3 ] )
+    # ---- Expected dtypes
+    expected_dtypes = {
+        'animal': object ,
+        'length': np.floating ,
+        'length_bin': pd.CategoricalDtype( ) ,
+    }
     # ---- Expected output
     expected_output = pd.DataFrame(
         {
@@ -39,12 +44,8 @@ def test_bin_variable( ):
     #----------------------------------
     ### Run tests: `bin_variable`
     #----------------------------------
-    ### Check shape
-    assert eval_dataframe_monkey.shape == expected_dimensions
-    assert eval_dataframe_function.shape == expected_dimensions
-    ### Check output
-    assert eval_dataframe_monkey.equals( expected_output )
-    assert eval_dataframe_function.equals( expected_output )
+    assert_dataframe_equal( eval_dataframe_monkey , expected_dtypes , expected_output )
+    assert_dataframe_equal( eval_dataframe_function , expected_dtypes , expected_output )
 
 def test_bin_stats( ):
 
@@ -81,72 +82,143 @@ def test_bin_stats( ):
     eval_dataframe_monkey_lwc = test_dataframe.bin_stats( 'length' , test_bin_values , contrasts = [ 'location' ] , variables = 'length' )
     # ---- Normal function
     eval_dataframe_function_lwc = bin_stats( test_dataframe , 'length' , test_bin_values , contrasts = [ 'location' ] , variables = 'length' )
-
+    # ++++ Bundle together for evaluation
+    eval_dictionary = {
+        'monkey_lwnc': eval_dataframe_monkey_lwnc ,
+        'function_lwnc': eval_dataframe_function_lwnc ,
+        'monkey_lnc': eval_dataframe_monkey_lnc ,
+        'function_lnc': eval_dataframe_function_lnc ,
+        'monkey_lncm': eval_dataframe_monkey_lncm ,
+        'function_lncm': eval_dataframe_function_lncm ,
+        'monkey_lwc': eval_dataframe_monkey_lwc ,
+        'function_lwc': eval_dataframe_function_lwc ,
+    }
     ###--------------------------------
     ### Expected outcomes
     ###--------------------------------
-    # ---- Expected dimensions
-    expected_dimensions_lwnc = tuple( [ 4 , 5 ] )
-    expected_dimensions_lnc = tuple( [ 4 , 3 ] )
-    expected_dimensions_lncm = tuple( [ 4 , 2 ] )
-    expected_dimensions_lwc = tuple( [ 8 , 4 ] )
-    # ---- Expected output
-    expected_output_lwnc = pd.DataFrame(
-        {   
-            'length_bin': pd.cut( [ 2.0 , 4.0 , 6.0 , 8.0 ] ,
-                                  np.array( [ 1.0 , 3.0 , 5.0 , 7.0 , 9.0 ] ) ) ,
-            'mean_length': [ 2.5 , 4.0 , 6.5 , 8.0 ] ,
-            'n_length': [ 2 , 1 , 2 , 1 ] ,
-            'mean_weight': [ 200.0 , 200.0 , 150.0 , 300.0 ] ,
-            'n_weight': [ 2 , 1 , 2 , 1 ] ,
+    # ---- Expected dtypes
+    expected_dtypes = {
+        'monkey_lwnc': {   
+            'length_bin': pd.CategoricalDtype( ) ,
+            'mean_length': np.floating ,
+            'n_length': np.integer ,
+            'mean_weight': np.floating ,
+            'n_weight': np.integer ,
         } ,
-    )
-    expected_output_lnc = pd.DataFrame(
-        {   
-            'length_bin': pd.cut( [ 2.0 , 4.0 , 6.0 , 8.0 ] ,
-                                  np.array( [ 1.0 , 3.0 , 5.0 , 7.0 , 9.0 ] ) ) ,
-            'mean_length': [ 2.5 , 4.0 , 6.5 , 8.0 ] ,
-            'n_length': [ 2 , 1 , 2 , 1 ] ,
+        'function_lwnc': {   
+            'length_bin': pd.CategoricalDtype( ) ,
+            'mean_length': np.floating ,
+            'n_length': np.integer ,
+            'mean_weight': np.floating ,
+            'n_weight': np.integer ,
         } ,
-    )
-    expected_output_lncm = pd.DataFrame(
-        {   
-            'length_bin': pd.cut( [ 2.0 , 4.0 , 6.0 , 8.0 ] ,
-                                  np.array( [ 1.0 , 3.0 , 5.0 , 7.0 , 9.0 ] ) ) ,
-            'mean_length': [ 2.5 , 4.0 , 6.5 , 8.0 ]
+        'monkey_lnc': {   
+            'length_bin': pd.CategoricalDtype( ) ,
+            'mean_length': np.floating ,
+            'n_length': np.integer ,
         } ,
-    )
-    expected_output_lwc = pd.DataFrame(
-        {   
-            'length_bin': pd.cut( np.repeat( [ 2.0 , 4.0 , 6.0 , 8.0 ] , 2 ) ,
-                                  np.array( [ 1.0 , 3.0 , 5.0 , 7.0 , 9.0 ] ) ) ,
-            'location': np.tile( [ 'lost city of z' , 'timbuktu' ] , 4 ) ,
-            'mean_length': [ 3.0 , 2.0 , 0.0 , 4.0 , 6.5 , 0.0 , 0.0 , 8.0 ] ,
-            'n_length': [ 1 , 1 , 0 , 1 , 2 , 0 , 0 , 1 ] ,
+        'function_lnc': {   
+            'length_bin': pd.CategoricalDtype( ) ,
+            'mean_length': np.floating ,
+            'n_length': np.integer ,
         } ,
-    )
-
+        'monkey_lncm': {   
+            'length_bin': pd.CategoricalDtype( ) ,
+            'mean_length': np.floating ,
+            'n_length': np.integer ,
+        } ,
+        'function_lncm': {   
+            'length_bin': pd.CategoricalDtype( ) ,
+            'mean_length': np.floating ,
+        } ,
+        'monkey_lwc': {   
+            'length_bin': pd.CategoricalDtype( ) ,
+            'location': object ,
+            'mean_length': np.floating ,
+            'n_length': np.integer ,
+        } ,
+        'function_lwc': {   
+            'length_bin': pd.CategoricalDtype( ) ,
+            'location': object ,
+            'mean_length': np.floating ,
+            'n_length': np.integer ,
+        } ,        
+    }
+    # ---- Expected outputs
+    expected_output = {
+        'monkey_lwnc': pd.DataFrame (
+            {   
+                'length_bin': pd.cut( [ 2.0 , 4.0 , 6.0 , 8.0 ] ,
+                                    np.array( [ 1.0 , 3.0 , 5.0 , 7.0 , 9.0 ] ) ) ,
+                'mean_length': [ 2.5 , 4.0 , 6.5 , 8.0 ] ,
+                'n_length': [ 2 , 1 , 2 , 1 ] ,
+                'mean_weight': [ 200.0 , 200.0 , 150.0 , 300.0 ] ,
+                'n_weight': [ 2 , 1 , 2 , 1 ] ,
+            } ,
+        ) ,
+        'function_lwnc': pd.DataFrame (
+            {   
+                'length_bin': pd.cut( [ 2.0 , 4.0 , 6.0 , 8.0 ] ,
+                                    np.array( [ 1.0 , 3.0 , 5.0 , 7.0 , 9.0 ] ) ) ,
+                'mean_length': [ 2.5 , 4.0 , 6.5 , 8.0 ] ,
+                'n_length': [ 2 , 1 , 2 , 1 ] ,
+                'mean_weight': [ 200.0 , 200.0 , 150.0 , 300.0 ] ,
+                'n_weight': [ 2 , 1 , 2 , 1 ] ,
+            } ,
+        ) ,
+        'monkey_lnc': pd.DataFrame (
+            {   
+                'length_bin': pd.cut( [ 2.0 , 4.0 , 6.0 , 8.0 ] ,
+                                    np.array( [ 1.0 , 3.0 , 5.0 , 7.0 , 9.0 ] ) ) ,
+                'mean_length': [ 2.5 , 4.0 , 6.5 , 8.0 ] ,
+                'n_length': [ 2 , 1 , 2 , 1 ] ,
+            } ,
+        ) ,
+        'function_lnc': pd.DataFrame(
+            {   
+                'length_bin': pd.cut( [ 2.0 , 4.0 , 6.0 , 8.0 ] ,
+                                    np.array( [ 1.0 , 3.0 , 5.0 , 7.0 , 9.0 ] ) ) ,
+                'mean_length': [ 2.5 , 4.0 , 6.5 , 8.0 ] ,
+                'n_length': [ 2 , 1 , 2 , 1 ] ,
+            } ,
+        ) ,
+        'monkey_lncm': pd.DataFrame (
+            {   
+                'length_bin': pd.cut( [ 2.0 , 4.0 , 6.0 , 8.0 ] ,
+                                    np.array( [ 1.0 , 3.0 , 5.0 , 7.0 , 9.0 ] ) ) ,
+                'mean_length': [ 2.5 , 4.0 , 6.5 , 8.0 ] ,
+            } ,
+        ) ,
+        'function_lncm': pd.DataFrame (
+            {   
+                'length_bin': pd.cut( [ 2.0 , 4.0 , 6.0 , 8.0 ] ,
+                                    np.array( [ 1.0 , 3.0 , 5.0 , 7.0 , 9.0 ] ) ) ,
+                'mean_length': [ 2.5 , 4.0 , 6.5 , 8.0 ] ,
+            } ,
+        ) ,
+        'monkey_lwc': pd.DataFrame(
+            {   
+                'length_bin': pd.cut( np.repeat( [ 2.0 , 4.0 , 6.0 , 8.0 ] , 2 ) ,
+                                    np.array( [ 1.0 , 3.0 , 5.0 , 7.0 , 9.0 ] ) ) ,
+                'location': np.tile( [ 'lost city of z' , 'timbuktu' ] , 4 ) ,
+                'mean_length': [ 3.0 , 2.0 , 0.0 , 4.0 , 6.5 , 0.0 , 0.0 , 8.0 ] ,
+                'n_length': [ 1 , 1 , 0 , 1 , 2 , 0 , 0 , 1 ] ,
+            } ,
+        ) ,
+        'function_lwc': pd.DataFrame(
+            {   
+                'length_bin': pd.cut( np.repeat( [ 2.0 , 4.0 , 6.0 , 8.0 ] , 2 ) ,
+                                    np.array( [ 1.0 , 3.0 , 5.0 , 7.0 , 9.0 ] ) ) ,
+                'location': np.tile( [ 'lost city of z' , 'timbuktu' ] , 4 ) ,
+                'mean_length': [ 3.0 , 2.0 , 0.0 , 4.0 , 6.5 , 0.0 , 0.0 , 8.0 ] ,
+                'n_length': [ 1 , 1 , 0 , 1 , 2 , 0 , 0 , 1 ] ,
+            } ,
+        ) ,        
+    }
     #----------------------------------
     ### Run tests: `bin_stats`
     #----------------------------------
-    ### Check shape
-    assert eval_dataframe_monkey_lwnc.shape == expected_dimensions_lwnc
-    assert eval_dataframe_function_lwnc.shape == expected_dimensions_lwnc
-    assert eval_dataframe_monkey_lnc.shape == expected_dimensions_lnc
-    assert eval_dataframe_function_lnc.shape == expected_dimensions_lnc
-    assert eval_dataframe_monkey_lncm.shape == expected_dimensions_lncm
-    assert eval_dataframe_function_lncm.shape == expected_dimensions_lncm
-    assert eval_dataframe_monkey_lwc.shape == expected_dimensions_lwc
-    assert eval_dataframe_function_lwc.shape == expected_dimensions_lwc
-    ### Check output
-    assert eval_dataframe_monkey_lwnc.equals( expected_output_lwnc )
-    assert eval_dataframe_function_lwnc.equals( expected_output_lwnc )
-    assert eval_dataframe_monkey_lnc.equals( expected_output_lnc )
-    assert eval_dataframe_function_lnc.equals( expected_output_lnc )
-    assert eval_dataframe_monkey_lncm.equals( expected_output_lncm )
-    assert eval_dataframe_function_lncm.equals( expected_output_lncm )
-    assert eval_dataframe_monkey_lwc.equals( expected_output_lwc )
-    assert eval_dataframe_function_lwc.equals( expected_output_lwc )
+    assert_dataframe_equal( eval_dictionary, expected_dtypes , expected_output )
 
 def test_count_variable( ):
 
@@ -177,8 +249,12 @@ def test_count_variable( ):
     ###--------------------------------
     ### Expected outcomes
     ###--------------------------------
-    # ---- Expected dimensions
-    expected_dimensions = tuple( [ 12 , 3 ] )
+    # ---- Expected dtypes
+    expected_dtypes = {
+        'location': object , 
+        'animal': object ,
+        'count': np.integer ,
+    }
     # ---- Expected output
     expected_output = pd.DataFrame(
         {
@@ -193,12 +269,8 @@ def test_count_variable( ):
     #----------------------------------
     ### Run tests: `count_variable`
     #----------------------------------
-    ### Check shape
-    assert eval_dataframe_monkey.shape == expected_dimensions
-    assert eval_dataframe_function.shape == expected_dimensions
-    ### Check dataframe equality
-    assert eval_dataframe_monkey.equals( expected_output )
-    assert eval_dataframe_function.equals( expected_output )
+    assert_dataframe_equal( eval_dataframe_monkey , expected_dtypes , expected_output )
+    assert_dataframe_equal( eval_dataframe_function , expected_dtypes , expected_output )
 
 def test_meld( ):
 
@@ -242,8 +314,17 @@ def test_meld( ):
     ###--------------------------------
     ### Expected outcomes
     ###--------------------------------
-    # ---- Expected dimensions
-    expected_dimensions = tuple( [ 16 , 8 ] )
+    # ---- Expected dtypes
+    expected_dtypes = {
+            'stratum_num': np.integer ,
+            'species_id': object ,
+            'sex': object ,
+            'group': object ,
+            'station': object ,
+            'length': np.floating ,
+            'length_bin': pd.CategoricalDtype( ) ,
+            'length_count': np.integer ,
+    }
     # ---- Expected output 
     expected_output = pd.DataFrame(
         {
@@ -271,12 +352,8 @@ def test_meld( ):
     #----------------------------------
     ### Run tests: `count_variable`
     #----------------------------------
-    ### Check shape
-    assert eval_dataframe_monkey.shape == expected_dimensions
-    assert eval_dataframe_function.shape == expected_dimensions
-    ### Check output
-    assert np.all( eval_dataframe_monkey == expected_output )
-    assert np.all( eval_dataframe_function == expected_output )
+    assert_dataframe_equal( eval_dataframe_monkey , expected_dtypes , expected_output )
+    assert_dataframe_equal( eval_dataframe_function , expected_dtypes , expected_output )
 
 def test_stretch( ):
 
@@ -301,8 +378,15 @@ def test_stretch( ):
     ###--------------------------------
     ### Expected outcomes
     ###--------------------------------
-    # ---- Expected dimensions
-    expected_dimensions = tuple( [ 8 , 6 ] )
+    # ---- Expected dtypes
+    expected_dtypes = {
+        'transect_num': np.integer ,
+        'latitude': np.floating ,
+        'longitude': np.floating ,
+        'stratum_num': np.integer ,
+        'sex': object ,
+        'load_a': np.floating ,
+    }
     # ---- Expected output
     expected_output = pd.DataFrame(
         {
@@ -319,12 +403,8 @@ def test_stretch( ):
     #----------------------------------
     ### Run tests: `count_variable`
     #----------------------------------
-    ### Check shape
-    assert eval_dataframe_monkey.shape == expected_dimensions
-    assert eval_dataframe_function.shape == expected_dimensions
-    ### Check output
-    assert np.all( eval_dataframe_monkey == expected_output )
-    assert np.all( eval_dataframe_function == expected_output )
+    assert_dataframe_equal( eval_dataframe_monkey , expected_dtypes , expected_output )
+    assert_dataframe_equal( eval_dataframe_function , expected_dtypes , expected_output )
 
 def test_group_merge( ):
 
@@ -387,64 +467,115 @@ def test_group_merge( ):
                                                   inner_on = 'group' , 
                                                   outer_on = [ 'stratum_num' ] ,
                                                   drop_na = False )
-
+    # ++++ Bundle!
+    eval_dictionary = {
+        'monkey_dropna': eval_dataframe_monkey_dropna ,
+        'function_dropna': eval_dataframe_function_dropna ,
+        'monkey_keepna': eval_dataframe_monkey_keepna ,
+        'function_keepna': eval_dataframe_function_keepna ,
+    }
     ###--------------------------------
     ### Expected outcomes
     ###--------------------------------
-    # ---- Expected dimensions
-    expected_dimensions_dropna = tuple( [ 12 , 6 ] )
-    expected_dimensions_keepna = tuple( [ 14 , 6 ] )
+    # ---- Expected dtypes
+    expected_dtypes = {
+        'monkey_dropna': {
+                'stratum_num': np.integer ,
+                'animal': object ,
+                'insert_metric_here': np.floating ,
+                'group': object ,
+                'new_metric_here': np.floating ,
+                'categorical_metric': object ,
+        } ,
+        'function_dropna': {
+                'stratum_num': np.integer ,
+                'animal': object ,
+                'insert_metric_here': np.floating ,
+                'group': object ,
+                'new_metric_here': np.floating ,
+                'categorical_metric': object ,
+        } ,
+        'monkey_keepna': {
+                'stratum_num': np.integer ,
+                'animal': object ,
+                'insert_metric_here': np.floating ,
+                'group': object ,
+                'new_metric_here': np.floating ,
+                'categorical_metric': object ,
+        } ,
+        'function_keepna': {
+                'stratum_num': np.integer ,
+                'animal': object ,
+                'insert_metric_here': np.floating ,
+                'group': object ,
+                'new_metric_here': np.floating ,
+                'categorical_metric': object ,
+        } ,
+    }
     # ---- Expected output
-    expected_output_dropna = pd.DataFrame(
-        {
-            'stratum_num': np.repeat( [ 1 , 2 ] , 6 ) ,
-            'animal': np.tile( [ 'big blue bass' , 'gnarly green grouse' , 'magenta mad manatee' ,
-                                 'pretty pink pony' , 'roudy red rabbit' , 'silly silver silkworm' ] , 2 ) ,
-            'insert_metric_here': [ 1.00 , 1.00 , 1.00 , 0.75 , 0.75 , 0.75 ,
-                                    0.50 , 0.50 , 0.50 , 0.75 , 0.75 , 1.00 ] ,
-            'group': np.repeat( [ 'sleepy' , 'alert' ] , 6 ) ,
-            'new_metric_here': [ 0.1 , 0.1 , 0.2 , 0.2 , 0.3 , 0.3 ,
-                                 0.5 , 0.2 , 0.2 , 0.4 , 0.4 , 0.5 ] ,
-            'categorical_metric': np.repeat( [ 'zippity' , 'doo' ] , 6 ) ,
-        } ,
-    )
-    expected_output_keepna = pd.DataFrame(
-        {
-            'stratum_num': np.concatenate( [ np.repeat( [ 1 , 2 ] , 7 ) ] ) ,
-            'animal': np.tile( [ 'big blue bass' , 'gnarly green grouse' , 'magenta mad manatee' ,
-                                'pretty pink pony' , 'roudy red rabbit' , 'silly silver silkworm' , None ] , 2 ).astype( object ) ,
-            'insert_metric_here': [ 1.00 , 1.00 , 1.00 , 0.75 , 0.75 , 0.75 ,
+    expected_output = {
+        'monkey_dropna': pd.DataFrame(
+            {
+                'stratum_num': np.repeat( [ 1 , 2 ] , 6 ) ,
+                'animal': np.tile( [ 'big blue bass' , 'gnarly green grouse' , 'magenta mad manatee' ,
+                                    'pretty pink pony' , 'roudy red rabbit' , 'silly silver silkworm' ] , 2 ) ,
+                'insert_metric_here': [ 1.00 , 1.00 , 1.00 , 0.75 , 0.75 , 0.75 ,
+                                        0.50 , 0.50 , 0.50 , 0.75 , 0.75 , 1.00 ] ,
+                'group': np.repeat( [ 'sleepy' , 'alert' ] , 6 ) ,
+                'new_metric_here': [ 0.1 , 0.1 , 0.2 , 0.2 , 0.3 , 0.3 ,
+                                    0.5 , 0.2 , 0.2 , 0.4 , 0.4 , 0.5 ] ,
+                'categorical_metric': np.repeat( [ 'zippity' , 'doo' ] , 6 ) ,
+            } ,
+        ) ,
+        'function_dropna': pd.DataFrame(
+            {
+                'stratum_num': np.repeat( [ 1 , 2 ] , 6 ) ,
+                'animal': np.tile( [ 'big blue bass' , 'gnarly green grouse' , 'magenta mad manatee' ,
+                                    'pretty pink pony' , 'roudy red rabbit' , 'silly silver silkworm' ] , 2 ) ,
+                'insert_metric_here': [ 1.00 , 1.00 , 1.00 , 0.75 , 0.75 , 0.75 ,
+                                        0.50 , 0.50 , 0.50 , 0.75 , 0.75 , 1.00 ] ,
+                'group': np.repeat( [ 'sleepy' , 'alert' ] , 6 ) ,
+                'new_metric_here': [ 0.1 , 0.1 , 0.2 , 0.2 , 0.3 , 0.3 ,
+                                    0.5 , 0.2 , 0.2 , 0.4 , 0.4 , 0.5 ] ,
+                'categorical_metric': np.repeat( [ 'zippity' , 'doo' ] , 6 ) ,
+            } ,
+        ) ,
+        'monkey_keepna': pd.DataFrame(
+            {
+                'stratum_num': np.concatenate( [ np.repeat( [ 1 , 2 ] , 7 ) ] ) ,
+                'animal': np.tile( [ 'big blue bass' , 'gnarly green grouse' , 'magenta mad manatee' ,
+                                    'pretty pink pony' , 'roudy red rabbit' , 'silly silver silkworm' , np.nan ] , 2 ).astype( object ) ,
+                'insert_metric_here': [ 1.00 , 1.00 , 1.00 , 0.75 , 0.75 , 0.75 ,
+                                        np.nan ,
+                                        0.50 , 0.50 , 0.50 , 0.75 , 0.75 , 1.00 ,
+                                        np.nan ] ,
+                'group': np.repeat( [ 'sleepy' , 'alert' ] , 7 ) ,
+                'new_metric_here': [ 0.1 , 0.1 , 0.2 , 0.2 , 0.3 , 0.3 ,
                                     np.nan ,
-                                    0.50 , 0.50 , 0.50 , 0.75 , 0.75 , 1.00 ,
+                                    0.5 , 0.2 , 0.2 , 0.4 , 0.4 , 0.5 , 
                                     np.nan ] ,
-            'group': np.repeat( [ 'sleepy' , 'alert' ] , 7 ) ,
-            'new_metric_here': [ 0.1 , 0.1 , 0.2 , 0.2 , 0.3 , 0.3 ,
-                                 np.nan ,
-                                 0.5 , 0.2 , 0.2 , 0.4 , 0.4 , 0.5 , 
-                                 np.nan ] ,
-            'categorical_metric': np.repeat( [ 'zippity' , 'doo' ] , 7 ) ,
-        } ,
-    )
-
+                'categorical_metric': np.repeat( [ 'zippity' , 'doo' ] , 7 ) ,
+            } ,
+        ) ,
+        'function_keepna': pd.DataFrame(
+            {
+                'stratum_num': np.concatenate( [ np.repeat( [ 1 , 2 ] , 7 ) ] ) ,
+                'animal': np.tile( [ 'big blue bass' , 'gnarly green grouse' , 'magenta mad manatee' ,
+                                    'pretty pink pony' , 'roudy red rabbit' , 'silly silver silkworm' , np.nan ] , 2 ).astype( object ) ,
+                'insert_metric_here': [ 1.00 , 1.00 , 1.00 , 0.75 , 0.75 , 0.75 ,
+                                        np.nan ,
+                                        0.50 , 0.50 , 0.50 , 0.75 , 0.75 , 1.00 ,
+                                        np.nan ] ,
+                'group': np.repeat( [ 'sleepy' , 'alert' ] , 7 ) ,
+                'new_metric_here': [ 0.1 , 0.1 , 0.2 , 0.2 , 0.3 , 0.3 ,
+                                    np.nan ,
+                                    0.5 , 0.2 , 0.2 , 0.4 , 0.4 , 0.5 , 
+                                    np.nan ] ,
+                'categorical_metric': np.repeat( [ 'zippity' , 'doo' ] , 7 ) ,
+            } ,
+        ) ,
+    }
     #----------------------------------
     ### Run tests: `count_variable`
     #----------------------------------
-    ### Check shape
-    # ++++ NaN removed
-    assert eval_dataframe_monkey_dropna.shape == expected_dimensions_dropna
-    assert eval_dataframe_function_dropna.shape == expected_dimensions_dropna
-    # ++++ NaN kept
-    assert eval_dataframe_monkey_keepna.shape == expected_dimensions_keepna
-    assert eval_dataframe_function_keepna.shape == expected_dimensions_keepna
-    ### Check output
-    # ++++ NaN removed
-    assert np.all( eval_dataframe_monkey_dropna == expected_output_dropna )
-    assert np.all( eval_dataframe_function_dropna == expected_output_dropna )
-    # ++++ NaN kept
-    eval_nan_value_mask_monkey = pd.isnull( eval_dataframe_monkey_keepna.insert_metric_here )
-    eval_nan_value_mask_function = pd.isnull( eval_dataframe_monkey_keepna.insert_metric_here )
-    expected_nan_value_mask = pd.isnull( expected_output_keepna.insert_metric_here )
-    assert len( eval_dataframe_monkey_keepna[ eval_nan_value_mask_monkey ] ) == 2
-    assert len( eval_dataframe_function_keepna[ eval_nan_value_mask_function ] ) == 2
-    assert eval_dataframe_monkey_keepna[ ~ eval_nan_value_mask_monkey ].equals( expected_output_keepna[ ~ expected_nan_value_mask ] )
-    assert eval_dataframe_function_keepna[ ~ eval_nan_value_mask_function ].equals( expected_output_keepna[ ~ expected_nan_value_mask ] )
+    assert_dataframe_equal( eval_dictionary , expected_dtypes , expected_output )

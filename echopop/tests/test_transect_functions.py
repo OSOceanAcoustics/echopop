@@ -1,8 +1,7 @@
 import pandas as pd
 import numpy as np
 import copy
-from echopop.tests.conftest import dictionary_equality , dataframe_equality
-from echopop.tests.conftest import dataframe_shape_equal , dataframe_dtypes_equality
+from echopop.tests.conftest import assert_dataframe_equal
 from echopop.computation.biology import index_transect_age_sex_proportions
 from echopop.computation.spatial import correct_transect_intervals , calculate_start_end_coordinates , calculate_transect_distance
 
@@ -178,12 +177,7 @@ def test_index_transect_age_sex_proportions( mock_survey ):
     #----------------------------------
     ### Run tests: `index_transect_age_sex_proportions`
     #----------------------------------
-    ### Check shape 
-    dataframe_shape_equal( eval_nasc_fraction_total_df , expected_output )
-    ### Check datatypes
-    dataframe_dtypes_equality( eval_nasc_fraction_total_df , expected_dtypes )
-    ### Dataframe equality
-    dataframe_equality( eval_nasc_fraction_total_df , expected_output )
+    assert_dataframe_equal( eval_nasc_fraction_total_df , expected_dtypes , expected_output )
     
 def test_correct_transect_intervals( ):
 
@@ -239,12 +233,7 @@ def test_correct_transect_intervals( ):
     #----------------------------------
     ### Run tests: `correct_transect_intervals`
     #----------------------------------
-    ### Check shape 
-    dataframe_shape_equal( eval_nasc_interval , expected_output )
-    ### Check datatypes
-    dataframe_dtypes_equality( eval_nasc_interval , expected_dtypes )
-    ### Dataframe equality
-    dataframe_equality( eval_nasc_interval , expected_output )
+    assert_dataframe_equal( eval_nasc_interval , expected_dtypes , expected_output )
 
 def test_calculate_start_end_coordinates( ):
 
@@ -261,7 +250,7 @@ def test_calculate_start_end_coordinates( ):
             'NASC_no_age1': [ 0.0 , 1e1 , 1e2 , 1e3 ] ,
             'haul_num': [ 1 , 1 , 2 , 2 ] ,
             'NASC_all_ages': [ 1e1 , 1e2 , 1e2 , 1e3 ] ,
-        }
+        } ,
     )
 
     ### Evaluate for later comparison
@@ -291,12 +280,7 @@ def test_calculate_start_end_coordinates( ):
     #----------------------------------
     ### Run tests: `calculate_start_end_coordinates`
     #----------------------------------
-    ### Check shape 
-    dataframe_shape_equal( eval_test_nasc_df , expected_output )
-    ### Check datatypes
-    dataframe_dtypes_equality( eval_test_nasc_df , expected_dtypes )
-    ### Dataframe equality
-    dataframe_equality( eval_test_nasc_df , expected_output )
+    assert_dataframe_equal( eval_test_nasc_df , expected_dtypes , expected_output )
 
 def test_calculate_transect_distance( ):
 
@@ -346,11 +330,6 @@ def test_calculate_transect_distance( ):
     )
 
     #----------------------------------
-    ### Run tests: `calculate_start_end_coordinates`
+    ### Run tests: `calculate_transect_distance`
     #----------------------------------
-    ### Check shape 
-    dataframe_shape_equal( eval_test_nasc_df , expected_output )
-    ### Check datatypes
-    dataframe_dtypes_equality( eval_test_nasc_df , expected_dtypes )
-    ### Dataframe equality
-    dataframe_equality( eval_test_nasc_df , expected_output )
+    assert_dataframe_equal( eval_test_nasc_df , expected_dtypes , expected_output )

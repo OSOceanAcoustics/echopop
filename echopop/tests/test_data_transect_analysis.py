@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
-from echopop.tests.conftest import dictionary_equality ,dataframe_equality
-from echopop.tests.conftest import dataframe_shape_equal , dataframe_dtypes_equality
+from echopop.tests.conftest import assert_dataframe_equal
 
 def test_fit_binned_length_weight_relationship( mock_survey ):
     
@@ -92,13 +91,8 @@ def test_fit_binned_length_weight_relationship( mock_survey ):
     ### Run tests: `fit_binned_length_weight_relationship`
     #----------------------------------
     eval_dictionary = mock_survey.statistics[ 'length_weight' ]
-    ### Check shape 
-    dataframe_shape_equal( eval_dictionary , expected_output )
-    ### Check datatypes
-    dataframe_dtypes_equality( eval_dictionary , expected_dtypes )
-    ### Dataframe equality
-    dictionary_equality( eval_dictionary , expected_output )
-    
+    assert_dataframe_equal( eval_dictionary , expected_dtypes , expected_output )
+
 def test_strata_sex_weight_proportions( mock_survey ):
 
     ### Initialize mock_survey for `weight`
@@ -217,12 +211,7 @@ def test_strata_sex_weight_proportions( mock_survey ):
     ### Run tests: `strata_sex_weight_proportions`
     #----------------------------------
     eval_dataframe = mock_survey.biology[ 'weight' ][ 'weight_strata_df' ]
-    ### Check shape 
-    dataframe_shape_equal( eval_dataframe , expected_dtypes )
-    ### Check datatypes
-    dataframe_dtypes_equality( eval_dataframe , expected_dtypes )
-    ### Dataframe equality
-    dataframe_equality( eval_dataframe , expected_output )
+    assert_dataframe_equal( eval_dataframe , expected_dtypes , expected_output )
     
 def test_strata_age_binned_weight_proportions( mock_survey ):
     
@@ -339,12 +328,7 @@ def test_strata_age_binned_weight_proportions( mock_survey ):
     ### Run tests: `strata_age_binned_weight_proportions`
     #----------------------------------
     eval_dictionary = mock_survey.biology[ 'weight' ][ 'proportions' ]
-    ### Check shape 
-    dataframe_shape_equal( eval_dictionary , expected_output )
-    ### Check datatypes
-    dataframe_dtypes_equality( eval_dictionary , expected_dtypes )
-    ### Dataframe equality
-    dictionary_equality( eval_dictionary , expected_output )
+    assert_dataframe_equal( eval_dictionary , expected_dtypes , expected_output )
     
 def test_nasc_to_biomass_conversion( mock_survey ):
     
@@ -632,11 +616,6 @@ def test_nasc_to_biomass_conversion( mock_survey ):
     ### Run tests: `test_nasc_to_biomass_conversion`
     #----------------------------------
     eval_dictionary = mock_survey.biology[ 'population' ]
-    ### Check shape 
-    dataframe_shape_equal( eval_dictionary , expected_output )
-    ### Check datatypes
-    dataframe_dtypes_equality( eval_dictionary , expected_dtypes )
-    ### Dataframe equality
-    dictionary_equality( eval_dictionary , expected_output )
+    assert_dataframe_equal( eval_dictionary , expected_dtypes , expected_output )
 
     
