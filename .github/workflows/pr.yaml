@@ -5,22 +5,25 @@ name: Running tests
 
 on:
   push:
-    branches: [ "main", "brandynlucca-WIP-refactoring" ]
+    branches: "main"
   pull_request:
-    branches: [ "main", "brandynlucca-WIP-refactoring" ]
+    branches: "main"
 
 jobs:
   build:
-
-    runs-on: ubuntu-latest
-
+    name: Python ${{ matrix.python-version }} -- ${{ matrix.runs-on }}
+    runs-on: ${{ matrix.runs-on }}
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.10", "3.11"]
+        runs-on: [ubuntu-latest]
     steps:
     - name: Check out repository code
       uses: actions/checkout@v4
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: "3.x"
+        python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip

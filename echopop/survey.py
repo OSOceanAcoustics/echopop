@@ -12,7 +12,10 @@ from .computation.acoustics import to_linear , ts_length_regression
 from .computation.spatial import calculate_transect_distance , transform_geometry
 from .computation.statistics import stratified_transect_statistic
 from .computation.kriging_methods import kriging_interpolation
-from .computation.biology import index_sex_weight_proportions , index_transect_age_sex_proportions
+from .computation.biology import index_transect_age_sex_proportions , filter_species 
+from .computation.biology import sum_strata_weight , calculate_aged_unaged_proportions
+from .computation.biology import  calculate_aged_biomass , calculate_unaged_biomass
+from .computation.biology import apply_age_bins , filter_species 
 
 ### !!! TODO : This is a temporary import call -- this will need to be changed to 
 # the correct relative structure (i.e. '.utils.data_structure_utils' instead of 
@@ -669,7 +672,7 @@ class Survey:
         station_length_aggregate = (
             station_sex_length
             # calculate the within-sample sum and proportions (necessary for the downstream dot product calculation)
-            .pipe( lambda x: x.assign( within_station_n = x.groupby( [ 'sex' , 'station' , 'stratum_num' ] )[ 'count' ].transform( sum ) ,
+            .pipe( lambda x: x.assign( within_station_n = x.groupby( [ 'sex' , 'station' , 'stratum_num' ] )[ 'count' ].transform( 'sum' ) ,
                                         within_station_p = lambda x: x[ 'count' ] / x[ 'within_station_n' ] ) )
             .replace( np.nan, 0 ) # remove erroneous NaN (divide by 0 or invalid values)
             .merge( total_n , on = 'stratum_num' ) # merge station_sex_length with total_n
@@ -685,8 +688,9 @@ class Survey:
             .loc[ station_length_aggregate.sex.isin( [ 'male' , 'female' ] ) ] # only parse 'male' and 'female'
             # create a pivot that will reorient data to the desired shape
             .pivot_table( index = [ 'sex' , 'station' ] , 
-                        columns = [ 'stratum_num' ] , 
-                        values = [ 'overall_station_p' ] )
+                          columns = [ 'stratum_num' ] , 
+                          values = [ 'overall_station_p' ] ,
+                          observed = False )
             .groupby( 'sex' )
             .sum( )
         )
@@ -698,7 +702,8 @@ class Survey:
             # create a pivot that will reorient data to the desired shape
             .pivot_table( index = [ 'sex' , 'station' ] , 
                           columns = 'stratum_num' , 
-                          values = 'overall_station_p' )
+                          values = 'overall_station_p' ,
+                          observed = False )
             .groupby( 'station' )
             .sum()
         )
@@ -710,7 +715,8 @@ class Survey:
             # create a pivot that will reorient data to the desired shape
             .pivot_table( index = [ 'sex' , 'station' ] , 
                           columns = 'stratum_num' , 
-                          values = 'overall_station_p' )
+                          values = 'overall_station_p'  ,
+                          observed = False )
             .groupby( [ 'sex' , 'station' ] )
             .sum()
         )
@@ -725,7 +731,8 @@ class Survey:
                 .reset_index( name = 'stn_p' ) , on = [ 'stratum_num' , 'station' ] )
             .pivot_table( columns = 'stratum_num' ,
                           index = [ 'station' , 'sex' ] ,
-                          values = [ 'stn_p' , 'sex_stn_p' ] )    
+                          values = [ 'stn_p' , 'sex_stn_p' ] ,
+                          observed = False )    
         )
         
         ### Format the length bin proportions so they resemble a similar table/matrix shape as the above metrics
@@ -734,7 +741,8 @@ class Survey:
             station_length_aggregate
             .pivot_table( columns = [ 'sex' , 'station' , 'stratum_num' ] , 
                           index = [ 'length_bin' ] ,
-                          values = [ 'within_station_p' ] )[ 'within_station_p' ]
+                          values = [ 'within_station_p' ] ,
+                          observed = False )[ 'within_station_p' ]
         )
         
         ### Calculate combined station fraction means
@@ -834,13 +842,13 @@ class Survey:
             .count_variable( variable = 'length' ,
                              contrasts = [ 'stratum_num' , 'age' ] ,
                              fun = 'size' )
-            .pipe( lambda x: x.assign( stratum_count_all = x.groupby( [ 'stratum_num' ] )[ 'count' ].transform( sum ) ,
-                                       stratum_count_total  = x.loc[ x.age > 1 ].groupby( [ 'stratum_num' ] )[ 'count' ].transform( sum ) ) )
-            .groupby( [ 'stratum_num' , 'age' ] )
+            .pipe( lambda x: x.assign( stratum_count_all = x.groupby( [ 'stratum_num' ] )[ 'count' ].transform( 'sum' ) ,
+                                       stratum_count_total  = x.loc[ x.age > 1 ].groupby( [ 'stratum_num' ] )[ 'count' ].transform( 'sum' ) ) )
+            .groupby( [ 'stratum_num' , 'age' ] , observed = False )[ [ 'age' , 'count' , 'stratum_count_all' , 'stratum_count_total' ] ]
             .apply( lambda df: pd.Series( {
                 'count_age_proportion_all': ( df[ 'count' ] / df.stratum_count_all ).sum() ,
                 'count_age_proportion_adult': ( df.loc[ df.age > 1 ][ 'count' ] / df.stratum_count_total ).sum( )
-            } ) )
+            } ) , include_groups = True )
             .reset_index( )
         )
 
@@ -861,17 +869,17 @@ class Survey:
             .dropna( how = 'any' )
             .pipe( lambda df: df.assign( weight_stratum_all = df
                                                         .groupby( [ 'stratum_num' ] )[ 'weight' ]
-                                                        .transform( sum ) ,
+                                                        .transform( 'sum' ) ,
                                         weight_stratum_adult = df
                                                             .loc[ lambda x: x.age > 1 ]
                                                             .groupby( [ 'stratum_num' ] )[ 'weight' ]
-                                                            .transform( sum ) ) )
+                                                            .transform( 'sum' ) ) )
             .groupby( [ 'stratum_num' , 'age' ] )
             .apply( lambda df: pd.Series( {
                 'weight_age_proportion_all': ( df.weight / df.weight_stratum_all ).sum( ) ,
                 'weight_age_proportion_adult': ( df.weight / df.weight_stratum_adult ).sum( )
-            } ) )
-            .reset_index()
+            } ) , include_groups = False )
+            .reset_index( )
         )
         
         # Calculate adult proportions/contributions (in terms of summed weight) for each stratum
@@ -885,14 +893,15 @@ class Survey:
             .count_variable( contrasts = [ 'stratum_num' , 'age' , 'length_bin' , 'sex' ] ,
                             variable = 'weight' ,
                             fun = 'sum' )
-            .pipe( lambda df: df.assign( weight_total_all = df.groupby( [ 'stratum_num' , 'sex' ] )[ 'count' ].transform( sum ) ,
-                                         weight_total_adult = df.loc[ df.age > 1 ].groupby( [ 'stratum_num' , 'sex' ] )[ 'count' ].transform( sum ) ) )
+            .pipe( lambda df: df.assign( weight_total_all = df.groupby( [ 'stratum_num' , 'sex' ] )[ 'count' ].transform( 'sum' ) ,
+                                         weight_total_adult = df.loc[ df.age > 1 ].groupby( [ 'stratum_num' , 'sex' ] )[ 'count' ].transform( 'sum' ) ) )
             .groupby( [ 'stratum_num' , 'age' , 'sex' ] )
             .apply( lambda x: pd.Series( {
                 'weight_sex_proportion_all': ( x[ 'count' ] / x.weight_total_all ).sum() ,
                 'weight_sex_proportion_adult': ( x[ 'count' ] / x.weight_total_adult ).sum()
-            } ) )
+            } ) , include_groups = False )
             .reset_index( )
+            .fillna( 0 )
         )
         
         length_sex_age_weight_proportions = (
@@ -905,10 +914,11 @@ class Survey:
             .count_variable( contrasts = [ 'stratum_num' , 'age' , 'length_bin' , 'sex' ] ,
                             variable = 'weight' ,
                             fun = 'sum' )
-            .pipe( lambda df: df.assign( weight_total_all = df.groupby( [ 'stratum_num' , 'sex' ] )[ 'count' ].transform( sum ) ,
-                                         weight_total_adult = df.loc[ df.age > 1 ].groupby( [ 'stratum_num' , 'sex' ] )[ 'count' ].transform( sum ) ) )
+            .pipe( lambda df: df.assign( weight_total_all = df.groupby( [ 'stratum_num' , 'sex' ] )[ 'count' ].transform( 'sum' ) ,
+                                         weight_total_adult = df.loc[ df.age > 1 ].groupby( [ 'stratum_num' , 'sex' ] )[ 'count' ].transform( 'sum' ) ) )
             .assign( weight_length_sex_proportion_all = lambda x: x[ 'count' ] / x.weight_total_all ,
                      weight_length_sex_proportion_adult = lambda x: x[ 'count' ] / x.weight_total_adult )
+            .replace( np.nan , 0 )
         )
         
         ### Add these dataframes to the appropriate data attribute
@@ -1134,50 +1144,53 @@ class Survey:
         )
 
     def standardize_coordinates( self ,
-                                 adjust_mesh = True ):
+                                 dataset: str = 'biomass_density' ):
         """
         Standardizes spatial coordinates based on reference positions
-        
-        Parameters
-        ----------
-        adjust_mesh
-            Boolean value that determines whether a defined mesh is also standardized
-            alongside the transect values
         """         
+
+        ### Parse which dataset will be adjusted
+        if dataset == 'biomass_density' :
+            data_regrid = self.biology[ 'population' ][ 'areal_density' ][ 'biomass_density_df' ]
+        elif dataset == 'number_density' :
+            data_regrid = self.biology[ 'population' ][ 'areal_density' ][ 'number_density_df' ]
+        elif dataset == 'abundance' :
+            data_regrid = self.biology[ 'population' ][ 'abundance' ][ 'abundance_df' ]
+        elif dataset == 'biomass' :
+            data_regrid = self.biology[ 'population' ][ 'biomass' ][ 'biomass_df' ]
+        elif dataset == 'biomass_age' :
+            data_regrid = self.biology[ 'population' ][ 'biomass' ][ 'biomass_age_df' ]
+
         ### Collect necessary parameter values
         # !!! TODO: This only currently applies to age-sex-indexed biomass
-        transect_trans_df , d_x , d_y = transform_geometry( self.biology[ 'population' ][ 'biomass' ][ 'biomass_age_df' ] , 
+        transect_trans_df , d_x , d_y = transform_geometry( data_regrid , 
                                                             self.statistics[ 'kriging' ][ 'isobath_200m_df' ] , 
-                                                            self.config[ 'kriging_parameters' ][ 'longitude_reference' ] , 
-                                                            self.config[ 'kriging_parameters' ][ 'longitude_offset' ] , 
-                                                            self.config[ 'kriging_parameters' ][ 'latitude_offset' ] ,
+                                                            self.config[ 'kriging_parameters' ] ,
                                                             self.config[ 'geospatial' ][ 'init' ] )
         
         ### Update Survey object with transformed coordinates
-        self.biology[ 'population' ][ 'biomass' ][ 'biomass_age_df' ] = transect_trans_df
+        if dataset == 'biomass_density' :
+            self.biology[ 'population' ][ 'areal_density' ][ 'biomass_density_df' ] = transect_trans_df
+        elif dataset == 'number_density' :
+            self.biology[ 'population' ][ 'areal_density' ][ 'number_density_df' ] = transect_trans_df
+        elif dataset == 'abundance' :
+            self.biology[ 'population' ][ 'abundance' ][ 'abundance_df' ] = transect_trans_df
+        elif dataset == 'biomass' :
+            self.biology[ 'population' ][ 'biomass' ][ 'biomass_df' ] = transect_trans_df
+        elif dataset == 'biomass_age' :
+            self.biology[ 'population' ][ 'biomass' ][ 'biomass_age_df' ] = transect_trans_df
 
-        ### Adjust coordinates if flagged
-        if adjust_mesh:
-
-            ### Transform mesh
-            mesh_trans_df = transform_geometry( self.statistics[ 'kriging' ][ 'mesh_df' ] , 
-                                                self.statistics[ 'kriging' ][ 'isobath_200m_df' ] , 
-                                                self.config[ 'kriging_parameters' ][ 'longitude_reference' ] , 
-                                                self.config[ 'kriging_parameters' ][ 'longitude_offset' ] , 
-                                                self.config[ 'kriging_parameters' ][ 'latitude_offset' ] ,
-                                                self.config[ 'geospatial' ][ 'init' ] ,
-                                                range_output = False ,
-                                                d_longitude = d_x , d_latitude = d_y )
-            
-            ### Update Survey object with transformed coordinates
-            self.statistics[ 'kriging' ].update(
-                {
-                    'transformed_mesh_geodf': mesh_trans_df
-                }
-            )
+        ### Transform mesh
+        mesh_trans_df , _ , _ = transform_geometry( self.statistics[ 'kriging' ][ 'mesh_df' ] , 
+                                                    self.statistics[ 'kriging' ][ 'isobath_200m_df' ] , 
+                                                    self.config[ 'kriging_parameters' ] ,
+                                                    self.config[ 'geospatial' ][ 'init' ] ,
+                                                    d_longitude = d_x , d_latitude = d_y )
+        
+        ### Update Survey object with transformed coordinates
+        self.statistics[ 'kriging' ][ 'mesh_df' ] =  mesh_trans_df
     
     def krige( self ,
-               species_id ,
                variable: str = 'B_a_adult' ):
         """
         Interpolates biomass data using ordinary kriging
@@ -1240,6 +1253,11 @@ class Survey:
                                                   variogram_parameters ,
                                                   kriging_parameters )
         
+        # ### Calculate grid CV
+        # kriged_results = grid_cv( self.biology[ 'population' ][ 'areal_density' ][ 'biomass_density_df' ] ,
+        #                           kriged_results ,
+        #                           self.statistics[ 'kriging' ][ 'model_config' ] )
+
         ### Assign results to an attribute
         self.statistics[ 'kriging' ].update(
             {
@@ -1250,7 +1268,7 @@ class Survey:
         ### TODO: This should be refactored out as an external function 
         ###### rather than a Survey-class method.
         ### Apportion biomass based on age and sex
-        self.apportion_kriged_biomass( species_id )
+        # self.apportion_kriged_biomass( species_id )
 
     def apportion_kriged_biomass( self ,
                                   species_id ):
@@ -1264,98 +1282,125 @@ class Survey:
         for aged and unaged fish, total biomass inferred from the biological and 
         kriged bioamss estimates, the coefficient of variation within each cell, 
         and georeferenced biomass estimates for specific paired values of sex 
-        and age-class.
+        and age-class. Binned length data (`length_df`) represent sexed, but
+        unaged fish measured at Station 1. Specimen data (`specimen_data`) represen
+        sexed and aged fish measured at Station 2. Total haul weights (`catch_df`) 
+        represent the bulk weights of unaged and unsexed fish measured in Station 1.
         """  
-        ### Length data (Station 1 - Unaged - Sexxed )
-        length_df_copy = self.biology[ 'length_df' ].copy( ).pipe( lambda df: df.loc[ df.species_id == species_id ] )
+        
+        ### Import biological data and filter out non-target species
+        # ---- Species filter
+        length_spp , specimen_spp , haul_spp = filter_species( [ self.biology[ 'length_df' ] ,
+                                                                 self.biology[ 'specimen_df' ] ,
+                                                                 self.biology[ 'catch_df' ] ] ,
+                                                               species_id )
+        
+        # ---- Remove 'bad' values 
+        # ---- `specimen_spp`
+        specimen_spp_filtered = specimen_spp[ specimen_spp.sex != 'unsexed' ].dropna( how = 'any' , subset = 'age' )
 
-        ### Length-weight data (Station 2 - Aged - Sexed)
-        specimen_df_copy = self.biology[ 'specimen_df' ].copy( ).pipe( lambda df: df.loc[ df.species_id == species_id ] )
+        # ---- `length_spp`
+        length_spp_filtered = length_spp[ length_spp.sex != 'unsexed' ]
 
-        ### Haul data 
-        haul_catch_df = self.biology[ 'catch_df' ].copy( ).pipe( lambda df: df.loc[ df.species_id == species_id ] )
-
-        ### Import length bins & intervals
+        ### Import discrete distribution bins
+        # ---- Length
         length_intervals = self.biology[ 'distributions' ][ 'length' ][ 'length_interval_arr' ]
         
-        ### Age bins
+        # ---- Age
         age_intervals = self.biology[ 'distributions' ][ 'age' ][ 'age_interval_arr' ]
- 
-        ### Process `haul_catch_df`
-        # Remove haul numbers not found within `length_df_copy`
-        haul_catch_filtered = (
-            haul_catch_df
-            .loc[ lambda x: x.haul_num.isin( length_df_copy.haul_num ) ]
-        )
 
-        ### Calculate summed weights
-        weight_strata , weight_strata_station , weight_length_age_sex_stratum = sum_strata_length_age_sex_weight( haul_catch_filtered ,
-                                                                                                                  specimen_df_copy ,
-                                                                                                                  length_intervals ,
-                                                                                                                  age_intervals )
+        ### Import length-weight regression parameters
+        regression_parameters = self.statistics[ 'length_weight' ][ 'regression_parameters' ]
+        regression_parameters = regression_parameters[ regression_parameters.sex != 'all' ]
 
-        ### Normalize the age-length-sex indexed proportions
-        dist_weight_sum = normalize_length_age_sex_weight_proportions( weight_length_age_sex_stratum ,
-                                                                       weight_strata )
+        ### Import length-weight relationship
+        length_weight_df = self.statistics[ 'length_weight' ][ 'length_weight_df' ]
         
-        ### Calculate aged / unaged proportions
-        aged_proportions = calculate_aged_proportions( weight_length_age_sex_stratum ,
-                                                       weight_strata )
+        # ---- Construct the complete dataframe containing all possible
+        # ---- strata, sexes, lengths, and ages
+        # full_biological_indices = pd.DataFrame(
+        #     list( product( np.unique( specimen_spp.stratum_num ) ,
+        #                    np.unique( specimen_spp.species_id ) ,
+        #                    np.unique( specimen_spp.sex ) ,
+        #                    pd.cut( length_bins , length_intervals ) ,
+        #                    pd.cut( age_bins , age_intervals ) ) ) ,
+        #     columns = [ 'stratum_num' , 'species_id' , 'sex' , 
+        #                 'length_bin' , 'age_bin' ]
+        # )
 
-        ### Calculate interpolated weights based on length bins for each sex per haul
-        haul_sex_weights_normalized = normalize_haul_sex_weights( self.statistics[ 'length_weight' ][ 'length_weight_df' ] ,
-                                                                  length_df_copy ,
-                                                                  weight_strata ,
-                                                                  weight_strata_station ,
-                                                                  aged_proportions ,
-                                                                  length_intervals )
+        ### Process `haul_spp`
+        # Remove haul numbers not found within `length_spp`
+        haul_spp_matched = haul_spp[ haul_spp.haul_num.isin( length_spp.haul_num ) ]
 
-        ### Parse kriged biomass (areal density) values
-        kriged_results = self.statistics[ 'kriging' ][ 'kriged_biomass_df' ]
-
-        kriged_results = (
-            kriged_results
-            .merge( dist_weight_sum , on = [ 'stratum_num' ] )
-            .assign( biomass_aged = lambda df: df.B_a_adult_mean * df.proportion_normalized * df.cell_area_nmi2 )
-            .merge( haul_sex_weights_normalized , on = [ 'stratum_num' , 'sex' ] )
-            .assign( biomass_unaged = lambda df: df.B_a_adult_mean * df.proportion_normalized_station_1 * df.cell_area_nmi2 ,
-                     biomass_total = lambda df: df.biomass_aged + df.biomass_unaged )
-        )
-
-        ### Parse the average weight calculations
-        average_weight_df = (
-            self.biology[ 'weight' ][ 'weight_strata_df' ]
-            .loc[ : , [ 'stratum_num' , 'average_weight_total' ] ]
-        )
-
-        ### Merge with the kriged results 
-        kriged_results = (
-            kriged_results
-            .merge( average_weight_df , on = [ 'stratum_num' ] )
-            .assign( N_adult_kriged = lambda df: df.B_adult_kriged / df.average_weight_total )
-            .merge( self.acoustics[ 'sigma_bs' ][ 'strata_mean' ] , on = [ 'stratum_num' ] )
-            .assign( NASC_kriged = lambda df: df.N_adult_kriged * df.sigma_bs_mean )
-        )
-
-        ### Calculate grid CV
-        kriged_results = grid_cv( self.biology[ 'population' ][ 'areal_density' ][ 'biomass_density_df' ] ,
-                                  kriged_results ,
-                                  self.statistics[ 'kriging' ][ 'model_config' ] )
+        ### Sum weights for aged/unaged and all within each stratum
+        weight_strata = sum_strata_weight( haul_spp_matched ,
+                                           specimen_spp )
         
-        ### Add biomass values to all ages for kriged biomass results
-        kriged_results_output = (
-            kriged_results
-            .merge( self.biology[ 'weight' ][ 'proportions' ][ 'sex_age_weight_proportions_df' ] , 
-                    on = [ 'stratum_num' , 'sex' ] )
-            .assign( biomass_sex_age = lambda x: x.weight_sex_proportion_all * x.biomass_total )
-            .loc[ : , [ 'centroid_latitude' , 'centroid_longitude' , 'stratum_num' , 
-                        'cell_area_nmi2' , 'sex' , 'age' , 'biomass_unaged' , 'biomass_aged' ,
-                        'biomass_total' , 'biomass_adult_cell_CV' , 'biomass_sex_age' ] ]
+        ### Calculate the summed aged proportions for age-1+ (*_all) and age-2+ (*_adult) fish      
+        aged_unaged_weight_proportions = calculate_aged_unaged_proportions( specimen_spp_filtered ,
+                                                                            weight_strata )
+
+        # !!! TODO: This does end up chewing up * a ton * of memory since the output dataframes are quite large
+        aged_sex_biomass , aged_biomass = calculate_aged_biomass( self.statistics[ 'kriging' ][ 'kriged_biomass_df' ] ,
+                                                                  specimen_spp_filtered ,
+                                                                  length_intervals ,
+                                                                  age_intervals ,
+                                                                  aged_unaged_weight_proportions )
+
+        ### Calculate unaged biomass for each sex and all animals
+        unaged_sex_biomass = calculate_unaged_biomass( self.statistics[ 'kriging' ][ 'kriged_biomass_df' ] ,
+                                                       length_spp_filtered ,
+                                                       length_intervals ,
+                                                       length_weight_df ,
+                                                       regression_parameters ,
+                                                       aged_unaged_weight_proportions )
+        
+        ### Re-distribute unaged biomass so it is compatible with aged biomass to calculate the overall summed biomass
+        redistributed_unaged_sex_biomass , redistributed_unaged_biomass = apply_age_bins( aged_sex_biomass , 
+                                                                                          unaged_sex_biomass )
+        
+        ### Sum the grand total by combining the aged and unaged biomass estimates post-apportionment
+        # ---- Merge sexed
+        overall_sexed_biomass = redistributed_unaged_sex_biomass.merge( aged_sex_biomass ,
+                                                                        on = [ 'length_bin' , 'age_bin' , 'sex' , 'species_id' ] ,
+                                                                        how = 'left' )
+        
+        # ---- Aggregate (sum)
+        overall_sexed_biomass[ 'total_sexed_biomass_all' ] = (
+            overall_sexed_biomass.biomass_sexed_unaged_all + 
+            overall_sexed_biomass.biomass_sexed_aged_all
+        )
+        overall_sexed_biomass[ 'total_sexed_biomass_adult' ] = (
+            overall_sexed_biomass.biomass_sexed_unaged_adult + 
+            overall_sexed_biomass.biomass_sexed_aged_adult
         )
         
+        # ---- Merge total
+        overall_biomass = redistributed_unaged_biomass.merge( aged_biomass ,
+                                                              on = [ 'length_bin' , 'age_bin' , 'species_id' ] ,
+                                                              how = 'left' )
+        
+        # ---- Aggregate (sum)
+        overall_biomass[ 'total_biomass_all' ] = (
+            overall_biomass.biomass_unaged_all + 
+            overall_biomass.biomass_aged_all
+        )
+        overall_biomass[ 'total_biomass_adult' ] = (
+            overall_biomass.biomass_unaged_adult + 
+            overall_biomass.biomass_aged_adult
+        )
+
+        ### Drop unnecessary columns
+        # ---- Overall sexed biomass 
+        overall_sexed_biomass.drop( [ 'summed_aged_biomass_all' ,
+                                      'summed_aged_biomass_adult' ] ,
+                                    axis = 1 ,
+                                    inplace = True )
+
         ### Assign results to an attribute
         self.statistics[ 'kriging' ].update(
             {
-                'apportioned_kriged_biomass_df': kriged_results_output ,
+                'apportioned_kriged_total_biomass_df': overall_biomass ,
+                'apportioned_kriged_sexed_biomass_df': overall_sexed_biomass ,
             }
         )
