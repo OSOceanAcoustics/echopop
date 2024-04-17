@@ -29,7 +29,7 @@
   #####################################################################################################################
   # Log-linear regression#
   ########################
-  # Target strenth (TS) - length (L) regression: TS=m*log10(L)+b
+  # Target strength (TS) - length (L) regression: TS=m*log10(L)+b
   TS_length_regression_parameters:
     pacific_hake:                         # corresponding species text code
       number_code: 22500                  # species number code
@@ -50,7 +50,7 @@
     A0: 6.25                              # base area of the grid cell
     longitude_reference: -124.78338       # longitude reference for kriging mesh adjustment
     longitude_offset: -124.78338          # longitudinal offset for kriging mesh adjustment
-    latitude_offset: 45.0                 # latitudinal offset for kriging mesh adjustment 
+    latitude_offset: 45.0                 # latitudinal offset for kriging mesh adjustment
 
   #####################################################################################################################
 ...

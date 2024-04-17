@@ -29,7 +29,7 @@
   #####################################################################################################################
   # Log-linear regression#
   ########################
-  # Target strenth (TS) - length (L) regression: TS=m*log10(L)+b
+  # Target strength (TS) - length (L) regression: TS=m*log10(L)+b
   TS_length_regression_parameters:
     pacific_hake:                         # corresponding species text code
       number_code: 22500                  # species number code
