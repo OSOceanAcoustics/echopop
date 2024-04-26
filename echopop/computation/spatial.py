@@ -192,8 +192,8 @@ def transform_geometry( dataframe: pd.DataFrame ,
 
     # ---- y
     geodataframe_geometry[ 'y_transformed' ] = (
-        ( geodataframe_geometry.geometry_transformed.x - kriging_grid_parameters[ 'latitude_offset' ] )
-        / d_longitude
+        ( geodataframe_geometry.geometry_transformed.y - kriging_grid_parameters[ 'latitude_offset' ] )
+        / d_latitude
     )    
 
     ### Return output Tuple
@@ -296,3 +296,29 @@ def grid_cv( biomass_density_df: pd.DataFrame ,
 
     ### Carriage return
     return kriged_results
+
+def to_utm( longitude: float ,
+            latitude: float , ) :
+    """
+    Converts projection string from longitude/latitude (WGS84) to equivalent UTM
+    
+    Parameters
+    ----------
+    longitude: float
+        Longitude coordinate
+    latitude: float
+        Latitude coordinate
+    """
+    # Calculate UTM band value
+    utm_value = str( ( np.floor( ( longitude + 180 ) / 6 ) % 60 + 1 ).astype( int ) )
+    
+    # Construct string to create equivalent EPSG code
+    if len( utm_value ) == 1 :
+        utm_value = '0' + utm_value
+        
+    if latitude >= 0.0 :
+        epsg = '326' + utm_value
+    else :
+        epsg = '327' + utm_value
+    
+    return epsg

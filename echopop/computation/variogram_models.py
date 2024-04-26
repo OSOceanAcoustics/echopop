@@ -1,7 +1,7 @@
 
 import numpy as np
 from scipy import special
-from typing import Union
+from typing import Union , Optional
 
 #################################################################
 # Single-family models
@@ -93,14 +93,15 @@ def bessel_gaussian( distance_lags: np.ndarray ,
 
 def bessel_exponential( distance_lags: np.ndarray ,
                         variogram_parameters ,
-                        decay_power: np.float64 = 1.0 , 
+                        decay_power: Optional[ np.float64 ] = None ,
                         **kwargs ):
     
+
     ###
     partial_sill = variogram_parameters[ 'sill' ] - variogram_parameters[ 'nugget' ]
 
     ###
-    decay = 1.0 - np.exp( - ( ( distance_lags / variogram_parameters[ 'correlation_range' ] ) ** decay_power ) )
+    decay = 1.0 - np.exp( - ( ( distance_lags / variogram_parameters[ 'correlation_range' ] ) ** variogram_parameters[ 'decay_power' ] ) )
 
     ### 
     hole_effect = special.j0( variogram_parameters[ 'hole_effect_range' ] *  distance_lags )
@@ -195,7 +196,7 @@ VARIOGRAM_MODELS = {
         ( 'cosine' , 'gaussian' ): cosine_gaussian ,
         ( 'exponential' , 'linear' ): exponential_linear ,
         ( 'gaussian' , 'linear' ): gaussian_linear ,
-    }
+    } ,
 }
 
 def variogram( distance_lags ,

@@ -3,30 +3,32 @@ import pandas as pd
 from ..computation.spatial import griddify_lag_distances , local_search_index
 from ..computation.variogram_models import variogram
 
-def compute_kriging_weights( ratio , M2 , K ):
+def kriging_lambda( anisotropy: float , 
+                    lagged_semivariogram: np.ndarray , 
+                    kriging_matrix: np.ndarray , ):
     """
     Apply singular value decomposition (SVD) to compute kriging (lambda) weights    
 
     Parameters
     ----------
-    ratio: np.float64
+    anisotropy: np.float64
         Anisotropy ratio.
-    M2: np.array
+    lagged_semivariogram: np.array
         Lagged semivariogram
-    K: np.array
+    kriging_matrix: np.array
         Kriging matrix.
     """
     ### Singular value decomposition (SVD)
     # U: left singular vectors (directions of maximum variance)
     # Sigma: singular values (amount of variance captured by each singular vector, U)
     # VH: conjugate transpose of the right singular vectors
-    U , Sigma , VH = np.linalg.svd( K , full_matrices = True )
+    U , Sigma , VH = np.linalg.svd( kriging_matrix , full_matrices = True )
     
     ### Create Sigma mask informed by the ratio-threshold
     # The ratio between all singular values and their respective
     # maximum is used to apply a mask that informs which values
     # are used to tabulate the kriging weights (aka lambda)
-    Sigma_mask = np.abs( Sigma / Sigma[ 0 ] ) > ratio
+    Sigma_mask = np.abs( Sigma / Sigma[ 0 ] ) > anisotropy
 
     ### Inverse masked semivariogram (K)
     K_inv = np.matmul(
@@ -35,7 +37,48 @@ def compute_kriging_weights( ratio , M2 , K ):
     )
 
     ### Calculate kriging weights (lambda)
-    return np.dot( K_inv , M2 )
+    return np.dot( K_inv , lagged_semivariogram )
+
+def kriging_matrix( x_coordinates ,
+                    y_coordinates ,
+                    variogram_parameters ) :
+    """
+    Calculate the kriging covariance matrix
+
+    Parameters
+    ----------
+    x_coordinates: np.array
+        The x-axis coordinates
+    y_coordinates: np.array
+        The y-axis coordinates
+    variogram_parameters: dict
+        Dictionary containing variogram model parameters
+    """ 
+
+    # Calculate local distance matrix of within-range samples
+    local_distance_matrix = griddify_lag_distances( x_coordinates , y_coordinates )
+    
+    # Calculate the covariance/kriging matrix (without the constant term)
+    kriging_matrix_initial = variogram( distance_lags = local_distance_matrix , 
+                                        variogram_parameters = variogram_parameters )
+
+    # Expand the covariance/kriging matrix with a constant
+    # ---- In Ordinary Kriging, this should be '1'
+    # Columns
+    kriging_matrix = np.concatenate( [ kriging_matrix_initial , 
+                                       np.ones( ( x_coordinates.size , 1 ) ) ] , 
+                                    axis = 1 )
+    
+    # Add column and row of ones for Ordinary Kriging
+    kriging_matrix = np.concatenate( [ kriging_matrix , 
+                                       np.ones( ( 1 , x_coordinates.size + 1 ) ) ] , 
+                                    axis = 0 )
+    
+    # Diagonal fill (0.0)
+    # ---- TODO: Should we put in statements for Objective mapping and Universal Kriging w/ Linear drift?  # noqa
+    np.fill_diagonal( kriging_matrix , 0.0 )
+
+    return kriging_matrix
 
 def compute_kriging_matrix( x_coordinates ,
                             y_coordinates ,
@@ -52,15 +95,16 @@ def compute_kriging_matrix( x_coordinates ,
     variogram_parameters: dict
         Dictionary containing variogram model parameters
     """    
-    ### Calculate local distance matrix of within-range samples
+
+    # Calculate local distance matrix of within-range samples
     local_distance_matrix = griddify_lag_distances( x_coordinates , y_coordinates )
     
-    ### Calculate the covariance/kriging matrix (without the constant term)
+    # Calculate the covariance/kriging matrix (without the constant term)
     kriging_matrix_initial = variogram( distance_lags = local_distance_matrix , 
                                         variogram_parameters = variogram_parameters )
 
-    ### Expand the covariance/kriging matrix with a constant
-    # In Ordinary Kriging, this should be '1'
+    # Expand the covariance/kriging matrix with a constant
+    # ---- In Ordinary Kriging, this should be '1'
     # Columns
     kriging_matrix = np.concatenate( [ kriging_matrix_initial , 
                                        np.ones( ( x_coordinates.size , 1 ) ) ] , 
@@ -78,10 +122,12 @@ def compute_kriging_matrix( x_coordinates ,
 
     return kriging_matrix
 
-def range_index_threshold( local_point_grid ,
-                           distance_matrix ,
-                           R ,
-                           k_min ):
+def range_index_threshold( local_point_grid: np.ndarray ,
+                           distance_matrix: np.ndarray ,
+                           mesh_point: pd.Series ,
+                           transect_extent: pd.DataFrame ,
+                           R: float ,
+                           k_min: int , ):
     """
     Calculate the kriging covariance matrix
 
@@ -91,32 +137,40 @@ def range_index_threshold( local_point_grid ,
         Gridded coordinate values
     distance_matrix: np.array
         Gridded distance matrix
-    R: np.float64
-        Semivariogram range parameter value
+    mesh_point: pd.Series
+        A Series containing the local mesh coordinates that the distance matrix is centered on
+    transect_extent: pd.DataFrame
+        A DataFrame containing the western-most x- and y-coordinates from survey transects
+    R: float
+        Kriging search radius
     k_min: int
         Minimum number of 'k'-nearest neighbors
     """
-    ### Calculate the within-sample grid indices
-    inside_indices = np.where( distance_matrix[ local_point_grid ] <= R )[ 0 ]
+    
+    # Calculate the closest grid points (up to the k[max]th point)
+    local_indices = distance_matrix[ local_point_grid ].argsort( )
+    
+    # Initialize out-of-sample (extrapolated) weights
+    out_of_sample_weights = 1.0
 
-    ### Expand search radius if the number of local points are insufficient
-    if len( inside_indices ) < k_min:
+    distance_matrix[ distance_matrix < R ].argsort( )
 
-        ### Sort the closest within-sample points
-        inside_indices = np.argsort( distance_matrix[ local_point_grid ] )[ : k_min ]
+    # Expand search radius if the number of local points are insufficient
+    if len( local_indices ) < k_min:
 
-        ### Look beyond the sample to collect indices beyond the range threshold
-        outside_indices = np.where( distance_matrix[ local_point_grid[ inside_indices ] ] > R )[ 0 ]
+        # Sort the closest within-sample points
+        inside_indices = np.argsort( local_indices )[ : k_min ]
 
-        ### Calculate the appropraite weights for these values beyond the threshold
-        # TODO: should we change this to how Chu does it?
-        # tapered function to handle extrapolation
-        out_of_sample_weights = np.exp( - np.nanmean( distance_matrix[ local_point_grid[ inside_indices ] ] ) / R )
+        # Develop the tapered function for extrapolating values outside the search radius
+        # ---- Based on the western-most transect values
+        # -------- Evaluate index for closest western-most latitude
+        western_limit = np.abs( mesh_point.y_transformed - transect_extent.y_transformed ).argmin( axis = 0 )
 
-    else:
-        ### If the sample size is sufficient
-        outside_indices = [ ]
-        out_of_sample_weights = 1.0
+        if mesh_point.x_transformed < transect_extent.iloc[ western_limit ].x_transformed - R :
+            # ---- Collect closest coordinate indices from the total distance matrix up to k[min]
+            closest_global_points = distance_matrix.argsort( )[ : k_min ]
+            # ---- Calculate the out-of-sample kriging weights
+            out_of_sample_weights = np.exp( -np.nanmean( np.sort( distance_matrix )[ closest_global_points ] / R ) )
 
     ### Carriage return
     return inside_indices , outside_indices , out_of_sample_weights
@@ -201,6 +255,8 @@ def ordinary_kriging( spatial_data ,
     variable_data = spatial_data[ variable ].values
     variable_x = spatial_data.x_transformed.values
     variable_y = spatial_data.y_transformed.values
+    west_boundary_x = spatial_data.x_west
+    west_boundary_y = spatial_data.y_west
 
     ### Iterate through the local point grid to evaluate the kriged/interpolated results
     for row in range( local_point_grid.shape[ 0 ] ):
@@ -209,7 +265,7 @@ def ordinary_kriging( spatial_data ,
         inside_indices , outside_indices , out_of_sample_weights = (
             range_index_threshold( local_point_grid[ row , : ] ,
                                    distance_matrix[ row , : ] ,
-                                   variogram_parameters[ 'range' ] , 
+                                   0.021 , 
                                    kriging_parameters[ 'kmin' ] )
             )
     
@@ -218,7 +274,7 @@ def ordinary_kriging( spatial_data ,
 
         ### Calculate the theoretical (semi)variogram at defined lag distances
         modeled_semivariogram = variogram( distance_lags = distance_matrix[ row , distance_within_indices ] , 
-                                           variogram_parameters = variogram_parameters )
+                                           variogram_parameters = variogram_parameters , decay_power = 1.5 )
 
         ### For Ordinary Kriging, we shift the lags by 1 to include a constant term (1.0)
         # TODO: Should we put in statements for Objective mapping and Universal Kriging w/ Linear drift?  # noqa

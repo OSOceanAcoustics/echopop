@@ -18,8 +18,8 @@ from functools import reduce
 # ==== multiple bin variables like age and length
 @patch_method_to_DataFrame( pd.DataFrame )
 def bin_variable( dataframe: pd.DataFrame , 
-                  bin_values: np.ndarray ,
-                  bin_variable: str ):
+                  bin_values: Union[ np.ndarray , List[ np.ndarray ] ] ,
+                  bin_variables: Union[ str , List[ str ] ] ):
     """
     Discretizes the target variable into user-defined bins
 
@@ -38,11 +38,28 @@ def bin_variable( dataframe: pd.DataFrame ,
     This will add a column to defined dataframes that groups length and age values
     into each bin that is explicitly defined in the function arguments
     """
+
+    # Convert bin_variable to list if string
+    if isinstance( bin_variables , str ) :
+        bin_variables = [ bin_variables ]
+
+    # Convert bin_values to list if ndarray
+    if isinstance( bin_values , np.ndarray ) :
+        bin_values = [ bin_values ]
+
+    # If there is a dimension mismatch, return Error
+    if len( bin_values ) != len( bin_variables ) :
+        raise ValueError("""Number of binning variables do not match expected number of binning 
+                         arrays.""")
     
-    return (
-        dataframe # input dataframe
-        .assign( **{f'{bin_variable}_bin': lambda x: pd.cut(x[bin_variable], bin_values)} ) # assign bin
-    )
+    # Initialize copy to prevent overwriting original
+    dataframe_out = dataframe.copy( )
+    
+    # Iterate over the binning values and variables
+    for variable , bins in zip( bin_variables , bin_values ) :
+        dataframe_out.loc[:,f'{variable}_bin'] = pd.cut( dataframe_out.loc[:, variable ] , bins = bins )
+
+    return dataframe_out
     
 @patch_method_to_DataFrame( pd.DataFrame )
 def bin_stats( dataframe: pd.DataFrame ,

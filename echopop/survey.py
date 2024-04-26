@@ -366,6 +366,18 @@ class Survey:
             } ,
         }
 
+        # Bin specimen data
+        self.biology[ 'specimen_df' ] = (
+            self.biology[ 'specimen_df' ]
+            .bin_variable( [ length_centered_bins , age_centered_bins ] , [ 'length' , 'age' ] )
+        )
+
+        # Length data
+        self.biology[ 'length_df' ] = (
+            self.biology[ 'length_df' ]
+            .bin_variable( [ length_centered_bins ] , [ 'length' ] )
+        )
+
     def transect_analysis(self ,
                           species_id: np.float64 = 22500 ):
         """
@@ -889,7 +901,7 @@ class Survey:
                                                 df.assign( sex = 'all' ) ] ) )
             .dropna( how = 'any' )
             .bin_variable( bin_values = length_intervals ,
-                           bin_variable = 'length' )
+                           bin_variables = 'length' )
             .count_variable( contrasts = [ 'stratum_num' , 'age' , 'length_bin' , 'sex' ] ,
                             variable = 'weight' ,
                             fun = 'sum' )
@@ -910,7 +922,7 @@ class Survey:
                                                 df.assign( sex = 'all' ) ] ) )
             .dropna( how = 'any' )
             .bin_variable( bin_values = length_intervals ,
-                           bin_variable = 'length' )
+                           bin_variables = 'length' )
             .count_variable( contrasts = [ 'stratum_num' , 'age' , 'length_bin' , 'sex' ] ,
                             variable = 'weight' ,
                             fun = 'sum' )
@@ -980,7 +992,7 @@ class Survey:
         nasc_adult_number_proportions = (
             self.biology[ 'weight' ][ 'proportions' ][ 'age_proportions_df' ]
         )
-
+        
         # Create dataframe to save it to Survey object
         areal_number_density_df = (
            nasc_to_areal_number_density_df
@@ -1218,7 +1230,7 @@ class Survey:
         ### Import updated/transformed coordinates                
         updated_coordinates = (
             self.biology
-            [ 'population' ][ 'biomass' ][ 'biomass_age_df' ]
+            [ 'population' ][ 'areal_density' ][ 'biomass_density_df' ]
             .drop_duplicates( subset = [ 'x_transformed' , 'y_transformed' ] )
             [ [ 'longitude' , 'latitude' , 'longitude_transformed' , 'geometry' , 
                 'x_transformed' , 'y_transformed' , 'transect_num' , 'stratum_num' ] ]
@@ -1231,7 +1243,7 @@ class Survey:
         spatial_data_transformed =  spatial_data.merge( updated_coordinates , on = union_lst )
 
         ### Import additional parameters/dataframes necessary for kriging
-        transformed_mesh = self.statistics[ 'kriging' ][ 'transformed_mesh_geodf' ].copy( )
+        transformed_mesh = self.statistics[ 'kriging' ][ 'mesh_df' ].copy( )
         dataframe_mesh = self.statistics[ 'kriging' ][ 'mesh_df' ].copy( )
         dataframe_geostrata = self.spatial[ 'geo_strata_df' ].copy( )
 
