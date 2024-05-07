@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from echopop.computation.operations import bin_variable , bin_stats , count_variable , meld , stretch , group_merge
+from echopop.utils.operations import bin_variable , bin_stats , count_variable , meld , stretch , group_merge
 from echopop.tests.conftest import assert_dataframe_equal
 
 def test_bin_variable( ):

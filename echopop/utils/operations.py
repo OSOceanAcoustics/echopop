@@ -1,10 +1,12 @@
 import numpy as np
 import pandas as pd
-from ..utils.monkey_patch_dataframe import patch_method_to_DataFrame
+from .monkey_patch_dataframe import patch_method_to_DataFrame
 from typing import Union , List
 from typing import Callable
 from functools import reduce
    
+
+# 
 ### !!! TODO: Assess whether `bin_variable` is necessary
 # ==== Currently works with dataframes as a whole, but 
 # ==== it is probably more efficient/sensible to refit 
@@ -160,7 +162,8 @@ def count_variable( dataframe: pd.DataFrame ,
     
 @patch_method_to_DataFrame( pd.DataFrame )
 def meld( specimen_dataframe: pd.DataFrame ,
-          length_dataframe: pd.DataFrame ):
+          length_dataframe: pd.DataFrame ,
+          contrasts: list ):
     """
     Concatenates the specimen and length dataframes using a shared format
 
@@ -170,13 +173,15 @@ def meld( specimen_dataframe: pd.DataFrame ,
         A DataFrame object containing data from the specimen dataset
     length_dataframe: pd.DataFrame
         A DataFrame object containing data from the length dataset
+    contrasts: list
+        List of contrasts for merging the two datasets together
     """
     # Reorganize the specimen dataframe so it matches the format
     # of the length dataframe w/ length counts
     specimen_stacked = (
         specimen_dataframe 
         .copy()
-        .groupby( ['stratum_num' , 'species_id' , 'sex' , 'group' , 'station' , 'length' , 'length_bin' ] ,
+        .groupby( contrasts ,
                   observed = False )[ [ 'length' ] ]
         .apply(lambda x: len( x ) , include_groups = True )
         .reset_index(name='length_count')

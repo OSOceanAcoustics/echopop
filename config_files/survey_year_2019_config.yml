@@ -16,7 +16,7 @@ CAN_haul_offset: 200         # The value to be added to the Canadian's haul numb
 ##############################################################################
 # Directory path that contains all input data needed
 
-data_root_dir: ROOT_DIRECTORY_CONTAINING_DATA_SUBFOLDERS
+data_root_dir: C:/Users/Brandyn/Documents/GitHub/EchoPro_data/2019_consolidated_files
 
 ##############################################################################
 # Input data files

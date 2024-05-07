@@ -3,23 +3,17 @@ from pathlib import Path
 import pandas as pd
 import numpy as np
 import copy
-from .core import CONFIG_MAP, LAYER_NAME_MAP
-### !!! TODO : This is a temporary import call -- this will need to be changed to 
-# the correct relative structure (i.e. '.core' instead of 'echopop.core' at a future testing step)
-from .computation.operations import bin_variable , bin_stats , count_variable , stretch
-from .utils.data_file_validation import load_configuration , validate_data_columns
-from .computation.acoustics import to_linear , ts_length_regression
+from .core import CONFIG_MAP, LAYER_NAME_MAP , DATA_STRUCTURE
+from .utils.load import load_configuration , validate_data_columns , prepare_input_data
+from .utils.operations import bin_variable
 from .computation.spatial import calculate_transect_distance , transform_geometry
 from .computation.statistics import stratified_transect_statistic
 from .computation.kriging_methods import kriging_interpolation
-from .computation.biology import index_transect_age_sex_proportions , filter_species 
+from .computation.acoustics import summarize_sigma_bs
+from .computation.biology import filter_species , fit_length_weight_relationship , number_proportions , quantize_number_counts
 from .computation.biology import sum_strata_weight , calculate_aged_unaged_proportions
 from .computation.biology import  calculate_aged_biomass , calculate_unaged_biomass
 from .computation.biology import apply_age_bins , filter_species 
-
-### !!! TODO : This is a temporary import call -- this will need to be changed to 
-# the correct relative structure (i.e. '.utils.data_structure_utils' instead of 
-# 'echopop.utils.data_structure_utils' at a future testing step)
 
 class Survey:
     """
@@ -56,23 +50,16 @@ class Survey:
         init_config_path: Union[str, Path] ,
         survey_year_config_path: Union[str, Path] ,
     ):
-        ### Loading the configuration settings and definitions that are used to 
+        # Loading the configuration settings and definitions that are used to 
         # initialize the Survey class object
-        # ATTRIBUTE ADDITIONS: `config`
+        # ---- ATTRIBUTE ADDITIONS: `config`
         self.config = load_configuration( Path( init_config_path ) , Path( survey_year_config_path ) )
 
-        # Initialize data attributes ! 
-        self.acoustics = copy.deepcopy(LAYER_NAME_MAP['NASC']['data_tree'])
-        self.biology = copy.deepcopy(LAYER_NAME_MAP['biological']['data_tree'])
-        self.spatial = copy.deepcopy(LAYER_NAME_MAP['stratification']['data_tree'])
-        self.statistics = copy.deepcopy(LAYER_NAME_MAP['kriging']['data_tree'])
+        # ---- Initialize the `input` attribute
+        self.input = copy.deepcopy( DATA_STRUCTURE[ 'input' ] )
 
-        ### Loading the datasets defined in the configuration files
-        # EXAMPLE ATTRIBUTE ADDITIONS: `biology`, `spatial`, `acoustics`
+        # Loading the datasets defined in the configuration files
         self.load_survey_data()
-
-        # Define length and age distributions
-        self.biometric_distributions()
 
     def load_survey_data( self ):
         """
@@ -83,24 +70,24 @@ class Survey:
         and LAYER_NAME_MAP dictionaries.
         """
 
-        ### Check whether data files defined from the configuration file exists
-        # Generate flat JSON table comprising all configuration parameter names
+        # Check whether data files defined from the configuration file exists
+        # ---- Generate flat JSON table comprising all configuration parameter names
         flat_configuration_table = pd.json_normalize(self.config).filter(regex="filename")
 
-        # Parse the flattened configuration table to identify data file names and paths
+        # ---- Parse the flattened configuration table to identify data file names and paths
         parsed_filenames = flat_configuration_table.values.flatten()
 
-        # Evaluate whether either file is missing
+        # ---- Evaluate whether either file is missing
         data_existence = [(Path(self.config['data_root_dir']) / file).exists() for file in parsed_filenames]
 
         # Assign the existence status to each configuration file for error evaluation
-        # Error evaluation and print message (if applicable)
+        # ---- Error evaluation and print message (if applicable)
         if not all(data_existence):
             missing_data = parsed_filenames[ ~ np.array( data_existence ) ]
             raise FileNotFoundError(f"The following data files do not exist: {missing_data}")
         
-        ### Data validation and import
-        # Iterate through known datasets and datalayers
+        # Data validation and import
+        # ---- Iterate through known datasets and datalayers
         for dataset in [*CONFIG_MAP.keys()]:
 
             for datalayer in [*self.config[dataset].keys()]:
@@ -115,7 +102,7 @@ class Survey:
                 config_map = [dataset, datalayer]
 
                 # Define the data layer name 
-                # -- Based on the lattermost portion of the file path string
+                # ---- Based on the lattermost portion of the file path string
                 # Create list for parsing the hard-coded API dictionary
                 if dataset == 'biological':
                     for region_id in [*self.config[dataset][datalayer].keys()]:
@@ -137,83 +124,36 @@ class Survey:
                     file_name = Path(self.config['data_root_dir']) / config_settings['filename']
                     sheet_name = config_settings['sheetname']
 
-                    # Validate column names of this iterated file
-                    validate_data_columns( file_name , sheet_name , config_map , validation_settings )
-
-                    # Validate datatypes within dataset and make appropriate changes to dtypes (if necessary)
-                    # -- This first enforces the correct dtype for each imported column
-                    # -- This then assigns the imported data to the correct class attribute
-                    
-                    ## If multiple sheets, iterate through
-                    # If multiple sheets, then this needs to be converted accordingly
+                    # If multiple sheets, iterate through
+                    # ---- If multiple sheets, then this needs to be converted accordingly
                     sheet_name = [ sheet_name ] if isinstance( sheet_name , str ) else sheet_name
 
                     for sheets in sheet_name:
-                        self.read_validated_data( file_name , sheets , config_map , validation_settings )             
+                        # Update if INPFC
+                        if sheets.lower( ) == 'inpfc' :
+                            # Update validation settings from CONFIG_MAP
+                            validation_settings = CONFIG_MAP[dataset]['inpfc_strata']
 
-        ### Merge haul numbers and regional indices across biological variables
-        # Also add strata values/indices here alongside transect numbers 
-        # -- Step 1: Consolidate information linking haul-transect-stratum
-        self.biology['haul_to_transect_df'] = (
-            self.biology['haul_to_transect_df']
-            .merge(self.spatial['strata_df'], on ='haul_num' , how = 'outer' )
-        )
-        # -- Step 2: Distribute this information to the other biological variables
-        # ---- Specimen 
-        self.biology['specimen_df'] = (
-            self.biology['specimen_df']
-            .merge( self.biology['haul_to_transect_df'] , on = ['haul_num' , 'region' ] ) 
-            .assign( sex = lambda x: np.where( x[ 'sex' ] == int( 1 ) , 'male' , 
-                                     np.where( x[ 'sex' ] == int( 2 ) , 'female' , 'unsexed' ) ) ,
-             group = lambda x: np.where( x[ 'sex' ].isin( [ 'male' , 'female' ] ) , 'sexed' , 'unsexed' ) )            
-        )
-        # ---- Length
-        self.biology['length_df'] = (
-            self.biology['length_df']
-            .merge( self.biology['haul_to_transect_df'] , on = ['haul_num' , 'region'] )
-            .assign( sex = lambda x: np.where( x[ 'sex' ] == int( 1 ) , 'male' , 
-                                     np.where( x[ 'sex' ] == int( 2 ) , 'female' , 'unsexed' ) ) ,
-             group = lambda x: np.where( x[ 'sex' ].isin( [ 'male' , 'female' ] ) , 'sexed' , 'unsexed' ) )          
-        )
-        # ---- Catch
-        self.biology['catch_df'] = (
-            self.biology['catch_df']
-            .merge( self.biology['haul_to_transect_df'] , on = ['haul_num' , 'region'] )
-        )
+                            # Update configuration key map
+                            config_map = [dataset,  'inpfc_strata']
 
-        ### Reorganize kriging/variogram parameters
-        # ---- Kriging
-        # Initial parameters from loaded data
-        kriging_params = (
-            self.statistics[ 'kriging' ][ 'vario_krig_para_df' ]
-            .filter( regex = 'krig[.]' )
-            .rename( columns = lambda x: x.replace( 'krig.' , '' ) )
-            .rename( columns = { 'ratio': 'anisotropy' ,
-                                 'srad': 'search_radius' } )
-            .to_dict( orient = 'records' )[ 0 ]
-        )
+                        elif datalayer == 'geo_strata' :
+                            # Update validation settings from CONFIG_MAP
+                            validation_settings = CONFIG_MAP[dataset][datalayer]
+                           
+                            # Update configuration key map
+                            config_map = [dataset,  datalayer]
 
-        # Incorporate configuration settings
-        kriging_params.update( self.config[ 'kriging_parameters' ] )
+                        # Validate datatypes within dataset and make appropriate changes to dtypes (if necessary)
+                        # ---- This first enforces the correct dtype for each imported column
+                        # ---- This then assigns the imported data to the correct class attribute
+                        validate_data_columns( file_name , sheets, config_map , validation_settings )
+                        
+                        # Read in data and add to `Survey` object
+                        self.read_validated_data( file_name , sheets , config_map , validation_settings ) 
 
-        # ---- Variogram
-        # Initial parameters from loaded data
-        variogram_params = (
-            self.statistics[ 'kriging' ][ 'vario_krig_para_df' ]
-            .filter( regex = 'vario[.]' )
-            .rename( columns = lambda x: x.replace( 'vario.' , '' ) )
-            .rename( columns = { 'lscl': 'correlation_range' ,
-                                 'powr': 'decay_power' ,
-                                 'hole': 'hole_effect_range' ,
-                                 'res': 'lag_resolution' ,
-                                 'nugt': 'nugget' } )
-            .to_dict( orient = 'records' )[ 0 ]
-        )
-
-        # Save both parameter sets to new location and delete the original dictionary
-        self.statistics[ 'variogram' ].update( { 'model_config': variogram_params } )
-        self.statistics[ 'kriging' ].update( { 'model_config': kriging_params } )
-        del self.statistics[ 'kriging' ][ 'vario_krig_para_df' ]
+        # Update the data format of various inputs within `Survey` (in place function)
+        prepare_input_data( self.input , self.config )
 
     def read_validated_data( self ,
                              file_name: Path ,
@@ -266,51 +206,40 @@ class Survey:
             # Apply data types from validation_settings to the filtered DataFrame
             df = df.apply(lambda col: col.astype(validation_settings.get(col.name, type(col[0])))) 
 
-        # Assign the data to their correct data attributes
-        # As of now this entails:
-        # -- biology --> biology
-        # -- stratification --> spatial
-        # -- kriging --> statistics
-        # -- NASC --> acoustics
-        # Step 1: Step into the data attribute 
+        # Assign the data to their correct data attributes/keys
         if LAYER_NAME_MAP[config_map[0]]['superlayer'] == []:
-            attribute_name  = LAYER_NAME_MAP[config_map[0]]['name']
-            internal = getattr( self , attribute_name )
+            sub_attribute  = LAYER_NAME_MAP[config_map[0]]['name']
         else:
-            attribute_name = LAYER_NAME_MAP[config_map[0]]['superlayer'][0]
-            internal = getattr( self , attribute_name )
+            sub_attribute = LAYER_NAME_MAP[config_map[0]]['superlayer'][0]
         # ------------------------------------------------------------------------------------------------
         # Step 2: Determine whether the dataframe already exists -- this only applies to some datasets
         # such as length that comprise multiple region indices (i.e. 'US', 'CAN')
-        if attribute_name in ['biology' , 'statistics' , 'spatial']:
-            if attribute_name == 'biology':
+        if sub_attribute in ['biology' , 'statistics' , 'spatial']:
+            if sub_attribute == 'biology':
                 # Add US / CAN as a region index 
                 df['region'] = config_map[2] 
 
                 # Apply CAN haul number offset 
                 if config_map[2] == 'CAN':
-                    df['haul_num'] += self.config['CAN_haul_offset']
-            
-            # If kriging dataset, then step one layer deeper into dictionary
-            elif config_map[0] == 'kriging':
-                internal = internal['kriging']    
+                    df['haul_num'] += self.config['CAN_haul_offset'] 
 
             # A single dataframe per entry is expected, so no other fancy operations are needed
             # If geo_strata, differentiate between inpfc and stratification1 sheets
             ### TODO: Temporary approach for incorporating the inpfc dataset. An improved approach
             ### can be incorporated later on.
             if sheet_name.lower() == 'inpfc':
-                df_list = [ internal[ 'inpfc_strata_df' ] , df ]
-                internal[ 'inpfc_strata_df' ] = pd.concat( df_list )
+                df_list = [ self.input[ sub_attribute ][ 'inpfc_strata_df' ] , df ]
+                self.input[ sub_attribute ][ 'inpfc_strata_df' ] = pd.concat( df_list )
             else: 
-                df_list = [ internal[ config_map[1] + '_df' ] , df ]
-                internal[ config_map[1] + '_df' ] = pd.concat(df_list)
+                if config_map[ 0 ] == 'kriging' :
+                    df_list = [ self.input[ sub_attribute ][ 'kriging' ][ config_map[1] + '_df' ] , df ]
+                    self.input[ sub_attribute ][ 'kriging' ][ config_map[1] + '_df' ] = pd.concat(df_list)
+                else :
+                    df_list = [ self.input[ sub_attribute ][ config_map[1] + '_df' ] , df ]
+                    self.input[ sub_attribute ][ config_map[1] + '_df' ] = pd.concat(df_list)
 
-        elif attribute_name == 'acoustics':
+        elif sub_attribute == 'acoustics':
             
-            # Step forward into 'acoustics' attribute
-            internal = internal['nasc']
-
             # Toggle through including and excluding age-1
             # -- This is required for merging the NASC dataframes together
             if config_map[1] == 'no_age1':
@@ -318,83 +247,64 @@ class Survey:
             else:
                 df = df.rename(columns={'NASC': 'NASC_all_ages'})
             
-            column_to_add = df.columns.difference(internal['nasc_df'].columns).tolist()
-            internal['nasc_df'][column_to_add] = df[column_to_add]
+            column_to_add = df.columns.difference(self.input['acoustics']['nasc_df'].columns).tolist()
+            self.input['acoustics']['nasc_df'][column_to_add] = df[column_to_add]
         
         else:
             raise ValueError('Unexpected data attribute structure. Check API settings located in the configuration YAML and core.py')
         
-    def biometric_distributions( self ):
-        """
-        Expand bin parameters into actual bins for length and age distributions
-        """
-
-        # Pull the relevant age and length bins and output a dictionary
-        length_bins = np.linspace( self.config[ 'biometrics' ]['bio_hake_len_bin'][0] ,
-                                   self.config[ 'biometrics' ]['bio_hake_len_bin'][1] ,
-                                   self.config[ 'biometrics' ]['bio_hake_len_bin'][2] ,
-                                   dtype = np.float64 )
-
-        age_bins = np.linspace( self.config[ 'biometrics' ]['bio_hake_age_bin'][0] ,
-                                self.config[ 'biometrics' ]['bio_hake_age_bin'][1] , 
-                                self.config[ 'biometrics' ]['bio_hake_age_bin'][2] ,
-                                dtype = np.float64 )
-
-        ### Discretize the age and length arrays into user-defined bins that will be used later on
-        ### to calculate various length- and age-weighted statistics
-        # Determine bin widths
-        length_binwidth = np.mean( np.diff( length_bins / 2.0 ) )
-        age_binwidth = np.mean( np.diff( age_bins / 2.0 ) )
-
-        # Now the bins are centered with the first and last elements properly appended
-        # These create an along-array interval such that values can be cut/discretized into
-        # bins that fall between each value/element of the array
-        length_centered_bins = np.concatenate( ( [ length_bins[0] - length_binwidth ] ,
-                                                length_bins + length_binwidth ) )
-        age_centered_bins = np.concatenate( ( [ age_bins[0] - age_binwidth ] ,
-                                            age_bins + age_binwidth ) ) 
-
-        # Add to the biological data attribute so it can be accessed downstream
-        self.biology['distributions'] = {
-            'length': {
-                'length_bins_arr': length_bins ,
-                'length_interval_arr': length_centered_bins ,
-            } ,
-            'age': {
-                'age_bins_arr': age_bins ,
-                'age_interval_arr': age_centered_bins ,
-            } ,
-        }
-
-        # Bin specimen data
-        self.biology[ 'specimen_df' ] = (
-            self.biology[ 'specimen_df' ]
-            .bin_variable( [ length_centered_bins , age_centered_bins ] , [ 'length' , 'age' ] )
-        )
-
-        # Length data
-        self.biology[ 'length_df' ] = (
-            self.biology[ 'length_df' ]
-            .bin_variable( [ length_centered_bins ] , [ 'length' ] )
-        )
-
     def transect_analysis(self ,
-                          species_id: np.float64 = 22500 ):
+                          species_id: np.float64 = 22500 ,
+                          stratum: str = 'ks' ):
         """
         Calculate population-level metrics from acoustic transect measurements
         """    
-        # Initialize major data structures that will be added (**tentative names**)
-        self.acoustics['sigma_bs'] = {}
-        self.biology['weight'] = {}
-        self.biology['population'] = {}
-        self.statistics['length_weight'] = {}
-                
-        # Calculate sigma_bs per stratum 
-        ### This will also provide dataframes for the length-binned, mean haul, and mean strata sigma_bs       
-        self.strata_mean_sigma_bs( species_id )        
+
+        # Initialize the `analysis` data structure
+        self.analysis = copy.deepcopy( DATA_STRUCTURE[ 'analysis' ] )
+
+        # Filter out non-target species
+        length_spp , specimen_spp = filter_species( [ self.input[ 'biology' ][ 'length_df' ] ,
+                                                      self.input[ 'biology' ][ 'specimen_df' ] ] ,
+                                                    species_id )
+        
+        # Calculate mean sigma_bs per individual haul, KS stratum, and INPFC stratum
+        self.analysis[ 'acoustics' ][ 'sigma_bs' ].update(
+            summarize_sigma_bs( length_spp , 
+                                specimen_spp , 
+                                self.input[ 'spatial' ] , 
+                                self.config )
+        )
         
         # Fit length-weight regression required for biomass calculation
-        self.fit_binned_length_weight_relationship( species_id )
+        self.analysis[ 'biology' ][ 'weight' ].update(
+            fit_length_weight_relationship( specimen_spp , 
+                                            self.input[ 'biology' ][ 'distributions' ][ 'length_bins_df' ] )            
+        )
+
+        # Count the number of specimens across age and length bins
+        self.analysis[ 'biology' ][ 'distributions' ].update(
+            quantize_number_counts( specimen_spp , length_spp , stratum = stratum )
+        )
+        
+        # Calculate the number proportions
+        self.analysis[ 'biology' ][ 'proportions' ].update(
+            {
+                f"{stratum}": {
+                    'number': number_proportions( self.analysis[ 'biology' ][ 'distributions' ][ f"{stratum}" ] )
+                } 
+            }
+        )
+
+        # Calculate the average weights among male, female, and all fish across strata
+        self.analysis[ 'biology' ][ 'weight' ].update(
+            {
+                f"{stratum}": {
+                    'weight_stratum_df': stratum_weights( self.analysis[ 'biology' ][ 'proportions' ][ 'ks' ][ 'number' ] ,
+                                                          self.analysis[ 'biology' ][ 'weight' ] )
+                }
+            }
+        )
 
         # Calculate the average sex-distributed weight and proportion per stratum
         self.strata_sex_weight_proportions( species_id )
@@ -408,216 +318,7 @@ class Survey:
         # integrated acoustic backscatter (ala NASC) to estimates of biological
         # relevance 
         self.nasc_to_biomass_conversion( species_id )
-        
-    def strata_mean_sigma_bs( self ,
-                              species_id: np.float64 ):
-        """
-        Calculates the stratified mean sigma_bs for each stratum
 
-        Parameters
-        ----------
-        species_id : np.float64
-            Numeric code representing a particular species of interest
-
-        Notes
-        -----
-        This function iterates through each stratum to fit acoustic target 
-        strength (TS, dB re. 1 m^2) values based on length distributions recorded for each
-        stratum. These fitted values are then convereted from the logarithmic
-        to linear domain (sigma_bs, m^2) and subsequently averaged. These are required for 
-        later functions that will convert vertically integrated backscatter (e.g. the nautical
-        area scattering coefficient, or NASC, m^2 nmi^-2) to estimates of areal density (animals nmi^-2).
-        """
-        
-        # Reformat 'specimen_df' to match the same format as 'len_df'
-        ### First make copies of each
-        specimen_df_copy = self.biology['specimen_df'].copy()
-        specimen_df_copy = specimen_df_copy[ specimen_df_copy.species_id == species_id ]
-        length_df_copy = self.biology['length_df'].copy()
-        length_df_copy = length_df_copy[ length_df_copy.species_id == species_id ]
-        
-        ### Iterate through 'specimen_df_copy' to grab 'length' and the number of values in that bin
-        ### Indexed by 'haul_num' , 'stratum_num' , 'species_id' , 'region' , 'length'
-        spec_df_reframed = (
-            specimen_df_copy
-            .groupby(['haul_num', 'stratum_num' , 'species_id', 'length'])
-            .apply(lambda x: len(x['length']))
-            .reset_index(name= 'length_count' )
-            )
-        
-        ### Concatenate the two dataframes
-        all_length_df = pd.concat( [ spec_df_reframed , length_df_copy ] , join = 'inner' )
-        
-        # Import parameters from configuration
-        ts_length_parameters = self.config[ 'TS_length_regression_parameters' ]['pacific_hake']
-        slope = ts_length_parameters[ 'TS_L_slope' ]
-        intercept = ts_length_parameters[ 'TS_L_intercept' ]
-        
-        # Convert length values into TS
-        ### ??? TODO: Not necessary for this operation, but may be useful to store for future use ?
-        ### ??? TODO: May need functions later on that estimate TS based on length using other methods,
-        ### ??? TODO: so that would need to be tested/triaged at this step of the code
-        all_length_df[ 'TS' ] = ts_length_regression( all_length_df[ 'length' ] , slope , intercept )
-        
-        # Convert TS into sigma_bs
-        all_length_df[ 'sigma_bs' ] = to_linear( all_length_df[ 'TS' ] )
-        
-        # Calculate the weighted mean sigma_bs per haul
-        ### This will track both the mean sigma_bs and sample size since this will propagate as a
-        ### grouped mean contained with a shared stratum
-        mean_haul_sigma_bs = (
-            all_length_df
-            .groupby(['haul_num' , 'stratum_num' , 'species_id' ])[['sigma_bs' , 'length_count']]
-            .apply(lambda x: np.average( x[ 'sigma_bs' ] , weights=x[ 'length_count' ]))
-            .to_frame( 'sigma_bs_mean' )
-            .reset_index()
-        )
-                
-        # Now these values can be re-merged with stratum information and averaged over strata
-        mean_strata_sigma_bs = (
-            mean_haul_sigma_bs
-            .groupby(['stratum_num' , 'species_id'])[ 'sigma_bs_mean' ]
-            .mean()
-            .reset_index()
-        )
-        
-        # Add back into object
-        self.acoustics['sigma_bs'] = {
-            'length_binned': all_length_df ,
-            'haul_mean': mean_haul_sigma_bs ,
-            'strata_mean': mean_strata_sigma_bs
-        }
-        
-        # Fill in missing sigma_bs values
-        self.impute_missing_sigma_bs( species_id )
-    
-    def impute_missing_sigma_bs( self ,
-                                 species_id: np.float64 ):
-        """
-        Imputes sigma_bs for strata without measurements or values
-
-        Parameters
-        ----------
-        species_id : np.float64
-            Numeric code representing a particular species of interest
-
-        Notes
-        -----
-        This function iterates through all stratum layers to impute either the
-        nearest neighbor or mean sigma_bs for strata that are missing values.
-        """    
-        #### TODO: CURRENTLY : species_id is unused since only hake are being processed, but this will need
-        ### to actually be parameterized in the future
-        # Collect all possible strata values
-        strata_options = np.unique( self.spatial[ 'strata_df' ].copy().stratum_num )
-        
-        #
-        strata_mean = self.acoustics[ 'sigma_bs' ][ 'strata_mean' ].copy()
-        
-        # impute missing strata values
-        present_strata = np.unique(strata_mean[ 'stratum_num' ]).astype(int)
-        missing_strata = strata_options[~(np.isin(strata_options, present_strata))]
-        
-        if len(missing_strata) > 0:
-            
-            # Concatenate the existing data with a DataFrame including the missing strata 
-            # with NaN placeholders for 'mean_sigma_bs'            
-            sigma_bs_impute = (
-                pd.concat( [ strata_mean , 
-                             pd.DataFrame( {
-                                 'stratum_num': missing_strata , 
-                                 'species_id': np.repeat( np.unique( strata_mean.species_id ) ,
-                                                         len( missing_strata ) ) ,
-                                 'sigma_bs_mean': np.repeat( np.nan ,
-                                                             len( missing_strata ) )
-                             } ) ] )
-                .sort_values( 'stratum_num' )        
-            )
-            
-            # Find strata intervals to impute over        
-            for i in missing_strata:
-                strata_floor = present_strata[present_strata < i]
-                strata_ceil = present_strata[present_strata > i]
-
-                new_stratum_below = np.max(strata_floor) if strata_floor.size > 0 else None
-                new_stratum_above = np.min(strata_ceil) if strata_ceil.size > 0 else None      
-                
-                sigma_bs_indexed = sigma_bs_impute[sigma_bs_impute['stratum_num'].isin([new_stratum_below, new_stratum_above])]
-                
-                sigma_bs_impute.loc[sigma_bs_impute.stratum_num==i , 'sigma_bs_mean' ] = sigma_bs_indexed[ 'sigma_bs_mean' ].mean()
-                
-            self.acoustics[ 'sigma_bs' ][ 'strata_mean' ] = sigma_bs_impute        
-   
-    
-    def fit_binned_length_weight_relationship( self ,
-                                               species_id: np.float64 ):
-        """
-        Fit a length-weight relationship across discrete bins
-
-        Parameters
-        ----------
-        species_id : np.float64
-            Numeric code representing a particular species of interest
-
-        Notes
-        -----
-        This function first fits a length-weight regression based on measured 
-        values and then produces an array of fitted weight values based on 
-        binned length values.  
-        The length-weight relationship produced here are used for later 
-        biomass calculations and apportionment.
-        """    
-        
-        ### First make copies of each
-        specimen_df_spp = self.biology[ 'specimen_df' ].copy().loc[ lambda x: x.species_id == species_id ]
-                
-        # pull distribution values
-        length_bins = self.biology['distributions']['length']['length_bins_arr']
-        length_intervals = self.biology['distributions']['length']['length_interval_arr']
-        
-        ### Grouped length-weight regressions
-        # outputs: rate | initial
-        self.statistics[ 'length_weight' ][ 'regression_parameters' ] = (
-            specimen_df_spp
-            .pipe( lambda df: pd.concat( [ df.loc[ df[ 'group' ] == 'sexed'  ] , 
-                                           df.assign( sex = 'all' ) ] ) ) # appends male-female to an 'all' dataframe
-            .dropna( how = 'any' )
-            .groupby( [ 'sex' ] )
-            .apply( lambda x: pd.Series( np.polyfit( np.log10( x[ 'length' ] ) , np.log10( x[ 'weight' ] ) , 1 ) ,
-                                         index = [ 'rate' , 'initial' ] ) )
-            .reset_index()
-        )
-
-        # predict weight (fit equation)       
-        fitted_weight = (
-            pd.DataFrame( { 'length_binned': length_bins } )
-            .bin_variable( length_intervals , 'length_binned' )
-            .rename( columns = { 'length_binned_bin': 'length_bin' } )
-            .merge( self.statistics[ 'length_weight' ][ 'regression_parameters' ] ,
-                    how = 'cross' )
-            .assign( weight_fitted = lambda x: 10 ** x.initial * x.length_binned ** x.rate )
-            .drop( 'length_binned' , axis = 1 )
-        )
-
-        # fill bins where n_length < 5 w/ regressed weight values
-        # TODO : the `bin_stats` function defaults to prepending 'mean' and 'n' -- this will
-        # TODO : need to be changed to comport with the same name formatting as the rest of 
-        # TODO : the module
-        self.statistics[ 'length_weight' ][ 'length_weight_df' ] = (
-            specimen_df_spp
-            .pipe( lambda df: pd.concat( [ df.loc[ df[ 'group' ] == 'sexed'  ] , 
-                                           df.assign( sex = 'all' ) ] ) )
-            .bin_variable( length_intervals , 'length' )
-            .bin_stats( bin_variable = 'length' ,
-                        contrasts = [ 'sex' ] ,
-                        bin_values = length_intervals )
-            .merge( fitted_weight ,
-                    on = [ 'length_bin' , 'sex' ] )
-            .assign( weight_modeled = lambda df: np.where( df.n_weight < 5 ,
-                                                           df.weight_fitted ,
-                                                           df.mean_weight ) )
-        )
-        
     def strata_sex_weight_proportions( self ,
                                        species_id: np.float64 ):
         """
