@@ -203,7 +203,6 @@ DATA_STRUCTURE = {
         'acoustics': {
             'sigma_bs': {
                 'haul_mean_df': pd.DataFrame( ) ,
-                'inpfc_mean_df': pd.DataFrame( ) ,
                 'strata_mean_df': pd.DataFrame( ) ,
             } ,
         } ,
@@ -214,154 +213,29 @@ DATA_STRUCTURE = {
                 'binned_unaged_counts_df': pd.DataFrame( ) ,
             } ,
             'distributions': dict( ) ,
-            'proportions': dict( ) ,
+            'population': {
+                'tables': dict( )
+            } ,
+            'proportions': {
+                'number': dict( ) ,
+                'weight': dict( )
+            } ,
             'weight': {
                 'length_weight_regression': dict ( )
             } ,
         } ,
+        'transect': dict( ) ,
+        'settings': {            
+            'kriging': dict( ) ,
+            'stratified': dict( ) ,
+            'transect': dict( ) ,
+            'variogram': dict( )         
+        } ,
+        'stratified': dict ( )
     } ,
-}
-
-LAYER_NAME_MAP = {
-    'biological': {
-        'name': 'biology' ,
-        'data': ['length' , 'specimen' , 'catch' , 'haul_to_transect' ] ,
-        'superlayer': [] ,
-        'data_tree': {
-            'catch_df': pd.DataFrame() ,
-            'distributions': {
-                'length_bins_arr':  np.array([]) ,
-                'age_bins_arr':  np.array([]) ,
-            } ,
-            'length_df': pd.DataFrame() ,
-            'haul_to_transect_df': pd.DataFrame() ,
-            'specimen_df': pd.DataFrame()
-        } ,
-    } ,
-    'stratification': {
-        'name': 'spatial' ,
-        'data': [ 'strata' , 'geo_strata' , 'inpfc_strata' ] ,
-        'superlayer': [] ,
-        'data_tree': {
-            'strata_df': pd.DataFrame() ,
-            'geo_strata_df': pd.DataFrame() ,
-            'inpfc_strata_df': pd.DataFrame() ,
-        } ,
-    } ,
-    'NASC': {
-        'name': 'nasc' ,
-        'data': ['no_age1' , 'all_ages'] ,
-        'superlayer': ['acoustics'] ,
-        'data_tree': {
-            'nasc': {
-                'nasc_df': pd.DataFrame() ,
-            } ,
-        } ,
-    } ,
-    'kriging': {
-        'name': 'kriging' ,
-        'data': ['mesh' , 'isobath_200m' , 'vario_krig_para'] ,
-        'superlayer': ['statistics'] ,
-        'data_tree': {
-            'kriging': {
-                'mesh_df': pd.DataFrame() ,
-                'isobath_200m_df': pd.DataFrame() ,
-                'vario_krig_para_df': pd.DataFrame() ,
-                'model_config': dict() ,
-            } ,
-            'variogram': {
-                'model_config': dict() ,
-            }
-        } ,
-    } 
-}
-
-
-DATA_STRUCTURE_MAP = {
-    'input': {
-        'acoustics': {
-            'nasc_df': pd.DataFrame( ) ,
-        } ,
-        'biology': {
-            'catch_df': pd.DataFrame( ) ,
-            'length_df': pd.DataFrame( ) ,
-            'haul_to_transect_df': pd.DataFrame( ) ,
-            'specimen_df': pd.DataFrame( ) ,
-        } ,
-        'spatial': {
-            'strata_df': pd.DataFrame( ) ,
-            'geo_strata_df': pd.DataFrame( ) ,
-            'inpfc_strata_df': pd.DataFrame( ) ,        
-        } ,
-        'statistics': {
-            'kriging': {
-                'mesh_df': pd.DataFrame( ) ,
-                'isobath_200m_df': pd.DataFrame( ) ,
-                'vario_krig_para_df': pd.DataFrame( ) ,
-                'model_config': dict( ) ,
-            } ,
-            'variogram': {
-                'model_config': dict( ) ,
-            } ,
-        } ,
-    } ,
-    'analysis': {
-        'acoustics': {
-            'sigma_bs': {
-                'haul_mean_df': pd.DataFrame( ) ,
-                'inpfc_mean_df': pd.DataFrame( ) ,
-                'strata_mean_df': pd.DataFrame( ) ,
-            } ,
-            'target_strength': {
-                'haul_mean_df': pd.DataFrame( ) ,
-                'inpfc_mean_df': pd.DataFrame( ) ,
-                'strata_mean_df': pd.DataFrame( )
-            }
-        } ,
-        'biology': {
-            'length': {
-                'haul_summary_df': pd.DataFrame( ) ,
-                'strata_summary_df': pd.DataFrame( ) ,
-                'inpfc_summary_df': pd.DataFrame( ) ,
-            }
-        }
-    }        
-}
-
-
-{
-    'acoustics': {
-        'nasc_df': pd.DataFrame( ) ,
-    } ,
-    'biology': {
-        'catch_df': pd.DataFrame( ) ,
-        'length_df': pd.DataFrame( ) ,
-        'haul_to_transect_df': pd.DataFrame( ) ,
-        'specimen_df': pd.DataFrame( ) ,
-    } ,
-    'spatial': {
-        'strata_df': pd.DataFrame( ) ,
-        'geo_strata_df': pd.DataFrame( ) ,
-        'inpfc_strata_df': pd.DataFrame( ) ,        
-    } ,
-    'statistics': {
-        'kriging': {
-            'mesh_df': pd.DataFrame() ,
-            'isobath_200m_df': pd.DataFrame() ,
-            'vario_krig_para_df': pd.DataFrame() ,
-            'model_config': dict() ,
-        } ,
-        'variogram': {
-            'model_config': dict() ,
-        } ,
-    } ,
-}
-
-
-DATA_STRUCTURE_MAP = {
-    'inputs': {
-        'name': 'input' ,
-        'initial_data': [ 'l' ]
+    'results': {
+        'transect': dict ( ) ,
+        'stratified': dict( )
     }
 }
 

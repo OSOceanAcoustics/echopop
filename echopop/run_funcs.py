@@ -1,162 +1,608 @@
 import numpy as np
 import pandas as pd
+import copy
+from typing import List, Union, Optional
+from pathlib import Path
 from echopop.core import CONFIG_MAP, LAYER_NAME_MAP , DATA_STRUCTURE
 from echopop.utils.load import load_configuration , validate_data_columns , prepare_input_data
 from echopop.survey import Survey
+from echopop.spatial.transect import transect_array
 from echopop.computation.kriging_methods import kriging_interpolation , compute_kriging_weights , range_index_threshold , compute_kriging_statistics , ordinary_kriging
-from echopop.computation.spatial import local_search_index , griddify_lag_distances
+from echopop.computation.spatial_old import local_search_index , griddify_lag_distances
 from echopop.computation.variogram_models import variogram
-from echopop.computation.biology import filter_species , fit_length_weight_relationship , number_proportions , quantize_number_counts
+from echopop.computation.biology import filter_species , fit_length_weight_relationship , number_proportions , quantize_number_counts , stratum_weights
 from echopop.computation.acoustics import summarize_sigma_bs
+from echopop.spatial.transect import prepare_transect_strata , transect_distance , summarize_transect_strata , save_transect_coordinates
+from echopop.computation.acoustics import nasc_to_biomass 
+from echopop.computation.biology import distribute_length_age , partition_transect_age , filter_species
+from echopop.computation.biology import number_proportions , weight_proportions , fit_length_weights
+from echopop.computation.statistics import stratified_transect_statistic
+from echopop.spatial.transect import transect_array
 
+# init_config_path = "./config_files/initialization_config.yml"
+# survey_year_config_path = "./config_files/survey_year_2019_config.yml"
+from echopop.survey import Survey
+survey = Survey( "./config_files/initialization_config.yml" ,
+                 "./config_files/survey_year_2019_config.yml" )
+survey.transect_analysis( )
+survey.stratified_summary( )
+
+
+
+species_id = 22500
+self = survey
+biomass_summary_df = self.results[ 'transect' ]['biomass_summary_df']
+biomass_summary.loc[ biomass_summary.sex == 'all' , 'biomass_all' ]
+self.analysis
+self.results
 self.input['acoustics']['nasc_df'].iloc[ 2358 ]
 a = self.input['acoustics']['nasc_df']
 a[ np.round( a.longitude , 4 ) == -1.242025e+02 ]
 full_out = new_out
 full_out[ 'age' ] = full_out[ 'age_bin' ].apply( lambda x: x.mid )
 
-proportions_dict = self.analysis[ 'biology' ][ 'proportions' ][ 'ks' ][ 'number' ]
-length_weight_dict = self.analysis[ 'biology' ][ 'weight' ]
-proportions_dict[ 'aged_length_proportions_df' ][ proportions_dict[ 'aged_length_proportions_df' ].sex == 'all' ].groupby( [ 'stratum_num' ] )[ 'proportion_number_overall_aged' ].sum( ).reset_index( name = 'number_proportion_aged' )
+# Extract algorithm arguments
+# ---- Number of replicates
+transect_replicates = settings_dict[ 'stratified' ][ 'transect_replicates' ]
+# ---- Transect sampling fraction
+transect_sample = settings_dict[ 'stratified' ][ 'transect_sample' ]
+# ---- Get stratum column name
+stratum_col = settings_dict[ 'stratified' ][ 'stratum_name' ]
+
+# Calculate the number of transects per stratum
+num_transects_to_sample = (
+    np.round(
+        strata_summary
+        .set_index( stratum_col )[ 'transect_count' ]
+        * transect_sample
+    ).astype( int )
+)
+
+# Offset term used for later variance calculation
+sample_offset = np.where( num_transects_to_sample == 1 , 0 , 1 )
+
+# Calculate effective sample size/degrees of freedom for variance calculation
+sample_dof =  num_transects_to_sample * ( num_transects_to_sample - sample_offset )
+
+# Index the strata summary
+transect_count = (
+    strata_summary
+    .set_index( stratum_col )[ 'transect_count' ]
+)
+
+# Get indexed total transect area
+total_transect_area = (
+    strata_summary
+    .set_index( stratum_col )[ 'transect_area_total' ]
+) 
+
+# Get indexed transect distance
+transect_distances = transect_summary.set_index( [ 'transect_num' ] )[ 'transect_distance' ]
+
+# Get indexed transect numbers
+transect_numbers = (
+    transect_summary
+    .set_index( stratum_col )[ 'transect_num' ]
+)
+
+# Get indexed biological value
+biological_value = (
+    transect_data
+    .groupby( [ 'transect_num' ] )[ settings_dict[ 'stratified' ][ 'variable' ] ]
+    .sum( )
+)
+
+# Initialize result arrays
+# ---- Mean
+mean_arr = np.empty( transect_replicates )
+# ---- Variance
+variance_arr = np.empty( transect_replicates )
+# ---- CV
+cv_arr = np.empty( transect_replicates )
+# ---- Total of variable
+total_arr = np.empty( transect_replicates )
+# ---- Total/integrated average
+total_average_arr = np.empty( transect_replicates )
+
+# Pre-allocate the stratum-specific means and variances
+mean_j = np.zeros( [ transect_replicates ,
+                     len( total_transect_area.index ) ] )
+variance_j = np.zeros_like( mean_j )
+total_j = np.zeros_like( mean_j )
+length_j = np.zeros_like( mean_j )
 
 
-def stratum_weights( proportions_dict: dict , length_weight_dict: dict ) :
+# Iterate across all strata
+for j in total_transect_area.index :
+    transect_vals = transect_numbers[j].values
+    tt = np.array( [  np.random.choice( transect_vals , num_transects_to_sample[ j ] , replace = False ) for i in range( transect_replicates ) ])
 
-    aged_proportions = proportions_dict[ 'aged_length_proportions_df' ]
-    unaged_proportions = proportions_dict[ 'unaged_length_proportions_df' ]
-    sex_proportions = proportions_dict[ 'sex_proportions_df' ]
+    distance_replicates = np.apply_along_axis( transect_array , 0 , tt , transect_distances )
+    length_j[ : , j - 1 ] = distance_replicates.sum( axis = 1 )
 
-    fitted_weight = length_weight_dict[ 'length_weight_regression' ][ 'weight_fitted_df' ]
+    biology_replicates = np.apply_along_axis( transect_array , 0 , tt , biological_value )
 
-    # Sum number proportions of aged specimens per stratum 
-    aged_unaged_proportions = (
-        aged_proportions[ aged_proportions.sex == 'all' ]
-        .groupby( [ 'stratum_num' ] )[ 'proportion_number_overall_aged' ].sum( )
-        .reset_index( name = 'number_proportion_aged' )
-    )
-
-    # Calculate unaged proportions per stratum
-    aged_unaged_proportions[ 'number_proportion_unaged' ] = (
-        1.0 - aged_unaged_proportions[ 'number_proportion_aged' ]
-    )
-
-    # Calculate the mixed aged and unaged number proportions
-    # ---- Merge aged and unaged number proportions
-    stratum_proportions_sexed = (
-        aged_unaged_proportions
-        .merge( sex_proportions , on = [ 'stratum_num' ] )
-    ) 
-    # ---- Calculate unaged number proportions per sex per stratum
-    stratum_proportions_sexed[ 'proportion_unaged' ] = (
-        stratum_proportions_sexed.number_proportion_unaged / (
-            stratum_proportions_sexed.number_proportion_unaged
-            + stratum_proportions_sexed.proportion_number_overall_aged
-        )
-    )
-    # ---- Calculate aged number proportions per sex per stratum
-    stratum_proportions_sexed[ 'proportion_aged' ] = (
-        stratum_proportions_sexed[ 'proportion_number_overall_aged' ] / (
-            stratum_proportions_sexed[ 'proportion_number_overall_aged' ]
-            + stratum_proportions_sexed[ 'proportion_unaged' ]
-        )
-    )
-    # ---- Reduce columns and ensure sex is in 'male/female/all'
-    stratum_proportions_sexed = (
-        stratum_proportions_sexed[ stratum_proportions_sexed.sex != 'unsexed' ]
-        [ [ 'stratum_num' , 'sex' , 'proportion_aged' , 'proportion_unaged' ] ]
-    )
-
-    # Combine the aged-unaged (or station-specific) proportions for calculations
-    # ---- Wide-to-long DataFrame
-    station_proportions = pd.wide_to_long( stratum_proportions_sexed , 
-                                           stubnames = "proportion" , 
-                                           i = [ 'stratum_num' , 'sex' ] , 
-                                           j = 'group' ,
-                                           sep = "_" ,
-                                           suffix = "\\w+" ).reset_index( )
-    # ---- Convert to Table (to replicate indexed matrix operations)
-    station_proportions_table = station_proportions.pivot_table( index = [ 'group' , 'sex' ]  , 
-                                                                 columns = [ 'stratum_num' ] , 
-                                                                 values = 'proportion' ).fillna( 0.0 )
+    stratified_weights = array_math( distance_replicates , distance_replicates.mean( axis = 1 ) , "/" )
+    adjusted_biology = biology_replicates / distance_replicates # normalized biomass of the jth transect in the ith stratum -- rhom_ij
+    mean_j[ : , j - 1 ] = array_math( ( biology_replicates * distance_replicates ).sum( axis = 1 ) , length_j[ : , j - 1 ] , "/" ) # rhom_i -- transect-length-normalized mean density
+    ( stratified_weights * array_math( adjusted_biology , mean_j[ : , j - 1 ] , "-" ) ** 2 ).sum( axis = 1 ) / sample_dof[ j ]
+    variance_j[ : , j - 1 ] = ( stratified_weights * array_math( adjusted_biology , mean_j[ : , j - 1 ] , "-" ) ** 2 ).sum( axis = 1 ) / sample_dof[ j ]
+    total_j[ : , j - 1 ] = biology_replicates.sum( axis = 1 )
     
-    # Calculate the number length proportions that will be later converted into weight
-    # ---- Aged length bins
-    aged_length_distribution = (
-        aged_proportions
-        .groupby( [ 'stratum_num' , 'sex' , 'length_bin' ] , observed = False )
-        [ 'proportion_number_aged' ].sum( )
-        .reset_index( name = 'number_proportion' )
-    )
-    # ---- Unaged length bins
-    unaged_length_distribution = (
-        unaged_proportions[ unaged_proportions.sex != 'unsexed' ]
-        [ [ 'stratum_num' , 'sex' , 'length_bin' , 'proportion_number_unaged' ] ]
-        .rename( columns = { 'proportion_number_unaged': 'number_proportion' } )
-    )
-    # ---- Concatenate the two datasets
-    length_number_proportions = pd.concat( [ aged_length_distribution.assign( group = 'aged' ) ,
-                                             unaged_length_distribution.assign( group = 'unaged' ) ] )    
-    # ---- Convert to Table (to replicate indexed matrix operations)
-    length_proportions_table = (
-        length_number_proportions
-        .pivot_table( index = [ 'group' , 'sex' , 'length_bin' ] ,
-                     columns = [ 'stratum_num' ] ,
-                     values = 'number_proportion' ,
-                     observed = False )
-        .fillna( 0.0 )
-    )
-    
-    # Convert the fitteed weights into a Table (to replicate index matrix operations)
-    fitted_weight_table = fitted_weight.pivot_table( index = [ 'sex' , 'length_intervals' ] ,
-                                                     values = 'weight_fitted' ,
-                                                     observed = False )
-    
-    # Calculate the average weights for male, female, and all fish within each stratum
-    # ---- All
-    weight_all = (
-        fitted_weight_table.loc[ 'all' ][ 'weight_fitted' ].values
-        .dot(
-            length_proportions_table.loc[ 'aged' , 'all' ] 
-            * station_proportions_table.loc[ 'aged' , 'all' ]
-            + length_proportions_table.loc[ 'unaged' , 'all' ] 
-            * station_proportions_table.loc[ 'unaged' , 'all' ]
-        )
-    ) 
-    # ---- Male (Note: the modeled weight calculated for all fish is used instead of the 
-    # ---- male-specific values)
-    weight_male = (
-        fitted_weight_table.loc[ 'all' ][ 'weight_fitted' ].values
-        .dot(
-            length_proportions_table.loc[ 'aged' , 'male' ] 
-            * station_proportions_table.loc[ 'aged' , 'male' ]
-            + length_proportions_table.loc[ 'unaged' , 'male' ] 
-            * station_proportions_table.loc[ 'unaged' , 'male' ]
-        )
-    ) 
-    # ---- Female (Note: the modeled weight calculated for all fish is used instead of the 
-    # ---- female-specific values)
-    weight_female = (
-        fitted_weight_table.loc[ 'all' ][ 'weight_fitted' ].values
-        .dot(
-            length_proportions_table.loc[ 'aged' , 'female' ] 
-            * station_proportions_table.loc[ 'aged' , 'female' ]
-            + length_proportions_table.loc[ 'unaged' , 'female' ] 
-            * station_proportions_table.loc[ 'unaged' , 'female' ]
-        )
-    ) 
-    # ---- Combine the stratum-averaged weights for each sex and all fish
-    stratum_weight_df = pd.DataFrame(
-        {
-            'stratum_num': np.tile( np.unique( station_proportions.stratum_num ) , 
-                                    len( np.unique( station_proportions.sex ) ) ) ,
-            'sex': np.repeat( [ 'all' , 'male' , 'female' ] , 
-                              len( np.unique( station_proportions.stratum_num ) ) ) ,
-            'average_weight': np.concatenate( [ weight_all , weight_male , weight_female ] ) ,
-        }
+# overall variance
+variance_overall = ( total_transect_area.to_numpy() ** 2 * variance_j ).sum( axis = 1 ) / total_transect_area.sum( ) ** 2
+biomass_m = ( total_transect_area.to_numpy() * total_j ).sum( axis = 1 ) / total_transect_area.sum( )
+( total_j.sum( axis = 1 ) * 1e-6 ).max( )
+CV = np.sqrt( ( total_transect_area.to_numpy() ** 2 * variance_j ).sum( axis = 1 ) ) / ( total_transect_area.to_numpy( ) * mean_j ).sum( axis = 1 )
+rhom_all = ( total_transect_area.to_numpy() * mean_j ).sum( axis = 1 ) / total_transect_area.sum( )
+biomass_m_ave = rhom_all * total_transect_area.sum( )
+
+total_j
+
+am = ( total_transect_area ** 2 * variance_j ).sum( axis = 1 )
+am.min( )
+
+
+
+am[3,:]
+(biology_replicates / distance_replicates)[3,:]
+
+(
+        np.nansum( ( stratified_weights ** 2 
+                    * ( ( biological_value[ transect_sel ] / 
+                            transect_distance[ transect_sel ] )  
+                        - mean_j[ j - 1 ] ) ** 2 ) ) 
+                    / sample_dof[ j ]
     )
 
-    # Return output
-    return stratum_weight_df    
+# Iterate across all strata
+for j in total_transect_area.index :
+
+    # Resample (without replacement) based on binned indices
+    # ---- Define start and end transects within each stratum
+    start , end = 1 , transect_count[j]            
+    # ---- Resample without replacement
+    sel_inds = np.random.choice( np.arange( start , end ) ,
+                                    num_transects_to_sample[ j ] ,
+                                    replace = False )
+    # ---- Get the related transect numbers
+    transect_sel = transect_numbers[j].values[ sel_inds ]
+
+    # Define stratified weights    
+    stratified_weights = (
+        transect_distance[ transect_sel ] / np.mean( transect_distance[ transect_sel ] )
+    ) 
+
+    # Compute mean and variance
+    # ---- Mean
+    mean_j[ j - 1 ] = (
+        np.nansum( biological_value[ transect_sel ] * stratified_weights ) 
+        / np.nansum( stratified_weights )
+    )
+    # ---- Variance
+    variance_j[ j - 1 ] = (
+        np.nansum( ( stratified_weights ** 2 
+                    * ( ( biological_value[ transect_sel ] / 
+                            transect_distance[ transect_sel ] )  
+                        - mean_j[ j - 1 ] ) ** 2 ) ) 
+                    / sample_dof[ j ]
+    )
+    # ---- Total biological value within the stratum
+    total_j[ j - 1 ] = biological_value[ transect_sel ].sum( )
+
+# Calculate the overall weighted means and variances for later calculations
+# ---- Variance
+variance_arr[ i ] = (
+    np.nansum( total_transect_area ** 2 * variance_j )
+    / np.nansum( total_transect_area ) ** 2
+)
+# ---- Total
+total_arr[ i ] = (
+    np.nansum( total_j * total_transect_area ) / np.nansum( total_transect_area )
+) 
+# ---- CV
+cv_arr[ i ] = (
+    np.sqrt( np.nansum( variance_j * total_transect_area **2 ) ) 
+    / np.nansum( total_transect_area * mean_j )
+)
+# ---- Mean       
+mean_arr[ i ] = (
+    np.nansum( total_transect_area * mean_j ) / np.nansum( total_transect_area )
+)
+# ---- Total average
+total_average_arr[ i ] = (
+    mean_arr[ i ] * np.nansum( total_transect_area )
+)
+
+print( i )
+
+
+
+
+
+
+biology_dict = self.input[ 'biology' ]
+length_weight_df = self.analysis['biology']['weight']['length_weight_regression']['weight_fitted_df']
+specimen_data = specimen_spp
+length_data = length_spp
+catch_data = catch_spp
+
+nasc_df = self.input[ 'acoustics' ][ 'nasc_df' ]
+acoustics_dict = self.analysis[ 'acoustics' ]
+haul_hake_fractions_df = self.input[ 'spatial' ][ 'strata_df' ]
+settings_dict = self.analysis[ 'settings' ]
+proportions_dict = self.analysis[ 'biology' ][ 'proportions' ]
+length_weight_strata = self.analysis[ 'biology' ][ 'weight' ]['weight_stratum_df'].copy( )  
+distributions_dict = self.input[ 'biology' ][ 'distributions' ]
+mimi = proportions_dict[ 'weight' ]['aged_weight_proportions_df'].pivot_table( index = [ 'length_bin' ] , columns = [ 'age_bin' , stratum_col ] , aggfunc = 'sum' , values = 'weight_proportion_aged' )
+TS_L_parameters = self.config[ 'TS_length_regression_parameters' ][ 'pacific_hake' ]
+
+from typing import Optional
+nasc_biology_df = nasc_to_biology
+strata_adult_proportions_df = strata_adult_proportions
+population_dict = self.analysis[ 'biology' ][ 'population' ]
+settings_dict = self.analysis[ 'settings' ]
+
+def partition_transect_age( nasc_biology_df: pd.DataFrame ,
+                            settings_dict: dict ,
+                            population_dict: dict ,
+                            strata_adult_proportions_df: pd.DataFrame ) :
+    
+    # Get the name of the stratum column
+    stratum_col = settings_dict[ 'transect' ][ 'stratum_name' ]
+
+    # Procedure where age-1 fish were excluded from the acoustic survey biological distributions
+    # ---- Merge adult proportions with acoustically derived georeferenced biological data
+    adult_data = nasc_biology_df.merge( strata_adult_proportions_df , on = [ stratum_col ] )
+    # ---- Adjust the full number density, biomass density, and NASC estimates
+    # -------- NASC
+    adult_data[ 'nasc' ] = (
+        adult_data[ 'nasc' ] * adult_data[ 'nasc_proportion' ]
+    )   
+    # -------- Number density
+    adult_data[ 'number_density' ] = (
+        adult_data[ 'number_density' ] * adult_data[ 'number_proportion' ]
+    )
+    adult_data[ 'number_density_female' ] = (
+        adult_data[ 'number_density_female' ] * adult_data[ 'number_proportion' ]
+    )
+    adult_data[ 'number_density_male' ] = (
+        adult_data[ 'number_density_male' ] * adult_data[ 'number_proportion' ]
+    )
+    # -------- Abundance
+    adult_data[ 'abundance' ] = (
+        adult_data[ 'abundance' ] * adult_data[ 'number_proportion' ]
+    )
+    adult_data[ 'abundance_female' ] = (
+        adult_data[ 'abundance_female' ] * adult_data[ 'number_proportion' ]
+    )
+    adult_data[ 'abundance_male' ] = (
+        adult_data[ 'abundance_male' ] * adult_data[ 'number_proportion' ]
+    )
+    # -------- Biomass density
+    adult_data[ 'biomass_density' ] = (
+        adult_data[ 'biomass_density' ] * adult_data[ 'weight_proportion' ]
+    )  
+    adult_data[ 'biomass_density_female' ] = (
+        adult_data[ 'biomass_density_female' ] * adult_data[ 'weight_proportion' ]
+    )  
+    adult_data[ 'biomass_density_male' ] = (
+        adult_data[ 'biomass_density_male' ] * adult_data[ 'weight_proportion' ]
+    )  
+    # -------- Biomass
+    adult_data[ 'biomass' ] = (
+        adult_data[ 'biomass' ] * adult_data[ 'weight_proportion' ]
+    )  
+    adult_data[ 'biomass_female' ] = (
+        adult_data[ 'biomass_female' ] * adult_data[ 'weight_proportion' ]
+    )  
+    adult_data[ 'biomass_male' ] = (
+        adult_data[ 'biomass_male' ] * adult_data[ 'weight_proportion' ]
+    )  
+    # ---- Drop unused column names
+    adult_data = adult_data.filter( regex = "^(?!.*(_proportion|_unsexed))")
+
+    # Adjust the population abundance tables to include only age-1 fish
+    # ---- Extract abundances distributed for unaged lengths
+    abundance_unaged_length = population_dict[ 'tables' ][ 'abundance' ][ 'unaged_abundance_df' ]
+    # ---- Convert `strata_adult_proportions_df` into a similarly indexed table
+    strata_adult_proportions_table = (
+        strata_adult_proportions_df.pivot_table( index = stratum_col ).T
+    )
+    # ---- Convert the table to represent age-1 proportions
+    strata_age1_proportions_table = 1.0 - strata_adult_proportions_table
+    # ---- Distribute the age-1 proportions across the unaged abundances
+    abundance_unaged_age1_tbl = (
+        strata_age1_proportions_table.loc[ 'number_proportion' ] * abundance_unaged_length
+    )
+
+    fitted_weight = self.analysis[ 'biology' ][ 'weight' ][ 'length_weight_regression' ][ 'weight_fitted_df' ]
+
+    # ---- Extract abundances distributed for unaged lengths
+    abundance_aged_length = population_dict[ 'tables' ][ 'abundance' ][ 'aged_abundance_df' ]
+    # ---- Reindex
+    abundance_age1_length = (
+        abundance_aged_length.T
+        .reset_index( )
+        .set_index( [ 'age_bin' , stratum_col ] ).loc[ 1 ].T
+    )
+    # ---- Extract fitted weights for all fish
+    fitted_weight_all = fitted_weight[ fitted_weight.sex == 'all' ].drop( 'sex' , axis = 1 )
+    # ---- Calculate the summed biomass across all strata for age-1 fish
+    # -------- All fish
+    fitted_biomass_all = (
+        fitted_weight[ fitted_weight.sex == 'all' ]
+        .drop( 'sex' , axis = 1 )[ 'weight_fitted' ]
+        .values.dot( abundance_age1_length.loc[ 'all' , : ]).sum( )
+    )
+    # -------- Female fish
+    fitted_biomass_female = (
+        fitted_weight[ fitted_weight.sex == 'all' ]
+        .drop( 'sex' , axis = 1 )[ 'weight_fitted' ]
+        .values.dot( abundance_age1_length.loc[ 'female' , : ]).sum( )
+    )
+    # -------- Male fish
+    fitted_biomass_male = (
+        fitted_weight[ fitted_weight.sex == 'all' ]
+        .drop( 'sex' , axis = 1 )[ 'weight_fitted' ]
+        .values.dot( abundance_age1_length.loc[ 'male' , : ]).sum( )
+    )
+    # ---- Calculate the estimated biomass proportions/contributions
+    female_ratio = fitted_biomass_female / fitted_biomass_all
+    male_ratio = fitted_biomass_male / fitted_biomass_all
+    # ---- Get the age-1 biomass from `population_dict`
+    biomass_aged_length = population_dict[ 'tables' ][ 'biomass' ][ 'aged_biomass_df' ]
+    # ---- Reindex and extract just the age-1 biomass estimates
+    biomass_age1_length = (
+        biomass_aged_length.T
+        .reset_index( )
+        .set_index( [ 'age_bin' , stratum_col ] ).loc[ 1 ].T
+    )
+    # ---- Calculate the age-1 biomass among male fish
+    # -------- Sum the total age-1 biomass
+    biomass_age1_total = biomass_age1_length.loc[ 'all' , ].sum( ).sum( )
+    # -------- Sum the total female age-1 biomass
+    biomass_age1_female = biomass_age1_total * female_ratio
+    # -------- Sum the total male age-1 biomass
+    biomass_age1_male = biomass_age1_total * male_ratio
+    # -------- Sum the mixed age-1 biomass
+    biomass_age1_mixed = biomass_age1_total - biomass_age1_female - biomass_age1_male
+
+    # Return outputs
+    # ---- Convert biomass estimates into a summary table
+    # -------- Initialize dataframe
+    biomass_summary_df = pd.DataFrame( { 'sex': [ 'all' , 'female' , 'male' , 'unsexed' , 'mixed' ] } )
+    # -------- Calculate biomass estimates for age-2+ fish
+    if settings_dict[ 'transect' ][ 'exclude_age1' ]:
+        biomass_summary_df[ 'biomass_adult' ] = (
+            np.array( [ biomass_aged_length.loc[ 'all' , : ].sum( ).sum( ) - biomass_age1_total ,
+                        biomass_aged_length.loc[ 'female' , : ].sum( ).sum( ) - biomass_age1_female ,
+                        biomass_aged_length.loc[ 'male' , : ].sum( ).sum( ) - biomass_age1_male ,
+                        nasc_biology_df[ 'biomass_unsexed' ].sum( ) ,
+                        nasc_biology_df[ nasc_biology_df[ 'fraction_hake' ] < 1.0 ][ 'biomass' ].sum( )
+                        - biomass_age1_mixed ] )
+        )
+    else: 
+        biomass_summary_df[ 'biomass_adult' ] = (
+            np.array( [ adult_data[ 'biomass' ].sum( ) ,
+                        adult_data[ 'biomass_female' ].sum( ) ,
+                        adult_data[ 'biomass_male' ].sum( ) ,
+                        nasc_biology_df[ 'biomass_unsexed' ].sum( ) ,
+                        nasc_biology_df[ nasc_biology_df[ 'fraction_hake' ] < 1.0 ][ 'biomass' ].sum( ) ] )
+        )
+    # -------- Calculate biomass estimates for age-1 fish
+    biomass_summary_df[ 'biomass_age1' ] = (
+        np.array( [ biomass_age1_total ,
+                    biomass_age1_female ,
+                    biomass_age1_male ,
+                    0.0 ,
+                    biomass_age1_mixed ] )
+    )
+    # ---- Generate outputs
+    return adult_data , biomass_summary_df , abundance_unaged_age1_tbl
+
+
+abundance_age1_length = (
+    abundance_aged_length.T
+    .reset_index( )
+    .set_index( [ 'age_bin' , stratum_col ] ).loc[ 1 ].T
+)
+
+
+fitted_weight[ fitted_weight.sex == 'all' ].drop( 'sex' , axis = 1 )[ 'weight_fitted' ].values.dot( abundance_age1_length.loc[ 'all' ] ).sum( )
+
+abundance_age1_length.T 
+
+kk.loc[ 'all' , : ]   
+abundance_aged_length.loc[ 'all' , ( 5 , ) ]
+
+abundance_aged_length.T.loc[ ( [  ] , 1 )  ]
+
+
+    abundance_aged_length.reset_levels( 'age_bin' , level = 0 )
+
+    abundance_aged_length.iloc[ : , ( : , 1 ) ]
+
+    
+    
+
+
+aged_weight_proportions = proportions_dict[ 'weight' ][ 'aged_weight_proportions_df' ]
+# -------- Sum to create a total/complete key
+aged_weight_proportions_all = (
+    aged_weight_proportions
+    .groupby( [ stratum_col , 'length_bin' , 'age_bin' ] ,
+                observed = False )[ 'weight_proportion_sex_aged' ]
+    .sum( )
+    .reset_index( )
+)
+
+aged_apportioned_biomass[ aged_apportioned_biomass.sex == 'all' ].groupby( [ 'stratum_num' ] )[ 'biomass_aged' ].sum( )
+biomass_strata[ biomass_strata.sex == 'all' ]
+
+m1 = aged_weight_proportions.groupby( [ stratum_col , 'length_bin' , 'age_bin' ] )[ 'weight_proportion_aged' ].sum( ).reset_index( )
+m1.groupby( [ 'stratum_num' ] )[ 'weight_proportion_aged' ].sum( )
+
+aged_weight_proportions.groupby( [ 'stratum_num' ] )[ 'weight_proportion_aged' ].sum( )
+aged_apportioned_abundance[ ( aged_apportioned_abundance.stratum_num == 3 ) & 
+                            ( aged_apportioned_abundance.age_bin == pd.Interval( left = 0.5 , right = 1.5 ) ) & 
+                            ( aged_apportioned_abundance.abundance_aged > 0 ) ]
+
+aged_apportioned_abundance[ ( aged_apportioned_abundance.stratum_num == 3 ) & ( aged_apportioned_abundance.age_bin == pd.Interval( left = 0.5 , right = 1.5 ) ) & ( aged_apportioned_abundance.length_bin == pd.Interval( left = 19 , right = 21 ) ) ]
+aged_weight_proportions[ ( aged_weight_proportions.stratum_num == 3 ) & ( aged_weight_proportions.age_bin == pd.Interval( left = 0.5 , right = 1.5 ) ) & ( aged_weight_proportions.length_bin == pd.Interval( left = 19 , right = 21 ) ) ]
+
+aged_weight_proportions
+unaged_apportioned_abundance
+
+    unaged_apportioned_abundance[ unaged_apportioned_abundance.sex == 'male' ].loc[ 3 ][ 'abundance_unaged' ].tolist()
+    # ---- Sexed abundance for aged fish
+    apportioned_abundance[ 'abundance_aged_sex' ] = (
+        apportioned_abundance[ 'abundance_total' ] 
+        * apportioned_abundance[ 'proportion_number_overall_aged' ]
+    )
+
+
+
+
+    # Parse out age-1 fish
+    # ---- Extract the aged weight proportions
+    aged_weight_proportions = proportions_dict[ 'weight' ][ 'aged_weight_proportions_df' ].copy( )
+    # ---- Sum the weight proportions to represent 'all' fish
+    aged_weight_proportions_all = (
+        aged_weight_proportions
+        .groupby( [ stratum_col , 'length_bin' , 'age_bin' ] , observed = False )[ 'weight_proportion_aged' ]
+        .sum( )
+        .reset_index( ).set_index( stratum_col )
+    ) 
+    # ---- Sum biomass across strata
+    biomass_strata = nasc_biology_grp.groupby( [ stratum_col ] )[ 'biomass' ].sum( )
+    # ---- Add summed stratum weights
+    aged_weight_proportions_all[ 'biomass_sexed' ] = biomass_strata
+    # ---- Apportion the biomass across the length and age bins
+    aged_weight_proportions_all[ 'biomass_apportioned' ] = (
+        aged_weight_proportions_all[ 'biomass_sexed' ] 
+        * aged_weight_proportions_all[ 'weight_proportion_aged' ]
+    )
+    # ---- Reformat into a pivot table
+    aged_weight_proportions_table = (
+        aged_weight_proportions_all.dropna( ).pivot_table( index = [ 'length_bin' ] ,
+                                                            columns = [ 'age_bin' ] ,
+                                                            values = 'biomass_apportioned' ,
+                                                            aggfunc = 'sum' ,
+                                                            observed = False )
+    )
+
+unaged_number_proportions[ ( unaged_number_proportions.sex == 'male' ) & ( unaged_number_proportions.stratum_num == 3 ) ]
+aged_weight_proportions_all
+unaged_apportioned_abundance[ unaged_apportioned_abundance.sex == 'male' ].loc[ 3 ][ 'abundance_unaged' ].tolist()
+
+tt = nasc_biology_grp[ nasc_biology_grp.nasc == 792.218174 ][ 'abundance_sex_male' ] 
+mt = nasc_biology_grp[ nasc_biology_grp.nasc == 792.218174 ][ 'abundance' ] * 0.415601
+st = unaged_number_proportions[ ( unaged_number_proportions.stratum_num == 3 ) & ( unaged_number_proportions.sex == 'male' ) ]
+
+mt.values * st[ 'proportion_number_unaged' ] - nasc_biology_grp[ nasc_biology_grp.nasc == 792.218174 ][ 'abundance' ].values * st[ 'proportion_number_overall_unaged' ]
+
+nasc_biology_grp.merge( adult_proportions , on = 'stratum_num' ).assign( new_biomass = lambda x: x.biomass * x.weight )[ 'biomass_sex_male' ].sum( ) * 1e-6
+age1_proportions
+biomass_strata_m = nasc_biology_grp.groupby( [ stratum_col ] )[ 'biomass_sex_male' ].sum( )
+biomass_strata_m.sum( ) * 1e-6
+nasc_biology[ nasc_biology.stratum_num == 3 ]
+nasc_biology[ nasc_biology.nasc == 792.218174 ]
+nasc_to_biology[ nasc_to_biology.nasc == 792.218174 ]
+ii = 7198
+nasc_biology_sex[ nasc_biology_sex.nasc == 792.218174 ][ 'proportion_number_overall' ] 
+nasc_biology_sex[ nasc_biology_sex.nasc == 792.218174 ]
+nasc_biology_grp[ 'biomass_sex_male' ].sum( ) * 1e-6
+nasc_biology_grp[ np.round( nasc_biology_grp.longitude , 6 ) == -121.457680 ]
+nasc_adult[ np.round( nasc_adult.longitude , 6 ) == -121.457680 ][ 'biomass' ]
+
+nasc_adult['biomass'].sum()*1e-6
+nasc_biology_grp[ 'biomass' ].sum()*1e-6 - 7.87
+nasc_biology_grp[ np.round( nasc_biology_grp.longitude , 6 ) == -121.457680 ][ 'biomass_sex_male' ].values * tem[(3,3)]
+tem[3]
+nasc_df[ ( nasc_df.stratum_num == 3 ) ]
+nasc_biology_grp[ nasc_biology_grp.stratum_num == 3 ]
+
+aged_weight_proportions_table.sum( )
+
+
+( aged_weight_proportions_table.sum( axis = 0 ).sum( ) - aged_weight_proportions_table.sum( axis = 0 )[ 1 ] ) * 1e-6
+aged_weight_proportions_table * 1e-9
+tem = aged_weight_proportions_all.reset_index( ).pivot_table( index = 'length_bin' , columns = [ 'age_bin' ] , values = 'biomass_apportioned' , aggfunc = 'sum' , observed = False )
+tem[1]
+( aged_weight_proportions_table.sum( axis = 0 ).sum( ) + nasc_biology_grp[ 'biomass_unsexed' ].sum( ) - aged_weight_proportions_table.sum( axis = 0 )[ 1 ] - aged_weight_proportions_table.sum( axis = 0 )[ 21 ] ) * 1e-6
+
+aged_weight_proportions_table.sum( axis = 0 ).sum( ) * 1e-6 - aged_weight_proportions_table.sum( axis = 0 )[ 21 ] * 1e-6 - aged_weight_proportions_table.sum( axis = 0 )[ 1 ] * 1e-6 + nasc_biology_grp[ 'biomass_unsexed' ].sum( ) * 1e-6
+aged_weight_proportions_table.sum( axis = 0 ).sum( )
+mett[ 'apportioned_biomass' ] = mett[ 'biomass' ] * mett[ 'weight_proportion_aged' ]
+mett_table = mett.reset_index( ).pivot_table( columns = [ 'age_bin' , stratum_col ] , index = 'length_bin' , values = 'apportioned_biomass' , observed = False )
+mett_table[ 1 ].sum( ).sum( ) * 1e-6
+mett[ 'apportioned_biomass' ].sum( ) * 1e-6
+attn.merge( sub_all )
+met.reset_index( ).pivot_table( columns = 'age_bin' , index = 'length_bin' ).iloc[ : , 7 ]
+mett[ 'biomass' ] = wgts_attn_prop 
+wgts_attn_prop = attn_new.groupby( [ stratum_col ] )[ 'biomass' ].sum( )
+met = aged_weight_proportions.groupby( [ stratum_col , 'length_bin' , 'age_bin' ] )[ 'weight_proportion_aged' ].sum( )
+nasc_biology_grp[ 'biomass_sex_male' ].sum( ) * 1e-6 
+nasc_biology_grp[ 'biomass_sex_female' ].sum( ) * 1e-6 
+nasc_biology_grp[ 'biomass' ].sum( ) * 1e-6
+
+pd.set_option('display.max_columns', 15)
+pd.set_option('display.width', 1e3)
+aged_weight_proportions_table * 1e-9
+tet = specimen_weight_proportions.pivot_table( index = [ 'length_bin' ] , columns = [ 'sex' , 'stratum_num' , 'age_bin' ] , values = 'weight_proportion_aged' , observed = False )
+tet[ 'male' , 1] + tet[ 'female' , 1]
+
+tt = nasc_biology_sex.copy( )
+att = tt[ [ stratum_col , 'transect_num' , 'longitude' , 'latitude' , 'sex' , 'nasc' , 'abundance' , 'abundance_sex' , 'biomass_sex' ] ]
+attn = att.pivot( index = [ stratum_col , 'transect_num' , 'longitude' , 'latitude' , 'abundance' ] , columns = 'sex' , values = [ 'abundance_sex' , 'biomass_sex' ] )
+sub_all = length_weight_strata[ length_weight_strata.sex == 'all' ].drop( 'sex' , axis = 1 )
+
+attn.columns = attn.columns.map('_'.join).str.strip('|')
+attn_new = attn.reset_index( ).merge( sub_all , on = stratum_col )
+attn_new[ 'biomass_unsexed' ] = ( attn_new[ 'abundance'] - attn_new[ 'abundance_sex_female' ] - attn_new[ 'abundance_sex_male' ] ) * attn_new[ 'average_weight' ]
+attn_new[ 'biomass' ] = attn_new[ 'biomass_sex_male' ] + attn_new[ 'biomass_sex_female' ] + attn_new[ 'biomass_unsexed' ]
+
+attn_new[ 'biomass_unsexed' ].sum( ) * 1e-6
+attn_new[ 'biomass' ].sum( ) * 1e-6
+mmi = self.analysis[ 'biology' ][ 'distributions' ][ 'binned_aged_counts_filtered_df' ]
+mmi[ mmi.sex == 'all' ].pivot_table( columns = 'age_bin' , index = 'length_bin' , aggfunc = 'sum' , values = 'count' )
+
+aged_weight_proportions = proportions_dict[ 'weight' ][ 'aged_weight_proportions_df' ].copy( )
+mmi = aged_weight_proportions.pivot_table( columns = [ 'age_bin' ] , index = 'length_bin', aggfunc = 'sum' , values = 'weight_proportion_aged' )
+mmi[ 21 ]
+
+wgts_attn_prop = attn_new.groupby( [ stratum_col ] )[ 'biomass' ].sum( )
+met = aged_weight_proportions.groupby( [ stratum_col , 'length_bin' , 'age_bin' ] )[ 'weight_proportion_aged' ].sum( )
+mett = met.reset_index( ).set_index( stratum_col )
+mett
+met.reset_index( ).pivot_table( columns = 'age_bin' , index = 'length_bin' ).iloc[ : , 7 ]
+mett[ 'biomass' ] = wgts_attn_prop 
+mett[ 'apportioned_biomass' ] = mett[ 'biomass' ] * mett[ 'weight_proportion_aged' ]
+mett_table = mett.reset_index( ).pivot_table( columns = [ 'age_bin' , stratum_col ] , index = 'length_bin' , values = 'apportioned_biomass' , observed = False )
+mett_table[ 1 ].sum( ).sum( ) * 1e-6
+mett[ 'apportioned_biomass' ].sum( ) * 1e-6
+attn.merge( sub_all )
+
+attn_new[ 'biomass' ].sum( ) * 1e-6 - mett_table[ 1 ].sum( ).sum( ) * 1e-6
+
+
+
+attn[ 'average_weight' ] = length_weight_strata[ length_weight_strata.sex == 'all' ].set_index( stratum_col ).drop( 'sex' , axis = 1 )
+
+
+attn.biomass.sum( ) * 1e-6
+
+( 8.321788e+08 + 8.185449e+08 ) * 1e-6 - 7.870 - 0.361
+
+
+
+length_weight_strata
+length_weight_strata = self.analysis[ 'biology' ][ 'weight' ]['weight_stratum_df'].copy( )
+proportions_dict
+distributions_dict
+    
+
 
 test = full_out[ ( full_out.age != 1 ) ]
 test['apportioned_biomass_all' ].sum( ) * 1e-6
@@ -404,7 +850,7 @@ stratum_weights = transect_stratum_weights( aged_length_proportions ,
 
 acoustics_dict = self.acoustics
 biology_dict = self.biology
-from echopop.computation.spatial import correct_transect_intervals
+from echopop.computation.spatial_old import correct_transect_intervals
 nasc_interval_df = correct_transect_intervals( acoustics_dict[ 'nasc' ][ 'nasc_df' ] )
 sigma_bs_strata = acoustics_dict[ 'sigma_bs' ][ 'strata_mean' ]
 info_strata = self.spatial[ 'strata_df' ].copy( )
@@ -775,7 +1221,7 @@ wgt_proportion[ ( wgt_proportion.stratum_num == 5 ) ].groupby( [ 'sex' ] )[ 'pro
 full_wgt_sex_full[ full_wgt_sex_full.sex.isin( [ 'male' , 'female' ] ) ].merge( full_wgt_all , on = [ 'stratum_num' ] ).assign( proportion = lambda x: x.weight / x.total_weight ).groupby( [ 'stratum_num' , 'sex' ] )[ 'proportion' ].sum( )
 acoustics_dict = self.acoustics
 biology_dict = self.biology
-from echopop.computation.spatial import correct_transect_intervals
+from echopop.computation.spatial_old import correct_transect_intervals
 np.unique( self.acoustics[ 'nasc' ][ 'nasc_df' ][ 'transect_num' ] )
 nasc_interval_df = correct_transect_intervals( acoustics_dict[ 'nasc' ][ 'nasc_df' ] )
 sigma_bs_strata = acoustics_dict[ 'sigma_bs' ][ 'strata_mean' ]
@@ -847,8 +1293,8 @@ a[ ( a.transect_num == 33 ) & ( np.round( a.longitude , 4 ) == -1.242025e+02 ) ]
 import geopandas as gpd
 from shapely.geometry import Polygon
 from shapely.ops import unary_union
-from echopop.computation.spatial import to_utm
-from echopop.computation.spatial import transform_geometry
+from echopop.computation.spatial_old import to_utm
+from echopop.computation.spatial_old import transform_geometry
 
 dataset = 'biomass_density'
 variable = 'rho_biomass_adult'

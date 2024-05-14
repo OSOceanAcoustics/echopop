@@ -195,6 +195,14 @@ def prepare_input_data( input_dict: dict , configuration_dict: dict ) :
                 latitude_bins )
     )
 
+    # Bin NASC transects into appropriate INPFC strata
+    input_dict[ 'acoustics' ][ 'nasc_df' ][ 'stratum_inpfc' ] = (
+        pd.cut( input_dict[ 'acoustics' ][ 'nasc_df' ][ 'latitude' ] ,
+                latitude_bins ,
+                right = True ,
+                labels = range( len( latitude_bins ) - 1 ) )
+    ).astype( int ) + 1
+
     # Merge haul numbers across biological variables
     # ---- Consolidate information linking haul-transect-stratum indices
     input_dict[ 'biology' ][ 'haul_to_transect_df' ] = (
@@ -314,3 +322,6 @@ def prepare_input_data( input_dict: dict , configuration_dict: dict ) :
     del input_dict[ 'statistics' ][ 'kriging' ][ 'vario_krig_para_df' ]
     # -------- Delete the duplicate configuration keys
     del configuration_dict[ 'kriging_parameters' ]
+
+    # Return updated dictionaries
+    return input_dict , configuration_dict

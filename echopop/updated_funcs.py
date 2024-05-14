@@ -3,7 +3,7 @@ import pandas as pd
 
 from echopop.survey import Survey
 from echopop.computation.kriging_methods import kriging_interpolation , compute_kriging_weights , range_index_threshold , compute_kriging_statistics , ordinary_kriging
-from echopop.computation.spatial import local_search_index , griddify_lag_distances
+from echopop.computation.spatial_old import local_search_index , griddify_lag_distances
 from echopop.computation.variogram_models import variogram
 
 ss = self.input[ 'biology' ][ 'length_df' ]
@@ -11,6 +11,182 @@ ss = ss [ ( ss.species_id == 22500 ) ]
 ss[ ss.length < 15 ]
 ss[ ss.age == 1 ]
 ss.groupby( [ 'stratum_num' ] )[ 'haul_weight' ].sum( )
+
+at = specimen_data[ specimen_data.stratum_num == 7 ]
+at[ ( at.sex != 'unsexed' ) ]
+distributions_dict = self.input[ 'biology' ][ 'distributions' ]
+proportions_dict = self.analysis[ 'biology' ][ 'proportions' ]
+TS_L_parameters = self.config[ 'TS_length_regression_parameters' ][ 'pacific_hake' ]
+settings_dict[ 'transect' ][ 'stratum_name' ]
+sigma_bs_strata
+
+# Get stratum column name
+stratum_col = settings_dict[ 'transect' ][ 'stratum_name' ]
+
+# Calculate the age1 number proportion
+# ---- Initialize the dataframe
+age_proportions = proportions_dict[ 'number' ][ 'aged_length_proportions_df' ]
+# ---- Only consider 'all' fish
+age_proportions = age_proportions[ ( age_proportions[ 'sex' ] == 'all' ) & ( age_proportions[ stratum_col ] != 0 ) ].reset_index( )
+# ---- Convert to center of length bin
+age_proportions.loc[ : , 'length_mid' ] = age_proportions.loc[ : , 'length_bin' ].apply( lambda df: df.mid ).astype( float )
+# ---- Convert into a pivot table
+age_proportions_table = age_proportions.pivot_table( index = [ 'length_bin' ] , 
+                                                     columns = [ stratum_col , 'age_bin' ] , 
+                                                     values = 'proportion_number_aged' , 
+                                                     aggfunc = 'sum' , 
+                                                     observed = False )
+# ---- Sum the number proportions for each age bin within each stratum
+age1_proportions = age_proportions_table.sum( )[ : , 1 ]
+
+# Calculate the new length-averaged sigma_bs for each stratum
+# ---- Extract the length-binned values
+length_bins = distributions_dict[ 'length_bins_df' ]
+# ---- Square the length values
+length_bins[ 'length_sq' ] = length_bins[ 'length_bins' ] ** 2.0
+# ---- Multiply by the TS-length regression coefficient (in the linear domain)
+length_bins[ 'length_sq' ] = length_bins[ 'length_sq' ] * to_linear( TS_L_parameters[ 'TS_L_intercept' ] )
+# ---- Repivot the number proportion data
+age_proportions_alt_table = age_proportions.pivot_table( index = [ 'length_bin' ] , 
+                                                         columns = [ stratum_col ] , 
+                                                         values = 'proportion_number_aged' , 
+                                                         aggfunc = 'sum' , 
+                                                         observed = False )
+# ---- Dot product to calculate the new average sigma_bs for all ages
+updated_sigma_bs = length_bins[ 'length_sq' ].values.dot( age_proportions_alt_table )
+
+# 
+# ---- Filter out adult (age-2+ fish)
+age_proportions_age1_table = age_proportions[ age_proportions[ 'age_bin' ] == pd.Interval( left = 0.5 , right = 1.5 ) ]
+# ---- Repivot for just age-1 fish
+age_proportions_age1_table = age_proportions_age1_table.pivot_table( index = [ 'length_bin' ] , 
+                                                                     columns = [ stratum_col ] , 
+                                                                     values = 'proportion_number_aged' , 
+                                                                     aggfunc = 'sum' , 
+                                                                     observed = False )
+# ---- Dot product to calculate the average sigma_bs for age-1 fish
+age1_sigma_bs = length_bins[ 'length_sq' ].values.dot( age_proportions_age1_table )
+# ---- Calculate age-1 NASC proportioon per stratum
+age1_nasc_proportion = age1_sigma_bs / updated_sigma_bs
+
+unage_proportions = proportions_dict[ 'number' ][ 'unaged_length_proportions_df' ]
+# ---- Only consider 'all' fish
+unage_proportions = unage_proportions[ unage_proportions[ 'sex' ] == 'all' ].reset_index( )
+# ---- Convert into a pivot table
+unage_proportions_table = unage_proportions.pivot_table( columns = [ stratum_col ] , 
+                                                         index = [ 'length_bin' ] , 
+                                                         values = 'proportion_number_unaged' , 
+                                                         aggfunc = 'sum' , 
+                                                         observed = False )
+
+min_index = np.where( length_bins[ 'length_bins' ] == 10.0 )[ 0 ]
+max_index = length_bins[ 'length_bins' ].size
+
+# Calculate thresholds derived from the summed length distributions of age-1 fish
+# ---- General length distribution
+age1_length_distribution_threshold = (
+    unage_proportions_table.iloc[ np.arange( min_index , max_index ) , : ] * 
+    age_proportions_age1_table.iloc[ np.arange( min_index , max_index ) , : ]
+).sum( )
+# ---- Just aged length distribution (age-1)
+age1_specific_length_distribution_threshold = age_proportions_age1_table.sum( )
+
+
+age_weight_proportions = proportions_dict[ 'weight' ][ 'aged_weight_proportions_df' ]
+age_weight_proportions = age_weight_proportions[ age_weight_proportions[ stratum_col ] != 0 ]
+age_weight_proportions_table = age_weight_proportions.pivot_table( index = [ 'length_bin' ] ,
+                                                                   columns = [ 'age_bin' , stratum_col ] ,
+                                                                   values = 'weight_proportion_aged' ,
+                                                                   aggfunc = 'sum' ,
+                                                                   observed = False )
+age_weight_proportions_table[ 1 ].sum( ) 
+
+age_weight_proportions_repivot = age_weight_proportions.pivot_table( index = [ 'age_bin' ] ,
+                                                                     columns = [ stratum_col ] ,
+                                                                     values = 'weight_proportion_aged' ,
+                                                                     aggfunc = 'sum' ,
+                                                                     observed = False )
+
+age1_weight_proportions = np.where( ( age1_length_distribution_threshold <= 1e-10 ) & 
+                                    ( age1_specific_length_distribution_threshold <= 1e-10 ) ,
+                                    0.0 ,
+                                    age_weight_proportions_table[ 1 ].sum( )
+                                    / age_weight_proportions_repivot.sum( ) )
+
+
+age_weight_proportions_table[ 1 ].sum( ) / age_weight_proportions_repivot.sum( )
+
+age_weight_proportions_table.T.sum( axis = 1 )
+age_proportions_table.sum( ).loc[ 5 ].sum( )
+
+age_proportions_age1_table.sum( axis = 0 )
+
+unage_proportions_table.loc[ : , : ] * age_proportions_age1_table.T.loc[ : , : ]
+
+unage_proportions_table.iloc[ np.arange( min_index , max_index ) , : ] * age_proportions_age1_table.T.iloc[ : , np.arange( min_index , max_index ) ]
+age_proportions_age1_table.T.iloc[ 5 , np.arange( min_index , max_index ) ]
+
+unage_proportions_table.iloc[ np.arange( min_index , max_index ) , 5 ]
+updated_index = age_proportions_age1_table.index.union( age_proportions_age1_table.columns )
+age_proportions_age1_table.reindex( index = updated_index , columns = [ 'length_bins' ] , fill_value = 0)
+unage_proportions_table.iloc[ 4 , np.arange( min_index , max_index ) ] * age_proportions_age1_table.iloc[ np.arange( min_index , max_index ) , 5 ]
+
+age_proportions_table.loc[ : , 5 ]
+age_weight_proportions = proportions_dict[ 'weight' ][ 'aged_weight_proportions_df' ]
+age_weight_proportions_table = age_weight_proportions.pivot_table( index = [ 'length_bin' ] ,
+                                                                   columns = [ stratum_col , 'age_bin' ] ,
+                                                                   values = 'weight_proportion_aged' ,
+                                                                   aggfunc = 'sum' ,
+                                                                   observed = False )
+
+min_index = np.where( length_bins[ 'length_bins' ] == 10.0 )[ 0 ]
+max_index = length_bins[ 'length_bins' ].size
+np.arange( min_index , max_index ).tolist()
+age_proportions_table.loc[ : , ]
+np.arange( min_index , max_index )[1]
+age_weight_proportions_table.iloc[ np.arange( min_index , max_index ) , 5 ] * age_proportions_age1_table.iloc[ np.arange( min_index , max_index ) , 5 ]
+age_weight_proportions.groupby( [ stratum_col , 'length_bin' , 'age_bin' ] )[ 'weight_proportion_aged' ].sum( )
+
+to_dB( age1_sigma_bs )
+age1_proportions
+( length_bins[ 'length_sq' ] * age1_proportions[ 1 ] ).sum( )
+# Return output
+# ---- Initialize dataframe
+new_sigma_bs = pd.DataFrame( { f"{stratum_col}": np.unique( age_proportions[ stratum_col ] ) } )
+# ---- Add age-1 proportions column
+new_sigma_bs[ 'age1_proportion' ] = age1_proportions
+# ---- Add updated sigma_bs
+new_sigma_bs[ 'sigma_bs_mean' ] = updated_sigma_bs
+# ---- Return
+# return new_sigma_bs
+
+age_proportions_table.loc[ : , 7 ]
+
+length_bins[ 'length_sq' ].values.dot( age_proportions_alt_table )
+age_proportions_alt_table.sum( )
+
+number_dist_lambda = lambda x: x.droplevel( 0 ,axis = 1 ).dot( b )
+
+tt_t.groupby( level = 0 , axis = 1 )
+
+tt_t.droplevel( 0 , axis = 1 )
+
+tt_t.sum )
+
+length_bins[ 'length_sq' ].values.dot( tt_t.sum( ) )
+
+a = to_linear( TS_L_parameters[ 'TS_L_intercept' ] ) * np.sort( np.unique( age_proportions[ 'length_mid' ] ) ) ** 2.0
+a.dot( tt_t.loc[ : , 1 ] ).sum( )
+
+a.T * tt_t.loc[ : , 1 ].sum( )
+
+to_linear( TS_L_parameters[ 'TS_L_intercept' ] )
+
+tt = tt[ tt.sex == 'all' ]
+tt_t = tt.pivot_table( index = [ 'length_bin' ] , columns = [ 'stratum_num' , 'age_bin' ] , values = 'proportion_number_aged' , aggfunc = 'sum' , observed = False )
+tt_t.sum( )
+
+tt_t.loc[ : , 3 ].sum()
 
 denom = aged_number_proportion[ aged_number_proportion.sex == 'all' ].groupby( [ 'stratum_num' ] )[ 'proportion_number_aged' ].sum( )
 numer = aged_number_proportion[ ( aged_number_proportion.sex == 'all' ) & ( aged_number_proportion.age_bin == pd.Interval( left = 0.5 , right = 1.5 ) ) ].groupby( [ 'stratum_num' ] )[ 'proportion_number_aged' ].sum( )
@@ -96,10 +272,10 @@ stratum_weights = transect_stratum_weights( aged_length_proportions ,
     unaged_sex_weight_proportions
 ) = transect_weight_proportions( spec , unaged_catch_weights , unaged_length_proportions , length_weight_df )
 
-acoustics_dict = self.acoustics
+acoustics_dict = self.input['acoustics']
 biology_dict = self.biology
-from echopop.computation.spatial import correct_transect_intervals
-nasc_interval_df = correct_transect_intervals( acoustics_dict[ 'nasc' ][ 'nasc_df' ] )
+from echopop.computation.spatial_old import correct_transect_intervals
+nasc_interval_df = correct_transect_intervals( acoustics_dict[ 'nasc_df' ] )
 sigma_bs_strata = acoustics_dict[ 'sigma_bs' ][ 'strata_mean' ]
 info_strata = self.spatial[ 'strata_df' ].copy( )
 nasc_fraction_total_df = nasc_interval_df.merge( info_strata , on = [ 'stratum_num' , 'haul_num' ] , how = 'outer' ).merge( sigma_bs_strata , on = [ 'stratum_num' ] , how = 'outer' ).dropna( subset = 'transect_num' )
@@ -467,7 +643,7 @@ wgt_proportion = full_wgt_sex_full.merge( full_wgt_full ).assign( proportion = l
 
 acoustics_dict = self.acoustics
 biology_dict = self.biology
-from echopop.computation.spatial import correct_transect_intervals
+from echopop.computation.spatial_old import correct_transect_intervals
 np.unique( self.acoustics[ 'nasc' ][ 'nasc_df' ][ 'transect_num' ] )
 nasc_interval_df = correct_transect_intervals( acoustics_dict[ 'nasc' ][ 'nasc_df' ] )
 sigma_bs_strata = acoustics_dict[ 'sigma_bs' ][ 'strata_mean' ]
@@ -522,8 +698,8 @@ a[ ( a.transect_num == 33 ) & ( np.round( a.longitude , 4 ) == -1.242025e+02 ) ]
 import geopandas as gpd
 from shapely.geometry import Polygon
 from shapely.ops import unary_union
-from echopop.computation.spatial import to_utm
-from echopop.computation.spatial import transform_geometry
+from echopop.computation.spatial_old import to_utm
+from echopop.computation.spatial_old import transform_geometry
 
 dataset = 'biomass_density'
 variable = 'rho_biomass_adult'
@@ -565,6 +741,9 @@ transect_summary = (
 
 test[ test.haul_num ]
 spatial_data[ spatial_data.transect_num == 119 ][ 'latitude' ].max( )
+transect_data = nasc_df
+mesh_data = self.input[ 'statistics' ][ 'kriging' ][ 'mesh_df' ]
+settings_dict = self.analysis[ 'settings' ][ 'kriging' ]
 
 if extrapolate is False :
     
@@ -1137,7 +1316,7 @@ def within_radius_index( array , radius ) :
     return np.sort( tt[ tt < R ] )
 
 pad = 9278
-from echopop.computation.spatial import griddify_lag_distances
+from echopop.computation.spatial_old import griddify_lag_distances
 distance_matrix = griddify_lag_distances( mesh_grid , spatial_data )
 R = self.statistics[ 'kriging' ][ 'model_config' ][ 'search_radius' ]
 dd = np.apply_along_axis( within_radius_distance , 1 , distance_matrix , R )

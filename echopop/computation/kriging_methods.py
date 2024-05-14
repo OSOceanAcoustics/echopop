@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from ..computation.spatial import griddify_lag_distances , local_search_index
+from .spatial_old import griddify_lag_distances , local_search_index
 from ..computation.variogram_models import variogram
 
 def kriging_lambda( anisotropy: float , 
