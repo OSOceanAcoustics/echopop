@@ -53,8 +53,8 @@ CONFIG_MAP = {
         'inpfc_strata': {
             'stratum_num': int ,
             'northlimit_latitude': np.float64 ,
-            'haul_start': int ,
-            'haul_end': int ,
+            'haul start': int ,
+            'haul end': int ,
         } ,
     } ,
     'NASC': {
@@ -243,6 +243,9 @@ LAYER_NAME_MAP = {
     'biological': {
         'name': 'biology' ,
         'data': ['length' , 'specimen' , 'catch' , 'haul_to_transect' ] ,
+        'data_label': [ 'length:unaged lengths' , 'specimen:aged lengths' , 
+                        'catch:unaged catch weights' , 
+                        'haul_to_transect:haul-to-transect key' ] ,
         'superlayer': [] ,
         'data_tree': {
             'catch_df': pd.DataFrame() ,
@@ -258,6 +261,9 @@ LAYER_NAME_MAP = {
     'stratification': {
         'name': 'spatial' ,
         'data': [ 'strata' , 'geo_strata' , 'inpfc_strata' ] ,
+        'data_label': [ 'strata:KS strata' , 
+                        'geo_strata:Georeferenced KS strata' , 
+                        'inpfc_strata:INPFC strata' ] ,
         'superlayer': [] ,
         'data_tree': {
             'strata_df': pd.DataFrame() ,
@@ -268,6 +274,8 @@ LAYER_NAME_MAP = {
     'NASC': {
         'name': 'nasc' ,
         'data': ['no_age1' , 'all_ages'] ,
+        'data_label': [ 'no_age1:Survey NASC' , 
+                        'all_ages:no_age1:Survey NASC' ] ,
         'superlayer': ['acoustics'] ,
         'data_tree': {
             'nasc': {
@@ -278,6 +286,7 @@ LAYER_NAME_MAP = {
     'kriging': {
         'name': 'kriging' ,
         'data': ['mesh' , 'isobath_200m' , 'vario_krig_para'] ,
+        'data_label': [ 'mesh:Kriging mesh' , 'isobath_200m:200m isobath' ] ,
         'superlayer': ['statistics'] ,
         'data_tree': {
             'kriging': {
@@ -291,6 +300,12 @@ LAYER_NAME_MAP = {
             }
         } ,
     } 
+}
+
+DATAFRAME_LABELS = {
+    'kriging': {
+        
+    }
 }
 
 SEX_CODE_MAP = {

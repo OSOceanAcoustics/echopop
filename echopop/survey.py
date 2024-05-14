@@ -5,8 +5,7 @@ import numpy as np
 import copy
 from .core import CONFIG_MAP, LAYER_NAME_MAP , DATA_STRUCTURE
 from .utils.load import load_configuration , validate_data_columns , prepare_input_data
-from .utils.operations import bin_variable
-from .computation.spatial_old import calculate_transect_distance , transform_geometry
+# from .utils.operations import bin_variable
 from .computation.statistics import stratified_transect_statistic
 from .computation.kriging_methods import kriging_interpolation
 from .computation.acoustics import summarize_sigma_bs , nasc_to_biomass
@@ -115,8 +114,12 @@ class Survey:
                         # Get file and sheet name
                         file_name = Path(self.config['data_root_dir']) / config_settings[region_id]['filename']
                         sheet_name = config_settings[region_id]['sheetname']
-                        config_map = config_map + ['region']
-                        config_map[2] = region_id
+                        
+                        # Update `config_map`
+                        if len( config_map ) == 2:
+                            config_map = config_map + [region_id]
+                        else:
+                            config_map[2] = region_id
 
                         # Validate column names of this iterated file
                         validate_data_columns( file_name , sheet_name , config_map , validation_settings )
@@ -152,12 +155,12 @@ class Survey:
                         # Validate datatypes within dataset and make appropriate changes to dtypes (if necessary)
                         # ---- This first enforces the correct dtype for each imported column
                         # ---- This then assigns the imported data to the correct class attribute
-                        validate_data_columns( file_name , sheets, config_map , validation_settings )
+                        validate_data_columns( file_name , sheets , config_map , validation_settings )
                         
                         # Read in data and add to `Survey` object
                         self.read_validated_data( file_name , sheets , config_map , validation_settings ) 
 
-        # Update the data format of various inputs within `Survey` (in place function)
+        # Update the data format of various inputs within `Survey`
         self.input , self.config = prepare_input_data( self.input , self.config )
 
     def read_validated_data( self ,
@@ -185,7 +188,6 @@ class Survey:
         # exception is made for 'kriging.vario_krig_para' since it requires additional
         # data wrangling (i.e. transposing) to resemble the same dataframe format applied
         # to all other data attributes.
-        # TODO : REVISIT THIS LATER
         if 'vario_krig_para' in config_map:
             # Read Excel file into memory and then transpose
             df_initial = pd.read_excel(file_name, header=None).T
@@ -216,9 +218,8 @@ class Survey:
             sub_attribute  = LAYER_NAME_MAP[config_map[0]]['name']
         else:
             sub_attribute = LAYER_NAME_MAP[config_map[0]]['superlayer'][0]
-        # ------------------------------------------------------------------------------------------------
-        # Step 2: Determine whether the dataframe already exists -- this only applies to some datasets
-        # such as length that comprise multiple region indices (i.e. 'US', 'CAN')
+            
+        # Step 2: Determine whether the dataframe already exists
         if sub_attribute in ['biology' , 'statistics' , 'spatial']:
             if sub_attribute == 'biology':
                 # Add US / CAN as a region index 
@@ -226,12 +227,9 @@ class Survey:
 
                 # Apply CAN haul number offset 
                 if config_map[2] == 'CAN':
-                    df['haul_num'] += self.config['CAN_haul_offset'] 
+                    df['haul_num'] += self.config['CAN_haul_offset']      
 
             # A single dataframe per entry is expected, so no other fancy operations are needed
-            # If geo_strata, differentiate between inpfc and stratification1 sheets
-            ### TODO: Temporary approach for incorporating the inpfc dataset. An improved approach
-            ### can be incorporated later on.
             if sheet_name.lower() == 'inpfc':
                 df_list = [ self.input[ sub_attribute ][ 'inpfc_strata_df' ] , df ]
                 self.input[ sub_attribute ][ 'inpfc_strata_df' ] = pd.concat( df_list )
@@ -242,22 +240,19 @@ class Survey:
                 else :
                     df_list = [ self.input[ sub_attribute ][ config_map[1] + '_df' ] , df ]
                     self.input[ sub_attribute ][ config_map[1] + '_df' ] = pd.concat(df_list)
-
         elif sub_attribute == 'acoustics':
             
             # Toggle through including and excluding age-1
-            # -- This is required for merging the NASC dataframes together
             if config_map[1] == 'no_age1':
                 df = df.rename(columns={'NASC': 'NASC_no_age1'})
             else:
                 df = df.rename(columns={'NASC': 'NASC_all_ages'})
             
             column_to_add = df.columns.difference(self.input['acoustics']['nasc_df'].columns).tolist()
-            self.input['acoustics']['nasc_df'][column_to_add] = df[column_to_add]
-        
+            self.input['acoustics']['nasc_df'][column_to_add] = df[column_to_add]      
         else:
-            raise ValueError('Unexpected data attribute structure. Check API settings located in the configuration YAML and core.py')
-        
+            raise ValueError('Unexpected data attribute structure. Check API settings located in the configuration YAML and core.py')              
+            
     def transect_analysis(self ,
                           species_id: np.float64 = 22500 ,
                           exclude_age1: bool = True ,
@@ -404,6 +399,11 @@ class Survey:
         age-class and sex. This also only applies to the transect results and is not currently 
         designed to be compatible with other derived population-level statistics (e.g. kriging).
         """ 
+        
+        # Error message for `stratum == 'ks'`
+        if stratum == 'ks': 
+            raise ValueError( """The Jolly and Hampton (1990) stratified analysis is not currently\
+        comaptible for calculating over KS strata. Please change `stratum` to 'inpfc'.""")
 
         # Parameterize analysis settings that will be applied to the stratified analysis
         self.analysis[ 'settings' ].update(
@@ -457,9 +457,9 @@ class Survey:
                extrapolate: bool = False ,
                kriging_parameters: Optional[ dict ] = None ,
                mesh_buffer_distance: float = 1.25 ,
-               projection: Optional[ str ] = None ,
-               stratum: str = 'ks' ,
                num_nearest_transects: int = 4 ,
+               projection: Optional[ str ] = None ,
+               stratum: str = 'ks' ,               
                variable: str = 'biomass_density' ,
                variogram_parameters: Optional[ dict ] = None ,
                verbose: bool = True ):
@@ -492,7 +492,8 @@ class Survey:
                     'variogram_parameters': (
                         self.input[ 'statistics' ][ 'variogram' ][ 'model_config' ]
                         if variogram_parameters is None else variogram_parameters
-                    )
+                    ) ,
+                    'verbose': verbose
                 }
             }
         )
@@ -514,6 +515,10 @@ class Survey:
             mesh_full = crop_mesh( nasc_df ,
                                    self.input[ 'statistics' ][ 'kriging' ][ 'mesh_df' ] ,
                                    self.analysis[ 'settings' ][ 'kriging' ] )
+            # ---- Print alert 
+            print( "Kriging mesh cropped to prevent extrapolation beyond the defined "
+            f"""`mesh_buffer_distance` value ({mesh_buffer_distance} nmi).""")
+            
         else:
             # ---- Else, extract original mesh dataframe
             mesh_df = self.input[ 'statistics' ][ 'kriging' ][ 'mesh_df' ].copy( )
@@ -541,8 +546,12 @@ class Survey:
             mesh_full , _ , _ = (
                 transform_geometry( mesh_full ,
                                     self.input[ 'statistics' ][ 'kriging' ][ 'isobath_200m_df' ] ,
-                                    self.analysis[ 'settings' ][ 'kriging' ] )
+                                    self.analysis[ 'settings' ][ 'kriging' ] ,
+                                    d_x , d_y )
             ) 
+            # ---- Print alert 
+            print( """Longitude and latitude coordinates (WGS84) converted to standardized """
+            """coordinates (x and y).""")
         else:
             # ---- Else, duplicate the transect longitude and latitude coordinates as 'x' and 'y'
             # -------- x
@@ -558,54 +567,6 @@ class Survey:
         self.analysis.update( { 'kriging': { 'mesh_df': mesh_full ,
                                              'transect_df': nasc_df } } )  
 
-
-        ### TODO : Need to relocate the transformed coordinates to an external location
-        ### Import georeferenced data
-        spatial_data = (
-            self.biology
-            [ 'population' ][ 'areal_density' ][ 'biomass_density_df' ]
-        )
-
-        ### Remove sexed data -- only use 'all' for this portion
-        spatial_data = (
-            spatial_data[ spatial_data.sex == 'all' ]
-            .drop_duplicates( subset = [ 'longitude' , 'latitude' ] )
-            [ [ 'transect_num' , 'latitude' , 'longitude' , 'stratum_num' , 
-                'B_a' , 'B_a_adult' ] ]
-        )
-
-        ### Import updated/transformed coordinates                
-        updated_coordinates = (
-            self.biology
-            [ 'population' ][ 'areal_density' ][ 'biomass_density_df' ]
-            .drop_duplicates( subset = [ 'x_transformed' , 'y_transformed' ] )
-            [ [ 'longitude' , 'latitude' , 'longitude_transformed' , 'geometry' , 
-                'x_transformed' , 'y_transformed' , 'transect_num' , 'stratum_num' ] ]
-        )
-
-        ### Find union of column names that will be used to join everything
-        union_lst = spatial_data.filter( items = updated_coordinates.columns ).columns.tolist( )
-        
-        ### Merge with input dataframe
-        spatial_data_transformed =  spatial_data.merge( updated_coordinates , on = union_lst )
-
-        ### Import additional parameters/dataframes necessary for kriging
-        transformed_mesh = self.statistics[ 'kriging' ][ 'mesh_df' ].copy( )
-        dataframe_mesh = self.statistics[ 'kriging' ][ 'mesh_df' ].copy( )
-        dataframe_geostrata = self.spatial[ 'geo_strata_df' ].copy( )
-
-        ### Import semivariogram and kriging parameters
-        kriging_parameters = self.statistics[ 'kriging' ][ 'model_config' ].copy( )
-        variogram_parameters = self.statistics[ 'variogram' ][ 'model_config' ].copy( )
-
-        ### ---------------------------------------------------------------
-        ### !!! TODO: 
-        ### This is related to a later issue found within the sex-age 
-        ### apportionment method, but the resulting areal biomass density 
-        ### estimates produced via `kriging_interpolation` are consistently
-        ### much lower than values produced using previous implementations. 
-        ### This therefore relates to Issue #202.
-        ### ---------------------------------------------------------------
         ### Run kriging algorithm
         kriged_dataframe = kriging_interpolation( spatial_data_transformed ,
                                                   transformed_mesh ,

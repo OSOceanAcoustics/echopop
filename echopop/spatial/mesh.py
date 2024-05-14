@@ -5,7 +5,7 @@ import numpy as np
 from typing import Union
 
 from ..spatial.projection import wgs84_to_utm
-from echopop.spatial.transect import transect_centroid , transect_extent
+from ..spatial.transect import transect_extent
 
 def crop_mesh( transect_data: pd.DataFrame ,
                mesh_data: pd.DataFrame ,               
@@ -53,7 +53,7 @@ def crop_mesh( transect_data: pd.DataFrame ,
     mesh_gdf_masked = mesh_gdf[ within_polygon_mask ]
 
     # Return the masked mesh dataframe
-    return mesh_gdf.drop( columns = 'geometry' )
+    return mesh_gdf_masked.drop( columns = 'geometry' )
 
 def griddify_lag_distances( coordinates_1: Union[pd.DataFrame , np.ndarray] ,
                             coordinates_2: Union[pd.DataFrame , np.ndarray] ):

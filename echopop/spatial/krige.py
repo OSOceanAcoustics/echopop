@@ -3,6 +3,7 @@ import pandas as pd
 
 from ..spatial.mesh import griddify_lag_distances
 from ..spatial.transect import define_western_extent
+from ..spatial.variogram import variogram
 
 def kriging( transect_data: pd.DataFrame ,
              mesh_data: pd.DataFrame ,
@@ -20,13 +21,191 @@ def kriging( transect_data: pd.DataFrame ,
         Kriging and variogram model parameters
     """
 
+    # Extract biological variable values
+    variable_data = transect_data[ settings_dict[ 'variable' ] ].to_numpy( )
+    
     # Generate the distance matrix for each mesh point relative to all transect coordinates
     distance_matrix = griddify_lag_distances( mesh_data , transect_data )
 
     # Calculate the western extent of the transect data
     western_extent = define_western_extent( transect_data )
+    
+    # Run the adaptive search window to identify which points have to be re-weighted to account
+    # for extrapolation
+    range_grid , inside_indices , outside_indices , outside_weights = (
+        adaptive_search_radius( distance_matrix ,
+                                mesh_data ,
+                                western_extent ,
+                                settings_dict )
+    )
+    
+    # Calculate the lagged semivariogram (M20)
+    local_variogram = np.apply_along_axis( variogram , 
+                                           1 , 
+                                           range_grid , 
+                                           settings_dict[ 'variogram_parameters' ]  )
+    
+    # Append 1.0 for the ordinary kriging assumptions (M2)
+    local_variogram_M2 = np.sort( np.hstack( ( local_variogram , 
+                                               np.ones( ( local_variogram.shape[ 0 ] , 1 ) ) ) ) )
+    
+    # Extract x- and y-coordinates, and variable_data
+    # ---- x
+    x_coordinates = transect_data[ 'x' ].to_numpy( )
+    # ---- y
+    y_coordinates = transect_data[ 'y' ].to_numpy( )
+    
+    # Stack all of the kriging parameters
+    full_stack = np.hstack( ( outside_weights.reshape( -1, 1 ).tolist( ) , 
+                              inside_indices.tolist( ) , 
+                              outside_indices.tolist( ) , 
+                              local_variogram_M2.tolist( ) , 
+                              range_grid.tolist( ) ) )
+    
+    # Ordinary kriging 
+    kriged_values = np.apply_along_axis( kriging_interpolation , 
+                                         1 , 
+                                         full_stack , 
+                                         settings_dict[ 'kriging_parameters' ] , 
+                                         settings_dict[ 'variogram_parameters' ] , 
+                                         x_coordinates , 
+                                         y_coordinates , 
+                                         variable_data )
+    
+    # Compute the coefficients of variation (CV)
+    # ---- Compute the global/survey variance
+    survey_variance = np.var( variable_data )
+    # ---- Calculate the integrated variable when distributed over area
+    # --------- Compute area
+    area = settings_dict[ 'kriging_parameters' ][ 'A0' ] * mesh_data[ 'fraction_cell_in_polygon' ]
+    # -------- Distribute biological variable over area
+    survey_estimate = np.nansum( kriged_values[ : , 0 ] * area )
+    # ---- Compute the georeferenced CV at each mesh node
+    mesh_CV = (
+        area.mean( ) * np.sqrt( kriged_values[ : , 1 ].dot( survey_variance ) ) 
+        / survey_estimate * np.sqrt( len( kriged_values[ : , 1 ] ) )
+    )
+    # ---- Compute the global/survey CV
+    survey_CV = (
+        np.sqrt( np.nansum( kriged_values[ : , 1 ] * area ** 2 ) * survey_variance ) 
+        / survey_estimate
+    )
+    # ---- Covariance 
+    covar = np.nansum( kriged_values[ : , 1 ] ) * survey_variance
+    CV = np.sqrt( kriged_values[ : , 1 ] * survey_variance ) / kriged_values[ : , 2 ]
+    CVn = np.mean( area ) * np.sqrt( covar ) / survey_estimate
 
+def kriging_interpolation( stacked_array: np.ndarray , kriging_parameters: dict , variogram_parameters: dict , x_coordinates: np.ndarray , y_coordinates: np.ndarray , variable_data: np.ndarray ):
+    
+    # Extract kriging parameter values 
+    # ---- Anisotropy
+    anisotropy = kriging_parameters[ 'anisotropy' ]
+    # ---- k_max
+    k_max = kriging_parameters[ 'kmax' ]
+    # ---- k_min
+    k_min = kriging_parameters[ 'kmin' ]
+    # ---- search radius
+    search_radius = kriging_parameters[ 'search_radius' ]
+    
+    # Break up the stacked index
+    # ---- Extrapolation/out-of-sample (OOS) weight
+    outside_weight = stacked_array[ 0 ]
+    # ---- Within-sample (IS) indices
+    interp_indices = stacked_array[ 1 : k_max + 1 ]
+    # -------- Drop NaN
+    interp_indices = interp_indices[ ~ np.isnan( interp_indices ) ].astype( int )
+    # ---- OOS indices
+    extrap_indices = stacked_array[ k_max + 1 : ( k_max + 1 + k_min ) ]
+    # -------- Drop NaN
+    extrap_indices = extrap_indices[ ~ np.isnan( extrap_indices ) ].astype( int )
+    # ---- Combine the IS and OOS indices
+    composite = np.concatenate( [ interp_indices , extrap_indices ] )
+    # ---- M2 lagged variogram
+    M2_vario = stacked_array[ - ( k_max * 2 ) - 1 : - k_max ] 
+    # -------- Drop NaN
+    M2_vario = M2_vario[ ~ np.isnan( M2_vario ) ]
+    # ---- Range grid
+    range_vals = stacked_array[ - k_max :]
+    # -------- Drop NaN 
+    range_vals = range_vals[ ~ np.isnan( range_vals ) ]
+    
+    # Index the coordinates and variable data
+    # ---- x
+    x_indexed = x_coordinates[ composite ]
+    # ---- y
+    y_indexed = y_coordinates[ composite ]
+    # ---- variable
+    variable_indexed = variable_data[ composite ]
+    
+    # Set extrapolated variable values to 0.0
+    variable_indexed[ range_vals > search_radius ] = 0.0
+    
+    # Compute the kriging covariance matrix
+    kriging_covariance = kriging_matrix( x_indexed , y_indexed , variogram_parameters )
+    
+    # Compute the kriging weights (lambda)
+    kriging_weights = kriging_lambda( anisotropy , M2_vario , kriging_covariance )
+    
+    # Calculate the point estimate
+    point_estimate = (
+        ( kriging_weights[ : len( composite ) ] * variable_indexed ).sum( ) * outside_weight
+    )
+    
+    # Calculate the kriged variance
+    kriged_variance = kriging_weights.dot( M2_vario )
+    
+    # Calculate the sample variance and CV
+    if abs( point_estimate ) < np.finfo( float ).eps:
+        sample_variance = np.nan
+    else:
+        sample_variance = (
+            np.sqrt( kriged_variance * np.var( variable_indexed , ddof = 1 ) ) 
+            / np.abs( point_estimate )
+        )    
+  
+    # Return output
+    return np.array( [ point_estimate , kriged_variance , sample_variance ] )
 
+def kriging_matrix( x_coordinates ,
+                    y_coordinates ,
+                    variogram_parameters ) :
+    """
+    Calculate the kriging covariance matrix
+
+    Parameters
+    ----------
+    x_coordinates: np.array
+        The x-axis coordinates
+    y_coordinates: np.array
+        The y-axis coordinates
+    variogram_parameters: dict
+        Dictionary containing variogram model parameters
+    """ 
+
+    # Calculate local distance matrix of within-range samples
+    local_distance_matrix = griddify_lag_distances( x_coordinates , y_coordinates )
+    
+    # Calculate the covariance/kriging matrix (without the constant term)
+    kriging_matrix_initial = variogram( distance_lags = local_distance_matrix , 
+                                        variogram_parameters = variogram_parameters )
+
+    # Expand the covariance/kriging matrix with a constant
+    # ---- In Ordinary Kriging, this should be '1'
+    # Columns
+    kriging_matrix = np.concatenate( [ kriging_matrix_initial , 
+                                       np.ones( ( x_coordinates.size , 1 ) ) ] , 
+                                    axis = 1 )
+    
+    # Add column and row of ones for Ordinary Kriging
+    kriging_matrix = np.concatenate( [ kriging_matrix , 
+                                       np.ones( ( 1 , x_coordinates.size + 1 ) ) ] , 
+                                    axis = 0 )
+    
+    # Diagonal fill (0.0)
+    # ---- TODO: Should we put in statements for Objective mapping and Universal Kriging w/ Linear drift?  # noqa
+    np.fill_diagonal( kriging_matrix , 0.0 )
+
+    return kriging_matrix
 
 def search_radius_mask( distance_matrix: np.ndarray , search_radius: float ) :
 
@@ -56,7 +235,7 @@ def count_within_radius( distance_matrirx_masked: np.ndarray ):
 def adaptive_search_radius( distance_matrix: np.ndarray ,
                             mesh_data: pd.DataFrame ,
                             western_extent: pd.DataFrame ,
-                            kriging_parameters: dict ) :
+                            settings_dict: dict ) :
     """
     Find the indices of the k-th nearest points (relative to a reference coordinate) required
     for computing the lagged semivariogram   
@@ -80,11 +259,11 @@ def adaptive_search_radius( distance_matrix: np.ndarray ,
 
     # Extract key search radius parameters
     # ---- k_min
-    k_min = kriging_parameters[ 'kmin' ]
+    k_min = settings_dict[ 'kriging_parameters' ][ 'kmin' ]
     # ---- k_max
-    k_max = kriging_parameters[ 'kmax' ]
+    k_max = settings_dict[ 'kriging_parameters' ][ 'kmax' ]
     # ---- Search radius (distance)
-    search_radius = kriging_parameters[ 'search_radius' ]
+    search_radius = settings_dict[ 'kriging_parameters' ][ 'search_radius' ]
 
     # Generate the search radius mask
     distance_matrix_masked = (
@@ -118,13 +297,14 @@ def adaptive_search_radius( distance_matrix: np.ndarray ,
         nearby_indices = local_indices[ sparse_radii ][ : , : k_min ]
         # Index the mesh grid coordinates for bounding the search radius expansion/extrapolation
         # ---- y-coordinates with array transformation to access matrix operations
-        mesh_y = mesh_data[ 'y' ][ sparse_radii ].to_numpy( ).reshape(-1, 1)
+        mesh_y = mesh_data[ 'y' ].to_numpy( )[ sparse_radii ].reshape(-1, 1)
         # ---- x-coordinates
-        mesh_x = mesh_data[ 'x' ][ sparse_radii ].to_numpy( )
+        mesh_x = mesh_data[ 'x' ].to_numpy( )[ sparse_radii ]
 
         # Update local points
         # ---- Fill NaN values
         local_points[ sparse_radii , k_min : ] = np.nan 
+        wr_indices[ sparse_radii , k_min : ] = np.nan
 
         # Calculate the mesh distance from the western boundary of the survey transects
         # ---- Find closest point
@@ -132,12 +312,46 @@ def adaptive_search_radius( distance_matrix: np.ndarray ,
         # ---- Calculate the western limits (x-axis)
         western_limit = western_extent.iloc[ np.ravel( mesh_western_distance ) ][ 'x' ]
         # ---- Compute bounding threshold (for tapered extrapolation function)
-        western_threshold = western_limit - search_radius
-
+        western_threshold = western_limit - search_radius        
+        # ---- Create a thresholded mask for lazy operations
+        western_limit_mask = mesh_x < western_threshold
+        
+        # Adjust values that don't fall outside the western extent
+        if np.any( ~ western_limit_mask ):
+            # ---- Grab all values that don't fall outside the western extent
+            soft_extrapolation_index = sparse_radii[ ~ western_limit_mask ]
+            
+            # Find the local points where there are at least some valid points
+            partial_indices = (
+                soft_extrapolation_index[ valid_distances[ soft_extrapolation_index ] > 0 ]
+            )
+            # ---- Update the current values in `wr_indices`
+            # -------- Create boolean mask for within-range/sample points
+            wr_mask = local_points[ partial_indices , : k_max ] < search_radius 
+            # -------- Create temporary matrix for within-range samples
+            wr_tmp = wr_indices[ partial_indices ].copy( )
+            # -------- Create temporary matrix for oos samples
+            oos_tmp = wr_indices[ partial_indices ].copy( )
+            # -------- Update temporary matrix by applying `wr_mask` for wr points
+            wr_tmp[ ~ wr_mask ] = np.nan
+            # -------- Update temporary matrix by applying `wr_mask` for oos points
+            oos_tmp[ wr_mask ] = np.nan
+            # -------- Assign the OOS values to `oos_indices`
+            oos_indices[ partial_indices ] = np.sort( oos_tmp[ : , : k_min ] )
+            # -------- Apply the mask to the remaining `wr_indices` values 
+            wr_indices[ partial_indices ] = np.sort( wr_tmp[ : , : k_max ] )
+            
+            # Find the local points where there are no valid points within the search radius
+            full_extrap_indices = (
+                soft_extrapolation_index[ valid_distances[ soft_extrapolation_index ] == 0 ]
+            )
+            # ---- Update `oos_indices`
+            oos_indices[ full_extrap_indices ] = wr_indices[ full_extrap_indices , : k_min ]
+            # ----- Update `wr_indices`
+            wr_indices[ full_extrap_indices ] = np.nan          
+            
         # Taper function for extrapolating values outside the search radius
-        if np.any( mesh_x < western_threshold ) :
-            # ---- Create a thresholded mask for lazy operations
-            western_limit_mask = mesh_x < western_threshold
+        if np.any( western_limit_mask ) :
             # ---- Index these values
             extrapolation_index = sparse_radii[ western_limit_mask ]
             # ---- Compute the OOS kriging weights
@@ -175,10 +389,15 @@ def adaptive_search_radius( distance_matrix: np.ndarray ,
                                                constant_values = np.nan )
             # -------- Updated `within_sample_indices` matrix
             wr_indices[ extrapolation_index ] = np.sort( sparse_interpolation_pad )
-
-            print( f"""Extrapolation applied to kriging mesh points ({len( sparse_radii )} of {wr_indices.shape[ 0 ]}):
-                    * {len( valid_distances[ valid_distances == 0 ] )} points had 0 valid range estimates without extrapolation
-                    * {len( valid_distances[ ( valid_distances != 0 ) & ( valid_distances< k_min ) ] )} points had at least 1 valid point but fewer than {k_min} valid neighbors""")
+            
+        # Alert message (if verbose = True)
+        if settings_dict[ 'verbose' ]:
+            print( f"""Extrapolation applied to kriging mesh points ({len( sparse_radii )} of """
+            f"""{wr_indices.shape[ 0 ]}):
+            * {len( valid_distances[ valid_distances == 0 ] )} points had 0 valid range estimates"""
+            f""" without extrapolation
+            * {len( valid_distances[ ( valid_distances != 0 ) & ( valid_distances< k_min ) ] )} """
+            f"""points had at least 1 valid point but fewer than {k_min} valid neighbors""")
 
     # Return output
     return local_points[ : , : k_max ] , wr_indices , oos_indices , oos_weights

@@ -4,6 +4,8 @@ import yaml
 import numpy as np
 import pandas as pd
 
+from ..core import LAYER_NAME_MAP
+
 def load_configuration( init_config_path: Path , 
                         survey_year_config_path: Path ):
     """
@@ -182,6 +184,10 @@ def prepare_input_data( input_dict: dict , configuration_dict: dict ) :
                                                        inplace = True )
     
     # Create INPFC stratum key with correct latitude bins/intervals
+    # ---- Update haul column names
+    input_dict[ 'spatial' ][ 'inpfc_strata_df' ].rename( columns = { 'haul start': 'haul_start' ,
+                                                                     'haul end': 'haul_end' } ,
+                                                        inplace = True )
     # ---- Rename stratum column name to avoid conflicts
     input_dict[ 'spatial' ][ 'inpfc_strata_df' ].rename( columns = { 'stratum_num': 'stratum_inpfc' } , 
                                                          inplace = True )
