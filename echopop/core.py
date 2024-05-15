@@ -235,7 +235,8 @@ DATA_STRUCTURE = {
     } ,
     'results': {
         'transect': dict ( ) ,
-        'stratified': dict( )
+        'stratified': dict( ) ,
+        'kriging': dict( )
     }
 }
 

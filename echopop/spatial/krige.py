@@ -22,7 +22,10 @@ def kriging( transect_data: pd.DataFrame ,
     """
 
     # Extract biological variable values
-    variable_data = transect_data[ settings_dict[ 'variable' ] ].to_numpy( )
+    # ---- Define the variable name
+    variable_name = settings_dict[ 'variable' ]
+    # ---- Extract array
+    variable_data = transect_data[ variable_name ].to_numpy( )
     
     # Generate the distance matrix for each mesh point relative to all transect coordinates
     distance_matrix = griddify_lag_distances( mesh_data , transect_data )
@@ -90,12 +93,38 @@ def kriging( transect_data: pd.DataFrame ,
         np.sqrt( np.nansum( kriged_values[ : , 1 ] * area ** 2 ) * survey_variance ) 
         / survey_estimate
     )
-    # ---- Covariance 
-    covar = np.nansum( kriged_values[ : , 1 ] ) * survey_variance
-    CV = np.sqrt( kriged_values[ : , 1 ] * survey_variance ) / kriged_values[ : , 2 ]
-    CVn = np.mean( area ) * np.sqrt( covar ) / survey_estimate
 
-def kriging_interpolation( stacked_array: np.ndarray , kriging_parameters: dict , variogram_parameters: dict , x_coordinates: np.ndarray , y_coordinates: np.ndarray , variable_data: np.ndarray ):
+    # Return a Tuple with the results
+    # ---- Create DataFrame with the mesh node results
+    # -------- Initialize
+    mesh_results = mesh_data.copy( ) 
+    # -------- Add area
+    mesh_results[ 'area' ] = area
+    # -------- Add the kriged variable
+    mesh_results[ "kriged_mean" ] = kriged_values[ : , 0 ]
+    # -------- Add the kriged variance
+    mesh_results[ "kriged_variance" ] = kriged_values[ : , 1 ]
+    # -------- Add the sample variance
+    mesh_results[ "sample_variance" ] = kriged_values[ : , 2 ]
+    # -------- Add the sample CV
+    mesh_results[ "sample_cv" ] = mesh_CV
+    # -------- Extract only the necessary dataframe columns
+    mesh_results = mesh_results.filter( regex = "^(?!(fraction|x|y))")
+    # ---- Create dictionary with survey-wide kriged results
+    survey_results = { 'variable': variable_name ,
+                       'survey_mean': kriged_values[ : , 0 ].mean( ) ,                       
+                       'survey_estimate': survey_estimate ,
+                       'survey_cv': survey_CV ,
+                       'mesh_results_df': mesh_results }
+    # ---- Return output
+    return survey_results
+
+def kriging_interpolation( stacked_array: np.ndarray , 
+                           kriging_parameters: dict , 
+                           variogram_parameters: dict , 
+                           x_coordinates: np.ndarray , 
+                           y_coordinates: np.ndarray , 
+                           variable_data: np.ndarray ):
     
     # Extract kriging parameter values 
     # ---- Anisotropy

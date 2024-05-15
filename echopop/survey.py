@@ -5,19 +5,37 @@ import numpy as np
 import copy
 from .core import CONFIG_MAP, LAYER_NAME_MAP , DATA_STRUCTURE
 from .utils.load import load_configuration , validate_data_columns , prepare_input_data
-# from .utils.operations import bin_variable
-from .computation.statistics import stratified_transect_statistic
-from .computation.kriging_methods import kriging_interpolation
+
 from .computation.acoustics import summarize_sigma_bs , nasc_to_biomass
-from .computation.biology import filter_species , fit_length_weight_relationship , number_proportions , quantize_number_counts , fit_length_weights , weight_proportions
-from .computation.biology import distribute_length_age , partition_transect_age
-from .spatial.transect import prepare_transect_strata , transect_distance , summarize_transect_strata , save_transect_coordinates
-from .computation.biology import sum_strata_weight , calculate_aged_unaged_proportions
-from .computation.biology import  calculate_aged_biomass , calculate_unaged_biomass
-from .computation.biology import apply_age_bins , filter_species 
+from .computation.statistics import stratified_transect_statistic
+
+from .spatial.transect import (
+    prepare_transect_strata , 
+    transect_distance , 
+    summarize_transect_strata , 
+    save_transect_coordinates
+)
+
+from .computation.biology import (
+    filter_species , 
+    fit_length_weight_relationship , 
+    number_proportions , 
+    quantize_number_counts , 
+    fit_length_weights , 
+    weight_proportions ,
+    distribute_length_age , 
+    partition_transect_age ,
+    sum_strata_weight , 
+    calculate_aged_unaged_proportions ,
+    calculate_aged_biomass , 
+    calculate_unaged_biomass ,
+    apply_age_bins
+)
+
 from .utils import message as em
 from .spatial.mesh import crop_mesh
 from .spatial.projection import transform_geometry
+from .spatial.krige import kriging
 
 class Survey:
     """
@@ -402,8 +420,9 @@ class Survey:
         
         # Error message for `stratum == 'ks'`
         if stratum == 'ks': 
-            raise ValueError( """The Jolly and Hampton (1990) stratified analysis is not currently\
-        comaptible for calculating over KS strata. Please change `stratum` to 'inpfc'.""")
+            raise ValueError( """The Jolly and Hampton (1990) stratified analysis is not"""
+        """ currently comaptible for calculating over KS strata. Please change `stratum` to"""
+        """ 'inpfc'.""")
 
         # Parameterize analysis settings that will be applied to the stratified analysis
         self.analysis[ 'settings' ].update(
@@ -498,6 +517,12 @@ class Survey:
             }
         )
 
+        # Prepare temporary message concerning coordinate transformation = False
+        if not coordinate_transform:
+            raise ValueError( """Kriging without coordinate standardization is currently """
+        """unavailable due to the kriging parameter `search_radius` being only defined for """
+        """transformed x- and y-coordinates.""")
+
         # Pull in the biological transect data        
         nasc_df = prepare_transect_strata( self.analysis[ 'transect' ] ,
                                            self.analysis[ 'settings' ][ 'kriging' ] )
@@ -566,160 +591,20 @@ class Survey:
         # ---- Save to the analysis attribute
         self.analysis.update( { 'kriging': { 'mesh_df': mesh_full ,
                                              'transect_df': nasc_df } } )  
-
-        ### Run kriging algorithm
-        kriged_dataframe = kriging_interpolation( spatial_data_transformed ,
-                                                  transformed_mesh ,
-                                                  dataframe_mesh ,
-                                                  dataframe_geostrata ,
-                                                  variogram_parameters ,
-                                                  kriging_parameters )
         
-        # ### Calculate grid CV
-        # kriged_results = grid_cv( self.biology[ 'population' ][ 'areal_density' ][ 'biomass_density_df' ] ,
-        #                           kriged_results ,
-        #                           self.statistics[ 'kriging' ][ 'model_config' ] )
-
-        ### Assign results to an attribute
-        self.statistics[ 'kriging' ].update(
+        # Run the kriging algorithm and procedure
+        self.results[ 'kriging' ].update(
             {
-                'kriged_biomass_df': kriged_dataframe
+                'interpolation': kriging( self.analysis[ 'kriging' ][ 'transect_df' ] ,
+                                          self.analysis[ 'kriging' ][ 'mesh_df' ] ,
+                                          self.analysis[ 'settings' ][ 'kriging' ] )
             }
         )
-        
-        ### TODO: This should be refactored out as an external function 
-        ###### rather than a Survey-class method.
-        ### Apportion biomass based on age and sex
-        # self.apportion_kriged_biomass( species_id )
 
-    def standardize_coordinates( self ,
-                                 dataset: str = 'biomass_density' ):
-        """
-        Standardizes spatial coordinates based on reference positions
-        """         
-
-        ### Parse which dataset will be adjusted
-        if dataset == 'biomass_density' :
-            data_regrid = self.biology[ 'population' ][ 'areal_density' ][ 'biomass_density_df' ]
-        elif dataset == 'number_density' :
-            data_regrid = self.biology[ 'population' ][ 'areal_density' ][ 'number_density_df' ]
-        elif dataset == 'abundance' :
-            data_regrid = self.biology[ 'population' ][ 'abundance' ][ 'abundance_df' ]
-        elif dataset == 'biomass' :
-            data_regrid = self.biology[ 'population' ][ 'biomass' ][ 'biomass_df' ]
-        elif dataset == 'biomass_age' :
-            data_regrid = self.biology[ 'population' ][ 'biomass' ][ 'biomass_age_df' ]
-
-        ### Collect necessary parameter values
-        # !!! TODO: This only currently applies to age-sex-indexed biomass
-        transect_trans_df , d_x , d_y = transform_geometry( data_regrid , 
-                                                            self.statistics[ 'kriging' ][ 'isobath_200m_df' ] , 
-                                                            self.config[ 'kriging_parameters' ] ,
-                                                            self.config[ 'geospatial' ][ 'init' ] )
-        
-        ### Update Survey object with transformed coordinates
-        if dataset == 'biomass_density' :
-            self.biology[ 'population' ][ 'areal_density' ][ 'biomass_density_df' ] = transect_trans_df
-        elif dataset == 'number_density' :
-            self.biology[ 'population' ][ 'areal_density' ][ 'number_density_df' ] = transect_trans_df
-        elif dataset == 'abundance' :
-            self.biology[ 'population' ][ 'abundance' ][ 'abundance_df' ] = transect_trans_df
-        elif dataset == 'biomass' :
-            self.biology[ 'population' ][ 'biomass' ][ 'biomass_df' ] = transect_trans_df
-        elif dataset == 'biomass_age' :
-            self.biology[ 'population' ][ 'biomass' ][ 'biomass_age_df' ] = transect_trans_df
-
-        ### Transform mesh
-        mesh_trans_df , _ , _ = transform_geometry( self.statistics[ 'kriging' ][ 'mesh_df' ] , 
-                                                    self.statistics[ 'kriging' ][ 'isobath_200m_df' ] , 
-                                                    self.config[ 'kriging_parameters' ] ,
-                                                    self.config[ 'geospatial' ][ 'init' ] ,
-                                                    d_longitude = d_x , d_latitude = d_y )
-        
-        ### Update Survey object with transformed coordinates
-        self.statistics[ 'kriging' ][ 'mesh_df' ] =  mesh_trans_df
-    
-    def krige( self ,
-               variable: str = 'B_a_adult' ):
-        """
-        Interpolates biomass data using ordinary kriging
-        
-        Parameters
-        ----------
-        variable
-            Biological variable that will be interpolated via kriging
-        """  
-        ### TODO : Need to relocate the transformed coordinates to an external location
-        ### Import georeferenced data
-        spatial_data = (
-            self.biology
-            [ 'population' ][ 'areal_density' ][ 'biomass_density_df' ]
-        )
-
-        ### Remove sexed data -- only use 'all' for this portion
-        spatial_data = (
-            spatial_data[ spatial_data.sex == 'all' ]
-            .drop_duplicates( subset = [ 'longitude' , 'latitude' ] )
-            [ [ 'transect_num' , 'latitude' , 'longitude' , 'stratum_num' , 
-                'B_a' , 'B_a_adult' ] ]
-        )
-
-        ### Import updated/transformed coordinates                
-        updated_coordinates = (
-            self.biology
-            [ 'population' ][ 'areal_density' ][ 'biomass_density_df' ]
-            .drop_duplicates( subset = [ 'x_transformed' , 'y_transformed' ] )
-            [ [ 'longitude' , 'latitude' , 'longitude_transformed' , 'geometry' , 
-                'x_transformed' , 'y_transformed' , 'transect_num' , 'stratum_num' ] ]
-        )
-
-        ### Find union of column names that will be used to join everything
-        union_lst = spatial_data.filter( items = updated_coordinates.columns ).columns.tolist( )
-        
-        ### Merge with input dataframe
-        spatial_data_transformed =  spatial_data.merge( updated_coordinates , on = union_lst )
-
-        ### Import additional parameters/dataframes necessary for kriging
-        transformed_mesh = self.statistics[ 'kriging' ][ 'mesh_df' ].copy( )
-        dataframe_mesh = self.statistics[ 'kriging' ][ 'mesh_df' ].copy( )
-        dataframe_geostrata = self.spatial[ 'geo_strata_df' ].copy( )
-
-        ### Import semivariogram and kriging parameters
-        kriging_parameters = self.statistics[ 'kriging' ][ 'model_config' ].copy( )
-        variogram_parameters = self.statistics[ 'variogram' ][ 'model_config' ].copy( )
-
-        ### ---------------------------------------------------------------
-        ### !!! TODO: 
-        ### This is related to a later issue found within the sex-age 
-        ### apportionment method, but the resulting areal biomass density 
-        ### estimates produced via `kriging_interpolation` are consistently
-        ### much lower than values produced using previous implementations. 
-        ### This therefore relates to Issue #202.
-        ### ---------------------------------------------------------------
-        ### Run kriging algorithm
-        kriged_dataframe = kriging_interpolation( spatial_data_transformed ,
-                                                  transformed_mesh ,
-                                                  dataframe_mesh ,
-                                                  dataframe_geostrata ,
-                                                  variogram_parameters ,
-                                                  kriging_parameters )
-        
-        # ### Calculate grid CV
-        # kriged_results = grid_cv( self.biology[ 'population' ][ 'areal_density' ][ 'biomass_density_df' ] ,
-        #                           kriged_results ,
-        #                           self.statistics[ 'kriging' ][ 'model_config' ] )
-
-        ### Assign results to an attribute
-        self.statistics[ 'kriging' ].update(
-            {
-                'kriged_biomass_df': kriged_dataframe
-            }
-        )
-        
-        ### TODO: This should be refactored out as an external function 
-        ###### rather than a Survey-class method.
-        ### Apportion biomass based on age and sex
-        # self.apportion_kriged_biomass( species_id )
+        # Print result if `verbose == True`
+        if verbose:
+            em.kriging_mesh_results_msg( self.results[ 'kriging' ] , 
+                                         self.analysis[ 'settings' ][ 'kriging' ] )
 
     def apportion_kriged_biomass( self ,
                                   species_id ):

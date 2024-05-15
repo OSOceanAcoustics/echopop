@@ -17,7 +17,9 @@ from echopop.computation.acoustics import nasc_to_biomass
 from echopop.computation.biology import distribute_length_age , partition_transect_age , filter_species
 from echopop.computation.biology import number_proportions , weight_proportions , fit_length_weights
 from echopop.computation.statistics import stratified_transect_statistic
-from echopop.spatial.transect import transect_array
+from echopop.spatial.transect import transect_array , define_western_extent
+from echopop.spatial.mesh import crop_mesh , griddify_lag_distances
+from echopop.spatial.projection import transform_geometry
 
 # init_config_path = "./config_files/initialization_config.yml"
 # survey_year_config_path = "./config_files/survey_year_2019_config.yml"
@@ -26,8 +28,12 @@ survey = Survey( "./config_files/initialization_config.yml" ,
                  "./config_files/survey_year_2019_config.yml" )
 survey.transect_analysis( )
 survey.stratified_summary( )
+survey.krige( extrapolate = True , coordinate_transform= False )
 
-
+self = survey
+transect_data = self.analysis[ 'kriging' ][ 'transect_df' ]
+mesh_data = self.analysis[ 'kriging' ][ 'mesh_df' ]
+settings_dict = self.analysis[ 'settings' ][ 'kriging' ]
 
 species_id = 22500
 self = survey

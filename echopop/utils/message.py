@@ -104,3 +104,31 @@ def stratified_results_msg( stratified_results_dict: pd.DataFrame , settings_dic
     f""" {stratified_message['mean:unweighted_confidence_interval']}
     --------------------------------"""
     )
+
+def kriging_mesh_results_msg( kriging_results_dict: pd.DataFrame , 
+                              settings_dict: dict ):
+    
+    # Extract dictionary results
+    kriging_mesh_results = kriging_results_dict[ 'interpolation' ]
+    
+    # Generate message output
+    return print(
+    f"""
+    KRIGING RESULTS (MESH)
+    --------------------------------
+    | Kriged variable: {settings_dict[ 'variable' ].replace("_"," ").capitalize()} (kg/nmi^2)
+    | Age-1 fish excluded: {settings_dict['exclude_age1']}
+    | Stratum definition: {settings_dict[ 'stratum' ].upper() }
+    | Mesh extrapolation: {settings_dict[ 'extrapolate' ] }
+    | Mesh and transect coordinate standardization: {settings_dict[ 'standardize_coordinates' ] }\n"""
+    f"""    Mean {settings_dict[ 'variable' ].replace("_"," ")}: """
+    f"""{np.round(kriging_mesh_results['survey_mean'],2)} kg/nmi^2\n"""
+    f"""    Total survey {settings_dict[ 'variable' ].replace("_density","")} estimate: """
+    f"""{np.round(kriging_mesh_results['survey_estimate']*1e-6,2)} kmt\n"""
+    f"""    Mean mesh sample CV: """
+    f"""{np.round(kriging_mesh_results[ 'mesh_results_df' ][ 'sample_cv' ].mean(),4)}\n"""
+    f"""    Overall survey CV: {np.round(kriging_mesh_results['survey_cv'], 4)}\n"""
+    f"""    Total area coverage:"""
+    f""" {np.round(kriging_mesh_results[ 'mesh_results_df' ]['area'].sum(),1)} nmi^2\n"""
+    """   --------------------------------"""
+    )
