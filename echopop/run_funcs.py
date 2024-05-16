@@ -10,32 +10,676 @@ from echopop.spatial.transect import transect_array
 from echopop.computation.kriging_methods import kriging_interpolation , compute_kriging_weights , range_index_threshold , compute_kriging_statistics , ordinary_kriging
 from echopop.computation.spatial_old import local_search_index , griddify_lag_distances
 from echopop.computation.variogram_models import variogram
-from echopop.computation.biology import filter_species , fit_length_weight_relationship , number_proportions , quantize_number_counts , stratum_weights
+from echopop.biology import filter_species , fit_length_weight_relationship , number_proportions , quantize_number_counts , stratum_weights
 from echopop.computation.acoustics import summarize_sigma_bs
 from echopop.spatial.transect import prepare_transect_strata , transect_distance , summarize_transect_strata , save_transect_coordinates
 from echopop.computation.acoustics import nasc_to_biomass 
-from echopop.computation.biology import distribute_length_age , partition_transect_age , filter_species
-from echopop.computation.biology import number_proportions , weight_proportions , fit_length_weights
+from echopop.biology import distribute_length_age , partition_transect_age , filter_species
+from echopop.biology import number_proportions , weight_proportions , fit_length_weights
 from echopop.computation.statistics import stratified_transect_statistic
 from echopop.spatial.transect import transect_array , define_western_extent
 from echopop.spatial.mesh import crop_mesh , griddify_lag_distances
 from echopop.spatial.projection import transform_geometry
-
-# init_config_path = "./config_files/initialization_config.yml"
-# survey_year_config_path = "./config_files/survey_year_2019_config.yml"
+from echopop.utils import load as el
+init_config_path = "./config_files/initialization_config.yml"
+survey_year_config_path = "./config_files/survey_year_2019_config.yml"
 from echopop.survey import Survey
 survey = Survey( "./config_files/initialization_config.yml" ,
                  "./config_files/survey_year_2019_config.yml" )
 survey.transect_analysis( )
-survey.stratified_summary( )
-survey.krige( extrapolate = True , coordinate_transform= False )
+survey.stratified_analysis( )
+survey.kriging_analysis( )
 
 self = survey
 transect_data = self.analysis[ 'kriging' ][ 'transect_df' ]
 mesh_data = self.analysis[ 'kriging' ][ 'mesh_df' ]
 settings_dict = self.analysis[ 'settings' ][ 'kriging' ]
+length_weight_fit = self.analysis[ 'transect' ]['biology']['weight']['length_weight_regression']['weight_fitted_df']
+lengths = self.input[ 'biology' ][ 'distributions' ][ 'length_bins_df' ]
 
+
+specimen_data = self.input[ 'biology' ][ 'specimen_df' ].copy( )
+specimen_data = specimen_data[ specimen_data.species_id == 22500 ]
+# Gather specimen measurements to represent 'all' fish
+specimen_data_all = specimen_data.assign( sex = 'all' )
+
+# Combine sexed and 'all' specimens
+# ---- Vertical concatenation
+specimen_data_all = pd.concat( [ specimen_data[ specimen_data.group_sex == 'sexed' ] ,
+                                    specimen_data_all ] )
+
+specimen_data_all.groupby( [ 'sex' ] )[ 'length' ].size( )
+# ---- Remove bad values
+tt = specimen_data_all.dropna( subset = [ 'weight' , 'length' ] )
+tt = specimen_data[ specimen_data.sex != 'male' ].dropna( subset = [ 'weight' , 'length' ] )
+specimen_data_all[ specimen_data_all.sex == 'male' ].shape[0]
+specimen_data_all[ specimen_data_all.sex == 'female' ].shape[0]
+
+
+gg = input_dict[ 'biology' ][ 'specimen_df' ][ input_dict[ 'biology' ][ 'specimen_df' ].species_id == 22500 ]
+
+np.polyfit( np.log10( tt[ 'length' ] ) , np.log10( tt[ 'weight' ] ) , 1 )
+# Fit length-weight linear regression by male, female, and all fish
+length_weight_regression_df = (
+    specimen_data_all
+    .groupby( [ 'species_id' , 'sex' ] )
+    .apply( lambda df: pd.Series( np.polyfit( np.log10( df[ 'length' ] ) ,
+                                                np.log10( df[ 'weight' ] ) , 1 ) ,
+                                    index = [ 'rate' , 'initial' ] ) ,
+            include_groups = False )
+    .reset_index( )
+)
+
+length_distribution = input_dict[ 'biology' ][ 'distributions' ][ 'length_bins_df' ]
+
+# Predict weights for binned lengths
+# ---- Initialize dataframe
+weight_fitted_df = length_distribution.copy( )
+# ---- Expand/merge with length-weight regression coefficients
+weight_fitted_df = weight_fitted_df.merge( length_weight_regression_df , how = 'cross' )
+# ---- Predict weight per bin
+weight_fitted_df[ 'weight_modeled' ] = (
+    10.0 ** weight_fitted_df[ 'initial' ] 
+    * weight_fitted_df[ 'length_bins' ] ** weight_fitted_df[ 'rate' ]
+)
+# ---- Drop unused columns
+weight_fitted_df = weight_fitted_df.filter( [ 'length_intervals' , 'species_id' , 'sex' , 
+                                                'weight_modeled' ] )
+
+# Adjust for cases where there are too few (< 5) specimens within a given length bin
+# ---- Count number of specimens across length bins
+weight_fitted_distribution_df = (
+    specimen_data_all
+    .count_variable( contrasts = [ 'species_id' , 'sex' , 'length_bin' ] , 
+                        variable = 'length' , fun = 'size' )
+    .set_index( [ 'species_id' , 'sex' , 'length_bin' ] )
+)
+# ---- Get mean weight per bin as well
+weight_fitted_distribution_df[ 'weight_mean' ] = (
+    specimen_data_all
+    .groupby( [ 'species_id' , 'sex' , 'length_bin' ] , observed = False )[ 'weight' ]
+    .mean( ).fillna( 0.0 )
+)
+# ---- Merge with the fitted weights
+weight_fitted_distribution_df = (
+    weight_fitted_distribution_df.merge( weight_fitted_df ,
+                                            left_on = [ 'species_id' , 'sex' , 'length_bin' ] ,
+                                            right_on = [ 'species_id' , 'sex' , 'length_intervals' ] )
+)
+# ---- Find fitted weights accounting for low sample sizes
+weight_fitted_distribution_df[ 'weight_fitted' ] = np.where( weight_fitted_distribution_df[ 'count' ] < 5 ,
+                                                                weight_fitted_distribution_df[ 'weight_modeled' ] ,
+                                                                weight_fitted_distribution_df[ 'weight_mean' ] )
+# ---- Pull out unused columns
+weight_fitted_distribution_df = weight_fitted_distribution_df.filter( [ 'species_id' , 'sex' ,
+                                                                        'length_intervals' ,
+                                                                        'weight_fitted' ] )
+
+# Prepare data
+# ---- Get the name of the stratum column
+stratum_col = [ col for col in specimen_data.columns if 'stratum' in col.lower( ) ][ 0 ]
+# ---- For cases where all samples were aged (i.e. in `specimen_data` and absent from
+# ---- `length_data`), these hauls are removed from `catch_data`
+catch_data_filtered = catch_data[ catch_data.haul_num.isin( length_data.haul_num ) ]
+
+# Generate sex-specific interpolators for fitted length-weight values for unaged fish (station 1)
+# ---- Parse the male- and female-specific fitted weight values
+length_weight_sex = (
+    length_weight_df.copy( )[ length_weight_df[ 'sex' ].isin( [ 'male' , 'female' ] ) ]
+)
+# ---- Extract 'length' from the interval categories
+length_weight_sex.loc[ : , 'length' ] = (
+    length_weight_sex.loc[ : , 'length_intervals' ].apply( lambda x: x.mid )
+)
+# ---- Create interpolator functions
+interpolators = group_interpolator_creator( grouped_data = length_weight_sex ,
+                                            independent_var = 'length' ,
+                                            dependent_var = 'weight_fitted' ,
+                                            contrast = 'sex' )
+# ---- Create helper/lambda function
+def weight_interpolator( dataframe_row ):
+    sex = dataframe_row[ 'sex' ]
+    length = dataframe_row[ 'length' ]
+    if sex in interpolators:
+        return interpolators[ sex ]( length )
+    else: 
+        return None
+# ---- Extract only sexed fish from the unaged (station 1) length dataset
+length_data_sexed = length_data[ length_data[ 'sex' ].isin( [ 'male' , 'female' ] ) ].copy( )
+# ---- Add interpolated weights to the general length dataset
+length_data_sexed.loc[ : , 'weight_interp' ] = (
+    length_data_sexed.apply( weight_interpolator , axis = 1 ) 
+    * length_data_sexed[ 'length_count' ]
+)
+# ---- Convert interpolated weights (summed across length counts) into a table
+length_table_sexed = (
+    length_data_sexed.pivot_table( columns = [ stratum_col , 'sex' ] , 
+                                   index = [ 'length_bin' ] , 
+                                   values = 'weight_interp' , 
+                                   aggfunc = 'sum' , 
+                                   observed = False  )
+)
+
+# Sum the total unaged catch data (station 1)
+catch_strata_weights = catch_data_filtered.count_variable( contrasts = [ stratum_col ] , 
+                                                            variable = 'haul_weight' , 
+                                                            fun = 'sum' ) 
+# ---- Rename resulting columns for both
+catch_strata_weights.rename( columns = { 'count': 'stratum_weight' } , inplace = True )
+
+# Calculate the standardized haul weights for each sex
+# ---- Convert the values in `catch_strata_weights` to an array
+catch_weights_array = catch_strata_weights[ 'stratum_weight' ].to_numpy( )
+# ---- Calculate the total weight per stratum per sex
+catch_weights_sex = length_table_sexed.sum( )
+# ---- Calculate the overall catch total per stratum
+catch_weights_total = length_table_sexed.sum( ).unstack( 0 ).sum( axis = 0 )
+# ---- Calculate the standardized catch weights
+catch_weights_standardized = (
+    ( catch_weights_sex / catch_weights_total ).unstack( 0 ) * catch_weights_array
+)
+
+# Sum the total aged catch data (station 2)
+# ---- Drop unsexed fish
+specimen_data_filtered = specimen_data[ specimen_data.group_sex != 'unsexed' ]
+# ---- Remove NaN
+specimen_data_filtered = specimen_data_filtered.dropna( subset = [ 'length' , 'weight' , 'age' ] )
+# ---- Bin weights across weight and age per sex
+specimen_weights_binned = (
+    specimen_data_filtered
+    .pivot_table( columns = [ stratum_col , 'sex' , 'age_bin' ] , 
+                  index = [ 'length_bin' ] , 
+                  values = 'weight' , 
+                  aggfunc = 'sum' , 
+                  observed = False )
+)
+# ---- Calculate the total weight per stratum per sex
+specimen_weights_sex = (
+    specimen_weights_binned.sum( ).unstack( [ 'age_bin' ] ).sum( axis = 1 ).unstack( 0 )
+)
+# ---- Calculate the stratum totals
+specimen_strata_weights = (
+    specimen_weights_sex.sum( ).reset_index( name = 'stratum_weight' )
+)
+
+# Calculate the total weight per stratum across both stations/datasets
+total_strata_weights = (
+    pd.concat( [ catch_strata_weights , specimen_strata_weights ] )
+    .pivot_table( columns = [ stratum_col ] , aggfunc = 'sum' , values = 'stratum_weight' ,
+                  observed = False )
+)
+
+gg = self.analysis[ 'transect' ][ 'biology' ][ 'proportions' ][ 'weight' ][ 'unaged_weight_proportions_df' ]
+
+gg.pivot_table( index = stratum_col , columns = 'sex' , values = 'weight_proportion_total' , aggfunc = 'sum' )
+
+specimen_strata_sex = specimen_data_filtered.count_variable( contrasts = [ stratum_col ] , 
+                                                             variable = 'weight' , 
+                                                             fun = 'sum' )
+# ---- Specimen (aged) data
+specimen_strata_weights = specimen_data_filtered.count_variable( contrasts = [ stratum_col ] , 
+                                                                 variable = 'weight' , 
+                                                                 fun = 'sum' )
+# ---- Rename resulting columns for both
+specimen_strata_weights.rename( columns = { 'count': 'stratum_weight' } , inplace = True )
+
+# Calculate the total weight per stratum across both stations/datasets
+total_strata_weights = (
+    pd.concat( [ catch_strata_weights , specimen_strata_weights ] )
+    .pivot_table( columns = [ stratum_col ] , aggfunc = 'sum' , values = 'stratum_weight' ,
+                  observed = False )
+)
+
+catch_weights_standardized / 
+
+total_strata_weights.unstack()
+pd.concat( [ catch_strata_weights , 
+             specimen_strata_weights ] ).pivot_table( index = [ stratum_col ] , aggfunc = 'sum' )
+
+np.array( [ [ catch_strata_weights[ 'stratum_weight' ] ] , [ specimen_strata_weights[ 'stratum_weight' ] ] ] )
+
+
+np.nansum( catch_strata_weights.set_index( stratum_col )  , specimen_strata_weights.set_index( stratum_col ) )
+
+total_strata_weights = (
+    catch_strata_weights.set_index( stratum_col ) 
+    + specimen_strata_weights.set_index( stratum_col )
+)
+
+
+totals = length_table_sexed.sum( ).unstack( ).sum( axis = 1 )
+
+length_weight_sex[ length_weight_sex.sex == 'male' ]
+
+length_table_sexed.sum( )
+
+catch_strata_weights.set_index( 'stratum_num' ) * ( length_table_sexed.sum( ).unstack( 'sex' ).stack( ) / totals )
+
+( length_table_sexed.sum( ).unstack( 'sex' ).stack( ) / totals ).unstack( 0 ) * ( catch_strata_weights[ 'count' ].to_numpy( ) )
+
+.unstack( 'sex' ).loc[ : , : ] * ( catch_strata_weights[ 'count' ].T )
+
+length_table_sexed.sum( ).unstack( 'sex' ).stack( ) / totals 
+
+length_table_sexed.sum( ).unstack( 'sex' ) / totals.values
+self.analysis[ 'transect' ][ 'biology' ][ 'weight' ][ 'length_weight_regression' ][ 'parameters_df' ]
+totals.values.T
+length_table_sexed / totals.values.reshape(1,-1)
+totals = length_table_sexed.sum( ).unstack( ).sum( axis = 1 )
+
+length_table_sexed.groupby( level = 0 ).sum( )
+
+totals = length_table_sexed.sum( ).stack( [ 'stratum_num' , 'sex' ] ).sum( axis = 0 )
+
+length_table_sexed / totals
+
+length_data_sexed.pivot_table( columns = [ 'sex' , stratum_col ] , index = [ 'length_bin' ] , values = 'weight_interp' , aggfunc = 'sum' , observed = False )
+
+
+
+unaged_counts = self.analysis[ 'transect' ][ 'biology' ][ 'distributions' ][ 'binned_unaged_counts_df' ]
+unaged_counts_table = (
+    unaged_counts[ unaged_counts[ 'sex' ].isin( [ 'male' , 'female' ] ) ]
+    .pivot_table( columns = [ 'sex' , 'stratum_num' ] ,
+                  index = 'length_bin' ,
+                  values = 'count' ,
+                  aggfunc = 'sum' ,
+                  observed = False )
+)
+lw_fit_table = (
+    length_weight_fit[ length_weight_fit.sex != 'all' ]
+    .rename( columns = { 'length_intervals': 'length_bin' } )
+        .pivot_table( columns = [ 'sex' ] ,
+                      index = 'length_bin' ,
+                      values = 'weight_fitted' ,
+                      aggfunc = 'sum' ,
+                      observed = False )
+)
+
+from scipy import interpolate
+
+length_sexed = length_data[ length_data.sex.isin( [ 'male' , 'female' ] )]
+length_sexed
+length_weight_fix_sexed = length_weight_fit[ length_weight_fit[ 'sex' ].isin( [ 'male' , 'female' ] ) ].copy()
+length_weight_fix_sexed.loc[ : , 'length' ] = length_weight_fix_sexed.loc[ : , 'length_intervals' ].apply( lambda x: x.mid )
+
+def create_interpolator(group):
+    group = group.sort_values(by='length')
+    return interpolate.interp1d(
+        group['length'],
+        group['weight_fitted'],
+        kind='linear',
+        bounds_error=False
+    )
+
+interpolators = length_weight_fix_sexed.groupby('sex').apply(
+    lambda group: create_interpolator(group) , include_groups = False
+).to_dict()
+
+interpolators = group_interpolator_creator( grouped_data = length_weight_fix_sexed ,
+                                            independent_var = 'length' ,
+                                            dependent_var = 'weight_fitted' ,
+                                            contrast = 'sex' )
+
+def interpolate_weight(row):
+    sex = row['sex']
+    length = row['length']
+    if sex in interpolators:
+        return interpolators[sex](length)
+    else:
+        return None
+
+length_sexed.loc[ : , 'weight_interp'] = length_sexed.apply(interpolate_weight, axis=1) * length_sexed['length_count']
+tillib = length_sexed.pivot_table( columns = [ 'sex' , 'stratum_num' ] , index = [ 'length_bin' ] , values = 'weight_interp' , aggfunc = 'sum' , observed = False )
+tillib.sum( )
+
+length_data_sexed.pivot_table( columns = [ 'sex' , stratum_col ] , index = [ 'length_bin' ] , values = 'weight_interp' , aggfunc = 'sum' , observed = False )
+
+female_interp = interpolators['female']
+male_interp = interpolators['male']
+
+
+length_weight_fix_sexed.groupby( [ 'sex' ] ).apply(
+    lambda group: interpolate.interp1d(
+                                        group[ 'length' ] ,
+                                        group[ 'weight_fitted' ] ,
+                                        kind = 'linear' ,
+                                        bounds_error = False
+                                    )
+).to_dict( )
+
+lw_m = length_weight_fit[ length_weight_fit[ 'sex' ] == 'male' ].copy()
+lw_m.loc[ : , 'length' ] = lw_m.loc[:,'length_intervals'].apply( lambda x: x.mid )
+len_interp = interpolate.interp1d(
+    lw_m[ 'length' ] ,
+    lw_m[ 'weight_fitted' ] ,
+    kind = 'linear' ,
+    bounds_error = False 
+)
+
+length_male = length_data[ length_data[ 'sex' ] == 'male' ].copy( )
+length_male[ 'weight_interp' ] = len_interp( length_male[ 'length' ] ) * length_male[ 'length_count' ]
+
+length_male[ length_male.stratum_num == 5 ]
+
+tillib = length_male.pivot_table( columns = [ 'stratum_num' ] , index = [ 'length_bin' ] , values = 'weight_interp' , aggfunc = 'sum' )
+tillib.sum( )
+( tillib * unaged_counts_table[ 'male' ] ).sum( )
+length_male.groupby( [ 'stratum_num' ] )[ 'weight_interp' ].sum( )
+length_male.groupby( [ 'stratum_num' ] )[ 'length_count' ].sum( )
+len_interp()
+
+    reference_interp = interpolate.interp1d(
+        reference[ 'latitude' ] ,
+        reference[ 'longitude' ] ,
+        kind = 'linear' ,
+        bounds_error = False
+    )
+
+sp_interp = st.interpolate.interp()
+
+sub_len = length_data[ length_data[ 'stratum_num' ] == 8 ]
+
+lw_fit_table[ 'male' ].to_numpy( ).dot( unaged_counts_table[ 'male' ] )
+
+lw_fit_table
+
+# Prepare data
+# ---- Get the name of the stratum column
+stratum_col = [ col for col in specimen_data.columns if 'stratum' in col.lower( ) ][ 0 ]
+# ---- For cases where all samples were aged (i.e. in `specimen_data` and absent from
+# ---- `length_data`), these hauls are removed from `catch_data`
+catch_data_filtered = catch_data[ catch_data.haul_num.isin( length_data.haul_num ) ]
+
+# Remove specimen data with missing data required for this analysis
+# ---- Drop unsexed fish
+specimen_data_filtered = specimen_data[ specimen_data.group_sex != 'unsexed' ]
+# ---- Remove NaN
+specimen_data_filtered = specimen_data_filtered.dropna( subset = [ 'length' , 'weight' , 'age' ] )
+
+# Sum the weights for each stratum across both datasets and then combine
+# ---- Specimen (aged) data
+specimen_strata_weights = specimen_data_filtered.count_variable( contrasts = [ stratum_col ] , 
+                                                                    variable = 'weight' , 
+                                                                    fun = 'sum' )
+# ---- Length/catch (unaged) data
+catch_strata_weights = catch_data_filtered.count_variable( contrasts = [ stratum_col ] , 
+                                                            variable = 'haul_weight' , 
+                                                            fun = 'sum' ) 
+# ---- Rename resulting columns for both
+specimen_strata_weights.rename( columns = { 'count': 'stratum_weight' } , inplace = True )
+catch_strata_weights.rename( columns = { 'count': 'stratum_weight' } , inplace = True )
+# ---- Initialize combined dataframe
+total_strata_weights = pd.concat( [ specimen_strata_weights ,
+                                    catch_strata_weights ] )
+# ---- Sum together to get the grand/overall total weight for each stratum
+total_strata_weights = total_strata_weights.groupby( [ stratum_col ] )[ 'stratum_weight' ].sum( )
+
+# Sum specimen weights across strata, sex, length, and age
+# ---- Sum weights within each bin
+specimen_weight_bins = (
+    specimen_data_filtered.count_variable( contrasts = [ stratum_col , 'sex' ,
+                                                            'length_bin' , 'age_bin' ] ,
+                                            variable = 'weight' ,
+                                            fun = 'sum' )
+    .rename( columns = { 'count': 'weight_sum' } )
+)
+# ---- Sum these weights for each sex (male/female)
+specimen_sex_weight_bins = (
+    specimen_weight_bins.count_variable( contrasts = [ stratum_col , 'sex' ] ,
+                                            variable = 'weight_sum' ,
+                                            fun = 'sum' )  
+    .rename( columns = { 'count': 'weight_sex_sum' } )
+)
+
+
+self = survey
+from echopop.biology import filter_species
 species_id = 22500
+
+### Import biological data and filter out non-target species
+# ---- Species filter
+length_spp , specimen_spp , haul_spp = filter_species( [ self.input['biology'][ 'length_df' ] ,
+                                                            self.input['biology'][ 'specimen_df' ] ,
+                                                            self.input['biology'][ 'catch_df' ] ] ,
+                                                        species_id )
+# ---- Remove 'bad' values 
+# ---- `specimen_spp`
+specimen_spp_filtered = specimen_spp[ specimen_spp.sex != 'unsexed' ].dropna( how = 'any' , subset = 'age' )
+
+# ---- `length_spp`
+length_spp_filtered = length_spp[ length_spp.sex != 'unsexed' ]
+
+### Import discrete distribution bins
+# ---- Length
+length_intervals = self.input['biology'][ 'distributions' ][ 'length_bins_df' ]
+# ---- Age
+age_intervals = self.input['biology'][ 'distributions' ][ 'age_bins_df' ]
+
+### Import length-weight regression parameters
+regression_parameters = self.analysis[ 'transect' ][ 'biology' ]['weight']['length_weight_regression'][ 'parameters_df' ] 
+regression_parameters = regression_parameters[ regression_parameters.sex != 'all' ]
+
+### Import length-weight relationship
+length_weight_df = self.analysis[ 'transect' ][ 'biology' ]['weight']['length_weight_regression'][ 'weight_fitted_df' ] 
+
+### Process `haul_spp`
+# Remove haul numbers not found within `length_spp`
+haul_spp_matched = haul_spp[ haul_spp.haul_num.isin( length_spp.haul_num ) ]
+
+from echopop.biology import sum_strata_weight
+
+### Sum weights for aged/unaged and all within each stratum
+weight_strata = sum_strata_weight( haul_spp_matched ,
+                                    specimen_spp )
+
+from echopop.biology import calculate_aged_unaged_proportions
+### Calculate the summed aged proportions for age-1+ (*_all) and age-2+ (*_adult) fish      
+aged_unaged_weight_proportions = calculate_aged_unaged_proportions( specimen_spp_filtered ,
+                                                                    weight_strata )
+
+from echopop.biology import calculate_aged_biomass
+
+self.statistics[ 'kriging' ][ 'kriged_biomass_df' ]
+
+# !!! TODO: This does end up chewing up * a ton * of memory since the output dataframes are quite large
+# aged_sex_biomass , aged_biomass = calculate_aged_biomass( self.results['kriging']['mesh_results_df'] ,
+#                                                             specimen_spp_filtered ,
+#                                                             length_intervals ,
+#                                                             age_intervals ,
+#                                                             aged_unaged_weight_proportions )
+specimen_data = specimen_spp_filtered
+length_distribution = length_intervals
+age_distribution = age_intervals
+aged_proportions = aged_unaged_weight_proportions
+
+from echopop.biology import aged_weight_proportions
+
+### Sum aged fish weights across age and length bins for each sex, then calculate weight proportions within each sex 
+# proportions_weight_length_age_sex = aged_weight_proportions( specimen_data , length_distribution , age_distribution )
+
+length_intervals = length_distribution
+age_intervals = age_distribution
+
+
+### Process the specimen data 
+# ---- Drop unaged fish
+# ==== !!! TODO: pending what FEAT says, weights associated with 
+# ==== missing ages should be added into the 'unaged' category. 
+# ==== This would further mean apportioning these into `weight_strata_aged_uanged`
+specimen_data_filtered = specimen_data[ specimen_data.sex != 'unsexed' ].dropna( how = 'any' , subset = 'age' )
+
+
+# # ---- Bin length and age measurements
+# specimen_data_filtered = (
+#     specimen_data_filtered
+#     # ---- Bin length
+#     .bin_variable( length_intervals[ 'length'] , 'length' )
+#     # ---- Age bin
+#     .bin_variable( age_intervals , 'age' )
+# )
+
+### Sum weights within each length and age bin for each sex within each stratum
+# ---- Create separate 'weight_adult' column
+specimen_data_filtered[ 'weight_adult' ] = (
+    np.where( specimen_data_filtered.age > 1 , specimen_data_filtered.weight , 0.0 )
+)
+
+# ---- Calculate aggregate sums of fish weights
+specimen_binned_weight = (
+    specimen_data_filtered
+    # ---- Group weight summations across stratum/species/sex/length/age
+    .groupby( [ 'stratum_num' , 'species_id' , 'sex' , 'length_bin' , 'age_bin' ] ,
+                observed = False  )
+    # ---- Sum the weights 
+    .agg( weight_all =( 'weight' , 'sum' )  , weight_adult =( 'weight_adult' , 'sum' ) ) 
+    # ---- Fill empty/non-existent values with 0's
+    .fillna( 0 )
+    .reset_index( )
+)
+    
+### Calculate the relative weight proportions of each length-age bin for each sex within each stratum
+# ---- Sum the total weights for age-1+ and age-2+ 
+proportions_weight_length_age_sex = (
+    specimen_binned_weight
+    # ---- Calculate total sex-specific weights for each stratum
+    .assign( total_weight_sex_all = lambda df: df.groupby( [ 'stratum_num' , 'species_id' , 'sex' ] )[ 'weight_all' ].transform( 'sum' ) ,
+                total_weight_sex_adult = lambda df: df.groupby( [ 'stratum_num' , 'species_id' , 'sex' ] )[ 'weight_adult' ].transform( 'sum' ) )
+)
+
+# ---- Sum the weight proportions for age-1+
+proportions_weight_length_age_sex[ 'proportion_weight_sex_all' ] = (
+    proportions_weight_length_age_sex.weight_all / proportions_weight_length_age_sex.total_weight_sex_all
+).fillna( 0 )
+
+    # ---- Sum the weight proportions for age-2+
+proportions_weight_length_age_sex[ 'proportion_weight_sex_adult' ] = (
+    proportions_weight_length_age_sex.weight_adult / proportions_weight_length_age_sex.total_weight_sex_adult
+).fillna( 0 )
+
+from echopop.biology import aged_sex_weight_proportions
+
+### Calculate the weight proportion of aged/unaged fish of either sex (2x2 choice) across all fish 
+# ---- belonging to each sex
+aged_sex_proportions = aged_sex_weight_proportions( proportions_weight_length_age_sex ,
+                                                    aged_proportions )
+
+from echopop.biology import distribute_aged_weight_proportions
+### Calculate weight proportions of aged fish distributed over age-length bins
+# ---- for each sex within each stratum relative to the summed weights of each
+# ---- stratum (i.e. aged + unaged weights)    
+distributed_sex_length_age_proportions = distribute_aged_weight_proportions( proportions_weight_length_age_sex ,
+                                                                                aged_sex_proportions )
+
+kriging_biomass_df = self.results[ 'kriging' ][ 'mesh_results_df' ]
+
+
+tt = self.analysis[ 'transect' ][ 'biology' ][ 'proportions' ][ 'weight' ][ 'aged_weight_proportions_df' ]
+import pandas as pd
+tt_tab = tt[ tt[ 'age_bin' ] != pd.Interval( left = 0.5 , right = 1.5 )].pivot_table( columns = [ 'stratum_num' ] , index = [ 'sex' ]  , values = 'weight_proportion_total' , aggfunc = 'sum' , observed = False )
+tt_tab
+
+
+    
+    columns = [ 'sex' ] , index = [ 'stratum_num' ] , values = 'weight_proportion_total' , aggfunc = 'sum' )
+self.analysis[ 'transect' ][ 'biology' ][ 'proportions' ][ 'weight' ].keys()
+
+tt.pivot_table( columns = [ 'sex' ] , index = [ 'stratum_num' ] , values = 'weight_proportion_total' , aggfunc = 'sum' )
+
+tt.groupby( [ 'stratum_num' , 'sex'] )
+### Sum 'kriging_biomass_df' across each stratum for appropriate stratum-specific apportionment
+kriged_stratum_biomass = kriging_biomass_df.groupby( [ 'stratum_num' ] , observed = False )[ 'B_adult_kriged' ].sum( )
+
+### Apportion sexed biomass across age-length
+# ---- Initialize dataframe
+stratum_sexed_kriged_biomass = distributed_sex_length_age_proportions.set_index( 'stratum_num' )
+stratum_sexed_kriged_biomass[ 'biomass_kriged' ] = kriged_stratum_biomass
+
+# ---- Apportioned biomass for age-1+ fish to different sex-length-age bins
+stratum_sexed_kriged_biomass[ 'biomass_sexed_aged_all' ] = (  
+    stratum_sexed_kriged_biomass.biomass_kriged
+    * stratum_sexed_kriged_biomass.normalized_proportion_weight_all
+)
+
+# ---- Apportioned biomass for age-2+ fish to different sex-length-age bins
+stratum_sexed_kriged_biomass[ 'biomass_sexed_aged_adult' ] = (  
+    stratum_sexed_kriged_biomass.biomass_kriged
+    * stratum_sexed_kriged_biomass.normalized_proportion_weight_adult
+)
+
+# ---- Sum across strata to produce 'grand totals' for each sex
+apportioned_sexed_kriged_biomass = (
+    stratum_sexed_kriged_biomass
+    .groupby( [ 'species_id' , 'sex' , 'length_bin' , 'age_bin' ] ,
+                observed = False )
+    .agg( { 'biomass_sexed_aged_all': 'sum' ,
+            'biomass_sexed_aged_adult': 'sum' } )
+    .reset_index( )
+)
+
+# ---- Sum across strata to produce 'grand totals' across all fish
+apportioned_total_kriged_biomass = (
+    apportioned_sexed_kriged_biomass
+    .groupby( [ 'species_id' , 'length_bin' , 'age_bin' ] ,
+                observed = False )
+    .agg( biomass_aged_all = ( 'biomass_sexed_aged_all' , 'sum' ) ,
+            biomass_aged_adult = ( 'biomass_sexed_aged_adult' , 'sum' ) )
+    .reset_index( )
+)
+
+### Return output (tuple)
+return apportioned_sexed_kriged_biomass , apportioned_total_kriged_biomass
+
+### Calculate unaged biomass for each sex and all animals
+unaged_sex_biomass = calculate_unaged_biomass( self.statistics[ 'kriging' ][ 'kriged_biomass_df' ] ,
+                                                length_spp_filtered ,
+                                                length_intervals ,
+                                                length_weight_df ,
+                                                regression_parameters ,
+                                                aged_unaged_weight_proportions )
+
+### Re-distribute unaged biomass so it is compatible with aged biomass to calculate the overall summed biomass
+redistributed_unaged_sex_biomass , redistributed_unaged_biomass = apply_age_bins( aged_sex_biomass , 
+                                                                                    unaged_sex_biomass )
+
+### Sum the grand total by combining the aged and unaged biomass estimates post-apportionment
+# ---- Merge sexed
+overall_sexed_biomass = redistributed_unaged_sex_biomass.merge( aged_sex_biomass ,
+                                                                on = [ 'length_bin' , 'age_bin' , 'sex' , 'species_id' ] ,
+                                                                how = 'left' )
+
+# ---- Aggregate (sum)
+overall_sexed_biomass[ 'total_sexed_biomass_all' ] = (
+    overall_sexed_biomass.biomass_sexed_unaged_all + 
+    overall_sexed_biomass.biomass_sexed_aged_all
+)
+overall_sexed_biomass[ 'total_sexed_biomass_adult' ] = (
+    overall_sexed_biomass.biomass_sexed_unaged_adult + 
+    overall_sexed_biomass.biomass_sexed_aged_adult
+)
+
+# ---- Merge total
+overall_biomass = redistributed_unaged_biomass.merge( aged_biomass ,
+                                                        on = [ 'length_bin' , 'age_bin' , 'species_id' ] ,
+                                                        how = 'left' )
+
+# ---- Aggregate (sum)
+overall_biomass[ 'total_biomass_all' ] = (
+    overall_biomass.biomass_unaged_all + 
+    overall_biomass.biomass_aged_all
+)
+overall_biomass[ 'total_biomass_adult' ] = (
+    overall_biomass.biomass_unaged_adult + 
+    overall_biomass.biomass_aged_adult
+)
+
+### Drop unnecessary columns
+# ---- Overall sexed biomass 
+overall_sexed_biomass.drop( [ 'summed_aged_biomass_all' ,
+                                'summed_aged_biomass_adult' ] ,
+                            axis = 1 ,
+                            inplace = True )
+
 self = survey
 biomass_summary_df = self.results[ 'transect' ]['biomass_summary_df']
 biomass_summary.loc[ biomass_summary.sex == 'all' , 'biomass_all' ]

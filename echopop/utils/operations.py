@@ -4,7 +4,7 @@ from .monkey_patch_dataframe import patch_method_to_DataFrame
 from typing import Union , List
 from typing import Callable
 from functools import reduce
-   
+from scipy import interpolate
 
 # 
 ### !!! TODO: Assess whether `bin_variable` is necessary
@@ -308,3 +308,32 @@ def group_merge( dataframe ,
 
     ### Carriage return
     return merged_frame
+
+def group_interpolator_creator( grouped_data: pd.DataFrame ,
+                                independent_var: str ,
+                                dependent_var: str ,
+                                contrast: str ) -> dict:
+    
+    # Interpolator generation helper function
+    def interpolator_factory( sub_group ):
+        # ---- Sort the grouped values
+        sub_group_sort = sub_group.sort_values( by = independent_var )
+        # ---- Return the interpolation object for the specific sub-group
+        return interpolate.interp1d(
+            sub_group_sort[ independent_var ] ,
+            sub_group_sort[ dependent_var ] ,
+            kind = 'linear' ,
+            bounds_error = False
+        )
+    
+    # Produce a dictionary comprising all of the produced interpolators
+    interpolators = (
+        grouped_data.groupby( [ contrast ] ).apply(
+            lambda group: interpolator_factory( group ) , include_groups = False
+        )
+    ).to_dict( )
+
+    # Return output
+    return interpolators
+
+

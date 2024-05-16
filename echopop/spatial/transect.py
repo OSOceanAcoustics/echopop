@@ -69,15 +69,15 @@ def save_transect_coordinates( transect_data: pd.DataFrame ) :
                          'transect_spacing' ] ]
     )
 
-def prepare_transect_strata( transect_dict: dict , 
-                             settings_dict: dict ) :
+def edit_transect_columns( transect_dict: dict , 
+                           settings_dict: dict ) :
     
     # Define the current stratum definition used for the transect data
     new_stratum = settings_dict[ 'stratum_name' ]
 
     # Prepare the transect data to be updated
     # ---- Call transect data
-    transect_data = transect_dict[ 'adult_transect_df' ].copy( )
+    transect_data = transect_dict[ 'acoustics' ][ 'adult_transect_df' ].copy( )
     # -------- Set index
     transect_data.set_index( [ 'transect_num' , 'longitude' , 'latitude' ] , inplace = True )
     # ---- Call full coordinate information

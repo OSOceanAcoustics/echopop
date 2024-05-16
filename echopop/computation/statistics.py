@@ -34,11 +34,11 @@ def stratified_transect_statistic( transect_data: pd.DataFrame ,
     
     # Extract algorithm arguments
     # ---- Number of replicates
-    transect_replicates = settings_dict[ 'stratified' ][ 'transect_replicates' ]
+    transect_replicates = settings_dict[ 'transect_replicates' ]
     # ---- Transect sampling fraction
-    transect_sample = settings_dict[ 'stratified' ][ 'transect_sample' ]
+    transect_sample = settings_dict[ 'transect_sample' ]
     # ---- Get stratum column name
-    stratum_col = settings_dict[ 'stratified' ][ 'stratum_name' ]
+    stratum_col = settings_dict[ 'stratum_name' ]
 
     # Calculate the number of transects per stratum
     num_transects_to_sample = (
@@ -67,14 +67,8 @@ def stratified_transect_statistic( transect_data: pd.DataFrame ,
     # Get indexed biological value
     biological_values = (
         transect_data
-        .groupby( [ 'transect_num' ] )[ settings_dict[ 'stratified' ][ 'variable' ] ]
+        .groupby( [ 'transect_num' ] )[ settings_dict[ 'variable' ] ]
         .sum( )
-    )
-
-    # Index the strata summary
-    transect_count = (
-        strata_summary
-        .set_index( stratum_col )[ 'transect_count' ]
     )
 
     # Get indexed transect numbers
@@ -171,7 +165,7 @@ def stratified_transect_statistic( transect_data: pd.DataFrame ,
                                                'total': replicate_total } )
     # ---- Save the stratified results
     stratified_results = {
-        'variable': settings_dict[ 'stratified' ][ 'variable' ] ,
+        'variable': settings_dict[ 'variable' ] ,
         'ci_percentile': 0.95 ,
         'mean': {
             'weighted_estimate': np.mean( replicate_mean ) ,

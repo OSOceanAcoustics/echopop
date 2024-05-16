@@ -3,8 +3,8 @@ from openpyxl import load_workbook
 import yaml
 import numpy as np
 import pandas as pd
-
-from ..core import LAYER_NAME_MAP
+import copy
+from ..core import CONFIG_MAP, LAYER_NAME_MAP , DATA_STRUCTURE
 
 def load_configuration( init_config_path: Path , 
                         survey_year_config_path: Path ):
@@ -68,6 +68,216 @@ def load_configuration( init_config_path: Path ,
     
     # Pass 'full_params' to the class instance
     return config_to_add
+
+def load_survey_data( configuration_dict: dict ) :
+        """
+        Loads the biological, NASC, and stratification
+        data using parameters obtained from the configuration
+        files. This will generate data attributes associated with the tags
+        defined in both the configuration yml files and the reference CONFIG_MAP
+        and LAYER_NAME_MAP dictionaries.
+        """    
+
+        # Initialize a dictionary called `input` that will produce the `input` attribute
+        input_dict = copy.deepcopy( DATA_STRUCTURE[ 'input' ] )
+
+        # Check whether data files defined from the configuration file exists
+        # ---- Generate flat JSON table comprising all configuration parameter names
+        flat_configuration_table = pd.json_normalize(configuration_dict).filter(regex="filename")
+
+        # ---- Parse the flattened configuration table to identify data file names and paths
+        parsed_filenames = flat_configuration_table.values.flatten()
+
+        # ---- Evaluate whether either file is missing
+        data_existence = [(Path(configuration_dict['data_root_dir']) / file).exists() 
+                           for file in parsed_filenames]
+
+        # Assign the existence status to each configuration file for error evaluation
+        # ---- Error evaluation and print message (if applicable)
+        if not all(data_existence):
+            missing_data = parsed_filenames[ ~ np.array( data_existence ) ]
+            raise FileNotFoundError(f"The following data files do not exist: {missing_data}")
+
+        # Data validation and import
+        # ---- Iterate through known datasets and datalayers
+        for dataset in [*CONFIG_MAP.keys()]:
+
+            for datalayer in [*configuration_dict[dataset].keys()]:
+
+                # Define validation settings from CONFIG_MAP
+                validation_settings = CONFIG_MAP[dataset][datalayer]
+
+                # Define configuration settings w/ file + sheet names
+                config_settings = configuration_dict[dataset][datalayer]
+
+                # Create reference index of the dictionary path
+                config_map = [dataset, datalayer]
+
+                # Define the data layer name 
+                # ---- Based on the lattermost portion of the file path string
+                # Create list for parsing the hard-coded API dictionary
+                if dataset == 'biological':
+                    for region_id in [*configuration_dict[dataset][datalayer].keys()]:
+
+                        # Get file and sheet name
+                        file_name = (
+                            Path(configuration_dict['data_root_dir']) 
+                            / config_settings[region_id]['filename']
+                        )
+                        sheet_name = config_settings[region_id]['sheetname']
+                        
+                        # Update `config_map`
+                        if len( config_map ) == 2:
+                            config_map = config_map + [region_id]
+                        else:
+                            config_map[2] = region_id
+
+                        # Validate column names of this iterated file
+                        validate_data_columns( 
+                            file_name , sheet_name , config_map , validation_settings 
+                        )
+
+                        # Validate datatypes within dataset and make appropriate changes to dtypes
+                        # ---- This first enforces the correct dtype for each imported column
+                        # ---- This then assigns the imported data to the correct class attribute
+                        read_validated_data( 
+                            input_dict , configuration_dict , file_name , sheet_name , config_map , 
+                            validation_settings 
+                        )
+                else:
+                    file_name = Path(configuration_dict['data_root_dir']) / config_settings['filename']
+                    sheet_name = config_settings['sheetname']
+
+                    # If multiple sheets, iterate through
+                    # ---- If multiple sheets, then this needs to be converted accordingly
+                    sheet_name = [ sheet_name ] if isinstance( sheet_name , str ) else sheet_name
+
+                    for sheets in sheet_name:
+                        # Update if INPFC
+                        if sheets.lower( ) == 'inpfc' :
+                            # Update validation settings from CONFIG_MAP
+                            validation_settings = CONFIG_MAP[dataset]['inpfc_strata']
+
+                            # Update configuration key map
+                            config_map = [dataset,  'inpfc_strata']
+
+                        elif datalayer == 'geo_strata' :
+                            # Update validation settings from CONFIG_MAP
+                            validation_settings = CONFIG_MAP[dataset][datalayer]
+                           
+                            # Update configuration key map
+                            config_map = [dataset,  datalayer]
+
+                        # Validate datatypes within dataset and make appropriate changes to dtypes (if necessary)
+                        # ---- This first enforces the correct dtype for each imported column
+                        # ---- This then assigns the imported data to the correct class attribute
+                        validate_data_columns( file_name , sheets , config_map , validation_settings )
+                        
+                        # Read in data and add to `Survey` object
+                        read_validated_data( 
+                            input_dict , configuration_dict , file_name , sheets , config_map , 
+                            validation_settings 
+                        ) 
+
+        # Update the data format of various inputs within `Survey`
+        input_dict , configuration_dict = prepare_input_data( input_dict , configuration_dict )
+
+        # Return `input_dict`
+        return input_dict
+
+def read_validated_data( input_dict: dict ,
+                         configuration_dict: dict ,
+                         file_name: Path ,
+                         sheet_name: str ,
+                         config_map: list ,
+                         validation_settings: dict ):
+    """
+    Reads in data and validates the data type of each column/variable
+
+    Parameters
+    ----------
+    input_dict: dict
+        Dictionary represent the `input` attribute for the `Survey`-class object
+    file_name: Path
+        The file name without the prepended file path
+    sheet_name: str
+        The Excel sheet name containing the target data
+    config_map: list
+        A list parsed from the file name that indicates how data attributes
+        within `self` are organized
+    validation_settings: dict
+        The subset CONFIG_MAP settings that contain the target column names
+    """
+
+    # Based on the configuration settings, read the Excel files into memory. A format
+    # exception is made for 'kriging.vario_krig_para' since it requires additional
+    # data wrangling (i.e. transposing) to resemble the same dataframe format applied
+    # to all other data attributes.
+    if 'vario_krig_para' in config_map:
+        # Read Excel file into memory and then transpose
+        df_initial = pd.read_excel(file_name, header=None).T
+
+        # Take the values from the first row and redfine them as the column headers
+        df_initial.columns = df_initial.iloc[0]
+        df_initial = df_initial.drop(0)
+
+        # Slice only the columns that are relevant to the echopop module functionality
+        valid_columns = list(set(validation_settings.keys()).intersection(set(df_initial.columns)))
+        df_filtered = df_initial[valid_columns]
+
+        # Ensure the order of columns in df_filtered matches df_initial
+        df_filtered = df_filtered[df_initial.columns]
+
+        # Apply data types from validation_settings to the filtered DataFrame
+        df = df_filtered.apply(lambda col: col.astype(validation_settings.get(col.name, type(df_filtered.iloc[0][col.name]))))
+    
+    else:
+        # Read Excel file into memory -- this only reads in the required columns
+        df = pd.read_excel(file_name, sheet_name=sheet_name, usecols=validation_settings.keys())
+
+        # Apply data types from validation_settings to the filtered DataFrame
+        df = df.apply(lambda col: col.astype(validation_settings.get(col.name, type(col[0])))) 
+
+    # Assign the data to their correct data attributes/keys
+    if LAYER_NAME_MAP[config_map[0]]['superlayer'] == []:
+        sub_attribute  = LAYER_NAME_MAP[config_map[0]]['name']
+    else:
+        sub_attribute = LAYER_NAME_MAP[config_map[0]]['superlayer'][0]
+        
+    # Step 2: Determine whether the dataframe already exists
+    if sub_attribute in ['biology' , 'statistics' , 'spatial']:
+        if sub_attribute == 'biology':
+            # Add US / CAN as a region index 
+            df['region'] = config_map[2] 
+
+            # Apply CAN haul number offset 
+            if config_map[2] == 'CAN':
+                df['haul_num'] += configuration_dict['CAN_haul_offset']      
+
+        # A single dataframe per entry is expected, so no other fancy operations are needed
+        if sheet_name.lower() == 'inpfc':
+            df_list = [ input_dict[ sub_attribute ][ 'inpfc_strata_df' ] , df ]
+            input_dict[ sub_attribute ][ 'inpfc_strata_df' ] = pd.concat( df_list )
+        else: 
+            if config_map[ 0 ] == 'kriging' :
+                df_list = [ input_dict[ sub_attribute ][ 'kriging' ][ config_map[1] + '_df' ] , df ]
+                input_dict[ sub_attribute ][ 'kriging' ][ config_map[1] + '_df' ] = pd.concat(df_list)
+            else :
+                df_list = [ input_dict[ sub_attribute ][ config_map[1] + '_df' ] , df ]
+                input_dict[ sub_attribute ][ config_map[1] + '_df' ] = pd.concat(df_list)
+    elif sub_attribute == 'acoustics':
+        
+        # Toggle through including and excluding age-1
+        if config_map[1] == 'no_age1':
+            df = df.rename(columns={'NASC': 'NASC_no_age1'})
+        else:
+            df = df.rename(columns={'NASC': 'NASC_all_ages'})
+        
+        column_to_add = df.columns.difference(input_dict['acoustics']['nasc_df'].columns).tolist()
+        input_dict['acoustics']['nasc_df'][column_to_add] = df[column_to_add]      
+    else:
+        raise ValueError( """Unexpected data attribute structure. Check API settings located in"""
+        """the configuration YAML and core.py""" )        
 
 def validate_data_columns( file_name: Path ,
                            sheet_name: str ,

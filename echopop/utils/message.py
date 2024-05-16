@@ -109,7 +109,7 @@ def kriging_mesh_results_msg( kriging_results_dict: pd.DataFrame ,
                               settings_dict: dict ):
     
     # Extract dictionary results
-    kriging_mesh_results = kriging_results_dict[ 'interpolation' ]
+    kriging_mesh_results = kriging_results_dict
     
     # Generate message output
     return print(

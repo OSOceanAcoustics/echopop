@@ -200,31 +200,26 @@ DATA_STRUCTURE = {
         } ,
     } ,
     'analysis' : {
-        'acoustics': {
-            'sigma_bs': {
-                'haul_mean_df': pd.DataFrame( ) ,
-                'strata_mean_df': pd.DataFrame( ) ,
+        'transect': {
+            'acoustics': {
+                'sigma_bs': dict( )
             } ,
+            'biology': {
+                'counts': dict( ) ,
+                'distributions': dict( ) ,
+                    'population': {
+                        'tables': dict( )
+                    } ,
+                    'proportions': {
+                        'number': dict( ) ,
+                        'weight': dict( ) 
+                    } ,
+                'weight': {
+                    'length_weight_regression': dict( )
+                } ,
+            } ,
+            'coordinates': pd.DataFrame( )
         } ,
-        'biology': {
-            'counts':{
-                'binned_aged_counts_df': pd.DataFrame( ) ,
-                'binned_aged_counts_filtered_df': pd.DataFrame( ) ,
-                'binned_unaged_counts_df': pd.DataFrame( ) ,
-            } ,
-            'distributions': dict( ) ,
-            'population': {
-                'tables': dict( )
-            } ,
-            'proportions': {
-                'number': dict( ) ,
-                'weight': dict( )
-            } ,
-            'weight': {
-                'length_weight_regression': dict ( )
-            } ,
-        } ,
-        'transect': dict( ) ,
         'settings': {            
             'kriging': dict( ) ,
             'stratified': dict( ) ,

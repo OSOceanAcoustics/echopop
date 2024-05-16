@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 from ..spatial.transect import correct_transect_intervals
-from .biology import age1_metric_proportions
+from ..biology import age1_metric_proportions
 
 def ts_length_regression( x, slope, intercept ):
     return slope * np.log10(x) + intercept
@@ -170,13 +170,9 @@ def summarize_sigma_bs( length_data: pd.DataFrame , specimen_data: pd.DataFrame 
         }
     )
 
-def nasc_to_biomass( nasc_df: pd.DataFrame , 
-                     acoustics_dict: dict , 
-                     distributions_dict: dict ,
-                     proportions_dict: dict ,
-                     TS_L_parameters: dict ,
-                     haul_hake_fractions_df: pd.DataFrame , 
-                     length_weight_strata: pd.DataFrame ,
+def nasc_to_biomass( input_dict: dict ,
+                     analysis_dict: dict ,
+                     configuration_dict: dict ,
                      settings_dict: dict ) :
     """
     Converts integrated acoustic backscatter (NASC) into estimates of 
@@ -193,13 +189,16 @@ def nasc_to_biomass( nasc_df: pd.DataFrame ,
     """ 
 
     # Extract the necessary correct strata mean sigma_bs
-    sigma_bs_strata = acoustics_dict[ 'sigma_bs' ][ 'strata_mean_df' ]
+    sigma_bs_strata = analysis_dict[ 'acoustics' ][ 'sigma_bs' ][ 'strata_mean_df' ]
+
+    # Pull out the length-weight conversion for each stratum
+    length_weight_strata = analysis_dict[ 'biology' ][ 'weight' ]['weight_stratum_df']
 
     # Get the name of the stratum column
     stratum_col = settings_dict[ 'transect' ][ 'stratum_name' ]
 
     # Correct the acoustic survey transect intervals
-    nasc_interval_df = correct_transect_intervals( nasc_df )
+    nasc_interval_df = correct_transect_intervals( input_dict[ 'acoustics' ][ 'nasc_df' ] )
 
     # Select the appropriate NASC column based on the inclusion or exclusion of age-1 fish
     if settings_dict[ 'transect' ][ 'exclude_age1' ] :
@@ -208,10 +207,14 @@ def nasc_to_biomass( nasc_df: pd.DataFrame ,
         # ---- Rename the used column
         nasc_interval_df.rename( columns = { 'NASC_no_age1': 'nasc' } , inplace = True )
         # ---- Calculate age-1 NASC and weight proportions
-        age1_proportions = age1_metric_proportions( distributions_dict ,
-                                                    proportions_dict ,
-                                                    TS_L_parameters ,
-                                                    settings_dict )
+        age1_proportions = (
+            age1_metric_proportions( 
+                input_dict[ 'biology' ][ 'distributions' ] ,
+                analysis_dict[ 'biology' ][ 'proportions' ] ,
+                configuration_dict[ 'TS_length_regression_parameters' ][ 'pacific_hake' ] ,
+                settings_dict 
+            )
+        )
         # ---- Calculate adult proportions
         # -------- Initialize dataframe
         adult_proportions = age1_proportions.copy( )
@@ -233,9 +236,12 @@ def nasc_to_biomass( nasc_df: pd.DataFrame ,
 
     # Merge hake fraction data into `nasc_interval_df`
     # ---- Initial merge
-    nasc_interval_df = nasc_interval_df.merge( haul_hake_fractions_df , 
-                                               on = [ stratum_col , 'haul_num' ] , 
-                                               how = 'outer' )
+    nasc_interval_df = (
+        nasc_interval_df
+        .merge( input_dict[ 'spatial' ][ 'strata_df' ] , 
+                on = [ stratum_col , 'haul_num' ] , 
+                how = 'outer' )
+    )
     # ---- Replace `fraction_hake` where NaN occurs
     nasc_interval_df[ 'fraction_hake' ] = nasc_interval_df[ 'fraction_hake' ].fillna( 0.0 )
     # ---- Drop NaN
@@ -258,7 +264,7 @@ def nasc_to_biomass( nasc_df: pd.DataFrame ,
 
     # Calculate the along-transect abundance (#, N) and biomass for each sex (kg)
     # ---- Extract the sex-specific number proportions for each stratum
-    sex_stratum_proportions = proportions_dict[ 'number' ][ 'sex_proportions_df' ].copy( )
+    sex_stratum_proportions = analysis_dict[ 'biology' ][ 'proportions' ][ 'number' ][ 'sex_proportions_df' ].copy( )
     # ---- Filter out sexes besides 'male' and 'female'
     sex_stratum_proportions = sex_stratum_proportions[ sex_stratum_proportions.sex.isin( [ 'male' , 'female' ] ) ]
     # ---- Merge with the NASC measurements
@@ -272,7 +278,8 @@ def nasc_to_biomass( nasc_df: pd.DataFrame ,
         nasc_biology_sex[ 'abundance' ] * nasc_biology_sex[ 'proportion_number_overall' ]        
     )
     # ---- Merge with sex-specific average weights per stratum
-    nasc_biology_sex = nasc_biology_sex.merge( length_weight_strata , on = [ stratum_col , 'sex' ] )
+    nasc_biology_sex = nasc_biology_sex.merge( length_weight_strata  , 
+                                               on = [ stratum_col , 'sex' ] )
     # ---- Calculate biomass density (kg/nmi^2)
     nasc_biology_sex[ 'biomass_density_sex' ] = (
         nasc_biology_sex[ 'number_density_sex' ] * nasc_biology_sex[ 'average_weight' ]
