@@ -94,7 +94,7 @@ def process_transect_data( input_dict: dict ,
         analysis_dict['biology']['weight']['length_weight_regression']['weight_fitted_df']
     )
     # ---- Quantize the weights
-    analysis_dict[ 'biology' ][ 'proportions' ].update(
+    analysis_dict[ 'biology' ][ 'distributions' ].update(
         {
             'weight': quantize_weights( specimen_data ,
                                         length_data ,
@@ -114,22 +114,11 @@ def process_transect_data( input_dict: dict ,
     analysis_dict[ 'biology' ][ 'proportions' ].update(
         {
             'weight': weight_proportions( specimen_data , 
-                                          length_data , 
                                           catch_data , 
-                                          analysis_dict['biology']['weight']['length_weight_regression']['weight_fitted_df'] )
+                                          analysis_dict[ 'biology' ][ 'distributions' ][ 'weight' ] )
         }
     )
-
-    # Calculate the weight proportions
-    analysis_dict[ 'biology' ][ 'proportions' ].update(
-        {
-            'weight': weight_proportions( specimen_data , 
-                                          length_data , 
-                                          catch_data , 
-                                          analysis_dict['biology']['weight']['length_weight_regression']['weight_fitted_df'] )
-        }
-    )
-
+    
     # Return the analysis dictionary
     return analysis_dict 
 
@@ -142,9 +131,9 @@ def acoustics_to_biology( input_dict: dict ,
     # (# animals), and biomass (kg) for all fish, sexed (male/female) fish, and unsexed fish
     strata_adult_proportions , nasc_to_biology = (
         nasc_to_biomass( input_dict ,
-                            analysis_dict ,
-                            configuration_dict ,
-                            settings_dict )
+                         analysis_dict ,
+                         configuration_dict ,
+                         settings_dict )
     ) 
 
     # Distribute abundance and biomass estimates over length and age bins

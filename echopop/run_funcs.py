@@ -23,9 +23,24 @@ from echopop.spatial.projection import transform_geometry
 from echopop.utils import load as el
 init_config_path = "./config_files/initialization_config.yml"
 survey_year_config_path = "./config_files/survey_year_2019_config.yml"
+
+
 from echopop.survey import Survey
 survey = Survey( "./config_files/initialization_config.yml" ,
                  "./config_files/survey_year_2019_config.yml" )
+survey.transect_analysis( )
+survey.stratified_analysis( )
+survey.kriging_analysis( )
+
+
+
+
+
+
+
+
+
+self = survey
 survey.transect_analysis( )
 survey.stratified_analysis( )
 survey.kriging_analysis( )
@@ -37,7 +52,9 @@ settings_dict = self.analysis[ 'settings' ][ 'kriging' ]
 length_weight_fit = self.analysis[ 'transect' ]['biology']['weight']['length_weight_regression']['weight_fitted_df']
 lengths = self.input[ 'biology' ][ 'distributions' ][ 'length_bins_df' ]
 
-
+survey.analysis[ 'transect' ][ 'acoustics' ][ 'adult_transect_df' ].to_csv( 'C:/Users/Brandyn/Documents/echopop_transect_results.csv' , index = False )
+survey.analysis[ 'stratified' ][ 'stratified_replicates_df' ].to_csv( 'C:/Users/Brandyn/Documents/echopop_stratified_results.csv' , index = False )
+survey.results[ 'kriging' ][ 'mesh_results_df' ].to_csv( 'C:/Users/Brandyn/Documents/echopop_kriging_results.csv' , index = False )
 specimen_data = self.input[ 'biology' ][ 'specimen_df' ].copy( )
 specimen_data = specimen_data[ specimen_data.species_id == 22500 ]
 # Gather specimen measurements to represent 'all' fish
