@@ -207,13 +207,13 @@ def _aassert_dataframe_values_equal( dataframe1: pd.DataFrame ,
     
     ### Evaluate equality between non-numerical values
     # ---- Mask out "NaN" 
-    dataframe1_nan_mask = dataframe1.isna( ).any( axis = 1 )
-    dataframe2_nan_mask = dataframe2.isna( ).any( axis = 1 )
+    dataframe1_nan_mask = dataframe1.isna( ).any( axis = 1 ).reset_index( drop = True )
+    dataframe2_nan_mask = dataframe2.isna( ).any( axis = 1 ).reset_index( drop = True )
     # ---- Evaluate equality
-    dataframe1_nan_mask == dataframe2_nan_mask
+    assert np.all( dataframe1_nan_mask == dataframe2_nan_mask )
     # ---- Evaluate equality among "real" values
-    dataframe1_masked = dataframe1[ ~ dataframe1_nan_mask ]
-    dataframe2_masked = dataframe2[ ~ dataframe2_nan_mask ]
+    dataframe1_masked = dataframe1.loc[ ~ dataframe1_nan_mask ].reset_index( drop = True )
+    dataframe2_masked = dataframe2.loc[ ~ dataframe2_nan_mask ].reset_index( drop = True )
     assert np.all( dataframe1_masked.select_dtypes( exclude = [ 'number' ] ) == dataframe2_masked.select_dtypes( exclude = [ 'number' ] ) )
 # ~~~~ Values --> compatible with direct DataFrame or bundled DataFrames within a dictionary
 def assert_dataframe_values_equal( input: Union[ pd.DataFrame , dict ] , 

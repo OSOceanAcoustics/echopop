@@ -1,26 +1,61 @@
 import numpy as np
 import pandas as pd
 
-from ..spatial.transect import correct_transect_intervals
-from ..biology import age1_metric_proportions
+from typing import Union
+from .spatial.transect import correct_transect_intervals
+from .biology import age1_metric_proportions
 
-def ts_length_regression( x, slope, intercept ):
-    return slope * np.log10(x) + intercept
+def ts_length_regression( length: Union[ np.ndarray , float ] , 
+                          slope: float , 
+                          intercept: float ) -> np.ndarray:
+    """
+    Converts length values into acoustic target strength (TS, dB re. 1 m^-2)
+    
+    Parameters
+    ----------
+    length: Union[ np.ndarray, float]
+        Length value(s) typically represented in 'cm' that will be converted into acoustic target
+        strength (TS, dB re. 1 m^-2). 
+    slope: float
+        TS-length regression slope coefficient
+    intercept: float
+        TS-length regression slope intercept
+    """
+    return slope * np.log10(length) + intercept
 
-def to_linear( x ):
-    return 10.0 ** ( x / 10.0 )
+def to_linear( db_values: Union[ np.ndarray , float ] ) -> np.ndarray:
+    """
+    Converts acoustics values in the logarithmic domain (dB) into the linear domain
+    
+    Parameters
+    ----------
+    db_values: Union[ np.ndarray, float]
+        Logarithmic acoustic values.
+    """
+    return 10.0 ** ( db_values / 10.0 )
 
-def to_dB( x ):
-    return 10 * np.log10(x)
+def to_dB( linear_values: Union[ np.ndarray , float ] ) -> np.ndarray:
+    """
+    Converts acoustics values in the linear domain into the logarithmic domain (dB)
+    
+    Parameters
+    ----------
+    linear_values: Union[ np.ndarray, float]
+        Linear acoustic values.
+    """
+    return 10 * np.log10( linear_values )
 
-def impute_missing_sigma_bs( strata_dict: dict , sigma_bs_stratum: pd.DataFrame ):
+def impute_missing_sigma_bs( strata_dict: dict ,
+                             sigma_bs_stratum: pd.DataFrame ) -> pd.DataFrame:
     """
     Imputes sigma_bs for strata without measurements or values
 
     Parameters
     ----------
     strata_dict: dict
+        Dictionary containing the complete list of expected stratum values.
     sigma_bs_stratum: pd.DataFrame    
+        Dataframe containing the mean `sigma_bs` calculated for each stratum.
 
     Notes
     -----
@@ -71,17 +106,28 @@ def impute_missing_sigma_bs( strata_dict: dict , sigma_bs_stratum: pd.DataFrame 
     # Return output
     return sigma_bs_stratum_impute         
 
-def summarize_sigma_bs( length_data: pd.DataFrame , specimen_data: pd.DataFrame , strata_dict: dict , configuration_dict: dict , settings_dict: dict ) :
+def summarize_sigma_bs( length_data: pd.DataFrame , 
+                        specimen_data: pd.DataFrame , 
+                        strata_dict: dict , 
+                        configuration_dict: dict , 
+                        settings_dict: dict ) -> dict :
     """
     Calculates the stratified mean sigma_bs for each stratum
 
     Parameters
     ----------
     length_data: pd.DataFrame
+        Dataframe containing unaged length measurements.
     specimen_data: pd.DataFrame
+        Dataframe containing aged length and weight measurements.
     strata_dict: dict
+        Dictionary containing the complete list of expected stratum values.
     configuration_dict: dict
+        Dictionary that contains all of the `Survey`-object configurations found within 
+        the `config` attribute.
     settings_dict: dict
+        Dictionary that contains all of the analysis settings that detail specific algorithm 
+        arguments and user-defined inputs.
 
     Notes
     -----
@@ -173,13 +219,23 @@ def summarize_sigma_bs( length_data: pd.DataFrame , specimen_data: pd.DataFrame 
 def nasc_to_biomass( input_dict: dict ,
                      analysis_dict: dict ,
                      configuration_dict: dict ,
-                     settings_dict: dict ) :
+                     settings_dict: dict ) -> tuple[ pd.DataFrame , pd.DataFrame ] :
     """
     Converts integrated acoustic backscatter (NASC) into estimates of 
     areal number/biomass densities, total abundance, and total biomass
 
     Parameters
     ----------
+    input_dict: dict
+        A dictionary containing the loaded survey data.
+    analysis_dict: dict
+        A dictionary containing processed biological and transect data. 
+    configuration_dict: dict
+        Dictionary that contains all of the `Survey`-object configurations found within 
+        the `config` attribute.
+    settings_dict: dict
+        Dictionary that contains all of the analysis settings that detail specific algorithm 
+        arguments and user-defined inputs.
 
     Notes
     -----

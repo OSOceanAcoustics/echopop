@@ -6,14 +6,14 @@ import pandas as pd
 import numpy as np
 import warnings
 
-from echopop.computation.acoustics import summarize_sigma_bs , nasc_to_biomass
-from echopop.computation.statistics import stratified_transect_statistic
+from .acoustics import summarize_sigma_bs , nasc_to_biomass
+from .statistics import stratified_transect_statistic
 
-from echopop.spatial.mesh import crop_mesh , stratify_mesh
-from echopop.spatial.projection import transform_geometry
-from echopop.spatial.krige import kriging
+from .spatial.mesh import crop_mesh , stratify_mesh
+from .spatial.projection import transform_geometry
+from .spatial.krige import kriging
 
-from echopop.biology import (
+from .biology import (
     filter_species , 
     fit_length_weight_relationship , 
     number_proportions , 
@@ -22,15 +22,10 @@ from echopop.biology import (
     fit_length_weights , 
     weight_proportions ,
     distribute_length_age , 
-    partition_transect_age ,
-    sum_strata_weight , 
-    calculate_aged_unaged_proportions ,
-    calculate_aged_biomass , 
-    calculate_unaged_biomass ,
-    apply_age_bins
+    partition_transect_age 
 )
 
-from echopop.spatial.transect import (
+from .spatial.transect import (
     edit_transect_columns , 
     transect_distance , 
     summarize_transect_strata , 
@@ -40,8 +35,25 @@ from echopop.spatial.transect import (
 def process_transect_data( input_dict: dict ,
                            analysis_dict: dict ,
                            settings_dict: dict ,
-                           configuration_dict: dict ):
+                           configuration_dict: dict ) -> dict:
+    """
+    Calculates stratified mean statistics for a set of transects
     
+
+    Parameters
+    ----------
+    input_dict: dict
+        A dictionary containing the loaded survey data.
+    analysis_dict: dict
+        A dictionary containing processed biological and transect data. 
+    configuration_dict: dict
+        Dictionary that contains all of the `Survey`-object configurations found within 
+        the `config` attribute.
+    settings_dict: dict
+        Dictionary that contains all of the analysis settings that detail specific algorithm 
+        arguments and user-defined inputs.
+    """ 
+        
     # Filter out non-target species
     length_data , specimen_data , catch_data = (
         filter_species( [ input_dict[ 'biology' ][ 'length_df' ] ,
@@ -127,7 +139,23 @@ def process_transect_data( input_dict: dict ,
 def acoustics_to_biology( input_dict: dict ,
                           analysis_dict: dict ,
                           configuration_dict: dict ,
-                          settings_dict: dict ):
+                          settings_dict: dict ) -> tuple[ pd.DataFrame , dict ]:
+    """
+    Convert acoustic transect data into population-level metrics such as abundance and biomass.
+    
+    Parameters
+    ----------
+    input_dict: dict
+        A dictionary containing the loaded survey data.
+    analysis_dict: dict
+        A dictionary containing processed biological and transect data. 
+    configuration_dict: dict
+        Dictionary that contains all of the `Survey`-object configurations found within 
+        the `config` attribute.
+    settings_dict: dict
+        Dictionary that contains all of the analysis settings that detail specific algorithm 
+        arguments and user-defined inputs.
+    """     
     
     # Convert NASC into number density (animals/nmi^2), biomass density (kg/nmi^2), abundance
     # (# animals), and biomass (kg) for all fish, sexed (male/female) fish, and unsexed fish
@@ -169,8 +197,19 @@ def acoustics_to_biology( input_dict: dict ,
     return biomass_summary , analysis_dict
 
 def stratified_summary( analysis_dict: dict ,
-                        settings_dict: dict ) :
+                        settings_dict: dict ) -> tuple[ pd.DataFrame , dict ] :
+    """
+    Calculate stratified statistics (with and without resampling) for the entire survey.
     
+    Parameters
+    ----------
+    analysis_dict: dict
+        A dictionary containing processed biological and transect data. 
+    settings_dict: dict
+        Dictionary that contains all of the analysis settings that detail specific algorithm 
+        arguments and user-defined inputs.
+    """     
+        
     # Define the and prepare the processed and georeferenced transect data
     transect_data = edit_transect_columns( analysis_dict[ 'transect' ] , settings_dict )
 
@@ -196,8 +235,21 @@ def stratified_summary( analysis_dict: dict ,
 
 def krige( input_dict: dict ,
            analysis_dict: dict ,
-           settings_dict: dict ):
+           settings_dict: dict ) -> tuple[ pd.DataFrame , dict]:
+    """
+    Interpolate spatial data using ordinary kriging.
     
+    Parameters
+    ----------
+    input_dict: dict
+        A dictionary containing the loaded survey data.
+    analysis_dict: dict
+        A dictionary containing processed biological and transect data. 
+    settings_dict: dict
+        Dictionary that contains all of the analysis settings that detail specific algorithm 
+        arguments and user-defined inputs.
+    """     
+            
     # Extract kriging mesh data
     mesh_data = input_dict[ 'statistics' ][ 'kriging' ][ 'mesh_df' ]
 
@@ -286,7 +338,19 @@ def apportion_kriged_values( analysis_dict: dict ,
                              settings_dict: dict ) -> tuple[ pd.DataFrame , 
                                                              pd.DataFrame , 
                                                              pd.DataFrame ] :
+    """
+    Apportion spatially distributed kriged biological estimates over length and age bins.
     
+    Parameters
+    ----------
+    analysis_dict: dict
+        A dictionary containing processed biological and transect data. 
+    kriged_mesh: pd.DataFrame
+        A dataframe containing the spatially distributed kriged estimates.
+    settings_dict: dict
+        Dictionary that contains all of the analysis settings that detail specific algorithm 
+        arguments and user-defined inputs.
+    """         
     # Sum the kriged weights for each stratum
     # ---- Extract stratum column name
     stratum_col = settings_dict[ 'stratum_name' ]
@@ -443,8 +507,7 @@ def apportion_kriged_values( analysis_dict: dict ,
                                   female_nonzero_unaged.index[female_nonzero_unaged].values]
                 # ---- Print
                 print(f"""Imputed apportioned unaged female {biology_col} at length bins:\n"""
-                      f"""{', '.join(intervals_list)}""" )
-                
+                      f"""{', '.join(intervals_list)}""" )                
     # ---- Sum the aged and unaged estimates together
     kriged_table = (
         ( unaged_apportioned_values + aged_pivot.unstack( 'sex' ) ).unstack()
@@ -461,6 +524,59 @@ def apportion_kriged_values( analysis_dict: dict ,
         .sum().reset_index(name=f"{biology_col}_apportioned")
     )
     
+    # Additional reapportionment if age-1 fish are excluded
+    if settings_dict[ 'exclude_age1' ]:
+        # ---- Pivot the kriged table
+        kriged_tbl = kriging_full_table.pivot_table( index = ['length_bin'] , columns = ['sex' , 'age_bin'] ,
+                                                     values = f"{biology_col}_apportioned" ,
+                                                     observed = False ,
+                                                     aggfunc = 'sum' )
+        # ---- Calculate the age-1 sum
+        age_1_sum = kriged_tbl.sum().unstack('sex').iloc[0]
+        # ---- Calculate the age-2+ sum
+        adult_sum = kriged_tbl.sum().unstack('sex').iloc[1:].sum()
+        # ---- Set the index of the kriged table dataframe
+        kriging_full_table.set_index( 'sex' , inplace = True )
+        # ---- Append the age-1 sums
+        kriging_full_table[ 'summed_sex_age1' ] = age_1_sum
+        # ---- Append the adult sums
+        kriging_full_table[ 'summed_sex_adult' ] = adult_sum
+        # ---- Drop sex as an index
+        kriging_full_table = kriging_full_table.reset_index( )
+        # ---- Calculate the adjusted apportionment that will be distributed over the adult values
+        kriging_full_table[ 'adjustment' ] = (
+            kriging_full_table[ 'summed_sex_age1' ] 
+            * kriging_full_table[ f"{biology_col}_apportioned" ] 
+            / kriging_full_table[ 'summed_sex_adult' ] 
+        )
+        # ---- Apply the adjustment
+        kriging_full_table.loc[ : , f"{biology_col}_apportioned" ] = (
+            kriging_full_table.loc[ : , f"{biology_col}_apportioned" ]
+            + kriging_full_table.loc[ : , 'adjustment' ]            
+        )
+        # ---- Index by age bins
+        kriging_full_table.set_index( 'age_bin' , inplace = True )
+        # ---- Zero out the age-1 values 
+        kriging_full_table.loc[ [ 1 ] , f"{biology_col}_apportioned" ] = 0.0
+        # ---- Remove age as an index
+        kriging_full_table = kriging_full_table.reset_index( )
+        # ---- Drop temporary columns
+        kriging_full_table.drop( columns = [ 'summed_sex_age1' , 'summed_sex_adult' , 'adjustment' ] , 
+                                 inplace = True )
+        # ---- Validate that apportioning age-1 values over all adult values did not 'leak'
+        # -------- Previous apportioned totals by sex
+        previous_totals = (
+            kriged_full_table.groupby( [ 'sex' ] )[ f"{biology_col}_apportioned" ].sum( )
+        )
+        # -------- New apportioned totals by sex
+        new_totals = (
+            kriging_full_table.groupby( [ 'sex' ] )[ f"{biology_col}_apportioned" ].sum( )
+        )
+        # -------- Check (1 kg tolerance)
+        if np.any( ( previous_totals - new_totals ) > 1e-6 ):
+            warnings.warn( f"""Apportioned kriged {biology_col} for age-1 not full distributed over\
+        all age-2+ bins.""")   
+
     # Check equality between original kriged estimates and (imputed) apportioned estimates
     if kriged_table[f"{biology_col}_apportioned"].sum( ) != kriged_strata.sum( ):
         # ---- If not equal, generate warning
@@ -470,4 +586,4 @@ def apportion_kriged_values( analysis_dict: dict ,
         `self.results['kriging']['tables']['unaged_tbl']` for each sex.""")               
 
     # Return output
-    return aged_pivot , unaged_pivot , kriged_full_table
+    return aged_pivot , unaged_pivot , kriging_full_table

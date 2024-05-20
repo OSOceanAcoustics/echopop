@@ -23,7 +23,77 @@ from echopop.biology import (
 from echopop.utils import message as em
 from echopop.utils import load as el
 
+tt = pd.DataFrame(
+                        { 'stratum_num': np.repeat( [ 1 , 2 ] , 12 ) ,
+                          'species_id': np.repeat( [ 9933 ] , 24 ) ,
+                          'length_bin': np.tile( [ pd.Interval( left = 15.0 , right = 20.0 ) , 
+                                                   pd.Interval( left = 20.0 , right = 25.0 )  ] , 12 ) , 
+                          'age_bin': np.repeat( [ pd.Interval( left = 0.5 , right = 1.5 ) , 
+                                                  pd.Interval( left = 1.5 , right = 2.5 ) ] , 12 ) ,         
+                          'sex': np.tile( [ 'all' , 'all' , 'all' , 'all' ,
+                                            'male' , 'male' , 'male' , 'male' ,
+                                            'female' , 'female' , 'female' , 'female' ] , 2 ) ,
+                          'proportion_number_aged': np.array( [ 0.25 , 0.25 , 0.25 , 0.50 ,
+                                                                0.00 , 0.00 , 0.50 , 0.50 ,
+                                                                0.00 , 0.00 , 0.50 , 0.50 ,
+                                                                0.25 , 0.25 , 0.25 , 0.25 , 
+                                                                0.25 , 0.25 , 0.25 , 0.25 ,
+                                                                0.25 , 0.25 , 0.25 , 0.25 ] ) } )
+age_proportions = tt
+tt.groupby( [ 'sex' , 'stratum_num' ] )[ 'proportion_number_aged'].sum()
 
+at =  pd.DataFrame(
+                    { 'length_bins': np.array( [ 17.5 , 22.5 ] ) ,
+                      'length_intervals': np.array( [ pd.Interval( left = 15.0 , right = 20.0 ) , 
+                                                      pd.Interval( left = 20.0 , right = 25.0 ) ] ) } )
+length_bins = at
+cc = { 
+        'TS_length_regression_parameters': {
+            'pacific_hake': {
+                'number_code': 9933 ,
+                'TS_L_slope': 10.0 ,
+                'TS_L_intercept': -40.0 ,
+                'length_units': 'cm'
+            }
+        }
+    }
+tam = pd.DataFrame(
+                        { 'stratum_num': np.repeat( [ 1 , 2 ] , 6 ) ,
+                          'species_id': np.repeat( [ 9933 ] , 12 ) ,
+                          'length_bin': np.tile( [ pd.Interval( left = 15.0 , right = 20.0 ) , 
+                                                   pd.Interval( left = 20.0 , right = 25.0 )  ] , 6 ) ,     
+                          'sex': np.tile( [ 'all' , 'all' , 'male' , 'male' , 'female' , 'female' ] , 2 ) ,
+                          'proportion_number_unaged': np.array( [ 0.50 , 0.50 , 0.25 , 0.25  ,
+                                                               0.00 , 0.00 , 0.50 , 0.50 ,
+                                                               0.00 , 0.00 , 0.50 , 0.50 ] ) } )
+unage_proportions = tam
+
+tum = {
+    'weight':
+        {
+            'aged_weight_proportions_df': pd.DataFrame(
+                        { 'stratum_num': np.repeat( [ 1 , 2 ] , 12 ) ,
+                          'length_bin': np.tile( [ pd.Interval( left = 15.0 , right = 20.0 ) , 
+                                                   pd.Interval( left = 20.0 , right = 25.0 )  ] , 12 ) , 
+                          'age_bin': np.repeat( [ pd.Interval( left = 0.5 , right = 1.5 ) , 
+                                                  pd.Interval( left = 1.5 , right = 2.5 ) ] , 12 ) ,         
+                          'sex': np.tile( [ 'all' , 'all' , 'all' , 'all' ,
+                                            'male' , 'male' , 'male' , 'male' ,
+                                            'female' , 'female' , 'female' , 'female' ] , 2 ) ,
+                          'weight_proportions': np.array( [ 0.25 , 0.25 , 0.25 , 0.50 ,
+                                                                0.00 , 0.00 , 0.50 , 0.50 ,
+                                                                0.00 , 0.00 , 0.50 , 0.50 ,
+                                                                0.25 , 0.25 , 0.25 , 0.25 , 
+                                                                0.25 , 0.25 , 0.25 , 0.25 ,
+                                                                0.25 , 0.25 , 0.25 , 0.25 ] ) } )
+        }
+}
+
+age_weight_proportions = tum[ 'weight' ][ 'aged_weight_proportions_df' ]
+
+TS_L_parameters = cc['TS_length_regression_parameters'][ 'pacific_hake' ]
+age_proportions = tt
+age_proportions.groupby( [ 'sex' , 'stratum_num' ] )[ 'proportion_number_overall_aged'].sum()
 init_config_path = "./config_files/initialization_config.yml"
 survey_year_config_path = "./config_files/survey_year_2019_config.yml"
 
@@ -96,8 +166,31 @@ tt = (
 tt.groupby( [ 'sex' , 'age_bin' ] )[ 'biomass_apportioned' ].sum( )
 
 # Calculate the summed estimates for age-1 for male, female, and all fish
+kriged_tbl = kriging_full_table.pivot_table( index = ['length_bin'] , columns = ['sex' , 'age_bin'] ,
+                                             values = f"{biology_col}_apportioned" ,
+                                             observed = False ,
+                                             aggfunc = 'sum' )
 age_1_sum = kriged_tbl.sum().unstack('sex').iloc[0]
+adult_sum = kriged_tbl.sum().unstack('sex').iloc[1:].sum()
+
+
+kriged_full_table.set_index( 'sex' , inplace = True )
+kriged_full_table[ 'summed_sex_age1' ] = age_1_sum
+kriged_full_table[ 'summed_sex_adult' ] = adult_sum
+kriged_full_table[ 'adjusted' ] = kriged_full_table[ 'biomass_apportioned' ] + ( kriged_full_table[ 'summed_sex_age1' ] * kriged_full_table[ 'biomass_apportioned' ] / kriged_full_table[ 'summed_sex_adult' ] )
+kriged_full_table[ 'adjusted' ][ kriged_full_table[ 'age_bin' ] == pd.Interval( 0.5 , 1.5 ) ] = 0.0
+kriged_full_table.groupby(['sex'])[ 'adjusted' ].sum() * 1e-6
+kriged_full_table.groupby(['sex'])[ 'biomass_apportioned' ].sum() * 1e-6
 # ---- > Convert to ratio
+am = kriged_tbl.T.unstack('sex') / age_1_sum
+am.loc[:,([2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34],'male')]
+kriged_tbl.stack( 'sex' , future_stack=True ).loc[:,([2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34],'male')]
+
+ kriged_tbl.stack( 'sex' , future_stack=True ).unstack( 'length_bin' ) / age_1_sum
+
+( kriged_tbl.stack( 'sex' , future_stack=True ) / age_1_sum ).loc[([28,30,32], 'male'), :]
+kriged_tbl.T.unstack( 'sex' ) / age_1_sum
+kriged_tbl.T / age_1_sum.to_numpy().reshape(-1,1)
 kriged_tbl.T.unstack('sex') / age_1_sum.to_numpy()
 kriged_tbl.loc[:,(1,'all')].sum()
 kriged_tbl.columns

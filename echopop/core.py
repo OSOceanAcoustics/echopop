@@ -150,8 +150,6 @@ CONFIG_MAP = {
     } ,
 } 
 
-
-#
 # ``LAYER_NAME_MAP`` is a hard-coded dictionary that aids in re-mapping the data tree
 # structure of various attributes contained within a generated ``Survey`` class object. 
 # Each dictionary comprises the same dataset names contained within the configuration file.
@@ -164,9 +162,6 @@ CONFIG_MAP = {
 # helpful for organizing data with more parsimonious and representative names. It may also be
 # helpful for future extensions enabling users to set additional data attributes that aren't 
 # included in the ``Survey`` class initialization and parameterization (when the object is generated).
-#
-# TODO: This is a hard-coded feature and therefore is not particularly helpful for more dynamic
-# use of this Python module (and the overall use of the echopop package).
 DATA_STRUCTURE = {
     'input': {
         'acoustics': {
@@ -296,21 +291,4 @@ LAYER_NAME_MAP = {
             }
         } ,
     } 
-}
-
-DATAFRAME_LABELS = {
-    'kriging': {
-        
-    }
-}
-
-SEX_CODE_MAP = {
-    '1': {
-        'name': 'male' ,
-        'abbr': 'M' 
-    } ,
-    '2': {
-        'name': 'female' ,
-        'abbr': 'F'
-    }
 }

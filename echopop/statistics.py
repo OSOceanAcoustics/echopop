@@ -2,13 +2,12 @@ import numpy as np
 import pandas as pd
 import scipy.stats as st
 
-from ..spatial.transect import transect_array
+from .spatial.transect import transect_array
 
 def stratified_transect_statistic( transect_data: pd.DataFrame , 
                                    transect_summary: pd.DataFrame , 
                                    strata_summary: pd.DataFrame , 
-                                   settings_dict: dict ):
-    
+                                   settings_dict: dict ) -> tuple[ pd.DataFrame , dict ]:    
     """
     Calculates stratified mean statistics for a set of transects
     
@@ -189,10 +188,21 @@ def stratified_transect_statistic( transect_data: pd.DataFrame ,
     # ---- Return outputs
     return resampled_distributions , stratified_results
 
-def array_math( left_array: np.array ,
-                right_array: np.array ,
-                operation: str ) :
+def array_math( left_array: np.ndarray ,
+                right_array: np.ndarray ,
+                operation: str ) -> np.ndarray :
+    """
+    Helper function that applies arithmetric operations across the dimensions of two arrays.
     
+    Parameters
+    ----------
+    left_array: np.ndarray
+        The first array containing data.
+    right_array: np.ndarray
+        The second array containing data.
+    operation: str
+        A string value representing a basic arithmetic operation ('+', '+', '-', '/')
+    """     
     # Define operations dictionary key
     operations = {
         "+": np.add,
@@ -204,13 +214,13 @@ def array_math( left_array: np.array ,
     # Apply the operation and return the output
     return operations[ operation ]( left_array.transpose( ) , right_array ).transpose( )
 
-def confidence_interval( values ):
+def confidence_interval( values: np.ndarray ) -> np.ndarray:
     """
     Calculates the 95% confidence interval (Normal) for a given array    
 
     Parameters
     ----------
-    values: np.array
+    values: np.ndarray
         An array of values
 
     Notes
