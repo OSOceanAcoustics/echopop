@@ -4,12 +4,12 @@ General analysis orchestration functions that bundle related functions and proce
 
 import pandas as pd
 import numpy as np
-import copy
+import warnings
 
 from echopop.computation.acoustics import summarize_sigma_bs , nasc_to_biomass
 from echopop.computation.statistics import stratified_transect_statistic
 
-from echopop.spatial.mesh import crop_mesh
+from echopop.spatial.mesh import crop_mesh , stratify_mesh
 from echopop.spatial.projection import transform_geometry
 from echopop.spatial.krige import kriging
 
@@ -115,6 +115,8 @@ def process_transect_data( input_dict: dict ,
         {
             'weight': weight_proportions( specimen_data , 
                                           catch_data , 
+                                          analysis_dict[ 'biology' ][ 'proportions' ][ 'number' ] ,
+                                          length_weight_df ,
                                           analysis_dict[ 'biology' ][ 'distributions' ][ 'weight' ] )
         }
     )
@@ -270,5 +272,202 @@ def krige( input_dict: dict ,
                               analysis_dict[ 'kriging' ][ 'mesh_df' ] ,
                               settings_dict )
     
+    # Stratified the kriging mesh
+    kriged_results[ 'mesh_results_df' ] = stratify_mesh( input_dict ,
+                                                         kriged_results[ 'mesh_results_df' ] ,
+                                                         settings_dict )
+
+    
     # Return kriged (interpolated) results
     return kriged_results , analysis_dict
+
+def apportion_kriged_values( analysis_dict: dict ,
+                             kriged_mesh: pd.DataFrame , 
+                             settings_dict: dict ) -> tuple[ pd.DataFrame , 
+                                                             pd.DataFrame , 
+                                                             pd.DataFrame ] :
+    
+    # Sum the kriged weights for each stratum
+    # ---- Extract stratum column name
+    stratum_col = settings_dict[ 'stratum_name' ]
+    # ---- Extract the biological variable (independent of area)
+    biology_col = settings_dict[ 'variable' ].replace( '_density' , '' )
+    # ---- Sum the kriged values for each stratum
+    kriged_strata = kriged_mesh.groupby( [ stratum_col ] , observed = False )[ biology_col ].sum( )
+    
+    # Extract the weight proportions from the analysis object
+    proportions_dict = analysis_dict[ 'transect' ][ 'biology' ][ 'proportions' ]
+    # ---- Aged 
+    aged_proportions = proportions_dict[ 'weight' ][ 'aged_weight_proportions_df' ].copy()
+    # ---- Unaged
+    unaged_proportions = proportions_dict[ 'weight' ][ 'unaged_weight_proportions_df' ].copy()
+    # ---- Aged-unaged sexed weight proportions
+    aged_unaged_sex_proportions = (
+        proportions_dict[ 'weight' ]['aged_unaged_sex_weight_proportions_df'].copy()
+        [ [ stratum_col , 'sex' , 'weight_proportion_overall_unaged' ] ]
+    )
+    
+    # Compute the apportioned unaged kriged biological values per stratum
+    # ---- Merge the unaged proportions
+    unaged_sexed_apportioned = unaged_proportions.merge( aged_unaged_sex_proportions )
+    # ---- Set index to stratum column
+    unaged_sexed_apportioned.set_index( [ stratum_col ] , inplace = True )
+    # ---- Append the stratum-aggregated values
+    unaged_sexed_apportioned[ f"{biology_col}_apportioned_unaged" ] = (
+        unaged_sexed_apportioned[ 'weight_proportion' ]
+        * unaged_sexed_apportioned[ 'weight_proportion_overall_unaged' ] 
+        * kriged_strata
+    )
+
+    # Distribute biological values over the overall proportions (i.e. relative to aged and unaged 
+    # fish) for aged fish
+    # ---- Set index to stratum column
+    aged_proportions.set_index( [ stratum_col ] , inplace = True )
+    # ---- Compute the distributed values
+    aged_proportions[ f"{biology_col}_apportioned" ] = (
+        aged_proportions[ 'weight_proportion_overall' ]
+        * kriged_strata
+    ).fillna( 0.0 )
+
+    # Distribute the aged biological distributions over unaged length distributions to estimate
+    # aged distributions
+    # ---- Pivot aged data
+    aged_pivot = aged_proportions.reset_index( ).pivot_table( index = [ 'sex' , 'length_bin' ] , 
+                                                              columns = [ 'age_bin' ] , 
+                                                              values = f"{biology_col}_apportioned" , 
+                                                              aggfunc = 'sum' , 
+                                                              observed = False )
+    # ---- Calculate the total biomass values for each sex per length bin
+    aged_length_totals = aged_pivot.sum( axis = 1 ).unstack( 'sex' )
+    # ---- Pivot unaged data    
+    unaged_pivot = (
+        unaged_sexed_apportioned.reset_index( )
+        .pivot_table( index = [ 'length_bin' ] ,
+                      columns = [ 'sex' ] ,
+                      values = f"{biology_col}_apportioned_unaged" ,
+                      aggfunc = 'sum' ,
+                      observed = False )
+    )
+    # ---- Calculate the new unaged biological values distributed over age    
+    unaged_apportioned_values = (
+        ( unaged_pivot * aged_pivot.unstack( 'sex' ) / aged_length_totals ).fillna( 0 )
+    )
+    
+    # Imputation is required when unaged values are present but aged values are absent at shared
+    # length bins! This requires an augmented implementation to address this accordingly
+    # ---- Sum across all age bins (of the aged fish data) to generate totals for each row (i.e. 
+    # ---- length bin)
+    summed_aged_length_totals = aged_pivot.T.sum()
+    # ---- Extract the indices of the summed totals that equal 0.0 for male and female fish
+    # -------- Male
+    male_zero_aged = np.where( summed_aged_length_totals.loc[ 'male' ] == 0.0 )[ 0 ]
+    # -------- Female
+    female_zero_aged = np.where( summed_aged_length_totals.loc[ 'female' ] == 0.0 )[ 0 ]
+    # ---- Extract the inverse where biological totals are present
+    # -------- Male
+    male_nonzero_aged = np.where( summed_aged_length_totals.loc[ 'male' ] != 0.0 )[ 0 ]
+    # -------- Female
+    female_nonzero_aged = np.where( summed_aged_length_totals.loc[ 'female' ] != 0.0 )[ 0 ]
+    # ---- Pivot the unaged data and find male and female values that are non-zero
+    # -------- Male
+    male_nonzero_unaged = unaged_pivot[ 'male' ].iloc[ male_zero_aged ] != 0.0
+    # -------- Convert to index
+    male_nonzero_unaged_idx = male_zero_aged[ male_nonzero_unaged ]
+    # -------- Female
+    female_nonzero_unaged = unaged_pivot[ 'female' ].iloc[ female_zero_aged ] != 0.0
+    # -------- Convert to index
+    female_nonzero_unaged_idx = female_zero_aged[ female_nonzero_unaged ]
+    # ---- Re-pivot the unaged apportioned values (if necessary)
+    if ( len( male_nonzero_unaged ) > 0 ) | ( len( female_nonzero_unaged ) ) > 0 :        
+        unaged_values_pvt = (
+            unaged_apportioned_values.copy()
+            .unstack( ).reset_index( name = 'values' )
+            .pivot_table( index = [ 'length_bin' ] ,
+                        columns = [ 'sex' , 'age_bin' ] ,
+                        values = 'values' ,
+                        observed = False )
+        )
+        # ---- Find the closest indices that can be used for nearest-neighbors imputation
+        if len( male_nonzero_unaged ) > 0 :
+            # -------- Male
+            imputed_male = (
+                male_nonzero_aged[ np.argmin( 
+                    np.abs( male_zero_aged[male_nonzero_unaged][ : , np.newaxis ] - male_nonzero_aged ) , 
+                    axis = 1 
+                ) ]
+            )
+            # ---- Update the values
+            unaged_values_pvt.iloc[male_nonzero_unaged_idx, unaged_values_pvt.columns.get_loc('male')] = (
+                unaged_pivot['male'].iloc[male_nonzero_unaged_idx].to_numpy( ) 
+                * aged_pivot.loc['male'].iloc[imputed_male].T 
+                / aged_length_totals['male'].iloc[imputed_male]
+            ).T
+        if len( female_nonzero_unaged ) > 0 :
+            # -------- Female
+            imputed_female = (
+            female_nonzero_aged[ np.argmin( 
+                    np.abs( female_zero_aged[female_nonzero_unaged][ : , np.newaxis ] - female_nonzero_aged ) , 
+                    axis = 1 
+                ) ]
+            )
+            # ---- Update the values
+            unaged_values_pvt.iloc[female_nonzero_unaged_idx, unaged_values_pvt.columns.get_loc('female')] = (
+                unaged_pivot['female'].iloc[female_nonzero_unaged_idx].to_numpy( ) 
+                * aged_pivot.loc['female'].iloc[imputed_female].T 
+                / aged_length_totals['female'].iloc[imputed_female]
+            ).T
+        # ---- Update the original unaged apportioned table
+        unaged_apportioned_values = (
+            unaged_values_pvt.unstack().reset_index(name='values')
+            .pivot_table( index = [ 'length_bin' ] , 
+                         columns=['age_bin' , 'sex' ] ,
+                         values = 'values' ,
+                         observed = False )
+        )
+        # ---- Alert message (if verbose = T)
+        if settings_dict[ 'verbose' ]:
+            # ---- Male: 
+            if len( male_nonzero_unaged ) > 0:
+                # ---- Get interval values
+                intervals_list = [str(interval) for 
+                                  interval in 
+                                  male_nonzero_unaged.index[male_nonzero_unaged].values]
+                # ---- Print
+                print(f"""Imputed apportioned unaged male {biology_col} at length bins:\n"""
+                      f"""{', '.join(intervals_list)}""" )
+            # ---- Female: 
+            if len( female_nonzero_unaged ) > 0:
+                # ---- Get interval values
+                intervals_list = [str(interval) for 
+                                  interval in 
+                                  female_nonzero_unaged.index[female_nonzero_unaged].values]
+                # ---- Print
+                print(f"""Imputed apportioned unaged female {biology_col} at length bins:\n"""
+                      f"""{', '.join(intervals_list)}""" )
+                
+    # ---- Sum the aged and unaged estimates together
+    kriged_table = (
+        ( unaged_apportioned_values + aged_pivot.unstack( 'sex' ) ).unstack()
+        .reset_index(name=f"{biology_col}_apportioned")
+    )
+    # ---- Duplicate so there is an 'all' category
+    kriged_full_table = pd.concat( [ kriged_table ,
+                                     kriged_table.copy( ).assign( sex = 'all' ) ] )
+    # ---- Consolidate
+    kriging_full_table = (
+        kriged_full_table
+        .groupby( [ 'length_bin' , 'age_bin' , 'sex' ] , observed = False )
+        [f"{biology_col}_apportioned"]
+        .sum().reset_index(name=f"{biology_col}_apportioned")
+    )
+    
+    # Check equality between original kriged estimates and (imputed) apportioned estimates
+    if kriged_table[f"{biology_col}_apportioned"].sum( ) != kriged_strata.sum( ):
+        # ---- If not equal, generate warning
+        warnings.warn( f"""Apportioned kriged {biology_col} does not equal the total \
+        kriged mesh {biology_col}! Check for cases where values kriged values may be only present \
+        in `self.results['kriging']['tables']['aged_tbl']` or \
+        `self.results['kriging']['tables']['unaged_tbl']` for each sex.""")               
+
+    # Return output
+    return aged_pivot , unaged_pivot , kriged_full_table

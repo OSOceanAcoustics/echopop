@@ -502,6 +502,8 @@ def quantize_weights( specimen_data: pd.DataFrame ,
 
 def weight_proportions( specimen_data: pd.DataFrame , 
                         catch_data: pd.DataFrame , 
+                        proportions_dict: dict ,
+                        length_weight_df: pd.DataFrame ,
                         distributions_dict: dict ):
     """
     Calculate the total and sex-specific mean weight for each stratum
@@ -636,6 +638,36 @@ def weight_proportions( specimen_data: pd.DataFrame ,
                       values = 'weight_proportion_overall'  )
         / unaged_total_sex_proportions.to_numpy( )
     )
+
+    # Compute the overall length-binned weight distributions among unaged fish
+    # ---- Extract the fitted weight values calculated for all fish
+    length_weight_all = length_weight_df[ length_weight_df[ 'sex' ] == 'all' ]
+    # ---- Generate the fitted weight array
+    fitted_weights = length_weight_all[ 'weight_fitted' ].to_numpy( )
+    # ---- Extract the number proportions computed for unaged fish
+    unaged_number_proportions = proportions_dict[ 'unaged_length_proportions_df' ]
+    # ---- Filter out values besides those computed for 'all' fish
+    unaged_number_proportions = (
+        unaged_number_proportions[ unaged_number_proportions[ 'sex' ] == 'all' ]
+    )
+    # ---- Convert to a table
+    unaged_number_proportions_tbl = (
+        unaged_number_proportions.pivot_table( columns = [ stratum_col ] ,
+                                               index = [ 'length_bin' ] ,
+                                               values = 'proportion_number_unaged' ,
+                                               aggfunc = 'sum' ,
+                                               observed = False )
+    )
+    # ---- Apportion the averaged weights
+    unaged_apportioned_weights = unaged_number_proportions_tbl.T * fitted_weights
+    # ---- Compute the average weight proportions per length bin per stratum
+    unaged_length_weights = (
+        unaged_apportioned_weights.T / unaged_apportioned_weights.sum( axis = 1 )
+    )
+    # ---- Convert back to a DataFrame
+    unaged_weight_proportions_df = (
+        unaged_length_weights.unstack( ).reset_index( name = 'weight_proportion' )
+    )
     
     # Calculate the aged and unaged weight proportions
     # ---- Aged
@@ -685,6 +717,7 @@ def weight_proportions( specimen_data: pd.DataFrame ,
     return (
         {
             'aged_weight_proportions_df': aged_overall_df ,
+            'unaged_weight_proportions_df': unaged_weight_proportions_df.reset_index( ) ,
             'aged_unaged_sex_weight_proportions_df': (
                 aged_unaged_sex_proportions.astype(float).reset_index().fillna( 0.0 )
             ) ,

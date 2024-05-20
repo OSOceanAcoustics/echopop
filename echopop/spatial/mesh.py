@@ -91,3 +91,28 @@ def griddify_lag_distances( coordinates_1: Union[pd.DataFrame , np.ndarray] ,
 
     # Return Euclidean distances
     return np.sqrt( x_distance * x_distance + y_distance * y_distance )
+
+def stratify_mesh( input_dict: dict ,
+                   kriged_mesh: pd.DataFrame ,
+                   settings_dict: dict ) -> pd.DataFrame:
+        
+    # Extract the geographic-delimited strata
+    if settings_dict[ 'stratum' ].lower( ) == 'ks': 
+        geo_strata = input_dict[ 'spatial' ][ 'geo_strata_df' ]
+    elif settings_dict[ 'stratum' ].lower( ) == 'inpfc': 
+        geo_strata = input_dict[ 'spatial' ][ 'inpfc_strata_df' ]  
+
+    # Define the latitude bin array
+    latitude_bins = np.concatenate( [ [ -90.0 ] , geo_strata[ 'northlimit_latitude' ] , [ 90.0 ] ] )
+
+    # Append the stratum variable to the kriging mesh
+    # ---- Extract the stratum column name
+    stratum_col = settings_dict[ 'stratum_name' ]
+    # ---- Append a stratum column to the kriging mesh
+    kriged_mesh[ f"{stratum_col}"] = pd.cut( kriged_mesh[ 'latitude' ] ,
+                                             latitude_bins ,
+                                             labels = list( geo_strata[ f"{stratum_col}" ] ) + [ 1 ] ,
+                                             ordered = False )
+    
+    # Return output
+    return kriged_mesh

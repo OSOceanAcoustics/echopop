@@ -5,6 +5,7 @@ import copy
 from .core import DATA_STRUCTURE
 from .analysis import (
     acoustics_to_biology , 
+    apportion_kriged_values ,
     krige ,
     process_transect_data ,     
     stratified_summary
@@ -254,6 +255,25 @@ class Survey:
         # Save the results to the `results` attribute
         self.results.update( { 'kriging': kriged_results } )
 
+        # Distribute the kriged results over length and age bins
+        aged_apportioned , unaged_apportioned , kriged_apportioned_table = (
+            apportion_kriged_values( self.analysis ,
+                                     kriged_results[ 'mesh_results_df' ] ,
+                                     self.analysis['settings'][ 'kriging' ] )
+        )
+
+        # Modify the resulting tables if age-1 fish are excluded! 
+        if settings_dict[ 'exclude_age1' ]:
+            
+        # ---- Update results
+        self.results[ 'kriging' ].update( { 
+                'tables': {
+                    'overall_apportionment_df': kriged_apportioned_table ,
+                    'aged_tbl': aged_apportioned ,
+                    'unaged_tbl': unaged_apportioned
+                }
+        } )                                          
+       
         # Print result if `verbose == True`
         if verbose:
             em.kriging_mesh_results_msg( self.results[ 'kriging' ] , 

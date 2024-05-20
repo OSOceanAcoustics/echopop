@@ -108,6 +108,8 @@ def kriging( transect_data: pd.DataFrame ,
     mesh_results[ "sample_variance" ] = kriged_values[ : , 2 ]
     # -------- Add the sample CV
     mesh_results[ "sample_cv" ] = mesh_CV
+    # -------- Add the absolute kriged value (i.e. not normalized by area)
+    mesh_results[ 'biomass' ] = kriged_values[ : , 0 ] * area
     # -------- Extract only the necessary dataframe columns
     mesh_results = mesh_results.filter( regex = "^(?!(fraction|x|y))")
     # ---- Create dictionary with survey-wide kriged results
