@@ -6,7 +6,6 @@ from shapely.geometry import Point , Polygon
 from shapely.ops import unary_union
 from ..spatial.projection import wgs84_to_utm
 
-
 def correct_transect_intervals( transect_data: pd.DataFrame ,
                                 interval_threshold: float = 0.05 ):
     """
@@ -285,3 +284,50 @@ def define_western_extent( transect_data: pd.DataFrame ,
 
     # Return output
     return transect_western_extent
+
+def transect_bearing( transect_data: pd.DataFrame ):
+
+    # Calculate the average heading per transect line
+    # ---- Initialize the dataframe
+    transect_direction = pd.DataFrame( 
+        { 'transect_num': np.unique( transect_data[ 'transect_num' ] ) } 
+    )
+    # ---- Set index
+    transect_direction.set_index( 'transect_num' , inplace = True )
+    # ---- Calculate the difference between the minimum and maximum longitudes
+    transect_direction[ 'longitude_min' ] = np.radians(
+        transect_data.groupby( [ 'transect_num' ] )[ 'longitude' ].min( )
+    )
+    transect_direction[ 'longitude_max' ] = np.radians(
+        transect_data.groupby( [ 'transect_num' ] )[ 'longitude' ].max( )
+    )
+    # ---- Calculate the difference between the minimum and maximum latitudes
+    transect_direction[ 'latitude_min' ] = np.radians(
+        transect_data.groupby( [ 'transect_num' ] )[ 'latitude' ].min( )
+    )
+    transect_direction[ 'latitude_max' ] = np.radians(
+        transect_data.groupby( [ 'transect_num' ] )[ 'latitude' ].max( )
+    )
+    # ---- Compute the change in longitude
+    delta_longitude = transect_direction[ 'longitude_max' ] - transect_direction[ 'longitude_min' ]
+    # ---- Compute the change in y-direction
+    delta_y = np.sin( delta_longitude ) * np.cos( transect_direction[ 'latitude_max' ] )
+    # ---- Compute the change in x-direction
+    delta_x = (
+        np.cos( transect_direction[ 'latitude_min' ] ) * np.sin( transect_direction[ 'latitude_max' ] )
+        - np.sin( transect_direction[ 'latitude_min' ] ) 
+        * np.cos( transect_direction[ 'latitude_max' ] ) * np.cos( delta_longitude )
+    )
+    # ---- Compute the bearings
+    transect_direction[ 'heading' ] = np.degrees( np.arctan2( delta_y , delta_x ) ) + 360 % 360
+
+    # Convert other columns back to degrees
+    transect_direction[ [ 'longitude_min' , 'longitude_max' , 
+                          'latitude_min' , 'latitude_max' ] ] = (
+                               transect_direction[ [ 'longitude_min' , 'longitude_max' , 
+                                                     'latitude_min' , 'latitude_max' ] ]
+                                                     .apply( lambda x: np.degrees( x ) )
+                          )
+
+    # Return the output
+    return transect_direction.reset_index( )

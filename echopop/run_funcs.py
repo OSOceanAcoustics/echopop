@@ -23,6 +23,332 @@ from echopop.biology import (
 from echopop.utils import message as em
 from echopop.utils import load as el
 
+settings_dict = self.analysis[ 'settings' ][ 'kriging' ]
+settings_dict.update( { 'latitude_resolution': latitude_resolution ,
+                        'bearing_tolerance': bearing_tolerance ,
+                        'crop_method': 'interpolation' } )
+# ARGS 
+latitude_resolution = 1.25 # nmi
+bearing_tolerance = 15 # degrees
+# INPUTS
+mesh_data = self.input[ 'statistics' ][ 'kriging' ][ 'mesh_df' ].copy( )
+mesh_data.rename( columns = { 'centroid_latitude': 'latitude' , 'centroid_longitude': 'longitude' } , inplace = True )
+
+transect_coords = self.analysis[ 'transect' ]['coordinates' ].copy( )
+transect_data = transect_coords
+# --------------------------------------------
+# Convert latitude resolution to degrees latitude
+latitude_resolution_deg = latitude_resolution / 60.0
+
+# Calculate the transect bearings
+transect_headings = transect_bearing( transect_coords )
+
+# Find the transects that face north-to-south (Region 2)
+transect_headings_ns = (
+    transect_headings[ ( transect_headings[ 'heading' ] < bearing_tolerance ) 
+                       | ( 360.0 - transect_headings[ 'heading' ]  < bearing_tolerance ) ]
+)
+# ---- Sub-sample the transect coordinates belonging to Region 2
+transect_coords[ 'mesh_region' ] = (
+    np.where( 
+        transect_coords[ 'transect_num' ] < transect_headings_ns[ 'transect_num' ].min( ) ,
+        1 ,
+        np.where( 
+            transect_coords[ 'transect_num' ] > transect_headings_ns[ 'transect_num' ].max( ) ,
+            3 , 2 
+        ) 
+    )
+)
+
+# Compute the transect extents across each region
+# ---- Mean latitude
+transect_coords[ 'latitude_mean' ] = (
+    transect_coords.groupby( [ 'transect_num' , 'mesh_region' ] )[ 'latitude' ]
+    .transform( 'mean' )
+)
+# ---- Northernmost extent
+transect_coords[ 'latitude_north' ] = (
+    transect_coords.groupby( [ 'transect_num' , 'mesh_region' ] )[ 'latitude' ]
+    .transform( 'max' )
+)
+# ---- Southernmost extent
+transect_coords[ 'latitude_south' ] = (
+    transect_coords.groupby( [ 'transect_num' , 'mesh_region' ] )[ 'latitude' ]
+    .transform( 'min' )
+)
+# ---- Eastern extent
+transect_coords[ 'longitude_east' ] = (
+    transect_coords.groupby( [ 'transect_num' , 'mesh_region' ] )[ 'longitude' ]
+    .transform( 'max' )
+)
+# ---- Westernmost extent
+transect_coords[ 'longitude_west' ] = (
+    transect_coords.groupby( [ 'transect_num' , 'mesh_region' ] )[ 'longitude' ]
+    .transform( 'min' )
+)
+# ---- Index by region
+transect_coords.set_index( 'mesh_region' , inplace = True )
+
+# Generate arrays that will be used for interpolation for each region
+# ---- Region 1
+region_1_latitude = (
+    np.arange( transect_coords.loc[ 1 , 'latitude' ].min( ) ,
+               transect_coords.loc[ 1 , 'latitude' ].max( ) ,
+               latitude_resolution_deg )
+)
+# ---- Region 2
+# -------- Compute the requisite longitudinal resolution
+longitude_resolution_deg = (
+    latitude_resolution_deg 
+    * np.cos( 
+        np.radians(
+            transect_coords.loc[ 
+                transect_coords[ 'transect_num' ] == transect_headings_ns[ 'transect_num' ].max( ) ,
+                'latitude_mean' ].mean( )
+            ) 
+        )
+)
+# -------- Compute the array
+region_2_longitude = (
+    np.arange( transect_coords.loc[ 2 , 'longitude_west' ].min( ) ,
+               transect_coords.loc[ 2 , 'longitude_east' ].max( ) ,
+               longitude_resolution_deg )
+)
+# ---- Region 3
+region_3_latitude = (
+    np.arange( transect_coords.loc[ 3 , 'latitude_south' ].min( ) ,
+               transect_coords.loc[ 3 , 'latitude_north' ].max( ) ,
+               latitude_resolution_deg )
+)
+
+new_coords = region_1_latitude
+coordinate_data = transect_coords.loc[1]
+coordinates_y = 'longitude'
+coordinates_x = 'latitude'
+
+def interpolate_survey_extent( new_coords: np.ndarray ,
+                               coordinate_data: pd.DataFrame ,
+                               coordinates_x: str ,
+                               coordinates_y: str ) -> tuple[ np.ndarray , np.ndarray ]:
+    
+    # Generate string that will be appended to the input strings
+    if coordinates_y in [ 'longitude' ]:
+        add_string = [ '_west' , '_east' ]
+    else: 
+        add_string = [ '_south' , '_north' ]
+
+    # Generate the column strings
+    # ---- South or West
+    lower_col = coordinates_y+add_string[0]
+    # ---- North or East
+    upper_col = coordinates_y+add_string[1]
+    
+    # Reduce the dataframe
+    # ---- South or West coordinates
+    lower_coords = (
+        coordinate_data.loc[ coordinate_data[ coordinates_y ] == coordinate_data[ lower_col ] ]
+    )
+    # ---- North or East coordinates
+    upper_coords = (
+        coordinate_data.loc[ coordinate_data[ coordinates_y ] == coordinate_data[ upper_col ] ]
+    )    
+
+    # 1D interpolators
+    # ---- South/West 
+    interpolator_lower = interpolate.interp1d(
+        lower_coords[ coordinates_x ] ,
+        lower_coords[ coordinates_y ] ,
+        kind = 'linear' ,
+        bounds_error = False
+    )
+    # ---- North/East
+    interpolator_upper = interpolate.interp1d(
+        upper_coords[ coordinates_x ] ,
+        upper_coords[ coordinates_y ] ,
+        kind = 'linear' ,
+        bounds_error = False
+    )
+
+    # Apply the interpolators to the new coordinates and return the outputs
+    return interpolator_lower( new_coords ) , interpolator_upper( new_coords )
+
+# Generate the new paired interpolated coordinates
+# ---- Region 1
+region_1_extents = interpolate_survey_extent( region_1_latitude , 
+                                              transect_coords.loc[ 1 ] , 
+                                              'latitude' , 'longitude' )
+# ---- Region 2
+region_2_extents = interpolate_survey_extent( region_2_longitude , 
+                                              transect_coords.loc[ 2 ] , 
+                                              'longitude' , 'latitude' )
+# ---- Region 3
+region_3_extents = interpolate_survey_extent( region_3_latitude , 
+                                              transect_coords.loc[ 3 ] , 
+                                              'latitude' , 'longitude' )
+
+# Iterate through each region to crop the mesh 
+# ---- Region 1
+region_1_index = [ ]
+# -------- Compute the change in longitude (degrees)
+delta_longitude = latitude_resolution_deg * np.cos( np.radians( region_1_latitude ) )
+# -------- Iterate through
+for i in range( len( delta_longitude ) ) :
+    # -------- Find the mesh indices that are within the survey extent
+    idx = np.where(
+        ( mesh_data[ 'longitude' ] >= region_1_extents[0][i] - delta_longitude[ i ] )
+        & ( mesh_data[ 'longitude' ] <= region_1_extents[1][i] + delta_longitude[ i ] ) 
+        & ( mesh_data[ 'latitude' ] >= region_1_latitude[i] - latitude_resolution_deg )
+        & ( mesh_data[ 'latitude' ] < region_1_latitude[i] + latitude_resolution_deg )
+    )
+    # -------- Append the indices
+    region_1_index.append( idx[ 0 ] )
+# ---- Region 2
+region_2_index = [ ]
+# -------- Extract the northern and southern components separately
+# -------- North
+transect_north = (
+    transect_coords
+    .loc[ transect_coords[ 'latitude' ] == transect_coords[ 'latitude_north' ] ].loc[2]
+)
+# -------- South
+transect_south = (
+    transect_coords
+    .loc[ transect_coords[ 'latitude' ] == transect_coords[ 'latitude_south' ] ].loc[2]
+)
+# -------- Iterate through
+for i in range( len( region_2_extents[0] ) ) :
+    # -------- Find the mesh indices that are within the survey extent: southern limit
+    if np.isnan( region_2_extents[0][i] ) | np.isnan( region_2_extents[1][i] ) :
+        # -------- Compute the indices for the northern- and southernmost coordinates
+        # -------- North
+        lon_n_min = np.argmin( np.abs( region_2_longitude[i] - transect_north[ 'longitude' ] ) )
+        # -------- South
+        lon_s_min = np.argmin( np.abs( region_2_longitude[i] - transect_south[ 'longitude' ] ) )
+        # -------- Slope
+        slope = ( 
+            ( transect_north[ 'latitude' ].iloc[ lon_n_min ] 
+            - transect_south[ 'latitude' ].iloc[ lon_s_min ] )
+            / ( transect_north[ 'longitude' ].iloc[ lon_n_min ] 
+            - transect_south[ 'longitude' ].iloc[ lon_s_min ] )
+        )     
+        # -------- Set a new border threshold
+        latitude_slope_i = (
+            slope 
+            * ( region_2_longitude[i] - transect_south[ 'longitude' ].iloc[ lon_s_min ] )
+            + transect_south[ 'latitude' ].iloc[ lon_s_min ]
+        )   
+        if np.isnan( region_2_extents[0][i] ):
+            # -------- Find the mesh indices that are within the survey extent
+            idx = np.where(
+                ( mesh_data[ 'longitude' ] >= region_2_longitude[i] - longitude_resolution_deg )
+                & ( mesh_data[ 'longitude' ] <= region_2_longitude[i] + longitude_resolution_deg ) 
+                & ( mesh_data[ 'latitude' ] >= latitude_slope_i - latitude_resolution_deg )
+                & ( mesh_data[ 'latitude' ] < region_2_extents[1][i] + latitude_resolution_deg )
+            )
+        else: 
+            # -------- Find the mesh indices that are within the survey extent
+            idx = np.where(
+                ( mesh_data[ 'longitude' ] >= region_2_longitude[i] - longitude_resolution_deg )
+                & ( mesh_data[ 'longitude' ] <= region_2_longitude[i] + longitude_resolution_deg ) 
+                & ( mesh_data[ 'latitude' ] >= region_2_extents[0][i] - latitude_resolution_deg )
+                & ( mesh_data[ 'latitude' ] < latitude_slope_i + latitude_resolution_deg )
+            )
+    else:
+        # -------- Find the mesh indices that are within the survey extent
+        idx = np.where(
+            ( mesh_data[ 'longitude' ] >= region_2_longitude[i] - longitude_resolution_deg )
+            & ( mesh_data[ 'longitude' ] <= region_2_longitude[i] + longitude_resolution_deg ) 
+            & ( mesh_data[ 'latitude' ] >= region_2_extents[0][i] - latitude_resolution_deg )
+            & ( mesh_data[ 'latitude' ] < region_2_extents[1][i] + latitude_resolution_deg )
+        )
+    # -------- Append the indices
+    region_2_index.append( idx[ 0 ] )
+# ---- Region 2
+region_3_index = [ ]
+# -------- Compute the change in longitude (degrees)
+delta_longitude = latitude_resolution_deg * np.cos( np.radians( region_3_latitude ) )
+# -------- Extract the northern and southern components separately
+# -------- West
+transect_west = (
+    transect_coords
+    .loc[ transect_coords[ 'longitude' ] == transect_coords[ 'longitude_west' ] ].loc[3]
+)
+# -------- East
+transect_east = (
+    transect_coords
+    .loc[ transect_coords[ 'longitude' ] == transect_coords[ 'longitude_east' ] ].loc[3]
+)
+# -------- Iterate through
+for i in range( len( region_3_extents[0] ) ) :
+    # -------- Find the mesh indices that are within the survey extent: southern limit
+    if np.isnan( region_3_extents[0][i] ) | np.isnan( region_3_extents[1][i] ) :
+        # -------- Compute the indices for the northern- and southernmost coordinates
+        # -------- North
+        lat_w_max = np.argmax( transect_west[ 'latitude' ] ) 
+        # -------- South
+        lat_e_max = np.argmax( transect_east[ 'latitude' ] )
+        # -------- Slope
+        slope = ( 
+            ( transect_west[ 'longitude' ].iloc[ lat_w_max ] 
+            - transect_east[ 'longitude' ].iloc[ lat_e_max] )
+            / ( transect_west[ 'latitude' ].max( )
+            - transect_east[ 'latitude' ].max( ) )
+        )     
+        # -------- Set a new border threshold
+        longitude_slope_i = (
+            slope 
+            * ( region_3_latitude[i] - transect_east[ 'latitude' ].max( ) )
+            + transect_east[ 'longitude' ].iloc[ lat_e_max ]
+        )   
+        if np.isnan( region_3_extents[0][i] ):
+            # -------- Find the mesh indices that are within the survey extent
+            idx = np.where(
+                ( mesh_data[ 'longitude' ] >= longitude_slope_i - delta_longitude[i] )
+                & ( mesh_data[ 'longitude' ] <= region_3_extents[1][i] + delta_longitude[i] ) 
+                & ( mesh_data[ 'latitude' ] >= region_3_latitude[i] - latitude_resolution_deg )
+                & ( mesh_data[ 'latitude' ] < region_3_latitude[i] + latitude_resolution_deg )
+            )
+        else: 
+            # -------- Find the mesh indices that are within the survey extent
+            idx = np.where(
+                ( mesh_data[ 'longitude' ] >= region_3_extents[0][i] - delta_longitude[i] )
+                & ( mesh_data[ 'longitude' ] <= longitude_slope_i + delta_longitude[i] ) 
+                & ( mesh_data[ 'latitude' ] >= region_3_latitude[i] - latitude_resolution_deg )
+                & ( mesh_data[ 'latitude' ] < region_3_latitude[i] + latitude_resolution_deg )
+            )
+    else:
+        # -------- Find the mesh indices that are within the survey extent
+        idx = np.where(
+            ( mesh_data[ 'longitude' ] >= region_3_extents[0][i] - delta_longitude[i] )
+            & ( mesh_data[ 'longitude' ] <= region_3_extents[1][i] + delta_longitude[i] ) 
+            & ( mesh_data[ 'latitude' ] >= region_3_latitude[i] - latitude_resolution_deg )
+            & ( mesh_data[ 'latitude' ] < region_3_latitude[i] + latitude_resolution_deg )
+        )
+    # -------- Append the indices
+    region_3_index.append( idx[ 0 ] )
+# ---- Concatenate the region indices
+interpolated_indices = np.unique(
+    np.concatenate(
+        [ np.concatenate( region_1_index ) , 
+        np.concatenate( region_2_index ) ,
+        np.concatenate( region_3_index ) ]
+    )
+)
+
+# Crop the mesh data
+mesh_data_cropped = mesh_data.loc[ interpolated_indices ]
+
+transects_ns = (
+    transect_coords[ transect_coords[ 'transect_num' ].isin( transect_headings_ns[ 'transect_num' ] )]
+)
+# ---- Sub-sample the transect coordinates belonging to Region 1
+transects_e = (
+    transect_coords[ transect_coords[ 'transect_num' ] < transect_headings_ns[ 'transect_num' ].min( ) ]
+)
+
+
+
+
 tt = pd.DataFrame(
                         { 'stratum_num': np.repeat( [ 1 , 2 ] , 12 ) ,
                           'species_id': np.repeat( [ 9933 ] , 24 ) ,

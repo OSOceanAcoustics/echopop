@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import scipy.stats as st
+import warnings
 
 from .spatial.transect import transect_array
 
@@ -39,6 +40,51 @@ def stratified_transect_statistic( transect_data: pd.DataFrame ,
     # ---- Get stratum column name
     stratum_col = settings_dict[ 'stratum_name' ]
 
+    # Get indexed transect distance
+    transect_distances = transect_summary.set_index( [ 'transect_num' ] )[ 'transect_distance' ]
+    # ---- Drop any transects where distance is 0.0 (i.e. from a single mesh node)
+    if np.any( transect_distances == 0.0 ):
+        # ---- Pick out transects where distance = 0.0 nmi
+        zero_distances = transect_distances[ transect_distances == 0.0 ].index.to_numpy( )
+        # ---- Update `transect_distances`
+        transect_distances = transect_distances[ transect_distances > 0.0 ]
+        # ---- Update `transect_data`
+        transect_data = (
+            transect_data[ ~ transect_data[ 'transect_num' ].isin( zero_distances ) ]
+        )
+        # ---- Get the 'poor' transect strata
+        zero_distances_strata = (
+            transect_summary.loc[ zero_distances ].groupby( [ stratum_col ] , observed = False )
+            .size( )
+        )
+        # ---- Update `transect_summary`
+        transect_summary = (
+            transect_summary[ ~ transect_summary[ 'transect_num' ].isin( zero_distances ) ]  
+        )
+        # ---- Update `strata_summary`
+        # -------- Set index
+        strata_summary.set_index( [ stratum_col ] , inplace = True )
+        # -------- Subtract the 'poor' transects from the total transect counts
+        strata_summary[ 'transect_count' ] = (
+            strata_summary[ 'transect_count' ] - zero_distances_strata            
+        )
+        # -------- Reset index
+        strata_summary.reset_index( inplace = True )
+
+        if settings_dict[ 'verbose' ]:
+            if settings_dict[ 'dataset' ] == 'kriging': 
+                # ---- Generate warning
+                warnings.warn( "Invalid virtual transects detected with distances of 0.0 nmi:"
+                                f"\n[virtual transect numbers] -> {zero_distances}."
+                                "\nThese will be removed from the stratified analysis." , 
+                                stacklevel = 1 )
+            else: 
+                # ---- Generate warning
+                warnings.warn( "Invalid survey transects detected with distances of 0.0 nmi:"
+                                f"\n[virtual transect numbers] -> {zero_distances}."
+                                "\nThese will be removed from the stratified analysis." ,
+                                stacklevel = 1 )
+
     # Calculate the number of transects per stratum
     num_transects_to_sample = (
         np.round(
@@ -54,14 +100,14 @@ def stratified_transect_statistic( transect_data: pd.DataFrame ,
     # Calculate effective sample size/degrees of freedom for variance calculation
     sample_dof =  num_transects_to_sample * ( num_transects_to_sample - sample_offset )
 
+    # Transect areas
+    # transect_areas = transect_summary.groupby( [ 'transect_num' ] )[ 'transect_area' ].sum( )
+
     # Get indexed total transect area
     total_transect_area = (
         strata_summary
         .set_index( stratum_col )[ 'transect_area_total' ]
     ) 
-
-    # Get indexed transect distance
-    transect_distances = transect_summary.set_index( [ 'transect_num' ] )[ 'transect_distance' ]
 
     # Get indexed biological value
     biological_values = (
@@ -148,8 +194,9 @@ def stratified_transect_statistic( transect_data: pd.DataFrame ,
     # Calculate the replicate grand total of the (weighted) biological variable
     # ---- Overall mean of transect integrated sums
     replicate_sum_mean = (
-        ( total_transect_area.to_numpy( ) * total_arr ).sum( axis = 1 ) / total_transect_area.sum( )
+        ( total_transect_area.to_numpy( ) * total_arr ).sum( axis = 1 ) / total_transect_area.sum()
     )
+
     # ---- Overall total using the overall mean
     replicate_total = total_arr.sum( axis = 1 )
 
@@ -166,6 +213,8 @@ def stratified_transect_statistic( transect_data: pd.DataFrame ,
     stratified_results = {
         'variable': settings_dict[ 'variable' ] ,
         'ci_percentile': 0.95 ,
+        'num_transects': strata_summary[ 'transect_count' ].sum( ) ,
+        'total_area': strata_summary[ 'transect_area_total' ].sum( ) ,
         'mean': {
             'weighted_estimate': np.mean( replicate_mean ) ,
             'unweighted_estimate': np.mean( replicate_sum_mean ) ,

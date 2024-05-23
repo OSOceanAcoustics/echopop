@@ -9,7 +9,11 @@ import warnings
 from .acoustics import summarize_sigma_bs , nasc_to_biomass
 from .statistics import stratified_transect_statistic
 
-from .spatial.mesh import crop_mesh , stratify_mesh
+from .spatial.mesh import (
+    crop_mesh , 
+    mesh_to_transects ,
+    stratify_mesh
+)
 from .spatial.projection import transform_geometry
 from .spatial.krige import kriging
 
@@ -197,6 +201,8 @@ def acoustics_to_biology( input_dict: dict ,
     return biomass_summary , analysis_dict
 
 def stratified_summary( analysis_dict: dict ,
+                        results_dict: dict ,
+                        spatial_dict: dict ,
                         settings_dict: dict ) -> tuple[ pd.DataFrame , dict ] :
     """
     Calculate stratified statistics (with and without resampling) for the entire survey.
@@ -205,19 +211,33 @@ def stratified_summary( analysis_dict: dict ,
     ----------
     analysis_dict: dict
         A dictionary containing processed biological and transect data. 
+    results_dict: dict
+        A dictionary containing georeferenced results (i.e. kriging).
+    spatial_dict: dict
+        A dictionary containing dataframes that define the KS and INPFC stratum limits.
     settings_dict: dict
         Dictionary that contains all of the analysis settings that detail specific algorithm 
         arguments and user-defined inputs.
     """     
-        
-    # Define the and prepare the processed and georeferenced transect data
-    transect_data = edit_transect_columns( analysis_dict[ 'transect' ] , settings_dict )
 
-    # Summarize transect spatial information
-    # ---- Transect distances
-    transect_summary = transect_distance( transect_data )
-    # ---- Counts and area coverage per stratum
-    strata_summary = summarize_transect_strata( transect_summary )
+    # Toggle the correct transect data 
+    # ---- The 'original' acoustic transect data
+    if settings_dict[ 'dataset' ] == 'transect': 
+        # ---- Define the and prepare the processed and georeferenced transect data
+        transect_data = edit_transect_columns( analysis_dict[ 'transect' ] , settings_dict )
+        # ---- Summarize transect spatial information
+        # -------- Transect distances
+        transect_summary = transect_distance( transect_data )
+        # -------- Counts and area coverage per stratum
+        strata_summary = summarize_transect_strata( transect_summary )
+    # ---- Kriged data
+    elif settings_dict[ 'dataset' ] == 'kriging': 
+        # ---- Convert the kriged mesh results into virtual transects
+        transect_data , transect_summary , strata_summary = (
+            mesh_to_transects( results_dict[ 'kriging' ] ,
+                               spatial_dict ,
+                               settings_dict )
+        )
 
     # Compute the stratified mean, variance, and coefficient of variation (CV)
     # ---- This includes the statistical (Gaussian) estimates (mean) and 95% confidence interval
@@ -228,7 +248,12 @@ def stratified_summary( analysis_dict: dict ,
                                                                      settings_dict )
     
     # Update the analysis attribute with the resampled/bootstrapped replicates
-    analysis_dict[ 'stratified' ].update( { 'stratified_replicates_df': replicates } )
+    analysis_dict[ 'stratified' ].update(
+        { f"{settings_dict[ 'dataset' ]}": {
+            'stratified_replicates_df': replicates
+            } 
+        } 
+    )
     
     # Return the outputs
     return stratified_results , analysis_dict
@@ -266,7 +291,7 @@ def krige( input_dict: dict ,
         mesh_full = crop_mesh( transect_data ,
                                mesh_data ,
                                settings_dict )
-        if settings_dict[ 'verbose' ]:
+        if ( settings_dict[ 'verbose' ] ) & ( settings_dict[ 'crop_method' ] == 'convex_hull' ) :
         # ---- Print alert 
             print( "Kriging mesh cropped to prevent extrapolation beyond the defined "
             f"""`mesh_buffer_distance` value ({settings_dict['mesh_buffer_distance']} nmi).""")
@@ -329,7 +354,6 @@ def krige( input_dict: dict ,
                                                          kriged_results[ 'mesh_results_df' ] ,
                                                          settings_dict )
 
-    
     # Return kriged (interpolated) results
     return kriged_results , analysis_dict
 
@@ -351,6 +375,7 @@ def apportion_kriged_values( analysis_dict: dict ,
         Dictionary that contains all of the analysis settings that detail specific algorithm 
         arguments and user-defined inputs.
     """         
+
     # Sum the kriged weights for each stratum
     # ---- Extract stratum column name
     stratum_col = settings_dict[ 'stratum_name' ]
@@ -578,7 +603,7 @@ def apportion_kriged_values( analysis_dict: dict ,
         all age-2+ bins.""")   
 
     # Check equality between original kriged estimates and (imputed) apportioned estimates
-    if kriged_table[f"{biology_col}_apportioned"].sum( ) != kriged_strata.sum( ):
+    if ( kriged_table[f"{biology_col}_apportioned"].sum( ) - kriged_strata.sum( ) ) > 1e-6:
         # ---- If not equal, generate warning
         warnings.warn( f"""Apportioned kriged {biology_col} does not equal the total \
         kriged mesh {biology_col}! Check for cases where values kriged values may be only present \

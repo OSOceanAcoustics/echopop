@@ -42,34 +42,47 @@ def stratified_results_msg( stratified_results_dict: pd.DataFrame , settings_dic
     # Create copy
     stratified_results = copy.deepcopy( stratified_results_dict )
 
+    # Apply back-transformation of total
+    # ---- Initialize
+    stratified_results.update( 
+        { 'back_transform': copy.deepcopy( stratified_results['total'] ) } 
+    )
+    # ---- Adjust the estimate and confidence interval values
+    stratified_results[ 'back_transform' ].update(
+        { 'estimate': ( stratified_results[ 'back_transform' ][ 'estimate' ] 
+                      / settings_dict[ 'transect_sample' ] ) ,
+          'confidence_interval': ( stratified_results[ 'back_transform' ][ 'confidence_interval' ] 
+                                  / settings_dict[ 'transect_sample' ] ) }
+    )
+
     # Create confidence interval string
     # ---- Helper function
     def format_values(value, ci_pct, variable, statistic, metric):
         if 'confidence_interval' in metric:
             if statistic == 'cv':
                 return f"[{', '.join(map(lambda x: str(x.round(4)), value))}; {int(ci_pct * 100)}% CI]"
-            elif statistic in ['total', 'mean', 'variance'] and variable == 'biomass':
+            elif statistic in [ 'back_transform' , 'total', 'mean', 'variance'] and variable == 'biomass':
                 return f"[{', '.join(map(lambda x: str(np.round(x* 1e-6,1)), value))}; {int(ci_pct * 100)}% CI]"
-            elif statistic in ['total', 'mean', 'variance'] and variable == 'abundance':
+            elif statistic in [ 'back_transform' , 'total', 'mean', 'variance'] and variable == 'abundance':
                 return f"[{', '.join(map(lambda x: str(int(np.round(x,0))), value))}; {int(ci_pct * 100)}% CI]"
             else:
                 return f"[{', '.join(map(lambda x: str(np.round(x,2)), value))}; {int(ci_pct * 100)}% CI]"
         elif 'estimate' in metric:
             if statistic == 'cv':
                 return f"{str(np.round(value, 4))}"
-            elif statistic in ['total', 'mean'] and variable == 'biomass':
+            elif statistic in [ 'back_transform' , 'total', 'mean'] and variable == 'biomass':
                 return f"{str(np.round(value*1e-6,1))} kmt"
             elif statistic == 'variance' and variable == 'biomass':
                 return f"{str(np.round(value*1e-6,1))} kmt^2"
-            elif statistic in ['total', 'mean', 'variance'] and variable == 'abundance':
+            elif statistic in [ 'back_transform' , 'total', 'mean', 'variance'] and variable == 'abundance':
                 return f"{str(int(np.round(value,0)))} fish"
             elif statistic == 'variance' and variable == 'abundance':
                 return f"{str(int(np.round(value,0)))} fish^2"
-            elif statistic in ['total', 'mean', 'variance'] and variable == 'biomass_density':
+            elif statistic in ['back_transform' , 'total', 'mean', 'variance'] and variable == 'biomass_density':
                 return f"{str(np.round(value*1e-6,1))} kmt/nmi^2"
             elif statistic == 'variance' and variable == 'biomass_density':
                 return f"{str(np.round(value*1e-6,1))} (kmt/nmi^2)^2"            
-            elif statistic in ['total', 'mean', 'variance'] and variable == 'number_density':
+            elif statistic in ['back_transform' , 'total', 'mean', 'variance'] and variable == 'number_density':
                 return f"{str(int(np.round(value,0)))} fish/nmi^2"
             elif statistic == 'variance' and variable == 'number_density':
                 return f"{str(int(np.round(value,0)))} (fish/nmi^2)^2"     
@@ -90,9 +103,11 @@ def stratified_results_msg( stratified_results_dict: pd.DataFrame , settings_dic
     # Generate message output
     return print(
     f"""
-    STRATIFIED RESULTS
+    STRATIFIED RESULTS ({settings_dict[ 'dataset' ].upper()})
     --------------------------------
     | Stratified variable: {settings_dict[ 'variable' ].title() } (kmt)
+    | Number of { 'virtual transects' if settings_dict[ 'dataset' ] == 'kriging' else 'transects' } : { stratified_results[ 'num_transects' ] }
+    | Total strata area coverage: { np.round(stratified_results[ 'total_area' ],1)} nmi^2
     | Age-1 fish excluded: {settings_dict['exclude_age1']}
     | Stratum definition: {settings_dict[ 'stratum' ].upper() }
     | Bootstrap replicates: {settings_dict[ 'transect_replicates' ] } samples
@@ -100,6 +115,8 @@ def stratified_results_msg( stratified_results_dict: pd.DataFrame , settings_dic
     CV: {stratified_message['cv:estimate']} {stratified_message['cv:confidence_interval']}\n"""
     f"""    Total (across sub-sampled transects): {stratified_message['total:estimate']}"""
     f""" {stratified_message['total:confidence_interval']}\n"""
+    f"""          (back-transformed): {stratified_message['back_transform:estimate']}"""    
+    f""" {stratified_message['back_transform:confidence_interval']}\n"""
     f"""    Mean (across sub-sampled transects): {stratified_message['mean:unweighted_estimate']}"""
     f""" {stratified_message['mean:unweighted_confidence_interval']}
     --------------------------------"""
@@ -120,6 +137,7 @@ def kriging_mesh_results_msg( kriging_results_dict: pd.DataFrame ,
     | Age-1 fish excluded: {settings_dict['exclude_age1']}
     | Stratum definition: {settings_dict[ 'stratum' ].upper() }
     | Mesh extrapolation: {settings_dict[ 'extrapolate' ] }
+    --- Mesh cropping method: { settings_dict[ 'crop_method' ].capitalize() if not settings_dict[ 'extrapolate' ] else None }
     | Mesh and transect coordinate standardization: {settings_dict[ 'standardize_coordinates' ] }\n"""
     f"""    Mean {settings_dict[ 'variable' ].replace("_"," ")}: """
     f"""{np.round(kriging_mesh_results['survey_mean'],2)} kg/nmi^2\n"""

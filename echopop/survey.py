@@ -1,4 +1,4 @@
-from typing import Union, Optional
+from typing import Union, Optional , Literal
 from pathlib import Path
 import numpy as np
 import copy
@@ -48,7 +48,10 @@ class Survey:
         self,
         init_config_path: Union[str, Path] ,
         survey_year_config_path: Union[str, Path] ,
-    ):
+    ):  
+        # Initialize `meta` attribute
+        self.meta = copy.deepcopy( DATA_STRUCTURE[ 'meta' ] )
+
         # Loading the configuration settings and definitions that are used to 
         # initialize the Survey class object
         self.config = el.load_configuration( Path( init_config_path ) , 
@@ -66,7 +69,7 @@ class Survey:
     def transect_analysis(self ,
                           species_id: np.float64 = 22500 ,
                           exclude_age1: bool = True ,
-                          stratum: str = 'ks' ,
+                          stratum: Literal[ 'inpfc' , 'ks' ] = 'ks' ,
                           verbose: bool = True ):
         """
         Calculate population-level metrics from acoustic transect measurements
@@ -105,13 +108,20 @@ class Survey:
         # ---- Update results (biomass summary)
         self.results[ 'transect' ].update( { 'biomass_summary_df': biomass_summary } )
 
+        # Update meta provenance tracking
+        self.meta[ 'provenance' ].update( 
+            { 'transect': self.analysis[ 'settings' ][ 'transect'][ 'stratum' ] } 
+        )
+
         # Print result if `verbose == True`
         if verbose:
             em.transect_results_msg( biomass_summary )
 
     def stratified_analysis( self ,
-                             stratum: str = 'inpfc' ,
-                             variable: str = 'biomass' ,
+                             dataset: Literal[ 'transect' , 'kriging' ] = 'transect' ,
+                             stratum: Literal[ 'inpfc' , 'ks' ] = 'inpfc' ,
+                             variable: Literal[ 'abundance' , 'biomass' , 'nasc' ] = 'biomass' ,
+                             mesh_transects_per_latitude: Optional[ int ] = None ,
                              transect_sample: Optional[ float ] = None ,
                              transect_replicates: Optional[ float ] = None ,
                              verbose = True ):
@@ -137,6 +147,7 @@ class Survey:
         self.analysis[ 'settings' ].update(
             {
                 'stratified': {
+                    'dataset': f"{dataset}" ,
                     'stratum': stratum.lower( ) ,
                     'stratum_name': 'stratum_num' if stratum == 'ks' else 'stratum_inpfc' ,
                     'transect_sample': (
@@ -148,20 +159,40 @@ class Survey:
                         if transect_replicates is None else transect_replicates
                     ) ,
                     'variable': variable ,
-                    'exclude_age1': self.analysis[ 'settings' ][ 'transect' ][ 'exclude_age1' ]
+                    'exclude_age1': self.analysis[ 'settings' ][ 'transect' ][ 'exclude_age1' ] ,
+                    'verbose': verbose
                 }
             }
         )
+        # ---- Append kriging-specific parameters if necessary
+        if dataset == 'kriging': 
+            self.analysis[ 'settings' ][ 'stratified' ].update(
+                {
+                    'mesh_transects_per_latitude': (
+                        self.config[ 'stratified_survey_mean_parameters' ][ 'mesh_transects_per_latitude' ]
+                        if mesh_transects_per_latitude is None else mesh_transects_per_latitude
+                    ) ,
+                    'variable': (
+                        self.analysis['settings']['kriging'][ 'variable' ].replace("_density","")
+                    )
+                }
+            )
 
         # Calculate the stratified mean, variance, and coefficient of variation
         stratified_results , self.analysis = (
             stratified_summary( self.analysis ,
+                                self.results ,
+                                self.input[ 'spatial' ] ,
                                 self.analysis[ 'settings' ][ 'stratified' ] )
         )
 
         # Add the stratified statistics dictionary results to the `results` attribute
         # ---- Update results (stratified results)
-        self.results[ 'stratified' ].update( stratified_results )
+        self.results[ 'stratified' ].update( 
+            {
+                f"{dataset}": stratified_results
+            }     
+        )
 
         # Print result if `verbose == True`
         if verbose:
@@ -169,9 +200,12 @@ class Survey:
                                        self.analysis[ 'settings' ][ 'stratified' ] )
             
     def kriging_analysis( self ,
+                          bearing_tolerance: float = 15.0 ,
                           coordinate_transform: bool = True ,
+                          crop_method: Literal[ 'interpolation' , 'convex_hull' ] = 'interpolation' ,
                           extrapolate: bool = False ,
                           kriging_parameters: Optional[ dict ] = None ,
+                          latitude_resolution: float = 1.25 ,
                           mesh_buffer_distance: float = 1.25 ,
                           num_nearest_transects: int = 4 ,
                           projection: Optional[ str ] = None ,
@@ -228,6 +262,9 @@ class Survey:
             # ---- Update the analysis settings
             self.analysis['settings']['kriging'].update(
                 {
+                    'bearing_tolerance': bearing_tolerance ,
+                    'crop_method': crop_method ,
+                    'latitude_resolution': latitude_resolution ,
                     'mesh_buffer_distance': mesh_buffer_distance ,
                     'num_nearest_transect': num_nearest_transects 
                 }

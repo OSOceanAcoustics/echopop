@@ -3,6 +3,7 @@ Core API/components for class structures, class methods, and utility/helper meth
 '''
 import numpy as np
 import pandas as pd
+from datetime import datetime
 
 # `Survey` object data structure
 CONFIG_MAP = {
@@ -163,6 +164,10 @@ CONFIG_MAP = {
 # helpful for future extensions enabling users to set additional data attributes that aren't 
 # included in the ``Survey`` class initialization and parameterization (when the object is generated).
 DATA_STRUCTURE = {
+    'meta': {
+        'provenance': dict( ) ,
+        'date': f'{datetime.now():%Y-%m-%d %H:%M:%S%z}'
+    } ,
     'input': {
         'acoustics': {
             'nasc_df': pd.DataFrame( ) ,
