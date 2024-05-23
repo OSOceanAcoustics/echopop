@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import pytest
 
 from echopop.tests.conftest import assert_dataframe_equal
 from echopop.utils.operations import (
@@ -331,6 +332,7 @@ def test_count_variable():
     # ----------------------------------
     assert_dataframe_equal(eval_dataframe_monkey, expected_dtypes, expected_output)
     assert_dataframe_equal(eval_dataframe_function, expected_dtypes, expected_output)
+
 
 @pytest.mark.skip(reason="Function has since been updated!")
 def test_meld():

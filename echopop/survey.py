@@ -66,7 +66,7 @@ class Survey:
 
         # Initialize the `results` data attribute
         self.results = copy.deepcopy(DATA_STRUCTURE["results"])
-    
+
     def transect_analysis(
         self,
         species_id: np.float64 = 22500,

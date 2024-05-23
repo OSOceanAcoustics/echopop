@@ -1,6 +1,6 @@
-pytest.skip(allow_module_level=True)
 import numpy as np
 import pandas as pd
+import pytest
 
 from echopop.computation.biology import (
     aged_sex_weight_proportions,
@@ -15,6 +15,7 @@ from echopop.computation.biology import (
     unaged_sex_weight_proportions,
     unaged_weight_proportions,
 )
+
 
 @pytest.mark.skip(reason="Function has since been updated!")
 def test_sum_strata_weight(mock_survey):
@@ -67,6 +68,7 @@ def test_sum_strata_weight(mock_survey):
     # ---- `object_weight_strata`
     check_values = np.array([56.663158, 9.231579, 93.700000, 31.568421, 31.636842])
     assert np.allclose(check_values, eval_weight_strata.weight_stratum_all)
+
 
 @pytest.mark.skip(reason="Function has since been updated!")
 def test_compute_aged_weight_proportions(mock_survey):
@@ -296,6 +298,7 @@ def test_calculate_aged_unaged_proportions():
     # ---- Dataframe equality
     assert np.allclose(eval_aged_unaged_weight_proportions, expected_output)
 
+
 @pytest.mark.skip(reason="Function has since been updated!")
 def test_aged_sex_weight_proportions():
 
@@ -467,6 +470,7 @@ def test_aged_sex_weight_proportions():
     # ---- Dataframe equality
     assert np.all(eval_aged_sex_proportions == expected_output)
 
+
 @pytest.mark.skip(reason="Function has since been updated!")
 def test_distribute_aged_weight_proportions():
 
@@ -523,6 +527,7 @@ def test_distribute_aged_weight_proportions():
     assert np.all(eval_distributed_aged_weight_proportions.dtypes == expected_output.dtypes)
     # ---- Dataframe equality
     assert np.all(eval_distributed_aged_weight_proportions == expected_output)
+
 
 @pytest.mark.skip(reason="Function has since been updated!")
 def test_calculate_aged_biomass():
@@ -673,6 +678,7 @@ def test_calculate_aged_biomass():
         == eval_aged_sex_biomass.biomass_sexed_aged_adult.sum()
     )
 
+
 @pytest.mark.skip(reason="Function has since been updated!")
 def test_unaged_number_proportions():
 
@@ -726,6 +732,7 @@ def test_unaged_number_proportions():
     assert eval_proportions_unaged_length.shape == expected_dimensions
     # ---- Dataframe equality
     assert np.all(expected_output == eval_proportions_unaged_length)
+
 
 @pytest.mark.skip(reason="Function has since been updated!")
 def test_unaged_weight_proportions():
@@ -800,6 +807,7 @@ def test_unaged_weight_proportions():
     # ---- Dataframe equality
     assert eval_proportions_unaged_weight_length.equals(expected_output)
 
+
 @pytest.mark.skip(reason="Function has since been updated!")
 def test_unaged_sex_weight_proportions():
 
@@ -869,6 +877,7 @@ def test_unaged_sex_weight_proportions():
     # Check data value equality
     # ---- `stratum_num`
     assert np.all(eval_proportions_unaged_weight_sex.stratum_num == expected_output.stratum_num)
+
 
 @pytest.mark.skip(reason="Function has since been updated!")
 def test_calculate_unaged_biomass():
@@ -980,6 +989,7 @@ def test_calculate_unaged_biomass():
     # ---- Check expected summed values
     assert np.isclose(eval_unaged_sex_biomass["biomass_sexed_unaged_all"].sum(), 98e3)
     assert np.isclose(eval_unaged_sex_biomass["biomass_sexed_unaged_adult"].sum(), 49e3)
+
 
 @pytest.mark.skip(reason="Function has since been updated!")
 def test_apply_age_bins():

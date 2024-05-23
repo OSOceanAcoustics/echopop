@@ -2,6 +2,7 @@ import copy
 from pathlib import Path
 
 import numpy as np
+import pytest
 import yaml
 
 from echopop import Survey
@@ -38,6 +39,7 @@ def test_load_configuration(test_path, tmp_path):
 def test_init(mock_survey):
     objS = mock_survey
     assert isinstance(objS, Survey)
+
 
 @pytest.mark.skip(reason="Function has since been updated!")
 def test_load_survey_data(mock_survey, test_path):

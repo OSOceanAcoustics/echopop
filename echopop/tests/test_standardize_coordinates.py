@@ -122,7 +122,7 @@
 #     # ---- Check data value equality
 #     non_na_values = ~np.isnan(output11.longitude_transformed)
 #     assert np.all(output11.longitude_transformed[non_na_values] == np.array([-92.5, -50.0, -7.5]))
-#     assert np.isnan(output11.longitude_transformed[0]) & np.isnan(output11.longitude_transformed[4])
+#   assert np.isnan(output11.longitude_transformed[0]) & np.isnan(output11.longitude_transformed[4])
 #     assert np.allclose(
 #         output11.x_transformed.values[non_na_values], np.array([-1.70670738, -1.000, -0.29138906])
 #     )

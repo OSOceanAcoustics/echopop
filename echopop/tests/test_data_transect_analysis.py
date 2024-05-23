@@ -1,7 +1,9 @@
 import numpy as np
 import pandas as pd
+import pytest
 
 from echopop.tests.conftest import assert_dataframe_equal
+
 
 @pytest.mark.skip(reason="Function has since been updated!")
 def test_fit_binned_length_weight_relationship(mock_survey):
@@ -130,6 +132,7 @@ def test_fit_binned_length_weight_relationship(mock_survey):
     # ----------------------------------
     eval_dictionary = mock_survey.statistics["length_weight"]
     assert_dataframe_equal(eval_dictionary, expected_dtypes, expected_output)
+
 
 @pytest.mark.skip(reason="Function has since been updated!")
 def test_strata_sex_weight_proportions(mock_survey):
@@ -475,6 +478,7 @@ def test_strata_age_binned_weight_proportions(mock_survey):
     # ----------------------------------
     eval_dictionary = mock_survey.biology["weight"]["proportions"]
     assert_dataframe_equal(eval_dictionary, expected_dtypes, expected_output)
+
 
 @pytest.mark.skip(reason="Function has since been updated!")
 def test_nasc_to_biomass_conversion(mock_survey):
