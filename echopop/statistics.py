@@ -1,17 +1,21 @@
+import warnings
+
 import numpy as np
 import pandas as pd
 import scipy.stats as st
-import warnings
 
 from .spatial.transect import transect_array
 
-def stratified_transect_statistic( transect_data: pd.DataFrame , 
-                                   transect_summary: pd.DataFrame , 
-                                   strata_summary: pd.DataFrame , 
-                                   settings_dict: dict ) -> tuple[ pd.DataFrame , dict ]:    
+
+def stratified_transect_statistic(
+    transect_data: pd.DataFrame,
+    transect_summary: pd.DataFrame,
+    strata_summary: pd.DataFrame,
+    settings_dict: dict,
+) -> tuple[pd.DataFrame, dict]:
     """
     Calculates stratified mean statistics for a set of transects
-    
+
 
     Parameters
     ----------
@@ -23,226 +27,213 @@ def stratified_transect_statistic( transect_data: pd.DataFrame ,
         DataFrame comprising summary features of latitude (INPFC) delimited strata
     settings_dict: dict
         Dictionary containing algorithm arguments that define the proportion of transects resampled
-        from the overall dataset within each strata (`transect_sample`) and the number of 
+        from the overall dataset within each strata (`transect_sample`) and the number of
         iterations/realizations used for bootstrapping/resampling (`transect_replicates`).
 
     Notes
     -----
-    This function calculates the stratified summary statistics for biomass within 
+    This function calculates the stratified summary statistics for biomass within
     `echopop.survey.stratified_summary()`.
-    """ 
-    
+    """
+
     # Extract algorithm arguments
     # ---- Number of replicates
-    transect_replicates = settings_dict[ 'transect_replicates' ]
+    transect_replicates = settings_dict["transect_replicates"]
     # ---- Transect sampling fraction
-    transect_sample = settings_dict[ 'transect_sample' ]
+    transect_sample = settings_dict["transect_sample"]
     # ---- Get stratum column name
-    stratum_col = settings_dict[ 'stratum_name' ]
+    stratum_col = settings_dict["stratum_name"]
 
     # Get indexed transect distance
-    transect_distances = transect_summary.set_index( [ 'transect_num' ] )[ 'transect_distance' ]
+    transect_distances = transect_summary.set_index(["transect_num"])["transect_distance"]
     # ---- Drop any transects where distance is 0.0 (i.e. from a single mesh node)
-    if np.any( transect_distances == 0.0 ):
+    if np.any(transect_distances == 0.0):
         # ---- Pick out transects where distance = 0.0 nmi
-        zero_distances = transect_distances[ transect_distances == 0.0 ].index.to_numpy( )
+        zero_distances = transect_distances[transect_distances == 0.0].index.to_numpy()
         # ---- Update `transect_distances`
-        transect_distances = transect_distances[ transect_distances > 0.0 ]
+        transect_distances = transect_distances[transect_distances > 0.0]
         # ---- Update `transect_data`
-        transect_data = (
-            transect_data[ ~ transect_data[ 'transect_num' ].isin( zero_distances ) ]
-        )
+        transect_data = transect_data[~transect_data["transect_num"].isin(zero_distances)]
         # ---- Get the 'poor' transect strata
         zero_distances_strata = (
-            transect_summary.loc[ zero_distances ].groupby( [ stratum_col ] , observed = False )
-            .size( )
+            transect_summary.loc[zero_distances].groupby([stratum_col], observed=False).size()
         )
         # ---- Update `transect_summary`
-        transect_summary = (
-            transect_summary[ ~ transect_summary[ 'transect_num' ].isin( zero_distances ) ]  
-        )
+        transect_summary = transect_summary[~transect_summary["transect_num"].isin(zero_distances)]
         # ---- Update `strata_summary`
         # -------- Set index
-        strata_summary.set_index( [ stratum_col ] , inplace = True )
+        strata_summary.set_index([stratum_col], inplace=True)
         # -------- Subtract the 'poor' transects from the total transect counts
-        strata_summary[ 'transect_count' ] = (
-            strata_summary[ 'transect_count' ] - zero_distances_strata            
-        )
+        strata_summary["transect_count"] = strata_summary["transect_count"] - zero_distances_strata
         # -------- Reset index
-        strata_summary.reset_index( inplace = True )
+        strata_summary.reset_index(inplace=True)
 
-        if settings_dict[ 'verbose' ]:
-            if settings_dict[ 'dataset' ] == 'kriging': 
+        if settings_dict["verbose"]:
+            if settings_dict["dataset"] == "kriging":
                 # ---- Generate warning
-                warnings.warn( "Invalid virtual transects detected with distances of 0.0 nmi:"
-                                f"\n[virtual transect numbers] -> {zero_distances}."
-                                "\nThese will be removed from the stratified analysis." , 
-                                stacklevel = 1 )
-            else: 
+                warnings.warn(
+                    "Invalid virtual transects detected with distances of 0.0 nmi:"
+                    f"\n[virtual transect numbers] -> {zero_distances}."
+                    "\nThese will be removed from the stratified analysis.",
+                    stacklevel=1,
+                )
+            else:
                 # ---- Generate warning
-                warnings.warn( "Invalid survey transects detected with distances of 0.0 nmi:"
-                                f"\n[virtual transect numbers] -> {zero_distances}."
-                                "\nThese will be removed from the stratified analysis." ,
-                                stacklevel = 1 )
+                warnings.warn(
+                    "Invalid survey transects detected with distances of 0.0 nmi:"
+                    f"\n[virtual transect numbers] -> {zero_distances}."
+                    "\nThese will be removed from the stratified analysis.",
+                    stacklevel=1,
+                )
 
     # Calculate the number of transects per stratum
-    num_transects_to_sample = (
-        np.round(
-            strata_summary
-            .set_index( stratum_col )[ 'transect_count' ]
-            * transect_sample
-        ).astype( int )
-    )
+    num_transects_to_sample = np.round(
+        strata_summary.set_index(stratum_col)["transect_count"] * transect_sample
+    ).astype(int)
 
     # Offset term used for later variance calculation
-    sample_offset = np.where( num_transects_to_sample == 1 , 0 , 1 )
+    sample_offset = np.where(num_transects_to_sample == 1, 0, 1)
 
     # Calculate effective sample size/degrees of freedom for variance calculation
-    sample_dof =  num_transects_to_sample * ( num_transects_to_sample - sample_offset )
+    sample_dof = num_transects_to_sample * (num_transects_to_sample - sample_offset)
 
     # Transect areas
     # transect_areas = transect_summary.groupby( [ 'transect_num' ] )[ 'transect_area' ].sum( )
 
     # Get indexed total transect area
-    total_transect_area = (
-        strata_summary
-        .set_index( stratum_col )[ 'transect_area_total' ]
-    ) 
+    total_transect_area = strata_summary.set_index(stratum_col)["transect_area_total"]
 
     # Get indexed biological value
-    biological_values = (
-        transect_data
-        .groupby( [ 'transect_num' ] )[ settings_dict[ 'variable' ] ]
-        .sum( )
-    )
+    biological_values = transect_data.groupby(["transect_num"])[settings_dict["variable"]].sum()
 
     # Get indexed transect numbers
-    transect_numbers = (
-        transect_summary
-        .set_index( stratum_col )[ 'transect_num' ]
-    )
+    transect_numbers = transect_summary.set_index(stratum_col)["transect_num"]
 
     # Pre-allocate the stratum-specific metrics
     # ---- Mean
-    mean_arr = np.zeros( [ transect_replicates ,
-                          len( total_transect_area.index ) ] )
+    mean_arr = np.zeros([transect_replicates, len(total_transect_area.index)])
     # ---- Variance
-    variance_arr = np.zeros_like( mean_arr ) 
+    variance_arr = np.zeros_like(mean_arr)
     # ---- Transect length
-    length_arr = np.zeros_like( mean_arr ) 
+    length_arr = np.zeros_like(mean_arr)
     # ---- Sum/integrated total across full stratified area/region
-    total_arr = np.zeros_like( mean_arr )
+    total_arr = np.zeros_like(mean_arr)
 
     # Iterate across all iterations/realizations
-    for j in total_transect_area.index: 
+    for j in total_transect_area.index:
 
         # Create an index array/matrix containing resampled (without replacement) transect numbers
-        transect_numbers_arr = np.array( [ np.random.choice( transect_numbers[j].values , 
-                                                             num_transects_to_sample[ j ] , 
-                                                             replace = False ) 
-                                          for i in range( transect_replicates ) ] )
-        
+        transect_numbers_arr = np.array(
+            [
+                np.random.choice(
+                    transect_numbers[j].values, num_transects_to_sample[j], replace=False
+                )
+                for i in range(transect_replicates)
+            ]
+        )
+
         # Assign the indexed transect distance and biological variables to each transect
         # ---- Transect lengths
-        distance_replicates = np.apply_along_axis( transect_array , 
-                                                   0 , 
-                                                   transect_numbers_arr , 
-                                                   transect_distances )
+        distance_replicates = np.apply_along_axis(
+            transect_array, 0, transect_numbers_arr, transect_distances
+        )
         # -------- Calculate the summed transect length
-        length_arr[ : , j - 1 ] = distance_replicates.sum( axis = 1 )
+        length_arr[:, j - 1] = distance_replicates.sum(axis=1)
         # ---- Biological variable
-        biology_replicates = np.apply_along_axis( transect_array , 
-                                                  0 , 
-                                                  transect_numbers_arr , 
-                                                  biological_values )
-        
+        biology_replicates = np.apply_along_axis(
+            transect_array, 0, transect_numbers_arr, biological_values
+        )
+
         # Calculate the stratified weights for along-transect values (within transect weights)
-        stratified_weights = array_math( distance_replicates , 
-                                         distance_replicates.mean( axis = 1 ) , 
-                                         operation = "/" )
-        
+        stratified_weights = array_math(
+            distance_replicates, distance_replicates.mean(axis=1), operation="/"
+        )
+
         # Standardize the biological values by their respective distances
         biology_adjusted = biology_replicates / distance_replicates
 
         # Calculate the mean transect-length-weighted biological values
-        mean_arr[ : , j - 1 ] = (
-            biology_replicates * distance_replicates
-        ).sum( axis = 1 ) / length_arr[ : , j - 1 ]
+        mean_arr[:, j - 1] = (biology_replicates * distance_replicates).sum(axis=1) / length_arr[
+            :, j - 1
+        ]
 
         # Sum the total of the biology variable
-        total_arr[ : , j - 1 ] = biology_replicates.sum( axis = 1 )
-        
+        total_arr[:, j - 1] = biology_replicates.sum(axis=1)
+
         # Calculate the variance of the transect-length-weighted biological values
         # ---- Calculate the sqauared deviation of the mean
-        squared_deviation = array_math( biology_adjusted , mean_arr[ : , j - 1 ] , "-" ) ** 2
+        squared_deviation = array_math(biology_adjusted, mean_arr[:, j - 1], "-") ** 2
         # ---- Sum of all weighted squared deviations
-        squared_deviation_wgt = ( stratified_weights ** 2 * squared_deviation ).sum( axis = 1 )
+        squared_deviation_wgt = (stratified_weights**2 * squared_deviation).sum(axis=1)
         # ---- Compute the variance by incorporating the degrees of freedom
-        variance_arr[ : , j - 1 ] = squared_deviation_wgt / sample_dof[ j ]
+        variance_arr[:, j - 1] = squared_deviation_wgt / sample_dof[j]
 
-    # Calculate the area-weight variance of the resulting transect-length-weighted biological 
-    # variable    
+    # Calculate the area-weight variance of the resulting transect-length-weighted biological
+    # variable
     # ---- Variance
-    replicate_variance = ( total_transect_area.to_numpy( ) ** 2 * variance_arr ).sum( axis = 1 ) 
+    replicate_variance = (total_transect_area.to_numpy() ** 2 * variance_arr).sum(axis=1)
     # ---- Convert to standard deviation
-    replicate_stdev = np.sqrt( replicate_variance )
+    replicate_stdev = np.sqrt(replicate_variance)
     # ---- Calculate the replicate mean
-    replicate_mean = ( total_transect_area.to_numpy( ) * mean_arr ).sum( axis = 1 )
-    # ---- Convert to CV 
+    replicate_mean = (total_transect_area.to_numpy() * mean_arr).sum(axis=1)
+    # ---- Convert to CV
     replicate_cv = replicate_stdev / replicate_mean
-    
+
     # Calculate the replicate grand total of the (weighted) biological variable
     # ---- Overall mean of transect integrated sums
-    replicate_sum_mean = (
-        ( total_transect_area.to_numpy( ) * total_arr ).sum( axis = 1 ) / total_transect_area.sum()
-    )
+    replicate_sum_mean = (total_transect_area.to_numpy() * total_arr).sum(
+        axis=1
+    ) / total_transect_area.sum()
 
     # ---- Overall total using the overall mean
-    replicate_total = total_arr.sum( axis = 1 )
+    replicate_total = total_arr.sum(axis=1)
 
     # Output the related summary statistics
-    # ---- Save the output resampled distributions    
-    resampled_distributions = pd.DataFrame( { 'realization': np.arange( 1 , transect_replicates + 1 ) ,
-                                               'mean_standardized': replicate_mean ,
-                                               'standard_deviation': replicate_stdev ,
-                                               'variance': replicate_variance ,
-                                               'cv': replicate_cv ,
-                                               'mean': replicate_sum_mean ,
-                                               'total': replicate_total } )
+    # ---- Save the output resampled distributions
+    resampled_distributions = pd.DataFrame(
+        {
+            "realization": np.arange(1, transect_replicates + 1),
+            "mean_standardized": replicate_mean,
+            "standard_deviation": replicate_stdev,
+            "variance": replicate_variance,
+            "cv": replicate_cv,
+            "mean": replicate_sum_mean,
+            "total": replicate_total,
+        }
+    )
     # ---- Save the stratified results
     stratified_results = {
-        'variable': settings_dict[ 'variable' ] ,
-        'ci_percentile': 0.95 ,
-        'num_transects': strata_summary[ 'transect_count' ].sum( ) ,
-        'total_area': strata_summary[ 'transect_area_total' ].sum( ) ,
-        'mean': {
-            'weighted_estimate': np.mean( replicate_mean ) ,
-            'unweighted_estimate': np.mean( replicate_sum_mean ) ,
-            'weighted_confidence_interval': confidence_interval( replicate_mean ) ,
-            'unweighted_confidence_interval': confidence_interval( replicate_sum_mean )
-        } ,
-        'variance': {
-            'estimate': np.mean( replicate_variance ) ,
-            'confidence_interval': confidence_interval( replicate_variance )
-        } ,
-        'cv': {
-            'estimate': np.mean( replicate_cv ) ,
-            'confidence_interval': confidence_interval( replicate_cv )
-        } ,
-        'total': {
-            'estimate': np.mean( replicate_total ) ,
-            'confidence_interval': confidence_interval( replicate_total )
-        }
+        "variable": settings_dict["variable"],
+        "ci_percentile": 0.95,
+        "num_transects": strata_summary["transect_count"].sum(),
+        "total_area": strata_summary["transect_area_total"].sum(),
+        "mean": {
+            "weighted_estimate": np.mean(replicate_mean),
+            "unweighted_estimate": np.mean(replicate_sum_mean),
+            "weighted_confidence_interval": confidence_interval(replicate_mean),
+            "unweighted_confidence_interval": confidence_interval(replicate_sum_mean),
+        },
+        "variance": {
+            "estimate": np.mean(replicate_variance),
+            "confidence_interval": confidence_interval(replicate_variance),
+        },
+        "cv": {
+            "estimate": np.mean(replicate_cv),
+            "confidence_interval": confidence_interval(replicate_cv),
+        },
+        "total": {
+            "estimate": np.mean(replicate_total),
+            "confidence_interval": confidence_interval(replicate_total),
+        },
     }
     # ---- Return outputs
-    return resampled_distributions , stratified_results
+    return resampled_distributions, stratified_results
 
-def array_math( left_array: np.ndarray ,
-                right_array: np.ndarray ,
-                operation: str ) -> np.ndarray :
+
+def array_math(left_array: np.ndarray, right_array: np.ndarray, operation: str) -> np.ndarray:
     """
     Helper function that applies arithmetric operations across the dimensions of two arrays.
-    
+
     Parameters
     ----------
     left_array: np.ndarray
@@ -251,21 +242,17 @@ def array_math( left_array: np.ndarray ,
         The second array containing data.
     operation: str
         A string value representing a basic arithmetic operation ('+', '+', '-', '/')
-    """     
+    """
     # Define operations dictionary key
-    operations = {
-        "+": np.add,
-        "-": np.subtract,
-        "*": np.multiply,
-        "/": np.divide
-    }
+    operations = {"+": np.add, "-": np.subtract, "*": np.multiply, "/": np.divide}
 
     # Apply the operation and return the output
-    return operations[ operation ]( left_array.transpose( ) , right_array ).transpose( )
+    return operations[operation](left_array.transpose(), right_array).transpose()
 
-def confidence_interval( values: np.ndarray ) -> np.ndarray:
+
+def confidence_interval(values: np.ndarray) -> np.ndarray:
     """
-    Calculates the 95% confidence interval (Normal) for a given array    
+    Calculates the 95% confidence interval (Normal) for a given array
 
     Parameters
     ----------
@@ -277,5 +264,5 @@ def confidence_interval( values: np.ndarray ) -> np.ndarray:
     This function calculates the 95% confidence interval (assuming a Normal) distribution
     for the bootstrapped stratified samples. This is done as opposed to using the percentile
     method for estimate the intervals.
-    """ 
-    return np.mean( values ) + np.array( [ -1 , 1 ] ) * st.norm.ppf( 0.975 ) * np.std( values )
+    """
+    return np.mean(values) + np.array([-1, 1]) * st.norm.ppf(0.975) * np.std(values)

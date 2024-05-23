@@ -3,9 +3,7 @@ from pathlib import Path
 import pandas as pd
 
 
-def check_column_names(
-    df: pd.DataFrame, expected_names: set, path_for_df: Path
-) -> None:
+def check_column_names(df: pd.DataFrame, expected_names: set, path_for_df: Path) -> None:
     """
     Ensures that the input DataFrame has the expected column names.
 
@@ -50,16 +48,10 @@ def check_existence_of_file(file_path: Path) -> None:
     """
 
     if not file_path.exists():
-        raise FileNotFoundError(
-            f"The file '{str(file_path.absolute())}' does not exist."
-        )
+        raise FileNotFoundError(f"The file '{str(file_path.absolute())}' does not exist.")
 
 
-def check_and_read(
-        param_path_str: str,
-        cols_types: dict,
-        params: dict
-) -> pd.DataFrame:
+def check_and_read(param_path_str: str, cols_types: dict, params: dict) -> pd.DataFrame:
     """
     For input data table, check file path and column names, read into DataFrame,
     retain only the target columns, and set the target column data types.
