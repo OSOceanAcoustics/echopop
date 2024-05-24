@@ -33,14 +33,6 @@ CONFIG_MAP = {
             "weight": np.float64,
             "age": np.float64,
         },
-        "specimen": {
-            "haul_num": int,
-            "species_id": int,
-            "sex": np.int8,
-            "length": np.float64,
-            "weight": np.float64,
-            "age": np.float64,
-        },
         # BIOLOGICAL DATASET -- HAUL TO TRANSECT
         "haul_to_transect": {
             "haul_num": int,
