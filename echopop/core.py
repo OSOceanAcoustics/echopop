@@ -10,7 +10,6 @@ import pandas as pd
 # `Survey` object data structure
 CONFIG_MAP = {
     "biological": {
-    "biological": {
         # BIOLOGICAL DATASET -- LENGTH
         "length": {
             "haul_num": int,
@@ -19,19 +18,7 @@ CONFIG_MAP = {
             "length": np.float64,
             "length_count": int,
         },
-        "length": {
-            "haul_num": int,
-            "species_id": int,
-            "sex": np.uint8,
-            "length": np.float64,
-            "length_count": int,
-        },
         # BIOLOGICAL DATASET -- CATCH
-        "catch": {
-            "haul_num": int,
-            "species_id": int,
-            "haul_weight": np.float64,
-        },
         "catch": {
             "haul_num": int,
             "species_id": int,
@@ -61,18 +48,7 @@ CONFIG_MAP = {
         },
     },
     "stratification": {
-        "haul_to_transect": {
-            "haul_num": int,
-            "transect_num": int,
-        },
-    },
-    "stratification": {
         # STRATIFICATION DATASET -- STRATA
-        "strata": {
-            "stratum_num": int,
-            "haul_num": int,
-            "fraction_hake": np.float64,
-        },
         "strata": {
             "stratum_num": int,
             "haul_num": int,
@@ -182,8 +158,7 @@ CONFIG_MAP = {
             "krig.ymin": np.float64,
             "krig.ymax": np.float64,
         },
-        },
-    }
+    },
 }
 
 # ``LAYER_NAME_MAP`` is a hard-coded dictionary that aids in re-mapping the data tree

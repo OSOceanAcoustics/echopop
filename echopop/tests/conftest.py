@@ -1,15 +1,10 @@
 from pathlib import Path
-from pathlib import Path
 from typing import Union
-
 
 import numpy as np
 import pandas as pd
 import pytest
-import pytest
 from _pytest.assertion.util import assertrepr_compare
-
-from echopop import Survey
 
 # Set up path to the `test_data` folder
 from echopop import Survey

@@ -1,5 +1,4 @@
 import copy
-import copy
 from pathlib import Path
 from typing import Literal, Optional, Union
 
@@ -51,13 +50,10 @@ class Survey:
 
     """
 
-
     def __init__(
         self,
         init_config_path: Union[str, Path],
-        survey_year_config_path: Union[str, Path],
-        init_config_path: Union[str, Path],
-        survey_year_config_path: Union[str, Path],
+        survey_year_config_path: Union[str, Path]
     ):
         # Initialize `meta` attribute
         self.meta = copy.deepcopy(DATA_STRUCTURE["meta"])
