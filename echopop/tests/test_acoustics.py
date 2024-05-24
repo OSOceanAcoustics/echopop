@@ -1,4 +1,5 @@
 import numpy as np
+import numpy as np
 import pandas as pd
 
 from echopop.acoustics import impute_missing_sigma_bs, to_dB, to_linear, ts_length_regression

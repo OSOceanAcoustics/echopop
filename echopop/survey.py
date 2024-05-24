@@ -1,4 +1,5 @@
 import copy
+import copy
 from pathlib import Path
 from typing import Literal, Optional, Union
 
@@ -32,22 +33,29 @@ class Survey:
     Attributes
     ----------
     meta : dict
+    meta : dict
         Metadata variable that provides summary information concerning the
         data contained within the class object (e.g. 'self.summary').
+    config : dict
     config : dict
         Configuration settings and parameters that can be referenced for
         various downstream and internal functions.
     data : dict
+        Various dictionaries are incorporated into the Survey class object that
         Various dictionaries are incorporated into the Survey class object that
         are directly referenced for various downstream and internal functions. This
         includes attributes such as 'biology', 'acoustics', and 'spatial' that represent
         various nested biological, acoustic, and spatial/stratification datasets imported
         based on the input files defined via the configuration settings.
 
+
     """
+
 
     def __init__(
         self,
+        init_config_path: Union[str, Path],
+        survey_year_config_path: Union[str, Path],
         init_config_path: Union[str, Path],
         survey_year_config_path: Union[str, Path],
     ):
@@ -133,6 +141,8 @@ class Survey:
         -----
         This function calculates estimates and confidence intervals (95%) for biomass mean,
         variance, and coefficients of variation (CVs). This currently only calculates this
+        metric for adult animals (age-2+) and is not calculated for other contrasts such as
+        age-class and sex. This also only applies to the transect results and is not currently
         metric for adult animals (age-2+) and is not calculated for other contrasts such as
         age-class and sex. This also only applies to the transect results and is not currently
         designed to be compatible with other derived population-level statistics (e.g. kriging).
@@ -223,6 +233,7 @@ class Survey:
     ):
         """
         Interpolates biomass data using ordinary kriging
+
 
         Parameters
         ----------

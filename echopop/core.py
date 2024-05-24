@@ -2,12 +2,27 @@
 Core API/components for class structures, class methods, and utility/helper methods
 """
 
+<<<<<<< HEAD
 from datetime import datetime
 
 import numpy as np
 import pandas as pd
 
 # `Survey` object data structure
+=======
+import numpy as np
+import pandas as pd
+
+#
+# ``CONFIG_MAP`` defines the expected column names for all datasets defined within both
+# ``initialization_config.yml`` and ``survey_year_2019.yml``. This further pairs the
+# expected datatype with each variable. The nested dictionary names represent
+# tags that are queried when the data are loaded which reflect the naming conventions
+# found within the configuration files.
+#
+# TODO: Update documentation to reflect dynamic parameterization since not all datasets
+# will be relegated to just the year 2019 upon deployment.
+>>>>>>> upstream/main
 CONFIG_MAP = {
     "biological": {
         # BIOLOGICAL DATASET -- LENGTH
@@ -50,14 +65,22 @@ CONFIG_MAP = {
         "geo_strata": {
             "stratum_num": int,
             "northlimit_latitude": np.float64,
+<<<<<<< HEAD
             "haul start": int,
             "haul end": int,
+=======
+>>>>>>> upstream/main
         },
         "inpfc_strata": {
             "stratum_num": int,
             "northlimit_latitude": np.float64,
+<<<<<<< HEAD
             "haul start": int,
             "haul end": int,
+=======
+            "haul_start": int,
+            "haul_end": int,
+>>>>>>> upstream/main
         },
     },
     "NASC": {
@@ -167,6 +190,7 @@ CONFIG_MAP = {
 # helpful for future extensions enabling users to set additional data attributes that aren't
 # included in the ``Survey`` class initialization and parameterization (when the object is
 # generated).
+<<<<<<< HEAD
 DATA_STRUCTURE = {
     "meta": {"provenance": dict(), "date": f"{datetime.now():%Y-%m-%d %H:%M:%S%z}"},
     "input": {
@@ -178,17 +202,60 @@ DATA_STRUCTURE = {
             "distributions": {
                 "age_bins_df": pd.DataFrame(),
                 "length_bins_df": pd.DataFrame(),
+=======
+#
+# TODO: This is a hard-coded feature and therefore is not particularly helpful for more dynamic
+# use of this Python module (and the overall use of the echopop package).
+LAYER_NAME_MAP = {
+    "biological": {
+        "name": "biology",
+        "data": ["length", "specimen", "catch", "haul_to_transect"],
+        "superlayer": [],
+        "data_tree": {
+            "catch_df": pd.DataFrame(),
+            "distributions": {
+                "length_bins_arr": np.array([]),
+                "age_bins_arr": np.array([]),
+>>>>>>> upstream/main
             },
             "length_df": pd.DataFrame(),
             "haul_to_transect_df": pd.DataFrame(),
             "specimen_df": pd.DataFrame(),
         },
+<<<<<<< HEAD
         "spatial": {
+=======
+    },
+    "stratification": {
+        "name": "spatial",
+        "data": ["strata", "geo_strata", "inpfc_strata"],
+        "superlayer": [],
+        "data_tree": {
+>>>>>>> upstream/main
             "strata_df": pd.DataFrame(),
             "geo_strata_df": pd.DataFrame(),
             "inpfc_strata_df": pd.DataFrame(),
         },
+<<<<<<< HEAD
         "statistics": {
+=======
+    },
+    "NASC": {
+        "name": "nasc",
+        "data": ["no_age1", "all_ages"],
+        "superlayer": ["acoustics"],
+        "data_tree": {
+            "nasc": {
+                "nasc_df": pd.DataFrame(),
+            },
+        },
+    },
+    "kriging": {
+        "name": "kriging",
+        "data": ["mesh", "isobath_200m", "vario_krig_para"],
+        "superlayer": ["statistics"],
+        "data_tree": {
+>>>>>>> upstream/main
             "kriging": {
                 "mesh_df": pd.DataFrame(),
                 "isobath_200m_df": pd.DataFrame(),
@@ -200,6 +267,7 @@ DATA_STRUCTURE = {
             },
         },
     },
+<<<<<<< HEAD
     "analysis": {
         "transect": {
             "acoustics": {"sigma_bs": dict()},
@@ -289,3 +357,8 @@ LAYER_NAME_MAP = {
         },
     },
 }
+=======
+}
+
+SEX_CODE_MAP = {"1": {"name": "male", "abbr": "M"}, "2": {"name": "female", "abbr": "F"}}
+>>>>>>> upstream/main
