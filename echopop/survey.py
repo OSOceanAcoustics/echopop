@@ -1,5 +1,4 @@
 import copy
-import copy
 from pathlib import Path
 from typing import Literal, Optional, Union
 
@@ -50,7 +49,6 @@ class Survey:
 
 
     """
-
 
     def __init__(
         self,
