@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+
 @pytest.mark.skip(reason="Function has since been updated!")
 def test_sum_strata_weight(mock_survey):
 
@@ -342,6 +343,7 @@ def test_compute_aged_weight_proportions(mock_survey):
     assert np.all(expected_output == eval_props_wgt_len_age_sex)
 
     # Mock data for `specimen_data`
+
 
 @pytest.mark.skip(reason="Function has since been updated!")
 def test_calculate_aged_unaged_proportions():
