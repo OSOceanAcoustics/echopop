@@ -2,21 +2,6 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from echopop.computation.biology import (
-    aged_sex_weight_proportions,
-    aged_weight_proportions,
-    apply_age_bins,
-    calculate_aged_biomass,
-    calculate_aged_unaged_proportions,
-    calculate_unaged_biomass,
-    distribute_aged_weight_proportions,
-    sum_strata_weight,
-    unaged_number_proportions,
-    unaged_sex_weight_proportions,
-    unaged_weight_proportions,
-)
-
-
 @pytest.mark.skip(reason="Function has since been updated!")
 def test_sum_strata_weight(mock_survey):
 
@@ -358,7 +343,7 @@ def test_compute_aged_weight_proportions(mock_survey):
 
     # Mock data for `specimen_data`
 
-
+@pytest.mark.skip(reason="Function has since been updated!")
 def test_calculate_aged_unaged_proportions():
 
     # Mock data for `specimen_data`

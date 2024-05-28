@@ -3,8 +3,8 @@ import copy
 import numpy as np
 import pandas as pd
 
-from echopop.computation.biology import index_transect_age_sex_proportions
-from echopop.computation.spatial import (
+from echopop.biology import index_transect_age_sex_proportions
+from echopop.spatial import (
     calculate_start_end_coordinates,
     calculate_transect_distance,
     correct_transect_intervals,
