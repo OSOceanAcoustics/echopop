@@ -94,30 +94,30 @@ def stratified_results_msg(stratified_results_dict: pd.DataFrame, settings_dict:
             if statistic == "cv":
                 return f"{str(np.round(value, 4))}"
             elif statistic in ["back_transform", "total", "mean"] and variable == "biomass":
-                return f"{str(np.round(value*1e-6,1))} kmt"
+                return f"{str(np.round(value * 1e-6, 1))} kmt"
             elif statistic == "variance" and variable == "biomass":
-                return f"{str(np.round(value*1e-6,1))} kmt^2"
+                return f"{str(np.round(value * 1e-6, 1))} kmt^2"
             elif (
                 statistic in ["back_transform", "total", "mean", "variance"]
                 and variable == "abundance"
             ):
-                return f"{str(int(np.round(value,0)))} fish"
+                return f"{str(int(np.round(value, 0)))} fish"
             elif statistic == "variance" and variable == "abundance":
-                return f"{str(int(np.round(value,0)))} fish^2"
+                return f"{str(int(np.round(value, 0)))} fish^2"
             elif (
                 statistic in ["back_transform", "total", "mean", "variance"]
                 and variable == "biomass_density"
             ):
-                return f"{str(np.round(value*1e-6,1))} kmt/nmi^2"
+                return f"{str(np.round(value * 1e-6, 1))} kmt/nmi^2"
             elif statistic == "variance" and variable == "biomass_density":
-                return f"{str(np.round(value*1e-6,1))} (kmt/nmi^2)^2"
+                return f"{str(np.round(value * 1e-6, 1))} (kmt/nmi^2)^2"
             elif (
                 statistic in ["back_transform", "total", "mean", "variance"]
                 and variable == "number_density"
             ):
-                return f"{str(int(np.round(value,0)))} fish/nmi^2"
+                return f"{str(int(np.round(value, 0)))} fish/nmi^2"
             elif statistic == "variance" and variable == "number_density":
-                return f"{str(int(np.round(value,0)))} (fish/nmi^2)^2"
+                return f"{str(int(np.round(value, 0)))} (fish/nmi^2)^2"
 
     # ---- Initialize the message reference dictionary
     stratified_message = {}
@@ -142,10 +142,10 @@ def stratified_results_msg(stratified_results_dict: pd.DataFrame, settings_dict:
     STRATIFIED RESULTS ({settings_dict["dataset"].upper()})
     --------------------------------
     | Stratified variable: {settings_dict["variable"].title()} (kmt)
-    | Number of { "virtual transects"
-if settings_dict["dataset"] == "kriging" else "transects" }: \
-{ stratified_results["num_transects"] }
-    | Total strata area coverage: {np.round(stratified_results["total_area"],1)} nmi^2
+    | Number of {"virtual transects"
+if settings_dict["dataset"] == "kriging" else "transects"}: \
+{stratified_results["num_transects"]}
+    | Total strata area coverage: {np.round(stratified_results["total_area"], 1)} nmi^2
     | Age-1 fish excluded: {settings_dict["exclude_age1"]}
     | Stratum definition: {settings_dict["stratum"].upper()}
     | Bootstrap replicates: {settings_dict["transect_replicates"]} samples
@@ -176,15 +176,14 @@ def kriging_results_msg(kriging_results_dict: pd.DataFrame, settings_dict: dict)
     kriging_mesh_results = kriging_results_dict
 
     # Generate message output
-    # fmt: off
     return print(
         f"""
     --------------------------------
     KRIGING RESULTS (MESH)
     --------------------------------
-    | Kriged variable: {settings_dict["variable" ].replace("_"," ").capitalize()} (kg/nmi^2)
+    | Kriged variable: {settings_dict["variable"].replace("_"," ").capitalize()} (kg/nmi^2)
     | Age-1 fish excluded: {settings_dict["exclude_age1"]}
-    | Stratum definition: {settings_dict["stratum" ].upper()}
+    | Stratum definition: {settings_dict["stratum"].upper()}
     | Mesh extrapolation: {settings_dict["extrapolate"]}
     --- Mesh cropping method: { settings_dict["crop_method"].capitalize() if not
     settings_dict["extrapolate"] else None}
@@ -194,14 +193,13 @@ def kriging_results_msg(kriging_results_dict: pd.DataFrame, settings_dict: dict)
     GENERAL RESULTS
     --------------------------------\n"""
         f"""    Mean {settings_dict[ "variable" ].replace("_"," ")}: """
-        f"""{np.round(kriging_mesh_results["survey_mean"],2)} kg/nmi^2\n"""
-        f"""    Total survey {settings_dict[ "variable" ].replace("_density","")} estimate: """
-        f"""{np.round(kriging_mesh_results["survey_estimate"]*1e-6,2)} kmt\n"""
+        f"""{np.round(kriging_mesh_results["survey_mean"], 2)} kg/nmi^2\n"""
+        f"""    Total survey {settings_dict["variable"].replace("_density","")} estimate: """
+        f"""{np.round(kriging_mesh_results["survey_estimate"] * 1e-6, 2)} kmt\n"""
         f"""    Mean mesh sample CV: """
-        f"""{np.round(kriging_mesh_results[ "mesh_results_df" ]["sample_cv"].mean(),4)}\n"""
+        f"""{np.round(kriging_mesh_results[ "mesh_results_df" ]["sample_cv"].mean(), 4)}\n"""
         f"""    Overall survey CV: {np.round(kriging_mesh_results["survey_cv"], 4)}\n"""
         f"""    Total area coverage:"""
-        f""" {np.round(kriging_mesh_results[ "mesh_results_df" ]["area"].sum(),1)} nmi^2\n"""
+        f""" {np.round(kriging_mesh_results["mesh_results_df"]["area"].sum(), 1)} nmi^2\n"""
         """   --------------------------------"""
     )
-    # fmt: on
