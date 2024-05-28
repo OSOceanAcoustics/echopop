@@ -9,6 +9,10 @@ parts:
   - file: install
   - file: input_files
   - file: core_data_structure
+  - file: example_notebooks
+    title: Example workflows and analyses
+    sections:
+    - file: example_notebooks/example_echopop_workflow.ipynb 
   - file: theory
     title: Underlying theory
     sections:
