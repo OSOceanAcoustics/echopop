@@ -135,7 +135,6 @@ def stratified_results_msg(stratified_results_dict: pd.DataFrame, settings_dict:
 
     # TODO: Add to the `stratified_analysis(...)` output: estimates for each of the strata
     # Generate message output
-    # fmt: off
     return print(
         f"""
     --------------------------------
@@ -143,7 +142,7 @@ def stratified_results_msg(stratified_results_dict: pd.DataFrame, settings_dict:
     --------------------------------
     | Stratified variable: {settings_dict["variable"].title()} (kmt)
     | Number of {"virtual transects"
-if settings_dict["dataset"] == "kriging" else "transects"}: \
+    if settings_dict["dataset"] == "kriging" else "transects"}: \
 {stratified_results["num_transects"]}
     | Total strata area coverage: {np.round(stratified_results["total_area"], 1)} nmi^2
     | Age-1 fish excluded: {settings_dict["exclude_age1"]}
@@ -163,11 +162,10 @@ if settings_dict["dataset"] == "kriging" else "transects"}: \
         f"""          (back-transformed): {stratified_message["back_transform:estimate"]}"""
         f""" {stratified_message["back_transform:confidence_interval"]}\n"""
         f"""    Mean (across sub-sampled transects):\
-        {stratified_message["mean:unweighted_estimate"]}"""
+{stratified_message["mean:unweighted_estimate"]}"""
         f""" {stratified_message["mean:unweighted_confidence_interval"]}
     --------------------------------"""
     )
-    # fmt: on
 
 
 def kriging_results_msg(kriging_results_dict: pd.DataFrame, settings_dict: dict) -> None:
@@ -181,23 +179,23 @@ def kriging_results_msg(kriging_results_dict: pd.DataFrame, settings_dict: dict)
     --------------------------------
     KRIGING RESULTS (MESH)
     --------------------------------
-    | Kriged variable: {settings_dict["variable"].replace("_"," ").capitalize()} (kg/nmi^2)
+    | Kriged variable: {settings_dict["variable"].replace("_", " ").capitalize()} (kg/nmi^2)
     | Age-1 fish excluded: {settings_dict["exclude_age1"]}
     | Stratum definition: {settings_dict["stratum"].upper()}
     | Mesh extrapolation: {settings_dict["extrapolate"]}
-    --- Mesh cropping method: { settings_dict["crop_method"].capitalize() if not
+    --- Mesh cropping method: {settings_dict["crop_method"].capitalize() if not
     settings_dict["extrapolate"] else None}
     | Mesh and transect coordinate standardization: {settings_dict["standardize_coordinates"]}"""
         """
     --------------------------------
     GENERAL RESULTS
     --------------------------------\n"""
-        f"""    Mean {settings_dict[ "variable" ].replace("_"," ")}: """
+        f"""    Mean {settings_dict[ "variable" ].replace("_", " ")}: """
         f"""{np.round(kriging_mesh_results["survey_mean"], 2)} kg/nmi^2\n"""
-        f"""    Total survey {settings_dict["variable"].replace("_density","")} estimate: """
+        f"""    Total survey {settings_dict["variable"].replace("_density", "")} estimate: """
         f"""{np.round(kriging_mesh_results["survey_estimate"] * 1e-6, 2)} kmt\n"""
         f"""    Mean mesh sample CV: """
-        f"""{np.round(kriging_mesh_results[ "mesh_results_df" ]["sample_cv"].mean(), 4)}\n"""
+        f"""{np.round(kriging_mesh_results["mesh_results_df"]["sample_cv"].mean(), 4)}\n"""
         f"""    Overall survey CV: {np.round(kriging_mesh_results["survey_cv"], 4)}\n"""
         f"""    Total area coverage:"""
         f""" {np.round(kriging_mesh_results["mesh_results_df"]["area"].sum(), 1)} nmi^2\n"""
