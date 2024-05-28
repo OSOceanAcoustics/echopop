@@ -132,18 +132,20 @@ def stratified_results_msg(stratified_results_dict: pd.DataFrame, settings_dict:
                     statistic,
                     metric,
                 )
+                
+    # Breakdown strings
+    # ---- Transect variable name
+    transect_name = "virtual transects" if settings_dict["dataset"] == "kriging" else "transects"
 
     # TODO: Add to the `stratified_analysis(...)` output: estimates for each of the strata
     # Generate message output
     return print(
         f"""
     --------------------------------
-    STRATIFIED RESULTS ({settings_dict["dataset"].upper()})
+    STRATIFIED RESULTS ({settings_dict['dataset'].upper()})
     --------------------------------
     | Stratified variable: {settings_dict["variable"].title()} (kmt)
-    | Number of {"virtual transects"
-        if settings_dict["dataset"] == "kriging" else "transects"}: \
-{stratified_results["num_transects"]}
+    | Number of {transect_name}: {stratified_results["num_transects"]}
     | Total strata area coverage: {np.round(stratified_results["total_area"], 1)} nmi^2
     | Age-1 fish excluded: {settings_dict["exclude_age1"]}
     | Stratum definition: {settings_dict["stratum"].upper()}
@@ -161,7 +163,7 @@ def stratified_results_msg(stratified_results_dict: pd.DataFrame, settings_dict:
         f""" {stratified_message["total:confidence_interval"]}\n"""
         f"""          (back-transformed): {stratified_message["back_transform:estimate"]}"""
         f""" {stratified_message["back_transform:confidence_interval"]}\n"""
-        f"""    Mean (across sub-sampled transects):\
+        f"""    Mean (across sub-sampled transects): \
 {stratified_message["mean:unweighted_estimate"]}"""
         f""" {stratified_message["mean:unweighted_confidence_interval"]}
     --------------------------------"""
