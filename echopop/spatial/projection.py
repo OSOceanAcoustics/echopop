@@ -92,7 +92,7 @@ def transform_geometry(
     lat_col = [col for col in reference_grid.columns if "lat" in col.lower()][0]
     # ---- Rename columns, if necessary
     reference = reference_grid.copy().rename(
-        columns={f"{lon_col }": "longitude", f"{lat_col}": "latitude"}
+        columns={f"{lon_col}": "longitude", f"{lat_col}": "latitude"}
     )
 
     # Create interpolation function from reference grid coordinates (to interpolate longitude)

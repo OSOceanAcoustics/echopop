@@ -430,11 +430,11 @@ def adaptive_search_radius(
         # Alert message (if verbose = True)
         if settings_dict["verbose"]:
             print(
-                f"""Extrapolation applied to kriging mesh points ({len( sparse_radii )} of """
-                f"""{wr_indices.shape[ 0 ]}):
-            * {len( valid_distances[ valid_distances == 0 ] )} points had 0 valid range estimates"""
+                f"""Extrapolation applied to kriging mesh points ({len(sparse_radii)} of """
+                f"""{wr_indices.shape[0]}):
+            * {len(valid_distances[valid_distances == 0])} points had 0 valid range estimates"""
                 f""" without extrapolation
-            * {len( valid_distances[ ( valid_distances != 0 ) & ( valid_distances< k_min ) ] )} """
+            * {len(valid_distances[(valid_distances != 0) & (valid_distances < k_min)])} """
                 f"""points had at least 1 valid point but fewer than {k_min} valid neighbors"""
             )
 

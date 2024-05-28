@@ -94,9 +94,7 @@ def edit_transect_columns(transect_dict: dict, settings_dict: dict):
     # ---- Change strata values
     transect_info = transect_info[[new_stratum, "transect_spacing"]]
     # ---- Select analysis variable
-    transect_info[f"{settings_dict[ 'variable' ]}"] = transect_data[
-        f"{settings_dict[ 'variable' ]}"
-    ]
+    transect_info[f"{settings_dict["variable"]}"] = transect_data[f"{settings_dict["variable"]}"]
 
     # Return the output
     return transect_info.reset_index()

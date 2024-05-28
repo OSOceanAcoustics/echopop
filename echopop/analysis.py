@@ -235,7 +235,7 @@ def stratified_summary(
 
     # Update the analysis attribute with the resampled/bootstrapped replicates
     analysis_dict["stratified"].update(
-        {f"{settings_dict[ 'dataset' ]}": {"stratified_replicates_df": replicates}}
+        {f"{settings_dict["dataset"]}": {"stratified_replicates_df": replicates}}
     )
 
     # Return the outputs
