@@ -132,7 +132,7 @@ def stratified_results_msg(stratified_results_dict: pd.DataFrame, settings_dict:
                     statistic,
                     metric,
                 )
-                
+
     # Breakdown strings
     # ---- Transect variable name
     transect_name = "virtual transects" if settings_dict["dataset"] == "kriging" else "transects"
@@ -175,6 +175,12 @@ def kriging_results_msg(kriging_results_dict: pd.DataFrame, settings_dict: dict)
     # Extract dictionary results
     kriging_mesh_results = kriging_results_dict
 
+    # Break down strings
+    # ---- Mesh cropping
+    mesh_crop = (
+        settings_dict["crop_method"].capitalize() if not settings_dict["extrapolate"] else None
+    )
+
     # Generate message output
     return print(
         f"""
@@ -185,8 +191,7 @@ def kriging_results_msg(kriging_results_dict: pd.DataFrame, settings_dict: dict)
     | Age-1 fish excluded: {settings_dict["exclude_age1"]}
     | Stratum definition: {settings_dict["stratum"].upper()}
     | Mesh extrapolation: {settings_dict["extrapolate"]}
-    --- Mesh cropping method: {settings_dict["crop_method"].capitalize() if not
-        settings_dict["extrapolate"] else None}
+    --- Mesh cropping method: {mesh_crop}
     | Mesh and transect coordinate standardization: {settings_dict["standardize_coordinates"]}"""
         """
     --------------------------------
