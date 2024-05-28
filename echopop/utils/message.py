@@ -132,7 +132,7 @@ def stratified_results_msg(stratified_results_dict: pd.DataFrame, settings_dict:
                     statistic,
                     metric,
                 )
-                
+
     # Breakdown strings
     # ---- Transect variable name
     transect_name = "virtual transects" if settings_dict["dataset"] == "kriging" else "transects"
