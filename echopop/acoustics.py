@@ -293,8 +293,17 @@ def nasc_to_biomass(
         # -------- Initialize dataframe
         adult_proportions = age1_proportions.copy()
         # -------- Invert proportions
-        adult_proportions.iloc[:, np.arange(1, 4)] = (
-            1.0 - adult_proportions.iloc[:, np.arange(1, 4)]
+        # ------------ Number
+        adult_proportions["number_proportion"] = (
+            1 - age1_proportions["number_proportion"]
+        )
+        # ------------ Weight
+        adult_proportions["weight_proportion"] = (
+            1 - age1_proportions["weight_proportion"]
+        )
+        # ------------ Weight
+        adult_proportions["nasc_proportion"] = (
+            1 - age1_proportions["nasc_proportion"]
         )
 
     else:
