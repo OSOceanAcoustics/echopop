@@ -398,14 +398,14 @@ def bc_ci(bootstrap_samples: np.ndarray, ci_args: dict):
             # -------- If samples extracted from 2D array
             if "group_name" in ci_args.keys():
                 z0_error = (
-                    f"Significant skewness detected among bootstrapped {ci_args["estimator_name"]} "
+                    f"Significant skewness detected among bootstrapped {ci_args['estimator_name']} "
                     f"in group index {ci_args["group_name"]} when calculating the bootstrapped "
-                    f"confidence intervals via {ci_args["boot_ci_method"]}! "
+                    f"confidence intervals via {ci_args['boot_ci_method']}! "
                 )
             # -------- If samples extracted from 1D array
             else:
                 z0_error = (
-                    f"Significant skewness detected among bootstrapped {ci_args["estimator_name"]} "
+                    f"Significant skewness detected among bootstrapped {ci_args['estimator_name']} "
                     f"when calculating the bootstrapped confidence intervals via "
                     f"{ci_args["boot_method"]}!"
                 )
@@ -413,7 +413,7 @@ def bc_ci(bootstrap_samples: np.ndarray, ci_args: dict):
             z0_error += (
                 f"The estimated Z-statistic (`z0`) was either degenerate or too skewed to produce "
                 f"reasonable interval estimates. Consider using a different interval approximation "
-                f"method (`boot_ci_method={ci_args["boot_ci_method"]}) or provide an alternative "
+                f"method (`boot_ci_method={ci_args['boot_ci_method']}) or provide an alternative "
                 f"(`boot_ci_method_alt`)."
             )
             # -------- Print
