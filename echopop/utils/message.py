@@ -146,7 +146,9 @@ def stratified_results_msg(stratified_results_dict: pd.DataFrame, settings_dict:
     survey_cv_cis_scaled = [np.round(ci, 4) for ci in survey_cv_cis]
     # -------- Create the string
     survey_cv_cis_str = f"{survey_cv} [{survey_cv_cis_scaled[0]}, {survey_cv_cis_scaled[1]}]"
-
+    # Fix strings
+    density_str = "\n".join(density_rows)
+    total_str = "\n".join(total_rows)
     # Generate message output
     return (
         print(
@@ -168,9 +170,9 @@ def stratified_results_msg(stratified_results_dict: pd.DataFrame, settings_dict:
             f"| Stratum area coverage:\n"
             f"{strata_area} nmi^2\n"
             f"| Stratum mean {settings_dict['variable']} density ({units}/nmi^2):\n"
-            f"{"\n".join(density_rows)}\n"
+            f"{density_str}\n"
             f"| Stratum mean {settings_dict['variable']} ({units}):\n"
-            f"{"\n".join(total_rows)}\n"
+            f"{total_str}\n"
             f"--------------------------------\n"
             f"SURVEY RESULTS\n"
             f"--------------------------------\n"
