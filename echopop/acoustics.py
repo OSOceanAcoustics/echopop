@@ -183,7 +183,7 @@ def aggregate_sigma_bs(
     # ---- Create DataFrame containing all necessary regression coefficients
     ts_length_parameters_df = pd.DataFrame.from_dict(ts_length_parameters_spp)
     # -------- Error check
-    if isinstance(settings_dict["transect"]["species_id"] , int):
+    if isinstance(settings_dict["transect"]["species_id"], int):
         spp_code = [settings_dict["transect"]["species_id"]]
     else:
         spp_code = settings_dict["transect"]["species_id"]

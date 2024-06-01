@@ -643,7 +643,7 @@ def confidence_interval(
         An array of values representing the full dataset assuming no stratification.
     ci_percentile: float
         Confidence interval percentile.
-    boot_ci_method: Literal["BC", "BCa", "empirical", "percentile", "standard", "t-jackknife", 
+    boot_ci_method: Literal["BC", "BCa", "empirical", "percentile", "standard", "t-jackknife",
                             "t-standard"]
         Method for computing the bootstrap interval.
     boot_ci_method_alt: Literal["empirical", "percentile", "standard", "t-jackknife", "t-standard"]

@@ -1,10 +1,9 @@
 import numpy as np
 
-from echopop.statistics import confidence_interval
-
 # import pandas as pd
 import pytest
 
+from echopop.statistics import confidence_interval
 
 # from echopop.tests.conftest import assert_dictionary_equal
 
@@ -236,6 +235,7 @@ import pytest
 #     # Run tests: `stratified_transect_statistic`
 #     # ----------------------------------
 #     assert_dictionary_equal(eval_dictionary, expected_dtypes, expected_output)
+
 
 @pytest.mark.skip(reason="Function has since been updated!")
 def test_confidence_interval():
