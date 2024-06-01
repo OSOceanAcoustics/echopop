@@ -95,12 +95,17 @@ def edit_transect_columns(transect_dict: dict, settings_dict: dict):
     transect_info = transect_info[[new_stratum, "transect_spacing"]]
     # ---- Select analysis variable
     transect_info[f"{settings_dict['variable']}"] = transect_data[f"{settings_dict['variable']}"]
+    # ---- Additional density values, if relevant
+    if settings_dict["variable"] == "biomass":
+        transect_info["biomass_density"] = transect_data["biomass_density"]
+    elif settings_dict["variable"] == "abundance":
+        transect_info["number_density"] = transect_data["number_density"]
 
     # Return the output
     return transect_info.reset_index()
 
 
-def transect_distance(transect_data: pd.DataFrame):
+def transect_spatial_features(transect_data: pd.DataFrame):
     """
     Calculates spatial features of each transect
 

@@ -135,6 +135,25 @@ def kriging_interpolation(
     y_coordinates: np.ndarray,
     variable_data: np.ndarray,
 ):
+    """
+    Interpolate data at georeferenced coordinates using ordinary kriging.
+
+    Parameters
+    ----------
+    stacked_array: np.ndarray
+        Horizontally stacked array that includes inside and outside weight indices, extrapolation
+        weights, the local semivariogram (M2), and local range estimates.
+    kriging_parameters: dict
+        Kriging parameters.
+    variogram_parameters: dict
+        Variogram parameters.
+    x_coordinates: np.array
+        The x-axis coordinates
+    y_coordinates: np.array
+        The y-axis coordinates
+    variable_data: np.ndarray
+        An array of data that will be interpolated.
+    """
 
     # Extract kriging parameter values
     # ---- Anisotropy
@@ -243,7 +262,16 @@ def kriging_matrix(x_coordinates, y_coordinates, variogram_parameters):
 
 
 def search_radius_mask(distance_matrix: np.ndarray, search_radius: float):
+    """
+    Creates a NaN mask of values that fall beyond the search radius
 
+    Parameters
+    ----------
+    distance_matrix: np.ndarray
+        An array of lag distances between mesh points and every transect coordinate.
+    search_radius: float
+        The maximum lag distance allowed from each mesh point.
+    """
     # Create copy of matrix
     matrix_copy = distance_matrix.copy()
 
@@ -258,7 +286,15 @@ def search_radius_mask(distance_matrix: np.ndarray, search_radius: float):
 
 
 def count_within_radius(distance_matrirx_masked: np.ndarray):
+    """
+    Counts the number of NaN-masked distance matrix values to determine points where extrapolation
+    is required.
 
+    Parameters
+    ----------
+    distance_matrix_masked: np.ndarray
+        A NaN-masked array of lagged distances.
+    """
     # Create copy of matrix
     matrix_copy = distance_matrirx_masked.copy()
 
@@ -284,16 +320,13 @@ def adaptive_search_radius(
     distance_matrix: np.ndarray
         An array/matrix that includes the distances of each mesh points from every
         georeferenced along-transect interval
-    tranect_extent: pd.DataFrame
-        A DataFrame that includes the x- and y-coordinates of the western-most coordinates for
-        each survey transect
-    k_min: int
-        The minimum number of nearest neighbors. Mesh points with fewer than `k_min` valid distances
-        are supplemented with extrapolated ranges numbering up to `k_min`.
-    k_max: int
-        The maximum number of nearest neighbors.
-    R: float
-        The search radius used to identify between `k_min` and `k_max` nearest neighbors.
+    mesh_data: pd.DataFrame
+        Kriging mesh.
+    western_extent: pd.DataFrame
+        Coordinates of the western extent of transect lines.
+    settings_dict:
+        Dictionary that contains all of the analysis settings that detail specific algorithm
+        arguments and user-defined inputs.
     """
 
     # Extract key search radius parameters

@@ -1,5 +1,3 @@
-import copy
-
 import numpy as np
 import pandas as pd
 
@@ -49,124 +47,137 @@ def transect_results_msg(transect_results_dict: dict, settings_dict: dict) -> No
 
 def stratified_results_msg(stratified_results_dict: pd.DataFrame, settings_dict: dict) -> None:
 
-    # Create copy
-    stratified_results = copy.deepcopy(stratified_results_dict)
+    # Assign the max number of results per line for multi-line entries
+    max_results_per_row = 8
 
-    # Apply back-transformation of total
-    # ---- Initialize
-    stratified_results.update({"back_transform": copy.deepcopy(stratified_results["total"])})
-    # ---- Adjust the estimate and confidence interval values
-    stratified_results["back_transform"].update(
-        {
-            "estimate": (
-                stratified_results["back_transform"]["estimate"] / settings_dict["transect_sample"]
-            ),
-            "confidence_interval": (
-                stratified_results["back_transform"]["confidence_interval"]
-                / settings_dict["transect_sample"]
-            ),
-        }
-    )
-
-    # Create confidence interval string
-    # ---- Helper function
-    def format_values(value, ci_pct, variable, statistic, metric):
-        if "confidence_interval" in metric:
-            if statistic == "cv":
-                return f"""[{', '.join(map(lambda x: str(x.round(4)), value))}; \
-{int(ci_pct * 100)}% CI]"""
-            elif (
-                statistic in ["back_transform", "total", "mean", "variance"]
-                and variable == "biomass"
-            ):
-                return f"""[{', '.join(map(lambda x: str(np.round(x * 1e-6, 1)), value))}; \
-{int(ci_pct * 100)}% CI]"""
-            elif (
-                statistic in ["back_transform", "total", "mean", "variance"]
-                and variable == "abundance"
-            ):
-                return f"""[{', '.join(map(lambda x: str(int(np.round(x, 0))), value))}; \
-{int(ci_pct * 100)}% CI]"""
-            else:
-                return f"""[{', '.join(map(lambda x: str(np.round(x, 2)), value))}; \
-{int(ci_pct * 100)}% CI]"""
-        elif "estimate" in metric:
-            if statistic == "cv":
-                return f"{str(np.round(value, 4))}"
-            elif statistic in ["back_transform", "total", "mean"] and variable == "biomass":
-                return f"{str(np.round(value * 1e-6, 1))} kmt"
-            elif statistic == "variance" and variable == "biomass":
-                return f"{str(np.round(value * 1e-6, 1))} kmt^2"
-            elif (
-                statistic in ["back_transform", "total", "mean", "variance"]
-                and variable == "abundance"
-            ):
-                return f"{str(int(np.round(value, 0)))} fish"
-            elif statistic == "variance" and variable == "abundance":
-                return f"{str(int(np.round(value, 0)))} fish^2"
-            elif (
-                statistic in ["back_transform", "total", "mean", "variance"]
-                and variable == "biomass_density"
-            ):
-                return f"{str(np.round(value * 1e-6, 1))} kmt/nmi^2"
-            elif statistic == "variance" and variable == "biomass_density":
-                return f"{str(np.round(value * 1e-6, 1))} (kmt/nmi^2)^2"
-            elif (
-                statistic in ["back_transform", "total", "mean", "variance"]
-                and variable == "number_density"
-            ):
-                return f"{str(int(np.round(value, 0)))} fish/nmi^2"
-            elif statistic == "variance" and variable == "number_density":
-                return f"{str(int(np.round(value, 0)))} (fish/nmi^2)^2"
-
-    # ---- Initialize the message reference dictionary
-    stratified_message = {}
-    # ---- Format the CI's (and initialize the updated stratified results)
-    for statistic, statistic_data in stratified_results.items():
-        if isinstance(statistic_data, dict):
-            for metric, metric_value in statistic_data.items():
-                stratified_message[f"{statistic}:{metric}"] = format_values(
-                    metric_value,
-                    stratified_results["ci_percentile"],
-                    stratified_results["variable"],
-                    statistic,
-                    metric,
-                )
+    # Determine variable units
+    if settings_dict["variable"] == "biomass":
+        units = "kmt"
+        bio_units_round = 1
+        bio_units_mult = 1e-6
+    elif settings_dict["variable"] == "abundance":
+        units = "number"
+        bio_units_round = 0
+        bio_units_mult = 1
+    else:
+        units = "m^2 nmi^-2"
+        bio_units_round = 1
+        bio_units_mult = 1
 
     # Breakdown strings
     # ---- Transect variable name
     transect_name = "virtual transects" if settings_dict["dataset"] == "kriging" else "transects"
+    # ---- Number of strata
+    strata_num = stratified_results_dict["estimate"]["strata"]["total"].size
+    # ---- Strata area
+    strata_area = " | ".join(str(x) for x in stratified_results_dict["stratum_area"].round())
+    # ---- Strata densities
+    # -------- Format the estimates
+    strata_densities = (
+        stratified_results_dict["estimate"]["strata"]["density"] * bio_units_mult
+    ).round(bio_units_round + 2)
+    # -------- Format the CIs
+    strata_density_cis = stratified_results_dict["ci"]["strata"]["density"]
+    strata_density_cis_scaled = [
+        np.round(ci * bio_units_mult, bio_units_round + 2) for ci in strata_density_cis
+    ]
+    # -------- Create the string
+    strata_density_cis_str = [
+        f"{mean} [{ci[0]}, {ci[1]}]"
+        for mean, ci in zip(strata_densities, strata_density_cis_scaled)
+    ]
+    # -------- Join
+    density_rows = []
+    for i in range(0, len(strata_density_cis_str), max_results_per_row):
+        row = " | ".join(strata_density_cis_str[i : i + max_results_per_row])
+        density_rows.append(row)
+    # ---- Strata totals
+    # -------- Format the estimates
+    strata_totals = (stratified_results_dict["estimate"]["strata"]["total"] * bio_units_mult).round(
+        bio_units_round
+    )
+    # -------- Format the CIs
+    strata_total_cis = stratified_results_dict["ci"]["strata"]["total"]
+    strata_total_cis_scaled = [
+        np.round(ci * bio_units_mult, bio_units_round) for ci in strata_total_cis
+    ]
+    # -------- Create the string
+    strata_total_cis_str = [
+        f"{mean} [{ci[0]}, {ci[1]}]" for mean, ci in zip(strata_totals, strata_total_cis_scaled)
+    ]
+    # -------- Join
+    total_rows = []
+    for i in range(0, len(strata_total_cis_str), max_results_per_row):
+        row = " | ".join(strata_total_cis_str[i : i + max_results_per_row])
+        total_rows.append(row)
+    # ---- Survey densities
+    # -------- Format the estimates
+    survey_densities = (
+        stratified_results_dict["estimate"]["survey"]["density"] * bio_units_mult
+    ).round(bio_units_round + 2)
+    # -------- Format the CIs
+    survey_density_cis = stratified_results_dict["ci"]["survey"]["density"]
+    survey_density_cis_scaled = [
+        np.round(ci * bio_units_mult, bio_units_round + 2) for ci in survey_density_cis
+    ]
+    # -------- Create the string
+    survey_density_cis_str = (
+        f"{survey_densities} [{survey_density_cis_scaled[0]}, {survey_density_cis_scaled[1]}]"
+    )
+    # ---- Survey totals
+    # -------- Format the estimates
+    survey_total = (stratified_results_dict["estimate"]["survey"]["total"] * bio_units_mult).round(
+        bio_units_round
+    )
+    # -------- Format the CIs
+    survey_total_cis = stratified_results_dict["ci"]["survey"]["total"]
+    survey_total_cis_scaled = [
+        np.round(ci * bio_units_mult, bio_units_round) for ci in survey_total_cis
+    ]
+    # -------- Create the string
+    survey_total_cis_str = (
+        f"{survey_total} [{survey_total_cis_scaled[0]}, {survey_total_cis_scaled[1]}]"
+    )
+    # ---- Survey CVs
+    # -------- Format the estimates
+    survey_cv = (stratified_results_dict["estimate"]["survey"]["cv"]).round(4)
+    # -------- Format the CIs
+    survey_cv_cis = stratified_results_dict["ci"]["survey"]["cv"]
+    survey_cv_cis_scaled = [np.round(ci, 4) for ci in survey_cv_cis]
+    # -------- Create the string
+    survey_cv_cis_str = f"{survey_cv} [{survey_cv_cis_scaled[0]}, {survey_cv_cis_scaled[1]}]"
 
-    # TODO: Add to the `stratified_analysis(...)` output: estimates for each of the strata
     # Generate message output
     return print(
-        f"""
-    --------------------------------
-    STRATIFIED RESULTS ({settings_dict['dataset'].upper()})
-    --------------------------------
-    | Stratified variable: {settings_dict["variable"].title()} (kmt)
-    | Number of {transect_name}: {stratified_results["num_transects"]}
-    | Total strata area coverage: {np.round(stratified_results["total_area"], 1)} nmi^2
-    | Age-1 fish excluded: {settings_dict["exclude_age1"]}
-    | Stratum definition: {settings_dict["stratum"].upper()}
-    | Bootstrap replicates: {settings_dict["transect_replicates"]} samples
-    | Resampling proportion: {settings_dict["transect_sample"]}
-    --------------------------------
-    STRATUM-SPECIFIC ESTIMATES
-    --------------------------------
-    _coming soon_
-    --------------------------------
-    GENERAL RESULTS
-    --------------------------------
-    CV: {stratified_message["cv:estimate"]} {stratified_message["cv:confidence_interval"]}\n"""
-        f"""    Total (across sub-sampled transects): {stratified_message["total:estimate"]}"""
-        f""" {stratified_message["total:confidence_interval"]}\n"""
-        f"""          (back-transformed): {stratified_message["back_transform:estimate"]}"""
-        f""" {stratified_message["back_transform:confidence_interval"]}\n"""
-        f"""    Mean (across sub-sampled transects): \
-{stratified_message["mean:unweighted_estimate"]}"""
-        f""" {stratified_message["mean:unweighted_confidence_interval"]}
-    --------------------------------"""
+        f"--------------------------------\n"
+        f" STRATIFIED RESULTS ({settings_dict["dataset"].upper()})\n"
+        f"--------------------------------\n"
+        f"| Stratified variable: {settings_dict["variable"].title()} ({units})\n"
+        f"| Number of {transect_name}: {stratified_results_dict["num_transects"]}\n"
+        f"| Number of strata ({settings_dict["stratum"].upper()}): {strata_num}\n"
+        f"| Total area coverage: {stratified_results_dict["total_area"].round()} nmi^2\n"
+        f"| Age-1 fish excluded: {settings_dict["exclude_age1"]}\n"
+        f"| Bootstrap replicates: {settings_dict["transect_replicates"]} samples\n"
+        f"| Resampling proportion: {settings_dict["transect_sample"]}\n"
+        f"| Bootstrap interval method: {settings_dict["bootstrap_ci_method"]} (CI: "
+        f"{settings_dict["bootstrap_ci"] * 1e2}%)\n"
+        f"--------------------------------\n"
+        f"STRATUM-SPECIFIC ESTIMATES\n"
+        f"--------------------------------\n"
+        f"| Stratum area coverage:\n"
+        f"{strata_area} nmi^2\n"
+        f"| Stratum mean {settings_dict["variable"]} density ({units}/nmi^2):\n"
+        f"{"\n".join(density_rows)}\n"
+        f"| Stratum mean {settings_dict["variable"]} ({units}):\n"
+        f"{"\n".join(total_rows)}\n"
+        f"--------------------------------\n"
+        f"SURVEY RESULTS\n"
+        f"--------------------------------\n"
+        f"| Survey mean {settings_dict["variable"]} density ({units}/nmi^2):"
+        f" {survey_density_cis_str}\n"
+        f"| Survey mean {settings_dict["variable"]} ({units}):"
+        f" {survey_total_cis_str}\n"
+        f"| Survey CV: {survey_cv_cis_str}"
     )
 
 

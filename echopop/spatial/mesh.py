@@ -425,8 +425,12 @@ def mesh_to_transects(
 
     # Create equivalent transect dataframe needed for the stratified summary analysis
     virtual_transect_data = mesh_data.reset_index()[
-        ["transect_num", "longitude", "latitude", stratum_col, variable_col]
+        ["transect_num", "longitude", "latitude", stratum_col, "area", variable_col]
     ]
+    # ---- Create density column
+    virtual_transect_data[f"{variable_col}_density"] = (
+        virtual_transect_data[variable_col] / virtual_transect_data["area"]
+    )
 
     # Calculate the total virtual transect distance and area
     # ---- Initialize the dataframe

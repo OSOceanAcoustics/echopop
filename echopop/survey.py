@@ -2,8 +2,6 @@ import copy
 from pathlib import Path
 from typing import Literal, Optional, Union
 
-import numpy as np
-
 from .analysis import (
     acoustics_to_biology,
     apportion_kriged_values,
@@ -32,10 +30,8 @@ class Survey:
     Attributes
     ----------
     meta : dict
-    meta : dict
         Metadata variable that provides summary information concerning the
         data contained within the class object (e.g. 'self.summary').
-    config : dict
     config : dict
         Configuration settings and parameters that can be referenced for
         various downstream and internal functions.
@@ -71,7 +67,7 @@ class Survey:
 
     def transect_analysis(
         self,
-        species_id: np.float64 = 22500,
+        species_id: Union[float, list[float]] = 22500,
         exclude_age1: bool = True,
         stratum: Literal["inpfc", "ks"] = "ks",
         verbose: bool = True,
@@ -126,6 +122,14 @@ class Survey:
         mesh_transects_per_latitude: Optional[int] = None,
         transect_sample: Optional[float] = None,
         transect_replicates: Optional[float] = None,
+        bootstrap_ci: float = 0.95,
+        bootstrap_ci_method: Literal[
+            "BC", "BCa", "empirical", "percentile", "standard", "t-jackknife", "t-standard"
+        ] = "BCa",
+        bootstrap_ci_method_alt: Optional[
+            Literal["empirical", "percentile", "standard", "t-jackknife", "t-standard"]
+        ] = "t-jackknife",
+        bootstrap_adjust_bias: bool = True,
         verbose=True,
     ):
         """
@@ -172,6 +176,10 @@ class Survey:
                     "variable": variable,
                     "exclude_age1": self.analysis["settings"]["transect"]["exclude_age1"],
                     "verbose": verbose,
+                    "bootstrap_ci_method": bootstrap_ci_method,
+                    "bootstrap_ci_method_alt": bootstrap_ci_method_alt,
+                    "bootstrap_ci": bootstrap_ci,
+                    "bootstrap_adjust_bias": bootstrap_adjust_bias,
                 }
             }
         )

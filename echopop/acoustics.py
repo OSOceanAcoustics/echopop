@@ -118,7 +118,7 @@ def impute_missing_sigma_bs(strata_dict: dict, sigma_bs_stratum: pd.DataFrame) -
     return sigma_bs_stratum_impute
 
 
-def summarize_sigma_bs(
+def aggregate_sigma_bs(
     length_data: pd.DataFrame,
     specimen_data: pd.DataFrame,
     strata_dict: dict,
@@ -182,6 +182,20 @@ def summarize_sigma_bs(
     ]
     # ---- Create DataFrame containing all necessary regression coefficients
     ts_length_parameters_df = pd.DataFrame.from_dict(ts_length_parameters_spp)
+    # -------- Error check
+    if isinstance(settings_dict["transect"]["species_id"] , int):
+        spp_code = [settings_dict["transect"]["species_id"]]
+    else:
+        spp_code = settings_dict["transect"]["species_id"]
+    # -------- Missing from configuration
+    if not spp_code <= ts_length_parameters_df["number_code"].to_list():
+        # ---- Detect missing species
+        missing_spp = set(spp_code) - set(ts_length_parameters_df["number_code"].to_list())
+
+        raise ValueError(
+            f"Missing TS-length regression parameters missing for the following species: "
+            f"{missing_spp}. Check `initialization_config.yml` for available models."
+        )
     # ---- Merge with the biological data
     ts_lengths_df = aggregate_lengths.merge(
         ts_length_parameters_df.drop("length_units", axis=1),
@@ -318,7 +332,7 @@ def nasc_to_biomass(
         / (4.0 * np.pi * nasc_biology["sigma_bs_mean"])
     )
     # ---- Round to the nearest whole number (we don't want fractions of a fish)
-    nasc_biology["number_density"] = np.round(nasc_biology["number_density"])
+    nasc_biology["number_density"] = nasc_biology["number_density"]
 
     # Calculate the along-transect abundance (# animals)
     nasc_biology["abundance"] = nasc_biology["interval_area"] * nasc_biology["number_density"]

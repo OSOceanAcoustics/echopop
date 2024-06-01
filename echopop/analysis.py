@@ -7,16 +7,18 @@ import warnings
 import numpy as np
 import pandas as pd
 
-from .acoustics import nasc_to_biomass, summarize_sigma_bs
+from .acoustics import aggregate_sigma_bs, nasc_to_biomass
 from .biology import (
     distribute_length_age,
     filter_species,
     fit_length_weight_relationship,
     fit_length_weights,
+    impute_kriged_values,
     number_proportions,
     partition_transect_age,
     quantize_number_counts,
     quantize_weights,
+    reallocate_kriged_age1,
     weight_proportions,
 )
 from .spatial.krige import kriging
@@ -26,7 +28,7 @@ from .spatial.transect import (
     edit_transect_columns,
     save_transect_coordinates,
     summarize_transect_strata,
-    transect_distance,
+    transect_spatial_features,
 )
 from .statistics import stratified_transect_statistic
 
@@ -35,8 +37,7 @@ def process_transect_data(
     input_dict: dict, analysis_dict: dict, settings_dict: dict, configuration_dict: dict
 ) -> dict:
     """
-    Calculates stratified mean statistics for a set of transects
-
+    Process acoustic and biological data collected along each transect across an entire survey
 
     Parameters
     ----------
@@ -72,7 +73,7 @@ def process_transect_data(
 
     # Calculate mean sigma_bs per individual haul, KS stratum, and INPFC stratum
     analysis_dict["acoustics"]["sigma_bs"].update(
-        summarize_sigma_bs(
+        aggregate_sigma_bs(
             length_data, specimen_data, input_dict["spatial"], configuration_dict, settings_dict
         )
     )
@@ -216,7 +217,7 @@ def stratified_summary(
         transect_data = edit_transect_columns(analysis_dict["transect"], settings_dict)
         # ---- Summarize transect spatial information
         # -------- Transect distances
-        transect_summary = transect_distance(transect_data)
+        transect_summary = transect_spatial_features(transect_data)
         # -------- Counts and area coverage per stratum
         strata_summary = summarize_transect_strata(transect_summary)
     # ---- Kriged data
@@ -413,112 +414,8 @@ def apportion_kriged_values(
 
     # Imputation is required when unaged values are present but aged values are absent at shared
     # length bins! This requires an augmented implementation to address this accordingly
-    # ---- Sum across all age bins (of the aged fish data) to generate totals for each row (i.e.
-    # ---- length bin)
-    summed_aged_length_totals = aged_pivot.T.sum()
-    # ---- Extract the indices of the summed totals that equal 0.0 for male and female fish
-    # -------- Male
-    male_zero_aged = np.where(summed_aged_length_totals.loc["male"] == 0.0)[0]
-    # -------- Female
-    female_zero_aged = np.where(summed_aged_length_totals.loc["female"] == 0.0)[0]
-    # ---- Extract the inverse where biological totals are present
-    # -------- Male
-    male_nonzero_aged = np.where(summed_aged_length_totals.loc["male"] != 0.0)[0]
-    # -------- Female
-    female_nonzero_aged = np.where(summed_aged_length_totals.loc["female"] != 0.0)[0]
-    # ---- Pivot the unaged data and find male and female values that are non-zero
-    # -------- Male
-    male_nonzero_unaged = unaged_pivot["male"].iloc[male_zero_aged] != 0.0
-    # -------- Convert to index
-    male_nonzero_unaged_idx = male_zero_aged[male_nonzero_unaged]
-    # -------- Female
-    female_nonzero_unaged = unaged_pivot["female"].iloc[female_zero_aged] != 0.0
-    # -------- Convert to index
-    female_nonzero_unaged_idx = female_zero_aged[female_nonzero_unaged]
-    # ---- Re-pivot the unaged apportioned values (if necessary)
-    if (len(male_nonzero_unaged) > 0) | (len(female_nonzero_unaged)) > 0:
-        unaged_values_pvt = (
-            unaged_apportioned_values.copy()
-            .unstack()
-            .reset_index(name="values")
-            .pivot_table(
-                index=["length_bin"], columns=["sex", "age_bin"], values="values", observed=False
-            )
-        )
-        # ---- Find the closest indices that can be used for nearest-neighbors imputation
-        if len(male_nonzero_unaged) > 0:
-            # -------- Male
-            imputed_male = male_nonzero_aged[
-                np.argmin(
-                    np.abs(male_zero_aged[male_nonzero_unaged][:, np.newaxis] - male_nonzero_aged),
-                    axis=1,
-                )
-            ]
-            # ---- Update the values
-            unaged_values_pvt.iloc[
-                male_nonzero_unaged_idx, unaged_values_pvt.columns.get_loc("male")
-            ] = (
-                unaged_pivot["male"].iloc[male_nonzero_unaged_idx].to_numpy()
-                * aged_pivot.loc["male"].iloc[imputed_male].T
-                / aged_length_totals["male"].iloc[imputed_male]
-            ).T
-        if len(female_nonzero_unaged) > 0:
-            # -------- Female
-            imputed_female = female_nonzero_aged[
-                np.argmin(
-                    np.abs(
-                        female_zero_aged[female_nonzero_unaged][:, np.newaxis] - female_nonzero_aged
-                    ),
-                    axis=1,
-                )
-            ]
-            # ---- Update the values
-            unaged_values_pvt.iloc[
-                female_nonzero_unaged_idx, unaged_values_pvt.columns.get_loc("female")
-            ] = (
-                unaged_pivot["female"].iloc[female_nonzero_unaged_idx].to_numpy()
-                * aged_pivot.loc["female"].iloc[imputed_female].T
-                / aged_length_totals["female"].iloc[imputed_female]
-            ).T
-        # ---- Update the original unaged apportioned table
-        unaged_apportioned_values = (
-            unaged_values_pvt.unstack()
-            .reset_index(name="values")
-            .pivot_table(
-                index=["length_bin"], columns=["age_bin", "sex"], values="values", observed=False
-            )
-        )
-        # ---- Alert message (if verbose = T)
-        if settings_dict["verbose"]:
-            # ---- Male:
-            if len(male_nonzero_unaged) > 0:
-                # ---- Get interval values
-                intervals_list = [
-                    str(interval)
-                    for interval in male_nonzero_unaged.index[male_nonzero_unaged].values
-                ]
-                # ---- Print
-                print(
-                    f"""Imputed apportioned unaged male {biology_col} at length bins:\n"""
-                    f"""{', '.join(intervals_list)}"""
-                )
-            # ---- Female:
-            if len(female_nonzero_unaged) > 0:
-                # ---- Get interval values
-                intervals_list = [
-                    str(interval)
-                    for interval in female_nonzero_unaged.index[female_nonzero_unaged].values
-                ]
-                # ---- Print
-                print(
-                    f"""Imputed apportioned unaged female {biology_col} at length bins:\n"""
-                    f"""{', '.join(intervals_list)}"""
-                )
-    # ---- Sum the aged and unaged estimates together
-    kriged_table = (
-        (unaged_apportioned_values + aged_pivot.unstack("sex"))
-        .unstack()
-        .reset_index(name=f"{biology_col}_apportioned")
+    kriged_table = impute_kriged_values(
+        aged_pivot, unaged_pivot, aged_length_totals, unaged_apportioned_values, settings_dict
     )
     # ---- Duplicate so there is an 'all' category
     kriged_full_table = pd.concat([kriged_table, kriged_table.copy().assign(sex="all")])
@@ -533,47 +430,7 @@ def apportion_kriged_values(
 
     # Additional reapportionment if age-1 fish are excluded
     if settings_dict["exclude_age1"]:
-        # ---- Pivot the kriged table
-        kriged_tbl = kriging_full_table.pivot_table(
-            index=["length_bin"],
-            columns=["sex", "age_bin"],
-            values=f"{biology_col}_apportioned",
-            observed=False,
-            aggfunc="sum",
-        )
-        # ---- Calculate the age-1 sum
-        age_1_sum = kriged_tbl.sum().unstack("sex").iloc[0]
-        # ---- Calculate the age-2+ sum
-        adult_sum = kriged_tbl.sum().unstack("sex").iloc[1:].sum()
-        # ---- Set the index of the kriged table dataframe
-        kriging_full_table.set_index("sex", inplace=True)
-        # ---- Append the age-1 sums
-        kriging_full_table["summed_sex_age1"] = age_1_sum
-        # ---- Append the adult sums
-        kriging_full_table["summed_sex_adult"] = adult_sum
-        # ---- Drop sex as an index
-        kriging_full_table = kriging_full_table.reset_index()
-        # ---- Calculate the adjusted apportionment that will be distributed over the adult values
-        kriging_full_table["adjustment"] = (
-            kriging_full_table["summed_sex_age1"]
-            * kriging_full_table[f"{biology_col}_apportioned"]
-            / kriging_full_table["summed_sex_adult"]
-        )
-        # ---- Apply the adjustment
-        kriging_full_table.loc[:, f"{biology_col}_apportioned"] = (
-            kriging_full_table.loc[:, f"{biology_col}_apportioned"]
-            + kriging_full_table.loc[:, "adjustment"]
-        )
-        # ---- Index by age bins
-        kriging_full_table.set_index("age_bin", inplace=True)
-        # ---- Zero out the age-1 values
-        kriging_full_table.loc[[1], f"{biology_col}_apportioned"] = 0.0
-        # ---- Remove age as an index
-        kriging_full_table = kriging_full_table.reset_index()
-        # ---- Drop temporary columns
-        kriging_full_table.drop(
-            columns=["summed_sex_age1", "summed_sex_adult", "adjustment"], inplace=True
-        )
+        kriging_full_table = reallocate_kriged_age1(kriging_full_table, settings_dict)
         # ---- Validate that apportioning age-1 values over all adult values did not 'leak'
         # -------- Previous apportioned totals by sex
         previous_totals = kriged_full_table.groupby(["sex"])[f"{biology_col}_apportioned"].sum()
@@ -582,18 +439,18 @@ def apportion_kriged_values(
         # -------- Check (1 kg tolerance)
         if np.any((previous_totals - new_totals) > 1e-6):
             warnings.warn(
-                f"""Apportioned kriged {biology_col} for age-1 not full distributed over\
-        all age-2+ bins."""
+                f"Apportioned kriged {biology_col} for age-1 not fully distributed over all age-2+ "
+                f"age bins."
             )
 
     # Check equality between original kriged estimates and (imputed) apportioned estimates
     if (kriged_table[f"{biology_col}_apportioned"].sum() - kriged_strata.sum()) > 1e-6:
         # ---- If not equal, generate warning
         warnings.warn(
-            f"""Apportioned kriged {biology_col} does not equal the total \
-        kriged mesh {biology_col}! Check for cases where values kriged values may be only present \
-        in `self.results['kriging']['tables']['aged_tbl']` or \
-        `self.results['kriging']['tables']['unaged_tbl']` for each sex."""
+            f"Apportioned kriged {biology_col} does not equal the total kriged mesh "
+            f"{biology_col}! Check for cases where kriged values may only be present in aged "
+            f"(`self.results['kriging']['tables']['aged_tbl']`) or unaged ("
+            f"(`self.results['kriging']['tables']['unaged_tbl']`) distributions for each sex."
         )
 
     # Return output
