@@ -407,7 +407,7 @@ def bc_ci(bootstrap_samples: np.ndarray, ci_args: dict):
                 z0_error = (
                     f"Significant skewness detected among bootstrapped {ci_args['estimator_name']} "
                     f"when calculating the bootstrapped confidence intervals via "
-                    f"{ci_args["boot_method"]}!"
+                    f"{ci_args['boot_method']}!"
                 )
             # -------- Finish Error message
             z0_error += (
