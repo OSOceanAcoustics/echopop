@@ -6,7 +6,7 @@ import pandas as pd
 import yaml
 from openpyxl import load_workbook
 
-from ..core import CONFIG_MAP, DATA_STRUCTURE, LAYER_NAME_MAP
+from ..core import CONFIG_MAP, DATA_STRUCTURE, LAYER_NAME_MAP, CONFIG_DATA_API, CONFIG_INIT_API
 
 
 def load_configuration(init_config_path: Path, survey_year_config_path: Path):
@@ -44,11 +44,14 @@ def load_configuration(init_config_path: Path, survey_year_config_path: Path):
         raise FileNotFoundError(f"The following configuration files do not exist: {missing_config}")
 
     # Read configuration files
-    # If configuration file existence is confirmed, proceed to reading in the actual files
-    # !!! TODO: Incorporate a configuration file validator that enforces required variables and
-    # formatting
+    # ---- Initialization
     init_config_params = yaml.safe_load(init_config_path.read_text())
+    # -------- Validate
+    validate_config_structure(init_config_params, CONFIG_INIT_API)
+    # ---- Survey year data
     survey_year_config_params = yaml.safe_load(survey_year_config_path.read_text())
+    # -------- Validate
+    validate_config_structure(survey_year_config_params, CONFIG_DATA_API)
 
     # Validate that initialization and survey year configuration parameters do not intersect
     config_intersect = set(init_config_params.keys()).intersection(
@@ -575,3 +578,50 @@ def prepare_input_data(input_dict: dict, configuration_dict: dict):
 
     # Return updated dictionaries
     return input_dict, configuration_dict
+
+def validate_config_structure(yaml_data, config_spec):
+    """
+    Validate configuration YAML dictionary structure and entry types
+    """
+    # Helper function for validating dictionary key names/structure
+    def validate_dict(data, spec, path=""):
+        for key, value in spec.items():
+            current_path = f"{path}.{key}" if path else key
+            if key == "ANY":
+                # If the spec key is "ANY", check all keys in the data against the "ANY" spec
+                if not isinstance(data, dict):
+                    raise ValueError(f"Expected a dictionary at {current_path}, got {type(data).__name__}")
+                for sub_key in data:
+                    validate_value(data[sub_key], spec[key], f"{current_path}.{sub_key}")
+            else:
+                if key not in data:
+                    raise KeyError(f"Missing key: {current_path}")
+                validate_value(data[key], value, current_path)
+    
+    # Helper function for parsing values entered at different points throughout the dictionary
+    def validate_value(data, spec, path):
+        if isinstance(spec, dict):
+            validate_dict(data, spec, path)
+        elif isinstance(spec, type):
+            if not is_valid_type(data, spec):
+                raise TypeError(f"Expected type {spec.__name__} at {path}, got {type(data).__name__}")
+        elif isinstance(spec, list):
+            if not isinstance(data, list):
+                raise TypeError(f"Expected a list at {path}, got {type(data).__name__}")
+            if len(spec) != 1:
+                raise ValueError(f"Spec list at {path} should contain exactly one type element, got {spec}")
+            for index, item in enumerate(data):
+                validate_value(item, spec[0], f"{path}[{index}]")
+        else:
+            raise ValueError(f"Unknown spec type at {path}: {spec}")
+
+    # Helper function for assessing the data type of each nested value
+    def is_valid_type(data, spec_type):
+        if spec_type is float:
+            return isinstance(data, (int, float))
+        return isinstance(data, spec_type)
+
+    try:
+        validate_dict(yaml_data, config_spec)
+    except (KeyError, TypeError, ValueError) as e:
+        print(f"Validation error: {e}")
