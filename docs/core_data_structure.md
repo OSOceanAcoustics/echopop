@@ -31,7 +31,9 @@ Survey.analysis['transect']['biology']['proportions']['number']
 Survey.analysis['transect']['biology']['proportions']['weight']
 ```
 
-When navigating the various levels of each nested attribute, the following suffixes are used to denote what the type of each entry/sub-key entails:
+### Variable naming convention
+
+In the `Survey` class data structure, the following suffixes are used to denote the data type of each entry:
 - `_df`: A standard `DataFrame` indexed by row number with at least two columns.
 - `_tbl`: A pivot table, which is a `DataFrame` whose rows and columns are both indexed by different variables besides the row and column numbers/names.
 - `_config`: A dictionary containing specific parameter arguments for a particular analysis or model.
