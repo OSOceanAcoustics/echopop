@@ -1,7 +1,7 @@
 (data-structure)=
 # Core data structures
 
-Input data, intermediate variables and calculations, and results are stored within several attributes associated with the `Survey`-class object. Information on how these attributes are used in the general `echopop` workflow can be found in greater detail [within the example notebook](echopop-example-workflow). 
+Input data, intermediate variables and calculations, and results are stored within several attributes associated with the `Survey`-class object. The attributes and stored data are detailed in the sections below. See [the example notebook](echopop-example-workflow) for information on how these attributes are used in the general `echopop` workflow. 
 
 ## Class attributes
 
@@ -23,7 +23,7 @@ Each of these attributes are organized using nested dictionaries that may contai
             * Various number proportion `DataFrame`'s
           * `weight`: weight proportions
             * Various weight proportion `DataFrame`'s
-which is equivalent to the following Python code:
+which can be accessed using the following Python code:
 ```python
 # Accessing number proportion dataframes
 Survey.analysis['transect']['biology']['proportions']['number']
@@ -31,13 +31,15 @@ Survey.analysis['transect']['biology']['proportions']['number']
 Survey.analysis['transect']['biology']['proportions']['weight']
 ```
 
-When navigating the various levels of each nested attribute, the following suffixes are used to denote what the type of each entry/sub-key entails:
+### Variable naming convention
+
+In the `Survey` class data structure, the following suffixes are used to denote the data type of each entry:
 - `_df`: A standard `DataFrame` indexed by row number with at least two columns.
 - `_tbl`: A pivot table, which is a `DataFrame` whose rows and columns are both indexed by different variables besides the row and column numbers/names.
 - `_config`: A dictionary containing specific parameter arguments for a particular analysis or model.
 - ` `: No suffix indicates either a dictionary with additional nested levels, or a scalar number/string (e.g. a single survey-wide mean estimate)
 
-These suffix conventions can help aid in navigating the different nested dictionaries via the `.keys()` `Dictionary` method within each `Survey`-class attribute by indicating variables and data at the deepest level within each dictionary tree. For instance, users can run the follwoing command:
+These suffix conventions can help aid in navigating the nested dictionaries via `.keys()` within each `Survey`-class attribute to see what is included at each level. For instance, users can run the following command:
 ```python 
 # If the Survey-class object is named 'survey':
 survey.input['biology'].keys()
@@ -90,12 +92,12 @@ Acoustic, biological, spatial, and statistical data defined in the configuration
 - `length_df`: Unaged (Station 1) length measurements.
 - `specimen_df`: Aged (Station 2) length and weight measurements.
 
-#### Spatial data (`'[spatial]'`)
+#### Spatial data (`['spatial']`)
 - `strata_df`: The length-based 'KS' stratum definitions and fraction of hake for each haul.
 - `geo_strata_df`: The latitudinal extents/ranges of each KS stratum throughout the survey region.
 - `inpfc_strata_df`: The INPFC stratum definitions and their respective latitudinal limits
 
-#### Statistical data (`'[statistics]'`)
+#### Statistical data (`['statistics']`)
 - `kriging`: Data and parameters required for the kriging analysis.
   - `mesh_df`: The survey kriging mesh used for interpolation.
   - `isobath_200m_df`: The 200 m isobath coordinates.
