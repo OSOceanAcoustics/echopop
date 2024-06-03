@@ -2,18 +2,12 @@
 Core API/components for class structures, class methods, and utility/helper methods
 """
 
+from datetime import datetime
+
 import numpy as np
 import pandas as pd
 
-#
-# ``CONFIG_MAP`` defines the expected column names for all datasets defined within both
-# ``initialization_config.yml`` and ``survey_year_2019.yml``. This further pairs the
-# expected datatype with each variable. The nested dictionary names represent
-# tags that are queried when the data are loaded which reflect the naming conventions
-# found within the configuration files.
-#
-# TODO: Update documentation to reflect dynamic parameterization since not all datasets
-# will be relegated to just the year 2019 upon deployment.
+# `Survey` object data structure
 CONFIG_MAP = {
     "biological": {
         # BIOLOGICAL DATASET -- LENGTH
@@ -56,12 +50,14 @@ CONFIG_MAP = {
         "geo_strata": {
             "stratum_num": int,
             "northlimit_latitude": np.float64,
+            "haul start": int,
+            "haul end": int,
         },
         "inpfc_strata": {
             "stratum_num": int,
             "northlimit_latitude": np.float64,
-            "haul_start": int,
-            "haul_end": int,
+            "haul start": int,
+            "haul end": int,
         },
     },
     "NASC": {
@@ -157,29 +153,91 @@ CONFIG_MAP = {
     },
 }
 
-
-#
 # ``LAYER_NAME_MAP`` is a hard-coded dictionary that aids in re-mapping the data tree
 # structure of various attributes contained within a generated ``Survey`` class object.
+# structure of various attributes contained within a generated ``Survey`` class object.
 # Each dictionary comprises the same dataset names contained within the configuration file.
+# Nested within each of these dictionaries include three variables:
 # Nested within each of these dictionaries include three variables:
 #     name (string): the name of the attribute appended to a ``Survey`` class object.
 #     data (list[string]): the name of the expected data layer, which is formatted as a dataframe.
 #     superlayer (list[string]): layer names that are prepended onto the nested dictionary structure
 #     of the data attribute.
+#     superlayer (list[string]): layer names that are prepended onto the nested dictionary structure
+#     of the data attribute.
 # While this reference library is only required in the sense that it is hard-coded into the
+# the current implementation concerning loading data into a ``Survey`` class object, it may be
 # the current implementation concerning loading data into a ``Survey`` class object, it may be
 # helpful for organizing data with more parsimonious and representative names. It may also be
 # helpful for future extensions enabling users to set additional data attributes that aren't
 # included in the ``Survey`` class initialization and parameterization (when the object is
 # generated).
-#
-# TODO: This is a hard-coded feature and therefore is not particularly helpful for more dynamic
-# use of this Python module (and the overall use of the echopop package).
+DATA_STRUCTURE = {
+    "meta": {"provenance": dict(), "date": f"{datetime.now():%Y-%m-%d %H:%M:%S%z}"},
+    "input": {
+        "acoustics": {
+            "nasc_df": pd.DataFrame(),
+        },
+        "biology": {
+            "catch_df": pd.DataFrame(),
+            "distributions": {
+                "age_bins_df": pd.DataFrame(),
+                "length_bins_df": pd.DataFrame(),
+            },
+            "length_df": pd.DataFrame(),
+            "haul_to_transect_df": pd.DataFrame(),
+            "specimen_df": pd.DataFrame(),
+        },
+        "spatial": {
+            "strata_df": pd.DataFrame(),
+            "geo_strata_df": pd.DataFrame(),
+            "inpfc_strata_df": pd.DataFrame(),
+        },
+        "statistics": {
+            "kriging": {
+                "mesh_df": pd.DataFrame(),
+                "isobath_200m_df": pd.DataFrame(),
+                "vario_krig_para_df": pd.DataFrame(),
+                "model_config": dict(),
+            },
+            "variogram": {
+                "model_config": dict(),
+            },
+        },
+    },
+    "analysis": {
+        "transect": {
+            "acoustics": {"sigma_bs": dict()},
+            "biology": {
+                "counts": dict(),
+                "distributions": dict(),
+                "population": {"tables": dict()},
+                "proportions": {"number": dict(), "weight": dict()},
+                "weight": {"length_weight_regression": dict()},
+            },
+            "coordinates": pd.DataFrame(),
+        },
+        "settings": {
+            "kriging": dict(),
+            "stratified": dict(),
+            "transect": dict(),
+            "variogram": dict(),
+        },
+        "stratified": dict(),
+    },
+    "results": {"transect": dict(), "stratified": dict(), "kriging": dict()},
+}
+
 LAYER_NAME_MAP = {
     "biological": {
         "name": "biology",
         "data": ["length", "specimen", "catch", "haul_to_transect"],
+        "data_label": [
+            "length:unaged lengths",
+            "specimen:aged lengths",
+            "catch:unaged catch weights",
+            "haul_to_transect:haul-to-transect key",
+        ],
         "superlayer": [],
         "data_tree": {
             "catch_df": pd.DataFrame(),
@@ -195,6 +253,11 @@ LAYER_NAME_MAP = {
     "stratification": {
         "name": "spatial",
         "data": ["strata", "geo_strata", "inpfc_strata"],
+        "data_label": [
+            "strata:KS strata",
+            "geo_strata:Georeferenced KS strata",
+            "inpfc_strata:INPFC strata",
+        ],
         "superlayer": [],
         "data_tree": {
             "strata_df": pd.DataFrame(),
@@ -205,6 +268,7 @@ LAYER_NAME_MAP = {
     "NASC": {
         "name": "nasc",
         "data": ["no_age1", "all_ages"],
+        "data_label": ["no_age1:Survey NASC", "all_ages:no_age1:Survey NASC"],
         "superlayer": ["acoustics"],
         "data_tree": {
             "nasc": {
@@ -215,6 +279,7 @@ LAYER_NAME_MAP = {
     "kriging": {
         "name": "kriging",
         "data": ["mesh", "isobath_200m", "vario_krig_para"],
+        "data_label": ["mesh:Kriging mesh", "isobath_200m:200m isobath"],
         "superlayer": ["statistics"],
         "data_tree": {
             "kriging": {
@@ -229,5 +294,3 @@ LAYER_NAME_MAP = {
         },
     },
 }
-
-SEX_CODE_MAP = {"1": {"name": "male", "abbr": "M"}, "2": {"name": "female", "abbr": "F"}}

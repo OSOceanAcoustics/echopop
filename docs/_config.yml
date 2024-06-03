@@ -53,5 +53,3 @@ sphinx:
   ]
   config:
     bibtex_reference_style: label
-
-exclude_patterns: [example_notebooks/*]

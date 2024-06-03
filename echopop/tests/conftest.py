@@ -6,6 +6,7 @@ import pandas as pd
 import pytest
 from _pytest.assertion.util import assertrepr_compare
 
+# Set up path to the `test_data` folder
 from echopop import Survey
 
 # Set up path to the `test_data` folder
@@ -13,7 +14,7 @@ HERE = Path(__file__).parent.absolute()
 TEST_DATA_ROOT = HERE.parent / "test_data"
 
 
-# Fixtures
+# FIXTURES
 # ---- Test root/config/input file paths
 @pytest.fixture(scope="session")
 def test_path():
@@ -35,7 +36,7 @@ def mock_survey(test_path) -> Survey:
     )
 
 
-# Hook functions
+# HOOK FUNCTIONS
 def pytest_assertrepr_compare(config, op, left, right):
     """
     Hook function that always shows the full `diff` on assertion
@@ -43,12 +44,13 @@ def pytest_assertrepr_compare(config, op, left, right):
     """
 
     # Adjust configuration `diff` verbosity
+    # Adjust configuration `diff` verbosity
     config.option.verbose = 2
 
     return assertrepr_compare(config, op, left, right)
 
 
-# Utility functions
+# UTILITY FUNCTIONS
 # ---- DICTIONARY
 # ++++ Shape and structure
 def dictionary_shape(dictionary: dict):
@@ -68,8 +70,11 @@ def dataframe_shape(input: Union[pd.DataFrame, dict]):
 
     # DataFrame
     if isinstance(input, pd.DataFrame):
-
         return input.shape
+
+    # Dictionary (bundled dataframes)
+    elif isinstance(input, dict):
+        dataframe_shapes = {}
 
     # Dictionary (bundled dataframes)
     elif isinstance(input, dict):
@@ -151,6 +156,10 @@ def assert_dictionary_values_equal(dictionary, reference_dictionary):
                 dictionary[key], reference_dictionary[key]
             ), f"Values for key '{key}' are not close."
 
+            assert np.isclose(
+                dictionary[key], reference_dictionary[key]
+            ), f"Values for key '{key}' are not close."
+
 
 # ---- DATAFRAME
 # ---- Shape and dimensions
@@ -212,10 +221,15 @@ def assert_dataframe_dtypes_equal(input: Union[pd.DataFrame, dict], reference: d
                         input[category][df_name], reference[category][df_name]
                     )
 
+                for df_name, _ in data.items():
+                    _assert_dataframe_dtypes_equal(
+                        input[category][df_name], reference[category][df_name]
+                    )
+
 
 # ---- Values
 # ~~~~ !!!! ATTN: this is a nested function within `assert_dataframe_equal`!
-def _aassert_dataframe_values_equal(dataframe1: pd.DataFrame, dataframe2: pd.DataFrame):
+def _assert_dataframe_values_equal(dataframe1: pd.DataFrame, dataframe2: pd.DataFrame):
 
     # Evaluate equality between numerical values
     assert np.allclose(
@@ -226,13 +240,13 @@ def _aassert_dataframe_values_equal(dataframe1: pd.DataFrame, dataframe2: pd.Dat
 
     # Evaluate equality between non-numerical values
     # ---- Mask out "NaN"
-    dataframe1_nan_mask = dataframe1.isna().any(axis=1)
-    dataframe2_nan_mask = dataframe2.isna().any(axis=1)
+    dataframe1_nan_mask = dataframe1.isna().any(axis=1).reset_index(drop=True)
+    dataframe2_nan_mask = dataframe2.isna().any(axis=1).reset_index(drop=True)
     # ---- Evaluate equality
-    dataframe1_nan_mask == dataframe2_nan_mask
+    assert np.all(dataframe1_nan_mask == dataframe2_nan_mask)
     # ---- Evaluate equality among "real" values
-    dataframe1_masked = dataframe1[~dataframe1_nan_mask]
-    dataframe2_masked = dataframe2[~dataframe2_nan_mask]
+    dataframe1_masked = dataframe1.loc[~dataframe1_nan_mask].reset_index(drop=True)
+    dataframe2_masked = dataframe2.loc[~dataframe2_nan_mask].reset_index(drop=True)
     assert np.all(
         dataframe1_masked.select_dtypes(exclude=["number"])
         == dataframe2_masked.select_dtypes(exclude=["number"])
@@ -246,18 +260,18 @@ def assert_dataframe_values_equal(
 
     # Direct DataFrame
     if isinstance(input, pd.DataFrame) & (isinstance(reference, pd.DataFrame)):
-        _aassert_dataframe_values_equal(input, reference)
+        _assert_dataframe_values_equal(input, reference)
 
     # Iterate through nested DataFrames within each dictionary
     else:
         for key, expected_df in reference.items():
 
             if isinstance(input[key], pd.DataFrame):
-                _aassert_dataframe_values_equal(input[key], expected_df)
+                _assert_dataframe_values_equal(input[key], expected_df)
 
             else:
                 for sub_key, _ in reference[key].items():
-                    _aassert_dataframe_values_equal(input[key][sub_key], expected_df[sub_key])
+                    _assert_dataframe_values_equal(input[key][sub_key], expected_df[sub_key])
 
 
 # ++++ DICTIONARY + DATAFRAME BUNDLING
