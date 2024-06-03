@@ -1,7 +1,7 @@
 (data-structure)=
 # Core data structures
 
-Input data, intermediate variables and calculations, and results are stored within several attributes associated with the `Survey`-class object. Information on how these attributes are used in the general `echopop` workflow can be found in greater detail [within the example notebook](echopop-example-workflow). 
+Input data, intermediate variables and calculations, and results are stored within several attributes associated with the `Survey`-class object. The attributes and stored data are detailed in the sections below. See [the example notebook](echopop-example-workflow) for information on how these attributes are used in the general `echopop` workflow. 
 
 ## Class attributes
 
