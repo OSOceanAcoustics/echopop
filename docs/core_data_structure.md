@@ -92,7 +92,7 @@ Acoustic, biological, spatial, and statistical data defined in the configuration
 - `length_df`: Unaged (Station 1) length measurements.
 - `specimen_df`: Aged (Station 2) length and weight measurements.
 
-#### Spatial data (`'[spatial]'`)
+#### Spatial data (`['spatial']`)
 - `strata_df`: The length-based 'KS' stratum definitions and fraction of hake for each haul.
 - `geo_strata_df`: The latitudinal extents/ranges of each KS stratum throughout the survey region.
 - `inpfc_strata_df`: The INPFC stratum definitions and their respective latitudinal limits
