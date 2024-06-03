@@ -294,17 +294,11 @@ def nasc_to_biomass(
         adult_proportions = age1_proportions.copy()
         # -------- Invert proportions
         # ------------ Number
-        adult_proportions["number_proportion"] = (
-            1 - age1_proportions["number_proportion"]
-        )
+        adult_proportions["number_proportion"] = 1 - age1_proportions["number_proportion"]
         # ------------ Weight
-        adult_proportions["weight_proportion"] = (
-            1 - age1_proportions["weight_proportion"]
-        )
+        adult_proportions["weight_proportion"] = 1 - age1_proportions["weight_proportion"]
         # ------------ Weight
-        adult_proportions["nasc_proportion"] = (
-            1 - age1_proportions["nasc_proportion"]
-        )
+        adult_proportions["nasc_proportion"] = 1 - age1_proportions["nasc_proportion"]
 
     else:
         # ---- Drop the unused column

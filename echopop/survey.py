@@ -31,19 +31,16 @@ class Survey:
     ----------
     meta : dict
         Metadata variable that provides summary information concerning the
-        data contained within the class object (e.g. 'self.summary').
+        data contained within the class object.
     config : dict
         Configuration settings and parameters that can be referenced for
         various downstream and internal functions.
-    data : dict
-        Various dictionaries are incorporated into the Survey class object that
-        Various dictionaries are incorporated into the Survey class object that
-        are directly referenced for various downstream and internal functions. This
-        includes attributes such as 'biology', 'acoustics', and 'spatial' that represent
-        various nested biological, acoustic, and spatial/stratification datasets imported
-        based on the input files defined via the configuration settings.
-
-
+    input: dict
+        Input data.
+    analysis: dict
+        Analysis variables and intermediate data products.
+    results: dict
+        Analysis results.
     """
 
     def __init__(

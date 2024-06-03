@@ -11,7 +11,18 @@ from ..spatial.transect import transect_bearing, transect_extent
 
 
 def crop_mesh(transect_data: pd.DataFrame, mesh_data: pd.DataFrame, settings_dict: dict):
+    """
+    Crop survey kriging mesh.
 
+    Parameters
+    ----------
+    transect_data: pd.DataFrame
+        Georeferenced transect data.
+    mesh_data: pd.DataFrame
+        Kriging mesh.
+    settings_dict: dict
+        Dictionary containing relevant algorithm variables and arguments.
+    """
     # Rename the mesh coordinate names, if necessary
     # ---- Longitude
     mesh_longitude = [col for col in mesh_data.columns if "lon" in col.lower()][0]
@@ -32,7 +43,18 @@ def crop_mesh(transect_data: pd.DataFrame, mesh_data: pd.DataFrame, settings_dic
 
 
 def hull_crop_method(transect_data: pd.DataFrame, mesh_data: pd.DataFrame, settings_dict: dict):
+    """
+    Crop the kriging mesh via convex hull polygons.
 
+    Parameters
+    ----------
+    transect_data: pd.DataFrame
+        Georeferenced transect data.
+    mesh_data: pd.DataFrame
+        Kriging mesh.
+    settings_dict: dict
+        Dictionary containing relevant algorithm variables and arguments.
+    """
     # Extract the analysis settings
     # ---- Number of nearest transects
     num_nearest_transects = settings_dict["num_nearest_transect"]
@@ -69,6 +91,19 @@ def hull_crop_method(transect_data: pd.DataFrame, mesh_data: pd.DataFrame, setti
 def interpolate_crop_method(
     transect_data: pd.DataFrame, mesh_data: pd.DataFrame, settings_dict: dict
 ):
+    """
+    Crop the kriging mesh by interpolating the eastern and western boundaries of the survey
+    partitioned into three geographical regions.
+
+    Parameters
+    ----------
+    transect_data: pd.DataFrame
+        Georeferenced transect data.
+    mesh_data: pd.DataFrame
+        Kriging mesh.
+    settings_dict: dict
+        Dictionary containing relevant algorithm variables and arguments.
+    """
 
     # Extract the analysis settings
     # ---- Number of nearest transects
@@ -318,10 +353,10 @@ def griddify_lag_distances(
 
     Parameters
     ----------
-    mesh_grid: pd.DataFrame
+    coordinates_1: pd.DataFrame
         Background dataframe mesh that represents the "complete" field
         of values
-    spatial_data: pd.DataFrame
+    coordinates_2: pd.DataFrame
         Georeferenced dataframe
 
     Notes
@@ -348,6 +383,17 @@ def griddify_lag_distances(
 
 
 def stratify_mesh(input_dict: dict, kriged_mesh: pd.DataFrame, settings_dict: dict) -> pd.DataFrame:
+    """
+    Partition the kriging mesh into separate strata.
+
+    Parameters
+    ----------
+    input_dict: dict
+        Dictionary comprising data inputs.
+    kriged_mesh: pd.DataFrame
+        Kriging mesh.
+    settings_dict: dict
+    """
 
     # Extract the geographic-delimited strata
     if settings_dict["stratum"].lower() == "ks":
@@ -376,7 +422,17 @@ def stratify_mesh(input_dict: dict, kriged_mesh: pd.DataFrame, settings_dict: di
 def mesh_to_transects(
     kriging_dict: dict, spatial_dict: dict, settings_dict: dict
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """
+    Synthesize virtual transects from the kriging mesh.
 
+    Parameters
+    ----------
+    kriging_dict: dict
+        Dictionary comprising kriged (interpolated) data.
+    spatial_dict: dict
+        Dictionary containing spatial coordinate and stratum definitions.
+    settings_dict: dict
+    """
     # Extract mesh data
     mesh_data = kriging_dict["mesh_results_df"].copy()
 
@@ -511,6 +567,28 @@ def mesh_to_transects(
 def interpolate_survey_extent(
     new_coords: np.ndarray, coordinate_data: pd.DataFrame, coordinates_x: str, coordinates_y: str
 ) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Interpolate the eastern and western survey extent boundaries.
+
+    Parameters
+    ----------
+    new_coords: np.ndarray
+        New coordinates for interpolation.
+    coordinate_data: pd.DataFrame
+        Georeferenced points from the original dataset.
+    coordinates_x: str
+        'longitude' or 'latitude'
+    coordinates_y: str
+        'longitude' or 'latitude'
+    """
+
+    # Remove case-dependency
+    coordinates_x = coordinates_x.lower()
+    coordinates_y = coordinates_y.lower()
+
+    # Error check
+    if coordinates_x == coordinates_y:
+        raise ValueError("Name for `coordinates_x` cannot be the same as `coordinates_y.")
 
     # Generate string that will be appended to the input strings
     if coordinates_y in ["longitude"]:

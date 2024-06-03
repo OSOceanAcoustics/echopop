@@ -157,6 +157,9 @@ def transect_spatial_features(transect_data: pd.DataFrame):
 
 
 def summarize_transect_strata(transect_summary: pd.DataFrame):
+    """
+    Calculate the total number of transects and area coverage within each stratum.
+    """
 
     # Get the name of the stratum column
     stratum_col = [col for col in transect_summary.columns if "stratum" in col.lower()][0]
@@ -180,7 +183,9 @@ def summarize_transect_strata(transect_summary: pd.DataFrame):
 
 
 def transect_array(index_matrix: np.ndarray, data_series: pd.Series):
-
+    """
+    Helper function for indexing transect arrays.
+    """
     return [data_series[idx] for idx in index_matrix]
 
 
@@ -202,6 +207,9 @@ def transect_coordinate_centroid(spatial_grouped: gpd.GeoSeries):
 
 
 def transect_extent(transect_data: pd.DataFrame, projection: str, num_nearest_transects: int):
+    """
+    Compute the extent of each transect line.
+    """
 
     # Detect the correct longitude and latitude coordinates
     # ---- Latitude
@@ -291,6 +299,9 @@ def define_western_extent(transect_data: pd.DataFrame, latitude_threshold: float
 
 
 def transect_bearing(transect_data: pd.DataFrame):
+    """
+    Compute the average transect bearing.
+    """
 
     # Calculate the average heading per transect line
     # ---- Initialize the dataframe

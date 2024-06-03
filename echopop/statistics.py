@@ -311,7 +311,9 @@ def stratified_transect_statistic(
 
 
 def empirical_ci(bootstrap_samples: np.ndarray, ci_args: dict):
-
+    """
+    Empirical bootstrap interval.
+    """
     # Extract the interval
     interval = ci_args["interval"]
 
@@ -325,7 +327,9 @@ def empirical_ci(bootstrap_samples: np.ndarray, ci_args: dict):
 
 
 def percentile_ci(bootstrap_samples: np.ndarray, ci_args: dict):
-
+    """
+    Percentile bootstrap interval.
+    """
     # Extract the interval
     interval = ci_args["interval"]
 
@@ -334,7 +338,9 @@ def percentile_ci(bootstrap_samples: np.ndarray, ci_args: dict):
 
 
 def standard_ci(bootstrap_samples: np.ndarray, ci_args: dict):
-
+    """
+    Normal/standard bootstrap interval.
+    """
     # Extract the interval
     interval = ci_args["interval"]
 
@@ -343,7 +349,9 @@ def standard_ci(bootstrap_samples: np.ndarray, ci_args: dict):
 
 
 def student_ci(bootstrap_samples: np.ndarray, ci_args: dict):
-
+    """
+    Studentized bootstrap interval assuming either a t-distribution or using a jackknife approach.
+    """
     # Extract the interval
     interval = ci_args["interval"]
 
@@ -376,7 +384,9 @@ def student_ci(bootstrap_samples: np.ndarray, ci_args: dict):
 
 
 def bc_ci(bootstrap_samples: np.ndarray, ci_args: dict):
-
+    """
+    Bias-corrected (BC) bootstrap interval.
+    """
     # Extract the interval
     interval = ci_args["interval"]
 
@@ -432,7 +442,13 @@ def bc_ci(bootstrap_samples: np.ndarray, ci_args: dict):
 
 
 def bca_ci(bootstrap_samples: np.ndarray, ci_args: dict):
+    """
+    Bias-Corrected and Accelerated (BCa) bootstrap interval.
 
+    Notes
+    ----------
+    The acceleration constant (a) is estimated using jackknife resampling.
+    """
     # Extract the interval
     interval = ci_args["interval"]
 
@@ -505,7 +521,29 @@ def bca_ci(bootstrap_samples: np.ndarray, ci_args: dict):
 def bootstrap_confidence_intervals(
     bootstrap_dict: dict, population_dict: dict, settings_dict: dict
 ) -> dict:
+    """
+    Compute the bootstrap confidence interval.
 
+    Notes
+    ----------
+    Percentile method[1]_
+    t-jackknife[4]_
+    t-standard[4]_
+    Empirical[1]_
+    Bias-Corrected and Accelerated (BCa)[2]_
+    Bias-Corrected (BC)[1]_
+    Standard[3]_
+
+    .. [1] Efron, B. (1981). Nonparametric standard errors and confidence intervals. *Canadian
+       Journal of Statistics*, *9*(2), 139-158. https://doi.org/10.2307/3314608
+    .. [2] Efron, B., and Tibshirani, R.J. (1993). *An introduction to the Bootstrap*. Springer US.
+        https://doi.org/10.1007/978-1-4899-4541-9
+    .. [3] Efron, B., and Tibshirani, R.J. (1986). Bootstrap methods for standard errors, confidence
+       intervals, and other measures of statistical accuracy. *Statistical Science*, *1*(1).
+       https://doi.org/10.1214/ss/1177013815
+    .. [4] DiCiccio, T.J., and Efron, B. (1996). Bootstrap confidence intervals. *Statistical
+       Science*, *11*(3). https://doi.org/10.1214/ss/1032280214
+    """
     # Extract variable name
     var_name = settings_dict["variable"]
     # Compute the confidence interval (CI) and bias estimates for density measurements
@@ -633,7 +671,7 @@ def confidence_interval(
     estimator_name: Optional[str] = None,
 ) -> tuple[Union[np.ndarray, list[np.ndarray]], Union[float, np.ndarray[float]]]:
     """
-    Calculates the 95% confidence interval (Normal) for a given array using bootstrapped methods.
+    Calculates the confidence interval for a given array using bootstrapped methods.
 
     Parameters
     ----------
@@ -655,7 +693,7 @@ def confidence_interval(
         An optional string that is for error-tracing purposes.
 
     Notes
-    -----
+    ----------
     Percentile method[1]_
     t-jackknife[4]_
     t-standard[4]_
