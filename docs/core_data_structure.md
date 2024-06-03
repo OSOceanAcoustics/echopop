@@ -37,7 +37,7 @@ When navigating the various levels of each nested attribute, the following suffi
 - `_config`: A dictionary containing specific parameter arguments for a particular analysis or model.
 - ` `: No suffix indicates either a dictionary with additional nested levels, or a scalar number/string (e.g. a single survey-wide mean estimate)
 
-These suffix conventions can help aid in navigating the different nested dictionaries via the `.keys()` `Dictionary` method within each `Survey`-class attribute by indicating variables and data at the deepest level within each dictionary tree. For instance, users can run the follwoing command:
+These suffix conventions can help aid in navigating the nested dictionaries via `.keys()` within each `Survey`-class attribute to see what is included at each level. For instance, users can run the following command:
 ```python 
 # If the Survey-class object is named 'survey':
 survey.input['biology'].keys()
