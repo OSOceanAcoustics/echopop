@@ -13,7 +13,7 @@ There are currently **five** unique class attributes that store different types 
 * `Survey.analysis`: Intermediate data products, variables, and other calculations that may be both relevant to users (e.g. number proportions) or are required for computing the final results. 
 * `Survey.results`: Overall results for each analysis.
 
-Each of these attributes are organized using nested dictionaries that may contain an uneven number of levels. For instance, calculated number and weight proportions computed via the transect analysis are nested via the following structure:
+Each of these attributes are organized using nested dictionaries that may contain different number of levels. For instance, number and weight proportions computed via the `transect_analysis` method are nested in the following structure:
 * Survey object
   * `analysis` attribute
     * `transect` key
