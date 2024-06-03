@@ -23,7 +23,7 @@ Each of these attributes are organized using nested dictionaries that may contai
             * Various number proportion `DataFrame`'s
           * `weight` sub-key
             * Various weight proportion `DataFrame`'s
-which is equivalent to the following Python code:
+which can be accessed using the following Python code:
 ```python
 # Accessing number proportion dataframes
 Survey.analysis['transect']['biology']['proportions']['number']
