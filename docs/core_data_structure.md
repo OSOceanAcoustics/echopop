@@ -14,14 +14,14 @@ There are currently **five** unique class attributes that store different types 
 * `Survey.results`: Overall results for each analysis.
 
 Each of these attributes are organized using nested dictionaries that may contain an uneven number of levels. For instance, calculated number and weight proportions computed via the transect analysis are nested via the following structure:
-* Survey object
-  * `analysis` attribute
-    * `transect` key
-      * `biology` sub-key
-        * `proportions` sub-key
-          * `number` sub-key
+* `Survey`-class object
+  * `analysis`: parent node containing intermediate calculations for all analyses in a nested dictionary structure
+    * `transect`: intermediate calculations computed via the `Survey.transect_analysis(...)` method
+      * `biology`: biological calculations 
+        * `proportions`: proportion calculations
+          * `number`: number proportions
             * Various number proportion `DataFrame`'s
-          * `weight` sub-key
+          * `weight`: weight proportions
             * Various weight proportion `DataFrame`'s
 which is equivalent to the following Python code:
 ```python
