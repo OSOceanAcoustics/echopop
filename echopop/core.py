@@ -12,7 +12,7 @@ CONFIG_INIT_API = {
     "stratified_survey_mean_parameters": {
         "strata_transect_proportion": float,
         "num_replicates": int,
-        "mesh_transects_per_latitude": int
+        "mesh_transects_per_latitude": int,
     },
     "bio_hake_len_bin": [float],
     "bio_hake_age_bin": [float],
@@ -21,108 +21,56 @@ CONFIG_INIT_API = {
             "number_code": int,
             "TS_L_slope": float,
             "TS_L_intercept": float,
-            "length_units": str
+            "length_units": str,
         }
     },
-    "geospatial": {
-        "init": str
-    },
+    "geospatial": {"init": str},
     "kriging_parameters": {
         "A0": float,
         "longitude_reference": float,
         "longitude_offset": float,
-        "latitude_offset": float
-    }
+        "latitude_offset": float,
+    },
 }
 
 # Required data configuration YAML structure
 CONFIG_DATA_API = {
     "survey_year": int,
-    "species": {
-        "number_code": int
-    },
+    "species": {"number_code": int},
     "CAN_haul_offset": int,
     "data_root_dir": str,
     "biological": {
         "length": {
-            "US": {
-                "filename": str,
-                "sheetname": str
-            },
-            "CAN": {
-                "filename": str,
-                "sheetname": str                
-            }
+            "US": {"filename": str, "sheetname": str},
+            "CAN": {"filename": str, "sheetname": str},
         },
-        "specimen":  {
-            "US": {
-                "filename": str,
-                "sheetname": str
-            },
-            "CAN": {
-                "filename": str,
-                "sheetname": str                
-            }
+        "specimen": {
+            "US": {"filename": str, "sheetname": str},
+            "CAN": {"filename": str, "sheetname": str},
         },
-        "catch":  {
-            "US": {
-                "filename": str,
-                "sheetname": str
-            },
-            "CAN": {
-                "filename": str,
-                "sheetname": str                
-            }
+        "catch": {
+            "US": {"filename": str, "sheetname": str},
+            "CAN": {"filename": str, "sheetname": str},
         },
-        "haul_to_transect":  {
-            "US": {
-                "filename": str,
-                "sheetname": str
-            },
-            "CAN": {
-                "filename": str,
-                "sheetname": str                
-            }
-        }
+        "haul_to_transect": {
+            "US": {"filename": str, "sheetname": str},
+            "CAN": {"filename": str, "sheetname": str},
+        },
     },
     "stratification": {
-        "strata": {
-            "filename": str,
-            "sheetname": str                
-        },
-        "geo_strata": {
-            "filename": str,
-            "sheetname": [str]  
-        }
+        "strata": {"filename": str, "sheetname": str},
+        "geo_strata": {"filename": str, "sheetname": [str]},
     },
     "NASC": {
-        "no_age1": {
-            "filename": str,
-            "sheetname": str  
-            },
-        "all_ages": {
-            "filename": str,
-            "sheetname": str              
-        }
-
+        "no_age1": {"filename": str, "sheetname": str},
+        "all_ages": {"filename": str, "sheetname": str},
     },
     "kriging": {
-        "mesh": {
-            "filename": str,
-            "sheetname": str  
-        },
-        "isobath_200m": {
-            "filename": str,
-            "sheetname": str  
-        },
-        "vario_krig_para": {
-            "filename": str,
-            "sheetname": str  
-        }
-    }
+        "mesh": {"filename": str, "sheetname": str},
+        "isobath_200m": {"filename": str, "sheetname": str},
+        "vario_krig_para": {"filename": str, "sheetname": str},
+    },
 }
-
-survey_year_config_params["kriging"]
 
 # `Survey` object data structure
 CONFIG_MAP = {

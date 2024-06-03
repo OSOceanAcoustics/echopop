@@ -6,7 +6,7 @@ import pandas as pd
 import yaml
 from openpyxl import load_workbook
 
-from ..core import CONFIG_MAP, DATA_STRUCTURE, LAYER_NAME_MAP, CONFIG_DATA_API, CONFIG_INIT_API
+from ..core import CONFIG_DATA_API, CONFIG_INIT_API, CONFIG_MAP, DATA_STRUCTURE, LAYER_NAME_MAP
 
 
 def load_configuration(init_config_path: Path, survey_year_config_path: Path):
@@ -579,10 +579,12 @@ def prepare_input_data(input_dict: dict, configuration_dict: dict):
     # Return updated dictionaries
     return input_dict, configuration_dict
 
+
 def validate_config_structure(yaml_data, config_spec):
     """
     Validate configuration YAML dictionary structure and entry types
     """
+
     # Helper function for validating dictionary key names/structure
     def validate_dict(data, spec, path=""):
         for key, value in spec.items():
@@ -590,26 +592,32 @@ def validate_config_structure(yaml_data, config_spec):
             if key == "ANY":
                 # If the spec key is "ANY", check all keys in the data against the "ANY" spec
                 if not isinstance(data, dict):
-                    raise ValueError(f"Expected a dictionary at {current_path}, got {type(data).__name__}")
+                    raise ValueError(
+                        f"Expected a dictionary at {current_path}, got {type(data).__name__}"
+                    )
                 for sub_key in data:
                     validate_value(data[sub_key], spec[key], f"{current_path}.{sub_key}")
             else:
                 if key not in data:
                     raise KeyError(f"Missing key: {current_path}")
                 validate_value(data[key], value, current_path)
-    
+
     # Helper function for parsing values entered at different points throughout the dictionary
     def validate_value(data, spec, path):
         if isinstance(spec, dict):
             validate_dict(data, spec, path)
         elif isinstance(spec, type):
             if not is_valid_type(data, spec):
-                raise TypeError(f"Expected type {spec.__name__} at {path}, got {type(data).__name__}")
+                raise TypeError(
+                    f"Expected type {spec.__name__} at {path}, got {type(data).__name__}"
+                )
         elif isinstance(spec, list):
             if not isinstance(data, list):
                 raise TypeError(f"Expected a list at {path}, got {type(data).__name__}")
             if len(spec) != 1:
-                raise ValueError(f"Spec list at {path} should contain exactly one type element, got {spec}")
+                raise ValueError(
+                    f"Spec list at {path} should contain exactly one type element, got {spec}"
+                )
             for index, item in enumerate(data):
                 validate_value(item, spec[0], f"{path}[{index}]")
         else:
