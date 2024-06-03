@@ -97,7 +97,7 @@ Acoustic, biological, spatial, and statistical data defined in the configuration
 - `geo_strata_df`: The latitudinal extents/ranges of each KS stratum throughout the survey region.
 - `inpfc_strata_df`: The INPFC stratum definitions and their respective latitudinal limits
 
-#### Statistical data (`'[statistics]'`)
+#### Statistical data (`['statistics']`)
 - `kriging`: Data and parameters required for the kriging analysis.
   - `mesh_df`: The survey kriging mesh used for interpolation.
   - `isobath_200m_df`: The 200 m isobath coordinates.
