@@ -1,5 +1,6 @@
 from typing import Union
 
+import pandas as pd
 import numpy as np
 from scipy import special
 
@@ -386,3 +387,22 @@ def variogram(
         model_function = VARIOGRAM_MODELS["single"][model_input]
     # ---- Pass the additional user arguments (kwargs) to the child function
     return model_function(distance_lags, variogram_parameters=variogram_parameters, **kwargs)
+
+def empirical_variogram(transect_data: pd.DataFrame,
+                        variogram_parameters: dict,
+                        settings_dict: dict):
+    """
+    Compute the empirical variogram from transect data.
+    """
+    
+    # Convert the x, y, and estimate columns to arrays
+    # ---- x
+    x_coord = transect_data["x"].to_numpy()
+    # ---- y
+    y_coord = transect_data["y"].to_numpy()
+    # ---- estimates
+    estimates = transect_data[settings_dict['variable']]
+    
+    # Extract relevant variogram parameters
+    # ---- Lag resolution [lcsl]
+    lag_resolution = variogram_parameters["lag_resolution"]

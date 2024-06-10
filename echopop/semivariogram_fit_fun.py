@@ -3,8 +3,6 @@ import pandas as pd
 import copy
 from scipy.stats import norm
 from echopop.survey import Survey
-from echopop.spatial.mesh import griddify_lag_distances
-import math
 
 survey = Survey( init_config_path = "C:/Users/Brandyn/Documents/GitHub/echopop/config_files/initialization_config.yml" ,
                  survey_year_config_path = "C:/Users/Brandyn/Documents/GitHub/echopop/config_files/survey_year_2019_config.yml" )
@@ -25,12 +23,11 @@ max_range = 0.06
 lag_resolution = variogram_parameters["lag_resolution"]
 variable = settings_dict["variable"]
 transect_data = self.analysis["kriging"]["transect_df"]
-settings_dict = self.analysis["settings"]["kriging"]
+
 estimates = transect_data["biomass_density"].to_numpy()
-analysis_dict = {
-    "n_lags": 30,
-    "max_range": 0.06
-}
+from echopop.spatial.mesh import griddify_lag_distances
+import math
+
 # Define the range of possible azimuth angles
 azimuth_range = 360
 
@@ -237,22 +234,349 @@ lag_counts_zero = np.concatenate([[len(estimates) - 1], lag_counts])
 # Calculate the variogram weights (for fitting)
 variogram_weights = lag_counts_zero / lag_counts_zero.sum()
 
-# semivariance_zero = (
-#     np.concatenate([[0],
-#                     pd.read_csv("C:/Users/Brandyn/Documents/gamma_h.csv").values.flatten()])
-# )
+# Prepare the data for determining the best-fit/optimized parameters
+# ---- 
 
-# Vertically stack the lags, semivariance, and weights
-data_stack = np.vstack((lags_zero, semivariance_zero, variogram_weights))
+griddify_lag_distances(transect_data.iloc[i], transect_data.iloc[i + 1:])
+# ---- Copmute the differences
+# -------- x
+x_distance = np.subtract.outer(x_coord, x_coord)
+# -------- y
+y_distance = np.subtract.outer(y_coord, y_coord)
+# ---- Fill the diagonals 
+# -------- x
+np.fill_diagonal(x_distance, np.nan)
+# -------- y
+np.fill_diagonal(y_distance, np.nan)
 
-# Index lag distances that are within the parameterized range
-within_range = np.where(lags_zero <= max_range)[0]
 
-# Truncate the data stack
-truncated_stack = data_stack[:, within_range]
+# ---- Create empty "z" coordinate 
+z = np.zeros_like(transect_distance_matrix)
+# ---- Calculate  angularity
+x_coord = transect_data["x"].to_numpy()
+y_coord = transect_data["y"].to_numpy()
+x_distance = np.subtract.outer(x_coord, x_coord)
+# ---- Differences across y-coordinates
+y_distance = np.subtract.outer(y_coord, y_coord)
+np.fill_diagonal(x_distance, np.nan)
+np.fill_diagonal(y_distance, np.nan)
+# ---- Calculate angle
+angularity = np.arctan(y_distance / x_distance) * 180.0 / np.pi
 
-#### ARGUMENTS
-max_iterations = 2e3
+# Filter the angles across the entire `angularity` array
+# ---- Define possible range of azimuth angles
+azimuth_range = 360
+lower_bound = angularity - 0.5 * azimuth_range
+upper_bound = angularity + 0.5 * azimuth_range
+ang_indx = []
+ang_indx[1000].size
+# Iterate over each row of the angularity array
+for row in range(angularity.shape[0]):
+    ang_z = angularity[row]
+    row_indices = np.where((ang_z >= ang_z - 0.5 * azimuth_range) & (ang_z < ang_z + 0.5 * azimuth_range))[0]
+    ang_indx.append(row_indices)
+
+import numpy as np
+
+variable = "biomass_density"
+bio = transect_data[variable].values
+azm = 0
+dip = 0
+angz = azm
+angd = dip
+nlag = n_lags
+res = lag_resolution
+nd = 9278
+x = x_coord
+y = y_coord
+z = np.zeros_like(x)
+vr = bio
+azm_deg = azm
+dip_deg = dip
+azm_res = 360
+dip_res = 180
+ndir = 1
+nl_cnt = int(np.max([1, np.round(0.01 * nd * ndir)]))
+
+# Initialize arrays
+cnt = np.zeros(nlag - 1)
+gamma_sum = np.zeros(nlag - 1)
+var_sum = np.zeros(nlag - 1)
+var_mean = np.zeros(nlag - 1)
+var2_sum = np.zeros(nlag - 1)
+gammah = np.full(nlag - 1, np.nan)
+c0 = np.zeros(nlag - 1)
+head_indx = np.zeros((nd, nlag - 1))
+tail_indx = np.zeros((nd, nlag - 1))
+
+dx = np.subtract.outer(x, x)
+dy = np.subtract.outer(y, y)
+dz = np.subtract.outer(z, z)
+dr = np.sqrt(dx**2 + dy**2)
+ang_z = np.degrees(np.arctan2(dy, dx))
+ang_d = np.degrees(np.arctan2(dz, dr))
+
+neg_indx = ang_z < azm_deg - 0.5 * azm_res
+ang_z[neg_indx] += 180
+
+mask = (ang_z >= azm_deg - 0.5 * azm_res) & (ang_z < azm_deg + 0.5 * azm_res) & \
+       (ang_d >= dip_deg - 0.5 * dip_res) & (ang_d < dip_deg + 0.5 * dip_res)
+
+for i in range(nd):
+    if (i * nd + 1) % nl_cnt == 0:
+        percent = f"{(i * nd + 1) / (nl_cnt * nd) * 100:.2f} percent done"
+        print(percent)
+
+    valid_mask = mask[i, i+1:]
+    ni = np.sum(valid_mask)
+    if ni > 0:
+        xi, yi, zi, var_i = x[i+1:][valid_mask], y[i+1:][valid_mask], z[i+1:][valid_mask], vr[i+1:][valid_mask]
+        dxi, dyi, dzi = x[i] - xi, y[i] - yi, z[i] - zi
+        d = np.sqrt(dxi**2 + dyi**2 + dzi**2)
+        indx_sort = np.argsort(d)
+        var_sort = var_i[indx_sort]
+        dsort = d[indx_sort]
+        dindx = np.round(dsort / res).astype(int) + 1
+        k_acc = 0
+        for k in np.arange(1, n_lags):
+            indxk = np.where(dindx[k_acc:ni] == k)[0] + k_acc
+            nk = len(indxk)
+            if nk > 0:
+                cnt[k - 1] += nk
+                k_acc += nk
+                var_dif = vr[i] - var_sort[indxk]
+                var_sum[k - 1] += np.sum(var_sort[indxk])
+                var2_sum[k - 1] += np.sum(var_sort[indxk]**2)
+                gamma_sum[k - 1] += np.sum(var_dif**2)
+                head_indx[i, k - 1] = nk
+                jindx = indx_sort[indxk] + i + 1
+                tail_indx[jindx, k - 1] += 1
+
+sigma_head = np.zeros(nlag - 1)
+mean_head = np.zeros(nlag - 1)
+sigma_tail = np.zeros(nlag - 1)
+mean_tail = np.zeros(nlag - 1)
+
+for k in np.arange(1, n_lags):
+    indx1 = np.where(head_indx[:, k - 1] >= 1)[0]
+    if len(indx1) > 0:
+        npk = np.nansum(head_indx[:, k - 1])
+        pdf = head_indx[indx1, k - 1] / npk
+        mean_head[k - 1] = np.nansum(vr[indx1] * pdf)
+        sigma_head[k - 1] = np.sqrt(np.nansum(((vr[indx1] - mean_head[k - 1])**2) * pdf))
+
+    indx1 = np.where(tail_indx[:, k - 1] >= 1)[0]
+    if len(indx1) > 0:
+        npk = np.nansum(tail_indx[:, k - 1])
+        pdf = tail_indx[indx1, k - 1] / npk
+        mean_tail[k - 1] = np.nansum(vr[indx1] * pdf)
+        sigma_tail[k - 1] = np.sqrt(np.nansum(((vr[indx1] - mean_tail[k - 1])**2) * pdf))
+
+indx = np.where(cnt >= 1)[0]
+if len(indx) > 0:
+    cnt_nz = cnt[indx]
+    var_mean[indx] = var_sum[indx] / cnt_nz
+    var_std2 = var2_sum[indx] / cnt_nz - var_mean[indx]**2
+    mean_tail[indx] = var_mean[indx]
+    sigma_tail[indx] = np.sqrt(np.abs(var_std2))
+    c0[indx] = sigma_tail[indx] * sigma_head[indx]
+    gammah[indx] = 0.5 * gamma_sum[indx] / (cnt_nz * np.mean(c0[indx]) + np.finfo(float).eps)
+    gammah[indx] = 0.5 * gamma_sum[indx] / (cnt_nz * c0[indx] + np.finfo(float).eps)
+else:
+    gammah = np.full(nlag - 1, np.nan)
+
+max_value = 1.1889
+indx = np.where(gammah > max(2.5, max_value))[0]
+gammah[indx] = np.nan
+
+gam = np.zeros((nlag, 1))
+dis = np.zeros((nlag, 1))
+np_arr = np.zeros((nlag, 1))
+hm = np.zeros((nlag, 1))
+tm = np.zeros((nlag, 1))
+hv = np.zeros((nlag, 1))
+tv = np.zeros((nlag, 1))
+xx = np.zeros((nlag, 1))
+yy = np.zeros((nlag, 1))
+zz = np.zeros((nlag, 1))
+
+indx_ij = np.arange(0, nlag)
+gam[indx_ij] = np.concatenate([np.array([0]), gammah])[:, np.newaxis]
+dis[indx_ij] = lags[:-1][:, np.newaxis]
+np_arr[indx_ij] = np.concatenate([np.array([nd - 1]), cnt])[:, np.newaxis]
+hm[indx_ij] = np.concatenate([np.array([0]), mean_head])[:, np.newaxis]
+tm[indx_ij] = np.concatenate([np.array([0]), mean_tail])[:, np.newaxis]
+hv[indx_ij] = np.concatenate([np.array([0]), sigma_head])[:, np.newaxis]
+tv[indx_ij] = np.concatenate([np.array([0]), sigma_tail])[:, np.newaxis]
+xx[indx_ij] = (lags[:-1] * np.cos(angz * np.pi / 180) * np.cos(angd * np.pi / 180))[:, np.newaxis]
+yy[indx_ij] = (lags[:-1] * np.sin(angz * np.pi / 180) * np.cos(angd * np.pi / 180))[:, np.newaxis]
+zz[indx_ij] = (lags[:-1] * np.sin(angd * np.pi / 180))[:, np.newaxis]
+
+
+variable = "biomass_density"
+bio = transect_data[variable].values
+azm = 0
+dip = 0
+angz = azm
+angd = dip
+nlag = n_lags
+res = lag_resolution
+nd = 9278
+x = x_coord
+y = y_coord
+z = np.zeros_like(x)
+vr = bio
+azm_deg = azm
+dip_deg = dip
+azm_res = 360
+dip_res = 180
+ndir = 1
+nl_cnt = int(np.max([1, np.round(0.01*nd*ndir)]))
+
+# Initialize arrays
+cnt = np.zeros(nlag - 1)
+gamma_sum = np.zeros(nlag - 1)
+var_sum = np.zeros(nlag - 1)
+var_mean = np.zeros(nlag - 1)
+var2_sum = np.zeros(nlag - 1)
+gammah = np.full(nlag - 1, np.nan)
+c0 = np.zeros(nlag - 1)
+head_indx = np.zeros((nd, nlag - 1))
+tail_indx = np.zeros((nd, nlag - 1))
+ss = []
+
+for i in range(nd):
+    if (i * nd + 1) % nl_cnt == 0:
+        percent = f"{(i * nd + 1) / (nl_cnt * nd) * 100:.2f} percent done"
+        print(percent)
+
+    dx = x[i + 1:] - x[i]
+    dy = y[i + 1:] - y[i]
+    dz = z[i + 1:] - z[i]
+    dr = np.sqrt(dx**2 + dy**2)
+    
+    ang_z = np.arctan(dy / dx) * 180 / np.pi
+    ang_d = np.arctan(dz / dr) * 180 / np.pi
+
+    neg_indx = np.where(ang_z < azm_deg - 0.5 * azm_res)[0]
+    ang_z[neg_indx] += 180
+
+    ang_indx = np.where((ang_z >= azm_deg - 0.5 * azm_res) & (ang_z < azm_deg + 0.5 * azm_res) &
+                        (ang_d >= dip_deg - 0.5 * dip_res) & (ang_d < dip_deg + 0.5 * dip_res))[0]
+
+    if len(ang_indx) > 0:
+        xi, yi, zi, var_i = x[ang_indx], y[ang_indx], z[ang_indx], vr[ang_indx]
+        ni = len(xi)
+        dxi, dyi, dzi = x[i] - xi, y[i] - yi, z[i] - zi
+        d = np.sqrt(dxi**2 + dyi**2 + dzi**2)
+        indx_sort = np.argsort(d)
+        var_sort = var_i[indx_sort]
+        dsort = d[indx_sort]
+        dindx = np.round(dsort / res).astype(int) + 1
+        k_acc = 0
+        for k in np.arange(1, n_lags):
+            indxk = np.where(dindx[k_acc:ni] == k)[0] + k_acc
+            nk = len(indxk)
+            if nk > 0:
+                cnt[k - 1] += nk
+                k_acc += nk
+                var_dif = vr[i] - var_sort[indxk]
+                var_sum[k - 1] += np.sum(var_sort[indxk])
+                var2_sum[k - 1] += np.sum(var_sort[indxk]**2)
+                gamma_sum[k - 1] += np.sum(var_dif**2)
+                head_indx[i, k - 1] = nk
+                jindx = indx_sort[indxk] + i
+                tail_indx[jindx, k - 1] += 1
+    
+sigma_head = np.zeros(nlag - 1)
+mean_head = np.zeros(nlag - 1)
+sigma_tail = np.zeros(nlag - 1)
+mean_tail = np.zeros(nlag - 1)
+
+for k in np.arange(1, n_lags):
+    indx1 = np.where(head_indx[:, k - 1] >= 1)[0]
+    hl = len(indx1)
+    if hl > 0:
+        npk = np.nansum(head_indx[:, k - 1])
+        pdf = head_indx[indx1, k-1] / npk
+        mean_head[k - 1] = np.nansum(vr[indx1] * pdf)
+        sigma_head[k - 1] = np.sqrt(np.nansum(((vr[indx1] - mean_head[k - 1])**2) * pdf))
+
+    indx1 = np.where(tail_indx[:, k - 1] >= 1)[0]
+    hl = len(indx1)
+    if hl > 0:
+        npk = np.nansum(tail_indx[:, k - 1])
+        pdf = tail_indx[indx1, k - 1] / npk
+        mean_tail[k - 1] = np.nansum(vr[indx1] * pdf)
+        sigma_tail[k - 1] = np.sqrt(np.nansum(((vr[indx1] - mean_tail[k - 1])**2) * pdf))
+
+indx = np.where(cnt >= 1)[0]
+if len(indx) > 0:
+    cnt_nz = cnt[indx]
+    var_mean[indx] = var_sum[indx] / cnt_nz
+    var_std2 = var2_sum[indx] / cnt_nz - var_mean[indx]**2
+    mean_tail[indx] = var_mean[indx]
+    sigma_tail[indx] = np.sqrt(np.abs(var_std2))
+    c0[indx] = sigma_tail[indx] * sigma_head[indx]
+    gammah[indx] = 0.5 * gamma_sum[indx] / (cnt_nz * np.mean(c0[indx]) + np.finfo(float).eps)
+    gammah[indx] = 0.5 * gamma_sum[indx] / (cnt_nz * c0[indx] + np.finfo(float).eps)
+else:
+    gammah = np.full(nlag - 1, np.nan)
+
+max_value = 1.1889
+indx = np.where(gammah > max(2.5, max_value))[0]
+gammah[indx] = np.nan
+
+gam = np.zeros((nlag, 1))
+dis = np.zeros((nlag, 1))
+np_arr = np.zeros((nlag, 1))
+hm = np.zeros((nlag, 1))
+tm = np.zeros((nlag, 1))
+hv = np.zeros((nlag, 1))
+tv = np.zeros((nlag, 1))
+xx = np.zeros((nlag, 1))
+yy = np.zeros((nlag, 1))
+zz = np.zeros((nlag, 1))
+
+indx_ij = np.arange(0, nlag)
+gam[indx_ij] = np.concatenate([np.array([0]), gammah])[:, np.newaxis]
+dis[indx_ij] = lags[:-1][:, np.newaxis]
+np_arr[indx_ij] = np.concatenate([np.array([nd - 1]), cnt])[:, np.newaxis]
+hm[indx_ij] = np.concatenate([np.array([0]), mean_head])[:, np.newaxis]
+tm[indx_ij] = np.concatenate([np.array([0]), mean_tail])[:, np.newaxis]
+hv[indx_ij] = np.concatenate([np.array([0]), sigma_head])[:, np.newaxis]
+tv[indx_ij] = np.concatenate([np.array([0]), sigma_tail])[:, np.newaxis]
+xx[indx_ij] = (lags[:-1] * np.cos(angz * np.pi / 180) * np.cos(angd * np.pi / 180))[:, np.newaxis]
+yy[indx_ij] = (lags[:-1] * np.sin(angz * np.pi / 180) * np.cos(angd * np.pi / 180))[:, np.newaxis]
+zz[indx_ij] = (lags[:-1] * np.sin(angd * np.pi / 180))[:, np.newaxis]
+
+max_sill = 1.2 * gammah.max()
+min_sill = 0.7 * gammah.max()
+max_nugt = gammah.max()
+min_nugt = gammah.min()
+indx1 = np.where(( hv.flatten() > 0) & (tv.flatten() > 0))[0]
+indx1 = np.argmin(np.abs(gam[indx1-1] - 0.3))
+lcsl = lags[indx1]
+
+cnt = np_arr
+wgt = cnt / cnt.sum()
+# model_para = [min_nugt, min_sill, lcsl, variogram_parameters["decay_power"], 
+#               variogram_parameters["hole_effect_range"]]
+model_para = [0.0002, 0.6935, 0.0040, 1.4986, 0.000]
+R = 0.06
+lags1 = np.concatenate([lags, [0.06]])
+indx = np.where(lags1 <= R)[0]
+
+data_in = np.vstack((lags1.flatten(), gam.flatten(), wgt.flatten()))
+truncated_data = data_in[:, indx]
+optimset = "fminbnd"
+MaxIter = 2e3
+# LB = [min_nugt*0.99, min_sill*0.99, 0, 1, 0]
+LB = np.zeros(5)
+UB = [max_nugt*1.01, max_sill*1.01, np.inf, 2, np.inf]
+LevenbergMarquardt=1
+
+
 
 def bessel_exponential(distance_lags: np.ndarray, nugget, sill, lcsl, decay_power, hole):
     """
@@ -284,22 +608,71 @@ def bessel_exponential(distance_lags: np.ndarray, nugget, sill, lcsl, decay_powe
     # Compute the composite J-Bessel and exponential semivariogram
     return partial_sill * (decay * hole_effect) + nugget
 
-from lmfit import Model, minimize, create_params, fit_report
+def cost_function(model_para, data_in):
+    x = data_in[0, :]
+    y = data_in[1, :]
+    yr = bessel_exponential(x, model_para[0], model_para[1], model_para[2], model_para[3], model_para[4])
+    w = data_in[2, :]
+    return (yr - y) * w
+
+from scipy.optimize import curve_fit
+from scipy.optimize import least_squares
+from scipy.optimize import minimize
 from scipy import special
+bounds = [(low, np.inf) for low in LB]
+# result = least_squares(cost_function, model_para, args=(truncated_data,), bounds = (LB, UB))
+opts = {
+    "max_nfev": 2000
+}
+x = truncated_data[0, :]
+y = truncated_data[1, :]
+result, _ = curve_fit(bessel_exponential, x, y, bounds=(LB, UB), max_nfev=2000)
+result, _ = curve_fit(bessel_exponential, x, y, method="lm")
+model_para = [0.02, 1.0, 0.07, 1.5, 0.000]
+result = least_squares(cost_function, 
+                       model_para, 
+                       args=(truncated_data,), 
+                    #    bounds=(LB, np.inf), 
+                       max_nfev=2000, method="lm")
+result = minimize(cost_function, model_para, args=(data_in,))
+# popt, pcov = curve_fit(bessel_exponential, distance_lags, semivariances, p0=model_para, bounds=(LB, UB))
+result
+result.x
+result
+out = bessel_exponential(x, 2.83188e-5, 9.35407160e-01, 7.66394436e-03, 1.67616771e+00, 9.76531531e-08)
+out1 = bessel_exponential(x, 2.52638102e-02, 0.94209, 0.0007, 1.4958, 4.4408e-14)
+out2 = bessel_exponential(x, 0.00015684, 0.94284, 0.0079618, 1.4986, 2.2204e-14)
+C = 0.94209 - 2.52638102e-02
+C * ( 1 - np.exp( - (x/0.0007) ** 1.4958)) * special.j0(4.4408e-14 * x) + 2.52638102e-02
+bessel_exponential(x, 2.52638102e-02, 0.94209, 0.0007, 1.4958, 4.4408e-14)
+bessel_exponential(0.002, 0.00015684, 0.94284, 0.0079618, 1.4986, 2.2204e-14)
+C = 0.94284 - 0.00015684
+C * ( 1 - np.exp( - (0.058/0.0079618) ** 1.4958)) * special.j0(2.2204e-14 * x) + 0.00015684
 
+bessel_exponential(x, 0.00015684, 0.94284, 0.0079618, 10, 2.2204e-14)
 
+import matplotlib.pyplot as plt
+plt.scatter(x, y)
+plt.plot(x, out)
+plt.plot(x, out2, color='orange')
+plt.show()
+
+from lmfit import Model, minimize, create_params, fit_report
 
 vmodel = Model(bessel_exponential)
-pars = create_params(nugget=dict(value=0.0, 
-                                 min=0), 
-                     sill=dict(value=0.7 * semivariance.max(),
-                               min=0.0), 
-                     lcsl=dict(value=length_scale, 
-                               min=0.0), 
-                     decay_power=dict(value=1.5, 
-                                      min=0.0), 
-                     hole=dict(value=0.000, 
-                               min=0.0))
+# params = vmodel.make_params(nugget=dict(value=0.002, min=0.0), sill=dict(value=0.90, min=0.0), 
+#                             lcsl=dict(value=0.007, min=0.0), decay_power=dict(value=1.5, min=1.0), 
+#                             hole=dict(value=0.0, min=0.0))
+
+pars = create_params(nugget=dict(value=0.0005, 
+                                 min=0, 
+                                 max=max_nugt), 
+                     sill=dict(value=0.9428, 
+                               min=min_sill, 
+                               max=max_sill), 
+                     lcsl=dict(value=0.008, min=0.0, max=np.inf, vary=False), 
+                     decay_power=dict(value=1.4958, min=0, max=np.inf), 
+                     hole=dict(value=0.000, min=0.0, max=np.inf))
 
 def cost_function(pars, data_in):
     vals = pars.valuesdict()
@@ -315,219 +688,36 @@ def cost_function(pars, data_in):
     yr = bessel_exponential(x, nugget=nugget, sill=sill, lcsl=lcsl, decay_power=decay_power, hole=hole)
     
     # return np.mean((((yr - y)**2) * w))
-    # return np.sum(((np.abs((yr - y)) * w)))
-    return (yr - y) * w
-
-def cost_function(x, y, w, nugget, sill, lcsl, decay_power, hole):
-    # vals = pars.valuesdict()
-    # nugget = vals["nugget"]
-    # sill = vals["sill"]
-    # lcsl = vals["lcsl"]
-    # decay_power = vals["decay_power"]
-    # hole = vals["hole"]
-
-    # x = data_in[0, :]
-    # w = data_in[2, :]
-
-    yr = bessel_exponential(x, nugget, sill, lcsl, decay_power, hole)
-    
-    # return np.mean((((yr - y)**2) * w))
-    # return np.sum(((np.abs((yr - y)) * w)))
-    return (yr - y) * w
-
-from scipy.optimize import least_squares
-from scipy.optimize import minimize
-def cost_function(params, x, y, w):
-    nugget, sill, lcsl, decay_power, hole = params
-    yr = bessel_exponential(x, nugget, sill, lcsl, decay_power, hole)
-    return (yr - y) * w
-options = {
-    'maxiter': 2000,              # Equivalent to MaxIter
-    # 'max_nfev': 500,
-    'disp': True,                 # Display convergence messages
-    'xtol': 1e-4,                 # Tolerance on solution
-    'finite_diff_rel_step': 1e-8, # Step size for finite difference approximation (forward difference)
-    'gtol': 1e-4,                 # Gradient tolerance
-    'initial_tr_radius': 0.01,    # Initial trust region radius
-}
-initial_guess = [0.0, 0.69, 0.004, 1.5, 0.0]
-lower_bounds = [0.0, 0.0, 0.0, 0.0, 0.0]
-upper_bounds = [np.inf, np.inf, np.inf, np.inf, np.inf]
-bounds = list(zip(lower_bounds, upper_bounds))
-options = {
-    'max_nfev': 500,                   # Equivalent to MaxFunEvals
-    # 'max_iter': 2000,                  # Equivalent to MaxIter
-    'ftol': 1e-4,                      # Equivalent to TolFun, not specified
-    'xtol': 1e-4,                      # Equivalent to TolX
-    'gtol': None,
-    'verbose': 2,                      # No direct equivalent to Display 'notify'; set to 0 for no output
-    'diff_step': 1e-8,                 # Not specified in MATLAB settings; default value used
-    'tr_solver': 'exact',              # Not specified in MATLAB settings; default value used
-    'jac':"2-point",                     # Equivalent to Jacobian, not specified
-    'x_scale': 'jac',
-    'method': 'trf',                   # Not specified in MATLAB settings; default value used
-}
-options = {
-    'max_nfev': 2000,                  # Maximum number of function evaluations
-    'ftol': 1e-6,                      # Tolerance on cost function
-    'xtol': 1e-4,                      # Tolerance on solution
-    'gtol': 1e-4,                      # Tolerance on gradient norm
-    'verbose': 2,                      # Display convergence messages
-    'diff_step': 1e-8,                 # Step size for finite difference approximation
-    'tr_solver': 'exact',              # Solver for trust-region subproblems
-    'x_scale': 'jac',                  # Jacobian scaling
-    'jac': '2-point',                  # Finite difference approximation for Jacobian (equivalent to 'forward')
-}
-
-
-# result = least_squares(cost_function, initial_guess, args=(truncated_stack[0], truncated_stack[1], truncated_stack[2]), bounds=(lower_bounds, upper_bounds), **options)
-# result = minimize(cost_function, initial_guess, args=(truncated_stack[0], truncated_stack[1], truncated_stack[2]), method='trust-constr', bounds=bounds, options=options)
-
-result = least_squares(cost_function, initial_guess, args=(truncated_stack[0], truncated_stack[1], truncated_stack[2]), bounds=(lower_bounds, upper_bounds), **options)
-
-nugget_opt, sill_opt, lcsl_opt, decay_power_opt, hole_opt = result.x
-print(f"Optimized parameters: nugget = {nugget_opt}, sill = {sill_opt}, lcsl = {lcsl_opt}, decay_power = {decay_power_opt}, hole = {hole_opt}")
-
-new_out = bessel_exponential(truncated_stack[0], nugget_opt, sill_opt, lcsl_opt, decay_power_opt, hole_opt)
-x = truncated_stack[0]
-y = truncated_stack[1]
-
-import matplotlib.pyplot as plt
-plt.scatter(x,y)
-plt.plot(x, new_out, label="Echopop -- constrainted Levenberg-Marquardt: direct fit")
-plt.plot(x, out1, color="orange", label=r"EchoPro -- constrainted Levenberg-Marquardt w/ cost-function: $(\gamma_{fit} - \gamma)w$")
-plt.ylabel(r'Semivariance [$\gamma$]')
-plt.xlabel("Distance lags (nmi)")
-plt.legend(loc="lower right")
-plt.show()
-
-
-from lmfit import Minimizer, Parameters, report_fit
-
-# Initial guess for the parameters
-params = Parameters()
-params.add('nugget', value=0.0, min=0.0, max=nugget_max)
-params.add('sill', value=0.69, min=sill_min, max=sill_max)
-params.add('lcsl', value=0.004, min=0.0)
-params.add('decay_power', value=1.5, min=1.2, max=4.0)
-params.add('hole', value=0, min=0.0, max=8.0)
-
-# Configure optimization options
-max_nfev = 500  # Maximum number of function evaluations
-max_iter = 2000  # Maximum number of iterations
-ftol = 1e-2      # Function tolerance
-xtol = 1e-2      # Step tolerance
-gtol = 1e-4    # Gradient tolerance
-def residual(params, x, y, w):
-    nugget = params['nugget']
-    sill = params['sill']
-    lcsl = params['lcsl']
-    decay_power = params['decay_power']
-    hole = params['hole']
-    
-    yr = bessel_exponential(x, nugget, sill, lcsl, decay_power, hole)
-    return (yr - y) * w
-# Perform the least squares optimization
-minimizer = Minimizer(residual, params, fcn_args=(truncated_stack[0], truncated_stack[1], truncated_stack[2]))
-result = minimizer.minimize(method='tcf', options={'max_nfev': 500, 'ftol': ftol, 'xtol': xtol, 'gtol': gtol})
-report_fit(result)
-
-new_out = bessel_exponential(truncated_stack[0], nugget_opt, sill_opt, lcsl_opt, decay_power_opt, hole_opt)
-x = truncated_stack[0]
-y = truncated_stack[1]
-
-import matplotlib.pyplot as plt
-plt.scatter(x,y)
-plt.plot(x, new_out, label=r"Echopop -- constrainted Levenberg-Marquardt w/ cost-function: $(\gamma_{fit} - \gamma)w$")
-plt.plot(x, out1, color="orange", label=r"EchoPro -- constrainted Levenberg-Marquardt w/ cost-function: $(\gamma_{fit} - \gamma)w$")
-plt.ylabel(r'Semivariance [$\gamma$]')
-plt.xlabel("Distance lags (nmi)")
-plt.legend(loc="lower right")
-plt.show()
-
-
-
-vmodel = Model(bessel_exponential)
-params = vmodel.make_params(nugget=dict(value=0.0, 
-                                 min=0), 
-                            sill=dict(value=0.7 * semivariance.max(),
-                                    min=0.0), 
-                            lcsl=dict(value=length_scale, 
-                                    min=0.0), 
-                            decay_power=dict(value=1.5, 
-                                            min=0.0), 
-                            hole=dict(value=0.000, 
-                                    min=0.0))
-fit = vmodel.fit(truncated_stack[1], params, distance_lags = truncated_stack[0])
-fit.fit_report()
-pars = create_params(nugget=dict(value=0.0, 
-                                 min=0), 
-                     sill=dict(value=0.7 * semivariance.max(),
-                               min=0.0), 
-                     lcsl=dict(value=length_scale, 
-                               min=0.0), 
-                     decay_power=dict(value=1.5, 
-                                      min=0.0), 
-                     hole=dict(value=0.000, 
-                               min=0.0))
-
-
-def cost_function(x, y, w, nugget, sill, lcsl, decay_power, hole):
-    vals = pars.valuesdict()
-    nugget = vals["nugget"]
-    sill = vals["sill"]
-    lcsl = vals["lcsl"]
-    decay_power = vals["decay_power"]
-    hole = vals["hole"]
-
-    x = data_in[0, :]
-    w = data_in[2, :]
-
-    yr = bessel_exponential(x, nugget=nugget, sill=sill, lcsl=lcsl, decay_power=decay_power, hole=hole)
-    
-    # return np.mean((((yr - y)**2) * w))
-    # return np.sum(((np.abs((yr - y)) * w)))
-    return (yr - y) * w
-
-def cost_function(x, w, nugget, sill, lcsl, decay_power, hole):
-    yr = bessel_exponential(x, nugget=nugget, sill=sill, lcsl=lcsl, decay_power=decay_power, hole=hole)
-    return yr * w
+    return np.mean(((np.abs((yr - y)) * w)))
+    # return (yr - y) * w
 
 # out = minimize(cost_function, pars, kws={"data_in": truncated_data}, method="least_squares", xtol=1e-4, max_nfev=2e3)
 # fit_report(out)
-import numdifftools as nd
-from scipy.optimize import curve_fit
-x = truncated_stack[0]
-y = truncated_stack[1]
-result = vmodel.fit(y, pars, distance_lags=x, method="lm", max_nfev=2000, xtol=1e-6, ftol=1e-6)
+
+result = vmodel.fit(y, pars, distance_lags=x - lag_resolution, method="trf")
 fit_report(result)
-fprime = lambda x: scipy.optimize.approx_fprime(x, f, 0.01)
-Hfun = nd.Hessdiag(cost_function)
-result1 = minimize(cost_function, pars, kws={"data_in": truncated_stack}, method="trust-ncg", jac=fprime, hess=Hfun, tol=1e-4, options={"damp": 0.1})
+result1 = minimize(cost_function, pars, kws={"data_in": truncated_data}, method="trf")
 dely = result.eval_uncertainty(sigma=3)
 om = result1.params.valuesdict()
-out = bessel_exponential(x, om["nugget"], om["sill"], om["lcsl"], om["decay_power"], om["hole"])
+out = bessel_exponential(x - lag_resolution, om["nugget"], om["sill"], om["lcsl"], om["decay_power"], om["hole"])
 fit_report(result1)
-out1 = bessel_exponential(x, 0.00015684, 0.94284, 0.0079618, 1.4986, 2.2204e-14)
-params, _ = curve_fit(bessel_exponential, x, y, p0=[0.0, 0.69, 0.004, 1.5, 0.00], bounds=(0, np.inf))
-bessel_exponential(x, params)
-import matplotlib.pyplot as plt
-# matplotlib.rc('text', usetex = True)
+out1 = bessel_exponential(x - lag_resolution, 0.00015684, 0.94284, 0.0079618, 1.4986, 2.2204e-14)
 
-plt.scatter(x,y)
+import matplotlib
+import matplotlib.pyplot as plt
+matplotlib.rc('text', usetex = True)
+
+plt.scatter(x - lag_resolution,y)
 # plt.fill_between(x, result.best_fit-dely, result.best_fit+dely, color="#ABABAB",
 #                  label=r'3-$\sigma$ uncertainty band')
-plt.plot(x, result.best_fit, label="Echopop -- constrainted Levenberg-Marquardt: direct fit")
-plt.plot(x, out1, color="orange", label=r"EchoPro -- constrainted Levenberg-Marquardt w/ cost-function: $(\gamma_{fit} - \gamma)w$")
+plt.plot(x - lag_resolution, result.best_fit, label="Echopop -- constrainted Levenberg-Marquardt: direct fit")
+plt.plot(x - lag_resolution, out1, color="orange", label="EchoPro -- constrainted Levenberg-Marquardt w/ cost-function")
 # plt.plot(x, out, color="red", label = r"Echopop -- constrainted Levenberg-Marquardt w/ cost-function: $\frac{\Sigma|(\gamma_{fit} - \gamma)w|}{n_{lags}}$")
-plt.plot(x, out, color="red", label = r"Echopop -- constrainted Levenberg-Marquardt w/ cost-function: $(\gamma_{fit} - \gamma)w$")
-plt.ylabel(r'Semivariance [$\gamma$]')
+plt.plot(x - lag_resolution, out, color="red", label = "Echopop -- constrainted Levenberg-Marquardt w/ cost-function")
+plt.ylabel('Semivariance')
 plt.xlabel("Distance lags (nmi)")
 plt.legend(loc="lower right")
 plt.show()
-
-np.mean(np.abs(result.best_fit - out1))
-np.mean(np.abs(out - out1))
 
 plt.plot(x, result.best_fit - out)
 plt.show()
