@@ -346,7 +346,8 @@ def interpolate_crop_method(
 
 
 def griddify_lag_distances(
-    coordinates_1: Union[pd.DataFrame, np.ndarray], coordinates_2: Union[pd.DataFrame, np.ndarray]
+    coordinates_1: Union[pd.DataFrame, np.ndarray], coordinates_2: Union[pd.DataFrame, np.ndarray],
+    angles: bool = False
 ):
     """
     Calculate point-to-point distances between two gridded dataframes
@@ -358,6 +359,9 @@ def griddify_lag_distances(
         of values
     coordinates_2: pd.DataFrame
         Georeferenced dataframe
+    angles: bool
+        A boolean flag determining whether the point-to-point azimuth angles are also computed 
+        alongside the distances.
 
     Notes
     ----------
@@ -378,8 +382,23 @@ def griddify_lag_distances(
         # ---- Differences across y-coordinates
         y_distance = np.subtract.outer(coordinates_2, coordinates_2)
 
-    # Return Euclidean distances
-    return np.sqrt(x_distance * x_distance + y_distance * y_distance)
+    # Return Euclidean distances (and angles if appropriate)
+    if angles:
+        # ---- Copy x-array
+        x_angles = x_distance.copy()
+        # ---- Replace the self-points with NaN
+        np.fill_diagonal(x_angles, np.nan)
+        # ---- Copy y-array
+        y_angles = y_distance.copy()
+        # ---- Replace the self-points with NaN
+        np.fill_diagonal(y_angles, np.nan)
+        # ---- Calculate the azimuth angle grid
+        angularity = np.arctan(y_angles / x_angles) * 180.0 / np.pi + 180 % 180
+        # ---- Return output
+        return np.sqrt(x_distance * x_distance + y_distance * y_distance), angularity
+    else:
+        # Return Euclidean distances
+        return np.sqrt(x_distance * x_distance + y_distance * y_distance)
 
 
 def stratify_mesh(input_dict: dict, kriged_mesh: pd.DataFrame, settings_dict: dict) -> pd.DataFrame:
