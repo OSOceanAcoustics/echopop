@@ -6,9 +6,9 @@ from echopop.survey import Survey
 from echopop.spatial.mesh import griddify_lag_distances
 import math
 
-survey = Survey( init_config_path = "C:/Users/Brandyn/Documents/GitHub/echopop/config_files/initialization_config.yml" ,
-                 survey_year_config_path = "C:/Users/Brandyn/Documents/GitHub/echopop/config_files/survey_year_2019_config.yml" )
-
+survey = Survey( init_config_path = "/Users/blucca/github/echopop/config_files/initialization_config.yml" ,
+                 survey_year_config_path = "/Users/blucca/github/echopop/config_files/survey_year_2019_config.yml" )
+self = survey
 survey.transect_analysis()
 survey.stratified_analysis(bootstrap_ci = 0.95, bootstrap_ci_method = "empirical")
 survey.kriging_analysis()
@@ -26,337 +26,181 @@ variogram_parameters = {
     "force_lag_zero": True
 }
 
-data_matrix = transect_distance_matrix
-mask_matrix = triangle_mask_flp
-azimuth_matrix = transect_azimuth_matrix
-azimuth_range = 360.0
-
-def semivariance(estimates: np.ndarray,
-                 lag_estimates: np.ndarray,
-                 lag_estimates_squared: np.ndarray,
-                 lag_counts: np.ndarray,
-                 lag_deviations: np.ndarray,
-                 head_index: np.ndarray):
-    """
-    Compute the standardized semivariance.
-    """
-    
-    # Calculate the mean head estimate per lag bin
-    mean_head = (estimates[:, np.newaxis] * (head_index / lag_counts)).sum(axis = 0)
-
-    # Calculate the standard deviation of head values per lag
-    sigma_head = np.sqrt(
-        ((estimates[:, np.newaxis] - mean_head) ** 2 * (head_index / lag_counts)).sum(axis = 0)
-    )
-
-    # Calculate the global mean and variance for each lag bin
-    # ---- Mean
-    lag_means = lag_estimates / lag_counts
-    # ---- Variance
-    lag_variance = lag_estimates_squared / lag_counts - lag_means ** 2
-
-    # Estimate the standard deviation of tail estimates
-    sigma_tail = np.sqrt(np.abs(lag_variance))
-
-    # Calculate the semivariance
-    # ---- Compute the partial sill that is applied as a weighted calculation
-    partial_sill = sigma_tail * sigma_head
-    # ---- Semivariance [gamma(h)]
-    return 0.5 * lag_deviations / (lag_counts * partial_sill)
-
-
-def variogram_matrix_filter(data_matrix: np.ndarray,
-                            mask_matrix: np.ndarray,
-                            azimuth_matrix: np.ndarray,
-                            azimuth_range: float):
-    """
-    Apply a triangle and azimuth filter to a data matrix required for computing the empirical 
-    variogram
-    """
-
-    # Convert array to matrix, if needed
-    if data_matrix.ndim == 1:
-        data_matrix = np.tile(data_matrix, (len(data_matrix), 1))
-    else:
-        if data_matrix.shape != azimuth_matrix.shape:
-            # ---- Determine which dimension is mismatched
-            dimension_diff = np.where(np.array(data_matrix.shape) != np.array(mask_matrix.shape))[0]
-            if dimension_diff == 0:
-                data_matrix = np.tile(data_matrix, (len(data_matrix), 1))
-            else:
-                data_matrix = np.tile(data_matrix, (1, len(data_matrix)))
-
-    # Define azimuth angle threshold
-    azimuth_threshold = 0.5 * azimuth_range
-
-    # Replace any azimuth NaN values with 0's, if necessary
-    azimuth_matrix[np.isnan(azimuth_matrix)] = 0.0
-
-    # Create the azimuth angle bitmap
-    azimuth_bitmap = (azimuth_matrix >= - azimuth_threshold) & (azimuth_matrix < azimuth_threshold)
-
-    # Mask the data matrix and broadcast out into a 1D array
-    return data_matrix[mask_matrix & azimuth_bitmap]
-
-data_matrix.T
-np.repeat(
-        np.arange(len(estimates)), len(estimates)
-    )
-
-estimate_rows = (
-        np.repeat(
-            np.arange(len(estimates)), len(estimates)
-        )[triangle_mask_flp.flatten() & azimuth_bitmap.flatten()]
-    )    
-
-n_rows = 9278
-n_lags = 30
-tri_new = np.tri(n_rows, k=-1, dtype=bool)  # Example triangle mask
-
-distance_matrix_msk = transect_distance_matrix.copy()
-distance_matrix_msk[~tri_new | ~azimuth_bitmap] = np.nan
-
-# Step 2: Compute lag indices and apply triangle mask
-lag_indices = distance_index[:, None] + np.arange(n_rows)
-valid_indices = lag_matrix[:, :, None] == np.arange(1, n_lags + 1)
-lag_indices_masked = np.where(valid_indices & triangle_mask[:, :, None], lag_indices, -1)
-
-lower_right_indices = np.triu_indices(n_rows, k=1)  # Get lower-right indices
-lag_indices = sorted_indices[lower_right_indices]
-
-
-head_index1 = np.zeros((n_rows, n_lags - 1), dtype=int)
-tail_index1 = np.zeros((n_rows, n_lags - 1), dtype=int)
-lag_counts1 = np.zeros((n_rows, n_lags), dtype=int)
-# lag_counts1 = np.apply_along_axis(lambda row: np.bincount(row[triangle_mask_flp[row]], minlength=n_lags), axis=1, arr=lag_matrix)
-def count_lags(row):
-    counts = np.bincount(row[np.ravel(triangle_mask_flp[row])])
-    return np.pad(counts, (0, n_lags - len(counts)), mode='constant')
-lag_counts1 = np.apply_along_axis(count_lags, axis=1, arr=lag_matrix)
-
-lag_mask = (lag_matrix[:, :, None] == np.arange(1, n_lags + 1))
-triangle_mask = np.tri(len(lag_matrix), k=-1, dtype=bool)
-triangle_mask_flipped = np.flip(np.flip(triangle_mask, axis=1), axis=0)
-lag_mask = lag_mask & triangle_mask_flipped[:, :, None]
-lag_indices = np.where(lag_mask, distance_index[:, :, None], -1)
-tail_index = np.apply_along_axis(lambda row: np.bincount(row[row != -1], minlength=n_lags), axis=1, arr=lag_indices)
-# Step 4: Calculate tail_index using np.bincount and np.where
-lag_indices = distance_index[:, :, None]
-lag_offsets = np.arange(n_rows)[:, None, None]
-valid_mask = (lag_matrix[:, :, None] == np.arange(1, n_lags)) & triangle_mask_flipped[:, :, None]
-tail_index1[:, :] = np.sum(valid_mask & (lag_indices == lag_offsets), axis=1)
-valid_mask = lag_mask[:, :, 1:]  # Exclude lag 0 because it's not included in tail_index
-tail_index1[:, 1:] = np.sum(valid_mask & (lag_indices == lag_offsets), axis=1)
-
-lag_indices = np.where(lag_mask, distance_index[:, :, None], -1)
-tail_index = np.apply_along_axis(lambda row: np.bincount(row[row != -1], minlength=n_lags), axis=1, arr=lag_indices)
-
-lag_mask = (equivalent_lags[:, None] == lag_indices) & (reshaped_masked_distances >= 0)
-tail_counts = np.sum(lag_mask, axis=1)  # Sum alon
-variogram_parameters = self.analysis["settings"]["kriging"]["variogram_parameters"]
-
-analysis_dict = self.analysis
-results_dict = self.results
-spatial_dict = self.input["spatial"]
-settings_dict = self.analysis["settings"]["stratified"]
-
-n_lags = 30
-# max_range = variogram_parameters["range"]
-max_range = 0.06
-lag_resolution = variogram_parameters["lag_resolution"]
-variable = settings_dict["variable"]
-transect_data = self.analysis["kriging"]["transect_df"]
-settings_dict = self.analysis["settings"]["kriging"]
-estimates = transect_data["biomass_density"].to_numpy()
-analysis_dict = {
-    "n_lags": 30,
-    "max_range": 0.06
-}
-# Define the range of possible azimuth angles
-azimuth_range = 360
-
-# Compute the range and lags 
-# ---- Estimate range based on the lag resolution and number of lags
-max_range = lag_resolution * n_lags
-# ---- Compute the lags
-lags = np.arange(1, n_lags) * lag_resolution
-
-# Calculate the lag distance matrix among transect data
-transect_distance_matrix = griddify_lag_distances(transect_data, transect_data)
-
-# Compute angles among coordinates
-# ---- Extract the x- and y-coordinates
-# -------- x
-x_coord = transect_data["x"].to_numpy()
-# -------- y
-y_coord = transect_data["y"].to_numpy()
-# ---- Copmute the differences
-# -------- x
-x_distance = np.subtract.outer(x_coord, x_coord)
-# -------- y
-y_distance = np.subtract.outer(y_coord, y_coord)
-# ---- Fill the diagonals 
-# -------- x
-np.fill_diagonal(x_distance, np.nan)
-# -------- y
-np.fill_diagonal(y_distance, np.nan)
-# ---- Calculate angle
-angularity = np.arctan(y_distance / x_distance) * 180.0 / np.pi + 180 % 180
-
-# Pre-allocate lag counts
-lag_counts = np.zeros(n_lags - 1)
-
-# Pre-allocate summed deviation per lag
-lag_deviations = np.zeros_like(lag_counts)
-
-# Pre-allocate summed estimates
-lag_estimates = np.zeros_like(lag_counts)
-
-# Pre-allocate summed estimats squared
-lag_estimates_squared = np.zeros_like(lag_counts)
-
-# Tally head- and tail-indices
-# ---- Head
-head_index = np.zeros((len(x_coord), n_lags - 1))
-# ---- Tail
-tail_index = np.zeros((len(x_coord), n_lags - 1))
-tril_mask = np.tri(len(x_coord), dtype=bool)
-
-# Set all elements below or on the main diagonal to False
-tril_mask = np.logical_not(tril_mask)
-# Iterate through the coordinates to calculate the angles
-for i in range(len(x_coord)):
-# for i in np.arange(0, 100):
-    # i = 3000
-    # lag_counts = np.zeros(n_lags - 1)
-    # ---- Extract the iterated distances
-    distances = transect_distance_matrix[i][i + 1:]
-    # ---- Extract the iterated angles
-    angles = angularity[i][i + 1:]
-    # ---- Find valid angles
-    angles_index = np.where(
-        (angles >= -180.0) & (angles < 180.0)
-    )[0]
-    # ---- Compute the semivariogram
-    if len(angles_index) > 0:
-        # ---- Filter the values
-        # -------- x        
-        delta_x = x_coord[i] - x_coord[angles_index]
-        # -------- y
-        delta_y = y_coord[i] - y_coord[angles_index]
-        # -------- estimates
-        estimates_filter = estimates[angles_index]
-        # ---- Calculate the new distance
-        delta_xy = np.sqrt(delta_x ** 2 + delta_y ** 2)
-        # ---- Sort the distances from closest to furthest
-        distance_index = np.argsort(delta_xy)
-        # ---- Apply sorted index to biological variables
-        estimates_sorted = estimates_filter[distance_index]
-        # ---- Apply sorted index to distances
-        distances_sorted = delta_xy[distance_index]
-        # ---- Quantize the distances into the equivalent lags
-        equivalent_lags = np.round(distances_sorted / lag_resolution).astype(int) + 1
-        # ---- Iterate through the k-lags
-        # -------- Initialize "k_start"
-        k_start = 0
-        for k in np.arange(1, n_lags):
-            # ---- Find the quantized lags 
-            lag_k_index = np.where(equivalent_lags[k_start:len(delta_x)] == k)[0] + k_start
-            # ---- Get the length of the indexed lags
-            lag_k_count = len(lag_k_index)
-            # ---- If values are present, advance
-            if lag_k_count > 0:
-                # ---- Add to running tallied lag-count
-                lag_counts[k - 1] += lag_k_count
-                # ---- Advance "k_start"
-                k_start += lag_k_count
-                # ---- Calculate differences among indexed estimates
-                delta_estimates = estimates[i] - estimates_sorted[lag_k_index]
-                # ---- Sum estimate for each lag bin
-                lag_estimates[k - 1] += estimates_sorted[lag_k_index].sum()
-                # ---- Squared sum estimate for each lag bin
-                lag_estimates_squared[k - 1] += (estimates_sorted[lag_k_index] ** 2).sum()
-                # ---- Sum the squared estimate differences
-                lag_deviations[k - 1] += (delta_estimates ** 2).sum()
-                # ---- Update head index
-                head_index[i, k - 1] = lag_k_count
-                # ---- Update lag index
-                lag_index = distance_index[lag_k_index] + i
-                # ---- Update tail index
-                tail_index[lag_index, k - 1] += 1
-
-# Pre-allocate the sigma and mean vectors
-sigma_head = np.zeros_like(lag_counts)
-mean_head = np.zeros_like(lag_counts)
-sigma_tail = np.zeros_like(lag_counts)
-mean_tail = np.zeros_like(lag_counts)
-
-# Iterate through the computed values necessary for estimating the mean and variance for each lag
-for k in np.arange(1, n_lags):
-    # ---- Iterate through the head vector
-    head_k_index = np.where(head_index[:, k - 1] >= 1)[0]
-    head_k_count = len(head_k_index)
-    # ---- Advance if values are present
-    if head_k_count > 0:
-        # ---- Compute the PDF
-        pdf = head_index[head_k_index, k - 1] / lag_counts[k - 1]
-        # ---- Calculate the head mean
-        mean_head[k - 1] = (estimates[head_k_index] * pdf).sum()
-        # ---- Calculate the head sigma
-        sigma_head[k - 1] = np.sqrt(
-            (((estimates[head_k_index] - mean_head[k - 1]) ** 2) * pdf).sum()
-        )
-    # ---- Iterate through the tail vector
-    tail_k_index = np.where(tail_index[:, k - 1] >= 1)[0]
-    tail_k_count = len(tail_k_index)
-    # ---- Advance if values are present
-    if tail_k_count > 0:
-        # ---- Compute the PDF
-        pdf = tail_index[tail_k_index, k - 1] / lag_counts[k - 1]
-        # ---- Calculate the head mean
-        mean_tail[k - 1] = (estimates[tail_k_index] * pdf).sum()
-        # ---- Calculate the head sigma
-        sigma_tail[k - 1] = np.sqrt(
-            (((estimates[tail_k_index] - mean_tail[k - 1]) ** 2) * pdf).sum()
-        )
-        
-# Initialize mean and sigma tail vectors that represent updated estimates
-mean_tail_up = np.zeros_like(mean_tail)
-sigma_tail_up = np.zeros_like(sigma_tail)
-
-# Initialize the partial sill and semivariance
-partial_sill = np.zeros_like(mean_tail_up)
-semivariance = np.zeros_like(mean_tail_up)
-
-# Compute the semivariance        
-lags_non_zero_counts = np.where(lag_counts >= 1)[0]
-if len(lags_non_zero_counts) > 0:
-    counts_non_zero = lag_counts[lags_non_zero_counts]
-    estimate_mean = lag_estimates[lags_non_zero_counts] / counts_non_zero
-    estimate_variance = lag_estimates_squared[lags_non_zero_counts] / counts_non_zero - estimate_mean**2
-    mean_tail_up[lags_non_zero_counts] = estimate_mean
-    sigma_tail_up[lags_non_zero_counts] = np.sqrt(np.abs(estimate_variance))
-    partial_sill[lags_non_zero_counts] = sigma_tail[lags_non_zero_counts] * sigma_head[lags_non_zero_counts]
-    semivariance[lags_non_zero_counts] = 0.5 * lag_deviations[lags_non_zero_counts] / (counts_non_zero * partial_sill[lags_non_zero_counts] + np.finfo(float).eps)
-else:
-    semivariance = np.full(n_lags - 1, np.nan)
-        
-
 lags, gamma_h, lag_counts, lag_covariance = empirical_variogram(transect_data, variogram_parameters, 
                                                                 settings_dict)
 
-variogram_parameters = {"nugget": 0.0, "decay_power": 1.5}
-init_parameters = {"sill": 0.91, "hole_effect_range": 0.0}
-kwargs = {"distance_lags": lags, "correlation_range": length_scale_init}
+variogram_parameters.update({"nugget": 0.0, "decay_power": 1.5})
+init_parameters = {"distance_lags": lags, 
+                   "sill": {
+                       "init": 0.91, 
+                       "bounds": (0.0, np.inf),
+                       "vary": True
+                    },
+                    "hole_effect_range": {
+                        "init": 0.0,
+                        "bounds": (0.0, np.inf),
+                        "vary": True
+                    }, 
+                    "correlation_range": {
+                        "init": 0.004,
+                        "bounds": (0.0, np.inf),
+                        "vary": True
+                    }
+}
+bounds = {
+    "lower": {"sill": 0.0, "hole_effect_range": 0.0, }
+}
 
 variogram_parameters["model"] = ["bessel", "exponential"]
+fit_parameters = ["nugget", "sill", "decay_power", "correlation_range", "hole_effect_range"]
+optimization_settings = {
+    "max_fun_evaluations": 500,
+    "cost_fun_tolerance": 1e-6,
+    "solution_tolerance": 1e-4,
+    "gradient_tolerance": 1e-4,
+    "finite_step_size": 1e-8,
+    "trust_region_solver": "exact",
+    "x_scale": "jacobian",
+    "jacobian_approx": "forward",
+}
 
+OPTIMIZATION_OPTIONS = {
+    "max_fun_evaluations": "max_nfev",
+    "cost_fun_tolerance": "ftol",
+    "solution_tolerance": "xtol",
+    "gradient_tolerance": "gtol",
+    "finite_step_size": "diff_step",
+    "trust_region_solver": "exact",
+    "x_scale": "x_scale",
+    "jacobian_approx": "jac"
+}
+
+
+options = {
+    'max_nfev': 2000,                  # Maximum number of function evaluations
+    'ftol': 1e-6,                      # Tolerance on cost function
+    'xtol': 1e-4,                      # Tolerance on solution
+    'gtol': 1e-4,                      # Tolerance on gradient norm
+    'verbose': 2,                      # Display convergence messages
+    'diff_step': 1e-8,                 # Step size for finite difference approximation
+    'tr_solver': 'exact',              # Solver for trust-region subproblems
+    'x_scale': 'jac',                  # Jacobian scaling
+    'jac': '2-point',                  # Finite difference approximation for Jacobian (equivalent to 'forward')
+}
+
+variogram_parameters = {
+    "max_range": 0.06,
+    "lag_resolution": 0.002,
+    "n_lags": 30,   
+    "azimuth_range": 360.0,  
+    "force_lag_zero": True
+}
+
+# ARGS (temp)
+fit_variogram: bool = True # - Fit variogram, yay or nay
+model: Union[list[str], str] = ["bessel", "exponential"]
+fit_parameters: Optional[Union[list[str], str]] = ["nugget", "sill", "decay_power", "correlation_range", "hole_effect_range"]
+verbose: bool = True
+force_lag_zero: bool = True
+azimuth_range: float = 360.0
+n_lags: Union[int, np.array] = 30
+lag_resolution: Optional[float] = None
+hole_effect_range: Optional[float] = None
+correlation_range: Optional[float] = None
+decay_power: Optional[float] = None
+nugget: Optional[float] = None
+sill: Optional[float] = None
+enhance_semivariance: Optional[bool] = None
+max_range: float = 0.06
+init_parameters: dict = None
+optimization_settings: dict = None
+variable = "biomass_density"
+
+self.input["statistics"]["variogram"]["model_config"]
+################
+self.analysis["settings"].update(
+    {
+        "variogram": {
+            "fit_variogram": fit_variogram,
+            "variable": variable,
+            "verbose": verbose
+        }
+    }
+)
+
+# Pull input variogram settings
+default_values = self.input["statistics"]["variogram"]["model_config"]
+
+variogram_parameters = {
+    "azimuth_range": azimuth_range,
+    "correlation_range": correlation_range if not None else default_values["correlation_range"],
+    "decay_power": decay_power if not None else default_values["decay_power"],
+    "fit_variogram": fit_variogram,
+    "force_lag_zero": force_lag_zero,
+    "hole_effect_range": hole_effect_range if not None else default["hole_effect_range"],
+    "lag_reolution": lag_resolution if not None else default_values["lag_resolution"],
+    "max_range": max_range,
+    "model": model,
+    "n_lags": n_lags,
+    "nugget": nugget if not None else default_values["nugget"],
+    "sill": sill if not None else default_values["sill"],
+}
+          
+
+
+optimization_settings
+lower_bounds = [0.0, 0.0, 0.0, 0.0 , 0.0]
+upper_bounds = [np.inf, np.inf, np.inf, np.inf, np.inf]
+
+
+# Check against 
+
+fit_parameters in list(function_arguments.keys())
+
+
+# Validate that the model exists within the available API
+# Parse the variogram parameters dictionary for the model name
+model_name = variogram_parameters["model"]
+# ---- Search for correct model
+if len(model_name) > 1:
+    args = inspect.signature(VARIOGRAM_MODELS["composite"][tuple(model_name)])
+else:
+    args = inspect.signature(VARIOGRAM_MODELS["single"][model_name])
+
+
+inspect.getargs(VARIOGRAM_MODELS["composite"][tuple(model_name)])
+
+# Get argument values/names
+arg_names = args.parameters.values()
+arg_names.astype(str)
+list(args.parameters.keys())
+
+
+
+sill_init, nugget_init, length_scale_init = initialize_variogram_parameters(gamma_h, lags)
+variogram_parameters
 # LEAST-SQUARES FITTING
 def fit_variogram(lags: np.ndarray,
                   gamma_h: np.ndarray,
                   lag_counts: np.nddaray,
-                  variogram_parameters: dict):
+                  variogram_parameters: dict,
+                  parameter_bounds: bool = True,
+                  fit_parameters: Optional[list[str]] = None):
     
+    # Construct 
+    
+    # Extract model function name 
+    model_id = variogram_parameters["model"]
+
+
+    #
+    if fit_parameters is not None:
+        # ---- Check against signature arguments for `model_id`
+        if len(model_id) > 1:
+            model_function = VARIOGRAM_MODELS["composite"][tuple(model_id)]
+        else: 
+            model_function = VARIOGRAM_MODELS["single"][model_id]
+        
     # Initialize parameters when user-input is absent
     sill_init, nugget_init, length_scale_init = initialize_variogram_parameters(gamma_h, lags)
     tuple(variogram_parameters["model"])
@@ -383,8 +227,6 @@ def fit_variogram(lags: np.ndarray,
     
     # Calculate the variogram weights (for fitting)
     variogram_weights = lag_counts / lag_counts.sum()
-
-
 
 # Vertically stack the lags, semivariance, and weights
 data_stack = np.vstack((lags_zero, semivariance_zero, variogram_weights))
