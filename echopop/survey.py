@@ -1,6 +1,8 @@
 import copy
 from pathlib import Path
-from typing import Literal, Optional, Union
+import numpy as np
+from typing import Literal, Optional, Union, Dict, List, Tuple, Literal
+import warnings
 
 from .analysis import (
     acoustics_to_biology,
@@ -8,6 +10,7 @@ from .analysis import (
     krige,
     process_transect_data,
     stratified_summary,
+    variogram_analysis
 )
 from .core import DATA_STRUCTURE
 from .utils import load as el, message as em
@@ -213,6 +216,138 @@ class Survey:
         if verbose:
             em.stratified_results_msg(stratified_results, self.analysis["settings"]["stratified"])
 
+    def fit_variogram(
+            self,
+            model: Union[str, List[str]] = ["bessel", "exponential"],
+            azimuth_range: float = 360.0,
+            lag_resolution: Optional[float] = None,
+            max_range: Optional[float] = None ,
+            n_lags: int = 30,
+            sill: Optional[float] = None,
+            nugget: Optional[float] = None,
+            hole_effect_range: Optional[float] = None,
+            correlation_range: Optional[float] = None,
+            enhance_semivariance: Optional[bool] = None,
+            decay_power: Optional[float] = None,
+            optimization_parameters: Optional[Dict[str, float]] = None,
+            fit_parameters: Union[str, List[float]] = ["nugget", "sill", "correlation_range", "hole_effect_range", "decay_power"],
+            initial_values: Optional[Union[List[Tuple[str, float]], Dict[str, Dict[str, float]]]] = None,
+            lower_bounds:Union[List[Tuple[str, float]], Dict[str, Dict[str, float]]] = [("nugget", 0.0), ("sill", 0.0), ("correlation_range", 0.0), ("hole_effect_range", 0.0), ("decay_power", 0.0)],
+            upper_bounds: Optional[Union[List[Tuple[str, float]], Dict[str, Dict[str, float]]]] = None,
+            verbose: bool = True,
+            standardize_coordinates: bool = True,
+            max_fun_evaluations: int = 500,
+            cost_fun_tolerance: float = 1e-6,
+            solution_tolerance: float = 1e-4,
+            gradient_tolerance: float = 1e-4,
+            finite_step_size: float = 1e-8,
+            trust_region_solver: Literal["exact", "base"] = "exact",
+            x_scale: Union[Literal["jacobian"], np.ndarray[float]] = "jacobian",
+            jacobian_approx: Literal["forward", "central"] = "forward",
+            force_lag_zero: bool = True,
+            variable: Literal["biomass", "abundance"] = "biomass"):
+        
+        # Validate "variable" input
+        if variable not in ["biomass", "abundance"]:
+            raise ValueError(
+                f"The user input for `variable` ({variable}) is invalid. Only `variable='biomass'` "
+                f"and `variable='abundance'` are valid inputs for the `fit_variogram()` method."
+            )
+    
+        # Parameterize analysis settings that will be applied to the variogram fitting and analysis
+        self.analysis["settings"].update(
+            {
+                "variogram": {
+                    "azimuth_range": azimuth_range,
+                    "fit_parameters": fit_parameters,
+                    "model": model,
+                    "standardize_coordinates": standardize_coordinates,
+                    "stratum_name": self.analysis["settings"]["transect"]["stratum_name"], 
+                    "variable": variable,
+                    "verbose": verbose
+                }
+            }
+        )
+
+         # Append `kriging_parameters` to the settings dictionary
+        if standardize_coordinates:
+            self.analysis["settings"]["variogram"].update(
+                {
+                    "kriging_parameters": self.input["statistics"]["kriging"]["model_config"]
+                }
+            )
+
+        # Create a copy of the existing variogram settings
+        variogram_parameters = self.input["statistics"]["variogram"]["model_config"].copy()
+
+        # Update the `variogram_parameters` dictionary based on user inputs
+        # ---- Model name
+        variogram_parameters["model"] = model
+        # ---- Nugget
+        if nugget is not None:
+            variogram_parameters["nugget"] = nugget
+        # ---- Sill
+        if sill is not None:
+            variogram_parameters["sill"] = sill
+        # ---- Correlation range
+        if correlation_range is not None:
+            variogram_parameters["correlation_range"] = correlation_range
+        # ---- Hole effect range
+        if hole_effect_range is not None:
+            variogram_parameters["hole_effect_range"] = hole_effect_range
+        # ---- Decay power
+        if decay_power is not None:
+            variogram_parameters["decay_power"] = decay_power
+        # ---- Semivariance enhancement
+        if enhance_semivariance is not None:
+            variogram_parameters["enhance_semivariance"] = enhance_semivariance
+        # ---- Lag resolution
+        if lag_resolution is not None:
+            variogram_parameters["lag_resolution"] = lag_resolution
+        # ---- Max range
+        if max_range is not None:
+            variogram_parameters["range"] = max_range
+        # ---- Number of lags
+        variogram_parameters["n_lags"] = n_lags
+        # ---- Azimuth range
+        variogram_parameters["azimuth_range"] = azimuth_range
+        # ---- Force lag-0 
+        variogram_parameters["force_lag_zero"] = force_lag_zero
+
+        # Create optimization settings dictionary 
+        # ---- Preallocate if not pre-defined by user
+        if optimization_parameters is None:
+            optimization_parameters = {
+                "max_fun_evaluations": max_fun_evaluations,
+                "cost_fun_tolerance": cost_fun_tolerance,
+                "solution_tolerance": solution_tolerance,
+                "gradient_tolerance": gradient_tolerance,
+                "finite_step_size": finite_step_size,
+                "trust_region_solver": trust_region_solver,
+                "x_scale": x_scale,
+                "jacobian_approx": jacobian_approx
+            }
+        
+        # Find the best-fit variogram parameters
+        best_fit_variogram = (
+            variogram_analysis(variogram_parameters, optimization_parameters,
+                               self.analysis["transect"],
+                               self.analysis["settings"]["variogram"],
+                               self.input["statistics"]["kriging"]["isobath_200m_df"],
+                               fit_parameters, initial_values, lower_bounds,
+                               upper_bounds)
+        )
+        
+        # Add variogram result
+        self.results.update(
+            {
+                "variogram": {
+                    "model_fit": best_fit_variogram
+                }
+            }
+        )
+
+
     # !!! TODO: develop different name for "crop_method = 'interpolation'"
     def kriging_analysis(
         self,
@@ -220,6 +355,7 @@ class Survey:
         coordinate_transform: bool = True,
         crop_method: Literal["interpolation", "convex_hull"] = "interpolation",
         extrapolate: bool = False,
+        best_fit_variogram: bool = True,
         kriging_parameters: Optional[dict] = None,
         latitude_resolution: float = 1.25,
         mesh_buffer_distance: float = 1.25,
@@ -240,7 +376,7 @@ class Survey:
             Biological variable that will be interpolated via kriging
         """
 
-        # Parameterize analysis settings that will be applied to the stratified analysis
+        # Parameterize analysis settings that will be applied to the kriging analysis
         self.analysis["settings"].update(
             {
                 "kriging": {
@@ -267,6 +403,23 @@ class Survey:
                 }
             }
         )
+
+        # Update variogram parameters to use fitted if the values are available
+        if best_fit_variogram:
+            if "variogram" in self.results:
+                if "model_fit" in self.results["variogram"]:
+                    self.analysis["settings"]["kriging"].update(
+                        {
+                            "variogram_parameters": self.results["variogram"]["model_fit"]
+                        }
+                    )
+                else:
+                    raise ValueError(
+                        "Argument `best_fit_variogram` is invalid. No fitted variogram parameters "
+                        "have been estimated via the `fit_variogram()` Survey-class method. "
+                        "Either run the `fit_variogram()` method first, or set the argument "
+                        "`best_fit_variogram=False`."
+                    )
 
         # Prepare temporary message concerning coordinate transformation = False
         if not coordinate_transform:

@@ -1,10 +1,13 @@
-from typing import Union, Optional
+from typing import Union, Optional, List
 import inspect 
 import warnings
 
 import pandas as pd
 import numpy as np
 from scipy import special
+from lmfit import Parameters, Minimizer, minimize
+
+from typing import Dict, List, Tuple, Union, Optional, Literal
 
 from .mesh import griddify_lag_distances
 
@@ -375,6 +378,13 @@ def variogram(
         represent the desired composite model (e.g. the composite J-Bessel and exponential model)
     """
 
+    # Get the variogram arguments and function
+    variogram_args, variogram_function = get_variogram_arguments(model)
+
+    # Extract the appropriate variogram arguments from `variogram_parameters`
+    parameter_values
+    {k: v for k, v in 
+
     # Convert to lowercase to match reference model dictionary
     if isinstance(model, str):
         model_input = model.lower()
@@ -398,7 +408,7 @@ def variogram(
 
 def empirical_variogram(transect_data: pd.DataFrame,
                         variogram_parameters: dict,
-                        settings_dict: dict):
+                        settings_dict: dict) -> tuple:
     """
     Compute the empirical variogram from transect data.
     """
@@ -406,14 +416,14 @@ def empirical_variogram(transect_data: pd.DataFrame,
     # Convert the estimate column to an array
     # ---- estimates
     estimates = transect_data[settings_dict['variable']].to_numpy()
-    
+
     # Extract relevant variogram parameters
     # ---- Lag resolution ['lcsl']
     lag_resolution = variogram_parameters["lag_resolution"]
     # ---- Number of lags 
     n_lags = variogram_parameters["n_lags"]
     # ---- Compute the lags ['h']
-    lags = np.arange(1, n_lags) * lag_resolution
+    lags = variogram_parameters["distance_lags"]
 
     # Calculate the lag distance matrix among transect data
     transect_distance_matrix, transect_azimuth_matrix = (
@@ -507,7 +517,7 @@ def empirical_variogram(transect_data: pd.DataFrame,
 def variogram_matrix_filter(data_matrix: np.ndarray,
                             mask_matrix: np.ndarray,
                             azimuth_matrix: np.ndarray,
-                            azimuth_range: float):
+                            azimuth_range: float) -> np.ndarray:
     """
     Apply a triangle and azimuth filter to a data matrix required for computing the empirical 
     variogram
@@ -542,7 +552,7 @@ def semivariance(estimates: np.ndarray,
                  lag_estimates_squared: np.ndarray,
                  lag_counts: np.ndarray,
                  lag_deviations: np.ndarray,
-                 head_index: np.ndarray):
+                 head_index: np.ndarray) -> tuple:
     """
     Compute the standardized semivariance.
     """
@@ -578,7 +588,7 @@ def semivariance(estimates: np.ndarray,
     return gamma_h, mean_lag_covariance
 
 def initialize_variogram_parameters(gamma_h: np.ndarray,
-                                    lags: np.ndarray):
+                                    lags: np.ndarray) -> tuple:
     
     """
     Approximate appropriate bounds for each parameter that are used for optimization.
@@ -611,21 +621,11 @@ def initialize_variogram_parameters(gamma_h: np.ndarray,
     # Return bounds
     return (sill_min, sill_max), (nugget_min, nugget_max), length_scale
 
-def validate_variogram_parameters(variogram_parameters: dict,
-                                  init_parameters: Optional[dict] = None,
-                                  fit_parameters: Optional[list[str]] = None,
-                                  optimization_settings: Optional[dict] = None):
+def get_variogram_arguments(model_name: Union[str, List[str]]):
     """
-    Validate variogram parameters and optimization settings
+    Get the variogram function arguments
     """
-
-    # Parse the variogram parameters dictionary for the model name
-    if "model" not in variogram_parameters:
-        raise KeyError("No variogram model was defined in the `variogram_parameters` dictionary."
-                       " Please see the documentation for `variogram()` for valid model inputs.")
-    else:
-        model_name = variogram_parameters["model"]
-
+        
     # Convert to lowercase to match reference model dictionary
     if isinstance(model_name, str):
         model_input = model_name.lower()
@@ -647,15 +647,182 @@ def validate_variogram_parameters(variogram_parameters: dict,
     else:
         raise LookupError(f"The model input ({model_name}) could not be matched to an" 
                           f" existing variogram method.")
-
+    
     # Check input parameters against the required function arguments
     # ---- Get the function signature
     function_signature = inspect.signature(model_function)
     # ---- Create ordered dictionary of required arguments
-    function_arguments = function_signature.parameters
-    # ---- Validate that all required parameters are present
-    # -------- Checks against the user-input (`variogram_parameters`) and the initialized 
-    # -------- dictionary (`init_parameters`) when present
+    return function_signature.parameters, {f"model_function": model_function}
+
+
+def create_optimization_options(fit_parameters: Union[str, List[str], Dict[str, Dict[str, float]]],
+                                default_variogram_settings: Dict[str, float],
+                                model: Union[str, List[str]],
+                                initial_values: Optional[Union[List[Tuple[str, float]], Dict[str, Dict[str, float]]]] = None,
+                                lower_bounds: Optional[Union[List[Tuple[str, float]], Dict[str, Dict[str, float]]]] = None,
+                                upper_bounds: Optional[Union[List[Tuple[str, float]], Dict[str, Dict[str, float]]]] = None,
+                                max_fun_evaluations: Optional[int] = None,
+                                cost_fun_tolerance: Optional[float] = None,
+                                solution_tolerance: Optional[float] = None,
+                                gradient_tolerance: Optional[float] = None,
+                                finite_step_size: Optional[float] = None,
+                                trust_region_solver: Optional[Literal["exact", "base"]] = None,
+                                x_scale: Optional[Union[Literal["jacobian"], np.ndarray[float]]] = None,
+                                jacobian_approx: Optional[Literal["forward", "central"]] = None) -> dict:
+    """
+    Construct the variogram optimization parameter dictionary
+    """ 
+
+    # Convert to a list if `parameter_values` is a single-parameter string
+    if isinstance(fit_parameters , str):
+        fit_parameters  = [fit_parameters]
+
+    # Construct the parameter values
+    # ---- If `parameter_values` is already a correctly formatted dict
+    if isinstance(fit_parameters, dict):
+        _parameters = fit_parameters 
+    elif isinstance(fit_parameters, list):
+        _parameters = {}
+        # ---- Iteratively populate `_parameters` with the varied parameters
+        _parameters = {param: {} for param in fit_parameters}
+    else: 
+        raise TypeError("Argument `fit_parameters` must either be a single string, a list of strings, or a pre-formatted"
+                        " dictionary. Please see the documentation for `create_optimization_options` for futher details.")
+
+    # Helper function for populating `_parameters`
+    def populate_parameters(argument, key, name):
+        # ---- Check argument existence
+        if argument: 
+            if isinstance(argument, dict):
+                _argument = {param: {key: value} for param, value in (argument.items())}
+            elif isinstance(argument, list):
+                if (all(isinstance(item, tuple) and len(item) == 2 and isinstance(item[0], str) 
+                        and isinstance(item[1], float) for item in argument)):
+                    _argument = {param: value for param, value in argument}
+                else:
+                    raise TypeError(f"The list of values for `{name}` must be a list of tuples (str, float).")
+            else: 
+                raise TypeError(f"Argument `{name} must either be either a dictionary or a list.")
+        
+            # Update `_parameters` with `_argument`
+            for param, value in zip(fit_parameters, _argument.items()):
+                if isinstance(value, tuple):
+                    _parameters[param][key] = value[1]
+                else:
+                    _parameters[param][key] = value
+
+    # Populate lower bounds
+    populate_parameters(lower_bounds, "min", "lower_bounds")
+
+    # Populate upper bounds
+    populate_parameters(upper_bounds, "max", "upper_bounds")
+
+    # Populate starting values
+    if initial_values is None:
+        # ---- Initialize empty list
+        init_values = []
+        # ---- Create empty fixed list
+        fixed_parameters = []
+        # ---- If no initial values are provided, use default values
+        for param in fit_parameters:
+            init_values.append((param, default_variogram_settings[param]))
+    else:
+        # ---- Create copy of `initial_values`
+        init_values = initial_values.copy()
+        # ---- Get the required parameters
+        variogram_args, variogram_function = get_variogram_arguments(model)
+        # ---- Get names
+        arg_names = list(variogram_args.keys())
+        # ---- Drop `distance_lags`
+        arg_names.remove("distance_lags")
+        # ---- Assign a list of parameters that will be kept fixed
+        fixed_parameters = []
+        # ---- Get the initial values present
+        init_parameters = {param for param, value in initial_values}
+        # ---- Find missing values that are contained within the `fit_parameters` list
+        missing_parameters = set(arg_names) - set(init_parameters)
+        # ---- Append default values to `inital_values`
+        if missing_parameters:
+            for param in missing_parameters:
+                fixed_parameters.append(param)
+                init_values.append((param, default_variogram_settings[param]))
+    # ---- And populate
+    populate_parameters(init_values, "value", "initial_values")
+
+    # Populate fixed constants, if any
+    if fixed_parameters:
+        for param in fixed_parameters:
+            _parameters[param]["vary"] = False
+
+    # Initial a Parameters class from the `lmfit` package
+    # ---- Initialize `paramaeters` object
+    parameters = Parameters()
+    # ---- Populate `parameters`
+    for param in _parameters.keys():
+        parameters.add(param, **_parameters[param])
+
+    # Save parameter names that are present
+    # ---- Parameter names
+    optimization_parameters = ["max_fun_evaluations", "cost_fun_tolerance", "solution_tolerance",
+                               "gradient_tolerance", "finite_step_size", "trust_region_solver", 
+                               "x_scale", "jacobian_approx"]
+    # ---- Parameter values
+    optimization_values = [max_fun_evaluations, cost_fun_tolerance, solution_tolerance, gradient_tolerance,
+                           finite_step_size, trust_region_solver, x_scale, jacobian_approx]
+    # ---- Drop unused 
+    unused_parameters_bitmap = [k is not None for k in optimization_values]
+    used_parameters = [value for bit, value in zip(unused_parameters_bitmap, optimization_parameters) if bit]
+    used_values = [value for bit, value in zip(unused_parameters_bitmap, optimization_values) if bit]
+
+    # Internal API (using argument names for the actual underlying functions)
+    _options = {
+        "max_nfev": max_fun_evaluations,
+        "ftol": cost_fun_tolerance,
+        "xtol": solution_tolerance,
+        "gtol": gradient_tolerance,
+        "diff_step": finite_step_size
+    }
+
+    # Filter
+    _options = {k: v for k, v in _options.items() if v is not None}
+
+    # Add trust region solver definition
+    if trust_region_solver is not None:
+        _options.update({"tr_solver": None if trust_region_solver == "base" else "exact"})
+
+    # Add x-scale
+    if x_scale is not None:
+        _options.update({"x_scale": "jac" if x_scale == "jacobian" else x_scale})
+    
+    # Add Jacobian approximation method
+    if jacobian_approx is not None:
+        _options.update({"jac": "2-point" if jacobian_approx == "forward" else "3-point"})
+
+    # Create and return a dictionary representing the full optimization parameterization
+    return ( {"parameters": parameters, "fixed_parameters": fixed_parameters, "config": _options, 
+            "used_parameters": pd.DataFrame(zip(used_parameters, used_values), columns=["names", "values"])} )
+
+
+def validate_variogram_parameters(variogram_parameters: dict,
+                                  fit_parameters: Optional[list[str]] = None,
+                                  optimization_settings: Optional[dict] = None) -> None:
+    """
+    Validate variogram parameters and optimization settings
+    """
+
+    # Parse the variogram parameters dictionary for the model name
+    if "model" not in variogram_parameters:
+        raise KeyError("No variogram model was defined in the `variogram_parameters` dictionary."
+                       " Please see the documentation for `variogram()` for valid model inputs.")
+    else:
+        model_name = variogram_parameters["model"]    
+
+    # Validate that all required parameters are present
+    # ---- Extract
+    function_arguments, _ = get_variogram_arguments(model_name)
+    # ----Checks against the user-input (`variogram_parameters`) and the initialized 
+    # ---- dictionary (`init_parameters`) when present
+    init_parameters = optimization_settings["fixed_parameters"]
     missing_args = []
     # ---- Iterate through
     for param in function_arguments.values():
@@ -688,6 +855,8 @@ def validate_variogram_parameters(variogram_parameters: dict,
 
     # Validate the optimization settings entries, if necessary
     if optimization_settings is not None:
+        # ---- Pivot parameters
+        present_parameters = optimization_settings["used_parameters"].set_index("names").T
         # ---- Validate that `optimization_settings` is a dictionary
         if not isinstance(optimization_settings, dict):
             raise TypeError("The argument `optimization_settings` must be a dictionary. Please see"
@@ -695,7 +864,7 @@ def validate_variogram_parameters(variogram_parameters: dict,
                             "arguments.")
         # ---- Check for any erroneous entries
         erroneous_args = (
-            set(optimization_settings) 
+            set(present_parameters.columns) 
             - set(["max_fun_evaluations", "cost_fun_tolerance", "solution_tolerance", 
                 "gradient_tolerance", "finite_step_size", "trust_region_solver", 
                 "x_scale", "jacobian_approx"])
@@ -706,123 +875,110 @@ def validate_variogram_parameters(variogram_parameters: dict,
                         f" are undefined. Please see documentation for `fit_variogram()`"
                         f" for valid optimization parameters/arguments.")
         # ---- Check `max_fun_evaluations`
-        if "max_fun_evaluations" in optimization_settings:
-            if not isinstance(optimization_settings["max_fun_evaluations"], int):
+        if "max_fun_evaluations" in present_parameters.columns:
+            if not isinstance(present_parameters["max_fun_evaluations"]["values"], int):
                 raise TypeError("The optimization parameter `max_fun_evaluations` must be an integer.")
-            elif optimization_settings["max_fun_evaluations"] <= 0:
+            elif present_parameters["max_fun_evaluations"]["values"] <= 0:
                 raise ValueError("The optimization parameter `max_fun_evaluations` must be a positive," 
                                 " non-zero integer.")
         # ---- Check `cost_fun_tolerance`
-        if "cost_fun_tolerance" in optimization_settings:
-            if not isinstance(optimization_settings["cost_fun_tolerance"], float):
+        if "cost_fun_tolerance" in present_parameters.columns:
+            if not isinstance(present_parameters["cost_fun_tolerance"]["values"], float):
                 raise TypeError("The optimization parameter `cost_fun_tolerance` must be a float.")
         # ---- Check `solution_tolerance`
-        if "solution_tolerance" in optimization_settings:
-            if not isinstance(optimization_settings["solution_tolerance"], float):
+        if "solution_tolerance" in present_parameters.columns:
+            if not isinstance(present_parameters["solution_tolerance"]["values"], float):
                 raise TypeError("The optimization parameter `solution_tolerance` must be a float.")
         # ---- Check `gradient_tolerance`
-        if "gradient_tolerance" in optimization_settings:
-            if not isinstance(optimization_settings["gradient_tolerance"], float):
+        if "gradient_tolerance" in present_parameters.columns:
+            if not isinstance(present_parameters["gradient_tolerance"]["values"], float):
                 raise TypeError("The optimization parameter `gradient_tolerance` must be a float.")
         # ---- Check `finite_step_size`
-        if "finite_step_size" in optimization_settings:
-            if not isinstance(optimization_settings["finite_step_size"], float):
+        if "finite_step_size" in present_parameters.columns:
+            if not isinstance(present_parameters["finite_step_size"]["values"], float):
                 raise TypeError("The optimization parameter `finite_step_size` must be a float.")
         # ---- Check `trust_region_solver`
-        if "trust_region_solver" in optimization_settings:
-            if not isinstance(optimization_settings["trust_region_solver"], str):
+        if "trust_region_solver" in present_parameters.columns:
+            if not isinstance(present_parameters["trust_region_solver"]["values"], str):
                 raise TypeError("The optimization parameter `trust_region_solver` must be a string.")
-            elif optimization_settings["trust_region_solver"] not in [None, "exact"]:
+            elif present_parameters["trust_region_solver"]["values"] not in ["base", "exact"]:
                 raise ValueError(f"The optimization parameter `trust_region_solver` "
-                                f"`{optimization_settings['trust_region_solver']}` is invalid. This "
+                                f"`{present_parameters['trust_region_solver']['values']}` is invalid. This "
                                 f"value must be one of the following: [None, 'exact'].")
         # ---- Check `x_scale`
-        if "x_scale" in optimization_settings:
-            if not isinstance(optimization_settings["x_scale"], (float, str)):
+        if "x_scale" in present_parameters.columns:
+            if not isinstance(present_parameters["x_scale"]["values"], (float, str)):
                 raise TypeError(f"The optimization parameter `x_scale` must either be a single float"
                                 f" or be a string.")
-            elif isinstance(optimization_settings["x_scale"], str):
-                if optimization_settings["x_scale"] != "jacobian":
-                    raise ValueError(f"The optimization parameter `x_scale` ({optimization_settings['x_scale']})"
+            elif isinstance(present_parameters["x_scale"]["values"], str):
+                if present_parameters["x_scale"]["values"] != "jacobian":
+                    raise ValueError(f"The optimization parameter `x_scale` ({present_parameters['x_scale']['values']})"
                                     f" is invalid. The only string value accepted is: 'jacobian'.")
         # ---- Check `jacobian_approx`
-        if "jacobian_approx" in optimization_settings:
-            if not isinstance(optimization_settings["jacobian_approx"], str):
+        if "jacobian_approx" in present_parameters.columns:
+            if not isinstance(present_parameters["jacobian_approx"]["values"], str):
                 raise TypeError("The optimization parameter `jacobian_approx` must be a string.")
-            elif optimization_settings["jacobian_approx"] not in ["forward", "central"]:
-                raise ValueError(f"The optimization parameter `jacobian_approx` ({optimization_settings['jacobian_approx']})"
+            elif present_parameters["jacobian_approx"]["values"] not in ["forward", "central"]:
+                raise ValueError(f"The optimization parameter `jacobian_approx` ({present_parameters['jacobian_approx']['values']})"
                                 f" is invalid. The only accepted values are: ['forward', 'central'].")
 
-def map_args_to_variogram(func, variogram_parameters, init_parameters: Optional[dict] = None, **kwargs):
-    """
-    Map user input dictionary to function arguments based on the variogram function's signature.
+def optimize_variogram(lag_counts: np.ndarray,
+                       lags: np.ndarray,
+                       gamma_h: np.ndarray,
+                       variogram_parameters: dict,
+                       optimization_settings: dict,
+                       settings_dict: dict):
 
-    Parameters:
-    - func: The target function.
-    - variogram_parameters: A dictionary containing user-provided arguments.
+    # Compute the lag weights
+    lag_weights = lag_counts / lag_counts.sum()
 
-    Returns:
-    - A dictionary of arguments mapped to the function's parameters.
-    """
+    # Vertically stack the lags, semivariance, and weights
+    data_stack = np.vstack((lags, gamma_h, lag_weights))
 
-    # Parse the variogram parameters dictionary for the model name
-    model_name = variogram_parameters["model"]
-    # ---- Search for correct model
-    if len(model_name) > 1:
-        args = inspect.signature(VARIOGRAM_MODELS["composite"][tuple(model_name)])
-    else:
-        args = inspect.signature(VARIOGRAM_MODELS["single"][model_name])
+    # Index lag distances that are within the parameterized range
+    within_range = np.where(lags <= variogram_parameters["range"])[0]
+
+    # Truncate the data stack
+    truncated_stack = data_stack[:, within_range]
+
+    # Get model name
+    _, variogram_fun = get_variogram_arguments(variogram_parameters["model"])
+
+    # Create helper cost function
+    def cost_function(parameters, x, y, w):
+        yr = variogram_fun["model_function"](x, **parameters)
+        return (yr - y) * w
+    # get initial fit
+    init_fit = cost_function(optimization_settings["parameters"], x=truncated_stack[0], y = truncated_stack[1], w = truncated_stack[2])
+    rmse_init = np.mean(np.abs(init_fit))
+
+    minimizer = Minimizer(cost_function, optimization_settings["parameters"], fcn_args=(truncated_stack[0], truncated_stack[1], truncated_stack[2]))
+    result = minimizer.minimize(method="least_squares", **optimization_settings["config"])
+    new_fit = np.mean(np.abs(result.residual))
+    best_fit_params = result.params.valuesdict()
     
-    inspect.getargs(VARIOGRAM_MODELS["composite"][tuple(model_name)])
+    if settings_dict["verbose"]:
 
-    # Get argument values/names
-    arg_names = args.parameters.values()
-    arg_names.astype(str)
-    list(args.parameters.keys())
+        params = [k for k in optimization_settings["parameters"].keys()]
 
-    keys = list(args.parameters)
-    [dict(zip(keys, i) for i in zip(*args.parameters.values()))]
-
-    # Validate that all required parameters are present
-    missing_args = []
-    # ---- Iterate through
-    for param in arg_names:
-        # ---- Ignore "distance_lags"
-        if param.name != "distance_lags":
-            if param.default is param.empty and param.name not in variogram_parameters:
-                if param.name not in kwargs:
-                    if init_parameters is not None and param.name not in init_parameters:
-                        missing_args.append(param.name)
-                    elif init_parameters is None:
-                        missing_args.append(param.name)
-    # ---- Generate error if any are missing
-    if missing_args:
-        raise ValueError(f"Missing variogram parameters: {', '.join(missing_args)}.")
+        # ---- Create updated values for printing
+        df = pd.DataFrame({"parameter": params})
+        df["initial"] = list(optimization_settings["parameters"].valuesdict().values())
+        df["new"] = list(best_fit_params.values())
+        lst = [f"{name.replace("_", " ").capitalize()}: {'{:.3}'.format(init)} -> {'{:.3}'.format(new)}" for name, init, new in zip(df["parameter"], df["initial"], df["new"])]
+        app = "\n".join(item for item in lst)
+        print(
+            f"-----------------------------\n"
+            f"VARIOGRAM OPTIMIZATION\n"
+            f"-----------------------------\n"
+            f"| See `self.analysis['settings']['variogram']['optimization']"
+            f" for parameter settings.\n"
+            f"-----------------------------\n"
+            f"| Initial -> Updated\n"
+            f"-----------------------------\n"
+            f"Overall fit [MAD]: {'{:.3}'.format(rmse_init)} -> {'{:.3}'.format(new_fit)}\n"
+            f"{app}"
+        )
     
-    # Gather parameter values
-    output = {}
-    
-    for param in arg_names:
-        if init_parameters is not None and param.name in init_parameters:
-            output[param.name] = init_parameters[param.name]
-        elif param.name in kwargs:
-            output[param.name] = kwargs[param.name]
-        else:
-            output[param.name] = variogram_parameters[param.name]
-    
-    # Update variogram parameters
-
-
-    # Get the function's signature
-    sig = inspect.signature(func)
-    
-    # Create a dictionary of arguments to pass to the function
-    kwargs = {}
-    
-    for param in sig.parameters.values():
-        if param.name in user_input:
-            kwargs[param.name] = user_input[param.name]
-        elif param.default is param.empty:
-            raise ValueError(f"Missing required argument: {param.name}")
-
-    return kwargs
+    # Return result
+    return best_fit_params

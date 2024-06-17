@@ -26,8 +26,220 @@ variogram_parameters = {
     "force_lag_zero": True
 }
 
+from echopop.spatial.variogram import empirical_variogram, validate_variogram_parameters
+from typing import Optional, Union, List, Tuple, Dict, Literal
+
+# `self.VARIOGRAM_ANALYSIS`
+# ARGUMENTS
+model: Union[str, List[str]] = ["bessel", "exponential"] # VARIOGRAM MODEL CHOICE
+azimuth_range: float = 360.0 # AZIMUTH ANGLE THRESHOLD [Degrees]
+lag_resolution: Optional[float] = None # LAG DISTANCE INCREMENT
+max_range: Optional[float] = None # RANGE THRESHOLD
+n_lags: int = 30 # NUMBER OF LAG BINS
+sill: Optional[float] = None # VARIOGRAM SILL
+nugget: Optional[float] = None #VARIOGRAM NUGGET
+hole_effect_range: Optional[float] = None
+correlation_range: Optional[float] = None
+enhance_semivariance: Optional[bool] = None
+decay_power: Optional[float] = None
+optimization_parameters: Optional[Dict[str, float]] = None
+fit_parameters: Union[str, List[float]] = ["nugget", "sill", "correlation_range", "hole_effect_range", "decay_power"]
+initial_values: Optional[Union[List[Tuple[str, float]], Dict[str, Dict[str, float]]]] = None
+lower_bounds:Union[List[Tuple[str, float]], Dict[str, Dict[str, float]]] = [("nugget", 0.0), ("sill", 0.0), ("correlation_range", 0.0), ("hole_effect_range", 0.0), ("decay_power", 0.0)]
+upper_bounds: Optional[Union[List[Tuple[str, float]], Dict[str, Dict[str, float]]]] = None
+verbose: bool = True
+standardize_coordinates: bool = True
+max_fun_evaluations: int = 500
+cost_fun_tolerance: float = 1e-6
+solution_tolerance: float = 1e-4
+gradient_tolerance: float = 1e-4
+finite_step_size: float = 1e-8
+trust_region_solver: Literal["exact", "base"] = "exact"
+x_scale: Union[Literal["jacobian"], np.ndarray[float]] = "jacobian"
+jacobian_approx: Literal["forward", "central"] = "forward"
+force_lag_zero = True
+variable = "biomass"
+
+# Set the variable that will be used for the variogram analysis
+if variable == "biomass":
+    target_variable = "biomass_density"
+elif variable == "abundance":
+    target_variable = "number_density"
+else: 
+    raise ValueError(f"The user input for `variable` ({variable}) is invalid. Only `variable='biomass'` "
+                     f"and `variable='abundance'` are valid inputs for the `variogram_analysis()` method.")
+
+# Create settings dictionary entry
+self.analysis["settings"]["variogram"].update({
+    "azimuth_range": azimuth_range,
+    "fit_parameters": fit_parameters,
+    "model": model,
+    "variable": variable,
+    "verbose": verbose,
+})
+
+## ~~~ ##
+settings_dict = self.analysis["settings"]["variogram"]
+
+# Create a copy of the existing variogram settings
+variogram_parameters = self.input["statistics"]["variogram"]["model_config"].copy()
+
+# Extract the transect data
+# transect_data = self.analysis["transect"]["acoustics"]["adult_transect_df"].copy()
+
+import warnings
+
+# Update the `variogram_parameters` dictionary based on user inputs
+# ---- Model name
+variogram_parameters["model"] = model
+# ---- Nugget
+if nugget is not None:
+    variogram_parameters["nugget"] = nugget
+# ---- Sill
+if sill is not None:
+    variogram_parameters["sill"] = sill
+# ---- Correlation range
+if correlation_range is not None:
+    variogram_parameters["correlation_range"] = correlation_range
+# ---- Hole effect range
+if hole_effect_range is not None:
+    variogram_parameters["hole_effect_range"] = hole_effect_range
+# ---- Decay power
+if decay_power is not None:
+    variogram_parameters["decay_power"] = decay_power
+# ---- Semivariance enhancement
+if enhance_semivariance is not None:
+    variogram_parameters["enhance_semivariance"] = enhance_semivariance
+# ---- Lag resolution
+if lag_resolution is not None:
+    variogram_parameters["lag_resolution"] = lag_resolution
+# ---- Number of lags
+variogram_parameters["n_lags"] = n_lags
+# ---- Azimuth range
+variogram_parameters["azimuth_range"] = azimuth_range
+# ---- Force lag-0 
+variogram_parameters["force_lag_zero"] = force_lag_zero
+
+# Compute the lag distances
+distance_lags = np.arange(1, n_lags) * variogram_parameters["lag_resolution"]
+# ---- Add to the `variogram_parameters` dictionary
+variogram_parameters["distance_lags"] = distance_lags
+# ---- Update the max range parameter, if necessary
+max_range = variogram_parameters["lag_resolution"] * n_lags
+# ---- Mismatched value in default parameters should be replaced 
+if variogram_parameters["range"] != max_range:
+    # ---- Update
+    variogram_parameters["range"] = max_range
+    # ---- Generate warning
+    warnings.warn(f"Default `range` parameter ({variogram_parameters["range"]}) does not "
+                  f"align with the inputs for `lag_resolution` ({variogram_parameters["lag_resolution"]}) "
+                  f"and `n_lags` ({n_lags}). The range will be changed to {max_range}.",
+                  stacklevel = 1)
+
+# Create optimization settings dictionary 
+# ---- Preallocate if not pre-defined by user
+if optimization_parameters is None:
+    optimization_parameters = {
+        "max_fun_evaluations": max_fun_evaluations,
+        "cost_fun_tolerance": cost_fun_tolerance,
+        "solution_tolerance": solution_tolerance,
+        "gradient_tolerance": gradient_tolerance,
+        "finite_step_size": finite_step_size,
+        "trust_region_solver": trust_region_solver,
+        "x_scale": x_scale,
+        "jacobian_approx": jacobian_approx
+    }
+# ---- Generate the dictionary
+# from echopop.spatial.variogram import create_optimization_options
+from lmfit import Parameters
+optimization_settings = create_optimization_options(fit_parameters, 
+                                                    variogram_parameters, 
+                                                    lower_bounds = lower_bounds,
+                                                    upper_bounds = upper_bounds,
+                                                    model=model, **optimization_parameters)
+
+# Validate the variogram properties, parameters, and optimization configuration
+validate_variogram_parameters(variogram_parameters, fit_parameters, optimization_settings)
+
+from echopop.spatial.projection import transform_geometry
+from echopop.spatial.transect import edit_transect_columns
+# If coordinates are standardized
+if standardize_coordinates:
+    # ---- Append `kriging_parameters` to the settings dictionary
+    settings_dict.update({"kriging_parameters": self.input["statistics"]["kriging"]["model_config"]})
+    settings_dict["stratum_name"] = self.analysis["settings"]["transect"]["stratum_name"]
+    # ---- 
+    self.analysis["variogram"] ={}
+    self.analysis["variogram"]["transect"] = copy.deepcopy(self.analysis["transect"])
+    # ---- Transform the coordinates
+    transect_extract = edit_transect_columns(self.analysis["variogram"]["transect"], settings_dict)
+    transect_data, _, _ = transform_geometry(transect_extract, self.input["statistics"]["kriging"]["isobath_200m_df"], settings_dict)
+    # ---- Edit the columns
+    
+
+# Compute the empirical variogram
 lags, gamma_h, lag_counts, lag_covariance = empirical_variogram(transect_data, variogram_parameters, 
                                                                 settings_dict)
+
+from lmfit import Model, fit_report
+
+def optimize_variogram():
+
+    # Compute the lag weights
+    lag_weights = lag_counts / lag_counts.sum()
+
+    # Vertically stack the lags, semivariance, and weights
+    data_stack = np.vstack((lags, gamma_h, lag_weights))
+
+    # Index lag distances that are within the parameterized range
+    within_range = np.where(lags <= variogram_parameters["range"])[0]
+
+    # Truncate the data stack
+    truncated_stack = data_stack[:, within_range]
+
+    # Get model name
+    _, variogram_fun = get_variogram_arguments(variogram_parameters["model"])
+
+    # Create helper cost function
+    def cost_function(parameters, x, y, w):
+        yr = variogram_fun["model_function"](x, **parameters)
+        return (yr - y) * w
+    # get initial fit
+    init_fit = cost_function(optimization_settings["parameters"], x=truncated_stack[0], y = truncated_stack[1], w = truncated_stack[2])
+    rmse_init = np.mean(np.abs(init_fit))
+
+    minimizer = Minimizer(cost_function, optimization_settings["parameters"], fcn_args=(truncated_stack[0], truncated_stack[1], truncated_stack[2]))
+    result = minimizer.minimize(method="least_squares", **optimization_settings["config"])
+    new_fit = np.mean(np.abs(result.residual))
+    best_fit_params = result.params.valuesdict()
+    
+    if settings_dict["verbose"]:
+
+        params = [k for k in optimization_settings["parameters"].keys()]
+
+        # ---- Create updated values for printing
+        df = pd.DataFrame({"parameter": params})
+        df["initial"] = list(optimization_settings["parameters"].valuesdict().values())
+        df["new"] = list(best_fit_params.values())
+        lst = [f"{name.replace("_", " ").capitalize()}: {'{:.3}'.format(init)} -> {'{:.3}'.format(new)}" for name, init, new in zip(df["parameter"], df["initial"], df["new"])]
+        app = "\n".join(item for item in lst)
+        print(
+            f"-----------------------------\n"
+            f"VARIOGRAM OPTIMIZATION\n"
+            f"-----------------------------\n"
+            f"| See `self.analysis['settings']['variogram']['optimization']"
+            f" for parameter settings.\n"
+            f"-----------------------------\n"
+            f"| Initial -> Updated\n"
+            f"-----------------------------\n"
+            f"Overall fit [MAD]: {'{:.3}'.format(rmse_init)} -> {'{:.3}'.format(new_fit)}\n"
+            f"{app}"
+        )
+
+    
+    
+
+
 
 variogram_parameters.update({"nugget": 0.0, "decay_power": 1.5})
 init_parameters = {"distance_lags": lags, 
@@ -51,29 +263,192 @@ bounds = {
     "lower": {"sill": 0.0, "hole_effect_range": 0.0, }
 }
 
+Model(model_function).make_params()
+
 variogram_parameters["model"] = ["bessel", "exponential"]
 fit_parameters = ["nugget", "sill", "decay_power", "correlation_range", "hole_effect_range"]
-optimization_settings = {
-    "max_fun_evaluations": 500,
-    "cost_fun_tolerance": 1e-6,
-    "solution_tolerance": 1e-4,
-    "gradient_tolerance": 1e-4,
-    "finite_step_size": 1e-8,
-    "trust_region_solver": "exact",
-    "x_scale": "jacobian",
-    "jacobian_approx": "forward",
+parameter_values = [("nugget", 0.0), ("sill", 0.91), ("decay_power", 1.5), ("correlation_range", 0.004), ("hole_effect_range", 0.0)]
+
+parameter_values = {
+    "nugget": dict(min = 0.0, max = np.inf, start = 0.0),
+    "sill": dict(min = 0.0, max = np.inf, start = 1.0),
+    "decay_power": dict(min = 0.0, max = np.inf, start = 1.5),
+    "correlation_range": dict(min = 0.0, max = np.inf, start = 1),
+    "hole_effect_range": dict(min = 0.0, max = np.inf, start = 0.0)
 }
 
-OPTIMIZATION_OPTIONS = {
-    "max_fun_evaluations": "max_nfev",
-    "cost_fun_tolerance": "ftol",
-    "solution_tolerance": "xtol",
-    "gradient_tolerance": "gtol",
-    "finite_step_size": "diff_step",
-    "trust_region_solver": "exact",
-    "x_scale": "x_scale",
-    "jacobian_approx": "jac"
-}
+from typing import List, Tuple, Dict, Union, Optional, Literal
+lower_bounds = [("nugget", 0.0), ("sill", 0.91)]
+upper_bounds = [("nugget", np.inf), ("correlation_range", np.inf)]
+initial_values = [("nugget", 0.0), ("sill", 0.91), ("correlation_range", 0.004), ("hole_effect_range", 0.0)]
+
+default_variogram_settings = self.input["statistics"]["variogram"]["model_config"]
+model = ["bessel", "exponential"]
+
+def create_optimization_options(fit_parameters: Union[str, List[str], Dict[str, Dict[str, float]]],
+                                default_variogram_settings: Dict[str, float],
+                                model: Union[str, List[str]],
+                                initial_values: Optional[Union[List[Tuple[str, float]], Dict[str, Dict[str, float]]]] = None,
+                                lower_bounds: Optional[Union[List[Tuple[str, float]], Dict[str, Dict[str, float]]]] = None,
+                                upper_bounds: Optional[Union[List[Tuple[str, float]], Dict[str, Dict[str, float]]]] = None,
+                                max_fun_evaluations: Optional[int] = None,
+                                cost_fun_tolerance: Optional[float] = None,
+                                solution_tolerance: Optional[float] = None,
+                                gradient_tolerance: Optional[float] = None,
+                                finite_step_size: Optional[float] = None,
+                                trust_region_solver: Optional[Literal["exact", "base"]] = None,
+                                x_scale: Optional[Union[Literal["jacobian"], np.ndarray[float]]] = None,
+                                jacobian_approx: Optional[Literal["forward", "central"]] = None) -> dict:
+    """
+    Construct the variogram optimization parameter dictionary
+    """ 
+
+    # Convert to a list if `parameter_values` is a single-parameter string
+    if isinstance(fit_parameters , str):
+        fit_parameters  = [fit_parameters]
+
+    # Construct the parameter values
+    # ---- If `parameter_values` is already a correctly formatted dict
+    if isinstance(fit_parameters, dict):
+        _parameters = fit_parameters 
+    elif isinstance(fit_parameters, list):
+        _parameters = {}
+        # ---- Iteratively populate `_parameters` with the varied parameters
+        _parameters = {param: {} for param in fit_parameters}
+    else: 
+        raise TypeError("Argument `fit_parameters` must either be a single string, a list of strings, or a pre-formatted"
+                        " dictionary. Please see the documentation for `create_optimization_options` for futher details.")
+
+    # Helper function for populating `_parameters`
+    def populate_parameters(argument, key, name):
+        # ---- Check argument existence
+        if argument: 
+            if isinstance(argument, dict):
+                _argument = {param: {key: value} for param, value in (argument.items())}
+            elif isinstance(argument, list):
+                if (all(isinstance(item, tuple) and len(item) == 2 and isinstance(item[0], str) 
+                        and isinstance(item[1], float) for item in argument)):
+                    _argument = {param: value for param, value in argument}
+                else:
+                    raise TypeError(f"The list of values for `{name}` must be a list of tuples (str, float).")
+            else: 
+                raise TypeError(f"Argument `{name} must either be either a dictionary or a list.")
+        
+            # Update `_parameters` with `_argument`
+            for param, value in zip(fit_parameters, _argument.items()):
+                if isinstance(value, tuple):
+                    _parameters[param][key] = value[1]
+                else:
+                    _parameters[param][key] = value
+
+    # Populate lower bounds
+    populate_parameters(lower_bounds, "min", "lower_bounds")
+
+    # Populate upper bounds
+    populate_parameters(upper_bounds, "max", "upper_bounds")
+
+    # Populate starting values
+    if initial_values is None:
+        # ---- Initialize empty list
+        init_values = []
+        # ---- Create empty fixed list
+        fixed_parameters = []
+        # ---- If no initial values are provided, use default values
+        for param in fit_parameters:
+            init_values.append((param, default_variogram_settings[param]))
+    else:
+        # ---- Create copy of `initial_values`
+        init_values = initial_values.copy()
+        # ---- Get the required parameters
+        variogram_args, variogram_function = get_variogram_arguments(model)
+        # ---- Get names
+        arg_names = list(variogram_args.keys())
+        # ---- Drop `distance_lags`
+        arg_names.remove("distance_lags")
+        # ---- Assign a list of parameters that will be kept fixed
+        fixed_parameters = []
+        # ---- Get the initial values present
+        init_parameters = {param for param, value in initial_values}
+        # ---- Find missing values that are contained within the `fit_parameters` list
+        missing_parameters = set(arg_names) - set(init_parameters)
+        # ---- Append default values to `inital_values`
+        if missing_parameters:
+            for param in missing_parameters:
+                fixed_parameters.append(param)
+                init_values.append((param, default_variogram_settings[param]))
+    # ---- And populate
+    populate_parameters(init_values, "value", "initial_values")
+
+    # Populate fixed constants, if any
+    if fixed_parameters:
+        for param in fixed_parameters:
+            _parameters[param]["vary"] = False
+
+    # Initial a Parameters class from the `lmfit` package
+    # ---- Initialize `paramaeters` object
+    parameters = Parameters()
+    # ---- Populate `parameters`
+    for param in _parameters.keys():
+        parameters.add(param, **_parameters[param])
+
+    # Save parameter names that are present
+    # ---- Parameter names
+    optimization_parameters = ["max_fun_evaluations", "cost_fun_tolerance", "solution_tolerance",
+                               "gradient_tolerance", "finite_step_size", "trust_region_solver", 
+                               "x_scale", "jacobian_approx"]
+    # ---- Parameter values
+    optimization_values = [max_fun_evaluations, cost_fun_tolerance, solution_tolerance, gradient_tolerance,
+                           finite_step_size, trust_region_solver, x_scale, jacobian_approx]
+    # ---- Drop unused 
+    unused_parameters_bitmap = [k is not None for k in optimization_values]
+    used_parameters = [value for bit, value in zip(unused_parameters_bitmap, optimization_parameters) if bit]
+    used_values = [value for bit, value in zip(unused_parameters_bitmap, optimization_values) if bit]
+
+    # Internal API (using argument names for the actual underlying functions)
+    _options = {
+        "max_nfev": max_fun_evaluations,
+        "ftol": cost_fun_tolerance,
+        "xtol": solution_tolerance,
+        "gtol": gradient_tolerance,
+        "diff_step": finite_step_size
+    }
+
+    # Filter
+    _options = {k: v for k, v in _options.items() if v is not None}
+
+    # Add trust region solver definition
+    if trust_region_solver is not None:
+        _options.update({"tr_solver": None if trust_region_solver == "base" else "exact"})
+
+    # Add x-scale
+    if x_scale is not None:
+        _options.update({"x_scale": "jac" if x_scale == "jacobian" else x_scale})
+    
+    # Add Jacobian approximation method
+    if jacobian_approx is not None:
+        _options.update({"jac": "2-point" if jacobian_approx == "forward" else "3-point"})
+
+    # Create and return a dictionary representing the full optimization parameterization
+    return ( {"parameters": parameters, "fixed_parameters": fixed_parameters, "config": _options, 
+            "used_parameters": pd.DataFrame(zip(used_parameters, used_values), columns=["names", "values"]),
+            "function": variogram_function} )
+
+
+
+fit_parameters = ["nugget", "sill", "correlation_range", "hole_effect_range", "decay_power"]
+optimization_settings = create_optimization_options(fit_parameters,
+                                                    default_variogram_settings,
+                                                    model=model,
+                                                    max_fun_evaluations=500,
+                                                    cost_fun_tolerance=1e-6,
+                                                    solution_tolerance=1e-4,
+                                                    gradient_tolerance=1e-4,
+                                                    finite_step_size=1e-8,
+                                                    trust_region_solver="exact",
+                                                    x_scale="jacobian",
+                                                    jacobian_approx="forward")
+
+
 
 
 options = {
@@ -87,7 +462,6 @@ options = {
     'x_scale': 'jac',                  # Jacobian scaling
     'jac': '2-point',                  # Finite difference approximation for Jacobian (equivalent to 'forward')
 }
-
 variogram_parameters = {
     "max_range": 0.06,
     "lag_resolution": 0.002,
@@ -278,9 +652,9 @@ from scipy import special
 vmodel = Model(bessel_exponential)
 pars = create_params(nugget=dict(value=0.0, 
                                  min=0), 
-                     sill=dict(value=0.7 * semivariance.max(),
+                     sill=dict(value=0.7,
                                min=0.0), 
-                     lcsl=dict(value=length_scale, 
+                     lcsl=dict(value=0, 
                                min=0.0), 
                      decay_power=dict(value=1.5, 
                                       min=0.0), 

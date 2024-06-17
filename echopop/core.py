@@ -56,8 +56,8 @@ CONFIG_MAP = {
         "inpfc_strata": {
             "stratum_num": int,
             "northlimit_latitude": np.float64,
-            "haul start": int,
-            "haul end": int,
+            "haul_start": int,
+            "haul_end": int,
         },
     },
     "NASC": {
@@ -225,7 +225,7 @@ DATA_STRUCTURE = {
         },
         "stratified": dict(),
     },
-    "results": {"transect": dict(), "stratified": dict(), "kriging": dict()},
+    "results": {"transect": dict(), "stratified": dict(), "kriging": dict(), "variogram": dict()},
 }
 
 LAYER_NAME_MAP = {
