@@ -599,7 +599,7 @@ def variogram(
     # Raise error if any are missing
     if len(arg_diff) > 0:
         raise ValueError(
-            f"The following variogram parameters are missing: {", ".join(list(arg_diff))}"
+            f"The following variogram parameters are missing: {', '.join(list(arg_diff))}"
         )
 
     # Filter out only the variogram parameters required for the model

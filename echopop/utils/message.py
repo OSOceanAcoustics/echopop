@@ -223,7 +223,7 @@ def variogram_results_msg(variogram_dict: dict) -> None:
         f"| See `self.analysis['settings']['variogram']['optimization']"
         f" for parameter settings.\n"
         f"-----------------------------\n"
-        f"| Variogram model: {variogram_dict["model"]} {model_append}\n"
+        f"| Variogram model: {variogram_dict['model']} {model_append}\n"
         f"-----------------------------\n"
         f"| Initial fit -> Optimized fit\n"
         f"-----------------------------\n"
