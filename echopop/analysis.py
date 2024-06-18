@@ -284,7 +284,7 @@ def variogram_analysis(
         _warn_skips = (os.path.dirname(__file__),)
         # ---- Generate warning
         warnings.warn(
-            f"Default `range` parameter ({variogram_parameters["range"]}) does not "
+            f"Default `range` parameter ({variogram_parameters['range']}) does not "
             f"align with the inputs for `lag_resolution` ({lag_resolution}) "
             f"and `n_lags` ({n_lags}). The range will be changed to {max_range}.",
             stacklevel=2,
