@@ -55,6 +55,7 @@ def test_kriging_matrix():
         "nugget": 0.0,
         "sill": 5.0,
         "decay_power": 1.0,
+        "model": ["bessel", "exponential"],
     }
 
     # Evaluate `kriging_matrix`
