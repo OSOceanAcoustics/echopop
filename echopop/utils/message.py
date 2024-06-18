@@ -208,7 +208,7 @@ def variogram_results_msg(variogram_dict: dict) -> None:
 
     # Create a list of strings that will be joined in an output message
     message_lst = [
-        f"{names.replace("_", " ").capitalize()}: "
+        f"{names.replace('_', ' ').capitalize()}: "
         f"{'{:.3}'.format(init)} -> {'{:.3}'.format(opt)}"
         for names, init, opt in zip(parameters, initial_parameters, optimized_parameters)
     ]
