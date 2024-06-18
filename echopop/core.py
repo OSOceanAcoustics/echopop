@@ -56,8 +56,8 @@ CONFIG_MAP = {
         "inpfc_strata": {
             "stratum_num": int,
             "northlimit_latitude": np.float64,
-            "haul_start": int,
-            "haul_end": int,
+            "haul start": int,
+            "haul end": int,
         },
     },
     "NASC": {

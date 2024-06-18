@@ -183,6 +183,59 @@ def stratified_results_msg(stratified_results_dict: pd.DataFrame, settings_dict:
     )
 
 
+def variogram_results_msg(variogram_dict: dict) -> None:
+
+    # Extract parameter names
+    parameters = list(variogram_dict["initial_fit"]["parameters"].keys())
+
+    # Get initial fit values
+    # ---- Each parameter
+    initial_parameters = list(variogram_dict["initial_fit"]["parameters"].values())
+    # ---- Mean absolute deviation (MAD)
+    initial_mad = variogram_dict["initial_fit"]["MAD"]
+
+    # Model descriptor
+    if len(variogram_dict["model"]) > 1:
+        model_append = "(composite family)"
+    else:
+        model_append = "(single family)"
+
+    # Get optimized fit values
+    # ---- Each parameter
+    optimized_parameters = list(variogram_dict["optimized_fit"]["parameters"].values())
+    # ---- Mean absolute deviation (MAD)
+    optimized_mad = variogram_dict["optimized_fit"]["MAD"]
+
+    # Create a list of strings that will be joined in an output message
+    message_lst = [
+        f"{names.replace("_", " ").capitalize()}: "
+        f"{'{:.3}'.format(init)} -> {'{:.3}'.format(opt)}"
+        for names, init, opt in zip(parameters, initial_parameters, optimized_parameters)
+    ]
+    # ---- Expand the list to be joined across multiple lines
+    message_joined = "\n".join(value for value in message_lst)
+
+    # Print output message
+    print(
+        f"-----------------------------\n"
+        f"VARIOGRAM OPTIMIZATION\n"
+        f"-----------------------------\n"
+        f"| See `self.analysis['settings']['variogram']['optimization']"
+        f" for parameter settings.\n"
+        f"-----------------------------\n"
+        f"| Variogram model: {variogram_dict["model"]} {model_append}\n"
+        f"-----------------------------\n"
+        f"| Initial fit -> Optimized fit\n"
+        f"-----------------------------\n"
+        f"Overall fit [MAD]: {'{:.3}'.format(initial_mad)} -> "
+        f"{'{:.3}'.format(optimized_mad)}\n"
+        f"{message_joined}\n"
+        f"-----------------------------\n"
+        f"| Results stored in `self.results['variogram']\n"
+        f"-----------------------------"
+    )
+
+
 def kriging_results_msg(kriging_results_dict: pd.DataFrame, settings_dict: dict) -> None:
 
     # Extract dictionary results

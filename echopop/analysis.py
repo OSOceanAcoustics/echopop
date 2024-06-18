@@ -2,10 +2,10 @@
 General analysis orchestration functions that bundle related functions and procedures
 """
 
-import warnings
 import copy
-
-from typing import Dict, List, Tuple, Literal, Optional, Union
+import os
+import warnings
+from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -26,18 +26,18 @@ from .biology import (
 )
 from .spatial.krige import kriging
 from .spatial.mesh import crop_mesh, mesh_to_transects, stratify_mesh
-from .spatial.variogram import (
-    create_optimization_options, 
-    empirical_variogram,
-    validate_variogram_parameters, 
-    optimize_variogram
-)
 from .spatial.projection import transform_geometry
 from .spatial.transect import (
     edit_transect_columns,
     save_transect_coordinates,
     summarize_transect_strata,
     transect_spatial_features,
+)
+from .spatial.variogram import (
+    create_optimization_options,
+    empirical_variogram,
+    optimize_variogram,
+    validate_variogram_parameters,
 )
 from .statistics import stratified_transect_statistic
 
@@ -251,21 +251,24 @@ def stratified_summary(
     # Return the outputs
     return stratified_results, analysis_dict
 
-def variogram_analysis(variogram_parameters: dict,
-                       optimization_parameters: dict,
-                       transect_dict: dict,
-                       settings_dict: dict,
-                       isobath_df: pd.DataFrame,
-                       fit_parameters: Union[str, List[float]],
-                       initial_values: Optional[Union[List[Tuple[str, float]], Dict[str, Dict[str, float]]]],
-                       lower_bounds: Union[List[Tuple[str, float]], Dict[str, Dict[str, float]]],
-                       upper_bounds: Optional[Union[List[Tuple[str, float]], Dict[str, Dict[str, float]]]],):
+
+def variogram_analysis(
+    variogram_parameters: dict,
+    optimization_parameters: dict,
+    transect_dict: dict,
+    settings_dict: dict,
+    isobath_df: pd.DataFrame,
+    fit_parameters: Union[str, List[float]],
+    initial_values: Optional[Union[List[Tuple[str, float]], Dict[str, Dict[str, float]]]],
+    lower_bounds: Union[List[Tuple[str, float]], Dict[str, Dict[str, float]]],
+    upper_bounds: Optional[Union[List[Tuple[str, float]], Dict[str, Dict[str, float]]]],
+):
 
     # Extract specific variogram parameters
     # ---- Number of lags
     n_lags = variogram_parameters["n_lags"]
     # ---- Lag resolution
-    lag_resolution = variogram_parameters["lag_resolution"] 
+    lag_resolution = variogram_parameters["lag_resolution"]
 
     # Compute the lag distances
     distance_lags = np.arange(1, n_lags) * lag_resolution
@@ -273,25 +276,32 @@ def variogram_analysis(variogram_parameters: dict,
     variogram_parameters["distance_lags"] = distance_lags
     # ---- Update the max range parameter, if necessary
     max_range = lag_resolution * n_lags
-    # ---- Mismatched value in default parameters should be replaced 
+    # ---- Mismatched value in default parameters should be replaced
     if "range" in variogram_parameters and variogram_parameters["range"] != max_range:
         # ---- Update
         variogram_parameters["range"] = max_range
+        # ---- Skip file dir in message
+        _warn_skips = (os.path.dirname(__file__),)
         # ---- Generate warning
-        warnings.warn(f"Default `range` parameter ({variogram_parameters["range"]}) does not "
-                    f"align with the inputs for `lag_resolution` ({lag_resolution}) "
-                    f"and `n_lags` ({n_lags}). The range will be changed to {max_range}.",
-                    stacklevel = 1)
-        
+        warnings.warn(
+            f"Default `range` parameter ({variogram_parameters["range"]}) does not "
+            f"align with the inputs for `lag_resolution` ({lag_resolution}) "
+            f"and `n_lags` ({n_lags}). The range will be changed to {max_range}.",
+            stacklevel=2,
+            skip_file_prefixes=_warn_skips,
+        )
+
     # Generate the optimization settings dictionary
-    optimization_settings = create_optimization_options(fit_parameters, 
-                                                        variogram_parameters, 
-                                                        initial_values = initial_values,
-                                                        lower_bounds = lower_bounds,
-                                                        upper_bounds = upper_bounds,
-                                                        model=variogram_parameters["model"], 
-                                                        **optimization_parameters)
-    
+    optimization_settings = create_optimization_options(
+        fit_parameters,
+        variogram_parameters,
+        initial_values=initial_values,
+        lower_bounds=lower_bounds,
+        upper_bounds=upper_bounds,
+        model=variogram_parameters["model"],
+        **optimization_parameters,
+    )
+
     # Validate all variogram-related inputs
     validate_variogram_parameters(variogram_parameters, fit_parameters, optimization_settings)
 
@@ -304,35 +314,43 @@ def variogram_analysis(variogram_parameters: dict,
     # Standardize the transect coordinates, if necessary
     if settings_dict["standardize_coordinates"]:
         # ---- Transform geometry
-        transect_data, _, _ = transform_geometry(transect_data, 
-                                                 isobath_df, 
-                                                 settings_dict)
+        transect_data, _, _ = transform_geometry(transect_data, isobath_df, settings_dict)
         # ---- Print message if verbose
         if settings_dict["verbose"]:
             # ---- Print alert
             print(
-                """Longitude and latitude coordinates (WGS84) converted to standardized """
-                """coordinates (x and y)."""
+                "Longitude and latitude coordinates (WGS84) converted to standardized "
+                "coordinates (x and y)."
             )
     else:
         # ---- x
         transect_data["x"] = "longitude"
         # ---- y
         transect_data["y"] = "latitude"
-    
+
     # Compute the empirical variogram
-    lags, gamma_h, lag_counts, lag_covariance = empirical_variogram(transect_data, 
-                                                                    variogram_parameters, 
-                                                                    settings_dict)
-    
+    lags, gamma_h, lag_counts, lag_covariance = empirical_variogram(
+        transect_data, variogram_parameters, settings_dict
+    )
+
     # Least-squares fitting
-    best_fit_variogram = optimize_variogram(lag_counts, lags, gamma_h,
-                                            variogram_parameters, 
-                                            optimization_settings,
-                                            settings_dict)
-    
-    # Return result
-    return best_fit_variogram
+    best_fit_variogram, initial_fit, optimized_fit = optimize_variogram(
+        lag_counts, lags, gamma_h, variogram_parameters, optimization_settings
+    )
+
+    # Return a dictionary of results
+    return {
+        "best_fit_parameters": best_fit_variogram,
+        "initial_fit": {
+            "parameters": dict(zip(initial_fit[0], initial_fit[1])),
+            "MAD": initial_fit[2],
+        },
+        "optimized_fit": {
+            "parameters": dict(zip(optimized_fit[0], optimized_fit[1])),
+            "MAD": optimized_fit[2],
+        },
+    }
+
 
 def krige(input_dict: dict, analysis_dict: dict, settings_dict: dict) -> tuple[pd.DataFrame, dict]:
     """

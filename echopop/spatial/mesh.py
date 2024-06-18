@@ -346,8 +346,9 @@ def interpolate_crop_method(
 
 
 def griddify_lag_distances(
-    coordinates_1: Union[pd.DataFrame, np.ndarray], coordinates_2: Union[pd.DataFrame, np.ndarray],
-    angles: bool = False
+    coordinates_1: Union[pd.DataFrame, np.ndarray],
+    coordinates_2: Union[pd.DataFrame, np.ndarray],
+    angles: bool = False,
 ):
     """
     Calculate point-to-point distances between two gridded dataframes
@@ -360,7 +361,7 @@ def griddify_lag_distances(
     coordinates_2: pd.DataFrame
         Georeferenced dataframe
     angles: bool
-        A boolean flag determining whether the point-to-point azimuth angles are also computed 
+        A boolean flag determining whether the point-to-point azimuth angles are also computed
         alongside the distances.
 
     Notes
