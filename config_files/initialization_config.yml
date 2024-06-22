@@ -28,6 +28,22 @@
   ]
 
   #####################################################################################################################
+  # Acoustic transect export processing#
+  ########################
+  nasc_exports:
+    export_file_directory: /raw_nasc
+    nasc_export_directory: /Exports     # Acoustic export directory
+    save_file_template: "{REGION}_NASC_{YEAR}_table_{GROUP}.xlsx"
+    save_file_sheetname: Sheet1
+    regions:                            # Main acoustic data region names (list or single string)
+      all_ages: [Age-1 Hake,            # Age-1+
+                 Age-1 Hake Mix,
+                 Hake,
+                 Hake Mix]
+      no_age1: [Hake, Hake Mix]         # Age-2+
+    max_transect_spacing: 10.0          # Maximum transect spacing (nmi)
+
+  #####################################################################################################################
   # Log-linear regression#
   ########################
   # Target strength (TS) - length (L) regression: TS=m*log10(L)+b
@@ -45,7 +61,7 @@
     init: epsg:4326                       # EPSG integer code for geodetic parameter dataset
 
   #####################################################################################################################
-  # kriging parameters#
+  # Kriging parameters#
   #####################
   kriging_parameters:
     A0: 6.25                              # base area of the grid cell
