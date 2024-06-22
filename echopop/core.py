@@ -153,6 +153,47 @@ CONFIG_MAP = {
     },
 }
 
+ECHOVIEW_EXPORT_MAP = {
+    "Region_ID": dict(name="region_id", type=int),
+    "Region_name": dict(name="region_name", type=str),
+    "Region_class": dict(name="region_class", type=str),
+    "Interval": dict(name="interval", type=int),
+    "Layer": dict(name="layer", type=int),
+    "Sv_mean": dict(name="sv_mean", type=float),
+    "PRC_NASC": dict(name="nasc", type=float),
+    "transect_num": dict(name="transect_num", type=int),
+    "VL_start": dict(name="vessel_log_start", type=float),
+    "VL_end": dict(name="vessel_log_end", type=float),
+    "Lat_S": dict(name="latitude", type=float),
+    "Lat_M": dict(name="latitude", type=float),
+    "Lat_E": dict(name="latitude", type=float),
+    "Lon_S": dict(name="longitude", type=float),
+    "Lon_M": dict(name="longitude", type=float),
+    "Lon_E": dict(name="longitude", type=float),
+    "Layer_depth_min": dict(name="layer_depth_min", type=float),
+    "Layer_depth_max": dict(name="layer_depth_max", type=float),
+    "Exclude_below_line_depth_mean": dict(name="max_depth", type=float),
+}
+
+REGION_EXPORT_MAP = {
+    "no_age1": {
+        "Tranect": dict(name="transect_num", type=int),
+        "Region ID": dict(name="region_id", type=int),
+        "Trawl #": dict(name="haul_num", type=int),
+        "Region Name": dict(name="region_name", type=str),
+        "Region Calss": dict(name="region_class", type=str),
+    },
+    "all_ages": {
+        "Tranect": dict(name="transect_num", type=int),
+        "Region ID": dict(name="region_id", type=int),
+        "Trawl #": dict(name="haul_num", type=int),
+        "Region Name": dict(name="region_name", type=str),
+        "Region Calss": dict(name="region_class", type=str),
+    },
+}
+
+NASC_OUTPUT_MAP = {}
+
 # ``LAYER_NAME_MAP`` is a hard-coded dictionary that aids in re-mapping the data tree
 # structure of various attributes contained within a generated ``Survey`` class object.
 # structure of various attributes contained within a generated ``Survey`` class object.

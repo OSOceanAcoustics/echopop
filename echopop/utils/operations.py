@@ -1,5 +1,5 @@
 from functools import reduce
-from typing import Callable, List, Union
+from typing import Callable, List, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -239,69 +239,100 @@ def stretch(
 
 
 @patch_method_to_DataFrame(pd.DataFrame)
-def group_merge(dataframe, dataframes_to_add, inner_on, outer_on, how="outer", drop_na=True):
+def group_merge(
+    dataframe: pd.DataFrame,
+    dataframes_to_add: List[pd.DataFrame],
+    inner_on: Optional[Union[str, List[str]]] = None,
+    outer_on: Optional[Union[str, List[str]]] = None,
+    how: str = "outer",
+    drop_na: bool = True,
+) -> pd.DataFrame:
     """
-    Group merge operation
+    Group merge operation for merging multiple dataframes into a parent dataframe.
 
     Parameters
     ----------
-    dataframe: pd.DataFrame
-        Parent dataframe
-    dataframes_to_add: list
-        Dataframes that will be added to the parent dataframe
-    inner_on: str or list
-        Index/column name that is used for an inner merge of dataframes
-        within `dataframes_to_add`
-    outer_on: str or List
-        Index/column name that is used for an outer merge of both the parent
-        and to-be-added dataframes
-    how: str
-        Merge method
-    drop_na: boolean
-        Flag determining whether np.nan values are removed
+    dataframe : pd.DataFrame
+        Parent dataframe.
+    dataframes_to_add : List[pd.DataFrame]
+        List of dataframes to merge into the parent dataframe.
+    inner_on : Optional[Union[str, List[str]]], optional
+        Index/column name(s) used for inner merge within dataframes_to_add.
+    outer_on : Optional[Union[str, List[str]]], optional
+        Index/column name(s) used for outer merge between parent dataframe and dataframes_to_add.
+    how : str, optional
+        Type of merge to be performed, as in `pd.merge`.
+    drop_na : bool, optional
+        Flag to drop NaN values after merging.
+
+    Returns
+    -------
+    pd.DataFrame
+        Merged dataframe.
 
     Notes
-    ----------
-    This is a lazy method for recursively merging multiple dataframes at once
+    -----
+    This function recursively merges multiple dataframes into a parent dataframe.
     """
+    # Validate inputs
+    if not isinstance(dataframe, pd.DataFrame):
+        raise ValueError("dataframe must be a pandas DataFrame")
+    if not isinstance(dataframes_to_add, list) or not all(
+        isinstance(df, pd.DataFrame) for df in dataframes_to_add
+    ):
+        raise ValueError("dataframes_to_add must be a list of pandas DataFrames")
 
-    # Ensure that both the 'dataframes' and 'on' arguments are lists
-    # ---- Dataframes
-    df_lst = [dataframes_to_add] if isinstance(dataframes_to_add, str) else dataframes_to_add
-    # ---- On
+    # Store original data types of columns in the parent dataframe
+    original_dtypes = {id(dataframe): dataframe.dtypes}
+    original_dtypes.update({id(df): df.dtypes for df in dataframes_to_add})
+
+    # Merge all dictionaries into a single dictionary with unique keys
+    unique_dtypes = {}
+    for dtypes_dict in original_dtypes.values():
+        unique_dtypes.update(dtypes_dict.to_dict())
+
+    # Ensure inner_on and outer_on are lists
+    inner_on = inner_on if inner_on is not None else []
+    outer_on = outer_on if outer_on is not None else []
+
     inner_on_lst = [inner_on] if isinstance(inner_on, str) else inner_on
     outer_on_lst = [outer_on] if isinstance(outer_on, str) else outer_on
 
-    # Merge the dataframes that will be joined to the original dataframe
-    filtered_dataframes = [df for df in df_lst if any(col in df.columns for col in inner_on_lst)]
+    # If inner_on is None, find common columns across all dataframes_to_add
+    if not inner_on:
+        common_columns_inner = set.intersection(*(set(df.columns) for df in dataframes_to_add))
+        inner_on_lst = list(common_columns_inner)
 
-    # Excluded dataframes
-    excluded_dataframes = [
-        df for df in df_lst if any(col not in df.columns for col in inner_on_lst)
-    ]
-
-    # Begin inner merge
-    innermost_frames_to_add = reduce(
-        lambda left, right: pd.merge(left, right, on=inner_on_lst + outer_on_lst, how=how),
-        filtered_dataframes,
-    )
-    inner_frames_to_add = reduce(
-        lambda left, right: pd.merge(left, right, on=outer_on_lst, how=how),
-        excluded_dataframes + [innermost_frames_to_add],
-    )
-
-    # Find union of column names that will be used to join everything
-    union_lst = dataframe.filter(items=inner_frames_to_add.columns).columns.tolist()
-
-    # Merge together and remove NaN values depending on argument 'drop_na'
-    if drop_na:
-        merged_frame = dataframe.dropna().merge(
-            inner_frames_to_add.dropna(), on=union_lst, how="outer"
+    # Merge dataframes within dataframes_to_add on inner_on
+    if inner_on_lst:
+        merged_inner_frames = reduce(
+            lambda left, right: pd.merge(left, right, on=inner_on_lst, how=how), dataframes_to_add
         )
     else:
-        merged_frame = dataframe.merge(inner_frames_to_add, on=union_lst, how="outer")
+        merged_inner_frames = pd.DataFrame()
 
-    # Return output
+    # If outer_on is None, find common columns between dataframe and merged_inner_frames
+    if not outer_on:
+        common_columns_outer = set(dataframe.columns).intersection(set(merged_inner_frames.columns))
+        outer_on_lst = list(common_columns_outer)
+
+    # Merge dataframe with merged_inner_frames
+    merged_frame = dataframe.merge(merged_inner_frames, on=outer_on_lst, how=how)
+
+    # Perform merge with drop_na option
+    if drop_na:
+        merged_frame = merged_frame.dropna()
+
+    # Restore original dtypes of columns in merged_frame
+    for col in merged_frame.columns:
+        dtype_to_restore = unique_dtypes.get(col)
+        if dtype_to_restore is not None:
+            if pd.api.types.is_integer_dtype(dtype_to_restore):
+                # Check if column contains NaN or inf values
+                if merged_frame[col].isnull().any() or not merged_frame[col].notna().all():
+                    continue  # Skip conversion if NaN or inf present
+                merged_frame[col] = merged_frame[col].astype(dtype_to_restore)
+
     return merged_frame
 
 

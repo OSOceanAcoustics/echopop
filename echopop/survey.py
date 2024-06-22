@@ -10,7 +10,7 @@ from .analysis import (
     stratified_summary,
 )
 from .core import DATA_STRUCTURE
-from .utils import load as el, message as em
+from .utils import batch_load as elb, load as el, message as em
 
 
 class Survey:
@@ -44,14 +44,28 @@ class Survey:
     """
 
     def __init__(
-        self, init_config_path: Union[str, Path], survey_year_config_path: Union[str, Path]
+        self,
+        init_config_path: Union[str, Path],
+        survey_year_config_path: Union[str, Path],
+        construct_nasc: bool = False,
+        transect_pattern: Optional[str] = r"T(\d+)",
+        export_file_directory: Optional[Union[str, Path]] = None,
+        export_save_directory: Optional[Union[str, Path]] = None,
     ):
         # Initialize `meta` attribute
         self.meta = copy.deepcopy(DATA_STRUCTURE["meta"])
 
-        # Loading the configuration settings and definitions that are used to
-        # initialize the Survey class object
+        # Loading the configuration settings and definitions that are used to initialize the Survey
+        # class object
         self.config = el.load_configuration(Path(init_config_path), Path(survey_year_config_path))
+
+        # NASC export file batch processing
+        if construct_nasc:
+            print("Constructing consolidated NASC export files.")
+            # ---- Batch processing
+            elb.batch_read_echoview_exports(
+                self.config, transect_pattern, export_file_directory, export_save_directory
+            )
 
         # Loading the datasets defined in the configuration files
         self.input = el.load_survey_data(self.config)

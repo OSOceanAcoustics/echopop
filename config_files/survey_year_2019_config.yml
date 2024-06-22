@@ -58,7 +58,7 @@ stratification:
   geo_strata:
     # The two stratification types are found in two sheets: "stratification1" and "INPFC"
     filename: Stratification/Stratification_geographic_Lat_2019_final.xlsx
-    sheetname: [ INPFC , stratification1 ]
+    sheetname: [INPFC , stratification1]
 NASC:
   # NASC values
   no_age1:
@@ -68,6 +68,13 @@ NASC:
   all_ages:
     # file that includes all ages
     filename: Exports/US_CAN_detailsa_2019_table1y+_ALL_final - updated.xlsx
+    sheetname: Sheet1
+export_regions:
+  all_ages:
+    filename: Stratification/US_CAN_2019_transect_region_haul_age1+ auto_final.xlsx
+    sheetname: Sheet1
+  no_age1:
+    filename: Stratification/US_CAN_2019_transect_region_haul_age2+ auto_20191205.xlsx
     sheetname: Sheet1
 kriging:
   mesh:
