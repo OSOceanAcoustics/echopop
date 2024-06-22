@@ -87,8 +87,8 @@ def stratified_results_msg(stratified_results_dict: pd.DataFrame, settings_dict:
     ]
     # -------- Join
     density_rows = []
-    for i in range(0, len(strata_density_cis_str), max_results_per_row):  
-        row = " | ".join(strata_density_cis_str[i : i + max_results_per_row])   
+    for i in range(0, len(strata_density_cis_str), max_results_per_row):
+        row = " | ".join(strata_density_cis_str[i : i + max_results_per_row])
         density_rows.append(row)
     # ---- Strata totals
     # -------- Format the estimates
