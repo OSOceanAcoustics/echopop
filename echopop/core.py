@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 
 # Required configuration initialization YAML structure
-CONFIG_INIT_API = {
+CONFIG_INIT_MODEL = {
     "stratified_survey_mean_parameters": {
         "strata_transect_proportion": float,
         "num_replicates": int,
@@ -34,7 +34,7 @@ CONFIG_INIT_API = {
 }
 
 # Required data configuration YAML structure
-CONFIG_DATA_API = {
+CONFIG_DATA_MODEL = {
     "survey_year": int,
     "species": {"number_code": int},
     "CAN_haul_offset": int,

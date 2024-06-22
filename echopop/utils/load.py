@@ -6,7 +6,7 @@ import pandas as pd
 import yaml
 from openpyxl import load_workbook
 
-from ..core import CONFIG_DATA_API, CONFIG_INIT_API, CONFIG_MAP, DATA_STRUCTURE, LAYER_NAME_MAP
+from ..core import CONFIG_DATA_MODEL, CONFIG_INIT_MODEL, CONFIG_MAP, DATA_STRUCTURE, LAYER_NAME_MAP
 
 
 def load_configuration(init_config_path: Path, survey_year_config_path: Path):
@@ -47,11 +47,11 @@ def load_configuration(init_config_path: Path, survey_year_config_path: Path):
     # ---- Initialization
     init_config_params = yaml.safe_load(init_config_path.read_text())
     # -------- Validate
-    validate_config_structure(init_config_params, CONFIG_INIT_API)
+    validate_config_structure(init_config_params, CONFIG_INIT_MODEL)
     # ---- Survey year data
     survey_year_config_params = yaml.safe_load(survey_year_config_path.read_text())
     # -------- Validate
-    validate_config_structure(survey_year_config_params, CONFIG_DATA_API)
+    validate_config_structure(survey_year_config_params, CONFIG_DATA_MODEL)
 
     # Validate that initialization and survey year configuration parameters do not intersect
     config_intersect = set(init_config_params.keys()).intersection(
@@ -586,42 +586,42 @@ def validate_config_structure(yaml_data, config_spec):
     """
 
     # Helper function for validating dictionary key names/structure
-    def validate_dict(data, spec, path=""):
+    def validate_dict(data, spec, branch=""):
         for key, value in spec.items():
-            current_path = f"{path}.{key}" if path else key
+            current_branch = f"{branch}.{key}" if branch else key
             if key == "ANY":
                 # If the spec key is "ANY", check all keys in the data against the "ANY" spec
                 if not isinstance(data, dict):
                     raise ValueError(
-                        f"Expected a dictionary at {current_path}, got {type(data).__name__}"
+                        f"Expected a dictionary at {current_branch}, got {type(data).__name__}"
                     )
                 for sub_key in data:
-                    validate_value(data[sub_key], spec[key], f"{current_path}.{sub_key}")
+                    validate_value(data[sub_key], spec[key], f"{current_branch}.{sub_key}")
             else:
                 if key not in data:
-                    raise KeyError(f"Missing key: {current_path}")
-                validate_value(data[key], value, current_path)
+                    raise KeyError(f"Missing key: {current_branch}")
+                validate_value(data[key], value, current_branch)
 
     # Helper function for parsing values entered at different points throughout the dictionary
-    def validate_value(data, spec, path):
+    def validate_value(data, spec, branch):
         if isinstance(spec, dict):
-            validate_dict(data, spec, path)
+            validate_dict(data, spec, branch)
         elif isinstance(spec, type):
             if not is_valid_type(data, spec):
                 raise TypeError(
-                    f"Expected type {spec.__name__} at {path}, got {type(data).__name__}"
+                    f"Expected type {spec.__name__} at {branch}, got {type(data).__name__}"
                 )
         elif isinstance(spec, list):
             if not isinstance(data, list):
-                raise TypeError(f"Expected a list at {path}, got {type(data).__name__}")
+                raise TypeError(f"Expected a list at {branch}, got {type(data).__name__}")
             if len(spec) != 1:
                 raise ValueError(
-                    f"Spec list at {path} should contain exactly one type element, got {spec}"
+                    f"Spec list at {branch} should contain exactly one type element, got {spec}"
                 )
             for index, item in enumerate(data):
-                validate_value(item, spec[0], f"{path}[{index}]")
+                validate_value(item, spec[0], f"{branch}[{index}]")
         else:
-            raise ValueError(f"Unknown spec type at {path}: {spec}")
+            raise ValueError(f"Unknown spec type at {branch}: {spec}")
 
     # Helper function for assessing the data type of each nested value
     def is_valid_type(data, spec_type):
