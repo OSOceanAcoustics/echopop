@@ -177,22 +177,24 @@ ECHOVIEW_EXPORT_MAP = {
 
 REGION_EXPORT_MAP = {
     "no_age1": {
-        "Tranect": dict(name="transect_num", type=int),
-        "Region ID": dict(name="region_id", type=int),
-        "Trawl #": dict(name="haul_num", type=int),
-        "Region Name": dict(name="region_name", type=str),
-        "Region Calss": dict(name="region_class", type=str),
+        "Tranect": dict(name = "transect_num", type = int),
+        "Region ID": dict(name = "region_id", type = int),
+        "Trawl #": dict(name = "haul_num", type = int),
+        "Region Name": dict(name = "region_name", type = str),
+        "Region Calss": dict(name = "region_class", type = str),
     },
     "all_ages": {
-        "Tranect": dict(name="transect_num", type=int),
-        "Region ID": dict(name="region_id", type=int),
-        "Trawl #": dict(name="haul_num", type=int),
-        "Region Name": dict(name="region_name", type=str),
-        "Region Calss": dict(name="region_class", type=str),
+        "Tranect": dict(name = "transect_num", type = int),
+        "Region ID": dict(name = "region_id", type = int),
+        "Trawl #": dict(name = "haul_num", type = int),
+        "Region Name": dict(name = "region_name", type = str),
+        "Region Calss": dict(name = "region_class", type = str),
     },
 }
 
-NASC_OUTPUT_MAP = {}
+NASC_OUTPUT_MAP = {
+    
+}
 
 # ``LAYER_NAME_MAP`` is a hard-coded dictionary that aids in re-mapping the data tree
 # structure of various attributes contained within a generated ``Survey`` class object.
