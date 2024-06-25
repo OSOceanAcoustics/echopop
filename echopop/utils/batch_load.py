@@ -164,7 +164,7 @@ def get_transect_numbers(export_files: list, transect_pattern: str, file_directo
     # ---- If some are missing
     if unparsed_transects:
         # ---- Join files on multiple lines
-        unparsed_transects_formatted = '\n'.join(unparsed_transects)
+        unparsed_transects_formatted = "\n".join(unparsed_transects)
         if len(unparsed_transects) > 10:
             # ---- Get number of unparsed strings
             unparsed_n = len(unparsed_transects)
