@@ -1185,7 +1185,7 @@ def partition_transect_age(
     # ---- Distribute the age-1 proportions across the unaged abundances
     abundance_unaged_age1_tbl = (
         strata_age1_proportions_table.loc["number_proportion"] * abundance_unaged_length
-    )
+    ).fillna(0.0)
 
     fitted_weight = fitted_weight_dict["length_weight_regression"]["weight_fitted_df"]
 
@@ -1240,36 +1240,59 @@ def partition_transect_age(
     # ---- Convert biomass estimates into a summary table
     # -------- Initialize dataframe
     biomass_summary_df = pd.DataFrame({"sex": ["all", "female", "male", "unsexed", "mixed"]})
-    # -------- Calculate biomass estimates for age-2+ fish
-    if settings_dict["transect"]["exclude_age1"]:
-        biomass_summary_df["biomass_adult"] = np.array(
-            [
-                biomass_aged_length.loc["all", :].sum().sum() - biomass_age1_total,
-                biomass_aged_length.loc["female", :].sum().sum() - biomass_age1_female,
-                biomass_aged_length.loc["male", :].sum().sum() - biomass_age1_male,
-                nasc_biology_df["biomass_unsexed"].sum(),
-                nasc_biology_df[nasc_biology_df["fraction_hake"] < 1.0]["biomass"].sum()
-                - biomass_age1_mixed,
-            ]
-        )
-    else:
-        biomass_summary_df["biomass_adult"] = np.array(
-            [
-                adult_data["biomass"].sum(),
-                adult_data["biomass_female"].sum(),
-                adult_data["biomass_male"].sum(),
-                nasc_biology_df["biomass_unsexed"].sum(),
-                nasc_biology_df[nasc_biology_df["fraction_hake"] < 1.0]["biomass"].sum(),
-            ]
-        )
     # -------- Calculate biomass estimates for age-1 fish
     biomass_summary_df["biomass_age1"] = np.array(
         [biomass_age1_total, biomass_age1_female, biomass_age1_male, 0.0, biomass_age1_mixed]
+    )
+    # ---- Biomass for adult fish
+    biomass_summary_df["biomass_adult"] = np.array(
+        [
+            biomass_aged_length.loc["all", :].sum().sum() - biomass_age1_total,
+            biomass_aged_length.loc["female", :].sum().sum() - biomass_age1_female,
+            biomass_aged_length.loc["male", :].sum().sum() - biomass_age1_male,
+            nasc_biology_df["biomass_unsexed"].sum(),
+            nasc_biology_df[nasc_biology_df["fraction_hake"] < 1.0]["biomass"].sum()
+            - biomass_age1_mixed,
+        ]
     )
     # -------- Calculate biomass estimates for all fish
     biomass_summary_df["biomass_all"] = (
         biomass_summary_df["biomass_adult"] + biomass_summary_df["biomass_age1"]
     )
+    # # -------- Calculate biomass estimates for age-2+ fish
+    # if settings_dict["transect"]["exclude_age1"]:
+    #     # ---- Biomass for adult fish
+    #     biomass_summary_df["biomass_adult"] = np.array(
+    #         [
+    #             biomass_aged_length.loc["all", :].sum().sum() - biomass_age1_total,
+    #             biomass_aged_length.loc["female", :].sum().sum() - biomass_age1_female,
+    #             biomass_aged_length.loc["male", :].sum().sum() - biomass_age1_male,
+    #             nasc_biology_df["biomass_unsexed"].sum(),
+    #             nasc_biology_df[nasc_biology_df["fraction_hake"] < 1.0]["biomass"].sum()
+    #             - biomass_age1_mixed,
+    #         ]
+    #     )
+    # else:
+    #     # ---- Biomass for all fish
+    #     biomass_summary_df["biomass_all"] = np.array(
+    #         [
+    #             adult_data["biomass"].sum(),
+    #             adult_data["biomass_female"].sum(),
+    #             adult_data["biomass_male"].sum(),
+    #             nasc_biology_df["biomass_unsexed"].sum(),
+    #             nasc_biology_df[nasc_biology_df["fraction_hake"] < 1.0]["biomass"].sum(),
+    #         ]
+    #     )
+    #     # ---- Biomass for adult fish
+    #     biomass_summary_df["biomass_"]
+    # # -------- Calculate biomass estimates for age-1 fish
+    # biomass_summary_df["biomass_age1"] = np.array(
+    #     [biomass_age1_total, biomass_age1_female, biomass_age1_male, 0.0, biomass_age1_mixed]
+    # )
+    # # -------- Calculate biomass estimates for all fish
+    # biomass_summary_df["biomass_all"] = (
+    #     biomass_summary_df["biomass_adult"] + biomass_summary_df["biomass_age1"]
+    # )
     # ---- Generate outputs
     return adult_data, biomass_summary_df, abundance_unaged_age1_tbl
 

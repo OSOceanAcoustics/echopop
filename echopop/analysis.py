@@ -68,7 +68,11 @@ def process_transect_data(
 
     # Save the transect coordinate information
     analysis_dict.update(
-        {"coordinates": save_transect_coordinates(input_dict["acoustics"]["nasc_df"])}
+        {
+            "coordinates": save_transect_coordinates(
+                input_dict["acoustics"]["nasc_df"], settings_dict["transect"]
+            )
+        }
     )
 
     # Calculate mean sigma_bs per individual haul, KS stratum, and INPFC stratum
