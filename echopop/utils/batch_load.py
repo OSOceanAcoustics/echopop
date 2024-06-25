@@ -7,7 +7,6 @@ from typing import List, Optional, Union
 import numpy as np
 import pandas as pd
 
-from ..acoustics import integrate_nasc
 from ..core import CONFIG_MAP, ECHOVIEW_EXPORT_MAP, REGION_EXPORT_MAP
 from ..spatial.transect import export_transect_layers, export_transect_spacing
 from .operations import group_merge
@@ -339,9 +338,69 @@ def get_haul_transect_key(configuration_dict: dict, root_dir: str):
     return haul_key_filtered
 
 
+def filter_export_regions(
+    transect_data: pd.DataFrame,
+    region_filter: Union[str, list[str]],
+    index_variable: Union[str, List[str]] = ["transect_num", "interval"],
+    unique_region_id: str = "region_id",
+    region_class_column: str = "region_class",
+    impute_regions: bool = True,
+):
+
+    # Check if region column is present if region filter is defined
+    if region_class_column not in transect_data.columns:
+        raise ValueError(
+            f"The defined `region_class_column` ({region_class_column}) used for applying "
+            f"`region_filter`does not exist!"
+        )
+    # ---- Convert to list, if needed
+    if isinstance(region_filter, str):
+        region_filter = list(region_filter)
+    elif not isinstance(region_filter, list):
+        raise TypeError(
+            f"The defined `region_filter` ({region_filter}) must be either a `str` or `list`."
+        )
+
+    # Define pattern (join list values)
+    region_pattern = rf"^(?:{'|'.join([re.escape(name.lower()) for name in region_filter])})"
+
+    # Apply the filter to only include the regions-of-interest
+    transect_data = transect_data[
+        transect_data[region_class_column].str.contains(region_pattern, case=False, regex=True)
+    ]
+
+    # Impute region IDs for cases where multiple regions overlap within the same interval
+    if impute_regions:
+        # ---- Check that index variables exist and convert to a list, if needed
+        if isinstance(index_variable, str):
+            index_variable = list(index_variable)
+        elif not isinstance(index_variable, list):
+            raise TypeError(
+                f"The defined `region_filter` ({index_variable}) must be either a `str` or `list`."
+            )
+        # Check for missing columns
+        missing_columns = set(index_variable) - set(transect_data.columns)
+        # ---- Raise error if needed
+        if missing_columns:
+            raise ValueError(
+                f"The following columns are missing from `transect_data`: {list(missing_columns)}"
+            )
+
+        # ---- Re-assign the region ID based on the first element
+        transect_data.loc[:, unique_region_id] = transect_data.groupby(
+            ["interval", "transect_num"]
+        )[unique_region_id].transform("first")
+
+    # Return the output
+    return transect_data
+
+
 def batch_read_echoview_exports(
     configuration_dict: dict,
     transect_pattern: str = r"T(\d+)",
+    index_variable: Union[str, List[str]] = ["transect_num", "interval"],
+    unique_region_id: str = "region_id",
+    region_class_column: str = "region_class",
     file_directory: Optional[Union[str, Path]] = None,
     save_directory: Optional[Union[str, Path]] = None,
 ):
@@ -470,58 +529,56 @@ def batch_read_echoview_exports(
     for key, values in region_names.items():
         # ---- Get valid region names
         region_filter = values
-        # ---- Partition specific grouped regions
-        grouped_region = regions_df[regions_df["group"] == key]
-        # ---- Integrate NASC
-        nasc_integrated = integrate_nasc(
+        # ---- Apply the region filter
+        transect_regions = filter_export_regions(
             transect_data,
-            integration_variable="nasc",
-            index_variable=["transect_num", "interval"],
-            region_class_column="region_class",
-            unique_region_id="region_id",
+            index_variable=index_variable,
             region_filter=region_filter,
+            unique_region_id=unique_region_id,
+            region_class_column=region_class_column,
+            impute_regions=True,
         )
-        # ---- Merge with the region definitions
-        nasc_region = grouped_region.merge(nasc_integrated, on=["transect_num", "region_id"])
-        # ---- Transform the region_ids to account for the overlapping values
-        nasc_region["region_id"] = nasc_region.groupby(["transect_num", "interval"])[
-            "region_id"
-        ].transform("first")
-        # ---- Update the haul numbers
-        nasc_region["haul_num"] = nasc_region.groupby(["transect_num", "interval", "region_id"])[
-            "haul_num"
-        ].transform("first")
-        # ---- Consolidate by ekeing out the remaining sum
-        nasc_summed = (
-            nasc_region.groupby(["transect_num", "interval", "region_id", "haul_num"])["nasc"]
+        # ---- Calculate transect spatial metrics
+        transect_layer_summary = export_transect_layers(transect_regions)
+        # ---- Vertically sum backscatter
+        nasc_intervals = (
+            transect_regions.groupby(list(index_variable + [unique_region_id]))["nasc"]
             .sum()
-            .to_frame()
+            .to_frame("NASC")
             .reset_index()
         )
-        # ---- Merge with the haul-transect key
-        nasc_strata_region = nasc_summed.merge(haul_transect, on=["haul_num"])
-        # ---- Calculate transect spatial metrics
-        transect_summary = export_transect_layers(transect_data)
-        # ---- Merge with the haul-transect indexed NASC
-        nasc_transect_summary = nasc_strata_region.merge(
-            transect_summary, on=["transect_num", "interval"]
+        # ---- Partition specific grouped regions
+        grouped_region = regions_df[regions_df["group"] == key]
+        # ---- Merge stratum and haul information into the integrated NASC dataframe
+        nasc_haul_strata = group_merge(nasc_intervals, [grouped_region, haul_transect])
+        #
+        full_interval_df = interval_template.merge(nasc_haul_strata, how="left")
+        #
+        full_interval_strata_df = full_interval_df.merge(transect_layer_summary, how="left")
+        # ---- Sort
+        full_interval_strata_df = full_interval_strata_df.sort_values(
+            ["transect_num", "vessel_log_start", "vessel_log_end"]
         )
-        # ----
-        nasc_intervals = interval_template.merge(
-            nasc_transect_summary, on=["transect_num", "interval", "bottom_depth"], how="outer"
-        )
-        # ---- Drop unused columns
-        nasc_intervals.drop(columns=["interval", "fraction_hake"], inplace=True)
         # ---- Fill NaN region id column with 999
-        nasc_intervals["region_id"] = nasc_intervals["region_id"].fillna(999).astype(int)
-        # ---- Fill other integer-based with 0's
-        nasc_intervals[["haul_num", "stratum_num"]] = (
-            nasc_intervals[["haul_num", "stratum_num"]].fillna(0).astype(int)
+        full_interval_strata_df[unique_region_id] = (
+            full_interval_strata_df[unique_region_id].fillna(999).astype(int)
+        )
+        # ---- Fill haul with 0's
+        full_interval_strata_df["haul_num"] = (
+            full_interval_strata_df["haul_num"].fillna(0).astype(int)
+        )
+        # ---- Fill stratum with 1's
+        full_interval_strata_df["stratum_num"] = (
+            full_interval_strata_df["stratum_num"].fillna(1).astype(int)
         )
         # ---- Fill float/continuous columns
-        nasc_intervals[["nasc", "layer_mean_depth", "layer_height"]] = (
-            nasc_intervals[["nasc", "layer_mean_depth", "layer_height"]].fillna(0).astype(float)
+        full_interval_strata_df[["NASC", "layer_mean_depth", "layer_height", "bottom_depth"]] = (
+            full_interval_strata_df[["NASC", "layer_mean_depth", "layer_height", "bottom_depth"]]
+            .fillna(0)
+            .astype(float)
         )
+        # ---- Drop unused columns
+        output_nasc = full_interval_strata_df.filter(export_settings["file_columns"])
         # ---- Format the save filename
         save_filename = export_settings["save_file_template"]
         # ---- REGION replacement
@@ -534,29 +591,13 @@ def batch_read_echoview_exports(
         save_filepath = "/".join([save_file_directory, save_filename])
         # ---- Update the configuration
         configuration_dict["NASC"][key]["filename"] = save_filepath
-        # ---- Organize dataframe
-        nasc_output = nasc_intervals[
-            [
-                "transect_num",
-                "region_id",
-                "vessel_log_start",
-                "vessel_log_end",
-                "latitude",
-                "longitude",
-                "stratum_num",
-                "transect_spacing",
-                "layer_mean_depth",
-                "layer_height",
-                "bottom_depth",
-                "nasc",
-                "haul_num",
-            ]
-        ]
-        # ---- Replace NASC column
-        nasc_output.rename(columns={"nasc": "NASC"}, inplace=True)
+        # ---- Update the sheetname
+        configuration_dict["NASC"][key]["sheetname"] = export_settings["save_file_sheetname"]
         # ---- Save xlsx file
-        nasc_output.to_excel(
-            excel_writer=str(Path(save_folder) / save_filename), sheet_name="Sheet1", index=False
+        output_nasc.to_excel(
+            excel_writer=str(Path(save_folder) / save_filename),
+            sheet_name=export_settings["save_file_sheetname"],
+            index=False,
         )
         # ---- Print out message
         print(
