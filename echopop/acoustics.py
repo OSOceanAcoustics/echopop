@@ -1,5 +1,4 @@
-import re
-from typing import List, Optional, Union
+from typing import Union
 
 import numpy as np
 import pandas as pd
@@ -274,15 +273,26 @@ def nasc_to_biomass(
     # Get the name of the stratum column
     stratum_col = settings_dict["transect"]["stratum_name"]
 
+    # Get group-specific columns
+    age_group_cols = settings_dict["transect"]["age_group_columns"]
+
+    # Get group-specific column names and create conversion key
+    name_conversion_key = {age_group_cols["haul_id"]: "haul_num", age_group_cols["nasc_id"]: "nasc"}
+    # ---- Update if the stratum is not equal to INPFC
+    if settings_dict["transect"]["stratum"] != "inpfc":
+        name_conversion_key.update({age_group_cols["stratum_id"]: stratum_col})
+
+    # Rename columns
+    # ---- Extract NASC data
+    nasc_data = input_dict["acoustics"]["nasc_df"].copy()
+    # ---- Change names
+    nasc_data.rename(columns=name_conversion_key, inplace=True)
+
     # Correct the acoustic survey transect intervals
-    nasc_interval_df = correct_transect_intervals(input_dict["acoustics"]["nasc_df"])
+    nasc_interval_df = correct_transect_intervals(nasc_data)
 
     # Select the appropriate NASC column based on the inclusion or exclusion of age-1 fish
     if settings_dict["transect"]["exclude_age1"]:
-        # ---- Drop the unused column
-        nasc_interval_df.drop("NASC_all_ages", axis=1, inplace=True)
-        # ---- Rename the used column
-        nasc_interval_df.rename(columns={"NASC_no_age1": "nasc"}, inplace=True)
         # ---- Calculate age-1 NASC and weight proportions
         age1_proportions = age1_metric_proportions(
             input_dict["biology"]["distributions"],
@@ -302,10 +312,6 @@ def nasc_to_biomass(
         adult_proportions["nasc_proportion"] = 1 - age1_proportions["nasc_proportion"]
 
     else:
-        # ---- Drop the unused column
-        nasc_interval_df.drop("NASC_no_age1", axis=1, inplace=True)
-        # ---- Rename the used column
-        nasc_interval_df.rename(columns={"NASC_all_ages": "nasc"}, inplace=True)
         # ---- Assign filled adult proportions dataframe
         adult_proportions = pd.DataFrame(
             {
@@ -319,7 +325,7 @@ def nasc_to_biomass(
     # Merge hake fraction data into `nasc_interval_df`
     # ---- Initial merge
     nasc_interval_df = nasc_interval_df.merge(
-        input_dict["spatial"]["strata_df"], on=[stratum_col, "haul_num"], how="outer"
+        input_dict["spatial"]["strata_df"], on=[stratum_col, "haul_num"], how="left"
     )
     # ---- Replace `fraction_hake` where NaN occurs
     nasc_interval_df["fraction_hake"] = nasc_interval_df["fraction_hake"].fillna(0.0)
@@ -468,76 +474,3 @@ def nasc_to_biomass(
     )
     # ---- Return output
     return adult_proportions, nasc_biology_grp
-
-
-def integrate_nasc(
-    transect_data: pd.DataFrame,
-    integration_variable: str = "nasc",
-    index_variable: Union[str, List[str]] = ["transect_num", "interval"],
-    unique_region_id: str = "region_id",
-    region_class_column: str = "region_class",
-    region_filter: Optional[Union[str, List[str]]] = None,
-):
-    """
-    Vertically integrate NASC.
-    """
-
-    # Check if region column is present if region filter is defined
-    if region_filter is not None:
-        if region_class_column not in transect_data.columns:
-            raise ValueError(
-                f"The defined `region_class_column` ({region_class_column}) used for applying "
-                f"`region_filter`does not exist!"
-            )
-        # ---- Convert to list, if needed
-        if isinstance(region_filter, str):
-            region_filter = list(region_filter)
-        elif not isinstance(region_filter, list):
-            raise TypeError(
-                f"The defined `region_filter` ({region_filter}) must be either a `str` or `list`."
-            )
-        # ---- Define pattern (join list values)
-        region_pattern = rf"^(?:{'|'.join([re.escape(name.lower()) for name in region_filter])})"
-        # ---- Apply the filter to only include the regions-of-interest
-        transect_data = transect_data[
-            transect_data[region_class_column].str.contains(region_pattern, case=False, regex=True)
-        ]
-        # ---- Update the `index_variable` with the region-specific column
-        index_variable = index_variable + [unique_region_id, region_class_column]
-
-    # Check that index variables exist
-    # ---- Convert to list, if needed
-    if isinstance(index_variable, str):
-        index_variable = list(index_variable)
-    elif not isinstance(index_variable, list):
-        raise TypeError(
-            f"The defined `region_filter` ({index_variable}) must be either a `str` or `list`."
-        )
-
-    # Check columns
-    # ---- Missing columns
-    missing_columns = set(index_variable) - set(transect_data.columns)
-    # ---- Raise error if needed
-    if missing_columns:
-        raise ValueError(
-            f"The following columns are missing from `transect_data`: {list(missing_columns)}"
-        )
-
-    # Check that the integration variable exists
-    # ---- Check input type
-    if not isinstance(integration_variable, str):
-        raise TypeError(f"Defined `integration_variable` ({integration_variable}) must be a `str`.")
-    # ---- Check existence
-    elif integration_variable not in transect_data.columns:
-        raise ValueError(
-            f"Defined `integration_variable` ({integration_variable}) does not exist in "
-            f"`transect_data`."
-        )
-    else:
-        transect_integrated = (
-            transect_data.groupby(index_variable)[integration_variable].sum().reset_index()
-        )
-
-    # Merge the integrated nasc with layer dataframe
-    # return transect_integrated.merge(transect_summary, on = tmp_idx)
-    return transect_integrated

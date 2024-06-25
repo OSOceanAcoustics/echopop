@@ -296,12 +296,29 @@ def read_validated_data(
 
         # Toggle through including and excluding age-1
         if config_map[1] == "no_age1":
-            df = df.rename(columns={"NASC": "NASC_no_age1"})
+            df = df.rename(
+                columns={
+                    "NASC": "NASC_no_age1",
+                    "haul_num": "haul_no_age1",
+                    "stratum_num": "stratum_no_age1",
+                }
+            )
         else:
-            df = df.rename(columns={"NASC": "NASC_all_ages"})
+            df = df.rename(
+                columns={
+                    "NASC": "NASC_all_ages",
+                    "haul_num": "haul_all_ages",
+                    "stratum_num": "stratum_all_ages",
+                }
+            )
 
-        column_to_add = df.columns.difference(input_dict["acoustics"]["nasc_df"].columns).tolist()
-        input_dict["acoustics"]["nasc_df"][column_to_add] = df[column_to_add]
+        if input_dict["acoustics"]["nasc_df"].shape == (0, 0):
+            input_dict["acoustics"]["nasc_df"] = df
+        else:
+            column_to_add = df.columns.difference(
+                input_dict["acoustics"]["nasc_df"].columns
+            ).tolist()
+            input_dict["acoustics"]["nasc_df"][column_to_add] = df[column_to_add]
     else:
         raise ValueError(
             """Unexpected data attribute structure. Check API settings located in"""

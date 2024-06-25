@@ -1,6 +1,6 @@
 import copy
 from pathlib import Path
-from typing import Literal, Optional, Union
+from typing import List, Literal, Optional, Union
 
 from .analysis import (
     acoustics_to_biology,
@@ -10,7 +10,7 @@ from .analysis import (
     stratified_summary,
 )
 from .core import DATA_STRUCTURE
-from .utils import batch_load as elb, load as el, message as em
+from .utils import batch_load as ebl, load as el, message as em
 
 
 class Survey:
@@ -49,6 +49,9 @@ class Survey:
         survey_year_config_path: Union[str, Path],
         construct_nasc: bool = False,
         transect_pattern: Optional[str] = r"T(\d+)",
+        index_variable: Union[str, List[str]] = ["transect_num", "interval"],
+        unique_region_id: str = "region_id",
+        region_class_column: str = "region_class",
         export_file_directory: Optional[Union[str, Path]] = None,
         export_save_directory: Optional[Union[str, Path]] = None,
     ):
@@ -63,8 +66,14 @@ class Survey:
         if construct_nasc:
             print("Constructing consolidated NASC export files.")
             # ---- Batch processing
-            elb.batch_read_echoview_exports(
-                self.config, transect_pattern, export_file_directory, export_save_directory
+            ebl.batch_read_echoview_exports(
+                self.config,
+                transect_pattern,
+                index_variable,
+                unique_region_id,
+                region_class_column,
+                export_file_directory,
+                export_save_directory,
             )
 
         # Loading the datasets defined in the configuration files
@@ -91,6 +100,11 @@ class Survey:
         self.analysis["settings"].update(
             {
                 "transect": {
+                    "age_group_columns": {
+                        "haul_id": "haul_no_age1" if exclude_age1 else "haul_all_ages",
+                        "nasc_id": "NASC_no_age1" if exclude_age1 else "NASC_all_ages",
+                        "stratum_id": "stratum_no_age1" if exclude_age1 else "stratum_all_ages",
+                    },
                     "species_id": species_id,
                     "stratum": stratum.lower(),
                     "stratum_name": "stratum_num" if stratum == "ks" else "inpfc",
