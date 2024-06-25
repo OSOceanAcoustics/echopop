@@ -163,19 +163,21 @@ def get_transect_numbers(export_files: list, transect_pattern: str, file_directo
     unparsed_transects = [file for file, num in transect_reference.items() if num is None]
     # ---- If some are missing
     if unparsed_transects:
+        # ---- Join files on multiple lines
+        unparsed_transects_formatted = '\n'.join(unparsed_transects)
         if len(unparsed_transects) > 10:
             # ---- Get number of unparsed strings
             unparsed_n = len(unparsed_transects)
             # ---- Raise error
             raise ValueError(
                 f"Transect numbers could not be parsed from {unparsed_n} files in {file_directory}."
-                f" The first 10 files include:\n {'\n'.join(unparsed_transects)}"
+                f" The first 10 files include:\n {unparsed_transects_formatted}"
             )
         else:
             # ---- Raise error
             raise ValueError(
                 f"Transect numbers could not be parsed from the following filename(s) in "
-                f"{file_directory}:\n {'\n'.join(unparsed_transects)}"
+                f"{file_directory}:\n {unparsed_transects_formatted}"
             )
 
     # Return output
