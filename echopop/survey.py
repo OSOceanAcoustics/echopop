@@ -1,6 +1,6 @@
 import copy
 from pathlib import Path
-from typing import Dict, List, Literal, Optional, Tuple, Union
+from typing import Dict, List, Literal, Optional, Tuple, Union, Type
 
 import numpy as np
 
@@ -256,7 +256,7 @@ class Survey:
         finite_step_size: float = 1e-8,
         trust_region_solver: Literal["exact", "base"] = "exact",
         x_scale: Union[Literal["jacobian"], np.ndarray[float]] = "jacobian",
-        jacobian_approx: Literal["forward", "central"] = "forward",
+        jacobian_approx: Literal["forward", "central"] = "central",
         force_lag_zero: bool = True,
         variable: Literal["biomass", "abundance"] = "biomass",
         verbose: bool = True,
