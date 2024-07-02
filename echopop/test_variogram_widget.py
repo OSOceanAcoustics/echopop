@@ -96,6 +96,22 @@ THEORETICAL_VARIOGRAM_PARAMETER_MAP = {
 }
 
 # %%
+import ipywidgets as widgets
+import matplotlib.pyplot as plt
+from typing import Dict
+from IPython.display import display, clear_output
+
+import pandas as pd
+import numpy as np
+
+from echopop.spatial.variogram import (
+    get_variogram_arguments, empirical_variogram
+)
+
+from echopop.spatial.projection import transform_geometry
+
+from echopop.spatial.transect import edit_transect_columns
+
 EMPIRICAL_VARIOGRAM_PARAMETER_MAP = {
     "n_lags": 30,
     "lag_resolution": 0.002,
