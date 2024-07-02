@@ -1,7 +1,7 @@
 import copy
 from pathlib import Path
 from typing import Dict, List, Literal, Optional, Tuple, Union, Type
-
+import warnings
 import numpy as np
 
 from .analysis import (
@@ -215,6 +215,38 @@ class Survey:
         # Print result if `verbose == True`
         if verbose:
             em.stratified_results_msg(stratified_results, self.analysis["settings"]["stratified"])
+
+    def variogram_gui(
+            self
+    ):
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+
+            # Get the stratum name
+            stratum_name = self.analysis["settings"]["transect"]["stratum_name"]
+
+            # Get standardization config for kriging 
+            standardization_parameters = self.input["statistics"]["kriging"]["model_config"]
+            # ---- Get isobath data
+            isobath_df = self.input["statistics"]["kriging"]["isobath_200m_df"]
+
+            # Get variogram parameters
+            variogram_parameters = self.input["statistics"]["variogram"]["model_config"].copy()
+
+            # Get transect data
+            transect_input = copy.deepcopy(self.analysis["transect"])
+
+            # Generate settings dictionary
+            settings_dict = {
+                "stratum_name": stratum_name,
+                "verbose": False,
+                "kriging_parameters": {
+                    "longitude_reference": standardization_parameters["longitude_reference"],
+                    "longitude_offset": standardization_parameters["longitude_offset"],
+                    "latitude_offset": standardization_parameters["latitude_offset"],
+                },
+            }
+
 
     def fit_variogram(
         self,
