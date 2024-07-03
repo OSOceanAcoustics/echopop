@@ -1,8 +1,9 @@
 import copy
 from pathlib import Path
-from typing import Dict, List, Literal, Optional, Tuple, Union, Type
-import warnings
+from typing import Dict, List, Literal, Optional, Tuple, Union
+
 import numpy as np
+from IPython.display import display
 
 from .analysis import (
     acoustics_to_biology,
@@ -13,6 +14,9 @@ from .analysis import (
     variogram_analysis,
 )
 from .core import DATA_STRUCTURE
+from .graphics import variogram_interactive as egv
+from .spatial.projection import transform_geometry
+from .spatial.transect import edit_transect_columns
 from .utils import load as el, message as em
 
 
@@ -216,37 +220,59 @@ class Survey:
         if verbose:
             em.stratified_results_msg(stratified_results, self.analysis["settings"]["stratified"])
 
-    def variogram_gui(
-            self
-    ):
-        with warnings.catch_warnings():
-            warnings.filterwarnings("ignore", category=DeprecationWarning)
+    def variogram_gui(self):
+        """
+        Semivariogram plotting and parameter optimization GUI method
+        """
 
-            # Get the stratum name
-            stratum_name = self.analysis["settings"]["transect"]["stratum_name"]
+        # Initialize results
+        self.results["variogram"] = {}
 
-            # Get standardization config for kriging 
-            standardization_parameters = self.input["statistics"]["kriging"]["model_config"]
-            # ---- Get isobath data
-            isobath_df = self.input["statistics"]["kriging"]["isobath_200m_df"]
+        # Initialize Survey-class object
+        self.analysis.update({"variogram": {}})
 
-            # Get variogram parameters
-            variogram_parameters = self.input["statistics"]["variogram"]["model_config"].copy()
+        # Get the stratum name
+        stratum_name = self.analysis["settings"]["transect"]["stratum_name"]
 
-            # Get transect data
-            transect_input = copy.deepcopy(self.analysis["transect"])
+        # Get standardization config for kriging
+        standardization_parameters = self.input["statistics"]["kriging"]["model_config"]
+        # ---- Get isobath data
+        isobath_df = self.input["statistics"]["kriging"]["isobath_200m_df"]
 
-            # Generate settings dictionary
-            settings_dict = {
-                "stratum_name": stratum_name,
-                "verbose": False,
-                "kriging_parameters": {
-                    "longitude_reference": standardization_parameters["longitude_reference"],
-                    "longitude_offset": standardization_parameters["longitude_offset"],
-                    "latitude_offset": standardization_parameters["latitude_offset"],
-                },
-            }
+        # Get variogram parameters
+        variogram_parameters = self.input["statistics"]["variogram"]["model_config"].copy()
 
+        # Generate settings dictionary
+        settings_dict = {
+            "stratum_name": stratum_name,
+            "variable": "biomass",
+            "verbose": False,
+            "kriging_parameters": {
+                "longitude_reference": standardization_parameters["longitude_reference"],
+                "longitude_offset": standardization_parameters["longitude_offset"],
+                "latitude_offset": standardization_parameters["latitude_offset"],
+            },
+        }
+
+        # Prepare the transect data
+        # ---- Create a copy of the transect dictionary
+        transect_input = copy.deepcopy(self.analysis["transect"])
+        # ---- Edit the transect data
+        transect_data = edit_transect_columns(transect_input, settings_dict)
+        isobath_df = self.input["statistics"]["kriging"]["isobath_200m_df"]
+        transect_data, _, _ = transform_geometry(transect_data, isobath_df, settings_dict)
+
+        # Generate GUI
+        SEMIVARIOGRAM_GUI = egv.variogram_widgets(
+            transect_data,
+            variogram_parameters,
+            settings_dict,
+            self.analysis["variogram"],
+            self.results["variogram"],
+        )
+
+        # Run GUI
+        display(SEMIVARIOGRAM_GUI)
 
     def fit_variogram(
         self,

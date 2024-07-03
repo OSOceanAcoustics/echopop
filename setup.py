@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-version = '0.4.0'
+version = "0.4.0"
 
 # Dynamically read dependencies from requirements file
 with open("requirements.txt") as f:

@@ -1,1 +1,0 @@
-from echopop import Survey
