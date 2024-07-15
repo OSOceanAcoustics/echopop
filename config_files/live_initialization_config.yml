@@ -6,52 +6,51 @@
   #####################################################################################################################
   # Biological data processing#
   ########################
-  # Jolly and Hampton (1990) stratified mean calculation
-  bio_hake_len_bin: [                   # length sequence array 2 - 80 cm. This specifies the bin centers!
-                  2,                    # start of bin centers
-                  80,                   # end of bin centers
-                  40                    # number of bins in total
-  ]
+  biology:
+    # Length-binning
+    # NOTE: start : end : number 
+    length_distribution:
+      bins: [2, 80, 40]
+    # Station separation
+    # NOTE: if `separate_stations` is True, `['list']` is required for `station_id`
+    stations: 
+      separate_stations: True
+      station_id: ["length", "specimen"]
 
   #####################################################################################################################
   # Geospatial settings#
   ########################
-  inpfc:                                  # INPFC northern latitude limits and labels
-    latitude_max: [36.0, 40.5, 43.0,    
-                  45.7667, 48.50, 55.0]
-    stratum_names: [1, 2, 3, 4, 5, 6]     
   geospatial:
-    init: epsg:4326                       # EPSG integer code for geodetic parameter dataset
+    inpfc:                                  # INPFC northern latitude limits and labels
+      latitude_max: [36.0, 40.5, 43.0,    
+                    45.7667, 48.50, 55.0]
+      stratum_names: [1, 2, 3, 4, 5, 6]     
+    projection: epsg:4326                   # EPSG integer code for geodetic parameter dataset
+  # NOTE: `link_biology_acoustics` defines how biological and acoustic data are linked with one another. This 
+  # comprises True/False statements that denote the desired association. All values set to "True" will be output.
+  # `global`        --> NASC associated with sigma_bs calculated from all survey data
+  # `INPFC`         --> NASC for each INPFC stratum associated with matched stratum-specific sigma_bs 
+  # `closest_haul`  --> NASC associated with sigma_bs calculated from the closest (spatially) trawls
+  # `weighted_haul` --> NASC associated with sigma_bs calculated from all survey data weighted by distance from haul coordinates
+    link_biology_acoustics:         
+      global: False
+      INPFC: True
+      closest_haul: False
+      weighted_haul: False
 
   #####################################################################################################################
-  # Analysis settings#
-  ########################
+  # Acoustics settings#
+  ######################## 
   acoustics:
-    nasc_frequency: 38                    # kHz
-  biology:
-    separate_stations:
-      station_id: ["length", "specimen"]
-  ## NOTE: `link_biology_acoustics` defines how biological and acoustic data are linked with one another. This 
-  ## comprises True/False statements that denote the desired association. All values set to "True" will be output.
-  ## `global`        --> NASC associated with sigma_bs calculated from all survey data
-  ## `INPFC`         --> NASC for each INPFC stratum associated with matched stratum-specific sigma_bs 
-  ## `closest_haul`  --> NASC associated with sigma_bs calculated from the closest (spatially) trawls
-  ## `weighted_haul` --> NASC associated with sigma_bs calculated from all survey data weighted by distance from haul coordinates
-  link_biology_acoustics:         
-    global: False
-    INPFC: True
-    closest_haul: False
-    weighted_haul: False
-  ## NOTE: `biological_processing` 
-
-  #####################################################################################################################
-  # Log-linear regression#
-  ########################
-  # Target strength (TS) - length (L) regression: TS=m*log10(L)+b
-  TS_length_regression_parameters:
-    pacific_hake:                         # corresponding species text code
-      number_code: 22500                  # species number code
-      TS_L_slope: 20.0                    # the 'm' or 'slope' parameter
-      TS_L_intercept: -68.0               # the 'b' or 'y-intercept'
-      length_units: cm                    # units for L used in regression/relationship
+    # Acoustic transmit frequency (Hz or kHz)
+    transmit: 
+      frequency: 38.0
+      units: kHz
+    # Target strength (TS) - length (L) regression: TS=m*log10(L)+b
+    TS_length_regression_parameters:
+      pacific_hake:                         # corresponding species text code
+        number_code: 22500                  # species number code
+        TS_L_slope: 20.0                    # the 'm' or 'slope' parameter
+        TS_L_intercept: -68.0               # the 'b' or 'y-intercept'
+        length_units: cm                    # units for L used in regression/relationship
 ...
