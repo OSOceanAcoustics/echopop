@@ -1,6 +1,4 @@
-import zarr
 import xarray as xr
-import shutil 
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -57,8 +55,8 @@ def live_configuration(live_init_config_path: Union[str, Path],
 ####################################################################################################  
 # TEST: YAML FILE CONFIGURATION
 # ---- Define filepaths
-live_init_config_path = "C:/Users/Brandyn/Documents/GitHub/echopop/config_files/live_initialization_config.yml"
-live_file_config_path = "C:/Users/Brandyn/Documents/GitHub/echopop/config_files/live_survey_year_2019_config.yml"
+live_init_config_path = "C:/Users/15052/Documents/GitHub/echopop/config_files/live_initialization_config.yml"
+live_file_config_path = "C:/Users/15052/Documents/GitHub/echopop/config_files/live_survey_year_2019_config.yml"
 # ---- Run function: `live_configuration`
 file_configuration = live_configuration(live_init_config_path, live_file_config_path)
 file_configuration
@@ -150,6 +148,8 @@ def load_acoustic_data(file_configuration: dict) -> Tuple[pd.DataFrame, xr.Datas
         full_config_map = {**acoustics_config_map["xarray_coordinates"],
                            **acoustics_config_map["xarray_variables"]}          
         # ! [REQUIRES DASK] ---- Read in all listed files 
+        # TODO: The sliding/overlapping windows makes this annoying -- in theory, only a single new zarr file will be ingested
+        # TODO: So this needs to be replaced w/ `open_dataset` instead
         zarr_data_ds = xr.open_mfdataset(zarr_files, 
                                          engine="zarr",
                                          chunks="auto",
@@ -200,6 +200,7 @@ def load_acoustic_data(file_configuration: dict) -> Tuple[pd.DataFrame, xr.Datas
     return zarr_data_df_output.drop(columns = ["frequency_nominal"]), coordinate_metadata
 ####################################################################################################  
 # TEST: ACOUSTIC ZARR FILE INGESTION CONFIGURATION
+# NOTE: 
 # ---- Run function: `load_validated_acoustic_data` using previously defined `file_configuration`
 acoustic_data, coordinate_metadata = load_acoustic_data(file_configuration)
 acoustic_data
@@ -214,7 +215,14 @@ def load_spatial_data(file_configuration: dict,
     projection = file_configuration["geospatial"]["projection"]
     # ---- Extract the biology-acoustics linking method options
     acoustics_biology_link = file_configuration["geospatial"]["link_biology_acoustics"]
-    
+
+    # Convert the DataFrame to a GeoDataFrame
+    acoustic_data_gdf = gpd.GeoDataFrame(
+        data=acoustic_data,
+        geometry=gpd.points_from_xy(acoustic_data["longitude"], acoustic_data["latitude"]),
+        crs=projection
+    )
+
     # Validate the spatial biology-acoustics linking method
     # ---- Get the biology-acoustics linking method
     link_method = next(key for key, value in acoustics_biology_link.items() if value)
@@ -224,6 +232,9 @@ def load_spatial_data(file_configuration: dict,
             f"Unexpected biology-acoustic linking parameter ([{link_method}]). Valid options "
             f"include: 'global', 'closest_haul', 'weighted_haul', and 'INPFC'."
         )
+    
+    # Create INPFC stratum dataframe
+    # ---- Extract 
         
     # Validate projection information
     # ---- Create a dummy GeoDataFrame to extract CRS information
@@ -406,17 +417,123 @@ xdf_int["number_density"] = xdf_int["NASC"] / (4.0 * np.pi * sigma_mean)
 
 
 ###################
-from typing import Union
-from pathlib import Path
-import copy
-import yaml
-
-# from echopop.acoustics import ts_length_regression, to_dB, to_linear
-# from echopop.live.core import DATA_STRUCTURE
+from geopy.distance import distance
+from shapely.geometry import Polygon, Point, box
+import geopandas as gpd
+from shapely.ops import unary_union
+import pyproj
 
 
-### INIT CONFIG
-initialization_config = "C:/Users/15052/Documents/GitHub/echopop/config_files/live_initialization_config.yml"
+grid_settings = file_configuration["geospatial"]["griddify"]
+grid = []
+lat_step = distance(nautical=grid_settings["grid_resolution"]["x"]).meters
+lon_step = distance(nautical=grid_settings["grid_resolution"]["y"]).meters
+lat_min = grid_settings["bounds"]["latitude"][0]
+lat_max = grid_settings["bounds"]["latitude"][1]
+lon_min = grid_settings["bounds"]["longitude"][0]
+lon_max = grid_settings["bounds"]["longitude"][1]
+
+utm_str = utm_string_generator((lon_max + lon_min)/2, (lat_max + lat_min)/2)
+utm_proj = pyproj.Proj(f"epsg:{utm_str}")
+x_min, y_min = utm_proj(lon_min, lat_min)
+x_max, y_max = utm_proj(lon_max, lat_max)
+
+num_lon_steps = int((x_max - x_min) / lon_step)
+num_lat_steps = int((y_max - y_min) / lat_step)
+
+lon1 = np.linspace(x_min, x_max - lon_step, num_lon_steps)
+lat1 = np.linspace(y_min, y_max - lat_step, num_lat_steps)
+lon2 = lon1 + lon_step
+lat2 = lat1 + lat_step
+
+# Convert UTM coordinates back to degrees
+lon_min_grid, lat_min_grid = np.meshgrid(lon1, lat1)
+lon_max_grid, lat_max_grid = np.meshgrid(lon2, lat2)
+
+# Convert UTM coordinates back to degrees with adjusted resolution
+lon1_deg, lat1_deg = utm_proj(lon_min_grid.ravel(), lat_min_grid.ravel(), inverse=True)
+lon2_deg, lat2_deg = utm_proj(lon_max_grid.ravel(), lat_max_grid.ravel(), inverse=True)
+
+polygons = [box(lon1, lat1, lon2, lat2) for lon1, lat1, lon2, lat2 in zip(lon1_deg, lat1_deg, lon2_deg, lat2_deg)]
+grid_gdf = gpd.GeoDataFrame({'geometry': polygons}, crs="epsg:4326")
+
+world = gpd.read_file("C:/Users/15052/Documents/GitHub/echopop_data/live_2019_files/coastline/ne_110m_land/ne_110m_land.shp")
+bbox = box(lon_min - 0.25, lat_min - 0.25, lon_max + 0.25, lat_max + 0.25)
+shapefile = world
+clipped_shapefile = gpd.clip(shapefile, bbox).to_crs(utm_proj.srs)
+clipped_shapefile.to_crs(utm_proj.srs)
+# clipped_geometry = bbox.intersection(world.union_all())
+# clipped_gdf = gpd.GeoDataFrame(geometry=[clipped_geometry], crs=world.crs)
+
+from shapely.geometry import MultiPolygon
+# Create an empty list to store clipped geometries
+# clipped_geometries = []
+
+# # Iterate over each grid polygon
+# for index, row in grid_gdf.iterrows():
+#     # Intersect grid polygon with land shape
+#     intersection = row['geometry'].intersection(clipped_shapefile.unary_union)
+
+#     # If intersection is a MultiPolygon, get the difference with the land shape
+#     if isinstance(intersection, MultiPolygon):
+#         clipped = row['geometry'].difference(clipped_shapefile.unary_union)
+#         if clipped.is_empty:
+#             continue
+#         clipped_geometries.append(clipped)
+#     else:
+#         # If intersection is a single Polygon, directly add to clipped geometries
+#         clipped_geometries.append(intersection)
+
+# clipped_grid = gpd.GeoDataFrame(geometry=clipped_geometries, crs=grid_gdf.crs)
+
+clipped_geometries = grid_gdf['geometry'].to_crs(utm_proj.srs).difference(clipped_shapefile.geometry.union_all())
+clipped_gdf = gpd.GeoDataFrame(geometry=clipped_geometries)
+clipped_gdf.to_crs(epsg=32610)
+
+invalid_geometries = clipped_gdf[~clipped_gdf.is_valid]
+clipped_gdf = clipped_gdf.buffer(0.001)
+clipped_gdf['area_sqm'] = clipped_gdf.area / 46300.00000000001**2
+
+clipped_gdf.area
+
+fig, ax = plt.subplots(figsize=(10, 8))
+clipped_gdf.plot(ax=ax, facecolor="none", edgecolor="black")
+clipped_shapefile.plot(ax=ax, edgecolor='black', linewidth=0.5)
+plt.tight_layout()
+plt.show()
+
+
+bbox.crs = {"init": "epsg:4326"}
+intersection = gpd.overlay(bbox, world, how='intersection')
+
+world_cut = gpd.sjoin(world, gpd.GeoDataFrame(geometry=[bbox]), how='inner', op='intersects')
+
+world_cut = world[world.geometry.intersects(bbox)]
+world_cut.to_crs("epsg:4326")
+
+import matplotlib.pyplot as plt
+fig, ax = plt.subplots(figsize=(10, 10))
+grid_gdf.plot(ax=ax, facecolor="none", edgecolor="black")
+world_cut.plot(ax=ax, linewidth=2, color='blue')
+plt.show()
+
+for cell in grid_gdf:
+
+    x, y = cell.exterior.xy  # Extract x and y coordinates of the cell
+    ax.fill(x, y, facecolor='none', edgecolor='black')  # Plot the cell as a polygon patch
+# Plot coastline
+# world.plot(ax=ax, linewidth=2, color='blue')
+plt.show()
+
+
+bbox = (lat_min, lon_min, lat_max, lon_max)
+G = ox.graph_from_bbox(bbox[2], bbox[3], bbox[0], bbox[1], network_type='none', simplify=False)
+G = ox.geometries_from_bbox(north=bbox[2], south=bbox[0], east=bbox[3], west=bbox[1], tags={'natural': ['coastline']})
+
+
+
+latitudes = range(int(lat_min), int(lat_max) + 1, int(lat_step))
+longitudes = range(int(lon_min), int(lon_max) + 1, int(lon_step))
 
 # Initialize `meta` attribute
 meta = copy.deepcopy(LIVE_DATA_STRUCTURE["meta"])

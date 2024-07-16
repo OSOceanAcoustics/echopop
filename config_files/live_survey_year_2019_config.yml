@@ -12,7 +12,7 @@ survey_year: 2019            # survey year being considered
 ##############################################################################
 # Directory path that contains all input data needed
 
-data_root_dir: C:/Users/Brandyn/Documents/GitHub/EchoPro_data/live_2019_files
+data_root_dir: C:/Users/15052/Documents/GitHub/echopop_data/live_2019_files
 
 ##############################################################################
 # Input data directories
@@ -20,9 +20,11 @@ input_directories:
   acoustic:
     directory: acoustics/
     extension: zarr
-    sheetname: null
   biological:
     directory: biology/
     extension: csv 
-    sheetname: null 
+    file_ids: 
+      catch: catch_perc
+      length: lf
+      specimen: spec
 ...
