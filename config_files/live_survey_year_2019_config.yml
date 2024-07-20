@@ -8,11 +8,13 @@
 # Parameters
 
 survey_year: 2019            # survey year being considered
-
+species:
+  text_code: pacific_hake    # target species for the survey year -- species name
+  number_code: 22500         # target species for the survey year -- numeric code
 ##############################################################################
 # Directory path that contains all input data needed
 
-data_root_dir: C:/Users/15052/Documents/GitHub/echopop_data/live_2019_files
+data_root_dir: C:/Users/Brandyn/Documents/GitHub/EchoPro_data/live_2019_files
 
 ##############################################################################
 # Input data directories
@@ -23,6 +25,14 @@ input_directories:
   biological:
     directory: biology/
     extension: csv 
+    file_name_formats:
+      catch: "{DATE:YYYYMM}_{HAUL}_{FILE_ID:catch_perc}"
+      length: "{DATE:YYYYMM}_{SPECIES_CODE}_{HAUL}_{FILE_ID:lf}"
+      specimen: "{DATE:YYYYMM}_{SPECIES_CODE}_{HAUL}_{FILE_ID:spec}"
+    file_index:
+      catch: [haul_num]
+      length: [haul_num, species_id]
+      specimen: [haul_num, species_id]
     file_ids: 
       catch: catch_perc
       length: lf
