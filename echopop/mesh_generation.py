@@ -1,3 +1,1189 @@
+import numpy as np
+import pandas as pd
+from sqlalchemy import create_engine, text
+from pathlib import Path
+import os 
+
+SQL_COMMANDS["create"].format(**{"table_name": "A", "column_definitions": "B"})
+
+# Coordinates
+x = np.array([1, 2, 3, 4, 5])
+y = np.array([1, 2, 3, 4, 5])
+
+# Create the grid points
+grid_points = [(i, j, 0) for i in x for j in y]
+
+#
+data_root_dir = Path("C:/Users/Brandyn/Documents/GitHub/EchoPro_data/")
+db_directory = data_root_dir / "database"
+# ---- Create the directory if it does not already exist
+db_directory.mkdir(parents=True, exist_ok=True)
+# ---- Complete path to `biology.db`
+db_file = db_directory / "grid.db"
+
+from sqlalchemy import create_engine, MetaData, Table, select, inspect, update, text, case
+
+# Initialize the database and create the table
+engine = create_engine(f"sqlite:///{db_file}")
+
+# Define metadata and the table to drop
+metadata = MetaData()
+grid_table = Table('grid', metadata, autoload_with=engine)
+# Drop the table
+with engine.connect() as connection:
+    grid_table.drop(connection)
+    print("Table 'grid' has been dropped.")
+
+# Inspect the database
+inspector = inspect(engine)
+tables = inspector.get_table_names()
+print(tables)
+
+def create_table_sql(table_name, columns, primary_keys=None, index_columns=None):
+    """
+    Generate a SQL command to create a table with dynamic columns, primary keys, and indices.
+
+    Args:
+        table_name (str): The name of the table.
+        columns (dict): A dictionary where keys are column names and values are data types.
+        primary_keys (list, optional): List of column names to be used as primary keys.
+        index_columns (list, optional): List of column names to be indexed.
+
+    Returns:
+        str: The SQL command to create the table.
+    """
+    # Generate column definitions
+    column_definitions = ",\n    ".join(f"{col} {dtype}" for col, dtype in columns.items())
+
+    # Generate primary key definition
+    primary_key_definition = ""
+    if primary_keys:
+        primary_key_definition = f",\n    PRIMARY KEY ({', '.join(primary_keys)})"
+
+    # Generate index definitions
+    index_definitions = ""
+    if index_columns:
+        index_definitions = "\n".join(
+            f"CREATE INDEX IF NOT EXISTS idx_{table_name}_{col} ON {table_name} ({col});"
+            for col in index_columns
+        )
+
+    # Combine all parts into the final SQL command
+    create_table_command = f"""
+    CREATE TABLE IF NOT EXISTS {table_name} (
+        {column_definitions}
+        {primary_key_definition}
+    );
+    """
+    # Return the command and any index definitions
+    return create_table_command.strip() + "\n" + index_definitions
+
+# Define metadata and the table to drop
+metadata = MetaData()
+grid_table = Table('grid', metadata, autoload_with=engine)
+# Drop the table
+with engine.connect() as connection:
+    grid_table.drop(connection)
+    print("Table 'grid' has been dropped.")
+    
+check_table_exists(engine, "grid")
+
+with engine.connect() as connection:
+    sql_create(connection, df, table_name, primary_keys)
+
+# Create the table
+table_name = "grid"
+columns = {"x": "INTEGER", "y": "INTEGER", "value": "REAL"}
+primary_keys = ["x", "y"]
+index_columns = ["x", "y"]
+
+create_sql = create_table_sql(table_name, columns, primary_keys, index_columns)
+print("Create Table SQL:\n", create_sql)
+
+with engine.connect() as connection:
+    connection.execute(text(create_sql))
+
+inspector = inspect(engine)
+tables = inspector.get_table_names()
+print(tables)
+
+check_table_exists(engine, "grid")
+
+sql_command = f"SELECT * FROM {table_name};"
+
+with engine.connect() as connection:
+    result = connection.execute(text(sql_command))
+    rows = result.fetchall()
+
+for row in rows:
+    print(row)
+    
+    
+check_table_exists(engine, "files_read")
+
+zarr_files_str = ["A", "B", "C", "D"]
+# ---- Create DataFrame
+current_files = pd.DataFrame(zarr_files_str, columns=["filepath"])
+
+with engine.connect() as connection:
+    sql_create(connection, table_name="files_read", df=current_files)
+    sql_insert(connection, table_name="files_read", columns=["filepath"], dataframe=current_files)
+
+table_name = "files_read"
+sql_command = f"SELECT * FROM {table_name};"
+
+with engine.connect() as connection:
+    result = connection.execute(text(sql_command))
+    rows = result.fetchall()
+
+for row in rows:
+    print(row)
+    
+    
+
+from sqlalchemy.exc import IntegrityError
+
+def insert_or_update(engine, table_name, columns, data, conflict_columns):
+    """
+    Insert or update data in a table.
+
+    Args:
+        engine (Engine): The SQLAlchemy engine instance.
+        table_name (str): The name of the table.
+        columns (list): List of column names.
+        data (list of dict): List of dictionaries containing data to insert or update.
+        conflict_columns (list): List of column names to use for conflict resolution.
+    """
+
+    # Prepare the SQL statement for insertion
+    column_names = ", ".join(columns)
+    placeholder = ", ".join(f":{col}" for col in columns)
+    # values_list = ", ".join(f"({', '.join(f':{col}' for col in columns)})" for _ in data)
+    values_str = ", ".join(
+        f"({', '.join(map(str, row))})"
+        for row in data
+    )
+    
+    
+    # Construct the SQL query
+    sql = f"""
+    INSERT INTO {table_name} ({column_names})
+    VALUES {values_str}
+    ON CONFLICT ({', '.join(conflict_columns)})
+    DO UPDATE SET {', '.join(f'{col}=excluded.{col}' for col in columns)}
+    """
+    
+    # Flatten the list of data for execution
+    # flattened_data = [item for sublist in [[(item[col] for col in columns)] for item in data] for item in sublist]
+
+    # Execute the SQL command
+    with engine.connect() as connection:
+        try:
+            connection.execute(text(sql))
+            # connection.commit()
+            print(f"Data inserted or updated successfully in table '{table_name}'.")
+        except IntegrityError as e:
+            print(f"IntegrityError: {e}")
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            
+# Prepare data for insertion or update
+# data = [{'x': i, 'y': j, 'value': v} for i, j, v in grid_points]
+data = grid_points
+
+# Insert or update data
+insert_or_update(engine, table_name, columns.keys(), data, primary_keys)
+
+sql_command = f"SELECT * FROM {table_name};"
+
+with engine.connect() as connection:
+    result = connection.execute(text(sql_command))
+    rows = result.fetchall()
+
+for row in rows:
+    print(row)
+
+def update_specific_rows(engine, table_name, updates, conditions):
+    """
+    Update specific rows in a table based on conditions.
+
+    Args:
+        engine (Engine): The SQLAlchemy engine instance.
+        table_name (str): The name of the table.
+        updates (dict): Dictionary of columns and their new values to be updated.
+        conditions (dict): Dictionary of columns and their values to be used in the WHERE clause.
+    """
+
+    # Construct the SET clause for the update
+    set_clause = ", ".join(f"{col} = :{col}" for col in updates.keys())
+    
+    # Construct the WHERE clause for the update
+    where_clause = " AND ".join(f"{col} = :{col}_cond" for col in conditions.keys())
+    
+    # Construct the SQL query
+    sql = f"""
+    UPDATE {table_name}
+    SET {set_clause}
+    WHERE {where_clause}
+    """
+    
+    # Prepare parameters for the query
+    parameters = {**updates, **{f"{col}_cond": val for col, val in conditions.items()}}
+
+    # Execute the SQL command
+    with engine.connect() as connection:
+        try:
+            connection.execute(text(sql), parameters)
+            print(f"Rows updated successfully in table '{table_name}'.")
+        except IntegrityError as e:
+            print(f"IntegrityError: {e}")
+        except Exception as e:
+            print(f"An error occurred: {e}")
+
+# Define table name
+table_name = "grid"
+# Define the table and columns
+table_name = 'grid'
+condition_columns = ['x', 'y']
+
+# Define the updates and conditions
+dd = {"x": np.array([1, 2, 3 , 4, 5]), "y": np.array([1, 2, 3 , 4, 5]), "value": np.array([1, 2, 3 , 4, 5]).astype(float)}
+new_data = pd.DataFrame(dd)
+new_data
+df = new_data
+
+with engine.connect() as connection: 
+    # sql_create(connection, table_name = "grid", df = df)
+    # sql_validate(connection, "grid")
+    # sql_drop(connection, "grid")
+    sql_insert(connection, table_name="grid", columns=df.columns, dataframe=df, id_columns=["x", "y"])
+
+
+data_tuples = [tuple(row) for row in df.itertuples(index=False)]
+
+all_columns = df.columns.tolist()
+if len(condition_columns) >= len(all_columns):
+    raise ValueError("The number of condition columns must be less than the number of columns in data.")
+
+# Prepare column names and conditions
+update_columns = [col for col in all_columns if col not in condition_columns]
+condition_str = " AND ".join(f"{col} = ?" for col in condition_columns)
+update_str = ", ".join(f"{col} = ?" for col in update_columns)
+data_tuples = [tuple(row) for row in df.itertuples(index=False)]
+# Generate values string for SQL command
+values_str = ", ".join(
+    f"({', '.join(map(str, row))})"
+    for row in data_tuples
+)
+
+# Construct the SQL query
+sql = f"""
+INSERT INTO {table_name} ({', '.join(all_columns)})
+VALUES {values_str}
+ON CONFLICT ({', '.join(condition_columns)})
+DO UPDATE SET {', '.join(f'{col} = {table_name}.{col} + excluded.{col}' for col in update_columns)}
+"""
+
+# Execute the SQL command
+with engine.connect() as connection:
+    try:
+        connection.execute(text(sql))
+        connection.commit()
+        print(f"Specific rows updated successfully in table '{table_name}'.")
+    except IntegrityError as e:
+        print(f"IntegrityError: {e}")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        
+sql_command = f"SELECT * FROM {table_name};"
+
+with engine.connect() as connection:
+    result = connection.execute(text(sql_command))
+    rows = result.fetchall()
+
+for row in rows:
+    print(row)     
+    
+       
+# Insert or update data
+insert_or_update(engine, table_name, columns.keys(), data, primary_keys)
+
+sql_command = f"SELECT * FROM {table_name};"
+
+with engine.connect() as connection:
+    result = connection.execute(text(sql_command))
+    rows = result.fetchall()
+
+for row in rows:
+    print(row)
+
+# Ensure that condition_columns match the length of data tuples minus the update column
+if len(condition_columns) != len(df.columns) - 1:
+    raise ValueError("The number of condition columns must match the number of columns in data minus the update column.")
+
+# Prepare the SQL statement for update
+update_columns = [col for col in df.columns if col not in condition_columns]
+condition_str = " AND ".join(f"{col} = ?" for col in condition_columns)
+update_str = ", ".join(f"{col} = ?" for col in update_columns)
+# Convert DataFrame rows to list of tuples
+data_tuples = [tuple(row) for row in df.itertuples(index=False)]
+
+# Generate a values string for the SQL command
+values_str = ", ".join(
+    f"({', '.join(map(str, row))})"
+    for row in data_tuples
+)
+# Construct the SQL query
+sql = f"""
+UPDATE {table_name}
+SET {update_str}
+WHERE {condition_str}
+"""
+
+# Flatten the list of data for execution
+flattened_data = []
+for row in data_tuples:
+    conditions = row[:len(condition_columns)]
+    update_values = row[len(condition_columns):]
+    flattened_data.extend(conditions + update_values)
+    
+# Execute the SQL command
+with engine.connect() as connection:
+    try:
+        connection.execute(text(sql), flattened_data)
+        print(f"Specific rows updated successfully in table '{table_name}'.")
+    except IntegrityError as e:
+        print(f"IntegrityError: {e}")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+# Execute the SQL command
+with engine.connect() as connection:
+    try:
+        connection.execute(text(sql), flattened_data)
+        print(f"Specific rows updated successfully in table '{table_name}'.")
+    except IntegrityError as e:
+        print(f"IntegrityError: {e}")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+# Update specific rows
+update_specific_rows(engine, table_name, updates, conditions)
+
+# Verify the update
+sql_command = f"SELECT * FROM {table_name};"
+with engine.connect() as connection:
+    result = connection.execute(text(sql_command))
+    rows = result.fetchall()
+
+for row in rows:
+    print(row)
+# Construct the full SQL command
+sql_command = f"""
+INSERT INTO {table_name} ({columns_str})
+VALUES {values_str};
+"""
+
+# Execute the SQL command
+with engine.connect() as connection:
+    connection.execute(text(sql_command))
+    connection.commit()
+
+check_table_exists(engine, "grid")
+
+# Define table name, columns, and data
+table_name = 'grid'
+columns = ['x', 'y', 'value']
+data = [
+    (1, 1, 1.0),
+    (2, 2, 1.5),
+    (3, 3, 2.0)
+]
+
+# Prepare the columns part of the SQL statement
+columns_str = ", ".join(columns)
+
+# Prepare the values part of the SQL statement
+values_str = ", ".join(
+    f"({', '.join(map(str, row))})"
+    for row in data
+)
+
+
+
+
+    
+    
+print("Generated SQL Command:")
+print(sql_command)
+
+# Execute the SQL command
+with engine.connect() as connection:
+    connection.execute(text(sql_command))
+
+def insert_values_sql(table_name, columns, values, filter_clause=""):
+    """
+    Generate a SQL command to insert values into a table.
+
+    Args:
+        table_name (str): The name of the table.
+        columns (list): List of column names to be inserted.
+        values (list of tuples): List of tuples where each tuple represents a row of values to be inserted.
+        filter_clause (str, optional): Optional filter clause to specify conditions for insertion.
+
+    Returns:
+        str: The SQL command to insert values into the table.
+    """
+    # Generate column names
+    column_names = ", ".join(columns)
+    
+    # Generate value placeholders
+    value_placeholders = ", ".join("?" * len(columns))
+
+    # Generate values part
+    values_part = ", ".join(f"({', '.join('?' * len(columns))})" for _ in values)
+    
+    # Flatten the values list for insertion
+    flattened_values = [item for sublist in values for item in sublist]
+
+    # Create the SQL command
+    insert_command = f"""
+    INSERT INTO {table_name} ({column_names})
+    VALUES {values_part}
+    {filter_clause}
+    """
+    return insert_command.strip(), flattened_values
+
+# Define the values for insertion
+insert_columns = ["x", "y", "value"]
+insert_values = [(1, 1, 10.0)]
+
+insert_sql, insert_data = insert_values_sql(table_name, insert_columns, insert_values)
+print("Insert Values SQL:\n", insert_sql)
+print("Data:\n", insert_data)
+
+insrt_stmt = 
+
+with engine.connect() as connection:
+    connection.execute(text(insert_sql), tuple(insert_data))
+
+# Define the values for insertion
+insert_columns = ["x", "y", "value"]
+insert_values = [(1, 1, 10.0), (2, 2, 20.0), (3, 3, 30.0)]
+
+# Call the function
+insert_or_update_table(engine, table_name, columns, data, conflict_columns)
+
+# Example usage
+table_name = "grid"
+columns = ["x", "y", "value"]
+data = [
+    (1, 1, 1.0),
+    (2, 2, 1.5),
+    (3, 3, 2.0),
+]
+
+sql_command = "INSERT INTO grid (x, y, value) VALUES (:x, :y, :value)"
+test_data = [{'x': 1, 'y': 1, 'value': 1.0}]
+
+with engine.connect() as connection:
+    connection.execute(text(sql_command), test_data)
+
+# Generate the SQL command and data
+insert_stmt = insert_into_table(table_name, columns, data)
+
+# Print the generated SQL command (for validation)
+print("Insert SQL Command:")
+print(insert_stmt)
+
+# Print for validation
+print("Insert SQL Command:")
+print(insert_sql)
+print("Data:")
+print(insert_data)
+
+# Example execution with SQLAlchemy
+with engine.connect() as connection:
+    connection.execute(insert_stmt)
+
+def insert_values_sql(table_name, columns, values):
+    """
+    Generate SQL command for inserting values into a table.
+
+    Args:
+        table_name (str): The name of the table.
+        columns (list): List of column names.
+        values (list of tuples): List of values to insert.
+
+    Returns:
+        str: The SQL command to insert the values.
+        list: Flattened list of values for binding to the SQL command.
+    """
+    column_names = ", ".join(columns)
+    value_placeholders = ", ".join("?" * len(columns))
+    values_part = ", ".join(f"({value_placeholders})" for _ in values)
+    flattened_values = [item for sublist in values for item in sublist]
+    
+    insert_command = f"""
+    INSERT INTO {table_name} ({column_names})
+    VALUES {values_part}
+    """
+    return insert_command.strip(), flattened_values
+
+def check_table_exists(engine, table_name):
+    """
+    Check if a table exists in the database.
+
+    Args:
+        engine: SQLAlchemy engine object.
+        table_name (str): The name of the table to check.
+
+    Returns:
+        bool: True if the table exists, False otherwise.
+    """
+    inspector = inspect(engine)
+    return table_name in inspector.get_table_names()
+
+with engine.connect() as connection:
+    # sql_validate(connection, "grid")
+    sql_inspect(connection)
+    sql_drop(connection, table_name)
+
+def select_from_table(engine, table_name, columns='*'):
+    """
+    Select data from a table.
+
+    Args:
+        engine: SQLAlchemy engine object.
+        table_name (str): The name of the table to select from.
+        columns (str or list): Columns to select. '*' selects all columns.
+
+    Returns:
+        list: List of rows returned by the query.
+    """
+    metadata = MetaData(bind=engine)
+    table = Table(table_name, metadata, autoload_with=engine)
+
+    if columns == '*':
+        columns = [col.name for col in table.columns]
+    elif isinstance(columns, str):
+        columns = [columns]
+
+    stmt = select([table.c[col] for col in columns])
+    
+    with engine.connect() as connection:
+        result = connection.execute(stmt)
+        return result.fetchall()
+    
+# Create table
+table_name = "grid"
+columns = {"x": "INTEGER", "y": "INTEGER", "value": "REAL"}
+primary_keys = ["x", "y"]
+index_columns = ["value"]
+
+create_sql = create_table_sql(table_name, columns, primary_keys, index_columns)
+print("Create Table SQL:\n", create_sql)
+
+with engine.connect() as connection:
+    connection.execute(create_sql)
+
+insert_columns = ["x", "y", "value"]
+insert_values = [(1, 1, 10.0), (2, 2, 20.0), (3, 3, 30.0)]
+
+# Insert data function
+def insert_values_sql(table_name, columns, values):
+    column_names = ", ".join(columns)
+    value_placeholders = ", ".join("?" * len(columns))
+    values_part = ", ".join(f"({value_placeholders})" for _ in values)
+    
+    insert_command = f"""
+    INSERT INTO {table_name} ({column_names})
+    VALUES {values_part}
+    """
+    # Flatten the list of values into a single list
+    flattened_values = [value for sublist in values for value in sublist]
+    
+    return insert_command.strip(), flattened_values
+
+
+table_name = 'grid'
+columns = ['x', 'y', 'value']
+data = [
+    (1, 1, 1.0),
+    (2, 2, 1.5),
+    (3, 3, 2.0)
+]
+
+# Prepare the columns part of the SQL statement
+columns_str = ", ".join(columns)
+
+# Prepare the values part of the SQL statement
+values_str = ", ".join(
+    f"({', '.join(map(str, row))})"
+    for row in data
+)
+
+# Construct the full SQL command
+sql_command = f"""
+INSERT INTO {table_name} ({columns_str})
+VALUES {values_str};
+"""
+
+# Execute the SQL command
+with engine.connect() as connection:
+    connection.execute(text(sql_command))
+
+sql_command = f"SELECT * FROM {table_name};"
+
+with engine.connect() as connection:
+    result = connection.execute(text(sql_command))
+    rows = result.fetchall()
+    
+print(f"Data in table {table_name}:")
+for row in rows:
+    print(row)
+# Construct the full SQL command
+sql_command = f"""
+INSERT INTO {table_name} ({columns_str})
+VALUES {values_str};
+"""
+
+
+insert_sql, insert_data = insert_values_sql(table_name, insert_columns, insert_values)
+print("Insert Values SQL:\n", insert_sql)
+print("Insert Data:\n", insert_data)
+
+with engine.connect() as connection:
+    connection.execute(insert_sql, [insert_data])
+
+# Check table existence
+exists = check_table_exists(engine, table_name)
+print(f"Table '{table_name}' exists: {exists}")
+
+# Select data from table
+data = select_from_table(engine, table_name, insert_columns)
+print(f"Data from '{table_name}':")
+for row in data:
+    print(row)
+
+
+
+
+create_sql = create_table_sql(table_name, columns, primary_keys, index_columns)
+print("Create Table SQL:\n", create_sql)
+
+# Define the values for insertion
+insert_columns = ["x", "y", "value"]
+insert_values = [(1, 1, 10.0)]
+
+insert_sql, insert_data = insert_values_sql(table_name, insert_columns, insert_values)
+print("Insert Values SQL:\n", insert_sql)
+print("Data:\n", insert_data)
+
+# Example usage
+table_name = "grid"
+columns = {
+    "x": "INTEGER",
+    "y": "INTEGER",
+    "value": "REAL"
+}
+primary_keys = ["x", "y"]
+index_columns = ["value"]
+
+sql_command = create_table_sql(table_name, columns, primary_keys, index_columns)
+print(sql_command)
+
+# Create the table
+create_table_sql = """
+CREATE TABLE IF NOT EXISTS grid (
+    x INTEGER,
+    y INTEGER,
+    value REAL,
+    PRIMARY KEY (x, y)
+);
+"""
+
+# Insert grid points
+insert_values = ", ".join(f"({i}, {j}, {v})" for i, j, v in grid_points)
+insert_sql = f"""
+INSERT INTO grid (x, y, value) VALUES {insert_values};
+"""
+
+# Connect to the database and execute the commands
+with engine.connect() as connection:
+    try:
+        # Create table if it does not exist
+        connection.execute(text(create_table_sql))
+        # Insert grid points
+        connection.execute(text(insert_sql))
+        connection.commit()
+        print("Grid points successfully inserted.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+
+engine = create_engine(f"sqlite:///{db_file}")
+metadata = MetaData()
+grid_table = Table('grid', metadata, autoload_with=engine)
+# Read existing grid values from the database into a DataFrame
+with engine.connect() as connection:
+    select_stmt = select(grid_table.c.x, grid_table.c.y, grid_table.c.value)
+    result = connection.execute(select_stmt)
+    existing_data = pd.DataFrame(result.fetchall(), columns=['x', 'y', 'value'])
+
+# Coordinates to update
+update_coords = {(1,1), (2,2), (3,3), (4,4), (5,5)}
+
+# Create a dictionary for fast lookup
+update_dict = {(i, j): 1.0 for i, j in update_coords}
+
+# Update the grid_points with new values where applicable
+updated_grid_points = [
+    (i, j, update_dict.get((i, j), value))
+    for i, j, value in grid_points
+]
+
+# Convert the list of tuples to a DataFrame
+df_updated_grid_points = pd.DataFrame(updated_grid_points, columns=['x', 'y', 'value'])
+
+# Print the DataFrame
+print(df_updated_grid_points)
+
+# Merge existing and updated data to find differences
+merged_data = pd.merge(existing_data, df_updated_grid_points, on=['x', 'y'], suffixes=('_existing', '_updated'))
+differences = merged_data[merged_data['value_existing'] != merged_data['value_updated']]
+
+# Assuming 'differences' is your DataFrame with updated values
+# Create a dictionary for batch updating
+update_dict = differences.set_index(['x', 'y'])['value_updated'].to_dict()
+
+# Generate the SQLAlchemy update statement
+update_stmt = update(grid_table).where(
+    grid_table.c.x.in_(update_dict.keys())
+).values({
+    grid_table.c.value: update_dict.get((grid_table.c.x, grid_table.c.y), grid_table.c.value)
+})
+
+# Create the CASE statement
+case_stmt = case(
+    { 
+        (grid_table.c.x == x) & (grid_table.c.y == y): value 
+        for (x, y), value in update_dict.items()
+    },
+    else_=grid_table.c.value
+)
+
+# Convert the DataFrame into a dictionary of case statements
+case_stmt = case(
+    [(grid_table.c.x == x) & (grid_table.c.y == y), value]
+    for (x, y), value in update_dict.items()
+)
+
+# Create the case statement
+case_stmt = case(
+    { (x, y): value for (x, y), value in update_dict.items() },
+    value=grid_table.c.x,  # Assuming `x` is the column being compared
+    else_=grid_table.c.value
+)
+
+case_stmt = case(
+    {
+        (x, y): value
+        for (x, y), value in update_dict.items()
+    },
+    value=grid_table.c.x,
+    else_=grid_table.c.value
+)
+
+# Create the case statement
+# Create a CASE statement using a dictionary
+case_stmt = case(
+    {
+        (grid_table.c.x == x) & (grid_table.c.y == y): value
+        for (x, y), value in update_dict.items()
+    },
+    else_=grid_table.c.value
+)
+case_stmt = case(
+    {((grid_table.c.x == x) & (grid_table.c.y == y)): value
+     for (x, y), value in update_dict.items()},
+    else_=grid_table.c.value
+)
+print("Case Statement:", str(case_stmt.compile(engine, compile_kwargs={"literal_binds": True})))
+
+
+# Create the update statement
+update_stmt = (
+    update(grid_table).
+    where(grid_table.c.value != case_stmt).
+    values(value=case_stmt)
+)    
+    
+print("Update Statement:", str(update_stmt.compile(engine, compile_kwargs={"literal_binds": True})))
+
+
+# Print the SQL for each update
+for (x, y), value in update_dict.items():
+    update_stmt = (
+        update(grid_table)
+        .where((grid_table.c.x == x) & (grid_table.c.y == y))
+        .values(value=value)
+    )
+    # Print the SQL statement with literal values for debugging
+    print("Update Statement:", str(update_stmt.compile(engine, compile_kwargs={"literal_binds": True})))
+
+    # Execute the update statement
+    with engine.connect() as connection:
+        result = connection.execute(update_stmt)
+        print(f"Updated {result.rowcount} entries for coordinates ({x}, {y}).")
+
+# Execute the update
+with engine.connect() as connection:
+    result = connection.execute(update_stmt)
+    print(f"Updated {result.rowcount} entries.")
+
+engine.dispose()
+
+engine = create_engine(f"sqlite:///{db_file}")
+metadata = MetaData()
+grid_table = Table('grid', metadata, autoload_with=engine)
+# Verify the updated rows
+select_stmt = select(grid_table)
+
+with engine.connect() as connection:
+    result = connection.execute(select_stmt)
+    rows = result.fetchall()
+
+for row in rows:
+    print(row)
+    
+# Define your SQLite engine and metadata
+engine = create_engine(F'sqlite:///{db_file}')
+metadata = MetaData()
+
+# Reflect the grid table
+grid_table = Table('grid', metadata, autoload_with=engine)
+
+# Define your update dictionary
+update_dict = {(1, 1): 1.0, (2, 2): 1.0, (3, 3): 1.0, (4, 4): 1.0, (5, 5): 1.0}
+
+# Execute updates
+# with engine.connect() as connection:
+connection = engine.connect()
+# for (x, y), value in update_dict.items():
+(x,y) = (1, 1)
+value = update_dict[(1,1)]
+
+update_stmt = (
+    update(grid_table)
+    .where((grid_table.c.x == x) & (grid_table.c.y == y))
+    .values(value=value)
+)
+# Print the SQL statement for debugging
+print("Executing Update Statement:", str(update_stmt.compile(engine, compile_kwargs={"literal_binds": True})))
+    
+# Execute the update statement
+result = connection.execute(update_stmt)
+print(f"Updated {result.rowcount} entries for coordinates ({x}, {y}).")
+connection.close()
+
+select_stmt = select(grid_table.c.x)
+
+# Execute the SELECT statement
+with engine.connect() as connection:
+    result = connection.execute(select_stmt)
+    x_values = result.fetchall()
+
+type(x_values[0])
+
+select_stmt = select(grid_table.c.y)
+
+# Execute the SELECT statement
+with engine.connect() as connection:
+    result = connection.execute(select_stmt)
+    y_values = result.fetchall()
+    
+select_stmt = select(grid_table.c.value)
+
+# Execute the SELECT statement
+with engine.connect() as connection:
+    result = connection.execute(select_stmt)
+    values = result.fetchall()  
+    
+case_stmt = case(
+    *[(grid_table.c.x == x) & (grid_table.c.y == y, value)
+      for (x, y), value in update_dict.items()],
+    else_=grid_table.c.value
+)
+
+update_dict = {(1, 2): 1.0, (3, 2): 1.0, (1, 5): 1.0, (4, 5): 1.0, (3, 5): 4.0}
+
+with engine.connect() as connection:
+    # Select all values to check the current state
+    result = connection.execute(select(grid_table.c.x, grid_table.c.y, grid_table.c.value))
+    current_values = result.fetchall()
+    print("Current Values:", current_values)
+    
+with engine.connect() as connection:
+    with connection.begin():  # Begin a transaction
+        for (x, y), value in update_dict.items():
+            stmt = (
+                update(grid_table)
+                .where((grid_table.c.x == x) & (grid_table.c.y == y))
+                .values(value=grid_table.c.value + value)
+            )
+            connection.execute(stmt)
+            
+with engine.connect() as connection:
+    # Re-select to check the updated state
+    result = connection.execute(select(grid_table.c.x, grid_table.c.y, grid_table.c.value))
+    updated_values = result.fetchall()
+    print("Updated Values:", updated_values)
+    
+    
+# Confirm the updates
+with engine.connect() as connection:
+    select_stmt = select([grid_table])
+    result = connection.execute(select_stmt)
+    rows = result.fetchall()
+
+# Print all rows to verify updates
+print("Database contents after update:")
+for row in rows:
+    print(row)
+    
+    
+# Construct the update statement
+update_stmt = (
+    update(grid_table)
+    .values(value=case_stmt)
+    .where(grid_table.c.value != case_stmt)
+)
+
+# Create a SELECT statement to fetch all rows from the grid_table
+select_stmt = select(grid_table)
+
+# Execute the SELECT statement and fetch results
+with engine.connect() as connection:
+    result = connection.execute(select_stmt)
+    rows = result.fetchall()
+
+# Print or inspect the fetched rows
+for row in rows:
+    print(row)
+
+# Create the update statement
+update_stmt = (
+    update(grid_table)
+    .where(grid_table.c.value != case_stmt)
+    .values(value=case_stmt)
+)
+
+# Execute the update
+with engine.connect() as connection:
+    result = connection.execute(update_stmt)
+    print(f"Updated {result.rowcount} entries.")
+
+case(
+    [
+        ((grid_table.c.x == x) & (grid_table.c.y == y), value)
+        for (x, y), value in update_dict.items()
+    ],
+    else_=grid_table.c.value
+)
+
+# Create a case statement for conditional update
+case_statements = {
+    (x, y): case(
+        [(grid_table.c.x == x) & (grid_table.c.y == y, value)],
+        else_=grid_table.c.value
+    ) 
+    for (x, y), value in update_dict.items()
+}
+
+
+# Define SQL command to select all data from the grid table
+select_sql = "SELECT * FROM grid;"
+
+# Connect to the database and execute the query
+with engine.connect() as connection:
+    try:
+        # Execute the select command
+        result = connection.execute(text(select_sql))
+        # Fetch all rows from the result
+        rows = result.fetchall()
+        # Print the results
+        print("Data in grid table:")
+        for row in rows:
+            print(row)
+    except Exception as e:
+        print("An error occurred: {}".format(e))
+
+# Coordinates to update
+update_coords = {(1,1), (2,2), (3,3), (4,4), (5,5)}
+
+# Create a copy of grid_points and update specific coordinates
+updated_grid_points = [
+    (i, j, 1.0) if (i, j) in update_coords else (i, j, value)
+    for i, j, value in grid_points
+]
+
+# Retrieve current data from the database
+with engine.connect() as connection:
+    result = connection.execute(text("SELECT x, y, value FROM grid;"))
+    current_data = result.fetchall()
+    
+# Convert to a dictionary for easy comparison
+current_values = {(x, y): value for x, y, value in current_data}   
+
+# Convert updated_grid_points to a dictionary
+updated_values = {(i, j): value for i, j, value in updated_grid_points}
+
+# Find differences
+differences = [
+    (i, j, value)
+    for i, j, value in updated_grid_points
+    if (i, j) in updated_values and (i, j) not in current_values or
+    (i, j) in current_values and current_values[(i, j)] != value
+]
+
+# Update differing values in the database
+with engine.connect() as connection:
+    for i, j, value in differences:
+        connection.execute(
+            text(f"UPDATE grid SET value = {value} WHERE x = {i} AND y = {j}"),
+        )
+    print(f"Updated {len(differences)} entries.")
+
+# Step 8: Read the table into Python
+with engine.connect() as connection:
+    # Query to select all rows from the table
+    result = connection.execute(text("SELECT x, y, value FROM grid;"))
+    df = pd.DataFrame(result.fetchall(), columns=['x', 'y', 'value'])
+
+# Print the DataFrame to validate the changes
+print(df)
+
+# Check current values
+with engine.connect() as connection:
+    result = connection.execute(text("SELECT x, y, value FROM grid;"))
+    current_values = {(row[0], row[1]): row[2] for row in result.fetchall()}
+
+print("Current grid points in database:")
+for row in current_values.items():
+    print(row)
+    
+print("Updated grid points with changes:")
+for row in updated_grid_points:
+    print(row)
+
+# Determine differences
+differences = [
+    (i, j, value)
+    for i, j, value in updated_grid_points
+    if (i, j) in current_values and current_values[(i, j)] != value
+]
+
+print(f"Differences to update: {differences}")
+
+# Step 6: Update the database with INSERT OR REPLACE
+with engine.connect() as connection:
+    with connection.begin():  # Ensure transactions are committed
+        for i, j, value in updated_grid_points:
+            sql = """
+            INSERT OR REPLACE INTO grid (x, y, value) 
+            VALUES (:x, :y, :value)
+            """
+            print(f"Executing SQL: {sql} with values: x={i}, y={j}, value={value}")
+            connection.execute(
+                text(sql),
+                {"x": i, "y": j, "value": value}
+            )
+        print(f"Updated entries with INSERT OR REPLACE.")
+
+# Step 8: Read the table into Python
+with engine.connect() as connection:
+    result = connection.execute(text("SELECT x, y, value FROM grid;"))
+    rows = result.fetchall()
+    df = pd.DataFrame(rows, columns=['x', 'y', 'value'])
+
+# Print the DataFrame to validate the changes
+print("Updated table data:")
+print(df)
+
+
+engine.dispose()
+
+# Check if the file exists and then remove it
+if db_file.exists():
+    db_file.unlink()
+    print(f"Deleted the file: {db_file}")
+else:
+    print(f"The file does not exist: {db_file}")
+
+with engine.connect() as connection:
+    connection.execute(text("""
+    CREATE TABLE IF NOT EXISTS grid (
+        x INTEGER,
+        y INTEGER,
+        value REAL,
+        PRIMARY KEY (x, y)
+    );
+    """))
+    
+    connection.execute(text("""
+    INSERT OR REPLACE INTO grid (x, y, value) VALUES
+    (1, 1, 0), (1, 2, 0), (1, 3, 0), (1, 4, 0), (1, 5, 0),
+    (2, 1, 0), (2, 2, 0), (2, 3, 0), (2, 4, 0), (2, 5, 0),
+    (3, 1, 0), (3, 2, 0), (3, 3, 0), (3, 4, 0), (3, 5, 0),
+    (4, 1, 0), (4, 2, 0), (4, 3, 0), (4, 4, 0), (4, 5, 0),
+    (5, 1, 0), (5, 2, 0), (5, 3, 0), (5, 4, 0), (5, 5, 0);
+    """))
+    
+    # Insert initial values (0) into the grid table
+    values = ",".join(["({}, {}, {})".format(i, j, 0) for i, j, _ in grid_points])
+    connection.execute(text("INSERT INTO grid (x, y, value) VALUES {values};".format(values=values)))
+    
+    # Commit
+    connection.commit() 
+    
+    # Verify data insertion
+    result = connection.execute(text("SELECT * FROM grid;"))
+    rows = result.fetchall()
+    print("Data in grid table:", rows)
+    
+    connection.execute(text("""
+    INSERT INTO grid (x, y, value) VALUES
+    """ + ",".join(["({}, {}, {})".format(i, j, 0) for i, j, _ in grid_points]) + ";"))
+
+engine.dispose()
+    
+    
+    result = connection.execute(text("SELECT * FROM grid;"))
+    rows = result.fetchall()
+    print("Data in grid table:", rows)
+
+with engine.connect() as connection:
+    result = connection.execute(text("SELECT name FROM sqlite_master WHERE type='table';"))
+    print(result.fetchall())
+
+with engine.connect() as connection:
+    # Describe the table schema
+    result = connection.execute(text("PRAGMA table_info(grid);"))
+    columns = result.fetchall()
+    print("Table schema:", columns)
+
+with engine.connect() as connection:
+    result = connection.execute(text("SELECT * FROM grid;"))
+    rows = result.fetchall()
+    for row in rows:
+        print(row)
+
+SQL(db_file, command="select")
+
+
+
+
+
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
