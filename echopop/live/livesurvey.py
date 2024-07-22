@@ -3,8 +3,10 @@ from pathlib import Path
 import copy
 import yaml
 
-from .core import(
-    DATA_STRUCTURE
+from .livecore import(
+    LIVE_DATA_STRUCTURE,
+    LIVE_FILE_FORMAT_MAP,
+    LIVE_INPUT_FILE_CONFIG_MAP
 )
 
 from ..acoustics import (
@@ -13,29 +15,47 @@ from ..acoustics import (
     to_linear
 )
 
+from . import live_data_processing as eldp
+
 class LiveSurvey:
     """
-    A real-time processing version of the `echopop` base 
-    `Survey` class that ingests biological, acoustic, and
-    event meta data to provide population estimates when 
-    generated.
+    A real-time processing version of the `echopop` base `Survey` class that ingests biological, 
+    acoustic, and event meta data to provide population estimates when generated.
     """
 
     def __init__(
-        self
+        self,
+        live_init_config_path: Union[str, Path], 
+        live_file_config_path: Union[str, Path],
+        update_config: bool = True,
+        verbose: bool = True,
     ):
         # Initialize `meta` attribute
-        self.meta = copy.deepcopy(DATA_STRUCTURE["meta"])
+        self.meta = copy.deepcopy(LIVE_DATA_STRUCTURE["meta"])
 
         # Loading the configuration settings and definitions that are used to
         # initialize the Survey class object
-        self.config = el.load_configuration(Path(init_config_path), Path(survey_year_config_path))
+        self.config = eldp.live_configuration(Path(live_init_config_path), 
+                                              Path(live_file_config_path))
 
-        # Loading the datasets defined in the configuration files
-        self.input = el.load_survey_data(self.config)
+        # Initialize input attribute
+        self.input = copy.deepcopy(LIVE_DATA_STRUCTURE["input"])
 
-        # Initialize the `analysis` data attribute
-        self.analysis = copy.deepcopy(DATA_STRUCTURE["analysis"])
+        # Initialize database attribute
+        self.database = copy.deepcopy(LIVE_DATA_STRUCTURE["database"])
 
-        # Initialize the `results` data attribute
-        self.results = copy.deepcopy(DATA_STRUCTURE["results"])
+        # Initialize the results attribute
+        self.results = copy.deepcopy(LIVE_DATA_STRUCTURE["results"])
+
+        # TODO: Replace Tuple output by appending the "database" key to the respective dataset dict
+        # Ingest data
+        # ---- Acoustics
+        self.input["acoustics"]["prc_nasc_df"], self.config = eldp.load_acoustic_data(self.config,
+                                                                                      update_config)
+        # ---- Biology
+        self.input["biology"], self.config = eldp.load_biology_data(self.config,
+                                                                    update_config)
+        
+        # TODO: Add verbosity for printing database filepaths/connections 
+        if verbose: 
+            pass
