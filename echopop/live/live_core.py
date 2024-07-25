@@ -131,3 +131,64 @@ LIVE_FILE_FORMAT_MAP = {
         "expression": r"(?P<FILE_ID>.+)"
     },
 }
+
+SPATIAL_CONFIG_MAP = {
+    "closest_haul": {
+        "proximity": {
+            "choices": ["distance", "time"],
+        },
+    },
+    "global" : {},
+    "griddify": {
+        "bounds": {
+            "longitude": {
+                "types": [float]
+            },
+            "latitude": {
+                "types": [float]
+            },
+            "northings": {
+                "types": [float]
+            },
+            "eastings": {
+                "types": [float]
+            },
+            "pairs": [("longitude", "latitude"), ("northings", "eastings")],
+        },
+        "grid_resolution": {
+            "x_distance": {
+                "types": float,
+            },
+            "y_distance": {
+                "types": float,
+            },
+            "d_longitude": {
+                "types": float,
+            },
+            "d_latitude": {
+                "types": float,
+            },
+            "grid_size_x": {
+                "types": int,
+            },
+            "grid_size_y": {
+                "types": int,
+            },
+            "pairs": [("x_distance", "y_distance"), ("d_longitude", "d_latitude"), 
+                      ("grid_size_x", "grid_size_y")],       
+        },
+    },
+    "inpfc": {
+        "stratum_names": {
+                "types": [int, str]
+            },
+        "latitude_max": {
+            "types": [float],
+        },
+    },
+    "weighted_haul": {
+        "proximity": {
+            "choices": ["distance", "time"]
+        },
+    },
+}

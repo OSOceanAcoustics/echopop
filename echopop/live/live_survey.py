@@ -1,7 +1,6 @@
 from typing import Union
 from pathlib import Path
 import copy
-import yaml
 
 from .live_core import(
     LIVE_DATA_STRUCTURE,
@@ -14,7 +13,7 @@ from ..acoustics import (
 )
 
 from . import live_data_processing as eldp
-
+from . import live_data_loading as eldl
 class LiveSurvey:
     """
     A real-time processing version of the `echopop` base `Survey` class that ingests biological, 
@@ -25,7 +24,6 @@ class LiveSurvey:
         self,
         live_init_config_path: Union[str, Path], 
         live_file_config_path: Union[str, Path],
-        update_config: bool = True,
         verbose: bool = True,
     ):
         # Initialize `meta` attribute
@@ -33,7 +31,7 @@ class LiveSurvey:
 
         # Loading the configuration settings and definitions that are used to
         # initialize the Survey class object
-        self.config = eldp.live_configuration(Path(live_init_config_path), 
+        self.config = eldl.live_configuration(Path(live_init_config_path), 
                                               Path(live_file_config_path))
         # ---- Initialize config key for database files
         self.config.update(
@@ -52,7 +50,7 @@ class LiveSurvey:
         # TODO: Replace Tuple output by appending the "database" key to the respective dataset dict
         # Ingest data
         # ---- Acoustics
-        self.input["acoustics"]["prc_nasc_df"] = eldp.load_acoustic_data(self.config)
+        self.input["acoustics"]["prc_nasc_df"] = eldl.load_acoustic_data(self.config)
         # ---- Biology
         self.input["biology"] = eldp.load_biology_data(self.config)
         

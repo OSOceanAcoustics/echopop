@@ -26,8 +26,23 @@ file_configuration = live_configuration(live_init_config_path, live_file_config_
 file_configuration.update({"database": {"acoustics": None, "biology": None}})
 ####################################################################################################
 # * Accessory function for tuning the acoustic transmit frequency units/scaling
+def format_vlaue(x):
+    pass
 
+def format_value(x):
+    if isinstance(x, str):
+        return "'{}'".format(x.replace("'", "''"))
+    elif isinstance(x, pd.Timestamp):
+        return "'{}'".format(x)
+    elif x is None:
+        return 'NULL'
+    else:
+        return str(x)
 
+data_str = ", ".join(
+    "({})".format(", ".join(format_value(x) for x in row))
+    for row in data_tuple
+)
 
 
 

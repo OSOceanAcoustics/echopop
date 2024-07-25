@@ -1,7 +1,9 @@
 from sqlalchemy import create_engine, text, Engine, inspect
 import sqlalchemy as sqla
 import pandas as pd
-from typing import Optional
+from typing import Optional, Literal, Union, List
+import numpy as np
+from pathlib import Path
 
 def sql_create(connection: sqla.Connection, dataframe: pd.DataFrame, table_name: str, 
                primary_keys: Optional[list] = None):
@@ -117,23 +119,31 @@ def sql_insert(connection: sqla.Connection, table_name: str, columns: list, data
     # Convert the DataFrame into a tuple and then into a string
     # ---- Replace NaN with None
     dataframe = dataframe.replace([np.nan], [None])
-    # ---- Identify any possible DATETIME columns
-    # datetime_columns = (
-    #     {col["name"]: str for col in columns_info 
-    #      if isinstance(col["type"], sqla.sql.sqltypes.DATETIME)}
-    # )
-    # ---- Encapsulate datetimes with quotes by converting to string
-    # dataframe = dataframe.astype(datetime_columns)
     # ---- DataFrame to Tuple
     data_tuple = [tuple(row) for row in dataframe.itertuples(index=False)]
+    
+    def format_value(x):
+        if isinstance(x, str):
+            return "'{}'".format(x.replace("'", "''"))
+        elif isinstance(x, pd.Timestamp):
+            return "'{}'".format(x)
+        elif x is None:
+            return 'NULL'
+        else:
+            return str(x)
+        
     # ---- Tuple to String
-    data_str = ", ".join(
-        # f"({', '.join(map(lambda x: f'\'{x}\'' if isinstance(x, str) else str(x), row))})"
-                f"({', '.join(map(lambda x: f'\'{x}\'' 
-                                  if isinstance(x, str) or isinstance(x, pd.Timestamp) 
-                                  else 'NULL' if x is None else str(x), row))})"
-        for row in data_tuple
-    )
+    # data_str = ", ".join(
+    #     # f"({', '.join(map(lambda x: f'\'{x}\'' if isinstance(x, str) or isinstance(x, pd.Timestamp) else 'NULL' if x is None else str(x), row))})"
+    #     f"({', '.join(map(lambda x: f'\'{x.replace('\\', '\\\\')}\'' if isinstance(x, str) or isinstance(x, pd.Timestamp) else 'NULL' if x is None else str(x), row))})"
+    #     for row in data_tuple
+    # )
+    flattened_data = [format_value(x) for row in data_tuple for x in row]
+    data_str = "({})".format(", ".join(flattened_data))
+    # data_str = ", ".join(
+    #     "({})".format(", ".join(map(format_value, row)))
+    #     for row in data_tuple
+    # )
     
     # Construct the "ON CONFLICT, DO UPDATE SET" if needed
     on_conflict_clause = ""
@@ -156,8 +166,7 @@ def sql_insert(connection: sqla.Connection, table_name: str, columns: list, data
     # Commit
     connection.commit()
 
-from typing import Literal
-import numpy as np
+
 def sql_select(connection: sqla.Connection, table_name: str, columns: list, 
                output_type: type = pd.DataFrame):
 
@@ -258,6 +267,75 @@ def format_sql_columns(kwargs: dict):
     return kwargs
 
 # TODO: Documentation
+def query_processed_files(root_directory: str, file_settings: dict, files: List[Path]) -> dict:
+
+    # Get the database name 
+    db_name = file_settings["database_name"]
+
+    # Create filepath to the SQL database
+    # ---- Create Path to SQL database file
+    db_directory = Path(root_directory) / "database"
+    # ---- Create the directory if it does not already exist
+    db_directory.mkdir(parents=True, exist_ok=True)
+    # ---- Complete path to the database file
+    db_file = db_directory / db_name
+
+    # Create a list of string-formatted Path names
+    files_str = [str(file) for file in files]
+    # ---- Create DataFrame
+    current_files = pd.DataFrame(files_str, columns=["filepath"])
+
+    # Check for the table `files_read`
+    files_read_tbl = SQL(db_file, "validate", table_name="files_read")
+
+    # Validate whether the table exists; if not, create the table and then insert
+    if not files_read_tbl:
+        # ---- Create table
+        SQL(db_file, "create", table_name="files_read", dataframe=current_files, 
+            primary_keys = ["filepath"])
+        # ---- Populate table
+        SQL(db_file, "insert", table_name="files_read", dataframe=current_files)
+        # ---- Break early
+        return files_str, db_file
+    
+    # Query already existing files
+    previous_files = SQL(db_file, "select", table_name="files_read", output_type=str)
+    # ---- Insert file list
+    SQL(db_file, "insert", table_name="files_read", dataframe=current_files, id_columns="filepath")
+
+    # Filter out previously processed files
+    # ---- Apply filter by comparing sets and return the output
+    return list(set(files_str) - set(previous_files)), db_file
+
+# TODO: Documentation
+def sql_data_exchange(database_file: Path, **kwargs):
+
+    # Check whether the `table_name` table exists
+    table_exists = SQL(database_file, "validate", **kwargs)
+
+    # If empty and table does not exist
+    if kwargs["dataframe"].empty and table_exists:
+        return SQL(database_file, "select", **kwargs)
+
+    # Create table if it does not exist and run the initial insertion
+    if not table_exists:
+        # ---- Create table
+        SQL(database_file, "create", **kwargs)
+        # ---- Ignore the `id_columns` argument, if present
+        try:
+            del kwargs["id_columns"]
+        except KeyError:
+            pass
+        # ---- Insert into table        
+        SQL(database_file, "insert", **kwargs)
+        # ---- Return the initial dataframe
+        return kwargs.get("dataframe")
+    
+    # Insert into the table
+    SQL(database_file, "insert", **kwargs)
+    
+    # Select existing data frame the database and return the output
+    return SQL(database_file, "select", **kwargs)
 
 
 # TODO: Documentation
@@ -280,31 +358,6 @@ def SQL(db_file: str, command: str, **kwargs):
             kwargs = {key: value for key, value in kwargs.items() if key in command_args}
             # ---- Return output
             return command_function(connection, **kwargs)
-            # # ---- SELECT
-            # if command == "select":
-            #     return pd.read_sql(text(SQL_COMMANDS[command].format(**kwargs)), con=connection)
-            # # ---- REPLACE
-            # elif command == "replace":
-            #     # ---- Extract dataframe
-            #     df_to_add = kwargs["dataframe"]
-            #     # ---- Replace current
-            #     df_to_add.to_sql(name=kwargs["table_name"], 
-            #                      con=connection, 
-            #                      if_exists="replace", index=False)
-
-            # # ---- INSERT
-            # elif command == "insert": 
-            #     # ---- Extract dataframe
-            #     df_to_add = kwargs["dataframe"]
-            #     # ---- Insert into the table
-            #     df_to_add.to_sql(name=kwargs["table_name"], con=connection, if_exists="append", 
-            #                      index=False)
-            # # ---- INSPECT
-            # elif command == "inspect":
-            #     return inspect(engine).get_table_names()
-            # # ---- OTHER COMMAND
-            # else: 
-            #     connection.execute(text(SQL_COMMANDS[command].format(**kwargs)))
     finally: 
         # ---- Dispose of the engine to release any resources being pooled/used
         engine.dispose()
