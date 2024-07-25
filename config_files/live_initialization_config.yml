@@ -35,8 +35,8 @@
         longitude: [-135.25, -117.00]
       # x/y (or E-W/N-S) grid resolution in nmi
       grid_resolution:
-        x: 25.0
-        y: 25.0
+        x_distance: 50.0
+        y_distance: 50.0
     projection: epsg:4326                   # EPSG integer code for geodetic parameter dataset
   # TODO: Remember to convert this back to a string
   # NOTE: `link_biology_acoustics` defines how biological and acoustic data are linked with one another. This 

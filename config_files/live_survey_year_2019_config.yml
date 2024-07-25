@@ -19,22 +19,30 @@ data_root_dir: C:/Users/Brandyn/Documents/GitHub/EchoPro_data/live_2019_files
 ##############################################################################
 # Input data directories
 input_directories: 
-  acoustic:
+  acoustics:
     directory: acoustics/
+    database_name: acoustics.db
     extension: zarr
-  biological:
+  biology:
     directory: biology/
+    database_name: biology.db
     extension: csv 
     file_name_formats:
       catch: "{DATE:YYYYMM}_{HAUL}_{FILE_ID:catch_perc}"
       length: "{DATE:YYYYMM}_{SPECIES_CODE}_{HAUL}_{FILE_ID:lf}"
       specimen: "{DATE:YYYYMM}_{SPECIES_CODE}_{HAUL}_{FILE_ID:spec}"
+      trawl_info: "{DATE:YYYYMM}_{HAUL}_{FILE_ID:operation_info}"
     file_index:
       catch: [haul_num]
       length: [haul_num, species_id]
       specimen: [haul_num, species_id]
+      trawl_info: []
     file_ids: 
       catch: catch_perc
       length: lf
       specimen: spec
+      trawl_info: operation_info
+  coastline: 
+    directory: coastline/
+    coastline_name: ne_110m_land
 ...

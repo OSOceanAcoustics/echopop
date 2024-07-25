@@ -3,10 +3,8 @@ from pathlib import Path
 import copy
 import yaml
 
-from .livecore import(
+from .live_core import(
     LIVE_DATA_STRUCTURE,
-    LIVE_FILE_FORMAT_MAP,
-    LIVE_INPUT_FILE_CONFIG_MAP
 )
 
 from ..acoustics import (
@@ -37,7 +35,11 @@ class LiveSurvey:
         # initialize the Survey class object
         self.config = eldp.live_configuration(Path(live_init_config_path), 
                                               Path(live_file_config_path))
-
+        # ---- Initialize config key for database files
+        self.config.update(
+            {"database": {key: None for key in self.config["input_directories"].keys()}}
+        )
+        
         # Initialize input attribute
         self.input = copy.deepcopy(LIVE_DATA_STRUCTURE["input"])
 
@@ -50,11 +52,9 @@ class LiveSurvey:
         # TODO: Replace Tuple output by appending the "database" key to the respective dataset dict
         # Ingest data
         # ---- Acoustics
-        self.input["acoustics"]["prc_nasc_df"], self.config = eldp.load_acoustic_data(self.config,
-                                                                                      update_config)
+        self.input["acoustics"]["prc_nasc_df"] = eldp.load_acoustic_data(self.config)
         # ---- Biology
-        self.input["biology"], self.config = eldp.load_biology_data(self.config,
-                                                                    update_config)
+        self.input["biology"] = eldp.load_biology_data(self.config)
         
         # TODO: Add verbosity for printing database filepaths/connections 
         if verbose: 

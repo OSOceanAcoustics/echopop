@@ -63,6 +63,20 @@ LIVE_INPUT_FILE_CONFIG_MAP = {
                 "catch_perc": "catch_percentage",
             }
         },
+        "trawl_info": {
+            "dtypes": {
+                "operation_number": int,
+                "td_timestamp": str,
+                "td_latitude": float,
+                "td_longitude": float,
+            },
+            "names": {
+                "operation_number": "haul_num",
+                "td_timestamp": "datetime",
+                "td_latitude": "latitude",
+                "td_longitude": "longitude",
+            },
+        },
         "length": {
             "dtypes": {
                 "sex": str,
@@ -73,7 +87,7 @@ LIVE_INPUT_FILE_CONFIG_MAP = {
                 "sex": "sex",
                 "rounded_length": "length",
                 "frequency": "length_count",
-            }
+            },
         },
         "specimen": {
             "dtypes": {

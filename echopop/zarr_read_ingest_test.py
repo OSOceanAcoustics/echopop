@@ -13,49 +13,9 @@ import os
 import re
 import contextlib
 from sqlalchemy import create_engine, text, Engine, inspect
+from echopop.live.live_core import LIVE_DATA_STRUCTURE, LIVE_FILE_FORMAT_MAP, LIVE_INPUT_FILE_CONFIG_MAP
+from echopop.live import live_data_processing as eldp
 
-####################################################################################################
-# * Functionality for a) loading YAML configuration file, b) search defined directory for 
-# * input files, c) ingest *.zarr/*.csv
-# TODO: Incorporate complete YAML file validator
-# TODO: Documentation
-def live_configuration(live_init_config_path: Union[str, Path], 
-                       live_file_config_path: Union[str, Path]):
-    
-    # Validate file existence
-    # ---- str-to-Path conversion, if necessary
-    live_init_config_path = Path(live_init_config_path)
-    live_file_config_path = Path(live_file_config_path)
-    # ---- Create list of both config paths
-    config_files = [live_init_config_path, live_file_config_path]
-    # ---- List of file existence checks
-    config_existence = [live_init_config_path.exists(), live_file_config_path.exists()]
-    # ---- Error evaluation and print message (if applicable)
-    if not all(config_existence):
-        missing_config = [
-            files for files, exists in zip(config_files, config_existence) if not exists
-        ]
-        raise FileNotFoundError(f"The following configuration files do not exist: {missing_config}")
-
-    # Read the YAML configuration/recipe file to parameterize the `LiveSurvey` class
-    # ---- Initialization settings
-    init_config = yaml.safe_load(Path(live_init_config_path).read_text())
-    # ---- Filepath/directory settings
-    file_config = yaml.safe_load(Path(live_file_config_path).read_text())
-    
-    # Check for intersecting/duplicative configuration keys
-    # ---- Compare sets of keys from each dictionary
-    config_intersect = set(init_config.keys()).intersection(set(file_config.keys()))
-    # ---- Raise error if needed
-    if config_intersect:
-        raise ValueError(
-            f"The initialization and file configuration files comprise the following intersecting "
-            f"keys: {' ,'.join(config_intersect)}. Key names must be unique for each configuration "
-            f"file."
-        )
-    
-    # Combine both into a dictionary output that can be added to the `LiveSurvey` class object
-    return {**init_config, **file_config}
 ####################################################################################################  
 # TEST: YAML FILE CONFIGURATION
 # ---- Define filepaths
@@ -66,460 +26,394 @@ file_configuration = live_configuration(live_init_config_path, live_file_config_
 file_configuration.update({"database": {"acoustics": None, "biology": None}})
 ####################################################################################################
 # * Accessory function for tuning the acoustic transmit frequency units/scaling
-# TODO: Documentation
-def configure_transmit_frequency(frequency_values: pd.Series,
-                                 transmit_settings: dict, 
-                                 current_units: str):
-    
-    # Extract transmit frequency units defined in configuration file
-    configuration_units = transmit_settings["units"]
-    
-    # Transform the units, if necessary
-    # ---- Hz to kHz
-    if current_units == "Hz" and configuration_units == "kHz":
-        return frequency_values * 1e-3
-    # ---- kHz to Hz
-    elif current_units == "kHz" and configuration_units == "Hz":
-        return frequency_values * 1e3
-    # ---- No change
-    else:
-        return frequency_values
-####################################################################################################
-# * Define `LIVE_INPUT_FILE_CONFIG_MAP` configuration mapping (this will be in an equivalent 
-# * `core.py`)
-# TODO: Update structure with additional information (as needed)
-# TODO: Documentation
-LIVE_INPUT_FILE_CONFIG_MAP = {
-    "acoustics": {
-        "xarray_coordinates": {
-            "distance": float,
-            "depth": float,
-        },
-        "xarray_variables": {
-            "NASC": float,
-            "frequency_nominal": float, 
-            "latitude": float,
-            "longitude": float,
-            "ping_time": "datetime64[ns]",
-        }
-    },
-    "biology": {
-        "catch": {
-            "dtypes": {
-                "partition": str,
-                "species_code": int,
-                "sample_weight_kg": float,
-                "catch_perc": float,
-            },
-            "names": {
-                "partition": "trawl_partition",
-                "species_code": "species_id",
-                "sample_weight_kg": "haul_weight",
-                "catch_perc": "catch_percentage",
-            }
-        },
-        "length": {
-            "dtypes": {
-                "sex": str,
-                "rounded_length": int,
-                "frequency": int,
-            },
-            "names": {
-                "sex": "sex",
-                "rounded_length": "length",
-                "frequency": "length_count",
-            }
-        },
-        "specimen": {
-            "dtypes": {
-                "rounded_length": int,
-                "organism_weight": float,
-                "sex": str,
-            },
-            "names": {
-                "sex": "sex",
-                "rounded_length": "length",
-                "organism_weight": "weight"
-            },
-        },
-    },
-}
 
-LIVE_FILE_FORMAT_MAP = {
-    "DATE:YYYYMM": {
-        "name": "date",
-        "dtype": "datetime[ns]",
-        "expression": r"(?P<DATE>\d{6})",
-    },
-    "DATE:YYYYMMDD": {
-        "name": "date",
-        "dtype": "datetime[ns]",
-        "expression": r"(?P<DATE>\d{8})",
-    },
-    "HAUL": {
-        "name": "haul_num",
-        "dtype": int,
-        "expression": r"(?P<HAUL>\d+)",
-    },
-    "SPECIES_CODE": {
-        "name": "species_id",
-        "dtype": int,
-        "expression": r"(?P<SPECIES_CODE>\d+)"
-    },
-    "FILE_ID": {
-        "name": "file_id",
-        "dtype": str,
-        "expression": r"(?P<FILE_ID>.+)"
-    },
-}
 
-def compile_filename_format(file_name_format: str):
 
-    # Create a copy of `file_name_format`
-    regex_pattern = file_name_format
-    
-    # Iterate through the keys from `LIVE_FILE_FORMAT_MAP` to format a regex pattern
-    for key, value in LIVE_FILE_FORMAT_MAP.items():
-        regex_pattern = regex_pattern.replace(f"{{{key}}}", value["expression"])
-    # ---- Replace the `FILE_ID` tag
-    regex_pattern = re.sub(r'\{FILE_ID:(.+?)\}', r'(?P<FILE_ID>\1)', regex_pattern)
 
-    # Compile the regex pattern and return the output
-    return re.compile(regex_pattern)
 
-def read_biology_csv(file: Path, pattern: re.Pattern, config_settings: dict):
-
-    # Read in the `*.csv` file
-    df = pd.read_csv(file, usecols=list(config_settings["dtypes"].keys()))
-
-    # Validate the dataframe
-    # ---- Check for any missing columns
-    missing_columns = (
-        [key for key in config_settings["dtypes"].keys() if key not in df.columns]
-    )
-    # ---- Raise Error, if needed
-    if missing_columns: 
-        raise ValueError(
-            f"The following columns are missing from [{file}]: {', '.join(missing_columns)}!"
-        )
-    # ---- Ensure the correct datatypes
-    df_validated = df.astype(config_settings["dtypes"])
-    # ---- Replace column names and drop 
-    df_validated = df_validated.rename(columns=config_settings["names"])
-
-    # Get the substring components that can be added to the DataFrame
-    filename_substrings = re.findall(r'\{([^:}]+)(?::[^}]+)?}', pattern)
-    # ---- Create sub-list of columns that can be added to the DataFrame
-    valid_tags = list(set(["HAUL", "SPECIES_CODE"]).intersection(set(filename_substrings)))
-
-    # Compile the filename regular expression
-    compiled_regex = compile_filename_format(pattern)
-    # ---- Create the `Match` object that will be used to parse the string
-    match_obj = compiled_regex.search(file.name)
-
-    # Iterate through the filename-derived tags and add them to the DataFrame
-    for i in valid_tags: 
-        matched_key = LIVE_FILE_FORMAT_MAP[i]
-        df_validated[matched_key["name"]] = matched_key["dtype"](match_obj.group(i))
-
-    # Return the resulting DataFrame
-    return df_validated
 ####################################################################################################
 # * Functionality for reading in processed acoustic data
 # TODO: Expand data validator and limit cases to '*.zarr' (for now)
 # TODO: Refactor "extra" components such as the validation steps, xarray-to-dataframe piping, etc.
 # TODO: Documentation
-def load_acoustic_data(file_configuration: dict, update_config: bool = True) -> Tuple[pd.DataFrame, xr.Dataset]:
-    # Get acoustic directory and initialization settings
-    # ---- Files
-    acoustic_file_settings = file_configuration["input_directories"]["acoustic"]
-    # ---- General settings
-    acoustic_analysis_settings = file_configuration["acoustics"]
-    
-    # Get the file-specific settings, datatypes, columns, etc.
-    # ---- Get defined columns and datatypes from `LIVE_INPUT_FILE_CONFIG_MAP`
-    acoustics_config_map = LIVE_INPUT_FILE_CONFIG_MAP["acoustics"]
-    # ---- Create list of coordinate data variables
-    specified_vars = list(acoustics_config_map["xarray_variables"].keys())
-    # ---- Create set of coordinate variables
-    specified_coords = list(acoustics_config_map["xarray_coordinates"].keys())      
-    # ---- Concatenate into a full configuration map
-    full_config_map = {**acoustics_config_map["xarray_coordinates"],
-                        **acoustics_config_map["xarray_variables"]} 
-    # ---- Initialize the dictionary that will define this key in the `input` attribute
-    acoustics_output = {"prc_nasc_df": pd.DataFrame(), 
-                        "nasc_df": pd.DataFrame()}
-    # ---- Initialize the SQL dictionary
-    # sql_acoustics_output = {"sv_df": pd.DataFrame()}
+file_settings = file_configuration["input_directories"]["acoustics"]
+root_directory = file_configuration["data_root_dir"]
 
-    # Create full filepath
-    acoustic_directory_path = (
-        Path(file_configuration["data_root_dir"]) / acoustic_file_settings["directory"]
-    )
-    
-    # Validate filepath, columns, datatypes
-    # ---- Directory check
-    directory_existence = acoustic_directory_path.exists()
-    # ---- Error evaluation (if applicable)
-    if not directory_existence:
-        raise FileNotFoundError(
-            f"The acoustic data directory [{acoustic_directory_path}] does not exist."
-        )
-    # ---- Get the defined file extension
-    file_extension = acoustic_file_settings["extension"]
-    # ---- Create Path.glob generator object (the case of a *.zarr file)
-    file_path_obj = acoustic_directory_path.glob(f"*{'.'+file_extension}")
-    # ---- Find all zarr files
-    zarr_files = list(file_path_obj)
-    # ---- Ensure files exist or raise error otherwise
-    if len(zarr_files) < 1:
-        raise FileNotFoundError(
-            f"No `*.zarr` files found in [{acoustic_directory_path}]!"
-        )
-    else:
-        # ---- Create Path to SQL database file
-        db_directory = Path(file_configuration["data_root_dir"]) / "database"
-        # ---- Create the directory if it does not already exist
-        db_directory.mkdir(parents=True, exist_ok=True)
-        # ---- Complete path to `biology.db`
-        db_file = db_directory / "acoustics.db"
-        # ---- Query the external SQL database to see if the file tracking table exists
-        tables = SQL(db_file, "inspect")
-        # ---- Create a list of string-formatted Path names
-        zarr_files_str = [str(file) for file in zarr_files]
-        # ---- Create DataFrame
-        current_files = pd.DataFrame(zarr_files_str, columns=["filepath"])
-        # ---- Create if it is missing and then advance `zarr_files`
-        if "files_read" not in tables:
-            # ---- Insert into the SQL database file
-            _ = SQL(db_file, "insert", table_name="files_read", columns="filepath",
-                    dataframe=current_files)        
-            # ---- Create empty list for later comparison
-            new_files = []
-        else:
-            # ---- Pull already processed filenames
-            previous_files = SQL(db_file, "select", table_name="files_read")
-            # ---- Compare against the current filelist 
-            new_files = (
-                [file for file in zarr_files_str if file not in set(previous_files["filepath"])]
-            )  
-            # ---- Create a DataFrame for the new files
-            new_files_df = pd.DataFrame(new_files, columns=["filepath"])
-            # ---- Insert into the SQL database file
-            _ = SQL(db_file, "insert", table_name="files_read", dataframe=new_files_df) 
 
-    # Find new files that have not yet been processed
-    if not new_files: 
-        subset_files = zarr_files
-    else:
-        subset_files = set(zarr_files).intersection(set(new_files))
-
-    # Read in the `*.zarr` file(s)
-    # ! [REQUIRES DASK] ---- Read in the listed file
-    if len(subset_files) > 1:
-        zarr_data_ds = xr.open_mfdataset(subset_files, engine="zarr", chunks="auto", 
-                                         data_vars=specified_vars, coords=specified_coords)
-    elif len(subset_files) == 1:
-        zarr_data_ds = xr.open_dataset(subset_files[0], engine="zarr", chunks="auto")
-
-    # Pre-process the Dataset, convert it to a DataFrame, and validate the structure
-    # ---- Extract coordinate metadata
-    coordinate_metadata = zarr_data_ds[["longitude", "latitude"]]    
-    # ---- Convert to a DataFrame
-    zarr_data_df = zarr_data_ds.to_dataframe().reset_index()
-    # ---- Check for any missing columns
-    missing_columns = (
-        [key for key in full_config_map.keys() if key not in zarr_data_df.columns]
-    )
-    # ---- Raise Error, if needed
-    if missing_columns: 
-        raise ValueError(
-            f"The following columns are missing from at least one *.{file_extension} file in "
-            f"[{acoustic_directory_path}]: {', '.join(missing_columns)}!"    
-        )
-    # ---- Select defined columns
-    zarr_data_df_filtered = zarr_data_df[full_config_map.keys()].astype(full_config_map)
-
-    # Extract defined acoustic frequency
-    # ---- From the configuration 
-    transmit_settings = acoustic_analysis_settings["transmit"]
-    # ---- Transform `frequency_nominal`, if necessary
-    zarr_data_df_filtered["frequency_nominal"] = (
-        configure_transmit_frequency(zarr_data_df_filtered["frequency_nominal"],
-                                     transmit_settings,
-                                     zarr_data_ds["frequency_nominal"].units)
-    )
-    # ---- Filter out any unused frequency coordinates
-    zarr_data_df_output = (
-        zarr_data_df_filtered
-        [zarr_data_df_filtered["frequency_nominal"] == transmit_settings["frequency"]]
-    )
-    
-    # Remaining adjustments to the acoustic data prior to being passed to the `LiveSurvey` object
-    # ---- Replace NASC `NaN` values with `0.0`
-    zarr_data_df_output.loc[:, "NASC"] = zarr_data_df_output.loc[:, "NASC"].fillna(0.0)
-    # ---- Drop frequency column and return the output
-    acoustics_output["prc_nasc_df"] = zarr_data_df_output.drop(columns = ["frequency_nominal"])
-    # ---- Return output
-    if update_config:
-        if file_configuration["database"]["acoustics"] is None: 
-            file_configuration["database"]["acoustics"] = db_file
-        return acoustics_output, file_configuration
-    else:
-        return acoustics_output
 ####################################################################################################  
 # TEST: ACOUSTIC ZARR FILE INGESTION CONFIGURATION
 # NOTE: 
 # ---- Run function: `load_validated_acoustic_data` using previously defined `file_configuration`
-acoustic_data, file_configuration = load_acoustic_data(file_configuration)
+acoustic_data = load_acoustic_data(file_configuration)
 acoustic_data
-####################################################################################################
-def load_biology_data(file_configuration: dict, update_config: bool = True):
+file_configuration["database"]
 
-    # Get acoustic directory and initialization settings
-    # ---- Files
-    biology_file_settings = file_configuration["input_directories"]["biological"]
-    # ---- General settings
-    biology_analysis_settings = file_configuration["biology"]
+def estimate_echometrics(acoustic_data_df: pd.DataFrame):
 
-    # Get the file-specific settings, datatypes, columns, etc.
-    # ---- Get defined columns and datatypes from `LIVE_INPUT_FILE_CONFIG_MAP`
-    biology_config_map = LIVE_INPUT_FILE_CONFIG_MAP["biology"]
-        # ---- Extract the expected file name ID's
-    biology_file_ids = biology_file_settings["file_name_formats"]
-    # ---- Extract all of the file ids
-    biology_config_ids = list(biology_file_ids.keys())
-    # ---- Initialize the dictionary that will define this key in the `input` attribute
-    biology_output = {f"{key}_df": pd.DataFrame() for key in biology_config_ids}
-    # ---- Initialize the SQL dictionary
-    sql_biology_output = {f"{key}_df": pd.DataFrame() for key in biology_config_ids}
-    
-    # Create full filepath
-    biology_directory_path = (
-        Path(file_configuration["data_root_dir"]) / biology_file_settings["directory"]
-    )
-    # ---- Directory check
-    directory_existence = biology_directory_path.exists()
-    # ---- Error evaluation (if applicable)
-    if not directory_existence:
-        raise FileNotFoundError(
-            f"The acoustic data directory [{biology_directory_path}] does not exist."
-        )
-    # ---- Get the defined file extension
-    file_extension = biology_file_settings["extension"]
-    # ---- Create Path.glob generator object
-    file_path_obj = biology_directory_path.glob(f"*{'.'+file_extension}")
-    #---- Create list of `*.csv`` files
-    csv_files = list(file_path_obj)
-    # ---- Ensure files exist or raise error otherwise
-    if len(csv_files) < 1:
-        raise FileNotFoundError(
-            f"No `*.csv` files found in [{biology_directory_path}]!"
-        )
-    else: 
-        # ---- Create Path to SQL database file
-        db_directory = Path(file_configuration["data_root_dir"]) / "database"
-        # ---- Create the directory if it does not already exist
-        db_directory.mkdir(parents=True, exist_ok=True)
-        # ---- Complete path to `biology.db`
-        db_file = db_directory / "biology.db"
-        # ---- Query the external SQL database to see if the file tracking table exists
-        tables = SQL(db_file, "inspect")
-        # ---- Create a list of string-formatted Path names
-        csv_files_str = [str(file) for file in csv_files]
-        # ---- Create DataFrame
-        current_files = pd.DataFrame(csv_files_str, columns=["filepath"])
-        # ---- Create if it is missing and then advance `csv_files`
-        if "files_read" not in tables:
-            # ---- Insert into the SQL database file
-            _ = SQL(db_file, "insert", table_name="files_read", columns="filepath",
-                     dataframe=current_files)        
-            # ---- Create empty list for later comparison
-            new_files = []
-        else:
-            # ---- Pull already processed filenames
-            previous_files = SQL(db_file, "select", table_name="files_read")
-            # ---- Compare against the current filelist 
-            new_files = (
-                [file for file in csv_files_str if file not in set(previous_files["filepath"])]
-            )  
-            # ---- Create a DataFrame for the new files
-            new_files_df = pd.DataFrame(new_files, columns=["filepath"])
-            # ---- Insert into the SQL database file
-            _ = SQL(db_file, "insert", table_name="files_read", dataframe=new_files_df) 
+    # Create copy
+    acoustic_df = acoustic_data_df.copy().reset_index(drop=True)
 
-    # Iterate through each of the file ids and read in the data 
-    for id in list(biology_file_ids.keys()): 
-        # ---- Extract the specific config mapping for this tag/id
-        sub_config_map = biology_config_map[id]
-        # ---- Drop the `{FIELD_ID}` tag identifier
-        file_id_format = re.sub(r'\{FILE_ID:([^}]+)\}', r'\1', biology_file_ids[id])
-        # ---- Replace all other tags with `*` placeholders
-        file_id_format = re.sub(r"\{[^{}]+\}", "*", file_id_format)
-        # ---- Create Path object with the generalized format
-        subfile_path_obj = biology_directory_path.glob(f"{file_id_format}.{file_extension}")
-        # ---- List all files that match this pattern
-        subcsv_files_str = [str(file) for file in list(subfile_path_obj)]
-        # ---- Filter for only new files
-        subset_files = set(subcsv_files_str).intersection(set(new_files))
-        # ---- Pull from SQL database, if applicable
-        if f"{id}_df" in tables:
-            # ---- SELECT
-            sql_df = SQL(db_file, "select", table_name=f"{id}_df", columns="*")
-            # ---- Concatenate to the dictionary
-            sql_biology_output[f"{id}_df"] = pd.concat([biology_output[f"{id}_df"], sql_df])
-        # ---- Add data files not stored in SQL database
-        if len(subset_files) > 0 or len(subset_files)== 0 and f"{id}_df" not in tables:
-            if len(subset_files) > 0:
-                file_list = subset_files
-            else:
-                file_list = subcsv_files_str
-            # ---- Create a list of relevant dataframes
-            sub_df_lst = [read_biology_csv(Path(file), biology_file_ids[id], sub_config_map) 
-                            for file in file_list]
-            # ---- Concatenate into a single DataFrame
-            sub_df = pd.concat(sub_df_lst, ignore_index=True)
-            # ---- Lower-case sex
-            if "sex" in sub_df.columns:
-                sub_df["sex"] = sub_df["sex"].str.lower()
-            # ---- Concatenate to the dictionary DataFrame
-            biology_output[f"{id}_df"] = pd.concat([biology_output[f"{id}_df"], sub_df])
+    # Pre-compute the change in depth
+    acoustic_df["dz"] = acoustic_df["depth"].diff()
 
-    # Get contrasts used for filtering the dataset
-    # ---- Species
-    species_filter = file_configuration["species"]["number_code"]
-    # ---- Trawl partition information
-    trawl_filter = biology_analysis_settings["catch"]["partition"]
-    # ---- Apply the filter
-    filtered_biology_output = {
-        key: df[
-            (df['species_id'] == species_filter if 'species_id' in df.columns else True) &
-            (df['trawl_partition'].str.lower() == trawl_filter if 'trawl_partition' in df.columns else True)
-        ]
-        for key, df in biology_output.items() if isinstance(df, pd.DataFrame) and not df.empty
-    }
+    # Initialize echometrics dictionary
+    echometrics = {}
 
-    # Update the SQL database
-    for table_name, df in filtered_biology_output.items():
-        # ---- Update        
-        _ = SQL(db_file, "insert", table_name=table_name, columns="*", 
-                dataframe=df)
-        
-    # Combine the two datasets 
-    merged_output = {
-        key: pd.concat([
-            sql_biology_output.get(key, pd.DataFrame()), 
-            filtered_biology_output.get(key, pd.DataFrame())
-        ]).drop_duplicates().reset_index(drop=True)
-        for key in set(sql_biology_output) | set(filtered_biology_output)
-    }
-    # ---- Return output
-    if update_config:
-        if file_configuration["database"]["biology"] is None: 
-            file_configuration["database"]["biology"] = db_file
-        return merged_output, file_configuration
+    # Compute the metrics center-of-mass
+    if acoustic_df["NASC"].sum() == 0.0:
+        echometrics.update({
+            "n_layers": 0,
+            "mean_Sv": -999,
+            "max_Sv": -999,
+            "nasc_db": np.nan,
+            "center_of_mass": np.nan,
+            "dispersion": np.nan,
+            "evenness": np.nan,
+            "aggregation": np.nan,    
+            "occupied_area": 0.0,        
+        })
     else:
-        return merged_output
+        
+        # Compute the number of layers
+        echometrics.update({
+            "n_layers": acoustic_df["depth"][acoustic_df["NASC"] > 0.0].size
+        })
+
+        # Compute ABC
+        # ---- Convert NASC to ABC
+        acoustic_df["ABC"] = acoustic_df["NASC"] / (4 * np.pi * 1852 ** 2)
+        # ---- Estimate mean Sv
+        echometrics.update({
+            "mean_Sv": 10.0 * np.log10(acoustic_df["ABC"].sum() / acoustic_df["depth"].max())
+        })
+        # --- Estimate max Sv (i.e. )
+        echometrics.update({
+            "max_Sv": 10 * np.log10(acoustic_df["ABC"].max() 
+                                    / acoustic_df.loc[np.argmax(acoustic_df["ABC"]), "dz"])
+        })
+
+        # Compute (acoustic) abundance
+        echometrics.update({
+            "nasc_db": 10 * np.log10(acoustic_df["ABC"].sum())
+        })
+
+        # Compute center of mass
+        echometrics.update({
+            "center_of_mass": (
+                (acoustic_df["depth"] * acoustic_df["NASC"]).sum()
+                / (acoustic_df["NASC"]).sum()
+            )
+        })
+
+        # Compute the dispersion
+        echometrics.update({
+            "dispersion": (
+                ((acoustic_df["depth"] - echometrics["center_of_mass"]) ** 2 
+                * acoustic_df["NASC"]).sum() / (acoustic_df["NASC"]).sum()                
+            )
+        })
+
+        # Compute the evenness
+        echometrics.update({
+            "evenness": (acoustic_df["NASC"] **2).sum() / ((acoustic_df["NASC"]).sum()) ** 2
+        })
+
+        # Compute the index of aggregation
+        echometrics.update({
+            "aggregation": 1 / echometrics["evenness"]
+        })
+
+        # Get the occupied area
+        echometrics.update({
+            "occupied_area": (
+                acoustic_df["dz"][acoustic_df["ABC"] > 0.0].sum() / acoustic_df["depth"].max()
+            )
+        })
+
+    # Return the dictionary
+    return echometrics
+
+def integrate_nasc(acoustic_data_df: pd.DataFrame, echometrics: bool = True):
+
+    # Vertically integrate PRC NASC
+    nasc_dict = {"nasc": acoustic_data_df["NASC"].sum()}
+    
+    # Horizontally concatenate `echometrics`, if `True`
+    if echometrics:
+        # ---- Compute values
+        # NOTE: This uses NASC instead of linear `sv`
+        echometrics_dict = estimate_echometrics(acoustic_data_df)
+        # ---- Merge
+        nasc_dict.update(echometrics_dict)
+
+    # Convert `nasc_dict` to a DataFrame and return the output
+    return pd.Series(nasc_dict)
+
+
+acoustic_data_df = acoustic_data["prc_nasc_df"]
+
+
+
+# SQL(database_file, "drop", table_name="nasc_df")
+# SQL(database_file, "validate", **kwargs)
+# SQL(database_file, "create", table_name="nasc_df", primary_keys=["latitude", "longitude", "ping_time"], dataframe=nasc_data_df)
+# SQL(database_file, "validate", **kwargs)
+# SQL(database_file, "select", table_name="nasc_df")
+# SQL(database_file, "insert", table_name="nasc_df", id_columns=["latitude", "longitude", "ping_time"], dataframe=nasc_data_df)
+# SQL(database_file, "select", table_name="nasc_df")
+# SQL(database_file, "insert", table_name="nasc_df", id_columns=["latitude", "longitude", "ping_time"], dataframe=nasc_data_df)
+# SQL(database_file, "select", table_name="nasc_df")
+# SQL(database_file, "insert", table_name="nasc_df", dataframe=nasc_data_df)
+# SQL(database_file, "drop", table_name="nasc_df")
+# SQL_DTYPES[type(dataframe["ping_time"][0]).__name__]
+
+def process_acoustic_data(acoustic_data_df: pd.DataFrame, file_configuration: dict, 
+                          echometrics: bool = True):
+
+    # Integrate NASC (and compute the echometrics, if necessary)
+    nasc_data_df = (
+        acoustic_data_df.groupby(["longitude", "latitude", "ping_time"])
+        .apply(lambda group: integrate_nasc(group, echometrics), include_groups=False)
+        .reset_index()
+    )
+    # ---- Amend the dtypes if echometrics were computed
+    if echometrics:
+        nasc_data_df = (
+            nasc_data_df
+            .astype({"n_layers": int, "mean_Sv": float, "max_Sv": float, "nasc_db": float,
+                    "center_of_mass": float, "dispersion": float, "evenness": float,
+                    "aggregation": float, "occupied_area": float})
+        )
+
+    # Get the acoustics database file
+    acoustics_db = file_configuration["database"]["acoustics"]
+
+    # Insert the new data into the database and pull in the combined previous and new data combined
+    full_nasc_df = sql_data_exchange(acoustics_db, dataframe=nasc_data_df, 
+                                     table_name="nasc_df", 
+                                     id_columns=["longitude", "latitude", "ping_time"],
+                                     primary_keys=["longitude", "latitude", "ping_time"],
+                                     output_type=pd.DataFrame)
+
+    # Return the output
+    return full_nasc_df
+
+####################################################################################################
+def reset_db_files(file_configuration: dict, table_exception: Optional[Union[str, List[str]]] = None):
+
+    # Get all database files
+    database_files = file_configuration["database"]
+
+    # Iterate through all keys
+    for _, db_file in database_files.items():
+        # ---- Map the table names
+        table_names = SQL(db_file, "map")
+        # ---- Drop any noted exceptions
+        if not isinstance(table_exception, list):
+            table_exception = [table_exception]
+        # ---- Drop exception table name
+        if None not in table_exception:
+            table_names = list(set(table_names) - set(table_exception))
+        _ = [SQL(db_file, "drop", table_name=table) for table in table_names]
+        # ---- Validate that all tables were removed        
+        if set(table_names).intersection(set(SQL(table_names, "map"))):
+            raise ValueError(
+                f"Attempted reset of [{str(db_file)}] failed."
+            )
+
+SPATIAL_CONFIG_MAP = {
+    "closest_haul": {
+        "proximity": {
+            "choices": ["distance", "time"],
+        },
+    },
+    "global" : {},
+    "griddify": {
+        "bounds": {
+            "longitude": {
+                "types": [float]
+            },
+            "latitude": {
+                "types": [float]
+            },
+            "northings": {
+                "types": [float]
+            },
+            "eastings": {
+                "types": [float]
+            },
+            "pairs": [("longitude", "latitude"), ("northings", "eastings")],
+        },
+        "grid_resolution": {
+            "x_distance": {
+                "types": float,
+            },
+            "y_distance": {
+                "types": float,
+            },
+            "d_longitude": {
+                "types": float,
+            },
+            "d_latitude": {
+                "types": float,
+            },
+            "grid_size_x": {
+                "types": int,
+            },
+            "grid_size_y": {
+                "types": int,
+            },
+            "pairs": [("x_distance", "y_distance"), ("d_longitude", "d_latitude"), 
+                      ("grid_size_x", "grid_size_y")],       
+        },
+    },
+    "inpfc": {
+        "stratum_names": {
+                "types": [int, str]
+            },
+        "latitude_max": {
+            "types": [float],
+        },
+    },
+    "weighted_haul": {
+        "proximity": {
+            "choices": ["distance", "time"]
+        },
+    },
+}
+
+
+
+reset_db_files(file_configuration, table_exception = "files_read")
+reset_db_files(file_configuration)
+
+stamp = 20240714194248
+stamp.astype(int)
+int(stamp)
+import re
+from datetime import datetime
+
+def infer_datetime_format(timestamp_str: Union[int, str]):
+    patterns = {
+        r"^\d{14}$": "%Y%m%d%H%M%S",             # YYYYMMDDHHMMSS
+        r"^\d{8}$": "%Y%m%d",                     # YYYYMMDD
+        r"^\d{6}$": "%H%M%S",                     # HHMMSS
+        r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$": "%Y-%m-%d %H:%M:%S",  # YYYY-MM-DD HH:MM:SS
+        r"^\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2}$": "%Y/%m/%d %H:%M:%S",  # YYYY/MM/DD HH:MM:SS
+        r"^\d{4}-\d{2}-\d{2}$": "%Y-%m-%d",       # YYYY-MM-DD
+        r"^\d{4}/\d{2}/\d{2}$": "%Y/%m/%d"        # YYYY/MM/DD
+    }
+    
+    for pattern, date_format in patterns.items():
+        if re.match(pattern, timestamp_str):
+            return date_format
+    
+    raise ValueError("Unknown timestamp format")
+
+filter_dict = dict(species_filer=species_filter, trawl_filter=trawl_filter)
+
+def biology_data_filter(biology_data: pd.DataFrame, filter_dict: dict):
+
+    # Create dataframe copy
+    data_copy = biology_data.copy()
+
+    # Iterate through dictionary to apply filters (if present)
+    for column, value in filter_dict.items():
+        if column in data_copy.columns:
+            data_copy = data_copy[data_copy[column] == value]
+
+    # Return output
+    return data_copy
+
+
+
+df[(df['species_id'] == species_filter if 'species_id' in df.columns else True)]
+df[(df["species_id"] == 17 if "species_id" in df.columns)]
+
+(df[df["haul_num"] == 17 if "haul_num" in df.columns] else True)
+
+
+from datetime import datetime
+
+df = biology_output["trawl_info_df"]
+df.loc[(df['species_id'] == species_filter if 'species_id' in df.columns else True), :]
+df.index
+
+biology_output["trawl_info_df"].reset_index().index
+df = biology_output["catch_df"]
+df = df.loc[0, :].to_frame().T
+df.index
+df.loc[(df['species_id'] == species_filter if 'species_id' in df.columns else True)]
+
+def convert_datetime(timestamp: Union[int, str, pd.Series]):
+
+    if isinstance(timestamp, pd.Series):
+        test_timestamp = str(timestamp[0])
+    else:
+        test_timestamp = str(timestamp)
+
+    # Approximate the datetime format
+    datetime_format = infer_datetime_format(str(test_timestamp))
+
+    #
+    if isinstance(timestamp, pd.Series):
+        return timestamp.apply(lambda x: datetime.strptime(x, datetime_format))
+    else:
+        return datetime.strptime(timestamp, datetime_format)
+    
+infer_datetime_format(stamp)
+convert_datetime(stamp)
+infer_datetime_format(202407)
+
+# {'global': False, 'INPFC': True, 'closest_haul': False, 'weighted_haul': False}
+file_configuration["geospatial"]["link_biology_acoustics"] = "INPFC"
+file_configuration["geospatial"]
+spatial_config = file_configuration["geospatial"]
+###############
+
+acoustic_data = self.input["acoustics"]
+biology_data = self.input["biology"]
+
+def load_spatial_data(acoustic_data: dict,
+                      biology_data: dict,                      
+                      file_configuration: dict,):
+    
+    # Extract spatial strata *only* if spatial information from the configuration settings
+    # ---- Get (geo)spatial config
+    spatial_config = file_configuration["geospatial"]
+    # ---- Remove case sensitivity
+    spatial_config = {key.lower(): value for key, value in spatial_config.items()}
+    # ---- Extract the projection
+    projection = spatial_config["projection"]
+    # ---- Extract the biology-acoustics linking method options
+    acoustics_biology_link = spatial_config["link_biology_acoustics"]
+
+    # Validate the configuration
+    validate_spatial_config(spatial_config)
+
+    # Assign the spatial link constraints to the acoustic and biological data
+    if acoustics_biology_link == "INPFC":
+        apply_inpfc_definitions(acoustic_data, biology_data, spatial_config)
+
+
+
+    # Convert the DataFrame to a GeoDataFrame
+    acoustic_data_gdf = gpd.GeoDataFrame(
+        data=acoustic_data,
+        geometry=gpd.points_from_xy(acoustic_data["longitude"], acoustic_data["latitude"]),
+        crs=projection
+    )
+
+    # Validate the spatial biology-acoustics linking method
+    # ---- Get the biology-acoustics linking method
+    link_method = next(key for key, value in acoustics_biology_link.items() if value)
+    # ---- Flag Error if unexpected method
+    if link_method not in ["global", "closest_haul", "INPFC", "weighted_haul"]:
+        raise ValueError(
+            f"Unexpected biology-acoustic linking parameter ([{link_method}]). Valid options "
+            f"include: 'global', 'closest_haul', 'weighted_haul', and 'INPFC'."
+        )
+    
 ####################################################################################################  
 # TEST: BIOLOGY FILE INGESTION CONFIGURATION
 # NOTE: 

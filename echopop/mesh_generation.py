@@ -12,8 +12,109 @@ y = np.array([1, 2, 3, 4, 5])
 
 # Create the grid points
 grid_points = [(i, j, 0) for i in x for j in y]
+def load_acoustic_data(file_configuration: dict) -> Tuple[pd.DataFrame]:
 
-#
+    # Get the acoustic file settings and root directory
+    # ---- File settings
+    file_settings = file_configuration["input_directories"]["acoustics"]
+    # ---- Root directory
+    root_directory = file_configuration["data_root_dir"]
+    
+    # Get and validate the acoustic data directory and files
+    acoustic_files = validate_data_directory(root_directory, file_settings)
+
+    # Query `acoustics.db` to process only new files (or create the db file in the first place)
+    new_acoustic_files = query_acoustic_db_files(file_configuration, acoustic_files)
+
+    # Read in the acoustic data files
+    # ! [REQUIRES DASK] ---- Read in the listed file
+    prc_nasc_df, acoustic_data_units = read_acoustic_zarr(new_acoustic_files)
+    # ---- Add the `acoustic_data_units` to the dictionary
+    file_configuration["acoustics"]["dataset_units"] = acoustic_data_units
+
+    # Preprocess the acoustic dataset
+    prc_nasc_df_processed = preprocess_acoustic_data(prc_nasc_df, file_configuration)
+
+    # Return output
+    return prc_nasc_df_processed
+
+def read_acoustic_zarr(acoustic_files: Path) -> tuple:
+
+    # Iterate through each of the file ids and read in the data 
+    for id in list(biology_file_ids.keys()): 
+        # ---- Extract the specific config mapping for this tag/id
+        sub_config_map = biology_config_map[id]
+        # ---- Drop the `{FIELD_ID}` tag identifier
+        file_id_format = re.sub(r'\{FILE_ID:([^}]+)\}', r'\1', biology_file_ids[id])
+        # ---- Replace all other tags with `*` placeholders
+        file_id_format = re.sub(r"\{[^{}]+\}", "*", file_id_format)
+        # ---- Create Path object with the generalized format
+        subfile_path_obj = biology_directory_path.glob(f"{file_id_format}.{file_extension}")
+        # ---- List all files that match this pattern
+        subcsv_files_str = [str(file) for file in list(subfile_path_obj)]
+        # ---- Filter for only new files
+        subset_files = set(subcsv_files_str).intersection(set(new_files))
+        # ---- Pull from SQL database, if applicable
+        if f"{id}_df" in tables:
+            # ---- SELECT
+            sql_df = SQL(db_file, "select", table_name=f"{id}_df", columns="*")
+            # ---- Concatenate to the dictionary
+            sql_biology_output[f"{id}_df"] = pd.concat([biology_output[f"{id}_df"], sql_df])
+        # ---- Add data files not stored in SQL database
+        if len(subset_files) > 0 or len(subset_files)== 0 and f"{id}_df" not in tables:
+            if len(subset_files) > 0:
+                file_list = subset_files
+            else:
+                file_list = subcsv_files_str
+            # ---- Create a list of relevant dataframes
+            sub_df_lst = [read_biology_csv(Path(file), biology_file_ids[id], sub_config_map) 
+                            for file in file_list]
+            # ---- Concatenate into a single DataFrame
+            sub_df = pd.concat(sub_df_lst, ignore_index=True)
+            # ---- Lower-case sex
+            if "sex" in sub_df.columns:
+                sub_df["sex"] = sub_df["sex"].str.lower()
+            # ---- Concatenate to the dictionary DataFrame
+            biology_output[f"{id}_df"] = pd.concat([biology_output[f"{id}_df"], sub_df])
+
+    # Get contrasts used for filtering the dataset
+    # ---- Species
+    species_filter = file_configuration["species"]["number_code"]
+    # ---- Trawl partition information
+    trawl_filter = biology_analysis_settings["catch"]["partition"]
+    # ---- Apply the filter
+    filtered_biology_output = {
+        key: df[
+            (df['species_id'] == species_filter if 'species_id' in df.columns else True) &
+            (df['trawl_partition'].str.lower() == trawl_filter if 'trawl_partition' in df.columns else True)
+        ]
+        for key, df in biology_output.items() if isinstance(df, pd.DataFrame) and not df.empty
+    }
+
+    # Update the SQL database
+    for table_name, df in filtered_biology_output.items():
+        # ---- Update        
+        _ = SQL(db_file, "insert", table_name=table_name, columns="*", 
+                dataframe=df)
+        
+    # Combine the two datasets 
+    merged_output = {
+        key: pd.concat([
+            sql_biology_output.get(key, pd.DataFrame()), 
+            filtered_biology_output.get(key, pd.DataFrame())
+        ]).drop_duplicates().reset_index(drop=True)
+        for key in set(sql_biology_output) | set(filtered_biology_output)
+    }
+    # ---- Return output
+    if update_config:
+        if file_configuration["database"]["biology"] is None: 
+            file_configuration["database"]["biology"] = db_file
+        return merged_output, file_configuration
+    else:
+        return merged_output
+
+
+
 data_root_dir = Path("C:/Users/Brandyn/Documents/GitHub/EchoPro_data/")
 db_directory = data_root_dir / "database"
 # ---- Create the directory if it does not already exist
@@ -118,7 +219,7 @@ with engine.connect() as connection:
 for row in rows:
     print(row)
     
-    
+converted_data[0]
 check_table_exists(engine, "files_read")
 
 zarr_files_str = ["A", "B", "C", "D"]
@@ -247,10 +348,12 @@ table_name = 'grid'
 condition_columns = ['x', 'y']
 
 # Define the updates and conditions
-dd = {"x": np.array([1, 2, 3 , 4, 5]), "y": np.array([1, 2, 3 , 4, 5]), "value": np.array([1, 2, 3 , 4, 5]).astype(float)}
+dd = {"x": np.array([1, 2, 3 , 4, 5]),"" "y": np.array([1, 2, 3 , 4, 5]), "value": np.array([1, 2, 3 , 4, 5]).astype(float)}
 new_data = pd.DataFrame(dd)
 new_data
 df = new_data
+
+kwargs = {"table_name": "grid", "columns": df.columns, "df": df}
 
 with engine.connect() as connection: 
     # sql_create(connection, table_name = "grid", df = df)
@@ -1911,6 +2014,8 @@ def read_biology_csv(file: Path, pattern: re.Pattern, config_settings: dict):
     # Return the resulting DataFrame
     return df_validated
 
+boundary_dict = griddify_definitions["bounds"]
+
 ##
 grid_settings["grid_resolution"]["x"] = 50
 grid_settings["grid_resolution"]["y"] = 50
@@ -1928,7 +2033,7 @@ bound_gdf = gpd.GeoDataFrame(
     geometry=gpd.points_from_xy(bound_df["lon"], bound_df["lat"]),
     crs = projection
 )
-
+from echopop.spatial.projection import utm_string_generator
 utm_string_generator(-117.0, 33.75)
 bound_gdf.total_bounds
 # Convert to UTM
