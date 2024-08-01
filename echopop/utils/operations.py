@@ -178,7 +178,7 @@ def meld(specimen_dataframe: pd.DataFrame, length_dataframe: pd.DataFrame, contr
     specimen_stacked = (
         specimen_dataframe.copy()
         .groupby(contrasts, observed=False)[["length"]]
-        .apply(lambda x: len(x), include_groups=True)
+        .apply(lambda x: len(x))
         .reset_index(name="length_count")
     )
 
@@ -329,7 +329,7 @@ def group_interpolator_creator(
     # Produce a dictionary comprising all of the produced interpolators
     interpolators = (
         grouped_data.groupby(contrast).apply(
-            lambda group: interpolator_factory(group), include_groups=False
+            lambda group: interpolator_factory(group)
         )
     ).to_dict()
 

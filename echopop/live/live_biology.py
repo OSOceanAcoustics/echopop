@@ -163,7 +163,7 @@ def compute_sigma_bs(specimen_data: pd.DataFrame, length_data: pd.DataFrame,
     sigma_bs_df = (
         ts_length_df
         .groupby(list(set(contrast_columns) - set(["length"])), observed=False)
-        .apply(lambda x: average_sigma_bs(x, weights="length_count"), include_groups=False)
+        .apply(lambda x: average_sigma_bs(x, weights="length_count"))
         .reset_index(name="sigma_bs")
     )
 
@@ -244,7 +244,7 @@ def length_weight_regression(specimen_data: pd.DataFrame, distribution_df: pd.Da
                 np.polyfit(np.log10(df["length"]), np.log10(df["weight"]), 1),
                 index=["rate", "initial"],
             ),
-            include_groups=False,
+            # include_groups=False,
         )
         .reset_index()
     )
@@ -808,3 +808,225 @@ def compute_average_weights(specimen_number_proportion: pd.DataFrame,
 
     # Return output
     return fitted_weight_df
+
+def weight_proportions(catch_data: pd.DataFrame,
+                       specimen_data: pd.DataFrame,
+                       length_data: pd.DataFrame,
+                       specimen_weight_binned: pd.DataFrame,
+                       length_weight_binned: pd.DataFrame,
+                       length_number_proportion: pd.DataFrame,
+                       length_weight_df: pd.DataFrame,
+                       file_configuration: dict):
+    
+    # Get the spatial column name, if there is one
+    spatial_column = file_configuration["spatial_column"]
+    # ---- Append additional columns that will be used
+    contrast_columns = spatial_column + ["sex", "species_id"]
+
+    # Calculate grouped totals
+    # ---- Sum the net haul weights from station 1/unaged fish
+    catch_weights = catch_data.count_variable(
+        contrasts=["species_id"] + spatial_column, 
+        variable="haul_weight", fun="sum"
+    )
+    # ---- Rename resulting columns for both
+    catch_weights.rename(columns={"count": "total_weight"}, inplace=True)
+    
+    # Sum total weights for specimen data
+    specimen_weights = specimen_weight_binned.sum().reset_index(name="total_weight")
+    
+    # For the specimen data 
+    # ---- Sum the net haul weights from station 1/unaged fish
+    specimen_weights_sex = (
+        specimen_weight_binned
+        .groupby(contrast_columns)["weight"]
+        .sum()
+    )
+    # ---- Total (per stratum, if it exists)
+    specimen_weight_total = specimen_weights_sex.transpose().unstack(1).sum(axis=1)
+    
+    # For the length (unaged) dataset
+    length_weights_sex = (
+        length_weight_binned
+        .groupby(contrast_columns)["weight_interp"]
+        .sum()
+    )
+    # ---- Further reduce to the grand total (per stratum, if it exists)
+    length_weight_total = length_weights_sex.transpose().unstack(1).sum(axis=1)
+
+    # ---- Standardize the unaged sexed weights
+    length_weight_standardized = (
+        (length_weights_sex / length_weight_total).unstack(0) 
+        * catch_weights["total_weight"].to_numpy()
+    )
+    
+    # Calculate the specimen weight proportions
+    # ---- Pivot weight bins
+    specimen_weight_binned_pvt = (
+        specimen_weight_binned.pivot_table(
+            columns=spatial_column,
+            index=["length_bin", "species_id", "sex"],
+            values="weight",
+            observed = False
+        )
+    )
+    # ---- Divide by the aged stratum weights (relative to only aged fish)
+    specimen_weight_proportions_pvt = (
+        specimen_weight_binned_pvt / specimen_weight_total.to_numpy()
+    )
+    # ---- Pivot back to the desired format
+    specimen_weight_proportion = (
+        specimen_weight_proportions_pvt
+        .stack().reset_index(name="weight_proportion")
+        .pivot_table(columns=spatial_column + ["species_id", "sex"], 
+                    index="length_bin", values="weight_proportion")
+    )    
+    # ---- Calculate the internal (i.e. only aged fish) for each sex
+    within_specimen_sex_proportions = (
+        specimen_weight_proportion.sum()
+    )
+
+    # Calculate the total strata weights
+    # ---- Index `catch_weights`
+    catch_weights_idx = catch_weights.set_index(spatial_column + ["species_id"])
+    # ---- Compute the spatially-stratified/grouped weights
+    spatial_weights = (
+        pd.concat([specimen_weight_total.to_frame("total_weight"), catch_weights_idx])
+        .pivot_table(
+            columns=spatial_column, 
+            aggfunc="sum", 
+            values="total_weight", 
+            observed=False
+        )
+    )
+    
+    # Calculate the weight proportions relative to the overall stratum weights
+    # ---- Aged
+    # -------- Reformat into dataframe and merge with total stratum weights
+    specimen_weights_binned_df = (
+        specimen_weight_binned_pvt.stack()
+        .to_frame("specimen_weight")
+        .reset_index()
+        .merge(spatial_weights.T.reset_index(), on=spatial_column)
+    )
+    # -------- Calculate proportions
+    specimen_weights_binned_df["weight_proportion_overall"] = (
+        specimen_weights_binned_df["specimen_weight"] / specimen_weights_binned_df["total_weight"]
+    )
+    # -------- Consolidate to calculate the sexed proportions per stratum
+    specimen_weight_sex_proportions = specimen_weights_binned_df.groupby(spatial_column + ["species_id", "sex"])[
+        "weight_proportion_overall"
+    ].sum()
+    # ---- Unaged
+    # -------- Reformat into dataframe and merge with total stratum weights
+    length_weights_sex_standardized_df = (
+        length_weight_standardized.stack()
+        .to_frame("catch_weight")
+        .reset_index()
+        .merge(spatial_weights.T.reset_index(), on=spatial_column)
+    )
+    # -------- Calculate proportions
+    length_weights_sex_standardized_df["weight_proportion_overall"] = (
+        length_weights_sex_standardized_df["catch_weight"]
+        / length_weights_sex_standardized_df["total_weight"]
+    )
+    # -------- Back-calculate the sexed weight proportions relative to just unaged fish
+    # ------------ Aggregate proportions
+    length_total_sex_proportions = length_weights_sex_standardized_df.pivot_table(
+        columns=["species_id", "sex"], index=spatial_column, values="weight_proportion_overall"
+    ).transpose().unstack(["species_id"]).sum(axis=0)
+    # ------------ Re-compute the proportions
+    length_weight_sex_proportions = (
+        length_weights_sex_standardized_df.pivot_table(
+            index=["species_id", "sex"], columns=spatial_column, 
+            values="weight_proportion_overall"
+        )
+        / length_total_sex_proportions.to_numpy()
+    )
+
+    # Compute the overall length-binned weight distributions among unaged fish
+    # ---- Extract the number proportions computed for unaged fish
+    length_number_proportions = length_number_proportion.copy()
+    # ---- Filter out values besides those computed for 'all' fish
+    length_number_proportions = length_number_proportions[length_number_proportions["sex"] == "all"]
+    # ---- Convert to a table
+    length_number_proportions_tbl = length_number_proportions.pivot_table(
+        columns=spatial_column + ["species_id"],
+        index=["length_bin"],
+        values="proportion_number_length",
+        aggfunc="sum",
+        observed=False,
+    )
+    # ---- Extract the fitted weight values calculated for all fish
+    length_weight_all = length_weight_df[length_weight_df["sex"] == "all"]
+    # ---- Generate the fitted weight array
+    fitted_weights = length_weight_all.copy()
+    # ---- Get actual length bins in dataset
+    fitted_weights = fitted_weights[fitted_weights["length_bin"].isin(length_number_proportions["length_bin"])]
+    # ---- Apportion the averaged weights
+    length_apportioned_weights = length_number_proportions_tbl.T * fitted_weights["weight_fitted"].to_numpy()
+    # ---- Compute the average weight proportions per length bin per stratum
+    average_length_bin_weights = length_apportioned_weights.T / length_apportioned_weights.sum(axis=1)
+    # ---- Convert back to a DataFrame
+    average_length_bin_weights_df = average_length_bin_weights.unstack().reset_index(
+        name="weight_proportion"
+    )
+
+    # Calculate the aged and unaged weight proportions
+    # ---- Aged
+    aged_proportions = specimen_weight_sex_proportions.unstack("sex").sum(axis=1)
+    # ---- Unaged
+    unaged_proportions = 1 - aged_proportions
+    # -------- Re-weight the unaged sexed proportions
+    unaged_weight_sex_proportions_overall = (
+        (length_weight_sex_proportions * unaged_proportions.unstack().transpose()).astype(float).fillna(0.0)
+    )
+
+    unaged_proportions.unstack().transpose()
+    # Format the outputs
+    # ---- Aged: stratum-sex-age-length relative to aged and total weights
+    aged_overall_df = (
+        specimen_weight_proportion.unstack()
+        .reset_index(name="weight_proportions")
+        .merge(
+            specimen_weights_binned_df[
+                spatial_column + ["length_bin", "sex", "species_id", "weight_proportion_overall"]
+            ]
+        )
+    )
+    # ---- Aged: stratum-sex relative to total weights
+    aged_sex_df =within_specimen_sex_proportions.reset_index(name="weight_proportion_aged").set_index(
+            spatial_column + ["species_id", "sex"]
+        )
+    # ---- Add the aged sex proportiosn relative to the overall survey
+    aged_sex_df["weight_proportion_overall_aged"] = specimen_weight_sex_proportions
+    # ---- Consolidate the aged and unaged sexed dataframes
+    # -------- Initialize the dataframe
+    aged_unaged_sex_proportions = aged_sex_df.reset_index().set_index(["species_id", "sex"] + spatial_column)
+    # --------- Add the within-unaged weight proportions
+    aged_unaged_sex_proportions["weight_proportion_unaged"] = (
+        length_weight_sex_proportions.stack()
+    )
+    # --------- Add the overall-unaged weight proportions
+    aged_unaged_sex_proportions["weight_proportion_overall_unaged"] = (
+        unaged_weight_sex_proportions_overall.stack()
+    )
+    # ---- Overall aged and unaged proportions
+    aged_unaged_proportions = aged_proportions.reset_index(name="aged_proportions")
+    # ---- Set index
+    aged_unaged_proportions.set_index(spatial_column + ["species_id"], inplace=True)
+    # -------- Add unaged proportions
+    aged_unaged_proportions["unaged_proportions"] = unaged_proportions#.reset_index()
+    # ---- Reset the index
+    aged_unaged_proportions = aged_unaged_proportions.reset_index()
+    
+    # Return output
+    return {
+        "aged_weight_proportions_df": aged_overall_df,
+        "unaged_weight_proportions_df": average_length_bin_weights_df,
+        "aged_unaged_sex_weight_proportions_df": (
+            aged_unaged_sex_proportions.astype(float).reset_index().fillna(0.0)
+        ),
+        "aged_unaged_weight_proportions_df": aged_unaged_proportions,
+    }
+

@@ -553,7 +553,7 @@ def process_acoustic_data(acoustic_data_df: pd.DataFrame, file_configuration: di
     # Integrate NASC (and compute the echometrics, if necessary)
     nasc_data_df = (
         acoustic_data_df.groupby(["longitude", "latitude", "ping_time"])
-        .apply(lambda group: integrate_nasc(group, echometrics), include_groups=False)
+        .apply(lambda group: integrate_nasc(group, echometrics))
         .reset_index()
     )
     # ---- Amend the dtypes if echometrics were computed

@@ -6,12 +6,21 @@ from echopop.live.live_biology import preprocess_biology_data
 from echopop.live.live_core import(
     LIVE_DATA_STRUCTURE,
 )
-
+from echopop.live.live_biology import (
+    bin_length_data,
+    compute_average_weights,
+    compute_sigma_bs,
+    length_bin_counts,
+    length_weight_regression,
+    number_proportions,
+    length_bin_weights,
+    preprocess_biology_data
+)
 from echopop.live import live_data_processing as eldp
 from echopop.live import live_data_loading as eldl
 
-live_init_config_path = "C:/Users/15052/Documents/GitHub/echopop/config_files/live_initialization_config.yml"
-live_file_config_path = "C:/Users/15052/Documents/GitHub/echopop/config_files/live_survey_year_2019_config.yml"
+live_init_config_path = "C:/Users/Brandyn/Documents/GitHub/echopop/config_files/live_initialization_config.yml"
+live_file_config_path = "C:/Users/Brandyn/Documents/GitHub/echopop/config_files/live_survey_year_2019_config.yml"
 
 realtime_survey = LiveSurvey(live_file_config_path, live_init_config_path)
 
