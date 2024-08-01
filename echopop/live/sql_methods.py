@@ -45,7 +45,12 @@ def sql_map_tables(connection: sqla.Connection):
     """
     """
     inspector = inspect(connection)
-    return inspector.get_table_names()
+    table_names = inspector.get_table_names()
+    # result = connection.execute(text("SELECT name FROM sqlite_master WHERE type='table';"))
+    # table_names = result.fetch_all()
+    # Extract table names from the results
+    # table_names = [name[0] for name in table_names]
+    return table_names
 
 def sql_validate(connection: sqla.Connection, table_name: str): 
     """
@@ -83,7 +88,7 @@ def sql_inspect(connection: sqla.Connection, table_name: str, columns: List[str]
     else: 
         # Inspect unique values in specified columns
         # ---- Create SQL command
-        sql_command = f"SELECT DISTINCT {", ".join(columns)} FROM {table_name};"
+        sql_command = f"SELECT DISTINCT {', '.join(columns)} FROM {table_name};"
         # ---- Execute
         table = connection.execute(text(sql_command.strip()))
         # ---- Extract unique values
@@ -96,7 +101,7 @@ def sql_inspect(connection: sqla.Connection, table_name: str, columns: List[str]
 def sql_drop(connection: sqla.Connection, table_name: str):
     """
     """
-    connection.execute(text(f"DROP TABLE IF EXISTS {table_name};"))
+    connection.execute(text(f"DROP TABLE IF EXISTS {table_name}"))
     
 def sql_insert(connection: sqla.Connection, table_name: str, columns: list, dataframe: pd.DataFrame,
                id_columns: Optional[list] = None):
@@ -550,6 +555,31 @@ def sql_data_exchange(database_file: Path, **kwargs):
     
     # Select existing data frame the database and return the output
     return SQL(database_file, "select", **kwargs)
+
+def reset_db_files(file_configuration: dict, table_exception: Optional[Union[str, List[str]]] = None):
+
+    # Get all database files
+    database_files = file_configuration["database"]
+
+    # Iterate through all keys
+    for _, db_file in database_files.items():
+        # ---- Map the table names
+        table_names = SQL(db_file, "map")
+        # ---- Drop any noted exceptions
+        if not isinstance(table_exception, list):
+            table_exception = [table_exception]
+        # ---- Drop exception table name
+        if None not in table_exception:
+            table_names = list(set(table_names) - set(table_exception))
+        # ---- Iterate through
+        for table_name in table_names:    
+            SQL(db_file, "drop", table_name=table_name)
+        # ---- Validate that all tables were removed  
+        remaining_tables = SQL(table_names, "map")      
+        if set(table_names).intersection(set(remaining_tables)):
+            raise ValueError(
+                f"Attempted reset of [{str(db_file)}] failed."
+            )
 
 
 # TODO: Documentation

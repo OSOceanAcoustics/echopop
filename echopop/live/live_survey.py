@@ -13,7 +13,7 @@ from ..acoustics import (
 )
 
 from .sql_methods import query_processed_files
-from .live_acoustics import preprocess_acoustic_data, integrate_nasc
+from .live_acoustics import preprocess_acoustic_data, compute_nasc
 from .live_biology import preprocess_biology_data
 
 
@@ -59,7 +59,6 @@ class LiveSurvey:
         if verbose: 
             pass
 
-
     def load_acoustic_data(self,
                            input_filenames: Optional[list] = None,
                            verbose: bool = True):
@@ -76,13 +75,17 @@ class LiveSurvey:
             # ---- Add the `acoustic_data_units` to the dictionary
             self.config["acoustics"]["dataset_units"] = acoustic_data_units   
             # ---- Preprocess the acoustic dataset
-            self.input["acoustics"]["prc_nasc_df"] = preprocess_acoustic_data(prc_nasc_df, 
+            # TODO: SettingWithCopyWarning:
+            self.input["acoustics"]["prc_nasc_df"] = preprocess_acoustic_data(prc_nasc_df.copy(), 
+                                                                              self.input["spatial"],
                                                                               self.config)     
             # TODO: Add verbosity for printing database filepaths/connections 
             if verbose:
+                # ---- Create file list
+                file_list = "\n".join(acoustic_files)
                 print(
                     f"The following acoustic files have been processed:\n"
-                    f"{"\n".join(acoustic_files)}."
+                    f"{file_list}."
                 )
         else:
             self.input["acoustics"]["prc_nasc_df"] = None
@@ -97,9 +100,11 @@ class LiveSurvey:
         
         # TODO: Add verbosity for printing database filepaths/connections 
         if biology_files and verbose:
-            print(
+            # ---- Create file list
+            file_list = "\n".join(biology_files)
+            print(  
                 f"The following biological files have been processed:\n"
-                f"{"\n".join(biology_files)}."
+                f"{file_list}."
             )
         
         # Read in the biology data files
@@ -111,10 +116,21 @@ class LiveSurvey:
         )
 
     def process_biology_data(self):
+        # method here
+        pass
+    
+    def process_acoustic_data(self, echometrics: bool = True):
+        
+        # Get the unprocessed acoustic data
+        acoustic_data_df = self.input["acoustics"]["prc_nasc_df"]
 
-        # Separate out processed and unprocessed biological data 
-        # ----- Unprocessed
-        biology_unprocessed = self.input["biology"]
-        # ---- Processed
-        biology_processed = self.input["biology_processed"]
+        # Integrate NASC (and compute the echometrics, if necessary)
+        nasc_data_df = compute_nasc(acoustic_data_df, self.config, echometrics)
+        
+        # Format the dataframe and insert into the LiveSurvey object
+        self.input["nasc_df"] = nasc_data_df
+    
+    def estimate_population(self):
+        # method here
+        pass 
         

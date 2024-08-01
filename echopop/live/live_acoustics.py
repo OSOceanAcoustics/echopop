@@ -3,6 +3,8 @@ import numpy as np
 import pandas as pd
 
 from echopop.acoustics import ts_length_regression, to_linear, to_dB
+from .live_spatial_methods import apply_spatial_definitions
+from .sql_methods import sql_data_exchange
 
 # TODO: Documentation
 def configure_transmit_frequency(frequency_values: pd.Series,
@@ -25,6 +27,7 @@ def configure_transmit_frequency(frequency_values: pd.Series,
     
 # TODO: Documentation
 def preprocess_acoustic_data(prc_nasc_df: pd.DataFrame,
+                             spatial_dict: dict,
                              file_configuration: dict) -> pd.DataFrame:
 
     # Get acoustic processing settings
@@ -34,14 +37,19 @@ def preprocess_acoustic_data(prc_nasc_df: pd.DataFrame,
 
     # Filter the dataset
     # ---- Configure `frequency_nominal`, if necessary
-    prc_nasc_df["frequency_nominal"] = (
-        configure_transmit_frequency(prc_nasc_df["frequency_nominal"],
+    prc_nasc_df.loc[:, "frequency_nominal"] = (
+        configure_transmit_frequency(prc_nasc_df.loc[:, "frequency_nominal"],
                                      transmit_settings,
                                      acoustic_analysis_settings["dataset_units"]["frequency"])
     )
     # ---- Filter out any unused frequency coordinates
     prc_nasc_df_filtered = (
         prc_nasc_df[prc_nasc_df["frequency_nominal"] == transmit_settings["frequency"]]
+    )
+    
+    # Apply spatial settings
+    prc_nasc_df_filtered.loc[:, "stratum"] = (
+        apply_spatial_definitions(prc_nasc_df_filtered["latitude"], spatial_dict)
     )
 
     # Remaining adjustments to the acoustic data prior to being passed to the `LiveSurvey` object
@@ -176,13 +184,19 @@ def integrate_nasc(acoustic_data_df: pd.DataFrame, echometrics: bool = True):
     # Convert `nasc_dict` to a DataFrame and return the output
     return pd.Series(nasc_dict)
 
-def compute_nasc(acoustic_data_df: pd.DataFrame, echometrics: bool = True):
+def compute_nasc(acoustic_data_df: pd.DataFrame, file_configuration: dict,
+                 echometrics: bool = True):
 
+    # Get spatial definitions, if any
+    spatial_column = file_configuration["spatial_column"]
+    
     # Integrate NASC (and compute the echometrics, if necessary)
     nasc_data_df = (
-        acoustic_data_df.groupby(["longitude", "latitude", "ping_time"])
-        .apply(integrate_nasc, echometrics, include_groups=False)
+        acoustic_data_df
+        .groupby(["longitude", "latitude", "ping_time", "source"] + spatial_column, observed=False)
+        .apply(integrate_nasc, echometrics)
         .unstack().reset_index()
+        .sort_values("ping_time")
     )
     # ---- Amend the dtypes if echometrics were computed
     if echometrics:
@@ -194,8 +208,39 @@ def compute_nasc(acoustic_data_df: pd.DataFrame, echometrics: bool = True):
                     "aggregation_index": float, "occupied_area": float})
         )
         # ---- Reorder columns
-        nasc_data_df = nasc_data_df[[
-            "longitude", "latitude", "ping_time", "nasc", "n_layers", "nasc_db", "mean_Sv", 
-            "max_Sv", "aggregation_index", "center_of_mass", "dispersion", "evenness", 
-            "occupied_area"
-        ]]
+        nasc_data_df = nasc_data_df[
+            spatial_column
+            + ["longitude", "latitude", "ping_time", "source", "nasc", "n_layers", "nasc_db", 
+               "mean_Sv", "max_Sv", "aggregation_index", "center_of_mass", "dispersion", "evenness", 
+               "occupied_area"]
+        ]
+
+    # Return the output
+    return nasc_data_df
+
+def format_acoustic_dataset(nasc_data_df: pd.DataFrame, file_configuration: dict):
+
+    # Get acoustic database filename
+    acoustic_db = file_configuration["database"]["acoustics"]
+   
+        # Create a copy of the dataframe
+    df = nasc_data_df.copy()
+    
+    # Add population-specific columns (specified in the file configuration)
+    # TODO: Add to `yaml` file for configuration; hard-code for now
+    add_columns = ["number_density", "biomass_density", "abundance", "biomass"]
+    # ----
+    df[add_columns] = 0.0
+    # ---- Assign values for key values
+    key_values = [f"{str(index)}-{df.loc[index, 'source']}" for index in df.index]    
+    # ---- Add an autoincrementing tag that will serve as a primary key and unique constraint
+    df.loc[:, "id"] = key_values
+    
+    # Insert the new data into the database & pull in the combined dataset
+    # TODO: Replace with single-direction INSERT statement instead of INSERT/SELECT
+    _ = sql_data_exchange(acoustic_db, dataframe=df, table_name="survey_data_df",
+                          id_columns=["id"], primary_keys=["id"], output_type=pd.DataFrame)
+           
+    # Return the formatted dataframe
+    return df
+                                    

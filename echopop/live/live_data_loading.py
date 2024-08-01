@@ -213,11 +213,11 @@ def validate_data_directory(file_configuration: dict, dataset: str,
 
     # Validate that files even exist
     # ---- List available *.zarr files
-    data_files = list(directory_path.glob(f"*{'.'+file_settings["extension"]}"))
+    data_files = list(directory_path.glob(f"*{'.'+file_settings['extension']}"))
     # ---- Error evaluation (if applicable)
     if not data_files:
         raise FileNotFoundError(
-            f"No `*.{file_settings["extension"]}` files found in [{directory_path}]!"
+            f"No `*.{file_settings['extension']}` files found in [{directory_path}]!"
         )
     
     # Check and format specific input filenames

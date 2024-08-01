@@ -4,6 +4,7 @@ import numpy as np
 from geopy.distance import distance
 from ..spatial.projection import utm_string_generator
 import shapely.geometry
+from typing import Union
 
 def create_inpfc_strata(spatial_config: dict):
 
@@ -34,28 +35,43 @@ def create_inpfc_strata(spatial_config: dict):
     return inpfc_strata_df
 
 def apply_inpfc_definitions(dataset: pd.DataFrame, inpfc_df: pd.DataFrame):
+    
+    # Create dataset copy
+    dataset = dataset.copy()
 
     # Bin the data based on latitude
-    if "latitude" in dataset.columns:
-        dataset["stratum"] = pd.cut(
-            dataset["latitude"],
-            np.unique(np.hstack([inpfc_df["lower"], inpfc_df["upper"]])),
-            labels = inpfc_df["stratum"]
+    if isinstance(dataset, pd.DataFrame) and "latitude" in dataset.columns:
+        dataset.loc[:, "stratum"] = pd.cut(
+            dataset.loc[:, "latitude"],
+            np.unique(np.hstack([inpfc_df.loc[:, "lower"], inpfc_df.loc[:, "upper"]])),
+            labels = inpfc_df.loc[:, "stratum"]
         ).astype(int)
+        
+        return dataset
+    else:
+        strata = pd.cut(dataset.copy(),
+                        np.unique(np.hstack([inpfc_df.loc[:, "lower"], 
+                                             inpfc_df.loc[:, "upper"]])),
+                        labels = inpfc_df.loc[:, "stratum"]
+        )
+        
+        return strata
 
     # Return the INPFC-stratified dataset
-    return dataset
+    # return dataset
 
-def apply_spatial_definitions(data_dict: dict, spatial_dict: dict):
+def apply_spatial_definitions(dataset: Union[dict, pd.Series], spatial_dict: dict):
 
     # Get the acoustic-biology link method
     link_method = spatial_dict["link_method"]
-      
+    
     # Apply spatial definitions
-    if link_method == "INPFC":
-        data_dict.update({
-            k: apply_inpfc_definitions(d, spatial_dict["strata"]) for k, d in data_dict.items()
+    if isinstance(dataset, dict) and link_method == "INPFC":
+        dataset.update({
+            k: apply_inpfc_definitions(d, spatial_dict["strata"]) for k, d in dataset.items()
         })
+    elif isinstance(dataset, pd.Series) and link_method == "INPFC":
+        return apply_inpfc_definitions(dataset, spatial_dict["strata"])
 
 # def apply_inpfc_definitions(acoustic_data: dict, biology_data: dict, spatial_config: dict):
 

@@ -53,13 +53,13 @@ LIVE_INPUT_FILE_CONFIG_MAP = {
             "dtypes": {
                 "partition": str,
                 "species_code": int,
-                "sample_weight_kg": float,
+                "overall_weight": float,
                 "catch_perc": float,
             },
             "names": {
                 "partition": "trawl_partition",
                 "species_code": "species_id",
-                "sample_weight_kg": "haul_weight",
+                "overall_weight": "haul_weight",
                 "catch_perc": "catch_percentage",
             }
         },

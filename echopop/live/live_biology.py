@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np
 from .sql_methods import SQL, sql_data_exchange, get_table_key_names
+from .live_spatial_methods import apply_spatial_definitions
+from .live_acoustics import average_sigma_bs
 from echopop.acoustics import ts_length_regression, to_dB, to_linear
 from echopop.utils.operations import group_interpolator_creator
 from functools import reduce
