@@ -3,8 +3,8 @@ import numpy as np
 from .sql_methods import SQL, sql_data_exchange, get_table_key_names
 from .live_spatial_methods import apply_spatial_definitions
 from .live_acoustics import average_sigma_bs
-from echopop.acoustics import ts_length_regression, to_dB, to_linear
-from echopop.utils.operations import group_interpolator_creator
+from ..acoustics import ts_length_regression, to_dB, to_linear
+from ..utils.operations import group_interpolator_creator
 from functools import reduce
 
 def biology_data_filter(biology_data: pd.DataFrame, filter_dict: dict):
@@ -129,16 +129,12 @@ def preprocess_biology_data(biology_output: dict, spatial_dict: dict, file_confi
 def compute_sigma_bs(specimen_data: pd.DataFrame, length_data: pd.DataFrame, 
                      file_configuration: dict):
 
-    # Assign contrast columns
-    contrast_list = []
-    # ---- Check for "stratum" column
-    if "stratum" in specimen_data.columns and "stratum" in length_data.columns:
-        contrast_list.append(["stratum"])
-    # ---- Add the additional columns
-    contrast_list.append(["haul_num", "species_id", "length"])
-    # ---- Concatenate
-    contrast_columns = list(np.concatenate(contrast_list))
-
+    # Determine contrast columns
+    # ----- Check for "stratum" column in spatial definitions configuration
+    stratum_column = file_configuration["spatial_column"]
+    # ---- Append to other defined keys
+    contrast_columns = stratum_column + ["haul_num", "species_id", "length"]
+    
     # Meld the biological datasets
     length_datasets = specimen_data.meld(length_data, 
                                          contrasts=contrast_columns)
@@ -167,7 +163,7 @@ def compute_sigma_bs(specimen_data: pd.DataFrame, length_data: pd.DataFrame,
     sigma_bs_df = (
         ts_length_df
         .groupby(list(set(contrast_columns) - set(["length"])), observed=False)
-        .apply(lambda x: average_sigma_bs(x, weighted="length_count"), include_groups=False)
+        .apply(lambda x: average_sigma_bs(x, weights="length_count"), include_groups=False)
         .reset_index(name="sigma_bs")
     )
 

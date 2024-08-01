@@ -13,8 +13,21 @@ from ..acoustics import (
 )
 
 from .sql_methods import query_processed_files
-from .live_acoustics import preprocess_acoustic_data, compute_nasc
-from .live_biology import preprocess_biology_data
+from .live_acoustics import (
+    compute_nasc,
+    preprocess_acoustic_data
+)
+    
+from .live_biology import (
+    bin_length_data,
+    compute_average_weights,
+    compute_sigma_bs,
+    length_bin_counts,
+    length_weight_regression,
+    number_proportions,
+    length_bin_weights,
+    preprocess_biology_data
+)
 
 
 from . import live_data_processing as eldp
@@ -116,19 +129,74 @@ class LiveSurvey:
         )
 
     def process_biology_data(self):
-        # method here
-        pass
-    
-    def process_acoustic_data(self, echometrics: bool = True):
-        
-        # Get the unprocessed acoustic data
-        acoustic_data_df = self.input["acoustics"]["prc_nasc_df"]
 
-        # Integrate NASC (and compute the echometrics, if necessary)
-        nasc_data_df = compute_nasc(acoustic_data_df, self.config, echometrics)
+        # TODO: How and when should the already processed data be imported?
+        # Separate out processed and unprocessed biological data 
+        # ----- Unprocessed
+        biology_unprocessed = self.input["biology"]
+
+        # Compute `sigma_bs` by sending it to the appropriate database table
+        compute_sigma_bs(biology_unprocessed["specimen_df"], 
+                         biology_unprocessed["length_df"], 
+                         self.config)
+
+        # Bin the length measurements of the biological data
+        bin_length_data(biology_unprocessed, self.config["length_distribution"])
+
+        # Compute the length-weight regression and add it to the SQL table
+        length_weight_df = length_weight_regression(biology_unprocessed["specimen_df"], 
+                                                    self.config["length_distribution"],
+                                                    self.config)
         
-        # Format the dataframe and insert into the LiveSurvey object
-        self.input["nasc_df"] = nasc_data_df
+        # Compute length-binned counts for the aggregated and individual-based measurements
+        specimen_binned, specimen_binned_filtered, length_binned = (
+            length_bin_counts(biology_unprocessed["length_df"], 
+                              biology_unprocessed["specimen_df"], 
+                              self.config)
+        )
+
+        # Compute the number proportions
+        specimen_number_proportion, length_number_proportion, sex_number_proportions = (
+            number_proportions(specimen_binned, specimen_binned_filtered, 
+                               length_binned, self.config)
+        )
+
+        # Compute the length-binned weights for the aggregated and individual-based measurements
+        length_weight_binned, specimen_weight_binned = (
+            length_bin_weights(biology_unprocessed["length_df"],
+                               biology_unprocessed["specimen_df"],
+                               length_weight_df,self.config)
+        )
+
+        # Calculate the average weights among male, female, and all fish
+        fitted_weight_df = compute_average_weights(specimen_number_proportion,
+                                                   length_number_proportion, 
+                                                   sex_number_proportions,
+                                                   length_weight_df,
+                                                   self.config["length_distribution"],
+                                                   self.config)
+
+    def process_acoustic_data(self, echometrics: bool = True, verbose: bool = True):
+
+        # Check for if any data is present; if not, provide report
+        if self.input["acoustics"]["prc_nasc_df"] is None:
+            # ---- Set the corresponding `nasc_df` DataFrame to None
+            self.input["nasc_df"] = None
+            # ---- Print, if verbose
+            if verbose:
+                print(
+                    "No acoustic data located in `*.input['acoustics']['prc_nasc_df']"
+                    " DataFrame. Data processing step will therefore be skipped."
+                )
+        else:        
+            # Get the unprocessed acoustic data
+            acoustic_data_df = self.input["acoustics"]["prc_nasc_df"]
+
+            # Integrate NASC (and compute the echometrics, if necessary)
+            nasc_data_df = compute_nasc(acoustic_data_df, self.config, echometrics)
+            
+            # Format the dataframe and insert into the LiveSurvey object
+            self.input["nasc_df"] = nasc_data_df
     
     def estimate_population(self):
         # method here

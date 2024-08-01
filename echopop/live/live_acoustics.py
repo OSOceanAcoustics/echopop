@@ -2,7 +2,7 @@ from typing import Union, Optional
 import numpy as np
 import pandas as pd
 
-from echopop.acoustics import ts_length_regression, to_linear, to_dB
+from ..acoustics import ts_length_regression, to_linear, to_dB
 from .live_spatial_methods import apply_spatial_definitions
 from .sql_methods import sql_data_exchange
 

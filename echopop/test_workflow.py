@@ -1,8 +1,17 @@
 from echopop.live.live_survey import LiveSurvey
 from echopop.live.sql_methods import reset_db_files
+from echopop.live.sql_methods import query_processed_files
+from echopop.live.live_acoustics import preprocess_acoustic_data, compute_nasc
+from echopop.live.live_biology import preprocess_biology_data
+from echopop.live.live_core import(
+    LIVE_DATA_STRUCTURE,
+)
 
-live_init_config_path = "C:/Users/Brandyn/Documents/GitHub/echopop/config_files/live_initialization_config.yml"
-live_file_config_path = "C:/Users/Brandyn/Documents/GitHub/echopop/config_files/live_survey_year_2019_config.yml"
+from echopop.live import live_data_processing as eldp
+from echopop.live import live_data_loading as eldl
+
+live_init_config_path = "C:/Users/15052/Documents/GitHub/echopop/config_files/live_initialization_config.yml"
+live_file_config_path = "C:/Users/15052/Documents/GitHub/echopop/config_files/live_survey_year_2019_config.yml"
 
 realtime_survey = LiveSurvey(live_file_config_path, live_init_config_path)
 
@@ -34,4 +43,5 @@ realtime_survey.input
 ####################################################################################################
 # NOTE: Acoustic / biological data converge here to derive population estimates 
 # TODO: Add argument that indicates what the new datasets and what data need to be pulled in
+# TODO: ARGUMENT {working_dataset: Literal["acoustic", "biology"]}
 realtime_survey.estimate_population()
