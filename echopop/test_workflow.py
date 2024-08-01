@@ -26,8 +26,12 @@ reset_db_files(realtime_survey.config)
 # NOTE: LOAD DATA
 realtime_survey.load_biology_data()
 realtime_survey.input
+# NOTE: INITIAL PROCESSING [JUST BIOLOGY]
+realtime_survey.process_biology_data()
+realtime_survey.input
 ####################################################################################################
 # TEST: POPULATION ESTIMATES
 ####################################################################################################
 # NOTE: Acoustic / biological data converge here to derive population estimates 
+# TODO: Add argument that indicates what the new datasets and what data need to be pulled in
 realtime_survey.estimate_population()
