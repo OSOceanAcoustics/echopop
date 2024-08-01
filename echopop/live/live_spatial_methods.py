@@ -5,10 +5,10 @@ from geopy.distance import distance
 from ..spatial.projection import utm_string_generator
 import shapely.geometry
 
-def apply_inpfc_definitions(acoustic_data: dict, biology_data: dict, spatial_config: dict):
+def create_inpfc_strata(spatial_config: dict):
 
     # Extract the INPFC definitions
-    inpfc_definitions = spatial_config["inpfc"]
+    inpfc_definitions = spatial_config["inpfc"]    
 
     # Create latitude bins
     latitude_bins = np.concatenate([[-90.0], inpfc_definitions["latitude_max"], [90.0]])
@@ -17,36 +17,88 @@ def apply_inpfc_definitions(acoustic_data: dict, biology_data: dict, spatial_con
                                 [np.max(inpfc_definitions["stratum_names"]) + 1]])
     
     # Create spatial key
-    spatial_config["spatial_key"] = pd.DataFrame({
-        "latitude_limit": inpfc_definitions["latitude_max"],
+    inpfc_strata_df = pd.DataFrame({
+        "latitude_limit": np.concatenate([inpfc_definitions["latitude_max"], [90.0]]),
+        "latitude_interval": pd.cut(np.concatenate([inpfc_definitions["latitude_max"], [90.0]]), 
+                                    latitude_bins),
+        "stratum": bin_names,
     })
-    # ---- Cut
-    spatial_config["spatial_key"]["stratum"] = (
-        pd.cut(inpfc_definitions["latitude_max"],
-               latitude_bins,
-               right = True,
-               labels = bin_names)
-    )
 
-    # Get the `prc_nasc_df` values, if they exist, and apply stratification information
-    if not acoustic_data["prc_nasc_df"].empty:
-        # ---- Bin the latitude data
-        acoustic_data["prc_nasc_df"]["stratum"] = pd.cut(
-            acoustic_data["prc_nasc_df"]["latitude"],
-            latitude_bins,
-            right = True,
-            labels = bin_names,
-        )
+    # Add boundaries
+    # ---- Lower
+    inpfc_strata_df["lower"] = inpfc_strata_df["latitude_interval"].apply(lambda x: x.left)
+    # ---- Upper
+    inpfc_strata_df["upper"] = inpfc_strata_df["latitude_interval"].apply(lambda x: x.right)
 
-    # Get the `trawl_info_df` values, if they exist, and apply stratification information
-    if not biology_data["trawl_info_df"].empty:
-        # ---- Bin the latitude data
-        biology_data["trawl_info_df"]["stratum"] = pd.cut(
-            biology_data["trawl_info_df"]["latitude"],
-            latitude_bins,
-            right = True,
-            labels = bin_names,
-        )
+    # Return the dataframe
+    return inpfc_strata_df
+
+def apply_inpfc_definitions(dataset: pd.DataFrame, inpfc_df: pd.DataFrame):
+
+    # Bin the data based on latitude
+    if "latitude" in dataset.columns:
+        dataset["stratum"] = pd.cut(
+            dataset["latitude"],
+            np.unique(np.hstack([inpfc_df["lower"], inpfc_df["upper"]])),
+            labels = inpfc_df["stratum"]
+        ).astype(int)
+
+    # Return the INPFC-stratified dataset
+    return dataset
+
+def apply_spatial_definitions(data_dict: dict, spatial_dict: dict):
+
+    # Get the acoustic-biology link method
+    link_method = spatial_dict["link_method"]
+      
+    # Apply spatial definitions
+    if link_method == "INPFC":
+        data_dict.update({
+            k: apply_inpfc_definitions(d, spatial_dict["strata"]) for k, d in data_dict.items()
+        })
+
+# def apply_inpfc_definitions(acoustic_data: dict, biology_data: dict, spatial_config: dict):
+
+#     # Extract the INPFC definitions
+#     inpfc_definitions = spatial_config["inpfc"]
+
+#     # Create latitude bins
+#     latitude_bins = np.concatenate([[-90.0], inpfc_definitions["latitude_max"], [90.0]])
+#     # ---- Append 1 more stratum layer
+#     bin_names = np.concatenate([inpfc_definitions["stratum_names"],
+#                                 [np.max(inpfc_definitions["stratum_names"]) + 1]])
+    
+#     # Create spatial key
+#     spatial_config["spatial_key"] = pd.DataFrame({
+#         "latitude_limit": inpfc_definitions["latitude_max"],
+#     })
+#     # ---- Cut
+#     spatial_config["spatial_key"]["stratum"] = (
+#         pd.cut(inpfc_definitions["latitude_max"],
+#                latitude_bins,
+#                right = True,
+#                labels = bin_names)
+#     )
+
+#     # Get the `prc_nasc_df` values, if they exist, and apply stratification information
+#     if not acoustic_data["prc_nasc_df"].empty:
+#         # ---- Bin the latitude data
+#         acoustic_data["prc_nasc_df"]["stratum"] = pd.cut(
+#             acoustic_data["prc_nasc_df"]["latitude"],
+#             latitude_bins,
+#             right = True,
+#             labels = bin_names,
+#         )
+
+#     # Get the `trawl_info_df` values, if they exist, and apply stratification information
+#     if not biology_data["trawl_info_df"].empty:
+#         # ---- Bin the latitude data
+#         biology_data["trawl_info_df"]["stratum"] = pd.cut(
+#             biology_data["trawl_info_df"]["latitude"],
+#             latitude_bins,
+#             right = True,
+#             labels = bin_names,
+#         )
 
 def define_boundary_box(boundary_dict: dict, projection: str):
     

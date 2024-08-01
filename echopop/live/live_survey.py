@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, Optional
 from pathlib import Path
 import copy
 
@@ -11,6 +11,11 @@ from ..acoustics import (
     to_dB,
     to_linear
 )
+
+from .sql_methods import query_processed_files
+from .live_acoustics import preprocess_acoustic_data, integrate_nasc
+from .live_biology import preprocess_biology_data
+
 
 from . import live_data_processing as eldp
 from . import live_data_loading as eldl
@@ -47,13 +52,69 @@ class LiveSurvey:
         # Initialize the results attribute
         self.results = copy.deepcopy(LIVE_DATA_STRUCTURE["results"])
 
-        # TODO: Replace Tuple output by appending the "database" key to the respective dataset dict
-        # Ingest data
-        # ---- Acoustics
-        self.input["acoustics"]["prc_nasc_df"] = eldl.load_acoustic_data(self.config)
-        # ---- Biology
-        self.input["biology"] = eldp.load_biology_data(self.config)
-        
+        # Configure the spatial settings
+        self.input.update({"spatial": eldl.configure_spatial_settings(self.config)})
+
         # TODO: Add verbosity for printing database filepaths/connections 
         if verbose: 
             pass
+
+
+    def load_acoustic_data(self,
+                           input_filenames: Optional[list] = None,
+                           verbose: bool = True):
+        
+        # Validate the data directory and format the filepaths
+        acoustic_files = eldl.validate_data_directory(self.config, dataset="acoustics", 
+                                                      input_filenames=input_filenames)
+        
+        # Read in the acoustic data files
+        if acoustic_files:
+            # ! [REQUIRES DASK] ---- Read in the listed file
+            # ---- Read in the acoustic data files
+            prc_nasc_df, acoustic_data_units = eldl.read_acoustic_files(acoustic_files)
+            # ---- Add the `acoustic_data_units` to the dictionary
+            self.config["acoustics"]["dataset_units"] = acoustic_data_units   
+            # ---- Preprocess the acoustic dataset
+            self.input["acoustics"]["prc_nasc_df"] = preprocess_acoustic_data(prc_nasc_df, 
+                                                                              self.config)     
+            # TODO: Add verbosity for printing database filepaths/connections 
+            if verbose:
+                print(
+                    f"The following acoustic files have been processed:\n"
+                    f"{"\n".join(acoustic_files)}."
+                )
+        else:
+            self.input["acoustics"]["prc_nasc_df"] = None
+
+    def load_biology_data(self,
+                          input_filenames: Optional[list] = None,
+                          verbose: bool = True):
+
+        # Validate the data directory and format the filepaths
+        biology_files = eldl.validate_data_directory(self.config, dataset="biology", 
+                                                     input_filenames=input_filenames)
+        
+        # TODO: Add verbosity for printing database filepaths/connections 
+        if biology_files and verbose:
+            print(
+                f"The following biological files have been processed:\n"
+                f"{"\n".join(biology_files)}."
+            )
+        
+        # Read in the biology data files
+        initial_biology_output = eldl.read_biology_files(biology_files, self.config)
+
+        # Preprocess the biology dataset
+        self.input["biology"], self.input["biology_processed"] = (
+            preprocess_biology_data(initial_biology_output, self.input["spatial"], self.config)
+        )
+
+    def process_biology_data(self):
+
+        # Separate out processed and unprocessed biological data 
+        # ----- Unprocessed
+        biology_unprocessed = self.input["biology"]
+        # ---- Processed
+        biology_processed = self.input["biology_processed"]
+        

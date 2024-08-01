@@ -13,6 +13,8 @@ from .live_core import(
     SPATIAL_CONFIG_MAP
 )
 
+from .live_spatial_methods import create_inpfc_strata
+
 # TODO: Incorporate complete YAML file validator
 # TODO: Documentation
 def live_configuration(live_init_config_path: Union[str, Path], 
@@ -55,156 +57,24 @@ def live_configuration(live_init_config_path: Union[str, Path],
     # Combine both into a dictionary output that can be added to the `LiveSurvey` class object
     return {**init_config, **file_config}
 
-# TODO: Documentation
-def validate_data_directory(root_directory: str, file_settings: dict) -> List[Path]:
-
-    # Get acoustic directory and initialization settings
-    # ---- Create the full filepath 
-    directory_path = Path(root_directory) / file_settings["directory"]
-    # ---- Get the defined file extension
-    file_extension = file_settings["extension"]
-
-    # Validate filepath, columns, datatypes
-    # ---- Error evaluation (if applicable)
-    if not directory_path.exists():
-        raise FileNotFoundError(
-            f"The acoustic data directory [{directory_path}] does not exist."
-        )
-    
-    # Validate that files even exist
-    # ---- List available *.zarr files
-    data_files = list(directory_path.glob(f"*{'.'+file_extension}"))
-    # ---- Error evaluation (if applicable)
-    if not data_files:
-        raise FileNotFoundError(
-            f"No `*.{file_extension}` files found in [{directory_path}]!"
-        )
-    
-    # Return the output
-    return data_files
-
-def read_acoustic_zarr(acoustic_files: Path) -> tuple:
+def read_acoustic_files(acoustic_files: List[Path]) -> tuple:
 
     # Get the file-specific settings, datatypes, columns, etc.
     # ---- Get defined columns and datatypes from `LIVE_INPUT_FILE_CONFIG_MAP`
     acoustics_config_map = LIVE_INPUT_FILE_CONFIG_MAP["acoustics"]
-    # ---- Create list of coordinate data variables
-    specified_vars = list(acoustics_config_map["xarray_variables"].keys())
-    # ---- Create set of coordinate variables
-    specified_coords = list(acoustics_config_map["xarray_coordinates"].keys())      
-    # ---- Concatenate into a full configuration map
-    full_config_map = {**acoustics_config_map["xarray_coordinates"],
-                        **acoustics_config_map["xarray_variables"]} 
-    
-    # Determine the file loading method for the `acoustic_files`
-    if len(acoustic_files) > 1:
-        zarr_data_ds = xr.open_mfdataset(acoustic_files, engine="zarr", chunks="auto", 
-                                         data_vars=specified_vars, coords=specified_coords)
-    else:
-        zarr_data_ds = xr.open_dataset(acoustic_files[0], engine="zarr", chunks="auto")
 
-    # Pre-process the Dataset, convert it to a DataFrame, and validate the structure
-    # ---- Convert to a DataFrame
-    zarr_data_df = zarr_data_ds.to_dataframe().reset_index()
-    # ---- Check for any missing columns
-    missing_columns = (
-        [key for key in full_config_map.keys() if key not in zarr_data_df.columns]
-    )
-    # ---- Raise Error, if needed
-    if missing_columns: 
-        raise ValueError(
-            f"The following columns are missing from at least one file: in "
-            f"{', '.join(missing_columns)}!"
-        )
-    # ---- Select defined columns
-    zarr_data_df_filtered = zarr_data_df[full_config_map.keys()].astype(full_config_map)
+    # Read all of the zarr files
+    results_list =  [(data_df, unit_dict) if i ==0 else (data_df, None) 
+                     for i, (data_df, unit_dict) in enumerate(
+                        read_acoustic_zarr(Path(file), acoustics_config_map) 
+                        for file in acoustic_files
+    )]
 
-    # Gather some of the units
-    data_units = {
-        "longitude": zarr_data_ds.longitude.units,
-        "latitude": zarr_data_ds.latitude.units,
-        "frequency": zarr_data_ds.frequency_nominal.units,
-    }
+    # Concatenate the dataframe component
+    acoustic_data_df = pd.concat([df for df, _ in results_list], ignore_index = True)
+    # ---- Add the `acoustic_data_units` to the dictionary and output the resulting tuple
+    return acoustic_data_df, results_list[0][1] if results_list else None
 
-    # Return a Tuple
-    return zarr_data_df_filtered, data_units
-
-# TODO: Documentation
-def configure_transmit_frequency(frequency_values: pd.Series,
-                                 transmit_settings: dict, 
-                                 current_units: str):
-    
-    # Extract transmit frequency units defined in configuration file
-    configuration_units = transmit_settings["units"]
-    
-    # Transform the units, if necessary
-    # ---- Hz to kHz
-    if current_units == "Hz" and configuration_units == "kHz":
-        return frequency_values * 1e-3
-    # ---- kHz to Hz
-    elif current_units == "kHz" and configuration_units == "Hz":
-        return frequency_values * 1e3
-    # ---- No change
-    else:
-        return frequency_values
-    
-# TODO: Documentation
-def preprocess_acoustic_data(prc_nasc_df: pd.DataFrame,
-                             file_configuration: dict) -> pd.DataFrame:
-
-    # Get acoustic processing settings
-    acoustic_analysis_settings = file_configuration["acoustics"]
-    # ---- Extract the fined acoustic frequency
-    transmit_settings = acoustic_analysis_settings["transmit"]
-
-    # Filter the dataset
-    # ---- Configure `frequency_nominal`, if necessary
-    prc_nasc_df["frequency_nominal"] = (
-        configure_transmit_frequency(prc_nasc_df["frequency_nominal"],
-                                     transmit_settings,
-                                     acoustic_analysis_settings["dataset_units"]["frequency"])
-    )
-    # ---- Filter out any unused frequency coordinates
-    prc_nasc_df_filtered = (
-        prc_nasc_df[prc_nasc_df["frequency_nominal"] == transmit_settings["frequency"]]
-    )
-
-    # Remaining adjustments to the acoustic data prior to being passed to the `LiveSurvey` object
-    # ---- Replace NASC `NaN` values with `0.0`
-    prc_nasc_df_filtered.loc[:, "NASC"] = prc_nasc_df_filtered.loc[:, "NASC"].fillna(0.0)
-    # ---- Drop the `frequency_nominal` column and return the output 
-    return prc_nasc_df_filtered.drop(columns = ["frequency_nominal"])
-
-# TODO: Documentation
-def load_acoustic_data(file_configuration: dict) -> Tuple[pd.DataFrame]:
-
-    # Get the acoustic file settings and root directory
-    # ---- File settings
-    file_settings = file_configuration["input_directories"]["acoustics"]
-    # ---- Root directory
-    root_directory = file_configuration["data_root_dir"]
-    
-    # Get and validate the acoustic data directory and files
-    acoustic_files = validate_data_directory(root_directory, file_settings)
-
-    # Query `acoustics.db` to process only new files (or create the db file in the first place)
-    new_acoustic_files, file_configuration["database"]["acoustics"] = (
-        query_processed_files(root_directory, file_settings, acoustic_files)  
-    )  
-
-    # Read in the acoustic data files
-    if new_acoustic_files:
-        # ! [REQUIRES DASK] ---- Read in the listed file
-        prc_nasc_df, acoustic_data_units = read_acoustic_zarr(new_acoustic_files)
-        # ---- Add the `acoustic_data_units` to the dictionary
-        file_configuration["acoustics"]["dataset_units"] = acoustic_data_units
-        # ---- Preprocess the acoustic dataset
-        prc_nasc_df_processed = preprocess_acoustic_data(prc_nasc_df, file_configuration)
-        # ---- Return output
-        return prc_nasc_df_processed
-    else:
-        return None
-    
 def filter_filenames(directory_path: Path, filename_id: str, 
                      files: List[Path],
                      file_extension: str):
@@ -223,6 +93,149 @@ def filter_filenames(directory_path: Path, filename_id: str,
     
     # Find intersection with the proposed filenames and return the output
     return list(set(subfile_str).intersection(set(file_str)))
+
+def read_biology_files(biology_files: List[Path], file_configuration: dict):
+
+    # Get the biology data file settings
+    file_settings = file_configuration["input_directories"]["biology"]
+
+    # Get the file-specific settings, datatypes, columns, etc.
+    # ---- Get defined columns and datatypes from `LIVE_INPUT_FILE_CONFIG_MAP`
+    biology_config_map = LIVE_INPUT_FILE_CONFIG_MAP["biology"] 
+    # ---- Extract the expected file name ID's
+    biology_file_ids = file_settings["file_name_formats"]
+    # ---- Extract all of the file ids
+    biology_config_ids = list(biology_file_ids.keys())
+    # ---- Initialize the dictionary that will define this key in the `input` attribute
+    biology_output = {f"{key}_df": pd.DataFrame() for key in biology_config_ids}
+    # # ---- Create filepath object
+    directory_path = Path(file_configuration["data_root_dir"]) / file_settings["directory"]
+    
+    # Add SQL file to dict
+    file_configuration["database"]["biology"] = (
+        Path(file_configuration["data_root_dir"]) / "database" / file_settings["database_name"]         
+    )
+
+    # Iterate through the different biology datasets and read them in
+    for dataset in list(biology_file_ids.keys()):
+        # ---- Get dataset-specific file lists
+        dataset_files = filter_filenames(directory_path, 
+                                         biology_file_ids[dataset], 
+                                         biology_files, 
+                                         file_settings["extension"])
+        # ---- If there are dataset files available
+        if dataset_files:
+            # ---- Read in validated biology data
+            dataframe_list = [read_biology_csv(Path(file), 
+                                               file_settings["file_name_formats"][dataset], 
+                                               biology_config_map[dataset]) 
+                              for file in dataset_files]
+            # ---- Concatenate the dataset
+            dataframe_combined = pd.concat(dataframe_list, ignore_index=True)
+            # ---- Lower-case sex
+            if "sex" in dataframe_combined.columns: 
+                dataframe_combined["sex"] = dataframe_combined["sex"].str.lower()
+            # ---- Lower-case trawl partition type
+            if "trawl_partition" in dataframe_combined.columns: 
+                dataframe_combined["trawl_partition"] = dataframe_combined["trawl_partition"].str.lower()
+            # ---- Reformat datetime column
+            if "datetime" in dataframe_combined.columns:
+                dataframe_combined["datetime"] = convert_datetime(dataframe_combined["datetime"])
+            # ---- Add to the data dictionary
+            biology_output[f"{dataset}_df"] = dataframe_combined
+    
+    # Return the output
+    return biology_output
+
+def read_acoustic_zarr(file: Path, config_map: dict) -> tuple:
+    
+    # Format the file reading configuration
+    # ---- Concatenate into a full configuration map
+    full_config_map = {**config_map["xarray_coordinates"],
+                        **config_map["xarray_variables"]} 
+
+    # Determine the file loading method for the `acoustic_files`
+    zarr_data_ds = xr.open_dataset(file, engine="zarr", chunks="auto")
+
+    # Pre-process the Dataset, convert it to a DataFrame, and validate the structure
+    # ---- Convert to a DataFrame
+    zarr_data_df = zarr_data_ds.to_dataframe().reset_index()
+    # ---- Check for any missing columns
+    missing_columns = (
+        [key for key in full_config_map.keys() if key not in zarr_data_df.columns]
+    )
+    # ---- Raise Error, if needed
+    if missing_columns: 
+        raise ValueError(
+            f"The following columns are missing from at least one file: in "
+            f"{', '.join(missing_columns)}!"
+        )
+    # ---- Select defined columns
+    zarr_data_df_filtered = zarr_data_df[full_config_map.keys()].astype(full_config_map)
+
+    # Add the filename as a column
+    zarr_data_df_filtered["source"] = Path(file).name 
+
+    # Gather some of the units
+    data_units = {
+        "longitude": zarr_data_ds.longitude.units,
+        "latitude": zarr_data_ds.latitude.units,
+        "frequency": zarr_data_ds.frequency_nominal.units,
+    }
+
+    # Return a Tuple
+    return zarr_data_df_filtered, data_units
+
+# TODO: Documentation
+def validate_data_directory(file_configuration: dict, dataset: str,
+                            input_filenames: Optional[list] = None) -> List[Path]:
+
+    # Get the dataset file settings
+    file_settings = file_configuration["input_directories"][dataset]
+
+    # Get the acoustic file settings and root directory
+    # ---- Root directory
+    if "data_root_dir" in file_configuration.keys():
+        root_directory = Path(file_configuration["data_root_dir"])
+    else: 
+        root_directory = Path()
+    # ---- File folder
+    data_directory = Path(file_settings["directory"])
+    # ---- Createa directory path
+    directory_path = root_directory / data_directory
+
+    # Validate filepath, columns, datatypes
+    # ---- Error evaluation (if applicable)
+    if not directory_path.exists():
+        raise FileNotFoundError(
+            f"The acoustic data directory [{directory_path}] does not exist."
+        )
+
+    # Validate that files even exist
+    # ---- List available *.zarr files
+    data_files = list(directory_path.glob(f"*{'.'+file_settings["extension"]}"))
+    # ---- Error evaluation (if applicable)
+    if not data_files:
+        raise FileNotFoundError(
+            f"No `*.{file_settings["extension"]}` files found in [{directory_path}]!"
+        )
+    
+    # Check and format specific input filenames
+    if isinstance(input_filenames, list):
+        data_files = [directory_path / filename for filename in input_filenames]
+    # ---- Raise Error
+    elif input_filenames is not None:
+        raise TypeError(
+            "Data loading argument `input_filenames` must be a list."
+        )        
+    
+    # Query the SQL database to process only new files (or create the db file in the first place)
+    valid_files, file_configuration["database"][dataset] = (
+        query_processed_files(root_directory, file_settings, data_files)
+    )
+
+    # Return the valid filenames/paths
+    return valid_files
 
 def compile_filename_format(file_name_format: str):
 
@@ -276,89 +289,6 @@ def read_biology_csv(file: Path, pattern: re.Pattern, config_map: dict):
     # Return the resulting DataFrame
     return df_validated
 
-def get_table_key_names(db_file: Path, data_dict: dict, table_name: str) -> List[str]:
-
-    # Get the data input column names
-    if data_dict[table_name].empty:
-        # ---- Inspect the table
-        inspected_table = SQL(db_file, "inspect", table_name=table_name)
-        # ---- Create a list of the data columns
-        table_columns = list(inspected_table.keys())
-    else:
-        # ---- Get the DataFrame column names
-        table_columns = data_dict[table_name].columns
-
-    # Create a list of the primary keys
-    key_columns = (
-           set(table_columns)
-           .intersection(["trawl_partition", "sex", "haul_num", "species_id", "longitude", 
-                          "latitude"]) 
-        )
-
-    # Return a list of the output
-    return list(key_columns)
-
-def biology_data_filter(biology_data: pd.DataFrame, filter_dict: dict):
-
-    # Create dataframe copy
-    data_copy = biology_data.copy()
-
-    # Iterate through dictionary to apply filters (if present)
-    for column, value in filter_dict.items():
-        if column in data_copy.columns:
-            data_copy = data_copy[data_copy[column] == value]
-
-    # Return output
-    return data_copy
-
-def preprocess_biology_data(biology_output: dict, file_configuration: dict):
-  
-    # Get SQL database file
-    biology_db = file_configuration["database"]["biology"]
-    
-    # Get contrasts used for filtering the dataset
-    # ---- Species
-    species_filter = file_configuration["species"]["number_code"]
-    # ---- Trawl partition information
-    trawl_filter = file_configuration["biology"]["catch"]["partition"]
-    # ---- Create filter dictionary
-    filter_dict = dict(species_id=species_filter, trawl_partition=trawl_filter)
-
-    # Apply the filter
-    filtered_biology_output = {
-        key: biology_data_filter(df, filter_dict) 
-        for key, df in biology_output.items() if isinstance(df, pd.DataFrame) and not df.empty
-    }
-    # ---- Swap this out if no new files are present
-    if not filtered_biology_output:
-        # ---- Get available tables
-        table_list = list(set(SQL(biology_db, "map")) - set(["files_read"]))
-        # ---- Plug into the dictionary
-        filtered_biology_output.update({key: pd.DataFrame() for key in table_list})
-    # ---- Initialize the results dictionary   
-    results_dict = {key: pd.DataFrame() for key in filtered_biology_output.keys()}
-
-    # Update the SQL database
-    for table_name, df in filtered_biology_output.items():
-        # ---- Get identifier columns
-        key_columns = get_table_key_names(biology_db, filtered_biology_output, table_name)
-        # ---- Create copy
-        df = df.copy()
-        # ---- Add an autoincrementing tag that will serve as a primary key and unique constraint
-        df.loc[:, "id"] = "row" + df.index.astype(str) + "-" + "-".join(key_columns)        
-        # ---- Insert the new data into the database & pull in the combined dataset
-        table_df = sql_data_exchange(biology_db, 
-                                     dataframe=df, 
-                                     table_name=table_name, 
-                                     id_columns=["id"],
-                                     primary_keys=["id"],
-                                     output_type=pd.DataFrame)
-        # ---- Add to the outgoing dictionary (and drop SQL db identifier)
-        results_dict.update({table_name: table_df.drop(columns="id")})
-    
-    # Return the output
-    return results_dict
-
 def infer_datetime_format(timestamp_str: Union[int, str]):
     patterns = {
         r"^\d{14}$": "%Y%m%d%H%M%S",             # YYYYMMDDHHMMSS
@@ -392,70 +322,70 @@ def convert_datetime(timestamp: Union[int, str, pd.Series]):
     else:
         return datetime.strptime(timestamp, datetime_format)
 
-def load_biology_data(file_configuration: dict):
+# def load_biology_data(file_configuration: dict):
 
-    # Get the acoustic file settings and root directory
-    # ---- File settings
-    file_settings = file_configuration["input_directories"]["biology"]
-    # ---- Root directory
-    root_directory = file_configuration["data_root_dir"]
+#     # Get the acoustic file settings and root directory
+#     # ---- File settings
+#     file_settings = file_configuration["input_directories"]["biology"]
+#     # ---- Root directory
+#     root_directory = file_configuration["data_root_dir"]
 
-    # Get and validate the acoustic data directory and files
-    biology_files = validate_data_directory(root_directory, file_settings)
+#     # Get and validate the acoustic data directory and files
+#     biology_files = validate_data_directory(root_directory, file_settings)
 
-    # Query `biology.db` to process only new files (or create the db file in the first place)
-    # SQL(biology_db, "drop", table_name="files_read")
-    new_biology_files, file_configuration["database"]["biology"] = (
-        query_processed_files(root_directory, file_settings, biology_files)
-    )
+#     # Query `biology.db` to process only new files (or create the db file in the first place)
+#     # SQL(biology_db, "drop", table_name="files_read")
+#     new_biology_files, file_configuration["database"]["biology"] = (
+#         query_processed_files(root_directory, file_settings, biology_files)
+#     )
 
-    # Get the file-specific settings, datatypes, columns, etc.
-    # ---- Get defined columns and datatypes from `LIVE_INPUT_FILE_CONFIG_MAP`
-    biology_config_map = LIVE_INPUT_FILE_CONFIG_MAP["biology"]
-    # ---- Extract the expected file name ID's
-    biology_file_ids = file_settings["file_name_formats"]
-    # ---- Extract all of the file ids
-    biology_config_ids = list(biology_file_ids.keys())
-    # ---- Initialize the dictionary that will define this key in the `input` attribute
-    biology_output = {f"{key}_df": pd.DataFrame() for key in biology_config_ids}
-    # ---- Create filepath object
-    directory_path = Path(file_configuration["data_root_dir"]) / file_settings["directory"]
+#     # Get the file-specific settings, datatypes, columns, etc.
+#     # ---- Get defined columns and datatypes from `LIVE_INPUT_FILE_CONFIG_MAP`
+#     biology_config_map = LIVE_INPUT_FILE_CONFIG_MAP["biology"]
+#     # ---- Extract the expected file name ID's
+#     biology_file_ids = file_settings["file_name_formats"]
+#     # ---- Extract all of the file ids
+#     biology_config_ids = list(biology_file_ids.keys())
+#     # ---- Initialize the dictionary that will define this key in the `input` attribute
+#     biology_output = {f"{key}_df": pd.DataFrame() for key in biology_config_ids}
+#     # ---- Create filepath object
+#     directory_path = Path(file_configuration["data_root_dir"]) / file_settings["directory"]
     
-    # Add SQL file to dict
-    file_configuration["database"]["biology"] = (
-        Path(file_configuration["data_root_dir"]) / "database" / file_settings["database_name"]         
-    )
+#     # Add SQL file to dict
+#     file_configuration["database"]["biology"] = (
+#         Path(file_configuration["data_root_dir"]) / "database" / file_settings["database_name"]         
+#     )
 
-    # Iterate through the different biology datasets and read them in
-    for dataset in list(biology_file_ids.keys()):
-        # ---- Get dataset-specific file lists
-        dataset_files = filter_filenames(directory_path, 
-                                         file_settings["file_name_formats"][dataset], 
-                                         new_biology_files, 
-                                         file_settings["extension"])
-        # ---- If there are dataset files available
-        if dataset_files:
-            # ---- Read in validated biology data
-            dataframe_list = [read_biology_csv(Path(file), 
-                                               file_settings["file_name_formats"][dataset], 
-                                               biology_config_map[dataset]) 
-                              for file in dataset_files]
-            # ---- Concatenate the dataset
-            dataframe_combined = pd.concat(dataframe_list, ignore_index=True)
-            # ---- Lower-case sex
-            if "sex" in dataframe_combined.columns: 
-                dataframe_combined["sex"] = dataframe_combined["sex"].str.lower()
-            # ---- Lower-case trawl partition type
-            if "trawl_partition" in dataframe_combined.columns: 
-                dataframe_combined["trawl_partition"] = dataframe_combined["trawl_partition"].str.lower()
-            # ---- Reformat datetime column
-            if "datetime" in dataframe_combined.columns:
-                dataframe_combined["datetime"] = convert_datetime(dataframe_combined["datetime"])
-            # ---- Add to the data dictionary
-            biology_output[f"{dataset}_df"] = dataframe_combined
+#     # Iterate through the different biology datasets and read them in
+#     for dataset in list(biology_file_ids.keys()):
+#         # ---- Get dataset-specific file lists
+#         dataset_files = filter_filenames(directory_path, 
+#                                          file_settings["file_name_formats"][dataset], 
+#                                          new_biology_files, 
+#                                          file_settings["extension"])
+#         # ---- If there are dataset files available
+#         if dataset_files:
+#             # ---- Read in validated biology data
+#             dataframe_list = [read_biology_csv(Path(file), 
+#                                                file_settings["file_name_formats"][dataset], 
+#                                                biology_config_map[dataset]) 
+#                               for file in dataset_files]
+#             # ---- Concatenate the dataset
+#             dataframe_combined = pd.concat(dataframe_list, ignore_index=True)
+#             # ---- Lower-case sex
+#             if "sex" in dataframe_combined.columns: 
+#                 dataframe_combined["sex"] = dataframe_combined["sex"].str.lower()
+#             # ---- Lower-case trawl partition type
+#             if "trawl_partition" in dataframe_combined.columns: 
+#                 dataframe_combined["trawl_partition"] = dataframe_combined["trawl_partition"].str.lower()
+#             # ---- Reformat datetime column
+#             if "datetime" in dataframe_combined.columns:
+#                 dataframe_combined["datetime"] = convert_datetime(dataframe_combined["datetime"])
+#             # ---- Add to the data dictionary
+#             biology_output[f"{dataset}_df"] = dataframe_combined
 
-    # Pre-process and return the results
-    return preprocess_biology_data(biology_output, file_configuration)
+#     # Pre-process and return the results
+#     return preprocess_biology_data(biology_output, file_configuration)
 
 def validate_hauls_config(spatial_config: dict, link_method: str):
 
@@ -581,6 +511,34 @@ def validate_inpfc_config(spatial_config: dict, link_method: str):
                 f"be one of the following types within a list: {model}."
             )    
         
+def configure_spatial_settings(file_configuration: dict):
+
+    # Extract spatial strata *only* if spatial information from the configuration settings
+    # ---- Get (geo)spatial config
+    spatial_config = file_configuration["geospatial"]
+    # ---- Remove case sensitivity
+    spatial_config = {key.lower(): value for key, value in spatial_config.items()}
+    # ---- Extract the biology-acoustics linking method options
+    acoustics_biology_link = spatial_config["link_biology_acoustics"]
+
+    # Validate the configuration
+    validate_spatial_config(spatial_config)
+
+    # Create spatial dictionary that will be added as an `input`
+    spatial_dict = {"link_method": acoustics_biology_link}
+
+    # Assign the spatial link constraints to the acoustic and biological data
+    if acoustics_biology_link == "INPFC":
+        # ---- Update spatial dictionary
+        spatial_dict.update({"strata": create_inpfc_strata(spatial_config)})
+        # ---- Update the stratum classification in the primary file configuration
+        file_configuration.update({"spatial_column": ["stratum"]})
+    else: 
+        # ---- Empty `spatial_column` key
+        file_configuration.update({"spatial_column": []})
+
+    # Return the dictionary as an output
+    return spatial_dict
 
 def validate_spatial_config(spatial_config: dict):
 

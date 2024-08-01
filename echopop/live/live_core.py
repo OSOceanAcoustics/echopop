@@ -79,11 +79,15 @@ LIVE_INPUT_FILE_CONFIG_MAP = {
         },
         "length": {
             "dtypes": {
+                "operation_number": int,
+                "partition": str,
                 "sex": str,
                 "rounded_length": int,
                 "frequency": int,
             },
             "names": {
+                "operation_number": "haul_num",
+                "partition": "trawl_partition",
                 "sex": "sex",
                 "rounded_length": "length",
                 "frequency": "length_count",
@@ -91,13 +95,17 @@ LIVE_INPUT_FILE_CONFIG_MAP = {
         },
         "specimen": {
             "dtypes": {
-                "rounded_length": int,
+                "operation_number": int,
+                "partition": str,
+                "length": float,
                 "organism_weight": float,
                 "sex": str,
             },
             "names": {
+                "operation_number": "haul_num",
+                "partition": "trawl_partition",
                 "sex": "sex",
-                "rounded_length": "length",
+                "length": "length",
                 "organism_weight": "weight"
             },
         },

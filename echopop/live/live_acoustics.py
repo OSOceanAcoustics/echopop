@@ -1,8 +1,54 @@
 from typing import Union, Optional
-
+import numpy as np
 import pandas as pd
 
 from echopop.acoustics import ts_length_regression, to_linear, to_dB
+
+# TODO: Documentation
+def configure_transmit_frequency(frequency_values: pd.Series,
+                                 transmit_settings: dict, 
+                                 current_units: str):
+    
+    # Extract transmit frequency units defined in configuration file
+    configuration_units = transmit_settings["units"]
+    
+    # Transform the units, if necessary
+    # ---- Hz to kHz
+    if current_units == "Hz" and configuration_units == "kHz":
+        return frequency_values * 1e-3
+    # ---- kHz to Hz
+    elif current_units == "kHz" and configuration_units == "Hz":
+        return frequency_values * 1e3
+    # ---- No change
+    else:
+        return frequency_values
+    
+# TODO: Documentation
+def preprocess_acoustic_data(prc_nasc_df: pd.DataFrame,
+                             file_configuration: dict) -> pd.DataFrame:
+
+    # Get acoustic processing settings
+    acoustic_analysis_settings = file_configuration["acoustics"]
+    # ---- Extract the fined acoustic frequency
+    transmit_settings = acoustic_analysis_settings["transmit"]
+
+    # Filter the dataset
+    # ---- Configure `frequency_nominal`, if necessary
+    prc_nasc_df["frequency_nominal"] = (
+        configure_transmit_frequency(prc_nasc_df["frequency_nominal"],
+                                     transmit_settings,
+                                     acoustic_analysis_settings["dataset_units"]["frequency"])
+    )
+    # ---- Filter out any unused frequency coordinates
+    prc_nasc_df_filtered = (
+        prc_nasc_df[prc_nasc_df["frequency_nominal"] == transmit_settings["frequency"]]
+    )
+
+    # Remaining adjustments to the acoustic data prior to being passed to the `LiveSurvey` object
+    # ---- Replace NASC `NaN` values with `0.0`
+    prc_nasc_df_filtered.loc[:, "NASC"] = prc_nasc_df_filtered.loc[:, "NASC"].fillna(0.0)
+    # ---- Drop the `frequency_nominal` column and return the output 
+    return prc_nasc_df_filtered.drop(columns = ["frequency_nominal"])
 
 # TODO: Documentation
 def average_sigma_bs(length: Union[pd.DataFrame, float, int], 
@@ -46,6 +92,10 @@ def estimate_echometrics(acoustic_data_df: pd.DataFrame):
     # Create copy
     acoustic_df = acoustic_data_df.copy().reset_index(drop=True)
 
+    # Compute ABC
+    # ---- Convert NASC to ABC
+    acoustic_df["ABC"] = acoustic_df["NASC"] / (4 * np.pi * 1852 ** 2)
+
     # Pre-compute the change in depth
     acoustic_df["dz"] = acoustic_df["depth"].diff()
 
@@ -62,65 +112,49 @@ def estimate_echometrics(acoustic_data_df: pd.DataFrame):
             "center_of_mass": np.nan,
             "dispersion": np.nan,
             "evenness": np.nan,
-            "aggregation": np.nan,    
+            "aggregation_index": np.nan,    
             "occupied_area": 0.0,        
         })
     else:
         
-        # Compute the number of layers
+        # Create the `echometrics` dictionary 
         echometrics.update({
-            "n_layers": acoustic_df["depth"][acoustic_df["NASC"] > 0.0].size
-        })
-
-        # Compute ABC
-        # ---- Convert NASC to ABC
-        acoustic_df["ABC"] = acoustic_df["NASC"] / (4 * np.pi * 1852 ** 2)
-        # ---- Estimate mean Sv
-        echometrics.update({
-            "mean_Sv": 10.0 * np.log10(acoustic_df["ABC"].sum() / acoustic_df["depth"].max())
-        })
-        # --- Estimate max Sv (i.e. )
-        echometrics.update({
-            "max_Sv": 10 * np.log10(acoustic_df["ABC"].max() 
-                                    / acoustic_df.loc[np.argmax(acoustic_df["ABC"]), "dz"])
-        })
-
-        # Compute (acoustic) abundance
-        echometrics.update({
-            "nasc_db": 10 * np.log10(acoustic_df["ABC"].sum())
-        })
-
-        # Compute center of mass
-        echometrics.update({
-            "center_of_mass": (
-                (acoustic_df["depth"] * acoustic_df["NASC"]).sum()
-                / (acoustic_df["NASC"]).sum()
-            )
-        })
-
-        # Compute the dispersion
-        echometrics.update({
-            "dispersion": (
-                ((acoustic_df["depth"] - echometrics["center_of_mass"]) ** 2 
-                * acoustic_df["NASC"]).sum() / (acoustic_df["NASC"]).sum()                
-            )
-        })
-
-        # Compute the evenness
-        echometrics.update({
-            "evenness": (acoustic_df["NASC"] **2).sum() / ((acoustic_df["NASC"]).sum()) ** 2
-        })
-
-        # Compute the index of aggregation
-        echometrics.update({
-            "aggregation": 1 / echometrics["evenness"]
-        })
-
-        # Get the occupied area
-        echometrics.update({
-            "occupied_area": (
+            # ---- Number of layers
+            "n_layers": int(acoustic_df["depth"][acoustic_df["NASC"] > 0.0].size),
+            # ---- Mean Sv (back-calculated)
+            "mean_Sv": float(
+                10.0 * np.log10(acoustic_df["ABC"].sum() / acoustic_df["depth"].max())
+            ),
+            # ---- Max Sv (back-calculated)
+            "max_Sv": float(
+                10 * np.log10(acoustic_df["ABC"].max() 
+                              / acoustic_df.loc[np.argmax(acoustic_df["ABC"]), "dz"])
+            ),
+            # ---- (Logarithmic) acoustic abundance
+            "nasc_db": float(10 * np.log10(acoustic_df["ABC"].sum())),
+            # ---- Center-of-mass
+            "center_of_mass": float(
+                (acoustic_df["depth"] * acoustic_df["NASC"]).sum() / (acoustic_df["NASC"]).sum()
+            ),
+            # ---- Evenness
+            "evenness": float(
+                (acoustic_df["NASC"] **2).sum() / ((acoustic_df["NASC"]).sum()) ** 2
+            ),
+            # ---- Occupied area
+            "occupied_area": float(
                 acoustic_df["dz"][acoustic_df["ABC"] > 0.0].sum() / acoustic_df["depth"].max()
             )
+        })
+
+        # Update variable-dependent metrics
+        echometrics.update({
+            # ---- Dispersion
+            "dispersion": float(
+                ((acoustic_df["depth"] - echometrics["center_of_mass"]) ** 2 
+                * acoustic_df["NASC"]).sum() / (acoustic_df["NASC"]).sum()                
+            ),
+            # ---- Index of aggregation
+            "aggregation_index": float(1 / echometrics["evenness"]), 
         })
 
     # Return the dictionary
@@ -141,3 +175,27 @@ def integrate_nasc(acoustic_data_df: pd.DataFrame, echometrics: bool = True):
 
     # Convert `nasc_dict` to a DataFrame and return the output
     return pd.Series(nasc_dict)
+
+def compute_nasc(acoustic_data_df: pd.DataFrame, echometrics: bool = True):
+
+    # Integrate NASC (and compute the echometrics, if necessary)
+    nasc_data_df = (
+        acoustic_data_df.groupby(["longitude", "latitude", "ping_time"])
+        .apply(integrate_nasc, echometrics, include_groups=False)
+        .unstack().reset_index()
+    )
+    # ---- Amend the dtypes if echometrics were computed
+    if echometrics:
+        # ---- Set dtypes
+        nasc_data_df = (
+            nasc_data_df
+            .astype({"n_layers": int, "mean_Sv": float, "max_Sv": float, "nasc_db": float,
+                    "center_of_mass": float, "dispersion": float, "evenness": float,
+                    "aggregation_index": float, "occupied_area": float})
+        )
+        # ---- Reorder columns
+        nasc_data_df = nasc_data_df[[
+            "longitude", "latitude", "ping_time", "nasc", "n_layers", "nasc_db", "mean_Sv", 
+            "max_Sv", "aggregation_index", "center_of_mass", "dispersion", "evenness", 
+            "occupied_area"
+        ]]

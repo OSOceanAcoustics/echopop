@@ -2,7 +2,7 @@ import xarray as xr
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from typing import Union, Tuple
+from typing import Union, Tuple, Optional
 from pathlib import Path
 import copy
 import yaml
@@ -13,38 +13,132 @@ import os
 import re
 import contextlib
 from sqlalchemy import create_engine, text, Engine, inspect
-from echopop.live.live_core import LIVE_DATA_STRUCTURE, LIVE_FILE_FORMAT_MAP, LIVE_INPUT_FILE_CONFIG_MAP
+from echopop.live.live_core import LIVE_DATA_STRUCTURE, LIVE_FILE_FORMAT_MAP, LIVE_INPUT_FILE_CONFIG_MAP, SPATIAL_CONFIG_MAP
+from echopop.live.live_data_loading import validate_data_directory
+from echopop.live.sql_methods import SQL, SQL_COMMANDS, query_processed_files, format_sql_columns
 from echopop.live import live_data_processing as eldp
+from echopop.live import live_data_loading as eldl
+from echopop.live.live_survey import LiveSurvey
+from echopop.live.live_acoustics import preprocess_acoustic_data
+from echopop.live.live_biology import preprocess_biology_data
+from echopop.survey import Survey
 
+survey_2019 = Survey("C:/Users/Brandyn/Documents/GitHub/echopop/config_files/initialization_config.yml", "C:/Users/Brandyn/Documents/GitHub/echopop/config_files/survey_year_2019_config.yml")
+survey_2019.transect_analysis()
+survey_2019.analysis["transect"]["biology"]["weight"]["weight_stratum_df"]
+analysis_dict = survey_2019.analysis["transect"]
+
+proportions_dict=analysis_dict["biology"]["proportions"]["number"]
+length_weight_dict = analysis_dict["biology"]["weight"]
+stratum_proportions_sexed["proportion_aged"] + stratum_proportions_sexed["proportion_unaged"]
 ####################################################################################################  
 # TEST: YAML FILE CONFIGURATION
 # ---- Define filepaths
+self = LiveSurvey
 live_init_config_path = "C:/Users/Brandyn/Documents/GitHub/echopop/config_files/live_initialization_config.yml"
 live_file_config_path = "C:/Users/Brandyn/Documents/GitHub/echopop/config_files/live_survey_year_2019_config.yml"
 # ---- Run function: `live_configuration`
-file_configuration = live_configuration(live_init_config_path, live_file_config_path)
-file_configuration.update({"database": {"acoustics": None, "biology": None}})
-####################################################################################################
-# * Accessory function for tuning the acoustic transmit frequency units/scaling
-def format_vlaue(x):
-    pass
+file_configuration = self.config
+files = biology_files
 
-def format_value(x):
-    if isinstance(x, str):
-        return "'{}'".format(x.replace("'", "''"))
-    elif isinstance(x, pd.Timestamp):
-        return "'{}'".format(x)
-    elif x is None:
-        return 'NULL'
-    else:
-        return str(x)
+biology_output = initial_biology_output
+file_configuration = self.config
+table_name = "length_df"
+df = filtered_biology_output[table_name]
+database_file = biology_db
+kwargs = dict(dataframe=df, table_name=table_name, id_columns=["id"], primary_keys=["id"], output_type=pd.DataFrame)
 
-data_str = ", ".join(
-    "({})".format(", ".join(format_value(x) for x in row))
-    for row in data_tuple
+def process_biology_data(self):
+
+    # Separate out processed and unprocessed biological data 
+    # ----- Unprocessed
+    biology_unprocessed = self.input["biology"]
+    # ---- Processed
+    biology_processed = self.input["biology_processed"]
+
+    # Compute `sigma_bs` by sending it to the appropriate database table
+    compute_sigma_bs(biology_unprocessed["specimen_df"], biology_unprocessed["length_df"], 
+                     self.config)
+    
+    # Bin the length measurements of the biological data
+    bin_length_data(biology_unprocessed, self.config["length_distribution"])
+
+    # Compute the length-weight regression and add it to the SQL table
+    length_weight_df = length_weight_regression(biology_unprocessed["specimen_df"], 
+                                                self.config["length_distribution"],
+                                                self.config)
+    
+    # Compute length-binned counts for the aggregated and individual-based measurements
+    specimen_binned, specimen_binned_filtered, length_binned = (
+        length_bin_counts(biology_unprocessed["length_df"], biology_unprocessed["specimen_df"], 
+                          self.config)
+    )
+
+    # Compute the number proportions
+    specimen_number_proportion, length_number_proportion, sex_number_proportions = (
+        number_proportions(specimen_binned, specimen_binned_filtered, length_binned,
+                           self.config)
+    )
+    
+    # Compute the length-binned weights for the aggregated and individual-based measurements
+    length_weight_binned, specimen_weight_binned = (
+        length_bin_weights(biology_unprocessed["length_df"],
+                           biology_unprocessed["specimen_df"],
+                           length_weight_df,self.config)
+    )
+
+    # Calculate the average weights among male, female, and all fish
+    fitted_weight_df = compute_average_weights(specimen_number_proportion, 
+                                               length_number_proportion, 
+                                               sex_number_proportions,
+                                               length_weight_df,
+                                               self.config["length_distribution"],
+                                               self.config)
+
+catch_data = self.input["biology"]["catch_df"]
+
+# Get the spatial column name, if there is one
+contrast_columns = file_configuration["spatial_column"].copy()
+# ---- Append additional columns that will be used
+contrast_columns.extend(["sex", "species_id"])
+
+# Calculate grouped totals
+# ---- Specimen
+specimen_weights = specimen_weight_binned.sum().reset_index(name="total_weight")
+
+
+# Calculate the sexed and total stratum weights for each sex among unaged fish
+# ---- Sum the net haul weights from station 1/unaged fish
+catch_weights = catch_data.count_variable(
+    contrasts=["species_id"] + file_configuration["spatial_column"], 
+    variable="haul_weight", fun="sum"
 )
+# ---- Rename resulting columns for both
+catch_weights.rename(columns={"count": "total_weight"}, inplace=True)
+
+# Sum the sexed and total weights from the weight-fitted unaged data
+# ---- Extract the unaged/length quantized weights
+unaged_weights_binned = distributions_dict["unaged_length_weight_tbl"].copy()
+# ---- Calculate the total weight per stratum per sex
+unaged_weights_sex = unaged_weights_binned.sum()
+# ---- Length (by sex)
+length_weights_sex = length_weight_binned.groupby(contrast_columns)["weight_interp"].sum()#.to_frame("weight")
+# ---- Further reduce
+length_weight_total = length_weights_sex.transpose().unstack(0).sum(axis=0)
+# ---- Standardize the unaged sexed weights
+(length_weights_sex / length_weight_total).unstack(0) * catch_weights["total_weight"].to_numpy()
 
 
+length_weight_total = (
+    length_weights_sex.reset_index(list(set(contrast_columns)-set(file_configuration["spatial_column"].copy())))
+    ["weight_interp"].sum()
+)
+# ---- Calculate the stratum totals
+unaged_strata_weights = unaged_weights_sex.unstack(0).sum(axis=0)
+# ---- Standardize the unaged sexed weights
+unaged_weights_sex_standardized = (unaged_weights_sex / unaged_strata_weights).unstack(
+    0
+) * catch_strata_weights["stratum_weight"].to_numpy()
 
 ####################################################################################################
 # * Functionality for reading in processed acoustic data
@@ -181,6 +275,37 @@ acoustic_data_df = acoustic_data["prc_nasc_df"]
 # SQL(database_file, "insert", table_name="nasc_df", dataframe=nasc_data_df)
 # SQL(database_file, "drop", table_name="nasc_df")
 # SQL_DTYPES[type(dataframe["ping_time"][0]).__name__]
+
+
+def process_acoustic_data(self,
+                            echometrics: bool = True):
+    
+    # Get the unprocessed acoustic data
+    acoustic_data_df = self.input["acoustics"]["prc_nasc_df"]
+
+    # Integrate NASC (and compute the echometrics, if necessary)
+    nasc_data_df = (
+        acoustic_data_df.groupby(["longitude", "latitude", "ping_time"])
+        .apply(integrate_nasc, echometrics, include_groups=False)
+        .unstack().reset_index()
+    )
+
+    # ---- Amend the dtypes if echometrics were computed
+    if echometrics:
+        # ---- Set dtypes
+        nasc_data_df = (
+            nasc_data_df
+            .astype({"n_layers": int, "mean_Sv": float, "max_Sv": float, "nasc_db": float,
+                    "center_of_mass": float, "dispersion": float, "evenness": float,
+                    "aggregation_index": float, "occupied_area": float})
+        )
+        # ---- Reorder columns
+        nasc_data_df = nasc_data_df[[
+            "longitude", "latitude", "ping_time", "nasc", "n_layers", "nasc_db", "mean_Sv", 
+            "max_Sv", "aggregation_index", "center_of_mass", "dispersion", "evenness", 
+            "occupied_area"
+        ]]
+
 
 def process_acoustic_data(acoustic_data_df: pd.DataFrame, file_configuration: dict, 
                           echometrics: bool = True):
@@ -389,6 +514,10 @@ spatial_config = file_configuration["geospatial"]
 acoustic_data = self.input["acoustics"]
 biology_data = self.input["biology"]
 
+
+
+from echopop.live.live_core import SPATIAL_CONFIG_MAP
+
 def load_spatial_data(acoustic_data: dict,
                       biology_data: dict,                      
                       file_configuration: dict,):
@@ -406,9 +535,15 @@ def load_spatial_data(acoustic_data: dict,
     # Validate the configuration
     validate_spatial_config(spatial_config)
 
+    # Create spatial dictionary that will be added as an `input`
+    spatial_dict = {"link_method": acoustics_biology_link}
+
     # Assign the spatial link constraints to the acoustic and biological data
     if acoustics_biology_link == "INPFC":
-        apply_inpfc_definitions(acoustic_data, biology_data, spatial_config)
+        spatial_dict.update({"strata": create_inpfc_strata(spatial_config)})
+
+    # Return the dictionary as an output
+    return spatial_dict
 
 
 
@@ -552,6 +687,8 @@ from echopop.acoustics import ts_length_regression, to_linear, to_dB
 
 __all__ = ["operations"]
 
+biology_data = self.input["biology"]
+
 # Meld bio datasets
 length_datasets = biology_data["specimen_df"].meld(biology_data["length_df"], 
                                                    contrasts=["haul_num", "species_id", "length"])
@@ -576,7 +713,10 @@ length_datasets[length_datasets["species_id"].isin(target_species["number_code"]
 #
 file_configuration["acoustics"]["TS_length_regression_parameters"][target_species["text_code"]]
 
-def average_sigma_bs(length: Union[pd.DataFrame, float, int], TS_L_slope: Optional[float] = None, TS_L_intercept: Optional[float] = None, weighted: Optional[Union[float, int, str]] = None):
+def average_sigma_bs(length: Union[pd.DataFrame, float, int], 
+                     TS_L_slope: Optional[float] = None, 
+                     TS_L_intercept: Optional[float] = None, 
+                     weighted: Optional[Union[float, int, str]] = None):
 
     # 
     if isinstance(length, pd.DataFrame):
@@ -648,6 +788,36 @@ def average_sigma_bs(length: Union[pd.DataFrame, float, int], TS_L_slope: Option
     else:
         return sigma_bs_value.mean()
 
+def parse_condition(condition):
+    # Handle nested conditions and logical operators
+    condition = condition.replace('&', ' AND ').replace('|', ' OR ')
+
+    # Handle "IN" lists and replace square brackets with parentheses
+    condition = re.sub(r'(\w+)\s*IN\s*\[(.*?)\]', lambda m: f"{m.group(1)} IN ({m.group(2)})", condition, flags=re.IGNORECASE)
+    
+    # Handle range conditions for BETWEEN, including floats
+    condition = re.sub(r'(\d*\.\d+|\d+)\s*<=\s*(\w+)\s*<=\s*(\d*\.\d+|\d+)', 
+                       lambda m: f"{m.group(2)} BETWEEN {m.group(1)} AND {m.group(3)}", condition)
+    
+    # Handle individual comparisons
+    condition = re.sub(r'(\w+)\s*([<>!=]+)\s*(\d*\.\d+|\d+)', lambda m: f"{m.group(1)} {m.group(2)} {m.group(3)}", condition)
+    condition = re.sub(r'(\w+)\s*([<>!=]+)\s*(\'[^\']*\')', lambda m: f"{m.group(1)} {m.group(2)} {m.group(3)}", condition)
+
+    # Handle single equal sign
+    condition = re.sub(r'(\w+)\s*=\s*(\d*\.\d+|\d+)', lambda m: f"{m.group(1)} = {m.group(2)}", condition)
+
+    # Remove redundant spaces
+    condition = re.sub(r'\s+', ' ', condition).strip()
+
+    return condition
+
+columns = ["sigma_bs_sum", "sigma_bs_count"]
+operation = "+"
+table_name = "sigma_bs_mean_df"
+dataframe = sigma_bs_df
+condition = condition_str
+
+SQL(acoustic_db, "select", table_name="files_read")
 average_sigma_bs
 
 ts_lengths_df.groupby(["haul_num"]).apply(average_sigma_bs).apply(lambda x: to_dB(x))
@@ -671,13 +841,57 @@ echometrics.update({
 })
 
 
+current = 10 ** (-60/10)
+count = 5
+old_tuple = (current, count)
+
+new = 10 ** (-50/10)
+count = 2
+
+data = pd.DataFrame({"value": 10 ** (np.array([-60.0, -50.0]) / 10.0),
+                     "count": np.array([5, 2]) })
+
+data = pd.DataFrame({"value": 10 ** (np.array([-61, -62, -63, -62, -61]) / 10.0)})
+data_new = pd.DataFrame({"value": 10 ** (np.array([-51, -52, -53, -52, -54, -56, -58]) / 10.0)})
+data["value"].sum() / data["value"].size
+data_new["value"].sum() / data_new["value"].size
+
+(data["value"].sum() + data_new["value"].sum()) / (data["value"].size + data_new["value"].size)
+
+data_test = pd.DataFrame({"value": 10 ** (np.array([-61, -62, -63, -62, -61, -51, -52, -53, -52, -54, -56, -58]) / 10.0)})
+data_test["value"].mean()
+
+data["value"].mean()
+
+data["value"].sum()
+
+old_number = np.average(data["value"], weights=data["count"])
+old_count = data["count"].sum()
+
+new_number = np.array([-80.0, -70.0, -60.0, -70.0, -80.0])
+new_count = len(new_number)
+new_mean = 10 ** (new_number.mean() / 10)
+
+np.average(np.concatenate([[old_number], [new_mean]]), 
+           weights = np.concatenate([[old_count], [new_count]]))
+
+np.mean(10 ** (np.array([-60.0, -60.0, -60.0, -60.0, -60.0, -50.0, -50.0, -80.0, -70.0, -60.0, -70.0, -80.0]) / 10))
+np.average(data["value"], weights=data["count"])
+
+np.sum(10 ** (np.array([-60.0, -60.0, -60.0, -60.0, -60.0, -50.0, -50.0, -80.0, -70.0, -60.0, -70.0, -80.0]) / 10))
 
 
 pd.read_fr
 pd.read_sql(text(SQL_COMMANDS["select"].format(**kwargs)), con=connection)
+db_file = self.config["database"]["acoustics"]
 engine = create_engine(f"sqlite:///{db_file}")
 connection = engine.connect()
-kwargs["dataframe"].to_sql(name=kwargs["table_name"], 
+
+SQL(db_file, "select", table_name="sigma_bs_mean_df", condition="stratum = 1")
+
+
+kwargs["dataframe"].to_sql(name=kwa
+rgs["table_name"], 
                                                   con=connection, 
                                                   if_exists="append", index=False)
 connection.close()

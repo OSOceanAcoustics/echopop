@@ -45,11 +45,7 @@
   # `INPFC`         --> NASC for each INPFC stratum associated with matched stratum-specific sigma_bs 
   # `closest_haul`  --> NASC associated with sigma_bs calculated from the closest (spatially) trawls
   # `weighted_haul` --> NASC associated with sigma_bs calculated from all survey data weighted by distance from haul coordinates
-    link_biology_acoustics:         
-      global: False
-      INPFC: True
-      closest_haul: False
-      weighted_haul: False
+    link_biology_acoustics: INPFC
 
   #####################################################################################################################
   # Acoustics settings#
