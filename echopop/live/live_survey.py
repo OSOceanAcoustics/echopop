@@ -15,6 +15,7 @@ from ..acoustics import (
 from .sql_methods import query_processed_files
 from .live_acoustics import (
     compute_nasc,
+    format_acoustic_dataset,
     preprocess_acoustic_data
 )
     
@@ -23,10 +24,11 @@ from .live_biology import (
     compute_average_weights,
     compute_sigma_bs,
     length_bin_counts,
-    length_weight_regression,
-    number_proportions,
     length_bin_weights,
-    preprocess_biology_data
+    length_weight_regression,
+    number_proportions,    
+    preprocess_biology_data,
+    weight_proportions
 )
 
 
@@ -175,6 +177,17 @@ class LiveSurvey:
                                                    length_weight_df,
                                                    self.config["length_distribution"],
                                                    self.config)
+        
+        # Compute the weight proportions
+        self.input["biology"].update({
+                "proportions": weight_proportions(biology_unprocessed["catch_df"], 
+                                                  specimen_weight_binned,
+                                                  length_weight_binned,
+                                                  length_number_proportion,
+                                                  length_weight_df,
+                                                  self.config)
+        })
+        
 
     def process_acoustic_data(self, echometrics: bool = True, verbose: bool = True):
 
@@ -196,7 +209,7 @@ class LiveSurvey:
             nasc_data_df = compute_nasc(acoustic_data_df, self.config, echometrics)
             
             # Format the dataframe and insert into the LiveSurvey object
-            self.input["nasc_df"] = nasc_data_df
+            self.input["nasc_df"] = format_acoustic_dataset(nasc_data_df, self.config)
     
     def estimate_population(self):
         # method here

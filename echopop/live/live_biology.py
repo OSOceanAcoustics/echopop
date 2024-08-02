@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from .sql_methods import SQL, sql_data_exchange, get_table_key_names
+from .sql_methods import SQL, sql_data_exchange, get_table_key_names, sql_group_update
 from .live_spatial_methods import apply_spatial_definitions
 from .live_acoustics import average_sigma_bs
 from ..acoustics import ts_length_regression, to_dB, to_linear
@@ -198,9 +198,9 @@ def length_weight_regression(specimen_data: pd.DataFrame, distribution_df: pd.Da
                              file_configuration: dict):
     
     # Get the spatial column name, if there is one
-    contrast_columns = file_configuration["spatial_column"].copy()
+    spatial_column = file_configuration["spatial_column"].copy()
     # ---- Append additional columns that will be used
-    contrast_columns.extend(["trawl_partition", "sex", "haul_num", "species_id", "length_bin"])
+    contrast_columns = spatial_column + ["trawl_partition", "sex", "haul_num", "species_id", "length_bin"]
     
     # Gather specimen measurements to represent 'all' fish
     specimen_data_all = specimen_data.assign(sex="all")
@@ -810,8 +810,6 @@ def compute_average_weights(specimen_number_proportion: pd.DataFrame,
     return fitted_weight_df
 
 def weight_proportions(catch_data: pd.DataFrame,
-                       specimen_data: pd.DataFrame,
-                       length_data: pd.DataFrame,
                        specimen_weight_binned: pd.DataFrame,
                        length_weight_binned: pd.DataFrame,
                        length_number_proportion: pd.DataFrame,
@@ -831,9 +829,6 @@ def weight_proportions(catch_data: pd.DataFrame,
     )
     # ---- Rename resulting columns for both
     catch_weights.rename(columns={"count": "total_weight"}, inplace=True)
-    
-    # Sum total weights for specimen data
-    specimen_weights = specimen_weight_binned.sum().reset_index(name="total_weight")
     
     # For the specimen data 
     # ---- Sum the net haul weights from station 1/unaged fish

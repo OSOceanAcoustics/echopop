@@ -3,6 +3,8 @@ from echopop.live.sql_methods import reset_db_files
 from echopop.live.sql_methods import query_processed_files
 from echopop.live.live_acoustics import preprocess_acoustic_data, compute_nasc
 from echopop.live.live_biology import preprocess_biology_data
+from echopop.live.sql_methods import SQL, SQL_COMMANDS, query_processed_files, format_sql_columns, sql_group_update, sql_data_exchange
+
 from echopop.live.live_core import(
     LIVE_DATA_STRUCTURE,
 )
@@ -14,13 +16,14 @@ from echopop.live.live_biology import (
     length_weight_regression,
     number_proportions,
     length_bin_weights,
-    preprocess_biology_data
+    preprocess_biology_data,
+    weight_proportions
 )
 from echopop.live import live_data_processing as eldp
 from echopop.live import live_data_loading as eldl
 
-live_init_config_path = "C:/Users/Brandyn/Documents/GitHub/echopop/config_files/live_initialization_config.yml"
-live_file_config_path = "C:/Users/Brandyn/Documents/GitHub/echopop/config_files/live_survey_year_2019_config.yml"
+live_init_config_path = "C:/Users/15052/Documents/GitHub/echopop/config_files/live_initialization_config.yml"
+live_file_config_path = "C:/Users/15052/Documents/GitHub/echopop/config_files/live_survey_year_2019_config.yml"
 
 realtime_survey = LiveSurvey(live_file_config_path, live_init_config_path)
 

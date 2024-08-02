@@ -15,11 +15,11 @@ import contextlib
 from sqlalchemy import create_engine, text, Engine, inspect
 from echopop.live.live_core import LIVE_DATA_STRUCTURE, LIVE_FILE_FORMAT_MAP, LIVE_INPUT_FILE_CONFIG_MAP, SPATIAL_CONFIG_MAP
 from echopop.live.live_data_loading import validate_data_directory
-from echopop.live.sql_methods import SQL, SQL_COMMANDS, query_processed_files, format_sql_columns
+from echopop.live.sql_methods import SQL, SQL_COMMANDS, query_processed_files, format_sql_columns, sql_group_update, sql_data_exchange
 from echopop.live import live_data_processing as eldp
 from echopop.live import live_data_loading as eldl
 from echopop.live.live_survey import LiveSurvey
-from echopop.live.live_acoustics import preprocess_acoustic_data
+from echopop.live.live_acoustics import preprocess_acoustic_data, compute_nasc, format_acoustic_dataset
 from echopop.live.live_biology import preprocess_biology_data
 from echopop.survey import Survey
 
@@ -88,6 +88,105 @@ def process_biology_data(self):
                                                length_weight_df,
                                                self.config["length_distribution"],
                                                self.config)
+
+# NOTE: ARGUMENT: {working_dataset: Literal["acoustic", "biology"]}
+working_dataset = "biology"
+
+#
+acoustic_db = self.config["database"]["acoustics"]
+biology_db = self.config["database"]["biology"]
+
+# 
+spatial_column = file_configuration["spatial_column"]
+
+# Create conditional string
+condition_str = (
+    f"stratum in {np.unique(self.input["nasc_df"]["stratum"])} "
+    f"& nasc > 0.0"
+)
+
+# Get corresponding data
+acoustic_df = SQL(acoustic_db,"select",table_name="survey_data_df",
+                  condition=condition_str)
+
+# Get corresponding `sigma_bs`
+sigma_bs_df = SQL(acoustic_db,"select",table_name="sigma_bs_mean_df",
+                  condition=f"stratum in {np.unique(self.input["nasc_df"]["stratum"])}")
+# ---- Compute the weighted average
+sigma_bs_mean_df = (
+    sigma_bs_df.groupby(spatial_column + ["species_id"])[["sigma_bs", "sigma_bs_count"]]
+    .apply(lambda df: np.average(df.sigma_bs, weights=df.sigma_bs_count))
+    .to_frame("sigma_bs_mean")
+    .reset_index()
+)
+
+#
+nasc_biology = acoustic_df.merge(sigma_bs_df, on=spatial_column)
+
+#
+nasc_biology["number_density"] = (
+    nasc_biology["nasc"]
+    / (4.0 * np.pi * nasc_biology["sigma_bs"])
+)
+
+psi = 10 ** (-21/10)
+psi * 280**2 * 1500 * 128e-6 / 2
+psi / 3 * 280 ** 3 / 280 / 1852 ** 2 * nasc_biology["number_density"]
+
+psi * (280.0 ** 2) / 1852 ** 2
+depth_area = 280 ** 2 * psi
+swath_length = 0.5 * 1852
+depth_area * swath_length / 1852 ** 2 * nasc_biology["number_density"]
+280 ** 2 * psi / 1852 ** 2 * nasc_biology["number_density"]
+
+SQL(acoustic_db, "map") 
+beam_angle = 9.0 * np.pi / 180.0
+280.0 * np.tan(beam_angle) * 2.0 * swath_length / 1852 ** 2 * nasc_biology["number_density"]
+280.0 * np.tan(beam_angle) * 2.0 ** 2 * np.pi * swath_length / 1852 ** 2 * nasc_biology["number_density"]
+area = 2.0 * nasc_biology["center_of_mass"] ** 2 * np.tan(beam_angle)
+area / 1852 ** 2 * nasc_biology["number_density"]
+SQL(acoustic_db, "map") 
+
+# Merge hake fraction data into `nasc_interval_df`
+# ---- Initial merge
+nasc_interval_df = nasc_interval_df.merge(
+    input_dict["spatial"]["strata_df"], on=[stratum_col, "haul_num"], how="outer"
+)
+# ---- Replace `fraction_hake` where NaN occurs
+nasc_interval_df["fraction_hake"] = nasc_interval_df["fraction_hake"].fillna(0.0)
+# ---- Drop NaN
+nasc_interval_df.dropna(subset=["transect_num"], inplace=True)
+
+# Calculate the along-transect number density (animals per nmi^2)
+# ---- Merge NASC measurements with mean sigma_bs for each stratum
+nasc_biology = nasc_interval_df.merge(sigma_bs_strata, on=[stratum_col])
+# ---- Calculate the number densities
+nasc_biology["number_density"] = (
+    nasc_biology["fraction_hake"]
+    * nasc_biology["nasc"]
+    / (4.0 * np.pi * nasc_biology["sigma_bs_mean"])
+)
+
+
+if working_dataset == "acoustic":
+    db_file = self.config["database"]["acoustic"]
+elif working_dataset == "biology":
+    db_file = self.config["database"]["biology"]
+else:
+    raise ValueError(
+        f"Argument for `working_dataset` [{working_dataset}] is invalid."
+        f" Value must either be 'acoustic' or 'biology'."
+    )
+
+# Extract the necessary correct strata mean sigma_bs
+sigma_bs_strata = analysis_dict["acoustics"]["sigma_bs"]["strata_mean_df"]
+
+# Pull out the length-weight conversion for each stratum
+length_weight_strata = analysis_dict["biology"]["weight"]["weight_stratum_df"]
+
+# Get the name of the stratum column
+stratum_col = settings_dict["transect"]["stratum_name"]
+
 
 catch_data = self.input["biology"]["catch_df"]
 

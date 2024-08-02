@@ -589,7 +589,7 @@ def SQL(db_file: str, command: str, **kwargs):
     engine = create_engine(f"sqlite:///{db_file}")
     
     # Format the data columns, if necessary, to fit within the SQL commands
-    if command not in ["inspect", "update", "select"]:
+    if command not in ["inspect", "update"]:
         kwargs = format_sql_columns(kwargs)
     
     # Run the command
