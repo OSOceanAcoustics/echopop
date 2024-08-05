@@ -1,10 +1,11 @@
-from typing import Union, Optional
+from typing import Union, Optional, List
 import numpy as np
 import pandas as pd
 
 from ..acoustics import ts_length_regression, to_linear, to_dB
 from .live_spatial_methods import apply_spatial_definitions
-from .sql_methods import sql_data_exchange
+from .sql_methods import sql_data_exchange, SQL
+from .live_data_processing import get_unique_identifiers, query_dataset
 
 # TODO: Documentation
 def configure_transmit_frequency(frequency_values: pd.Series,
@@ -243,4 +244,37 @@ def format_acoustic_dataset(nasc_data_df: pd.DataFrame, file_configuration: dict
            
     # Return the formatted dataframe
     return df
-                                    
+                                
+def get_nasc_sql_data(db_file: str,
+                      data_dict: dict, 
+                      unique_columns: List[str]):
+    # ---- Add SELECTION columns
+    data_columns = (
+        unique_columns + ["x", "y", "longitude", "latitude", "ping_time", "nasc", "number_density", 
+                          "biomass_density"]
+    )
+    # ----- Get the SQL dataset
+    nasc_sql_data = query_dataset(db_file, 
+                                  data_dict,
+                                  table_name="survey_data_df",
+                                  data_columns = data_columns,
+                                  unique_columns=unique_columns,
+                                  constraint="nasc > 0.0")
+    # ---- Use SQL table data if present
+    if nasc_sql_data is not None and not nasc_sql_data.empty:
+        return nasc_sql_data
+    elif "nasc_df" in data_dict.keys():
+        return data_dict["nasc_df"]
+
+def get_sigma_bs_sql_data(db_file: str,
+                          data_dict: dict,
+                          unique_columns: list):
+
+    # Get corresponding `sigma_bs` DataFrame
+    sigma_bs_df = query_dataset(db_file, 
+                                  data_dict,
+                                  table_name="sigma_bs_mean_df",
+                                  data_columns=["sigma_bs", "sigma_bs_count"],
+                                  unique_columns=unique_columns)
+
+    sigma_bs_df = SQL(db_file, "select", table_name="sigma_bs_mean_df")

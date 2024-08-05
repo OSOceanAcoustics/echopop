@@ -1,4 +1,4 @@
-from typing import Union, Optional
+from typing import Union, Optional, Literal
 from pathlib import Path
 import copy
 
@@ -171,12 +171,14 @@ class LiveSurvey:
         )
 
         # Calculate the average weights among male, female, and all fish
-        fitted_weight_df = compute_average_weights(specimen_number_proportion,
-                                                   length_number_proportion, 
-                                                   sex_number_proportions,
-                                                   length_weight_df,
-                                                   self.config["length_distribution"],
-                                                   self.config)
+        self.input["weight_stratumn_df"] = (
+            compute_average_weights(specimen_number_proportion,
+                                    length_number_proportion, 
+                                    sex_number_proportions,
+                                    length_weight_df,
+                                    self.config["length_distribution"],
+                                    self.config)
+        )
         
         # Compute the weight proportions
         self.input["biology"].update({
@@ -209,9 +211,11 @@ class LiveSurvey:
             nasc_data_df = compute_nasc(acoustic_data_df, self.config, echometrics)
             
             # Format the dataframe and insert into the LiveSurvey object
-            self.input["nasc_df"] = format_acoustic_dataset(nasc_data_df, self.config)
+            self.input["acoustics"]["nasc_df"] = format_acoustic_dataset(nasc_data_df, self.config)
     
-    def estimate_population(self):
-        # method here
+    def estimate_population(self,
+                            working_dataset: Literal["acoustic", "biology"]):
+        
+        # method
         pass 
         

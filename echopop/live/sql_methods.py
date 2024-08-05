@@ -333,6 +333,7 @@ SQL_DTYPES = {
     "float": "FLOAT",
     "int": "INTEGER",
     'bool': 'BOOLEAN',
+    "Interval": "TEXT",
     "Timestamp": "DATETIME",
     'object': 'TEXT',
     "str": "TEXT",

@@ -48,70 +48,34 @@ df = filtered_biology_output[table_name]
 database_file = biology_db
 kwargs = dict(dataframe=df, table_name=table_name, id_columns=["id"], primary_keys=["id"], output_type=pd.DataFrame)
 
-def process_biology_data(self):
+# NOTE: ARGUMENT: {working_dataset: Literal["acoustics", "biology"]}
+working_dataset = "acoustics"
+self = realtime_survey
+file_configuration = self.config
+self.results["biology"] = self.input["biology_processed"]
+self.results["acoustics"] = self.input["nasc_df"]
 
-    # Compute `sigma_bs` by sending it to the appropriate database table
-    compute_sigma_bs(biology_unprocessed["specimen_df"], biology_unprocessed["length_df"], 
-                     self.config)
-    
-    # Bin the length measurements of the biological data
-    bin_length_data(biology_unprocessed, self.config["length_distribution"])
-
-    # Compute the length-weight regression and add it to the SQL table
-    length_weight_df = length_weight_regression(biology_unprocessed["specimen_df"], 
-                                                self.config["length_distribution"],
-                                                self.config)
-    
-    # Compute length-binned counts for the aggregated and individual-based measurements
-    specimen_binned, specimen_binned_filtered, length_binned = (
-        length_bin_counts(biology_unprocessed["length_df"], biology_unprocessed["specimen_df"], 
-                          self.config)
-    )
-
-    # Compute the number proportions
-    specimen_number_proportion, length_number_proportion, sex_number_proportions = (
-        number_proportions(specimen_binned, specimen_binned_filtered, length_binned,
-                           self.config)
-    )
-    
-    # Compute the length-binned weights for the aggregated and individual-based measurements
-    length_weight_binned, specimen_weight_binned = (
-        length_bin_weights(biology_unprocessed["length_df"],
-                           biology_unprocessed["specimen_df"],
-                           length_weight_df,self.config)
-    )
-
-    # Calculate the average weights among male, female, and all fish
-    fitted_weight_df = compute_average_weights(specimen_number_proportion, 
-                                               length_number_proportion, 
-                                               sex_number_proportions,
-                                               length_weight_df,
-                                               self.config["length_distribution"],
-                                               self.config)
-
-# NOTE: ARGUMENT: {working_dataset: Literal["acoustic", "biology"]}
-working_dataset = "biology"
-
-#
-acoustic_db = self.config["database"]["acoustics"]
-biology_db = self.config["database"]["biology"]
-
-# 
+# Get spatial column
 spatial_column = file_configuration["spatial_column"]
 
-# Create conditional string
-condition_str = (
-    f"stratum in {np.unique(self.input["nasc_df"]["stratum"])} "
-    f"& nasc > 0.0"
-)
+# Initialize the working data dictionary
+working_data = copy.deepcopy(self.results)
+contrast_columns = []
+# ---- Define unique columns
+unique_columns = spatial_column + contrast_columns
 
-# Get corresponding data
-acoustic_df = SQL(acoustic_db,"select",table_name="survey_data_df",
-                  condition=condition_str)
+if working_dataset == "acoustics" and self.input["nasc_df"] is not None:
+    # ---- Get dataset
+    acoustic_df = get_nasc_sql_data(acoustic_db, 
+                                    self.input["acoustics"], 
+                                    unique_columns=unique_columns)
+
 
 # Get corresponding `sigma_bs`
-sigma_bs_df = SQL(acoustic_db,"select",table_name="sigma_bs_mean_df",
-                  condition=f"stratum in {np.unique(self.input["nasc_df"]["stratum"])}")
+# sigma_bs_df = SQL(acoustic_db,"select",table_name="sigma_bs_mean_df",
+#                   condition=f"stratum in {np.unique(self.input["nasc_df"]["stratum"])}")
+sigma_bs_df = SQL(acoustic_db, "select", table_name="sigma_bs_mean_df")
+sigma_bs_df["stratum"] = 2
 # ---- Compute the weighted average
 sigma_bs_mean_df = (
     sigma_bs_df.groupby(spatial_column + ["species_id"])[["sigma_bs", "sigma_bs_count"]]
@@ -121,13 +85,263 @@ sigma_bs_mean_df = (
 )
 
 #
-nasc_biology = acoustic_df.merge(sigma_bs_df, on=spatial_column)
+nasc_biology = acoustic_df.merge(sigma_bs_mean_df, on=spatial_column)
+
+# Get the spatially averaged weights
+weight_spatial_averages = self.input["weight_stratumn_df"]
+# ---- Sub-select 'all'
+general_weight_averages = weight_spatial_averages[weight_spatial_averages["sex"] == "all"]
+general_weight_averages["stratum"] = 2
 
 #
 nasc_biology["number_density"] = (
     nasc_biology["nasc"]
-    / (4.0 * np.pi * nasc_biology["sigma_bs"])
+    / (4.0 * np.pi * nasc_biology["sigma_bs_mean"])
 )
+
+#
+nasc_biology = nasc_biology.merge(general_weight_averages)
+
+nasc_biology["biomass_density"] = nasc_biology["number_density"] * nasc_biology["average_weight"]
+
+sql_group_update(acoustic_db, dataframe=nasc_biology, 
+                 table_name="survey_data_df", columns=["number_density", "biomass_density"], 
+                 unique_columns=["stratum", "longitude", "latitude", "ping_time"])
+
+strata_df = self.input["spatial"]["strata"].copy()
+strata_df[["length_mean", "weight_mean", "TS_mean", "number_density_mean", 
+           "biomass_density_mean", "abundance_sum", "biomass_sum"]] = np.nan
+strata_df.drop(columns=["latitude_interval"], inplace=True)
+SQL(acoustic_db, "select", table_name="survey_data_df")
+
+SQL(biology_db, "drop", table_name="strata_summary_df")
+SQL(biology_db, "create", table_name="strata_summary_df", dataframe=strata_df, primary_keys=["stratum"])
+SQL(biology_db, "insert", table_name="strata_summary_df", dataframe=strata_df,
+    id_columns=["stratum"])
+
+tt = pd.DataFrame({
+    "x": np.array([1, 1, 1, 2, 2, 2, 3, 3, 3]),
+    "y": np.array([1, 2, 3, 1, 2, 3, 1, 2, 3]),
+    "area": 50 ** 2,
+    "mean_number_density": 0.0,
+    "mean_biomass_density": 0.0,
+    "abundance": 0.0,
+    "biomass": 0.0
+})
+
+nasc_biology_output_a = self.input["nasc_df"].assign(x=1, y=1).reset_index(drop=True)
+nasc_biology_output_a.loc[3, "x"] = 2
+nasc_biology_output_a.loc[3, "y"] = 3
+nasc_biology_output_a = nasc_biology_output_a.filter(["stratum", "x", "y", "longitude", "latitude", "nasc", "number_density", "biomass_density"])
+nasc_biology_output = nasc_biology_output_a.merge(sigma_bs_mean_df, on=spatial_column)
+nasc_biology_output["number_density"] = (
+    nasc_biology_output["nasc"]
+    / (4.0 * np.pi * nasc_biology_output["sigma_bs_mean"])
+)
+nasc_biology_output =nasc_biology_output.merge(general_weight_averages)
+nasc_biology_output["biomass_density"] = nasc_biology_output["number_density"] * nasc_biology_output["average_weight"]
+nasc_biology_output = nasc_biology_output.filter(["stratum", "x", "y", "longitude", "latitude", "number_density", "biomass_density"])
+nasc_biology_output = nasc_biology_output[nasc_biology_output["number_density"] > 0.0].reset_index()
+
+SQL(acoustic_db, "drop", table_name="reference")
+SQL(acoustic_db, "drop", table_name="grid")
+
+SQL(acoustic_db, "create", table_name = "reference", dataframe=tt)
+SQL(acoustic_db, "create", table_name = "grid", dataframe=nasc_biology_output_a)
+
+SQL(acoustic_db, "insert", table_name = "reference", dataframe=tt)
+SQL(acoustic_db, "insert", table_name = "grid", dataframe=nasc_biology_output_a)
+
+SQL(acoustic_db, "select", table_name="grid")
+SQL(acoustic_db, "select", table_name="reference")
+
+sql_group_update(acoustic_db, dataframe=nasc_biology_output, 
+                 table_name="grid", columns=["number_density", "biomass_density"], 
+                 unique_columns=["stratum", "x", "y", "longitude", "latitude"])
+
+SQL(acoustic_db, "select", table_name="grid")
+
+from typing import List
+
+data_table = "grid"
+grid_table = "reference"
+column_pairs = [("number_density", "abundance"), ("biomass_density", "biomass")]
+coordinates = ["x", "y"]
+dataframe = nasc_biology_output
+
+def update_population_grid(db_file: str, 
+                           data_table: str,
+                           grid_table: str,
+                           dataframe: pd.DataFrame,
+                           column_pairs: Union[List[tuple[str, str]], tuple[str, str]],
+                           coordinates: List[str]):
+    
+    # Convert `column_pairs` to a list, if needed
+    if not isinstance(column_pairs, list):
+        column_pairs = [column_pairs]
+
+    dataframe[coordinates]
+    # Format the coordinate pairs
+    # ---- Convert coordinate values into a list of tuples
+    coord_pairs = [tuple(row) for row in dataframe[coordinates].itertuples(index=False)]    
+    # ---- Get unique pairs
+    coords = list(set(coord_pairs))
+
+    # Format the SQL script command
+    # ---- Initialize
+    sql_script = []
+    # ---- Iteratively update
+    for input_column, output_column in column_pairs:
+        sql_script.append(
+        f"""
+        BEGIN TRANSACTION;
+                        
+        -- Calculate averages for input_column and update grid_table
+        WITH avgs AS (
+            SELECT
+                {coordinates[0]},
+                {coordinates[1]},
+                AVG(d.{input_column}) as avg_value
+            FROM {data_table} d
+            GROUP BY d.{coordinates[0]}, d.{coordinates[1]}
+        )
+
+        -- Update the grid_table with both average and computed total
+        UPDATE {grid_table}
+        SET 
+            mean_{input_column} = (
+                SELECT avg_value
+                FROM avgs
+                WHERE avgs.{coordinates[0]} = {grid_table}.{coordinates[0]}
+                    AND avgs.{coordinates[1]} = {grid_table}.{coordinates[1]}
+            ),
+            {output_column} = (
+                SELECT avg_value * {grid_table}.area
+                FROM avgs
+                WHERE avgs.{coordinates[0]} = {grid_table}.{coordinates[0]}
+                    AND avgs.{coordinates[1]} = {grid_table}.{coordinates[1]}
+            )       
+        WHERE EXISTS (
+            SELECT 1
+            FROM avgs
+            WHERE avgs.{coordinates[0]} = {grid_table}.{coordinates[0]}
+              AND avgs.{coordinates[1]} = {grid_table}.{coordinates[1]}
+        );
+
+        COMMIT;
+        """
+        )
+
+    # Create the engine
+    engine = create_engine(f"sqlite:///{db_file}")
+
+    # Create the SQL database connection and send the script 
+    with engine.connect() as connection:
+        dbapi_conn = connection.connection
+        _ = dbapi_conn.executescript("\n".join(sql_script))
+
+
+SQL(acoustic_db, "select", table_name=data_table)
+SQL(acoustic_db, "select", table_name=grid_table)
+
+
+SQL(acoustic_db, "update", table_name="grid", dataframe=nasc_biology_output, unique_columns=["stratum", "x", "y"], columns=["number_density", "biomass_density"])
+SQL(acoustic_db, "select", table_name="reference")
+
+source_db = acoustic_db
+target_db = biology_db
+
+source_table = "grid"
+target_table = "strata_summary_df"
+
+data_columns = ["number_density", "biomass_density"]
+strata_columns = ["stratum"]
+strata = [2]
+stratum_list = ', '.join(map(str, stratum_values))
+
+data_column = data_columns[0]
+data_columns = data_columns[0]
+def sql_update_strata_summary(source_db: str,
+                              target_db: str,
+                              arg_fun: str,
+                              data_columns: List[tuple[str, str]],
+                              strata: list):
+    
+    # Format strata list as a string
+    strata_str = ', '.join(map(str, strata))
+
+    # Function reference map
+    FUNCTION_MAP = {
+        "sum": {"function": "SUM", 
+                "suffix": "sum"},
+        "mean": {"function": "AVG",
+                "suffix": "mean"}
+    }
+
+    # Prepare the SQL script
+    sql_script = f"""
+    -- Attach the source and target databases
+    ATTACH DATABASE '{source_db}' AS source;
+    ATTACH DATABASE '{target_db}' AS target;
+
+    """
+
+    # Dynamically format the cross-database command
+    for data_column, method in data_columns:
+        # ----- Format the function-method-suffic keys
+        suffix = FUNCTION_MAP[method]["suffix"]
+        fun = FUNCTION_MAP[method]["function"]
+        # ---- Create the combined SQL command using f-strings
+        sql_script += f"""
+        -- Calculate averages and directly update the target table
+        UPDATE target.{target_table}
+        SET {data_column}_{suffix} = (
+            SELECT {fun}({data_column})
+            FROM source.{source_table}
+            WHERE stratum = target.{target_table}.stratum
+        )
+        WHERE stratum IN ({strata_str});
+        """
+    # ----- Append DETACH commands only once at the end   
+    sql_script += """
+    -- Detach the databases
+    DETACH DATABASE source;
+    DETACH DATABASE target;
+    """
+
+    # Create the engine
+    engine = create_engine(f"sqlite:///{target_db}")
+
+    # Create the SQL database connection and send the script 
+    with engine.connect() as connection:
+        dbapi_conn = connection.connection
+        _ = dbapi_conn.executescript(sql_script)
+
+SQL(biology_db, "select", table_name=target_table)
+SQL(acoustic_db, "select", table_name=source_table)
+connection.close()
+dbapi_conn.close()
+
+
+pairs = [(1, 2), (3, 4), (5, 6)]
+
+# Convert the pairs into a format suitable for SQL IN clause
+pairs_placeholder = ', '.join(f'({x}, {y})' for x, y in pairs)
+
+# Construct the SQL command as a text string
+sql_command = f'''
+BEGIN TRANSACTION;
+
+UPDATE reference
+SET total = (
+    SELECT AVG(g.sigma_bs) * r.area
+    FROM grid g
+    WHERE g.stratum = r.stratum_x
+)
+WHERE (stratum_x, stratum_y) IN ({pairs_placeholder});
+
+COMMIT;
+'''
 
 psi = 10 ** (-21/10)
 psi * 280**2 * 1500 * 128e-6 / 2
