@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Union, Tuple, Optional, List
 import yaml
 import re
-from .sql_methods import SQL, query_processed_files, sql_data_exchange
+from .sql_methods import SQL, query_processed_files, sql_data_exchange, initialize_database
 import pandas as pd
 from datetime import datetime
 import xarray as xr
@@ -228,6 +228,9 @@ def validate_data_directory(file_configuration: dict, dataset: str,
         raise TypeError(
             "Data loading argument `input_filenames` must be a list."
         )        
+    
+    # Initialize the database file
+    initialize_database(root_directory, file_settings)
     
     # Query the SQL database to process only new files (or create the db file in the first place)
     valid_files, file_configuration["database"][dataset] = (

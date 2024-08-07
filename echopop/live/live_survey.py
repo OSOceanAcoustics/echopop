@@ -1,6 +1,10 @@
 from typing import Union, Optional, Literal
 from pathlib import Path
+from datetime import datetime
 import copy
+import pandas as pd
+
+from .sql_methods import query_processed_files
 
 from .live_core import(
     LIVE_DATA_STRUCTURE,
@@ -48,6 +52,8 @@ class LiveSurvey:
     ):
         # Initialize `meta` attribute
         self.meta = copy.deepcopy(LIVE_DATA_STRUCTURE["meta"])
+        # ---- Add datetime
+        self.meta["date"] = datetime.now()
 
         # Loading the configuration settings and definitions that are used to
         # initialize the Survey class object
@@ -74,6 +80,48 @@ class LiveSurvey:
         if verbose: 
             pass
 
+    def __repr__(self):
+
+        # Get any acoustic files created
+        if "acoustic_files" in self.meta["provenance"]:
+            # ---- Get the filenames
+            acoustic_filenames = self.meta["provenance"]["acoustic_files"]
+            # ---- Subset if many files are being processed
+            if len(acoustic_filenames) > 2:
+                acoustic_filenames = acoustic_filenames[:2] + ["..."] + [f"[n = {len(acoustic_filenames)}]"]
+            # ---- Format string
+            acoustic_files = ", ".join(acoustic_filenames)
+        else:
+            acoustic_files = "None"
+
+        # Get any biology files created
+        if "biology_files" in self.meta["provenance"]:
+            # ---- Get the filenames
+            biology_filenames = self.meta["provenance"]["biology_files"]
+            # ---- Subset if many files are being processed
+            if len(biology_filenames) > 4:
+                biology_filenames = biology_filenames + ["..."]
+            # ---- Format string
+            biology_files = ", ".join(biology_filenames)
+        else:
+            biology_files = "None"
+
+        # Get linked database names
+        linked_dbs = (
+            "\n   ".join([f"{key.title()}: {db}" for key, db in self.config["database"].items()])
+        )
+
+        return (
+            f"LiveSurvey-class object \n"
+            f"Timestamp: {self.meta['date']} \n"
+            f"Acoustic files being processed: \n   {acoustic_files}\n"
+            f"Biology files being processed: \n   {biology_files}\n"
+            f"Linked databases: \n   {linked_dbs}"
+        )
+    
+    def __str__(self):
+        return self.__repr__()
+
     def load_acoustic_data(self,
                            input_filenames: Optional[list] = None,
                            verbose: bool = True):
@@ -93,13 +141,17 @@ class LiveSurvey:
             # TODO: SettingWithCopyWarning:
             self.input["acoustics"]["prc_nasc_df"] = preprocess_acoustic_data(prc_nasc_df.copy(), 
                                                                               self.input["spatial"],
-                                                                              self.config)     
+                                                                              self.config)  
+            # ---- Add meta key
+            self.meta["provenance"].update({
+                "acoustic_files": acoustic_files,
+            })   
             # TODO: Add verbosity for printing database filepaths/connections 
             if verbose:
                 # ---- Create file list
                 file_list = "\n".join(acoustic_files)
                 print(
-                    f"The following acoustic files have been processed:\n"
+                    f"The following acoustic files are being processed:\n"
                     f"{file_list}."
                 )
         else:
@@ -118,17 +170,22 @@ class LiveSurvey:
             # ---- Create file list
             file_list = "\n".join(biology_files)
             print(  
-                f"The following biological files have been processed:\n"
+                f"The following biological files are being processed:\n"
                 f"{file_list}."
             )
         
-        # Read in the biology data files
-        initial_biology_output = eldl.read_biology_files(biology_files, self.config)
+            # Read in the biology data files
+            initial_biology_output = eldl.read_biology_files(biology_files, self.config)
 
-        # Preprocess the biology dataset
-        self.input["biology"], self.input["biology_processed"] = (
-            preprocess_biology_data(initial_biology_output, self.input["spatial"], self.config)
-        )
+            # Preprocess the biology dataset
+            self.input["biology"], self.input["biology_processed"] = (
+                preprocess_biology_data(initial_biology_output, self.input["spatial"], self.config)
+            )
+
+            # Add meta key
+            self.meta["provenance"].update({
+                "biology_files": biology_files,
+            })  
 
     def process_biology_data(self):
 
@@ -137,59 +194,73 @@ class LiveSurvey:
         # ----- Unprocessed
         biology_unprocessed = self.input["biology"]
 
-        # Compute `sigma_bs` by sending it to the appropriate database table
-        compute_sigma_bs(biology_unprocessed["specimen_df"], 
-                         biology_unprocessed["length_df"], 
-                         self.config)
+        # Check if data are present
+        unprocess_data_dfs = (
+            [True if isinstance(df, pd.DataFrame) and not df.empty else False 
+             for _, df in biology_unprocessed.items()]
+        )
+        # ---- Proceed in processing the unprocessed data
+        if all(unprocess_data_dfs):
 
-        # Bin the length measurements of the biological data
-        bin_length_data(biology_unprocessed, self.config["length_distribution"])
+            # Compute `sigma_bs` by sending it to the appropriate database table
+            compute_sigma_bs(biology_unprocessed["specimen_df"], 
+                            biology_unprocessed["length_df"], 
+                            self.config)
 
-        # Compute the length-weight regression and add it to the SQL table
-        length_weight_df = length_weight_regression(biology_unprocessed["specimen_df"], 
-                                                    self.config["length_distribution"],
+            # Bin the length measurements of the biological data
+            bin_length_data(biology_unprocessed, self.config["length_distribution"])
+
+            # Compute the length-weight regression and add it to the SQL table
+            length_weight_df = length_weight_regression(biology_unprocessed["specimen_df"], 
+                                                        self.config["length_distribution"],
+                                                        self.config)
+            
+            # Compute length-binned counts for the aggregated and individual-based measurements
+            specimen_binned, specimen_binned_filtered, length_binned = (
+                length_bin_counts(biology_unprocessed["length_df"], 
+                                biology_unprocessed["specimen_df"], 
+                                self.config)
+            )
+
+            # Compute the number proportions
+            specimen_number_proportion, length_number_proportion, sex_number_proportions = (
+                number_proportions(specimen_binned, specimen_binned_filtered, 
+                                length_binned, self.config)
+            )
+
+            # Compute the length-binned weights for the aggregated and individual-based measurements
+            length_weight_binned, specimen_weight_binned = (
+                length_bin_weights(biology_unprocessed["length_df"],
+                                biology_unprocessed["specimen_df"],
+                                length_weight_df,self.config)
+            )
+
+            # Calculate the average weights among male, female, and all fish
+            self.input["weight_stratum_df"] = (
+                compute_average_weights(specimen_number_proportion,
+                                        length_number_proportion, 
+                                        sex_number_proportions,
+                                        length_weight_df,
+                                        self.config["length_distribution"],
+                                        self.config)
+            )
+            
+            # Compute the weight proportions
+            self.input["biology"].update({
+                    "proportions": weight_proportions(biology_unprocessed["catch_df"], 
+                                                    specimen_weight_binned,
+                                                    length_weight_binned,
+                                                    length_number_proportion,
+                                                    length_weight_df,
                                                     self.config)
-        
-        # Compute length-binned counts for the aggregated and individual-based measurements
-        specimen_binned, specimen_binned_filtered, length_binned = (
-            length_bin_counts(biology_unprocessed["length_df"], 
-                              biology_unprocessed["specimen_df"], 
-                              self.config)
-        )
+            })
 
-        # Compute the number proportions
-        specimen_number_proportion, length_number_proportion, sex_number_proportions = (
-            number_proportions(specimen_binned, specimen_binned_filtered, 
-                               length_binned, self.config)
-        )
-
-        # Compute the length-binned weights for the aggregated and individual-based measurements
-        length_weight_binned, specimen_weight_binned = (
-            length_bin_weights(biology_unprocessed["length_df"],
-                               biology_unprocessed["specimen_df"],
-                               length_weight_df,self.config)
-        )
-
-        # Calculate the average weights among male, female, and all fish
-        self.input["weight_stratumn_df"] = (
-            compute_average_weights(specimen_number_proportion,
-                                    length_number_proportion, 
-                                    sex_number_proportions,
-                                    length_weight_df,
-                                    self.config["length_distribution"],
-                                    self.config)
-        )
-        
-        # Compute the weight proportions
-        self.input["biology"].update({
-                "proportions": weight_proportions(biology_unprocessed["catch_df"], 
-                                                  specimen_weight_binned,
-                                                  length_weight_binned,
-                                                  length_number_proportion,
-                                                  length_weight_df,
-                                                  self.config)
-        })
-        
+            # Update the database
+            query_processed_files(self.config["data_root_dir"], 
+                                self.config["input_directories"]["biology"],
+                                self.meta["provenance"]["biology_files"],
+                                processed=True)
+            
 
     def process_acoustic_data(self, echometrics: bool = True, verbose: bool = True):
 
@@ -211,11 +282,27 @@ class LiveSurvey:
             nasc_data_df = compute_nasc(acoustic_data_df, self.config, echometrics)
             
             # Format the dataframe and insert into the LiveSurvey object
-            self.input["acoustics"]["nasc_df"] = format_acoustic_dataset(nasc_data_df, self.config)
+            self.input["acoustics"]["nasc_df"] = format_acoustic_dataset(nasc_data_df, 
+                                                                         self.config,
+                                                                         self.meta)
+
+            # Update the database
     
     def estimate_population(self,
-                            working_dataset: Literal["acoustic", "biology"]):
+                            working_dataset: Literal["acoustic", "biology"],
+                            verbose: bool = True):
+       
+        # method
+       if working_dataset == "acoustic":
+           eldp.acoustic_pipeline(self.input["acoustics"],
+                                  self.input["spatial"]["strata"],
+                                  self.config,
+                                  verbose=verbose)
         
         # method
-        pass 
+       if working_dataset == "biology":
+           eldp.biology_pipeline(self.input["biology"],
+                                 self.input["spatial"]["strata"],
+                                 self.config,
+                                 verbose=verbose)
         

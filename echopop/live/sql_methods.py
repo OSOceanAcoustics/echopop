@@ -205,6 +205,16 @@ def sql_update(connection: sqla.Connection, table_name: str, columns: list,
     elif not isinstance(columns, list):
         columns = [columns]
 
+    def format_value(x):
+        if isinstance(x, str):
+            return "'{}'".format(x.replace("'", "''"))
+        elif isinstance(x, pd.Timestamp):
+            return "'{}'".format(x)
+        elif x is None:
+            return 'NULL'
+        else:
+            return str(x)
+
     # Format the SET command
     # ---- Update column by applying arithmetic between table and dataframe
     if operation is not None and dataframe is not None:
@@ -222,7 +232,8 @@ def sql_update(connection: sqla.Connection, table_name: str, columns: list,
         set_list = [f"{column} = {dataframe[column].values[0]}" for column in columns]
     # ---- Join the list
     set_clause = ', '.join(set_list)
-
+    [f"{column} = {dataframe[column].values[0]}" for column in columns]
+    ", ".join(f"({','.join(map(lambda x: format_value(x), row))})"  for row in data_tuple)
     # Add the WHERE clause if a parsed condition is provided
     if condition is not None:
         # ---- Parse the conditional string
@@ -313,6 +324,89 @@ def sql_select(connection: sqla.Connection, table_name: str,
         # ---- Tuple
         else:
             return converted_data
+
+def validate_tables(db_file: str, table_name: Union[str, List[str]], 
+                    reference_dataframe: pd.DataFrame):
+
+    # Helper function
+    def _validate_table(table):
+        # ---- Check table existence
+        if not SQL(db_file, "validate", table_name=table):
+            raise KeyError(
+            f"SQL database table `{table}` in `{db_file}` failed to initialize!"
+        )
+        # ---- Get DataFrame dtypes (avoid 'object' and similar ambiguous typing)
+        expected_dtypes = (
+            {col: type(reference_dataframe[col][0]).__name__ for col in reference_dataframe.columns}
+        )
+        # ---- Inspect the table 
+        inspected_table = SQL(db_file, "inspect", table_name=table)
+        # ---- Get the column dtypes (with back-formatting via configuration mapping)
+        table_dtypes = {
+            col: SQL_DTYPES[type(inspected_table["filepath"]["type"]).__name__].__name__ 
+            for col in inspected_table.keys()
+        }
+        # ---- Compare keys
+        key_difference = list(set(expected_dtypes).difference(set(table_dtypes)))
+        # -------- Raise error, if needed
+        if key_difference:
+            raise KeyError(
+                f"The following columns are missing from table `{table}` in `{db_file}`: "
+                f"{', '.join(key_difference)}."
+            )
+        # ---- Compare dtypes
+        dtypes_comparison = (
+            {key: table_dtypes[key] for key in table_dtypes 
+             if table_dtypes[key] != expected_dtypes.get(key)}
+        )
+        # ---- Get key names
+        dtypes_different_names = list(set(dtypes_comparison))
+        # ---- Raise error, if needed
+        if dtypes_different_names:
+            raise TypeError(
+                f"The following columns from table `{table}` in `{db_file}` had unexpected "
+                f"datatypes: {', '.join(dtypes_different_names)}."
+            )
+        
+    # Iterate through tables to validate
+    if isinstance(table_name, list):
+        _ = [_validate_table(table) for table in table_name]
+    else:
+        _validate_table(table_name)
+
+def initialize_database(root_directory: Path, file_settings: dict):
+
+    # Get the database name 
+    db_name = file_settings["database_name"]
+
+    # Create filepath to the SQL database
+    # ---- Create Path to SQL database file
+    db_directory = root_directory / "database"
+    # ---- Create the directory if it does not already exist
+    db_directory.mkdir(parents=True, exist_ok=True)
+    # ---- Complete path to the database file
+    db_file = db_directory / db_name
+
+    # Spoof an empty DataFrame for formatting purposes
+    template_df = pd.DataFrame({"filepath": ["dummy/path/string"]})
+
+    # Create two tables for 'files read' and 'files processed'
+    # ---- Read files
+    SQL(db_file, "create", table_name="files_read", dataframe=template_df, 
+        primary_keys=["filepath"])
+    # ---- Processed files
+    SQL(db_file, "create", table_name="files_processed", dataframe=template_df, 
+        primary_keys=["filepath"])    
+    
+    # Query the database ensure it exists
+    # ---- File existence
+    if not Path(db_file).exists():
+        raise FileExistsError(
+            f"SQL database file `{db_file}` failed to initialize!"
+        )
+    
+    # Validate the created tables
+    validate_tables(db_file, ["files_read", "files_processed"], template_df)
 
 SQL_COMMANDS = {
     "create": dict(function=sql_create, args=["table_name", "dataframe", "primary_keys"]),
@@ -492,16 +586,15 @@ def format_sql_columns(kwargs: dict):
     return kwargs
 
 # TODO: Documentation
-def query_processed_files(root_directory: Path, file_settings: dict, files: List[Path]) -> dict:
+def query_processed_files(root_directory: Path, file_settings: dict, files: List[Path],
+                          processed=False) -> dict:
 
     # Get the database name 
     db_name = file_settings["database_name"]
 
     # Create filepath to the SQL database
     # ---- Create Path to SQL database file
-    db_directory = root_directory / "database"
-    # ---- Create the directory if it does not already exist
-    db_directory.mkdir(parents=True, exist_ok=True)
+    db_directory = Path(root_directory) / "database"
     # ---- Complete path to the database file
     db_file = db_directory / db_name
 
@@ -509,28 +602,19 @@ def query_processed_files(root_directory: Path, file_settings: dict, files: List
     files_str = [str(file) for file in files]
     # ---- Create DataFrame
     current_files = pd.DataFrame(files_str, columns=["filepath"])
+   
+    # Check against `files_processed`
+    previous_files = SQL(db_file, "select", table_name="files_processed", output_type=str)
 
-    # Check for the table `files_read`
-    files_read_tbl = SQL(db_file, "validate", table_name="files_read")
-
-    # Validate whether the table exists; if not, create the table and then insert
-    if not files_read_tbl:
-        # ---- Create table
-        SQL(db_file, "create", table_name="files_read", dataframe=current_files, 
-            primary_keys = ["filepath"])
-        # ---- Populate table
-        SQL(db_file, "insert", table_name="files_read", dataframe=current_files)
-        # ---- Break early
-        return files_str, db_file
-    
-    # Query already existing files
-    previous_files = SQL(db_file, "select", table_name="files_read", output_type=str)
-    # ---- Insert file list
-    SQL(db_file, "insert", table_name="files_read", dataframe=current_files, id_columns=["filepath"])
-
-    # Filter out previously processed files
-    # ---- Apply filter by comparing sets and return the output
-    return list(set(files_str) - set(previous_files)), db_file
+    # Insert the files into the `files_read` table
+    if processed: 
+        SQL(db_file, "insert", table_name="files_processed", dataframe=current_files, 
+            id_columns=["filepath"])
+    else:
+        SQL(db_file, "insert", table_name="files_read", dataframe=current_files, 
+            id_columns=["filepath"])
+        # ---- Apply filter by comparing sets and return the output
+        return list(set(files_str) - set(previous_files)), db_file
 
 # TODO: Documentation
 def sql_data_exchange(database_file: Path, **kwargs):
@@ -581,6 +665,63 @@ def reset_db_files(file_configuration: dict, table_exception: Optional[Union[str
             raise ValueError(
                 f"Attempted reset of [{str(db_file)}] failed."
             )
+
+def sql_update_strata_summary(source_db: str,
+                              target_db: str,
+                              source_table: str,
+                              target_table: str,
+                              data_columns: List[tuple[str, str]],
+                              strata: list):
+    
+    # Format strata list as a string
+    strata_str = ', '.join(map(str, strata))
+
+    # Function reference map
+    FUNCTION_MAP = {
+        "sum": {"function": "SUM", 
+                "suffix": "sum"},
+        "mean": {"function": "AVG",
+                "suffix": "mean"}
+    }
+
+    # Prepare the SQL script
+    sql_script = f"""
+    -- Attach the source and target databases
+    ATTACH DATABASE '{source_db}' AS source;
+    ATTACH DATABASE '{target_db}' AS target;
+
+    """
+
+    # Dynamically format the cross-database command
+    for data_column, method in data_columns:
+        # ----- Format the function-method-suffic keys
+        suffix = FUNCTION_MAP[method]["suffix"]
+        fun = FUNCTION_MAP[method]["function"]
+        # ---- Create the combined SQL command using f-strings
+        sql_script += f"""
+        -- Calculate averages and directly update the target table
+        UPDATE target.{target_table}
+        SET {data_column}_{suffix} = (
+            SELECT {fun}({data_column})
+            FROM source.{source_table}
+            WHERE stratum = target.{target_table}.stratum
+        )
+        WHERE stratum IN ({strata_str});
+        """
+    # ----- Append DETACH commands only once at the end   
+    sql_script += """
+    -- Detach the databases
+    DETACH DATABASE source;
+    DETACH DATABASE target;
+    """
+
+    # Create the engine
+    engine = create_engine(f"sqlite:///{target_db}")
+
+    # Create the SQL database connection and send the script 
+    with engine.connect() as connection:
+        dbapi_conn = connection.connection
+        _ = dbapi_conn.executescript(sql_script)
 
 
 # TODO: Documentation

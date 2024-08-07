@@ -53,7 +53,7 @@ def apply_inpfc_definitions(dataset: pd.DataFrame, inpfc_df: pd.DataFrame):
                         np.unique(np.hstack([inpfc_df.loc[:, "lower"], 
                                              inpfc_df.loc[:, "upper"]])),
                         labels = inpfc_df.loc[:, "stratum"]
-        )
+        ).astype(int)
         
         return strata
 

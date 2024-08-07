@@ -45,4 +45,5 @@ input_directories:
   coastline: 
     directory: coastline/
     coastline_name: ne_110m_land
+
 ...

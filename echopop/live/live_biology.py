@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from .sql_methods import SQL, sql_data_exchange, get_table_key_names, sql_group_update
+from .sql_methods import SQL, sql_data_exchange, get_table_key_names, sql_group_update, query_processed_files, sql_update_strata_summary
 from .live_spatial_methods import apply_spatial_definitions
 from .live_acoustics import average_sigma_bs
 from ..acoustics import ts_length_regression, to_dB, to_linear
@@ -163,15 +163,22 @@ def compute_sigma_bs(specimen_data: pd.DataFrame, length_data: pd.DataFrame,
     sigma_bs_df = (
         ts_length_df
         .groupby(list(set(contrast_columns) - set(["length"])), observed=False)
+        [["TS_L_slope", "TS_L_intercept", "length", "length_count"]]
         .apply(lambda x: average_sigma_bs(x, weights="length_count"))
-        .reset_index(name="sigma_bs")
+        .to_frame("sigma_bs")
     )
 
     # For SQL database storage purposes, the sum and count are stored instead
     # ---- Count sum
-    sigma_bs_df["sigma_bs_count"] = ts_length_df["length_count"].sum()
+    sigma_bs_df["sigma_bs_count"] = (
+        ts_length_df.reset_index()
+        .groupby(list(set(contrast_columns) - set(["length"])), observed=False)["length_count"]
+        .sum()
+    )
     # ---- Value sum
     sigma_bs_df["sigma_bs_sum"] = sigma_bs_df["sigma_bs"] * sigma_bs_df["sigma_bs_count"]
+    # ---- Reset index
+    sigma_bs_df = sigma_bs_df.reset_index()
     
     # Get the database file name
     acoustic_db = file_configuration["database"]["acoustics"]
@@ -185,14 +192,22 @@ def compute_sigma_bs(specimen_data: pd.DataFrame, length_data: pd.DataFrame,
         # ---- Populate table
         SQL(acoustic_db, "insert", table_name="sigma_bs_mean_df", dataframe=sigma_bs_df)
     else:
-        # ---- Create a filter condition command
-        condition_str = " & ".join([f"{key} in {np.unique(sigma_bs_df[key])}" for key in key_list])
-        # ---- Update the table key 
-        SQL(acoustic_db, "update", table_name="sigma_bs_mean_df", dataframe=sigma_bs_df, 
-            operation="+", columns=["sigma_bs_count", "sigma_bs_sum"], condition=condition_str)
-        # ---- Update the actual `sigma_bs` value in the table
-        SQL(acoustic_db, "update", table_name="sigma_bs_mean_df", columns=["sigma_bs"],
-            operation="sigma_bs_sum / sigma_bs_count", condition=condition_str)
+        # ---- Check the present keys
+        current_keys_dict = SQL(acoustic_db, "inspect", table_name="sigma_bs_mean_df", 
+                                columns=key_list)
+        # ---- Insert if missing
+        if not all([all(sigma_bs_df[key].isin(current_keys_dict[key])) for key in key_list]):
+            SQL(acoustic_db, "insert", table_name="sigma_bs_mean_df", dataframe=sigma_bs_df)
+        # ---- Update if not missing
+        else:
+            # ---- Create a filter condition command
+            condition_str = " & ".join([f"{key} in {np.unique(sigma_bs_df[key])}" for key in key_list])
+            # ---- Update the table key 
+            SQL(acoustic_db, "update", table_name="sigma_bs_mean_df", dataframe=sigma_bs_df, 
+                operation="+", columns=["sigma_bs_count", "sigma_bs_sum"], condition=condition_str)
+            # ---- Update the actual `sigma_bs` value in the table
+            SQL(acoustic_db, "update", table_name="sigma_bs_mean_df", columns=["sigma_bs"],
+                operation="sigma_bs_sum / sigma_bs_count", condition=condition_str)
         
 def length_weight_regression(specimen_data: pd.DataFrame, distribution_df: pd.DataFrame, 
                              file_configuration: dict):
@@ -754,11 +769,11 @@ def compute_average_weights(specimen_number_proportion: pd.DataFrame,
     )
 
     specimen_length_complete = complete_distrib_df.copy()
-    specimen_length_complete["number_proportion"] = specimen_length_distribution.set_index(contrast_columns + ["length_bin"])
+    specimen_length_complete["number_proportion"] = specimen_length_distribution.set_index(contrast_columns + ["length_bin"]).sort_index()
     specimen_length_complete.loc[:, "number_proportion"] = specimen_length_complete["number_proportion"].fillna(0.0)
 
     length_length_complete = complete_distrib_df.copy()
-    length_length_complete["number_proportion"] = length_length_distribution.set_index(contrast_columns + ["length_bin"])
+    length_length_complete["number_proportion"] = length_length_distribution.set_index(contrast_columns + ["length_bin"]).sort_index()
     length_length_complete.loc[:, "number_proportion"] = length_length_complete["number_proportion"].fillna(0.0)
 
     # ---- Concatenate the two datasets
@@ -806,6 +821,53 @@ def compute_average_weights(specimen_number_proportion: pd.DataFrame,
         np.concatenate([weight_all, weight_male, weight_female])
     )
 
+    # Get database file
+    biology_db = file_configuration["database"]["biology"]
+
+    # Insert/update the table
+    # ---- Create id/primary key
+    key_values = ["-".join(fitted_weight_df.reset_index()
+                           .loc[idx, contrast_columns]
+                           .values.astype(str)) 
+                for idx in fitted_weight_df.reset_index().index]
+    # ---- Add to the output
+    fitted_weight_df["id"] = key_values
+    if not SQL(biology_db, "validate", table_name="weight_stratum_df"):
+        # ---- Create
+        SQL(biology_db, "create", table_name="weight_stratum_df", 
+            dataframe=fitted_weight_df, primary_keys=["id"])       
+        # ---- Populate table
+        SQL(biology_db, "insert", table_name="weight_stratum_df", 
+            dataframe=fitted_weight_df, id_columns=["id"])
+    else:
+        # ---- Get previous values in the table
+        table_df = SQL(biology_db, "select", table_name="weight_stratum_df")
+        # ---- Check the table keys
+        table_keys = np.unique(table_df[contrast_columns].apply(tuple, axis=1)).tolist()
+        # ---- Check the current keys
+        fitted_weight_df["current_keys"] = fitted_weight_df[contrast_columns].apply(tuple, axis=1)
+        # ---- Get unique values
+        current_keys = np.unique(fitted_weight_df["current_keys"]).tolist()
+        # ---- Get INSERTION keys
+        insertion_keys = list(set(current_keys).difference(set(table_keys)))
+        # ---- Get UPDATE keys
+        update_keys = list(set(current_keys).intersection(set(table_keys)))
+        # ---- INSERT values
+        if insertion_keys:
+            # ---- Create DataFrame
+            insertion_df = fitted_weight_df[fitted_weight_df["current_keys"].isin(insertion_keys)]
+            # ---- INSERT
+            SQL(biology_db, "insert", table_name="weight_stratum_df", 
+                dataframe=insertion_df.drop(columns="current_keys"))
+        # ---- UPDATE values
+        if update_keys:
+            # ---- Create DataFrame
+            update_df = fitted_weight_df[fitted_weight_df["current_keys"].isin(update_keys)]
+            # ---- UPDATE
+            sql_group_update(biology_db, dataframe=update_df, 
+                             table_name="weight_stratum_df", columns=["average_weight"],
+                             unique_columns=contrast_columns,
+                             id_columns=["id"])
     # Return output
     return fitted_weight_df
 
@@ -1025,3 +1087,42 @@ def weight_proportions(catch_data: pd.DataFrame,
         "aged_unaged_weight_proportions_df": aged_unaged_proportions,
     }
 
+# TODO: NEED TO UPDATE TO EITHER INSERT IF NOT PRESENT OR UPDATE OTHERWISE ! ! !
+# ! SEE ABOVE
+def summarize_strata(nasc_biology_data: pd.DataFrame, spatial_data: pd.DataFrame,
+                     file_configuration: dict):
+
+    # Get biology database
+    acoustic_db = file_configuration["database"]["acoustics"]
+
+    # Get biology database
+    biology_db = file_configuration["database"]["biology"]
+
+    # Validate table
+    if not SQL(biology_db, "validate", table_name="strata_summary_df"):
+
+        # Create copy
+        strata_df = spatial_data.copy()
+
+        # Define new columns 
+        strata_df[["length_mean", "weight_mean", "TS_mean", "number_density_mean", 
+                "biomass_density_mean", "abundance_sum", "biomass_sum"]] = np.nan
+        # ---- Drop 'latitude_interval'
+        strata_df.drop(columns=["latitude_interval"], inplace=True)
+
+        # ---- Create
+        SQL(biology_db, "create", table_name="strata_summary_df", 
+            dataframe=strata_df, primary_keys=["stratum"])       
+        # ---- Populate table
+        SQL(biology_db, "insert", table_name="strata_summary_df", 
+            dataframe=strata_df, id_columns=["stratum"])
+        
+    # Get unique strata values
+    strata_values = np.unique(nasc_biology_data["stratum"]).tolist()
+    
+    # Update the table
+    sql_update_strata_summary(source_db=acoustic_db, target_db=biology_db, 
+                              source_table="survey_data_df", target_table="strata_summary_df", 
+                              data_columns=[("number_density", "mean"), 
+                                            ("biomass_density", "mean")], 
+                              strata=strata_values)

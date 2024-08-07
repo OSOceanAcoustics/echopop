@@ -12,14 +12,16 @@ import geopandas as gpd
 import os
 import re
 import contextlib
+from echopop.acoustics import ts_length_regression, to_linear, to_dB
 from sqlalchemy import create_engine, text, Engine, inspect
 from echopop.live.live_core import LIVE_DATA_STRUCTURE, LIVE_FILE_FORMAT_MAP, LIVE_INPUT_FILE_CONFIG_MAP, SPATIAL_CONFIG_MAP
 from echopop.live.live_data_loading import validate_data_directory
-from echopop.live.sql_methods import SQL, SQL_COMMANDS, query_processed_files, format_sql_columns, sql_group_update, sql_data_exchange
+from echopop.live.sql_methods import SQL, SQL_COMMANDS, query_processed_files, format_sql_columns, sql_group_update, sql_data_exchange, initialize_database, sql_update_strata_summary
 from echopop.live import live_data_processing as eldp
 from echopop.live import live_data_loading as eldl
+from echopop.live.live_data_processing import query_dataset, get_unique_identifiers
 from echopop.live.live_survey import LiveSurvey
-from echopop.live.live_acoustics import preprocess_acoustic_data, compute_nasc, format_acoustic_dataset
+from echopop.live.live_acoustics import integrate_nasc
 from echopop.live.live_biology import preprocess_biology_data
 from echopop.survey import Survey
 
@@ -31,6 +33,28 @@ analysis_dict = survey_2019.analysis["transect"]
 proportions_dict=analysis_dict["biology"]["proportions"]["number"]
 length_weight_dict = analysis_dict["biology"]["weight"]
 stratum_proportions_sexed["proportion_aged"] + stratum_proportions_sexed["proportion_unaged"]
+
+files = data_files
+
+
+    
+
+    
+    # Map the table names and validate table creation
+    # ---- Get table names
+    tables = SQL(db_file, "map")
+    # ---- `files_read`
+    if "files_read" not in tables:
+        raise KeyError(
+            f"SQL database table `files_read` in `{db_file}` failed to initialize!"
+        )
+    # ---- `files_processed`
+    if "files_processed" not in tables:
+        raise KeyError(
+            f"SQL database table `files_processed` in `{db_file}` failed to initialize!"
+        )
+    
+
 ####################################################################################################  
 # TEST: YAML FILE CONFIGURATION
 # ---- Define filepaths
@@ -64,50 +88,105 @@ contrast_columns = []
 # ---- Define unique columns
 unique_columns = spatial_column + contrast_columns
 
-if working_dataset == "acoustics" and self.input["nasc_df"] is not None:
-    # ---- Get dataset
-    acoustic_df = get_nasc_sql_data(acoustic_db, 
-                                    self.input["acoustics"], 
-                                    unique_columns=unique_columns)
+acoustic_db = file_configuration["database"][working_dataset]
+self = realtime_survey
+acoustic_dict = self.input["acoustics"]
+verbose = True
+contrast_columns = []
+db_file = acoustic_db
+table_name="survey_data_df"
+data_columns = data_columns
+unique_columns=unique_columns
+constraint="nasc > 0.0"
+data_dict = self.input["acoustics"]
+data_dict["nasc_df"]["stratum"] = 1
+data_dict["prc_nasc_df"]["stratum"] = 2
+table_name = "sigma_bs_mean_df"
+data_columns=["sigma_bs", "sigma_bs_count"]
+biology_db
+strata_df = self.input["spatial"]["strata"]
 
+def biology_pipeline(biology_dict: dict, 
+                     strata_df: pd.DataFrame, 
+                     file_configuration: dict, 
+                     verbose: bool,
+                     contrast_columns: List[str] = []):
 
-# Get corresponding `sigma_bs`
-# sigma_bs_df = SQL(acoustic_db,"select",table_name="sigma_bs_mean_df",
-#                   condition=f"stratum in {np.unique(self.input["nasc_df"]["stratum"])}")
-sigma_bs_df = SQL(acoustic_db, "select", table_name="sigma_bs_mean_df")
-sigma_bs_df["stratum"] = 2
-# ---- Compute the weighted average
-sigma_bs_mean_df = (
-    sigma_bs_df.groupby(spatial_column + ["species_id"])[["sigma_bs", "sigma_bs_count"]]
-    .apply(lambda df: np.average(df.sigma_bs, weights=df.sigma_bs_count))
-    .to_frame("sigma_bs_mean")
-    .reset_index()
-)
+    # Get spatial column
+    spatial_column = file_configuration["spatial_column"]
+    unique_columns = spatial_column + contrast_columns
 
-#
-nasc_biology = acoustic_df.merge(sigma_bs_mean_df, on=spatial_column)
+    # Get database file
+    acoustic_db = file_configuration["database"]["acoustics"]
 
-# Get the spatially averaged weights
-weight_spatial_averages = self.input["weight_stratumn_df"]
-# ---- Sub-select 'all'
-general_weight_averages = weight_spatial_averages[weight_spatial_averages["sex"] == "all"]
-general_weight_averages["stratum"] = 2
+    # Get biology database file
+    biology_db = file_configuration["database"]["biology"]
 
-#
-nasc_biology["number_density"] = (
-    nasc_biology["nasc"]
-    / (4.0 * np.pi * nasc_biology["sigma_bs_mean"])
-)
+    # Check for data completion
+    # ---- List of boolean values
+    full_biology_data = (
+        [True for _, df in biology_dict.items() if isinstance(df, pd.DataFrame) and df is not None]
+    )
+    # ---- Validation
+    if not all(full_biology_data):
+        # ---- Print, if verbose
+        if verbose:
+            print(
+                f"No new processed biology data available for processing."
+            )
+    else:
+        # Get related biology data
+        acoustic_df = get_nasc_sql_data(acoustic_db, 
+                                        biology_dict, 
+                                        unique_columns=unique_columns)        
 
-#
-nasc_biology = nasc_biology.merge(general_weight_averages)
+        # Get the corresopding `sigma_bs` data (and also compute the sample-number weighted average)
+        sigma_bs_df = get_sigma_bs_sql_data(acoustic_db, 
+                                            biology_dict,
+                                            unique_columns=unique_columns)
 
-nasc_biology["biomass_density"] = nasc_biology["number_density"] * nasc_biology["average_weight"]
+    # Calculate population estimates if valid data are available
+    if all([True if df is not None else False for df in [acoustic_df, sigma_bs_df]]):    
+        # ---- Merge the NASC and sigma_bs datasets
+        nasc_biology = acoustic_df.merge(sigma_bs_df, on=unique_columns)
+        # ---- Compute the number densities (animals nmi^-2)
+        nasc_biology["number_density"] = (
+            nasc_biology["nasc"]
+            / (4.0 * np.pi * nasc_biology["sigma_bs_mean"])
+        )
 
-sql_group_update(acoustic_db, dataframe=nasc_biology, 
-                 table_name="survey_data_df", columns=["number_density", "biomass_density"], 
-                 unique_columns=["stratum", "longitude", "latitude", "ping_time"])
+    # Get the corresponding average strata weights (computed for all fish)
+    weight_spatial_averages = get_average_strata_weights(biology_db,
+                                                         biology_dict,
+                                                         unique_columns=unique_columns)
+    
+    if weight_spatial_averages is not None:
+        # Merge average weights with number density estimates
+        nasc_biology = nasc_biology.merge(weight_spatial_averages, on=unique_columns)
 
+        # Compute biomass densities
+        nasc_biology["biomass_density"] = (
+            nasc_biology["number_density"] * nasc_biology["average_weight"]
+        )
+
+    # Update the survey population estimate DataFrame with the newly computed densities
+    if not nasc_biology.empty:        
+        sql_group_update(acoustic_db, dataframe=nasc_biology, table_name="survey_data_df", 
+                        columns=["number_density", "biomass_density"], 
+                        unique_columns=["stratum", "longitude", "latitude", "ping_time"])
+    
+    # Summarize strata
+    summarize_strata(nasc_biology, strata_df, file_configuration)
+
+db_file=acoustic_db
+dataframe=nasc_biology
+table_name="survey_data_df"
+columns=["number_density", "biomass_density"]
+unique_columns=["stratum", "longitude", "latitude", "ping_time"]
+nasc_biology["number_density"].sum() / 2
+nasc_biology["number_density"]
+SQL(acoustic_db, "select", table_name="survey_data_df")
+SQL(biology_db, "select", table_name="strata_summary_df")
 strata_df = self.input["spatial"]["strata"].copy()
 strata_df[["length_mean", "weight_mean", "TS_mean", "number_density_mean", 
            "biomass_density_mean", "abundance_sum", "biomass_sum"]] = np.nan
@@ -318,7 +397,7 @@ def sql_update_strata_summary(source_db: str,
         _ = dbapi_conn.executescript(sql_script)
 
 SQL(biology_db, "select", table_name=target_table)
-SQL(acoustic_db, "select", table_name=source_table)
+SQL(acoustic_db, "select", table_name=source_table)["number_density"].mean()
 connection.close()
 dbapi_conn.close()
 

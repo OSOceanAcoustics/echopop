@@ -4,8 +4,7 @@ import pandas as pd
 
 from ..acoustics import ts_length_regression, to_linear, to_dB
 from .live_spatial_methods import apply_spatial_definitions
-from .sql_methods import sql_data_exchange, SQL
-from .live_data_processing import get_unique_identifiers, query_dataset
+from .sql_methods import sql_data_exchange, SQL, query_processed_files
 
 # TODO: Documentation
 def configure_transmit_frequency(frequency_values: pd.Series,
@@ -49,8 +48,9 @@ def preprocess_acoustic_data(prc_nasc_df: pd.DataFrame,
     )
     
     # Apply spatial settings
-    prc_nasc_df_filtered.loc[:, "stratum"] = (
-        apply_spatial_definitions(prc_nasc_df_filtered["latitude"], spatial_dict)
+    prc_nasc_df_filtered = (
+        prc_nasc_df_filtered
+        .assign(stratum=apply_spatial_definitions(prc_nasc_df_filtered["latitude"], spatial_dict))
     )
 
     # Remaining adjustments to the acoustic data prior to being passed to the `LiveSurvey` object
@@ -192,13 +192,25 @@ def compute_nasc(acoustic_data_df: pd.DataFrame, file_configuration: dict,
     spatial_column = file_configuration["spatial_column"]
     
     # Integrate NASC (and compute the echometrics, if necessary)
-    nasc_data_df = (
-        acoustic_data_df
-        .groupby(["longitude", "latitude", "ping_time", "source"] + spatial_column, observed=False)
-        .apply(integrate_nasc, echometrics)
-        .unstack().reset_index()
-        .sort_values("ping_time")
-    )
+    # ---- Get number of unique sources
+    if len(np.unique(acoustic_data_df["source"])) == 1:
+        nasc_data_df = (
+            acoustic_data_df
+            .groupby(["longitude", "latitude", "ping_time", "source"] + spatial_column, 
+                     observed=False)
+            .apply(integrate_nasc, echometrics)
+            .reset_index()
+            .sort_values("ping_time")
+        )
+    else:
+        nasc_data_df = (
+            acoustic_data_df
+            .groupby(["longitude", "latitude", "ping_time", "source"] + spatial_column, 
+                     observed=False)
+            .apply(integrate_nasc, echometrics, include_groups=False)
+            .unstack().reset_index()
+            .sort_values("ping_time")
+        )
     # ---- Amend the dtypes if echometrics were computed
     if echometrics:
         # ---- Set dtypes
@@ -219,7 +231,7 @@ def compute_nasc(acoustic_data_df: pd.DataFrame, file_configuration: dict,
     # Return the output
     return nasc_data_df
 
-def format_acoustic_dataset(nasc_data_df: pd.DataFrame, file_configuration: dict):
+def format_acoustic_dataset(nasc_data_df: pd.DataFrame, file_configuration: dict, meta_dict: dict):
 
     # Get acoustic database filename
     acoustic_db = file_configuration["database"]["acoustics"]
@@ -236,6 +248,12 @@ def format_acoustic_dataset(nasc_data_df: pd.DataFrame, file_configuration: dict
     key_values = [f"{str(index)}-{df.loc[index, 'source']}" for index in df.index]    
     # ---- Add an autoincrementing tag that will serve as a primary key and unique constraint
     df.loc[:, "id"] = key_values
+
+    # Update the successfully processed files
+    query_processed_files(file_configuration["data_root_dir"], 
+                          file_configuration["input_directories"]["acoustics"],
+                          meta_dict["provenance"]["acoustic_files"],
+                          processed=True)
     
     # Insert the new data into the database & pull in the combined dataset
     # TODO: Replace with single-direction INSERT statement instead of INSERT/SELECT
@@ -244,37 +262,3 @@ def format_acoustic_dataset(nasc_data_df: pd.DataFrame, file_configuration: dict
            
     # Return the formatted dataframe
     return df
-                                
-def get_nasc_sql_data(db_file: str,
-                      data_dict: dict, 
-                      unique_columns: List[str]):
-    # ---- Add SELECTION columns
-    data_columns = (
-        unique_columns + ["x", "y", "longitude", "latitude", "ping_time", "nasc", "number_density", 
-                          "biomass_density"]
-    )
-    # ----- Get the SQL dataset
-    nasc_sql_data = query_dataset(db_file, 
-                                  data_dict,
-                                  table_name="survey_data_df",
-                                  data_columns = data_columns,
-                                  unique_columns=unique_columns,
-                                  constraint="nasc > 0.0")
-    # ---- Use SQL table data if present
-    if nasc_sql_data is not None and not nasc_sql_data.empty:
-        return nasc_sql_data
-    elif "nasc_df" in data_dict.keys():
-        return data_dict["nasc_df"]
-
-def get_sigma_bs_sql_data(db_file: str,
-                          data_dict: dict,
-                          unique_columns: list):
-
-    # Get corresponding `sigma_bs` DataFrame
-    sigma_bs_df = query_dataset(db_file, 
-                                  data_dict,
-                                  table_name="sigma_bs_mean_df",
-                                  data_columns=["sigma_bs", "sigma_bs_count"],
-                                  unique_columns=unique_columns)
-
-    sigma_bs_df = SQL(db_file, "select", table_name="sigma_bs_mean_df")
