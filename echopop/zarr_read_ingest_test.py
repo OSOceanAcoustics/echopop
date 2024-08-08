@@ -29,7 +29,7 @@ survey_2019 = Survey("C:/Users/Brandyn/Documents/GitHub/echopop/config_files/ini
 survey_2019.transect_analysis()
 survey_2019.analysis["transect"]["biology"]["weight"]["weight_stratum_df"]
 analysis_dict = survey_2019.analysis["transect"]
-
+SQL(acoustic_db, "select", table_name="sigma_bs_mean_df")
 proportions_dict=analysis_dict["biology"]["proportions"]["number"]
 length_weight_dict = analysis_dict["biology"]["weight"]
 stratum_proportions_sexed["proportion_aged"] + stratum_proportions_sexed["proportion_unaged"]

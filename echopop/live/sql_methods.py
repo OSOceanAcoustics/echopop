@@ -232,8 +232,7 @@ def sql_update(connection: sqla.Connection, table_name: str, columns: list,
         set_list = [f"{column} = {dataframe[column].values[0]}" for column in columns]
     # ---- Join the list
     set_clause = ', '.join(set_list)
-    [f"{column} = {dataframe[column].values[0]}" for column in columns]
-    ", ".join(f"({','.join(map(lambda x: format_value(x), row))})"  for row in data_tuple)
+
     # Add the WHERE clause if a parsed condition is provided
     if condition is not None:
         # ---- Parse the conditional string
@@ -442,6 +441,7 @@ def sql_group_update(db_file: str,
                      table_name: str,
                      columns: List[str],
                      unique_columns: List[str],
+                     operation: Optional[str] = None,
                      id_columns: Optional[List[str]] = None):
     
     # Check for unique values contained within the table
@@ -468,9 +468,7 @@ def sql_group_update(db_file: str,
     # Insert into the table if not otherwise present
     if not filtered_df.empty: 
         SQL(db_file, "insert", table_name=table_name, id_columns=id_columns, dataframe=filtered_df)
-
-    # Update the table
-    # ---- Format the conditional string
+       
     case_statements = []
     for col in columns:
         case_stmt = "CASE"
@@ -482,24 +480,57 @@ def sql_group_update(db_file: str,
             ])
             # Add the WHEN condition to the CASE statement
             case_stmt += f" WHEN {filter_conditions} THEN {row[col]}"
-        case_stmt += " END"
-        case_statements.append(f"{col} = {case_stmt}")
+        case_stmt += f" ELSE {col} END"
+
+        if operation is not None:
+            case_statements.append(f"{col} = {col} {operation} {case_stmt}")
+        else:
+            case_statements.append(f"{col} = {case_stmt}")
+        
+            
+    # Update the table
+    # ---- Format the conditional string
+    # case_statements = []
+    # for col in columns:
+    #     case_stmt = "CASE"
+    #     for _, row in dataframe.iterrows():
+    #         # Construct the filter condition based on unique_columns
+    #         filter_conditions = ' AND '.join([
+    #             f"{col} = '{row[col]}'" if isinstance(row[col], str) else f"{col} = {row[col]}"
+    #             for col in unique_columns
+    #         ])
+    #         # Add the WHEN condition to the CASE statement
+    #         case_stmt += f" WHEN {filter_conditions} THEN {row[col]}"
+    #     case_stmt += " END"
+    #     case_statements.append(f"{col} = {case_stmt}")
 
     # Construct the full SQL UPDATE statement
-    update_clause = ', '.join(case_statements)
+    update_clause = ", ".join(case_statements)
 
     # Format the SQL COMMAND string
+    # sql_command = f"""        
+    # UPDATE {table_name}
+    # SET {update_clause}
+    # WHERE ({' OR '.join([
+    #     ' AND '.join([
+    #         f"{col} = '{row[col]}'" if isinstance(row[col], str) else f"{col} = {row[col]}"
+    #         for col in unique_columns
+    #     ])
+    #     for _, row in dataframe.iterrows()
+    # ])});
+    # """
     sql_command = f"""        
     UPDATE {table_name}
-    SET {update_clause}
-    WHERE ({' OR '.join([
-        ' AND '.join([
-            f"{col} = '{row[col]}'" if isinstance(row[col], str) else f"{col} = {row[col]}"
-            for col in unique_columns
-        ])
-        for _, row in dataframe.iterrows()
-    ])});
+    SET {update_clause};
     """
+    # WHERE ({' OR '.join([
+    #     ' AND '.join([
+    #         f"{col} = '{row[col]}'" if isinstance(row[col], str) else f"{col} = {row[col]}"
+    #         for col in unique_columns
+    #     ])
+    #     for _, row in dataframe.iterrows()
+    # ])});
+    # """
 
     # Create engine
     engine = create_engine(f"sqlite:///{db_file}")

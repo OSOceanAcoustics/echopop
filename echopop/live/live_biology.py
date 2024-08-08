@@ -162,7 +162,7 @@ def compute_sigma_bs(specimen_data: pd.DataFrame, length_data: pd.DataFrame,
     # ---- Compute haul-specific means
     sigma_bs_df = (
         ts_length_df
-        .groupby(list(set(contrast_columns) - set(["length"])), observed=False)
+        .groupby(key_list, observed=False)
         [["TS_L_slope", "TS_L_intercept", "length", "length_count"]]
         .apply(lambda x: average_sigma_bs(x, weights="length_count"))
         .to_frame("sigma_bs")
@@ -172,42 +172,75 @@ def compute_sigma_bs(specimen_data: pd.DataFrame, length_data: pd.DataFrame,
     # ---- Count sum
     sigma_bs_df["sigma_bs_count"] = (
         ts_length_df.reset_index()
-        .groupby(list(set(contrast_columns) - set(["length"])), observed=False)["length_count"]
+        .groupby(key_list, observed=False)["length_count"]
         .sum()
     )
     # ---- Value sum
     sigma_bs_df["sigma_bs_sum"] = sigma_bs_df["sigma_bs"] * sigma_bs_df["sigma_bs_count"]
     # ---- Reset index
     sigma_bs_df = sigma_bs_df.reset_index()
-    
+    # ---- Create a tuple-key that can be used as an identifier
+    sigma_bs_df.loc[:, "id"] = sigma_bs_df[key_list].apply(tuple, axis=1).astype(str)
+
     # Get the database file name
     acoustic_db = file_configuration["database"]["acoustics"]
 
     # Check for `sigma_bs_mean_df` in the database file
     # ---- Query database
     if not SQL(acoustic_db, "validate", table_name="sigma_bs_mean_df"):
+        # ---- Create an insertion dataframe
+        insertion_df = sigma_bs_df.copy()
         # ---- Create
-        SQL(acoustic_db, "create", table_name="sigma_bs_mean_df", dataframe=sigma_bs_df, 
-            primary_keys=list(set(contrast_columns) - set(["length"])))
+        SQL(acoustic_db, "create", table_name="sigma_bs_mean_df", dataframe=insertion_df, 
+            primary_keys=["id"])
         # ---- Populate table
-        SQL(acoustic_db, "insert", table_name="sigma_bs_mean_df", dataframe=sigma_bs_df)
+        SQL(acoustic_db, "insert", table_name="sigma_bs_mean_df", dataframe=insertion_df)
     else:
-        # ---- Check the present keys
-        current_keys_dict = SQL(acoustic_db, "inspect", table_name="sigma_bs_mean_df", 
-                                columns=key_list)
-        # ---- Insert if missing
-        if not all([all(sigma_bs_df[key].isin(current_keys_dict[key])) for key in key_list]):
-            SQL(acoustic_db, "insert", table_name="sigma_bs_mean_df", dataframe=sigma_bs_df)
-        # ---- Update if not missing
-        else:
+        # ---- Get previous values in the table
+        table_df = SQL(acoustic_db, "select", table_name="sigma_bs_mean_df")
+        # ---- Check the table keys
+        table_keys = np.unique(table_df["id"]).tolist()
+        # ---- Get unique values
+        current_keys = np.unique(sigma_bs_df["id"]).tolist()
+        # ---- Get INSERTION keys
+        insertion_keys = list(set(current_keys).difference(set(table_keys)))
+        # ---- Get UPDATE keys
+        update_keys = list(set(current_keys).intersection(set(table_keys)))
+        # ---- INSERT values
+        if insertion_keys:
+            # ---- Create DataFrame
+            insertion_df = sigma_bs_df[sigma_bs_df["id"].isin(insertion_keys)]
+            # ---- INSERT
+            SQL(acoustic_db, "insert", table_name="sigma_bs_mean_df", 
+                dataframe=insertion_df)
+        # ---- UPDATE values
+        if update_keys:
+            update_df = sigma_bs_df[sigma_bs_df["id"].isin(update_keys)]
             # ---- Create a filter condition command
-            condition_str = " & ".join([f"{key} in {np.unique(sigma_bs_df[key])}" for key in key_list])
-            # ---- Update the table key 
-            SQL(acoustic_db, "update", table_name="sigma_bs_mean_df", dataframe=sigma_bs_df, 
-                operation="+", columns=["sigma_bs_count", "sigma_bs_sum"], condition=condition_str)
-            # ---- Update the actual `sigma_bs` value in the table
-            SQL(acoustic_db, "update", table_name="sigma_bs_mean_df", columns=["sigma_bs"],
-                operation="sigma_bs_sum / sigma_bs_count", condition=condition_str)
+            sql_group_update(acoustic_db, dataframe=update_df, table_name="sigma_bs_mean_df", 
+                             columns=["sigma_bs_count", "sigma_bs_sum"], operation="+",
+                             unique_columns=["id"], id_columns=["id"])
+            # condition_str = " & ".join([f"id = {id_value}" for id_value in update_keys])
+
+        #     SQL(acoustic_db, "update", table_name="sigma_bs_mean_df", dataframe=update_df, 
+        #         operation="+", columns=["sigma_bs_count", "sigma_bs_sum"], 
+        #         condition=condition_str)
+        #             # ---- Check the present keys
+        # current_keys_dict = SQL(acoustic_db, "inspect", table_name="sigma_bs_mean_df", 
+        #                         columns=key_list)
+        # # ---- Insert if missing
+        # if not all([all(sigma_bs_df[key].isin(current_keys_dict[key])) for key in key_list]):
+        #     SQL(acoustic_db, "insert", table_name="sigma_bs_mean_df", dataframe=sigma_bs_df)
+        # # ---- Update if not missing
+        # else:
+        #     # ---- Create a filter condition command
+        #     condition_str = " & ".join([f"{key} in {np.unique(sigma_bs_df[key])}" for key in key_list])
+        #     # ---- Update the table key 
+        #     SQL(acoustic_db, "update", table_name="sigma_bs_mean_df", dataframe=sigma_bs_df, 
+        #         operation="+", columns=["sigma_bs_count", "sigma_bs_sum"], condition=condition_str)
+        #     # ---- Update the actual `sigma_bs` value in the table
+        #     SQL(acoustic_db, "update", table_name="sigma_bs_mean_df", columns=["sigma_bs"],
+        #         operation="sigma_bs_sum / sigma_bs_count", condition=condition_str)
         
 def length_weight_regression(specimen_data: pd.DataFrame, distribution_df: pd.DataFrame, 
                              file_configuration: dict):
@@ -361,7 +394,7 @@ def length_bin_weights(length_data: pd.DataFrame, specimen_data: pd.DataFrame,
     #     columns=list(set(length_data.columns) - set(["length_bin"])))
     # list(set(length_data.columns) - set(["length_bin"]))
     # Get length distribution
-    # distribution_df = file_configuration["length_distribution"]
+    distribution_df = file_configuration["length_distribution"]
 
     # Generate sex-specific interpolators for fitted length-weight values for binned length counts
     # ---- Parse the male- and female-specific fitted weight values
@@ -407,7 +440,21 @@ def length_bin_weights(length_data: pd.DataFrame, specimen_data: pd.DataFrame,
     ).reset_index()
 
     # Check for `length_weight_df` in the database file
+    # ---- Combine the datasets
+    full_weight_distrib = (
+        pd.concat([length_table_sexed.rename(columns={"weight_interp": "weight"}), 
+                   specimen_table_sexed], ignore_index=True)
+    )
+    # ---- Sum by bin
+    full_weight_distrib = (
+        full_weight_distrib.groupby(contrast_columns + ["length_bin"])["weight"].sum().reset_index()
+    )
     # ---- Create id/primary key
+    full_weight_distrib.loc[:, "id"] = (
+        full_weight_distrib[contrast_columns + ["length_bin"]].apply(tuple, axis=1).astype(str)
+        .str.replace("'", "")
+    )
+    #
     key_values = ["-".join(length_table_sexed.reset_index()
                            .loc[idx, ["species_id", "sex", "length_bin"]]
                            .values.astype(str)) 
@@ -416,20 +463,65 @@ def length_bin_weights(length_data: pd.DataFrame, specimen_data: pd.DataFrame,
     length_table_sexed["id"] = key_values
     # ---- Query database
     if not SQL(biology_db, "validate", table_name="length_weight_df"):
+        # ---- Create full table
+        overall_weight_distrib = (
+            pd.DataFrame({"stratum": file_configuration["geospatial"]["inpfc"]["stratum_names"] + 
+                          [len(file_configuration["geospatial"]["inpfc"]["stratum_names"]) + 1]})
+            .merge(pd.DataFrame({"sex": ["male", "female"]}), how="cross")
+            .merge(pd.DataFrame(
+                {"species_id": np.unique(file_configuration["species"]["number_code"])}
+            ), how="cross")
+            .merge(distribution_df.filter(["length_bin"]), how="cross")
+        )
+        # ---- Pre-allocate weight
+        overall_weight_distrib.loc[:, "weight"] = 0.0
+        # ---- Create id/primary key
+        overall_weight_distrib.loc[:, "id"] = (
+            overall_weight_distrib[contrast_columns + ["length_bin"]].apply(tuple, axis=1)
+            .astype(str)
+            .str.replace("'", "")
+        )
         # ---- Create
         SQL(biology_db, "create", table_name="length_weight_df", 
-            dataframe=length_table_sexed, primary_keys=["id"])       
-        # ---- Populate table
+            dataframe=overall_weight_distrib, primary_keys=["id"])    
+        # ---- INSERT
         SQL(biology_db, "insert", table_name="length_weight_df", 
-            dataframe=length_table_sexed, id_columns=["id"])
-    else:
-        # ---- Update the table
-        sql_group_update(db_file=biology_db, 
-                         dataframe=length_table_sexed, 
-                         table_name="length_weight_df", 
-                         columns=["weight_interp"],
-                         unique_columns=contrast_columns, 
-                         id_columns=["id"])
+            dataframe=overall_weight_distrib)            
+    # ---- UPDATE
+    sql_group_update(biology_db, dataframe=full_weight_distrib, table_name="length_weight_df", 
+                     columns=["weight"],
+                     unique_columns=["id"], id_columns=["id"])   
+    # table_df = SQL(biology_db, "select", table_name="length_weight_df")
+    # # ---- Check the table keys
+    # table_keys = np.unique(table_df["id"]).tolist()
+    # # ---- Get unique values
+    # current_keys = np.unique(full_weight_distrib["id"]).tolist()
+    # # ---- Get INSERTION keys
+    # insertion_keys = list(set(current_keys).difference(set(table_keys)))
+    # # ---- Get UPDATE keys
+    # update_keys = list(set(current_keys).intersection(set(table_keys)))
+    #     # ---- INSERT values
+    #     if insertion_keys:
+    #         # ---- Create DataFrame
+    #         insertion_df = full_weight_distrib[full_weight_distrib["id"].isin(insertion_keys)]
+    #         # ---- INSERT
+    #         SQL(biology_db, "insert", table_name="length_weight_df", 
+    #             dataframe=insertion_df)
+    #     # ---- UPDATE values
+    #     if update_keys:
+    #         update_df = full_weight_distrib[full_weight_distrib["id"].isin(update_keys)]
+    #         # ---- Create a filter condition command
+    #         sql_group_update(biology_db, dataframe=update_df, table_name="length_weight_df", 
+    #                          columns=["weight"],
+    #                          unique_columns=["id"], id_columns=["id"])            
+
+    #     # ---- Update the table
+    #     sql_group_update(db_file=biology_db, 
+    #                      dataframe=length_table_sexed, 
+    #                      table_name="length_weight_df", 
+    #                      columns=["weight_interp"],
+    #                      unique_columns=contrast_columns, 
+    #                      id_columns=["id"])
     # length_sql_sexed
     
     

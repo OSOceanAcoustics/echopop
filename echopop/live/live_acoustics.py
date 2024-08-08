@@ -169,21 +169,24 @@ def estimate_echometrics(acoustic_data_df: pd.DataFrame):
     # Return the dictionary
     return echometrics
 
-def integrate_nasc(acoustic_data_df: pd.DataFrame, echometrics: bool = True):
+def integrate_nasc(data_df: pd.DataFrame, echometrics: bool = True):
 
     # Vertically integrate PRC NASC
-    nasc_dict = {"nasc": acoustic_data_df["NASC"].sum()}
+    nasc_dict = {"nasc": data_df["NASC"].sum()}
     
     # Horizontally concatenate `echometrics`, if `True`
     if echometrics:
         # ---- Compute values
         # NOTE: This uses NASC instead of linear `sv`
-        echometrics_dict = estimate_echometrics(acoustic_data_df)
+        echometrics_dict = estimate_echometrics(data_df)
         # ---- Merge
         nasc_dict.update(echometrics_dict)
 
     # Convert `nasc_dict` to a DataFrame and return the output
-    return pd.Series(nasc_dict)
+    # return pd.Series(nasc_dict)
+    return pd.DataFrame(nasc_dict, index=[0])
+
+    # return pd.DataFrame([nasc_dict])
 
 def compute_nasc(acoustic_data_df: pd.DataFrame, file_configuration: dict,
                  echometrics: bool = True):
@@ -193,24 +196,24 @@ def compute_nasc(acoustic_data_df: pd.DataFrame, file_configuration: dict,
     
     # Integrate NASC (and compute the echometrics, if necessary)
     # ---- Get number of unique sources
-    if len(np.unique(acoustic_data_df["source"])) == 1:
-        nasc_data_df = (
-            acoustic_data_df
-            .groupby(["longitude", "latitude", "ping_time", "source"] + spatial_column, 
-                     observed=False)
-            .apply(integrate_nasc, echometrics)
-            .reset_index()
-            .sort_values("ping_time")
-        )
-    else:
-        nasc_data_df = (
-            acoustic_data_df
-            .groupby(["longitude", "latitude", "ping_time", "source"] + spatial_column, 
-                     observed=False)
-            .apply(integrate_nasc, echometrics, include_groups=False)
-            .unstack().reset_index()
-            .sort_values("ping_time")
-        )
+    # if len(np.unique(acoustic_data_df["ping_time"])) > 1:
+    #     nasc_data_df = (
+    #         acoustic_data_df
+    #         .groupby(["longitude", "latitude", "ping_time", "source"] + spatial_column, 
+    #                  observed=False)
+    #         .apply(integrate_nasc, echometrics, include_groups=False).unstack()
+    #         .reset_index()
+    #         .sort_values("ping_time")
+    #     )
+    # else:
+    nasc_data_df = (
+        acoustic_data_df
+        .groupby(["longitude", "latitude", "ping_time", "source"] + spatial_column, 
+                    observed=False)
+        .apply(integrate_nasc, echometrics, include_groups=False).droplevel(-1)
+        .reset_index()
+        .sort_values("ping_time")
+    )
     # ---- Amend the dtypes if echometrics were computed
     if echometrics:
         # ---- Set dtypes

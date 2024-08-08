@@ -144,8 +144,8 @@ def acoustic_pipeline(acoustic_dict: dict,
             # Update the survey population estimate DataFrame with the newly computed densities
             if all([True if df is not None else False for df in [acoustic_df, sigma_bs_df]]):        
                 sql_group_update(acoustic_db, dataframe=nasc_biology, table_name="survey_data_df", 
-                                columns=["number_density", "biomass_density"], 
-                                unique_columns=["stratum", "longitude", "latitude", "ping_time"])
+                                 columns=["number_density", "biomass_density"], 
+                                 unique_columns=["id"])
             
                 # Summarize strata
                 summarize_strata(nasc_biology, strata_df, file_configuration)
