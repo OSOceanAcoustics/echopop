@@ -261,8 +261,11 @@ def format_acoustic_dataset(nasc_data_df: pd.DataFrame, file_configuration: dict
     # ---- Add an autoincrementing tag that will serve as a primary key and unique constraint
     df.loc[:, "id"] = key_values
 
+    # Get root database directory
+    root_database = file_configuration["database_directory"]
+
     # Update the successfully processed files
-    query_processed_files(file_configuration["data_root_dir"], 
+    query_processed_files(root_database, 
                           file_configuration["input_directories"]["acoustics"],
                           meta_dict["provenance"]["acoustic_files"],
                           processed=True)

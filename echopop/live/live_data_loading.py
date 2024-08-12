@@ -54,10 +54,6 @@ def live_configuration(live_init_config_path: Union[str, Path],
             f"file."
         )
     
-    # Amend root directory, if needed
-    if "data_root_dir" not in file_config:
-        file_config["data_root_dir"] = ""
-    
     # Combine both into a dictionary output that can be added to the `LiveSurvey` class object
     return {**init_config, **file_config}
 

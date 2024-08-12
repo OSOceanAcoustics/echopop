@@ -39,6 +39,7 @@ from .live_spatial_methods import initialize_grid
 
 from . import live_data_processing as eldp
 from . import live_data_loading as eldl
+
 class LiveSurvey:
     """
     A real-time processing version of the `echopop` base `Survey` class that ingests biological, 
@@ -60,7 +61,7 @@ class LiveSurvey:
         # initialize the Survey class object
         self.config = eldl.live_configuration(Path(live_init_config_path), 
                                               Path(live_file_config_path))
-        # ---- Initialize config key for database files
+        # # ---- Initialize config key for database files
         self.config.update(
             {"database": {key: None for key in self.config["input_directories"].keys()}}
         )
@@ -198,6 +199,9 @@ class LiveSurvey:
         # ----- Unprocessed
         biology_unprocessed = self.input["biology"]
 
+        # Get database root directory
+        root_directory = self.config["database_directory"]
+
         # Check if data are present
         unprocess_data_dfs = (
             [True if isinstance(df, pd.DataFrame) and not df.empty else False 
@@ -260,10 +264,10 @@ class LiveSurvey:
             })
 
             # Update the database
-            query_processed_files(self.config["data_root_dir"], 
-                                self.config["input_directories"]["biology"],
-                                self.meta["provenance"]["biology_files"],
-                                processed=True)
+            query_processed_files(root_directory, 
+                                  self.config["input_directories"]["biology"],
+                                  self.meta["provenance"]["biology_files"],
+                                  processed=True)
             
 
     def process_acoustic_data(self, echometrics: bool = True, verbose: bool = True):
