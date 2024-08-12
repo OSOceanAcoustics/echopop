@@ -183,21 +183,21 @@ def compute_sigma_bs(specimen_data: pd.DataFrame, length_data: pd.DataFrame,
     sigma_bs_df.loc[:, "id"] = sigma_bs_df[key_list].apply(tuple, axis=1).astype(str)
 
     # Get the database file name
-    acoustic_db = file_configuration["database"]["acoustics"]
+    biology_db = file_configuration["database"]["biology"]
 
     # Check for `sigma_bs_mean_df` in the database file
     # ---- Query database
-    if not SQL(acoustic_db, "validate", table_name="sigma_bs_mean_df"):
+    if not SQL(biology_db, "validate", table_name="sigma_bs_mean_df"):
         # ---- Create an insertion dataframe
         insertion_df = sigma_bs_df.copy()
         # ---- Create
-        SQL(acoustic_db, "create", table_name="sigma_bs_mean_df", dataframe=insertion_df, 
+        SQL(biology_db, "create", table_name="sigma_bs_mean_df", dataframe=insertion_df, 
             primary_keys=["id"])
         # ---- Populate table
-        SQL(acoustic_db, "insert", table_name="sigma_bs_mean_df", dataframe=insertion_df)
+        SQL(biology_db, "insert", table_name="sigma_bs_mean_df", dataframe=insertion_df)
     else:
         # ---- Get previous values in the table
-        table_df = SQL(acoustic_db, "select", table_name="sigma_bs_mean_df")
+        table_df = SQL(biology_db, "select", table_name="sigma_bs_mean_df")
         # ---- Check the table keys
         table_keys = np.unique(table_df["id"]).tolist()
         # ---- Get unique values
@@ -211,13 +211,13 @@ def compute_sigma_bs(specimen_data: pd.DataFrame, length_data: pd.DataFrame,
             # ---- Create DataFrame
             insertion_df = sigma_bs_df[sigma_bs_df["id"].isin(insertion_keys)]
             # ---- INSERT
-            SQL(acoustic_db, "insert", table_name="sigma_bs_mean_df", 
+            SQL(biology_db, "insert", table_name="sigma_bs_mean_df", 
                 dataframe=insertion_df)
         # ---- UPDATE values
         if update_keys:
             update_df = sigma_bs_df[sigma_bs_df["id"].isin(update_keys)]
             # ---- Create a filter condition command
-            sql_group_update(acoustic_db, dataframe=update_df, table_name="sigma_bs_mean_df", 
+            sql_group_update(biology_db, dataframe=update_df, table_name="sigma_bs_mean_df", 
                              columns=["sigma_bs_count", "sigma_bs_sum"], operation="+",
                              unique_columns=["id"], id_columns=["id"])
             # condition_str = " & ".join([f"id = {id_value}" for id_value in update_keys])

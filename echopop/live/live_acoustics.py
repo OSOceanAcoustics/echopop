@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 
 from ..acoustics import ts_length_regression, to_linear, to_dB
-from .live_spatial_methods import apply_spatial_definitions
+from .live_spatial_methods import apply_spatial_definitions, apply_griddify_definitions
 from .sql_methods import sql_data_exchange, SQL, query_processed_files
 
 # TODO: Documentation
@@ -26,7 +26,7 @@ def configure_transmit_frequency(frequency_values: pd.Series,
         return frequency_values
     
 # TODO: Documentation
-def preprocess_acoustic_data(prc_nasc_df: pd.DataFrame,
+def preprocess_acoustic_data(survey_data: pd.DataFrame,
                              spatial_dict: dict,
                              file_configuration: dict) -> pd.DataFrame:
 
@@ -37,15 +37,21 @@ def preprocess_acoustic_data(prc_nasc_df: pd.DataFrame,
 
     # Filter the dataset
     # ---- Configure `frequency_nominal`, if necessary
-    prc_nasc_df.loc[:, "frequency_nominal"] = (
-        configure_transmit_frequency(prc_nasc_df.loc[:, "frequency_nominal"],
+    survey_data.loc[:, "frequency_nominal"] = (
+        configure_transmit_frequency(survey_data.loc[:, "frequency_nominal"],
                                      transmit_settings,
                                      acoustic_analysis_settings["dataset_units"]["frequency"])
     )
     # ---- Filter out any unused frequency coordinates
     prc_nasc_df_filtered = (
-        prc_nasc_df[prc_nasc_df["frequency_nominal"] == transmit_settings["frequency"]]
+        survey_data[survey_data["frequency_nominal"] == transmit_settings["frequency"]]
     )
+
+    # Get grid coordinates
+    prc_nasc_df_filtered = pd.concat([
+        prc_nasc_df_filtered,
+        apply_griddify_definitions(prc_nasc_df_filtered, file_configuration["geospatial"])
+    ], axis = 1)
     
     # Apply spatial settings
     prc_nasc_df_filtered = (
@@ -192,7 +198,10 @@ def compute_nasc(acoustic_data_df: pd.DataFrame, file_configuration: dict,
                  echometrics: bool = True):
 
     # Get spatial definitions, if any
-    spatial_column = file_configuration["spatial_column"]
+    # spatial_column = file_configuration["spatial_column"]
+
+    # Get stratum column, if any
+    gridding_column = file_configuration["gridding_column"]
     
     # Integrate NASC (and compute the echometrics, if necessary)
     # ---- Get number of unique sources
@@ -208,7 +217,7 @@ def compute_nasc(acoustic_data_df: pd.DataFrame, file_configuration: dict,
     # else:
     nasc_data_df = (
         acoustic_data_df
-        .groupby(["longitude", "latitude", "ping_time", "source"] + spatial_column, 
+        .groupby(["longitude", "latitude", "ping_time", "source"] + gridding_column, 
                     observed=False)
         .apply(integrate_nasc, echometrics, include_groups=False).droplevel(-1)
         .reset_index()
@@ -225,7 +234,7 @@ def compute_nasc(acoustic_data_df: pd.DataFrame, file_configuration: dict,
         )
         # ---- Reorder columns
         nasc_data_df = nasc_data_df[
-            spatial_column
+            gridding_column
             + ["longitude", "latitude", "ping_time", "source", "nasc", "n_layers", "nasc_db", 
                "mean_Sv", "max_Sv", "aggregation_index", "center_of_mass", "dispersion", "evenness", 
                "occupied_area"]
@@ -244,7 +253,7 @@ def format_acoustic_dataset(nasc_data_df: pd.DataFrame, file_configuration: dict
     
     # Add population-specific columns (specified in the file configuration)
     # TODO: Add to `yaml` file for configuration; hard-code for now
-    add_columns = ["number_density", "biomass_density", "abundance", "biomass"]
+    add_columns = ["number_density", "biomass_density"]
     # ----
     df[add_columns] = 0.0
     # ---- Assign values for key values

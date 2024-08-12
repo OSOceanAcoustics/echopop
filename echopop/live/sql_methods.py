@@ -380,7 +380,8 @@ def initialize_database(root_directory: Path, file_settings: dict):
 
     # Create filepath to the SQL database
     # ---- Create Path to SQL database file
-    db_directory = root_directory / "database"
+    # db_directory = root_directory / "database"
+    db_directory = Path(file_settings["database_directory"])
     # ---- Create the directory if it does not already exist
     db_directory.mkdir(parents=True, exist_ok=True)
     # ---- Complete path to the database file
@@ -625,7 +626,7 @@ def query_processed_files(root_directory: Path, file_settings: dict, files: List
 
     # Create filepath to the SQL database
     # ---- Create Path to SQL database file
-    db_directory = Path(root_directory) / "database"
+    db_directory = Path(file_configuration["database_directory"])
     # ---- Complete path to the database file
     db_file = db_directory / db_name
 

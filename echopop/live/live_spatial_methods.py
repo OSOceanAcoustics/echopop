@@ -4,6 +4,9 @@ import numpy as np
 from geopy.distance import distance
 from ..spatial.projection import utm_string_generator
 import shapely.geometry
+from shapely.geometry import box
+import sqlalchemy as sqla
+from pathlib import Path
 from typing import Union
 
 def create_inpfc_strata(spatial_config: dict):
@@ -143,7 +146,7 @@ def define_boundary_box(boundary_dict: dict, projection: str):
         crs=projection,
     )
 
-def apply_griddify_definitions(acoustic_data: dict, biology_data: dict, spatial_config: dict):
+def apply_griddify_definitions(dataset: pd.DataFrame, spatial_config: dict):
 
     # Extract the griddification definitions
     griddify_definitions = spatial_config["griddify"]
@@ -190,77 +193,346 @@ def apply_griddify_definitions(acoustic_data: dict, biology_data: dict, spatial_
     # Get the centroids
     cells_gdf["cell_centroid"] = cells_gdf["geometry"].centroid
 
-    # Get the `prc_nasc_df` values, if they exist, and apply stratification information
-    if not acoustic_data["prc_nasc_df"].empty:
+    # Convert to GeoDataFrame
+    dataset_gdf = gpd.GeoDataFrame(
+        data=dataset,
+        geometry=gpd.points_from_xy(dataset["longitude"], dataset["latitude"]),
+        crs=projection,
+    )
+    # ---- To UTM
+    dataset_gdf = dataset_gdf.to_crs(projection_new)
 
-        #
-        prc_nasc_df = acoustic_data["prc_nasc_df"]
+    # Extract x- and y-coordinates
+    dataset_gdf["x"] = dataset_gdf["geometry"].x
+    dataset_gdf["y"] = dataset_gdf["geometry"].y
 
-        # to GDF
-        prc_nasc_gdf = gpd.GeoDataFrame(
-            data=prc_nasc_df,
-            geometry=gpd.points_from_xy(prc_nasc_df["longitude"], prc_nasc_df["latitude"]),
-            crs=projection,
+    # Bin the longitude data
+    dataset_gdf["stratum_x"] = pd.cut(
+        dataset_gdf["x"],
+        np.arange(xmin, xmax+x_step, x_step),
+        right = True,
+        labels = range(len(np.arange(xmin, xmax+x_step, x_step)) - 1),
+    ).astype(int) + 1
+
+    # Bin the latitude data
+    dataset_gdf["stratum_y"] = pd.cut(
+        dataset_gdf["y"],
+        np.arange(ymin, ymax+y_step, y_step),
+        right = True,
+        labels = range(len(np.arange(ymin, ymax+y_step, y_step)) - 1),
+    ).astype(int) + 1
+
+    # Update the original dataset
+    return (
+        dataset_gdf.loc[:, ["stratum_x", "stratum_y"]]
+        .rename(columns={"stratum_x": "x", "stratum_y": "y"})
+    )
+    # dataset.loc[:, "x"] = dataset_gdf.copy().loc[:, "stratum_x"]
+    # dataset.loc[:, "y"] = dataset_gdf.copy().loc[:, "stratum_y"]
+
+
+# def apply_griddify_definitions(acoustic_data: dict, biology_data: dict, spatial_config: dict):
+
+#     # Extract the griddification definitions
+#     griddify_definitions = spatial_config["griddify"]
+
+#     # Get the projection definition
+#     projection = spatial_config["projection"]
+
+#     # Compute the boundary box GeoDataFrame
+#     boundary_box = define_boundary_box(griddify_definitions["bounds"], projection)
+
+#     # Convert the coordinates, if needed
+#     if not set(["northings", "eastings"]).intersection(set(griddify_definitions["bounds"].keys())):
+#         # ---- Compute the equivalent UTM string
+#         utm_num = int(utm_string_generator(np.median(boundary_box.loc[0:3, "x"]), 
+#                                            np.median(boundary_box.loc[0:3, "y"])))
+#         # ---- Compute the boundary box GeoDataFrame with the new projection
+#         boundary_box = boundary_box.to_crs(utm_num)
+#         # ---- Create a new projection for later
+#         projection_new = f"epsg:{utm_num}"
+#     else:
+#         projection_new = projection
+
+#     # Define the step sizes
+#     # ---- Define x step size
+#     x_step = distance(nautical=griddify_definitions["grid_resolution"]["x_distance"]).meters
+#     # ---- Define y step size
+#     y_step = distance(nautical=griddify_definitions["grid_resolution"]["y_distance"]).meters
+
+#     # Get the boundary tuple
+#     xmin, ymin, xmax, ymax = boundary_box.total_bounds
+
+#     # Generate the cells
+#     grid_cells = []
+#     # ---- Iterate through
+#     for y0 in np.arange(ymin, ymax+y_step, y_step):
+#         for x0 in np.arange(xmin, xmax+x_step, x_step):
+#             x1 = x0-x_step
+#             y1 = y0+y_step
+#             grid_cells.append(shapely.geometry.box(x0, y0, x1, y1))
+
+#     # Convert to a GeoDataFrame
+#     cells_gdf = gpd.GeoDataFrame(grid_cells, columns=["geometry"], crs=projection_new)
+
+#     # Get the centroids
+#     cells_gdf["cell_centroid"] = cells_gdf["geometry"].centroid
+
+#     # Get the `prc_nasc_df` values, if they exist, and apply stratification information
+#     if not acoustic_data["prc_nasc_df"].empty:
+
+#         #
+#         prc_nasc_df = acoustic_data["prc_nasc_df"]
+
+#         # to GDF
+#         prc_nasc_gdf = gpd.GeoDataFrame(
+#             data=prc_nasc_df,
+#             geometry=gpd.points_from_xy(prc_nasc_df["longitude"], prc_nasc_df["latitude"]),
+#             crs=projection,
+#         )
+#         # to UTM
+#         prc_nasc_new = prc_nasc_gdf.to_crs(projection_new)
+
+#         prc_nasc_new["x"] = prc_nasc_new["geometry"].x
+#         prc_nasc_new["y"] = prc_nasc_new["geometry"].y
+
+#         # ---- Bin the latitude data
+#         prc_nasc_new["stratum_x"] = pd.cut(
+#             prc_nasc_new["x"],
+#             np.arange(xmin, xmax+x_step, x_step),
+#             right = True,
+#             labels = range(len(np.arange(xmin, xmax+x_step, x_step)) - 1),
+#         ).astype(int) + 1
+
+#         prc_nasc_new["stratum_y"] = pd.cut(
+#             prc_nasc_new["y"],
+#             np.arange(ymin, ymax+y_step, y_step),
+#             right = True,
+#             labels = range(len(np.arange(ymin, ymax+y_step, y_step)) - 1),
+#         ).astype(int) + 1
+
+#         #
+#         acoustic_data["prc_nasc_df"]["stratum"] = (
+#             prc_nasc_new["stratum_x"].astype(str) + "-" + prc_nasc_new["stratum_y"].astype(str)
+#         )
+
+#     if not biology_data["trawl_info_df"].empty:
+
+#         #
+#         trawl_info_df = biology_data["trawl_info_df"]
+
+#         # to GDF
+#         trawl_info_gdf = gpd.GeoDataFrame(
+#             data=trawl_info_df,
+#             geometry=gpd.points_from_xy(trawl_info_df["longitude"], trawl_info_df["latitude"]),
+#             crs=projection,
+#         )
+#         # to UTM
+#         trawl_info_new = trawl_info_gdf.to_crs(projection_new)
+
+#         trawl_info_new["x"] = trawl_info_new["geometry"].x
+#         trawl_info_new["y"] = trawl_info_new["geometry"].y
+
+#         # ---- Bin the latitude data
+#         trawl_info_new["stratum_x"] = pd.cut(
+#             trawl_info_new["x"],
+#             np.arange(xmin, xmax+x_step, x_step),
+#             right = True,
+#             labels = range(len(np.arange(xmin, xmax+x_step, x_step)) - 1),
+#         ).astype(int) + 1
+
+#         trawl_info_new["stratum_y"] = pd.cut(
+#             trawl_info_new["y"],
+#             np.arange(ymin, ymax+y_step, y_step),
+#             right = True,
+#             labels = range(len(np.arange(ymin, ymax+y_step, y_step)) - 1),
+#         ).astype(int) + 1
+
+#         #
+#         biology_data["trawl_info_df"]["stratum"] = (
+#             trawl_info_new["stratum_x"].astype(str) + "-" + trawl_info_new["stratum_y"].astype(str)
+#         )
+
+def initialize_grid(file_configuration = dict):
+
+    # Get root directory, if defined
+    if "data_root_dir" in file_configuration:
+        root_dir = Path(file_configuration["data_root_dir"])
+    else:
+        root_dir = Path()
+
+    # Get `grid` settings
+    grid_database = file_configuration["input_directories"]["grid"]["database_name"]
+    # ----
+    db_directory = Path(file_configuration["database_directory"])
+
+    # Create full filepath
+    # db_filepath = root_dir / "database" / grid_database
+    db_filepath = db_directory / grid_database
+    # ---- Update config
+    file_configuration["database"]["grid"] = db_filepath
+
+    # Create if file doesn't already exist
+    if not db_filepath.exists():
+
+        # Get projection
+        projection = file_configuration["geospatial"]["projection"]
+        
+        # Get grid settings
+        grid_settings = file_configuration["geospatial"]["griddify"]
+
+        # Get the resolution
+        resolution = grid_settings["grid_resolution"]
+        # ---- Convert from nmi to m
+        resolution_m = {key: distance(nautical=dist).meters for key, dist in resolution.items()}
+
+        # Get boundary coordinates
+        boundary = grid_settings["bounds"]
+        # ---- x
+        x = boundary["longitude"]
+        # ---- y
+        y = boundary["latitude"]
+        # ---- Create DataFrame
+        boundary_df = pd.DataFrame({
+            "x": np.array([np.min(x), np.max(x), np.max(x), np.min(x), np.min(x)]),
+            "y": np.array([np.min(y), np.min(y), np.max(y), np.max(y), np.min(y)])
+        })
+
+        # Create GeoDataFrame
+        boundary_gdf = gpd.GeoDataFrame(
+            data = boundary_df,
+            geometry=gpd.points_from_xy(boundary_df["x"], boundary_df["y"]),
+            crs = projection
         )
-        # to UTM
-        prc_nasc_new = prc_nasc_gdf.to_crs(projection_new)
 
-        prc_nasc_new["x"] = prc_nasc_new["geometry"].x
-        prc_nasc_new["y"] = prc_nasc_new["geometry"].y
+        # Convert to UTM (decimal degrees to m)
+        # ---- Create UTM code
+        utm_code = utm_string_generator((boundary_df.x.min() + boundary_df.x.max()) / 2, 
+                                        (boundary_df.y.min() + boundary_df.y.max()) / 2)
+        # ---- Create number code
+        utm_num = int(utm_code)
+        # ---- UTM conversion
+        boundary_gdf_utm = boundary_gdf.to_crs(utm_num)
 
-        # ---- Bin the latitude data
-        prc_nasc_new["stratum_x"] = pd.cut(
-            prc_nasc_new["x"],
-            np.arange(xmin, xmax+x_step, x_step),
-            right = True,
-            labels = range(len(np.arange(xmin, xmax+x_step, x_step)) - 1),
-        ).astype(int) + 1
+        # Get step sizes for each grid cell
+        # ---- x
+        x_step = resolution_m["x_distance"]
+        # ---- y
+        y_step = resolution_m["y_distance"]
 
-        prc_nasc_new["stratum_y"] = pd.cut(
-            prc_nasc_new["y"],
-            np.arange(ymin, ymax+y_step, y_step),
-            right = True,
-            labels = range(len(np.arange(ymin, ymax+y_step, y_step)) - 1),
-        ).astype(int) + 1
+        # Prepare grid cell generation
+        # ---- Get new boundaries
+        xmin, ymin, xmax, ymax = boundary_gdf_utm.total_bounds
+        # ---- Initialize empty list
+        grid_cells = []
+        # ---- Initialize coordinate counter
+        y_ct = 0
+        x_coord = []; y_coord = []
+        # ---- Iterate through to generate cells
+        for y0 in np.arange(ymin, ymax, y_step):
+            y_ct += 1
+            x_ct = 0
+            for x0 in np.arange(xmin, xmax, x_step):
+                x_ct += 1
+                # ---- Step forward
+                x_coord.append(x_ct)
+                y_coord.append(y_ct)
+                x1 = x0 - x_step
+                y1 = y0 + y_step
+                # ---- Append to list
+                grid_cells.append(shapely.geometry.box(x0, y0, x1, y1))
 
-        #
-        acoustic_data["prc_nasc_df"]["stratum"] = (
-            prc_nasc_new["stratum_x"].astype(str) + "-" + prc_nasc_new["stratum_y"].astype(str)
-        )
+        # Convert to a GeoDataFrame
+        cells_gdf = gpd.GeoDataFrame(grid_cells, columns=["geometry"], crs=utm_code)
+        # ---- Add cordinates
+        cells_gdf.loc[:, "x"] = np.array(x_coord)
+        cells_gdf.loc[:, "y"] = np.array(y_coord)        
 
-    if not biology_data["trawl_info_df"].empty:
+        # Get coastline shapefile directory, if defined
+        if "coastline" in file_configuration["input_directories"]:
 
-        #
-        trawl_info_df = biology_data["trawl_info_df"]
+            # Get coastline settings
+            coast_settings = file_configuration["input_directories"]["coastline"]
+            # ---- Create filepath
+            shp_filepath = (
+                root_dir / coast_settings["directory"] 
+                / coast_settings["coastline_name"] / f"{coast_settings["coastline_name"]}.shp"
+            )
+            # ---- Validate existence
+            if not shp_filepath.exists():
+                raise FileNotFoundError(
+                    f"{shp_filepath} does not exist!"
+                )
 
-        # to GDF
-        trawl_info_gdf = gpd.GeoDataFrame(
-            data=trawl_info_df,
-            geometry=gpd.points_from_xy(trawl_info_df["longitude"], trawl_info_df["latitude"]),
-            crs=projection,
-        )
-        # to UTM
-        trawl_info_new = trawl_info_gdf.to_crs(projection_new)
+            # Get original lat/lon geometry boundaries
+            xmin0, ymin0, xmax0, ymax0 = boundary_gdf.total_bounds
+            
+            # Read in file
+            full_coast = gpd.read_file(shp_filepath)
+            # ---- Convert to UTM
+            full_coast_utm = full_coast.to_crs(utm_code)
+            # ---- Remove empty
+            full_coast_utm = full_coast_utm[~full_coast_utm.is_empty]
 
-        trawl_info_new["x"] = trawl_info_new["geometry"].x
-        trawl_info_new["y"] = trawl_info_new["geometry"].y
+            # Create bouning box with a buffer
+            boundary_box = box(xmin0 - 5, ymin0 - 5, xmax0 + 5, ymax0 + 5)
+            # ---- Create an unbuffered copy
+            boundary_box_unbuffered = box(xmin0, ymin0, xmax0, ymax0)
+            # ---- Convert to a GeoDataFrame
+            boundary_box_unbuffered_gdf = (
+                gpd.GeoDataFrame(geometry=[boundary_box_unbuffered], crs=projection)
+            )
+            # ---- Clip the coastline for saving
+            clipped_coast_original = (
+                gpd.clip(full_coast, box(xmin0 + 1, ymin0 + 1, xmax0 + 1, ymax0 + 1))
+            )
 
-        # ---- Bin the latitude data
-        trawl_info_new["stratum_x"] = pd.cut(
-            trawl_info_new["x"],
-            np.arange(xmin, xmax+x_step, x_step),
-            right = True,
-            labels = range(len(np.arange(xmin, xmax+x_step, x_step)) - 1),
-        ).astype(int) + 1
+            # Clip the coastline shapefile
+            clipped_coast = gpd.clip(full_coast, boundary_box).to_crs(utm_code)
 
-        trawl_info_new["stratum_y"] = pd.cut(
-            trawl_info_new["y"],
-            np.arange(ymin, ymax+y_step, y_step),
-            right = True,
-            labels = range(len(np.arange(ymin, ymax+y_step, y_step)) - 1),
-        ).astype(int) + 1
+            # Clip the grid cells
+            cells_gdf.loc[:, "geometry"] = (
+                cells_gdf["geometry"].difference(clipped_coast.geometry.union_all())
+            )
 
-        #
-        biology_data["trawl_info_df"]["stratum"] = (
-            trawl_info_new["stratum_x"].astype(str) + "-" + trawl_info_new["stratum_y"].astype(str)
-        )
+            # Calculate area per cell
+            cells_gdf.loc[:, "area"] = cells_gdf.area
+
+            # Convert back to original projection and clip 
+            clipped_cells_latlon = (
+                gpd.clip(cells_gdf.to_crs(projection), boundary_box_unbuffered_gdf)
+                .reset_index(drop=True)
+            )
+
+            # Initialize empty columns that can be added to later on
+            clipped_cells_latlon.loc[:, ["number_density_mean", "biomass_density_mean", 
+                                         "abundance", "biomass"]] = 0.0
+            
+            # Create output DataFrame
+            output_df = pd.DataFrame({
+                "geometry": clipped_cells_latlon["geometry"].apply(lambda geom: geom.wkt)
+            })
+            # ---- Add the required columns
+            output_df = pd.concat([output_df, clipped_cells_latlon.loc[:, ["x", "y", "area"]]], 
+                                  axis=1) 
+            # ---- Initialize empty columns that can be added to later on
+            output_df.loc[:, ["number_density_mean", "biomass_density_mean", "abundance", 
+                              "biomass"]] = 0.0
+           
+            # Write to the database file (for the grid)
+            # ---- Create engine
+            engine = sqla.create_engine(f"sqlite:///{db_filepath}")
+            # ---- Connect and create table
+            _ = output_df.to_sql("grid_df", engine, if_exists="replace", index=False)
+
+            # Write to the database file (for the coastline shapefile)
+            # ---- Create output copy
+            coastline_out = pd.DataFrame({
+                "geometry": clipped_coast_original["geometry"].apply(lambda geom: geom.wkt)
+            })
+            # ---- Concatenate
+            coastline_out = (
+                pd.concat([coastline_out, clipped_coast_original.drop(columns="geometry")], axis=1)
+            )
+            # ---- Connect and create table
+            _ = coastline_out.to_sql("coastline_df", engine, if_exists="replace", index=False)

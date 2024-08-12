@@ -20,17 +20,25 @@ def get_unique_identifiers(data_dict: dict,
                            unique_columns: List[str]) -> pd.DataFrame:
 
     # Gather all dataframes from a dictionary into a list
-    df_list = [df for _, df in data_dict.items()]
+    if isinstance(data_dict, dict):
+        df_list = [df for _, df in data_dict.items()]
+    else:
+        df_list = [data_dict]
 
     # Get unique values of each contrast column across the biological datasets    
-    dfs = [pd.DataFrame({col: df[col].unique().tolist()}) for col in unique_columns 
-           for df in df_list if isinstance(df, pd.DataFrame) and not df.empty]
+    # dfs = [pd.DataFrame({col: df[col].unique().tolist()}) for col in unique_columns 
+    #        for df in df_list if isinstance(df, pd.DataFrame) and not df.empty and col in df.columns]    
+    combined_df = pd.concat(
+        [df[unique_columns] for df in df_list if all(col in df.columns for col in unique_columns)], 
+        ignore_index=True
+    ).drop_duplicates()
     
     # Reduce into a single DataFrame
-    if len(unique_columns) > 1:
-        return reduce(lambda left, right: pd.merge(left, right, how='cross'), dfs)
-    else:
-        return reduce(lambda left, right: pd.merge(left, right, how="outer"), dfs)
+    return combined_df
+    # if len(unique_columns) > 1:
+    #     return reduce(lambda left, right: pd.merge(left, right, how='cross'), dfs)
+    # else:
+    #     return reduce(lambda left, right: pd.merge(left, right, how="outer"), dfs)
 
 def query_dataset(db_file: str,
                   data_dict: dict,
@@ -49,14 +57,18 @@ def query_dataset(db_file: str,
         valid_keys = list(set(inspected_table.keys()).intersection(set(data_columns)))
         # ---- Get unique identifiers
         unique_keys_df = get_unique_identifiers(data_dict, unique_keys)
-        # ---- Create conditional string            
-        conditional_str = (
-           " & ".join([f"{col} in {np.unique(unique_keys_df[col]).tolist()}" 
-                       for col in unique_keys_df.columns])  
-        )
+        # ---- Create conditional string  
+        conditional_str = " | ".join(
+            [" & ".join([f"{col} = {val}" for col, val in row.items()]) 
+            for _, row in unique_keys_df.iterrows()]
+        )          
+        # conditional_str = (
+        #    " & ".join([f"{col} in {np.unique(unique_keys_df[col]).tolist()}" 
+        #                for col in unique_keys_df.columns])  
+        # )
         # ---- Append the additional constraint statement if present
         if constraint is not None:
-            conditional_str += f" & {constraint}"
+            conditional_str = f"({conditional_str})" + f" & {constraint}"
         # ---- SELECT the dataset using the conidtional statement
         data_sql = SQL(db_file, "select", table_name=table_name, columns=valid_keys,
                        condition=conditional_str).filter(data_columns)
@@ -90,7 +102,8 @@ def acoustic_pipeline(acoustic_dict: dict,
 
     # Get spatial column
     spatial_column = file_configuration["spatial_column"]
-    unique_columns = spatial_column + contrast_columns
+    gridding_column = file_configuration["gridding_column"]
+    unique_columns = gridding_column + contrast_columns
 
     # Get database file
     acoustic_db = file_configuration["database"]["acoustics"]
@@ -112,15 +125,15 @@ def acoustic_pipeline(acoustic_dict: dict,
                                         unique_columns=unique_columns)
         
         # Get the corresopding `sigma_bs` data (and also compute the sample-number weighted average)
-        sigma_bs_df = get_sigma_bs_sql_data(acoustic_db, 
+        sigma_bs_df = get_sigma_bs_sql_data(biology_db, 
                                             acoustic_dict,
-                                            unique_columns=unique_columns)
+                                            unique_columns=["stratum"])
         
         # Calculate population estimates if valid data are available
         if all([True if df is not None else False for df in [acoustic_df, sigma_bs_df]]):
 
             # ---- Merge the NASC and sigma_bs datasets
-            nasc_biology = acoustic_df.merge(sigma_bs_df, on=unique_columns)
+            nasc_biology = acoustic_df.merge(sigma_bs_df, on=spatial_column + contrast_columns)
             # ---- Compute the number densities (animals nmi^-2)
             nasc_biology["number_density"] = (
                 nasc_biology["nasc"]
@@ -130,11 +143,12 @@ def acoustic_pipeline(acoustic_dict: dict,
             # Get the corresponding average strata weights (computed for all fish)
             weight_spatial_averages = get_average_strata_weights(biology_db,
                                                                 acoustic_dict,
-                                                                unique_columns=unique_columns)
+                                                                unique_columns=spatial_column + contrast_columns)
             
             if weight_spatial_averages is not None:
                 # Merge average weights with number density estimates
-                nasc_biology = nasc_biology.merge(weight_spatial_averages, on=unique_columns)
+                nasc_biology = nasc_biology.merge(weight_spatial_averages, 
+                                                  on=spatial_column + contrast_columns)
 
                 # Compute biomass densities
                 nasc_biology["biomass_density"] = (
@@ -156,7 +170,7 @@ def get_nasc_sql_data(db_file: str,
     
     # Add SELECTION columns
     data_columns = (
-        unique_columns + ["x", "y", "longitude", "latitude", "ping_time", "nasc", "number_density", 
+        unique_columns + ["longitude", "latitude", "ping_time", "nasc", "number_density", 
                           "biomass_density", "id"]
     )
     # ----- Get the SQL dataset

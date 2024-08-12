@@ -15,6 +15,7 @@ species:
 # Directory path that contains all input data needed
 
 data_root_dir: C:/Users/Brandyn/Documents/GitHub/EchoPro_data/live_2019_files
+database_directory: C:/Users/Brandyn/Documents/GitHub/EchoPro_data/live_2019_files/database
 
 ##############################################################################
 # Input data directories
@@ -44,6 +45,8 @@ input_directories:
       trawl_info: operation_info
   coastline: 
     directory: coastline/
-    coastline_name: ne_110m_land
+    coastline_name: ne_10m_land
+  grid:
+    database_name: grid.db
 
 ...

@@ -35,6 +35,7 @@ from .live_biology import (
     weight_proportions
 )
 
+from .live_spatial_methods import initialize_grid
 
 from . import live_data_processing as eldp
 from . import live_data_loading as eldl
@@ -72,6 +73,9 @@ class LiveSurvey:
 
         # Initialize the results attribute
         self.results = copy.deepcopy(LIVE_DATA_STRUCTURE["results"])
+
+        # Initialize the extrapolation grid
+        initialize_grid(self.config)
 
         # Configure the spatial settings
         self.input.update({"spatial": eldl.configure_spatial_settings(self.config)})
@@ -204,8 +208,8 @@ class LiveSurvey:
 
             # Compute `sigma_bs` by sending it to the appropriate database table
             compute_sigma_bs(biology_unprocessed["specimen_df"], 
-                            biology_unprocessed["length_df"], 
-                            self.config)
+                             biology_unprocessed["length_df"], 
+                             self.config)
 
             # Bin the length measurements of the biological data
             bin_length_data(biology_unprocessed, self.config["length_distribution"])

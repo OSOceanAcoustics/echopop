@@ -112,9 +112,13 @@ def read_biology_files(biology_files: List[Path], file_configuration: dict):
     directory_path = Path(file_configuration["data_root_dir"]) / file_settings["directory"]
     
     # Add SQL file to dict
+    # file_configuration["database"]["biology"] = (
+    #     Path(file_configuration["data_root_dir"]) / "database" / file_settings["database_name"]         
+    # )
     file_configuration["database"]["biology"] = (
-        Path(file_configuration["data_root_dir"]) / "database" / file_settings["database_name"]         
+        Path(file_configuration["database_directory"]) / file_settings["database_name"]         
     )
+
 
     # Iterate through the different biology datasets and read them in
     for dataset in list(biology_file_ids.keys()):
@@ -539,6 +543,9 @@ def configure_spatial_settings(file_configuration: dict):
     else: 
         # ---- Empty `spatial_column` key
         file_configuration.update({"spatial_column": []})
+
+    # Add grid
+    file_configuration.update({"gridding_column": file_configuration["stratum_column"] + ["x", "y"]})
 
     # Return the dictionary as an output
     return spatial_dict
