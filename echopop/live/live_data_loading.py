@@ -545,7 +545,7 @@ def configure_spatial_settings(file_configuration: dict):
         file_configuration.update({"spatial_column": []})
 
     # Add grid
-    file_configuration.update({"gridding_column": file_configuration["stratum_column"] + ["x", "y"]})
+    file_configuration.update({"gridding_column": file_configuration["spatial_column"] + ["x", "y"]})
 
     # Return the dictionary as an output
     return spatial_dict
