@@ -109,7 +109,10 @@ def read_biology_files(biology_files: List[Path], file_configuration: dict):
     # ---- Initialize the dictionary that will define this key in the `input` attribute
     biology_output = {f"{key}_df": pd.DataFrame() for key in biology_config_ids}
     # # ---- Create filepath object
-    directory_path = Path(file_configuration["data_root_dir"]) / file_settings["directory"]
+    if "data_root_dir" in file_configuration:
+        directory_path = Path(file_configuration["data_root_dir"]) / file_settings["directory"]
+    else:
+        directory_path = Path(file_settings["directory"])
     
     # Add SQL file to dict
     # file_configuration["database"]["biology"] = (
