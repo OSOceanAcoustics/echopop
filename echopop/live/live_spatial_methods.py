@@ -456,7 +456,7 @@ def initialize_grid(file_configuration = dict):
             # ---- Create filepath
             shp_filepath = (
                 root_dir / coast_settings["directory"] 
-                / coast_settings["coastline_name"] / f"{coast_settings["coastline_name"]}.shp"
+                / coast_settings["coastline_name"] / f"{coast_settings['coastline_name']}.shp"
             )
             # ---- Validate existence
             if not shp_filepath.exists():

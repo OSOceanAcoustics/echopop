@@ -21,7 +21,7 @@ from echopop.live import live_data_processing as eldp
 from echopop.live import live_data_loading as eldl
 from echopop.live.live_data_processing import query_dataset, get_unique_identifiers
 from echopop.live.live_survey import LiveSurvey
-from echopop.live.live_acoustics import integrate_nasc
+from echopop.live.live_acoustics import integrate_nasc, configure_transmit_frequency
 from echopop.live.live_biology import preprocess_biology_data
 from echopop.survey import Survey
 
@@ -34,26 +34,200 @@ proportions_dict=analysis_dict["biology"]["proportions"]["number"]
 length_weight_dict = analysis_dict["biology"]["weight"]
 stratum_proportions_sexed["proportion_aged"] + stratum_proportions_sexed["proportion_unaged"]
 
-files = data_files
+updated_survey_data = nasc_biology.copy()
+gridding_column = file_configuration["gridding_column"]
+
+unique_keys = get_unique_identifiers(updated_survey_data, gridding_column)
 
 
-    
+file_configuration = self.config
+grid_settings["grid_resolution"]["x"] = 50
+grid_settings["grid_resolution"]["y"] = 50
+lat_step = distance(nautical=grid_settings["grid_resolution"]["x"]).meters
+lon_step = distance(nautical=grid_settings["grid_resolution"]["y"]).meters
+self = realtime_survey
+file_configuration = self.config
 
-    
-    # Map the table names and validate table creation
-    # ---- Get table names
-    tables = SQL(db_file, "map")
-    # ---- `files_read`
-    if "files_read" not in tables:
-        raise KeyError(
-            f"SQL database table `files_read` in `{db_file}` failed to initialize!"
+def initialize_grid():
+
+    # Get root directory, if defined
+    if "data_root_dir" in file_configuration:
+        root_dir = Path(file_configuration["data_root_dir"])
+    else:
+        root_dir = Path()
+
+    # Get `grid` settings
+    grid_database = file_configuration["input_directories"]["grid"]["database_name"]
+
+    # Create full filepath
+    db_filepath = root_dir / "database" / grid_database
+
+    # Create if file doesn't already exist
+    if not db_filepath.exists():
+
+        # Get projection
+        projection = file_configuration["geospatial"]["projection"]
+        
+        # Get grid settings
+        grid_settings = file_configuration["geospatial"]["griddify"]
+
+        # Get the resolution
+        resolution = grid_settings["grid_resolution"]
+        # ---- Convert from nmi to m
+        resolution_m = {key: distance(nautical=dist).meters for key, dist in resolution.items()}
+
+        # Get boundary coordinates
+        boundary = grid_settings["bounds"]
+        # ---- x
+        x = boundary["longitude"]
+        # ---- y
+        y = boundary["latitude"]
+        # ---- Create DataFrame
+        boundary_df = pd.DataFrame({
+            "x": np.array([np.min(x), np.max(x), np.max(x), np.min(x), np.min(x)]),
+            "y": np.array([np.min(y), np.min(y), np.max(y), np.max(y), np.min(y)])
+        })
+
+        # Create GeoDataFrame
+        boundary_gdf = gpd.GeoDataFrame(
+            data = boundary_df,
+            geometry=gpd.points_from_xy(boundary_df["x"], boundary_df["y"]),
+            crs = projection
         )
-    # ---- `files_processed`
-    if "files_processed" not in tables:
-        raise KeyError(
-            f"SQL database table `files_processed` in `{db_file}` failed to initialize!"
-        )
-    
+
+        # Convert to UTM (decimal degrees to m)
+        # ---- Create UTM code
+        utm_code = utm_string_generator((boundary_df.x.min() + boundary_df.x.max()) / 2, 
+                                        (boundary_df.y.min() + boundary_df.y.max()) / 2)
+        # ---- Create number code
+        utm_num = int(utm_code)
+        # ---- Create string code
+        utm_str = f"epsg:{utm_num}"
+        # ---- UTM conversion
+        boundary_gdf_utm = boundary_gdf.to_crs(utm_num)
+
+        # Get step sizes for each grid cell
+        # ---- x
+        x_step = resolution_m["x_distance"]
+        # ---- y
+        y_step = resolution_m["y_distance"]
+
+        # Prepare grid cell generation
+        # ---- Get new boundaries
+        xmin, ymin, xmax, ymax = boundary_gdf_utm.total_bounds
+        # ---- Initialize empty list
+        grid_cells = []
+        # ---- Initialize coordinate counter
+        y_ct = 0
+        x_coord = []; y_coord = []
+        # ---- Iterate through to generate cells
+        for y0 in np.arange(ymin, ymax, y_step):
+            y_ct += 1
+            x_ct = 0
+            for x0 in np.arange(xmin, xmax, x_step):
+                x_ct += 1
+                # ---- Step forward
+                x_coord.append(x_ct)
+                y_coord.append(y_ct)
+                x1 = x0 - x_step
+                y1 = y0 + y_step
+                # ---- Append to list
+                grid_cells.append(shapely.geometry.box(x0, y0, x1, y1))
+
+        # Convert to a GeoDataFrame
+        cells_gdf = gpd.GeoDataFrame(grid_cells, columns=["geometry"], crs=utm_code)
+        # ---- Add cordinates
+        cells_gdf.loc[:, "x"] = np.array(x_coord)
+        cells_gdf.loc[:, "y"] = np.array(y_coord)        
+
+        # Get coastline shapefile directory, if defined
+        if "coastline" in file_configuration["input_directories"]:
+
+            # Get coastline settings
+            coast_settings = file_configuration["input_directories"]["coastline"]
+            # ---- Create filepath
+            shp_filepath = (
+                root_dir / coast_settings["directory"] 
+                / coast_settings["coastline_name"] / f"{coast_settings["coastline_name"]}.shp"
+            )
+            # ---- Validate existence
+            if not shp_filepath.exists():
+                raise FileNotFoundError(
+                    f"{shp_filepath} does not exist!"
+                )
+            
+            # Get original lat/lon geometry boundaries
+            xmin0, ymin0, xmax0, ymax0 = boundary_gdf.total_bounds
+            
+            # Read in file
+            full_coast = gpd.read_file(shp_filepath)
+            # ---- Convert to UTM
+            full_coast_utm = full_coast.to_crs(utm_code)
+            # ---- Remove empty
+            full_coast_utm = full_coast_utm[~full_coast_utm.is_empty]
+
+            # Create bouning box with a buffer
+            boundary_box = box(xmin0 - 5, ymin0 - 5, xmax0 + 5, ymax0 + 5)
+            # ---- Create an unbuffered copy
+            boundary_box_unbuffered = box(xmin0, ymin0, xmax0, ymax0)
+            # ---- Convert to a GeoDataFrame
+            boundary_box_unbuffered_gdf = (
+                gpd.GeoDataFrame(geometry=[boundary_box_unbuffered], crs=projection)
+            )
+            # ---- Clip the coastline for saving
+            clipped_coast_original = (
+                gpd.clip(full_coast, box(xmin0 + 1, ymin0 + 1, xmax0 + 1, ymax0 + 1))
+            )
+
+            # Clip the coastline shapefile
+            clipped_coast = gpd.clip(full_coast, boundary_box).to_crs(utm_code)
+
+            # Clip the grid cells
+            cells_gdf.loc[:, "geometry"] = (
+                cells_gdf["geometry"].difference(clipped_coast.geometry.union_all())
+            )
+
+            # Calculate area per cell
+            cells_gdf.loc[:, "area"] = cells_gdf.area
+
+            # Convert back to original projection and clip 
+            clipped_cells_latlon = (
+                gpd.clip(cells_gdf.to_crs(projection), boundary_box_unbuffered_gdf)
+                .reset_index(drop=True)
+            )
+
+            # Initialize empty columns that can be added to later on
+            clipped_cells_latlon.loc[:, ["number_density_mean", "biomass_density_mean", 
+                                         "abundance", "biomass"]] = 0.0
+            
+            # Create output DataFrame
+            output_df = pd.DataFrame({
+                "geometry": clipped_cells_latlon["geometry"].apply(lambda geom: geom.wkt)
+            })
+            # ---- Add the required columns
+            output_df = pd.concat([output_df, clipped_cells_latlon.loc[:, ["x", "y", "area"]]], 
+                                  axis=1) 
+            # ---- Initialize empty columns that can be added to later on
+            output_df.loc[:, ["number_density_mean", "biomass_density_mean", "abundance", 
+                              "biomass"]] = 0.0
+           
+            # Write to the database file (for the grid)
+            # ---- Create engine
+            engine = sqla.create_engine(f"sqlite:///{db_filepath}")
+            # ---- Connect and create table
+            _ = output_df.to_sql("grid_df", engine, if_exists="replace")
+
+            # Write to the database file (for the coastline shapefile)
+            # ---- Create output copy
+            coastline_out = pd.DataFrame({
+                "geometry": clipped_coast_original["geometry"].apply(lambda geom: geom.wkt)
+            })
+            # ---- Concatenate
+            coastline_out = (
+                pd.concat([coastline_out, clipped_coast_original.drop(columns="geometry")], axis=1)
+            )
+            # ---- Connect and create table
+            _ = coastline_out.to_sql("coastline_df", engine, if_exists="replace")
 
 ####################################################################################################  
 # TEST: YAML FILE CONFIGURATION
@@ -245,8 +419,137 @@ from typing import List
 data_table = "grid"
 grid_table = "reference"
 column_pairs = [("number_density", "abundance"), ("biomass_density", "biomass")]
-coordinates = ["x", "y"]
+
 dataframe = nasc_biology_output
+
+import sqlalchemy as sqla
+grid_db_file = file_configuration["database"]["grid"]
+survey_db_file = Path(file_configuration["data_root_dir"]) / "database" / "acoustics.db"
+data_table = "survey_data_df"
+grid_table = "grid_df"
+coordinates = ["x", "y"]
+from echopop.live.sql_methods import SQL
+
+SQL(grid_db_file, "select", table_name=grid_table)
+SQL(survey_db_file, "select", table_name=data_table)
+SQL(data_table, "map")
+
+updated_survey_data = nasc_biology.copy()
+# Get relevant table
+previous_grid = query_dataset(grid_db_file, updated_survey_data, 
+                              table_name=grid_table,
+                              data_columns=["x", "y", "area", "number_density_mean", 
+                                            "biomass_density_mean", "abundance", "biomass"],
+                              unique_columns=["x", "y"])
+
+# Get unique coordinates
+update_keys = get_unique_identifiers(updated_survey_data, gridding_column).set_index(["x", "y"])
+update_keys["number_density_mean"] = updated_survey_data.groupby(["x", "y"])["number_density"].mean()
+update_keys["biomass_density_mean"] = updated_survey_data.groupby(["x", "y"])["biomass_density"].mean()
+
+
+
+number_density_mean = updated_survey_data.groupby(["x", "y"])["number_density"].mean()
+biomass_density_mean = updated_survey_data.groupby(["x", "y"])["biomass_density"].mean()
+
+SQL(grid_db_file, "select", table_name=grid_table)
+
+
+
+pulled_data = pd.concat([SQL(grid_db_file, "select", 
+                             table_name=grid_table, 
+                             condition=f"x = {t[0]} & y = {t[1]}") for t in unique_coord])
+previous_cell_data = pd.concat([SQL(survey_db_file, "select", 
+                                    table_name=data_table,
+                                    condition=f"x = {t[0]} & y = {t[1]}") for t in unique_coord])
+
+from echopop.live.live_data_processing import get_nasc_sql_data, get_sigma_bs_sql_data, get_average_strata_weights, summarize_strata
+from echopop.live.sql_methods import sql_group_update
+from typing import List
+from shapely.geometry import box
+SQL(grid_db_file, "select", table_name="grid_df")
+# Compute means
+number_density_mean = previous_cell_data.groupby(["x", "y"])["number_density"].mean()
+previous_cell_data = previous_cell_data.groupby(["x", "y"])["biomass_density"].mean()
+
+[SQL(grid_db_file, "select", table_name=grid_table, condition=f"x = {xi} & y = {yi}") for xi, yi in zip(nasc_data_df["x"], nasc_data_df["y"])]
+
+# Write to the database file (for the grid)
+# ---- Create engine
+engine = sqla.create_engine(f"sqlite:///{db_filepath}")
+
+def update_population_grid(grid_db_file: str, 
+                           data_table: str,
+                           grid_table: str,
+                           dataframe: pd.DataFrame,
+                           column_pairs: Union[List[tuple[str, str]], tuple[str, str]],
+                           coordinates: List[str]):
+    
+    # Convert `column_pairs` to a list, if needed
+    if not isinstance(column_pairs, list):
+        column_pairs = [column_pairs]
+
+    dataframe[coordinates]
+    # Format the coordinate pairs
+    # ---- Convert coordinate values into a list of tuples
+    coord_pairs = [tuple(row) for row in dataframe[coordinates].itertuples(index=False)]    
+    # ---- Get unique pairs
+    coords = list(set(coord_pairs))
+
+    # Format the SQL script command
+    # ---- Initialize
+    sql_script = []
+    # ---- Iteratively update
+    for input_column, output_column in column_pairs:
+        sql_script.append(
+        f"""
+        BEGIN TRANSACTION;
+                        
+        -- Calculate averages for input_column and update grid_table
+        WITH avgs AS (
+            SELECT
+                {coordinates[0]},
+                {coordinates[1]},
+                AVG(d.{input_column}) as avg_value
+            FROM {data_table} d
+            GROUP BY d.{coordinates[0]}, d.{coordinates[1]}
+        )
+
+        -- Update the grid_table with both average and computed total
+        UPDATE {grid_table}
+        SET 
+            mean_{input_column} = (
+                SELECT avg_value
+                FROM avgs
+                WHERE avgs.{coordinates[0]} = {grid_table}.{coordinates[0]}
+                    AND avgs.{coordinates[1]} = {grid_table}.{coordinates[1]}
+            ),
+            {output_column} = (
+                SELECT avg_value * {grid_table}.area
+                FROM avgs
+                WHERE avgs.{coordinates[0]} = {grid_table}.{coordinates[0]}
+                    AND avgs.{coordinates[1]} = {grid_table}.{coordinates[1]}
+            )       
+        WHERE EXISTS (
+            SELECT 1
+            FROM avgs
+            WHERE avgs.{coordinates[0]} = {grid_table}.{coordinates[0]}
+              AND avgs.{coordinates[1]} = {grid_table}.{coordinates[1]}
+        );
+
+        COMMIT;
+        """
+        )
+
+    # Create the engine
+    engine = create_engine(f"sqlite:///{db_file}")
+
+    # Create the SQL database connection and send the script 
+    with engine.connect() as connection:
+        dbapi_conn = connection.connection
+        _ = dbapi_conn.executescript("\n".join(sql_script))
+
+
 
 def update_population_grid(db_file: str, 
                            data_table: str,
