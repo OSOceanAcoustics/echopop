@@ -626,7 +626,8 @@ def query_processed_files(root_directory: Path, file_settings: dict, files: List
 
     # Create filepath to the SQL database
     # ---- Create Path to SQL database file
-    db_directory = Path(file_configuration["database_directory"])
+    # db_directory = Path(file_configuration["database_directory"])
+    db_directory = Path(root_directory)
     # ---- Complete path to the database file
     db_file = db_directory / db_name
 

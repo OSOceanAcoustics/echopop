@@ -442,6 +442,15 @@ previous_grid = query_dataset(grid_db_file, updated_survey_data,
                                             "biomass_density_mean", "abundance", "biomass"],
                               unique_columns=["x", "y"])
 
+# Index
+previous_grid.set_index(["x", "y"], inplace=True)
+previous_grid["biomass_density_mean"] = updated_survey_data.groupby(["x", "y"])["biomass_density"].mean()
+previous_grid["number_density_mean"] = updated_survey_data.groupby(["x", "y"])["number_density"].mean()
+
+# Convert area from m^2 to nmi^2
+previous_grid["abundance"] = previous_grid["number_density_mean"] * previous_grid["area"]
+previous_grid["biomass"] = previous_grid["biomass_density_mean"] * previous_grid["area"]
+
 # Get unique coordinates
 update_keys = get_unique_identifiers(updated_survey_data, gridding_column).set_index(["x", "y"])
 update_keys["number_density_mean"] = updated_survey_data.groupby(["x", "y"])["number_density"].mean()
