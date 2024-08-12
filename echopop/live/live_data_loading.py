@@ -232,6 +232,8 @@ def validate_data_directory(file_configuration: dict, dataset: str,
         raise TypeError(
             "Data loading argument `input_filenames` must be a list."
         )        
+    #
+    root_directory = file_configuration["database_directory"]
     
     # Initialize the database file
     initialize_database(root_directory, file_settings)
