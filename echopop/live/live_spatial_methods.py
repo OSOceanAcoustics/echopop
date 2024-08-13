@@ -554,13 +554,13 @@ def update_population_grid(file_configuration: dict,
     # Get filepath for grid
     grid_db = list(
         Path(file_configuration["database_directory"])
-        .glob(pattern=f"{file_settings["grid"]["database_name"]}")
+        .glob(pattern=f"{file_settings['grid']['database_name']}")
     )[0]
 
     # Get filepath for acoustics
     survey_db = list(
         Path(file_configuration["database_directory"])
-        .glob(pattern=f"{file_settings["acoustics"]["database_name"]}")
+        .glob(pattern=f"{file_settings['acoustics']['database_name']}")
     )[0]
 
     # Define the SQL tables that will be parsed and queries
