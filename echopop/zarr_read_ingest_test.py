@@ -24,6 +24,27 @@ from echopop.live.live_survey import LiveSurvey
 from echopop.live.live_acoustics import integrate_nasc, configure_transmit_frequency
 from echopop.live.live_biology import preprocess_biology_data
 from echopop.survey import Survey
+import geopandas as gpd
+import pandas as pd
+import numpy as np
+import shapely.geometry
+from shapely.geometry import box
+from echopop.spatial.projection import utm_string_generator
+from geopy.distance import distance
+from echopop.live.sql_methods import SQL
+from shapely import wkt
+import matplotlib.pyplot as plt
+import geopandas as gpd
+import matplotlib.colors as colors
+import matplotlib.cm as cm
+import numpy as np
+from matplotlib.colors import ListedColormap
+self = realtime_survey
+spatial_config = self.config["geospatial"]
+dataset = self.input["acoustics"]["nasc_df"]
+
+
+
 
 survey_2019 = Survey("C:/Users/Brandyn/Documents/GitHub/echopop/config_files/initialization_config.yml", "C:/Users/Brandyn/Documents/GitHub/echopop/config_files/survey_year_2019_config.yml")
 survey_2019.transect_analysis()
@@ -434,6 +455,8 @@ SQL(grid_db_file, "select", table_name=grid_table)
 SQL(survey_db_file, "select", table_name=data_table)
 SQL(data_table, "map")
 
+gridding_column = self.config["gridding_column"]
+
 updated_survey_data = nasc_biology.copy()
 # Get relevant table
 previous_grid = query_dataset(grid_db_file, updated_survey_data, 
@@ -441,23 +464,39 @@ previous_grid = query_dataset(grid_db_file, updated_survey_data,
                               data_columns=["x", "y", "area", "number_density_mean", 
                                             "biomass_density_mean", "abundance", "biomass"],
                               unique_columns=["x", "y"])
+previous_data = query_dataset(survey_db_file, updated_survey_data, 
+                              table_name=data_table,
+                              data_columns=["x", "y", "number_density", "biomass_density"],
+                              unique_columns=["x", "y"])
+# Get unique coordinates
+update_keys = get_unique_identifiers(updated_survey_data, gridding_column).set_index(["x", "y"])
+
 
 # Index
 previous_grid.set_index(["x", "y"], inplace=True)
-previous_grid["biomass_density_mean"] = updated_survey_data.groupby(["x", "y"])["biomass_density"].mean()
-previous_grid["number_density_mean"] = updated_survey_data.groupby(["x", "y"])["number_density"].mean()
+previous_grid["biomass_density_mean"] = previous_data.groupby(["x", "y"])["biomass_density"].mean()
+previous_grid["number_density_mean"] = previous_data.groupby(["x", "y"])["number_density"].mean()
 
 # Convert area from m^2 to nmi^2
 previous_grid["abundance"] = previous_grid["number_density_mean"] * previous_grid["area"]
 previous_grid["biomass"] = previous_grid["biomass_density_mean"] * previous_grid["area"]
+previous_grid = previous_grid.reset_index()
 
-# Get unique coordinates
-update_keys = get_unique_identifiers(updated_survey_data, gridding_column).set_index(["x", "y"])
+sql_group_update(grid_db_file, dataframe=previous_grid, 
+                 table_name=grid_table, 
+                 columns=["number_density_mean", "biomass_density_mean", "abundance", "biomass"], 
+                 unique_columns=["x", "y"])
+
+murr = SQL(grid_db_file, "select", table_name=grid_table)
+murr[murr.abundance > 0]
+
 update_keys["number_density_mean"] = updated_survey_data.groupby(["x", "y"])["number_density"].mean()
 update_keys["biomass_density_mean"] = updated_survey_data.groupby(["x", "y"])["biomass_density"].mean()
 
-
-
+am = SQL(grid_db_file, "select", table_name="grid_df")
+am[am.abundance > 0]
+bm = SQL(grid_db_file, "select", table_name="grid_df")
+bm[bm.abundance > 0]
 number_density_mean = updated_survey_data.groupby(["x", "y"])["number_density"].mean()
 biomass_density_mean = updated_survey_data.groupby(["x", "y"])["biomass_density"].mean()
 
@@ -1656,6 +1695,10 @@ catch_df = pd.DataFrame(
 TS_SLOPE = 20.0
 TS_INTERCEPT = -68.0
 
+acoustic_db = realtime_survey.config["database"]["acoustics"]
+SQL(acoustic_db, "select", table_name="files_processed")
+biology_db = realtime_survey.config["database"]["biology"]
+SQL(biology_db, "select", table_name="files_processedk")
 ####
 # CONCATENATE FILE SOURCES
 specimen_reframed = specimen_df.groupby(["haul_num", "station", "sex", "length"])["length"].value_counts().to_frame("length_count").reset_index()
@@ -1666,6 +1709,12 @@ all_lengths = pd.concat([length_df, specimen_reframed])
 comb_lengths = all_lengths.groupby(["haul_num", "sex", "length"])["length_count"].sum().to_frame("length_count").reset_index()
 
 
+from echopop.live.sql_methods import SQL
+
+# Assuming that you have a LiveSurvey object defined
+# ---- Get the database file name (and path)
+biology_db = livesurvey_object.config["database"]["biology"]
+# ----
 # CONVERT TO TS
 comb_lengths["ts"] = TS_SLOPE * np.log10(comb_lengths["length"]) + TS_INTERCEPT
 # TO SIGMA_BS
@@ -1673,7 +1722,6 @@ comb_lengths["sigma_bs"] = 10 ** (comb_lengths["ts"] / 10)
 # WEIGHTED MEAN SIGMA_BS
 sigma_mean = np.average(comb_lengths["sigma_bs"], weights=comb_lengths["length_count"])
 
-### 
 # INTEGRATE NASC
 path2file = "C:/Users/15052/Downloads/win_1720457505_1720460000_NASC.zarr"
 

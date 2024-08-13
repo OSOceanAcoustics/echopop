@@ -1,6 +1,5 @@
 from echopop.live.live_survey import LiveSurvey
 from echopop.live.sql_methods import SQL
-
 ####################################################################################################
 # TEST: Set up `LiveSurvey` object
 # NOTE: General initialization parameter configuration

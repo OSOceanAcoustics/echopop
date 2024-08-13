@@ -2033,26 +2033,165 @@ bb_orig_gdf = gpd.GeoDataFrame(geometry=[bb_orig], crs=projection)
 # plt.xlim(lon_min-3, lon_max+3)
 # plt.ylim(lat_min-3, lat_max+3)
 # plt.show()
-test = SQL(db_filepath, "select", table_name="grid_df")
+from echopop.live.sql_methods import SQL
 from shapely import wkt
 import matplotlib.pyplot as plt
+import geopandas as gpd
+import matplotlib.colors as colors
+import matplotlib.cm as cm
+import numpy as np
+from matplotlib.colors import ListedColormap
+import matplotlib.dates as mdates
+from datetime import datetime
+db_filepath = realtime_survey.config["database"]["grid"]
+survey_db = realtime_survey.config["database"]["acoustics"]
+grid_df = SQL(db_filepath, "select", table_name="grid_df")
+# grid_df[grid_df.abundance > 0]
+grid_df[grid_df.abundance > 1e10]
+# grid_df[grid_df.abundance > 0]
+coast_df = SQL(db_filepath, "select", table_name="coastline_df")
+survey_df = SQL(survey_db, "select", table_name="survey_data_df")
 
-test = output_df.copy()
-test["geometry"] = test["geometry"].apply(wkt.loads)
-test_gdf = gpd.GeoDataFrame(test, geometry="geometry", crs=projection)
+# def parse_datetime(date_str):
+#     # List of possible formats
+#     formats = [
+#         '%Y-%m-%d %H:%M:%S.%f',  # With fractional seconds
+#         '%Y-%m-%d %H:%M:%S',     # Without fractional seconds
+#         '%Y-%m-%dT%H:%M:%S.%f',  # ISO 8601 format with fractional seconds
+#         '%Y-%m-%dT%H:%M:%S'      # ISO 8601 format without fractional seconds
+#     ]
+    
+#     for fmt in formats:
+#         try:
+#             return pd.to_datetime(date_str, format=fmt)
+#         except (ValueError, TypeError):
+#             continue  # Try the next format
+    
+#     return pd.NaT  # Return NaT if no formats match
+
+# survey_df["ping_time"] = survey_df["ping_time"].apply(parse_datetime)
+
+# pd.to_datetime(survey_df["ping_time"], format='%Y-%m-%d %H:%M:%S.%f', errors="coerce")
+
+# fig, ax = plt.subplots(figsize=(5, 8))
+# ax.scatter(survey_df.ping_time, survey_df.nasc)
+# plt.ylabel("NASC")
+# # ax.xaxis.set_major_locator(mdates.DayLocator(5, 10, 15))
+# plt.show()
+
+
+# times = np.arange(np.datetime64('2001-01-02'),
+#                   np.datetime64('2002-02-03'), np.timedelta64(75, 'm'))
+# y = np.random.randn(len(times))
+# survey_df[(survey_df.nasc > 0) & (survey_df.nasc < 1e5)]["nasc"].mean()
+# survey_df[(survey_df.nasc > 0) & (survey_df.nasc > 1e5)]["nasc"].mean()
+
+# fig, ax = plt.subplots()
+# ax.plot(times, y)
+# survey_df[(survey_df.number_density > 0) & (survey_df.x == 21)]
+# # a = self.input["acoustics"]["prc_nasc_df"]
+# # survey_df[(survey_df.x) == 24 & (survey_df.y == 13)]
+
+grid_df["geometry"] = grid_df["geometry"].apply(wkt.loads)
+coast_df["geometry"] = coast_df["geometry"].apply(wkt.loads)
+
+projection = realtime_survey.config["geospatial"]["projection"]
+
+grid_gdf = gpd.GeoDataFrame(grid_df, geometry="geometry", crs=projection)
+grid_gdf_1 = grid_gdf[grid_gdf.abundance > 0]
+coast_gdf = gpd.GeoDataFrame(coast_df, geometry="geometry", crs=projection)
+
+lims = grid_gdf.total_bounds
+# nu = dataset_gdf[(dataset_gdf.stratum_x == 25) & (dataset_gdf.stratum_y == 11)]
+# dataset_gdf.stratum_x.max() 
+# # np.linspace(1, 1, len(np.arange(xmin, xmax+x_step, x_step))-1)
+
+# # np.arange(1, len(np.arange(xmin, xmax+x_step, x_step)))
+# pd.cut(
+#     nu["x"],
+#     np.arange(xmin, xmax, x_step),
+#     right = False,
+#     labels = np.arange(1, len(np.arange(xmin, xmax, x_step))),
+# ).astype(int) - 1
+# grid_gdf["x"] =  grid_gdf["x"] - 1
+
+# fig, ax = plt.subplots(figsize=(5, 8))
+# grid_gdf.plot(ax=ax, edgecolor="gainsboro", color="white", linewidth=0.5, legend=False)
+# plt.plot(dataset_gdf.longitude, dataset_gdf.latitude, linewidth=1, color='black')
+# plt.plot(nu.longitude, nu.latitude, linewidth=1, color="red")
+# # Calculate centroids and plot text
+# for idx, row in grid_gdf.iterrows():
+#     centroid = row.geometry.centroid
+#     var = f"{row.x}-{row.y}"
+#     ax.annotate(var, xy=(centroid.x, centroid.y), 
+#                 xytext=(0,0), fontsize=8, 
+#                 textcoords="offset points",
+#                 ha='center', va='center', color='black')
+# plt.tight_layout()
+# plt.margins(0, 0)
+# coast_gdf.plot(ax=ax, linewidth=1.2, color='gray', edgecolor="black")
+# plt.xlim(lims[0]*1.005, lims[2]*1.01)
+# plt.ylim(lims[1]*0.98, lims[3]*1.005)
+# plt.show()
+
+
+variable = "abundance"
+VARIABLE_MAP = {
+    "number_density_mean": {
+        "name": "Mean number density",
+        "units": "fish $\\mathregular{nmi^{-2}}$"
+    }, 
+    "biomass_density_mean": {
+        "name": "Mean biomass density",
+        "units": "kg $\\mathregular{nmi^{-2}}$"
+    },     
+    "biomass": {
+        "name": "Biomass",
+        "units": "kg"
+    },
+    "abundance": {
+        "name": "Abundance",
+        "units": "$\\it{N}$"
+    }
+}
+
+viridis = plt.colormaps.get_cmap('viridis').resampled(1024)
+newcolors = viridis(np.linspace(0, 1, 1024))[::-1]
+white = np.array([1, 1, 1, 1])
+newcolors[0, :] = white
+custom_cmap = ListedColormap(newcolors)
+# Check the minimum and maximum values for normalization
+
+
+fig, ax = plt.subplots(figsize=(5, 8))
+grid_gdf.plot(ax=ax, edgecolor="gainsboro", color="white", linewidth=0.5, legend=False)
+grid_gdf_1.plot(ax=ax, column=variable, edgecolor="black", linewidth=2, cmap=custom_cmap, legend=False, norm=norm)
+plt.scatter(survey_df["longitude"], survey_df["latitude"], linewidth=0.5, color="black")
+vmin = grid_gdf[variable][grid_gdf[variable] > 0.0].min()
+vmax = grid_gdf[variable].max()
+norm = colors.Normalize(vmin=0, vmax=vmax, clip=False)
+# norm = colors.Normalize(vmin=grid_gdf[variable][grid_gdf[variable] > 0.0].min(), vmax=grid_gdf[variable].max())
+# cbar = plt.colorbar(cm.ScalarMappable(norm=norm, cmap=custom_cmap), ax=ax, orientation="horizontal", shrink=0.5)
+cbar = plt.colorbar(cm.ScalarMappable(cmap=custom_cmap, norm=norm), ax=ax, orientation="horizontal", shrink=0.5)
+cbar.set_label(f"{VARIABLE_MAP[variable]["name"]} ({VARIABLE_MAP[variable]["units"]})", 
+               fontsize=12, labelpad=10, loc='center')  
+cbar.ax.xaxis.set_label_position('top')
+cbar.ax.xaxis.set_ticks_position('top')
+plt.tight_layout()
+plt.margins(0,0)
+# grid_gdf_1.plot(ax=ax, linewidth=1.5, color="black")
+coast_gdf.plot(ax=ax, linewidth=1.2, color='gray', edgecolor="black")
+plt.xlim(lims[0]*1.005, lims[2]*1.01)
+plt.ylim(lims[1]*0.98, lims[3]*1.005)
+plt.xlabel(u'Longitude (\u00B0E)')
+plt.ylabel(u'Latitude (\u00B0N)')
+plt.show()
+
 
 co = SQL(db_filepath, "select", table_name="coastline_df")
 co["geometry"] = co["geometry"].apply(wkt.loads)
 co_gdf = gpd.GeoDataFrame(co, geometry="geometry", crs=projection)
 
-lims = test_gdf.total_bounds
-
-fig, ax = plt.subplots(figsize=(10, 10))
-test_gdf.plot(ax=ax, column="abundance", edgecolor="black", cmap="viridis", legend=False)
-co_gdf.plot(ax=ax, linewidth=1.2, color='gray', edgecolor="black")
-plt.xlim(lims[0]*1.005, lims[2]*1.01)
-plt.ylim(lims[1]*0.98, lims[3]*1.005)
-plt.show()
 
 
 test["geometry"].apply(wkt.loads)

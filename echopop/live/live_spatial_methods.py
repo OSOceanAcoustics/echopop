@@ -7,7 +7,8 @@ import shapely.geometry
 from shapely.geometry import box
 import sqlalchemy as sqla
 from pathlib import Path
-from typing import Union
+from typing import Union, List
+from .sql_methods import sql_group_update, query_dataset
 
 def create_inpfc_strata(spatial_config: dict):
 
@@ -181,8 +182,8 @@ def apply_griddify_definitions(dataset: pd.DataFrame, spatial_config: dict):
     # Generate the cells
     grid_cells = []
     # ---- Iterate through
-    for y0 in np.arange(ymin, ymax+y_step, y_step):
-        for x0 in np.arange(xmin, xmax+x_step, x_step):
+    for y0 in np.arange(ymin, ymax, y_step):
+        for x0 in np.arange(xmin, xmax, x_step):
             x1 = x0-x_step
             y1 = y0+y_step
             grid_cells.append(shapely.geometry.box(x0, y0, x1, y1))
@@ -210,9 +211,9 @@ def apply_griddify_definitions(dataset: pd.DataFrame, spatial_config: dict):
     dataset_gdf["stratum_x"] = pd.cut(
         dataset_gdf["x"],
         np.arange(xmin, xmax+x_step, x_step),
-        right = True,
-        labels = range(len(np.arange(xmin, xmax+x_step, x_step)) - 1),
-    ).astype(int) + 1
+        right = False,
+        labels = np.arange(1, len(np.arange(xmin, xmax+x_step, x_step))),
+    ).astype(int)
 
     # Bin the latitude data
     dataset_gdf["stratum_y"] = pd.cut(
@@ -501,6 +502,8 @@ def initialize_grid(file_configuration = dict):
 
             # Calculate area per cell
             cells_gdf.loc[:, "area"] = cells_gdf.area
+            # ---- Convert back to nmi^2 from m^2
+            cells_gdf.loc[:, "area"] = cells_gdf.loc[:, "area"] / 1852 ** 2
 
             # Convert back to original projection and clip 
             clipped_cells_latlon = (
@@ -540,3 +543,71 @@ def initialize_grid(file_configuration = dict):
             )
             # ---- Connect and create table
             _ = coastline_out.to_sql("coastline_df", engine, if_exists="replace", index=False)
+
+def update_population_grid(file_configuration: dict,
+                           coordinates: Union[List[str], str],
+                           dataset: Union[dict, pd.DataFrame]):
+
+    # Extract input directory settings
+    file_settings = file_configuration["input_directories"]
+
+    # Get filepath for grid
+    grid_db = list(
+        Path(file_configuration["database_directory"])
+        .glob(pattern=f"{file_settings["grid"]["database_name"]}")
+    )[0]
+
+    # Get filepath for acoustics
+    survey_db = list(
+        Path(file_configuration["database_directory"])
+        .glob(pattern=f"{file_settings["acoustics"]["database_name"]}")
+    )[0]
+
+    # Define the SQL tables that will be parsed and queries
+    data_table = "survey_data_df"
+    grid_table = "grid_df"
+
+    # Get indexed survey data
+    indexed_data = query_dataset(survey_db, 
+                                 dataset, 
+                                 table_name=data_table, 
+                                 data_columns=coordinates + ["x", "y", "number_density", 
+                                                             "biomass_density"], 
+                                 unique_columns=coordinates)
+    
+    # Get indexed grid data
+    indexed_grid = query_dataset(grid_db, 
+                                 indexed_data, 
+                                 table_name=grid_table, 
+                                 data_columns= ["x", "y", "area", "number_density_mean", 
+                                                "biomass_density_mean", "abundance", "biomass"], 
+                                 unique_columns=["x", "y"])
+    
+    # Set DataFrame index
+    indexed_grid.set_index(["x", "y"], inplace=True)
+
+    # Update the areal density esitmates
+    # ---- Number (animals/nmi^2)
+    indexed_grid["number_density_mean"] = indexed_data.groupby(["x", "y"])["number_density"].mean()
+    # ---- Bioamss (kg/nmi^2)
+    indexed_grid["biomass_density_mean"] = indexed_data.groupby(["x", "y"])["biomass_density"].mean()
+
+    # Compute the abundance and biomass per grid cell
+    # ---- Abundance (# animals)
+    indexed_grid["abundance"] = indexed_grid["number_density_mean"] * indexed_grid["area"]
+    # ---- kg
+    indexed_grid["biomass"] = indexed_grid["biomass_density_mean"] * indexed_grid["area"]
+
+    # Update grid table
+    # ---- Reset index
+    output_df = indexed_grid.reset_index()
+    # ---- Grouped update
+    sql_group_update(grid_db, dataframe=output_df, table_name=grid_table, 
+                     columns=["number_density_mean", "biomass_density_mean", "abundance", 
+                              "biomass"], 
+                     unique_columns=["x", "y"])
+
+
+
+
+    

@@ -566,6 +566,29 @@ def get_table_key_names(db_file: Path, data_dict: dict, table_name: str) -> List
     # Return a list of the output
     return list(key_columns)
 
+def get_unique_identifiers(data_dict: dict,
+                           unique_columns: List[str]) -> pd.DataFrame:
+
+    # Gather all dataframes from a dictionary into a list
+    if isinstance(data_dict, dict):
+        df_list = [df for _, df in data_dict.items()]
+    else:
+        df_list = [data_dict]
+
+    # Get unique values of each contrast column across the biological datasets    
+    combined_df = pd.concat(
+        [df[unique_columns] for df in df_list if isinstance(df, pd.DataFrame) and all(col in df.columns for col in unique_columns)], 
+        ignore_index=True
+    ).drop_duplicates()
+    
+    # Reduce into a single DataFrame
+    return combined_df
+    # if len(unique_columns) > 1:
+    #     return reduce(lambda left, right: pd.merge(left, right, how='cross'), dfs)
+    # else:
+    #     return reduce(lambda left, right: pd.merge(left, right, how="outer"), dfs)
+
+
 def parse_condition(condition: str):
     # Replace logical operators with SQL equivalents
     condition = condition.replace('&', ' AND ').replace('|', ' OR ')
@@ -699,6 +722,43 @@ def reset_db_files(file_configuration: dict, table_exception: Optional[Union[str
                 f"Attempted reset of [{str(db_file)}] failed."
             )
 
+def query_dataset(db_file: str,
+                  data_dict: dict,
+                  table_name: str,
+                  data_columns: List[str],
+                  unique_columns: List[str],
+                  constraint: Optional[str] = None):
+    
+    # Validate that the desired table exists
+    if SQL(db_file, "validate", table_name=table_name):
+        # ---- Inspect the SQL table
+        inspected_table = SQL(db_file, "inspect", table_name=table_name)
+        # ---- Create a list of intersecting column names
+        unique_keys = list(set(inspected_table.keys()).intersection(set(unique_columns)))
+        # ---- Create list of valid columns
+        valid_keys = list(set(inspected_table.keys()).intersection(set(data_columns)))
+        # ---- Get unique identifiers
+        unique_keys_df = get_unique_identifiers(data_dict, unique_keys)
+        # ---- Create conditional string  
+        conditional_str = " | ".join(
+            [" & ".join([f"{col} = {val}" for col, val in row.items()]) 
+            for _, row in unique_keys_df.iterrows()]
+        )          
+        # conditional_str = (
+        #    " & ".join([f"{col} in {np.unique(unique_keys_df[col]).tolist()}" 
+        #                for col in unique_keys_df.columns])  
+        # )
+        # ---- Append the additional constraint statement if present
+        if constraint is not None:
+            conditional_str = f"({conditional_str})" + f" & {constraint}"
+        # ---- SELECT the dataset using the conidtional statement
+        data_sql = SQL(db_file, "select", table_name=table_name, columns=valid_keys,
+                       condition=conditional_str).filter(data_columns)
+    else:
+        data_sql = None
+
+    # Return the table DataFrame
+    return data_sql
 def sql_update_strata_summary(source_db: str,
                               target_db: str,
                               source_table: str,
