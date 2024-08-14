@@ -96,7 +96,8 @@ def filter_filenames(directory_path: Path, filename_id: str,
     # Find intersection with the proposed filenames and return the output
     return list(set(subfile_str).intersection(set(file_str)))
 
-def read_biology_files(biology_files: List[Path], file_configuration: dict):
+def read_biology_files(biology_files: List[Path], file_configuration: dict, 
+                       pandas_kwargs: dict = {}):
 
     # Get the biology data file settings
     file_settings = file_configuration["input_directories"]["biology"]
@@ -137,7 +138,8 @@ def read_biology_files(biology_files: List[Path], file_configuration: dict):
             # ---- Read in validated biology data
             dataframe_list = [read_biology_csv(Path(file), 
                                                file_settings["file_name_formats"][dataset], 
-                                               biology_config_map[dataset]) 
+                                               biology_config_map[dataset],
+                                               pandas_kwargs) 
                               for file in dataset_files]
             # ---- Concatenate the dataset
             dataframe_combined = pd.concat(dataframe_list, ignore_index=True)
@@ -265,10 +267,10 @@ def compile_filename_format(file_name_format: str):
     # Compile the regex pattern and return the output
     return re.compile(regex_pattern)
 
-def read_biology_csv(file: Path, pattern: re.Pattern, config_map: dict):
+def read_biology_csv(file: Path, pattern: re.Pattern, config_map: dict, pandas_kwargs: dict = {}):
 
     # Read in the `*.csv` file
-    df = pd.read_csv(file, usecols=list(config_map["dtypes"].keys()))
+    df = pd.read_csv(file, usecols=list(config_map["dtypes"].keys()), **pandas_kwargs)
 
     # Validate the dataframe
     # ---- Check for any missing columns

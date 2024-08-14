@@ -165,6 +165,7 @@ class LiveSurvey:
             self.input["acoustics"]["prc_nasc_df"] = None
 
     def load_biology_data(self,
+                          pandas_kwargs: dict = {},
                           input_filenames: Optional[list] = None,
                           verbose: bool = True):
 
@@ -182,7 +183,8 @@ class LiveSurvey:
             )
         
             # Read in the biology data files
-            initial_biology_output = eldl.read_biology_files(biology_files, self.config)
+            initial_biology_output = eldl.read_biology_files(biology_files, self.config,
+                                                             pandas_kwargs=pandas_kwargs)
 
             # Preprocess the biology dataset
             self.input["biology"], self.input["biology_processed"] = (
