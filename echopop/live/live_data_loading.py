@@ -217,19 +217,19 @@ def validate_data_directory(file_configuration: dict, dataset: str,
 
     # Validate filepath, columns, datatypes
     # ---- Error evaluation (if applicable)
-    if not directory_path.exists():
-        raise FileNotFoundError(
-            f"The acoustic data directory [{directory_path}] does not exist."
-        )
+    # if not directory_path.exists():
+    #     raise FileNotFoundError(
+    #         f"The acoustic data directory [{directory_path}] does not exist."
+    #     )
 
     # Validate that files even exist
     # ---- List available *.zarr files
     data_files = list(directory_path.glob(f"*{'.'+file_settings['extension']}"))
     # ---- Error evaluation (if applicable)
-    if not data_files:
-        raise FileNotFoundError(
-            f"No `*.{file_settings['extension']}` files found in [{directory_path}]!"
-        )
+    # if not data_files:
+    #     raise FileNotFoundError(
+    #         f"No `*.{file_settings['extension']}` files found in [{directory_path}]!"
+    #     )
     
     # Check and format specific input filenames
     if isinstance(input_filenames, list):
