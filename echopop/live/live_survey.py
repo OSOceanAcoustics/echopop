@@ -128,12 +128,14 @@ class LiveSurvey:
         return self.__repr__()
 
     def load_acoustic_data(self,
-                           input_filenames: Optional[list] = None,
+                           xarray_kwargs: dict = {},
+                           input_filenames: Optional[list] = None,                           
                            verbose: bool = True):
         
         # Validate the data directory and format the filepaths
-        acoustic_files = eldl.validate_data_directory(self.config, dataset="acoustics", 
-                                                      input_filenames=input_filenames)
+        acoustic_files = eldl.validate_data_directory(self.config, dataset="acoustics",                                                       
+                                                      input_filenames=input_filenames,
+                                                      xarray_kwargs=xarray_kwargs)
         
         # Read in the acoustic data files
         if acoustic_files:

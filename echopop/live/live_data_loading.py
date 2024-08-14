@@ -57,7 +57,8 @@ def live_configuration(live_init_config_path: Union[str, Path],
     # Combine both into a dictionary output that can be added to the `LiveSurvey` class object
     return {**init_config, **file_config}
 
-def read_acoustic_files(acoustic_files: List[Path]) -> tuple:
+def read_acoustic_files(acoustic_files: List[Path],
+                        xarray_kwargs: dict = {}) -> tuple:
 
     # Get the file-specific settings, datatypes, columns, etc.
     # ---- Get defined columns and datatypes from `LIVE_INPUT_FILE_CONFIG_MAP`
@@ -66,7 +67,8 @@ def read_acoustic_files(acoustic_files: List[Path]) -> tuple:
     # Read all of the zarr files
     results_list =  [(data_df, unit_dict) if i ==0 else (data_df, None) 
                      for i, (data_df, unit_dict) in enumerate(
-                        read_acoustic_zarr(Path(file), acoustics_config_map) 
+                        read_acoustic_zarr(Path(file), acoustics_config_map, 
+                                           xarray_kwargs=xarray_kwargs) 
                         for file in acoustic_files
     )]
 
@@ -154,7 +156,7 @@ def read_biology_files(biology_files: List[Path], file_configuration: dict):
     # Return the output
     return biology_output
 
-def read_acoustic_zarr(file: Path, config_map: dict) -> tuple:
+def read_acoustic_zarr(file: Path, config_map: dict, xarray_kwargs: dict = {}) -> tuple:
     
     # Format the file reading configuration
     # ---- Concatenate into a full configuration map
@@ -162,7 +164,7 @@ def read_acoustic_zarr(file: Path, config_map: dict) -> tuple:
                         **config_map["xarray_variables"]} 
 
     # Determine the file loading method for the `acoustic_files`
-    zarr_data_ds = xr.open_dataset(file, engine="zarr", chunks="auto")
+    zarr_data_ds = xr.open_dataset(file, engine="zarr", chunks="auto", **xarray_kwargs)
 
     # Pre-process the Dataset, convert it to a DataFrame, and validate the structure
     # ---- Convert to a DataFrame
