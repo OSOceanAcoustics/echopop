@@ -358,18 +358,22 @@ def initialize_grid(file_configuration = dict):
 
     # Get root directory, if defined
     if "data_root_dir" in file_configuration:
-        root_dir = Path(file_configuration["data_root_dir"])
+        # root_dir = Path(file_configuration["data_root_dir"])
+        root_dir = file_configuration["data_root_dir"]
     else:
-        root_dir = Path()
+        # root_dir = Path()
+        root_dir = ""
 
     # Get `grid` settings
     grid_database = file_configuration["input_directories"]["grid"]["database_name"]
     # ----
     db_directory = Path(file_configuration["database_directory"])
+    # db_directory = file_configuration["database_directory"]
 
     # Create full filepath
     # db_filepath = root_dir / "database" / grid_database
     db_filepath = db_directory / grid_database
+    # db_filepath = "/".join([db_directory, grid_database])
     # ---- Update config
     file_configuration["database"]["grid"] = db_filepath
 
@@ -455,19 +459,23 @@ def initialize_grid(file_configuration = dict):
             # Get coastline settings
             coast_settings = file_configuration["input_directories"]["coastline"]
             # ---- Get root folder directory
-            coast_root = root_dir / coast_settings["directory"] / coast_settings["coastline_name"] 
+            # coast_root = root_dir / coast_settings["directory"] / coast_settings["coastline_name"] 
+            coast_root = (
+                "/".join([root_dir, coast_settings["directory"], coast_settings["coastline_name"]])
+            )
             # ---- Create filepath
             shp_filepath = (
                 # root_dir / coast_settings["directory"] 
                 # / coast_settings["coastline_name"] 
-                coast_root
-                / f"{coast_settings['coastline_name']}.shp"
+                # coast_root
+                # / f"{coast_settings['coastline_name']}.shp"
+                "/".join([coast_root, f"{coast_settings['coastline_name']}.shp"])
             )
             # ---- Validate existence
-            if not shp_filepath.exists():
-                raise FileNotFoundError(
-                    f"{shp_filepath} does not exist!"
-                )
+            # if not shp_filepath.exists():
+            #     raise FileNotFoundError(
+            #         f"{shp_filepath} does not exist!"
+            #     )
 
             # Get original lat/lon geometry boundaries
             xmin0, ymin0, xmax0, ymax0 = boundary_gdf.total_bounds
