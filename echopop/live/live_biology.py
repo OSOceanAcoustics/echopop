@@ -120,8 +120,11 @@ def preprocess_biology_data(biology_output: dict, spatial_dict: dict, file_confi
                                      id_columns=["id"],
                                      primary_keys=["id"],
                                      output_type=pd.DataFrame)
-        # ---- Add to the outgoing dictionary (and drop SQL db identifier)
-        sql_results_dict.update({table_name: table_df.drop(columns="id")})
+        # ---- Drop SQL db identifier
+        if "id" in table_df.columns:
+            table_df.drop(columns="id", inplace=True)
+        # ---- Add to the outgoing dictionary
+        sql_results_dict.update({table_name: table_df})
 
     # Return the output
     return filtered_biology_output, sql_results_dict
