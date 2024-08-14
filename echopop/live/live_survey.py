@@ -50,6 +50,7 @@ class LiveSurvey:
         self,
         live_init_config_path: Union[str, Path], 
         live_file_config_path: Union[str, Path],
+        cloud_storage_options: dict = {},
         verbose: bool = True,
     ):
         # Initialize `meta` attribute
@@ -61,9 +62,13 @@ class LiveSurvey:
         # initialize the Survey class object
         self.config = eldl.live_configuration(Path(live_init_config_path), 
                                               Path(live_file_config_path))
-        # # ---- Initialize config key for database files
+        # ---- Initialize config key for database files
         self.config.update(
             {"database": {key: None for key in self.config["input_directories"].keys()}}
+        )
+        # ---- Add cloud storage options, if needed
+        self.config.update(
+            {"storage_options": cloud_storage_options}
         )
         
         # Initialize input attribute

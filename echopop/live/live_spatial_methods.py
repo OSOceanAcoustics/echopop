@@ -481,7 +481,7 @@ def initialize_grid(file_configuration = dict):
             xmin0, ymin0, xmax0, ymax0 = boundary_gdf.total_bounds
             
             # Read in file
-            full_coast = gpd.read_file(shp_filepath)
+            full_coast = gpd.read_file(shp_filepath, **file_configuration["storage_options"])
             # ---- Convert to UTM
             full_coast_utm = full_coast.to_crs(utm_code)
             # ---- Remove empty
