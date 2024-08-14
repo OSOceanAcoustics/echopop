@@ -207,13 +207,20 @@ def validate_data_directory(file_configuration: dict, dataset: str,
     # Get the acoustic file settings and root directory
     # ---- Root directory
     if "data_root_dir" in file_configuration.keys():
-        root_directory = Path(file_configuration["data_root_dir"])
+        # root_directory = Path(file_configuration["data_root_dir"])
+        root_directory = file_configuration["data_root_dir"]
     else: 
-        root_directory = Path()
+        # root_directory = Path()
+        root_directory = ""
     # ---- File folder
-    data_directory = Path(file_settings["directory"])
+    # data_directory = Path(file_settings["directory"])
+    data_directory = file_settings["directory"]
     # ---- Createa directory path
-    directory_path = root_directory / data_directory
+    # directory_path = root_directory / data_directory
+    if root_directory != "":    
+        directory_path = "/".join([root_directory, data_directory])
+    else:
+        directory_path = data_directory
 
     # Validate filepath, columns, datatypes
     # ---- Error evaluation (if applicable)
@@ -224,7 +231,7 @@ def validate_data_directory(file_configuration: dict, dataset: str,
 
     # Validate that files even exist
     # ---- List available *.zarr files
-    data_files = list(directory_path.glob(f"*{'.'+file_settings['extension']}"))
+    # data_files = list(directory_path.glob(f"*{'.'+file_settings['extension']}"))
     # ---- Error evaluation (if applicable)
     # if not data_files:
     #     raise FileNotFoundError(
@@ -233,21 +240,25 @@ def validate_data_directory(file_configuration: dict, dataset: str,
     
     # Check and format specific input filenames
     if isinstance(input_filenames, list):
-        data_files = [directory_path / filename for filename in input_filenames]
+        # data_files = [directory_path / filename for filename in input_filenames]
+        data_files = ["/".join([directory_path, filename]) for filename in input_filenames]
     # ---- Raise Error
     elif input_filenames is not None:
         raise TypeError(
             "Data loading argument `input_filenames` must be a list."
         )        
-    #
-    root_directory = file_configuration["database_directory"]
+    else:
+        data_files = list(directory_path.glob(f"*{'.'+file_settings['extension']}"))
+
+    # Database root directory
+    database_root_directory = file_configuration["database_directory"]
 
     # Initialize the database file
-    initialize_database(root_directory, file_settings)
+    initialize_database(database_root_directory, file_settings)
     
     # Query the SQL database to process only new files (or create the db file in the first place)
     valid_files, file_configuration["database"][dataset] = (
-        query_processed_files(root_directory, file_settings, data_files)
+        query_processed_files(database_root_directory, file_settings, data_files)
     )
 
     # Return the valid filenames/paths
