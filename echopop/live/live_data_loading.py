@@ -67,7 +67,7 @@ def read_acoustic_files(acoustic_files: List[Path],
     # Read all of the zarr files
     results_list =  [(data_df, unit_dict) if i ==0 else (data_df, None) 
                      for i, (data_df, unit_dict) in enumerate(
-                        read_acoustic_zarr(Path(file), acoustics_config_map, 
+                        read_acoustic_zarr(file, acoustics_config_map, 
                                            xarray_kwargs=xarray_kwargs) 
                         for file in acoustic_files
     )]
