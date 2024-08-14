@@ -95,7 +95,7 @@ class LiveSurvey:
         # Get any acoustic files created
         if "acoustic_files" in self.meta["provenance"]:
             # ---- Get the filenames
-            acoustic_filenames = self.meta["provenance"]["acoustic_files"]
+            acoustic_filenames = self.meta["provenance"]["acoustic_files_read"]
             # ---- Subset if many files are being processed
             if len(acoustic_filenames) > 2:
                 acoustic_filenames = acoustic_filenames[:2] + ["..."] + [f"[n = {len(acoustic_filenames)}]"]
@@ -107,7 +107,7 @@ class LiveSurvey:
         # Get any biology files created
         if "biology_files" in self.meta["provenance"]:
             # ---- Get the filenames
-            biology_filenames = self.meta["provenance"]["biology_files"]
+            biology_filenames = self.meta["provenance"]["biology_files_read"]
             # ---- Subset if many files are being processed
             if len(biology_filenames) > 4:
                 biology_filenames = biology_filenames + ["..."]
@@ -156,7 +156,7 @@ class LiveSurvey:
                                                                               self.config)  
             # ---- Add meta key
             self.meta["provenance"].update({
-                "acoustic_files": acoustic_files,
+                "acoustic_files_read":  acoustic_files,
             })   
             # TODO: Add verbosity for printing database filepaths/connections 
             if verbose:
@@ -198,7 +198,7 @@ class LiveSurvey:
 
             # Add meta key
             self.meta["provenance"].update({
-                "biology_files": biology_files,
+                "biology_files_read": biology_files,
             })  
 
     def process_biology_data(self):
@@ -275,8 +275,13 @@ class LiveSurvey:
             # Update the database
             query_processed_files(root_directory, 
                                   self.config["input_directories"]["biology"],
-                                  self.meta["provenance"]["biology_files"],
+                                  self.meta["provenance"]["biology_files_read"],
                                   processed=True)
+            
+            # Add meta key
+            self.meta["provenance"].update({
+                "biology_files_processed": self.meta["provenance"]["biology_files_read"]
+            })  
             
 
     def process_acoustic_data(self, echometrics: bool = True, verbose: bool = True):
@@ -303,7 +308,10 @@ class LiveSurvey:
                                                                          self.config,
                                                                          self.meta)
 
-            # Update the database
+            # Add meta key
+            self.meta["provenance"].update({
+                "acoustic_files_processed": self.meta["provenance"]["acoustic_files_read"]
+            })  
     
     def estimate_population(self,
                             working_dataset: Literal["acoustic", "biology"],

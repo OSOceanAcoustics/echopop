@@ -248,7 +248,7 @@ def validate_data_directory(file_configuration: dict, dataset: str,
             "Data loading argument `input_filenames` must be a list."
         )        
     else:
-        data_files = list(directory_path.glob(f"*{'.'+file_settings['extension']}"))
+        data_files = list(Path(directory_path).glob(f"*{'.'+file_settings['extension']}"))
 
     # Database root directory
     database_root_directory = file_configuration["database_directory"]

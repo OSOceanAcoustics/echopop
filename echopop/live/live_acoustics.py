@@ -267,7 +267,7 @@ def format_acoustic_dataset(nasc_data_df: pd.DataFrame, file_configuration: dict
     # Update the successfully processed files
     query_processed_files(root_database, 
                           file_configuration["input_directories"]["acoustics"],
-                          meta_dict["provenance"]["acoustic_files"],
+                          meta_dict["provenance"]["acoustic_files_read"],
                           processed=True)
     
     # Insert the new data into the database & pull in the combined dataset
