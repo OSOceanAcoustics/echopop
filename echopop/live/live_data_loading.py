@@ -96,7 +96,7 @@ def filter_filenames(directory_path: Path, filename_id: str,
     # Find intersection with the proposed filenames and return the output
     return list(set(subfile_str).intersection(set(file_str)))
 
-def read_biology_files(biology_files: List[Path], file_configuration: dict, 
+def read_biology_files(biology_files: List[str], file_configuration: dict, 
                        pandas_kwargs: dict = {}):
 
     # Get the biology data file settings
