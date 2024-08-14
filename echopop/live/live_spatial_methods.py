@@ -482,6 +482,7 @@ def initialize_grid(file_configuration = dict):
             
             # Read in file
             full_coast = gpd.read_file(shp_filepath, 
+                                       engine="pyogrio",
                                        storage_options=file_configuration["storage_options"])
             # ---- Convert to UTM
             full_coast_utm = full_coast.to_crs(utm_code)
