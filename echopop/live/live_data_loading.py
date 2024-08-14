@@ -57,7 +57,7 @@ def live_configuration(live_init_config_path: Union[str, Path],
     # Combine both into a dictionary output that can be added to the `LiveSurvey` class object
     return {**init_config, **file_config}
 
-def read_acoustic_files(acoustic_files: List[Path],
+def read_acoustic_files(acoustic_files: List[str],
                         xarray_kwargs: dict = {}) -> tuple:
 
     # Get the file-specific settings, datatypes, columns, etc.
