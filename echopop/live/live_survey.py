@@ -178,6 +178,9 @@ class LiveSurvey:
         biology_files = eldl.validate_data_directory(self.config, dataset="biology", 
                                                      input_filenames=input_filenames)
         
+        # ! REMOVE 
+        self.meta["provenance"]["biology_files_checkpoint1"] = biology_files
+        
         # TODO: Add verbosity for printing database filepaths/connections 
         if biology_files and verbose:
             # ---- Create file list
@@ -190,10 +193,20 @@ class LiveSurvey:
             # Read in the biology data files
             initial_biology_output = eldl.read_biology_files(biology_files, self.config,
                                                              pandas_kwargs=pandas_kwargs)
+            
+            # ! REMOVE 
+            self.meta["provenance"]["biology_files_checkpoint2"] =(
+                {key: df.shape for key, df in initial_biology_output.items()}
+            ) 
 
             # Preprocess the biology dataset
             self.input["biology"], self.input["biology_processed"] = (
                 preprocess_biology_data(initial_biology_output, self.input["spatial"], self.config)
+            )
+
+            # ! REMOVE 
+            self.meta["provenance"]["biology_files_checkpoint2"] = (
+                {key: df.shape for key, df in self.input["biology_processed"].items()}
             )
 
             # Add meta key
