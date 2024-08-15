@@ -205,7 +205,7 @@ class LiveSurvey:
             )
 
             # ! REMOVE 
-            self.meta["provenance"]["biology_files_checkpoint2"] = (
+            self.meta["provenance"]["biology_files_checkpoint3"] = (
                 {key: df.shape for key, df in self.input["biology_processed"].items()}
             )
 
