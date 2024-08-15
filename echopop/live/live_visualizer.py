@@ -117,8 +117,8 @@ def plot_livesurvey_grid(grid_db: Union[Path, pd.DataFrame],
         var_info = VARIABLE_MAP[var]
         ax.set_title(f"{var_info['name']}")
         # ---- Set axis labels
-        plt.xlabel(u'Longitude (\u00B0E)')
-        plt.ylabel(u'Latitude (\u00B0N)')
+        ax.set_xlabel(u'Longitude (\u00B0E)')
+        ax.set_ylabel(u'Latitude (\u00B0N)')
         # ---- Add colorbar
         sm = plt.cm.ScalarMappable(cmap=custom_cmap, 
                                    norm=plt.Normalize(vmin=grid_gdf[var].min(), 
@@ -320,8 +320,8 @@ def plot_livesurvey_track(survey_data_db: Union[Path, pd.DataFrame],
         var_info = VARIABLE_MAP[var]
         ax.set_title(f"{var_info['name']}")
         # ---- Set axis labels
-        plt.xlabel(u'Longitude (\u00B0E)')
-        plt.ylabel(u'Latitude (\u00B0N)')
+        ax.set_xlabel(u'Longitude (\u00B0E)')
+        ax.set_ylabel(u'Latitude (\u00B0N)')
         # ---- Add colorbar
         sm = plt.cm.ScalarMappable(cmap=custom_cmap, norm=norm)
         sm._A = []  # fake up the array of the scalar mappable
