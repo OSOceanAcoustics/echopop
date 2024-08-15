@@ -86,8 +86,18 @@ def filter_filenames(directory_path: Path, filename_id: str,
     file_id_format = re.sub(r'\{FILE_ID:([^}]+)\}', r'\1', filename_id)
     # ---- Replace all other tags with `*` placeholders
     file_id_format = re.sub(r"\{[^{}]+\}", "*", file_id_format)
-    # ---- Create Path object with the generalized format
-    subfile_path_obj = Path(directory_path).glob(f"{file_id_format}.{file_extension}")
+    # ---- Compile the pattern
+    pattern = re.compile(rf'{file_id_format.replace(".", r"\.").replace("*", ".*")}')
+    # ---- Create Path object with the generalized format: S3
+    s3_files = [filename for filename in files 
+                if filename.startswith("s3://") and pattern.search(filename)]
+    # ---- Local search
+    local_files = Path(directory_path).glob(f"{file_id_format}.{file_extension}")
+    # ---- Assign to subfile path object
+    if s3_files:
+        subfile_path_obj = s3_files
+    else:
+        subfile_path_obj = local_files
     # ---- List all files that match this pattern
     subfile_str = [str(file) for file in list(subfile_path_obj)]
 
@@ -127,7 +137,6 @@ def read_biology_files(biology_files: List[str], file_configuration: dict,
         # Path(file_configuration["database_directory"]) / file_settings["database_name"]    
         "/".join([file_configuration["database_directory"], file_settings["database_name"]])     
     )
-
 
     # Iterate through the different biology datasets and read them in
     for dataset in list(biology_file_ids.keys()):
@@ -284,7 +293,9 @@ def compile_filename_format(file_name_format: str):
 def read_biology_csv(file: Path, pattern: re.Pattern, config_map: dict, pandas_kwargs: dict = {}):
 
     # Read in the `*.csv` file
-    df = pd.read_csv(file, usecols=list(config_map["dtypes"].keys()), storage_options=pandas_kwargs)
+    df = pd.read_csv(file, 
+                     usecols=list(config_map["dtypes"].keys()), 
+                     storage_options=pandas_kwargs)
 
     # Validate the dataframe
     # ---- Check for any missing columns
@@ -309,7 +320,7 @@ def read_biology_csv(file: Path, pattern: re.Pattern, config_map: dict, pandas_k
     # Compile the filename regular expression
     compiled_regex = compile_filename_format(pattern)
     # ---- Create the `Match` object that will be used to parse the string
-    match_obj = compiled_regex.search(file.name)
+    match_obj = compiled_regex.search(file)
 
     # Iterate through the filename-derived tags and add them to the DataFrame
     for i in valid_tags: 
