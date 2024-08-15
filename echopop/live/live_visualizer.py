@@ -356,3 +356,137 @@ def plot_livesurvey_track(survey_data_db: Union[Path, pd.DataFrame],
 
     # Show the plot
     plt.show()
+
+def plot_livesurvey_distributions(weight_table: pd.DataFrame, 
+                                  stratum_table: pd.DataFrame,
+                                  specimen_table: pd.DataFrame,
+                                  length_table: pd.DataFrame,
+                                  biology_db: Optional[Path] = None):
+    
+    # If calling from SQL database
+    if biology_db is not None: 
+        weight_table = SQL(biology_db, "select", table_name="length_weight_df")
+        stratum_table = SQL(biology_db, "select", table_name="strata_summary_df")
+        specimen_table = SQL(biology_db, "select", table_name="specimen_data_df")
+        length_table = SQL(biology_db, "select", table_name="length_df")
+    elif not all([isinstance(df, pd.DataFrame) for df in [weight_table, stratum_table, 
+                                                          specimen_table, length_table]]):
+        raise TypeError(
+            "All tables must be a `pandas.DataFrame."
+        )
+    
+    # Organize the weight table data
+    # ---- Sum weights by stratum, sex, and length_bin
+    aggregated_data = (
+        weight_table.groupby(['stratum', 'sex', 'length_bin'])['weight'].sum().reset_index()
+    )
+    # ---- Create a column to indicate 'all' sexes
+    aggregated_data_all = (
+        aggregated_data.groupby(['stratum', 'length_bin'])['weight'].sum().reset_index()
+    )
+    aggregated_data_all['sex'] = 'all'
+    # ---- Combine the male, female, and all data
+    plot_weight_data = pd.concat([aggregated_data, aggregated_data_all], ignore_index=True)
+    
+    # Define the sexes
+    sexes = plot_weight_data.sex.unique().tolist()
+    
+    # Organize the length table data
+    bins = plot_weight_data.length_bin.unique() + 1
+    full_bins = np.concatenate([[bins[0] - np.diff(bins).mean() / 2], bins])
+    length_table["length_bin"] = (
+        pd.cut(length_table["length"], bins=full_bins, labels=bins - 1).astype(float)
+    )
+    length_table_sex = (
+        length_table.groupby(["stratum", "sex", "length_bin"])["length_count"].sum().reset_index()
+    )
+    length_table_all = (
+        length_table.groupby(["stratum", "length_bin"])["length_count"].sum().reset_index()
+    )
+    length_table_all['sex'] = 'all'
+    full_count = (
+        specimen_table.meld(length_table_all, contrasts=["stratum", "sex", "species_id", "length_bin"])
+        .loc[lambda x: x.sex.isin(sexes)]
+        .groupby(['stratum', 'sex', 'length_bin'])['length_count'].sum().reset_index()
+    )
+    full_count["total"] = full_count.groupby(["stratum", "sex"])["length_count"].transform("sum")
+    full_count["number_proportion"] = full_count["length_count"] / full_count["total"]
+    # ---- Combine into the full dataset for plotting
+    plot_count_data = (
+        plot_weight_data
+        .merge(full_count.filter(["stratum", "sex", "length_bin", "number_proportion"]), 
+            on=["stratum", "sex", "length_bin"], how="left")
+    ).fillna(0.0)
+    
+    # Get a color map
+    colors = plt.colormaps['tab10']
+    num_strata = len(stratum_table['stratum'].unique())
+    num_sexes = len(sexes)
+    color_map = colors(num_strata)
+    
+    # Plot
+    fig, axes = plt.subplots(nrows=3, ncols=2, figsize=(6, 8), sharex=True, sharey=True)
+    plt.subplots_adjust(hspace=0.08, wspace=0.05, bottom=0.25)  # Adjust spacing between plots
+    
+    # Plot weights and counts
+    for i, sex in enumerate(sexes):
+        # Weight plot (left column)
+        ax_weight = axes[i, 0]
+        data_weight = plot_weight_data[plot_weight_data['sex'] == sex]
+        for j, (stratum, group) in enumerate(data_weight.groupby('stratum')):
+            # color = colors(i / num_strata) if num_strata > 1 else colors(0)        
+            color = colors(j / num_strata) if num_strata > 1 else colors(0)
+            total = group["weight"].sum()
+            group["proportions"] = group["weight"] / total if total > 0.0 else 0.0
+            ms = 5 if group["proportions"].max() > 0.0 else 0.1
+            # handle, = ax_weight.plot(group['length_bin'], group['proportions'], marker='o', 
+            #                          label=f'Stratum {stratum}', color=color, ms=ms)
+            ax_weight.plot(group['length_bin'], group['proportions'], marker='o', 
+                        label=f'Stratum {stratum}', color=color, ms=ms)
+        if i == 0:
+            ax_weight.set_title(f'Weight')
+        if i < num_sexes - 1:  # No x-ticks for non-bottom plots
+            ax_weight.set_xlabel('')
+        if i == num_sexes // 2:
+            ax_weight.set_ylabel('Within-stratum proportion [0, 1]')
+        if i == num_sexes - 1:  # Bottom plot
+            ax_weight.set_xlabel('Length bin (cm)')
+        ax_weight.set_ylim(0.0, 1.0)
+        # Add label in the top-left corner
+        ax_weight.text(0.05, 1.00 - 0.05 * (num_sexes - 1), sex.title(), 
+                       transform=ax_weight.transAxes,
+                       fontsize=12, verticalalignment='top',
+                       bbox=dict(facecolor='white', alpha=0.8, 
+                                 edgecolor='none'))
+        
+        # Count plot (right column)
+        ax_count = axes[i, 1]
+        data_count = plot_count_data[plot_count_data['sex'] == sex]
+        for j, (stratum, group) in enumerate(data_count.groupby('stratum')):
+            color = colors(j / num_strata) if num_strata > 1 else colors(0)
+            ms = 5 if group["number_proportion"].max() > 0.0 else 0.1
+            ax_count.plot(group['length_bin'], group['number_proportion'], 
+                        marker='o', label=f'Stratum {stratum}', color=color, ms=ms)
+        if i == 0:
+            ax_count.set_title(f"Number")
+        if i < num_sexes - 1:  # No x-ticks for non-bottom plots
+            ax_count.set_xlabel('')
+        if i == num_sexes - 1:  # Bottom plot
+            ax_count.set_xlabel('Length bin (cm)')
+        ax_count.set_ylim(0.0, 1.0)
+        # Add label in the top-left corner
+        ax_count.text(0.05, 1.00 - 0.05 * (num_sexes - 1), sex.title(), 
+                      transform=ax_count.transAxes,
+                      fontsize=12, verticalalignment='top', 
+                      bbox=dict(facecolor='white', alpha=0.8, 
+                                edgecolor='none'))
+    # Create a new axes for the legend
+    legend_ax = fig.add_axes([0.15, 0.05, 0.7, 0.1])  # Position the legend axes (left, bottom, width, height)
+    legend_ax.axis('off')  # Hide the new axes
+    
+    # Create a shared legend in the bottom-most subplot
+    handles, labels = axes[2, 1].get_legend_handles_labels() # Get handles and labels from the bottom-left plot
+    fig.legend(handles, labels, loc='upper center', bbox_to_anchor=(0.5, 0.2), 
+               ncol=num_strata // 2 + 1, fontsize='small', title='INPFC stratum')
+
+    plt.show()
