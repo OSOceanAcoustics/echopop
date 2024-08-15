@@ -87,7 +87,7 @@ def filter_filenames(directory_path: Path, filename_id: str,
     # ---- Replace all other tags with `*` placeholders
     file_id_format = re.sub(r"\{[^{}]+\}", "*", file_id_format)
     # ---- Create Path object with the generalized format
-    subfile_path_obj = directory_path.glob(f"{file_id_format}.{file_extension}")
+    subfile_path_obj = Path(directory_path).glob(f"{file_id_format}.{file_extension}")
     # ---- List all files that match this pattern
     subfile_str = [str(file) for file in list(subfile_path_obj)]
 
