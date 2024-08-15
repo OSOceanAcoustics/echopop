@@ -4,6 +4,7 @@ import yaml
 import re
 from .sql_methods import SQL, query_processed_files, sql_data_exchange, initialize_database
 import pandas as pd
+import numpy as np
 from datetime import datetime
 import xarray as xr
 
@@ -113,16 +114,18 @@ def read_biology_files(biology_files: List[str], file_configuration: dict,
     biology_output = {f"{key}_df": pd.DataFrame() for key in biology_config_ids}
     # # ---- Create filepath object
     if "data_root_dir" in file_configuration:
-        directory_path = Path(file_configuration["data_root_dir"]) / file_settings["directory"]
+        # directory_path = Path(file_configuration["data_root_dir"]) / file_settings["directory"]
+        directory_path = "/".join([file_configuration["data_root_dir"], file_settings["directory"]])
     else:
-        directory_path = Path(file_settings["directory"])
+        directory_path = file_settings["directory"]
     
     # Add SQL file to dict
     # file_configuration["database"]["biology"] = (
     #     Path(file_configuration["data_root_dir"]) / "database" / file_settings["database_name"]         
     # )
     file_configuration["database"]["biology"] = (
-        Path(file_configuration["database_directory"]) / file_settings["database_name"]         
+        # Path(file_configuration["database_directory"]) / file_settings["database_name"]    
+        "/".join([file_configuration["database_directory"], file_settings["database_name"]])     
     )
 
 
@@ -136,7 +139,7 @@ def read_biology_files(biology_files: List[str], file_configuration: dict,
         # ---- If there are dataset files available
         if dataset_files:
             # ---- Read in validated biology data
-            dataframe_list = [read_biology_csv(Path(file), 
+            dataframe_list = [read_biology_csv(file, 
                                                file_settings["file_name_formats"][dataset], 
                                                biology_config_map[dataset],
                                                pandas_kwargs) 
@@ -281,7 +284,7 @@ def compile_filename_format(file_name_format: str):
 def read_biology_csv(file: Path, pattern: re.Pattern, config_map: dict, pandas_kwargs: dict = {}):
 
     # Read in the `*.csv` file
-    df = pd.read_csv(file, usecols=list(config_map["dtypes"].keys()), **pandas_kwargs)
+    df = pd.read_csv(file, usecols=list(config_map["dtypes"].keys()), storage_options=pandas_kwargs)
 
     # Validate the dataframe
     # ---- Check for any missing columns
