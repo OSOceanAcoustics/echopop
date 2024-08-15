@@ -87,7 +87,9 @@ def filter_filenames(directory_path: Path, filename_id: str,
     # ---- Replace all other tags with `*` placeholders
     file_id_format = re.sub(r"\{[^{}]+\}", "*", file_id_format)
     # ---- Compile the pattern
-    pattern = re.compile(rf'{file_id_format.replace(".", r"\.").replace("*", ".*")}')
+    escaped_file_id_format = re.escape(file_id_format)
+    pattern = re.compile(escaped_file_id_format.replace(r"\*", ".*"))
+    # pattern = re.compile(rf'{file_id_format.replace(".", r"\.").replace("*", ".*")}')
     # ---- Create Path object with the generalized format: S3
     s3_files = [filename for filename in files 
                 if filename.startswith("s3://") and pattern.search(filename)]
