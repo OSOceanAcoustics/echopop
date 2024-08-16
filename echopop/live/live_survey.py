@@ -83,6 +83,8 @@ class LiveSurvey:
         # Initialize the extrapolation grid
         initialize_grid(self.config)
 
+        # TODO: add quick utility function to get db filepaths
+
         # Configure the spatial settings
         self.input.update({"spatial": eldl.configure_spatial_settings(self.config)})
 
@@ -335,7 +337,9 @@ class LiveSurvey:
            eldp.acoustic_pipeline(self.input["acoustics"],
                                   self.input["spatial"]["strata"],
                                   self.config,
-                                  verbose=verbose)
+                                  verbose=verbose)   
+           # --- Validate successful run
+           self.meta["provenance"]["acoustic_population"] = True
         
         # method
        if working_dataset == "biology":
@@ -343,4 +347,7 @@ class LiveSurvey:
                                  self.input["spatial"]["strata"],
                                  self.config,
                                  verbose=verbose)
+           # --- Validate successful run
+           self.meta["provenance"]["biology_population"] = True
+
         
