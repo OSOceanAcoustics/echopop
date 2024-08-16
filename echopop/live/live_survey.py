@@ -331,23 +331,25 @@ class LiveSurvey:
     def estimate_population(self,
                             working_dataset: Literal["acoustic", "biology"],
                             verbose: bool = True):
-       
+    
+        self.meta["provenance"][f"{working_dataset}_population"] = False
+
         # method
-       if working_dataset == "acoustic":
-           eldp.acoustic_pipeline(self.input["acoustics"],
-                                  self.input["spatial"]["strata"],
-                                  self.config,
-                                  verbose=verbose)   
-           # --- Validate successful run
-           self.meta["provenance"]["acoustic_population"] = True
+        if working_dataset == "acoustic":
+            eldp.acoustic_pipeline(self.input["acoustics"],
+                                    self.input["spatial"]["strata"],
+                                    self.config,
+                                    verbose=verbose)   
+            # --- Validate successful run
+            self.meta["provenance"]["acoustic_population"] = True
         
         # method
-       if working_dataset == "biology":
-           eldp.biology_pipeline(self.input["biology"],
-                                 self.input["spatial"]["strata"],
-                                 self.config,
-                                 verbose=verbose)
-           # --- Validate successful run
-           self.meta["provenance"]["biology_population"] = True
+        if working_dataset == "biology":
+            eldp.biology_pipeline(self.input["biology"],
+                                    self.input["spatial"]["strata"],
+                                    self.config,
+                                    verbose=verbose)
+            # --- Validate successful run
+            self.meta["provenance"]["biology_population"] = True
 
         
