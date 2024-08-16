@@ -83,7 +83,8 @@ class LiveSurvey:
         # Initialize the extrapolation grid
         initialize_grid(self.config)
 
-        # TODO: add quick utility function to get db filepaths
+        # Add database paths to configuration attribute
+        eldp.configure_database_paths(self.config)
 
         # Configure the spatial settings
         self.input.update({"spatial": eldl.configure_spatial_settings(self.config)})

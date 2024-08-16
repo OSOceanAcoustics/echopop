@@ -786,6 +786,12 @@ def sql_update_strata_summary(source_db: str,
     ATTACH DATABASE '{source_db}' AS source;
     ATTACH DATABASE '{target_db}' AS target;
 
+    -- Verify the source database tables
+    SELECT name FROM source.sqlite_master WHERE type='table';
+
+    -- Query the source table directly
+    SELECT * FROM source.{source_table} LIMIT 1;
+
     """
 
     # Dynamically format the cross-database command

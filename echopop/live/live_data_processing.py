@@ -33,6 +33,20 @@ def get_average_strata_weights(db_file: str,
     else:
         return None
 
+def configure_database_paths(file_configuration: dict):
+
+    # Extract input directory settings
+    file_settings = file_configuration["input_directories"]
+
+    # Get database directory
+    database_dir = file_configuration["database_directory"]
+
+    # Update configuration
+    file_configuration["database"].update({
+        dataset: "/".join([database_dir, file_settings[dataset]["database_name"]]) 
+        for dataset in file_settings.keys() if "database_name" in file_settings[dataset]
+    })
+
 def acoustic_pipeline(acoustic_dict: dict, 
                       strata_df: pd.DataFrame, 
                       file_configuration: dict, 
@@ -81,8 +95,8 @@ def acoustic_pipeline(acoustic_dict: dict,
 
             # Get the corresponding average strata weights (computed for all fish)
             weight_spatial_averages = get_average_strata_weights(biology_db,
-                                                                acoustic_dict,
-                                                                unique_columns=spatial_column + contrast_columns)
+                                                                 acoustic_dict,
+                                                                 unique_columns=spatial_column + contrast_columns)
             
             if weight_spatial_averages is not None:
                 # Merge average weights with number density estimates
