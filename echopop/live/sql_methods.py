@@ -435,6 +435,7 @@ SQL_DTYPES = {
     "INTEGER": int,
     "DATETIME": str,
     "TEXT": str,
+    "BIGINT": int,
 } 
 
 def sql_group_update(db_file: str,
