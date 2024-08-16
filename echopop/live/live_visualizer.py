@@ -207,7 +207,7 @@ def plot_livesurvey_track(survey_data_db: Union[Path, pd.DataFrame],
             "colormap": "inferno",
             "minimum": 0.0,
             "cbar_reverse": True,
-            "size": [25, 250]
+            "size": [25, 150]
         }, 
         "biomass_density": {
             "name": "Mean biomass density",
@@ -215,7 +215,7 @@ def plot_livesurvey_track(survey_data_db: Union[Path, pd.DataFrame],
             "colormap": "plasma",
             "minimum": 0.0,
             "cbar_reverse": True,
-            "size": [25, 250]
+            "size": [25, 150]
         },     
         "nasc": {
             "name": "Nautical area scattering coefficient",
@@ -223,7 +223,7 @@ def plot_livesurvey_track(survey_data_db: Union[Path, pd.DataFrame],
             "colormap": "viridis",
             "minimum": 0.0,
             "cbar_reverse": False,
-            "size": [25, 250]
+            "size": [25, 150]
         },
         "max_Sv": {
             "name": "Max $\\mathregular{S_V}$",
@@ -235,7 +235,7 @@ def plot_livesurvey_track(survey_data_db: Union[Path, pd.DataFrame],
                 "minimum": -80.0,
                 "maximum": -36.0
             },
-            "size": [5, 200]
+            "size": [5, 100]
         },
         # "mean_Sv": {
         #     "name": "$Mean \\mathregular{S_V}$",
@@ -305,7 +305,7 @@ def plot_livesurvey_track(survey_data_db: Union[Path, pd.DataFrame],
             cmap=custom_cmap,
             norm=norm,
             edgecolor="black",
-            linewidths=0.5
+            linewidths=0.1
         )    
         # ---- Add coastline data layer
         coast_gdf.plot(ax=ax, linewidth=1.2, color='gray', edgecolor="black")

@@ -70,14 +70,13 @@ SQL(realtime_survey.config["database"]["biology"], "select", table_name="length_
 SQL(realtime_survey.config["database"]["biology"], "select", table_name="weight_stratum_df")
 # NOTE: Stratum summary tables
 SQL(realtime_survey.config["database"]["biology"], "select", table_name="strata_summary_df")
-SQL(realtime_survey.config["database"]["biology"], "map")
-SQL(realtime_survey.config["database"]["biology"], "select", table_name="length_df")
 ####################################################################################################
 # FROM THE `LiveSurvey` object !
 # ---- Either have the db file already called in as a `pandas.DataFrame`, or query the table
+survey_data_db = Path(realtime_survey.config["database"]["acoustics"])
 grid_db = Path(realtime_survey.config["database"]["grid"])
-survey_data_db = Path('C:/Users/Brandyn/Documents/GitHub/EchoPro_data/live_2019_files/database/acoustics.db')
 coast_db = grid_db
+biology_db = Path(realtime_survey.config["database"]["biology"])
 projection = realtime_survey.config["geospatial"]["projection"]
 # NOTE: PLOTS
 # ---- PLOT GRID
@@ -85,12 +84,12 @@ elv.plot_livesurvey_grid(grid_db, projection, coast_db)
 # ---- PLOT TRACK
 elv.plot_livesurvey_track(survey_data_db, projection, coast_db)
 # ---- PLOT DISTRIBUTIONS
-weight_table = SQL(realtime_survey.config["database"]["biology"], "select", 
+weight_table = SQL(biology_db, "select", 
                    table_name="length_weight_df")
-stratum_table = SQL(realtime_survey.config["database"]["biology"], "select", 
+stratum_table = SQL(biology_db, "select", 
                     table_name="strata_summary_df")
-specimen_table = SQL(realtime_survey.config["database"]["biology"], "select", 
+specimen_table = SQL(biology_db, "select", 
                      table_name="specimen_data_df")
-length_table = SQL(realtime_survey.config["database"]["biology"], "select", 
+length_table = SQL(biology_db, "select", 
                    table_name="length_df")
 elv.plot_livesurvey_distributions(weight_table, stratum_table, specimen_table, length_table)

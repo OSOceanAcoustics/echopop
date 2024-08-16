@@ -113,6 +113,10 @@ def estimate_echometrics(acoustic_data_df: pd.DataFrame):
 
     # Pre-compute the change in depth
     acoustic_df["dz"] = acoustic_df["depth"].diff()
+    # ---- Change first cell !
+    acoustic_df.loc[0, "dz"] = (
+        acoustic_df.loc[1, "depth"] - acoustic_df.loc[0, "depth"]
+    )
 
     # Initialize echometrics dictionary
     echometrics = {}
