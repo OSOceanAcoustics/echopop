@@ -253,6 +253,9 @@ def plot_livesurvey_track(survey_data_db: Union[Path, pd.DataFrame],
     # List of variables to plot
     variables = list(VARIABLE_MAP.keys())
 
+    # Go completed variables
+    intact_variables = [var for var in variables if not survey_gdf[var].isnull().all()]
+
     def scale_sizes(values, min_value, max_value, min_size=25, max_size=250):
 
         # Censor values if needed
@@ -265,11 +268,16 @@ def plot_livesurvey_track(survey_data_db: Union[Path, pd.DataFrame],
             * (max_size - min_size) + min_size
         )    
     
-    # Create a figure and a 2x2 grid of subplots
-    fig, axes = plt.subplots(2, 2, figsize=(10, 10))
+    # Create a figure and a 2xn grid of subplots
+    if len(intact_variables) == 4:
+        fig, axes = plt.subplots(2, 2, figsize=(10, 10))
+    elif len(intact_variables) == 3:
+        fig, axes = plt.subplots(1, 3, figsize=(10, 10))
+    elif len(intact_variables) == 2:
+        fig, axes = plt.subplots(1, 1, figsize=(10, 10))
 
     # Iterate through and plot all subplots
-    for ax, var in zip(axes.flat, variables):
+    for ax, var in zip(axes.flat, intact_variables):
         # ---- Get the colormap
         colormap = plt.colormaps.get_cmap(VARIABLE_MAP[var]["colormap"]).resampled(256)
         # ---- Invert
@@ -304,8 +312,8 @@ def plot_livesurvey_track(survey_data_db: Union[Path, pd.DataFrame],
                           max_size=VARIABLE_MAP[var]["size"][1]),
             cmap=custom_cmap,
             norm=norm,
-            edgecolor="black",
-            linewidths=0.1
+            # edgecolor="black",
+            # linewidths=0.1
         )    
         # ---- Add coastline data layer
         coast_gdf.plot(ax=ax, linewidth=1.2, color='gray', edgecolor="black")
@@ -325,7 +333,7 @@ def plot_livesurvey_track(survey_data_db: Union[Path, pd.DataFrame],
         # ---- Add colorbar
         sm = plt.cm.ScalarMappable(cmap=custom_cmap, norm=norm)
         sm._A = []  # fake up the array of the scalar mappable
-        cbar = fig.colorbar(sm, ax=ax, shrink=0.5)
+        cbar = fig.colorbar(sm, ax=ax, shrink=0.5, fraction=0.075, pad=0.1)
         cbar.set_label(f"{var_info['units']}")
         # ---- Add scalebar
         scalebar_length = 250  # Length of scale bar in km
