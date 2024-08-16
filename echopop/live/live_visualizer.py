@@ -154,7 +154,8 @@ def plot_livesurvey_grid(grid_db: Union[Path, pd.DataFrame],
     plt.tight_layout()
 
     # Show the plot
-    plt.show()
+    # plt.show()
+    return fig
 
 def plot_livesurvey_track(survey_data_db: Union[Path, pd.DataFrame],
                           projection: str,
@@ -363,7 +364,8 @@ def plot_livesurvey_track(survey_data_db: Union[Path, pd.DataFrame],
     plt.tight_layout()
 
     # Show the plot
-    plt.show()
+    # plt.show()
+    return fig
 
 def plot_livesurvey_distributions(weight_table: pd.DataFrame, 
                                   stratum_table: pd.DataFrame,
@@ -497,4 +499,5 @@ def plot_livesurvey_distributions(weight_table: pd.DataFrame,
     fig.legend(handles, labels, loc='upper center', bbox_to_anchor=(0.5, 0.2), 
                ncol=num_strata // 2 + 1, fontsize='small', title='INPFC stratum')
 
-    plt.show()
+    # plt.show()
+    return fig

@@ -72,6 +72,8 @@ SQL(realtime_survey.config["database"]["biology"], "select", table_name="weight_
 SQL(realtime_survey.config["database"]["biology"], "select", table_name="strata_summary_df")
 ####################################################################################################
 # FROM THE `LiveSurvey` object !
+# ---- Convert to a Panel
+import panel as pn
 # ---- Either have the db file already called in as a `pandas.DataFrame`, or query the table
 survey_data_db = Path(realtime_survey.config["database"]["acoustics"])
 grid_db = Path(realtime_survey.config["database"]["grid"])
@@ -79,10 +81,20 @@ coast_db = grid_db
 biology_db = Path(realtime_survey.config["database"]["biology"])
 projection = realtime_survey.config["geospatial"]["projection"]
 # NOTE: PLOTS
+# Ensure Panel is initialized
+pn.extension()
+# ---- Helper function
+def plt_to_pn(fig):
+    # Convert to a panel object
+    panel = pn.panel(fig)
+    # Display
+    panel.show() # OR panel.servable() if you want to serve it in a Panel server
 # ---- PLOT GRID
-elv.plot_livesurvey_grid(grid_db, projection, coast_db)
+fig = elv.plot_livesurvey_grid(grid_db, projection, coast_db)
+plt_to_pn(fig)
 # ---- PLOT TRACK
-elv.plot_livesurvey_track(survey_data_db, projection, coast_db)
+fig = elv.plot_livesurvey_track(survey_data_db, projection, coast_db)
+plt_to_pn(fig)
 # ---- PLOT DISTRIBUTIONS
 weight_table = SQL(biology_db, "select", 
                    table_name="length_weight_df")
@@ -92,4 +104,8 @@ specimen_table = SQL(biology_db, "select",
                      table_name="specimen_data_df")
 length_table = SQL(biology_db, "select", 
                    table_name="length_df")
-elv.plot_livesurvey_distributions(weight_table, stratum_table, specimen_table, length_table)
+fig = elv.plot_livesurvey_distributions(weight_table, stratum_table, specimen_table, length_table)
+plt_to_pn(fig)
+
+
+
