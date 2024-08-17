@@ -208,6 +208,10 @@ def plot_livesurvey_track(survey_data_db: Union[Path, pd.DataFrame],
             "colormap": "inferno",
             "minimum": 0.0,
             "cbar_reverse": True,
+                "color_threshold": {
+                "minimum": 1e1,
+                "maximum": 1e6,
+            },
             "size": [25, 150]
         }, 
         "biomass_density": {
@@ -216,6 +220,10 @@ def plot_livesurvey_track(survey_data_db: Union[Path, pd.DataFrame],
             "colormap": "plasma",
             "minimum": 0.0,
             "cbar_reverse": True,
+            "color_threshold": {
+                "minimum": 1e1,
+                "maximum": 1e6,
+            },
             "size": [25, 150]
         },     
         "nasc": {
@@ -224,6 +232,10 @@ def plot_livesurvey_track(survey_data_db: Union[Path, pd.DataFrame],
             "colormap": "viridis",
             "minimum": 0.0,
             "cbar_reverse": False,
+                "color_threshold": {
+                "minimum": 1e2,
+                "maximum": 1e4
+            },
             "size": [25, 150]
         },
         "max_Sv": {
