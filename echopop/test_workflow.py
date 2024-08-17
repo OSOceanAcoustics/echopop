@@ -93,7 +93,7 @@ def plt_to_pn(fig):
 fig = elv.plot_livesurvey_grid(grid_db, projection, coast_db)
 plt_to_pn(fig)
 # ---- PLOT TRACK
-fig = elv.plot_livesurvey_track(survey_data_db, projection, coast_db)
+fig1 = elv.plot_livesurvey_track(survey_data_db, projection, coast_db)
 plt_to_pn(fig)
 # ---- PLOT DISTRIBUTIONS
 weight_table = SQL(biology_db, "select", 
@@ -104,8 +104,93 @@ specimen_table = SQL(biology_db, "select",
                      table_name="specimen_data_df")
 length_table = SQL(biology_db, "select", 
                    table_name="length_df")
-fig = elv.plot_livesurvey_distributions(weight_table, stratum_table, specimen_table, length_table)
+fig2 = elv.plot_livesurvey_distributions(weight_table, stratum_table, specimen_table, length_table)
 plt_to_pn(fig)
+### MULTIPANEL
+panel0 = pn.panel(fig, name='Gridded population estimates')
+panel1 = pn.panel(fig1, name='Alongtrack population estimates')
+panel2 = pn.panel(fig2, name='Length and weight distributions')
+
+def serve_panels():
+    # Create links to each panel
+    home = pn.Column(
+        pn.pane.Markdown("# Main Page"),
+        pn.pane.Markdown("[Gridded population estimates](gridded_population_estimates)", sizing_mode="stretch_width"),
+        pn.pane.Markdown("[Alongtrack population estimates](alongtrack_population_estimates)", sizing_mode="stretch_width"),
+        pn.pane.Markdown("[Length and weight distributions](length_weight_distributions)", sizing_mode="stretch_width")
+    )
+
+    # Serve the home page and individual panels
+    pn.serve({
+        'Main Page': home,
+        'gridded_population_estimates': panel0,
+        'alongtrack_population_estimates': panel1,
+        'length_weight_distributions': panel2
+    },  show=True)
+# Run the function to serve panels
+serve_panels()
+
+
+
+def serve_panels():
+    panel0.servable(title='Gridded population', location=True)
+    panel1.servable(title='Alongtrack population')
+    panel2.servable(title='Length/weight distribution')
+    pn.serve({'gridded a': panel0, 'fig1': panel1, 'fig2': panel2}, show=True)
+serve_panels()
+
+def serve_panels():
+    # Assign titles and make panels servable
+    panel0.servable(title='Gridded population')
+    panel1.servable(title='Alongtrack population')
+    panel2.servable(title='Length/weight distribution')
+    
+    # Create a dictionary layout
+    layout = {
+        'Gridded population': panel0,
+        'Alongtrack population': panel1,
+        'Length/weight distribution': panel2
+    }
+    
+    # Serve the panels
+    pn.serve(layout, show=True)
+
+# Run the function to serve panels
+serve_panels()
+
+layout = pn.Column(
+    pn.pane.Markdown("# Gridded population", style={'font-size': '20px'}),
+    panel0,
+    pn.pane.Markdown("# Alongtrack population", style={'font-size': '20px'}),
+    panel1,
+    pn.pane.Markdown("# Length/weight distribution", style={'font-size': '20px'}),
+    panel2
+)
+
+def serve_panels():
+    # Serve the layout with titles
+    layout.servable()
+    pn.serve(layout, show=True)
+
+# Run the function to serve panels
+serve_panels()
+
+# Create a layout
+layout = pn.Tabs(('Plot 1', panel1), ('Plot 2', panel2))
+
+# Serve the layout
+layout.servable()
+pn.serve(layout, show=True)
+# Run the server to display panels in separate windows
+# Create a layout with tabs
+tabs = pn.Tabs(('Alongtrack population', panel1), ('Length/weight distribution', panel2))
+tabs.servable()
+pn.serve(tabs, port=5006, show=True)
+pn.serve({'Plot 1': panel1, 'Plot 2': panel2}, show=True)
+
+combined_panel = pn.Column(panel1, panel2)
+combined_panel.show()
+panel1.show()
 
 
 
