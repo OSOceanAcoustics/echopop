@@ -62,21 +62,37 @@ def plot_livesurvey_grid(grid_db: Union[Path, pd.DataFrame],
             "name": "Mean number density",
             "units": "fish $\\mathregular{nmi^{-2}}$",
             "colormap": "viridis",
+            "color_threshold": {
+                "minimum": 1e1,
+                "maximum": 1e6
+            },
         }, 
         "biomass_density_mean": {
             "name": "Mean biomass density",
             "units": "kg $\\mathregular{nmi^{-2}}$",
             "colormap": "plasma",
+            "color_threshold": {
+                "minimum": 1e1,
+                "maximum": 1e6
+            },
         },     
         "biomass": {
             "name": "Biomass",
             "units": "kg",
             "colormap": "cividis",
+            "color_threshold": {
+                "minimum": 1e1 * grid_gdf["area"].max(),
+                "maximum": 1e6 * grid_gdf["area"].max()
+            },
         },
         "abundance": {
             "name": "Abundance",
             "units": "$\\it{N}$",
             "colormap": "inferno",
+            "color_threshold": {
+                "minimum": 1e1 * grid_gdf["area"].max(),
+                "maximum": 1e6 * grid_gdf["area"].max()
+            },
         }
     }
 
@@ -98,8 +114,16 @@ def plot_livesurvey_grid(grid_db: Union[Path, pd.DataFrame],
         newcolors[0, :] = white
         # ---- Create the new custom colormap
         custom_cmap = ListedColormap(newcolors)
+        # ---- Drop "empty" values
+        sub_grid_gdf = grid_gdf[grid_gdf[var] > 0.0]
+        if "color_threshold" in VARIABLE_MAP[var].keys():
+            min_value = VARIABLE_MAP[var]["color_threshold"]["minimum"]
+            max_value = VARIABLE_MAP[var]["color_threshold"]["maximum"]
+        else:
+            min_value = sub_grid_gdf[var].min()
+            max_value = sub_grid_gdf[var].max()
         # ---- Normalize colorscale
-        norm=plt.Normalize(vmin=grid_gdf[var].min(), vmax=grid_gdf[var].max())
+        norm=plt.Normalize(vmin=min_value, vmax=max_value)
         # ---- Plot the polygons with color fills based on the variable (non-zero)
         grid_gdf.plot(column=var, ax=ax, edgecolor="gainsboro", legend=False, cmap=custom_cmap,
                       norm=norm,
@@ -121,8 +145,7 @@ def plot_livesurvey_grid(grid_db: Union[Path, pd.DataFrame],
         ax.set_ylabel(u'Latitude (\u00B0N)')
         # ---- Add colorbar
         sm = plt.cm.ScalarMappable(cmap=custom_cmap, 
-                                   norm=plt.Normalize(vmin=grid_gdf[var].min(), 
-                                                      vmax=grid_gdf[var].max()))
+                                   norm=norm)
         sm._A = []  # fake up the array of the scalar mappable
         cbar = fig.colorbar(sm, ax=ax, shrink=0.5)
         cbar.set_label(f"{var_info['units']}")
@@ -232,7 +255,7 @@ def plot_livesurvey_track(survey_data_db: Union[Path, pd.DataFrame],
             "colormap": "viridis",
             "minimum": 0.0,
             "cbar_reverse": False,
-                "color_threshold": {
+            "color_threshold": {
                 "minimum": 1e2,
                 "maximum": 1e4
             },
@@ -349,7 +372,7 @@ def plot_livesurvey_track(survey_data_db: Union[Path, pd.DataFrame],
         cbar = fig.colorbar(sm, ax=ax, shrink=0.5, fraction=0.075, pad=0.1)
         cbar.set_label(f"{var_info['units']}")
         # ---- Add scalebar
-        scalebar_length = 250  # Length of scale bar in km
+        scalebar_length = 100  # Length of scale bar in km
         scalebar_length_in_degrees = scalebar_length / 111  # Assuming 1 degree = 111 km
         # ---- Transform scale bar coordinates to axis units
         # scalebar_x = axis_limits[0]*1.005 + (axis_limits[2]*1.01 - axis_limits[0]*1.005) * 0.1
