@@ -7,6 +7,7 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 import xarray as xr
+import os
 
 from .live_core import(
     LIVE_FILE_FORMAT_MAP,
@@ -269,6 +270,17 @@ def validate_data_directory(file_configuration: dict, dataset: str,
 
     # Initialize the database file
     initialize_database(database_root_directory, file_settings)
+
+    # Clean the file names    
+    data_files = [
+        re.sub(r'//', r'\\', str(filename)).replace('/', '\\') 
+        if not str(filename).startswith('s3://') 
+        else str(filename)
+        for filename in data_files
+    ]
+
+    # Drop incomplete datasets
+    data_files = validate_complete_biology_dataset(data_files, directory_path, file_configuration)
     
     # Query the SQL database to process only new files (or create the db file in the first place)
     valid_files, file_configuration["database"][dataset] = (
@@ -277,6 +289,67 @@ def validate_data_directory(file_configuration: dict, dataset: str,
 
     # Return the valid filenames/paths
     return valid_files
+
+def validate_complete_biology_dataset(data_files: List[str], 
+                                      directory_path: str,
+                                      file_configuration: dict):
+
+    # Get the biology data file settings
+    file_settings = file_configuration["input_directories"]["biology"]
+
+    # Get the file-specific settings, datatypes, columns, etc.
+    # ---- Extract the expected file name ID's
+    biology_file_ids = file_settings["file_name_formats"]
+
+    # Define helper function for extract haul number from filename strings
+    def get_file_haul_number(filename, format_string):
+        # Step 1: Extract the filename from the full path
+        filename_only = os.path.basename(filename)
+            
+        # Remove the file extension from the filename
+        filename_no_ext = os.path.splitext(filename_only)[0]
+
+        # Split the format string and filename into parts
+        format_parts = re.findall(r'\{[^}]+\}|[^_]+', format_string)
+        filename_parts = filename_no_ext.split('_')
+
+        # Find the index of {HAUL} in format_parts
+        haul_index = format_parts.index('{HAUL}')
+
+        # Extract and return the haul number from filename_parts
+        if haul_index < len(filename_parts):
+            return filename_parts[haul_index]
+        return None
+        
+    # Organize dataset by their respective dataset-type
+    dataset_dict = {key: filter_filenames(directory_path, 
+                                          ds, 
+                                          data_files, 
+                                          file_settings["extension"]) 
+                    for key, ds in biology_file_ids.items()}
+    
+    # Extract the haul numbers
+    extracted_hauls = {
+        key: set(get_file_haul_number(filename, biology_file_ids.get(key, ''))
+                for filename in filenames)
+        for key, filenames in dataset_dict.items()
+    }
+
+    # Find haul numbers that appear in all keys
+    common_hauls = set.intersection(*extracted_hauls.values())
+
+    # Filter filenames to keep only those with haul numbers in the common set
+    filtered_filenames = [
+        filename
+        for key, filenames in dataset_dict.items()
+        for filename in filenames
+        if get_file_haul_number(filename, biology_file_ids.get(key, '')) 
+        in common_hauls
+    ]
+
+    # Return the curated filename list
+    return filtered_filenames
+
 
 def compile_filename_format(file_name_format: str):
 
