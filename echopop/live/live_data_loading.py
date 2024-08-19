@@ -280,7 +280,9 @@ def validate_data_directory(file_configuration: dict, dataset: str,
     ]
 
     # Drop incomplete datasets
-    data_files = validate_complete_biology_dataset(data_files, directory_path, file_configuration)
+    if dataset == "biology":
+        data_files = validate_complete_biology_dataset(data_files, directory_path, 
+                                                       file_configuration)
     
     # Query the SQL database to process only new files (or create the db file in the first place)
     valid_files, file_configuration["database"][dataset] = (
