@@ -358,10 +358,11 @@ def validate_complete_biology_dataset(data_files: List[str],
         if get_file_haul_number(filename, biology_file_ids.get(key, '')) 
         not in common_hauls
     ]
-
+    # ---- Create list
+    non_filtered_filenames_lst = "\n".join(non_filtered_filenames)
     print(
-        f"The following files are parts of incomplete filesets: "
-        f"{'\n'.join(non_filtered_filenames)}"
+        f"The following files are parts of incomplete filesets: \n"
+        f"{non_filtered_filenames_lst}"
     )
 
     # Return the curated filename list
