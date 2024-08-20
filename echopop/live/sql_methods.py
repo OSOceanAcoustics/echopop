@@ -669,11 +669,13 @@ def query_processed_files(root_directory: Path, file_settings: dict, files: List
     if processed: 
         SQL(db_file, "insert", table_name="files_processed", dataframe=current_files, 
             id_columns=["filepath"])
-    else:
+    elif not current_files.empty:
         SQL(db_file, "insert", table_name="files_read", dataframe=current_files, 
             id_columns=["filepath"])
         # ---- Apply filter by comparing sets and return the output
         return list(set(files_str) - set(previous_files)), db_file
+    else:
+        return None, db_file
 
 # TODO: Documentation
 def sql_data_exchange(database_file: Path, **kwargs):

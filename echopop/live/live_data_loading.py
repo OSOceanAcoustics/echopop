@@ -281,7 +281,8 @@ def validate_data_directory(file_configuration: dict, dataset: str,
 
     # Drop incomplete datasets
     if dataset == "biology":
-        data_files = validate_complete_biology_dataset(data_files, directory_path, 
+        data_files = validate_complete_biology_dataset(data_files, 
+                                                       directory_path, 
                                                        file_configuration)
     
     # Query the SQL database to process only new files (or create the db file in the first place)
@@ -348,6 +349,20 @@ def validate_complete_biology_dataset(data_files: List[str],
         if get_file_haul_number(filename, biology_file_ids.get(key, '')) 
         in common_hauls
     ]
+
+    # Get bad files for DEBUG
+    non_filtered_filenames = [
+        filename
+        for key, filenames in dataset_dict.items()
+        for filename in filenames
+        if get_file_haul_number(filename, biology_file_ids.get(key, '')) 
+        not in common_hauls
+    ]
+
+    print(
+        f"The following files are parts of incomplete filesets: "
+        f"{'\n'.join(non_filtered_filenames)}"
+    )
 
     # Return the curated filename list
     return filtered_filenames
