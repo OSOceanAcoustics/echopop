@@ -86,7 +86,7 @@ def acoustic_pipeline(acoustic_dict: dict,
         if all([True if df is not None else False for df in [acoustic_df, sigma_bs_df]]):
 
             # ---- Merge the NASC and sigma_bs datasets
-            nasc_biology = acoustic_df.merge(sigma_bs_df, on=spatial_column + contrast_columns)
+            nasc_biology = acoustic_df.merge(sigma_bs_df, on=spatial_column)
             # ---- Compute the number densities (animals nmi^-2)
             nasc_biology["number_density"] = (
                 nasc_biology["nasc"]
@@ -101,7 +101,7 @@ def acoustic_pipeline(acoustic_dict: dict,
             if weight_spatial_averages is not None:
                 # Merge average weights with number density estimates
                 nasc_biology = nasc_biology.merge(weight_spatial_averages, 
-                                                  on=spatial_column + contrast_columns)
+                                                  on=spatial_column)
 
                 # Compute biomass densities
                 nasc_biology["biomass_density"] = (
@@ -109,7 +109,8 @@ def acoustic_pipeline(acoustic_dict: dict,
                 )
 
             # Update the survey population estimate DataFrame with the newly computed densities
-            if all([True if df is not None else False for df in [acoustic_df, sigma_bs_df]]):        
+            if (all([True if df is not None else False for df in [acoustic_df, sigma_bs_df]]) 
+                and not nasc_biology.empty):        
                 sql_group_update(acoustic_db, dataframe=nasc_biology, table_name="survey_data_df", 
                                  columns=["number_density", "biomass_density"], 
                                  unique_columns=["id"])

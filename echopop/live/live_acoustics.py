@@ -45,6 +45,8 @@ def preprocess_acoustic_data(survey_data: pd.DataFrame,
     # ---- Filter out any unused frequency coordinates
     prc_nasc_df_filtered = (
         survey_data[survey_data["frequency_nominal"] == transmit_settings["frequency"]]
+        # ---- Drop NaN/NaT values from longitude/latitude/ping_time
+        .dropna(subset=["longitude", "latitude", "ping_time"])
     )
 
     # Get grid coordinates
