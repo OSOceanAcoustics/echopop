@@ -745,10 +745,10 @@ def query_dataset(db_file: str,
         # ---- Get unique identifiers
         unique_keys_df = get_unique_identifiers(data_dict, unique_keys)
         # ---- Conditional string formatting helper function
-        def format_value(value):
-            if isinstance(value, str):
-                return f"'{value.replace("'", "''")}'"
-            return str(value)
+        def format_value(x):
+            if isinstance(x, str):
+                return "'{}'".format(x.replace("'", "''"))
+            return str(x)
         # ---- Create conditional string  
         conditional_str = " | ".join(
             [" & ".join([f"{col} = {format_value(val)}" for col, val in row.items()]) 
