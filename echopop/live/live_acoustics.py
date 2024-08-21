@@ -265,7 +265,7 @@ def format_acoustic_dataset(nasc_data_df: pd.DataFrame, file_configuration: dict
     # ----
     df[add_columns] = 0.0
     # ---- Assign values for key values
-    key_values = [f"{df.loc[index, "ship_id"]}-{str(index)}-{df.loc[index, 'source']}" 
+    key_values = [f"{df.loc[index, 'ship_id']}-{str(index)}-{df.loc[index, 'source']}" 
                   for index in df.index]    
     # ---- Add an autoincrementing tag that will serve as a primary key and unique constraint
     df.loc[:, "id"] = key_values
