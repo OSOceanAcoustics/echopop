@@ -744,11 +744,20 @@ def query_dataset(db_file: str,
         valid_keys = list(set(inspected_table.keys()).intersection(set(data_columns)))
         # ---- Get unique identifiers
         unique_keys_df = get_unique_identifiers(data_dict, unique_keys)
+        # ---- Conditional string formatting helper function
+        def format_value(value):
+            if isinstance(value, str):
+                return f"'{value.replace("'", "''")}'"
+            return str(value)
         # ---- Create conditional string  
         conditional_str = " | ".join(
-            [" & ".join([f"{col} = {val}" for col, val in row.items()]) 
+            [" & ".join([f"{col} = {format_value(val)}" for col, val in row.items()]) 
             for _, row in unique_keys_df.iterrows()]
-        )          
+        )
+        # conditional_str = " | ".join(
+        #     [" & ".join([f"{col} = {val}" for col, val in row.items()]) 
+        #     for _, row in unique_keys_df.iterrows()]
+        # )          
         # conditional_str = (
         #    " & ".join([f"{col} in {np.unique(unique_keys_df[col]).tolist()}" 
         #                for col in unique_keys_df.columns])  

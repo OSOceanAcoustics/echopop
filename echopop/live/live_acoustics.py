@@ -60,6 +60,8 @@ def preprocess_acoustic_data(survey_data: pd.DataFrame,
     )
 
     # Remaining adjustments to the acoustic data prior to being passed to the `LiveSurvey` object
+    # ---- Add `ship_id` from the file configuration
+    prc_nasc_df_filtered.loc[:, "ship_id"] = file_configuration["ship_id"]
     # ---- Replace NASC `NaN` values with `0.0`
     prc_nasc_df_filtered.loc[:, "NASC"] = prc_nasc_df_filtered.loc[:, "NASC"].fillna(0.0)
     # ---- Drop the `frequency_nominal` column and return the output 
@@ -221,7 +223,7 @@ def compute_nasc(acoustic_data_df: pd.DataFrame, file_configuration: dict,
     # else:
     nasc_data_df = (
         acoustic_data_df
-        .groupby(["longitude", "latitude", "ping_time", "source"] + gridding_column, 
+        .groupby(["ship_id", "longitude", "latitude", "ping_time", "source"] + gridding_column, 
                     observed=False)
         .apply(integrate_nasc, echometrics, include_groups=False).droplevel(-1)
         .reset_index()
@@ -239,9 +241,9 @@ def compute_nasc(acoustic_data_df: pd.DataFrame, file_configuration: dict,
         # ---- Reorder columns
         nasc_data_df = nasc_data_df[
             gridding_column
-            + ["longitude", "latitude", "ping_time", "source", "nasc", "n_layers", "nasc_db", 
-               "mean_Sv", "max_Sv", "aggregation_index", "center_of_mass", "dispersion", "evenness", 
-               "occupied_area"]
+            + ["ship_id", "longitude", "latitude", "ping_time", "source", "nasc", "n_layers", 
+               "nasc_db", "mean_Sv", "max_Sv", "aggregation_index", "center_of_mass", "dispersion", 
+               "evenness", "occupied_area"]
         ]
 
     # Return the output
@@ -261,7 +263,8 @@ def format_acoustic_dataset(nasc_data_df: pd.DataFrame, file_configuration: dict
     # ----
     df[add_columns] = 0.0
     # ---- Assign values for key values
-    key_values = [f"{str(index)}-{df.loc[index, 'source']}" for index in df.index]    
+    key_values = [f"{df.loc[index, "ship_id"]}-{str(index)}-{df.loc[index, 'source']}" 
+                  for index in df.index]    
     # ---- Add an autoincrementing tag that will serve as a primary key and unique constraint
     df.loc[:, "id"] = key_values
 

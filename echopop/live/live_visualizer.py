@@ -304,6 +304,12 @@ def plot_livesurvey_track(survey_data_db: Union[Path, pd.DataFrame],
             * (max_size - min_size) + min_size
         )    
     
+    # Define colors for ship_ids (you can customize these colors as needed)
+    ship_id_colors = {
+        ship_id: plt.cm.tab10(i)  # Use a colormap for distinct colors; adjust as needed
+        for i, ship_id in enumerate(survey_gdf['ship_id'].unique())
+    }
+
     # Create a figure and a 2xn grid of subplots
     if len(intact_variables) == 4:
         fig, axes = plt.subplots(2, 2, figsize=(10, 10))
@@ -323,8 +329,18 @@ def plot_livesurvey_track(survey_data_db: Union[Path, pd.DataFrame],
         custom_cmap = ListedColormap(newcolors)
         # ---- Plot cruisetrack
         # survey_gdf.plot(ax=ax, color="dimgray", linewidth=0.25, linestyle="-")
-        ax.plot(survey_gdf.geometry.x, survey_gdf.geometry.y, color="dimgray", 
-                linewidth=0.25, linestyle="-")
+        # ax.plot(survey_gdf.geometry.x, survey_gdf.geometry.y, color="dimgray", 
+        #         linewidth=0.25, linestyle="-")
+        handles = []  # List to store legend handles
+        for ship_id, group in survey_gdf.groupby("ship_id"):
+            # Sort the group by latitude or longitude
+            # group = group.sort_values(by=["latitude", "longitude"])  
+            color = ship_id_colors.get(ship_id, 'gray')
+            line_handle, = ax.plot(group.geometry.x, group.geometry.y, color=color, 
+                        linewidth=0.25, linestyle="-", label=ship_id, zorder=1)
+            handles.append(line_handle)  # Add handle to legend
+            # ax.plot(group.geometry.x, group.geometry.y, label=ship_id, linewidth=0.25, 
+            #         linestyle="-", zorder=1)
         # ---- Drop "empty" values
         sub_gdf = survey_gdf[survey_gdf[var] > VARIABLE_MAP[var]["minimum"]]
         # ---- Assign color range
@@ -348,6 +364,7 @@ def plot_livesurvey_track(survey_data_db: Union[Path, pd.DataFrame],
                           max_size=VARIABLE_MAP[var]["size"][1]),
             cmap=custom_cmap,
             norm=norm,
+            zorder = 2
             # edgecolor="black",
             # linewidths=0.1
         )    
@@ -390,6 +407,7 @@ def plot_livesurvey_track(survey_data_db: Union[Path, pd.DataFrame],
         # ---- Add scale text
         ax.text(x0 + x_scale + scalebar_length_in_degrees / 2, y0 + y_scale - (y1 - y0) * 0.025, 
                 f'{scalebar_length} km', ha='center', va='top', color='black')
+        # ax.legend(handles=handles, title='Ship ID')
 
         # ax.text(scalebar_x + (scalebar_length / 200), 
         #         scalebar_y - scalebar_y_offset, 

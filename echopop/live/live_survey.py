@@ -340,7 +340,8 @@ class LiveSurvey:
             eldp.acoustic_pipeline(self.input["acoustics"],
                                     self.input["spatial"]["strata"],
                                     self.config,
-                                    verbose=verbose)   
+                                    verbose=verbose,
+                                    contrast_columns=["ship_id"])   
             # --- Validate successful run
             self.meta["provenance"]["acoustic_population"] = True
         
