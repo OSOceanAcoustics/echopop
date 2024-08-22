@@ -1,7 +1,5 @@
 from typing import List, Union
 
-from typing import List, Union
-
 import geopandas as gpd
 import geopy.distance
 import numpy as np
@@ -412,14 +410,14 @@ def export_transect_layers(
         raise ValueError(
             f"The following columns are missing from `transect_data`: {list(missing_columns)}"
         )
-    
+
     # Check for specific columns, otherwise proceed with calculations
     for col in ["max_depth", "layer_depth_min", "layer_depth_max"]:
         if col not in transect_data.columns:
             raise ValueError(
                 f"Expected column '{col}' is missing from 'transect data'."
             )
-        
+
     # Compute the mean layer and bottom depths
     # ---- Bottom depth
     transect_summary = (
