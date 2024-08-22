@@ -9,6 +9,8 @@ from datetime import datetime
 import xarray as xr
 import os
 import copy
+import boto3
+from botocore.exceptions import ClientError
 
 from .live_core import(
     LIVE_FILE_FORMAT_MAP,
@@ -218,6 +220,28 @@ def read_acoustic_zarr(file: Path, config_map: dict, xarray_kwargs: dict = {}) -
     # Return a Tuple
     return zarr_data_df_filtered, data_units
 
+def construct_directorypath(file_configuration: dict, file_settings: dict):
+    """Construct the root directory path."""
+
+    # Get the general root_directory, if present
+    if "data_root_dir" in file_configuration:
+        root_directory = file_configuration["data_root_dir"]
+    else:
+        root_directory = ""
+
+    # Get the local directory (or this may be the root directory depending on the config)
+    data_directory = file_settings["directory"]
+
+    # Return the directory path
+    if root_directory != "":    
+        return "/".join([root_directory, data_directory])
+    else:
+        return data_directory
+
+def is_s3_path(path):
+    """Check if a path is an S3 path."""
+    return path.startswith("s3://")
+
 # TODO: Documentation
 def validate_data_directory(file_configuration: dict, dataset: str,
                             input_filenames: Optional[list] = None) -> List[Path]:
@@ -225,65 +249,48 @@ def validate_data_directory(file_configuration: dict, dataset: str,
     # Get the dataset file settings
     file_settings = file_configuration["input_directories"][dataset]
 
-    # Get the acoustic file settings and root directory
-    # ---- Root directory
-    if "data_root_dir" in file_configuration.keys():
-        # root_directory = Path(file_configuration["data_root_dir"])
-        root_directory = file_configuration["data_root_dir"]
-    else: 
-        # root_directory = Path()
-        root_directory = ""
-    # ---- File folder
-    # data_directory = Path(file_settings["directory"])
-    data_directory = file_settings["directory"]
-    # ---- Createa directory path
-    # directory_path = root_directory / data_directory
-    if root_directory != "":    
-        directory_path = "/".join([root_directory, data_directory])
-    else:
-        directory_path = data_directory
+    # Get the data file settings and directorypath
+    directory_path = construct_directorypath(file_configuration, file_settings)
 
-    # Validate filepath, columns, datatypes
-    # ---- Error evaluation (if applicable)
-    # if not directory_path.exists():
-    #     raise FileNotFoundError(
-    #         f"The acoustic data directory [{directory_path}] does not exist."
-    #     )
-
-    # Validate that files even exist
-    # ---- List available *.zarr files
-    # data_files = list(directory_path.glob(f"*{'.'+file_settings['extension']}"))
-    # ---- Error evaluation (if applicable)
-    # if not data_files:
-    #     raise FileNotFoundError(
-    #         f"No `*.{file_settings['extension']}` files found in [{directory_path}]!"
-    #     )
-    
-    # Check and format specific input filenames
-    if isinstance(input_filenames, list):
-        # data_files = [directory_path / filename for filename in input_filenames]
-        data_files = ["/".join([directory_path, filename]) for filename in input_filenames]
-    # ---- Raise Error
-    elif input_filenames is not None:
+    # Validate `input_filenames` input
+    if input_filenames is not None and not isinstance(input_filenames, list):
         raise TypeError(
             "Data loading argument `input_filenames` must be a list."
         )        
+    
+    # Format data filenames
+    if input_filenames is not None:
+        data_files = ["/".join([directory_path, filename]) for filename in input_filenames]
+
+    # Validate directories and format filepath names
+    # ---- S3 bucket
+    if is_s3_path(directory_path):
+        # ---- Validate
+        validate_s3_path(directory_path, file_configuration["storage_options"])
+        # ---- Format data files
+        if input_filenames is None:
+            data_files = []
+    # ---- Local
     else:
-        data_files = list(Path(directory_path).glob(f"*{'.'+file_settings['extension']}"))
-
-    # Database root directory
-    database_root_directory = file_configuration["database_directory"]
-
-    # Initialize the database file
-    initialize_database(database_root_directory, file_settings)
-
-    # Clean the file names    
+        # ---- Validate
+        validate_local_path(directory_path, file_settings)
+        # ---- Format data files
+        if input_filenames is None:            
+            data_files = list(Path(directory_path).glob(f"*{'.'+file_settings['extension']}"))
+    
+    # Clean the filenames
     data_files = [
         re.sub(r'//', r'\\', str(filename)).replace('/', '\\') 
         if not str(filename).startswith('s3://') 
         else str(filename)
         for filename in data_files
     ]
+
+    # Database root directory
+    database_root_directory = file_configuration["database_directory"]
+
+    # Initialize the database file
+    initialize_database(database_root_directory, file_settings)
 
     # Drop incomplete datasets
     if dataset == "biology":
@@ -298,6 +305,79 @@ def validate_data_directory(file_configuration: dict, dataset: str,
 
     # Return the valid filenames/paths
     return valid_files
+
+def validate_s3_path(s3_path: str, cloud_credentials: dict):
+    """Check if (parts of) S3 path exists."""
+
+    # Redundant validation that S3 object validation is appropriate
+    if not is_s3_path(s3_path):
+        raise ValueError("The path is not an S3 path.")    
+    
+    # Validate credentials
+    if not all([True if param in cloud_credentials.keys() else False 
+                for param in ["key", "secret"]]):
+        # ---- Find missing credentials
+        missing_creds = set(["key", "secret"]) - set(cloud_credentials)
+        # ---- Format into string
+        missing_creds_str = ", ".join(["'{}'".format(x.replace("'", "''")) for x in missing_creds])
+        # ---- Raise Error
+        raise PermissionError(
+            f"Required S3 credentials missing: {missing_creds_str}."
+        )
+
+    # Remove the s3:// prefix
+    s3_path_reduced = s3_path[len("s3://"):]
+
+    # Split into bucket and key
+    parts = s3_path_reduced.split("/", 1)
+    if len(parts) < 2:
+        raise ValueError(f"Invalid S3 path format for '{s3_path}'.")
+    
+    # Get bucket name and directory keys
+    bucket_name, directory = parts
+
+    # Initialize the S3 client
+    s3_client = boto3.client("s3", 
+                             aws_access_key_id=cloud_credentials["key"], 
+                             aws_secret_access_key=cloud_credentials["secret"])
+    
+    # Check if the bucket exists
+    try:
+        s3_client.head_bucket(Bucket=bucket_name)
+    except ClientError as e:
+        raise FileNotFoundError(
+            f"S3 bucket '{bucket_name}' does not exist or you do not have access."
+        )
+    
+    # Check if the S3 directory exists
+    try:
+        # ---- Ping a response from the bucket     
+        response = s3_client.list_objects_v2(Bucket=bucket_name, Prefix=directory, MaxKeys=1)
+        # ---- Check for `Contents`
+        if "Contents" not in response:
+            raise FileNotFoundError(f"S3 path '{s3_path}' does not exist.")
+    except ClientError as e: 
+        # --- Raise Error and propagate it upwards
+        raise e
+
+def validate_local_path(directory_path: str, file_settings: dict):
+
+    # Validate filepath
+    # ---- Error evaluation (if applicable)
+    if not Path(directory_path).exists():
+        raise FileNotFoundError(
+            f"The data directory [{directory_path}] does not exist."
+        )
+    
+    # Validate that files even exist
+    # ---- List available files of target extension
+    data_files = list(Path(directory_path).glob(f"*{'.'+file_settings['extension']}"))
+    # ---- Error evaluation (if applicable)
+    if not data_files:
+        raise FileNotFoundError(
+            f"No `*.{file_settings['extension']}` files found in [{directory_path}]!"
+        )
+
 
 def validate_complete_biology_dataset(data_files: List[str], 
                                       directory_path: str,

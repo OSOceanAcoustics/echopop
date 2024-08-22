@@ -7,7 +7,8 @@
 ##############################################################################
 # Parameters
 
-survey_year: 2019            # survey year being considered
+ship_id: R/V Shimada
+survey_year: 2024           # survey year being considered
 species:
   text_code: pacific_hake    # target species for the survey year -- species name
   number_code: 22500         # target species for the survey year -- numeric code
@@ -26,6 +27,7 @@ input_directories:
     extension: zarr
   biology:
     directory: biology/
+    # directory: s3://sh2407-upload/data/Echopop-biology/
     database_name: biology.db
     extension: csv 
     file_name_formats:
