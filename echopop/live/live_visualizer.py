@@ -7,6 +7,7 @@ import pandas as pd
 import geopandas as gpd
 from typing import Union, Optional
 from pathlib import Path
+import matplotlib.gridspec as gridspec
 
 def plot_livesurvey_grid(grid_db: Union[Path, pd.DataFrame],
                          projection: str,
@@ -317,6 +318,7 @@ def plot_livesurvey_track(survey_data_db: Union[Path, pd.DataFrame],
         fig, axes = plt.subplots(1, 3, figsize=(10, 10))
     elif len(intact_variables) == 2:
         fig, axes = plt.subplots(1, 1, figsize=(10, 10))
+    plt.subplots_adjust(left=0.1, right=0.9, bottom=0.1, top=0.9, wspace=0.0, hspace=0.0)
 
     # Iterate through and plot all subplots
     for ax, var in zip(axes.flat, intact_variables):
