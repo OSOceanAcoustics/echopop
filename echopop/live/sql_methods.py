@@ -116,16 +116,23 @@ def sql_insert(connection: sqla.Connection, table_name: str, columns: list, data
         conflict_columns (list): List of column names to use for conflict resolution.
     """
     
+    # Create 'inspector' for the db file
+    inspector = inspect(connection)
+    # ---- Get the column names from the db file
+    table_columns = [col['name'] for col in inspector.get_columns(table_name)]
+
     # Prepare the SQL statement for insertion
     # ---- Check whether `columns` is '*'
     if "*" in columns:
         # ---- Create 'inspector' for the db file
         inspector = inspect(connection)
         # ---- Get the column names from the db file
-        columns = [col['name'] for col in inspector.get_columns(table_name)]
+        columns = table_columns
     # ---- If not a List
     elif not isinstance(columns, list):
         columns = [columns]
+    # ---- Match column indexing with original table
+    columns = [col for col in table_columns if col in columns]
     # ---- Prepare the columns as a string of column names
     column_names = ", ".join(columns)
 
@@ -136,6 +143,8 @@ def sql_insert(connection: sqla.Connection, table_name: str, columns: list, data
     # Convert the DataFrame into a tuple and then into a string
     # ---- Replace NaN with None
     dataframe = dataframe.replace([np.nan], [None])
+    # ---- Match column indexing with original table
+    dataframe = dataframe[columns]
     # ---- DataFrame to Tuple
     data_tuple = [tuple(row) for row in dataframe.itertuples(index=False)]
     
@@ -157,7 +166,7 @@ def sql_insert(connection: sqla.Connection, table_name: str, columns: list, data
     #                                 else 'NULL' if x is None else str(x), row))})"
     #     for row in data_tuple
     # )
-    data_str = ", ".join(f"({','.join(map(lambda x: format_value(x), row))})"  for row in data_tuple)
+    data_str = ", ".join(f"({','.join(map(lambda x: format_value(x), row))})" for row in data_tuple)
     
     # Construct the "ON CONFLICT, DO UPDATE SET" if needed
     on_conflict_clause = ""

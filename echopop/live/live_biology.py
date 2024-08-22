@@ -195,9 +195,10 @@ def compute_sigma_bs(specimen_data: pd.DataFrame, length_data: pd.DataFrame,
         insertion_df = sigma_bs_df.copy()
         # ---- Create
         SQL(biology_db, "create", table_name="sigma_bs_mean_df", dataframe=insertion_df, 
-            primary_keys=["id"])
+            primary_keys=key_list+["id"])
         # ---- Populate table
-        SQL(biology_db, "insert", table_name="sigma_bs_mean_df", dataframe=insertion_df)
+        SQL(biology_db, "insert", table_name="sigma_bs_mean_df", dataframe=insertion_df,
+            id_columns=key_list+["id"])
     else:
         # ---- Get previous values in the table
         table_df = SQL(biology_db, "select", table_name="sigma_bs_mean_df")

@@ -60,8 +60,7 @@ class LiveSurvey:
 
         # Loading the configuration settings and definitions that are used to
         # initialize the Survey class object
-        self.config = eldl.live_configuration(Path(live_init_config_path), 
-                                              Path(live_file_config_path))
+        self.config = eldl.live_configuration(live_init_config_path, live_file_config_path)
         # ---- Initialize config key for database files
         self.config.update(
             {"database": {key: None for key in self.config["input_directories"].keys()}}
