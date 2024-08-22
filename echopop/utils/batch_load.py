@@ -2,7 +2,7 @@ import glob
 import os
 import re
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Tuple
 
 import numpy as np
 import pandas as pd
@@ -458,51 +458,8 @@ def batch_read_echoview_exports(
     # Get NASC export settings
     export_settings = configuration_dict["nasc_exports"]
 
-    # Check that save directory exists
-    # ---- Get save file directory
-    if save_directory is None:
-        save_file_directory = export_settings["nasc_export_directory"]
-    elif not isinstance(save_directory, (str, Path)):
-        raise TypeError(f"Save directory for NASC file {save_directory} must be a `Path` or `str`.")
-    else:
-        save_file_directory = save_directory
-    # ---- Drop prepended "/" or "\\" to avoid using an absolute path
-    if save_file_directory.startswith("/") or save_file_directory.startswith("\\"):
-        save_file_directory = save_file_directory[1:]
-    # ---- Create filepath
-    save_folder = str(Path(configuration_dict["data_root_dir"]) / save_file_directory)
-    # ---- Validate existence
-    if not Path(save_folder).exists():
-        raise FileNotFoundError(f"Save directory for NASC file ({save_folder}) does not exist.")
-
-    # Check that directory exists
-    # ---- Get export file directory
-    export_file_directory = export_settings["export_file_directory"]
-    # ---- Drop prepended "/" or "\\" to avoid using an absolute path
-    if export_file_directory.startswith("/") or export_file_directory.startswith("\\"):
-        export_file_directory = export_file_directory[1:]
-
-    # Generate a list of all export files in the directory
-    # ---- Convert path to string if Path
-    if file_directory is not None:
-        if isinstance(file_directory, Path):
-            file_directory = str(file_directory)
-        elif not isinstance(file_directory, (Path, str)):
-            raise TypeError(f"Input directory {file_directory} must either be a `Path` or a `str`.")
-    else:
-        file_directory = str(Path(configuration_dict["data_root_dir"]) / export_file_directory)
-
-    # Validate
-    # ---- Check if directotry exists
-    if not Path(file_directory).exists():
-        raise FileNotFoundError(f"The export file directory {{{file_directory}}} not found!")
-    # ---- Check if there are any files
-    elif not any(Path(file_directory).iterdir()):
-        raise FileNotFoundError(
-            f"The export file directory {{{file_directory}}} contains no files!"
-        )
-    # ---- Get export files
-    export_files = glob.glob(file_directory + "/*")
+    # Validate relevant directories and file existence
+    save_folder, file_directory, export_files = validate_export_directories(configuration_dict)
 
     # Get the transect numbers
     transect_reference = get_transect_numbers(export_files, transect_pattern, file_directory)
@@ -606,3 +563,47 @@ def batch_read_echoview_exports(
             f"Updated NASC export file for group '{key}' saved at "
             f"{str(Path(save_folder) / save_filename)}."
         )
+
+def validate_export_directories(configuration_dict: dict) -> Tuple[str, str, list]:
+
+    # Get the data root directory
+    root_directory = Path(configuration_dict["data_root_dir"])
+
+    # Get NASC export settings
+    export_settings = configuration_dict["nasc_exports"]
+
+    # Construct the directorypaths: Save files
+    # ---- Save file directory
+    save_file_directory = export_settings["nasc_export_directory"]
+    # ---- Drop prepended "/" or "\\" to avoid using an absolute path
+    if save_file_directory.startswith("/") or save_file_directory.startswith("\\"):
+        save_file_directory = save_file_directory[1:]
+    # ---- Create directorypath
+    save_folder = str(root_directory / save_file_directory)
+    # ---- Validate existence
+    if not Path(save_folder).exists():
+        raise FileNotFoundError(f"Save directory for NASC file ({save_folder}) does not exist.")
+    
+    # Construct the directorypaths: Export files
+    # ---- Export file directory
+    export_file_directory = export_settings["export_file_directory"]
+    # ---- Drop prepended "/" or "\\" to avoid using an absolute path
+    if export_file_directory.startswith("/") or export_file_directory.startswith("\\"):
+        export_file_directory = export_file_directory[1:]
+    # ---- Create directorypath
+    file_folder = str(root_directory / export_file_directory)
+    # ---- Validate existence
+    if not Path(file_folder).exists():
+        raise FileNotFoundError(f"The export file directory {{{file_folder}}} not found!")
+    
+    # Validate export files existence
+    # ---- Check whether files exist at all
+    if not any(Path(file_folder).iterdir()):
+        raise FileNotFoundError(
+            f"The export file directory {{{file_folder}}} contains no files!"
+        )
+    # ---- Get export files
+    export_files = glob.glob(file_folder + "/*")
+
+    # Return
+    return save_folder, file_folder, export_files

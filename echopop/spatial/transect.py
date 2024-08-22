@@ -390,38 +390,35 @@ def export_transect_layers(
         raise ValueError(
             f"The following columns are missing from `transect_data`: {list(missing_columns)}"
         )
-
-    # Calculate the maximum depth
-    if "max_depth" not in transect_data.columns:
-        raise ValueError("The column 'max_depth' is missing from `transect_data`.")
-    else:
-        # ---- Compute the bottom depth
-        transect_summary = (
-            transect_data.groupby(index_variable)["max_depth"].max().to_frame("bottom_depth")
-        )
-
-    # Calculate the mean layer depth and height
-    if "layer_depth_min" not in transect_data.columns:
-        raise ValueError("The column 'layer_depth_min' is missing from `transect_data`.")
-    elif "layer_depth_max" not in transect_data.columns:
-        raise ValueError("The column 'layer_depth_max' is missing from `transect_data`.")
-    else:
-        # ---- Mean layer depth
-        transect_summary["layer_mean_depth"] = (
-            transect_data.groupby(index_variable)
-            .agg(
-                mean_depth_min=("layer_depth_min", "min"), mean_depth_max=("layer_depth_max", "max")
+    
+    # Check for specific columns, otherwise proceed with calculations
+    for col in ["max_depth", "layer_depth_min", "layer_depth_max"]:
+        if col not in transect_data.columns:
+            raise ValueError(
+                f"Expected column '{col}' is missing from 'transect data'."
             )
-            .assign(mean_depth=lambda x: (x.mean_depth_min + x.mean_depth_max) / 2)["mean_depth"]
+        
+    # Compute the mean layer and bottom depths
+    # ---- Bottom depth
+    transect_summary = (
+        transect_data.groupby(index_variable)["max_depth"].max().to_frame("bottom_depth")
+    )
+    # ---- Mean layer depth
+    transect_summary["layer_mean_depth"] = (
+        transect_data.groupby(index_variable)
+        .agg(
+            mean_depth_min=("layer_depth_min", "min"), mean_depth_max=("layer_depth_max", "max")
         )
-        # ---- Mean layer height
-        transect_summary["layer_height"] = (
-            transect_data.groupby(index_variable)
-            .agg(
-                mean_depth_min=("layer_depth_min", "min"), mean_depth_max=("layer_depth_max", "max")
-            )
-            .assign(height=lambda x: x.mean_depth_max - x.mean_depth_min)["height"]
+        .assign(mean_depth=lambda x: (x.mean_depth_min + x.mean_depth_max) / 2)["mean_depth"]
+    )
+    # ---- Mean layer height
+    transect_summary["layer_height"] = (
+        transect_data.groupby(index_variable)
+        .agg(
+            mean_depth_min=("layer_depth_min", "min"), mean_depth_max=("layer_depth_max", "max")
         )
+        .assign(height=lambda x: x.mean_depth_max - x.mean_depth_min)["height"]
+    )
 
     # Return the output
     return transect_summary.reset_index()
