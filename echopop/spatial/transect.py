@@ -1,5 +1,7 @@
 from typing import List, Union
 
+from typing import List, Union
+
 import geopandas as gpd
 import geopy.distance
 import numpy as np
@@ -60,12 +62,23 @@ def correct_transect_intervals(transect_data: pd.DataFrame, interval_threshold: 
     # ---- Filter pattern
     pattern = (
         "^(?=transect|latitude|longitude|stratum_inpfc|stratum_num|haul_num|interval_area|nasc).*"
+    # ---- Filter pattern
+    pattern = (
+        "^(?=transect|latitude|longitude|stratum_inpfc|stratum_num|haul_num|interval_area|nasc).*"
     )
+    # ---- Filter and return output
+    return transect_data_copy.filter(regex=pattern)
     # ---- Filter and return output
     return transect_data_copy.filter(regex=pattern)
 
 
-def save_transect_coordinates(transect_data: pd.DataFrame, settings_dict: dict):
+def save_transect_coordinates(transect_data: pd.DataFrame, settings_dict: dict, settings_dict: dict):
+
+    # Get the correct haul and stratum names
+    age_group_cols = settings_dict["age_group_columns"]
+
+    # Get stratum column name
+    stratum_col = settings_dict["stratum_name"]
 
     # Get the correct haul and stratum names
     age_group_cols = settings_dict["age_group_columns"]
@@ -75,15 +88,24 @@ def save_transect_coordinates(transect_data: pd.DataFrame, settings_dict: dict):
 
     # Extract transect numbers, coordinates, and strata
     transect_data_extract = transect_data.filter(
+    transect_data_extract = transect_data.filter(
         [
             "transect_num",
             age_group_cols["stratum_id"],
+            age_group_cols["stratum_id"],
             "stratum_inpfc",
+            age_group_cols["haul_id"],
             age_group_cols["haul_id"],
             "longitude",
             "latitude",
             "transect_spacing",
         ]
+    )
+
+    # Rename the group-specific columns and return the output
+    return transect_data_extract.rename(
+        columns={age_group_cols["haul_id"]: "haul_num", age_group_cols["stratum_id"]: stratum_col}
+    )
     )
 
     # Rename the group-specific columns and return the output
