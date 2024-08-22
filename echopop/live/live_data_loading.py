@@ -8,11 +8,14 @@ import numpy as np
 from datetime import datetime
 import xarray as xr
 import os
+import copy
 
 from .live_core import(
     LIVE_FILE_FORMAT_MAP,
     LIVE_INPUT_FILE_CONFIG_MAP,
-    SPATIAL_CONFIG_MAP
+    SPATIAL_CONFIG_MAP,
+    LIVE_CONFIG_INIT_MODEL,
+    LIVE_CONFIG_DATA_MODEL
 )
 
 from .live_spatial_methods import create_inpfc_strata
@@ -42,8 +45,11 @@ def live_configuration(live_init_config_path: Union[str, Path],
     # Read the YAML configuration/recipe file to parameterize the `LiveSurvey` class
     # ---- Initialization settings
     init_config = yaml.safe_load(Path(live_init_config_path).read_text())
+    # -------- Validate
+    init_config = validate_live_config(copy.deepcopy(init_config), LIVE_CONFIG_INIT_MODEL)
     # ---- Filepath/directory settings
     file_config = yaml.safe_load(Path(live_file_config_path).read_text())
+    file_config = validate_live_config(copy.deepcopy(file_config), LIVE_CONFIG_DATA_MODEL)
     
     # Check for intersecting/duplicative configuration keys
     # ---- Compare sets of keys from each dictionary
@@ -456,71 +462,6 @@ def convert_datetime(timestamp: Union[int, str, pd.Series]):
     else:
         return datetime.strptime(timestamp, datetime_format)
 
-# def load_biology_data(file_configuration: dict):
-
-#     # Get the acoustic file settings and root directory
-#     # ---- File settings
-#     file_settings = file_configuration["input_directories"]["biology"]
-#     # ---- Root directory
-#     root_directory = file_configuration["data_root_dir"]
-
-#     # Get and validate the acoustic data directory and files
-#     biology_files = validate_data_directory(root_directory, file_settings)
-
-#     # Query `biology.db` to process only new files (or create the db file in the first place)
-#     # SQL(biology_db, "drop", table_name="files_read")
-#     new_biology_files, file_configuration["database"]["biology"] = (
-#         query_processed_files(root_directory, file_settings, biology_files)
-#     )
-
-#     # Get the file-specific settings, datatypes, columns, etc.
-#     # ---- Get defined columns and datatypes from `LIVE_INPUT_FILE_CONFIG_MAP`
-#     biology_config_map = LIVE_INPUT_FILE_CONFIG_MAP["biology"]
-#     # ---- Extract the expected file name ID's
-#     biology_file_ids = file_settings["file_name_formats"]
-#     # ---- Extract all of the file ids
-#     biology_config_ids = list(biology_file_ids.keys())
-#     # ---- Initialize the dictionary that will define this key in the `input` attribute
-#     biology_output = {f"{key}_df": pd.DataFrame() for key in biology_config_ids}
-#     # ---- Create filepath object
-#     directory_path = Path(file_configuration["data_root_dir"]) / file_settings["directory"]
-    
-#     # Add SQL file to dict
-#     file_configuration["database"]["biology"] = (
-#         Path(file_configuration["data_root_dir"]) / "database" / file_settings["database_name"]         
-#     )
-
-#     # Iterate through the different biology datasets and read them in
-#     for dataset in list(biology_file_ids.keys()):
-#         # ---- Get dataset-specific file lists
-#         dataset_files = filter_filenames(directory_path, 
-#                                          file_settings["file_name_formats"][dataset], 
-#                                          new_biology_files, 
-#                                          file_settings["extension"])
-#         # ---- If there are dataset files available
-#         if dataset_files:
-#             # ---- Read in validated biology data
-#             dataframe_list = [read_biology_csv(Path(file), 
-#                                                file_settings["file_name_formats"][dataset], 
-#                                                biology_config_map[dataset]) 
-#                               for file in dataset_files]
-#             # ---- Concatenate the dataset
-#             dataframe_combined = pd.concat(dataframe_list, ignore_index=True)
-#             # ---- Lower-case sex
-#             if "sex" in dataframe_combined.columns: 
-#                 dataframe_combined["sex"] = dataframe_combined["sex"].str.lower()
-#             # ---- Lower-case trawl partition type
-#             if "trawl_partition" in dataframe_combined.columns: 
-#                 dataframe_combined["trawl_partition"] = dataframe_combined["trawl_partition"].str.lower()
-#             # ---- Reformat datetime column
-#             if "datetime" in dataframe_combined.columns:
-#                 dataframe_combined["datetime"] = convert_datetime(dataframe_combined["datetime"])
-#             # ---- Add to the data dictionary
-#             biology_output[f"{dataset}_df"] = dataframe_combined
-
-#     # Pre-process and return the results
-#     return preprocess_biology_data(biology_output, file_configuration)
-
 def validate_hauls_config(spatial_config: dict, link_method: str):
 
     # Get the link method configuration map
@@ -705,3 +646,150 @@ def validate_spatial_config(spatial_config: dict):
         validate_inpfc_config(spatial_config, link_method)
     elif link_method != "global": 
         validate_hauls_config(spatial_config, link_method)
+
+def validate_live_config(config, reference_model):
+    """Validate configuration inputs"""
+
+    # Recursive function for validating entire nested dictionary
+    def validate_keys(config, model, path=""):
+
+        # Get the required/optional/actual keys
+        # ---- Keys that are required by the software
+        required_keys = model.get("required_keys", [])
+        # ---- Keys that are optionally incorporated into the software
+        optional_keys = model.get("optional_keys", [])
+        # ---- Navigate the nested branches
+        keys = model.get("keys", {})
+
+        # General helper functions
+        # ----
+        def get_keys_from_tuples(tuples):
+            """Parse key names from tuples"""
+            return {key for group in tuples if isinstance(group, tuple) for key in group}
+        # ----
+        def find_missing_keys(required_keys, keys_to_check):
+            """Find any missing keys"""
+            all_required_keys = get_keys_from_tuples(required_keys)
+            valid_keys_in_tuples = set()
+            for group in required_keys:
+                if isinstance(group, tuple):
+                    if any(key in keys_to_check for key in group):
+                        valid_keys_in_tuples.update(group)
+            missing_keys = [key for key in valid_keys_in_tuples if key not in keys_to_check]
+            unexpected_keys = [key for key in keys_to_check if key not in all_required_keys]
+            return missing_keys, unexpected_keys
+        # ----
+        def check_for_missing_keys(required_keys, config_keys, path):
+            """Check whether any required keys are missing"""
+            missing_required = []
+            for key in required_keys:
+                if isinstance(key, tuple):
+                    missing_keys, unexpected_keys_for_keys = find_missing_keys(required_keys, 
+                                                                               config_keys)
+                    if missing_keys:
+                        raise ValueError(
+                            f"Missing required key(s): {', '.join(missing_keys)} at {path}"
+                        )
+                    return unexpected_keys_for_keys
+                elif key not in config_keys and key != "*":
+                    missing_required.append(key)
+            if missing_required:
+                raise ValueError(
+                    f"Missing required key(s): {', '.join(missing_required)} at {path}"
+                )
+            return []
+        # ----
+        def check_for_unexpected_keys(config_keys, required_keys):
+            """Check for unexpected keys"""
+            unexpected_keys = []
+            for key in config_keys:
+                if (key not in required_keys 
+                    and key not in optional_keys 
+                    and "*" not in required_keys):
+                    if not any(key in group for group in required_keys if isinstance(group, tuple)):
+                        unexpected_keys.append(key)
+            return unexpected_keys
+
+        # Top-level validation
+        if path == "":
+            missing_primary_keys = [key for key in required_keys 
+                                    if key != "*" and key not in config]
+            if missing_primary_keys:
+                raise ValueError(f"Missing primary key(s): {', '.join(missing_primary_keys)}")
+            unexpected_primary_keys = [key for key in config 
+                                       if key not in required_keys 
+                                       and key not in optional_keys 
+                                       and "*" not in required_keys]
+            # ---- Raise error
+            if unexpected_primary_keys:
+                raise ValueError(
+                    f"Unexpected primary key(s) found: {', '.join(unexpected_primary_keys)}"
+                )
+        # Nested validation
+        else:
+            config_keys = config.keys()
+            unexpected_keys = check_for_missing_keys(required_keys, config_keys, path)
+            unexpected_keys.extend(check_for_unexpected_keys(config_keys, required_keys))
+            # ---- Raise error
+            if unexpected_keys:
+                raise ValueError(f"Unexpected key(s) found: {', '.join(unexpected_keys)} at {path}")
+
+        # Recursively validate nested dictionaries and lists
+        for key, sub_model in keys.items():
+            if key == "*" and isinstance(sub_model, dict):
+                for sub_key in config:
+                    validate_keys(config[sub_key], 
+                                  sub_model, path=f"{path}.{sub_key}" if path else sub_key)
+            elif key == "*" and isinstance(sub_model, list):
+                for sub_key in config:
+                    validate_list(config[sub_key], sub_model, key, path)
+            elif key == "*":
+                for sub_key in config:
+                    validate_type(config[sub_key], sub_model, key, path)
+            elif key in config:
+                if isinstance(sub_model, dict):
+                    validate_keys(config[key], sub_model, path=f"{path}.{key}" if path else key)
+                elif isinstance(sub_model, list):
+                    validate_list(config[key], sub_model, key, path)
+                else:
+                    validate_type(config[key], sub_model, key, path)
+
+    # Additional helper functions
+    # ----
+    def validate_list(config_value, allowed_types, key, path):
+        """Validate configuration with model that is formatted as a list"""
+        if all(isinstance(item, (str, int, float)) for item in allowed_types):
+            if config_value not in allowed_types:
+                raise ValueError(
+                    f"Invalid value for key '{key}' at {path}. Expected one of: {allowed_types}"
+                )
+        elif not isinstance(config_value, list):
+            if type(config_value) not in allowed_types:
+                raise ValueError(
+                    f"Invalid value for key '{key}' at {path}. Expected one of: {allowed_types}"
+                )
+        else:
+            if isinstance(config_value, list):
+                for item in config_value:
+                    if not any(isinstance(item, t) for t in allowed_types):
+                        raise ValueError(
+                            f"Invalid type for items in list '{key}' at {path}. Expected one of: "
+                            f"{allowed_types}"
+                        )
+            else:
+                raise ValueError(
+                    f"Invalid type for key '{key}' at {path}. Expected a list of: {allowed_types}"
+                )
+    # ----
+    def validate_type(config_value, expected_type, key, path):
+        """Validate configuration with model that is at the furthest point along a branch"""
+        if not isinstance(config_value, expected_type):
+            raise ValueError(
+                f"Invalid type for key '{key}' at {path}. Expected type: {expected_type}"
+            )
+
+    # Validate all branches within the configuration dictionary
+    validate_keys(config, reference_model)
+
+    # Return
+    return config
