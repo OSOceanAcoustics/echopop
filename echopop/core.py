@@ -257,6 +257,11 @@ REGION_EXPORT_MAP = {
     },
 }
 
+BIODATA_HAUL_MAP = {
+    "Haul": dict(name="haul_num", type=int),
+    "Transect": dict(name="transect_num", type=int),
+}
+
 NASC_OUTPUT_MAP = {}
 
 # ``LAYER_NAME_MAP`` is a hard-coded dictionary that aids in re-mapping the data tree
