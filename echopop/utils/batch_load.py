@@ -3,7 +3,6 @@ import os
 import re
 from pathlib import Path
 from typing import List, Optional, Tuple, Union
-from typing import List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -805,7 +804,6 @@ def validate_export_directories(configuration_dict: dict) -> Tuple[str, str, lis
     if not Path(save_folder).exists():
         raise FileNotFoundError(f"Save directory for NASC file ({save_folder}) does not exist.")
 
-
     # Construct the directorypaths: Export files
     # ---- Export file directory
     export_file_directory = export_settings["export_file_directory"]
@@ -818,7 +816,6 @@ def validate_export_directories(configuration_dict: dict) -> Tuple[str, str, lis
     if not Path(file_folder).exists():
         raise FileNotFoundError(f"The export file directory {{{file_folder}}} not found!")
 
-
     # Validate export files existence
     # ---- Check whether files exist at all
     if not any(Path(file_folder).iterdir()):
@@ -829,4 +826,3 @@ def validate_export_directories(configuration_dict: dict) -> Tuple[str, str, lis
 
     # Return
     return save_folder, file_folder, export_files
-
