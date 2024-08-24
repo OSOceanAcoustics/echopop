@@ -700,8 +700,9 @@ def write_transect_region_key(transect_data: pd.DataFrame, configuration_dict: d
     # Iterate through each expected NASC region groups
     for region in nasc_regions.keys():
         # ---- Format region pattern
-        region_pattern = rf"^(?:{'|'.join([re.escape(name.lower())
-                                           for name in nasc_regions[region]])})"
+        region_pattern = (
+            rf"^(?:{'|'.join([re.escape(name.lower()) for name in nasc_regions[region]])})"
+        )
         # ---- Swap out the {GROUP} component of the filename string
         filename = file_template.replace("{GROUP}", region)
         # ---- Filter the dataframe
