@@ -1,9 +1,13 @@
-from echopop.survey import Survey
 import copy
+import glob
+import os
+import re
 from pathlib import Path
-from typing import List, Literal, Optional, Union, Tuple
-from echopop.core import DATA_STRUCTURE, CONFIG_MAP, ECHOVIEW_EXPORT_MAP, REGION_EXPORT_MAP
-from echopop.core import ECHOVIEW_EXPORT_MAP
+from typing import List, Literal, Optional, Tuple, Union
+
+import numpy as np
+import pandas as pd
+
 from echopop.analysis import (
     acoustics_to_biology,
     apportion_kriged_values,
@@ -11,19 +15,26 @@ from echopop.analysis import (
     process_transect_data,
     stratified_summary,
 )
-from echopop.utils import batch_load as ebl, load as el, message as em
+from echopop.core import CONFIG_MAP, DATA_STRUCTURE, ECHOVIEW_EXPORT_MAP, REGION_EXPORT_MAP
 from echopop.spatial.transect import export_transect_layers, export_transect_spacing
-import numpy as np
-import pandas as pd
-import glob
-import os
-import re
-from echopop.utils.batch_load import get_haul_transect_key, get_transect_numbers, load_export_regions, consolidate_exports
+from echopop.survey import Survey
+from echopop.utils import batch_load as ebl, load as el, message as em
+from echopop.utils.batch_load import (
+    consolidate_exports,
+    get_haul_transect_key,
+    get_transect_numbers,
+    load_export_regions,
+)
 from echopop.utils.operations import group_merge
+
 #
-init_config_path = "C:/Users/Brandyn/Documents/GitHub/echopop/config_files/initialization_config.yml"
+init_config_path = (
+    "C:/Users/Brandyn/Documents/GitHub/echopop/config_files/initialization_config.yml"
+)
 # NOTE: File configuration
-survey_year_config_path = "C:/Users/Brandyn/Documents/GitHub/echopop/config_files/survey_year_2019_config.yml"
+survey_year_config_path = (
+    "C:/Users/Brandyn/Documents/GitHub/echopop/config_files/survey_year_2019_config.yml"
+)
 
 self = Survey
 
@@ -69,17 +80,15 @@ save_directory = export_save_directory
 # !: ----
 configuration_dict = self.config
 
+
 # Extract the placeholder names from a pattern string
 def extract_placeholders(pattern_template):
-    placeholder_pattern = re.compile(r'\{(\w+)\}')
+    placeholder_pattern = re.compile(r"\{(\w+)\}")
     matches = placeholder_pattern.findall(pattern_template)
     return matches
 
-pattern_config = configuration_dict['transect_region_mapping']['parts']
-template = configuration_dict['transect_region_mapping']['pattern']
+
+pattern_config = configuration_dict["transect_region_mapping"]["parts"]
+template = configuration_dict["transect_region_mapping"]["pattern"]
 
 template_parts = extract_placeholders(template)
-
-
-
-
