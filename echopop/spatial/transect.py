@@ -60,12 +60,17 @@ def correct_transect_intervals(transect_data: pd.DataFrame, interval_threshold: 
     # ---- Filter pattern
     pattern = (
         "^(?=transect|latitude|longitude|stratum_inpfc|stratum_num|haul_num|interval_area|nasc).*"
+    # ---- Filter pattern
+    pattern = (
+        "^(?=transect|latitude|longitude|stratum_inpfc|stratum_num|haul_num|interval_area|nasc).*"
     )
+    # ---- Filter and return output
+    return transect_data_copy.filter(regex=pattern)
     # ---- Filter and return output
     return transect_data_copy.filter(regex=pattern)
 
 
-def save_transect_coordinates(transect_data: pd.DataFrame, settings_dict: dict):
+def save_transect_coordinates(transect_data: pd.DataFrame, settings_dict: dict, settings_dict: dict):
 
     # Get the correct haul and stratum names
     age_group_cols = settings_dict["age_group_columns"]
@@ -81,6 +86,7 @@ def save_transect_coordinates(transect_data: pd.DataFrame, settings_dict: dict):
 
     # Extract transect numbers, coordinates, and strata
     transect_data_extract = transect_data.filter(
+    transect_data_extract = transect_data.filter(
         [
             "transect_num",
             age_group_cols["stratum_id"],
@@ -92,6 +98,12 @@ def save_transect_coordinates(transect_data: pd.DataFrame, settings_dict: dict):
             "latitude",
             "transect_spacing",
         ]
+    )
+
+    # Rename the group-specific columns and return the output
+    return transect_data_extract.rename(
+        columns={age_group_cols["haul_id"]: "haul_num", age_group_cols["stratum_id"]: stratum_col}
+    )
     )
 
     # Rename the group-specific columns and return the output
@@ -402,7 +414,9 @@ def export_transect_layers(
     # Check for specific columns, otherwise proceed with calculations
     for col in ["max_depth", "layer_depth_min", "layer_depth_max"]:
         if col not in transect_data.columns:
-            raise ValueError(f"Expected column '{col}' is missing from 'transect data'.")
+            raise ValueError(
+                f"Expected column '{col}' is missing from 'transect data'."
+            )
 
     # Compute the mean layer and bottom depths
     # ---- Bottom depth
@@ -412,13 +426,17 @@ def export_transect_layers(
     # ---- Mean layer depth
     transect_summary["layer_mean_depth"] = (
         transect_data.groupby(index_variable)
-        .agg(mean_depth_min=("layer_depth_min", "min"), mean_depth_max=("layer_depth_max", "max"))
+        .agg(
+            mean_depth_min=("layer_depth_min", "min"), mean_depth_max=("layer_depth_max", "max")
+        )
         .assign(mean_depth=lambda x: (x.mean_depth_min + x.mean_depth_max) / 2)["mean_depth"]
     )
     # ---- Mean layer height
     transect_summary["layer_height"] = (
         transect_data.groupby(index_variable)
-        .agg(mean_depth_min=("layer_depth_min", "min"), mean_depth_max=("layer_depth_max", "max"))
+        .agg(
+            mean_depth_min=("layer_depth_min", "min"), mean_depth_max=("layer_depth_max", "max")
+        )
         .assign(height=lambda x: x.mean_depth_max - x.mean_depth_min)["height"]
     )
 
