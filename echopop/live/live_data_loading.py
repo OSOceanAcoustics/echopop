@@ -48,10 +48,12 @@ def live_configuration(live_init_config_path: Union[str, Path],
     # ---- Initialization settings
     init_config = yaml.safe_load(Path(live_init_config_path).read_text())
     # -------- Validate
-    init_config = validate_live_config(copy.deepcopy(init_config), LIVE_CONFIG_INIT_MODEL)
+    init_config = validate_live_config(copy.deepcopy(init_config), LIVE_CONFIG_INIT_MODEL,
+                                       live_init_config_path)
     # ---- Filepath/directory settings
     file_config = yaml.safe_load(Path(live_file_config_path).read_text())
-    file_config = validate_live_config(copy.deepcopy(file_config), LIVE_CONFIG_DATA_MODEL)
+    file_config = validate_live_config(copy.deepcopy(file_config), LIVE_CONFIG_DATA_MODEL,
+                                       live_file_config_path)
     
     # Check for intersecting/duplicative configuration keys
     # ---- Compare sets of keys from each dictionary
@@ -727,8 +729,12 @@ def validate_spatial_config(spatial_config: dict):
     elif link_method != "global": 
         validate_hauls_config(spatial_config, link_method)
 
-def validate_live_config(config, reference_model):
+def validate_live_config(config: dict, reference_model: dict, filename: Union[str, Path]):
     """Validate configuration inputs"""
+    
+    # Convert to string if Path
+    if isinstance(filename, Path):
+        filename = str(filename)
 
     # Recursive function for validating entire nested dictionary
     def validate_keys(config, model, path=""):
@@ -768,14 +774,17 @@ def validate_live_config(config, reference_model):
                                                                                config_keys)
                     if missing_keys:
                         raise ValueError(
-                            f"Missing required key(s): {', '.join(missing_keys)} at {path}"
+                            f"Missing required configuration key(s): "
+                            f"{', '.join(missing_keys)} at {path} in configuration file "
+                            f"'{filename}'."
                         )
                     return unexpected_keys_for_keys
                 elif key not in config_keys and key != "*":
                     missing_required.append(key)
             if missing_required:
                 raise ValueError(
-                    f"Missing required key(s): {', '.join(missing_required)} at {path}"
+                    f"Missing required configuration key(s): {', '.join(missing_required)} at "
+                    f"{path} in configuration file '{filename}'."
                 )
             return []
         # ----
@@ -795,7 +804,10 @@ def validate_live_config(config, reference_model):
             missing_primary_keys = [key for key in required_keys 
                                     if key != "*" and key not in config]
             if missing_primary_keys:
-                raise ValueError(f"Missing primary key(s): {', '.join(missing_primary_keys)}")
+                raise ValueError(
+                    f"Missing primary configuration key(s): {', '.join(missing_primary_keys)} in "
+                    f"configuration file '{filename}'."
+                )
             unexpected_primary_keys = [key for key in config 
                                        if key not in required_keys 
                                        and key not in optional_keys 
@@ -803,7 +815,8 @@ def validate_live_config(config, reference_model):
             # ---- Raise error
             if unexpected_primary_keys:
                 raise ValueError(
-                    f"Unexpected primary key(s) found: {', '.join(unexpected_primary_keys)}"
+                    f"Unexpected primary key(s) found in configuration file '{filename}': "
+                    f"{', '.join(unexpected_primary_keys)}"
                 )
         # Nested validation
         else:
@@ -812,7 +825,10 @@ def validate_live_config(config, reference_model):
             unexpected_keys.extend(check_for_unexpected_keys(config_keys, required_keys))
             # ---- Raise error
             if unexpected_keys:
-                raise ValueError(f"Unexpected key(s) found: {', '.join(unexpected_keys)} at {path}")
+                raise ValueError(
+                    f"Unexpected key(s) found: {', '.join(unexpected_keys)} at {path} in "
+                    f"configuration file '{filename}'."
+                    )
 
         # Recursively validate nested dictionaries and lists
         for key, sub_model in keys.items():
@@ -841,31 +857,35 @@ def validate_live_config(config, reference_model):
         if all(isinstance(item, (str, int, float)) for item in allowed_types):
             if config_value not in allowed_types:
                 raise ValueError(
-                    f"Invalid value for key '{key}' at {path}. Expected one of: {allowed_types}"
+                    f"Invalid value for key '{key}' at {path} in {filename}. Expected one of: "
+                    f"{allowed_types}"
                 )
         elif not isinstance(config_value, list):
             if type(config_value) not in allowed_types:
                 raise ValueError(
-                    f"Invalid value for key '{key}' at {path}. Expected one of: {allowed_types}"
+                    f"Invalid value for key '{key}' at {path} in {filename}. Expected one of: "
+                    f"{allowed_types}"
                 )
         else:
             if isinstance(config_value, list):
                 for item in config_value:
                     if not any(isinstance(item, t) for t in allowed_types):
                         raise ValueError(
-                            f"Invalid type for items in list '{key}' at {path}. Expected one of: "
-                            f"{allowed_types}"
+                            f"Invalid type for items in list '{key}' at {path} in {filename}. "
+                            f"Expected one of: {allowed_types}"
                         )
             else:
                 raise ValueError(
-                    f"Invalid type for key '{key}' at {path}. Expected a list of: {allowed_types}"
+                    f"Invalid type for key '{key}' at {path} in {filename}. Expected a list of: "
+                    f"{allowed_types}"
                 )
     # ----
     def validate_type(config_value, expected_type, key, path):
         """Validate configuration with model that is at the furthest point along a branch"""
         if not isinstance(config_value, expected_type):
             raise ValueError(
-                f"Invalid type for key '{key}' at {path}. Expected type: {expected_type}"
+                f"Invalid type for key '{key}' at {path} in {filename}. Expected type: "
+                f"{expected_type}"
             )
 
     # Validate all branches within the configuration dictionary
