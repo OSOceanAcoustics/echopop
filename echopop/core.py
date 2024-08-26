@@ -262,8 +262,6 @@ BIODATA_HAUL_MAP = {
     "Transect": dict(name="transect_num", type=int),
 }
 
-NASC_OUTPUT_MAP = {}
-
 # ``LAYER_NAME_MAP`` is a hard-coded dictionary that aids in re-mapping the data tree
 # structure of various attributes contained within a generated ``Survey`` class object.
 # structure of various attributes contained within a generated ``Survey`` class object.

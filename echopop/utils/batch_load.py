@@ -754,7 +754,7 @@ def write_haul_to_transect_key(configuration_dict: dict):
         # ---- Iterate through regions
         for region in gear_data.keys():
             # ---- Update {COUNTRY_CODE} component
-            save_file = name_template.replace("{COUNTRY_CODE}", region + ".xlsx")
+            save_file = name_template.replace("{COUNTRY}", region + ".xlsx")
             # ---- Get directory settings
             dir_settings = haul_to_transect_settings["file_settings"][region]
             # ---- Get directory
