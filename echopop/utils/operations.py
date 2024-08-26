@@ -306,10 +306,12 @@ def group_merge(dataframe, dataframes_to_add, inner_on, outer_on, how="outer", d
 
 
 def group_interpolator_creator(
-    grouped_data: pd.DataFrame, independent_var: str, dependent_var: str, 
-    contrast: Union[List[str], str]
+    grouped_data: pd.DataFrame,
+    independent_var: str,
+    dependent_var: str,
+    contrast: Union[List[str], str],
 ) -> dict:
-    
+
     # Check if `contrast` is a list or not
     if not isinstance(contrast, list):
         contrast = []
@@ -328,9 +330,7 @@ def group_interpolator_creator(
 
     # Produce a dictionary comprising all of the produced interpolators
     interpolators = (
-        grouped_data.groupby(contrast).apply(
-            lambda group: interpolator_factory(group)
-        )
+        grouped_data.groupby(contrast).apply(lambda group: interpolator_factory(group))
     ).to_dict()
 
     # Return output

@@ -20,7 +20,7 @@ database_directory: C:/Users/Brandyn/Documents/GitHub/EchoPro_data/live_2019_fil
 
 ##############################################################################
 # Input data directories
-input_directories: 
+input_directories:
   acoustics:
     directory: acoustics/
     database_name: acoustics.db
@@ -29,7 +29,7 @@ input_directories:
     directory: biology/
     # directory: s3://sh2407-upload/data/Echopop-biology/
     database_name: biology.db
-    extension: csv 
+    extension: csv
     file_name_formats:
       catch: "{DATE:YYYYMM}_{HAUL}_{FILE_ID:catch_perc}"
       length: "{DATE:YYYYMM}_{SPECIES_CODE}_{HAUL}_{FILE_ID:lf}"
@@ -40,12 +40,12 @@ input_directories:
       length: [haul_num, species_id]
       specimen: [haul_num, species_id]
       trawl_info: []
-    file_ids: 
+    file_ids:
       catch: catch_perc
       length: lf
       specimen: spec
       trawl_info: operation_info
-  coastline: 
+  coastline:
     directory: coastline/
     coastline_name: ne_10m_land
   grid:

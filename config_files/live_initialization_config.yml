@@ -8,16 +8,16 @@
   ########################
   biology:
     # Length-binning
-    # NOTE: start : end : number 
+    # NOTE: start : end : number
     length_distribution:
       bins: [2, 80, 40]
     # Station separation
     # NOTE: if `separate_stations` is True, `['list']` is required for `station_id`
-    stations: 
+    stations:
       separate_stations: True
       station_id: ["length", "specimen"]
-    # Trawl identifier 
-    catch: 
+    # Trawl identifier
+    catch:
       partition: codend
 
   #####################################################################################################################
@@ -25,10 +25,10 @@
   ########################
   geospatial:
     inpfc:                                  # INPFC northern latitude limits and labels
-      latitude_max: [36.0, 40.5, 43.0,    
+      latitude_max: [36.0, 40.5, 43.0,
                     45.7667, 48.50, 55.0]
-      stratum_names: [1, 2, 3, 4, 5, 6]     
-    griddify: 
+      stratum_names: [1, 2, 3, 4, 5, 6]
+    griddify:
       # Coordinate bounds
       bounds:
         latitude: [32.75, 55.50]
@@ -39,20 +39,20 @@
         y_distance: 25.0
     projection: epsg:4326                   # EPSG integer code for geodetic parameter dataset
   # TODO: Remember to convert this back to a string
-  # NOTE: `link_biology_acoustics` defines how biological and acoustic data are linked with one another. This 
+  # NOTE: `link_biology_acoustics` defines how biological and acoustic data are linked with one another. This
   # comprises True/False statements that denote the desired association. All values set to "True" will be output.
   # `global`        --> NASC associated with sigma_bs calculated from all survey data
-  # `INPFC`         --> NASC for each INPFC stratum associated with matched stratum-specific sigma_bs 
+  # `INPFC`         --> NASC for each INPFC stratum associated with matched stratum-specific sigma_bs
   # `closest_haul`  --> NASC associated with sigma_bs calculated from the closest (spatially) trawls
   # `weighted_haul` --> NASC associated with sigma_bs calculated from all survey data weighted by distance from haul coordinates
     link_biology_acoustics: INPFC
 
   #####################################################################################################################
   # Acoustics settings#
-  ######################## 
+  ########################
   acoustics:
     # Acoustic transmit frequency (Hz or kHz)
-    transmit: 
+    transmit:
       frequency: 38.0
       units: kHz
     # Target strength (TS) - length (L) regression: TS=m*log10(L)+b

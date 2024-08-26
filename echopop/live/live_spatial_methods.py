@@ -1,33 +1,40 @@
-import geopandas as gpd
-import pandas as pd
-import numpy as np
-from geopy.distance import distance
-from ..spatial.projection import utm_string_generator
-import shapely.geometry
-from shapely.geometry import box
-import sqlalchemy as sqla
 from pathlib import Path
-from typing import Union, List
-from .sql_methods import sql_group_update, query_dataset
+from typing import List, Union
+
+import geopandas as gpd
+import numpy as np
+import pandas as pd
+import shapely.geometry
+import sqlalchemy as sqla
+from geopy.distance import distance
+from shapely.geometry import box
+
+from ..spatial.projection import utm_string_generator
+from .sql_methods import query_dataset, sql_group_update
+
 
 def create_inpfc_strata(spatial_config: dict):
 
     # Extract the INPFC definitions
-    inpfc_definitions = spatial_config["inpfc"]    
+    inpfc_definitions = spatial_config["inpfc"]
 
     # Create latitude bins
     latitude_bins = np.concatenate([[-90.0], inpfc_definitions["latitude_max"], [90.0]])
     # ---- Append 1 more stratum layer
-    bin_names = np.concatenate([inpfc_definitions["stratum_names"],
-                                [np.max(inpfc_definitions["stratum_names"]) + 1]])
-    
+    bin_names = np.concatenate(
+        [inpfc_definitions["stratum_names"], [np.max(inpfc_definitions["stratum_names"]) + 1]]
+    )
+
     # Create spatial key
-    inpfc_strata_df = pd.DataFrame({
-        "latitude_limit": np.concatenate([inpfc_definitions["latitude_max"], [90.0]]),
-        "latitude_interval": pd.cut(np.concatenate([inpfc_definitions["latitude_max"], [90.0]]), 
-                                    latitude_bins),
-        "stratum": bin_names,
-    })
+    inpfc_strata_df = pd.DataFrame(
+        {
+            "latitude_limit": np.concatenate([inpfc_definitions["latitude_max"], [90.0]]),
+            "latitude_interval": pd.cut(
+                np.concatenate([inpfc_definitions["latitude_max"], [90.0]]), latitude_bins
+            ),
+            "stratum": bin_names,
+        }
+    )
 
     # Add boundaries
     # ---- Lower
@@ -38,8 +45,9 @@ def create_inpfc_strata(spatial_config: dict):
     # Return the dataframe
     return inpfc_strata_df
 
+
 def apply_inpfc_definitions(dataset: pd.DataFrame, inpfc_df: pd.DataFrame):
-    
+
     # Create dataset copy
     dataset = dataset.copy()
 
@@ -48,34 +56,36 @@ def apply_inpfc_definitions(dataset: pd.DataFrame, inpfc_df: pd.DataFrame):
         dataset.loc[:, "stratum"] = pd.cut(
             dataset.loc[:, "latitude"],
             np.unique(np.hstack([inpfc_df.loc[:, "lower"], inpfc_df.loc[:, "upper"]])),
-            labels = inpfc_df.loc[:, "stratum"]
+            labels=inpfc_df.loc[:, "stratum"],
         ).astype(int)
-        
+
         return dataset
     else:
-        strata = pd.cut(dataset.copy(),
-                        np.unique(np.hstack([inpfc_df.loc[:, "lower"], 
-                                             inpfc_df.loc[:, "upper"]])),
-                        labels = inpfc_df.loc[:, "stratum"]
+        strata = pd.cut(
+            dataset.copy(),
+            np.unique(np.hstack([inpfc_df.loc[:, "lower"], inpfc_df.loc[:, "upper"]])),
+            labels=inpfc_df.loc[:, "stratum"],
         ).astype(int)
-        
+
         return strata
 
     # Return the INPFC-stratified dataset
     # return dataset
 
+
 def apply_spatial_definitions(dataset: Union[dict, pd.Series], spatial_dict: dict):
 
     # Get the acoustic-biology link method
     link_method = spatial_dict["link_method"]
-    
+
     # Apply spatial definitions
     if isinstance(dataset, dict) and link_method == "INPFC":
-        dataset.update({
-            k: apply_inpfc_definitions(d, spatial_dict["strata"]) for k, d in dataset.items()
-        })
+        dataset.update(
+            {k: apply_inpfc_definitions(d, spatial_dict["strata"]) for k, d in dataset.items()}
+        )
     elif isinstance(dataset, pd.Series) and link_method == "INPFC":
         return apply_inpfc_definitions(dataset, spatial_dict["strata"])
+
 
 # def apply_inpfc_definitions(acoustic_data: dict, biology_data: dict, spatial_config: dict):
 
@@ -87,7 +97,7 @@ def apply_spatial_definitions(dataset: Union[dict, pd.Series], spatial_dict: dic
 #     # ---- Append 1 more stratum layer
 #     bin_names = np.concatenate([inpfc_definitions["stratum_names"],
 #                                 [np.max(inpfc_definitions["stratum_names"]) + 1]])
-    
+
 #     # Create spatial key
 #     spatial_config["spatial_key"] = pd.DataFrame({
 #         "latitude_limit": inpfc_definitions["latitude_max"],
@@ -120,8 +130,9 @@ def apply_spatial_definitions(dataset: Union[dict, pd.Series], spatial_dict: dic
 #             labels = bin_names,
 #         )
 
+
 def define_boundary_box(boundary_dict: dict, projection: str):
-    
+
     # Get x-coordinates
     if "longitude" in boundary_dict.keys():
         x = np.array(boundary_dict["longitude"])
@@ -135,10 +146,12 @@ def define_boundary_box(boundary_dict: dict, projection: str):
         y = np.array(boundary_dict["eastings"])
 
     # Create a boundary DataFrame
-    bound_df = pd.DataFrame({
-        "x": np.array([x.min(), x.max(), x.max(), x.min(), x.min()]),
-        "y":np.array([y.min(), y.max(), y.max(), y.min(), y.min()]),
-    })
+    bound_df = pd.DataFrame(
+        {
+            "x": np.array([x.min(), x.max(), x.max(), x.min(), x.min()]),
+            "y": np.array([y.min(), y.max(), y.max(), y.min(), y.min()]),
+        }
+    )
 
     # Convert to a GeoDataFrame and return the GeoDataFrame
     return gpd.GeoDataFrame(
@@ -146,6 +159,7 @@ def define_boundary_box(boundary_dict: dict, projection: str):
         geometry=gpd.points_from_xy(bound_df["x"], bound_df["y"]),
         crs=projection,
     )
+
 
 def apply_griddify_definitions(dataset: pd.DataFrame, spatial_config: dict):
 
@@ -161,8 +175,11 @@ def apply_griddify_definitions(dataset: pd.DataFrame, spatial_config: dict):
     # Convert the coordinates, if needed
     if not set(["northings", "eastings"]).intersection(set(griddify_definitions["bounds"].keys())):
         # ---- Compute the equivalent UTM string
-        utm_num = int(utm_string_generator(np.median(boundary_box.loc[0:3, "x"]), 
-                                           np.median(boundary_box.loc[0:3, "y"])))
+        utm_num = int(
+            utm_string_generator(
+                np.median(boundary_box.loc[0:3, "x"]), np.median(boundary_box.loc[0:3, "y"])
+            )
+        )
         # ---- Compute the boundary box GeoDataFrame with the new projection
         boundary_box = boundary_box.to_crs(utm_num)
         # ---- Create a new projection for later
@@ -184,8 +201,8 @@ def apply_griddify_definitions(dataset: pd.DataFrame, spatial_config: dict):
     # ---- Iterate through
     for y0 in np.arange(ymin, ymax, y_step):
         for x0 in np.arange(xmin, xmax, x_step):
-            x1 = x0-x_step
-            y1 = y0+y_step
+            x1 = x0 - x_step
+            y1 = y0 + y_step
             grid_cells.append(shapely.geometry.box(x0, y0, x1, y1))
 
     # Convert to a GeoDataFrame
@@ -210,23 +227,25 @@ def apply_griddify_definitions(dataset: pd.DataFrame, spatial_config: dict):
     # Bin the longitude data
     dataset_gdf["stratum_x"] = pd.cut(
         dataset_gdf["x"],
-        np.arange(xmin, xmax+x_step, x_step),
-        right = False,
-        labels = np.arange(1, len(np.arange(xmin, xmax+x_step, x_step))),
+        np.arange(xmin, xmax + x_step, x_step),
+        right=False,
+        labels=np.arange(1, len(np.arange(xmin, xmax + x_step, x_step))),
     ).astype(int)
 
     # Bin the latitude data
-    dataset_gdf["stratum_y"] = pd.cut(
-        dataset_gdf["y"],
-        np.arange(ymin, ymax+y_step, y_step),
-        right = True,
-        labels = range(len(np.arange(ymin, ymax+y_step, y_step)) - 1),
-    ).astype(int) + 1
+    dataset_gdf["stratum_y"] = (
+        pd.cut(
+            dataset_gdf["y"],
+            np.arange(ymin, ymax + y_step, y_step),
+            right=True,
+            labels=range(len(np.arange(ymin, ymax + y_step, y_step)) - 1),
+        ).astype(int)
+        + 1
+    )
 
     # Update the original dataset
-    return (
-        dataset_gdf.loc[:, ["stratum_x", "stratum_y"]]
-        .rename(columns={"stratum_x": "x", "stratum_y": "y"})
+    return dataset_gdf.loc[:, ["stratum_x", "stratum_y"]].rename(
+        columns={"stratum_x": "x", "stratum_y": "y"}
     )
     # dataset.loc[:, "x"] = dataset_gdf.copy().loc[:, "stratum_x"]
     # dataset.loc[:, "y"] = dataset_gdf.copy().loc[:, "stratum_y"]
@@ -244,9 +263,9 @@ def apply_griddify_definitions(dataset: pd.DataFrame, spatial_config: dict):
 #     boundary_box = define_boundary_box(griddify_definitions["bounds"], projection)
 
 #     # Convert the coordinates, if needed
-#     if not set(["northings", "eastings"]).intersection(set(griddify_definitions["bounds"].keys())):
+#    if not set(["northings", "eastings"]).intersection(set(griddify_definitions["bounds"].keys())):
 #         # ---- Compute the equivalent UTM string
-#         utm_num = int(utm_string_generator(np.median(boundary_box.loc[0:3, "x"]), 
+#         utm_num = int(utm_string_generator(np.median(boundary_box.loc[0:3, "x"]),
 #                                            np.median(boundary_box.loc[0:3, "y"])))
 #         # ---- Compute the boundary box GeoDataFrame with the new projection
 #         boundary_box = boundary_box.to_crs(utm_num)
@@ -351,10 +370,11 @@ def apply_griddify_definitions(dataset: pd.DataFrame, spatial_config: dict):
 
 #         #
 #         biology_data["trawl_info_df"]["stratum"] = (
-#             trawl_info_new["stratum_x"].astype(str) + "-" + trawl_info_new["stratum_y"].astype(str)
+#            trawl_info_new["stratum_x"].astype(str) + "-" + trawl_info_new["stratum_y"].astype(str)
 #         )
 
-def initialize_grid(file_configuration = dict):
+
+def initialize_grid(file_configuration=dict):
 
     # Get root directory, if defined
     if "data_root_dir" in file_configuration:
@@ -382,7 +402,7 @@ def initialize_grid(file_configuration = dict):
 
         # Get projection
         projection = file_configuration["geospatial"]["projection"]
-        
+
         # Get grid settings
         grid_settings = file_configuration["geospatial"]["griddify"]
 
@@ -398,22 +418,26 @@ def initialize_grid(file_configuration = dict):
         # ---- y
         y = boundary["latitude"]
         # ---- Create DataFrame
-        boundary_df = pd.DataFrame({
-            "x": np.array([np.min(x), np.max(x), np.max(x), np.min(x), np.min(x)]),
-            "y": np.array([np.min(y), np.min(y), np.max(y), np.max(y), np.min(y)])
-        })
+        boundary_df = pd.DataFrame(
+            {
+                "x": np.array([np.min(x), np.max(x), np.max(x), np.min(x), np.min(x)]),
+                "y": np.array([np.min(y), np.min(y), np.max(y), np.max(y), np.min(y)]),
+            }
+        )
 
         # Create GeoDataFrame
         boundary_gdf = gpd.GeoDataFrame(
-            data = boundary_df,
+            data=boundary_df,
             geometry=gpd.points_from_xy(boundary_df["x"], boundary_df["y"]),
-            crs = projection
+            crs=projection,
         )
 
         # Convert to UTM (decimal degrees to m)
         # ---- Create UTM code
-        utm_code = utm_string_generator((boundary_df.x.min() + boundary_df.x.max()) / 2, 
-                                        (boundary_df.y.min() + boundary_df.y.max()) / 2)
+        utm_code = utm_string_generator(
+            (boundary_df.x.min() + boundary_df.x.max()) / 2,
+            (boundary_df.y.min() + boundary_df.y.max()) / 2,
+        )
         # ---- Create number code
         utm_num = int(utm_code)
         # ---- UTM conversion
@@ -432,7 +456,8 @@ def initialize_grid(file_configuration = dict):
         grid_cells = []
         # ---- Initialize coordinate counter
         y_ct = 0
-        x_coord = []; y_coord = []
+        x_coord = []
+        y_coord = []
         # ---- Iterate through to generate cells
         for y0 in np.arange(ymin, ymax, y_step):
             y_ct += 1
@@ -449,9 +474,9 @@ def initialize_grid(file_configuration = dict):
 
         # Convert to a GeoDataFrame
         cells_gdf = gpd.GeoDataFrame(grid_cells, columns=["geometry"], crs=utm_code)
-        # ---- Add cordinates
+        # ---- Add coordinates
         cells_gdf.loc[:, "x"] = np.array(x_coord)
-        cells_gdf.loc[:, "y"] = np.array(y_coord)        
+        cells_gdf.loc[:, "y"] = np.array(y_coord)
 
         # Get coastline shapefile directory, if defined
         if "coastline" in file_configuration["input_directories"]:
@@ -459,14 +484,14 @@ def initialize_grid(file_configuration = dict):
             # Get coastline settings
             coast_settings = file_configuration["input_directories"]["coastline"]
             # ---- Get root folder directory
-            # coast_root = root_dir / coast_settings["directory"] / coast_settings["coastline_name"] 
-            coast_root = (
-                "/".join([root_dir, coast_settings["directory"], coast_settings["coastline_name"]])
+            # coast_root = root_dir / coast_settings["directory"] / coast_settings["coastline_name"]
+            coast_root = "/".join(
+                [root_dir, coast_settings["directory"], coast_settings["coastline_name"]]
             )
             # ---- Create filepath
             shp_filepath = (
-                # root_dir / coast_settings["directory"] 
-                # / coast_settings["coastline_name"] 
+                # root_dir / coast_settings["directory"]
+                # / coast_settings["coastline_name"]
                 # coast_root
                 # / f"{coast_settings['coastline_name']}.shp"
                 "/".join([coast_root, f"{coast_settings['coastline_name']}.shp"])
@@ -479,63 +504,67 @@ def initialize_grid(file_configuration = dict):
 
             # Get original lat/lon geometry boundaries
             xmin0, ymin0, xmax0, ymax0 = boundary_gdf.total_bounds
-            
+
             # Read in file
-            full_coast = gpd.read_file(shp_filepath, 
-                                       engine="pyogrio",
-                                       storage_options=file_configuration["storage_options"])
+            full_coast = gpd.read_file(
+                shp_filepath,
+                engine="pyogrio",
+                storage_options=file_configuration["storage_options"],
+            )
             # ---- Convert to UTM
             full_coast_utm = full_coast.to_crs(utm_code)
             # ---- Remove empty
             full_coast_utm = full_coast_utm[~full_coast_utm.is_empty]
 
-            # Create bouning box with a buffer
+            # Create bounding box with a buffer
             boundary_box = box(xmin0 - 5, ymin0 - 5, xmax0 + 5, ymax0 + 5)
             # ---- Create an unbuffered copy
             boundary_box_unbuffered = box(xmin0, ymin0, xmax0, ymax0)
             # ---- Convert to a GeoDataFrame
-            boundary_box_unbuffered_gdf = (
-                gpd.GeoDataFrame(geometry=[boundary_box_unbuffered], crs=projection)
+            boundary_box_unbuffered_gdf = gpd.GeoDataFrame(
+                geometry=[boundary_box_unbuffered], crs=projection
             )
             # ---- Clip the coastline for saving
-            clipped_coast_original = (
-                gpd.clip(full_coast, box(xmin0 + 1, ymin0 + 1, xmax0 + 1, ymax0 + 1))
+            clipped_coast_original = gpd.clip(
+                full_coast, box(xmin0 + 1, ymin0 + 1, xmax0 + 1, ymax0 + 1)
             )
 
             # Clip the coastline shapefile
             clipped_coast = gpd.clip(full_coast, boundary_box).to_crs(utm_code)
 
             # Clip the grid cells
-            cells_gdf.loc[:, "geometry"] = (
-                cells_gdf["geometry"].difference(clipped_coast.geometry.union_all())
+            cells_gdf.loc[:, "geometry"] = cells_gdf["geometry"].difference(
+                clipped_coast.geometry.union_all()
             )
 
             # Calculate area per cell
             cells_gdf.loc[:, "area"] = cells_gdf.area
             # ---- Convert back to nmi^2 from m^2
-            cells_gdf.loc[:, "area"] = cells_gdf.loc[:, "area"] / 1852 ** 2
+            cells_gdf.loc[:, "area"] = cells_gdf.loc[:, "area"] / 1852**2
 
-            # Convert back to original projection and clip 
-            clipped_cells_latlon = (
-                gpd.clip(cells_gdf.to_crs(projection), boundary_box_unbuffered_gdf)
-                .reset_index(drop=True)
-            )
+            # Convert back to original projection and clip
+            clipped_cells_latlon = gpd.clip(
+                cells_gdf.to_crs(projection), boundary_box_unbuffered_gdf
+            ).reset_index(drop=True)
 
             # Initialize empty columns that can be added to later on
-            clipped_cells_latlon.loc[:, ["number_density_mean", "biomass_density_mean", 
-                                         "abundance", "biomass"]] = 0.0
-            
+            clipped_cells_latlon.loc[
+                :, ["number_density_mean", "biomass_density_mean", "abundance", "biomass"]
+            ] = 0.0
+
             # Create output DataFrame
-            output_df = pd.DataFrame({
-                "geometry": clipped_cells_latlon["geometry"].apply(lambda geom: geom.wkt)
-            })
+            output_df = pd.DataFrame(
+                {"geometry": clipped_cells_latlon["geometry"].apply(lambda geom: geom.wkt)}
+            )
             # ---- Add the required columns
-            output_df = pd.concat([output_df, clipped_cells_latlon.loc[:, ["x", "y", "area"]]], 
-                                  axis=1) 
+            output_df = pd.concat(
+                [output_df, clipped_cells_latlon.loc[:, ["x", "y", "area"]]], axis=1
+            )
             # ---- Initialize empty columns that can be added to later on
-            output_df.loc[:, ["number_density_mean", "biomass_density_mean", "abundance", 
-                              "biomass"]] = 0.0
-           
+            output_df.loc[
+                :, ["number_density_mean", "biomass_density_mean", "abundance", "biomass"]
+            ] = 0.0
+
             # Write to the database file (for the grid)
             # ---- Create engine
             engine = sqla.create_engine(f"sqlite:///{db_filepath}")
@@ -544,33 +573,36 @@ def initialize_grid(file_configuration = dict):
 
             # Write to the database file (for the coastline shapefile)
             # ---- Create output copy
-            coastline_out = pd.DataFrame({
-                "geometry": clipped_coast_original["geometry"].apply(lambda geom: geom.wkt)
-            })
+            coastline_out = pd.DataFrame(
+                {"geometry": clipped_coast_original["geometry"].apply(lambda geom: geom.wkt)}
+            )
             # ---- Concatenate
-            coastline_out = (
-                pd.concat([coastline_out, clipped_coast_original.drop(columns="geometry")], axis=1)
+            coastline_out = pd.concat(
+                [coastline_out, clipped_coast_original.drop(columns="geometry")], axis=1
             )
             # ---- Connect and create table
             _ = coastline_out.to_sql("coastline_df", engine, if_exists="replace", index=False)
 
-def update_population_grid(file_configuration: dict,
-                           coordinates: Union[List[str], str],
-                           dataset: Union[dict, pd.DataFrame]):
+
+def update_population_grid(
+    file_configuration: dict, coordinates: Union[List[str], str], dataset: Union[dict, pd.DataFrame]
+):
 
     # Extract input directory settings
     file_settings = file_configuration["input_directories"]
 
     # Get filepath for grid
     grid_db = list(
-        Path(file_configuration["database_directory"])
-        .glob(pattern=f"{file_settings['grid']['database_name']}")
+        Path(file_configuration["database_directory"]).glob(
+            pattern=f"{file_settings['grid']['database_name']}"
+        )
     )[0]
 
     # Get filepath for acoustics
     survey_db = list(
-        Path(file_configuration["database_directory"])
-        .glob(pattern=f"{file_settings['acoustics']['database_name']}")
+        Path(file_configuration["database_directory"]).glob(
+            pattern=f"{file_settings['acoustics']['database_name']}"
+        )
     )[0]
 
     # Define the SQL tables that will be parsed and queries
@@ -578,29 +610,41 @@ def update_population_grid(file_configuration: dict,
     grid_table = "grid_df"
 
     # Get indexed survey data
-    indexed_data = query_dataset(survey_db, 
-                                 dataset, 
-                                 table_name=data_table, 
-                                 data_columns=coordinates + ["x", "y", "number_density", 
-                                                             "biomass_density"], 
-                                 unique_columns=coordinates)
-    
+    indexed_data = query_dataset(
+        survey_db,
+        dataset,
+        table_name=data_table,
+        data_columns=coordinates + ["x", "y", "number_density", "biomass_density"],
+        unique_columns=coordinates,
+    )
+
     # Get indexed grid data
-    indexed_grid = query_dataset(grid_db, 
-                                 indexed_data, 
-                                 table_name=grid_table, 
-                                 data_columns= ["x", "y", "area", "number_density_mean", 
-                                                "biomass_density_mean", "abundance", "biomass"], 
-                                 unique_columns=["x", "y"])
-    
+    indexed_grid = query_dataset(
+        grid_db,
+        indexed_data,
+        table_name=grid_table,
+        data_columns=[
+            "x",
+            "y",
+            "area",
+            "number_density_mean",
+            "biomass_density_mean",
+            "abundance",
+            "biomass",
+        ],
+        unique_columns=["x", "y"],
+    )
+
     # Set DataFrame index
     indexed_grid.set_index(["x", "y"], inplace=True)
 
-    # Update the areal density esitmates
+    # Update the areal density estimates
     # ---- Number (animals/nmi^2)
     indexed_grid["number_density_mean"] = indexed_data.groupby(["x", "y"])["number_density"].mean()
     # ---- Bioamss (kg/nmi^2)
-    indexed_grid["biomass_density_mean"] = indexed_data.groupby(["x", "y"])["biomass_density"].mean()
+    indexed_grid["biomass_density_mean"] = indexed_data.groupby(["x", "y"])[
+        "biomass_density"
+    ].mean()
 
     # Compute the abundance and biomass per grid cell
     # ---- Abundance (# animals)
@@ -612,12 +656,10 @@ def update_population_grid(file_configuration: dict,
     # ---- Reset index
     output_df = indexed_grid.reset_index()
     # ---- Grouped update
-    sql_group_update(grid_db, dataframe=output_df, table_name=grid_table, 
-                     columns=["number_density_mean", "biomass_density_mean", "abundance", 
-                              "biomass"], 
-                     unique_columns=["x", "y"])
-
-
-
-
-    
+    sql_group_update(
+        grid_db,
+        dataframe=output_df,
+        table_name=grid_table,
+        columns=["number_density_mean", "biomass_density_mean", "abundance", "biomass"],
+        unique_columns=["x", "y"],
+    )
