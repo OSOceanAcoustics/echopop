@@ -2,12 +2,12 @@ import glob
 import os
 import re
 from pathlib import Path
-from typing import List, Optional, Tuple, Union
+from typing import List, Tuple, Union
 
 import numpy as np
 import pandas as pd
 
-from ..core import BIODATA_HAUL_MAP, CONFIG_MAP, ECHOVIEW_EXPORT_MAP, REGION_EXPORT_MAP
+from ..core import CONFIG_MAP, ECHOVIEW_EXPORT_MAP, REGION_EXPORT_MAP
 from ..spatial.transect import export_transect_layers, export_transect_spacing
 from .operations import group_merge
 
