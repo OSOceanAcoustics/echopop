@@ -183,6 +183,7 @@ def load_survey_data(configuration_dict: dict):
                         # Update configuration key map
                         config_map = [dataset, datalayer]
 
+                    # TODO: This can be refactored out for the acoustic datad
                     # Validate datatypes within dataset and make appropriate changes to dtypes
                     # (if necessary)
                     # ---- This first enforces the correct dtype for each imported column
@@ -292,6 +293,7 @@ def read_validated_data(
             else:
                 df_list = [input_dict[sub_attribute][config_map[1] + "_df"], df]
                 input_dict[sub_attribute][config_map[1] + "_df"] = pd.concat(df_list)
+    # TODO: This can be refactored out
     elif sub_attribute == "acoustics":
 
         # Toggle through including and excluding age-1

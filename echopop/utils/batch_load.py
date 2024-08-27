@@ -555,6 +555,8 @@ def batch_read_echoview_exports(
             full_interval_strata_df["haul_num"].fillna(0).astype(int)
         )
         # ---- Fill stratum with 1's
+        # TODO: Add clarification that these don't make an impact or something to that effect
+        # ! Or can this be avoided (e.g. just replace with '0' instead of '1'?)
         full_interval_strata_df["stratum_num"] = (
             full_interval_strata_df["stratum_num"].fillna(1).astype(int)
         )
@@ -756,7 +758,7 @@ def write_haul_to_transect_key(configuration_dict: dict):
         # ---- Iterate through regions
         for region in gear_data.keys():
             # ---- Update {COUNTRY_CODE} component
-            save_file = name_template.replace("{COUNTRY_CODE}", region + ".xlsx")
+            save_file = name_template.replace("{COUNTRY}", region + ".xlsx")
             # ---- Get directory settings
             dir_settings = haul_to_transect_settings["file_settings"][region]
             # ---- Get directory

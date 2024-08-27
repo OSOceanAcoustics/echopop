@@ -16,6 +16,7 @@
 #     stratified_summary,
 # )
 # from echopop.core import CONFIG_MAP, DATA_STRUCTURE, ECHOVIEW_EXPORT_MAP, REGION_EXPORT_MAP
+# from echopop.core import BIODATA_HAUL_MAP
 # from echopop.spatial.transect import export_transect_layers, export_transect_spacing
 # from echopop.survey import Survey
 # from echopop.utils import batch_load as ebl, load as el, message as em
@@ -24,6 +25,10 @@
 #     get_haul_transect_key,
 #     get_transect_numbers,
 #     load_export_regions,
+#     write_haul_to_transect_key,
+#     write_transect_region_key,
+#     validate_echoview_exports,
+#     validate_export_directories
 # )
 # from echopop.utils.operations import group_merge
 
@@ -38,11 +43,11 @@
 
 # self = Survey
 
-# # construct_nasc: bool = True
-# # transect_pattern: Optional[str] = r"T(\d+)"
-# # index_variable: Union[str, List[str]] = ["transect_num", "interval"]
-# # unique_region_id: str = "region_id"
-# # region_class_column: str = "region_class"
+# construct_nasc: bool = True
+# transect_pattern: Optional[str] = r"T(\d+)"
+# index_variable: Union[str, List[str]] = ["transect_num", "interval"]
+# unique_region_id: str = "region_id"
+# region_class_column: str = "region_class"
 # # # !: DELETE THESE
 # # export_file_directory: Optional[Union[str, Path]] = None
 # # export_save_directory: Optional[Union[str, Path]] = None
@@ -50,11 +55,11 @@
 
 # # ###
 # # # Initialize `meta` attribute
-# # self.meta = copy.deepcopy(DATA_STRUCTURE["meta"])
+# self.meta = copy.deepcopy(DATA_STRUCTURE["meta"])
 
 # # # Loading the configuration settings and definitions that are used to initialize the Survey
 # # # class object
-# # self.config = el.load_configuration(Path(init_config_path), Path(survey_year_config_path))
+# self.config = el.load_configuration(Path(init_config_path), Path(survey_year_config_path))
 
 # # NASC export file batch processing
 # # if construct_nasc:
