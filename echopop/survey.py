@@ -15,7 +15,7 @@ from .utils import batch_load as ebl, load as el, message as em
 
 class Survey:
     """
-    echopop base class that imports and prepares parameters for
+    Echopop base class that imports and prepares parameters for
     a survey. Additionally, it includes functions for accessing
     the modules associated with the transect and Kriging variable
     calculations, CV analysis, semi-variogram algorithm, and Kriging.
@@ -34,9 +34,10 @@ class Survey:
         data contained within the class object.
     config : dict
         Configuration settings and parameters that can be referenced for
-        various downstream and internal functions.
+        various downstream and internal functions defined within the `init_config_path` and
+        `survey_year_config_path` *.yaml files.
     input: dict
-        Input data.
+        Input data based on files included within the `survey_year_config_path` *.yaml file.
     analysis: dict
         Analysis variables and intermediate data products.
     results: dict
@@ -138,6 +139,24 @@ class Survey:
         # Print result if `verbose == True`
         if verbose:
             em.transect_results_msg(self.results["transect"], self.analysis["settings"]["transect"])
+
+    def load_acoustic_survey_data(
+            self,
+            echoview_exports: bool = True,
+                   
+            construct_nasc: bool = False,
+        transect_pattern: Optional[str] = r"T(\d+)",
+        index_variable: Union[str, List[str]] = ["transect_num", "interval"],
+        unique_region_id: str = "region_id",
+        region_class_column: str = "region_class",):
+        """
+        Loads in active acoustic backscatter survey data
+        """
+        pass
+
+    def load_survey_data():
+        pass
+
 
     def stratified_analysis(
         self,

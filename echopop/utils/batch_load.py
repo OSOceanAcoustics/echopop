@@ -423,8 +423,8 @@ def batch_read_echoview_exports(
     index_variable: Union[str, List[str]] = ["transect_num", "interval"],
     unique_region_id: str = "region_id",
     region_class_column: str = "region_class",
-    file_directory: Optional[Union[str, Path]] = None,
-    save_directory: Optional[Union[str, Path]] = None,
+    create_haul_transect_key: bool = True,
+    create_transect_region_key: bool = True,
 ):
     """
     Import a directory comprising Echoview exports via batch processing
@@ -479,7 +479,8 @@ def batch_read_echoview_exports(
     export_settings = configuration_dict["nasc_exports"]
 
     # Write haul-to-transect key, if the appropriate data inputs are available
-    write_haul_to_transect_key(configuration_dict)
+    if create_transect_region_key:
+        write_haul_to_transect_key(configuration_dict)
 
     # Validate relevant directories and file existence
     save_folder, file_directory, export_files = validate_export_directories(configuration_dict)
@@ -495,7 +496,8 @@ def batch_read_echoview_exports(
     interval_template = interval_template.rename(columns={"max_depth": "bottom_depth"})
 
     # Write the transect-region-haul key xlsx file
-    write_transect_region_key(transect_data, configuration_dict)
+    if create_haul_transect_key:
+        write_transect_region_key(transect_data, configuration_dict)
 
     # Get region info
     # ---- Region filenames
