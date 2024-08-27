@@ -553,6 +553,8 @@ def batch_read_echoview_exports(
             full_interval_strata_df["haul_num"].fillna(0).astype(int)
         )
         # ---- Fill stratum with 1's
+        # TODO: Add clarification that these don't make an impact or something to that effect
+        # ! Or can this be avoided (e.g. just replace with '0' instead of '1'?)
         full_interval_strata_df["stratum_num"] = (
             full_interval_strata_df["stratum_num"].fillna(1).astype(int)
         )
