@@ -10,7 +10,7 @@ from .analysis import (
     stratified_summary,
 )
 from .core import DATA_STRUCTURE
-from .utils import batch_load as ebl, load as el, message as em
+from .utils import load as el, load_nasc as eln, message as em
 
 
 class Survey:
@@ -45,16 +45,7 @@ class Survey:
     """
 
     def __init__(
-        self,
-        init_config_path: Union[str, Path],
-        survey_year_config_path: Union[str, Path],
-        construct_nasc: bool = False,
-        transect_pattern: Optional[str] = r"T(\d+)",
-        index_variable: Union[str, List[str]] = ["transect_num", "interval"],
-        unique_region_id: str = "region_id",
-        region_class_column: str = "region_class",
-        export_file_directory: Optional[Union[str, Path]] = None,
-        export_save_directory: Optional[Union[str, Path]] = None,
+        self, init_config_path: Union[str, Path], survey_year_config_path: Union[str, Path]
     ):
         # Initialize `meta` attribute
         self.meta = copy.deepcopy(DATA_STRUCTURE["meta"])
@@ -63,28 +54,83 @@ class Survey:
         # class object
         self.config = el.load_configuration(Path(init_config_path), Path(survey_year_config_path))
 
-        # NASC export file batch processing
-        if construct_nasc:
-            print("Constructing consolidated NASC export files.")
-            # ---- Batch processing
-            ebl.batch_read_echoview_exports(
-                self.config,
-                transect_pattern,
-                index_variable,
-                unique_region_id,
-                region_class_column,
-                export_file_directory,
-                export_save_directory,
-            )
+        # Initialize the `input` data attribute
+        self.input = copy.deepcopy(DATA_STRUCTURE["input"])
 
-        # Loading the datasets defined in the configuration files
-        self.input = el.load_survey_data(self.config)
+        # Initialize the `results` data attribute
+        self.results = copy.deepcopy(DATA_STRUCTURE["results"])
 
         # Initialize the `analysis` data attribute
         self.analysis = copy.deepcopy(DATA_STRUCTURE["analysis"])
 
         # Initialize the `results` data attribute
         self.results = copy.deepcopy(DATA_STRUCTURE["results"])
+
+        # # NASC export file batch processing
+        # if construct_nasc:
+        #     print("Constructing consolidated NASC export files.")
+        #     # ---- Batch processing
+        #     ebl.batch_read_echoview_exports(
+        #         self.config,
+        #         transect_pattern,
+        #         index_variable,
+        #         unique_region_id,
+        #         region_class_column
+        #     )
+
+        # # Loading the datasets defined in the configuration files
+        # self.input = el.load_survey_data(self.config)
+
+    def load_acoustic_data(
+        self,
+        echoview_exports: bool = True,
+        index_variable: Union[str, List[str]] = ["transect_num", "interval"],
+        region_class_column: str = "region_class",
+        transect_pattern: str = r"T(\d+)",
+        unique_region_id: str = "region_id",
+        write_transect_region_file: bool = True,
+        verbose: bool = True,
+    ):
+        """
+        Loads in active acoustic backscatter survey data
+        """
+
+        # Compile echoview acoustic backscatter exports if `echoview_exports == True`:
+        if echoview_exports:
+            eln.batch_read_echoview_exports(
+                self.config,
+                transect_pattern,
+                index_variable,
+                unique_region_id,
+                region_class_column,
+                write_transect_region_file,
+                verbose,
+            )
+            # ---- Update key for `export_regions`
+            self.meta["provenance"]["imported_datasets"].update(["export_regions"])
+
+        # Read in compiled `*.xlsx` acoustic backscatter data file(s) and additional validation
+        # ---- Update key for `NASC`
+        self.meta["provenance"]["imported_datasets"].update(["NASC"])
+        # ---- Load the acoustic survey data
+        el.load_dataset(self.input, self.config, dataset_type="NASC")
+
+    def load_survey_data(self, write_haul_transect_file: bool = True, verbose: bool = True):
+        """
+        Loads in biological and spatial survey data
+        """
+
+        # Create haul-transect-mapping key file
+        if write_haul_transect_file:
+            el.write_haul_to_transect_key(self.config, verbose)
+
+        # Get previously processed datasets
+        # ---- Updated datasets
+        new_datasets = ["biological", "kriging", "stratification"]
+        # ---- Load in the new data
+        el.load_dataset(self.input, self.config, dataset_type=new_datasets)
+        # ---- Update key for the new datasets
+        self.meta["provenance"]["imported_datasets"].update(new_datasets)
 
     def transect_analysis(
         self,
@@ -139,24 +185,6 @@ class Survey:
         # Print result if `verbose == True`
         if verbose:
             em.transect_results_msg(self.results["transect"], self.analysis["settings"]["transect"])
-
-    def load_acoustic_survey_data(
-            self,
-            echoview_exports: bool = True,
-                   
-            construct_nasc: bool = False,
-        transect_pattern: Optional[str] = r"T(\d+)",
-        index_variable: Union[str, List[str]] = ["transect_num", "interval"],
-        unique_region_id: str = "region_id",
-        region_class_column: str = "region_class",):
-        """
-        Loads in active acoustic backscatter survey data
-        """
-        pass
-
-    def load_survey_data():
-        pass
-
 
     def stratified_analysis(
         self,

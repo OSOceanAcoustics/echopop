@@ -424,7 +424,8 @@ def batch_read_echoview_exports(
     unique_region_id: str = "region_id",
     region_class_column: str = "region_class",
     create_haul_transect_key: bool = True,
-    create_transect_region_key: bool = True,
+    write_transect_region_file: bool = True,
+    verbose: bool = True,
 ):
     """
     Import a directory comprising Echoview exports via batch processing
@@ -479,8 +480,8 @@ def batch_read_echoview_exports(
     export_settings = configuration_dict["nasc_exports"]
 
     # Write haul-to-transect key, if the appropriate data inputs are available
-    if create_transect_region_key:
-        write_haul_to_transect_key(configuration_dict)
+    # if create_transect_region_key:
+    #     write_haul_to_transect_key(configuration_dict)
 
     # Validate relevant directories and file existence
     save_folder, file_directory, export_files = validate_export_directories(configuration_dict)
@@ -496,8 +497,8 @@ def batch_read_echoview_exports(
     interval_template = interval_template.rename(columns={"max_depth": "bottom_depth"})
 
     # Write the transect-region-haul key xlsx file
-    if create_haul_transect_key:
-        write_transect_region_key(transect_data, configuration_dict)
+    if write_transect_region_file:
+        write_transect_region_key(transect_data, configuration_dict, verbose)
 
     # Get region info
     # ---- Region filenames
@@ -589,10 +590,11 @@ def batch_read_echoview_exports(
             index=False,
         )
         # ---- Print out message
-        print(
-            f"Updated NASC export file for group '{key}' saved at "
-            f"'{str(Path(save_folder) / save_filename)}'."
-        )
+        if verbose:
+            print(
+                f"Updated NASC export file for group '{key}' saved at "
+                f"'{str(Path(save_folder) / save_filename)}'."
+            )
 
 
 def compile_patterns(pattern_config: dict):
@@ -636,7 +638,7 @@ def extract_parts_and_labels(region_name: str, compiled_patterns: re.Pattern, pa
     return labels
 
 
-def write_transect_region_key(transect_data: pd.DataFrame, configuration_dict: dict):
+def write_transect_region_key(transect_data: pd.DataFrame, configuration_dict: dict, verbose: bool):
 
     # Get pattern configuration for filtering region names
     pattern_config = configuration_dict["transect_region_mapping"]["parts"]
@@ -728,64 +730,10 @@ def write_transect_region_key(transect_data: pd.DataFrame, configuration_dict: d
             excel_writer=str(Path(root_dir + save_dir) / filename), sheet_name=sheet, index=False
         )
         # ---- Print out message
-        print(
-            f"Update export region, transect, and haul key map for '{region}' saved at "
-            f"'{str(Path(root_dir + save_dir) / filename)}'."
-        )
-
-
-def write_haul_to_transect_key(configuration_dict: dict):
-
-    # Get the haul-to-transect mapping settings
-    haul_to_transect_settings = configuration_dict["haul_to_transect_mapping"]
-
-    # Get root directory
-    root_directory = configuration_dict["data_root_dir"]
-
-    if "gear_data" in configuration_dict:
-        # ---- Get filename template
-        name_template = haul_to_transect_settings["save_file_template"]
-        # ---- Define datatypes
-        dtypes = {key: values["type"] for key, values in BIODATA_HAUL_MAP.items()}
-        # ---- Define column name conversion
-        col_names = {key: values["name"] for key, values in BIODATA_HAUL_MAP.items()}
-        # ---- Get gear data dictionary
-        gear_data = configuration_dict["gear_data"]
-        # ---- Get survey year
-        survey_year = configuration_dict["survey_year"]
-        # ---- Swap out the {YEAR} component
-        name_template = name_template.replace("{YEAR}", str(survey_year))
-        # ---- Iterate through regions
-        for region in gear_data.keys():
-            # ---- Update {COUNTRY_CODE} component
-            save_file = name_template.replace("{COUNTRY}", region + ".xlsx")
-            # ---- Get directory settings
-            dir_settings = haul_to_transect_settings["file_settings"][region]
-            # ---- Get directory
-            save_dir = dir_settings["directory"]
-            # ---- Create filepath
-            filepath = Path(root_directory) / gear_data[region]["filename"]
-            # ---- Get sheetname
-            sheet = gear_data[region]["sheetname"]
-            # ---- Read file
-            data = pd.read_excel(
-                filepath, sheet_name=sheet, usecols=BIODATA_HAUL_MAP.keys()
-            ).dropna(subset=BIODATA_HAUL_MAP.keys())
-            # ---- Update datatypes
-            data = data.astype(dtypes)
-            # ---- Change column names
-            data = data.rename(columns=col_names).reset_index(drop=True)
-
-            # ---- Write the file
-            data.to_excel(
-                excel_writer=str(Path(root_directory + save_dir) / save_file),
-                sheet_name=dir_settings["sheetname"],
-                index=False,
-            )
-            # ---- Print out message
+        if verbose:
             print(
-                f"Haul-to-transect mapping file for '{region}' saved at "
-                f"'{Path(root_directory + save_dir) / save_file}'."
+                f"Updated export region, transect, and haul key map for '{region}' saved at "
+                f"'{str(Path(root_dir + save_dir) / filename)}'."
             )
 
 

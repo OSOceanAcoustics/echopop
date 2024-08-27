@@ -45,7 +45,8 @@ biological:
       sheetname: biodata_catch_CAN
   haul_to_transect:
     US:
-      filename: Biological/US/haul_to_transect_mapping_2019_US.xlsx
+      # filename: Biological/US/haul_to_transect_mapping_2019_US.xlsx
+      filename: Biological/US/haul_to_transect_mapping_2019.xlsx
       sheetname: Sheet1
     CAN:
       filename: Biological/CAN/haul_to_transect_mapping_2019_CAN.xlsx
@@ -63,10 +64,12 @@ NASC:
   # NASC values
   no_age1:
     # file that excludes age1 values
+    # filename: Exports/US_CAN_detailsa_2019_table2y+_ALL_final - updated.xlsx
     filename: Exports/US_CAN_detailsa_2019_table2y+_ALL_final - updated.xlsx
     sheetname: Sheet1
   all_ages:
     # file that includes all ages
+    # filename: Exports/US_CAN_detailsa_2019_table1y+_ALL_final - updated.xlsx
     filename: Exports/US_CAN_detailsa_2019_table1y+_ALL_final - updated.xlsx
     sheetname: Sheet1
 export_regions:

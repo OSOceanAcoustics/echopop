@@ -282,7 +282,9 @@ BIODATA_HAUL_MAP = {
 # included in the ``Survey`` class initialization and parameterization (when the object is
 # generated).
 DATA_STRUCTURE = {
-    "meta": {"provenance": dict(), "date": f"{datetime.now():%Y-%m-%d %H:%M:%S%z}"},
+    "meta": {
+        "provenance": {"imported_datasets": set(), "date": f"{datetime.now():%Y-%m-%d %H:%M:%S%z}"},
+    },
     "input": {
         "acoustics": {
             "nasc_df": pd.DataFrame(),
