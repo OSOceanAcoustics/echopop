@@ -41,7 +41,7 @@ class Survey:
     analysis: dict
         Analysis variables and intermediate data products.
     results: dict
-        Analysis results.
+        Overall results produced by each of the analysis methods and workflows.
     """
 
     def __init__(
@@ -66,24 +66,9 @@ class Survey:
         # Initialize the `results` data attribute
         self.results = copy.deepcopy(DATA_STRUCTURE["results"])
 
-        # # NASC export file batch processing
-        # if construct_nasc:
-        #     print("Constructing consolidated NASC export files.")
-        #     # ---- Batch processing
-        #     ebl.batch_read_echoview_exports(
-        #         self.config,
-        #         transect_pattern,
-        #         index_variable,
-        #         unique_region_id,
-        #         region_class_column
-        #     )
-
-        # # Loading the datasets defined in the configuration files
-        # self.input = el.load_survey_data(self.config)
-
     def load_acoustic_data(
         self,
-        echoview_exports: bool = True,
+        echoview_exports: bool = False,
         index_variable: Union[str, List[str]] = ["transect_num", "interval"],
         region_class_column: str = "region_class",
         transect_pattern: str = r"T(\d+)",
@@ -92,7 +77,44 @@ class Survey:
         verbose: bool = True,
     ):
         """
-        Loads in active acoustic backscatter survey data
+        Loads in active acoustic backscatter survey data from .xlsx files, or processes
+        Echoview `csv` file exports by consolidating them into aforementioned .xlsx files.
+
+        Parameters
+        ----------
+        echoview_exports: bool
+            Boolean flag for determining whether Echoview exports will be processed and
+            consolidated into defined .xlsx files [True]. Otherwise, the consolidated .xlsx files
+            will be used [False].
+        index_variable: Union[str, List[str]]
+            Index columns used for defining discrete acoustic backscatter samples and vertical
+            integration.
+        region_class_column: str
+            Dataframe column denoting the Echoview export region class (e.g. "zooplankton").
+        transect_pattern: str
+            A (raw) string that corresponds to the transect number embedded within the base name of
+            the file path associated with each export file. Defaults to ``r'T(\\d+)'``. See a
+            further description below for more details.
+        unique_region_id: str
+            Dataframe column that denotes region-specific names and identifiers.
+        write_transect_region_file: bool
+            Boolean flag for determining whether to write a transect-region key (.xlsx) within a
+            directory defined by the file configuration .yaml.
+        verbose: bool
+            Console messages that will print various messages, updates, etc. when set to True.
+
+        Notes
+        ----------
+        The string pattern for `transect_pattern` requires a consistent filename format that can be
+        readily parsed by `read_echoview_exports`. The default value for `transect_pattern`
+        (``r'T(\\d+)'``) enables the function to parse all numbers that trail the letter "T" in the
+        base filename. For example, an example file of
+        "C:/Path/User/Data/random_12_V34-T56-A78_G9.csv" would yield a transect number of '56'
+        since it trails the "T" and does not accidentally use other numbers in the string. However,
+        a filename like "C:/Path/User/Data/randomT_12_T34-T56-T78_G9.csv" would detect multiple
+        transect numbers ('34', '56', and '78') since numbers trail the letter "T" in three places.
+        Therefore, it is important to ensure that embedded transect numbers are differentiable from
+        other digits that may appear in the base filename.
         """
 
         # Compile echoview acoustic backscatter exports if `echoview_exports == True`:
@@ -118,6 +140,14 @@ class Survey:
     def load_survey_data(self, write_haul_transect_file: bool = True, verbose: bool = True):
         """
         Loads in biological and spatial survey data
+
+        Parameters
+        ----------
+        write_haul_transect_file: bool
+            Boolean flag for determining whether to write a haul-transect mapping key (.xlsx)
+            within a directory defined by the file configuration .yaml.
+        verbose: bool
+            Console messages that will print various messages, updates, etc. when set to True.
         """
 
         # Create haul-transect-mapping key file

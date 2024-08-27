@@ -423,7 +423,6 @@ def batch_read_echoview_exports(
     index_variable: Union[str, List[str]] = ["transect_num", "interval"],
     unique_region_id: str = "region_id",
     region_class_column: str = "region_class",
-    create_haul_transect_key: bool = True,
     write_transect_region_file: bool = True,
     verbose: bool = True,
 ):
@@ -432,17 +431,21 @@ def batch_read_echoview_exports(
 
     Parameters
     ----------
-    file_directory: Union[str, Path]
-        Filepath/directory where acoustic transect exports are located. It is assumed that the files
-        in this directory include file quartets for each export with the following labels:
-        'cells', 'layers', 'analysis', and 'intervals'.
-    transect_pattern: str
-        A (raw) string that corresponds to the transect number embedded within the base name of the
-        file path associated with each export file. Defaults to ``r'T(\\d+)'``. See a further
-        description below for more details.
     configuration_dict: dict
         Dictionary containing file information, directories, and other values stored within the
         configuration YAML files.
+    transect_pattern: str
+        See :func:`echopop.survey.load_acoustic_data`.
+    index_variable: Union[str, List[str]]
+        See :func:`echopop.survey.load_acoustic_data`.
+    region_class_column: str
+        See :func:`echopop.survey.load_acoustic_data`.
+    unique_region_id: str
+        See :func:`echopop.survey.load_acoustic_data`.
+    write_transect_region_file: bool
+        See :func:`echopop.survey.load_acoustic_data`.
+    verbose: bool
+        See :func:`echopop.survey.load_acoustic_data`.
 
     Returns
     ----------
@@ -462,18 +465,9 @@ def batch_read_echoview_exports(
         - `stratum_inpfc` (Optional[int]): Latitude-based (INPFC) stratum numbers that are added
         when `include_stratum = True` and `strata = 'inpfc'`.
 
-    Notes
+    See Also
     ----------
-    The string pattern for `transect_pattern` requires a consistent filename format that can be
-    readily parsed by `read_echoview_exports`. The default value for `transect_pattern`
-    (``r'T(\\d+)'``) enables the function to parse all numbers that trail the letter "T" in the base
-    filename. For example, an example file of "C:/Path/User/Data/random_12_V34-T56-A78_G9.csv" would
-    yield a transect number of '56' since it trails the "T" and does not accidentally use other
-    numbers in the string. However, a filename like
-    "C:/Path/User/Data/randomT_12_T34-T56-T78_G9.csv" would detect multiple transect numbers ('34',
-    '56', and '78') since numbers trail the letter "T" in three places. Therefore, it is important
-    to ensure that embedded transect numbers are differentiable from other digits that may appear
-    in the base filename.
+    :func:`echopop.survey.load_acoustic_data`
     """
 
     # Get NASC export settings
@@ -772,7 +766,6 @@ def validate_export_directories(configuration_dict: dict) -> Tuple[str, str, lis
     # Validate export files existence
     # ---- Check whether files exist at all
     if not any(Path(file_folder).iterdir()):
-        raise FileNotFoundError(f"The export file directory {{{file_folder}}} contains no files!")
         raise FileNotFoundError(f"The export file directory {{{file_folder}}} contains no files!")
     # ---- Get export files
     export_files = glob.glob(file_folder + "/*")
