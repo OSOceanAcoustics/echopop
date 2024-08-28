@@ -1,3 +1,4 @@
+import re
 from functools import reduce
 from typing import Callable, List, Optional, Union
 
@@ -361,3 +362,50 @@ def group_interpolator_creator(
 
     # Return output
     return interpolators
+
+
+def compile_patterns(pattern_config: dict):
+    """Compile patterns for each part in the configuration
+
+    Parameters
+    ----------
+    pattern_config: dict
+        Dictionary containing certain filename parts and patterns.
+    """
+    compiled_patterns = {}
+    for part_name, part_patterns in pattern_config.items():
+        compiled_patterns[part_name] = [
+            re.compile(pattern, re.IGNORECASE) for pattern in [p["pattern"] for p in part_patterns]
+        ]
+    return compiled_patterns
+
+
+def extract_parts_and_labels(region_name: str, compiled_patterns: re.Pattern, pattern_config: dict):
+    """Extract corresponding labels from a region name based on compiled patterns."""
+
+    labels = {}
+    remaining_name = region_name
+
+    for part_name, patterns in compiled_patterns.items():
+        for pattern in patterns:
+            match = pattern.search(remaining_name)
+            if match:
+                matched_value = match.group(0)
+                label = next(
+                    (
+                        p["label"]
+                        for p in pattern_config[part_name]
+                        if p["pattern"] == pattern.pattern
+                    ),
+                    matched_value,
+                )
+                labels[part_name] = label if label != "None" else matched_value
+                # BELOW FOR DEBUGGING
+                # --------
+                # extracted_parts[part_name] = matched_value
+                # --------
+                remaining_name = remaining_name.replace(matched_value, "", 1)
+                break
+
+    # return extracted_parts, labels
+    return labels

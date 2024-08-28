@@ -430,6 +430,17 @@ def validate_data_columns(
 
 
 def write_haul_to_transect_key(configuration_dict: dict, verbose: bool):
+    """
+    Function for writing the haul-transect mapping key .xlsx file.
+
+    Parameters
+    ----------
+    configuration_dict: dict
+        Dictionary containing file information, directories, and other values stored within the
+        configuration YAML files.
+    verbose: bool
+        Console messages that will print various messages, updates, etc. when set to True.
+    """
 
     # Get the haul-to-transect mapping settings
     haul_to_transect_settings = configuration_dict["haul_to_transect_mapping"]
@@ -717,215 +728,6 @@ def prepare_input_data(input_dict: dict, configuration_dict: dict):
         input_dict["statistics"]["kriging"].update({"model_config": kriging_params})
         # -------- Delete the duplicate dataframe
         del input_dict["statistics"]["kriging"]["vario_krig_para_df"]
-    # -------- Delete the duplicate configuration keys
-    # del configuration_dict["kriging_parameters"]
-
-    # # Generate length and age vectors
-    # # ---- Length vector
-    # length_bins = np.linspace(
-    #     configuration_dict["biometrics"]["bio_hake_len_bin"][0],
-    #     configuration_dict["biometrics"]["bio_hake_len_bin"][1],
-    #     configuration_dict["biometrics"]["bio_hake_len_bin"][2],
-    #     dtype=np.float64,
-    # )
-    # # ---- Age vector
-    # age_bins = np.linspace(
-    #     configuration_dict["biometrics"]["bio_hake_age_bin"][0],
-    #     configuration_dict["biometrics"]["bio_hake_age_bin"][1],
-    #     configuration_dict["biometrics"]["bio_hake_age_bin"][2],
-    #     dtype=np.float64,
-    # )
-
-    # # Discretize these values into discrete intervals
-    # # ---- Calculate binwidths
-    # # -------- Length
-    # length_binwidth = np.mean(np.diff(length_bins / 2.0))
-    # # -------- Age
-    # age_binwidth = np.mean(np.diff(age_bins / 2.0))
-    # # ---- Center the bins within the binwidths
-    # # -------- Length
-    # length_centered_bins = np.concatenate(
-    #     ([length_bins[0] - length_binwidth], length_bins + length_binwidth)
-    # )
-    # # -------- Age
-    # age_centered_bins = np.concatenate(([age_bins[0] - age_binwidth], age_bins + age_binwidth))
-
-    # # Merge the vector and centered bins into dataframes that will be added into the `input`
-    # # attribute
-    # # ---- Generate DataFrame for length
-    # length_bins_df = pd.DataFrame({"length_bins": length_bins})
-    # # -------- Discretize the bins as categorical intervals
-    # length_bins_df["length_intervals"] =pd.cut(length_bins_df["length_bins"],length_centered_bins)
-    # # ---- Generate DataFrame for age
-    # age_bins_df = pd.DataFrame({"age_bins": age_bins})
-    # # -------- Discretize the bins as categorical intervals
-    # age_bins_df["age_intervals"] = pd.cut(age_bins_df["age_bins"], age_centered_bins)
-    # # ---- Update `input` attribute
-    # # -------- Length
-    # input_dict["biology"]["distributions"]["length_bins_df"] = length_bins_df
-    # # -------- Age
-    # input_dict["biology"]["distributions"]["age_bins_df"] = age_bins_df
-    # # -------- Delete the duplicate configuration keys
-    # del configuration_dict["biometrics"]
-
-    # # Update `geo_strata` column names
-    # input_dict["spatial"]["geo_strata_df"].rename(
-    #     columns={"haul start": "haul_start", "haul end": "haul_end"}, inplace=True
-    # )
-
-    # # Create INPFC stratum key with correct latitude bins/intervals
-    # # ---- Update haul column names
-    # input_dict["spatial"]["inpfc_strata_df"].rename(
-    #     columns={"haul start": "haul_start", "haul end": "haul_end"}, inplace=True
-    # )
-    # # ---- Rename stratum column name to avoid conflicts
-    # input_dict["spatial"]["inpfc_strata_df"].rename(
-    #     columns={"stratum_num": "stratum_inpfc"}, inplace=True
-    # )
-    # # ---- Create latitude intervals to bin the strata
-    # latitude_bins = np.concatenate(
-    #     [[-90], input_dict["spatial"]["inpfc_strata_df"]["northlimit_latitude"], [90]]
-    # )
-    # # ---- Add categorical intervals
-    # input_dict["spatial"]["inpfc_strata_df"]["latitude_interval"] = pd.cut(
-    #     input_dict["spatial"]["inpfc_strata_df"]["northlimit_latitude"] * 0.99, latitude_bins
-    # )
-
-    # # Bin NASC transects into appropriate INPFC strata
-    # input_dict["acoustics"]["nasc_df"]["stratum_inpfc"] = (
-    #     pd.cut(
-    #         input_dict["acoustics"]["nasc_df"]["latitude"],
-    #         latitude_bins,
-    #         right=True,
-    #         labels=range(len(latitude_bins) - 1),
-    #     )
-    # ).astype(int) + 1
-
-    # # Merge haul numbers across biological variables
-    # # ---- Consolidate information linking haul-transect-stratum indices
-    # input_dict["biology"]["haul_to_transect_df"] = input_dict["biology"][
-    #     "haul_to_transect_df"
-    # ].merge(input_dict["spatial"]["strata_df"], on="haul_num", how="outer")
-    # # ---- Create interval key for haul numbers to assign INPFC stratum
-    # haul_bins = np.sort(
-    #     np.unique(
-    #         np.concatenate(
-    #             [
-    #                 input_dict["spatial"]["inpfc_strata_df"]["haul_start"] - int(1),
-    #                 input_dict["spatial"]["inpfc_strata_df"]["haul_end"],
-    #             ]
-    #         )
-    #     )
-    # )
-    # # ---- Quantize the INPFC dataframe hauls based on strata
-    # input_dict["spatial"]["inpfc_strata_df"]["haul_bin"] = pd.cut(
-    #     (
-    #         input_dict["spatial"]["inpfc_strata_df"]["haul_start"]
-    #         + input_dict["spatial"]["inpfc_strata_df"]["haul_end"]
-    #     )
-    #     / 2,
-    #     haul_bins,
-    # )
-    # # ---- Rename `stratum_num` column
-    # input_dict["spatial"]["inpfc_strata_df"].rename(
-    #     columns={"stratum_num": "stratum_inpfc"}, inplace=True
-    # )
-    # # ---- Define haul bins with `haul_to_transect_df`
-    # input_dict["biology"]["haul_to_transect_df"]["haul_bin"] = pd.cut(
-    #     input_dict["biology"]["haul_to_transect_df"]["haul_num"], haul_bins
-    # )
-    # # ---- Define INPFC stratum for `haul_to_transect_df`
-    # input_dict["biology"]["haul_to_transect_df"] = (
-    #     input_dict["biology"]["haul_to_transect_df"].merge(
-    #         input_dict["spatial"]["inpfc_strata_df"][["stratum_inpfc", "haul_bin"]], how="left"
-    #     )
-    #     # .filter( regex = '^((?!_bin).)*$')
-    # )
-    # # ---- Distribute this information to other biological variables
-    # # -------- Specimen
-    # input_dict["biology"]["specimen_df"] = input_dict["biology"]["specimen_df"].merge(
-    #     input_dict["biology"]["haul_to_transect_df"], how="left"
-    # )
-    # # -------- Length
-    # input_dict["biology"]["length_df"] = input_dict["biology"]["length_df"].merge(
-    #     input_dict["biology"]["haul_to_transect_df"], how="left"
-    # )
-    # # -------- Catch
-    # input_dict["biology"]["catch_df"] = input_dict["biology"]["catch_df"].merge(
-    #     input_dict["biology"]["haul_to_transect_df"], how="left"
-    # )
-
-    # # Relabel sex to literal words among biological data
-    # # ---- Specimen
-    # input_dict["biology"]["specimen_df"]["sex"] = np.where(
-    #     input_dict["biology"]["specimen_df"]["sex"] == int(1),
-    #     "male",
-    #     np.where(input_dict["biology"]["specimen_df"]["sex"] == int(2), "female", "unsexed"),
-    # )
-    # # -------- Sex group
-    # input_dict["biology"]["specimen_df"]["group_sex"] = np.where(
-    #     input_dict["biology"]["specimen_df"]["sex"] != "unsexed", "sexed", "unsexed"
-    # )
-    # # ---- Length
-    # input_dict["biology"]["length_df"]["sex"] = np.where(
-    #     input_dict["biology"]["length_df"]["sex"] == int(1),
-    #     "male",
-    #     np.where(input_dict["biology"]["length_df"]["sex"] == int(2), "female", "unsexed"),
-    # )
-    # # -------- Sex group
-    # input_dict["biology"]["length_df"]["group_sex"] = np.where(
-    #     input_dict["biology"]["length_df"]["sex"] != "unsexed", "sexed", "unsexed"
-    # )
-
-    # # Discretize the age and length bins of appropriate biological data
-    # # ---- Specimen
-    # input_dict["biology"]["specimen_df"] = input_dict["biology"]["specimen_df"].bin_variable(
-    #     [length_centered_bins, age_centered_bins], ["length", "age"]
-    # )
-    # # ---- Length
-    # input_dict["biology"]["length_df"] = input_dict["biology"]["length_df"].bin_variable(
-    #     length_centered_bins, "length"
-    # )
-
-    # # Reorganize kriging/variogram parameters
-    # # ---- Kriging
-    # # -------- Generate dictionary comprising kriging model configuration
-    # kriging_params = (
-    #     input_dict["statistics"]["kriging"]["vario_krig_para_df"]
-    #     .filter(regex="krig[.]")
-    #     .rename(columns=lambda x: x.replace("krig.", ""))
-    #     .rename(columns={"ratio": "anisotropy", "srad": "search_radius"})
-    #     .to_dict(orient="records")[0]
-    # )
-    # # -------- Concatenate configuration settings for kriging
-    # kriging_params.update(configuration_dict["kriging_parameters"])
-    # # ---- Variogram
-    # # -------- Generate dictionary comprising variogram model configuration
-    # variogram_params = (
-    #     input_dict["statistics"]["kriging"]["vario_krig_para_df"]
-    #     .filter(regex="vario[.]")
-    #     .rename(columns=lambda x: x.replace("vario.", ""))
-    #     .rename(
-    #         columns={
-    #             "lscl": "correlation_range",
-    #             "powr": "decay_power",
-    #             "hole": "hole_effect_range",
-    #             "res": "lag_resolution",
-    #             "nugt": "nugget",
-    #         }
-    #     )
-    #     .to_dict(orient="records")[0]
-    # )
-    # # ---- Update the input attribute with the reorganized parameters
-    # input_dict["statistics"]["variogram"].update({"model_config": variogram_params})
-    # input_dict["statistics"]["kriging"].update({"model_config": kriging_params})
-    # # -------- Delete the duplicate dataframe
-    # del input_dict["statistics"]["kriging"]["vario_krig_para_df"]
-    # # -------- Delete the duplicate configuration keys
-    # del configuration_dict["kriging_parameters"]
-
-    # # Return updated dictionaries
-    # return input_dict, configuration_dict
 
 
 def validate_config_structure(yaml_data, config_spec):

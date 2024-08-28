@@ -32,7 +32,7 @@ def push_nested_dict(nested_dictionary, variable_tree_list, data):
 
 def map_imported_datasets(dictionary: dict) -> List[str]:
     """
-    Utility function for mapping datasets that have been successfully imported
+    Utility function for mapping datasets that have been successfully imported.
     """
 
     # Helper function for detecting whether a dictionary key is filled/empty

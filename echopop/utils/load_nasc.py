@@ -9,7 +9,7 @@ import pandas as pd
 
 from ..core import CONFIG_MAP, ECHOVIEW_EXPORT_MAP, REGION_EXPORT_MAP
 from ..spatial.transect import export_transect_layers, export_transect_spacing
-from .operations import group_merge
+from .operations import compile_patterns, extract_parts_and_labels, group_merge
 
 
 def read_echoview_export(filename: str, transect_number: int):
@@ -473,10 +473,6 @@ def batch_read_echoview_exports(
     # Get NASC export settings
     export_settings = configuration_dict["nasc_exports"]
 
-    # Write haul-to-transect key, if the appropriate data inputs are available
-    # if create_transect_region_key:
-    #     write_haul_to_transect_key(configuration_dict)
-
     # Validate relevant directories and file existence
     save_folder, file_directory, export_files = validate_export_directories(configuration_dict)
 
@@ -589,47 +585,6 @@ def batch_read_echoview_exports(
                 f"Updated NASC export file for group '{key}' saved at "
                 f"'{str(Path(save_folder) / save_filename)}'."
             )
-
-
-def compile_patterns(pattern_config: dict):
-    """Compile patterns for each part in the configuration."""
-    compiled_patterns = {}
-    for part_name, part_patterns in pattern_config.items():
-        compiled_patterns[part_name] = [
-            re.compile(pattern, re.IGNORECASE) for pattern in [p["pattern"] for p in part_patterns]
-        ]
-    return compiled_patterns
-
-
-def extract_parts_and_labels(region_name: str, compiled_patterns: re.Pattern, pattern_config: dict):
-    """Extract corresponding labels from a region name based on compiled patterns."""
-    # extracted_parts = {}
-    labels = {}
-    remaining_name = region_name
-
-    for part_name, patterns in compiled_patterns.items():
-        for pattern in patterns:
-            match = pattern.search(remaining_name)
-            if match:
-                matched_value = match.group(0)
-                label = next(
-                    (
-                        p["label"]
-                        for p in pattern_config[part_name]
-                        if p["pattern"] == pattern.pattern
-                    ),
-                    matched_value,
-                )
-                labels[part_name] = label if label != "None" else matched_value
-                # BELOW FOR DEBUGGING
-                # --------
-                # extracted_parts[part_name] = matched_value
-                # --------
-                remaining_name = remaining_name.replace(matched_value, "", 1)
-                break
-
-    # return extracted_parts, labels
-    return labels
 
 
 def write_transect_region_key(transect_data: pd.DataFrame, configuration_dict: dict, verbose: bool):
