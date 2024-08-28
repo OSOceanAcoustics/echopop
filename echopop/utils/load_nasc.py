@@ -423,7 +423,6 @@ def batch_read_echoview_exports(
     index_variable: Union[str, List[str]] = ["transect_num", "interval"],
     unique_region_id: str = "region_id",
     region_class_column: str = "region_class",
-    write_transect_region_file: bool = True,
     verbose: bool = True,
 ):
     """
@@ -441,8 +440,6 @@ def batch_read_echoview_exports(
     region_class_column: str
         See :func:`echopop.survey.load_acoustic_data`.
     unique_region_id: str
-        See :func:`echopop.survey.load_acoustic_data`.
-    write_transect_region_file: bool
         See :func:`echopop.survey.load_acoustic_data`.
     verbose: bool
         See :func:`echopop.survey.load_acoustic_data`.
@@ -487,8 +484,7 @@ def batch_read_echoview_exports(
     interval_template = interval_template.rename(columns={"max_depth": "bottom_depth"})
 
     # Write the transect-region-haul key xlsx file
-    if write_transect_region_file:
-        write_transect_region_key(transect_data, configuration_dict, verbose)
+    write_transect_region_key(transect_data, configuration_dict, verbose)
 
     # Get region info
     # ---- Region filenames

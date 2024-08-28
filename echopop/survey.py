@@ -68,12 +68,11 @@ class Survey:
 
     def load_acoustic_data(
         self,
-        echoview_exports: bool = False,
         index_variable: Union[str, List[str]] = ["transect_num", "interval"],
+        ingest_exports: Optional[Literal["echoview", "echopype"]] = None,
         region_class_column: str = "region_class",
         transect_pattern: str = r"T(\d+)",
         unique_region_id: str = "region_id",
-        write_transect_region_file: bool = True,
         verbose: bool = True,
     ):
         """
@@ -82,13 +81,12 @@ class Survey:
 
         Parameters
         ----------
-        echoview_exports: bool
-            Boolean flag for determining whether Echoview exports will be processed and
-            consolidated into defined .xlsx files [True]. Otherwise, the consolidated .xlsx files
-            will be used [False].
         index_variable: Union[str, List[str]]
             Index columns used for defining discrete acoustic backscatter samples and vertical
             integration.
+        ingest_exports: Literal['echoview', 'echopype']
+            The type of acoustic backscatter exports required for generating the associated 
+            consolidated .xlsx files.
         region_class_column: str
             Dataframe column denoting the Echoview export region class (e.g. "zooplankton").
         transect_pattern: str
@@ -97,9 +95,6 @@ class Survey:
             further description below for more details.
         unique_region_id: str
             Dataframe column that denotes region-specific names and identifiers.
-        write_transect_region_file: bool
-            Boolean flag for determining whether to write a transect-region key (.xlsx) within a
-            directory defined by the file configuration .yaml.
         verbose: bool
             Console messages that will print various messages, updates, etc. when set to True.
 
@@ -117,15 +112,20 @@ class Survey:
         other digits that may appear in the base filename.
         """
 
+        # Check `ingest_exports` argument
+        if ingest_exports is not None and not ingest_exports in ["echoview", "echopype"]:
+            raise ValueError(
+                "Argument `ingest_exports` must either be 'echoview' or 'echopype'."
+            )
+
         # Compile echoview acoustic backscatter exports if `echoview_exports == True`:
-        if echoview_exports:
+        if ingest_exports is not None and ingest_exports == "echoview":
             eln.batch_read_echoview_exports(
                 self.config,
                 transect_pattern,
                 index_variable,
                 unique_region_id,
                 region_class_column,
-                write_transect_region_file,
                 verbose,
             )
             # ---- Update key for `export_regions`
@@ -137,22 +137,18 @@ class Survey:
         # ---- Load the acoustic survey data
         el.load_dataset(self.input, self.config, dataset_type="NASC")
 
-    def load_survey_data(self, write_haul_transect_file: bool = True, verbose: bool = True):
+    def load_survey_data(self, verbose: bool = True):
         """
         Loads in biological and spatial survey data
 
         Parameters
         ----------
-        write_haul_transect_file: bool
-            Boolean flag for determining whether to write a haul-transect mapping key (.xlsx)
-            within a directory defined by the file configuration .yaml.
         verbose: bool
             Console messages that will print various messages, updates, etc. when set to True.
         """
 
         # Create haul-transect-mapping key file
-        if write_haul_transect_file:
-            el.write_haul_to_transect_key(self.config, verbose)
+        el.write_haul_to_transect_key(self.config, verbose)
 
         # Get previously processed datasets
         # ---- Updated datasets
