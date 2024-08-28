@@ -1,25 +1,25 @@
-from echopop.live.live_survey import LiveSurvey
-from echopop.live.sql_methods import SQL
-import echopop.live.live_visualizer as elv
 from pathlib import Path
-from echopop.live import live_data_processing as eldp
-from echopop.live import live_data_loading as eldl
-from echopop.live.live_core import(
-    LIVE_DATA_STRUCTURE, LIVE_INPUT_FILE_CONFIG_MAP
-)
+
 import boto3
-from botocore.exceptions import NoCredentialsError, ClientError
-import pandas as pd
 import numpy as np
-from echopop.live.sql_methods import SQL, sql_data_exchange, get_table_key_names,
+import pandas as pd
+from botocore.exceptions import ClientError, NoCredentialsError
+
+import echopop.live.live_visualizer as elv
+from echopop.live import live_data_loading as eldl, live_data_processing as eldp
+from echopop.live.live_core import LIVE_DATA_STRUCTURE, LIVE_INPUT_FILE_CONFIG_MAP
+from echopop.live.live_survey import LiveSurvey
+from echopop.live.sql_methods import SQL, get_table_key_names, sql_data_exchange
+
 sql_group_update, query_processed_files, sql_update_strata_summary
-from echopop.live.live_spatial_methods import apply_spatial_definitions
+from functools import reduce
+
+from echopop.acoustics import to_dB, to_linear, ts_length_regression
 from echopop.live.live_acoustics import average_sigma_bs, compute_nasc
 from echopop.live.live_biology import compute_sigma_bs
-from echopop.acoustics import ts_length_regression, to_dB, to_linear
-from echopop.utils.operations import group_interpolator_creator
-from functools import reduce
 from echopop.live.live_data_loading import filter_filenames, read_biology_csv
+from echopop.live.live_spatial_methods import apply_spatial_definitions
+from echopop.utils.operations import group_interpolator_creator
 
 ##################################################################################################
 # TEST: Set up `LiveSurvey` object
@@ -99,6 +99,7 @@ SQL(realtime_survey.config["database"]["biology"], "select", table_name="strata_
 # FROM THE `LiveSurvey` object !
 # ---- Convert to a Panel
 import panel as pn
+
 # ---- Either have the db file already called in as a `pandas.DataFrame`, or query the table
 survey_data_db = Path(realtime_survey.config["database"]["acoustics"])
 grid_db = Path(realtime_survey.config["database"]["grid"])
@@ -120,6 +121,7 @@ fig.show()
 plt_to_pn(fig)
 # ---- PLOT TRACK
 from echopop.live.live_visualizer import plot_livesurvey_track
+
 fig1 = plot_livesurvey_track(survey_data, projection, coast_db)
 fig1.show()
 plt_to_pn(fig1)
