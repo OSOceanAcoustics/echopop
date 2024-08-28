@@ -113,8 +113,10 @@ class Survey:
         """
 
         # Check `ingest_exports` argument
-        if ingest_exports is not None and ingest_exports not in ["echoview", "echopype"]:
-            raise ValueError("Argument `ingest_exports` must either be 'echoview' or 'echopype'.")
+        if ingest_exports is not None and not ingest_exports in ["echoview", "echopype"]:
+            raise ValueError(
+                "Argument `ingest_exports` must either be 'echoview' or 'echopype'."
+            )
 
         # Compile echoview acoustic backscatter exports if `echoview_exports == True`:
         if ingest_exports is not None and ingest_exports == "echoview":
