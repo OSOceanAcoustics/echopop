@@ -85,7 +85,7 @@ class Survey:
             Index columns used for defining discrete acoustic backscatter samples and vertical
             integration.
         ingest_exports: Literal['echoview', 'echopype']
-            The type of acoustic backscatter exports required for generating the associated 
+            The type of acoustic backscatter exports required for generating the associated
             consolidated .xlsx files.
         region_class_column: str
             Dataframe column denoting the Echoview export region class (e.g. "zooplankton").
@@ -113,10 +113,8 @@ class Survey:
         """
 
         # Check `ingest_exports` argument
-        if ingest_exports is not None and not ingest_exports in ["echoview", "echopype"]:
-            raise ValueError(
-                "Argument `ingest_exports` must either be 'echoview' or 'echopype'."
-            )
+        if ingest_exports is not None and ingest_exports not in ["echoview", "echopype"]:
+            raise ValueError("Argument `ingest_exports` must either be 'echoview' or 'echopype'.")
 
         # Compile echoview acoustic backscatter exports if `echoview_exports == True`:
         if ingest_exports is not None and ingest_exports == "echoview":
