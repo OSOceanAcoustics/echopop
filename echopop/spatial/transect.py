@@ -1,3 +1,5 @@
+from typing import List, Union
+
 import geopandas as gpd
 import geopy.distance
 import numpy as np
@@ -55,24 +57,39 @@ def correct_transect_intervals(transect_data: pd.DataFrame, interval_threshold: 
     )
 
     # Filter out unnecessary columns and return output
-    return transect_data_copy.filter(
-        regex="^(?=transect_num|latitude|longitude|stratum_|haul_|interval_area|NASC_).*"
+    # ---- Filter pattern
+    pattern = (
+        "^(?=transect|latitude|longitude|stratum_inpfc|stratum_num|haul_num|interval_area|nasc).*"
     )
+    # ---- Filter and return output
+    return transect_data_copy.filter(regex=pattern)
 
 
-def save_transect_coordinates(transect_data: pd.DataFrame):
+def save_transect_coordinates(transect_data: pd.DataFrame, settings_dict: dict):
+
+    # Get the correct haul and stratum names
+    age_group_cols = settings_dict["age_group_columns"]
+
+    # Get stratum column name
+    stratum_col = settings_dict["stratum_name"]
 
     # Extract transect numbers, coordinates, and strata
-    return transect_data[
+    transect_data_extract = transect_data.filter(
         [
             "transect_num",
-            "stratum_num",
+            age_group_cols["stratum_id"],
             "stratum_inpfc",
+            age_group_cols["haul_id"],
             "longitude",
             "latitude",
             "transect_spacing",
         ]
-    ]
+    )
+
+    # Rename the group-specific columns and return the output
+    return transect_data_extract.rename(
+        columns={age_group_cols["haul_id"]: "haul_num", age_group_cols["stratum_id"]: stratum_col}
+    )
 
 
 def edit_transect_columns(transect_dict: dict, settings_dict: dict):
@@ -346,3 +363,121 @@ def transect_bearing(transect_data: pd.DataFrame):
 
     # Return the output
     return transect_direction.reset_index()
+
+
+def export_transect_layers(
+    transect_data: pd.DataFrame,
+    index_variable: Union[str, List[str]] = ["transect_num", "interval"],
+):
+    """
+    Calculate the mean depth and layer height for specific grouped data.
+    """
+
+    # Check that index variables exist
+    # ---- Convert to list, if needed
+    if isinstance(index_variable, str):
+        index_variable = list(index_variable)
+    elif not isinstance(index_variable, list):
+        raise TypeError(
+            f"The defined `region_filter` ({index_variable}) must be either a `str` or `list`."
+        )
+
+    # Check columns
+    # ---- Missing columns
+    missing_columns = set(index_variable) - set(transect_data.columns)
+    # ---- Raise error if needed
+    if missing_columns:
+        raise ValueError(
+            f"The following columns are missing from `transect_data`: {list(missing_columns)}"
+        )
+
+    # Check for specific columns, otherwise proceed with calculations
+    for col in ["max_depth", "layer_depth_min", "layer_depth_max"]:
+        if col not in transect_data.columns:
+            raise ValueError(f"Expected column '{col}' is missing from 'transect data'.")
+
+    # Compute the mean layer and bottom depths
+    # ---- Bottom depth
+    transect_summary = (
+        transect_data.groupby(index_variable)["max_depth"].max().to_frame("bottom_depth")
+    )
+    # ---- Mean layer depth
+    transect_summary["layer_mean_depth"] = (
+        transect_data.groupby(index_variable)
+        .agg(mean_depth_min=("layer_depth_min", "min"), mean_depth_max=("layer_depth_max", "max"))
+        .assign(mean_depth=lambda x: (x.mean_depth_min + x.mean_depth_max) / 2)["mean_depth"]
+    )
+    # ---- Mean layer height
+    transect_summary["layer_height"] = (
+        transect_data.groupby(index_variable)
+        .agg(mean_depth_min=("layer_depth_min", "min"), mean_depth_max=("layer_depth_max", "max"))
+        .assign(height=lambda x: x.mean_depth_max - x.mean_depth_min)["height"]
+    )
+
+    # Return the output
+    return transect_summary.reset_index()
+
+
+def export_transect_spacing(
+    transect_data: pd.DataFrame, default_transect_spacing: float, latitude_threshold: float = 60.0
+):
+    """
+    Calculate the maximum spacing between transects.
+    """
+
+    # Get unique transect numbers
+    if "transect_num" not in transect_data.columns:
+        raise ValueError("Column 'transect_num' missing from `transcect_data`.")
+    else:
+        transect_number = np.unique(transect_data["transect_num"])
+
+    # Define the default transect spacing
+    if not isinstance(default_transect_spacing, float):
+        raise TypeError("Argument `default_transect_spacing` must be a float.")
+    else:
+        # ---- Initialize max transect spacing column
+        transect_data["transect_spacing"] = default_transect_spacing
+
+    # Iterate through the transects to determine the maximum spacing
+    for i in range(len(transect_number)):
+        if i >= 2:
+            # ---- For 2 transects prior to the current transect
+            lag_2_index = transect_data.index[
+                (transect_data["transect_num"] == transect_number[i - 2])
+                & (transect_data["latitude"] < latitude_threshold)
+            ]
+            # ---- For 1 transect prior to the current transect
+            lag_1_index = transect_data.index[
+                (transect_data["transect_num"] == transect_number[i - 1])
+            ]
+            # ---- Current transect
+            current_index = transect_data.index[
+                (transect_data["transect_num"] == transect_number[i])
+                & (transect_data["latitude"] < latitude_threshold)
+            ]
+            # ---- Calculate the mean transect latitude (lag-2)
+            lag_2_latitude = transect_data.loc[lag_2_index, "latitude"].mean()
+            # ---- Calculate the mean transect latitude (lag-2)
+            current_latitude = transect_data.loc[current_index, "latitude"].mean()
+            # ---- Compute the difference in the latitudes of adjacent transects
+            delta_latitude = np.abs(current_latitude - lag_2_latitude)
+            # ---- Get latitude range for the lag-2 transect
+            latitude_2_range = (
+                transect_data.loc[lag_2_index, "latitude"].max()
+                - transect_data.loc[lag_2_index, "latitude"].min()
+            )
+            # ---- Get latitude range for current transect
+            latitude_range = (
+                transect_data.loc[current_index, "latitude"].max()
+                - transect_data.loc[current_index, "latitude"].min()
+            )
+            # ---- Assign maximum spacing
+            if (
+                (delta_latitude <= 2.0 * default_transect_spacing * 1.1 / 30.0)
+                & (latitude_2_range < 1 / 6)
+                & (latitude_range < 1 / 6)
+            ):
+                transect_data.loc[lag_1_index, "transect_spacing"] = delta_latitude * 30.0
+
+    # Return the updated dataframe
+    return transect_data

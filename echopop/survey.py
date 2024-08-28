@@ -1,6 +1,6 @@
 import copy
 from pathlib import Path
-from typing import Literal, Optional, Union
+from typing import List, Literal, Optional, Union
 
 from .analysis import (
     acoustics_to_biology,
@@ -10,12 +10,12 @@ from .analysis import (
     stratified_summary,
 )
 from .core import DATA_STRUCTURE
-from .utils import load as el, message as em
+from .utils import load as el, load_nasc as eln, message as em
 
 
 class Survey:
     """
-    echopop base class that imports and prepares parameters for
+    Echopop base class that imports and prepares parameters for
     a survey. Additionally, it includes functions for accessing
     the modules associated with the transect and Kriging variable
     calculations, CV analysis, semi-variogram algorithm, and Kriging.
@@ -34,13 +34,14 @@ class Survey:
         data contained within the class object.
     config : dict
         Configuration settings and parameters that can be referenced for
-        various downstream and internal functions.
+        various downstream and internal functions defined within the `init_config_path` and
+        `survey_year_config_path` *.yaml files.
     input: dict
-        Input data.
+        Input data based on files included within the `survey_year_config_path` *.yaml file.
     analysis: dict
         Analysis variables and intermediate data products.
     results: dict
-        Analysis results.
+        Overall results produced by each of the analysis methods and workflows.
     """
 
     def __init__(
@@ -49,18 +50,111 @@ class Survey:
         # Initialize `meta` attribute
         self.meta = copy.deepcopy(DATA_STRUCTURE["meta"])
 
-        # Loading the configuration settings and definitions that are used to
-        # initialize the Survey class object
+        # Loading the configuration settings and definitions that are used to initialize the Survey
+        # class object
         self.config = el.load_configuration(Path(init_config_path), Path(survey_year_config_path))
 
-        # Loading the datasets defined in the configuration files
-        self.input = el.load_survey_data(self.config)
+        # Initialize the `input` data attribute
+        self.input = copy.deepcopy(DATA_STRUCTURE["input"])
+
+        # Initialize the `results` data attribute
+        self.results = copy.deepcopy(DATA_STRUCTURE["results"])
 
         # Initialize the `analysis` data attribute
         self.analysis = copy.deepcopy(DATA_STRUCTURE["analysis"])
 
         # Initialize the `results` data attribute
         self.results = copy.deepcopy(DATA_STRUCTURE["results"])
+
+    def load_acoustic_data(
+        self,
+        index_variable: Union[str, List[str]] = ["transect_num", "interval"],
+        ingest_exports: Optional[Literal["echoview", "echopype"]] = None,
+        region_class_column: str = "region_class",
+        transect_pattern: str = r"T(\d+)",
+        unique_region_id: str = "region_id",
+        verbose: bool = True,
+    ):
+        """
+        Loads in active acoustic backscatter survey data from .xlsx files, or processes
+        Echoview `csv` file exports by consolidating them into aforementioned .xlsx files.
+
+        Parameters
+        ----------
+        index_variable: Union[str, List[str]]
+            Index columns used for defining discrete acoustic backscatter samples and vertical
+            integration.
+        ingest_exports: Literal['echoview', 'echopype']
+            The type of acoustic backscatter exports required for generating the associated
+            consolidated .xlsx files.
+        region_class_column: str
+            Dataframe column denoting the Echoview export region class (e.g. "zooplankton").
+        transect_pattern: str
+            A (raw) string that corresponds to the transect number embedded within the base name of
+            the file path associated with each export file. Defaults to ``r'T(\\d+)'``. See a
+            further description below for more details.
+        unique_region_id: str
+            Dataframe column that denotes region-specific names and identifiers.
+        verbose: bool
+            Console messages that will print various messages, updates, etc. when set to True.
+
+        Notes
+        ----------
+        The string pattern for `transect_pattern` requires a consistent filename format that can be
+        readily parsed by `read_echoview_exports`. The default value for `transect_pattern`
+        (``r'T(\\d+)'``) enables the function to parse all numbers that trail the letter "T" in the
+        base filename. For example, an example file of
+        "C:/Path/User/Data/random_12_V34-T56-A78_G9.csv" would yield a transect number of '56'
+        since it trails the "T" and does not accidentally use other numbers in the string. However,
+        a filename like "C:/Path/User/Data/randomT_12_T34-T56-T78_G9.csv" would detect multiple
+        transect numbers ('34', '56', and '78') since numbers trail the letter "T" in three places.
+        Therefore, it is important to ensure that embedded transect numbers are differentiable from
+        other digits that may appear in the base filename.
+        """
+
+        # Check `ingest_exports` argument
+        if ingest_exports is not None and ingest_exports not in ["echoview", "echopype"]:
+            raise ValueError("Argument `ingest_exports` must either be 'echoview' or 'echopype'.")
+
+        # Compile echoview acoustic backscatter exports if `echoview_exports == True`:
+        if ingest_exports is not None and ingest_exports == "echoview":
+            eln.batch_read_echoview_exports(
+                self.config,
+                transect_pattern,
+                index_variable,
+                unique_region_id,
+                region_class_column,
+                verbose,
+            )
+            # ---- Update key for `export_regions`
+            self.meta["provenance"]["imported_datasets"].update(["export_regions"])
+
+        # Read in compiled `*.xlsx` acoustic backscatter data file(s) and additional validation
+        # ---- Update key for `NASC`
+        self.meta["provenance"]["imported_datasets"].update(["NASC"])
+        # ---- Load the acoustic survey data
+        el.load_dataset(self.input, self.config, dataset_type="NASC")
+
+    def load_survey_data(self, verbose: bool = True):
+        """
+        Loads in biological and spatial survey data
+
+        Parameters
+        ----------
+        verbose: bool
+            Console messages that will print various messages, updates, etc. when set to True.
+        """
+
+        # Create haul-transect-mapping key file
+        el.write_haul_to_transect_key(self.config, verbose)
+
+        # Get previously processed datasets
+        # ---- Updated datasets
+        new_datasets = ["biological", "kriging", "stratification"]
+        # ---- Load in the new data
+        el.load_dataset(self.input, self.config, dataset_type=new_datasets)
+        # ---- Update key for the new datasets
+        self.meta["provenance"]["imported_datasets"].update(new_datasets)
 
     def transect_analysis(
         self,
@@ -77,6 +171,11 @@ class Survey:
         self.analysis["settings"].update(
             {
                 "transect": {
+                    "age_group_columns": {
+                        "haul_id": "haul_no_age1" if exclude_age1 else "haul_all_ages",
+                        "nasc_id": "NASC_no_age1" if exclude_age1 else "NASC_all_ages",
+                        "stratum_id": "stratum_no_age1" if exclude_age1 else "stratum_all_ages",
+                    },
                     "species_id": species_id,
                     "stratum": stratum.lower(),
                     "stratum_name": "stratum_num" if stratum == "ks" else "inpfc",
