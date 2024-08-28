@@ -99,6 +99,17 @@ def load_dataset(
     files. This will generate data attributes associated with the tags
     defined in both the configuration yml files and the reference CONFIG_MAP
     and LAYER_NAME_MAP dictionaries.
+
+    Parameters
+    ----------
+    input_dict: dict
+        A dictionary containing the loaded survey data.
+    configuration_dict: dict
+        Dictionary that contains all of the `Survey`-object configurations found within
+        the `config` attribute.
+    dataset_type: Union[str, List[str]], optional
+        A string (or list of strings) corresponding to the named datasets defined in both
+        'CONFIG_MAP' and the dataset definitions located in the file configuration .yaml.
     """
 
     # Re-initialize the input keys, if needed
@@ -118,9 +129,6 @@ def load_dataset(
     if set(input_keys).issubset(imported_data):
         # ---- Reset the relevant keys
         input_dict.update({key: copy.deepcopy(DATA_STRUCTURE["input"][key]) for key in input_keys})
-
-    # Initialize a dictionary called `input` that will produce the `input` attribute
-    # input_dict = copy.deepcopy(DATA_STRUCTURE["input"])
 
     # Check whether data files defined from the configuration file exists
     # ---- Generate flat JSON table comprising all configuration parameter names
@@ -246,11 +254,7 @@ def load_dataset(
                     )
 
     # Update the data format of various inputs within `Survey`
-    # input_dict, configuration_dict = prepare_input_data(input_dict, configuration_dict)
     prepare_input_data(input_dict, configuration_dict)
-
-    # Return `input_dict`
-    # return input_dict
 
 
 def read_validated_data(
