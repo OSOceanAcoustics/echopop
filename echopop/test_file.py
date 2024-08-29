@@ -1,7 +1,22 @@
-from echopop.survey import Survey
-from typing import Dict, List, Tuple, Union, Literal, Optional, Callable, TypedDict, Mapping, Any, Type
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Literal,
+    Mapping,
+    Optional,
+    Tuple,
+    Type,
+    TypedDict,
+    Union,
+)
+
 import numpy as np
+
 from echopop.spatial.variogram import create_optimization_options
+from echopop.survey import Survey
+
 file_config = "C:/Users/Brandyn/Documents/GitHub/echopop/config_files/survey_year_2019_config.yml"
 init_config = "C:/Users/Brandyn/Documents/GitHub/echopop/config_files/initialization_config.yml"
 survey = Survey(init_config, file_config)
@@ -76,14 +91,14 @@ def validate_type(value: Any, expected_type: Any) -> bool:
                 posint(value)
                 return True
             except (TypeError, ValueError):
-                return False            
+                return False
         else:
             return isinstance(value, expected_type)
-    
+
     # Handle Union
     if hasattr(expected_type, "__origin__") and expected_type.__origin__ is Union:
         return any(validate_type(value, arg) for arg in expected_type.__args__)
-    
+
     # Handle Literal
     if hasattr(expected_type, "__origin__") and expected_type.__origin__ is Literal:
         return validate_literal(value, expected_type.__values__)
@@ -94,11 +109,11 @@ def validate_type(value: Any, expected_type: Any) -> bool:
             return False
         item_type = expected_type.__args__[0]
         return all(validate_type(item, item_type) for item in value)
-    
+
     # Handle numpy.ndarray
     if hasattr(expected_type, "__origin__") and expected_type.__origin__ is np.ndarray:
         return isinstance(value, np.ndarray) and np.issubdtype(value.dtype, np.number) and value.dtype == np.float64
-    
+
     return False
 
 # def validate_type(value: Any, expected_type: Type) -> bool:
@@ -122,7 +137,7 @@ def validate_type(value: Any, expected_type: Any) -> bool:
 #             if len(value) != len(expected_type.__args__):
 #                 return False
 #             return all(validate_type(v, t) for v, t in zip(value, expected_type.__args__))
-        
+
 #         elif origin is Union:
 #             return any(validate_type(value, arg) for arg in expected_type.__args__)
 #     return False
@@ -132,23 +147,23 @@ def validate_type(value: Any, expected_type: Any) -> bool:
 #     """
 #     if isinstance(expected_type, type):
 #         return isinstance(value, expected_type)
-    
+
 #     # Handle Literal types
 #     elif hasattr(expected_type, "__origin__") and expected_type.__origin__ is Literal:
 #         allowed_values = expected_type.__args__
 #         return value in allowed_values
-    
+
 #     # Handle Union types
 #     elif hasattr(expected_type, "__origin__") and expected_type.__origin__ is Union:
 #         return any(validate_type(value, arg) for arg in expected_type.__args__)
-    
+
 #     # Handle List types
 #     elif hasattr(expected_type, "__origin__") and expected_type.__origin__ is list:
 #         if not isinstance(value, list):
 #             return False
 #         item_type = expected_type.__args__[0]
 #         return all(validate_type(item, item_type) for item in value)
-    
+
 #     # Handle Tuple types
 #     elif hasattr(expected_type, "__origin__") and expected_type.__origin__ is tuple:
 #         if not isinstance(value, tuple):
@@ -187,10 +202,11 @@ def validate_dict(data: Dict[str, Any], expected_types: Dict[str, Any]) -> None:
                 actual_description = type(data[key]).__name__
                 if hasattr(expected_type, "fail_state"):
                     raise TypeError(f"Value for '{key}' (type: '{actual_description}') {expected_description}.")
-                else:                
+                else:
                     raise TypeError(f"Value for '{key}' (type: '{actual_description}') does not match expected type {expected_description}.")
 
 from typing import Annotated
+
 
 class posint(int):
 
@@ -200,7 +216,7 @@ class posint(int):
         if not isinstance(value, int) or value < 0:
             raise ValueError("Value must be a non-negative integer.")
         return super().__new__(cls, value)
-    
+
 expected_type = PositiveInt
 isinstance(expected_type, PositiveInt)
 type(expected_type)
@@ -240,7 +256,7 @@ class VariogramBase(TypedDict, total=False):
         "enhance_semivariance": None,
         "decay_power": None
     }
-        
+
     # Define the expected datatypes
     EXPECTED_DTYPES = {
         "model": Union[str, List[str]],
@@ -257,9 +273,9 @@ class VariogramBase(TypedDict, total=False):
     }
 
     @classmethod
-    def create(cls, 
-               model: Union[str, List[str]] = ["bessel", "exponential"], 
-            #    n_lags: int = 30, 
+    def create(cls,
+               model: Union[str, List[str]] = ["bessel", "exponential"],
+            #    n_lags: int = 30,
                n_lags: posint = 30,
                lag_resolution: Optional[float] = None,
                max_range: Optional[float] = None,
@@ -268,8 +284,8 @@ class VariogramBase(TypedDict, total=False):
                hole_effect_range: Optional[float] = None,
                correlation_range: Optional[float] = None,
                enhance_semivariance: Optional[bool] = None,
-               decay_power: Optional[float] = None,      
-               **kwargs         
+               decay_power: Optional[float] = None,
+               **kwargs
             ) -> "VariogramBase":
         """
         Base variogram model parameters
@@ -310,7 +326,7 @@ class VariogramBase(TypedDict, total=False):
 
         Returns
         ----------
-        VariogramBase: A validated dictionary with the user-defined variogram parameter values and 
+        VariogramBase: A validated dictionary with the user-defined variogram parameter values and
         default values for any missing parameters/keys.
         """
 
@@ -338,7 +354,7 @@ class VariogramBase(TypedDict, total=False):
         cls.validate(filtered_params)
 
         return filtered_params
-    
+
     # Create validation method
     @staticmethod
     def validate(data: Dict[str, Any]):
@@ -360,7 +376,7 @@ class VariogramBase(TypedDict, total=False):
         validate_dict(data, VariogramBase.EXPECTED_DTYPES)
         # FOR DEBUGGING
         # --------
-        # print("Validate passed.")    
+        # print("Validate passed.")
 
 test_dict =  {"enhance_semivariance": True, "model": ["exponential", "bessel"], "correlation_range": 0.008, "n_lags": 50}
 result = VariogramBase.create(**test_dict)
@@ -390,7 +406,7 @@ class VariogramOptimize(TypedDict):
         "x_scale": "jacobian",
         "jacobian_approx": "forward",
         }
-        
+
     # Define the expected datatypes
     EXPECTED_DTYPES = {
         "max_fun_evaluations": int,
@@ -404,16 +420,16 @@ class VariogramOptimize(TypedDict):
     }
 
     @classmethod
-    def create(cls, 
+    def create(cls,
                max_fun_evaluations: int = 500,
                cost_fun_tolerance: float = 1e-6,
                solution_tolerance: float = 1e-4,
                gradient_tolerance: float = 1e-4,
-               finite_step_size: float = 1e-8,             
+               finite_step_size: float = 1e-8,
                trust_region_solver: Literal["exact", "base"] = "exact",
                x_scale: Union[Literal["jacobian"], np.ndarray[float]] = "jacobian",
-               jacobian_approx: Literal["forward", "central"] = "forward",         
-               **kwargs 
+               jacobian_approx: Literal["forward", "central"] = "forward",
+               **kwargs
             ) -> "VariogramOptimize":
         """
         Base variogram model parameters
@@ -446,7 +462,7 @@ class VariogramOptimize(TypedDict):
 
         Returns
         ----------
-        VariogramOptimize: A validated dictionary with the user-defined variogram optimizatization 
+        VariogramOptimize: A validated dictionary with the user-defined variogram optimizatization
         parameter values and default values for any missing parameters/keys.
         """
 
@@ -472,7 +488,7 @@ class VariogramOptimize(TypedDict):
         cls.validate(filtered_params)
 
         return filtered_params
-    
+
     # Create validation method
     @staticmethod
     def validate(data: Dict[str, Any]):
@@ -494,7 +510,7 @@ class VariogramOptimize(TypedDict):
         validate_dict(data, VariogramOptimize.EXPECTED_DTYPES)
         # FOR DEBUGGING
         # --------
-        # print("Validate passed.")    
+        # print("Validate passed.")
 
 test_dict_invalid = {
     "jacobian_approx": 1  # Invalid Literal value
@@ -518,7 +534,7 @@ class InitialValues(TypedDict):
     }
 
 # Define the main TypedDict
-class VariogramInitial(TypedDict, total=False):    
+class VariogramInitial(TypedDict, total=False):
     fit_parameters: Union[List[str], Dict[str, InitialValues]]
 
     def __init__(self,
@@ -527,7 +543,7 @@ class VariogramInitial(TypedDict, total=False):
         self.fit_parameters = fit_parameters
 
     @classmethod
-    def create(cls, 
+    def create(cls,
                fit_parameters: Union[List[str], Dict[str, InitialValues]]) -> 'VariogramInitial':
         """
         Create a ParameterConfig from a list of parameter names or a dictionary.
@@ -544,7 +560,7 @@ class VariogramInitial(TypedDict, total=False):
         # ---- Update
         cls.validate(fit_parameters)
         return cls(fit_parameters)
-    
+
     @staticmethod
     def validate(params: Dict[str, InitialValues]) -> None:
         """
@@ -584,7 +600,7 @@ def test_fun(
         params2: VariogramOptimize,
         params3: VariogramInitial,
         verbose = True,
-): 
+):
     print(VariogramBase.create(**params1))
     print(VariogramOptimize.create(**params2))
     print(VariogramInitial.create(params3))
