@@ -1,6 +1,6 @@
 import copy
 from pathlib import Path
-from typing import List, Dict, List, Literal, Optional, Tuple, Union
+from typing import Dict, List, Literal, Optional, Tuple, Union
 
 import numpy as np
 
