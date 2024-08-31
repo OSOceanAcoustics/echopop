@@ -1,4 +1,4 @@
-dateutil
+datetime
 ipympl
 ipywidgets
 jupyter_contrib_nbextensions
