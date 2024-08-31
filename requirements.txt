@@ -12,4 +12,3 @@ pandas
 PyYAML
 scipy
 shapely
-lmfit

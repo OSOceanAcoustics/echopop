@@ -12,6 +12,8 @@ from .analysis import (
     stratified_summary,
     variogram_analysis,
 )
+
+from .utils.validate import VariogramBase, VariogramOptimize, VariogramInitial, VariogramEmpirical
 from .core import DATA_STRUCTURE
 from .utils import load as el, load_nasc as eln, message as em
 
@@ -317,46 +319,15 @@ class Survey:
 
     def fit_variogram(
         self,
+        variogram_parameters: VariogramBase,
+        optimization_parameters: VariogramOptimize,
         model: Union[str, List[str]] = ["bessel", "exponential"],
-        fit_parameters: Union[str, List[str]] = [
-            "nugget",
-            "sill",
-            "correlation_range",
-            "hole_effect_range",
-            "decay_power",
-        ],
-        n_lags: int = 30,
+        n_lags: int = 30,     
         azimuth_range: float = 360.0,
-        lag_resolution: Optional[float] = None,
-        max_range: Optional[float] = None,
-        sill: Optional[float] = None,
-        nugget: Optional[float] = None,
-        hole_effect_range: Optional[float] = None,
-        correlation_range: Optional[float] = None,
-        enhance_semivariance: Optional[bool] = None,
-        decay_power: Optional[float] = None,
-        optimization_parameters: Optional[Dict[str, float]] = None,
-        initial_values: Optional[
-            Union[List[Tuple[str, float]], Dict[str, Dict[str, float]]]
-        ] = None,
-        lower_bounds: Union[List[Tuple[str, float]], Dict[str, Dict[str, float]]] = [
-            ("nugget", 0.0),
-            ("sill", 0.0),
-            ("correlation_range", 0.0),
-            ("hole_effect_range", 0.0),
-            ("decay_power", 0.0),
-        ],
-        upper_bounds: Optional[Union[List[Tuple[str, float]], Dict[str, Dict[str, float]]]] = None,
         standardize_coordinates: bool = True,
-        max_fun_evaluations: int = 500,
-        cost_fun_tolerance: float = 1e-6,
-        solution_tolerance: float = 1e-4,
-        gradient_tolerance: float = 1e-4,
-        finite_step_size: float = 1e-8,
-        trust_region_solver: Literal["exact", "base"] = "exact",
-        x_scale: Union[Literal["jacobian"], np.ndarray[float]] = "jacobian",
-        jacobian_approx: Literal["forward", "central"] = "forward",
         force_lag_zero: bool = True,
+        initialize_variogram: VariogramInitial = ["nugget", "sill", "correlation_range",
+                                                  "hole_effect_range", "decay_power"],
         variable: Literal["biomass", "abundance"] = "biomass",
         verbose: bool = True,
     ):
@@ -365,47 +336,35 @@ class Survey:
 
         Parameters
         ----------
+        variogram_parameters: VariogramBase
+            A dictionary comprising various arguments required for computing the model variogram. 
+            See :fun:`echopop.utils.validate.VariogramBase` and 
+            :fun:`echopop.spatial.variogram.variogram` for more details on the required/default
+            parameters.
+        optimization_parameters: VariogramOptimize
+            A dictionary comprising various arguments for optimizing the variogram fit via 
+            non-linear least squares. See :fun:`echopop.utils.validate.VariogramOptimize` for more
+            details on the required/default parameters.
+        initialize_variogram: VariogramInitial
+            A dictionary or list that indicates how each variogram parameter (see 
+            :fun:`echopop.spatial.variogram.variogram` for more details) is configured for 
+            optimization. Including parameter names in a list will incorporate default initial 
+            values imported from the associated file in the configuration *.yaml are used instead.
+            This also occurs when `initialize_variogram` is formatted as a dictionary and the 
+            'value' key is not present for defined parameters. Parameter names excluded from either
+            the list or dictionary keys are assumed to be held as fixed values. See 
+            :fun:`echopop.utils.validate.VariogramInitial` and 
+            :fun:`echopop.utils.validate.InitialValues` for more details. 
         model: Union[str, List[str]]
             A string or list of model names. A single name represents a single family model. Two
             inputs represent the desired composite model (e.g. the composite J-Bessel and
             exponential model). Defaults to: ['bessel', 'exponential']. Available models and their
             required arguments can be reviewed in the :fun:`echopop.spatial.variogram.variogram`
             function.
-        fit_parameters: Union[str, List[str]]
-            The name of a single or list of parameters that should be fit using the non-linear
-            least squares algorithm. Parameters available for fitting depend on the variogram model
-            specified in the `model` argument. Available models and their
-            required arguments can be reviewed in the :fun:`echopop.spatial.variogram.variogram`
-            function. Any parameters not included here are assumed to be held constant for fitting.
-        sill: Optional[float]
-            See the description of `sill` in
-            :fun:`echopop.spatial.variogram.variogram`.
-        nugget: Optional[float]
-            See the description of `nugget` in
-            :fun:`echopop.spatial.variogram.variogram`.
-        correlation_range: Optional[float]
-            See the description of `correlation_range` in
-            :fun:`echopop.spatial.variogram.variogram`.
-        hole_effect_range: Optional[float]
-            See the description of `hole_effect_range` in
-            :fun:`echopop.spatial.variogram.variogram`.
-        decay_power: Optional[float]
-            See the description of `decay_power` in
-            :fun:`echopop.spatial.variogram.variogram`.
-        enhanced_semivariance: Optional[float]
-            See the description of `enhanced_semivariance` in
-            :fun:`echopop.spatial.variogram.variogram`.
-        sill: Optional[float]
-            See the description of `variogram_parameters` in
-            :fun:`echopop.spatial.variogram.variogram`.
         azimuth_range: float
             The total azimuth angle range that is allowed for constraining
             the relative angles between spatial points, particularly for cases where a high degree
             of directionality is assumed.
-        lag_resolution: Optional[float]
-            See the `variogram_parameters` argument in
-            :fun:`echopop.spatial.variogram.empirical_variogram` for more details on
-            `lag_resolution`.
         n_lags: Optional[float]
             See the `variogram_parameters` argument in
             :fun:`echopop.spatial.variogram.empirical_variogram` for more details on
@@ -414,9 +373,6 @@ class Survey:
             See the `variogram_parameters` argument in
             :fun:`echopop.spatial.variogram.empirical_variogram` for more details on
             `force_lag_zero`.
-        max_range: Optional[float]
-            An optional input defining the maximum lag distance range that will be computed for
-            fitting the theoretical variogram parameters.
         standardize_coordinates: bool
             When set to `True`, transect coordinates are standardized using reference coordinates.
         variable: Literal["biomass", "abundance"]
@@ -424,57 +380,14 @@ class Survey:
             "abundance" and "biomass", with the default being "biomass". These inputs correspond
             to fitting the empirical and theoretical variograms on "number density" and "biomass
             density", respectively.
-        initial_values: Optional[Union[List[Tuple[str, float]], Dict[str, Dict[str, float]]]]
-            An optional list of tuples or a dictionary that includes labeled values that are used
-            for initial variogram model parameter optimization. This uses the following format:
-                - `initial_values = [("param1", initial_value1), ("param2", initial_value2)]`
-                - `initial_values = {("param1": initial_value, "param2": initial_value2)}`
-            Example: `initial_values = [("nugget", 0.0), ("decay_power", 1.5)]`
-        lower_bounds: Union[List[Tuple[str, float]], Dict[str, Dict[str, float]]]
-            A list of tuples or dictionary that includes labeled values that are used to set the
-            lower bounds (or minimum) of each parameter during optimization. This uses an identical
-            format as the `initial_values` argument.
-        upper_bounds: Union[List[Tuple[str, float]], Dict[str, Dict[str, float]]]
-            A list of tuples or dictionary that includes labeled values that are used to set the
-            upper bounds (or maximum) of each parameter during optimization. This uses an identical
-            format as the `initial_values` argument. When not configured, these values default to
-            infinity.
-        max_fun_evaluations: int
-            The maximum number of evaluations. Defaults to 500.
-        cost_fun_tolerance: float
-            Threshold used for determining convergence via incremental changes of the cost function.
-            Defaults to 1e-6.
-        solution_tolerance: float
-            Threshold used for determining convergence via change of the independent variables.
-            Defaults to 1e-8.
-        gradient_tolerance: float
-            Threshold used for determining convergence via the gradient norma. Defaults to 1e-8.
-        finite_step_size: float
-            The relative step sizes used for approximating the Jacobian via finite differences.
-        trust_region_solver: Literal["exact", "float"]
-            The method used for solving the trust-region problem by either using the Jacobian
-            computed from the first iteration (`"base"`) or via singular value decomposition
-            (`"exact"`). Defaults to "exact".
-        x_scale: Union[Literal["jacobian"], np.ndarray[float]]
-            When `x_scale="jacobian"`, the characteristic scale is updated across numerical
-            iterations via the inverse norms of the Jacobian matrix. Otherwise, a `np.ndarray`
-            of the same length as `fit_parameters` can provide a constant scaling factor.
-        jacobian_approx: Literal["forward", "central"]
-            Indicates whether forward differencing (`"forward"`) or central differencing
-            (`"central"`) should be used to approximate the Jacobian matrix.
-        optimization_settings: Optional[dict]
-            An optional dictionary that can be configured to configure `max_fun_tolerance`,
-            `cost_fun_tolerance`, `solution_tolerance`, `gradient_tolerance`, `finite_step_size`,
-            `trust_region_solver`, `x_scale`, and `jacobian_approx` where any missing values default
-            to being `None`.
         verbose: bool
             When set to `True`, optional console messages and reports are provided to users.
 
         Notes
         -----
         The variogram model fitting methods makes use of the `lmfit` library. Values included in
-        the `fit_parameters` argument, but omitted from `initial_values`, use default values
-        imported from `self.input["statistics"]["variogram"]["model_config"]`.
+        the `variogram_parameters` argument, but omitted from `initialize_variogram`, use default 
+        values imported from `self.input["statistics"]["variogram"]["model_config"]`.
         """
 
         # Validate "variable" input
@@ -492,7 +405,11 @@ class Survey:
             {
                 "variogram": {
                     "azimuth_range": azimuth_range,
-                    "fit_parameters": fit_parameters,
+                    "fit_parameters": (
+                        initialize_variogram.keys() if isinstance(initialize_variogram, dict) 
+                        else initialize_variogram
+                    ),
+                    "force_lag_zero": force_lag_zero,
                     "model": model,
                     "standardize_coordinates": standardize_coordinates,
                     "stratum_name": self.analysis["settings"]["transect"]["stratum_name"],
@@ -509,69 +426,26 @@ class Survey:
             )
 
         # Create a copy of the existing variogram settings
-        variogram_parameters = self.input["statistics"]["variogram"]["model_config"].copy()
-
-        # Update the `variogram_parameters` dictionary based on user inputs
-        # ---- Model name
-        variogram_parameters["model"] = model
-        # ---- Nugget
-        if nugget is not None:
-            variogram_parameters["nugget"] = nugget
-        # ---- Sill
-        if sill is not None:
-            variogram_parameters["sill"] = sill
-        # ---- Correlation range
-        if correlation_range is not None:
-            variogram_parameters["correlation_range"] = correlation_range
-        # ---- Hole effect range
-        if hole_effect_range is not None:
-            variogram_parameters["hole_effect_range"] = hole_effect_range
-        # ---- Decay power
-        if decay_power is not None:
-            variogram_parameters["decay_power"] = decay_power
-        # ---- Semivariance enhancement
-        if enhance_semivariance is not None:
-            variogram_parameters["enhance_semivariance"] = enhance_semivariance
-        # ---- Lag resolution
-        if lag_resolution is not None:
-            variogram_parameters["lag_resolution"] = lag_resolution
-        # ---- Max range
-        if max_range is not None:
-            variogram_parameters["range"] = max_range
-        # ---- Number of lags
-        variogram_parameters["n_lags"] = n_lags
-        # ---- Azimuth range
-        variogram_parameters["azimuth_range"] = azimuth_range
-        # ---- Force lag-0
-        variogram_parameters["force_lag_zero"] = force_lag_zero
+        default_variogram_parameters = self.input["statistics"]["variogram"]["model_config"].copy()
+        # ---- Update model, n_lags
+        default_variogram_parameters.update({
+            "model": model,
+            "n_lags": n_lags
+        })
 
         # Create optimization settings dictionary
-        # ---- Preallocate if not pre-defined by user
-        if optimization_parameters is None:
-            optimization_parameters = {
-                "max_fun_evaluations": max_fun_evaluations,
-                "cost_fun_tolerance": cost_fun_tolerance,
-                "solution_tolerance": solution_tolerance,
-                "gradient_tolerance": gradient_tolerance,
-                "finite_step_size": finite_step_size,
-                "trust_region_solver": trust_region_solver,
-                "x_scale": x_scale,
-                "jacobian_approx": jacobian_approx,
-            }
         # ---- Add to settings
         self.analysis["settings"]["variogram"].update({"optimization": optimization_parameters})
 
         # Find the best-fit variogram parameters
         best_fit_variogram = variogram_analysis(
             variogram_parameters,
+            default_variogram_parameters,
             optimization_parameters,
+            initialize_variogram,
             self.analysis["transect"],
             self.analysis["settings"]["variogram"],
             self.input["statistics"]["kriging"]["isobath_200m_df"],
-            fit_parameters,
-            initial_values,
-            lower_bounds,
-            upper_bounds,
         )
 
         # Add "partial" results to analysis attribute

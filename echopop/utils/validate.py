@@ -30,6 +30,25 @@ class posfloat(float):
             raise ValueError("Value must be a non-negative float.")
         return super().__new__(cls, value)
 
+class realposfloat(posfloat):
+    """Real number positive-only float (includes 0.0)"""
+
+    __failstate__ = "must be a non-negative real number"
+
+    def __new__(cls, value):
+        if np.isinf(value):  # Check if value is infinity
+            raise ValueError(cls.__failstate__)
+        return super().__new__(cls, value)
+
+class realcircle(realposfloat):
+    """Real number in a unit circle"""
+
+    __failstate__ = "must be a non-negative real angle (as a 'float') between 0.0 and 360.0 degrees"
+
+    def __new__(cls, value):
+        if value < 0.0 or value > 360.0:  # Check if value is infinity
+            raise ValueError(cls.__failstate__)
+        return super().__new__(cls, value)
 
 # Validation functions
 def describe_type(expected_type: Any) -> str:
@@ -75,7 +94,7 @@ def validate_type(value: Any, expected_type: Any) -> bool:
     # Handle base `type` case
     if isinstance(expected_type, type):
         # ---- Handle `posint`
-        if expected_type in [posint, posfloat]:
+        if expected_type in [posint, posfloat, realposfloat, realcircle]:
             try:
                 expected_type(value)
                 return True
@@ -135,18 +154,16 @@ def validate_typed_dict(data: Dict[str, Any], expected_types: Dict[str, Any]) ->
 
 # Validation classes
 class VariogramBase(TypedDict, total=False):
-    # Provide the type-hints
     model: Union[str, List[str]]
-    # n_lags: int
     n_lags: posint
-    lag_resolution: Optional[posfloat]
-    max_range: Optional[posfloat]
-    sill: Optional[posfloat]
-    nugget: Optional[posfloat]
-    hole_effect_range: Optional[posfloat]
-    correlation_range: Optional[posfloat]
+    lag_resolution: Optional[realposfloat]
+    max_range: Optional[realposfloat]
+    sill: Optional[realposfloat]
+    nugget: Optional[realposfloat]
+    hole_effect_range: Optional[realposfloat]
+    correlation_range: Optional[realposfloat]
     enhance_semivariance: Optional[bool]
-    decay_power: Optional[posfloat]
+    decay_power: Optional[realposfloat]
 
     # Define default values
     DEFAULT_VALUES = {
@@ -166,14 +183,14 @@ class VariogramBase(TypedDict, total=False):
     EXPECTED_DTYPES = {
         "model": Union[str, List[str]],
         "n_lags": posint,
-        "lag_resolution": Optional[posfloat],
-        "max_range": Optional[posfloat],
-        "sill": Optional[posfloat],
-        "nugget": Optional[posfloat],
-        "hole_effect_range": Optional[posfloat],
-        "correlation_range": Optional[posfloat],
-        "enhance_semivariance": Optional[posfloat],
-        "decay_power": Optional[posfloat],
+        "lag_resolution": Optional[realposfloat],
+        "max_range": Optional[realposfloat],
+        "sill": Optional[realposfloat],
+        "nugget": Optional[realposfloat],
+        "hole_effect_range": Optional[realposfloat],
+        "correlation_range": Optional[realposfloat],
+        "enhance_semivariance": Optional[bool],
+        "decay_power": Optional[realposfloat],
     }
 
     @classmethod
@@ -181,14 +198,14 @@ class VariogramBase(TypedDict, total=False):
         cls,
         model: Union[str, List[str]] = ["bessel", "exponential"],
         n_lags: posint = 30,
-        lag_resolution: Optional[posfloat] = None,
-        max_range: Optional[posfloat] = None,
-        sill: Optional[posfloat] = None,
-        nugget: Optional[posfloat] = None,
-        hole_effect_range: Optional[posfloat] = None,
-        correlation_range: Optional[posfloat] = None,
+        lag_resolution: Optional[realposfloat] = None,
+        max_range: Optional[realposfloat] = None,
+        sill: Optional[realposfloat] = None,
+        nugget: Optional[realposfloat] = None,
+        hole_effect_range: Optional[realposfloat] = None,
+        correlation_range: Optional[realposfloat] = None,
         enhance_semivariance: Optional[posfloat] = None,
-        decay_power: Optional[posfloat] = None,
+        decay_power: Optional[realposfloat] = None,
         **kwargs,
     ) -> "VariogramBase":
         """
@@ -206,27 +223,27 @@ class VariogramBase(TypedDict, total=False):
             See the `variogram_parameters` argument in
             :fun:`echopop.spatial.variogram.empirical_variogram` for more details on
             `n_lags`.
-        sill: Optional[posfloat]
+        sill: Optional[realposfloat]
             See the description of `sill` in
             :fun:`echopop.spatial.variogram.variogram`.
-        nugget: Optional[posfloat]
+        nugget: Optional[realposfloat]
             See the description of `nugget` in
             :fun:`echopop.spatial.variogram.variogram`.
-        correlation_range: Optional[posfloat]
+        correlation_range: Optional[realposfloat]
             See the description of `correlation_range` in
             :fun:`echopop.spatial.variogram.variogram`.
-        hole_effect_range: Optional[posfloat]
+        hole_effect_range: Optional[realposfloat]
             See the description of `hole_effect_range` in
             :fun:`echopop.spatial.variogram.variogram`.
-        decay_power: Optional[posfloat]
+        decay_power: Optional[realposfloat]
             See the description of `decay_power` in
             :fun:`echopop.spatial.variogram.variogram`.
         enhanced_semivariance: Optional[bool]
             See the description of `enhanced_semivariance` in
             :fun:`echopop.spatial.variogram.variogram`.
-        max_range: Optional[posfloat]
+        max_range: Optional[realposfloat]
             An optional input defining the maximum lag distance range that will be computed for
-            fitting the theoretical variogram parameters.
+            fitting the theoretical variogram parameters.    
 
         Returns
         ----------
@@ -318,13 +335,112 @@ class VariogramBase(TypedDict, total=False):
         # --------
 
 
+class VariogramEmpirical(TypedDict, total=False):
+    # Provide the type-hints
+    azimuth_range: realcircle
+    force_lag_zero: bool
+    standardize_coordinates: bool
+
+    # Define default values
+    DEFAULT_VALUES = {
+        "azimuth_range": 360.0,
+        "force_lag_zero": True,
+        "standardize_coordinates": True
+    }
+
+    # Define the expected datatypes
+    EXPECTED_DTYPES = {
+        "azimuth_range": realcircle,
+        "force_lag_zero": bool,
+        "standardize_coordinates": bool
+    }
+
+    @classmethod
+    def create(
+        cls,
+        azimuth_range: realcircle = 360.0,
+        force_lag_zero: bool = True,
+        standardize_coordinates: bool = True,
+        **kwargs,
+    ) -> "VariogramEmpirical":
+        """
+        Empirical variogram parameters
+
+        Parameters
+        ----------
+        azimuth_range: float
+            The total azimuth angle range that is allowed for constraining
+            the relative angles between spatial points, particularly for cases where a high degree
+            of directionality is assumed. 
+        force_lag_zero: bool
+            See the `variogram_parameters` argument in
+            :fun:`echopop.spatial.variogram.empirical_variogram` for more details on
+            `force_lag_zero`.
+        standardize_coordinates: bool
+            When set to `True`, transect coordinates are standardized using reference coordinates.
+
+        Returns
+        ----------
+        VariogramEmpirical: A validated dictionary with the user-defined empirical variogram 
+        parameter values and default values for any missing parameters/keys.
+        """
+
+        # User-defined parameters
+        inputs = {
+            "azimuth_range": azimuth_range,
+            "force_lag_zero": force_lag_zero,
+            "standardize_coordinates": standardize_coordinates
+        }
+
+        # Drop missing `inputs`
+        input_filtered = {key: value for key, value in inputs.items() if value is not None}
+
+        # Merge the default values with those provided by the user
+        # ---- Copy defaults
+        params = cls.DEFAULT_VALUES.copy()
+        # ---- Update
+        params.update(input_filtered)
+
+        # Filter the parameter keys
+        filtered_params = {key: params[key] for key in cls.EXPECTED_DTYPES if key in params}
+
+        # Validate the parameter datatypes
+        cls.validate(filtered_params)
+
+        return filtered_params
+
+    # Create validation method
+    @staticmethod
+    def validate(data: Dict[str, Any]):
+        """
+        Validate the input dictionary against the `VariogramBase` class definition/schema.
+
+        Parameters
+        ----------
+        data: Dict[str, Any]
+            A dictionary containing the parameters that will be validated.
+
+        Raises
+        ----------
+        TypedError:
+            If any value does not match the expected datatype.
+        """
+
+        # Define expected datatypes
+        validate_typed_dict(data, VariogramEmpirical.EXPECTED_DTYPES)
+        # FOR DEBUGGING
+        # --------
+        # print("Validate passed.")
+        # --------
+
+
 class VariogramOptimize(TypedDict):
     max_fun_evaluations: posint
-    cost_fun_tolerance: posfloat
-    gradient_tolerance: posfloat
-    finite_step_size: posfloat
+    cost_fun_tolerance: realposfloat
+    gradient_tolerance: realposfloat
+    finite_step_size: realposfloat
     trust_region_solver: Literal["base", "exact"]
-    x_scale: Union[Literal["jacobian"], np.ndarray[posfloat]]
+    x_scale: Union[Literal["jacobian"], np.ndarray[realposfloat]]
     jacobian_approx: Literal["forward", "central"] = "forward"
 
     # Define default values
@@ -342,12 +458,12 @@ class VariogramOptimize(TypedDict):
     # Define the expected datatypes
     EXPECTED_DTYPES = {
         "max_fun_evaluations": posint,
-        "cost_fun_tolerance": posfloat,
-        "solution_tolerance": posfloat,
-        "gradient_tolerance": posfloat,
-        "finite_step_size": posfloat,
+        "cost_fun_tolerance": realposfloat,
+        "solution_tolerance": realposfloat,
+        "gradient_tolerance": realposfloat,
+        "finite_step_size": realposfloat,
         "trust_region_solver": Literal["base", "exact"],
-        "x_scale": Union[Literal["jacobian"], np.ndarray[posfloat]],
+        "x_scale": Union[Literal["jacobian"], np.ndarray[realposfloat]],
         "jacobian_approx": Literal["forward", "central"],
     }
 
@@ -355,12 +471,12 @@ class VariogramOptimize(TypedDict):
     def create(
         cls,
         max_fun_evaluations: posint = 500,
-        cost_fun_tolerance: posfloat = 1e-6,
-        solution_tolerance: posfloat = 1e-4,
-        gradient_tolerance: posfloat = 1e-4,
-        finite_step_size: posfloat = 1e-8,
+        cost_fun_tolerance: realposfloat = 1e-6,
+        solution_tolerance: realposfloat = 1e-4,
+        gradient_tolerance: realposfloat = 1e-4,
+        finite_step_size: realposfloat = 1e-8,
         trust_region_solver: Literal["exact", "base"] = "exact",
-        x_scale: Union[Literal["jacobian"], np.ndarray[posfloat]] = "jacobian",
+        x_scale: Union[Literal["jacobian"], np.ndarray[realposfloat]] = "jacobian",
         jacobian_approx: Literal["forward", "central"] = "forward",
         **kwargs,
     ) -> "VariogramOptimize":
@@ -371,21 +487,21 @@ class VariogramOptimize(TypedDict):
         ----------
         max_fun_evaluations: posint
             The maximum number of evaluations. Defaults to 500.
-        cost_fun_tolerance: posfloat
+        cost_fun_tolerance: realposfloat
             Threshold used for determining convergence via incremental changes of the cost function.
             Defaults to 1e-6.
-        solution_tolerance: posfloat
+        solution_tolerance: realposfloat
             Threshold used for determining convergence via change of the independent variables.
             Defaults to 1e-8.
-        gradient_tolerance: posfloat
+        gradient_tolerance: realposfloat
             Threshold used for determining convergence via the gradient norma. Defaults to 1e-8.
-        finite_step_size: posfloat
+        finite_step_size: realposfloat
             The relative step sizes used for approximating the Jacobian via finite differences.
         trust_region_solver: Literal["exact", "base"]
             The method used for solving the trust-region problem by either using the Jacobian
             computed from the first iteration (`"base"`) or via singular value decomposition
             (`"exact"`). Defaults to "exact".
-        x_scale: Union[Literal["jacobian"], np.ndarray[posfloat]]
+        x_scale: Union[Literal["jacobian"], np.ndarray[realposfloat]]
             When `x_scale="jacobian"`, the characteristic scale is updated across numerical
             iterations via the inverse norms of the Jacobian matrix. Otherwise, a `np.ndarray`
             of the same length as `fit_parameters` can provide a constant scaling factor.
@@ -449,18 +565,18 @@ class VariogramOptimize(TypedDict):
 class InitialValues(TypedDict):
     """Initial values type-class"""
 
-    low: Optional[posfloat]
-    initial: Optional[posfloat]
-    upper: Optional[posfloat]
+    min: Optional[posfloat]
+    value: Optional[realposfloat]
+    max: Optional[posfloat]
 
     # Default values for parameters
-    DEFAULT_STRUCTURE = {"low": 0.0, "initial": 0.0, "upper": np.inf}
+    DEFAULT_STRUCTURE = {"min": 0.0, "value": 0.0, "max": np.inf}
 
     # Define expected types for parameter details
     EXPECTED_DTYPES = {
-        "low": Optional[posfloat],
-        "initial": Optional[posfloat],
-        "upper": Optional[posfloat],
+        "min": Optional[posfloat],
+        "value": Optional[realposfloat],
+        "max": Optional[posfloat],
     }
 
 
@@ -524,8 +640,8 @@ class VariogramInitial(TypedDict, total=False):
             expected_list = ", ".join(f"'{par}'" for par in VariogramInitial.VALID_PARAMETERS)
             # ---- Print Error
             raise ValueError(
-                f"Unexpected parameter(s): {unexpected_list}. Initial values ('low', 'initial' "
-                f"and 'upper') for variogram optimization are only accepted/valid for the "
+                f"Unexpected parameter(s): {unexpected_list}. Initial values ('min', 'value' "
+                f"and 'max') for variogram optimization are only accepted/valid for the "
                 f"following parameters: {expected_list}."
             )
 
@@ -535,6 +651,23 @@ class VariogramInitial(TypedDict, total=False):
                 validate_typed_dict(details, InitialValues.EXPECTED_DTYPES)
             except Exception as e:
                 raise TypeError(f"Parameter '{param}': initial {str(e)[0].lower() + str(e)[1:]}")
+        
+        # Ensure that values are ordered appropriately
+        invalid_values = [
+            key for key, value in params.items()
+            if not (value['min'] <= value['value'] <= value['max'])
+        ]
+        # ---- Raise Error
+        if invalid_values:
+            # ---- Add outer apostrophes
+            invalid_list = ", ".join(f"'{par}'" for par in invalid_values)
+            # ---- Print
+            raise TypeError(
+                f"Invalid initial values for: {invalid_list}. Values must satisfy the logic: "
+                f"`min` <= value` <= `max`."
+            )
+        
         # FOR DEBUGGING
         # --------
         # print("Validate passed.")
+        # --------
