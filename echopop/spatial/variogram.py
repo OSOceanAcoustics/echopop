@@ -1,6 +1,6 @@
 import inspect
 import warnings
-from typing import Dict, List, Literal, Optional, Tuple, Union
+from typing import Dict, List, Literal, Optional, Tuple, Union, Any
 
 import numpy as np
 import pandas as pd
@@ -895,10 +895,13 @@ def initialize_variogram_parameters(
     # Compute the lag distances and max range
     # ---- Add to the `variogram_parameters` dictionary
     updated_variogram_parameters["distance_lags"] = (
-        np.arange(1, n_lags) * updated_variogram_parameters["lag_resolution"]
+        np.arange(1, updated_variogram_parameters["n_lags"]) 
+        * updated_variogram_parameters["lag_resolution"]
     )
     # ---- Update the max range parameter, if necessary
-    updated_variogram_parameters["range"] = updated_variogram_parameters["lag_resolution"] * n_lags
+    updated_variogram_parameters["range"] = (
+        updated_variogram_parameters["lag_resolution"] * updated_variogram_parameters["n_lags"]
+    )
 
     # Return the validated variogram parameters
     return updated_variogram_parameters
