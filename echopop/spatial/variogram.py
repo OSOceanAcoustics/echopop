@@ -1,14 +1,14 @@
 import inspect
 import warnings
-from typing import Dict, List, Literal, Optional, Tuple, Union, Any
+from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
 import pandas as pd
 from lmfit import Minimizer, Parameters
 from scipy import special
 
-from .mesh import griddify_lag_distances
 from ..utils.validate import VariogramBase, VariogramInitial, VariogramOptimize
+from .mesh import griddify_lag_distances
 
 # Set warnings filter
 warnings.simplefilter("always")
@@ -846,41 +846,41 @@ def semivariance(
     return gamma_h, mean_lag_covariance
 
 
-def initialize_variogram_parameters(gamma_h: np.ndarray, lags: np.ndarray) -> tuple:
-    """
-    Approximate appropriate bounds for each parameter that are used for optimization.
-    """
+# def initialize_variogram_parameters(gamma_h: np.ndarray, lags: np.ndarray) -> tuple:
+#     """
+#     Approximate appropriate bounds for each parameter that are used for optimization.
+#     """
 
-    # Compute empirical boundary estimates for the sill
-    # ---- Lower
-    sill_min = 0.7 * gamma_h.max()
-    # ---- Upper
-    sill_max = 1.2 * gamma_h.max()
+#     # Compute empirical boundary estimates for the sill
+#     # ---- Lower
+#     sill_min = 0.7 * gamma_h.max()
+#     # ---- Upper
+#     sill_max = 1.2 * gamma_h.max()
 
-    # Compute empirical boundary for the nugget
-    # ---- Lower
-    nugget_min = 0.0
-    # ---- Upper
-    nugget_max = sill_max
+#     # Compute empirical boundary for the nugget
+#     # ---- Lower
+#     nugget_min = 0.0
+#     # ---- Upper
+#     nugget_max = sill_max
 
-    # Estimate the length scale
-    # ---- Find the maximum value within the first half of the variogram
-    semivariogram_max = np.argmax(gamma_h[: int(np.round(0.5 * len(gamma_h)))])
-    # ---- Find the lag distance corresponding to the 6 dB attenuation from the maximum
-    lag_6db = np.argmin(np.abs(gamma_h[:semivariogram_max] - 0.3))
-    # ---- Assign the length scale
-    if lags[lag_6db] <= 0.01 * lags.max():
-        # ---- Minimum value
-        length_scale = 0.1 * lags.max()
-    else:
-        length_scale = lags[lag_6db]
+#     # Estimate the length scale
+#     # ---- Find the maximum value within the first half of the variogram
+#     semivariogram_max = np.argmax(gamma_h[: int(np.round(0.5 * len(gamma_h)))])
+#     # ---- Find the lag distance corresponding to the 6 dB attenuation from the maximum
+#     lag_6db = np.argmin(np.abs(gamma_h[:semivariogram_max] - 0.3))
+#     # ---- Assign the length scale
+#     if lags[lag_6db] <= 0.01 * lags.max():
+#         # ---- Minimum value
+#         length_scale = 0.1 * lags.max()
+#     else:
+#         length_scale = lags[lag_6db]
 
-    # Return bounds
-    return (sill_min, sill_max), (nugget_min, nugget_max), length_scale
+#     # Return bounds
+#     return (sill_min, sill_max), (nugget_min, nugget_max), length_scale
+
 
 def initialize_variogram_parameters(
-        variogram_parameters: VariogramBase,
-        default_variogram_parameters: Dict[str, Any]
+    variogram_parameters: VariogramBase, default_variogram_parameters: Dict[str, Any]
 ):
     """
     Initialize and validate the variogram model parameters
@@ -895,7 +895,7 @@ def initialize_variogram_parameters(
     # Compute the lag distances and max range
     # ---- Add to the `variogram_parameters` dictionary
     updated_variogram_parameters["distance_lags"] = (
-        np.arange(1, updated_variogram_parameters["n_lags"]) 
+        np.arange(1, updated_variogram_parameters["n_lags"])
         * updated_variogram_parameters["lag_resolution"]
     )
     # ---- Update the max range parameter, if necessary
@@ -906,6 +906,7 @@ def initialize_variogram_parameters(
     # Return the validated variogram parameters
     return updated_variogram_parameters
 
+
 def initialize_initial_optimization_values(
     initialize_variogram: VariogramInitial,
     variogram_parameters: VariogramBase,
@@ -915,15 +916,13 @@ def initialize_initial_optimization_values(
     """
 
     # Initialize and validate the optimization variogram parameters
-    # ---- Create complete initial values for any cases where `initial` may be missing from the 
+    # ---- Create complete initial values for any cases where `initial` may be missing from the
     # ---- user input
     updated_initial_values = {
-        key: {
-            **value,
-            'value': value.get('value', variogram_parameters.get(key))
-        }
+        key: {**value, "value": value.get("value", variogram_parameters.get(key))}
         for key, value in (
-            initialize_variogram.items() if isinstance(initialize_variogram, dict)
+            initialize_variogram.items()
+            if isinstance(initialize_variogram, dict)
             else {k: {} for k in initialize_variogram}.items()
         )
     }
@@ -933,22 +932,17 @@ def initialize_initial_optimization_values(
     # Get the variogram arguments
     args, _ = get_variogram_arguments(variogram_parameters["model"])
     # ---- Get names
-    arg_names = (list(args.keys()))
+    arg_names = list(args.keys())
     # ---- Drop `distance_lags`
     arg_names.remove("distance_lags")
     # ---- Find missing arguments from the initial values
     missing_args = list(set(arg_names) - set(initial_values))
 
-    # Create complete initial values for any cases where `initial` may be missing from the 
+    # Create complete initial values for any cases where `initial` may be missing from the
     # remaining arguments
     updated_missing_values = {
-        key: {
-            **value,
-            'value': value.get('value', variogram_parameters.get(key))
-        }
-        for key, value in (
-            {k: {"vary": False} for k in missing_args}.items()
-        )
+        key: {**value, "value": value.get("value", variogram_parameters.get(key))}
+        for key, value in ({k: {"vary": False} for k in missing_args}.items())
     }
 
     # Initialize the Parameters class from the `lmfit` package
@@ -958,15 +952,15 @@ def initialize_initial_optimization_values(
     parameters = Parameters()
 
     # Iterate through to add to `parameters`
-    _ = {parameters.add(param, **full_initialization[param]) 
-         for param in full_initialization.keys()}
-    
+    _ = {
+        parameters.add(param, **full_initialization[param]) for param in full_initialization.keys()
+    }
+
     # Return the full `parameters` object
     return parameters
 
-def initialize_optimization_config(
-    optimization_parameters: VariogramOptimize
-):
+
+def initialize_optimization_config(optimization_parameters: VariogramOptimize):
     """
     Initialize and validate the optimization parameters
     """
@@ -981,29 +975,39 @@ def initialize_optimization_config(
         "finite_step_size": "diff_step",
         "trust_region_solver": "tr_solver",
         "x_scale": "x_scale",
-        "jacobian_approx": "jac"
+        "jacobian_approx": "jac",
     }
 
     # Initialize and validate the optimization variogram parameters
     updated_optimization_parameters = VariogramOptimize.create(**optimization_parameters)
 
     # Reformat the names to comport with `lmfit`
-    lmfit_parameters = {LMFIT_OPT_NAMES.get(k, k): v 
-                        for k, v in updated_optimization_parameters.items()}
-    
+    lmfit_parameters = {
+        LMFIT_OPT_NAMES.get(k, k): v for k, v in updated_optimization_parameters.items()
+    }
+
     # Update specific Literal parameters
-    lmfit_parameters.update({
-        "tr_solver": None 
-            if updated_optimization_parameters["trust_region_solver"] == "base" else "exact",
-        "x_scale": "jac" 
-            if updated_optimization_parameters["x_scale"] == "jacobian"
-            else updated_optimization_parameters["x_scale"],
-        "jac": "2-point" 
-        if optimization_parameters["jacobian_approx"] == "forward" else "3-point"
-    })
+    lmfit_parameters.update(
+        {
+            "tr_solver": (
+                None
+                if updated_optimization_parameters["trust_region_solver"] == "base"
+                else "exact"
+            ),
+            "x_scale": (
+                "jac"
+                if updated_optimization_parameters["x_scale"] == "jacobian"
+                else updated_optimization_parameters["x_scale"]
+            ),
+            "jac": (
+                "2-point" if optimization_parameters["jacobian_approx"] == "forward" else "3-point"
+            ),
+        }
+    )
 
     # Return the validated `lmfit_parameters`
     return lmfit_parameters
+
 
 def get_variogram_arguments(model_name: Union[str, List[str]]):
     """
@@ -1039,6 +1043,7 @@ def get_variogram_arguments(model_name: Union[str, List[str]]):
     function_signature = inspect.signature(model_function)
     # ---- Create ordered dictionary of required arguments
     return function_signature.parameters, {"model_function": model_function}
+
 
 def optimize_variogram(
     lag_counts: np.ndarray,

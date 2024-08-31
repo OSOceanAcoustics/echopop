@@ -1,8 +1,6 @@
 import copy
 from pathlib import Path
-from typing import Dict, List, Literal, Optional, Tuple, Union
-
-import numpy as np
+from typing import List, Literal, Optional, Union
 
 from .analysis import (
     acoustics_to_biology,
@@ -12,10 +10,9 @@ from .analysis import (
     stratified_summary,
     variogram_analysis,
 )
-
-from .utils.validate import VariogramBase, VariogramOptimize, VariogramInitial, VariogramEmpirical
 from .core import DATA_STRUCTURE
 from .utils import load as el, load_nasc as eln, message as em
+from .utils.validate import VariogramBase, VariogramInitial, VariogramOptimize
 
 
 class Survey:
@@ -322,12 +319,17 @@ class Survey:
         variogram_parameters: VariogramBase,
         optimization_parameters: VariogramOptimize,
         model: Union[str, List[str]] = ["bessel", "exponential"],
-        n_lags: int = 30,     
+        n_lags: int = 30,
         azimuth_range: float = 360.0,
         standardize_coordinates: bool = True,
         force_lag_zero: bool = True,
-        initialize_variogram: VariogramInitial = ["nugget", "sill", "correlation_range",
-                                                  "hole_effect_range", "decay_power"],
+        initialize_variogram: VariogramInitial = [
+            "nugget",
+            "sill",
+            "correlation_range",
+            "hole_effect_range",
+            "decay_power",
+        ],
         variable: Literal["biomass", "abundance"] = "biomass",
         verbose: bool = True,
     ):
@@ -337,24 +339,24 @@ class Survey:
         Parameters
         ----------
         variogram_parameters: VariogramBase
-            A dictionary comprising various arguments required for computing the model variogram. 
-            See :fun:`echopop.utils.validate.VariogramBase` and 
+            A dictionary comprising various arguments required for computing the model variogram.
+            See :fun:`echopop.utils.validate.VariogramBase` and
             :fun:`echopop.spatial.variogram.variogram` for more details on the required/default
             parameters.
         optimization_parameters: VariogramOptimize
-            A dictionary comprising various arguments for optimizing the variogram fit via 
+            A dictionary comprising various arguments for optimizing the variogram fit via
             non-linear least squares. See :fun:`echopop.utils.validate.VariogramOptimize` for more
             details on the required/default parameters.
         initialize_variogram: VariogramInitial
-            A dictionary or list that indicates how each variogram parameter (see 
-            :fun:`echopop.spatial.variogram.variogram` for more details) is configured for 
-            optimization. Including parameter names in a list will incorporate default initial 
+            A dictionary or list that indicates how each variogram parameter (see
+            :fun:`echopop.spatial.variogram.variogram` for more details) is configured for
+            optimization. Including parameter names in a list will incorporate default initial
             values imported from the associated file in the configuration *.yaml are used instead.
-            This also occurs when `initialize_variogram` is formatted as a dictionary and the 
+            This also occurs when `initialize_variogram` is formatted as a dictionary and the
             'value' key is not present for defined parameters. Parameter names excluded from either
-            the list or dictionary keys are assumed to be held as fixed values. See 
-            :fun:`echopop.utils.validate.VariogramInitial` and 
-            :fun:`echopop.utils.validate.InitialValues` for more details. 
+            the list or dictionary keys are assumed to be held as fixed values. See
+            :fun:`echopop.utils.validate.VariogramInitial` and
+            :fun:`echopop.utils.validate.InitialValues` for more details.
         model: Union[str, List[str]]
             A string or list of model names. A single name represents a single family model. Two
             inputs represent the desired composite model (e.g. the composite J-Bessel and
@@ -386,7 +388,7 @@ class Survey:
         Notes
         -----
         The variogram model fitting methods makes use of the `lmfit` library. Values included in
-        the `variogram_parameters` argument, but omitted from `initialize_variogram`, use default 
+        the `variogram_parameters` argument, but omitted from `initialize_variogram`, use default
         values imported from `self.input["statistics"]["variogram"]["model_config"]`.
         """
 
@@ -406,7 +408,8 @@ class Survey:
                 "variogram": {
                     "azimuth_range": azimuth_range,
                     "fit_parameters": (
-                        initialize_variogram.keys() if isinstance(initialize_variogram, dict) 
+                        initialize_variogram.keys()
+                        if isinstance(initialize_variogram, dict)
                         else initialize_variogram
                     ),
                     "force_lag_zero": force_lag_zero,
@@ -428,10 +431,7 @@ class Survey:
         # Create a copy of the existing variogram settings
         default_variogram_parameters = self.input["statistics"]["variogram"]["model_config"].copy()
         # ---- Update model, n_lags
-        default_variogram_parameters.update({
-            "model": model,
-            "n_lags": n_lags
-        })
+        default_variogram_parameters.update({"model": model, "n_lags": n_lags})
 
         # Create optimization settings dictionary
         # ---- Add to settings

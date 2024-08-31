@@ -3,9 +3,7 @@ General analysis orchestration functions that bundle related functions and proce
 """
 
 import copy
-import os
 import warnings
-from typing import Dict, List, Optional, Tuple, Union, Any
 
 import numpy as np
 import pandas as pd
@@ -42,7 +40,6 @@ from .spatial.variogram import (
 )
 from .statistics import stratified_transect_statistic
 from .utils.validate import VariogramEmpirical
-
 
 
 def process_transect_data(
@@ -266,22 +263,24 @@ def variogram_analysis(
     initialize_variogram: dict,
     transect_dict: dict,
     settings_dict: dict,
-    isobath_df: pd.DataFrame
+    isobath_df: pd.DataFrame,
 ):
-    
+
     # Validate the relevant empirical variogram parameters
     empirical_variogram_params = VariogramEmpirical.create(**settings_dict)
 
     # Initialize and validate the variogram model parameters
-    valid_variogram_params = initialize_variogram_parameters(variogram_parameters, 
-                                                             default_variogram_parameters)
-    
+    valid_variogram_params = initialize_variogram_parameters(
+        variogram_parameters, default_variogram_parameters
+    )
+
     # Initialize and validate the optimization parameters
     valid_optimization_params = initialize_optimization_config(optimization_parameters)
 
     # Initialize and validate the initial values/boundary inputs
-    valid_initial_values = initialize_initial_optimization_values(initialize_variogram,
-                                                                  variogram_parameters)
+    valid_initial_values = initialize_initial_optimization_values(
+        initialize_variogram, variogram_parameters
+    )
 
     # Prepare the transect data
     # ---- Create a copy of the transect dictionary
@@ -313,8 +312,10 @@ def variogram_analysis(
 
     # Least-squares fitting
     # ---- Consolidate the optimization dictionaries into a single one
-    optimization_settings = {"parameters": valid_initial_values, 
-                             "config": valid_optimization_params}
+    optimization_settings = {
+        "parameters": valid_initial_values,
+        "config": valid_optimization_params,
+    }
     # ---- Optimize parameters
     best_fit_variogram, initial_fit, optimized_fit = optimize_variogram(
         lag_counts, lags, gamma_h, valid_variogram_params, optimization_settings

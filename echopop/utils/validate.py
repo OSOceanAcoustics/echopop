@@ -30,6 +30,7 @@ class posfloat(float):
             raise ValueError("Value must be a non-negative float.")
         return super().__new__(cls, value)
 
+
 class realposfloat(posfloat):
     """Real number positive-only float (includes 0.0)"""
 
@@ -40,6 +41,7 @@ class realposfloat(posfloat):
             raise ValueError(cls.__failstate__)
         return super().__new__(cls, value)
 
+
 class realcircle(realposfloat):
     """Real number in a unit circle"""
 
@@ -49,6 +51,7 @@ class realcircle(realposfloat):
         if value < 0.0 or value > 360.0:  # Check if value is infinity
             raise ValueError(cls.__failstate__)
         return super().__new__(cls, value)
+
 
 # Validation functions
 def describe_type(expected_type: Any) -> str:
@@ -243,7 +246,7 @@ class VariogramBase(TypedDict, total=False):
             :fun:`echopop.spatial.variogram.variogram`.
         max_range: Optional[realposfloat]
             An optional input defining the maximum lag distance range that will be computed for
-            fitting the theoretical variogram parameters.    
+            fitting the theoretical variogram parameters.
 
         Returns
         ----------
@@ -345,14 +348,14 @@ class VariogramEmpirical(TypedDict, total=False):
     DEFAULT_VALUES = {
         "azimuth_range": 360.0,
         "force_lag_zero": True,
-        "standardize_coordinates": True
+        "standardize_coordinates": True,
     }
 
     # Define the expected datatypes
     EXPECTED_DTYPES = {
         "azimuth_range": realcircle,
         "force_lag_zero": bool,
-        "standardize_coordinates": bool
+        "standardize_coordinates": bool,
     }
 
     @classmethod
@@ -371,7 +374,7 @@ class VariogramEmpirical(TypedDict, total=False):
         azimuth_range: float
             The total azimuth angle range that is allowed for constraining
             the relative angles between spatial points, particularly for cases where a high degree
-            of directionality is assumed. 
+            of directionality is assumed.
         force_lag_zero: bool
             See the `variogram_parameters` argument in
             :fun:`echopop.spatial.variogram.empirical_variogram` for more details on
@@ -381,7 +384,7 @@ class VariogramEmpirical(TypedDict, total=False):
 
         Returns
         ----------
-        VariogramEmpirical: A validated dictionary with the user-defined empirical variogram 
+        VariogramEmpirical: A validated dictionary with the user-defined empirical variogram
         parameter values and default values for any missing parameters/keys.
         """
 
@@ -389,7 +392,7 @@ class VariogramEmpirical(TypedDict, total=False):
         inputs = {
             "azimuth_range": azimuth_range,
             "force_lag_zero": force_lag_zero,
-            "standardize_coordinates": standardize_coordinates
+            "standardize_coordinates": standardize_coordinates,
         }
 
         # Drop missing `inputs`
@@ -651,11 +654,12 @@ class VariogramInitial(TypedDict, total=False):
                 validate_typed_dict(details, InitialValues.EXPECTED_DTYPES)
             except Exception as e:
                 raise TypeError(f"Parameter '{param}': initial {str(e)[0].lower() + str(e)[1:]}")
-        
+
         # Ensure that values are ordered appropriately
         invalid_values = [
-            key for key, value in params.items()
-            if not (value['min'] <= value['value'] <= value['max'])
+            key
+            for key, value in params.items()
+            if not (value["min"] <= value["value"] <= value["max"])
         ]
         # ---- Raise Error
         if invalid_values:
@@ -666,7 +670,7 @@ class VariogramInitial(TypedDict, total=False):
                 f"Invalid initial values for: {invalid_list}. Values must satisfy the logic: "
                 f"`min` <= value` <= `max`."
             )
-        
+
         # FOR DEBUGGING
         # --------
         # print("Validate passed.")
