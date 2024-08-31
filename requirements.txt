@@ -1,3 +1,4 @@
+dateutil
 ipympl
 ipywidgets
 jupyter_contrib_nbextensions
