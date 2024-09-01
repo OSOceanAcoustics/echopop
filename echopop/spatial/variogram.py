@@ -70,6 +70,7 @@ def gaussian(distance_lags: np.ndarray, sill: float, nugget: float, correlation_
     # Compute the Gaussian semivariogram
     return partial_sill * decay + nugget
 
+
 # ---- J-Bessel
 def jbessel(distance_lags: np.ndarray, sill: float, nugget: float, hole_effect_range: float):
     """
@@ -98,6 +99,7 @@ def jbessel(distance_lags: np.ndarray, sill: float, nugget: float, hole_effect_r
     # Compute the J-Bessel semivariogram
     return partial_sill * decay + nugget
 
+
 # ---- K-Bessel
 def kbessel(distance_lags: np.ndarray, sill: float, nugget: float, hole_effect_range: float):
     """
@@ -125,17 +127,22 @@ def kbessel(distance_lags: np.ndarray, sill: float, nugget: float, hole_effect_r
         return np.where(distance_lags == 0.0, 0.0, nugget)
 
     # Compute the cyclical term
-    cycle = np.where(distance_lags / hole_effect_range < 1e-4,
-                     0.0,
-                     special.kv(1.0, (distance_lags / hole_effect_range)))
+    cycle = np.where(
+        distance_lags / hole_effect_range < 1e-4,
+        0.0,
+        special.kv(1.0, (distance_lags / hole_effect_range)),
+    )
 
     # Calculate the spatial decay term
-    decay = np.where(distance_lags / hole_effect_range < 1e-4,
-                     0.0,
-                     1.0 - (distance_lags / hole_effect_range) * cycle)
+    decay = np.where(
+        distance_lags / hole_effect_range < 1e-4,
+        0.0,
+        1.0 - (distance_lags / hole_effect_range) * cycle,
+    )
 
     # Compute the J-Bessel semivariogram
     return partial_sill * decay + nugget
+
 
 # ---- Linear
 def linear(distance_lags: np.ndarray, sill: float, nugget: float):
@@ -159,6 +166,7 @@ def linear(distance_lags: np.ndarray, sill: float, nugget: float):
     # Compute the linear semivariogram
     return partial_sill * distance_lags + nugget
 
+
 # ---- Nugget
 def nugget(distance_lags: np.ndarray, sill: float, nugget: float):
     """
@@ -173,10 +181,11 @@ def nugget(distance_lags: np.ndarray, sill: float, nugget: float):
     nugget: float
         The semivariogram y-intercept that corresponds to variability at lag distances shorter than
         the lag resolution.
-    """    
+    """
 
     # Sum together except at lag == 0.0
     return np.where(distance_lags == 0.0, 0.0, sill + nugget)
+
 
 # ---- Sinc
 def sinc(distance_lags: np.ndarray, sill: float, nugget: float, hole_effect_range: float):
@@ -502,7 +511,7 @@ def gaussian_linear(
 
 # Variogram function API
 VARIOGRAM_MODELS = {
-    "single": {        
+    "single": {
         "exponential": exponential,
         "gaussian": gaussian,
         "jbessel": jbessel,
