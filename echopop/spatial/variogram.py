@@ -15,35 +15,6 @@ warnings.simplefilter("always")
 
 
 # Single family models
-# ---- J-Bessel
-def bessel(distance_lags: np.ndarray, sill: float, nugget: float, hole_effect_range: float):
-    """
-    Calculates the J-Bessel semivariogram model at defined lagged distances
-
-    Parameters
-    ----------
-    distance_lags: np.ndarray
-        An array of lag distances
-    sill: float
-        The asymptotic value as lags approach infinity.
-    nugget: float
-        The semivariogram y-intercept that corresponds to variability at lag distances shorter than
-        the lag resolution.
-    hole_effect_range: float
-        The (normalized) length scale/range that 'holes' are observed, which represent 'null' (or
-        very small) points compared to their neighboring lags.
-    """
-
-    # Calculate the partial sill (or the sill minus the nugget)
-    partial_sill = sill - nugget
-
-    # Calculate the spatial decay term
-    decay = 1.0 - special.j0(hole_effect_range * distance_lags)
-
-    # Compute the J-Bessel semivariogram
-    return partial_sill * decay + nugget
-
-
 # ---- Exponential
 def exponential(distance_lags: np.ndarray, sill: float, nugget: float, correlation_range: float):
     """
@@ -99,6 +70,72 @@ def gaussian(distance_lags: np.ndarray, sill: float, nugget: float, correlation_
     # Compute the Gaussian semivariogram
     return partial_sill * decay + nugget
 
+# ---- J-Bessel
+def jbessel(distance_lags: np.ndarray, sill: float, nugget: float, hole_effect_range: float):
+    """
+    Calculates the J-Bessel semivariogram model at defined lagged distances
+
+    Parameters
+    ----------
+    distance_lags: np.ndarray
+        An array of lag distances
+    sill: float
+        The asymptotic value as lags approach infinity.
+    nugget: float
+        The semivariogram y-intercept that corresponds to variability at lag distances shorter than
+        the lag resolution.
+    hole_effect_range: float
+        The (normalized) length scale/range that 'holes' are observed, which represent 'null' (or
+        very small) points compared to their neighboring lags.
+    """
+
+    # Calculate the partial sill (or the sill minus the nugget)
+    partial_sill = sill - nugget
+
+    # Calculate the spatial decay term
+    decay = 1.0 - special.j0(hole_effect_range * distance_lags)
+
+    # Compute the J-Bessel semivariogram
+    return partial_sill * decay + nugget
+
+# ---- K-Bessel
+def kbessel(distance_lags: np.ndarray, sill: float, nugget: float, hole_effect_range: float):
+    """
+    Calculates the K-Bessel semivariogram model at defined lagged distances
+
+    Parameters
+    ----------
+    distance_lags: np.ndarray
+        An array of lag distances
+    sill: float
+        The asymptotic value as lags approach infinity.
+    nugget: float
+        The semivariogram y-intercept that corresponds to variability at lag distances shorter than
+        the lag resolution.
+    hole_effect_range: float
+        The (normalized) length scale/range that 'holes' are observed, which represent 'null' (or
+        very small) points compared to their neighboring lags.
+    """
+
+    # Calculate the partial sill (or the sill minus the nugget)
+    partial_sill = sill - nugget
+
+    # Avoid the case where `hole_effect_range` = 0.0
+    if hole_effect_range == 0.0:
+        return np.where(distance_lags == 0.0, 0.0, nugget)
+
+    # Compute the cyclical term
+    cycle = np.where(distance_lags / hole_effect_range < 1e-4,
+                     0.0,
+                     special.kv(1.0, (distance_lags / hole_effect_range)))
+
+    # Calculate the spatial decay term
+    decay = np.where(distance_lags / hole_effect_range < 1e-4,
+                     0.0,
+                     1.0 - (distance_lags / hole_effect_range) * cycle)
+
+    # Compute the J-Bessel semivariogram
+    return partial_sill * decay + nugget
 
 # ---- Linear
 def linear(distance_lags: np.ndarray, sill: float, nugget: float):
@@ -122,6 +159,24 @@ def linear(distance_lags: np.ndarray, sill: float, nugget: float):
     # Compute the linear semivariogram
     return partial_sill * distance_lags + nugget
 
+# ---- Nugget
+def nugget(distance_lags: np.ndarray, sill: float, nugget: float):
+    """
+    Calculates the semivariogram model comprising only a nugget effect
+
+    Parameters
+    ----------
+    distance_lags: np.ndarray
+        An array of lag distances
+    sill: float
+        The asymptotic value as lags approach infinity.
+    nugget: float
+        The semivariogram y-intercept that corresponds to variability at lag distances shorter than
+        the lag resolution.
+    """    
+
+    # Sum together except at lag == 0.0
+    return np.where(distance_lags == 0.0, 0.0, sill + nugget)
 
 # ---- Sinc
 def sinc(distance_lags: np.ndarray, sill: float, nugget: float, hole_effect_range: float):
@@ -149,7 +204,7 @@ def sinc(distance_lags: np.ndarray, sill: float, nugget: float, hole_effect_rang
     partial_sill = sill - nugget
 
     # Calculate the spatial decay term
-    decay = 1.0 - np.sin((distance_lags * eps) * hole_effect_range / (distance_lags * eps))
+    decay = 1.0 - np.sin(hole_effect_range * (distance_lags + eps)) / (distance_lags + eps)
 
     # Compute the sinc semivariogram
     return partial_sill * decay + nugget
@@ -183,9 +238,9 @@ def spherical(distance_lags: np.ndarray, sill: float, nugget: float, correlation
 
     # Compute the spherical semivariogram
     return np.where(
-        distance_lags <= correlation_range,
+        distance_lags < correlation_range,
         partial_sill * decay + nugget,
-        partial_sill,
+        sill + nugget,
     )
 
 
@@ -447,11 +502,13 @@ def gaussian_linear(
 
 # Variogram function API
 VARIOGRAM_MODELS = {
-    "single": {
-        "bessel": bessel,
+    "single": {        
         "exponential": exponential,
         "gaussian": gaussian,
+        "jbessel": jbessel,
+        "kbessel": kbessel,
         "linear": linear,
+        "nugget": nugget,
         "sinc": sinc,
         "spherical": spherical,
     },
@@ -508,10 +565,6 @@ def variogram(
         | :fun:`variogram`           | Input           | Parameters               |
         | model                      |                 |                          |
         +============================+=================+==========================+
-        |  :fun:`bessel`             | 'bessel'        | - `sill`                 |
-        |                            |                 | - `nugget`               |
-        |                            |                 | - `hole_effect_range`    |
-        +----------------------------+-----------------+--------------------------+
         |  :fun:`exponential`        | 'exponential    | - `sill`                 |
         |                            |                 | - `nugget`               |
         |                            |                 | - `correlation_range`    |
@@ -520,7 +573,18 @@ def variogram(
         |                            |                 | - `nugget`               |
         |                            |                 | - `correlation_range`    |
         +----------------------------+-----------------+--------------------------+
+        |  :fun:`jbessel`            | 'jbessel'       | - `sill`                 |
+        |                            |                 | - `nugget`               |
+        |                            |                 | - `hole_effect_range`    |
+        +----------------------------+-----------------+--------------------------+
+        |  :fun:`kbessel`            | 'kbessel'       | - `sill`                 |
+        |                            |                 | - `nugget`               |
+        |                            |                 | - `hole_effect_range`    |
+        +----------------------------+-----------------+--------------------------+
         |  :fun:`linear`             | 'linear'        | - `nugget`               |
+        |                            |                 | - `sill`                 |
+        +----------------------------+-----------------+--------------------------+
+        |  :fun:`nugget`             | 'nugget'        | - `nugget`               |
         |                            |                 | - `sill`                 |
         +----------------------------+-----------------+--------------------------+
         |  :fun:`sinc`               | 'sinc'          | - `sill`                 |
