@@ -37,8 +37,8 @@ class realposfloat(posfloat):
     __failstate__ = "must be a non-negative real number"
 
     def __new__(cls, value):
-        if np.isinf(value):  # Check if value is infinity
-            raise ValueError(cls.__failstate__)
+        if not isinstance(value, (float, int)) or np.isinf(value):  # Check if value is infinity
+            raise ValueError(f"Value {cls.__failstate__}.")
         return super().__new__(cls, value)
 
 
@@ -48,8 +48,8 @@ class realcircle(realposfloat):
     __failstate__ = "must be a non-negative real angle (as a 'float') between 0.0 and 360.0 degrees"
 
     def __new__(cls, value):
-        if value < 0.0 or value > 360.0:  # Check if value is infinity
-            raise ValueError(cls.__failstate__)
+        if not isinstance(value, (float, int)) or (value < 0.0 or value > 360.0):
+            raise ValueError(f"Value {cls.__failstate__}.")
         return super().__new__(cls, value)
 
 
@@ -94,6 +94,14 @@ def validate_type(value: Any, expected_type: Any) -> bool:
     Validate if the value matches the expected type.
     """
 
+    # Handle numpy.ndarray
+    if hasattr(expected_type, "__origin__") and expected_type.__origin__ is np.ndarray:
+        return (
+            isinstance(value, np.ndarray)
+            and np.issubdtype(value.dtype, np.number)
+            # and value.dtype == np.float64
+        )
+
     # Handle base `type` case
     if isinstance(expected_type, type):
         # ---- Handle `posint`
@@ -114,6 +122,10 @@ def validate_type(value: Any, expected_type: Any) -> bool:
     if hasattr(expected_type, "__origin__") and expected_type.__origin__ is Literal:
         # ---- Get allowed values
         allowed_values = get_args(expected_type)
+        if isinstance(value, np.ndarray):
+            allowed_values_array = np.array(list(allowed_values), dtype=object)
+            value_array = np.array(value, dtype=object)
+            return np.array_equal(np.sort(value_array), np.sort(allowed_values_array))
         return value in allowed_values
 
     # Handle List
@@ -123,13 +135,13 @@ def validate_type(value: Any, expected_type: Any) -> bool:
         item_type = expected_type.__args__[0]
         return all(validate_type(item, item_type) for item in value)
 
-    # Handle numpy.ndarray
-    if hasattr(expected_type, "__origin__") and expected_type.__origin__ is np.ndarray:
-        return (
-            isinstance(value, np.ndarray)
-            and np.issubdtype(value.dtype, np.number)
-            # and value.dtype == np.float64
-        )
+    # # Handle numpy.ndarray
+    # if hasattr(expected_type, "__origin__") and expected_type.__origin__ is np.ndarray:
+    #     return (
+    #         isinstance(value, np.ndarray)
+    #         and np.issubdtype(value.dtype, np.number)
+    #         # and value.dtype == np.float64
+    #     )
 
     return False
 
@@ -182,6 +194,20 @@ class VariogramBase(TypedDict, total=False):
         "decay_power": None,
     }
 
+    # Root default values -- used for reinitialization
+    _ROOT_DEFAULT = {
+        "model": ["bessel", "exponential"],
+        "n_lags": 30,
+        "lag_resolution": None,
+        "max_range": None,
+        "sill": None,
+        "nugget": None,
+        "hole_effect_range": None,
+        "correlation_range": None,
+        "enhance_semivariance": None,
+        "decay_power": None,
+    }
+
     # Define the expected datatypes
     EXPECTED_DTYPES = {
         "model": Union[str, List[str]],
@@ -199,8 +225,8 @@ class VariogramBase(TypedDict, total=False):
     @classmethod
     def create(
         cls,
-        model: Union[str, List[str]] = ["bessel", "exponential"],
-        n_lags: posint = 30,
+        model: Union[str, List[str]] = None,
+        n_lags: posint = None,
         lag_resolution: Optional[realposfloat] = None,
         max_range: Optional[realposfloat] = None,
         sill: Optional[realposfloat] = None,
@@ -308,10 +334,20 @@ class VariogramBase(TypedDict, total=False):
         }
 
         # Validate the parameter datatypes
-        # cls.validate(filtered_new_defaults)
+        cls.validate(filtered_new_defaults)
 
         # Update `DEFAULT_VALUES` attribute
         cls.DEFAULT_VALUES.update(filtered_new_defaults)
+
+    # Create default value restoration method
+    @classmethod
+    def restore_defaults(cls):
+        """
+        Restore DEFAULT_VALUES attribute to original pre-updated state.
+        """
+
+        # Restore original state
+        cls.DEFAULT_VALUES.update(cls._ROOT_DEFAULT)
 
     # Create validation method
     @staticmethod
@@ -444,7 +480,7 @@ class VariogramOptimize(TypedDict):
     finite_step_size: realposfloat
     trust_region_solver: Literal["base", "exact"]
     x_scale: Union[Literal["jacobian"], np.ndarray[realposfloat]]
-    jacobian_approx: Literal["forward", "central"] = "forward"
+    jacobian_approx: Literal["forward", "central"]
 
     # Define default values
     DEFAULT_VALUES = {

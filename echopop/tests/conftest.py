@@ -151,14 +151,17 @@ def assert_dictionary_values_equal(dictionary, reference_dictionary):
             assert np.allclose(
                 dictionary[key], reference_dictionary[key]
             ), f"Arrays for key '{key}' are not close."
+        elif isinstance(dictionary[key], (int, float)):
+            assert np.isclose(
+                dictionary[key], reference_dictionary[key]
+            ), f"Values for key '{key}' are not close."
+        elif dictionary[key] == reference_dictionary[key]:
+            continue
         else:
-            assert np.isclose(
-                dictionary[key], reference_dictionary[key]
-            ), f"Values for key '{key}' are not close."
-
-            assert np.isclose(
-                dictionary[key], reference_dictionary[key]
-            ), f"Values for key '{key}' are not close."
+            raise AssertionError(
+                f"Values for key '{key}' are not the same. Got: {dictionary[key]}, expected: "
+                f"{reference_dictionary[key]}."
+            )
 
 
 # ---- DATAFRAME
