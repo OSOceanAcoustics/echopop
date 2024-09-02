@@ -1099,10 +1099,12 @@ def get_variogram_arguments(model_name: Union[str, List[str]]):
 
     # Parse user input from reference model dictionary
     # ---- Check against VARIOGRAM_MODELS API to ensure model exists
-    if (len(model_input) > 1) & (tuple(model_input) in VARIOGRAM_MODELS["composite"]):
+    if isinstance(model_input, list) and (tuple(model_input) in VARIOGRAM_MODELS["composite"]):
+        # if (len(model_input) > 1) & (tuple(model_input) in VARIOGRAM_MODELS["composite"]):
         # ---- Parse model function
         model_function = VARIOGRAM_MODELS["composite"][tuple(model_input)]
-    elif (len([model_input]) == 1) & (model_input in VARIOGRAM_MODELS["single"]):
+    # elif (len([model_input]) == 1) & (model_input in VARIOGRAM_MODELS["single"]):
+    elif not isinstance(model_input, list) and (model_input in VARIOGRAM_MODELS["single"]):
         # ---- Parse model function
         model_function = VARIOGRAM_MODELS["single"][model_input]
     else:

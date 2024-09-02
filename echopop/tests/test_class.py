@@ -409,7 +409,7 @@ def test_VariogramBase_class(description):
     # ---- Update the values
     VariogramBase.update_defaults(MOCK_NEW_DEFAULTS)
     # ---- Search for 'invalid_parameter' in defaults attribute
-    assert not "invalid_parameter" in VariogramBase.DEFAULT_VALUES
+    assert "invalid_parameter" not in VariogramBase.DEFAULT_VALUES
 
     # -------------------------
     VariogramBase.restore_defaults()
