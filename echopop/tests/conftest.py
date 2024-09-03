@@ -1,5 +1,7 @@
 from pathlib import Path
 from typing import Union
+import json 
+from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -23,6 +25,7 @@ def test_path():
         "ROOT": TEST_DATA_ROOT,
         "CONFIG": TEST_DATA_ROOT / "config_files",
         "INPUT": TEST_DATA_ROOT / "input_files",
+        "EXPECTED": TEST_DATA_ROOT / "expected_outputs"
     }
 
 
@@ -305,3 +308,105 @@ def assert_dataframe_equal(
     assert_dataframe_dtypes_equal(input, reference_dtypes)
     # Values
     assert_dataframe_values_equal(input, reference_values)
+
+# Utility functions (JSON)
+def update_json_file(filename: str, test_name: str, new_entries: dict):
+    """
+    Updates an existing JSON file with new entries, overwriting existing entries with the same key.
+
+    Parameters
+    ----------
+    filename: str
+        The name of the JSON file.
+    test_name: str
+        The name of the associated `pytest`.
+    new_entries: dict
+        A dictionary containing the new entries to add or update.
+
+    Returns
+    ----------
+    None
+
+    Notes
+    ----------
+    This is primarily used for updating associated .JSON files that store values for expected 
+    test results.
+    """
+
+    # Determine whether the associated test-key already exists
+    try:
+        with open(filename, 'r') as f:
+            existing_data = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        existing_data = {}
+
+    # Among new entries, convert any arrays to a JSON-friendly format
+    # ---- Add a metadata key `is_numpy`: a list of keys
+    new_entries["is_numpy"] = (
+        [k for k, v in new_entries.items() if isinstance(v, np.ndarray)]
+    )
+    # ---- Add a metadata key `is_pandas`: a list of keys
+    new_entries["is_pandas"] = (
+        [k for k, v in new_entries.items() if isinstance(v, pd.DataFrame)]
+    )
+    # ---- Convert numpy
+    new_entries = {k: v.tolist() if isinstance(v, np.ndarray) else v 
+                   for k, v in new_entries.items()}
+    # ---- Convert pandas
+    new_entries = {k: v.to_dict() if isinstance(v, pd.DataFrame) else v 
+                   for k, v in new_entries.items()}
+    
+    # Update the test-key
+    existing_data[test_name] = new_entries
+
+    # Write/update the JSON file
+    with open(filename, 'w') as f:
+        json.dump(existing_data, f, indent=4)
+
+def load_json_data(filename: str, default_value=None, test_name: Optional[str] = None):
+    """
+    Loads JSON data from a file. If the file doesn't exist or an error occurs, returns the default 
+    value.
+
+    Parameters
+    ----------
+    filename: str
+        The name of the JSON file.
+    default_value: dict
+        The default value to return if loading fails.
+    test_name: Optional[str]
+        The name of the associated `pytest`.
+
+    Returns
+    ----------
+    The loaded JSON data or the default value.
+    """
+
+    # Extract the expected results
+    try:
+        with open(filename, 'r') as f:
+            data = json.load(f)
+            if test_name is not None:
+                # ---- Get expected data
+                expected_data = data.get(test_name, default_value)              
+            else:
+                expected_data = data           
+            # ---- Get unique keys sans `'is_numpy'`
+            outcomes = list(set(expected_data) - set(["is_numpy", "is_pandas"]))
+            # ---- Convert to a Numpy array, if needed
+            expected_data.update(
+                {k: np.array(v) for k, v in expected_data.items() 
+                    if k in expected_data["is_numpy"]}
+            )
+            # ---- Convert to a Pandas DataFrame, if needed
+            expected_data.update(
+                {k: pd.DataFrame(v) for k, v in expected_data.items() 
+                    if k in expected_data["is_pandas"]}
+            )  
+            # ---- Return the output
+            return expected_data
+    except (FileNotFoundError, json.JSONDecodeError):
+        return default_value
+
+
+

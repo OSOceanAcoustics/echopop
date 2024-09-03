@@ -682,6 +682,22 @@ def variogram(
     # Pipe the parameters into the appropriate variogram function
     return variogram_function["model_function"](distance_lags, **required_args)
 
+def prepare_variogram_matrices(transect_data: pd.DataFrame,
+                               lag_resolution: float,
+                               **kwargs):
+    """
+    Create azimuth and lag matrices used for computing the empirical variogram
+    """
+    
+    # Calculate the lag distance matrix among transect data
+    transect_distance_matrix, transect_azimuth_matrix = griddify_lag_distances(
+        transect_data, transect_data, angles=True
+    )
+
+    # Compute the lag matrix
+    lag_matrix = np.round(transect_distance_matrix / lag_resolution).astype(int) + 1
+
+    return transect_azimuth_matrix, lag_matrix
 
 def empirical_variogram(
     transect_data: pd.DataFrame, variogram_parameters: dict, settings_dict: dict
@@ -736,12 +752,13 @@ def empirical_variogram(
     # ---- Compute the lags ['h']
     lags = variogram_parameters["distance_lags"]
 
-    # Calculate the lag distance matrix among transect data
-    transect_distance_matrix, transect_azimuth_matrix = griddify_lag_distances(
-        transect_data, transect_data, angles=True
-    )
-    # ---- Convert to lags
-    lag_matrix = np.round(transect_distance_matrix / lag_resolution).astype(int) + 1
+    # # Calculate the lag distance matrix among transect data
+    # transect_distance_matrix, transect_azimuth_matrix = griddify_lag_distances(
+    #     transect_data, transect_data, angles=True
+    # )
+    # # ---- Convert to lags
+    # lag_matrix = np.round(transect_distance_matrix / lag_resolution).astype(int) + 1
+    azimuth_matrix, lag_matrix = prepare_variogram_matrices(transect_data, **variogram_parameters)
 
     # Pre-allocate vectors/arrays that will be iteratively filled
     # ---- Counts for each lag
@@ -766,7 +783,7 @@ def empirical_variogram(
     equivalent_lags = variogram_matrix_filter(
         lag_matrix,
         triangle_mask_flp,
-        transect_azimuth_matrix,
+        azimuth_matrix,
         variogram_parameters["azimuth_range"],
     )
     # ---- Compute the binned sum
@@ -790,7 +807,7 @@ def empirical_variogram(
     estimate_rows = variogram_matrix_filter(
         np.arange(len(estimates))[:, np.newaxis],
         triangle_mask_flp,
-        transect_azimuth_matrix,
+        azimuth_matrix,
         variogram_parameters["azimuth_range"],
     )
     # ---- Calculate the deviations between indexed estimates and lag-specific ones
@@ -825,6 +842,13 @@ def empirical_variogram(
         )
     else:
         return lags, gamma_h, lag_counts, lag_covariance
+
+# def prepare_variogram_matrices(transect_data: pd.DataFrame,
+#                                lag_resolution: float,
+#                                n_lags: int,
+#                                distance_lags: np.ndarray[float]):
+    
+
 
 
 def variogram_matrix_filter(
