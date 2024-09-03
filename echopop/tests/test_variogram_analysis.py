@@ -1,3 +1,7 @@
+import re
+
+import pytest
+
 import echopop.spatial.variogram as esv
 import pytest
 import re
@@ -15,85 +19,103 @@ ___EXPECTED_OUTCOME_FILENAME__ = "variogram_analysis.json"
     [
         (
             "exponential",
-            ({"distance_lags", "sill", "nugget", "correlation_range"},
-             esv.exponential), None
+            ({"distance_lags", "sill", "nugget", "correlation_range"}, esv.exponential),
+            None,
         ),
         (
-             "gaussian",
-             ({"distance_lags", "sill", "nugget", "correlation_range"},
-             esv.gaussian), None
+            "gaussian",
+            ({"distance_lags", "sill", "nugget", "correlation_range"}, esv.gaussian),
+            None,
+        ),
+        ("jbessel", ({"distance_lags", "sill", "nugget", "hole_effect_range"}, esv.jbessel), None),
+        ("kbessel", ({"distance_lags", "sill", "nugget", "hole_effect_range"}, esv.kbessel), None),
+        ("linear", ({"distance_lags", "sill", "nugget"}, esv.linear), None),
+        ("nugget", ({"distance_lags", "sill", "nugget"}, esv.nugget), None),
+        ("sinc", ({"distance_lags", "sill", "nugget", "hole_effect_range"}, esv.sinc), None),
+        (
+            "spherical",
+            ({"distance_lags", "sill", "nugget", "correlation_range"}, esv.spherical),
+            None,
         ),
         (
-             "jbessel",
-             ({"distance_lags", "sill", "nugget", "hole_effect_range"},
-             esv.jbessel), None
+            ("bessel", "exponential"),
+            (
+                {
+                    "distance_lags",
+                    "sill",
+                    "nugget",
+                    "correlation_range",
+                    "hole_effect_range",
+                    "decay_power",
+                },
+                esv.bessel_exponential,
+            ),
+            None,
         ),
         (
-             "kbessel",
-             ({"distance_lags", "sill", "nugget", "hole_effect_range"}, 
-             esv.kbessel), None
+            ("bessel", "gaussian"),
+            (
+                {"distance_lags", "sill", "nugget", "correlation_range", "hole_effect_range"},
+                esv.bessel_gaussian,
+            ),
+            None,
         ),
         (
-             "linear",
-             ({"distance_lags", "sill", "nugget"}, 
-             esv.linear), None
+            ("cosine", "exponential"),
+            (
+                {
+                    "distance_lags",
+                    "sill",
+                    "nugget",
+                    "correlation_range",
+                    "hole_effect_range",
+                    "enhance_semivariance",
+                },
+                esv.cosine_exponential,
+            ),
+            None,
         ),
         (
-             "nugget",
-             ({"distance_lags", "sill", "nugget"}, 
-             esv.nugget), None
+            ("cosine", "gaussian"),
+            (
+                {"distance_lags", "sill", "nugget", "correlation_range", "hole_effect_range"},
+                esv.cosine_gaussian,
+            ),
+            None,
         ),
         (
-             "sinc",
-             ({"distance_lags", "sill", "nugget", "hole_effect_range"}, 
-             esv.sinc), None
+            ("exponential", "linear"),
+            (
+                {
+                    "distance_lags",
+                    "sill",
+                    "nugget",
+                    "correlation_range",
+                    "hole_effect_range",
+                    "decay_power",
+                },
+                esv.exponential_linear,
+            ),
+            None,
         ),
         (
-             "spherical",
-             ({"distance_lags", "sill", "nugget", "correlation_range"}, 
-             esv.spherical), None
+            ("gaussian", "linear"),
+            (
+                {"distance_lags", "sill", "nugget", "correlation_range", "hole_effect_range"},
+                esv.gaussian_linear,
+            ),
+            None,
+        ),
+        ("invalid", (None, None), "could not be matched to an existing variogram method."),
+        (
+            ("invalid", "tuple"),
+            (None, None),
+            "could not be matched to an existing variogram method.",
         ),
         (
-             ("bessel", "exponential"),
-             ({"distance_lags", "sill", "nugget", "correlation_range", "hole_effect_range", 
-              "decay_power"}, esv.bessel_exponential), None
-        ),
-        (
-             ("bessel", "gaussian"),
-             ({"distance_lags", "sill", "nugget", "correlation_range", "hole_effect_range"}, 
-              esv.bessel_gaussian), None
-        ),
-        (
-             ("cosine", "exponential"),
-             ({"distance_lags", "sill", "nugget", "correlation_range", "hole_effect_range", 
-              "enhance_semivariance"}, esv.cosine_exponential), None
-        ),
-        (
-             ("cosine", "gaussian"),
-             ({"distance_lags", "sill", "nugget", "correlation_range", "hole_effect_range"}, 
-              esv.cosine_gaussian), None
-        ),
-        (
-             ("exponential", "linear"),
-             ({"distance_lags", "sill", "nugget", "correlation_range", "hole_effect_range", 
-              "decay_power"}, esv.exponential_linear), None
-        ),
-        (
-             ("gaussian", "linear"),
-             ({"distance_lags", "sill", "nugget", "correlation_range", "hole_effect_range"}, 
-              esv.gaussian_linear), None
-        ),
-        (
-             "invalid",
-             (None, None), "could not be matched to an existing variogram method."
-        ),
-        (
-             ("invalid", "tuple"),
-             (None, None), "could not be matched to an existing variogram method."
-        ),
-        (
-             ["invalid", "list"],
-             (None, None), "could not be matched to an existing variogram method."
+            ["invalid", "list"],
+            (None, None),
+            "could not be matched to an existing variogram method.",
         ),
     ],
     ids=[
@@ -113,7 +135,7 @@ ___EXPECTED_OUTCOME_FILENAME__ = "variogram_analysis.json"
         "Gaussian-Linear arguments",
         "Unknown single-family variogram model (str)",
         "Unknown composite variogram model (tuple)",
-        "Invalid composite variogram model (list)"
+        "Invalid composite variogram model (list)",
     ],
 )
 def test_get_variogram_arguments(model, expected, exception):
@@ -124,10 +146,11 @@ def test_get_variogram_arguments(model, expected, exception):
     else:
         # Get arguments
         args, func = esv.get_variogram_arguments(model)
-        # Assert argument equality        
+        # Assert argument equality
         assert set(args.keys()) == set(expected[0])
         # Assert function equality
         assert func["model_function"] == expected[1]
+
 
 @pytest.mark.parametrize(
     "description",
@@ -147,7 +170,7 @@ def test_initialize_optimization_config(description):
         "finite_step_size": 1e-8,
         "trust_region_solver": "exact",
         "x_scale": "jacobian",
-        "jacobian_approx": "forward",        
+        "jacobian_approx": "forward",
     }
 
     # -------------------------
@@ -156,42 +179,22 @@ def test_initialize_optimization_config(description):
     output = esv.initialize_optimization_config(ECHOPOP_OPTIMIZATION_INPUTS)
     # ---- Create translation dictionary
     TRANSLATION_DICT = {
-        "max_fun_evaluations": {
-            "name": "max_nfev",
-            "value": 500
-        },
-        "cost_fun_tolerance": {
-            "name": "ftol",
-            "value": 1e-8
-        },
-        "solution_tolerance": {
-            "name": "xtol",
-            "value": 1e-8
-        },
-        "gradient_tolerance": {
-            "name": "gtol",
-            "value": 1e-8
-        },
-        "finite_step_size": {
-            "name": "diff_step",
-            "value": 1e-8
-        },
-        "trust_region_solver": {
-            "name": "tr_solver",
-            "value": "exact"
-        },
-        "x_scale": {
-            "name": "x_scale",
-            "value": "jac"
-        },
-        "jacobian_approx": {
-            "name": "jac",
-            "value": "2-point"
-        },
+        "max_fun_evaluations": {"name": "max_nfev", "value": 500},
+        "cost_fun_tolerance": {"name": "ftol", "value": 1e-8},
+        "solution_tolerance": {"name": "xtol", "value": 1e-8},
+        "gradient_tolerance": {"name": "gtol", "value": 1e-8},
+        "finite_step_size": {"name": "diff_step", "value": 1e-8},
+        "trust_region_solver": {"name": "tr_solver", "value": "exact"},
+        "x_scale": {"name": "x_scale", "value": "jac"},
+        "jacobian_approx": {"name": "jac", "value": "2-point"},
     }
     # ---- Iterate through keys to assess equality across names [ EQUIVALENT KEYS ]
-    assert all([TRANSLATION_DICT[key]["name"] in output.keys()
-                for key in ECHOPOP_OPTIMIZATION_INPUTS.keys()])
+    assert all(
+        [
+            TRANSLATION_DICT[key]["name"] in output.keys()
+            for key in ECHOPOP_OPTIMIZATION_INPUTS.keys()
+        ]
+    )
     # ---- Iterate through keys to assess equality across values [ EQUIVALENT VALUES ]
     assert all([output[TRANSLATION_DICT[key]["name"]] == TRANSLATION_DICT[key]["value"] 
                 for key in ECHOPOP_OPTIMIZATION_INPUTS.keys()])
