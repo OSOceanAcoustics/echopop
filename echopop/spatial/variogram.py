@@ -851,60 +851,11 @@ def empirical_variogram(
     # lag_matrix = np.round(transect_distance_matrix / lag_resolution).astype(int) + 1
     azimuth_matrix, lag_matrix = prepare_variogram_matrices(transect_data, **variogram_parameters)
 
-    # Pre-allocate vectors/arrays that will be iteratively filled
-    # ---- Counts for each lag
-    # lag_counts = np.zeros(n_lags - 1)
-    # # ---- Summed deviation for each lag
-    # lag_deviations = np.zeros_like(lag_counts)
-    # # ---- Summmed estimates for each lag
-    # lag_estimates = np.zeros_like(lag_counts)
-    # # ---- Summed squared estimates for each lag
-    # lag_estimates_squared = np.zeros_like(lag_counts)
-    # ---- Head (or first) observation indices
-    head_index = np.zeros((len(estimates), n_lags - 1))
-
     # Create a triangle mask with the diaganol offset to the left by 1
     # ---- Initial mask
     triangle_mask = np.tri(len(estimates), k=-1, dtype=bool)
     # ---- Vertically and then horizontally flip to force the 'True' and 'False' positions
     triangle_mask_flp = np.flip(np.flip(triangle_mask), axis=1)
-
-    # # Tally the counts of each lag present
-    # # ---- Filter the lag matrix and convert to a 1D array
-    # equivalent_lags = variogram_matrix_filter(
-    #     lag_matrix,
-    #     triangle_mask_flp,
-    #     transect_azimuth_matrix,
-    #     variogram_parameters["azimuth_range"],
-    # )
-    # # ---- Compute the binned sum
-    # lag_counts = np.bincount(equivalent_lags)[1:n_lags]
-
-    # # Compute the summed estimates per lag
-    # # ---- Filter the field estimates
-    # estimates_filtered = variogram_matrix_filter(
-    #   estimates, triangle_mask_flp, transect_azimuth_matrix, variogram_parameters["azimuth_range"]
-    # )
-    # # ---- Compute the binned sum
-    # lag_estimates = np.bincount(equivalent_lags, weights=estimates_filtered)[1:n_lags]
-    # # ---- Compute the binned squared-sum
-    # lag_estimates_squared = np.bincount(equivalent_lags, weights=estimates_filtered**2)[1:n_lags]
-
-    # # Calculate the deviations within each lag
-    # # ---- Subset the lag array via a boolean bitmap
-    # lag_bitmap = equivalent_lags < n_lags
-    # # ---Create a dummy array that produces the row indices for the estimate matrix/array and then
-    # # ---- apply the triangle mask and azimuth filter
-    # estimate_rows = variogram_matrix_filter(
-    #     np.arange(len(estimates))[:, np.newaxis],
-    #     triangle_mask_flp,
-    #     transect_azimuth_matrix,
-    #     variogram_parameters["azimuth_range"],
-    # )
-    # # ---- Calculate the deviations between indexed estimates and lag-specific ones
-    # deviations = (estimates[estimate_rows][lag_bitmap] - estimates_filtered[lag_bitmap]) ** 2
-    # # ---- Sum for each lag bin
-    # lag_deviations = np.bincount(equivalent_lags[lag_bitmap], weights=deviations)[1:n_lags]
 
     # Quantize lag metrics
     lag_counts, lag_estimates, lag_estimates_squared, lag_deviations = quantize_lags(
@@ -915,10 +866,12 @@ def empirical_variogram(
     # ---- Apply a mask using the triangle bitmap
     head_mask = np.where(triangle_mask_flp, lag_matrix, -1)
 
-    # ---- Helper function for computing the binned summations for each row
+    # Helper function for computing the binned summations for each row
     def bincount_row(row, n_lags):
         return np.bincount(row[row != -1], minlength=n_lags)[1:n_lags]
-
+    
+    # Pre-allocate vectors/arrays that will be iteratively filled
+    head_index = np.zeros((len(estimates), n_lags - 1))
     # ---- Find the head indices of each lag for each row
     head_index = np.apply_along_axis(bincount_row, axis=1, arr=head_mask, n_lags=n_lags)
 
@@ -1135,6 +1088,9 @@ def initialize_initial_optimization_values(
         for key, value in ({k: {"vary": False} for k in missing_args}.items())
     }
 
+    # TODO: THIS NEEDS TO BE CHANGED FROM A DICT TO AN ORDERED DICT TO MAINTAIN CONSISTENT
+    # TODO: PARAMETER ORDERING
+    # ! CAN YIELD UNSTABLE RESULTS WHEN WRITING TESTS
     # Initialize the Parameters class from the `lmfit` package
     # ---- Combine the parameter dictionaries
     full_initialization = {**updated_initial_values, **updated_missing_values}

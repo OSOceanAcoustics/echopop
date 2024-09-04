@@ -511,12 +511,12 @@ class VariogramOptimize(TypedDict):
         cls,
         max_fun_evaluations: posint = 500,
         cost_fun_tolerance: realposfloat = 1e-6,
-        solution_tolerance: realposfloat = 1e-4,
+        solution_tolerance: realposfloat = 1e-6,
         gradient_tolerance: realposfloat = 1e-4,
         finite_step_size: realposfloat = 1e-8,
         trust_region_solver: Literal["exact", "base"] = "exact",
         x_scale: Union[Literal["jacobian"], np.ndarray[realposfloat]] = "jacobian",
-        jacobian_approx: Literal["forward", "central"] = "forward",
+        jacobian_approx: Literal["central", "forward"] = "central",
         **kwargs,
     ) -> "VariogramOptimize":
         """
