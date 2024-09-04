@@ -28,6 +28,63 @@
   ]
 
   #####################################################################################################################
+  # Acoustic transect export processing#
+  ########################
+  nasc_exports:
+    export_file_directory: /raw_nasc
+    nasc_export_directory: /Exports     # Acoustic export directory
+    save_file_template: "{REGION}_NASC_{YEAR}_table_{GROUP}.xlsx"
+    save_file_sheetname: Sheet1
+    regions:                            # Main acoustic data region names (list or single string)
+      all_ages: [Age-1 Hake,            # Age-1+
+                 Age-1 Hake Mix,
+                 Hake,
+                 Hake Mix]
+      no_age1: [Hake, Hake Mix]         # Age-2+
+    max_transect_spacing: 10.0          # Maximum transect spacing (nmi)
+    file_columns: [transect_num, region_id, vessel_log_start, vessel_log_end, latitude, longitude,
+                   stratum_num, transect_spacing, layer_mean_depth, layer_height, bottom_depth,
+                   NASC, haul_num]
+  haul_to_transect_mapping:
+    save_file_template: "haul_to_transect_mapping_{YEAR}_{COUNTRY}"
+    country_code: [CAN, US]
+    file_settings:
+      US:
+        directory: /Biological/US
+        sheetname: Sheet1
+      CAN:
+        directory: /Biological/CAN
+        sheetname: Sheet1
+  transect_region_mapping:
+    save_file_template: "{COUNTRY}_{YEAR}_transect_region_haul_{GROUP}.xlsx"
+    save_file_directory: /Stratification
+    save_file_sheetname: Sheet1
+    pattern: "{REGION_CLASS}{HAUL_NUM}{COUNTRY}"
+    parts:
+      REGION_CLASS:
+        - pattern: ^[hH](?![a-zA-Z]|1a)
+          label: Hake
+        - pattern: ^[hH]1[aA][mM]
+          label: Age-1 Hake Mix
+        - pattern: ^[hH]1[aA]
+          label: Age-1 Hake
+        - pattern: ^[hH][mM]
+          label: Hake Mix
+        - pattern: hake_mix
+          label: Hake Mix
+        - pattern: hake
+          label: Hake
+      HAUL_NUM:
+        - pattern: '[0-9]+'
+          label: None
+      COUNTRY:
+        - pattern: ^[cC]
+          label: CAN
+        - pattern: ^[uU]
+          label: US
+
+
+  #####################################################################################################################
   # Log-linear regression#
   ########################
   # Target strength (TS) - length (L) regression: TS=m*log10(L)+b
@@ -45,7 +102,7 @@
     init: epsg:4326                       # EPSG integer code for geodetic parameter dataset
 
   #####################################################################################################################
-  # kriging parameters#
+  # Kriging parameters#
   #####################
   kriging_parameters:
     A0: 6.25                              # base area of the grid cell

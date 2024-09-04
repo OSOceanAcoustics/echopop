@@ -1,12 +1,13 @@
 import inspect
 import warnings
-from typing import Dict, List, Literal, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
 import pandas as pd
 from lmfit import Minimizer, Parameters
 from scipy import special
 
+from ..utils.validate import VariogramBase, VariogramInitial, VariogramOptimize
 from .mesh import griddify_lag_distances
 
 # Set warnings filter
@@ -14,35 +15,6 @@ warnings.simplefilter("always")
 
 
 # Single family models
-# ---- J-Bessel
-def bessel(distance_lags: np.ndarray, sill: float, nugget: float, hole_effect_range: float):
-    """
-    Calculates the J-Bessel semivariogram model at defined lagged distances
-
-    Parameters
-    ----------
-    distance_lags: np.ndarray
-        An array of lag distances
-    sill: float
-        The asymptotic value as lags approach infinity.
-    nugget: float
-        The semivariogram y-intercept that corresponds to variability at lag distances shorter than
-        the lag resolution.
-    hole_effect_range: float
-        The (normalized) length scale/range that 'holes' are observed, which represent 'null' (or
-        very small) points compared to their neighboring lags.
-    """
-
-    # Calculate the partial sill (or the sill minus the nugget)
-    partial_sill = sill - nugget
-
-    # Calculate the spatial decay term
-    decay = 1.0 - special.j0(hole_effect_range * distance_lags)
-
-    # Compute the J-Bessel semivariogram
-    return partial_sill * decay + nugget
-
-
 # ---- Exponential
 def exponential(distance_lags: np.ndarray, sill: float, nugget: float, correlation_range: float):
     """
@@ -99,6 +71,79 @@ def gaussian(distance_lags: np.ndarray, sill: float, nugget: float, correlation_
     return partial_sill * decay + nugget
 
 
+# ---- J-Bessel
+def jbessel(distance_lags: np.ndarray, sill: float, nugget: float, hole_effect_range: float):
+    """
+    Calculates the J-Bessel semivariogram model at defined lagged distances
+
+    Parameters
+    ----------
+    distance_lags: np.ndarray
+        An array of lag distances
+    sill: float
+        The asymptotic value as lags approach infinity.
+    nugget: float
+        The semivariogram y-intercept that corresponds to variability at lag distances shorter than
+        the lag resolution.
+    hole_effect_range: float
+        The (normalized) length scale/range that 'holes' are observed, which represent 'null' (or
+        very small) points compared to their neighboring lags.
+    """
+
+    # Calculate the partial sill (or the sill minus the nugget)
+    partial_sill = sill - nugget
+
+    # Calculate the spatial decay term
+    decay = 1.0 - special.j0(hole_effect_range * distance_lags)
+
+    # Compute the J-Bessel semivariogram
+    return partial_sill * decay + nugget
+
+
+# ---- K-Bessel
+def kbessel(distance_lags: np.ndarray, sill: float, nugget: float, hole_effect_range: float):
+    """
+    Calculates the K-Bessel semivariogram model at defined lagged distances
+
+    Parameters
+    ----------
+    distance_lags: np.ndarray
+        An array of lag distances
+    sill: float
+        The asymptotic value as lags approach infinity.
+    nugget: float
+        The semivariogram y-intercept that corresponds to variability at lag distances shorter than
+        the lag resolution.
+    hole_effect_range: float
+        The (normalized) length scale/range that 'holes' are observed, which represent 'null' (or
+        very small) points compared to their neighboring lags.
+    """
+
+    # Calculate the partial sill (or the sill minus the nugget)
+    partial_sill = sill - nugget
+
+    # Avoid the case where `hole_effect_range` = 0.0
+    if hole_effect_range == 0.0:
+        return np.where(distance_lags == 0.0, 0.0, nugget)
+
+    # Compute the cyclical term
+    cycle = np.where(
+        distance_lags / hole_effect_range < 1e-4,
+        0.0,
+        special.kv(1.0, (distance_lags / hole_effect_range)),
+    )
+
+    # Calculate the spatial decay term
+    decay = np.where(
+        distance_lags / hole_effect_range < 1e-4,
+        0.0,
+        1.0 - (distance_lags / hole_effect_range) * cycle,
+    )
+
+    # Compute the J-Bessel semivariogram
+    return partial_sill * decay + nugget
+
+
 # ---- Linear
 def linear(distance_lags: np.ndarray, sill: float, nugget: float):
     """
@@ -120,6 +165,26 @@ def linear(distance_lags: np.ndarray, sill: float, nugget: float):
 
     # Compute the linear semivariogram
     return partial_sill * distance_lags + nugget
+
+
+# ---- Nugget
+def nugget(distance_lags: np.ndarray, sill: float, nugget: float):
+    """
+    Calculates the semivariogram model comprising only a nugget effect
+
+    Parameters
+    ----------
+    distance_lags: np.ndarray
+        An array of lag distances
+    sill: float
+        The asymptotic value as lags approach infinity.
+    nugget: float
+        The semivariogram y-intercept that corresponds to variability at lag distances shorter than
+        the lag resolution.
+    """
+
+    # Sum together except at lag == 0.0
+    return np.where(distance_lags == 0.0, 0.0, sill + nugget)
 
 
 # ---- Sinc
@@ -148,7 +213,7 @@ def sinc(distance_lags: np.ndarray, sill: float, nugget: float, hole_effect_rang
     partial_sill = sill - nugget
 
     # Calculate the spatial decay term
-    decay = 1.0 - np.sin((distance_lags * eps) * hole_effect_range / (distance_lags * eps))
+    decay = 1.0 - np.sin(hole_effect_range * (distance_lags + eps)) / (distance_lags + eps)
 
     # Compute the sinc semivariogram
     return partial_sill * decay + nugget
@@ -182,9 +247,9 @@ def spherical(distance_lags: np.ndarray, sill: float, nugget: float, correlation
 
     # Compute the spherical semivariogram
     return np.where(
-        distance_lags <= correlation_range,
+        distance_lags < correlation_range,
         partial_sill * decay + nugget,
-        partial_sill,
+        sill + nugget,
     )
 
 
@@ -447,10 +512,12 @@ def gaussian_linear(
 # Variogram function API
 VARIOGRAM_MODELS = {
     "single": {
-        "bessel": bessel,
         "exponential": exponential,
         "gaussian": gaussian,
+        "jbessel": jbessel,
+        "kbessel": kbessel,
         "linear": linear,
+        "nugget": nugget,
         "sinc": sinc,
         "spherical": spherical,
     },
@@ -507,10 +574,6 @@ def variogram(
         | :fun:`variogram`           | Input           | Parameters               |
         | model                      |                 |                          |
         +============================+=================+==========================+
-        |  :fun:`bessel`             | 'bessel'        | - `sill`                 |
-        |                            |                 | - `nugget`               |
-        |                            |                 | - `hole_effect_range`    |
-        +----------------------------+-----------------+--------------------------+
         |  :fun:`exponential`        | 'exponential    | - `sill`                 |
         |                            |                 | - `nugget`               |
         |                            |                 | - `correlation_range`    |
@@ -519,7 +582,18 @@ def variogram(
         |                            |                 | - `nugget`               |
         |                            |                 | - `correlation_range`    |
         +----------------------------+-----------------+--------------------------+
+        |  :fun:`jbessel`            | 'jbessel'       | - `sill`                 |
+        |                            |                 | - `nugget`               |
+        |                            |                 | - `hole_effect_range`    |
+        +----------------------------+-----------------+--------------------------+
+        |  :fun:`kbessel`            | 'kbessel'       | - `sill`                 |
+        |                            |                 | - `nugget`               |
+        |                            |                 | - `hole_effect_range`    |
+        +----------------------------+-----------------+--------------------------+
         |  :fun:`linear`             | 'linear'        | - `nugget`               |
+        |                            |                 | - `sill`                 |
+        +----------------------------+-----------------+--------------------------+
+        |  :fun:`nugget`             | 'nugget'        | - `nugget`               |
         |                            |                 | - `sill`                 |
         +----------------------------+-----------------+--------------------------+
         |  :fun:`sinc`               | 'sinc'          | - `sill`                 |
@@ -609,6 +683,113 @@ def variogram(
     return variogram_function["model_function"](distance_lags, **required_args)
 
 
+def prepare_variogram_matrices(transect_data: pd.DataFrame, lag_resolution: float, **kwargs):
+    """
+    Create azimuth and lag matrices used for computing the empirical variogram
+    """
+
+    # Calculate the lag distance matrix among transect data
+    transect_distance_matrix, transect_azimuth_matrix = griddify_lag_distances(
+        transect_data, transect_data, angles=True
+    )
+
+    # Compute the lag matrix
+    lag_matrix = np.round(transect_distance_matrix / lag_resolution).astype(int) + 1
+
+    return transect_azimuth_matrix, lag_matrix
+
+
+def quantize_lags(
+    estimates: np.ndarray[float],
+    lag_matrix: np.ndarray[int],
+    mask_matrix: np.ndarray[bool],
+    azimuth_matrix: np.ndarray[float],
+    azimuth_range: float,
+    n_lags: int,
+    **kwargs,
+) -> np.ndarray:
+    """
+    Quantize lags using various metrics including counts, deviations, sums, and other statistical
+    estimators required for computing the empirical variogram
+
+    Parameters
+    ----------
+    estimates: np.ndarray
+        A 1D matrix of field estimates
+    data_matrix: np.ndarray
+        A 2D matrix of values.
+    mask_matrix: np.ndarray
+        A 2D boolean matrix that provides a triangular bitmap that is used to mask values contained
+        in `data_matrix`.
+    azimuth_matrix: np.ndarray
+        A 2D matrix containing azimuth angle estimates.
+    azimuth_range: float
+        The total azimuth angle range that is allowed for constraining the relative angles between
+        spatial points, particularly for cases where a high degree of directionality is assumed.
+    n_lags: int
+        The number of lags
+    """
+
+    # Validate that `estimates` is a 1D array
+    if estimates.ndim > 1:
+        raise ValueError("Estimates array ('estimates') must be a 1D array.")
+
+    # Validate that dimensions are 2D
+    if lag_matrix.ndim < 2 or mask_matrix.ndim < 2 or azimuth_matrix.ndim < 2:
+        error = (
+            "The function `quantize_lags` requires arrays to be 2D. The following 1D arrays have "
+            "invalid shapes: "
+        )
+        invalid_arrays = []
+        if lag_matrix.ndim < 2:
+            invalid_arrays += ["'lag_matrix'"]
+        if mask_matrix.ndim < 2:
+            invalid_arrays += ["'mask_matrix'"]
+        if azimuth_matrix.ndim < 2:
+            invalid_arrays += ["'azimuth_matrix'"]
+        raise ValueError(error + ", ".join(invalid_arrays))
+
+    # Tally the counts of each lag present
+    equivalent_lags = variogram_matrix_filter(
+        lag_matrix, mask_matrix, azimuth_matrix, azimuth_range
+    )
+
+    # Compute the binned sum
+    lag_counts = np.bincount(equivalent_lags)[1:n_lags]
+
+    # Compute the summed estimates per lag
+    # ---- Filter the field estimates
+    estimates_filtered = variogram_matrix_filter(
+        estimates, mask_matrix, azimuth_matrix, azimuth_range
+    )
+    # ---- Compute the binned sum
+    lag_estimates = np.bincount(equivalent_lags, weights=estimates_filtered.flatten())[1:n_lags]
+
+    # Compute the binned squared-sum
+    lag_estimates_squared = np.bincount(equivalent_lags, weights=estimates_filtered**2)[1:n_lags]
+
+    # Calculate the deviations within each lag
+    # ---- Subset the lag array via a boolean bitmap
+    lag_bitmap = equivalent_lags < n_lags
+    # ---- Create a dummy array that produces the row indices for the estimate matrix/array and then
+    # ---- apply the triangle mask and azimuth filter
+    estimate_rows = variogram_matrix_filter(
+        np.arange(len(estimates))[:, np.newaxis],
+        mask_matrix,
+        azimuth_matrix,
+        azimuth_range,
+    )
+
+    # Compute the deviations between indexed and lag-specific estimates
+    deviations = (estimates[estimate_rows][lag_bitmap] - estimates_filtered[lag_bitmap]) ** 2
+
+    # Sum deviations per lag bin
+    lag_deviations = np.bincount(equivalent_lags[lag_bitmap], weights=deviations)[1:n_lags]
+
+    # Return the outputs as a tuple
+    return lag_counts, lag_estimates, lag_estimates_squared, lag_deviations
+
+
 def empirical_variogram(
     transect_data: pd.DataFrame, variogram_parameters: dict, settings_dict: dict
 ) -> tuple:
@@ -656,30 +837,19 @@ def empirical_variogram(
 
     # Extract relevant variogram parameters
     # ---- Lag resolution ['lcsl']
-    lag_resolution = variogram_parameters["lag_resolution"]
+    # lag_resolution = variogram_parameters["lag_resolution"]
     # ---- Number of lags
     n_lags = variogram_parameters["n_lags"]
     # ---- Compute the lags ['h']
     lags = variogram_parameters["distance_lags"]
 
     # Calculate the lag distance matrix among transect data
-    transect_distance_matrix, transect_azimuth_matrix = griddify_lag_distances(
-        transect_data, transect_data, angles=True
-    )
+    # transect_distance_matrix, transect_azimuth_matrix = griddify_lag_distances(
+    #     transect_data, transect_data, angles=True
+    # )
     # ---- Convert to lags
-    lag_matrix = np.round(transect_distance_matrix / lag_resolution).astype(int) + 1
-
-    # Pre-allocate vectors/arrays that will be iteratively filled
-    # ---- Counts for each lag
-    lag_counts = np.zeros(n_lags - 1)
-    # ---- Summed deviation for each lag
-    lag_deviations = np.zeros_like(lag_counts)
-    # ---- Summmed estimates for each lag
-    lag_estimates = np.zeros_like(lag_counts)
-    # ---- Summed squared estimates for each lag
-    lag_estimates_squared = np.zeros_like(lag_counts)
-    # ---- Head (or first) observation indices
-    head_index = np.zeros((len(estimates), n_lags - 1))
+    # lag_matrix = np.round(transect_distance_matrix / lag_resolution).astype(int) + 1
+    azimuth_matrix, lag_matrix = prepare_variogram_matrices(transect_data, **variogram_parameters)
 
     # Create a triangle mask with the diaganol offset to the left by 1
     # ---- Initial mask
@@ -687,51 +857,21 @@ def empirical_variogram(
     # ---- Vertically and then horizontally flip to force the 'True' and 'False' positions
     triangle_mask_flp = np.flip(np.flip(triangle_mask), axis=1)
 
-    # Tally the counts of each lag present
-    # ---- Filter the lag matrix and convert to a 1D array
-    equivalent_lags = variogram_matrix_filter(
-        lag_matrix,
-        triangle_mask_flp,
-        transect_azimuth_matrix,
-        variogram_parameters["azimuth_range"],
+    # Quantize lag metrics
+    lag_counts, lag_estimates, lag_estimates_squared, lag_deviations = quantize_lags(
+        estimates, lag_matrix, triangle_mask_flp, azimuth_matrix, **variogram_parameters
     )
-    # ---- Compute the binned sum
-    lag_counts = np.bincount(equivalent_lags)[1:n_lags]
-
-    # Compute the summed estimates per lag
-    # ---- Filter the field estimates
-    estimates_filtered = variogram_matrix_filter(
-        estimates, triangle_mask_flp, transect_azimuth_matrix, variogram_parameters["azimuth_range"]
-    )
-    # ---- Compute the binned sum
-    lag_estimates = np.bincount(equivalent_lags, weights=estimates_filtered)[1:n_lags]
-    # ---- Compute the binned squared-sum
-    lag_estimates_squared = np.bincount(equivalent_lags, weights=estimates_filtered**2)[1:n_lags]
-
-    # Calculate the deviations within each lag
-    # ---- Subset the lag array via a boolean bitmap
-    lag_bitmap = equivalent_lags < n_lags
-    # ---- Create a dummy array that produces the row indices for the estimate matrix/array and then
-    # ---- apply the triangle mask and azimuth filter
-    estimate_rows = variogram_matrix_filter(
-        np.arange(len(estimates))[:, np.newaxis],
-        triangle_mask_flp,
-        transect_azimuth_matrix,
-        variogram_parameters["azimuth_range"],
-    )
-    # ---- Calculate the deviations between indexed estimates and lag-specific ones
-    deviations = (estimates[estimate_rows][lag_bitmap] - estimates_filtered[lag_bitmap]) ** 2
-    # ---- Sum for each lag bin
-    lag_deviations = np.bincount(equivalent_lags[lag_bitmap], weights=deviations)[1:n_lags]
 
     # Compute the mean and standard deviation of the head estimates for each lag bin
     # ---- Apply a mask using the triangle bitmap
     head_mask = np.where(triangle_mask_flp, lag_matrix, -1)
 
-    # ---- Helper function for computing the binned summations for each row
+    # Helper function for computing the binned summations for each row
     def bincount_row(row, n_lags):
         return np.bincount(row[row != -1], minlength=n_lags)[1:n_lags]
 
+    # Pre-allocate vectors/arrays that will be iteratively filled
+    head_index = np.zeros((len(estimates), n_lags - 1))
     # ---- Find the head indices of each lag for each row
     head_index = np.apply_along_axis(bincount_row, axis=1, arr=head_mask, n_lags=n_lags)
 
@@ -754,9 +894,9 @@ def empirical_variogram(
 
 
 def variogram_matrix_filter(
-    data_matrix: np.ndarray,
-    mask_matrix: np.ndarray,
-    azimuth_matrix: np.ndarray,
+    data_matrix: np.ndarray[int],
+    mask_matrix: np.ndarray[bool],
+    azimuth_matrix: np.ndarray[float],
     azimuth_range: float,
 ) -> np.ndarray:
     """
@@ -835,47 +975,186 @@ def semivariance(
     # ---- Compute the partial sill that is applied as a weighted calculation
     partial_sill = sigma_tail * sigma_head
     # ---- Semivariance [gamma(h)] and cross-sill estimate
-    gamma_h = 0.5 * lag_deviations / (lag_counts * partial_sill)
-
+    # gamma_h = 0.5 * lag_deviations / (lag_counts * partial_sill)
+    with np.errstate(divide="ignore"):
+        gamma_h = 0.5 * lag_deviations / (lag_counts * partial_sill)
     # Calculate the mean lag distance covariance
     # ---- Find non-zero head and tail variances
     non_zero_variance = np.where((sigma_head > 0.0) & (sigma_tail > 0.0))[0]
     # ---- Mean lag covariance
-    mean_lag_covariance = (sigma_head[non_zero_variance] * sigma_tail[non_zero_variance]).mean()
+    if non_zero_variance.size > 0:
+        mean_lag_covariance = (sigma_head[non_zero_variance] * sigma_tail[non_zero_variance]).mean()
+    else:
+        mean_lag_covariance = np.nan
     return gamma_h, mean_lag_covariance
 
 
-def initialize_variogram_parameters(gamma_h: np.ndarray, lags: np.ndarray) -> tuple:
+# def initialize_variogram_parameters(gamma_h: np.ndarray, lags: np.ndarray) -> tuple:
+#     """
+#     Approximate appropriate bounds for each parameter that are used for optimization.
+#     """
+
+#     # Compute empirical boundary estimates for the sill
+#     # ---- Lower
+#     sill_min = 0.7 * gamma_h.max()
+#     # ---- Upper
+#     sill_max = 1.2 * gamma_h.max()
+
+#     # Compute empirical boundary for the nugget
+#     # ---- Lower
+#     nugget_min = 0.0
+#     # ---- Upper
+#     nugget_max = sill_max
+
+#     # Estimate the length scale
+#     # ---- Find the maximum value within the first half of the variogram
+#     semivariogram_max = np.argmax(gamma_h[: int(np.round(0.5 * len(gamma_h)))])
+#     # ---- Find the lag distance corresponding to the 6 dB attenuation from the maximum
+#     lag_6db = np.argmin(np.abs(gamma_h[:semivariogram_max] - 0.3))
+#     # ---- Assign the length scale
+#     if lags[lag_6db] <= 0.01 * lags.max():
+#         # ---- Minimum value
+#         length_scale = 0.1 * lags.max()
+#     else:
+#         length_scale = lags[lag_6db]
+
+#     # Return bounds
+#     return (sill_min, sill_max), (nugget_min, nugget_max), length_scale
+
+
+def initialize_variogram_parameters(
+    variogram_parameters: VariogramBase, default_variogram_parameters: Dict[str, Any]
+):
     """
-    Approximate appropriate bounds for each parameter that are used for optimization.
+    Initialize and validate the variogram model parameters
     """
 
-    # Compute empirical boundary estimates for the sill
-    # ---- Lower
-    sill_min = 0.7 * gamma_h.max()
-    # ---- Upper
-    sill_max = 1.2 * gamma_h.max()
+    # Update the defaults for the base variogram model parameters
+    VariogramBase.update_defaults(default_variogram_parameters)
 
-    # Compute empirical boundary for the nugget
-    # ---- Lower
-    nugget_min = 0.0
-    # ---- Upper
-    nugget_max = sill_max
+    # Initialize and validate the theoretical variogram parameters
+    updated_variogram_parameters = VariogramBase.create(**variogram_parameters)
 
-    # Estimate the length scale
-    # ---- Find the maximum value within the first half of the variogram
-    semivariogram_max = np.argmax(gamma_h[: int(np.round(0.5 * len(gamma_h)))])
-    # ---- Find the lag distance corresponding to the 6 dB attenuation from the maximum
-    lag_6db = np.argmin(np.abs(gamma_h[:semivariogram_max] - 0.3))
-    # ---- Assign the length scale
-    if lags[lag_6db] <= 0.01 * lags.max():
-        # ---- Minimum value
-        length_scale = 0.1 * lags.max()
-    else:
-        length_scale = lags[lag_6db]
+    # Compute the lag distances and max range
+    # ---- Add to the `variogram_parameters` dictionary
+    updated_variogram_parameters["distance_lags"] = (
+        np.arange(1, updated_variogram_parameters["n_lags"])
+        * updated_variogram_parameters["lag_resolution"]
+    )
+    # ---- Update the max range parameter, if necessary
+    updated_variogram_parameters["range"] = (
+        updated_variogram_parameters["lag_resolution"] * updated_variogram_parameters["n_lags"]
+    )
 
-    # Return bounds
-    return (sill_min, sill_max), (nugget_min, nugget_max), length_scale
+    # Return the validated variogram parameters
+    return updated_variogram_parameters
+
+
+def initialize_initial_optimization_values(
+    initialize_variogram: VariogramInitial,
+    variogram_parameters: VariogramBase,
+):
+    """
+    Initialize and validate the variogram parameter initial and boundary values
+    """
+
+    # Initialize and validate the optimization variogram parameters
+    # ---- Create complete initial values for any cases where `initial` may be missing from the
+    # ---- user input
+    updated_initial_values = {
+        key: {**value, "value": value.get("value", variogram_parameters.get(key))}
+        for key, value in (
+            initialize_variogram.items()
+            if isinstance(initialize_variogram, dict)
+            else {k: {} for k in initialize_variogram}.items()
+        )
+    }
+    # ---- Create the validated dictionary
+    initial_values = VariogramInitial.create(updated_initial_values)
+
+    # Get the variogram arguments
+    args, _ = get_variogram_arguments(variogram_parameters["model"])
+    # ---- Get names
+    arg_names = list(args.keys())
+    # ---- Drop `distance_lags`
+    arg_names.remove("distance_lags")
+    # ---- Find missing arguments from the initial values
+    missing_args = list(set(arg_names) - set(initial_values))
+
+    # Create complete initial values for any cases where `initial` may be missing from the
+    # remaining arguments
+    updated_missing_values = {
+        key: {**value, "value": value.get("value", variogram_parameters.get(key))}
+        for key, value in ({k: {"vary": False} for k in missing_args}.items())
+    }
+
+    # TODO: THIS NEEDS TO BE CHANGED FROM A DICT TO AN ORDERED DICT TO MAINTAIN CONSISTENT
+    # TODO: PARAMETER ORDERING
+    # ! CAN YIELD UNSTABLE RESULTS WHEN WRITING TESTS
+    # Initialize the Parameters class from the `lmfit` package
+    # ---- Combine the parameter dictionaries
+    full_initialization = {**updated_initial_values, **updated_missing_values}
+    # ---- Initialize `paramaeters` object
+    parameters = Parameters()
+
+    # Iterate through to add to `parameters`
+    _ = {
+        parameters.add(param, **full_initialization[param]) for param in full_initialization.keys()
+    }
+
+    # Return the full `parameters` object
+    return parameters
+
+
+def initialize_optimization_config(optimization_parameters: VariogramOptimize):
+    """
+    Initialize and validate the optimization parameters
+    """
+
+    # Reformat the optimization parameters to comport with `lmfit`
+    # ---- Internal API
+    LMFIT_OPT_NAMES = {
+        "max_fun_evaluations": "max_nfev",
+        "cost_fun_tolerance": "ftol",
+        "solution_tolerance": "xtol",
+        "gradient_tolerance": "gtol",
+        "finite_step_size": "diff_step",
+        "trust_region_solver": "tr_solver",
+        "x_scale": "x_scale",
+        "jacobian_approx": "jac",
+    }
+
+    # Initialize and validate the optimization variogram parameters
+    updated_optimization_parameters = VariogramOptimize.create(**optimization_parameters)
+
+    # Reformat the names to comport with `lmfit`
+    lmfit_parameters = {
+        LMFIT_OPT_NAMES.get(k, k): v for k, v in updated_optimization_parameters.items()
+    }
+
+    # Update specific Literal parameters
+    lmfit_parameters.update(
+        {
+            "tr_solver": (
+                None
+                if updated_optimization_parameters["trust_region_solver"] == "base"
+                else "exact"
+            ),
+            "x_scale": (
+                "jac"
+                if updated_optimization_parameters["x_scale"] == "jacobian"
+                else updated_optimization_parameters["x_scale"]
+            ),
+            "jac": (
+                "2-point"
+                if updated_optimization_parameters["jacobian_approx"] == "forward"
+                else "3-point"
+            ),
+        }
+    )
+
+    # Return the validated `lmfit_parameters`
+    return lmfit_parameters
 
 
 def get_variogram_arguments(model_name: Union[str, List[str]]):
@@ -895,10 +1174,12 @@ def get_variogram_arguments(model_name: Union[str, List[str]]):
 
     # Parse user input from reference model dictionary
     # ---- Check against VARIOGRAM_MODELS API to ensure model exists
-    if (len(model_input) > 1) & (tuple(model_input) in VARIOGRAM_MODELS["composite"]):
+    if isinstance(model_input, list) and (tuple(model_input) in VARIOGRAM_MODELS["composite"]):
+        # if (len(model_input) > 1) & (tuple(model_input) in VARIOGRAM_MODELS["composite"]):
         # ---- Parse model function
         model_function = VARIOGRAM_MODELS["composite"][tuple(model_input)]
-    elif (len([model_input]) == 1) & (model_input in VARIOGRAM_MODELS["single"]):
+    # elif (len([model_input]) == 1) & (model_input in VARIOGRAM_MODELS["single"]):
+    elif not isinstance(model_input, list) and (model_input in VARIOGRAM_MODELS["single"]):
         # ---- Parse model function
         model_function = VARIOGRAM_MODELS["single"][model_input]
     else:
@@ -914,347 +1195,15 @@ def get_variogram_arguments(model_name: Union[str, List[str]]):
     return function_signature.parameters, {"model_function": model_function}
 
 
-def create_optimization_options(
-    fit_parameters: Union[str, List[str], Dict[str, Dict[str, float]]],
-    default_variogram_settings: Dict[str, float],
-    model: Union[str, List[str]],
-    initial_values: Optional[Union[List[Tuple[str, float]], Dict[str, Dict[str, float]]]] = None,
-    lower_bounds: Optional[Union[List[Tuple[str, float]], Dict[str, Dict[str, float]]]] = None,
-    upper_bounds: Optional[Union[List[Tuple[str, float]], Dict[str, Dict[str, float]]]] = None,
-    max_fun_evaluations: Optional[int] = None,
-    cost_fun_tolerance: Optional[float] = None,
-    solution_tolerance: Optional[float] = None,
-    gradient_tolerance: Optional[float] = None,
-    finite_step_size: Optional[float] = None,
-    trust_region_solver: Optional[Literal["exact", "base"]] = None,
-    x_scale: Optional[Union[Literal["jacobian"], np.ndarray[float]]] = None,
-    jacobian_approx: Optional[Literal["forward", "central"]] = None,
-) -> dict:
-    """
-    Construct the variogram optimization parameter dictionary
-    """
-
-    # Convert to a list if `parameter_values` is a single-parameter string
-    if isinstance(fit_parameters, str):
-        fit_parameters = [fit_parameters]
-
-    # Construct the parameter values
-    # ---- If `parameter_values` is already a correctly formatted dict
-    if isinstance(fit_parameters, dict):
-        _parameters = fit_parameters
-    elif isinstance(fit_parameters, list):
-        _parameters = {}
-        # ---- Iteratively populate `_parameters` with the varied parameters
-        _parameters = {param: {} for param in fit_parameters}
-    else:
-        raise TypeError(
-            "Argument `fit_parameters` must either be a single string, a list of strings, or a "
-            "pre-formatted dictionary. Please see the documentation for "
-            "`create_optimization_options` for further details."
-        )
-
-    # Helper function for populating `_parameters`
-    def populate_parameters(argument, key, name):
-        # ---- Check argument existence
-        if argument:
-            if isinstance(argument, dict):
-                _argument = {param: {key: value} for param, value in (argument.items())}
-            elif isinstance(argument, list):
-                if all(
-                    isinstance(item, tuple)
-                    and len(item) == 2
-                    and isinstance(item[0], str)
-                    and isinstance(item[1], float)
-                    for item in argument
-                ):
-                    _argument = {param: value for param, value in argument}
-                else:
-                    raise TypeError(
-                        f"The list of values for `{name}` must be a list of tuples (str, float)."
-                    )
-            else:
-                raise TypeError(f"Argument `{name} must either be either a dictionary or a list.")
-
-            # Update `_parameters` with `_argument`
-            for param, value in zip(fit_parameters, _argument.items()):
-                if isinstance(value, tuple):
-                    _parameters[param][key] = value[1]
-                else:
-                    _parameters[param][key] = value
-
-    # Populate lower bounds
-    populate_parameters(lower_bounds, "min", "lower_bounds")
-
-    # Populate upper bounds
-    populate_parameters(upper_bounds, "max", "upper_bounds")
-
-    # Populate starting values
-    if initial_values is None:
-        # ---- Initialize empty list
-        init_values = []
-        # ---- Create empty fixed list
-        fixed_parameters = []
-        # ---- If no initial values are provided, use default values
-        for param in fit_parameters:
-            init_values.append((param, default_variogram_settings[param]))
-    else:
-        # ---- Create copy of `initial_values`
-        init_values = initial_values.copy()
-        # ---- Get the required parameters
-        variogram_args, variogram_function = get_variogram_arguments(model)
-        # ---- Get names
-        arg_names = list(variogram_args.keys())
-        # ---- Drop `distance_lags`
-        arg_names.remove("distance_lags")
-        # ---- Assign a list of parameters that will be kept fixed
-        fixed_parameters = []
-        # ---- Get the initial values present
-        init_parameters = {param for param, value in initial_values}
-        # ---- Find missing values that are contained within the `fit_parameters` list
-        missing_parameters = set(arg_names) - set(init_parameters)
-        # ---- Append default values to `inital_values`
-        if missing_parameters:
-            for param in missing_parameters:
-                fixed_parameters.append(param)
-                init_values.append((param, default_variogram_settings[param]))
-    # ---- And populate
-    populate_parameters(init_values, "value", "initial_values")
-
-    # Populate fixed constants, if any
-    if fixed_parameters:
-        for param in fixed_parameters:
-            _parameters[param]["vary"] = False
-
-    # Initial a Parameters class from the `lmfit` package
-    # ---- Initialize `paramaeters` object
-    parameters = Parameters()
-    # ---- Populate `parameters`
-    for param in _parameters.keys():
-        parameters.add(param, **_parameters[param])
-
-    # Save parameter names that are present
-    # ---- Parameter names
-    optimization_parameters = [
-        "max_fun_evaluations",
-        "cost_fun_tolerance",
-        "solution_tolerance",
-        "gradient_tolerance",
-        "finite_step_size",
-        "trust_region_solver",
-        "x_scale",
-        "jacobian_approx",
-    ]
-    # ---- Parameter values
-    optimization_values = [
-        max_fun_evaluations,
-        cost_fun_tolerance,
-        solution_tolerance,
-        gradient_tolerance,
-        finite_step_size,
-        trust_region_solver,
-        x_scale,
-        jacobian_approx,
-    ]
-    # ---- Drop unused
-    unused_parameters_bitmap = [k is not None for k in optimization_values]
-    used_parameters = [
-        value for bit, value in zip(unused_parameters_bitmap, optimization_parameters) if bit
-    ]
-    used_values = [
-        value for bit, value in zip(unused_parameters_bitmap, optimization_values) if bit
-    ]
-
-    # Internal API (using argument names for the actual underlying functions)
-    _options = {
-        "max_nfev": max_fun_evaluations,
-        "ftol": cost_fun_tolerance,
-        "xtol": solution_tolerance,
-        "gtol": gradient_tolerance,
-        "diff_step": finite_step_size,
-    }
-
-    # Filter
-    _options = {k: v for k, v in _options.items() if v is not None}
-
-    # Add trust region solver definition
-    if trust_region_solver is not None:
-        _options.update({"tr_solver": None if trust_region_solver == "base" else "exact"})
-
-    # Add x-scale
-    if x_scale is not None:
-        _options.update({"x_scale": "jac" if x_scale == "jacobian" else x_scale})
-
-    # Add Jacobian approximation method
-    if jacobian_approx is not None:
-        _options.update({"jac": "2-point" if jacobian_approx == "forward" else "3-point"})
-
-    # Create and return a dictionary representing the full optimization parameterization
-    return {
-        "parameters": parameters,
-        "fixed_parameters": fixed_parameters,
-        "config": _options,
-        "used_parameters": pd.DataFrame(
-            zip(used_parameters, used_values), columns=["names", "values"]
-        ),
-    }
-
-
-def validate_variogram_parameters(
-    variogram_parameters: dict,
-    fit_parameters: Optional[list[str]] = None,
-    optimization_settings: Optional[dict] = None,
-) -> None:
-    """
-    Validate variogram parameters and optimization settings
-    """
-
-    # Parse the variogram parameters dictionary for the model name
-    if "model" not in variogram_parameters:
-        raise KeyError(
-            "No variogram model was defined in the `variogram_parameters` dictionary."
-            " Please see the documentation for `variogram()` for valid model inputs."
-        )
-    else:
-        model_name = variogram_parameters["model"]
-
-    # Validate that all required parameters are present
-    # ---- Extract
-    function_arguments, _ = get_variogram_arguments(model_name)
-    # ----Checks against the user-input (`variogram_parameters`) and the initialized
-    # ---- dictionary (`init_parameters`) when present
-    init_parameters = optimization_settings["fixed_parameters"]
-    missing_args = []
-    # ---- Iterate through
-    for param in function_arguments.values():
-        # ---- Ignore "distance_lags"
-        if param.name != "distance_lags":
-            # ---- For cases where there is no default argument
-            if param.default is param.empty:
-                # ---- For cases where there is no user-input
-                if param.name not in variogram_parameters:
-                    # ---- For cases where a value is not initialized
-                    if init_parameters is not None and param.name not in init_parameters:
-                        missing_args.append(param.name)
-                    else:
-                        missing_args.append(param.name)
-    # ---- Generate error if any are missing
-    if missing_args:
-        raise ValueError(f"Missing variogram parameters: {', '.join(missing_args)}.")
-
-    # Evaluate whether arguments defined in `fit_parameters` exist
-    # ---- Find arguments that do not match any arguments
-    if fit_parameters is not None:
-        erroneous_args = set(fit_parameters).difference(list(function_arguments.keys()))
-        # ---- Generate warning
-        if list(erroneous_args):
-            warnings.warn(
-                f"Unnecessary variogram parameters included in the argument `fit_parameters`:"
-                f" {', '.join(list(erroneous_args))}. These will be ignored.",
-                stacklevel=1,
-            )
-
-    # Validate the optimization settings entries, if necessary
-    if optimization_settings is not None:
-        # ---- Pivot parameters
-        present_parameters = optimization_settings["used_parameters"].set_index("names").T
-        # ---- Validate that `optimization_settings` is a dictionary
-        if not isinstance(optimization_settings, dict):
-            raise TypeError(
-                "The argument `optimization_settings` must be a dictionary. Please see"
-                " documentation for `fit_variogram()` for valid optimization parameters/"
-                "arguments."
-            )
-        # ---- Check for any erroneous entries
-        erroneous_args = set(present_parameters.columns) - set(
-            [
-                "max_fun_evaluations",
-                "cost_fun_tolerance",
-                "solution_tolerance",
-                "gradient_tolerance",
-                "finite_step_size",
-                "trust_region_solver",
-                "x_scale",
-                "jacobian_approx",
-            ]
-        )
-        # ---- Generate warning if needed
-        if list(erroneous_args):
-            raise KeyError(
-                f"User optimization arguments ({', '.join(list(erroneous_args))})"
-                f" are undefined. Please see documentation for `fit_variogram()`"
-                f" for valid optimization parameters/arguments."
-            )
-        # ---- Check `max_fun_evaluations`
-        if "max_fun_evaluations" in present_parameters.columns:
-            if not isinstance(present_parameters["max_fun_evaluations"]["values"], int):
-                raise TypeError(
-                    "The optimization parameter `max_fun_evaluations` must be an integer."
-                )
-            elif present_parameters["max_fun_evaluations"]["values"] <= 0:
-                raise ValueError(
-                    "The optimization parameter `max_fun_evaluations` must be a positive,"
-                    " non-zero integer."
-                )
-        # ---- Check `cost_fun_tolerance`
-        if "cost_fun_tolerance" in present_parameters.columns:
-            if not isinstance(present_parameters["cost_fun_tolerance"]["values"], float):
-                raise TypeError("The optimization parameter `cost_fun_tolerance` must be a float.")
-        # ---- Check `solution_tolerance`
-        if "solution_tolerance" in present_parameters.columns:
-            if not isinstance(present_parameters["solution_tolerance"]["values"], float):
-                raise TypeError("The optimization parameter `solution_tolerance` must be a float.")
-        # ---- Check `gradient_tolerance`
-        if "gradient_tolerance" in present_parameters.columns:
-            if not isinstance(present_parameters["gradient_tolerance"]["values"], float):
-                raise TypeError("The optimization parameter `gradient_tolerance` must be a float.")
-        # ---- Check `finite_step_size`
-        if "finite_step_size" in present_parameters.columns:
-            if not isinstance(present_parameters["finite_step_size"]["values"], float):
-                raise TypeError("The optimization parameter `finite_step_size` must be a float.")
-        # ---- Check `trust_region_solver`
-        if "trust_region_solver" in present_parameters.columns:
-            if not isinstance(present_parameters["trust_region_solver"]["values"], str):
-                raise TypeError(
-                    "The optimization parameter `trust_region_solver` must be a string."
-                )
-            elif present_parameters["trust_region_solver"]["values"] not in ["base", "exact"]:
-                raise ValueError(
-                    f"The optimization parameter `trust_region_solver` "
-                    f"`{present_parameters['trust_region_solver']['values']}` is invalid. This "
-                    f"value must be one of the following: [None, 'exact']."
-                )
-        # ---- Check `x_scale`
-        if "x_scale" in present_parameters.columns:
-            if not isinstance(present_parameters["x_scale"]["values"], (float, str)):
-                raise TypeError(
-                    "The optimization parameter `x_scale` must either be a single float"
-                    " or be a string."
-                )
-            elif isinstance(present_parameters["x_scale"]["values"], str):
-                if present_parameters["x_scale"]["values"] != "jacobian":
-                    raise ValueError(
-                        f"The optimization parameter `x_scale` "
-                        f"({present_parameters['x_scale']['values']})"
-                        f" is invalid. The only string value accepted is: 'jacobian'."
-                    )
-        # ---- Check `jacobian_approx`
-        if "jacobian_approx" in present_parameters.columns:
-            if not isinstance(present_parameters["jacobian_approx"]["values"], str):
-                raise TypeError("The optimization parameter `jacobian_approx` must be a string.")
-            elif present_parameters["jacobian_approx"]["values"] not in ["forward", "central"]:
-                raise ValueError(
-                    f"The optimization parameter `jacobian_approx` "
-                    f"({present_parameters['jacobian_approx']['values']})"
-                    f" is invalid. The only accepted values are: ['forward', 'central']."
-                )
-
-
 def optimize_variogram(
     lag_counts: np.ndarray,
     lags: np.ndarray,
     gamma_h: np.ndarray,
-    variogram_parameters: dict,
+    # variogram_parameters: dict,
     optimization_settings: dict,
+    model: Union[str, List[str]],
+    range: float,
+    **kwargs,
 ):
     """
     Optimize variogram parameters.
@@ -1267,13 +1216,15 @@ def optimize_variogram(
     data_stack = np.vstack((lags, gamma_h, lag_weights))
 
     # Index lag distances that are within the parameterized range
-    within_range = np.where(lags <= variogram_parameters["range"])[0]
+    # within_range = np.where(lags <= variogram_parameters["range"])[0]
+    within_range = np.where(lags <= range)[0]
 
     # Truncate the data stack
     truncated_stack = data_stack[:, within_range]
 
     # Get model name
-    _, variogram_fun = get_variogram_arguments(variogram_parameters["model"])
+    # _, variogram_fun = get_variogram_arguments(variogram_parameters["model"])
+    _, variogram_fun = get_variogram_arguments(model)
 
     # Create helper cost-function that is weighted using the kriging weights (`w`), lag
     # distances (`x`), and empirical semivariance (`y`)

@@ -20,35 +20,34 @@ def transect_results_msg(transect_results_dict: dict, settings_dict: dict) -> No
 
     # Generate message output
     return print(
-        f"""
-    --------------------------------
-    TRANSECT RESULTS
-    --------------------------------
-    | Variable: Biomass (kmt)
-    | Age-1 fish excluded: {settings_dict['exclude_age1']}
-    | Stratum definition: {settings_dict['stratum'].upper()}
-    --------------------------------
-    GENERAL RESULTS
-    --------------------------------
-    Total biomass: {biomass_message.loc['all']['biomass_all']}{units}
-        Age-1: {biomass_message.loc['all']['biomass_age1']}{units}
-        Age-2+: {biomass_message.loc['all']['biomass_adult']}{units}
-    Total female biomass: {biomass_message.loc['female']['biomass_all']}{units}
-        Age-1: {biomass_message.loc['female']['biomass_age1']}{units}
-        Age-2+: {biomass_message.loc['female']['biomass_adult']}{units}
-    Total male biomass: {biomass_message.loc['male']['biomass_all']}{units}
-        Age-1: {biomass_message.loc['male']['biomass_age1']}{units}
-        Age-2+: {biomass_message.loc['male']['biomass_adult']}{units}
-    Total unsexed biomass: {biomass_message.loc['unsexed']['biomass_all']}{units}
-    Total mixed biomass: {biomass_message.loc['mixed']['biomass_all']}{units}
-    --------------------------------"""
+        f"--------------------------------\n"
+        f"TRANSECT RESULTS\n"
+        f"--------------------------------\n"
+        f"| Variable: Biomass (kmt)\n"
+        f"| Age-1 fish excluded: {settings_dict['exclude_age1']}\n"
+        f"| Stratum definition: {settings_dict['stratum'].upper()}\n"
+        f"--------------------------------\n"
+        f"GENERAL RESULTS\n"
+        f"--------------------------------\n"
+        f"| Total biomass: {biomass_message.loc['all']['biomass_all']}{units}\n"
+        f"    Age-1: {biomass_message.loc['all']['biomass_age1']}{units}\n"
+        f"    Age-2+: {biomass_message.loc['all']['biomass_adult']}{units}\n"
+        f"| Total female biomass: {biomass_message.loc['female']['biomass_all']}{units}\n"
+        f"    Age-1: {biomass_message.loc['female']['biomass_age1']}{units}\n"
+        f"    Age-2+: {biomass_message.loc['female']['biomass_adult']}{units}\n"
+        f"| Total male biomass: {biomass_message.loc['male']['biomass_all']}{units}\n"
+        f"    Age-1: {biomass_message.loc['male']['biomass_age1']}{units}\n"
+        f"    Age-2+: {biomass_message.loc['male']['biomass_adult']}{units}\n"
+        f"| Total unsexed biomass: {biomass_message.loc['unsexed']['biomass_all']}{units}\n"
+        f"| Total mixed biomass: {biomass_message.loc['mixed']['biomass_all']}{units}\n"
+        f"--------------------------------"
     )
 
 
 def stratified_results_msg(stratified_results_dict: pd.DataFrame, settings_dict: dict) -> None:
 
     # Assign the max number of results per line for multi-line entries
-    max_results_per_row = 8
+    max_results_per_row = 3
 
     # Determine variable units
     if settings_dict["variable"] == "biomass":
@@ -147,8 +146,8 @@ def stratified_results_msg(stratified_results_dict: pd.DataFrame, settings_dict:
     # -------- Create the string
     survey_cv_cis_str = f"{survey_cv} [{survey_cv_cis_scaled[0]}, {survey_cv_cis_scaled[1]}]"
     # Fix strings
-    density_str = "\n".join(density_rows)
-    total_str = "\n".join(total_rows)
+    density_str = "\n    ".join(density_rows)
+    total_str = "\n    ".join(total_rows)
     # Generate message output
     return print(
         f"--------------------------------\n"
@@ -166,12 +165,12 @@ def stratified_results_msg(stratified_results_dict: pd.DataFrame, settings_dict:
         f"--------------------------------\n"
         f"STRATUM-SPECIFIC ESTIMATES\n"
         f"--------------------------------\n"
-        f"| Stratum area coverage:\n"
-        f"{strata_area} nmi^2\n"
+        f"| Stratum area coverage (n = {strata_num}):\n"
+        f"    {strata_area} nmi^2\n"
         f"| Stratum mean {settings_dict['variable']} density ({units}/nmi^2):\n"
-        f"{density_str}\n"
+        f"    {density_str}\n"
         f"| Stratum mean {settings_dict['variable']} ({units}):\n"
-        f"{total_str}\n"
+        f"    {total_str}\n"
         f"--------------------------------\n"
         f"SURVEY RESULTS\n"
         f"--------------------------------\n"
@@ -179,7 +178,8 @@ def stratified_results_msg(stratified_results_dict: pd.DataFrame, settings_dict:
         f" {survey_density_cis_str}\n"
         f"| Survey mean {settings_dict['variable']} ({units}):"
         f" {survey_total_cis_str}\n"
-        f"| Survey CV: {survey_cv_cis_str}"
+        f"| Survey CV: {survey_cv_cis_str}\n"
+        f"--------------------------------"
     )
 
 
@@ -249,28 +249,28 @@ def kriging_results_msg(kriging_results_dict: pd.DataFrame, settings_dict: dict)
 
     # Generate message output
     return print(
-        f"""
-    --------------------------------
-    KRIGING RESULTS (MESH)
-    --------------------------------
-    | Kriged variable: {settings_dict['variable'].replace('_', ' ').capitalize()} (kg/nmi^2)
-    | Age-1 fish excluded: {settings_dict['exclude_age1']}
-    | Stratum definition: {settings_dict['stratum'].upper()}
-    | Mesh extrapolation: {settings_dict['extrapolate']}
-    --- Mesh cropping method: {mesh_crop}
-    | Mesh and transect coordinate standardization: {settings_dict['standardize_coordinates']}"""
-        """
-    --------------------------------
-    GENERAL RESULTS
-    --------------------------------\n"""
-        f"""    Mean {settings_dict['variable'].replace('_', ' ')}: """
-        f"""{np.round(kriging_mesh_results['survey_mean'], 2)} kg/nmi^2\n"""
-        f"""    Total survey {settings_dict['variable'].replace('_density', '')} estimate: """
-        f"""{np.round(kriging_mesh_results['survey_estimate'] * 1e-6, 2)} kmt\n"""
-        f"""    Mean mesh sample CV: """
-        f"""{np.round(kriging_mesh_results['mesh_results_df']['sample_cv'].mean(), 4)}\n"""
-        f"""    Overall survey CV: {np.round(kriging_mesh_results['survey_cv'], 4)}\n"""
-        f"""    Total area coverage:"""
-        f""" {np.round(kriging_mesh_results['mesh_results_df']['area'].sum(), 1)} nmi^2\n"""
-        """   --------------------------------"""
+        f"--------------------------------\n"
+        f"KRIGING RESULTS (MESH)\n"
+        f"--------------------------------\n"
+        f"| Kriged variable: {settings_dict['variable'].replace('_', ' ').capitalize()} "
+        f"(kg/nmi^2)\n"
+        f"| Age-1 fish excluded: {settings_dict['exclude_age1']}\n"
+        f"| Stratum definition: {settings_dict['stratum'].upper()}\n"
+        f"| Mesh extrapolation: {settings_dict['extrapolate']}\n"
+        f"    Mesh cropping method: {mesh_crop}\n"
+        f"| Mesh and transect coordinate standardization: "
+        f"{settings_dict['standardize_coordinates']}\n"
+        f"--------------------------------\n"
+        f"GENERAL RESULTS\n"
+        f"--------------------------------\n"
+        f"| Mean {settings_dict['variable'].replace('_', '' '')}: "
+        f"{np.round(kriging_mesh_results['survey_mean'], 2)} kg/nmi^2\n"
+        f"| Total survey {settings_dict['variable'].replace('_density', '')} estimate: "
+        f"{np.round(kriging_mesh_results['survey_estimate'] * 1e-6, 2)} kmt\n"
+        f"| Mean mesh sample CV: "
+        f"{np.round(kriging_mesh_results['mesh_results_df']['sample_cv'].mean(), 4)}\n"
+        f"| Overall survey CV: {np.round(kriging_mesh_results['survey_cv'], 4)}\n"
+        f"| Total area coverage: "
+        f"{np.round(kriging_mesh_results['mesh_results_df']['area'].sum(), 1)} nmi^2\n"
+        f"--------------------------------"
     )

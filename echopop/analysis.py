@@ -3,9 +3,7 @@ General analysis orchestration functions that bundle related functions and proce
 """
 
 import copy
-import os
 import warnings
-from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -34,12 +32,14 @@ from .spatial.transect import (
     transect_spatial_features,
 )
 from .spatial.variogram import (
-    create_optimization_options,
     empirical_variogram,
+    initialize_initial_optimization_values,
+    initialize_optimization_config,
+    initialize_variogram_parameters,
     optimize_variogram,
-    validate_variogram_parameters,
 )
 from .statistics import stratified_transect_statistic
+from .utils.validate import VariogramEmpirical
 
 
 def process_transect_data(
@@ -77,7 +77,11 @@ def process_transect_data(
 
     # Save the transect coordinate information
     analysis_dict.update(
-        {"coordinates": save_transect_coordinates(input_dict["acoustics"]["nasc_df"])}
+        {
+            "coordinates": save_transect_coordinates(
+                input_dict["acoustics"]["nasc_df"], settings_dict["transect"]
+            )
+        }
     )
 
     # Calculate mean sigma_bs per individual haul, KS stratum, and INPFC stratum
@@ -254,56 +258,29 @@ def stratified_summary(
 
 def variogram_analysis(
     variogram_parameters: dict,
+    default_variogram_parameters: dict,
     optimization_parameters: dict,
+    initialize_variogram: dict,
     transect_dict: dict,
     settings_dict: dict,
     isobath_df: pd.DataFrame,
-    fit_parameters: Union[str, List[float]],
-    initial_values: Optional[Union[List[Tuple[str, float]], Dict[str, Dict[str, float]]]],
-    lower_bounds: Union[List[Tuple[str, float]], Dict[str, Dict[str, float]]],
-    upper_bounds: Optional[Union[List[Tuple[str, float]], Dict[str, Dict[str, float]]]],
 ):
 
-    # Extract specific variogram parameters
-    # ---- Number of lags
-    n_lags = variogram_parameters["n_lags"]
-    # ---- Lag resolution
-    lag_resolution = variogram_parameters["lag_resolution"]
+    # Validate the relevant empirical variogram parameters
+    empirical_variogram_params = VariogramEmpirical.create(**settings_dict)
 
-    # Compute the lag distances
-    distance_lags = np.arange(1, n_lags) * lag_resolution
-    # ---- Add to the `variogram_parameters` dictionary
-    variogram_parameters["distance_lags"] = distance_lags
-    # ---- Update the max range parameter, if necessary
-    max_range = lag_resolution * n_lags
-    # ---- Mismatched value in default parameters should be replaced
-    if "range" in variogram_parameters and variogram_parameters["range"] != max_range:
-        # ---- Update
-        variogram_parameters["range"] = max_range
-        # ---- Skip file dir in message
-        _warn_skips = (os.path.dirname(__file__),)
-        # ---- Generate warning
-        warnings.warn(
-            f"Default `range` parameter ({variogram_parameters['range']}) does not "
-            f"align with the inputs for `lag_resolution` ({lag_resolution}) "
-            f"and `n_lags` ({n_lags}). The range will be changed to {max_range}.",
-            stacklevel=2,
-            skip_file_prefixes=_warn_skips,
-        )
-
-    # Generate the optimization settings dictionary
-    optimization_settings = create_optimization_options(
-        fit_parameters,
-        variogram_parameters,
-        initial_values=initial_values,
-        lower_bounds=lower_bounds,
-        upper_bounds=upper_bounds,
-        model=variogram_parameters["model"],
-        **optimization_parameters,
+    # Initialize and validate the variogram model parameters
+    valid_variogram_params = initialize_variogram_parameters(
+        variogram_parameters, default_variogram_parameters
     )
 
-    # Validate all variogram-related inputs
-    validate_variogram_parameters(variogram_parameters, fit_parameters, optimization_settings)
+    # Initialize and validate the optimization parameters
+    valid_optimization_params = initialize_optimization_config(optimization_parameters)
+
+    # Initialize and validate the initial values/boundary inputs
+    valid_initial_values = initialize_initial_optimization_values(
+        initialize_variogram, valid_variogram_params
+    )
 
     # Prepare the transect data
     # ---- Create a copy of the transect dictionary
@@ -329,13 +306,19 @@ def variogram_analysis(
         transect_data["y"] = "latitude"
 
     # Compute the empirical variogram
-    lags, gamma_h, lag_counts, lag_covariance = empirical_variogram(
-        transect_data, variogram_parameters, settings_dict
+    lags, gamma_h, lag_counts, _ = empirical_variogram(
+        transect_data, {**valid_variogram_params, **empirical_variogram_params}, settings_dict
     )
 
     # Least-squares fitting
+    # ---- Consolidate the optimization dictionaries into a single one
+    optimization_settings = {
+        "parameters": valid_initial_values,
+        "config": valid_optimization_params,
+    }
+    # ---- Optimize parameters
     best_fit_variogram, initial_fit, optimized_fit = optimize_variogram(
-        lag_counts, lags, gamma_h, variogram_parameters, optimization_settings
+        lag_counts, lags, gamma_h, valid_variogram_params, optimization_settings
     )
 
     # Return a dictionary of results

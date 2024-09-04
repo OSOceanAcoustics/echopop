@@ -9,7 +9,8 @@
   stratified_survey_mean_parameters:
     strata_transect_proportion: 0.75                          # percent of Jolly-Hampton transects in each stratum
     num_replicates: 10000                                         # number of resample replicates
-
+    mesh_transects_per_latitude: 5                            # number of virtual transects per degree latitude in kriging mesh
+    
   #####################################################################################################################
   # Biological data processing#
   ########################
