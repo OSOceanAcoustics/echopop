@@ -279,7 +279,7 @@ def variogram_analysis(
 
     # Initialize and validate the initial values/boundary inputs
     valid_initial_values = initialize_initial_optimization_values(
-        initialize_variogram, variogram_parameters
+        initialize_variogram, valid_variogram_params
     )
 
     # Prepare the transect data

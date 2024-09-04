@@ -486,12 +486,12 @@ class VariogramOptimize(TypedDict):
     DEFAULT_VALUES = {
         "max_fun_evaluations": 500,
         "cost_fun_tolerance": 1e-6,
-        "solution_tolerance": 1e-4,
+        "solution_tolerance": 1e-6,
         "gradient_tolerance": 1e-4,
         "finite_step_size": 1e-8,
         "trust_region_solver": "exact",
         "x_scale": "jacobian",
-        "jacobian_approx": "forward",
+        "jacobian_approx": "central",
     }
 
     # Define the expected datatypes
@@ -503,7 +503,7 @@ class VariogramOptimize(TypedDict):
         "finite_step_size": realposfloat,
         "trust_region_solver": Literal["base", "exact"],
         "x_scale": Union[Literal["jacobian"], np.ndarray[realposfloat]],
-        "jacobian_approx": Literal["forward", "central"],
+        "jacobian_approx": Literal["central", "forward"],
     }
 
     @classmethod

@@ -682,13 +682,12 @@ def variogram(
     # Pipe the parameters into the appropriate variogram function
     return variogram_function["model_function"](distance_lags, **required_args)
 
-def prepare_variogram_matrices(transect_data: pd.DataFrame,
-                               lag_resolution: float,
-                               **kwargs):
+
+def prepare_variogram_matrices(transect_data: pd.DataFrame, lag_resolution: float, **kwargs):
     """
     Create azimuth and lag matrices used for computing the empirical variogram
     """
-    
+
     # Calculate the lag distance matrix among transect data
     transect_distance_matrix, transect_azimuth_matrix = griddify_lag_distances(
         transect_data, transect_data, angles=True
@@ -698,6 +697,98 @@ def prepare_variogram_matrices(transect_data: pd.DataFrame,
     lag_matrix = np.round(transect_distance_matrix / lag_resolution).astype(int) + 1
 
     return transect_azimuth_matrix, lag_matrix
+
+
+def quantize_lags(
+    estimates: np.ndarray[float],
+    lag_matrix: np.ndarray[int],
+    mask_matrix: np.ndarray[bool],
+    azimuth_matrix: np.ndarray[float],
+    azimuth_range: float,
+    n_lags: int,
+    **kwargs,
+) -> np.ndarray:
+    """
+    Quantize lags using various metrics including counts, deviations, sums, and other statistical
+    estimators required for computing the empirical variogram
+
+    Parameters
+    ----------
+    estimates: np.ndarray
+        A 1D matrix of field estimates
+    data_matrix: np.ndarray
+        A 2D matrix of values.
+    mask_matrix: np.ndarray
+        A 2D boolean matrix that provides a triangular bitmap that is used to mask values contained
+        in `data_matrix`.
+    azimuth_matrix: np.ndarray
+        A 2D matrix containing azimuth angle estimates.
+    azimuth_range: float
+        The total azimuth angle range that is allowed for constraining the relative angles between
+        spatial points, particularly for cases where a high degree of directionality is assumed.
+    n_lags: int
+        The number of lags
+    """
+
+    # Validate that `estimates` is a 1D array
+    if estimates.ndim > 1:
+        raise ValueError("Estimates array ('estimates') must be a 1D array.")
+
+    # Validate that dimensions are 2D
+    if lag_matrix.ndim < 2 or mask_matrix.ndim < 2 or azimuth_matrix.ndim < 2:
+        error = (
+            "The function `quantize_lags` requires arrays to be 2D. The following 1D arrays have "
+            "invalid shapes: "
+        )
+        invalid_arrays = []
+        if lag_matrix.ndim < 2:
+            invalid_arrays += ["'lag_matrix'"]
+        if mask_matrix.ndim < 2:
+            invalid_arrays += ["'mask_matrix'"]
+        if azimuth_matrix.ndim < 2:
+            invalid_arrays += ["'azimuth_matrix'"]
+        raise ValueError(error + ", ".join(invalid_arrays))
+
+    # Tally the counts of each lag present
+    equivalent_lags = variogram_matrix_filter(
+        lag_matrix, mask_matrix, azimuth_matrix, azimuth_range
+    )
+
+    # Compute the binned sum
+    lag_counts = np.bincount(equivalent_lags)[1:n_lags]
+
+    # Compute the summed estimates per lag
+    # ---- Filter the field estimates
+    estimates_filtered = variogram_matrix_filter(
+        estimates, mask_matrix, azimuth_matrix, azimuth_range
+    )
+    # ---- Compute the binned sum
+    lag_estimates = np.bincount(equivalent_lags, weights=estimates_filtered.flatten())[1:n_lags]
+
+    # Compute the binned squared-sum
+    lag_estimates_squared = np.bincount(equivalent_lags, weights=estimates_filtered**2)[1:n_lags]
+
+    # Calculate the deviations within each lag
+    # ---- Subset the lag array via a boolean bitmap
+    lag_bitmap = equivalent_lags < n_lags
+    # ---- Create a dummy array that produces the row indices for the estimate matrix/array and then
+    # ---- apply the triangle mask and azimuth filter
+    estimate_rows = variogram_matrix_filter(
+        np.arange(len(estimates))[:, np.newaxis],
+        mask_matrix,
+        azimuth_matrix,
+        azimuth_range,
+    )
+
+    # Compute the deviations between indexed and lag-specific estimates
+    deviations = (estimates[estimate_rows][lag_bitmap] - estimates_filtered[lag_bitmap]) ** 2
+
+    # Sum deviations per lag bin
+    lag_deviations = np.bincount(equivalent_lags[lag_bitmap], weights=deviations)[1:n_lags]
+
+    # Return the outputs as a tuple
+    return lag_counts, lag_estimates, lag_estimates_squared, lag_deviations
+
 
 def empirical_variogram(
     transect_data: pd.DataFrame, variogram_parameters: dict, settings_dict: dict
@@ -746,29 +837,29 @@ def empirical_variogram(
 
     # Extract relevant variogram parameters
     # ---- Lag resolution ['lcsl']
-    lag_resolution = variogram_parameters["lag_resolution"]
+    # lag_resolution = variogram_parameters["lag_resolution"]
     # ---- Number of lags
     n_lags = variogram_parameters["n_lags"]
     # ---- Compute the lags ['h']
     lags = variogram_parameters["distance_lags"]
 
-    # # Calculate the lag distance matrix among transect data
+    # Calculate the lag distance matrix among transect data
     # transect_distance_matrix, transect_azimuth_matrix = griddify_lag_distances(
     #     transect_data, transect_data, angles=True
     # )
-    # # ---- Convert to lags
+    # ---- Convert to lags
     # lag_matrix = np.round(transect_distance_matrix / lag_resolution).astype(int) + 1
     azimuth_matrix, lag_matrix = prepare_variogram_matrices(transect_data, **variogram_parameters)
 
     # Pre-allocate vectors/arrays that will be iteratively filled
     # ---- Counts for each lag
-    lag_counts = np.zeros(n_lags - 1)
-    # ---- Summed deviation for each lag
-    lag_deviations = np.zeros_like(lag_counts)
-    # ---- Summmed estimates for each lag
-    lag_estimates = np.zeros_like(lag_counts)
-    # ---- Summed squared estimates for each lag
-    lag_estimates_squared = np.zeros_like(lag_counts)
+    # lag_counts = np.zeros(n_lags - 1)
+    # # ---- Summed deviation for each lag
+    # lag_deviations = np.zeros_like(lag_counts)
+    # # ---- Summmed estimates for each lag
+    # lag_estimates = np.zeros_like(lag_counts)
+    # # ---- Summed squared estimates for each lag
+    # lag_estimates_squared = np.zeros_like(lag_counts)
     # ---- Head (or first) observation indices
     head_index = np.zeros((len(estimates), n_lags - 1))
 
@@ -778,42 +869,47 @@ def empirical_variogram(
     # ---- Vertically and then horizontally flip to force the 'True' and 'False' positions
     triangle_mask_flp = np.flip(np.flip(triangle_mask), axis=1)
 
-    # Tally the counts of each lag present
-    # ---- Filter the lag matrix and convert to a 1D array
-    equivalent_lags = variogram_matrix_filter(
-        lag_matrix,
-        triangle_mask_flp,
-        azimuth_matrix,
-        variogram_parameters["azimuth_range"],
-    )
-    # ---- Compute the binned sum
-    lag_counts = np.bincount(equivalent_lags)[1:n_lags]
+    # # Tally the counts of each lag present
+    # # ---- Filter the lag matrix and convert to a 1D array
+    # equivalent_lags = variogram_matrix_filter(
+    #     lag_matrix,
+    #     triangle_mask_flp,
+    #     transect_azimuth_matrix,
+    #     variogram_parameters["azimuth_range"],
+    # )
+    # # ---- Compute the binned sum
+    # lag_counts = np.bincount(equivalent_lags)[1:n_lags]
 
-    # Compute the summed estimates per lag
-    # ---- Filter the field estimates
-    estimates_filtered = variogram_matrix_filter(
-        estimates, triangle_mask_flp, transect_azimuth_matrix, variogram_parameters["azimuth_range"]
-    )
-    # ---- Compute the binned sum
-    lag_estimates = np.bincount(equivalent_lags, weights=estimates_filtered)[1:n_lags]
-    # ---- Compute the binned squared-sum
-    lag_estimates_squared = np.bincount(equivalent_lags, weights=estimates_filtered**2)[1:n_lags]
+    # # Compute the summed estimates per lag
+    # # ---- Filter the field estimates
+    # estimates_filtered = variogram_matrix_filter(
+    #   estimates, triangle_mask_flp, transect_azimuth_matrix, variogram_parameters["azimuth_range"]
+    # )
+    # # ---- Compute the binned sum
+    # lag_estimates = np.bincount(equivalent_lags, weights=estimates_filtered)[1:n_lags]
+    # # ---- Compute the binned squared-sum
+    # lag_estimates_squared = np.bincount(equivalent_lags, weights=estimates_filtered**2)[1:n_lags]
 
-    # Calculate the deviations within each lag
-    # ---- Subset the lag array via a boolean bitmap
-    lag_bitmap = equivalent_lags < n_lags
-    # ---- Create a dummy array that produces the row indices for the estimate matrix/array and then
-    # ---- apply the triangle mask and azimuth filter
-    estimate_rows = variogram_matrix_filter(
-        np.arange(len(estimates))[:, np.newaxis],
-        triangle_mask_flp,
-        azimuth_matrix,
-        variogram_parameters["azimuth_range"],
+    # # Calculate the deviations within each lag
+    # # ---- Subset the lag array via a boolean bitmap
+    # lag_bitmap = equivalent_lags < n_lags
+    # # ---Create a dummy array that produces the row indices for the estimate matrix/array and then
+    # # ---- apply the triangle mask and azimuth filter
+    # estimate_rows = variogram_matrix_filter(
+    #     np.arange(len(estimates))[:, np.newaxis],
+    #     triangle_mask_flp,
+    #     transect_azimuth_matrix,
+    #     variogram_parameters["azimuth_range"],
+    # )
+    # # ---- Calculate the deviations between indexed estimates and lag-specific ones
+    # deviations = (estimates[estimate_rows][lag_bitmap] - estimates_filtered[lag_bitmap]) ** 2
+    # # ---- Sum for each lag bin
+    # lag_deviations = np.bincount(equivalent_lags[lag_bitmap], weights=deviations)[1:n_lags]
+
+    # Quantize lag metrics
+    lag_counts, lag_estimates, lag_estimates_squared, lag_deviations = quantize_lags(
+        estimates, lag_matrix, triangle_mask_flp, azimuth_matrix, **variogram_parameters
     )
-    # ---- Calculate the deviations between indexed estimates and lag-specific ones
-    deviations = (estimates[estimate_rows][lag_bitmap] - estimates_filtered[lag_bitmap]) ** 2
-    # ---- Sum for each lag bin
-    lag_deviations = np.bincount(equivalent_lags[lag_bitmap], weights=deviations)[1:n_lags]
 
     # Compute the mean and standard deviation of the head estimates for each lag bin
     # ---- Apply a mask using the triangle bitmap
@@ -843,18 +939,11 @@ def empirical_variogram(
     else:
         return lags, gamma_h, lag_counts, lag_covariance
 
-# def prepare_variogram_matrices(transect_data: pd.DataFrame,
-#                                lag_resolution: float,
-#                                n_lags: int,
-#                                distance_lags: np.ndarray[float]):
-    
-
-
 
 def variogram_matrix_filter(
-    data_matrix: np.ndarray,
-    mask_matrix: np.ndarray,
-    azimuth_matrix: np.ndarray,
+    data_matrix: np.ndarray[int],
+    mask_matrix: np.ndarray[bool],
+    azimuth_matrix: np.ndarray[float],
     azimuth_range: float,
 ) -> np.ndarray:
     """
@@ -933,13 +1022,17 @@ def semivariance(
     # ---- Compute the partial sill that is applied as a weighted calculation
     partial_sill = sigma_tail * sigma_head
     # ---- Semivariance [gamma(h)] and cross-sill estimate
-    gamma_h = 0.5 * lag_deviations / (lag_counts * partial_sill)
-
+    # gamma_h = 0.5 * lag_deviations / (lag_counts * partial_sill)
+    with np.errstate(divide="ignore"):
+        gamma_h = 0.5 * lag_deviations / (lag_counts * partial_sill)
     # Calculate the mean lag distance covariance
     # ---- Find non-zero head and tail variances
     non_zero_variance = np.where((sigma_head > 0.0) & (sigma_tail > 0.0))[0]
     # ---- Mean lag covariance
-    mean_lag_covariance = (sigma_head[non_zero_variance] * sigma_tail[non_zero_variance]).mean()
+    if non_zero_variance.size > 0:
+        mean_lag_covariance = (sigma_head[non_zero_variance] * sigma_tail[non_zero_variance]).mean()
+    else:
+        mean_lag_covariance = np.nan
     return gamma_h, mean_lag_covariance
 
 
@@ -1097,7 +1190,9 @@ def initialize_optimization_config(optimization_parameters: VariogramOptimize):
                 else updated_optimization_parameters["x_scale"]
             ),
             "jac": (
-                "2-point" if optimization_parameters["jacobian_approx"] == "forward" else "3-point"
+                "2-point"
+                if updated_optimization_parameters["jacobian_approx"] == "forward"
+                else "3-point"
             ),
         }
     )
@@ -1148,8 +1243,11 @@ def optimize_variogram(
     lag_counts: np.ndarray,
     lags: np.ndarray,
     gamma_h: np.ndarray,
-    variogram_parameters: dict,
+    # variogram_parameters: dict,
     optimization_settings: dict,
+    model: Union[str, List[str]],
+    range: float,
+    **kwargs,
 ):
     """
     Optimize variogram parameters.
@@ -1162,13 +1260,15 @@ def optimize_variogram(
     data_stack = np.vstack((lags, gamma_h, lag_weights))
 
     # Index lag distances that are within the parameterized range
-    within_range = np.where(lags <= variogram_parameters["range"])[0]
+    # within_range = np.where(lags <= variogram_parameters["range"])[0]
+    within_range = np.where(lags <= range)[0]
 
     # Truncate the data stack
     truncated_stack = data_stack[:, within_range]
 
     # Get model name
-    _, variogram_fun = get_variogram_arguments(variogram_parameters["model"])
+    # _, variogram_fun = get_variogram_arguments(variogram_parameters["model"])
+    _, variogram_fun = get_variogram_arguments(model)
 
     # Create helper cost-function that is weighted using the kriging weights (`w`), lag
     # distances (`x`), and empirical semivariance (`y`)

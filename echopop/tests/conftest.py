@@ -1,7 +1,6 @@
+import json
 from pathlib import Path
-from typing import Union
-import json 
-from typing import Optional
+from typing import Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -25,7 +24,7 @@ def test_path():
         "ROOT": TEST_DATA_ROOT,
         "CONFIG": TEST_DATA_ROOT / "config_files",
         "INPUT": TEST_DATA_ROOT / "input_files",
-        "EXPECTED": TEST_DATA_ROOT / "expected_outputs"
+        "EXPECTED": TEST_DATA_ROOT / "expected_outputs",
     }
 
 
@@ -309,6 +308,7 @@ def assert_dataframe_equal(
     # Values
     assert_dataframe_values_equal(input, reference_values)
 
+
 # Utility functions (JSON)
 def update_json_file(filename: str, test_name: str, new_entries: dict):
     """
@@ -329,43 +329,71 @@ def update_json_file(filename: str, test_name: str, new_entries: dict):
 
     Notes
     ----------
-    This is primarily used for updating associated .JSON files that store values for expected 
+    This is primarily used for updating associated .JSON files that store values for expected
     test results.
     """
 
     # Determine whether the associated test-key already exists
     try:
-        with open(filename, 'r') as f:
+        with open(filename, "r") as f:
             existing_data = json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
         existing_data = {}
 
+    # Helper function for converting Python into JSON data types
+    def convert_to_json(data):
+        if isinstance(data, dict):
+            return {k: convert_to_json(v) for k, v in data.items()}
+        elif isinstance(data, list):
+            return [convert_to_json(item) for item in data]
+        elif isinstance(data, np.ndarray):
+            # Handle NaN values by converting them to None for JSON serialization
+            return data.tolist()
+        elif isinstance(data, pd.DataFrame):
+            return data.to_dict(orient="records")
+        else:
+            return data
+
+    # Convert the data
+    converted_entries = convert_to_json(new_entries)
+
+    # Helper function for gathering data types
+    def gather_metadata(data, is_numpy, is_pandas, prefix=""):
+        if isinstance(data, dict):
+            for k, v in data.items():
+                gather_metadata(v, is_numpy, is_pandas, f"{prefix}{k}.")
+        elif isinstance(data, list):
+            for item in data:
+                gather_metadata(item, is_numpy, is_pandas, prefix)
+        elif isinstance(data, np.ndarray):
+            is_numpy.append(prefix.rstrip("."))
+        elif isinstance(data, pd.DataFrame):
+            is_pandas.append(prefix.rstrip("."))
+
+    # Gather metadata to determine whether datatypes are numpy.ndarray or pandas.DataFrame
+    # ---- Initialize lists
+    is_numpy = []
+    is_pandas = []
+    # ---- Populate the lists
+    gather_metadata(new_entries, is_numpy, is_pandas)
+
     # Among new entries, convert any arrays to a JSON-friendly format
     # ---- Add a metadata key `is_numpy`: a list of keys
-    new_entries["is_numpy"] = (
-        [k for k, v in new_entries.items() if isinstance(v, np.ndarray)]
-    )
+    converted_entries["is_numpy"] = list(set([key.split(".")[-1] for key in is_numpy]))
     # ---- Add a metadata key `is_pandas`: a list of keys
-    new_entries["is_pandas"] = (
-        [k for k, v in new_entries.items() if isinstance(v, pd.DataFrame)]
-    )
-    # ---- Convert numpy
-    new_entries = {k: v.tolist() if isinstance(v, np.ndarray) else v 
-                   for k, v in new_entries.items()}
-    # ---- Convert pandas
-    new_entries = {k: v.to_dict() if isinstance(v, pd.DataFrame) else v 
-                   for k, v in new_entries.items()}
-    
+    converted_entries["is_pandas"] = list(set([key.split(".")[-1] for key in is_pandas]))
+
     # Update the test-key
-    existing_data[test_name] = new_entries
+    existing_data[test_name] = converted_entries
 
     # Write/update the JSON file
-    with open(filename, 'w') as f:
+    with open(filename, "w") as f:
         json.dump(existing_data, f, indent=4)
+
 
 def load_json_data(filename: str, default_value=None, test_name: Optional[str] = None):
     """
-    Loads JSON data from a file. If the file doesn't exist or an error occurs, returns the default 
+    Loads JSON data from a file. If the file doesn't exist or an error occurs, returns the default
     value.
 
     Parameters
@@ -384,29 +412,37 @@ def load_json_data(filename: str, default_value=None, test_name: Optional[str] =
 
     # Extract the expected results
     try:
-        with open(filename, 'r') as f:
+        with open(filename, "r") as f:
             data = json.load(f)
             if test_name is not None:
                 # ---- Get expected data
-                expected_data = data.get(test_name, default_value)              
+                expected_data = data.get(test_name, default_value)
             else:
-                expected_data = data           
-            # ---- Get unique keys sans `'is_numpy'`
-            outcomes = list(set(expected_data) - set(["is_numpy", "is_pandas"]))
-            # ---- Convert to a Numpy array, if needed
-            expected_data.update(
-                {k: np.array(v) for k, v in expected_data.items() 
-                    if k in expected_data["is_numpy"]}
-            )
-            # ---- Convert to a Pandas DataFrame, if needed
-            expected_data.update(
-                {k: pd.DataFrame(v) for k, v in expected_data.items() 
-                    if k in expected_data["is_pandas"]}
-            )  
-            # ---- Return the output
-            return expected_data
+                expected_data = data
+            # ---- Get the key names that are numpy arrays
+            is_numpy = expected_data.get("is_numpy", [])
+            # ---- Get the key names that are pandas DataFrames
+            is_pandas = expected_data.get("is_pandas", [])
+
+            # Helper function for converting JSON to Python data types
+            def convert_from_json(data, is_numpy, is_pandas):
+                if isinstance(data, dict):
+                    for k, v in data.items():
+                        # Check if the current key is in `is_numpy` or `is_pandas`
+                        if k in is_numpy:
+                            data[k] = np.array(v)
+                        elif k in is_pandas:
+                            data[k] = pd.DataFrame(v)
+                        else:
+                            # Recursively process nested dictionaries or lists
+                            data[k] = convert_from_json(v, is_numpy, is_pandas)
+                elif isinstance(data, list):
+                    for i in range(len(data)):
+                        data[i] = convert_from_json(data[i], is_numpy, is_pandas)
+                return data
+
+            # Return the converted data
+            return convert_from_json(expected_data, is_numpy, is_pandas)
+
     except (FileNotFoundError, json.JSONDecodeError):
         return default_value
-
-
-

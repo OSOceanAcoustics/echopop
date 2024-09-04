@@ -316,8 +316,8 @@ class Survey:
 
     def fit_variogram(
         self,
-        variogram_parameters: VariogramBase,
-        optimization_parameters: VariogramOptimize,
+        variogram_parameters: VariogramBase = {},
+        optimization_parameters: VariogramOptimize = {},
         model: Union[str, List[str]] = ["bessel", "exponential"],
         n_lags: int = 30,
         azimuth_range: float = 360.0,
