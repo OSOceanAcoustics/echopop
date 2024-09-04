@@ -869,7 +869,7 @@ def empirical_variogram(
     # Helper function for computing the binned summations for each row
     def bincount_row(row, n_lags):
         return np.bincount(row[row != -1], minlength=n_lags)[1:n_lags]
-    
+
     # Pre-allocate vectors/arrays that will be iteratively filled
     head_index = np.zeros((len(estimates), n_lags - 1))
     # ---- Find the head indices of each lag for each row
