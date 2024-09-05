@@ -1,3 +1,4 @@
+datetime
 ipympl
 ipywidgets
 jupyter_contrib_nbextensions
@@ -5,9 +6,11 @@ jupyter_contrib_nbextensions
 traitlets<5.10
 geopandas
 geopy
-openpyxl
+lmfit
+openpyxl>=3.1.3
 # 9/27/23: Pin to <2 to avoid new warning occurring in several cases
 pandas
+python-dateutil
 PyYAML
 scipy
 shapely

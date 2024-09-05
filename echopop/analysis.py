@@ -2,6 +2,7 @@
 General analysis orchestration functions that bundle related functions and procedures
 """
 
+import copy
 import warnings
 
 import numpy as np
@@ -30,7 +31,15 @@ from .spatial.transect import (
     summarize_transect_strata,
     transect_spatial_features,
 )
+from .spatial.variogram import (
+    empirical_variogram,
+    initialize_initial_optimization_values,
+    initialize_optimization_config,
+    initialize_variogram_parameters,
+    optimize_variogram,
+)
 from .statistics import stratified_transect_statistic
+from .utils.validate import VariogramEmpirical
 
 
 def process_transect_data(
@@ -245,6 +254,85 @@ def stratified_summary(
 
     # Return the outputs
     return stratified_results, analysis_dict
+
+
+def variogram_analysis(
+    variogram_parameters: dict,
+    default_variogram_parameters: dict,
+    optimization_parameters: dict,
+    initialize_variogram: dict,
+    transect_dict: dict,
+    settings_dict: dict,
+    isobath_df: pd.DataFrame,
+):
+
+    # Validate the relevant empirical variogram parameters
+    empirical_variogram_params = VariogramEmpirical.create(**settings_dict)
+
+    # Initialize and validate the variogram model parameters
+    valid_variogram_params = initialize_variogram_parameters(
+        variogram_parameters, default_variogram_parameters
+    )
+
+    # Initialize and validate the optimization parameters
+    valid_optimization_params = initialize_optimization_config(optimization_parameters)
+
+    # Initialize and validate the initial values/boundary inputs
+    valid_initial_values = initialize_initial_optimization_values(
+        initialize_variogram, valid_variogram_params
+    )
+
+    # Prepare the transect data
+    # ---- Create a copy of the transect dictionary
+    transect_input = copy.deepcopy(transect_dict)
+    # ---- Edit the transect data
+    transect_data = edit_transect_columns(transect_input, settings_dict)
+
+    # Standardize the transect coordinates, if necessary
+    if settings_dict["standardize_coordinates"]:
+        # ---- Transform geometry
+        transect_data, _, _ = transform_geometry(transect_data, isobath_df, settings_dict)
+        # ---- Print message if verbose
+        if settings_dict["verbose"]:
+            # ---- Print alert
+            print(
+                "Longitude and latitude coordinates (WGS84) converted to standardized "
+                "coordinates (x and y)."
+            )
+    else:
+        # ---- x
+        transect_data["x"] = "longitude"
+        # ---- y
+        transect_data["y"] = "latitude"
+
+    # Compute the empirical variogram
+    lags, gamma_h, lag_counts, _ = empirical_variogram(
+        transect_data, {**valid_variogram_params, **empirical_variogram_params}, settings_dict
+    )
+
+    # Least-squares fitting
+    # ---- Consolidate the optimization dictionaries into a single one
+    optimization_settings = {
+        "parameters": valid_initial_values,
+        "config": valid_optimization_params,
+    }
+    # ---- Optimize parameters
+    best_fit_variogram, initial_fit, optimized_fit = optimize_variogram(
+        lag_counts, lags, gamma_h, valid_variogram_params, optimization_settings
+    )
+
+    # Return a dictionary of results
+    return {
+        "best_fit_parameters": best_fit_variogram,
+        "initial_fit": {
+            "parameters": dict(zip(initial_fit[0], initial_fit[1])),
+            "MAD": initial_fit[2],
+        },
+        "optimized_fit": {
+            "parameters": dict(zip(optimized_fit[0], optimized_fit[1])),
+            "MAD": optimized_fit[2],
+        },
+    }
 
 
 def krige(input_dict: dict, analysis_dict: dict, settings_dict: dict) -> tuple[pd.DataFrame, dict]:

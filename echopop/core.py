@@ -336,7 +336,7 @@ DATA_STRUCTURE = {
         },
         "stratified": dict(),
     },
-    "results": {"transect": dict(), "stratified": dict(), "kriging": dict()},
+    "results": {"transect": dict(), "stratified": dict(), "kriging": dict(), "variogram": dict()},
 }
 
 LAYER_NAME_MAP = {

@@ -8,9 +8,11 @@ from .analysis import (
     krige,
     process_transect_data,
     stratified_summary,
+    variogram_analysis,
 )
 from .core import DATA_STRUCTURE
 from .utils import load as el, load_nasc as eln, message as em
+from .utils.validate import VariogramBase, VariogramInitial, VariogramOptimize
 
 
 class Survey:
@@ -312,6 +314,158 @@ class Survey:
         if verbose:
             em.stratified_results_msg(stratified_results, self.analysis["settings"]["stratified"])
 
+    def fit_variogram(
+        self,
+        variogram_parameters: VariogramBase = {},
+        optimization_parameters: VariogramOptimize = {},
+        model: Union[str, List[str]] = ["bessel", "exponential"],
+        n_lags: int = 30,
+        azimuth_range: float = 360.0,
+        standardize_coordinates: bool = True,
+        force_lag_zero: bool = True,
+        initialize_variogram: VariogramInitial = [
+            "nugget",
+            "sill",
+            "correlation_range",
+            "hole_effect_range",
+            "decay_power",
+        ],
+        variable: Literal["biomass", "abundance"] = "biomass",
+        verbose: bool = True,
+    ):
+        """
+        Compute the best-fit variogram parameters for tansect data
+
+        Parameters
+        ----------
+        variogram_parameters: VariogramBase
+            A dictionary comprising various arguments required for computing the model variogram.
+            See :fun:`echopop.utils.validate.VariogramBase` and
+            :fun:`echopop.spatial.variogram.variogram` for more details on the required/default
+            parameters.
+        optimization_parameters: VariogramOptimize
+            A dictionary comprising various arguments for optimizing the variogram fit via
+            non-linear least squares. See :fun:`echopop.utils.validate.VariogramOptimize` for more
+            details on the required/default parameters.
+        initialize_variogram: VariogramInitial
+            A dictionary or list that indicates how each variogram parameter (see
+            :fun:`echopop.spatial.variogram.variogram` for more details) is configured for
+            optimization. Including parameter names in a list will incorporate default initial
+            values imported from the associated file in the configuration *.yaml are used instead.
+            This also occurs when `initialize_variogram` is formatted as a dictionary and the
+            'value' key is not present for defined parameters. Parameter names excluded from either
+            the list or dictionary keys are assumed to be held as fixed values. See
+            :fun:`echopop.utils.validate.VariogramInitial` and
+            :fun:`echopop.utils.validate.InitialValues` for more details.
+        model: Union[str, List[str]]
+            A string or list of model names. A single name represents a single family model. Two
+            inputs represent the desired composite model (e.g. the composite J-Bessel and
+            exponential model). Defaults to: ['bessel', 'exponential']. Available models and their
+            required arguments can be reviewed in the :fun:`echopop.spatial.variogram.variogram`
+            function.
+        azimuth_range: float
+            The total azimuth angle range that is allowed for constraining
+            the relative angles between spatial points, particularly for cases where a high degree
+            of directionality is assumed.
+        n_lags: Optional[float]
+            See the `variogram_parameters` argument in
+            :fun:`echopop.spatial.variogram.empirical_variogram` for more details on
+            `n_lags`.
+        force_lag_zero: bool
+            See the `variogram_parameters` argument in
+            :fun:`echopop.spatial.variogram.empirical_variogram` for more details on
+            `force_lag_zero`.
+        standardize_coordinates: bool
+            When set to `True`, transect coordinates are standardized using reference coordinates.
+        variable: Literal["biomass", "abundance"]
+            Transect data values used for fitting the variogram. This includes two options:
+            "abundance" and "biomass", with the default being "biomass". These inputs correspond
+            to fitting the empirical and theoretical variograms on "number density" and "biomass
+            density", respectively.
+        verbose: bool
+            When set to `True`, optional console messages and reports are provided to users.
+
+        Notes
+        -----
+        The variogram model fitting methods makes use of the `lmfit` library. Values included in
+        the `variogram_parameters` argument, but omitted from `initialize_variogram`, use default
+        values imported from `self.input["statistics"]["variogram"]["model_config"]`.
+        """
+
+        # Validate "variable" input
+        if variable not in ["biomass", "abundance"]:
+            raise ValueError(
+                f"The user input for `variable` ({variable}) is invalid. Only `variable='biomass'` "
+                f"and `variable='abundance'` are valid inputs for the `fit_variogram()` method."
+            )
+
+        # Initialize Survey-class object
+        self.analysis.update({"variogram": {}})
+
+        # Parameterize analysis settings that will be applied to the variogram fitting and analysis
+        self.analysis["settings"].update(
+            {
+                "variogram": {
+                    "azimuth_range": azimuth_range,
+                    "fit_parameters": (
+                        initialize_variogram.keys()
+                        if isinstance(initialize_variogram, dict)
+                        else initialize_variogram
+                    ),
+                    "force_lag_zero": force_lag_zero,
+                    "model": model,
+                    "standardize_coordinates": standardize_coordinates,
+                    "stratum_name": self.analysis["settings"]["transect"]["stratum_name"],
+                    "variable": variable,
+                    "verbose": verbose,
+                }
+            }
+        )
+
+        # Append `kriging_parameters` to the settings dictionary
+        if standardize_coordinates:
+            self.analysis["settings"]["variogram"].update(
+                {"kriging_parameters": self.input["statistics"]["kriging"]["model_config"]}
+            )
+
+        # Create a copy of the existing variogram settings
+        default_variogram_parameters = self.input["statistics"]["variogram"]["model_config"].copy()
+        # ---- Update model, n_lags
+        default_variogram_parameters.update({"model": model, "n_lags": n_lags})
+
+        # Create optimization settings dictionary
+        # ---- Add to settings
+        self.analysis["settings"]["variogram"].update({"optimization": optimization_parameters})
+
+        # Find the best-fit variogram parameters
+        best_fit_variogram = variogram_analysis(
+            variogram_parameters,
+            default_variogram_parameters,
+            optimization_parameters,
+            initialize_variogram,
+            self.analysis["transect"],
+            self.analysis["settings"]["variogram"],
+            self.input["statistics"]["kriging"]["isobath_200m_df"],
+        )
+
+        # Add "partial" results to analysis attribute
+        self.analysis["variogram"].update(
+            {
+                "model": model,
+                "initial_fit": best_fit_variogram["initial_fit"],
+                "optimized_fit": best_fit_variogram["optimized_fit"],
+            }
+        )
+
+        # Add variogram result
+        self.results.update(
+            {"variogram": {"model_fit": best_fit_variogram["best_fit_parameters"], "model": model}}
+        )
+
+        # Print result if `verbose == True`
+        if verbose:
+            em.variogram_results_msg(self.analysis["variogram"])
+
     # !!! TODO: develop different name for "crop_method = 'interpolation'"
     def kriging_analysis(
         self,
@@ -319,6 +473,7 @@ class Survey:
         coordinate_transform: bool = True,
         crop_method: Literal["interpolation", "convex_hull"] = "interpolation",
         extrapolate: bool = False,
+        best_fit_variogram: bool = True,
         kriging_parameters: Optional[dict] = None,
         latitude_resolution: float = 1.25,
         mesh_buffer_distance: float = 1.25,
@@ -326,6 +481,7 @@ class Survey:
         projection: Optional[str] = None,
         stratum: str = "ks",
         variable: str = "biomass_density",
+        variogram_model: Union[str, List[str]] = ["bessel", "exponential"],
         variogram_parameters: Optional[dict] = None,
         verbose: bool = True,
     ):
@@ -339,7 +495,7 @@ class Survey:
             Biological variable that will be interpolated via kriging
         """
 
-        # Parameterize analysis settings that will be applied to the stratified analysis
+        # Parameterize analysis settings that will be applied to the kriging analysis
         self.analysis["settings"].update(
             {
                 "kriging": {
@@ -366,6 +522,29 @@ class Survey:
                 }
             }
         )
+
+        # Update variogram model
+        self.analysis["settings"]["kriging"]["variogram_parameters"]["model"] = variogram_model
+
+        # Update variogram parameters to use fitted if the values are available
+        if best_fit_variogram:
+            if "variogram" in self.results:
+                if "model_fit" in self.results["variogram"]:
+                    # ---- Parameters
+                    self.analysis["settings"]["kriging"].update(
+                        {"variogram_parameters": self.results["variogram"]["model_fit"]}
+                    )
+                    # ---- Update model
+                    self.analysis["settings"]["kriging"]["variogram_parameters"]["model"] = (
+                        self.results["variogram"]["model"]
+                    )
+                else:
+                    raise ValueError(
+                        "Argument `best_fit_variogram` is invalid. No fitted variogram parameters "
+                        "have been estimated via the `fit_variogram()` Survey-class method. "
+                        "Either run the `fit_variogram()` method first, or set the argument "
+                        "`best_fit_variogram=False`."
+                    )
 
         # Prepare temporary message concerning coordinate transformation = False
         if not coordinate_transform:

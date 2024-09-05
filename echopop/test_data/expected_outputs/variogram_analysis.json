@@ -1,0 +1,2858 @@
+{
+    "prepare_variogram_matrices": {
+        "azimuth_matrix": [
+            [
+                NaN,
+                85.62921171311494,
+                58.63368652966955,
+                -67.58771761428689,
+                84.36320720644414
+            ],
+            [
+                85.62921171311494,
+                NaN,
+                -52.64076060004619,
+                79.56961395651349,
+                52.921929841311446
+            ],
+            [
+                58.63368652966955,
+                -52.64076060004619,
+                NaN,
+                43.95070845026178,
+                -57.32032361551085
+            ],
+            [
+                -67.58771761428689,
+                79.56961395651349,
+                43.95070845026178,
+                NaN,
+                78.31690444374267
+            ],
+            [
+                84.36320720644414,
+                52.921929841311446,
+                -57.32032361551085,
+                78.31690444374267,
+                NaN
+            ]
+        ],
+        "lag_matrix": [
+            [
+                1,
+                448,
+                321,
+                88,
+                464
+            ],
+            [
+                448,
+                1,
+                219,
+                373,
+                20
+            ],
+            [
+                321,
+                219,
+                1,
+                278,
+                225
+            ],
+            [
+                88,
+                373,
+                278,
+                1,
+                390
+            ],
+            [
+                464,
+                20,
+                225,
+                390,
+                1
+            ]
+        ],
+        "is_numpy": [
+            "azimuth_matrix",
+            "lag_matrix"
+        ],
+        "is_pandas": []
+    },
+    "quantize_lags": {
+        "basic_inputs": {
+            "expected": {
+                "lag_counts": [
+                    1,
+                    1
+                ],
+                "lag_estimates": [
+                    1.0,
+                    3.0
+                ],
+                "lag_estimates_squared": [
+                    1.0,
+                    9.0
+                ],
+                "lag_deviations": [
+                    0.0,
+                    0.0
+                ]
+            },
+            "exceptions": null,
+            "id": "Basic valid inputs"
+        },
+        "basic_inputs_plus_kwargs": {
+            "expected": {
+                "lag_counts": [
+                    1,
+                    1
+                ],
+                "lag_estimates": [
+                    1.0,
+                    3.0
+                ],
+                "lag_estimates_squared": [
+                    1.0,
+                    9.0
+                ],
+                "lag_deviations": [
+                    0.0,
+                    0.0
+                ]
+            },
+            "exceptions": null,
+            "id": "Superfluous kwargs args"
+        },
+        "invalid_1d_array": {
+            "expected": null,
+            "exceptions": "requires arrays to be 2D",
+            "id": "Invalid 1D array"
+        },
+        "invalid_1d_arrays": {
+            "expected": null,
+            "exceptions": "requires arrays to be 2D",
+            "id": "Multiple invalid 1D array"
+        },
+        "invalid_estimates_input": {
+            "expected": null,
+            "exceptions": "must be a 1D array",
+            "id": "Invalid 2D array for estimates"
+        },
+        "large_sample_size": {
+            "expected": {
+                "lag_counts": [
+                    12635,
+                    12519
+                ],
+                "lag_estimates": [
+                    6582.74123055,
+                    6538.70487521
+                ],
+                "lag_estimates_squared": [
+                    4476.91982075,
+                    4469.42487519
+                ],
+                "lag_deviations": [
+                    2088.67551011,
+                    2026.94478262
+                ]
+            },
+            "exceptions": null,
+            "id": "Large data input",
+            "fixture": true
+        },
+        "is_numpy": [
+            "lag_estimates",
+            "lag_counts",
+            "lag_estimates_squared",
+            "lag_deviations"
+        ],
+        "is_pandas": []
+    },
+    "semivariance": {
+        "standard_inputs": {
+            "gamma_h": [
+                25903.93781952514,
+                96900.67907379512,
+                544879.9435325476,
+                2592.4524432086287,
+                2572.157100313205,
+                2533.1357987171723,
+                2541.3276516811156,
+                2519.6809619649007,
+                2478.2154138182605,
+                2473.195225151557,
+                2498.6528722212583,
+                2434.2573358899995,
+                2496.066443840966,
+                2544.078448508775,
+                2327.0415457122167,
+                2392.888709594617,
+                2434.25733589,
+                2453.459357671738,
+                2535.8563865210094,
+                2552.392223326333
+            ],
+            "mean_lag_covariance": 4653510.458448028,
+            "exception": null
+        },
+        "uniform_inputs": {
+            "gamma_h": [
+                5558.335418404297,
+                5558.335418404297,
+                5558.335418404297,
+                5558.335418404297,
+                5558.335418404297,
+                5558.335418404297,
+                5558.335418404297,
+                5558.335418404297,
+                5558.335418404297,
+                5558.335418404297,
+                5558.335418404297,
+                5558.335418404297,
+                5558.335418404297,
+                5558.335418404297,
+                5558.335418404297,
+                5558.335418404297,
+                5558.335418404297,
+                5558.335418404297,
+                5558.335418404297,
+                5558.335418404297
+            ],
+            "mean_lag_covariance": 8995498.87443715,
+            "exception": null
+        },
+        "empty_inputs": {
+            "gamma_h": [],
+            "mean_lag_covariance": NaN,
+            "exception": null
+        },
+        "zero_counts": {
+            "gamma_h": [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+            ],
+            "mean_lag_covariance": 138592.58262980764,
+            "exception": null
+        },
+        "nan_deviations": {
+            "gamma_h": [
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN
+            ],
+            "mean_lag_covariance": 138592.58262980764,
+            "exception": null
+        },
+        "nan_deviations_estimates": {
+            "gamma_h": [
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN
+            ],
+            "mean_lag_covariance": NaN,
+            "exception": null
+        },
+        "all_nan": {
+            "gamma_h": [
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN,
+                NaN
+            ],
+            "mean_lag_covariance": NaN,
+            "exception": null
+        },
+        "mismatched_shapes": {
+            "gamma_h": null,
+            "mean_lag_covariance": null,
+            "exception": "operands could not be broadcast together with shapes"
+        },
+        "is_numpy": [
+            "gamma_h"
+        ],
+        "is_pandas": []
+    },
+    "optimize_variogram": {
+        "normal_inputs": {
+            "exponential": {
+                "best_fit_variogram": {
+                    "nugget": 0.0010167470484570961,
+                    "sill": 0.9400859844817055,
+                    "correlation_range": 0.1367450913852899
+                },
+                "initial_fit": [
+                    [
+                        "correlation_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        20.0,
+                        0.2,
+                        0.25
+                    ],
+                    0.05798006169879521
+                ],
+                "optimized_fit": [
+                    [
+                        "correlation_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        0.1367450913852899,
+                        0.0010167470484570961,
+                        0.9400859844817055
+                    ],
+                    0.010451481967266602
+                ]
+            },
+            "gaussian": {
+                "best_fit_variogram": {
+                    "nugget": 0.07273893589284985,
+                    "sill": 0.9969972436612047,
+                    "correlation_range": 36.08846220203311
+                },
+                "initial_fit": [
+                    [
+                        "correlation_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        20.0,
+                        0.2,
+                        0.25
+                    ],
+                    0.05777742720734915
+                ],
+                "optimized_fit": [
+                    [
+                        "correlation_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        36.08846220203311,
+                        0.07273893589284985,
+                        0.9969972436612047
+                    ],
+                    0.0016824868152957924
+                ]
+            },
+            "jbessel": {
+                "best_fit_variogram": {
+                    "nugget": 1.0392735918204636,
+                    "sill": 0.9419377569468583,
+                    "hole_effect_range": 1.096312876634713
+                },
+                "initial_fit": [
+                    [
+                        "hole_effect_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        1.0,
+                        0.2,
+                        0.25
+                    ],
+                    0.05789021820796232
+                ],
+                "optimized_fit": [
+                    [
+                        "hole_effect_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        1.096312876634713,
+                        1.0392735918204636,
+                        0.9419377569468583
+                    ],
+                    0.010504306416436278
+                ]
+            },
+            "kbessel": {
+                "best_fit_variogram": {
+                    "nugget": 0.028534985949982928,
+                    "sill": 1.038814405718143,
+                    "hole_effect_range": 20.202226861668862
+                },
+                "initial_fit": [
+                    [
+                        "hole_effect_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        1.0,
+                        0.2,
+                        0.25
+                    ],
+                    0.057815903957372815
+                ],
+                "optimized_fit": [
+                    [
+                        "hole_effect_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        20.202226861668862,
+                        0.028534985949982928,
+                        1.038814405718143
+                    ],
+                    0.002614673037540075
+                ]
+            },
+            "linear": {
+                "best_fit_variogram": {
+                    "nugget": 0.5748926842384429,
+                    "sill": 0.5798255372024155
+                },
+                "initial_fit": [
+                    [
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        0.2,
+                        0.25
+                    ],
+                    0.24582184069800164
+                ],
+                "optimized_fit": [
+                    [
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        0.5748926842384429,
+                        0.5798255372024155
+                    ],
+                    0.006827213550904646
+                ]
+            },
+            "nugget": {
+                "best_fit_variogram": {
+                    "nugget": 0.44504219991244465,
+                    "sill": 0.4950421997833693
+                },
+                "initial_fit": [
+                    [
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        0.2,
+                        0.25
+                    ],
+                    0.041393188854489164
+                ],
+                "optimized_fit": [
+                    [
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        0.44504219991244465,
+                        0.4950421997833693
+                    ],
+                    0.01045139798488732
+                ]
+            },
+            "sinc": {
+                "best_fit_variogram": {
+                    "nugget": 5.002874171852536,
+                    "sill": 0.9377044575472446,
+                    "hole_effect_range": 0.995692450207264
+                },
+                "initial_fit": [
+                    [
+                        "hole_effect_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        1.0,
+                        0.2,
+                        0.25
+                    ],
+                    0.057825964821692305
+                ],
+                "optimized_fit": [
+                    [
+                        "hole_effect_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        0.995692450207264,
+                        5.002874171852536,
+                        0.9377044575472446
+                    ],
+                    0.010154938169989892
+                ]
+            },
+            "spherical": {
+                "best_fit_variogram": {
+                    "nugget": 0.8392944832329396,
+                    "sill": 0.10910991031936983,
+                    "correlation_range": 20.000000110528884
+                },
+                "initial_fit": [
+                    [
+                        "correlation_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        20.0,
+                        0.2,
+                        0.25
+                    ],
+                    0.04081445257528849
+                ],
+                "optimized_fit": [
+                    [
+                        "correlation_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        20.000000110528884,
+                        0.8392944832329396,
+                        0.10910991031936983
+                    ],
+                    0.007573484322437963
+                ]
+            },
+            "bessel_exponential": {
+                "best_fit_variogram": {
+                    "nugget": 0.9438100201129406,
+                    "sill": 2.372115162111596,
+                    "correlation_range": 70.70558217092851,
+                    "hole_effect_range": 0.9752484698071886,
+                    "decay_power": 0.00044850692819323017
+                },
+                "initial_fit": [
+                    [
+                        "correlation_range",
+                        "decay_power",
+                        "hole_effect_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        20.0,
+                        2.0,
+                        1.0,
+                        0.2,
+                        0.25
+                    ],
+                    0.06204520967658699
+                ],
+                "optimized_fit": [
+                    [
+                        "correlation_range",
+                        "decay_power",
+                        "hole_effect_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        70.70558217092851,
+                        0.00044850692819323017,
+                        0.9752484698071886,
+                        0.9438100201129406,
+                        2.372115162111596
+                    ],
+                    0.009789279477937259
+                ]
+            },
+            "bessel_gaussian": {
+                "best_fit_variogram": {
+                    "nugget": 0.9398110835888019,
+                    "sill": 0.6398766379815191,
+                    "correlation_range": 22178.315255206187,
+                    "hole_effect_range": 0.33304090640159534
+                },
+                "initial_fit": [
+                    [
+                        "correlation_range",
+                        "hole_effect_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        20.0,
+                        1.0,
+                        0.2,
+                        0.25
+                    ],
+                    0.06204520967658699
+                ],
+                "optimized_fit": [
+                    [
+                        "correlation_range",
+                        "hole_effect_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        22178.315255206187,
+                        0.33304090640159534,
+                        0.9398110835888019,
+                        0.6398766379815191
+                    ],
+                    0.010593849204971697
+                ]
+            },
+            "exponential_linear": {
+                "best_fit_variogram": {
+                    "nugget": 0.2565365128811695,
+                    "sill": 0.2012536155210927,
+                    "correlation_range": 2.8097960695708144,
+                    "hole_effect_range": 1.0216620015055402,
+                    "decay_power": 0.5982912381853731
+                },
+                "initial_fit": [
+                    [
+                        "correlation_range",
+                        "decay_power",
+                        "hole_effect_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        20.0,
+                        2.0,
+                        1.0,
+                        0.2,
+                        0.25
+                    ],
+                    23.424032552340122
+                ],
+                "optimized_fit": [
+                    [
+                        "correlation_range",
+                        "decay_power",
+                        "hole_effect_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        2.8097960695708144,
+                        0.5982912381853731,
+                        1.0216620015055402,
+                        0.2565365128811695,
+                        0.2012536155210927
+                    ],
+                    0.006778574757116466
+                ]
+            },
+            "gaussian_linear": {
+                "best_fit_variogram": {
+                    "nugget": 0.759348577908742,
+                    "sill": 0.7593417446882149,
+                    "correlation_range": 2.056509503724733,
+                    "hole_effect_range": 4.51639333499654
+                },
+                "initial_fit": [
+                    [
+                        "correlation_range",
+                        "hole_effect_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        20.0,
+                        1.0,
+                        0.2,
+                        0.25
+                    ],
+                    23.424032552340122
+                ],
+                "optimized_fit": [
+                    [
+                        "correlation_range",
+                        "hole_effect_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        2.056509503724733,
+                        4.51639333499654,
+                        0.759348577908742,
+                        0.7593417446882149
+                    ],
+                    0.007899572686139484
+                ]
+            }
+        },
+        "changed_default_parameters": {
+            "exponential": {
+                "best_fit_variogram": {
+                    "nugget": 0.031811084793953205,
+                    "sill": 1.0771963210235278,
+                    "correlation_range": 33.23640732457613
+                },
+                "initial_fit": [
+                    [
+                        "correlation_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        10.0,
+                        0.5,
+                        0.75
+                    ],
+                    0.019808095938468287
+                ],
+                "optimized_fit": [
+                    [
+                        "correlation_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        33.23640732457613,
+                        0.031811084793953205,
+                        1.0771963210235278
+                    ],
+                    0.003516907544245888
+                ]
+            },
+            "gaussian": {
+                "best_fit_variogram": {
+                    "nugget": 0.18986907129471872,
+                    "sill": 1.0016398488311713,
+                    "correlation_range": 38.36442876006354
+                },
+                "initial_fit": [
+                    [
+                        "correlation_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        10.0,
+                        0.5,
+                        0.75
+                    ],
+                    0.019874872000865997
+                ],
+                "optimized_fit": [
+                    [
+                        "correlation_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        38.36442876006354,
+                        0.18986907129471872,
+                        1.0016398488311713
+                    ],
+                    0.0019482390184012092
+                ]
+            },
+            "jbessel": {
+                "best_fit_variogram": {
+                    "nugget": 0.6845859684656951,
+                    "sill": 0.9391880958754952,
+                    "hole_effect_range": 5.1988134479484405
+                },
+                "initial_fit": [
+                    [
+                        "hole_effect_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        5.0,
+                        0.5,
+                        0.75
+                    ],
+                    0.019415116331251352
+                ],
+                "optimized_fit": [
+                    [
+                        "hole_effect_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        5.1988134479484405,
+                        0.6845859684656951,
+                        0.9391880958754952
+                    ],
+                    0.010387491927070678
+                ]
+            },
+            "kbessel": {
+                "best_fit_variogram": {
+                    "nugget": 0.01774047525427451,
+                    "sill": 1.0377047328235864,
+                    "hole_effect_range": 20.006137028827087
+                },
+                "initial_fit": [
+                    [
+                        "hole_effect_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        5.0,
+                        0.5,
+                        0.75
+                    ],
+                    0.019912795191621296
+                ],
+                "optimized_fit": [
+                    [
+                        "hole_effect_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        20.006137028827087,
+                        0.01774047525427451,
+                        1.0377047328235864
+                    ],
+                    0.002590022058724899
+                ]
+            },
+            "linear": {
+                "best_fit_variogram": {
+                    "nugget": 0.5764532217481956,
+                    "sill": 0.5813663261206553
+                },
+                "initial_fit": [
+                    [
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        0.5,
+                        0.75
+                    ],
+                    1.5044483535040811
+                ],
+                "optimized_fit": [
+                    [
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        0.5764532217481956,
+                        0.5813663261206553
+                    ],
+                    0.006813433719707826
+                ]
+            },
+            "nugget": {
+                "best_fit_variogram": {
+                    "nugget": 0.37603912045130344,
+                    "sill": 0.5640587025252952
+                },
+                "initial_fit": [
+                    [
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        0.5,
+                        0.75
+                    ],
+                    0.033262032085561506
+                ],
+                "optimized_fit": [
+                    [
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        0.37603912045130344,
+                        0.5640587025252952
+                    ],
+                    0.010450897398142608
+                ]
+            },
+            "sinc": {
+                "best_fit_variogram": {
+                    "nugget": 0.6203123268445354,
+                    "sill": 0.9402725257770752,
+                    "hole_effect_range": 5.9135193271511115
+                },
+                "initial_fit": [
+                    [
+                        "hole_effect_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        5.0,
+                        0.5,
+                        0.75
+                    ],
+                    0.01995098613267035
+                ],
+                "optimized_fit": [
+                    [
+                        "hole_effect_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        5.9135193271511115,
+                        0.6203123268445354,
+                        0.9402725257770752
+                    ],
+                    0.010496912139385344
+                ]
+            },
+            "spherical": {
+                "best_fit_variogram": {
+                    "nugget": 0.7223511209924707,
+                    "sill": 0.2256343864437091,
+                    "correlation_range": 20.00000009038387
+                },
+                "initial_fit": [
+                    [
+                        "correlation_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        10.0,
+                        0.5,
+                        0.75
+                    ],
+                    0.033332395159020554
+                ],
+                "optimized_fit": [
+                    [
+                        "correlation_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        20.00000009038387,
+                        0.7223511209924707,
+                        0.2256343864437091
+                    ],
+                    0.007451358069031855
+                ]
+            },
+            "bessel_exponential": {
+                "best_fit_variogram": {
+                    "nugget": 0.9401140989614166,
+                    "sill": 0.6782885879107033,
+                    "correlation_range": 1214.629380137608,
+                    "hole_effect_range": 4.567778150906699,
+                    "decay_power": 0.31878070048258955
+                },
+                "initial_fit": [
+                    [
+                        "correlation_range",
+                        "decay_power",
+                        "hole_effect_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        10.0,
+                        1.25,
+                        5.0,
+                        0.5,
+                        0.75
+                    ],
+                    0.03862310823570675
+                ],
+                "optimized_fit": [
+                    [
+                        "correlation_range",
+                        "decay_power",
+                        "hole_effect_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        1214.629380137608,
+                        0.31878070048258955,
+                        4.567778150906699,
+                        0.9401140989614166,
+                        0.6782885879107033
+                    ],
+                    0.01051170193027107
+                ]
+            },
+            "bessel_gaussian": {
+                "best_fit_variogram": {
+                    "nugget": 0.9414217396909084,
+                    "sill": 0.7229682745523249,
+                    "correlation_range": 751.0332911274385,
+                    "hole_effect_range": 4.808023074561137
+                },
+                "initial_fit": [
+                    [
+                        "correlation_range",
+                        "hole_effect_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        10.0,
+                        5.0,
+                        0.5,
+                        0.75
+                    ],
+                    0.03862400090458871
+                ],
+                "optimized_fit": [
+                    [
+                        "correlation_range",
+                        "hole_effect_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        751.0332911274385,
+                        4.808023074561137,
+                        0.9414217396909084,
+                        0.7229682745523249
+                    ],
+                    0.010532632173529432
+                ]
+            },
+            "exponential_linear": {
+                "best_fit_variogram": {
+                    "nugget": 0.6876034611358923,
+                    "sill": 0.6869633390225726,
+                    "correlation_range": 20.13694195681173,
+                    "hole_effect_range": 5.006516444128619,
+                    "decay_power": 1.026208135416229
+                },
+                "initial_fit": [
+                    [
+                        "correlation_range",
+                        "decay_power",
+                        "hole_effect_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        10.0,
+                        1.25,
+                        5.0,
+                        0.5,
+                        0.75
+                    ],
+                    22.518112807053488
+                ],
+                "optimized_fit": [
+                    [
+                        "correlation_range",
+                        "decay_power",
+                        "hole_effect_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        20.13694195681173,
+                        1.026208135416229,
+                        5.006516444128619,
+                        0.6876034611358923,
+                        0.6869633390225726
+                    ],
+                    0.0064977679622282595
+                ]
+            },
+            "gaussian_linear": {
+                "best_fit_variogram": {
+                    "nugget": 0.7500238912099633,
+                    "sill": 0.7500174315252885,
+                    "correlation_range": 27.525126078991818,
+                    "hole_effect_range": 5.000013915599906
+                },
+                "initial_fit": [
+                    [
+                        "correlation_range",
+                        "hole_effect_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        10.0,
+                        5.0,
+                        0.5,
+                        0.75
+                    ],
+                    585.5476519842242
+                ],
+                "optimized_fit": [
+                    [
+                        "correlation_range",
+                        "hole_effect_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        27.525126078991818,
+                        5.000013915599906,
+                        0.7500238912099633,
+                        0.7500174315252885
+                    ],
+                    0.007954353477035554
+                ]
+            }
+        },
+        "adjusted_some_optimization_params": {
+            "exponential": {
+                "best_fit_variogram": {
+                    "nugget": 3.91468009704337e-14,
+                    "sill": 1.073170245762257,
+                    "correlation_range": 32.22441455991462
+                },
+                "initial_fit": [
+                    [
+                        "correlation_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        10.0,
+                        0.5,
+                        0.75
+                    ],
+                    0.019808095938468287
+                ],
+                "optimized_fit": [
+                    [
+                        "correlation_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        32.22441455991462,
+                        3.91468009704337e-14,
+                        1.073170245762257
+                    ],
+                    0.0033981761473433677
+                ]
+            },
+            "gaussian": {
+                "best_fit_variogram": {
+                    "nugget": 0.05818330313796765,
+                    "sill": 0.9975452871237003,
+                    "correlation_range": 36.079227662423975
+                },
+                "initial_fit": [
+                    [
+                        "correlation_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        10.0,
+                        0.5,
+                        0.75
+                    ],
+                    0.019874872000865997
+                ],
+                "optimized_fit": [
+                    [
+                        "correlation_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        36.079227662423975,
+                        0.05818330313796765,
+                        0.9975452871237003
+                    ],
+                    0.0016682612812574842
+                ]
+            },
+            "jbessel": {
+                "best_fit_variogram": {
+                    "nugget": 0.2991542592401514,
+                    "sill": 0.9371477661280446,
+                    "hole_effect_range": 5.199051499716853
+                },
+                "initial_fit": [
+                    [
+                        "hole_effect_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        5.0,
+                        0.5,
+                        0.75
+                    ],
+                    0.019415116331251352
+                ],
+                "optimized_fit": [
+                    [
+                        "hole_effect_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        5.199051499716853,
+                        0.2991542592401514,
+                        0.9371477661280446
+                    ],
+                    0.010410728287605718
+                ]
+            },
+            "kbessel": {
+                "best_fit_variogram": {
+                    "nugget": 3.591934928322825e-14,
+                    "sill": 1.0364523440874769,
+                    "hole_effect_range": 19.767800200086576
+                },
+                "initial_fit": [
+                    [
+                        "hole_effect_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        5.0,
+                        0.5,
+                        0.75
+                    ],
+                    0.019912795191621296
+                ],
+                "optimized_fit": [
+                    [
+                        "hole_effect_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        19.767800200086576,
+                        3.591934928322825e-14,
+                        1.0364523440874769
+                    ],
+                    0.0025746694534679667
+                ]
+            },
+            "linear": {
+                "best_fit_variogram": {
+                    "nugget": 0.5748926824505326,
+                    "sill": 0.579825535437819
+                },
+                "initial_fit": [
+                    [
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        0.5,
+                        0.75
+                    ],
+                    1.5044483535040811
+                ],
+                "optimized_fit": [
+                    [
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        0.5748926824505326,
+                        0.579825535437819
+                    ],
+                    0.006827213566300214
+                ]
+            },
+            "nugget": {
+                "best_fit_variogram": {
+                    "nugget": 0.37603513875493494,
+                    "sill": 0.5640492616842332
+                },
+                "initial_fit": [
+                    [
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        0.5,
+                        0.75
+                    ],
+                    0.033262032085561506
+                ],
+                "optimized_fit": [
+                    [
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        0.37603513875493494,
+                        0.5640492616842332
+                    ],
+                    0.010451397957165836
+                ]
+            },
+            "sinc": {
+                "best_fit_variogram": {
+                    "nugget": 0.5446730542168491,
+                    "sill": 0.9402188244791653,
+                    "hole_effect_range": 5.914805857877472
+                },
+                "initial_fit": [
+                    [
+                        "hole_effect_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        5.0,
+                        0.5,
+                        0.75
+                    ],
+                    0.01995098613267035
+                ],
+                "optimized_fit": [
+                    [
+                        "hole_effect_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        5.914805857877472,
+                        0.5446730542168491,
+                        0.9402188244791653
+                    ],
+                    0.010539670826816068
+                ]
+            },
+            "spherical": {
+                "best_fit_variogram": {
+                    "nugget": 0.7260280764723775,
+                    "sill": 0.22204576520341418,
+                    "correlation_range": 20.000000000000018
+                },
+                "initial_fit": [
+                    [
+                        "correlation_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        10.0,
+                        0.5,
+                        0.75
+                    ],
+                    0.033332395159020554
+                ],
+                "optimized_fit": [
+                    [
+                        "correlation_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        20.000000000000018,
+                        0.7260280764723775,
+                        0.22204576520341418
+                    ],
+                    0.007452011517757243
+                ]
+            },
+            "bessel_exponential": {
+                "best_fit_variogram": {
+                    "nugget": 0.9394114176548064,
+                    "sill": 0.5737108439269051,
+                    "correlation_range": 1208.1698220422306,
+                    "hole_effect_range": 4.570898361954862,
+                    "decay_power": 0.180333560278775
+                },
+                "initial_fit": [
+                    [
+                        "correlation_range",
+                        "decay_power",
+                        "hole_effect_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        10.0,
+                        1.25,
+                        5.0,
+                        0.5,
+                        0.75
+                    ],
+                    0.03862310823570675
+                ],
+                "optimized_fit": [
+                    [
+                        "correlation_range",
+                        "decay_power",
+                        "hole_effect_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        1208.1698220422306,
+                        0.180333560278775,
+                        4.570898361954862,
+                        0.9394114176548064,
+                        0.5737108439269051
+                    ],
+                    0.010481309547987198
+                ]
+            },
+            "bessel_gaussian": {
+                "best_fit_variogram": {
+                    "nugget": 0.940055828252841,
+                    "sill": 0.6904908308797493,
+                    "correlation_range": 742.8286035236874,
+                    "hole_effect_range": 4.796649595771956
+                },
+                "initial_fit": [
+                    [
+                        "correlation_range",
+                        "hole_effect_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        10.0,
+                        5.0,
+                        0.5,
+                        0.75
+                    ],
+                    0.03862400090458871
+                ],
+                "optimized_fit": [
+                    [
+                        "correlation_range",
+                        "hole_effect_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        742.8286035236874,
+                        4.796649595771956,
+                        0.940055828252841,
+                        0.6904908308797493
+                    ],
+                    0.010583065610542265
+                ]
+            },
+            "exponential_linear": {
+                "best_fit_variogram": {
+                    "nugget": 0.7445537220150606,
+                    "sill": 0.7443586373801669,
+                    "correlation_range": 24.932315491485056,
+                    "hole_effect_range": 4.999937318743378,
+                    "decay_power": 1.2440131796666611
+                },
+                "initial_fit": [
+                    [
+                        "correlation_range",
+                        "decay_power",
+                        "hole_effect_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        10.0,
+                        1.25,
+                        5.0,
+                        0.5,
+                        0.75
+                    ],
+                    22.518112807053488
+                ],
+                "optimized_fit": [
+                    [
+                        "correlation_range",
+                        "decay_power",
+                        "hole_effect_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        24.932315491485056,
+                        1.2440131796666611,
+                        4.999937318743378,
+                        0.7445537220150606,
+                        0.7443586373801669
+                    ],
+                    0.006896327186338322
+                ]
+            },
+            "gaussian_linear": {
+                "best_fit_variogram": {
+                    "nugget": 0.7500337301916171,
+                    "sill": 0.7500272782489307,
+                    "correlation_range": 27.539650816932735,
+                    "hole_effect_range": 5.000013936470746
+                },
+                "initial_fit": [
+                    [
+                        "correlation_range",
+                        "hole_effect_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        10.0,
+                        5.0,
+                        0.5,
+                        0.75
+                    ],
+                    585.5476519842242
+                ],
+                "optimized_fit": [
+                    [
+                        "correlation_range",
+                        "hole_effect_range",
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        27.539650816932735,
+                        5.000013936470746,
+                        0.7500337301916171,
+                        0.7500272782489307
+                    ],
+                    0.007952674754264928
+                ]
+            }
+        },
+        "nugget_only": {
+            "exponential": {
+                "best_fit_variogram": {
+                    "nugget": 8.211925560960929e-08,
+                    "sill": 0.75,
+                    "correlation_range": 10.0
+                },
+                "initial_fit": [
+                    [
+                        "nugget",
+                        "sill",
+                        "correlation_range"
+                    ],
+                    [
+                        0.5,
+                        0.75,
+                        10.0
+                    ],
+                    0.019808095938468287
+                ],
+                "optimized_fit": [
+                    [
+                        "nugget",
+                        "sill",
+                        "correlation_range"
+                    ],
+                    [
+                        8.211925560960929e-08,
+                        0.75,
+                        10.0
+                    ],
+                    0.019066843523975113
+                ]
+            },
+            "gaussian": {
+                "best_fit_variogram": {
+                    "nugget": 2.748201065593545e-07,
+                    "sill": 0.75,
+                    "correlation_range": 10.0
+                },
+                "initial_fit": [
+                    [
+                        "nugget",
+                        "sill",
+                        "correlation_range"
+                    ],
+                    [
+                        0.5,
+                        0.75,
+                        10.0
+                    ],
+                    0.019874872000865997
+                ],
+                "optimized_fit": [
+                    [
+                        "nugget",
+                        "sill",
+                        "correlation_range"
+                    ],
+                    [
+                        2.748201065593545e-07,
+                        0.75,
+                        10.0
+                    ],
+                    0.01926717192344261
+                ]
+            },
+            "jbessel": {
+                "best_fit_variogram": {
+                    "nugget": 1.41384494770384e-08,
+                    "sill": 0.75,
+                    "hole_effect_range": 5.0
+                },
+                "initial_fit": [
+                    [
+                        "nugget",
+                        "sill",
+                        "hole_effect_range"
+                    ],
+                    [
+                        0.5,
+                        0.75,
+                        5.0
+                    ],
+                    0.019415116331251352
+                ],
+                "optimized_fit": [
+                    [
+                        "nugget",
+                        "sill",
+                        "hole_effect_range"
+                    ],
+                    [
+                        1.41384494770384e-08,
+                        0.75,
+                        5.0
+                    ],
+                    0.01788790462376692
+                ]
+            },
+            "kbessel": {
+                "best_fit_variogram": {
+                    "nugget": 8.809340453289072e-10,
+                    "sill": 0.75,
+                    "hole_effect_range": 5.0
+                },
+                "initial_fit": [
+                    [
+                        "nugget",
+                        "sill",
+                        "hole_effect_range"
+                    ],
+                    [
+                        0.5,
+                        0.75,
+                        5.0
+                    ],
+                    0.019912795191621296
+                ],
+                "optimized_fit": [
+                    [
+                        "nugget",
+                        "sill",
+                        "hole_effect_range"
+                    ],
+                    [
+                        8.809340453289072e-10,
+                        0.75,
+                        5.0
+                    ],
+                    0.01938094116262897
+                ]
+            },
+            "linear": {
+                "best_fit_variogram": {
+                    "nugget": 0.7472483055200797,
+                    "sill": 0.75
+                },
+                "initial_fit": [
+                    [
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        0.5,
+                        0.75
+                    ],
+                    1.5044483535040811
+                ],
+                "optimized_fit": [
+                    [
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        0.7472483055200797,
+                        0.75
+                    ],
+                    0.007154757660549202
+                ]
+            },
+            "nugget": {
+                "best_fit_variogram": {
+                    "nugget": 0.19008439961393317,
+                    "sill": 0.75
+                },
+                "initial_fit": [
+                    [
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        0.5,
+                        0.75
+                    ],
+                    0.033262032085561506
+                ],
+                "optimized_fit": [
+                    [
+                        "nugget",
+                        "sill"
+                    ],
+                    [
+                        0.19008439961393317,
+                        0.75
+                    ],
+                    0.010451397987940852
+                ]
+            },
+            "sinc": {
+                "best_fit_variogram": {
+                    "nugget": 4.160243163097663e-12,
+                    "sill": 0.75,
+                    "hole_effect_range": 5.0
+                },
+                "initial_fit": [
+                    [
+                        "nugget",
+                        "sill",
+                        "hole_effect_range"
+                    ],
+                    [
+                        0.5,
+                        0.75,
+                        5.0
+                    ],
+                    0.01995098613267035
+                ],
+                "optimized_fit": [
+                    [
+                        "nugget",
+                        "sill",
+                        "hole_effect_range"
+                    ],
+                    [
+                        4.160243163097663e-12,
+                        0.75,
+                        5.0
+                    ],
+                    0.019917692425593655
+                ]
+            },
+            "spherical": {
+                "best_fit_variogram": {
+                    "nugget": 0.19008079533319527,
+                    "sill": 0.75,
+                    "correlation_range": 10.0
+                },
+                "initial_fit": [
+                    [
+                        "nugget",
+                        "sill",
+                        "correlation_range"
+                    ],
+                    [
+                        0.5,
+                        0.75,
+                        10.0
+                    ],
+                    0.033332395159020554
+                ],
+                "optimized_fit": [
+                    [
+                        "nugget",
+                        "sill",
+                        "correlation_range"
+                    ],
+                    [
+                        0.19008079533319527,
+                        0.75,
+                        10.0
+                    ],
+                    0.010478281738254493
+                ]
+            },
+            "bessel_exponential": {
+                "best_fit_variogram": {
+                    "nugget": 0.935070562701844,
+                    "sill": 0.75,
+                    "correlation_range": 10.0,
+                    "hole_effect_range": 5.0,
+                    "decay_power": 1.25
+                },
+                "initial_fit": [
+                    [
+                        "nugget",
+                        "sill",
+                        "correlation_range",
+                        "decay_power",
+                        "hole_effect_range"
+                    ],
+                    [
+                        0.5,
+                        0.75,
+                        10.0,
+                        1.25,
+                        5.0
+                    ],
+                    0.03862310823570675
+                ],
+                "optimized_fit": [
+                    [
+                        "nugget",
+                        "sill",
+                        "correlation_range",
+                        "decay_power",
+                        "hole_effect_range"
+                    ],
+                    [
+                        0.935070562701844,
+                        0.75,
+                        10.0,
+                        1.25,
+                        5.0
+                    ],
+                    0.010382781367019036
+                ]
+            },
+            "bessel_gaussian": {
+                "best_fit_variogram": {
+                    "nugget": 0.9350741076854889,
+                    "sill": 0.75,
+                    "correlation_range": 10.0,
+                    "hole_effect_range": 5.0
+                },
+                "initial_fit": [
+                    [
+                        "nugget",
+                        "sill",
+                        "correlation_range",
+                        "hole_effect_range"
+                    ],
+                    [
+                        0.5,
+                        0.75,
+                        10.0,
+                        5.0
+                    ],
+                    0.03862400090458871
+                ],
+                "optimized_fit": [
+                    [
+                        "nugget",
+                        "sill",
+                        "correlation_range",
+                        "hole_effect_range"
+                    ],
+                    [
+                        0.9350741076854889,
+                        0.75,
+                        10.0,
+                        5.0
+                    ],
+                    0.010382155234320971
+                ]
+            },
+            "exponential_linear": {
+                "best_fit_variogram": {
+                    "nugget": 0.750181405466889,
+                    "sill": 0.75,
+                    "correlation_range": 10.0,
+                    "hole_effect_range": 5.0,
+                    "decay_power": 1.25
+                },
+                "initial_fit": [
+                    [
+                        "nugget",
+                        "sill",
+                        "correlation_range",
+                        "decay_power",
+                        "hole_effect_range"
+                    ],
+                    [
+                        0.5,
+                        0.75,
+                        10.0,
+                        1.25,
+                        5.0
+                    ],
+                    22.518112807053488
+                ],
+                "optimized_fit": [
+                    [
+                        "nugget",
+                        "sill",
+                        "correlation_range",
+                        "decay_power",
+                        "hole_effect_range"
+                    ],
+                    [
+                        0.750181405466889,
+                        0.75,
+                        10.0,
+                        1.25,
+                        5.0
+                    ],
+                    0.007069714491341597
+                ]
+            },
+            "gaussian_linear": {
+                "best_fit_variogram": {
+                    "nugget": 0.7500064395301772,
+                    "sill": 0.75,
+                    "correlation_range": 10.0,
+                    "hole_effect_range": 5.0
+                },
+                "initial_fit": [
+                    [
+                        "nugget",
+                        "sill",
+                        "correlation_range",
+                        "hole_effect_range"
+                    ],
+                    [
+                        0.5,
+                        0.75,
+                        10.0,
+                        5.0
+                    ],
+                    585.5476519842242
+                ],
+                "optimized_fit": [
+                    [
+                        "nugget",
+                        "sill",
+                        "correlation_range",
+                        "hole_effect_range"
+                    ],
+                    [
+                        0.7500064395301772,
+                        0.75,
+                        10.0,
+                        5.0
+                    ],
+                    0.00800087910887398
+                ]
+            }
+        },
+        "assign_init_bounds": {
+            "exponential": {
+                "best_fit_variogram": {
+                    "nugget": 0.5,
+                    "sill": 0.9335456044125501,
+                    "correlation_range": 4.999999999999682
+                },
+                "initial_fit": [
+                    [
+                        "correlation_range",
+                        "sill",
+                        "nugget"
+                    ],
+                    [
+                        5.0,
+                        0.75,
+                        0.5
+                    ],
+                    0.020022143591391883
+                ],
+                "optimized_fit": [
+                    [
+                        "correlation_range",
+                        "sill",
+                        "nugget"
+                    ],
+                    [
+                        4.999999999999682,
+                        0.9335456044125501,
+                        0.5
+                    ],
+                    0.010563335261054168
+                ]
+            },
+            "gaussian": {
+                "best_fit_variogram": {
+                    "nugget": 0.5,
+                    "sill": 0.9326754714657575,
+                    "correlation_range": 4.999999999999759
+                },
+                "initial_fit": [
+                    [
+                        "correlation_range",
+                        "sill",
+                        "nugget"
+                    ],
+                    [
+                        5.0,
+                        0.75,
+                        0.5
+                    ],
+                    0.020116580549331468
+                ],
+                "optimized_fit": [
+                    [
+                        "correlation_range",
+                        "sill",
+                        "nugget"
+                    ],
+                    [
+                        4.999999999999759,
+                        0.9326754714657575,
+                        0.5
+                    ],
+                    0.010761680942496282
+                ]
+            },
+            "jbessel": {
+                "best_fit_variogram": {
+                    "nugget": 0.5,
+                    "sill": 0.922248739670434,
+                    "hole_effect_range": 5.0
+                },
+                "initial_fit": [
+                    [
+                        "sill",
+                        "nugget",
+                        "hole_effect_range"
+                    ],
+                    [
+                        0.75,
+                        0.5,
+                        5.0
+                    ],
+                    0.019401043716559544
+                ],
+                "optimized_fit": [
+                    [
+                        "sill",
+                        "nugget",
+                        "hole_effect_range"
+                    ],
+                    [
+                        0.922248739670434,
+                        0.5,
+                        5.0
+                    ],
+                    0.010263604309454418
+                ]
+            },
+            "kbessel": {
+                "best_fit_variogram": {
+                    "nugget": 0.5,
+                    "sill": 0.9346008835529677,
+                    "hole_effect_range": 5.0
+                },
+                "initial_fit": [
+                    [
+                        "sill",
+                        "nugget",
+                        "hole_effect_range"
+                    ],
+                    [
+                        0.75,
+                        0.5,
+                        5.0
+                    ],
+                    0.019898722576929487
+                ],
+                "optimized_fit": [
+                    [
+                        "sill",
+                        "nugget",
+                        "hole_effect_range"
+                    ],
+                    [
+                        0.9346008835529677,
+                        0.5,
+                        5.0
+                    ],
+                    0.010303146944412865
+                ]
+            },
+            "linear": {
+                "best_fit_variogram": {
+                    "nugget": 0.5,
+                    "sill": 0.5058947216663535
+                },
+                "initial_fit": [
+                    [
+                        "sill",
+                        "nugget"
+                    ],
+                    [
+                        0.75,
+                        0.5
+                    ],
+                    1.5044342808893894
+                ],
+                "optimized_fit": [
+                    [
+                        "sill",
+                        "nugget"
+                    ],
+                    [
+                        0.5058947216663535,
+                        0.5
+                    ],
+                    0.007466419540003974
+                ]
+            },
+            "nugget": {
+                "best_fit_variogram": {
+                    "nugget": 0.5,
+                    "sill": 0.5019901040224224
+                },
+                "initial_fit": [
+                    [
+                        "sill",
+                        "nugget"
+                    ],
+                    [
+                        0.75,
+                        0.5
+                    ],
+                    0.033276104700253314
+                ],
+                "optimized_fit": [
+                    [
+                        "sill",
+                        "nugget"
+                    ],
+                    [
+                        0.5019901040224224,
+                        0.5
+                    ],
+                    0.010764651997532007
+                ]
+            },
+            "sinc": {
+                "best_fit_variogram": {
+                    "nugget": 0.5,
+                    "sill": 0.9279181518189877,
+                    "hole_effect_range": 5.0
+                },
+                "initial_fit": [
+                    [
+                        "sill",
+                        "nugget",
+                        "hole_effect_range"
+                    ],
+                    [
+                        0.75,
+                        0.5,
+                        5.0
+                    ],
+                    0.019965058747362163
+                ],
+                "optimized_fit": [
+                    [
+                        "sill",
+                        "nugget",
+                        "hole_effect_range"
+                    ],
+                    [
+                        0.9279181518189877,
+                        0.5,
+                        5.0
+                    ],
+                    0.011052304253447155
+                ]
+            },
+            "spherical": {
+                "best_fit_variogram": {
+                    "nugget": 0.5,
+                    "sill": 0.5019901040224224,
+                    "correlation_range": 4.9999999995
+                },
+                "initial_fit": [
+                    [
+                        "correlation_range",
+                        "sill",
+                        "nugget"
+                    ],
+                    [
+                        5.0,
+                        0.75,
+                        0.5
+                    ],
+                    0.03331832254432874
+                ],
+                "optimized_fit": [
+                    [
+                        "correlation_range",
+                        "sill",
+                        "nugget"
+                    ],
+                    [
+                        4.9999999995,
+                        0.5019901040224224,
+                        0.5
+                    ],
+                    0.010806869841607435
+                ]
+            },
+            "bessel_exponential": {
+                "best_fit_variogram": {
+                    "nugget": 0.5,
+                    "sill": 0.504614028017178,
+                    "correlation_range": 4.999999999978209,
+                    "hole_effect_range": 5.0,
+                    "decay_power": 1.0217696019008526
+                },
+                "initial_fit": [
+                    [
+                        "correlation_range",
+                        "decay_power",
+                        "sill",
+                        "nugget",
+                        "hole_effect_range"
+                    ],
+                    [
+                        5.0,
+                        1.5,
+                        0.75,
+                        0.5,
+                        5.0
+                    ],
+                    0.03862224374676921
+                ],
+                "optimized_fit": [
+                    [
+                        "correlation_range",
+                        "decay_power",
+                        "sill",
+                        "nugget",
+                        "hole_effect_range"
+                    ],
+                    [
+                        4.999999999978209,
+                        1.0217696019008526,
+                        0.504614028017178,
+                        0.5,
+                        5.0
+                    ],
+                    0.03790948957691155
+                ]
+            },
+            "bessel_gaussian": {
+                "best_fit_variogram": {
+                    "nugget": 0.5,
+                    "sill": 0.504614665016947,
+                    "correlation_range": 4.999999999978571,
+                    "hole_effect_range": 5.0
+                },
+                "initial_fit": [
+                    [
+                        "correlation_range",
+                        "sill",
+                        "nugget",
+                        "hole_effect_range"
+                    ],
+                    [
+                        5.0,
+                        0.75,
+                        0.5,
+                        5.0
+                    ],
+                    0.03862384916260878
+                ],
+                "optimized_fit": [
+                    [
+                        "correlation_range",
+                        "sill",
+                        "nugget",
+                        "hole_effect_range"
+                    ],
+                    [
+                        4.999999999978571,
+                        0.504614665016947,
+                        0.5,
+                        5.0
+                    ],
+                    0.03790957656388876
+                ]
+            },
+            "exponential_linear": {
+                "best_fit_variogram": {
+                    "nugget": 0.5,
+                    "sill": 0.5000043765108676,
+                    "correlation_range": 0.0022020780713738475,
+                    "hole_effect_range": 5.0,
+                    "decay_power": 1.0000271461543289
+                },
+                "initial_fit": [
+                    [
+                        "correlation_range",
+                        "decay_power",
+                        "sill",
+                        "nugget",
+                        "hole_effect_range"
+                    ],
+                    [
+                        5.0,
+                        1.5,
+                        0.75,
+                        0.5,
+                        5.0
+                    ],
+                    66.46887758672712
+                ],
+                "optimized_fit": [
+                    [
+                        "correlation_range",
+                        "decay_power",
+                        "sill",
+                        "nugget",
+                        "hole_effect_range"
+                    ],
+                    [
+                        0.0022020780713738475,
+                        1.0000271461543289,
+                        0.5000043765108676,
+                        0.5,
+                        5.0
+                    ],
+                    0.03802102747982492
+                ]
+            },
+            "gaussian_linear": {
+                "best_fit_variogram": {
+                    "nugget": 0.5,
+                    "sill": 0.5004815417999977,
+                    "correlation_range": 4.999999999994552,
+                    "hole_effect_range": 5.0
+                },
+                "initial_fit": [
+                    [
+                        "correlation_range",
+                        "sill",
+                        "nugget",
+                        "hole_effect_range"
+                    ],
+                    [
+                        5.0,
+                        0.75,
+                        0.5,
+                        5.0
+                    ],
+                    585.690380191019
+                ],
+                "optimized_fit": [
+                    [
+                        "correlation_range",
+                        "sill",
+                        "nugget",
+                        "hole_effect_range"
+                    ],
+                    [
+                        4.999999999994552,
+                        0.5004815417999977,
+                        0.5,
+                        5.0
+                    ],
+                    1.1633018528159693
+                ]
+            }
+        },
+        "assign_init_bounds_additional": {
+            "exponential": {
+                "best_fit_variogram": {
+                    "nugget": 0.5,
+                    "sill": 0.9735147956542368,
+                    "correlation_range": 9.191764109844438
+                },
+                "initial_fit": [
+                    [
+                        "correlation_range",
+                        "sill",
+                        "nugget"
+                    ],
+                    [
+                        5.0,
+                        1.0,
+                        0.5
+                    ],
+                    0.010409104799450043
+                ],
+                "optimized_fit": [
+                    [
+                        "correlation_range",
+                        "sill",
+                        "nugget"
+                    ],
+                    [
+                        9.191764109844438,
+                        0.9735147956542368,
+                        0.5
+                    ],
+                    0.009003452441133262
+                ]
+            },
+            "gaussian": {
+                "best_fit_variogram": {
+                    "nugget": 0.5,
+                    "sill": 0.9729984211657325,
+                    "correlation_range": 9.422704098325944
+                },
+                "initial_fit": [
+                    [
+                        "correlation_range",
+                        "sill",
+                        "nugget"
+                    ],
+                    [
+                        5.0,
+                        1.0,
+                        0.5
+                    ],
+                    0.010600456342119174
+                ],
+                "optimized_fit": [
+                    [
+                        "correlation_range",
+                        "sill",
+                        "nugget"
+                    ],
+                    [
+                        9.422704098325944,
+                        0.9729984211657325,
+                        0.5
+                    ],
+                    0.009280728783140256
+                ]
+            },
+            "jbessel": {
+                "best_fit_variogram": {
+                    "nugget": 0.5,
+                    "sill": 0.95859163501567,
+                    "hole_effect_range": 1.5041794720876767
+                },
+                "initial_fit": [
+                    [
+                        "hole_effect_range",
+                        "sill",
+                        "nugget"
+                    ],
+                    [
+                        1.5,
+                        1.0,
+                        0.5
+                    ],
+                    0.011075006263559615
+                ],
+                "optimized_fit": [
+                    [
+                        "hole_effect_range",
+                        "sill",
+                        "nugget"
+                    ],
+                    [
+                        1.5041794720876767,
+                        0.95859163501567,
+                        0.5
+                    ],
+                    0.009480005228274602
+                ]
+            },
+            "kbessel": {
+                "best_fit_variogram": {
+                    "nugget": 0.5,
+                    "sill": 0.9997623486757661,
+                    "hole_effect_range": 21.24198475826134
+                },
+                "initial_fit": [
+                    [
+                        "hole_effect_range",
+                        "sill",
+                        "nugget"
+                    ],
+                    [
+                        1.5,
+                        1.0,
+                        0.5
+                    ],
+                    0.010620115374345417
+                ],
+                "optimized_fit": [
+                    [
+                        "hole_effect_range",
+                        "sill",
+                        "nugget"
+                    ],
+                    [
+                        21.24198475826134,
+                        0.9997623486757661,
+                        0.5
+                    ],
+                    0.00559770629093489
+                ]
+            },
+            "linear": {
+                "best_fit_variogram": {
+                    "nugget": 0.5,
+                    "sill": 0.9500000048821323
+                },
+                "initial_fit": [
+                    [
+                        "sill",
+                        "nugget"
+                    ],
+                    [
+                        1.0,
+                        0.5
+                    ],
+                    3.0436265128060795
+                ],
+                "optimized_fit": [
+                    [
+                        "sill",
+                        "nugget"
+                    ],
+                    [
+                        0.9500000048821323,
+                        0.5
+                    ],
+                    2.735788096480902
+                ]
+            },
+            "nugget": {
+                "best_fit_variogram": {
+                    "nugget": 0.5,
+                    "sill": 0.9500324276638205
+                },
+                "initial_fit": [
+                    [
+                        "sill",
+                        "nugget"
+                    ],
+                    [
+                        1.0,
+                        0.5
+                    ],
+                    0.05596819589079651
+                ],
+                "optimized_fit": [
+                    [
+                        "sill",
+                        "nugget"
+                    ],
+                    [
+                        0.9500324276638205,
+                        0.5
+                    ],
+                    0.051432721058705916
+                ]
+            },
+            "sinc": {
+                "best_fit_variogram": {
+                    "nugget": 0.5,
+                    "sill": 0.9504433083144348,
+                    "hole_effect_range": 1.389254598221802
+                },
+                "initial_fit": [
+                    [
+                        "hole_effect_range",
+                        "sill",
+                        "nugget"
+                    ],
+                    [
+                        1.5,
+                        1.0,
+                        0.5
+                    ],
+                    0.01055188605882789
+                ],
+                "optimized_fit": [
+                    [
+                        "hole_effect_range",
+                        "sill",
+                        "nugget"
+                    ],
+                    [
+                        1.389254598221802,
+                        0.9504433083144348,
+                        0.5
+                    ],
+                    0.010034120942923747
+                ]
+            },
+            "spherical": {
+                "best_fit_variogram": {
+                    "nugget": 0.5,
+                    "sill": 0.9500324276638205,
+                    "correlation_range": 5.0000000005
+                },
+                "initial_fit": [
+                    [
+                        "correlation_range",
+                        "sill",
+                        "nugget"
+                    ],
+                    [
+                        5.0,
+                        1.0,
+                        0.5
+                    ],
+                    0.05601041373487194
+                ],
+                "optimized_fit": [
+                    [
+                        "correlation_range",
+                        "sill",
+                        "nugget"
+                    ],
+                    [
+                        5.0000000005,
+                        0.9500324276638205,
+                        0.5
+                    ],
+                    0.05147493890278136
+                ]
+            },
+            "bessel_exponential": {
+                "best_fit_variogram": {
+                    "nugget": 0.5,
+                    "sill": 0.9684817890633602,
+                    "correlation_range": 5.44318888458148,
+                    "hole_effect_range": 1.467461138474434,
+                    "decay_power": 1.541080329067023
+                },
+                "initial_fit": [
+                    [
+                        "correlation_range",
+                        "decay_power",
+                        "hole_effect_range",
+                        "sill",
+                        "nugget"
+                    ],
+                    [
+                        5.0,
+                        1.5,
+                        1.5,
+                        1.0,
+                        0.5
+                    ],
+                    0.03840926996439803
+                ],
+                "optimized_fit": [
+                    [
+                        "correlation_range",
+                        "decay_power",
+                        "hole_effect_range",
+                        "sill",
+                        "nugget"
+                    ],
+                    [
+                        5.44318888458148,
+                        1.541080329067023,
+                        1.467461138474434,
+                        0.9684817890633602,
+                        0.5
+                    ],
+                    0.03793682979629047
+                ]
+            },
+            "bessel_gaussian": {
+                "best_fit_variogram": {
+                    "nugget": 0.5,
+                    "sill": 0.9507580396631777,
+                    "correlation_range": 9.589855238103853,
+                    "hole_effect_range": 1.4671683229791963
+                },
+                "initial_fit": [
+                    [
+                        "correlation_range",
+                        "hole_effect_range",
+                        "sill",
+                        "nugget"
+                    ],
+                    [
+                        5.0,
+                        1.5,
+                        1.0,
+                        0.5
+                    ],
+                    0.03840842299502697
+                ],
+                "optimized_fit": [
+                    [
+                        "correlation_range",
+                        "hole_effect_range",
+                        "sill",
+                        "nugget"
+                    ],
+                    [
+                        9.589855238103853,
+                        1.4671683229791963,
+                        0.9507580396631777,
+                        0.5
+                    ],
+                    0.03791486112616578
+                ]
+            },
+            "exponential_linear": {
+                "best_fit_variogram": {
+                    "nugget": 0.5,
+                    "sill": 0.95002346862168,
+                    "correlation_range": 9.999997244070242,
+                    "hole_effect_range": 0.0009614292694628047,
+                    "decay_power": 1.450031793514501
+                },
+                "initial_fit": [
+                    [
+                        "correlation_range",
+                        "decay_power",
+                        "hole_effect_range",
+                        "sill",
+                        "nugget"
+                    ],
+                    [
+                        5.0,
+                        1.5,
+                        1.5,
+                        1.0,
+                        0.5
+                    ],
+                    39.863564309773494
+                ],
+                "optimized_fit": [
+                    [
+                        "correlation_range",
+                        "decay_power",
+                        "hole_effect_range",
+                        "sill",
+                        "nugget"
+                    ],
+                    [
+                        9.999997244070242,
+                        1.450031793514501,
+                        0.0009614292694628047,
+                        0.95002346862168,
+                        0.5
+                    ],
+                    0.024061749282089342
+                ]
+            },
+            "gaussian_linear": {
+                "best_fit_variogram": {
+                    "nugget": 0.5,
+                    "sill": 0.9500133334793163,
+                    "correlation_range": 9.999998485381097,
+                    "hole_effect_range": 0.00040148401122311144
+                },
+                "initial_fit": [
+                    [
+                        "correlation_range",
+                        "hole_effect_range",
+                        "sill",
+                        "nugget"
+                    ],
+                    [
+                        5.0,
+                        1.5,
+                        1.0,
+                        0.5
+                    ],
+                    351.39642544223074
+                ],
+                "optimized_fit": [
+                    [
+                        "correlation_range",
+                        "hole_effect_range",
+                        "sill",
+                        "nugget"
+                    ],
+                    [
+                        9.999998485381097,
+                        0.00040148401122311144,
+                        0.9500133334793163,
+                        0.5
+                    ],
+                    0.08809854591471641
+                ]
+            }
+        },
+        "is_numpy": [],
+        "is_pandas": []
+    }
+}
