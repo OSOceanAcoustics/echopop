@@ -3,7 +3,7 @@ ipympl
 ipywidgets
 jupyter_contrib_nbextensions
 # 9/27/23. See https://github.com/microsoft/azuredatastudio/issues/24436#issuecomment-1723328100
-traitlets<5.10
+traitlets
 geopandas
 geopy
 lmfit
