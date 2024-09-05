@@ -64,9 +64,6 @@ class Survey:
         # Initialize the `input` data attribute
         self.input = copy.deepcopy(DATA_STRUCTURE["input"])
 
-        # Initialize the `results` data attribute
-        self.results = copy.deepcopy(DATA_STRUCTURE["results"])
-
         # Initialize the `analysis` data attribute
         self.analysis = copy.deepcopy(DATA_STRUCTURE["analysis"])
 
@@ -373,6 +370,12 @@ class Survey:
         # Run GUI
         display(SEMIVARIOGRAM_GUI)
 
+        # Update the results
+        # self.analysis["variogram"].update({
+        #     "model_fit": SEMIVARIOGRAM_GUI.results["best_fit"]["model_fit"],
+        #     "model": SEMIVARIOGRAM_GUI.results["variogram"]["model"]
+        # })
+
     def fit_variogram(
         self,
         variogram_parameters: VariogramBase = {},
@@ -426,7 +429,7 @@ class Survey:
             The total azimuth angle range that is allowed for constraining
             the relative angles between spatial points, particularly for cases where a high degree
             of directionality is assumed.
-        n_lags: Optional[float]
+        n_lags: int
             See the `variogram_parameters` argument in
             :fun:`echopop.spatial.variogram.empirical_variogram` for more details on
             `n_lags`.
