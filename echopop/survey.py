@@ -1,8 +1,7 @@
 import copy
 from pathlib import Path
-from typing import Dict, List, Literal, Optional, Tuple, Union
+from typing import List, Literal, Optional, Union
 
-import numpy as np
 from IPython.display import display
 
 from .analysis import (

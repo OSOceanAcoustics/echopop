@@ -10,13 +10,14 @@ from IPython.display import clear_output, display
 from matplotlib.patches import Patch
 
 from ..spatial.variogram import (
-    create_optimization_options,
     empirical_variogram,
     get_variogram_arguments,
+    initialize_initial_optimization_values,
+    initialize_optimization_config,
     optimize_variogram,
-    validate_variogram_parameters,
     variogram,
 )
+from ..utils.validate import VariogramBase, VariogramEmpirical, VariogramInitial, VariogramOptimize
 
 ####################################################################################################
 # Variogram model dropdown widget map
@@ -96,7 +97,7 @@ def plot_empirical_variogram(
 
     # Generate point-size scaling lambda function
     def size_scale(x):
-        (((x - x.min()) / float(x.max() - x.min()) + 1) * 10) ** 2
+        return (((x - x.min()) / float(x.max() - x.min()) + 1) * 10) ** 2
 
     # Create the plot
     fig, ax = plt.subplots(figsize=(8, 5))  # Figure and axis initialization
@@ -247,12 +248,29 @@ def empirical_variogram_widget(
         )
 
     # Initialize the value dictionary
+    # Validate the entries and format them accordingly
+    # ---- Lag resolution, number of lags
+    valid_base_params = VariogramBase.create(
+        **{"n_lags": n_lags_entry.value, "lag_resolution": lag_resolution_entry.value}
+    )
+    # ---- Azimuth range
+    valid_empirical_params = VariogramEmpirical.create(
+        **{"azimuth_range": azimuth_range_entry.value}
+    )
+
+    # Initialize the value dictionary
     general_settings = {
-        "n_lags": n_lags_entry.value,
-        "lag_resolution": lag_resolution_entry.value,
-        "azimuth_range": azimuth_range_entry.value,
+        "n_lags": valid_base_params["n_lags"],
+        "lag_resolution": valid_base_params["lag_resolution"],
+        "azimuth_range": valid_empirical_params["azimuth_range"],
         "variable": empirical_variogram_dropdown.value,
     }
+    # general_settings = {
+    #     "n_lags": n_lags_entry.value,
+    #     "lag_resolution": lag_resolution_entry.value,
+    #     "azimuth_range": azimuth_range_entry.value,
+    #     "variable": empirical_variogram_dropdown.value,
+    # }
 
     # Helper function for copmuting the empirical variogram
     def compute_empirical_variogram(
@@ -565,9 +583,9 @@ def optimize_variogram_widgets(
     # Create widgets based on OPTIMIZATION_PARAMETER_MAP
     for description, config in OPTIMIZATION_PARAMETER_MAP.items():
         widget_type = config["widget"]
-        initial_value = config["value"]
-        step = config["step"]
         name = config["name"]
+        initial_value = VariogramOptimize.create(**{name: config["value"]})[name]
+        step = config["step"]
 
         if widget_type == "entry_int":
             widget = widgets.IntText(
@@ -660,7 +678,11 @@ def optimize_variogram_widgets(
 
         # Convert the widget dictionary into a normal dictionary
         parameters_dict = {
-            key: value.value if isinstance(value, (widgets.FloatText, widgets.Checkbox)) else value
+            key: (
+                {"value": value.value}
+                if isinstance(value, (widgets.FloatText, widgets.Checkbox))
+                else value
+            )
             for key, value in variogram_settings.items()
         }
 
@@ -669,23 +691,28 @@ def optimize_variogram_widgets(
         # ---- Remove from the parameters dictionary
         del parameters_dict["model"]
 
+        # Initialize the starting values
+        fit_parameters = initialize_initial_optimization_values(
+            VariogramInitial.create(parameters_dict), VariogramBase.create(**general_settings)
+        )
+
         # Get the fit parameters
-        fit_parameters = list(parameters_dict.keys())
+        # fit_parameters = list(parameters_dict.keys())
 
         # Create a list of lower bound tuples
         # ---- Repeat zero's
-        lower_bound_values = np.zeros(len(fit_parameters))
-        # ---- Convert to tuples list
-        lower_bounds = [w for w in zip(fit_parameters, lower_bound_values) if None not in w]
+        # lower_bound_values = np.zeros(len(fit_parameters))
+        # # ---- Convert to tuples list
+        # lower_bounds = [w for w in zip(fit_parameters, lower_bound_values) if None not in w]
 
-        # Create a tuples list for the upper bounds
-        # ---- Repeat INF
-        upper_bound_values = np.repeat(np.inf, len(fit_parameters))
-        # ---- Convert to tuples list
-        upper_bounds = [w for w in zip(fit_parameters, upper_bound_values) if None not in w]
+        # # Create a tuples list for the upper bounds
+        # # ---- Repeat INF
+        # upper_bound_values = np.repeat(np.inf, len(fit_parameters))
+        # # ---- Convert to tuples list
+        # upper_bounds = [w for w in zip(fit_parameters, upper_bound_values) if None not in w]
 
-        # Create a tuples list for the initial values
-        initial_values = list(parameters_dict.items())
+        # # Create a tuples list for the initial values
+        # initial_values = list(parameters_dict.items())
 
         # Create a refreshed parameter dictionary that includes both the model name and range
         # ---- Create copy
@@ -694,26 +721,28 @@ def optimize_variogram_widgets(
         variogram_parameters.update({"model": model, "range": general_settings["range"]})
 
         # Create the correctly formatted optimization settings
-        optimization_settings = create_optimization_options(
-            fit_parameters,
-            variogram_parameters,
-            initial_values=initial_values,
-            lower_bounds=lower_bounds,
-            upper_bounds=upper_bounds,
-            model=variogram_parameters["model"],
-            **optimization_args,
-        )
+        # optimization_settings = create_optimization_options(
+        #     fit_parameters,
+        #     variogram_parameters,
+        #     initial_values=initial_values,
+        #     lower_bounds=lower_bounds,
+        #     upper_bounds=upper_bounds,
+        #     model=variogram_parameters["model"],
+        #     **optimization_args,
+        # )
+        optimization_config = initialize_optimization_config(optimization_args)
 
-        # Validate all variogram-related inputs
-        validate_variogram_parameters(variogram_parameters, fit_parameters, optimization_settings)
+        # # Validate all variogram-related inputs
+        # validate_variogram_parameters(variogram_parameters, fit_parameters, optimization_settings)
+        optimization_settings = {"parameters": fit_parameters, "config": optimization_config}
 
         # Find the best-fit parameters
         best_fit_variogram, initial_fit, optimized_fit = optimize_variogram(
             empirical_params["lag_counts"],
             empirical_params["lags"],
             empirical_params["gamma_h"],
-            variogram_parameters,
             optimization_settings,
+            **variogram_parameters,
         )
 
         # Update plot
@@ -815,7 +844,13 @@ def variogram_widgets(
     warnings.filterwarnings("ignore", category=DeprecationWarning)
 
     # Enable `matplotlib` widget backend
-    get_ipython().run_line_magic("matplotlib", "widget")
+    # get_ipython().run_line_magic("matplotlib", "widget")
+    try:
+        # ---- Only works in IPython environments
+        get_ipython().run_line_magic("matplotlib", "widget")
+    except AttributeError:
+        # ---- Fallback for non-IPython environments
+        plt.switch_backend("module://ipympl.backend_nbagg")
 
     # Create Output widget for plotting area
     plot_output_widget = widgets.Output(layout=widgets.Layout(height="550px"))
@@ -890,5 +925,12 @@ def variogram_widgets(
         [widgets.VBox([full_accordion]), widgets.VBox([loading_label, plot_output_widget])]
     )
 
+    # Result container FOR DEBUGGING
+    gui_widget.results = result_container
+    gui_widget.empirical = empirical_params
+    # result_container = {
+    #     "empirical_params": empirical_params
+    # }
+
     # Create widget
-    return gui_widget  # , result_container
+    return gui_widget  # , results_dict
