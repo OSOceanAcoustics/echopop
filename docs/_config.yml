@@ -51,9 +51,7 @@ sphinx:
     'sphinx.ext.intersphinx',
     'sphinx.ext.mathjax',
     'sphinx.ext.ifconfig',
-    'sphinx.ext.githubpages',
-    'sphinx_toggleprompt',
-    'nbsphinx'
+    'sphinx.ext.githubpages'
   ]
   config:
     bibtex_reference_style: label
