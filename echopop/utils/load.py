@@ -14,6 +14,7 @@ from ..core import (
     CONFIG_MAP,
     DATA_STRUCTURE,
     LAYER_NAME_MAP,
+    NAME_CONFIG,
 )
 from .data_structure_utils import map_imported_datasets
 
@@ -200,7 +201,9 @@ def load_dataset(
                         config_map[2] = region_id
 
                     # Validate column names of this iterated file
-                    validate_data_columns(file_name, sheet_name, config_map, validation_settings)
+                    valid_columns = validate_data_columns(
+                        file_name, sheet_name, config_map, validation_settings
+                    )
 
                     # Validate datatypes within dataset and make appropriate changes to dtypes
                     # ---- This first enforces the correct dtype for each imported column
@@ -212,6 +215,7 @@ def load_dataset(
                         sheet_name,
                         config_map,
                         validation_settings,
+                        valid_columns,
                     )
             else:
                 file_name = Path(configuration_dict["data_root_dir"]) / config_settings["filename"]
@@ -241,7 +245,9 @@ def load_dataset(
                     # (if necessary)
                     # ---- This first enforces the correct dtype for each imported column
                     # ---- This then assigns the imported data to the correct class attribute
-                    validate_data_columns(file_name, sheets, config_map, validation_settings)
+                    valid_columns = validate_data_columns(
+                        file_name, sheets, config_map, validation_settings
+                    )
 
                     # Read in data and add to `Survey` object
                     read_validated_data(
@@ -251,6 +257,7 @@ def load_dataset(
                         sheets,
                         config_map,
                         validation_settings,
+                        valid_columns,
                     )
 
     # Update the data format of various inputs within `Survey`
@@ -264,6 +271,7 @@ def read_validated_data(
     sheet_name: str,
     config_map: list,
     validation_settings: dict,
+    valid_columns: list,
 ):
     """
     Reads in data and validates the data type of each column/variable
@@ -281,6 +289,8 @@ def read_validated_data(
         within `self` are organized
     validation_settings: dict
         The subset CONFIG_MAP settings that contain the target column names
+    valid_columns: list
+        List of valid input column names
     """
 
     # Based on the configuration settings, read the Excel files into memory. A format
@@ -311,7 +321,10 @@ def read_validated_data(
 
     else:
         # Read Excel file into memory -- this only reads in the required columns
-        df = pd.read_excel(file_name, sheet_name=sheet_name, usecols=validation_settings.keys())
+        # df = pd.read_excel(file_name, sheet_name=sheet_name, usecols=validation_settings.keys())
+        df = pd.read_excel(file_name, sheet_name=sheet_name, usecols=valid_columns)
+        # ---- Rename the columns, if needed
+        df = df.rename(columns=NAME_CONFIG)
 
         # Apply data types from validation_settings to the filtered DataFrame
         df = df.apply(lambda col: col.astype(validation_settings.get(col.name, type(col[0]))))
@@ -380,7 +393,7 @@ def read_validated_data(
 
 def validate_data_columns(
     file_name: Path, sheet_name: str, config_map: list, validation_settings: dict
-):
+) -> list:
     """
     Opens a virtual instance of each .xlsx file to validate the presence
     of require data column/variable names
@@ -414,16 +427,33 @@ def validate_data_columns(
             # column names of the workbook
             if "vario_krig_para" in config_map:
                 data_columns = [list(row) for row in zip(*sheet.iter_rows(values_only=True))][0]
+                # ---- Define an empty list
+                valid_columns = []
             else:
-                data_columns = {col.value for col in sheet[1]}
+                # ---- Get actual column names
+                original_columns = [col.value for col in sheet[1]]
+                # ---- Translate the column names, if needed
+                data_columns = [
+                    NAME_CONFIG[name] if name in NAME_CONFIG else name for name in original_columns
+                ]
 
-            # Error evaluation and print message (if applicable)
-            if not set(validation_settings.keys()).issubset(set(data_columns)):
-                missing_columns = set(validation_settings.keys()) - set(data_columns)
-                raise ValueError(f"Missing columns in the Excel file: {missing_columns}")
+                # Error evaluation and print message (if applicable)
+                if not set(validation_settings.keys()).issubset(set(data_columns)):
+                    missing_columns = set(validation_settings.keys()) - set(data_columns)
+                    raise ValueError(f"Missing columns in the Excel file: {missing_columns}")
+
+                # Get present data column names
+                valid_columns = [
+                    o
+                    for o, t in zip(original_columns, data_columns)
+                    if t in validation_settings.keys()
+                ]
 
         # Close connection to the work book
         workbook.close()
+
+        # Return the columns
+        return valid_columns
 
     except Exception as e:
         print(f"Error reading file '{str(file_name)}': {e}")
