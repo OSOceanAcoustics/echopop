@@ -318,7 +318,7 @@ def variogram_analysis(
     }
     # ---- Optimize parameters
     best_fit_variogram, initial_fit, optimized_fit = optimize_variogram(
-        lag_counts, lags, gamma_h, valid_variogram_params, optimization_settings
+        lag_counts, lags, gamma_h, optimization_settings, **valid_variogram_params
     )
 
     # Return a dictionary of results

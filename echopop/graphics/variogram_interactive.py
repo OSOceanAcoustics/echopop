@@ -776,8 +776,16 @@ def optimize_variogram_widgets(
         )
 
         # Update results values
-        best_fit_variogram.update({"initial_fit": initial_fit[2], "optim_fit": optimized_fit[2]})
-        best_fit_variogram_capture.update(best_fit_variogram)
+        best_fit_variogram_capture.update(
+            {
+                "model_fit": best_fit_variogram,
+                "initial_fit": initial_fit[2],
+                "optim_fit": optimized_fit[2],
+            }
+        )
+        # best_fit_variogram.update({"initial_fit": initial_fit[2], "optim_fit": optimized_fit[2]})
+        # best_fit_variogram["initial_fit"] = initial_fit[2]
+        # best_fit_variogram["optim_fit"] = optimized_fit[2]
 
     optimize_variogram_button.on_click(
         lambda b: on_optimize_variogram_button_clicked(b, variogram_settings, general_settings)
@@ -908,10 +916,9 @@ def variogram_widgets(
         # Save the results
         results_dict.update(
             {
-                "variogram": {
-                    "model_fit": result_container["optimization"],
-                    "model": result_container["variogram"]["model"],
-                }
+                "model_fit": result_container["best_fit"]["model_fit"],
+                "optimization_settings": result_container["optimization"],
+                "model": result_container["variogram"]["model"],
             }
         )
 

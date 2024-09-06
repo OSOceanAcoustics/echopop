@@ -1,0 +1,19 @@
+.output_area pre,
+.output_area .highlight,
+.output_text,
+.output_subarea {
+    overflow-y: auto;  /* Enable vertical scrolling */
+    max-height: 100px;  /* Adjust the maximum height as needed */
+}
+
+/* For smaller scrollable outputs */
+.scroll-output-small pre {
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+/* For larger scrollable outputs */
+.scroll-output-large pre {
+    max-height: 300px;
+    overflow-y: auto;
+}
