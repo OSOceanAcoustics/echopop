@@ -533,7 +533,7 @@ class Survey:
         self,
         bearing_tolerance: float = 15.0,
         coordinate_transform: bool = True,
-        crop_method: Literal["interpolation", "convex_hull"] = "interpolation",
+        crop_method: Literal["transect_ends", "convex_hull"] = "transect_ends",
         extrapolate: bool = False,
         best_fit_variogram: bool = True,
         kriging_parameters: Optional[dict] = None,

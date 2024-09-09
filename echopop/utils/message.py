@@ -246,6 +246,8 @@ def kriging_results_msg(kriging_results_dict: pd.DataFrame, settings_dict: dict)
     mesh_crop = (
         settings_dict["crop_method"].capitalize() if not settings_dict["extrapolate"] else None
     )
+    # ---- Replace '_'
+    mesh_crop = mesh_crop.replace("_", " ")
 
     # Generate message output
     return print(

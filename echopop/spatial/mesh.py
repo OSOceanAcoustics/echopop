@@ -35,8 +35,8 @@ def crop_mesh(transect_data: pd.DataFrame, mesh_data: pd.DataFrame, settings_dic
 
     # Select and return cropped mesh depending on the cropping method
     # ---- Interpolation
-    if settings_dict["crop_method"] == "interpolation":
-        return interpolate_crop_method(transect_data.copy(), mesh, settings_dict)
+    if settings_dict["crop_method"] == "transect_ends":
+        return transect_ends_crop_method(transect_data.copy(), mesh, settings_dict)
     # ---- Convex hull
     elif settings_dict["crop_method"] == "convex_hull":
         return hull_crop_method(transect_data.copy(), mesh, settings_dict)
@@ -88,7 +88,7 @@ def hull_crop_method(transect_data: pd.DataFrame, mesh_data: pd.DataFrame, setti
     return mesh_gdf_masked.drop(columns="geometry")
 
 
-def interpolate_crop_method(
+def transect_ends_crop_method(
     transect_data: pd.DataFrame, mesh_data: pd.DataFrame, settings_dict: dict
 ):
     """
