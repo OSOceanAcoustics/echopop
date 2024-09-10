@@ -11,28 +11,27 @@ from ..utils.validate import (
 )
 
 
-
 @pytest.mark.parametrize(
     "input, exception",
     [
-        ({"filename": "blurgh/blargh", "sheetname": "sheet1"}, None),
+        ({"directory": "blurgh/blargh", "sheetname": "sheet1"}, None),
         ({"sheetname": "sheet1"}, ValidationError),
-        ({"filename": "blurgh/blargh"}, ValidationError),
+        ({"directory": "blurgh/blargh"}, ValidationError),
         ({}, ValidationError),
-        ({"filename": None, "sheetname": "sheet1"}, ValidationError),
-        ({"filename": "blurgh/blargh", "sheetname": None}, ValidationError),
-        ({"filename": 1, "sheetname": "sheet1"}, ValidationError),
-        ({"filename": "blurgh/blargh", "sheetname": 1}, ValidationError),
-        ({"filename": "blurgh/blarg", "sheetname": "sheet1", "excess": "erroneous"}, None),
+        ({"directory": None, "sheetname": "sheet1"}, ValidationError),
+        ({"directory": "blurgh/blargh", "sheetname": None}, ValidationError),
+        ({"directory": 1, "sheetname": "sheet1"}, ValidationError),
+        ({"directory": "blurgh/blargh", "sheetname": 1}, ValidationError),
+        ({"directory": "blurgh/blarg", "sheetname": "sheet1", "excess": "erroneous"}, None),
     ],
     ids=[
         "Valid `FileSettings`",
-        "Missing 'filename'",
+        "Missing 'directory'",
         "Missing 'sheetname'",
         "Empty dictionary",
-        "filename key missing value",
+        "Directory key missing value",
         "Sheetname key missing value",
-        "filename value not a string",
+        "Directory value not a string",
         "Sheetname value not a string",
         "Excess keys (valid)",
     ],
