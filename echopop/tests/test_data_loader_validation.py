@@ -11,7 +11,6 @@ from ..utils.validate import (
 )
 
 
-
 @pytest.mark.parametrize(
     "input, exception",
     [
