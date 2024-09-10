@@ -11,9 +11,10 @@ import numpy as np
 # CLASS-SPECIFIC CORE API
 class posint(int):
     """Positive-only integer (includes 0)"""
-
+    
     __failstate__ = "must be a non-negative integer"
-
+    __origin__ = "posint"
+    
     def __new__(cls, value):
         if not isinstance(value, int) or value < 0:
             raise ValueError("Value must be a non-negative integer.")
@@ -22,9 +23,10 @@ class posint(int):
 
 class posfloat(float):
     """Positive-only float (includes 0.0)"""
-
+    
     __failstate__ = "must be a non-negative float"
-
+    __origin__ = "posfloat"
+    
     def __new__(cls, value):
         if not isinstance(value, (float, int)) or value < 0:
             raise ValueError("Value must be a non-negative float.")
@@ -33,9 +35,10 @@ class posfloat(float):
 
 class realposfloat(posfloat):
     """Real number positive-only float (includes 0.0)"""
-
+    
     __failstate__ = "must be a non-negative real number"
-
+    __origin__ = "realposfloat"
+    
     def __new__(cls, value):
         if not isinstance(value, (float, int)) or np.isinf(value):  # Check if value is infinity
             raise ValueError(f"Value {cls.__failstate__}.")
@@ -44,9 +47,10 @@ class realposfloat(posfloat):
 
 class realcircle(realposfloat):
     """Real number in a unit circle"""
-
+    
     __failstate__ = "must be a non-negative real angle (as a 'float') between 0.0 and 360.0 degrees"
-
+    __origin__ = "realcircle"
+    
     def __new__(cls, value):
         if not isinstance(value, (float, int)) or (value < 0.0 or value > 360.0):
             raise ValueError(f"Value {cls.__failstate__}.")
@@ -58,33 +62,33 @@ def describe_type(expected_type: Any) -> str:
     """
     Convert a type hint into a human-readable string.
     """
-
+    
     if hasattr(expected_type, "__failstate__"):
         return expected_type.__failstate__
-
+    
     if hasattr(expected_type, "__origin__"):
         origin = expected_type.__origin__
-
+        
         if origin is Literal:
             return f"one of {expected_type.__args__}"
-
+        
         if origin is Union:
             args = expected_type.__args__
             descriptions = [describe_type(arg) for arg in args if arg is not type(None)]
             if not descriptions:
                 return "any value"
             return " or ".join(descriptions)
-
+        
         if origin is np.ndarray:
             return "numpy.ndarray of floats"
-
+        
         if origin is list:
             item_type = expected_type.__args__[0]
             return f"list of '{describe_type(item_type)}'"
-
+        
     if isinstance(expected_type, type):
         return f"'{expected_type.__name__}'"
-
+    
     # return str(expected_type)
     return f"'{expected_type}'"
 
@@ -93,7 +97,7 @@ def validate_type(value: Any, expected_type: Any) -> bool:
     """
     Validate if the value matches the expected type.
     """
-
+    
     # Handle numpy.ndarray
     if hasattr(expected_type, "__origin__") and expected_type.__origin__ is np.ndarray:
         return (
@@ -101,7 +105,7 @@ def validate_type(value: Any, expected_type: Any) -> bool:
             and np.issubdtype(value.dtype, np.number)
             # and value.dtype == np.float64
         )
-
+        
     # Handle base `type` case
     if isinstance(expected_type, type):
         # ---- Handle `posint`
@@ -113,11 +117,11 @@ def validate_type(value: Any, expected_type: Any) -> bool:
                 return False
         else:
             return isinstance(value, expected_type)
-
+        
     # Handle Union
     if hasattr(expected_type, "__origin__") and expected_type.__origin__ is Union:
         return any(validate_type(value, arg) for arg in expected_type.__args__)
-
+    
     # Handle Literal
     if hasattr(expected_type, "__origin__") and expected_type.__origin__ is Literal:
         # ---- Get allowed values
@@ -127,22 +131,14 @@ def validate_type(value: Any, expected_type: Any) -> bool:
             value_array = np.array(value, dtype=object)
             return np.array_equal(np.sort(value_array), np.sort(allowed_values_array))
         return value in allowed_values
-
+    
     # Handle List
     if hasattr(expected_type, "__origin__") and expected_type.__origin__ is list:
         if not isinstance(value, list):
             return False
         item_type = expected_type.__args__[0]
         return all(validate_type(item, item_type) for item in value)
-
-    # # Handle numpy.ndarray
-    # if hasattr(expected_type, "__origin__") and expected_type.__origin__ is np.ndarray:
-    #     return (
-    #         isinstance(value, np.ndarray)
-    #         and np.issubdtype(value.dtype, np.number)
-    #         # and value.dtype == np.float64
-    #     )
-
+    
     return False
 
 
@@ -707,6 +703,199 @@ class VariogramInitial(TypedDict, total=False):
                 f"`min` <= value` <= `max`."
             )
 
+        # FOR DEBUGGING
+        # --------
+        # print("Validate passed.")
+        # --------
+
+class MeshCrop(TypedDict):
+    crop_method: Literal["interpolate_extent", "convex_hull"]
+    num_nearest_transects: posint
+    mesh_buffer_distance: realposfloat
+    latitude_resolution: realposfloat
+    bearing_tolerance: realposfloat
+    
+    # Define default values
+    DEFAULT_VALUES = {
+        "crop_method": "interpolate_extent",
+        "num_nearest_transects": 4,
+        "mesh_buffer_distance": 1.25,
+        "latitude_resolution": 1.25,
+        "bearing_tolerance": 15.0,
+    }    
+    
+    # Define the expected datatypes
+    EXPECTED_DTYPES = {
+        "crop_method": Literal["interpolate_extent", "convex_hull"],
+        "num_nearest_transects": posint,
+        "mesh_buffer_distance": realposfloat,
+        "latitude_resolution": realposfloat,
+        "bearing_tolerance": realposfloat,
+    }
+    
+    # Create creation method
+    @classmethod
+    def create(
+        cls,
+        crop_method: Literal["interpolate_extent", "convex_hull"] = "interpolate_extent",
+        num_nearest_transects: posint = 4,
+        mesh_buffer_distance: realposfloat = 1.25,
+        latitude_resolution: realposfloat = 1.25,
+        bearing_tolerance: realposfloat = 15.0,
+        **kwargs
+    ):
+        
+        # User-defined parameters
+        inputs = {
+            "crop_method": crop_method,
+            "num_nearest_transects": num_nearest_transects,
+            "mesh_buffer_distance": mesh_buffer_distance,
+            "latitude_resolution":latitude_resolution,
+            "bearing_tolerance": bearing_tolerance,
+        }    
+        
+        # Drop missing `inputs`
+        input_filtered = {key: value for key, value in inputs.items() if value is not None}
+        
+        # Merge the default values with those provided by the user
+        # ---- Copy defaults
+        params = cls.DEFAULT_VALUES.copy()
+        # ---- Update
+        params.update(input_filtered)
+                
+        # Filter the parameter keys
+        filtered_params = {key: params[key] for key in cls.EXPECTED_DTYPES if key in params}
+        
+        # Validate the parameter datatypes
+        cls.validate(filtered_params)
+        
+        # Update the keys to the correct typing when conversions are valid
+        filtered_params.update({
+            key: cls.EXPECTED_DTYPES[key](filtered_params[key]) 
+            if ((hasattr(cls.EXPECTED_DTYPES[key], "__origin__") 
+                and cls.EXPECTED_DTYPES[key].__origin__ is not Literal) 
+                or not hasattr(cls.EXPECTED_DTYPES[key], "__origin__")) 
+            else filtered_params[key] for key in filtered_params            
+        })
+        
+        return filtered_params
+          
+    # Create validation method
+    @staticmethod
+    def validate(data: Dict[str, Any]):
+        """
+        Validate the input dictionary against the `MeshCrop` class definition/schema.
+        
+        Parameters
+        ----------
+        data: Dict[str, Any]
+            A dictionary containing the parameters that will be validated.
+            
+        Raises
+        ----------
+        TypedError:
+            If any value does not match the expected datatype.
+        """
+        
+        # Define expected datatypes
+        validate_typed_dict(data, MeshCrop.EXPECTED_DTYPES)
+        # FOR DEBUGGING
+        # --------
+        # print("Validate passed.")
+        # --------
+
+class KrigingParameters(TypedDict):
+    anisotropy: realposfloat
+    kmax: posint
+    kmin: posint
+    correlation_range: realposfloat
+    search_radius: Optional[realposfloat]
+    
+    # Define default values
+    DEFAULT_VALUES = {
+        "anisotropy": 0.001,
+        "kmin": 3,
+        "kmax": 10,
+        "correlation_range": None,
+        "search_radius": None,
+    }    
+    
+    # Define the expected datatypes
+    EXPECTED_DTYPES = {
+        "anisotropy": realposfloat,
+        "kmax": posint,
+        "kmin": posint,
+        "correlation_range": realposfloat,
+        "search_radius": realposfloat,
+    }
+    
+    # Create creation method
+    @classmethod
+    def create(
+        cls,
+        anisotropy: realposfloat = 0.001,
+        kmax: posint = 3,
+        kmin: posint = 10,
+        correlation_range: realposfloat = None,
+        search_radius: Optional[realposfloat] = None,
+        **kwargs
+    ):
+                
+        # User-defined parameters
+        inputs = {
+            "anisotropy": anisotropy,
+            "kmax": kmax,
+            "kmin": kmin,
+            "correlation_range": correlation_range,
+            "search_radius": (search_radius if search_radius is not None 
+                              else correlation_range * 3),
+        }
+        
+        # Drop missing `inputs`
+        input_filtered = {key: value for key, value in inputs.items() if value is not None}
+        
+        # Merge the default values with those provided by the user
+        # ---- Copy defaults
+        params = cls.DEFAULT_VALUES.copy()
+        # ---- Update
+        params.update(input_filtered)
+                
+        # Filter the parameter keys
+        filtered_params = {key: params[key] for key in cls.EXPECTED_DTYPES if key in params}
+        
+        # Validate the parameter datatypes
+        cls.validate(filtered_params)
+        
+        # Update the keys to the correct typing when conversions are valid
+        filtered_params.update({
+            key: cls.EXPECTED_DTYPES[key](filtered_params[key]) 
+            if ((hasattr(cls.EXPECTED_DTYPES[key], "__origin__") 
+                and cls.EXPECTED_DTYPES[key].__origin__ is not Literal) 
+                or not hasattr(cls.EXPECTED_DTYPES[key], "__origin__")) 
+            else filtered_params[key] for key in filtered_params            
+        })
+        
+        return filtered_params
+          
+    # Create validation method
+    @staticmethod
+    def validate(data: Dict[str, Any]):
+        """
+        Validate the input dictionary against the `KrigingParameters` class definition/schema.
+        
+        Parameters
+        ----------
+        data: Dict[str, Any]
+            A dictionary containing the parameters that will be validated.
+            
+        Raises
+        ----------
+        TypedError:
+            If any value does not match the expected datatype.
+        """
+        
+        # Define expected datatypes
+        validate_typed_dict(data, KrigingParameters.EXPECTED_DTYPES)
         # FOR DEBUGGING
         # --------
         # print("Validate passed.")
