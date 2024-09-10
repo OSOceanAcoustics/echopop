@@ -7,15 +7,9 @@ import pandas as pd
 import yaml
 from openpyxl import load_workbook
 
-from ..core import (
-    BIODATA_HAUL_MAP,
-    CONFIG_DATA_MODEL,
-    CONFIG_INIT_MODEL,
-    CONFIG_MAP,
-    DATA_STRUCTURE,
-    LAYER_NAME_MAP,
-)
+from ..core import BIODATA_HAUL_MAP, CONFIG_MAP, DATA_STRUCTURE, LAYER_NAME_MAP
 from .data_structure_utils import map_imported_datasets
+from .validate import CONFIG_DATA_MODEL, CONFIG_INIT_MODEL
 
 
 def load_configuration(init_config_path: Path, survey_year_config_path: Path):
@@ -56,32 +50,36 @@ def load_configuration(init_config_path: Path, survey_year_config_path: Path):
     # ---- Initialization
     init_config_params = yaml.safe_load(init_config_path.read_text())
     # -------- Validate
-    validate_config_structure(init_config_params, CONFIG_INIT_MODEL)
+    valid_init_config_params = CONFIG_INIT_MODEL(
+        init_config_path.as_posix(), **init_config_params
+    ).model_dump(exclude_none=True)
     # ---- Survey year data
     survey_year_config_params = yaml.safe_load(survey_year_config_path.read_text())
     # -------- Validate
-    validate_config_structure(survey_year_config_params, CONFIG_DATA_MODEL)
+    valid_survey_year_config_params = CONFIG_DATA_MODEL(
+        survey_year_config_path.as_posix(), **survey_year_config_params
+    ).model_dump(exclude_none=True)
 
     # Validate that initialization and survey year configuration parameters do not intersect
-    config_intersect = set(init_config_params.keys()).intersection(
-        set(survey_year_config_params.keys())
+    config_intersect = set(valid_init_config_params.keys()).intersection(
+        set(valid_survey_year_config_params.keys())
     )
 
     # Error evaluation, if applicable
     if config_intersect:
         raise RuntimeError(
-            f"""The initialization and survey year configuration files comprise the following
-            intersecting variables: {config_intersect}"""
+            f"The initialization and survey year configuration files comprise the following"
+            f"intersecting variables: {', '.join(config_intersect)}"
         )
 
     # Format dictionary that will parameterize the `config` class attribute
     # Join the initialization and survey year parameters into a single dictionary
-    config_to_add = {**init_config_params, **survey_year_config_params}
+    config_to_add = {**valid_init_config_params, **valid_survey_year_config_params}
 
     # Amend length/age distribution locations within the configuration attribute
     config_to_add["biometrics"] = {
-        "bio_hake_len_bin": init_config_params["bio_hake_len_bin"],
-        "bio_hake_age_bin": init_config_params["bio_hake_age_bin"],
+        "bio_hake_len_bin": valid_init_config_params["bio_hake_len_bin"],
+        "bio_hake_age_bin": valid_init_config_params["bio_hake_age_bin"],
     }
 
     del config_to_add["bio_hake_len_bin"], config_to_add["bio_hake_age_bin"]

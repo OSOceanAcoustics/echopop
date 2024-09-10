@@ -3,9 +3,11 @@ Validation functions.
 """
 
 # TODO: Compile all package validators here since they may not belong elsewhere
+import re
 from typing import Any, Dict, List, Literal, Optional, TypedDict, Union, get_args
 
 import numpy as np
+from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator
 
 
 # CLASS-SPECIFIC CORE API
@@ -51,6 +53,344 @@ class realcircle(realposfloat):
         if not isinstance(value, (float, int)) or (value < 0.0 or value > 360.0):
             raise ValueError(f"Value {cls.__failstate__}.")
         return super().__new__(cls, value)
+
+
+class FileSettings(BaseModel):
+    """
+    Parameter file settings
+    """
+
+    directory: str
+    sheetname: str
+
+
+class StratifiedSurveyMeanParameters(BaseModel, arbitrary_types_allowed=True):
+    """
+    Stratified sampling parameters
+    """
+
+    strata_transect_proportion: posfloat
+    num_replicates: posint
+    mesh_transects_per_latitude: posint
+
+    @field_validator("num_replicates", "mesh_transects_per_latitude", mode="before")
+    def validate_posint(cls, v):
+        return posint(v)
+
+    @field_validator("strata_transect_proportion", mode="before")
+    def validate_posfloat(cls, v):
+        return posfloat(v)
+
+
+class KrigingParameters(BaseModel, arbitrary_types_allowed=True):
+    """
+    Kriging model parameters
+    """
+
+    A0: posfloat
+    longitude_reference: float
+    longitude_offset: float
+    latitude_offset: float
+
+    @field_validator("A0", mode="before")
+    def validate_posfloat(cls, v):
+        return posfloat(v)
+
+
+class HaulTransectMap(BaseModel, arbitrary_types_allowed=True):
+    """
+    Haul-to-transect key mapping generation parameters
+    """
+
+    save_file_template: str
+    country_code: List[str]
+    file_settings: Dict[str, FileSettings]
+
+    @model_validator(mode="before")
+    def validate_country_files(cls, values):
+        # ---- Get the country code list
+        country_codes = values.get("country_code", [])
+        # ---- Get file settings keys
+        file_settings_keys = list(values.get("file_settings", {}).keys())
+        # ---- Keys within `file_settings` must match those defined in `country_code`
+        if not set(file_settings_keys) == set(country_codes):
+            # ---- Raise error
+            raise ValueError(
+                f"File settings keys {file_settings_keys} must match those defined in "
+                f"'country_code' ({country_codes})."
+            )
+        # ---- Return values
+        return values
+
+    @field_validator("save_file_template", mode="after")
+    def validate_save_file_template(cls, v):
+        # ---- Find all strings contained within curly braces
+        template_ids = re.findall(r"{(.*?)}", v)
+        # ---- Evaluate valid id's
+        if not set(template_ids).issubset(set(["YEAR", "COUNTRY"])):
+            # ---- Get the unknown IDs
+            unknown_ids = set(template_ids) - set(["YEAR", "COUNTRY"])
+            # ---- Raise Error
+            raise ValueError(
+                f"Haul-to-transect mapping save file template ({v}) contains invalid identifiers "
+                f"({list(unknown_ids)}). Valid identifiers within the filename template (bounded "
+                f"by curly braces) include: ['YEAR', 'COUNTRY']."
+            )
+
+
+class PatternParts(BaseModel):
+    """
+    String pattern parts
+    """
+
+    pattern: str
+    label: str
+
+
+class TransectRegionMap(BaseModel, arbitrary_types_allowed=True):
+    """
+    Transect-to-region mapping parameters
+    """
+
+    save_file_template: str
+    save_file_directory: str
+    save_file_sheetname: str
+    pattern: str
+    parts: Dict[str, List[PatternParts]]
+
+    @model_validator(mode="before")
+    def validate_country_files(cls, values):
+        # ---- Get the country code list
+        country_codes = values.get("country_code", [])
+        # ---- Get file settings keys
+        file_settings_keys = list(values.get("file_settings", {}).keys())
+        # ---- Keys within `file_settings` must match those defined in `country_code`
+        if not set(file_settings_keys) == set(country_codes):
+            # ---- Raise error
+            raise ValueError(
+                f"File settings keys {file_settings_keys} must match those defined in "
+                f"'country_code' ({country_codes})."
+            )
+        # ---- Return values
+        return values
+
+    @field_validator("save_file_template", mode="after")
+    def validate_save_file_template(cls, v):
+        # ---- Find all strings contained within curly braces
+        template_ids = re.findall(r"{(.*?)}", v)
+        # ---- Evaluate valid id's
+        if not set(template_ids).issubset(set(["YEAR", "COUNTRY", "GROUP"])):
+            # ---- Get the unknown IDs
+            unknown_ids = set(template_ids) - set(["YEAR", "COUNTRY", "GROUP"])
+            # ---- Raise Error
+            raise ValueError(
+                f"Haul-to-transect mapping save file template ({v}) contains invalid identifiers "
+                f"({list(unknown_ids)}). Valid identifiers within the filename template (bounded "
+                f"by curly braces) include: ['YEAR', 'COUNTRY', 'GROUP']."
+            )
+
+    @field_validator("pattern", mode="after")
+    def validate_pattern(cls, v):
+        # ---- Find all strings contained within curly braces
+        template_ids = re.findall(r"{(.*?)}", v)
+        # ---- Evaluate valid id's
+        if not set(template_ids).issubset(set(["REGION_CLASS", "HAUL_NUM", "COUNTRY"])):
+            # ---- Get the unknown IDs
+            unknown_ids = set(template_ids) - set(["REGION_CLASS", "HAUL_NUM", "COUNTRY"])
+            # ---- Raise Error
+            raise ValueError(
+                f"Haul-to-transect mapping save file template ({v}) contains invalid identifiers "
+                f"({list(unknown_ids)}). Valid identifiers within the filename template (bounded "
+                f"by curly braces) include: ['REGION_CLASS', 'HAUL_NUM', 'COUNTRY']."
+            )
+
+
+class TSLRegressionParameters(BaseModel):
+    """
+    Target strength - length regression parameters
+    """
+
+    number_code: int
+    TS_L_slope: float = Field(allow_inf_nan=False)
+    TS_L_intercept: float = Field(allow_inf_nan=False)
+    length_units: str
+
+
+class Geospatial(BaseModel):
+    """
+    Geospatial parameters
+    """
+
+    init: str
+
+    @field_validator("init", mode="before")
+    def validate_init(cls, v):
+        # ---- Convert to a string if read in as an integer
+        if isinstance(v, (int, float)):
+            v = str(v)
+        # ---- Convert to lowercase
+        v = v.lower()
+        # ---- Mold the entry into the expected format that includes a preceding 'epsg:'
+        if not v.startswith("epsg"):
+            v = "epsg:" + v
+        # ---- Ensure that the colon is present
+        if ":" not in v:
+            v = "epsg:" + v.split("epsg")[1]
+        # ---- Evaluate whether the pre-validator succeeded in finding an acceptable format
+        if not re.match(r"^epsg:\d+$", v):
+            raise ValueError(
+                f"Echopop cannot parse the defined EPSG code ('{v}'). EPSG codes most be formatted "
+                f"with strings beginning with 'epsg:' followed by the integer number code (e.g. "
+                f"'epsg:4326')."
+            )
+        # ---- Return the pre-validated entry
+        return v
+
+
+class NASCExports(BaseModel):
+    """
+    NASC export processing parameters
+    """
+
+    export_file_directory: str
+    nasc_export_directory: str
+    save_file_template: str
+    save_file_sheetname: str
+    regions: Dict[str, List[str]]
+    max_transect_spacing: float
+    file_columns: List[str]
+
+    @field_validator("save_file_template", mode="after")
+    def validate_save_file_template(cls, v):
+        # ---- Find all strings contained within curly braces
+        template_ids = re.findall(r"{(.*?)}", v)
+        # ---- Evaluate valid id's
+        if not set(template_ids).issubset(set(["REGION", "YEAR", "GROUP"])):
+            # ---- Get the unknown IDs
+            unknown_ids = set(template_ids) - set(["REGION", "YEAR", "GROUP"])
+            # ---- Raise Error
+            raise ValueError(
+                f"Haul-to-transect mapping save file template ({v}) contains invalid identifiers "
+                f"({list(unknown_ids)}). Valid identifiers within the filename template (bounded "
+                f"by curly braces) include: ['YEAR', 'REGION', 'GROUP']."
+            )
+
+
+class CONFIG_INIT_MODEL(BaseModel, arbitrary_types_allowed=True):
+    """
+    Initialization parameter configuration YAML validator
+    """
+
+    stratified_survey_mean_parameters: StratifiedSurveyMeanParameters
+    kriging_parameters: KrigingParameters
+    bio_hake_age_bin: List[Union[posint, realposfloat]]
+    bio_hake_len_bin: List[Union[posint, realposfloat]]
+    TS_length_regression_parameters: Dict[str, TSLRegressionParameters]
+    geospatial: Geospatial
+    nasc_exports: Optional[NASCExports] = None
+    haul_to_transect_mapping: Optional[HaulTransectMap] = None
+    transect_region_mapping: Optional[TransectRegionMap] = None
+
+    def __init__(self, filename, **kwargs):
+        try:
+            super().__init__(**kwargs)
+        except ValidationError as e:
+            # Customize error message
+            new_message = str(e).replace(
+                self.__class__.__name__, f"configuration parameters defined in {filename}"
+            )
+            raise ValueError(new_message) from e
+
+    @field_validator("bio_hake_age_bin", "bio_hake_len_bin", mode="before")
+    def validate_interval(cls, v):
+        # ---- Check Union typing
+        try:
+            all(
+                isinstance(value, (int, float))
+                and (posint(value) if isinstance(value, int) else realposfloat(value))
+                for value in v
+            )
+        except ValueError as e:
+            raise ValueError(f"Invalid value detected within list. Every {str(e).lower()}")
+        # ---- Check length
+        if not len(v) == 3:
+            raise ValueError(
+                "Interval list must have a length of 3: "
+                "['starting_value', 'ending_value', 'number']."
+            )
+        # ---- Check for any that may be 'realposfloat'
+        any_posfloat = any(isinstance(value, (realposfloat, float)) for value in v)
+        # ---- If true, then convert
+        if any_posfloat:
+            return [posint(value) if i == 2 else realposfloat(value) for i, value in enumerate(v)]
+        else:
+            return [posint(value) for value in v]
+
+
+class XLSXFiles(BaseModel):
+    """
+    .xlsx file tree structure
+    """
+
+    filename: str
+    sheetname: Union[str, List[str]]
+
+
+class BiologicalFiles(BaseModel):
+    """
+    Biological data files
+    """
+
+    length: Dict[str, XLSXFiles]
+    specimen: Dict[str, XLSXFiles]
+    catch: Dict[str, XLSXFiles]
+    haul_to_transect: Dict[str, XLSXFiles]
+
+
+class KrigingFiles(BaseModel):
+    """
+    Kriging data files
+    """
+
+    vario_krig_para: XLSXFiles
+    isobath_200m: XLSXFiles
+    mesh: XLSXFiles
+
+
+class StratificationFiles(BaseModel):
+    """
+    Stratification data files
+    """
+
+    strata: XLSXFiles
+    geo_strata: XLSXFiles
+
+
+class CONFIG_DATA_MODEL(BaseModel):
+    """
+    Data file configuration YAML validator
+    """
+
+    survey_year: int
+    biological: BiologicalFiles
+    stratification: StratificationFiles
+    NASC: Dict[str, XLSXFiles]
+    gear_data: Dict[str, XLSXFiles]
+    kriging: KrigingFiles
+    data_root_dir: Optional[str] = None
+    CAN_haul_offset: Optional[int] = None
+    ship_id: Optional[Union[int, str, float]] = None
+    export_regions: Optional[Dict[str, XLSXFiles]] = None
+
+    def __init__(self, filename, **kwargs):
+        try:
+            super().__init__(**kwargs)
+        except ValidationError as e:
+            # Customize error message
+            new_message = str(e).replace(
+                self.__class__.__name__, f"configured data files defined in {filename}"
+            )
+            raise ValueError(new_message) from e
 
 
 # Validation functions
