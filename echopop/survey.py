@@ -2,6 +2,7 @@ import copy
 from pathlib import Path
 from typing import List, Literal, Optional, Union
 
+import numpy as np
 from IPython.display import display
 
 from .analysis import (
@@ -182,7 +183,12 @@ class Survey:
                     },
                     "species_id": species_id,
                     "stratum": stratum.lower(),
-                    "stratum_name": "stratum_num" if stratum == "ks" else "inpfc",
+                    "stratum_name": "stratum_num" if stratum == "ks" else "stratum_inpfc",
+                    "unique_strata": (
+                        np.unique(self.input["spatial"]["strata_df"]["stratum_num"])
+                        if stratum == "ks"
+                        else np.unique(self.input["spatial"]["inpfc_strata_df"]["stratum_inpfc"])
+                    ),
                     "exclude_age1": exclude_age1,
                 }
             }

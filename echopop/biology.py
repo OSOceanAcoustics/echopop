@@ -132,7 +132,7 @@ def fit_length_weight_relationship(
 
 
 def quantize_number_counts(
-    specimen_data: pd.DataFrame, length_data: pd.DataFrame, stratum: str
+    specimen_data: pd.DataFrame, length_data: pd.DataFrame, stratum_column: str
 ) -> dict:
     """
     Quantize the number of animals belonging to each binned length and age
@@ -141,24 +141,24 @@ def quantize_number_counts(
     ----------
     specimen_data : pd.DataFrame
         Dataframe containing aged length and weight data.
-    length_distribution: pd.DataFrame
+    length_data: pd.DataFrame
         Dataframe containing the overall quantized length bins and intervals.
-    stratum: str
-        Stratum name.
+    stratum_column: str
+        Stratum column name.
     """
 
     # Sub-select the correct stratum definition
-    if stratum.lower() == "ks":
-        stratum_col = "stratum_num"
-    else:
-        stratum_col = "stratum_inpfc"
+    # if stratum.lower() == "ks":
+    #     stratum_col = "stratum_num"
+    # else:
+    #     stratum_col = "stratum_inpfc"
 
     # Bin counts by sex
     # ---- Aged
     aged_number_distribution = pd.concat(
         [specimen_data, specimen_data.assign(sex="all")]
     ).count_variable(
-        contrasts=[stratum_col, "species_id", "sex", "length_bin", "age_bin"],
+        contrasts=[stratum_column, "species_id", "sex", "length_bin", "age_bin"],
         variable="length",
         fun="size",
     )
@@ -172,7 +172,7 @@ def quantize_number_counts(
         )
         .dropna(subset=["length", "age", "weight"])
         .count_variable(
-            contrasts=[stratum_col, "species_id", "sex", "length_bin", "age_bin"],
+            contrasts=[stratum_column, "species_id", "sex", "length_bin", "age_bin"],
             variable="length",
             fun="size",
         )
@@ -181,7 +181,7 @@ def quantize_number_counts(
     unaged_number_distribution = pd.concat(
         [length_data, length_data.assign(sex="all")]
     ).count_variable(
-        contrasts=[stratum_col, "species_id", "sex", "length_bin"],
+        contrasts=[stratum_column, "species_id", "sex", "length_bin"],
         variable="length_count",
         fun="sum",
     )
@@ -213,7 +213,7 @@ def number_proportions(count_dict: dict) -> dict:
     # ---- Collect unique strata
     strata_unique = pd.DataFrame(
         {
-            "stratum_num": np.unique(
+            f"{stratum_col}": np.unique(
                 np.concatenate(
                     [
                         count_dict["binned_aged_counts_df"][stratum_col],
@@ -253,7 +253,7 @@ def number_proportions(count_dict: dict) -> dict:
     count_total = (
         strata_unique.merge(sex_unique, how="cross")
         .merge(species_unique, how="cross")
-        .set_index(["stratum_num", "species_id", "sex"])
+        .set_index([stratum_col, "species_id", "sex"])
     )
     # ---- Aged (overall)
     count_total["total_overall_aged"] = (
@@ -499,7 +499,10 @@ def fit_length_weights(proportions_dict: dict, length_weight_dict: dict) -> pd.D
 
 
 def quantize_weights(
-    specimen_data: pd.DataFrame, length_data: pd.DataFrame, length_weight_df: pd.DataFrame
+    specimen_data: pd.DataFrame,
+    length_data: pd.DataFrame,
+    length_weight_df: pd.DataFrame,
+    stratum_column: str,
 ) -> dict:
     """
     Quantize the weight of animals belonging to each binned length and age
@@ -512,11 +515,13 @@ def quantize_weights(
         Dataframe containing unaged length data.
     length_weight_df: pd.DataFrame
         Dataframe containing the fitted weights per binned length value
+    stratum_column: str
+        Stratum column name.
     """
 
     # Prepare data
     # ---- Get the name of the stratum column
-    stratum_col = [col for col in specimen_data.columns if "stratum" in col.lower()][0]
+    # stratum_col = [col for col in specimen_data.columns if "stratum" in col.lower()][0]
 
     # Generate sex-specific interpolators for fitted length-weight values for unaged fish
     # (station 1)
@@ -551,7 +556,7 @@ def quantize_weights(
     )
     # ---- Convert interpolated weights (summed across length counts) into a table
     length_table_sexed = length_data_sexed.pivot_table(
-        columns=[stratum_col, "sex"],
+        columns=[stratum_column, "sex"],
         index=["length_bin"],
         values="weight_interp",
         aggfunc="sum",
@@ -565,7 +570,7 @@ def quantize_weights(
     specimen_data_filtered = specimen_data_filtered.dropna(subset=["length", "weight", "age"])
     # ---- Convert to a table
     specimen_table_sexed = specimen_data_filtered.pivot_table(
-        columns=[stratum_col, "sex", "age_bin"],
+        columns=[stratum_column, "sex", "age_bin"],
         index=["length_bin"],
         values="weight",
         aggfunc="sum",
@@ -580,21 +585,17 @@ def quantize_weights(
 
 
 def weight_proportions(
-    specimen_data: pd.DataFrame,
     catch_data: pd.DataFrame,
     proportions_dict: dict,
     length_weight_df: pd.DataFrame,
     distributions_dict: dict,
+    stratum_column: str,
 ):
     """
     Calculate the weight proportions of aged and unaged animals across length and age bins
 
     Parameters
     ----------
-    specimen_data: pd.DataFrame
-        Dataframe containing aged length-weight data.
-    length_data: pd.DataFrame
-        Dataframe containing unaged length data.
     catch_data: pd.DataFrame
         Dataframe containing unaged weight data.
     proportions_dict: dict
@@ -603,6 +604,8 @@ def weight_proportions(
         Dataframe containing fitted weights per length bin.
     distributions_dict: dict
         Dictionary containing length-weight distributions.
+    stratum_column: str
+        Stratum column name.
 
     Notes
     -----
@@ -612,7 +615,7 @@ def weight_proportions(
     """
 
     # Get the name of the stratum column
-    stratum_col = [col for col in specimen_data.columns if "stratum" in col.lower()][0]
+    # stratum_col = [col for col in specimen_data.columns if "stratum" in col.lower()][0]
 
     # Calculate the sexed and total stratum weights for each sex among aged fish
     # ---- Extract the aged/specimen quantized weights
@@ -625,7 +628,7 @@ def weight_proportions(
     # Calculate the sexed and total stratum weights for each sex among unaged fish
     # ---- Sum the net haul weights from station 1/unaged fish
     catch_strata_weights = catch_data.count_variable(
-        contrasts=[stratum_col], variable="haul_weight", fun="sum"
+        contrasts=[stratum_column], variable="haul_weight", fun="sum"
     )
     # ---- Rename resulting columns for both
     catch_strata_weights.rename(columns={"count": "stratum_weight"}, inplace=True)
@@ -648,7 +651,7 @@ def weight_proportions(
         aged_weights_binned.unstack()
         .reset_index(name="weight")
         .pivot_table(
-            columns=[stratum_col],
+            columns=[stratum_column],
             index=["age_bin", "length_bin", "sex"],
             values="weight",
             observed=False,
@@ -663,7 +666,7 @@ def weight_proportions(
         aged_weight_proportions_pvt.stack()
         .reset_index(name="weight_proportion")
         .pivot_table(
-            columns=[stratum_col, "sex", "age_bin"],
+            columns=[stratum_column, "sex", "age_bin"],
             index="length_bin",
             values="weight_proportion",
             observed=False,
@@ -674,7 +677,7 @@ def weight_proportions(
 
     # Calculate the total strata weights
     total_strata_weights = pd.concat([aged_strata_weights, catch_strata_weights]).pivot_table(
-        columns=[stratum_col], aggfunc="sum", values="stratum_weight", observed=False
+        columns=[stratum_column], aggfunc="sum", values="stratum_weight", observed=False
     )
 
     # Calculate the weight proportions relative to the overall stratum weights
@@ -684,14 +687,14 @@ def weight_proportions(
         aged_weights_binned_pvt.stack()
         .to_frame("specimen_weight")
         .reset_index()
-        .merge(total_strata_weights.T.reset_index(), on=stratum_col)
+        .merge(total_strata_weights.T.reset_index(), on=stratum_column)
     )
     # -------- Calculate proportions
     aged_weights_binned_df["weight_proportion_overall"] = (
         aged_weights_binned_df["specimen_weight"] / aged_weights_binned_df["stratum_weight"]
     )
     # -------- Consolidate to calculate the sexed proportions per stratum
-    aged_weight_sex_proportions = aged_weights_binned_df.groupby([stratum_col, "sex"])[
+    aged_weight_sex_proportions = aged_weights_binned_df.groupby([stratum_column, "sex"])[
         "weight_proportion_overall"
     ].sum()
     # ---- Unaged
@@ -700,7 +703,7 @@ def weight_proportions(
         unaged_weights_sex_standardized.stack()
         .to_frame("catch_weight")
         .reset_index()
-        .merge(total_strata_weights.T.reset_index(), on=stratum_col)
+        .merge(total_strata_weights.T.reset_index(), on=stratum_column)
     )
     # -------- Calculate proportions
     unaged_weights_sex_standardized_df["weight_proportion_overall"] = (
@@ -710,12 +713,12 @@ def weight_proportions(
     # -------- Back-calculate the sexed weight proportions relative to just unaged fish
     # ------------ Aggregate proportions
     unaged_total_sex_proportions = unaged_weights_sex_standardized_df.pivot_table(
-        columns=["sex"], index=[stratum_col], values="weight_proportion_overall"
+        columns=["sex"], index=[stratum_column], values="weight_proportion_overall"
     ).sum(axis=1)
     # ------------ Re-compute the proportions
     unaged_weight_sex_proportions = (
         unaged_weights_sex_standardized_df.pivot_table(
-            index=["sex"], columns=[stratum_col], values="weight_proportion_overall"
+            index=["sex"], columns=[stratum_column], values="weight_proportion_overall"
         )
         / unaged_total_sex_proportions.to_numpy()
     )
@@ -731,7 +734,7 @@ def weight_proportions(
     unaged_number_proportions = unaged_number_proportions[unaged_number_proportions["sex"] == "all"]
     # ---- Convert to a table
     unaged_number_proportions_tbl = unaged_number_proportions.pivot_table(
-        columns=[stratum_col],
+        columns=[stratum_column],
         index=["length_bin"],
         values="proportion_number_unaged",
         aggfunc="sum",
@@ -763,13 +766,13 @@ def weight_proportions(
         .reset_index(name="weight_proportions")
         .merge(
             aged_weights_binned_df[
-                [stratum_col, "age_bin", "length_bin", "sex", "weight_proportion_overall"]
+                [stratum_column, "age_bin", "length_bin", "sex", "weight_proportion_overall"]
             ]
         )
     )
     # ---- Aged: stratum-sex relative to total weights
     aged_sex_df = within_aged_sex_proportions.reset_index(name="weight_proportion_aged").set_index(
-        [stratum_col, "sex"]
+        [stratum_column, "sex"]
     )
     # ---- Add the aged sex proportiosn relative to the overall survey
     aged_sex_df["weight_proportion_overall_aged"] = aged_weight_sex_proportions
@@ -785,18 +788,21 @@ def weight_proportions(
         unaged_weight_sex_proportions_overall.unstack()
     )
     # ---- Overall aged and unaged proportions
-    aged_unaged_proportions = aged_proportions.reset_index(name="aged_proportions")
+    aged_unaged_proportions = aged_proportions.to_frame(
+        "aged_proportions"
+    )  # .reset_index(name="aged_proportions")
     # -------- Add unaged proportions
     aged_unaged_proportions["unaged_proportions"] = unaged_proportions
 
     # Return output
     return {
         "aged_weight_proportions_df": aged_overall_df,
-        "unaged_weight_proportions_df": unaged_weight_proportions_df.reset_index(),
+        "unaged_weight_proportions_df": unaged_weight_proportions_df,  # .reset_index()
         "aged_unaged_sex_weight_proportions_df": (
             aged_unaged_sex_proportions.astype(float).reset_index().fillna(0.0)
         ),
-        "aged_unaged_weight_proportions_df": aged_unaged_proportions,
+        # "aged_unaged_weight_proportions_df": aged_unaged_proportions,
+        "aged_unaged_weight_proportions_df": aged_unaged_proportions.reset_index(),
     }
 
 
