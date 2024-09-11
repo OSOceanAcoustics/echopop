@@ -136,6 +136,8 @@ class HaulTransectMap(BaseModel, arbitrary_types_allowed=True):
                 f"({list(unknown_ids)}). Valid identifiers within the filename template (bounded "
                 f"by curly braces) include: ['YEAR', 'COUNTRY']."
             )
+        # ---- Return values
+        return v
 
 
 class PatternParts(BaseModel):
@@ -159,17 +161,19 @@ class TransectRegionMap(BaseModel, arbitrary_types_allowed=True):
     parts: Dict[str, List[PatternParts]]
 
     @model_validator(mode="before")
-    def validate_country_files(cls, values):
+    def validate_pattern_parts(cls, values):
         # ---- Get the country code list
-        country_codes = values.get("country_code", [])
+        pattern_codes = values.get("pattern", "")
+        # ---- Extract the codes
+        codes = re.findall(r"{(.*?)}", pattern_codes)
         # ---- Get file settings keys
-        file_settings_keys = list(values.get("file_settings", {}).keys())
+        parts_keys = list(values.get("parts", {}).keys())
         # ---- Keys within `file_settings` must match those defined in `country_code`
-        if not set(file_settings_keys) == set(country_codes):
+        if not set(parts_keys) == set(codes):
             # ---- Raise error
             raise ValueError(
-                f"File settings keys {file_settings_keys} must match those defined in "
-                f"'country_code' ({country_codes})."
+                f"Defined pattern dictionary keys {parts_keys} must match those defined in "
+                f"'pattern' ({codes})."
             )
         # ---- Return values
         return values
@@ -184,10 +188,12 @@ class TransectRegionMap(BaseModel, arbitrary_types_allowed=True):
             unknown_ids = set(template_ids) - set(["YEAR", "COUNTRY", "GROUP"])
             # ---- Raise Error
             raise ValueError(
-                f"Haul-to-transect mapping save file template ({v}) contains invalid identifiers "
+                f"Transect-to-region mapping save file template ({v}) contains invalid identifiers "
                 f"({list(unknown_ids)}). Valid identifiers within the filename template (bounded "
                 f"by curly braces) include: ['YEAR', 'COUNTRY', 'GROUP']."
             )
+        # ---- Return value
+        return v
 
     @field_validator("pattern", mode="after")
     def validate_pattern(cls, v):
@@ -199,10 +205,12 @@ class TransectRegionMap(BaseModel, arbitrary_types_allowed=True):
             unknown_ids = set(template_ids) - set(["REGION_CLASS", "HAUL_NUM", "COUNTRY"])
             # ---- Raise Error
             raise ValueError(
-                f"Haul-to-transect mapping save file template ({v}) contains invalid identifiers "
+                f"Transect-to-region mapping save file template ({v}) contains invalid identifiers "
                 f"({list(unknown_ids)}). Valid identifiers within the filename template (bounded "
                 f"by curly braces) include: ['REGION_CLASS', 'HAUL_NUM', 'COUNTRY']."
             )
+            # ---- Return value
+        return v
 
 
 class TSLRegressionParameters(BaseModel):
@@ -247,7 +255,7 @@ class Geospatial(BaseModel):
         return v
 
 
-class NASCExports(BaseModel):
+class NASCExports(BaseModel, arbitrary_types_allowed=True):
     """
     NASC export processing parameters
     """
@@ -257,8 +265,12 @@ class NASCExports(BaseModel):
     save_file_template: str
     save_file_sheetname: str
     regions: Dict[str, List[str]]
-    max_transect_spacing: float
+    max_transect_spacing: realposfloat
     file_columns: List[str]
+
+    @field_validator("max_transect_spacing", mode="before")
+    def validate_realposfloat(cls, v):
+        return realposfloat(v)
 
     @field_validator("save_file_template", mode="after")
     def validate_save_file_template(cls, v):
@@ -274,6 +286,8 @@ class NASCExports(BaseModel):
                 f"({list(unknown_ids)}). Valid identifiers within the filename template (bounded "
                 f"by curly braces) include: ['YEAR', 'REGION', 'GROUP']."
             )
+        # ---- Return values
+        return v
 
 
 class CONFIG_INIT_MODEL(BaseModel, arbitrary_types_allowed=True):
@@ -341,10 +355,10 @@ class BiologicalFiles(BaseModel):
     Biological data files
     """
 
-    length: Dict[str, XLSXFiles]
-    specimen: Dict[str, XLSXFiles]
-    catch: Dict[str, XLSXFiles]
-    haul_to_transect: Dict[str, XLSXFiles]
+    length: Union[Dict[str, XLSXFiles], XLSXFiles]
+    specimen: Union[Dict[str, XLSXFiles], XLSXFiles]
+    catch: Union[Dict[str, XLSXFiles], XLSXFiles]
+    haul_to_transect: Union[Dict[str, XLSXFiles], XLSXFiles]
 
 
 class KrigingFiles(BaseModel):
