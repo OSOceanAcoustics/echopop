@@ -39,7 +39,13 @@ from .spatial.variogram import (
     optimize_variogram,
 )
 from .statistics import stratified_transect_statistic
-from .utils.validate import VariogramEmpirical
+from .utils.validate import (
+    KrigingAnalysis,
+    KrigingParameters,
+    MeshCrop,
+    VariogramBase,
+    VariogramEmpirical,
+)
 
 
 def process_transect_data(
@@ -350,6 +356,26 @@ def krige(input_dict: dict, analysis_dict: dict, settings_dict: dict) -> tuple[p
         arguments and user-defined inputs.
     """
 
+    # Validate cropping method parameters
+    validated_cropping_methods = MeshCrop.create(**settings_dict["cropping_parameters"])
+    # ---- Update the dictionary
+    settings_dict["cropping_parameters"].update({**validated_cropping_methods})
+
+    # Validate the variogram parameters
+    valid_variogram_parameters = VariogramBase.create(**settings_dict["variogram_parameters"])
+    # ---- Update the dictionary
+    settings_dict["variogram_parameters"].update({**valid_variogram_parameters})
+
+    # Validate kriging parameters
+    valid_kriging_parameters = KrigingParameters.create(
+        **{**settings_dict["kriging_parameters"], **settings_dict["variogram_parameters"]}
+    )
+    # ---- Update the dictionary
+    settings_dict["kriging_parameters"].update({**valid_kriging_parameters})
+
+    # Validate the additional kriging arguments
+    _ = KrigingAnalysis(**settings_dict["variogram_parameters"])
+
     # Extract kriging mesh data
     mesh_data = input_dict["statistics"]["kriging"]["mesh_df"]
 
@@ -359,18 +385,22 @@ def krige(input_dict: dict, analysis_dict: dict, settings_dict: dict) -> tuple[p
     # Define the and prepare the processed and georeferenced transect data
     transect_data = edit_transect_columns(analysis_dict["transect"], settings_dict)
 
-    # Crop the mesh grid if the kriged data will not be extrapolated
-    if not settings_dict["extrapolate"]:
-        # ---- Compute the cropped mesh
-        mesh_full = crop_mesh(transect_data, mesh_data, settings_dict)
-        if (settings_dict["verbose"]) & (settings_dict["crop_method"] == "convex_hull"):
-            # ---- Print alert
-            print(
-                "Kriging mesh cropped to prevent extrapolation beyond the defined "
-                f"""`mesh_buffer_distance` value ({settings_dict['mesh_buffer_distance']} nmi)."""
-            )
+    # Add kriging parameters to the settings config
+    settings_dict.update(
+        {
+            "kriging_parameters": {
+                **input_dict["statistics"]["kriging"]["model_config"],
+                **valid_kriging_parameters,
+            },
+            "variogram_parameters": {
+                **settings_dict["variogram_parameters"],
+                **valid_variogram_parameters,
+            },
+        },
+    )
 
-    else:
+    # Crop the mesh grid if the kriged data will not be extrapolated
+    if settings_dict["extrapolate"]:
         # ---- Else, extract original mesh dataframe
         mesh_df = mesh_data.copy()
         # ---- Extract longitude column name
@@ -381,6 +411,17 @@ def krige(input_dict: dict, analysis_dict: dict, settings_dict: dict) -> tuple[p
         mesh_full = mesh_df.copy().rename(
             columns={f"{mesh_longitude}": "longitude", f"{mesh_latitude}": "latitude"}
         )
+    else:
+        # ---- Compute the cropped mesh
+        mesh_full = crop_mesh(transect_data, mesh_data, validated_cropping_methods)
+        if (settings_dict["verbose"]) and (
+            validated_cropping_methods["crop_method"] == "convex_hull"
+        ):
+            # ---- Print alert
+            print(
+                f"Kriging mesh cropped to prevent extrapolation beyond the defined "
+                f"`mesh_buffer_distance` value ({settings_dict['mesh_buffer_distance']} nmi)."
+            )
 
     # Standardize the x- and y-coordinates, if necessary
     if settings_dict["standardize_coordinates"]:
@@ -391,8 +432,8 @@ def krige(input_dict: dict, analysis_dict: dict, settings_dict: dict) -> tuple[p
         if settings_dict["verbose"]:
             # ---- Print alert
             print(
-                """Longitude and latitude coordinates (WGS84) converted to standardized """
-                """coordinates (x and y)."""
+                "Longitude and latitude coordinates (WGS84) converted to standardized "
+                "coordinates (x and y)."
             )
     else:
         # ---- Else, duplicate the transect longitude and latitude coordinates as 'x' and 'y'
