@@ -5,7 +5,6 @@ from typing import List, Optional, Union
 import numpy as np
 import pandas as pd
 import yaml
-from openpyxl import load_workbook
 
 from ..core import (
     BIODATA_HAUL_MAP,
@@ -200,11 +199,6 @@ def load_dataset(
                     else:
                         config_map[2] = region_id
 
-                    # Validate column names of this iterated file
-                    valid_columns = validate_data_columns(
-                        file_name, sheet_name, config_map, validation_settings
-                    )
-
                     # Validate datatypes within dataset and make appropriate changes to dtypes
                     # ---- This first enforces the correct dtype for each imported column
                     # ---- This then assigns the imported data to the correct class attribute
@@ -215,7 +209,6 @@ def load_dataset(
                         sheet_name,
                         config_map,
                         validation_settings,
-                        valid_columns,
                     )
             else:
                 file_name = Path(configuration_dict["data_root_dir"]) / config_settings["filename"]
@@ -241,14 +234,6 @@ def load_dataset(
                         # Update configuration key map
                         config_map = [dataset, datalayer]
 
-                    # Validate datatypes within dataset and make appropriate changes to dtypes
-                    # (if necessary)
-                    # ---- This first enforces the correct dtype for each imported column
-                    # ---- This then assigns the imported data to the correct class attribute
-                    valid_columns = validate_data_columns(
-                        file_name, sheets, config_map, validation_settings
-                    )
-
                     # Read in data and add to `Survey` object
                     read_validated_data(
                         input_dict,
@@ -257,7 +242,6 @@ def load_dataset(
                         sheets,
                         config_map,
                         validation_settings,
-                        valid_columns,
                     )
 
     # Update the data format of various inputs within `Survey`
@@ -271,7 +255,6 @@ def read_validated_data(
     sheet_name: str,
     config_map: list,
     validation_settings: dict,
-    valid_columns: list,
 ):
     """
     Reads in data and validates the data type of each column/variable
@@ -289,8 +272,6 @@ def read_validated_data(
         within `self` are organized
     validation_settings: dict
         The subset CONFIG_MAP settings that contain the target column names
-    valid_columns: list
-        List of valid input column names
     """
 
     # Based on the configuration settings, read the Excel files into memory. A format
@@ -306,11 +287,14 @@ def read_validated_data(
         df_initial = df_initial.drop(0)
 
         # Slice only the columns that are relevant to the echopop module functionality
-        valid_columns = list(set(validation_settings.keys()).intersection(set(df_initial.columns)))
-        df_filtered = df_initial[valid_columns]
+        df_filtered = df_initial.filter(validation_settings)
 
-        # Ensure the order of columns in df_filtered matches df_initial
-        df_filtered = df_filtered[df_initial.columns]
+        # Error evaluation and print message (if applicable)
+        if not set(validation_settings).issubset(set(df_filtered)):
+            missing_columns = set(validation_settings.keys()) - set(df_filtered)
+            raise ValueError(
+                f"Missing kriging/variogram parameters in the Excel file: {missing_columns}"
+            )
 
         # Apply data types from validation_settings to the filtered DataFrame
         df = df_filtered.apply(
@@ -322,9 +306,14 @@ def read_validated_data(
     else:
         # Read Excel file into memory -- this only reads in the required columns
         # df = pd.read_excel(file_name, sheet_name=sheet_name, usecols=validation_settings.keys())
-        df = pd.read_excel(file_name, sheet_name=sheet_name, usecols=valid_columns)
-        # ---- Rename the columns, if needed
-        df = df.rename(columns=NAME_CONFIG)
+        df = pd.read_excel(file_name, sheet_name=sheet_name)
+        # ---- Rename the columns, if needed, and then filter them
+        df = df.rename(columns=NAME_CONFIG).filter(validation_settings)
+
+        # Error evaluation and print message (if applicable)
+        if not set(validation_settings).issubset(set(df)):
+            missing_columns = set(validation_settings.keys()) - set(df)
+            raise ValueError(f"Missing columns in the Excel file: {missing_columns}")
 
         # Apply data types from validation_settings to the filtered DataFrame
         df = df.apply(lambda col: col.astype(validation_settings.get(col.name, type(col[0]))))
@@ -386,77 +375,9 @@ def read_validated_data(
             input_dict["acoustics"]["nasc_df"][column_to_add] = df[column_to_add]
     else:
         raise ValueError(
-            """Unexpected data attribute structure. Check API settings located in"""
-            """the configuration YAML and core.py"""
+            "Unexpected data attribute structure. Check API settings located in "
+            "the configuration YAML and core.py."
         )
-
-
-def validate_data_columns(
-    file_name: Path, sheet_name: str, config_map: list, validation_settings: dict
-) -> list:
-    """
-    Opens a virtual instance of each .xlsx file to validate the presence
-    of require data column/variable names
-
-    Parameters
-    ----------
-    file_name: Path
-        File path of data
-    sheet_name: str
-        Name of Excel sheet containing data
-    config_map: list
-        A list parsed from the file name that indicates how data attributes
-        within `self` are organized
-    validation_settings: dict
-        The subset CONFIG_MAP settings that contain the target column names
-    """
-
-    # Open connection with the workbook and specific sheet
-    # This is useful for not calling the workbook into memory and allows for parsing
-    # only the necessary rows/column names
-    try:
-        workbook = load_workbook(file_name, read_only=True)
-
-        # If multiple sheets, iterate through
-        sheet_name = [sheet_name] if isinstance(sheet_name, str) else sheet_name
-
-        for sheets in sheet_name:
-            sheet = workbook[sheets]
-
-            # Validate that the expected columns are contained within the parsed
-            # column names of the workbook
-            if "vario_krig_para" in config_map:
-                data_columns = [list(row) for row in zip(*sheet.iter_rows(values_only=True))][0]
-                # ---- Define an empty list
-                valid_columns = []
-            else:
-                # ---- Get actual column names
-                original_columns = [col.value for col in sheet[1]]
-                # ---- Translate the column names, if needed
-                data_columns = [
-                    NAME_CONFIG[name] if name in NAME_CONFIG else name for name in original_columns
-                ]
-
-                # Error evaluation and print message (if applicable)
-                if not set(validation_settings.keys()).issubset(set(data_columns)):
-                    missing_columns = set(validation_settings.keys()) - set(data_columns)
-                    raise ValueError(f"Missing columns in the Excel file: {missing_columns}")
-
-                # Get present data column names
-                valid_columns = [
-                    o
-                    for o, t in zip(original_columns, data_columns)
-                    if t in validation_settings.keys()
-                ]
-
-        # Close connection to the work book
-        workbook.close()
-
-        # Return the columns
-        return valid_columns
-
-    except Exception as e:
-        print(f"Error reading file '{str(file_name)}': {e}")
 
 
 def write_haul_to_transect_key(configuration_dict: dict, verbose: bool):
