@@ -375,7 +375,7 @@ def read_validated_data(
             input_dict["acoustics"]["nasc_df"][column_to_add] = df[column_to_add]
     else:
         raise ValueError(
-            "Unexpected data attribute structure. Check API settings located in "
+            "Unexpected data attribute structure. Check the settings in "
             "the configuration YAML and core.py."
         )
 
