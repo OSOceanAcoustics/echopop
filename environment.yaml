@@ -14,9 +14,7 @@ dependencies:
   # Computational stack
   - geopandas
   - geopy
-  - openpyxl
   # 9/27/23: Pin to <2 to avoid new warning occurring in several cases
   - pandas<2
-  - PyYAML
   - shapely<2
   - scipy
