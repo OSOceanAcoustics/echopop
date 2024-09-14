@@ -662,7 +662,8 @@ def prepare_input_data(input_dict: dict, configuration_dict: dict):
         # ---- Define INPFC stratum for `haul_to_transect_df`
         # input_dict["biology"]["haul_to_transect_df"] = input_dict["biology"][
         #     "haul_to_transect_df"
-        # ].merge(input_dict["spatial"]["inpfc_strata_df"][["stratum_inpfc", "haul_bin"]], how="left")
+        # ].merge(input_dict["spatial"]["inpfc_strata_df"][["stratum_inpfc", "haul_bin"]], 
+        # how="left")
         # ---- Distribute this information to other biological variables
         # -------- Specimen
         # input_dict["biology"]["specimen_df"] = input_dict["biology"]["specimen_df"].merge(
