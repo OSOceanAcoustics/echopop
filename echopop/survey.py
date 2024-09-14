@@ -150,7 +150,7 @@ class Survey:
         """
 
         # Create haul-transect-mapping key file
-        el.write_haul_to_transect_key(self.config, verbose)
+        # el.write_haul_to_transect_key(self.config, verbose)
 
         # Get previously processed datasets
         # ---- Updated datasets

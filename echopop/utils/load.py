@@ -135,20 +135,19 @@ def load_dataset(
     flat_configuration_table = pd.json_normalize(configuration_dict).filter(regex="filename")
 
     # Convert `dataset_type` to list if needed and defined
-    if dataset_type is not None and not isinstance(dataset_type, list):
+    if dataset_type is None:
+        # ---- Default to `CONFIG_MAP` keys otherwise
+        dataset_type = list(CONFIG_MAP.keys())
+    elif not isinstance(dataset_type, list):
         dataset_type = [dataset_type]
 
     # Get the subset table if specific `dataset_type` is defined
-    if dataset_type:
-        # ---- Get the outermost dictionary keys
-        outer_keys = flat_configuration_table.columns.str.split(".").str[0]
-        # ---- Get the associated column names
-        matching_columns = flat_configuration_table.columns[outer_keys.isin(dataset_type)]
-        # ---- Filter the columns
-        flat_configuration_table = flat_configuration_table.filter(matching_columns)
-    # ---- Default to `CONFIG_MAP` keys otherwise
-    else:
-        dataset_type = list(CONFIG_MAP.keys())
+    # ---- Get the outermost dictionary keys
+    outer_keys = flat_configuration_table.columns.str.split(".").str[0]
+    # ---- Get the associated column names
+    matching_columns = flat_configuration_table.columns[outer_keys.isin(dataset_type)]
+    # ---- Filter the columns
+    flat_configuration_table = flat_configuration_table.filter(matching_columns)
     # ---- Parse the flattened configuration table to identify data file names and paths
     parsed_filenames = flat_configuration_table.values.flatten()
     # ---- Evaluate whether either file is missing
@@ -341,7 +340,9 @@ def read_validated_data(
         else:
             if config_map[0] == "kriging":
                 df_list = [input_dict[sub_attribute]["kriging"][config_map[1] + "_df"], df]
-                input_dict[sub_attribute]["kriging"][config_map[1] + "_df"] = pd.concat(df_list)
+                input_dict[sub_attribute]["kriging"][config_map[1] + "_df"] = pd.concat(
+                    df_list
+                ).tail(1)
             else:
                 df_list = [input_dict[sub_attribute][config_map[1] + "_df"], df]
                 input_dict[sub_attribute][config_map[1] + "_df"] = pd.concat(df_list)
@@ -524,7 +525,15 @@ def prepare_input_data(input_dict: dict, configuration_dict: dict):
         input_dict["biology"]["specimen_df"]["sex"] = np.where(
             input_dict["biology"]["specimen_df"]["sex"] == int(1),
             "male",
-            np.where(input_dict["biology"]["specimen_df"]["sex"] == int(2), "female", "unsexed"),
+            np.where(
+                input_dict["biology"]["specimen_df"]["sex"] == int(2),
+                "female",
+                np.where(
+                    input_dict["biology"]["specimen_df"]["sex"].isin(["male", "female"]),
+                    input_dict["biology"]["specimen_df"]["sex"],
+                    "unsexed",
+                ),
+            ),
         )
         # -------- Sex group
         input_dict["biology"]["specimen_df"]["group_sex"] = np.where(
@@ -534,7 +543,15 @@ def prepare_input_data(input_dict: dict, configuration_dict: dict):
         input_dict["biology"]["length_df"]["sex"] = np.where(
             input_dict["biology"]["length_df"]["sex"] == int(1),
             "male",
-            np.where(input_dict["biology"]["length_df"]["sex"] == int(2), "female", "unsexed"),
+            np.where(
+                input_dict["biology"]["length_df"]["sex"] == int(2),
+                "female",
+                np.where(
+                    input_dict["biology"]["length_df"]["sex"].isin(["male", "female"]),
+                    input_dict["biology"]["length_df"]["sex"],
+                    "unsexed",
+                ),
+            ),
         )
         # -------- Sex group
         input_dict["biology"]["length_df"]["group_sex"] = np.where(
@@ -594,9 +611,9 @@ def prepare_input_data(input_dict: dict, configuration_dict: dict):
 
         # Merge haul numbers and spatial information across biological variables
         # ---- Consolidate information linking haul-transect-stratum indices
-        input_dict["biology"]["haul_to_transect_df"] = input_dict["biology"][
-            "haul_to_transect_df"
-        ].merge(input_dict["spatial"]["strata_df"], on="haul_num", how="outer")
+        # input_dict["biology"]["haul_to_transect_df"] = input_dict["biology"][
+        #     "haul_to_transect_df"
+        # ].merge(input_dict["spatial"]["strata_df"], on="haul_num", how="outer")
         # ---- Create interval key for haul numbers to assign INPFC stratum
         haul_bins = np.sort(
             np.unique(
@@ -621,30 +638,94 @@ def prepare_input_data(input_dict: dict, configuration_dict: dict):
         input_dict["spatial"]["inpfc_strata_df"].rename(
             columns={"stratum_num": "stratum_inpfc"}, inplace=True
         )
+
+        # Get the KS-strata
+        strata_df = input_dict["spatial"]["strata_df"].copy().set_index(["haul_num"])
+
+        # Loop through the KS-strata to map the correct strata values
+        for keys, values in input_dict["biology"].items():
+            if isinstance(values, pd.DataFrame) and "haul_num" in values.columns:
+                # ---- Index based on `haul_num`
+                input_dict["biology"][keys].set_index(["haul_num"], inplace=True)
+                # ---- Map the correct `stratum_num` value
+                input_dict["biology"][keys]["stratum_num"] = strata_df["stratum_num"]
+                # ---- Correct the value datatype
+                input_dict["biology"][keys]["stratum_num"] = (
+                    input_dict["biology"][keys]["stratum_num"].fillna(0.0).astype(int)
+                )
+                # ---- Reset the index
+                input_dict["biology"][keys].reset_index(inplace=True)
         # ---- Define haul bins with `haul_to_transect_df`
-        input_dict["biology"]["haul_to_transect_df"]["haul_bin"] = pd.cut(
-            input_dict["biology"]["haul_to_transect_df"]["haul_num"], haul_bins
-        )
+        # input_dict["biology"]["haul_to_transect_df"]["haul_bin"] = pd.cut(
+        #     input_dict["biology"]["haul_to_transect_df"]["haul_num"], haul_bins
+        # )
         # ---- Define INPFC stratum for `haul_to_transect_df`
-        input_dict["biology"]["haul_to_transect_df"] = input_dict["biology"][
-            "haul_to_transect_df"
-        ].merge(input_dict["spatial"]["inpfc_strata_df"][["stratum_inpfc", "haul_bin"]], how="left")
+        # input_dict["biology"]["haul_to_transect_df"] = input_dict["biology"][
+        #     "haul_to_transect_df"
+        # ].merge(input_dict["spatial"]["inpfc_strata_df"][["stratum_inpfc", "haul_bin"]], how="left")
         # ---- Distribute this information to other biological variables
         # -------- Specimen
-        input_dict["biology"]["specimen_df"] = input_dict["biology"]["specimen_df"].merge(
-            input_dict["biology"]["haul_to_transect_df"], how="left"
+        # input_dict["biology"]["specimen_df"] = input_dict["biology"]["specimen_df"].merge(
+        #     input_dict["biology"]["haul_to_transect_df"], how="left"
+        # )
+        # # -------- Length
+        # input_dict["biology"]["length_df"] = input_dict["biology"]["length_df"].merge(
+        #     input_dict["biology"]["haul_to_transect_df"], how="left"
+        # )
+        # # -------- Catch
+        # input_dict["biology"]["catch_df"] = input_dict["biology"]["catch_df"].merge(
+        #     input_dict["biology"]["haul_to_transect_df"], how="left"
+        # )
+
+    # ACOUSTICS + SPATIAL + BIOLOGICAL
+    if set(["acoustics", "biology", "spatial"]).issubset(imported_data):
+        # ---- Identify haul sub-groups, if they exist
+        groups = [
+            col.replace("haul_", "")
+            for col in input_dict["acoustics"]["nasc_df"].columns
+            if "haul" in col
+        ]
+        # ---- Get unique species to be processed
+        spp = configuration_dict["species"]["number_code"]
+        # ---- Change to list, if needed
+        spp = [spp] if not isinstance(spp, list) else spp
+        # ---- Get the unique values in the table
+        nonzero_trawls = list(
+            set(
+                val
+                for df in input_dict["biology"].values()
+                if isinstance(df, pd.DataFrame)
+                and all(col in df.columns for col in ["haul_num", "species_id"])
+                for val in df.loc[df["species_id"].isin(spp), "haul_num"].unique()
+            )
         )
-        # -------- Length
-        input_dict["biology"]["length_df"] = input_dict["biology"]["length_df"].merge(
-            input_dict["biology"]["haul_to_transect_df"], how="left"
-        )
-        # -------- Catch
-        input_dict["biology"]["catch_df"] = input_dict["biology"]["catch_df"].merge(
-            input_dict["biology"]["haul_to_transect_df"], how="left"
-        )
+        # ---- Assign the correct KS-strata to NASC region groups
+        for grp in groups:
+            # ---- Index `nasc_df`
+            input_dict["acoustics"]["nasc_df"].set_index(f"haul_{grp}", inplace=True)
+            # ---- Create copy of `strata_df` and index
+            strata_df = input_dict["spatial"]["strata_df"].copy()
+            # ---- Remove zero-trawls
+            strata_df = (
+                strata_df[strata_df["haul_num"].isin(nonzero_trawls)]
+                .filter(["stratum_num", "haul_num"])
+                .rename(columns={"haul_num": f"haul_{grp}"})
+                .set_index([f"haul_{grp}"])
+            )
+            # ---- Merge the strata information based on haul
+            input_dict["acoustics"]["nasc_df"][f"stratum_{grp}"] = strata_df["stratum_num"]
+            # ---- Fill empty with 0.0's
+            input_dict["acoustics"]["nasc_df"][f"stratum_{grp}"] = (
+                input_dict["acoustics"]["nasc_df"][f"stratum_{grp}"].fillna(0).astype(int)
+            )
+            # ---- Reset index
+            input_dict["acoustics"]["nasc_df"].reset_index(inplace=True)
 
     # STATISTICS
-    if set(["statistics"]).issubset(imported_data):
+    if (
+        set(["statistics"]).issubset(imported_data)
+        and "vario_krig_para_df" in input_dict["statistics"]["kriging"]
+    ):
         # Reorganize kriging/variogram parameters
         # ---- Kriging
         # -------- Generate dictionary comprising kriging model configuration
