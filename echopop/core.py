@@ -72,6 +72,37 @@ CONFIG_DATA_MODEL = {
     },
 }
 
+# Name configuration dictionary
+NAME_CONFIG = {
+    "Age": "age",
+    "Cell portion": "fraction_cell_in_polygon",
+    "Frequency": "length_count",
+    "haul": "haul_num",
+    "haul end": "haul_end",
+    "haul start": "haul_start",
+    "Haul": "haul_num",
+    "Latitude": "latitude",
+    "Latitude (upper limit)": "northlimit_latitude",
+    "Latitude of centroid": "centroid_latitude",
+    "Length": "length",
+    "Longitude": "longitude",
+    "Longitude of centroid": "centroid_longitude",
+    "strata": "stratum_num",
+    "Sex": "sex",
+    "Ship": "ship_id",
+    "Spacing": "transect_spacing",
+    "Species_Code": "species_id",
+    "Species_Name": "species_name",
+    "Strata Index": "stratum_num",
+    "Stratum": "stratum_num",
+    "Transect": "transect_num",
+    "VL start": "vessel_log_start",
+    "VL end": "vessel_log_end",
+    "wt": "fraction_hake",
+    "Weight": "weight",
+    "Weight_In-Haul": "haul_weight",
+}
+
 # `Survey` object data structure
 CONFIG_MAP = {
     "biological": {
@@ -115,14 +146,14 @@ CONFIG_MAP = {
         "geo_strata": {
             "stratum_num": int,
             "northlimit_latitude": np.float64,
-            "haul start": int,
-            "haul end": int,
+            "haul_start": int,
+            "haul_end": int,
         },
         "inpfc_strata": {
             "stratum_num": int,
             "northlimit_latitude": np.float64,
-            "haul start": int,
-            "haul end": int,
+            "haul_start": int,
+            "haul_end": int,
         },
     },
     "NASC": {
