@@ -1,8 +1,10 @@
 import re
 from typing import Any, Dict, List, Literal, Optional, TypedDict, Union, get_args
+
 import numpy as np
 import pandas as pd
 from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator
+
 from .validate import posfloat, posint, realcircle, realposfloat
 
 
@@ -117,6 +119,7 @@ def validate_typed_dict(data: Dict[str, Any], expected_types: Dict[str, Any]) ->
 ####################################################################################################
 # PYDANTIC VALIDATORS
 # --------------------------------------------------------------------------------------------------
+
 
 class FileSettings(BaseModel):
     """
@@ -468,6 +471,7 @@ class CONFIG_DATA_MODEL(BaseModel):
                 self.__class__.__name__, f"configured data files defined in {filename}"
             )
             raise ValueError(new_message) from e
+
 
 # Validation classes
 class VariogramBase(TypedDict, total=False):

@@ -1,10 +1,12 @@
-from pandera import DataFrameModel, Field, check
-from pandera.typing import Series
-from pandera.errors import SchemaError, SchemaErrors
-import pandas as pd
-import numpy as np
-import re
 import copy
+import re
+
+import numpy as np
+import pandas as pd
+from pandera import DataFrameModel, Field, check
+from pandera.errors import SchemaError, SchemaErrors
+from pandera.typing import Series
+
 
 ####################################################################################################
 # UTILITY FUNCTION
@@ -14,7 +16,7 @@ def extract_errors(data, key="error"):
     Utility function for extract `pandera.SchemaError` and `pandera.SchemaErrors` messages
     """
     errors = []
-    
+
     if isinstance(data, dict):
         # If the current level is a dictionary, iterate through its keys
         for k, v in data.items():
@@ -26,7 +28,7 @@ def extract_errors(data, key="error"):
         # If the current level is a list, iterate through its elements
         for item in data:
             errors.extend(extract_errors(item, key))  # Recursively search nested lists
-    
+
     return errors
 
 
@@ -35,23 +37,23 @@ def extract_errors(data, key="error"):
 # --------------------------------------------------------------------------------------------------
 class BaseDataFrame(DataFrameModel):
 
-    class Config:        
+    class Config:
         metadata = {}
         strict = False
 
     _DTYPE_TESTS = {
         int: (
-            lambda v: pd.api.types.is_integer_dtype(v) 
-                or (pd.api.types.is_numeric_dtype(v) and (v % 1 == 0).all())
+            lambda v: pd.api.types.is_integer_dtype(v)
+            or (pd.api.types.is_numeric_dtype(v) and (v % 1 == 0).all())
         ),
         float: lambda v: pd.api.types.is_float_dtype(v),
-        str: lambda v: pd.api.types.is_object_dtype(v)
+        str: lambda v: pd.api.types.is_object_dtype(v),
     }
 
     _DTYPE_COERCION = {
         int: lambda v: v.astype(np.float64, errors="ignore").astype(np.int64, errors="ignore"),
         float: lambda v: v.astype(np.float64, errors="ignore"),
-        str: lambda v: v.astype(str, errors="ignore")
+        str: lambda v: v.astype(str, errors="ignore"),
     }
 
     def __init__(self, *args, **kwargs):
@@ -64,7 +66,7 @@ class BaseDataFrame(DataFrameModel):
         # Get the schema of the DataFrameModel
         schema = cls.to_schema()
         column_types = {}
-                
+
         # Iterate over columns in the schema
         for column_name, column_schema in schema.columns.items():
             # Access the dtype directly
@@ -73,11 +75,11 @@ class BaseDataFrame(DataFrameModel):
                 column_types[column_name] = column_schema.dtype.type
             # ---- Collect mixed types from metadata
             else:
-                column_types[column_name] = (
-                    cls.get_metadata()[cls.__name__]["columns"][column_name]["types"]
-                )
-        
-        return column_types   
+                column_types[column_name] = cls.get_metadata()[cls.__name__]["columns"][
+                    column_name
+                ]["types"]
+
+        return column_types
 
     @classmethod
     def judge(cls, df: pd.DataFrame) -> pd.DataFrame:
@@ -93,10 +95,7 @@ class BaseDataFrame(DataFrameModel):
             # ---- Join unique errors
             errors_stk = "\n".join(extract_errors(errors[0].message))
             # ---- Format the error message
-            message = (
-                f"The following DataFrame validation errors were flagged: \n"
-                f"{errors_stk}"
-            )
+            message = f"The following DataFrame validation errors were flagged: \n" f"{errors_stk}"
             # ---- Raise Error
             raise SchemaError(cls, df, message)
 
@@ -114,7 +113,7 @@ class BaseDataFrame(DataFrameModel):
         valid_cols = []
         # ---- Find all indices where there are violating NaN/-Inf/Inf values
         for column_name, dtype in column_types.items():
-            # ---- Apply coercion based on column patterns            
+            # ---- Apply coercion based on column patterns
             for col in df.columns:
                 # ---- Regular expression matching
                 if re.match(column_name, col):
@@ -126,27 +125,31 @@ class BaseDataFrame(DataFrameModel):
                     else:
                         valid_cols.append(col_name)
                     # ---- Check if null values are allowed
-                    if (
-                        not cls.to_schema().columns[column_name].nullable
-                    ):
+                    if not cls.to_schema().columns[column_name].nullable:
                         # ---- Get the violating indices
-                        invalid_idx.update({
-                            col: df.index[df[col].isna() | df[col].isin([np.inf, -np.inf])]
-                            .to_list()
-                        })           
+                        invalid_idx.update(
+                            {
+                                col: df.index[
+                                    df[col].isna() | df[col].isin([np.inf, -np.inf])
+                                ].to_list()
+                            }
+                        )
         # ---- Initialize the list
         invalid_lst = []
-        # ---- Extend the values        
+        # ---- Extend the values
         invalid_lst.extend(
-            [value for key in invalid_idx.keys() 
-             if invalid_idx[key] is not None and key in valid_cols
-             for value in invalid_idx[key]]
+            [
+                value
+                for key in invalid_idx.keys()
+                if invalid_idx[key] is not None and key in valid_cols
+                for value in invalid_idx[key]
+            ]
         )
         # ---- If the indices are invalid, but can be dropped then drop them
         df.drop(invalid_lst, axis=0, inplace=True)
         # ---- Apply type coercion based on column types and alias patterns
         for column_name, dtype in column_types.items():
-            # ---- Apply coercion based on column patterns            
+            # ---- Apply coercion based on column patterns
             for col in df.columns:
                 if re.match(column_name, col):
                     # ---- Retrieve the column name
@@ -161,19 +164,20 @@ class BaseDataFrame(DataFrameModel):
                             # ---- Adjust typing annotations
                             if test and test(df[col]):
                                 cls.__annotations__[col] = Series[typing]
-                                break                                
+                                break
                         # ---- Coerce the datatypes
                         df[col] = cls._DTYPE_COERCION.get(typing)(df[col])
                     # ---- If not a List from the metadata attribute
                     else:
-                        df[col] = df[col].astype(str(dtype))      
+                        df[col] = df[col].astype(str(dtype))
         # ---- Validate
         df_valid = cls.judge(df.filter(valid_cols))
         # ---- Return to default annotations
         cls.__annotations__ = default_annotations
         # ---- Return the validated DataFrame
         return df_valid
-    
+
+
 class LengthBiodata(BaseDataFrame):
     haul_num: Series = Field(nullable=False, metadata=dict(types=[int, float]))
     length: Series[float] = Field(gt=0.0, nullable=False)
@@ -181,16 +185,22 @@ class LengthBiodata(BaseDataFrame):
     sex: Series = Field(nullable=False, metadata=dict(types=[int, str]))
     species_id: Series = Field(nullable=False, metadata=dict(types=[int, float, str]))
 
-    @check("haul_num", name="'haul_num' element-wise datatypes",
-           error="Column datatype should be either 'int' or 'float'")
+    @check(
+        "haul_num",
+        name="'haul_num' element-wise datatypes",
+        error="Column datatype should be either 'int' or 'float'",
+    )
     def validate_haul_num(cls, haul_num: Series) -> Series[bool]:
         return Series([isinstance(value, (int, float)) for value in haul_num])
 
-    @check("sex", name="'sex' element-wise datatypes",
-           error=(
-               "Column datatype should either be all 'int', or all 'str' contained within "
-               "['male', 'm', 'female', 'f', 'unsexed', 'u']"
-            ))
+    @check(
+        "sex",
+        name="'sex' element-wise datatypes",
+        error=(
+            "Column datatype should either be all 'int', or all 'str' contained within "
+            "['male', 'm', 'female', 'f', 'unsexed', 'u']"
+        ),
+    )
     def validate_sex(cls, sex: Series) -> Series[bool]:
         # ---- Check if value is 'int'
         if all(isinstance(x, str) for x in sex):
@@ -198,25 +208,36 @@ class LengthBiodata(BaseDataFrame):
         else:
             return Series([isinstance(value, int) for value in sex])
 
-    @check("species_id", name="'species_id' element-wise datatypes",
-           error="Column datatype should be either 'int', 'float', or 'str'")
+    @check(
+        "species_id",
+        name="'species_id' element-wise datatypes",
+        error="Column datatype should be either 'int', 'float', or 'str'",
+    )
     def validate_species_id(cls, species_id: Series) -> Series[bool]:
         return Series([isinstance(value, (int, float, str)) for value in species_id])
+
 
 class CatchBiodata(BaseDataFrame):
     haul_num: Series = Field(ge=0.0, nullable=False, metadata=dict(types=[int, float]))
     haul_weight: Series[float] = Field(ge=0.0, nullable=False)
     species_id: Series = Field(ge=0.0, nullable=False, metadata=dict(types=[int, float, str]))
 
-    @check("haul_num", name="'haul_num' element-wise datatypes",
-              error="Column datatype should be either 'int' or 'float'")
+    @check(
+        "haul_num",
+        name="'haul_num' element-wise datatypes",
+        error="Column datatype should be either 'int' or 'float'",
+    )
     def validate_haul_num(cls, haul_num: Series) -> Series[bool]:
         return Series([isinstance(value, (int, float)) for value in haul_num])
 
-    @check("species_id", name="'species_id' element-wise datatypes",
-              error="Column datatype should be either 'int', 'float', or 'str'")
+    @check(
+        "species_id",
+        name="'species_id' element-wise datatypes",
+        error="Column datatype should be either 'int', 'float', or 'str'",
+    )
     def validate_species_id(cls, species_id: Series) -> Series[bool]:
         return Series([isinstance(value, (int, float, str)) for value in species_id])
+
 
 class SpecimenBiodata(BaseDataFrame):
     age: Series = Field(ge=0, nullable=False, metadata=dict(types=[int, float]))
@@ -225,17 +246,24 @@ class SpecimenBiodata(BaseDataFrame):
     sex: Series = Field(nullable=False, metadata=dict(types=[int, str]))
     species_id: Series = Field(nullable=False, metadata=dict(types=[int, float, str]))
     weight: Series[float] = Field(gt=0.0, nullable=False)
-        
-    @check("age", "haul_num", name="element-wise datatypes",
-           error="Column datatype should be either 'int' or 'float'")
+
+    @check(
+        "age",
+        "haul_num",
+        name="element-wise datatypes",
+        error="Column datatype should be either 'int' or 'float'",
+    )
     def validate_haul_num(cls, v: Series) -> Series[bool]:
         return Series([isinstance(value, (int, float)) for value in v])
 
-    @check("sex", name="'sex' element-wise datatypes",
-           error=(
-               "Column datatype should either be all 'int', or all 'str' contained within "
-               "['male', 'm', 'female', 'f', 'unsexed', 'u']"
-            ))
+    @check(
+        "sex",
+        name="'sex' element-wise datatypes",
+        error=(
+            "Column datatype should either be all 'int', or all 'str' contained within "
+            "['male', 'm', 'female', 'f', 'unsexed', 'u']"
+        ),
+    )
     def validate_sex(cls, sex: Series) -> Series[bool]:
         # ---- Check if value is 'int'
         if all(isinstance(x, str) for x in sex):
@@ -243,49 +271,72 @@ class SpecimenBiodata(BaseDataFrame):
         else:
             return Series([isinstance(value, int) for value in sex])
 
-    @check("species_id", name="'species_id' element-wise datatypes",
-           error="Column datatype should be either 'int', 'float', or 'str'")
+    @check(
+        "species_id",
+        name="'species_id' element-wise datatypes",
+        error="Column datatype should be either 'int', 'float', or 'str'",
+    )
     def validate_species_id(cls, species_id: Series) -> Series[bool]:
         return Series([isinstance(value, (int, float, str)) for value in species_id])
+
 
 class HaulTransect(BaseDataFrame):
     haul_num: Series = Field(nullable=False, metadata=dict(types=[int, float]))
     transect_num: Series = Field(nullable=False, metadata=dict(types=[int, float]))
-    
-    @check("haul_num", "transect_num", name="element-wise datatypes",
-           error="Column datatype should be either 'int' or 'float'")
+
+    @check(
+        "haul_num",
+        "transect_num",
+        name="element-wise datatypes",
+        error="Column datatype should be either 'int' or 'float'",
+    )
     def validate_haul_num(cls, v: Series) -> Series[bool]:
         return Series([isinstance(value, (int, float)) for value in v])
+
 
 class KSStrata(BaseDataFrame):
     fraction: Series[float] = Field(ge=0.0, le=1.0, nullable=False, regex=True)
     haul: Series = Field(nullable=False, regex=True, metadata=dict(types=[int, float]))
     stratum: Series = Field(nullable=False, regex=True, metadata=dict(types=[int, float, str]))
-    
-    @check("haul", name="element-wise datatypes",
-           error="Column datatype should be either 'int' or 'float'")
+
+    @check(
+        "haul",
+        name="element-wise datatypes",
+        error="Column datatype should be either 'int' or 'float'",
+    )
     def validate_haul(cls, v: Series) -> Series[bool]:
         return Series([isinstance(value, (int, float)) for value in v])
 
-    @check("stratum", name="'stratum' element-wise datatypes",
-           error="Column datatype should be either 'int', 'float', or 'str'")
+    @check(
+        "stratum",
+        name="'stratum' element-wise datatypes",
+        error="Column datatype should be either 'int', 'float', or 'str'",
+    )
     def validate_stratum(cls, stratum: Series) -> Series[bool]:
         return Series([isinstance(value, (int, float, str)) for value in stratum])
+
 
 class GeoStrata(BaseDataFrame):
     haul: Series = Field(nullable=False, regex=True, metadata=dict(types=[int, float]))
     northlimit_latitude: Series[float] = Field(ge=-90.0, le=90.0, nullable=False)
     stratum: Series = Field(nullable=False, regex=True, metadata=dict(types=[int, float, str]))
 
-    @check("haul", name="element-wise datatypes",
-           error="Column datatype should be either 'int' or 'float'")
+    @check(
+        "haul",
+        name="element-wise datatypes",
+        error="Column datatype should be either 'int' or 'float'",
+    )
     def validate_haul(cls, v: Series) -> Series[bool]:
         return Series([isinstance(value, (int, float)) for value in v])
 
-    @check("stratum", name="'stratum' element-wise datatypes",
-           error="Column datatype should be either 'int', 'float', or 'str'")
+    @check(
+        "stratum",
+        name="'stratum' element-wise datatypes",
+        error="Column datatype should be either 'int', 'float', or 'str'",
+    )
     def validate_stratum(cls, stratum: Series) -> Series[bool]:
         return Series([isinstance(value, (int, float, str)) for value in stratum])
+
 
 class AcousticData(BaseDataFrame):
     haul: Series = Field(nullable=False, regex=True, metadata=dict(types=[int, float]))
@@ -296,26 +347,38 @@ class AcousticData(BaseDataFrame):
     transect_spacing: Series[float] = Field(ge=0.0, nullable=False, regex=False, coerce=True)
     vessel_log_start: Series[float] = Field(ge=0.0, nullable=False, coerce=True)
     vessel_log_end: Series[float] = Field(ge=0.0, nullable=False, coerce=True)
-    
-    @check("haul", name="element-wise datatypes",
-           error="Column datatype should be either 'int' or 'float'")
+
+    @check(
+        "haul",
+        name="element-wise datatypes",
+        error="Column datatype should be either 'int' or 'float'",
+    )
     def validate_haul(cls, v: Series) -> Series[bool]:
         return Series([isinstance(value, (int, float)) for value in v])
-    
-    @check("transect", name="element-wise datatypes",
-           error="Column datatype should be either 'int' or 'float'")
+
+    @check(
+        "transect",
+        name="element-wise datatypes",
+        error="Column datatype should be either 'int' or 'float'",
+    )
     def validate_transect(cls, v: Series) -> Series[bool]:
         return Series([isinstance(value, (int, float)) for value in v])
 
+
 class IsobathData(BaseDataFrame):
-    latitude: Series[float] = Field(ge=-90.0, le=90.0, nullable=False, regex=True, coerce=True, 
-                                    alias=".*latitude.*")
-    longitude: Series[float] = Field(ge=-180.0, le=180.0, nullable=False, regex=True, coerce=True, 
-                                    alias=".*longitude.*")
-    
+    latitude: Series[float] = Field(
+        ge=-90.0, le=90.0, nullable=False, regex=True, coerce=True, alias=".*latitude.*"
+    )
+    longitude: Series[float] = Field(
+        ge=-180.0, le=180.0, nullable=False, regex=True, coerce=True, alias=".*longitude.*"
+    )
+
+
 class KrigiedMesh(IsobathData):
-    fraction: Series[float] = Field(ge=0.0, le=1.0, nullable=False, regex=True, coerce=True,
-                                    alias=".*fraction.*")
+    fraction: Series[float] = Field(
+        ge=0.0, le=1.0, nullable=False, regex=True, coerce=True, alias=".*fraction.*"
+    )
+
 
 class VarioKrigingPara(BaseDataFrame):
     y_offset: Series[float] = Field(ge=-90.0, le=90.0, nullable=False, alias="dataprep.y_offset")
@@ -327,7 +390,7 @@ class VarioKrigingPara(BaseDataFrame):
     powr: Series[float] = Field(ge=0.0, nullable=False, alias="vario.powr")
     range: Series[float] = Field(ge=0.0, nullable=False, alias="vario.range")
     res: Series[float] = Field(gt=0.0, nullable=False, alias="vario.res")
-    sill: Series[float] = Field(ge=0.0, nullable=False, alias="vario.sill")  
+    sill: Series[float] = Field(ge=0.0, nullable=False, alias="vario.sill")
     ytox_ratio: Series[float] = Field(nullable=False, alias="vario.ytox_ratio")
     ztox_ratio: Series[float] = Field(nullable=False, alias="vario.ztox_ratio")
     blk_nx: Series[int] = Field(gt=0, nullable=False, alias="krig.blk_nx")
@@ -351,12 +414,13 @@ class VarioKrigingPara(BaseDataFrame):
     xmin: Series[float] = Field(nullable=False, alias="krig.xmin")
     xmax: Series[float] = Field(nullable=False, alias="krig.xmax")
     xmin0: Series[float] = Field(ge=-180.0, le=180.0, nullable=False, alias="krig.xmin0")
-    xmax0: Series[float] = Field(ge=-180.0, le=180.0, nullable=False, alias="krig.xmax0")    
+    xmax0: Series[float] = Field(ge=-180.0, le=180.0, nullable=False, alias="krig.xmax0")
     y_res: Series[float] = Field(nullable=False, alias="krig.y_res")
     ymin: Series[float] = Field(nullable=False, alias="krig.ymin")
     ymax: Series[float] = Field(nullable=False, alias="krig.ymax")
     ymin0: Series[float] = Field(ge=-90.0, le=90.0, nullable=False, alias="krig.ymin0")
     ymax0: Series[float] = Field(ge=-90.0, le=90.0, nullable=False, alias="krig.ymax0")
+
 
 ####################################################################################################
 # CONFIGURATION DATAFRAME MAPPING
