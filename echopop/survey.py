@@ -17,7 +17,7 @@ from .graphics import variogram_interactive as egv
 from .spatial.projection import transform_geometry
 from .spatial.transect import edit_transect_columns
 from .utils import load as el, load_nasc as eln, message as em
-from .utils.validate import VariogramBase, VariogramInitial, VariogramOptimize
+from .utils.validate_dict import VariogramBase, VariogramInitial, VariogramOptimize
 
 
 class Survey:

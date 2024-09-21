@@ -39,7 +39,7 @@ from .spatial.variogram import (
     optimize_variogram,
 )
 from .statistics import stratified_transect_statistic
-from .utils.validate import VariogramEmpirical
+from .utils.validate_dict import VariogramEmpirical
 
 
 def process_transect_data(
