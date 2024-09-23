@@ -2,7 +2,6 @@ import re
 from typing import Any, Dict, List, Literal, Optional, TypedDict, Union, get_args
 
 import numpy as np
-import pandas as pd
 from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator
 
 from .validate import posfloat, posint, realcircle, realposfloat

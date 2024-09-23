@@ -4,9 +4,8 @@ import pandas as pd
 import pytest
 from pandera.errors import SchemaError
 
+from echopop.tests.conftest import assert_dataframe_equal
 from echopop.utils.validate_df import BaseDataFrame, IsobathData
-
-from .conftest import assert_dataframe_equal
 
 
 @pytest.mark.parametrize(
@@ -70,18 +69,62 @@ def test_BaseDataFrame_model_structure(description):
             None,
             "greater_than_or_equal_to(-180.0)",
         ),
+        (
+            pd.DataFrame(dict(latitude=[-1.0, 0.0, 1.0], longitude=[-1.0, 0.0, 181.0])),
+            None,
+            "less_than_or_equal_to(180.0)",
+        ),
+        (
+            pd.DataFrame(dict(latitude=[-91.0, 0.0, 1.0], longitude=[-1.0, 0.0, 1.0])),
+            None,
+            "greater_than_or_equal_to(-90.0)",
+        ),
+        (
+            pd.DataFrame(dict(latitude=[-1.0, 0.0, 91.0], longitude=[1.0, 0.0, 1.0])),
+            None,
+            "less_than_or_equal_to(90.0)",
+        ),
+        (
+            pd.DataFrame(dict(latitude=[-1.0, 0.0, 1.0])),
+            None,
+            "'.*longitude.*' did not match any columns in the dataframe",
+        ),
+        (
+            pd.DataFrame(dict(longitude=[1.0, 0.0, 1.0])),
+            None,
+            "'.*latitude.*' did not match any columns in the dataframe",
+        ),
+        (
+            pd.DataFrame(dict()),
+            None,
+            [
+                "'.*longitude.*' did not match any columns in the dataframe",
+                "'.*latitude.*' did not match any columns in the dataframe",
+            ],
+        ),
     ],
     ids=[
         "Simple DataFrame input [single row]",
         "Simple DataFrame input [multiple rows]",
         "Invalid longitude [lower limit]",
+        "Invalid longitude [upper limit]",
+        "Invalid latitude [lower limit]",
+        "Invalid latitude [upper limit]",
+        "Missing column [longitude]",
+        "Missing column [latitude]",
+        "Missing all columns",
     ],
 )
 def test_IsobathData_model(input, expected, exception):
 
     if exception:
-        with pytest.raises(SchemaError, match=re.escape(exception)):
-            assert IsobathData.validate_df(input)
+        if isinstance(exception, list):
+            for e in exception:
+                with pytest.raises(SchemaError, match=re.escape(e)):
+                    assert IsobathData.validate_df(input)
+        else:
+            with pytest.raises(SchemaError, match=re.escape(exception)):
+                assert IsobathData.validate_df(input)
     else:
         # Test creation with various parameters
         result = IsobathData.validate_df(input)
