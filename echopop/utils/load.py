@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import yaml
 
-from ..core import BIODATA_HAUL_MAP, CONFIG_MAP, DATA_STRUCTURE, LAYER_NAME_MAP
+from ..core import BIODATA_HAUL_MAP, CONFIG_MAP, DATA_STRUCTURE, LAYER_NAME_MAP, NAME_CONFIG
 from .data_structure_utils import map_imported_datasets
 from .validate import CONFIG_DATA_MODEL, CONFIG_INIT_MODEL
 
@@ -302,7 +302,6 @@ def read_validated_data(
 
     else:
         # Read Excel file into memory -- this only reads in the required columns
-        # df = pd.read_excel(file_name, sheet_name=sheet_name, usecols=validation_settings.keys())
         df = pd.read_excel(file_name, sheet_name=sheet_name)
         # ---- Rename the columns, if needed, and then filter them
         df = df.rename(columns=NAME_CONFIG).filter(validation_settings)
