@@ -30,7 +30,7 @@ def extract_errors(data, failed_coercion: pd.DataFrame, key="error"):
                 errors.append(f"   -{error_msg}")
             # for k, v in data.items():
             # if "error" in data:
-            #     errors.append(f"   -{data["error"].capitalize()}") 
+            #     errors.append(f"   -{data["error"].capitalize()}")
             else:
                 errors.append(f"   -{data['error'].capitalize()}")
         else:
