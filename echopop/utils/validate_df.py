@@ -11,7 +11,7 @@ from pandera.typing import Series
 ####################################################################################################
 # UTILITY FUNCTION
 # --------------------------------------------------------------------------------------------------
-def extract_errors(data, key="error"):
+def extract_errors(data, failed_coercion: pd.DataFrame, key="error"):
     """
     Utility function for extract `pandera.SchemaError` and `pandera.SchemaErrors` messages
     """
@@ -19,17 +19,32 @@ def extract_errors(data, key="error"):
 
     if isinstance(data, dict):
         # If the current level is a dictionary, iterate through its keys
-        for k, v in data.items():
-            if k == key:
-                errors.append(f"   -{v.capitalize()}")  # Append the error message if key matches
+        # ---- Check if coercion error occurred
+        if "error" in data and "column" in data:
+            if data["column"] in failed_coercion.Column.unique():
+                # ---- Match the column
+                error_msg = failed_coercion.loc[
+                    failed_coercion.Column == data["column"], "error"
+                ].values[0]
+                # ---- Append
+                errors.append(f"   -{error_msg}")
+            # for k, v in data.items():
+            # if "error" in data:
+            #     errors.append(f"   -{data["error"].capitalize()}") 
             else:
-                errors.extend(extract_errors(v, key))  # Recursively search nested dictionaries
+                errors.append(f"   -{data['error'].capitalize()}")
+        else:
+            for k, v in data.items():
+                errors.extend(extract_errors(v, failed_coercion, key))
     elif isinstance(data, list):
         # If the current level is a list, iterate through its elements
         for item in data:
-            errors.extend(extract_errors(item, key))  # Recursively search nested lists
+            errors.extend(
+                extract_errors(item, failed_coercion, key)
+            )  # Recursively search nested lists
 
-    return errors
+    # Drop 'traceback' messages
+    return list(set(errors))
 
 
 ####################################################################################################
@@ -82,7 +97,62 @@ class BaseDataFrame(DataFrameModel):
         return column_types
 
     @classmethod
-    def judge(cls, df: pd.DataFrame) -> pd.DataFrame:
+    def coercion_check(cls, df: pd.DataFrame, col_types: dict) -> pd.DataFrame:
+
+        # Initialize a DataFrame
+        errors_coerce = pd.DataFrame(dict(Column=[], error=[]))
+
+        # Coerce the data
+        for column_name, dtype in col_types.items():
+            # ---- Apply coercion based on column patterns
+            for col in df.columns:
+                if re.match(column_name, col):
+                    # ---- Retrieve the column name
+                    # col_name = re.match(column_name, col).group(0)
+                    # Coerce the column to the appropriate dtype
+                    if isinstance(dtype, list):
+                        # ---- Initialize the dtype of the validator annotation
+                        cls.__annotations__[col] = Series[dtype[0]]
+                        # ---- Check for all valid integers
+                        for typing in dtype:
+                            test = cls._DTYPE_TESTS.get(typing, None)
+                            # ---- Adjust typing annotations
+                            if test and test(df[col]):
+                                cls.__annotations__[col] = Series[typing]
+                                break
+                        # ---- Coerce the datatypes
+                        try:
+                            df[col] = cls._DTYPE_COERCION.get(typing)(df[col])
+                        except Exception as e:
+                            e.__traceback__ = None
+                            message = (
+                                f"{col.capitalize()} column must be a Series of '{str(dtype)}' "
+                                f"values. Series values could not be automatically coerced."
+                            )
+                            # errors_coerce.append(e)
+                            errors_coerce = pd.concat(
+                                [errors_coerce, pd.DataFrame(dict(Column=col, error=message))]
+                            )
+                    # ---- If not a List from the metadata attribute
+                    else:
+                        try:
+                            df[col] = df[col].astype(str(dtype))
+                        except Exception as e:
+                            e.__traceback__ = None
+                            message = (
+                                f"{col.capitalize()} column must be a Series of '{str(dtype)}' "
+                                f"values. Series values could not be automatically coerced."
+                            )
+                            # errors_coerce.append(e)
+                            errors_coerce = pd.concat(
+                                [errors_coerce, pd.DataFrame(dict(Column=[col], error=[message]))]
+                            )
+
+        # Return the DataFrame
+        return errors_coerce
+
+    @classmethod
+    def judge(cls, df: pd.DataFrame, coercion_failures: pd.DataFrame) -> pd.DataFrame:
         # ---- Collect errors
         errors = []
         try:
@@ -93,7 +163,7 @@ class BaseDataFrame(DataFrameModel):
         # ---- If Errors occur:
         if errors:
             # ---- Join unique errors
-            errors_stk = "\n".join(extract_errors(errors[0].message))
+            errors_stk = "\n".join(extract_errors(errors[0].message, coercion_failures))
             # ---- Format the error message
             message = f"The following DataFrame validation errors were flagged: \n" f"{errors_stk}"
             # ---- Raise Error
@@ -147,31 +217,12 @@ class BaseDataFrame(DataFrameModel):
         )
         # ---- If the indices are invalid, but can be dropped then drop them
         df.drop(invalid_lst, axis=0, inplace=True)
-        # ---- Apply type coercion based on column types and alias patterns
-        for column_name, dtype in column_types.items():
-            # ---- Apply coercion based on column patterns
-            for col in df.columns:
-                if re.match(column_name, col):
-                    # ---- Retrieve the column name
-                    col_name = re.match(column_name, col).group(0)
-                    # Coerce the column to the appropriate dtype
-                    if isinstance(dtype, list):
-                        # ---- Initialize the dtype of the validator annotation
-                        cls.__annotations__[col] = Series[dtype[0]]
-                        # ---- Check for all valid integers
-                        for typing in dtype:
-                            test = cls._DTYPE_TESTS.get(typing, None)
-                            # ---- Adjust typing annotations
-                            if test and test(df[col]):
-                                cls.__annotations__[col] = Series[typing]
-                                break
-                        # ---- Coerce the datatypes
-                        df[col] = cls._DTYPE_COERCION.get(typing)(df[col])
-                    # ---- If not a List from the metadata attribute
-                    else:
-                        df[col] = df[col].astype(str(dtype))
-        # ---- Validate
-        df_valid = cls.judge(df.filter(valid_cols))
+
+        # Coercion check
+        coercion_failures = cls.coercion_check(df, column_types)
+
+        # Validate
+        df_valid = cls.judge(df.filter(valid_cols), coercion_failures)
         # ---- Return to default annotations
         cls.__annotations__ = default_annotations
         # ---- Return the validated DataFrame
@@ -367,14 +418,14 @@ class AcousticData(BaseDataFrame):
 
 class IsobathData(BaseDataFrame):
     latitude: Series[float] = Field(
-        ge=-90.0, le=90.0, nullable=False, regex=True, coerce=True, alias=".*latitude.*"
+        ge=-90.0, le=90.0, nullable=False, regex=True, alias=".*latitude.*"
     )
     longitude: Series[float] = Field(
-        ge=-180.0, le=180.0, nullable=False, regex=True, coerce=True, alias=".*longitude.*"
+        ge=-180.0, le=180.0, nullable=False, regex=True, alias=".*longitude.*"
     )
 
 
-class KrigiedMesh(IsobathData):
+class KrigedMesh(IsobathData):
     fraction: Series[float] = Field(
         ge=0.0, le=1.0, nullable=False, regex=True, coerce=True, alias=".*fraction.*"
     )
@@ -443,7 +494,7 @@ DATASET_DF_MODEL = {
     },
     "kriging": {
         "isobath_200m": IsobathData,
-        "mesh": KrigiedMesh,
+        "mesh": KrigedMesh,
         "vario_krig_para": VarioKrigingPara,
     },
 }
