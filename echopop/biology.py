@@ -147,12 +147,6 @@ def quantize_number_counts(
         Stratum column name.
     """
 
-    # Sub-select the correct stratum definition
-    # if stratum.lower() == "ks":
-    #     stratum_col = "stratum_num"
-    # else:
-    #     stratum_col = "stratum_inpfc"
-
     # Bin counts by sex
     # ---- Aged
     aged_number_distribution = pd.concat(
@@ -519,10 +513,6 @@ def quantize_weights(
         Stratum column name.
     """
 
-    # Prepare data
-    # ---- Get the name of the stratum column
-    # stratum_col = [col for col in specimen_data.columns if "stratum" in col.lower()][0]
-
     # Generate sex-specific interpolators for fitted length-weight values for unaged fish
     # (station 1)
     # ---- Parse the male- and female-specific fitted weight values
@@ -613,9 +603,6 @@ def weight_proportions(
     female, and total (male, female, and unsexed fish). The average weight is estimated using the
     length-weight relationship fitted in ``fit_binned_length_weight_relationship``.
     """
-
-    # Get the name of the stratum column
-    # stratum_col = [col for col in specimen_data.columns if "stratum" in col.lower()][0]
 
     # Calculate the sexed and total stratum weights for each sex among aged fish
     # ---- Extract the aged/specimen quantized weights
@@ -797,11 +784,10 @@ def weight_proportions(
     # Return output
     return {
         "aged_weight_proportions_df": aged_overall_df,
-        "unaged_weight_proportions_df": unaged_weight_proportions_df,  # .reset_index()
+        "unaged_weight_proportions_df": unaged_weight_proportions_df,
         "aged_unaged_sex_weight_proportions_df": (
             aged_unaged_sex_proportions.astype(float).reset_index().fillna(0.0)
         ),
-        # "aged_unaged_weight_proportions_df": aged_unaged_proportions,
         "aged_unaged_weight_proportions_df": aged_unaged_proportions.reset_index(),
     }
 
@@ -1265,40 +1251,6 @@ def partition_transect_age(
     biomass_summary_df["biomass_all"] = (
         biomass_summary_df["biomass_adult"] + biomass_summary_df["biomass_age1"]
     )
-    # # -------- Calculate biomass estimates for age-2+ fish
-    # if settings_dict["transect"]["exclude_age1"]:
-    #     # ---- Biomass for adult fish
-    #     biomass_summary_df["biomass_adult"] = np.array(
-    #         [
-    #             biomass_aged_length.loc["all", :].sum().sum() - biomass_age1_total,
-    #             biomass_aged_length.loc["female", :].sum().sum() - biomass_age1_female,
-    #             biomass_aged_length.loc["male", :].sum().sum() - biomass_age1_male,
-    #             nasc_biology_df["biomass_unsexed"].sum(),
-    #             nasc_biology_df[nasc_biology_df["fraction_hake"] < 1.0]["biomass"].sum()
-    #             - biomass_age1_mixed,
-    #         ]
-    #     )
-    # else:
-    #     # ---- Biomass for all fish
-    #     biomass_summary_df["biomass_all"] = np.array(
-    #         [
-    #             adult_data["biomass"].sum(),
-    #             adult_data["biomass_female"].sum(),
-    #             adult_data["biomass_male"].sum(),
-    #             nasc_biology_df["biomass_unsexed"].sum(),
-    #             nasc_biology_df[nasc_biology_df["fraction_hake"] < 1.0]["biomass"].sum(),
-    #         ]
-    #     )
-    #     # ---- Biomass for adult fish
-    #     biomass_summary_df["biomass_"]
-    # # -------- Calculate biomass estimates for age-1 fish
-    # biomass_summary_df["biomass_age1"] = np.array(
-    #     [biomass_age1_total, biomass_age1_female, biomass_age1_male, 0.0, biomass_age1_mixed]
-    # )
-    # # -------- Calculate biomass estimates for all fish
-    # biomass_summary_df["biomass_all"] = (
-    #     biomass_summary_df["biomass_adult"] + biomass_summary_df["biomass_age1"]
-    # )
     # ---- Generate outputs
     return adult_data, biomass_summary_df, abundance_unaged_age1_tbl
 

@@ -72,9 +72,6 @@ def impute_missing_sigma_bs(
     # Collect stratum column name
     stratum_col = [col for col in sigma_bs_stratum.columns if "stratum" in col.lower()][0]
 
-    # Collect all possible strata
-    # strata_options = np.unique(strata_dict["strata_df"][stratum_col])
-
     # Collect present strata
     present_strata = np.unique(sigma_bs_stratum[stratum_col]).astype(int)
 
@@ -343,12 +340,6 @@ def nasc_to_biomass(
     nasc_interval_df["fraction_hake"] = nasc_interval_df["fraction_hake"].fillna(0.0)
     # ---- Reset the index
     nasc_interval_df.reset_index(inplace=True)
-    # # ---- Initial merge
-    # nasc_interval_df = nasc_interval_df.merge(
-    #     input_dict["spatial"]["strata_df"], on=[stratum_col, "haul_num"], how="left"
-    # )
-    # # ---- Replace `fraction_hake` where NaN occurs
-    # nasc_interval_df["fraction_hake"] = nasc_interval_df["fraction_hake"].fillna(0.0)
     # ---- Drop NaN
     nasc_interval_df.dropna(subset=["transect_num"], inplace=True)
 

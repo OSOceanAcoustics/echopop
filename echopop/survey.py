@@ -655,10 +655,6 @@ class Survey:
         aged_apportioned, unaged_apportioned, kriged_apportioned_table = apportion_kriged_values(
             self.analysis, kriged_results["mesh_results_df"], self.analysis["settings"]["kriging"]
         )
-
-        # Modify the resulting tables if age-1 fish are excluded!
-        # if settings_dict[ 'exclude_age1' ]:
-
         # ---- Update results
         self.results["kriging"].update(
             {
