@@ -483,21 +483,12 @@ def batch_read_echoview_exports(
     # ---- Rename a column
     interval_template = interval_template.rename(columns={"max_depth": "bottom_depth"})
 
-    # Write the transect-region-haul key xlsx file
-    write_transect_region_key(transect_data, configuration_dict, verbose)
+    # Process and construct the transect-region map key
+    transect_region_key = construct_transect_region_key(transect_data, configuration_dict)
 
     # Get region info
-    # ---- Region filenames
-    region_files = configuration_dict["export_regions"]
     # ---- Region names
     region_names = export_settings["regions"]
-    # ---- Root directory
-    root_dir = configuration_dict["data_root_dir"]
-    # ---- Read in region definitions
-    regions_df = load_export_regions(region_files, region_names, root_dir)
-
-    # Read in the haul-to-transect KS strata key
-    haul_transect = get_haul_transect_key(configuration_dict, root_dir)
 
     # Vertical/areal integration (over groups)
     for key, values in region_names.items():
@@ -522,13 +513,19 @@ def batch_read_echoview_exports(
             .reset_index()
         )
         # ---- Partition specific grouped regions
-        grouped_region = regions_df[regions_df["group"] == key]
+        grouped_region = transect_region_key[transect_region_key["group"] == key]
+        # ---- Create interval copy
+        interval_copy = (
+            interval_template.copy().set_index(["interval", "transect_num"]).sort_index()
+        )
         # ---- Merge stratum and haul information into the integrated NASC dataframe
-        nasc_haul_strata = group_merge(nasc_intervals, [grouped_region, haul_transect])
-        #
-        full_interval_df = interval_template.merge(nasc_haul_strata, how="left")
-        #
-        full_interval_strata_df = full_interval_df.merge(transect_layer_summary, how="left")
+        nasc_hauls = nasc_intervals.merge(grouped_region).set_index(["interval", "transect_num"])
+        # ---- Append the haul numbers
+        interval_copy.loc[:, nasc_hauls.columns] = nasc_hauls
+        # ---- Reset the index
+        interval_copy.reset_index(inplace=True)
+        # ---- Combine with the transect layer summaries
+        full_interval_strata_df = interval_copy.merge(transect_layer_summary, how="left")
         # ---- Sort
         full_interval_strata_df = full_interval_strata_df.sort_values(
             ["transect_num", "vessel_log_start", "vessel_log_end"]
@@ -541,12 +538,6 @@ def batch_read_echoview_exports(
         full_interval_strata_df["haul_num"] = (
             full_interval_strata_df["haul_num"].fillna(0).astype(int)
         )
-        # ---- Fill stratum with 1's
-        # TODO: Add clarification that these don't make an impact or something to that effect
-        # ! Or can this be avoided (e.g. just replace with '0' instead of '1'?)
-        full_interval_strata_df["stratum_num"] = (
-            full_interval_strata_df["stratum_num"].fillna(1).astype(int)
-        )
         # ---- Fill float/continuous columns
         full_interval_strata_df[["NASC", "layer_mean_depth", "layer_height", "bottom_depth"]] = (
             full_interval_strata_df[["NASC", "layer_mean_depth", "layer_height", "bottom_depth"]]
@@ -555,6 +546,8 @@ def batch_read_echoview_exports(
         )
         # ---- Drop unused columns
         output_nasc = full_interval_strata_df.filter(export_settings["file_columns"])
+        # ---- Add the region group key
+        output_nasc["group"] = key
         # ---- Format the save filename
         save_filename = export_settings["save_file_template"]
         # ---- REGION replacement
@@ -581,6 +574,104 @@ def batch_read_echoview_exports(
                 f"Updated NASC export file for group '{key}' saved at "
                 f"'{str(Path(save_folder) / save_filename)}'."
             )
+
+
+def construct_transect_region_key(transect_data: pd.DataFrame, configuration_dict: dict):
+
+    # Get pattern configuration for filtering region names
+    pattern_config = configuration_dict["transect_region_mapping"]["parts"]
+
+    # Get unique region names
+    unique_regions = pd.DataFrame({"region_name": transect_data["region_name"].unique()})
+
+    # Compile string label patterns
+    compiled_patterns = compile_patterns(pattern_config)
+
+    # Helper function for extracting
+    def extract_parts(row):
+        """Extract parts and labels from the region_name and return as a Series."""
+        extracted_labels = extract_parts_and_labels(
+            row["region_name"], compiled_patterns, pattern_config
+        )
+        # Initialize column dictionary
+        column_data = {"region_name": row["region_name"]}
+        # Dynamically create the column names based on the pattern configuration
+        column_data.update(
+            {
+                f"{part_name.lower()}": extracted_labels.get(part_name, None)
+                for part_name in pattern_config.keys()
+            }
+        )
+        # Return the column dictionary as a series
+        return pd.Series(column_data)
+
+    # Extract the various components from the configuration string
+    unique_regions_coded = unique_regions.apply(extract_parts, axis=1)
+    # ---- Set the index
+    unique_regions_coded.set_index("region_name", inplace=True)
+
+    # Apply valid types
+    valid_dtypes = {
+        "region_class": str,
+        "haul_num": int,
+        "country": str,
+    }
+    # ---- Replace missing `haul_num` with 0
+    unique_regions_coded["haul_num"] = unique_regions_coded["haul_num"].fillna(0)
+    # ---- Apply conversion
+    unique_regions_filtered = unique_regions_coded.apply(
+        lambda col: col.astype(valid_dtypes.get(col.name, type(col.iloc[0])))
+    )
+    # ---- Apply haul number offset if so defined
+    if "CAN_haul_offset" in configuration_dict:
+        unique_regions_filtered.loc[unique_regions_filtered["country"] == "CAN", "haul_num"] = (
+            unique_regions_filtered.loc[unique_regions_filtered["country"] == "CAN", "haul_num"]
+            + configuration_dict["CAN_haul_offset"]
+        )
+
+    # Map the regions-hauls
+    # ---- Index the data based on region name
+    transect_data_filtered = transect_data.set_index("region_name")
+    # ---- Map the values
+    transect_data_filtered.loc[:, unique_regions_filtered.columns] = unique_regions_filtered
+    # ---- Reset the index
+    transect_data_filtered.reset_index(inplace=True)
+
+    # Pull out NASC export region settings
+    nasc_regions = configuration_dict["nasc_exports"]["regions"]
+
+    # Initialize a list to contain the grouped transect-region keys
+    full_transect_region_map = []
+    # ---- Iterate through
+    for region in nasc_regions.keys():
+        # ---- Format region pattern
+        region_pattern = (
+            rf"^(?:{'|'.join([re.escape(name.lower()) for name in nasc_regions[region]])})"
+        )
+        # ---- Filter the dataframe
+        transect_region = transect_data_filtered[
+            transect_data_filtered["region_class"].str.contains(
+                region_pattern, case=False, regex=True
+            )
+        ]
+        # ---- Ensure that `region_class` is lowercase
+        transect_region.loc[:, "region_class"] = transect_region.loc[:, "region_class"].str.lower()
+        # ---- Find the unique keys
+        unique_regions_map = (
+            transect_region.groupby(["haul_num", "transect_num", "country", "region_id"])[
+                "region_name"
+            ]
+            .first()
+            .reset_index()
+            .sort_values(["haul_num"])
+        )
+        # ---- Add `group` name
+        unique_regions_map["group"] = region
+        # ---- Append
+        full_transect_region_map.append(unique_regions_map)
+
+    # Return the values
+    return pd.concat(full_transect_region_map).sort_values(["haul_num"])
 
 
 def write_transect_region_key(transect_data: pd.DataFrame, configuration_dict: dict, verbose: bool):
