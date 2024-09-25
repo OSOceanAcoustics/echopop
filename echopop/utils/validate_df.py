@@ -33,7 +33,7 @@ def extract_errors(data, failed_coercion: pd.DataFrame, key="error"):
             #     errors.append(f"   -{data["error"].capitalize()}")
             else:
                 re.sub(r"[()]", "", data["error"])
-                re.sub(r"\(\)", "", data['error'])
+                re.sub(r"\(\)", "", data["error"])
                 ("(a)").replace(".*(.*).*", "")
                 errors.append(f"   -{data['error'].capitalize()}")
         else:
@@ -136,7 +136,7 @@ class BaseDataFrame(DataFrameModel):
                                 # errors_coerce.append(e)
                                 errors_coerce = pd.concat(
                                     [errors_coerce, pd.DataFrame(dict(Column=col, error=message))]
-                                )                            
+                                )
                     # ---- If not a List from the metadata attribute
                     else:
                         try:
@@ -353,8 +353,9 @@ class HaulTransect(BaseDataFrame):
 
 
 class KSStrata(BaseDataFrame):
-    fraction: Series[float] = Field(ge=0.0, le=1.0, nullable=False, regex=True,
-                                    alias=".*fraction.*")
+    fraction: Series[float] = Field(
+        ge=0.0, le=1.0, nullable=False, regex=True, alias=".*fraction.*"
+    )
     haul: Series = Field(nullable=False, regex=True, metadata=dict(types=[int, float]))
     stratum: Series = Field(nullable=False, regex=True, metadata=dict(types=[int, float, str]))
 
