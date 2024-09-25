@@ -610,10 +610,6 @@ def prepare_input_data(input_dict: dict, configuration_dict: dict):
     if set(["biology", "spatial"]).issubset(imported_data):
 
         # Merge haul numbers and spatial information across biological variables
-        # ---- Consolidate information linking haul-transect-stratum indices
-        # input_dict["biology"]["haul_to_transect_df"] = input_dict["biology"][
-        #     "haul_to_transect_df"
-        # ].merge(input_dict["spatial"]["strata_df"], on="haul_num", how="outer")
         # ---- Create interval key for haul numbers to assign INPFC stratum
         haul_bins = np.sort(
             np.unique(
@@ -655,28 +651,6 @@ def prepare_input_data(input_dict: dict, configuration_dict: dict):
                 )
                 # ---- Reset the index
                 input_dict["biology"][keys].reset_index(inplace=True)
-        # ---- Define haul bins with `haul_to_transect_df`
-        # input_dict["biology"]["haul_to_transect_df"]["haul_bin"] = pd.cut(
-        #     input_dict["biology"]["haul_to_transect_df"]["haul_num"], haul_bins
-        # )
-        # ---- Define INPFC stratum for `haul_to_transect_df`
-        # input_dict["biology"]["haul_to_transect_df"] = input_dict["biology"][
-        #     "haul_to_transect_df"
-        # ].merge(input_dict["spatial"]["inpfc_strata_df"][["stratum_inpfc", "haul_bin"]],
-        # how="left")
-        # ---- Distribute this information to other biological variables
-        # -------- Specimen
-        # input_dict["biology"]["specimen_df"] = input_dict["biology"]["specimen_df"].merge(
-        #     input_dict["biology"]["haul_to_transect_df"], how="left"
-        # )
-        # # -------- Length
-        # input_dict["biology"]["length_df"] = input_dict["biology"]["length_df"].merge(
-        #     input_dict["biology"]["haul_to_transect_df"], how="left"
-        # )
-        # # -------- Catch
-        # input_dict["biology"]["catch_df"] = input_dict["biology"]["catch_df"].merge(
-        #     input_dict["biology"]["haul_to_transect_df"], how="left"
-        # )
 
     # ACOUSTICS + SPATIAL + BIOLOGICAL
     if set(["acoustics", "biology", "spatial"]).issubset(imported_data):

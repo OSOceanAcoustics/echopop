@@ -149,9 +149,6 @@ class Survey:
             Console messages that will print various messages, updates, etc. when set to True.
         """
 
-        # Create haul-transect-mapping key file
-        # el.write_haul_to_transect_key(self.config, verbose)
-
         # Get previously processed datasets
         # ---- Updated datasets
         new_datasets = ["biological", "kriging", "stratification"]

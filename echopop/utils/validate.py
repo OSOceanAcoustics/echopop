@@ -135,14 +135,6 @@ def validate_type(value: Any, expected_type: Any) -> bool:
         item_type = expected_type.__args__[0]
         return all(validate_type(item, item_type) for item in value)
 
-    # # Handle numpy.ndarray
-    # if hasattr(expected_type, "__origin__") and expected_type.__origin__ is np.ndarray:
-    #     return (
-    #         isinstance(value, np.ndarray)
-    #         and np.issubdtype(value.dtype, np.number)
-    #         # and value.dtype == np.float64
-    #     )
-
     return False
 
 
