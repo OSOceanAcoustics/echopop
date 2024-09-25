@@ -7,7 +7,7 @@ import pandas as pd
 from lmfit import Minimizer, Parameters
 from scipy import special
 
-from ..utils.validate import VariogramBase, VariogramInitial, VariogramOptimize
+from ..utils.validate_dict import VariogramBase, VariogramInitial, VariogramOptimize
 from .mesh import griddify_lag_distances
 
 # Set warnings filter

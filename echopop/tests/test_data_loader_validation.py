@@ -4,7 +4,7 @@ import pytest
 import yaml
 from pydantic import ValidationError
 
-from ..utils.validate import (
+from ..utils.validate_dict import (
     CONFIG_DATA_MODEL,
     CONFIG_INIT_MODEL,
     BiologicalFiles,
