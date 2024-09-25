@@ -32,6 +32,9 @@ def extract_errors(data, failed_coercion: pd.DataFrame, key="error"):
             # if "error" in data:
             #     errors.append(f"   -{data["error"].capitalize()}")
             else:
+                re.sub(r"[()]", "", data["error"])
+                re.sub(r"\(\)", "", data['error'])
+                ("(a)").replace(".*(.*).*", "")
                 errors.append(f"   -{data['error'].capitalize()}")
         else:
             for k, v in data.items():
@@ -119,20 +122,21 @@ class BaseDataFrame(DataFrameModel):
                             # ---- Adjust typing annotations
                             if test and test(df[col]):
                                 cls.__annotations__[col] = Series[typing]
+                                # break
+                            # ---- Coerce the datatypes
+                            try:
+                                df[col] = cls._DTYPE_COERCION.get(typing)(df[col])
                                 break
-                        # ---- Coerce the datatypes
-                        try:
-                            df[col] = cls._DTYPE_COERCION.get(typing)(df[col])
-                        except Exception as e:
-                            e.__traceback__ = None
-                            message = (
-                                f"{col.capitalize()} column must be a Series of '{str(dtype)}' "
-                                f"values. Series values could not be automatically coerced."
-                            )
-                            # errors_coerce.append(e)
-                            errors_coerce = pd.concat(
-                                [errors_coerce, pd.DataFrame(dict(Column=col, error=message))]
-                            )
+                            except Exception as e:
+                                e.__traceback__ = None
+                                message = (
+                                    f"{col.capitalize()} column must be a Series of '{str(dtype)}' "
+                                    f"values. Series values could not be automatically coerced."
+                                )
+                                # errors_coerce.append(e)
+                                errors_coerce = pd.concat(
+                                    [errors_coerce, pd.DataFrame(dict(Column=col, error=message))]
+                                )                            
                     # ---- If not a List from the metadata attribute
                     else:
                         try:
@@ -167,7 +171,7 @@ class BaseDataFrame(DataFrameModel):
             # ---- Format the error message
             message = f"The following DataFrame validation errors were flagged: \n" f"{errors_stk}"
             # ---- Raise Error
-            raise SchemaError(cls, df, message)
+            raise SchemaError(cls, df, message) from None
 
     @classmethod
     def validate_df(cls, df: pd.DataFrame) -> pd.DataFrame:
@@ -217,6 +221,9 @@ class BaseDataFrame(DataFrameModel):
         )
         # ---- If the indices are invalid, but can be dropped then drop them
         df.drop(invalid_lst, axis=0, inplace=True)
+        # ---- Reset index
+        if not df.empty:
+            df.reset_index(inplace=True)
 
         # Coercion check
         coercion_failures = cls.coercion_check(df, column_types)
@@ -269,9 +276,9 @@ class LengthBiodata(BaseDataFrame):
 
 
 class CatchBiodata(BaseDataFrame):
-    haul_num: Series = Field(ge=0.0, nullable=False, metadata=dict(types=[int, float]))
+    haul_num: Series = Field(nullable=False, metadata=dict(types=[int, float]))
     haul_weight: Series[float] = Field(ge=0.0, nullable=False)
-    species_id: Series = Field(ge=0.0, nullable=False, metadata=dict(types=[int, float, str]))
+    species_id: Series = Field(nullable=False, metadata=dict(types=[int, float, str]))
 
     @check(
         "haul_num",
@@ -346,7 +353,8 @@ class HaulTransect(BaseDataFrame):
 
 
 class KSStrata(BaseDataFrame):
-    fraction: Series[float] = Field(ge=0.0, le=1.0, nullable=False, regex=True)
+    fraction: Series[float] = Field(ge=0.0, le=1.0, nullable=False, regex=True,
+                                    alias=".*fraction.*")
     haul: Series = Field(nullable=False, regex=True, metadata=dict(types=[int, float]))
     stratum: Series = Field(nullable=False, regex=True, metadata=dict(types=[int, float, str]))
 
