@@ -1,16 +1,17 @@
-datetime
+# Data processing and wrangling stack
+lmfit
+numpy
+pandas
+scipy
+# Spatial data processing stack
+geopandas
+geopy
+shapely
+# Visualization stack
 ipympl
 ipywidgets
 jupyter_contrib_nbextensions
-# 9/27/23. See https://github.com/microsoft/azuredatastudio/issues/24436#issuecomment-1723328100
 traitlets
-geopandas
-geopy
-lmfit
-openpyxl>=3.1.3
-# 9/27/23: Pin to <2 to avoid new warning occurring in several cases
-pandas
-python-dateutil
-PyYAML
-scipy
-shapely
+# Validation stack
+pandera
+pydantic

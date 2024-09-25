@@ -7,8 +7,9 @@ from typing import List, Tuple, Union
 import numpy as np
 import pandas as pd
 
-from ..core import CONFIG_MAP, ECHOVIEW_EXPORT_MAP, REGION_EXPORT_MAP
+from ..core import ECHOVIEW_EXPORT_MAP, REGION_EXPORT_MAP
 from ..spatial.transect import export_transect_layers, export_transect_spacing
+from ..utils.validate_df import KSStrata
 from .operations import compile_patterns, extract_parts_and_labels, group_merge
 
 
@@ -345,11 +346,11 @@ def get_haul_transect_key(configuration_dict: dict, root_dir: str):
 
     # Get configuration map settings specific to the KS strata
     # ---- Dictionary to DataFrame
-    CONFIG_DF = pd.DataFrame(CONFIG_MAP)
+    # CONFIG_DF = pd.DataFrame(CONFIG_MAP)
     # ---- Find 'strata'
-    strata_config = CONFIG_DF.loc["strata"].dropna()
+    # strata_config = CONFIG_DF.loc["strata"].dropna()
     # ---- Get the first valid index
-    strata_reference = strata_config[strata_config.first_valid_index()]
+    # strata_reference = strata_config[strata_config.first_valid_index()]
 
     # Create filepath
     # ---- Create filepath
@@ -361,9 +362,10 @@ def get_haul_transect_key(configuration_dict: dict, root_dir: str):
     # Read in data
     haul_key = pd.read_excel(haul_key_path, sheet_name=sheet[0])
     # ---- Retain only the necessary columns
-    haul_key_filtered = haul_key.filter(strata_reference.keys())
+    # haul_key_filtered = haul_key.filter(strata_reference.keys())
     # ---- Assign datatypes
-    haul_key_filtered = haul_key_filtered.astype(strata_reference, errors="ignore")
+    # haul_key_filtered = haul_key_filtered.astype(strata_reference, errors="ignore")
+    haul_key_filtered = KSStrata.validate_df(haul_key)
 
     # Return output
     return haul_key_filtered
