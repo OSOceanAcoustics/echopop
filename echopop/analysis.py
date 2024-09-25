@@ -39,7 +39,7 @@ from .spatial.variogram import (
     optimize_variogram,
 )
 from .statistics import stratified_transect_statistic
-from .utils.validate import (
+from .utils.validate_dict import (
     KrigingAnalysis,
     KrigingParameters,
     MeshCrop,
@@ -92,9 +92,7 @@ def process_transect_data(
 
     # Calculate mean sigma_bs per individual haul, KS stratum, and INPFC stratum
     analysis_dict["acoustics"]["sigma_bs"].update(
-        aggregate_sigma_bs(
-            length_data, specimen_data, input_dict["spatial"], configuration_dict, settings_dict
-        )
+        aggregate_sigma_bs(length_data, specimen_data, configuration_dict, settings_dict)
     )
 
     # Fit length-weight regression required for biomass calculation
@@ -107,7 +105,7 @@ def process_transect_data(
     # Count the number of specimens across age and length bins
     analysis_dict["biology"]["distributions"].update(
         quantize_number_counts(
-            specimen_data, length_data, stratum=settings_dict["transect"]["stratum"]
+            specimen_data, length_data, settings_dict["transect"]["stratum_name"]
         )
     )
 
@@ -123,7 +121,14 @@ def process_transect_data(
     ]
     # ---- Quantize the weights
     analysis_dict["biology"]["distributions"].update(
-        {"weight": quantize_weights(specimen_data, length_data, length_weight_df)}
+        {
+            "weight": quantize_weights(
+                specimen_data,
+                length_data,
+                length_weight_df,
+                settings_dict["transect"]["stratum_name"],
+            )
+        }
     )
 
     # Calculate the average weights among male, female, and all fish across strata
@@ -140,11 +145,11 @@ def process_transect_data(
     analysis_dict["biology"]["proportions"].update(
         {
             "weight": weight_proportions(
-                specimen_data,
                 catch_data,
                 analysis_dict["biology"]["proportions"]["number"],
                 length_weight_df,
                 analysis_dict["biology"]["distributions"]["weight"],
+                settings_dict["transect"]["stratum_name"],
             )
         }
     )

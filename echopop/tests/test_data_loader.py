@@ -5,23 +5,27 @@ import numpy as np
 import pytest
 import yaml
 
-from echopop import Survey
-from echopop.core import LAYER_NAME_MAP
-from echopop.tests.conftest import assert_dictionary_structure_equal
-from echopop.utils.load import load_configuration
+from .. import Survey
+from ..core import LAYER_NAME_MAP
+from ..utils.load import load_configuration
+from .conftest import assert_dictionary_structure_equal
 
 
 def test_load_configuration(test_path, tmp_path):
-    init_params = yaml.safe_load(Path(test_path["CONFIG"] / "config_init.yml").read_text())
-    survey_params = yaml.safe_load(Path(test_path["CONFIG"] / "config_survey.yml").read_text())
+
+    # Read in the initialization and file configuration
+    # ---- Initialization
+    init_config = yaml.safe_load(Path(test_path["CONFIG"] / "config_init.yml").read_text())
+    # ---- Files
+    files_config = yaml.safe_load(Path(test_path["CONFIG"] / "config_survey.yml").read_text())
 
     # Swap out test data root path
-    survey_params["data_root_dir"] = str(test_path["INPUT"])
+    files_config["data_root_dir"] = str(test_path["INPUT"])
 
     # Write a new temp yaml file with correct data path
     temp_config_survey_path = tmp_path / "config_survey_local.yaml"
     with open(temp_config_survey_path, "w") as yf:
-        yaml.safe_dump(survey_params, yf)
+        yaml.safe_dump(files_config, yf)
 
     # Use class method
     config = load_configuration(
@@ -32,7 +36,7 @@ def test_load_configuration(test_path, tmp_path):
     # Check parsed values (to be completed!)
     assert (
         config["stratified_survey_mean_parameters"]["strata_transect_proportion"]
-        == init_params["stratified_survey_mean_parameters"]["strata_transect_proportion"]
+        == init_config["stratified_survey_mean_parameters"]["strata_transect_proportion"]
     )
 
 

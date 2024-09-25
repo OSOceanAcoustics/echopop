@@ -17,7 +17,12 @@ from ..spatial.variogram import (
     optimize_variogram,
     variogram,
 )
-from ..utils.validate import VariogramBase, VariogramEmpirical, VariogramInitial, VariogramOptimize
+from ..utils.validate_dict import (
+    VariogramBase,
+    VariogramEmpirical,
+    VariogramInitial,
+    VariogramOptimize,
+)
 
 ####################################################################################################
 # Variogram model dropdown widget map

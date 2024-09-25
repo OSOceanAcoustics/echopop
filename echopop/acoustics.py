@@ -50,14 +50,16 @@ def to_dB(linear_values: Union[np.ndarray, float]) -> np.ndarray:
     return 10 * np.log10(linear_values)
 
 
-def impute_missing_sigma_bs(strata_dict: dict, sigma_bs_stratum: pd.DataFrame) -> pd.DataFrame:
+def impute_missing_sigma_bs(
+    strata_options: np.ndarray, sigma_bs_stratum: pd.DataFrame
+) -> pd.DataFrame:
     """
     Imputes sigma_bs for strata without measurements or values
 
     Parameters
     ----------
-    strata_dict: dict
-        Dictionary containing the complete list of expected stratum values.
+    strata_options: np.ndarray
+        An array comprising the stratum numbers.
     sigma_bs_stratum: pd.DataFrame
         Dataframe containing the mean `sigma_bs` calculated for each stratum.
 
@@ -69,9 +71,6 @@ def impute_missing_sigma_bs(strata_dict: dict, sigma_bs_stratum: pd.DataFrame) -
 
     # Collect stratum column name
     stratum_col = [col for col in sigma_bs_stratum.columns if "stratum" in col.lower()][0]
-
-    # Collect all possible strata
-    strata_options = np.unique(strata_dict["strata_df"][stratum_col])
 
     # Collect present strata
     present_strata = np.unique(sigma_bs_stratum[stratum_col]).astype(int)
@@ -121,7 +120,6 @@ def impute_missing_sigma_bs(strata_dict: dict, sigma_bs_stratum: pd.DataFrame) -
 def aggregate_sigma_bs(
     length_data: pd.DataFrame,
     specimen_data: pd.DataFrame,
-    strata_dict: dict,
     configuration_dict: dict,
     settings_dict: dict,
 ) -> dict:
@@ -134,8 +132,6 @@ def aggregate_sigma_bs(
         Dataframe containing unaged length measurements.
     specimen_data: pd.DataFrame
         Dataframe containing aged length and weight measurements.
-    strata_dict: dict
-        Dictionary containing the complete list of expected stratum values.
     configuration_dict: dict
         Dictionary that contains all of the `Survey`-object configurations found within
         the `config` attribute.
@@ -225,7 +221,9 @@ def aggregate_sigma_bs(
     )
 
     # Impute sigma_bs values, if necessary, for missing strata
-    sigma_bs_stratum_updated = impute_missing_sigma_bs(strata_dict, sigma_bs_stratum)
+    sigma_bs_stratum_updated = impute_missing_sigma_bs(
+        settings_dict["transect"]["unique_strata"], sigma_bs_stratum
+    )
 
     # Calculate mean TS for all hauls, KS-strata, and INPFC strata
     # ---- By haul
@@ -276,6 +274,17 @@ def nasc_to_biomass(
     # Get group-specific columns
     age_group_cols = settings_dict["transect"]["age_group_columns"]
 
+    # Extract the correct strata dataframe
+    if settings_dict["transect"]["stratum"] == "inpfc":
+        # ---- Get the haul-to-transect key
+        haul_to_transect_key = input_dict["biology"]["haul_to_transect_df"].copy()
+        # ---- Remove NaN fractions
+        haul_to_transect_key.dropna(subset=["fraction_hake"], inplace=True)
+        # ---- Reduce the columns
+        strata_df = haul_to_transect_key.filter(["stratum_inpfc", "haul_num", "fraction_hake"])
+    else:
+        strata_df = input_dict["spatial"]["strata_df"]
+
     # Get group-specific column names and create conversion key
     name_conversion_key = {age_group_cols["haul_id"]: "haul_num", age_group_cols["nasc_id"]: "nasc"}
     # ---- Update if the stratum is not equal to INPFC
@@ -323,12 +332,14 @@ def nasc_to_biomass(
         )
 
     # Merge hake fraction data into `nasc_interval_df`
-    # ---- Initial merge
-    nasc_interval_df = nasc_interval_df.merge(
-        input_dict["spatial"]["strata_df"], on=[stratum_col, "haul_num"], how="left"
-    )
+    # ---- Index based on haul number
+    nasc_interval_df.set_index("haul_num", inplace=True)
+    # ---- Map the indexed 'fraction_hake' from `strata_df`
+    nasc_interval_df["fraction_hake"] = strata_df.set_index("haul_num")["fraction_hake"]
     # ---- Replace `fraction_hake` where NaN occurs
     nasc_interval_df["fraction_hake"] = nasc_interval_df["fraction_hake"].fillna(0.0)
+    # ---- Reset the index
+    nasc_interval_df.reset_index(inplace=True)
     # ---- Drop NaN
     nasc_interval_df.dropna(subset=["transect_num"], inplace=True)
 
