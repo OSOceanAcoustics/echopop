@@ -16,7 +16,7 @@ CAN_haul_offset: 200         # The value to be added to the Canadian's haul numb
 ##############################################################################
 # Directory path that contains all input data needed
 
-data_root_dir: ROOT_DIRECTORY_CONTAINING_DATA_SUBFOLDERS
+data_root_dir: C:/Users/Brandyn/Documents/GitHub/EchoPro_data/2019_consolidated_files
 
 ##############################################################################
 # Input data files
@@ -45,6 +45,7 @@ biological:
       sheetname: biodata_catch_CAN
   haul_to_transect:
     US:
+      # filename: Biological/US/haul_to_transect_mapping_2019_US.xlsx
       filename: Biological/US/haul_to_transect_mapping_2019.xlsx
       sheetname: Sheet1
     CAN:
@@ -58,17 +59,34 @@ stratification:
   geo_strata:
     # The two stratification types are found in two sheets: "stratification1" and "INPFC"
     filename: Stratification/Stratification_geographic_Lat_2019_final.xlsx
-    sheetname: [ INPFC , stratification1 ]
+    sheetname: [INPFC , stratification1]
 NASC:
   # NASC values
   no_age1:
     # file that excludes age1 values
+    # filename: Exports/US_CAN_detailsa_2019_table2y+_ALL_final - updated.xlsx
     filename: Exports/US_CAN_detailsa_2019_table2y+_ALL_final - updated.xlsx
     sheetname: Sheet1
   all_ages:
     # file that includes all ages
+    # filename: Exports/US_CAN_detailsa_2019_table1y+_ALL_final - updated.xlsx
     filename: Exports/US_CAN_detailsa_2019_table1y+_ALL_final - updated.xlsx
     sheetname: Sheet1
+export_regions:
+  all_ages:
+    # filename: Stratification/US_CAN_2019_transect_region_haul_age1+ auto_final.xlsx
+    filename: Stratification/CAN_US_2019_transect_region_haul_all_ages.xlsx
+    sheetname: Sheet1
+  no_age1:
+    filename: Stratification/CAN_US_2019_transect_region_haul_no_age1.xlsx
+    sheetname: Sheet1
+gear_data:
+  US:
+    filename: Biological/US/2019_biodata_gear.xlsx
+    sheetname: biodata_gear
+  CAN:
+    filename: Biological/CAN/2019_biodata_gear_CAN.xlsx
+    sheetname: biodata_gear_CAN
 kriging:
   mesh:
     filename: Kriging_files/Kriging_grid_files/krig_grid2_5nm_cut_centroids_2013.xlsx
