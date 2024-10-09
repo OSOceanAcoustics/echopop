@@ -32,9 +32,6 @@ def extract_errors(data, failed_coercion: pd.DataFrame, key="error"):
             # if "error" in data:
             #     errors.append(f"   -{data["error"].capitalize()}")
             else:
-                re.sub(r"[()]", "", data["error"])
-                re.sub(r"\(\)", "", data["error"])
-                ("(a)").replace(".*(.*).*", "")
                 errors.append(f"   -{data['error'].capitalize()}")
         else:
             for k, v in data.items():
