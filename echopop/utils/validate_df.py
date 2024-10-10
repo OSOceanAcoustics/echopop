@@ -445,7 +445,6 @@ class VarioKrigingPara(BaseDataFrame):
     corr: Series[float] = Field(ge=0.0, nullable=False, alias="vario.corr")
     hole: Series[float] = Field(ge=0.0, nullable=False, alias="vario.hole")
     lscl: Series[float] = Field(ge=0.0, nullable=False, alias="vario.lscl")
-    model: Series[int] = Field(nullable=False, alias="vario.model")
     nugt: Series[float] = Field(ge=0.0, nullable=False, alias="vario.nugt")
     powr: Series[float] = Field(ge=0.0, nullable=False, alias="vario.powr")
     range: Series[float] = Field(ge=0.0, nullable=False, alias="vario.range")
