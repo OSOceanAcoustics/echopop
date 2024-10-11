@@ -1,20 +1,15 @@
 import re
+from collections import OrderedDict
+from typing import Any, Dict, List, Literal, Optional, Union
 
 import numpy as np
 import pytest
-from pydantic import ValidationError, RootModel
-from collections import OrderedDict
-from typing import Any, Dict, List, Literal, Optional, Union
-from ..utils.validate import (
-    posfloat,
-    posint,
-    realcircle,
-    realposfloat,
-)
+from pydantic import RootModel, ValidationError
+
 from echopop.utils.validate_dict import (
     InitialValues,
-    KrigingAnalysis, 
-    KrigingParameterInputs, 
+    KrigingAnalysis,
+    KrigingParameterInputs,
     MeshCrop,
     VariogramBase,
     VariogramEmpirical,
@@ -22,6 +17,9 @@ from echopop.utils.validate_dict import (
     VariogramModel,
     VariogramOptimize,
 )
+
+from ..utils.validate import posfloat, posint, realcircle, realposfloat
+
 
 @pytest.fixture
 def InitialValues_fields() -> Dict[str, Any]:
@@ -40,11 +38,9 @@ def InitialValues_fields() -> Dict[str, Any]:
             "default": None,
             "annotation": Optional[posfloat],
         },
-        "vary": {
-            "default": False,
-            "annotation": bool
-        }
+        "vary": {"default": False, "annotation": bool},
     }
+
 
 @pytest.mark.parametrize(
     "description",
@@ -53,25 +49,27 @@ def InitialValues_fields() -> Dict[str, Any]:
 )
 def test_InitialValues_model_structure(description, InitialValues_fields):
 
-    #--------------------------
+    # --------------------------
     # ASSERT: field annotations
     # ---- Check existence
     assert set(InitialValues_fields).issubset(InitialValues.model_fields)
     # ---- Check typing, defaults, and other expected attributes
     assert all(
-        [InitialValues.model_fields[param]._attributes_set 
-         == InitialValues_fields[param] for param in InitialValues.model_fields]
-    )    
+        [
+            InitialValues.model_fields[param]._attributes_set == InitialValues_fields[param]
+            for param in InitialValues.model_fields
+        ]
+    )
 
-    #--------------------------
+    # --------------------------
     # ASSERT: '__base__' class inheritance
     assert InitialValues.__base__ == VariogramModel
 
-    #--------------------------
+    # --------------------------
     # ASSERT: 'model_config' parameterization
     # ---- Check existence
     assert "model_config" in dir(InitialValues)
-    # ---- Validate correct setting 
+    # ---- Validate correct setting
     assert InitialValues.model_config == dict(arbitrary_types_allowed=True)
 
     # -------------------------
@@ -84,19 +82,20 @@ def test_InitialValues_model_structure(description, InitialValues_fields):
     # -------------------------
     # ASSERT: private methods
     # ---- Internal class methods for filling default values
-    assert (
-        set(["_DEFAULT_STRUCTURE_EMPTY", "_DEFAULT_STRUCTURE_OPTIMIZE"])
-        .issubset(InitialValues.__dict__)
+    assert set(["_DEFAULT_STRUCTURE_EMPTY", "_DEFAULT_STRUCTURE_OPTIMIZE"]).issubset(
+        InitialValues.__dict__
     )
     # ---- Output for '._DEFAULT_STRUCTURE_EMPTY'
     assert InitialValues._DEFAULT_STRUCTURE_EMPTY() == {"vary": False}
     # ---- Output for '._DEFAULT_STRUCTURE_OPTIMIZE'
-    assert (
-        InitialValues._DEFAULT_STRUCTURE_OPTIMIZE() 
-        == {"min": 0.0, "value": 0.0, "max": np.inf, "vary": True}
-    )
+    assert InitialValues._DEFAULT_STRUCTURE_OPTIMIZE() == {
+        "min": 0.0,
+        "value": 0.0,
+        "max": np.inf,
+        "vary": True,
+    }
 
-    #--------------------------
+    # --------------------------
     # EXTRACT: field validator decorator arguments
     # ---- 'field_validators' 'Decorator' object
     field_decor = InitialValues.__pydantic_decorators__.field_validators
@@ -106,22 +105,17 @@ def test_InitialValues_model_structure(description, InitialValues_fields):
     # -------------------------
     # ASSERT: field validator decorators
     # ---- Check whether field decorators exist
-    assert (
-        set(["validate_realposfloat", "validate_posfloat"])
-        .issubset(InitialValues.__dict__)
-    )
+    assert set(["validate_realposfloat", "validate_posfloat"]).issubset(InitialValues.__dict__)
 
     # -------------------------
     # ASSERT: 'valid_realposfloat'
     # ---- Check output for 'validate_realposfloat' [VALID]
     assert InitialValues.validate_realposfloat(2) == 2.0
     # ---- Check output for 'validate_realposfloat' [INVALID: negative]
-    with pytest.raises(ValueError, 
-                       match=re.escape("Value must be a non-negative float.")):
+    with pytest.raises(ValueError, match=re.escape("Value must be a non-negative float.")):
         assert InitialValues.validate_realposfloat(-2.0)
     # ---- Check output for 'validate_realposfloat' [INVALID: NaN]
-    with pytest.raises(ValueError, 
-                       match=re.escape("Value must be a non-negative real number.")):
+    with pytest.raises(ValueError, match=re.escape("Value must be a non-negative real number.")):
         assert InitialValues.validate_realposfloat(np.inf)
     # ---- Check the applicable fields
     assert field_decor["validate_realposfloat"].info.fields == ("min", "value")
@@ -133,29 +127,29 @@ def test_InitialValues_model_structure(description, InitialValues_fields):
     # ---- Checkout output for 'validate_posfloat' [VALID]
     assert InitialValues.validate_posfloat(1) == 1.0
     # ---- Check output for 'validate_posfloat' [INVALID: negative]
-    with pytest.raises(ValueError, 
-                       match=re.escape("Value must be a non-negative float.")):
+    with pytest.raises(ValueError, match=re.escape("Value must be a non-negative float.")):
         assert InitialValues.validate_posfloat(-1.0)
     # ---- Check the applicable fields
-    assert field_decor["validate_posfloat"].info.fields == ("max", )
+    assert field_decor["validate_posfloat"].info.fields == ("max",)
     # ---- Check the applicable validation mode
     assert field_decor["validate_posfloat"].info.mode == "before"
 
     # -------------------------
     # ASSERT: model validator decorators
-    # ---- Check whether the field exsits
+    # ---- Check whether the field exists
     assert "validate_value_sort" in InitialValues.__dict__
     # MOCK: parameterized model
     MOCK_SELF = InitialValues(**{"max": 2.0, "min": 1.0, "value": 1.5, "vary": True})
     # ASSERT: mode validator correctly sorts the outputs
-    # ---- [NOTE]: This is not required as an 'OrderedDict' -- it is more for console-related messages/reports
+    # ---- [NOTE]: This is not required as an 'OrderedDict' -- it is more for console-related
+    # ---- messages/reports
     # ---- Check that key-value pairs are identical
-    assert (
-        OrderedDict(InitialValues.validate_value_sort(MOCK_SELF).model_dump()) 
-        == OrderedDict({"min": 1.0, "value": 1.5, "max": 2.0, "vary": True})
+    assert OrderedDict(InitialValues.validate_value_sort(MOCK_SELF).model_dump()) == OrderedDict(
+        {"min": 1.0, "value": 1.5, "max": 2.0, "vary": True}
     )
     # ---- Check the applicable validation mode
     assert model_decor["validate_value_sort"].info.mode == "after"
+
 
 @pytest.mark.parametrize(
     "input, expected, exception",
@@ -198,31 +192,36 @@ def test_InitialValues_model_structure(description, InitialValues_fields):
         (
             {"min": -1.0, "value": -2.0, "max": -3.0, "vary": "dummy"},
             None,
-            ["min\n  Value error, Value must be a non-negative float",
-             "value\n  Value error, Value must be a non-negative float.",
-             "max\n  Value error, Value must be a non-negative float.",
-             "vary\n  Input should be a valid boolean"],
+            [
+                "min\n  Value error, Value must be a non-negative float",
+                "value\n  Value error, Value must be a non-negative float.",
+                "max\n  Value error, Value must be a non-negative float.",
+                "vary\n  Input should be a valid boolean",
+            ],
         ),
         (
             {"min": 2.0, "value": 1.0, "max": 3.0, "vary": True},
             None,
-            "Value error, Optimization minimum, starting, and maximum values  must satisfy the logic:",
+            "Value error, Optimization minimum, starting, and maximum values  must satisfy the "
+            "logic:",
         ),
         (
             {"min": 1.0, "value": 2.0, "max": 1.0, "vary": True},
             None,
-            "Value error, Optimization minimum, starting, and maximum values  must satisfy the logic:",
+            "Value error, Optimization minimum, starting, and maximum values  must satisfy the "
+            "logic:",
         ),
         (
             {"min": 3.0, "max": 1.0, "vary": True},
             None,
-            "Value error, Optimization minimum, starting, and maximum values  must satisfy the logic:",
+            "Value error, Optimization minimum, starting, and maximum values  must satisfy the "
+            "logic:",
         ),
         (
             {"min": 3.0, "value": 4.0, "vary": True, "extra": True},
             {"min": 3.0, "value": 4.0, "max": np.inf, "vary": True},
             None,
-        )
+        ),
     ],
     ids=[
         "Empty dictionary [fill with default values]",
@@ -237,7 +236,7 @@ def test_InitialValues_model_structure(description, InitialValues_fields):
         "Value for 'value' exceeds 'max'",
         "Value for 'min' exceeds 'max'",
         "Automatic pruning of function arguments",
-    ]
+    ],
 )
 def test_InitialValues_model(input, expected, exception):
 
@@ -253,6 +252,7 @@ def test_InitialValues_model(input, expected, exception):
     else:
         result = InitialValues.create(**input)
         assert result == expected
+
 
 @pytest.fixture
 def VariogramBase_fields() -> Dict[str, Any]:
@@ -309,6 +309,7 @@ def VariogramBase_fields() -> Dict[str, Any]:
         },
     }
 
+
 @pytest.mark.parametrize(
     "description",
     ["Assess `VariogramBase` pydantic model structure"],
@@ -316,25 +317,27 @@ def VariogramBase_fields() -> Dict[str, Any]:
 )
 def test_VariogramBase_model_structure(description, VariogramBase_fields):
 
-    #--------------------------
+    # --------------------------
     # ASSERT: field annotations
     # ---- Check existence
     assert set(VariogramBase_fields).issubset(VariogramBase.model_fields)
     # ---- Check typing, defaults, and other expected attributes
     assert all(
-        [VariogramBase.model_fields[param]._attributes_set 
-         == VariogramBase_fields[param] for param in VariogramBase.model_fields]
-    )    
+        [
+            VariogramBase.model_fields[param]._attributes_set == VariogramBase_fields[param]
+            for param in VariogramBase.model_fields
+        ]
+    )
 
-    #--------------------------
+    # --------------------------
     # ASSERT: '__base__' class inheritance
     assert VariogramBase.__base__ == VariogramModel
 
-    #--------------------------
+    # --------------------------
     # ASSERT: 'model_config' parameterization
     # ---- Check existence
     assert "model_config" in dir(VariogramBase)
-    # ---- Validate correct setting 
+    # ---- Validate correct setting
     assert VariogramBase.model_config == dict(arbitrary_types_allowed=True)
 
     # -------------------------
@@ -342,11 +345,10 @@ def test_VariogramBase_model_structure(description, VariogramBase_fields):
     # ---- Check existence
     assert "create" in dir(VariogramBase)
     # ---- Check default output
-    with pytest.raises(ValidationError, 
-                       match=re.escape("2 validation errors for VariogramBase")):
+    with pytest.raises(ValidationError, match=re.escape("2 validation errors for VariogramBase")):
         assert VariogramBase.create()
 
-    #--------------------------
+    # --------------------------
     # EXTRACT: field validator decorator arguments
     # ---- 'field_validators' 'Decorator' object
     field_decor = VariogramBase.__pydantic_decorators__.field_validators
@@ -354,27 +356,27 @@ def test_VariogramBase_model_structure(description, VariogramBase_fields):
     # -------------------------
     # ASSERT: field validator decorators
     # ---- Check whether field decorators exist
-    assert (
-        set(["validate_posint", "validate_realposfloat"])
-        .issubset(VariogramBase.__dict__)
-    )
+    assert set(["validate_posint", "validate_realposfloat"]).issubset(VariogramBase.__dict__)
 
     # -------------------------
     # ASSERT: 'valid_realposfloat'
     # ---- Check output for 'validate_realposfloat' [VALID]
     assert VariogramBase.validate_realposfloat(2) == 2.0
     # ---- Check output for 'validate_realposfloat' [INVALID: negative]
-    with pytest.raises(ValueError, 
-                       match=re.escape("Value must be a non-negative float.")):
+    with pytest.raises(ValueError, match=re.escape("Value must be a non-negative float.")):
         assert VariogramBase.validate_realposfloat(-2.0)
     # ---- Check output for 'validate_realposfloat' [INVALID: NaN]
-    with pytest.raises(ValueError, 
-                       match=re.escape("Value must be a non-negative real number.")):
+    with pytest.raises(ValueError, match=re.escape("Value must be a non-negative real number.")):
         assert VariogramBase.validate_realposfloat(np.inf)
     # ---- Check the applicable fields
-    assert field_decor["validate_realposfloat"].info.fields == ("lag_resolution", "sill", 
-                                                                "nugget", "hole_effect_range", 
-                                                                "correlation_range", "decay_power")
+    assert field_decor["validate_realposfloat"].info.fields == (
+        "lag_resolution",
+        "sill",
+        "nugget",
+        "hole_effect_range",
+        "correlation_range",
+        "decay_power",
+    )
     # ---- Check the applicable validation mode
     assert field_decor["validate_realposfloat"].info.mode == "before"
 
@@ -383,98 +385,19 @@ def test_VariogramBase_model_structure(description, VariogramBase_fields):
     # ---- Checkout output for 'validate_posfloat' [VALID]
     assert VariogramBase.validate_posint(1) == 1
     # ---- Checkout output for 'validate_posfloat' [INVALID: float]
-    with pytest.raises(ValueError, 
-                       match=re.escape("Value must be a non-negative integer.")):
+    with pytest.raises(ValueError, match=re.escape("Value must be a non-negative integer.")):
         assert VariogramBase.validate_posint(1.0)
     # ---- Check output for 'validate_posint' [INVALID: negative]
-    with pytest.raises(ValueError, 
-                       match=re.escape("Value must be a non-negative integer.")):
+    with pytest.raises(ValueError, match=re.escape("Value must be a non-negative integer.")):
         assert VariogramBase.validate_posint(-1)
     # ---- Check output for 'validate_posint' [INVALID: NaN]
-    with pytest.raises(ValueError, 
-                       match=re.escape("Value must be a non-negative integer.")):
+    with pytest.raises(ValueError, match=re.escape("Value must be a non-negative integer.")):
         assert VariogramBase.validate_posint(np.nan)
     # ---- Check the applicable fields
-    assert field_decor["validate_posint"].info.fields == ("n_lags", )
+    assert field_decor["validate_posint"].info.fields == ("n_lags",)
     # ---- Check the applicable validation mode
     assert field_decor["validate_posint"].info.mode == "before"
 
-
-    # -------------------------
-    # ASSERT: private methods
-    # ---- Internal class methods for filling default values
-    assert (
-        set(["_DEFAULT_STRUCTURE_EMPTY", "_DEFAULT_STRUCTURE_OPTIMIZE"])
-        .issubset(InitialValues.__dict__)
-    )
-    # ---- Output for '._DEFAULT_STRUCTURE_EMPTY'
-    assert InitialValues._DEFAULT_STRUCTURE_EMPTY() == {"vary": False}
-    # ---- Output for '._DEFAULT_STRUCTURE_OPTIMIZE'
-    assert (
-        InitialValues._DEFAULT_STRUCTURE_OPTIMIZE() 
-        == {"min": 0.0, "value": 0.0, "max": np.inf, "vary": True}
-    )
-
-    #--------------------------
-    # EXTRACT: field validator decorator arguments
-    # ---- 'field_validators' 'Decorator' object
-    field_decor = InitialValues.__pydantic_decorators__.field_validators
-    # ---- 'model_validators' 'Decorator' object
-    model_decor = InitialValues.__pydantic_decorators__.model_validators
-
-    # -------------------------
-    # ASSERT: field validator decorators
-    # ---- Check whether field decorators exist
-    assert (
-        set(["validate_realposfloat", "validate_posfloat"])
-        .issubset(InitialValues.__dict__)
-    )
-
-    # -------------------------
-    # ASSERT: 'valid_realposfloat'
-    # ---- Check output for 'validate_realposfloat' [VALID]
-    assert InitialValues.validate_realposfloat(2) == 2.0
-    # ---- Check output for 'validate_realposfloat' [INVALID: negative]
-    with pytest.raises(ValueError, 
-                       match=re.escape("Value must be a non-negative float.")):
-        assert InitialValues.validate_realposfloat(-2.0)
-    # ---- Check output for 'validate_realposfloat' [INVALID: NaN]
-    with pytest.raises(ValueError, 
-                       match=re.escape("Value must be a non-negative real number.")):
-        assert InitialValues.validate_realposfloat(np.inf)
-    # ---- Check the applicable fields
-    assert field_decor["validate_realposfloat"].info.fields == ("min", "value")
-    # ---- Check the applicable validation mode
-    assert field_decor["validate_realposfloat"].info.mode == "before"
-
-    # -------------------------
-    # ASSERT: 'valid_posfloat'
-    # ---- Checkout output for 'validate_posfloat' [VALID]
-    assert InitialValues.validate_posfloat(1) == 1.0
-    # ---- Check output for 'validate_posfloat' [INVALID: negative]
-    with pytest.raises(ValueError, 
-                       match=re.escape("Value must be a non-negative float.")):
-        assert InitialValues.validate_posfloat(-1.0)
-    # ---- Check the applicable fields
-    assert field_decor["validate_posfloat"].info.fields == ("max", )
-    # ---- Check the applicable validation mode
-    assert field_decor["validate_posfloat"].info.mode == "before"
-
-    # -------------------------
-    # ASSERT: model validator decorators
-    # ---- Check whether the field exsits
-    assert "validate_value_sort" in InitialValues.__dict__
-    # MOCK: parameterized model
-    MOCK_SELF = InitialValues(**{"max": 2.0, "min": 1.0, "value": 1.5, "vary": True})
-    # ASSERT: mode validator correctly sorts the outputs
-    # ---- [NOTE]: This is not required as an 'OrderedDict' -- it is more for console-related messages/reports
-    # ---- Check that key-value pairs are identical
-    assert (
-        OrderedDict(InitialValues.validate_value_sort(MOCK_SELF).model_dump()) 
-        == OrderedDict({"min": 1.0, "value": 1.5, "max": 2.0, "vary": True})
-    )
-    # ---- Check the applicable validation mode
-    assert model_decor["validate_value_sort"].info.mode == "after"
 
 @pytest.fixture
 def VariogramEmpirical_fields() -> Dict[str, Any]:
@@ -486,7 +409,6 @@ def VariogramEmpirical_fields() -> Dict[str, Any]:
             "ge": 0.0,
             "le": 360.0,
             "allow_inf_nan": False,
-
         },
         "force_lag_zero": {
             "default": True,
@@ -498,6 +420,7 @@ def VariogramEmpirical_fields() -> Dict[str, Any]:
         },
     }
 
+
 @pytest.mark.parametrize(
     "description",
     ["Assess `VariogramEmpirical` pydantic model structure"],
@@ -505,25 +428,28 @@ def VariogramEmpirical_fields() -> Dict[str, Any]:
 )
 def test_VariogramEmpirical_model_structure(description, VariogramEmpirical_fields):
 
-    #--------------------------
+    # --------------------------
     # ASSERT: field annotations
     # ---- Check existence
     assert set(VariogramEmpirical_fields).issubset(VariogramEmpirical.model_fields)
     # ---- Check typing, defaults, and other expected attributes
     assert all(
-        [VariogramEmpirical.model_fields[param]._attributes_set 
-         == VariogramEmpirical_fields[param] for param in VariogramEmpirical.model_fields]
-    )    
+        [
+            VariogramEmpirical.model_fields[param]._attributes_set
+            == VariogramEmpirical_fields[param]
+            for param in VariogramEmpirical.model_fields
+        ]
+    )
 
-    #--------------------------
+    # --------------------------
     # ASSERT: '__base__' class inheritance
     assert VariogramEmpirical.__base__ == VariogramModel
 
-    #--------------------------
+    # --------------------------
     # ASSERT: 'model_config' parameterization
     # ---- Check existence
     assert "model_config" in dir(VariogramEmpirical)
-    # ---- Validate correct setting 
+    # ---- Validate correct setting
     assert VariogramEmpirical.model_config == dict(arbitrary_types_allowed=True)
 
     # -------------------------
@@ -531,11 +457,13 @@ def test_VariogramEmpirical_model_structure(description, VariogramEmpirical_fiel
     # ---- Check existence
     assert "create" in dir(VariogramEmpirical)
     # ---- Check default output
-    assert VariogramEmpirical.create() == {"azimuth_range": 360.0, 
-                                           "force_lag_zero": True, 
-                                           "standardize_coordinates": True}
+    assert VariogramEmpirical.create() == {
+        "azimuth_range": 360.0,
+        "force_lag_zero": True,
+        "standardize_coordinates": True,
+    }
 
-    #--------------------------
+    # --------------------------
     # EXTRACT: field validator decorator arguments
     # ---- 'field_validators' 'Decorator' object
     field_decor = VariogramEmpirical.__pydantic_decorators__.field_validators
@@ -549,21 +477,19 @@ def test_VariogramEmpirical_model_structure(description, VariogramEmpirical_fiel
     # ---- Check output for 'validate_realcircle' [VALID]
     assert VariogramEmpirical.validate_realcircle(2) == 2.0
     # ---- Check output for 'validate_realcircle' [INVALID: < 0.0]
-    with pytest.raises(ValueError, 
-                       match=re.escape("Value must be a non-negative real angle")):
+    with pytest.raises(ValueError, match=re.escape("Value must be a non-negative real angle")):
         assert VariogramEmpirical.validate_realcircle(-2.0)
     # ---- Check output for 'validate_realcircle' [INVALID: > 360.0]
-    with pytest.raises(ValueError, 
-                       match=re.escape("Value must be a non-negative real angle")):
+    with pytest.raises(ValueError, match=re.escape("Value must be a non-negative real angle")):
         assert VariogramEmpirical.validate_realcircle(361.0)
     # ---- Check output for 'validate_realposfloat' [INVALID: NaN]
-    with pytest.raises(ValueError, 
-                       match=re.escape("Value must be a non-negative real angle")):
+    with pytest.raises(ValueError, match=re.escape("Value must be a non-negative real angle")):
         assert VariogramEmpirical.validate_realcircle(np.inf)
     # ---- Check the applicable fields
-    assert field_decor["validate_realcircle"].info.fields == ("azimuth_range", )
+    assert field_decor["validate_realcircle"].info.fields == ("azimuth_range",)
     # ---- Check the applicable validation mode
     assert field_decor["validate_realcircle"].info.mode == "before"
+
 
 @pytest.mark.parametrize(
     "input, expected, exception",
@@ -604,14 +530,17 @@ def test_VariogramEmpirical_model_structure(description, VariogramEmpirical_fiel
             None,
         ),
         (
-            {"azimuth_range": 361.0, "force_lag_zero": "Invalid", 
-             "standardize_coordinates": "Invalid"},
-             None,
-             [
+            {
+                "azimuth_range": 361.0,
+                "force_lag_zero": "Invalid",
+                "standardize_coordinates": "Invalid",
+            },
+            None,
+            [
                 "Value must be a non-negative real angle",
                 "Input should be a valid boolean",
                 "Input should be a valid boolean",
-             ],
+            ],
         ),
         (
             {"extra": True},
@@ -629,7 +558,7 @@ def test_VariogramEmpirical_model_structure(description, VariogramEmpirical_fiel
         "Acceptable coercion of 'azimuth_range' ['int' to 'float']",
         "Error handling when input datatypes are all incorrect",
         "Automatic pruning of erroneous arguments",
-    ]
+    ],
 )
 def test_VariogramEmpirical_model(input, expected, exception):
 
@@ -646,6 +575,7 @@ def test_VariogramEmpirical_model(input, expected, exception):
         result = VariogramEmpirical.create(**input)
         assert result == expected
 
+
 @pytest.fixture
 def VariogramInitial_fields() -> Dict[str, Any]:
 
@@ -656,6 +586,7 @@ def VariogramInitial_fields() -> Dict[str, Any]:
         },
     }
 
+
 @pytest.mark.parametrize(
     "description",
     ["Assess `VariogramInitial` pydantic model structure"],
@@ -663,25 +594,27 @@ def VariogramInitial_fields() -> Dict[str, Any]:
 )
 def test_VariogramInitial_model_structure(description, VariogramInitial_fields):
 
-    #--------------------------
+    # --------------------------
     # ASSERT: field annotations
     # ---- Check existence
     assert set(VariogramInitial_fields).issubset(VariogramInitial.model_fields)
     # ---- Check typing, defaults, and other expected attributes
     assert all(
-        [VariogramInitial.model_fields[param]._attributes_set 
-         == VariogramInitial_fields[param] for param in VariogramInitial.model_fields]
-    )    
+        [
+            VariogramInitial.model_fields[param]._attributes_set == VariogramInitial_fields[param]
+            for param in VariogramInitial.model_fields
+        ]
+    )
 
-    #--------------------------
+    # --------------------------
     # ASSERT: '__base__' class inheritance
     assert VariogramInitial.__base__ == RootModel[InitialValues]
 
-    #--------------------------
+    # --------------------------
     # ASSERT: 'model_config' parameterization
     # ---- Check existence
     assert "model_config" in dir(VariogramInitial)
-    # ---- Validate correct setting 
+    # ---- Validate correct setting
     assert VariogramInitial.model_config == {}
 
     # -------------------------
@@ -689,15 +622,17 @@ def test_VariogramInitial_model_structure(description, VariogramInitial_fields):
     # ---- Internal class methods for filling default values
     assert "_VALID_PARAMETERS" in VariogramInitial.__dict__
     # ---- Output for '._VALID_PARAMETERS'
-    assert (
-        VariogramInitial._VALID_PARAMETERS() 
-        == ["correlation_range", "decay_power", 
-            "hole_effect_range", "nugget", "sill"]
-    )
+    assert VariogramInitial._VALID_PARAMETERS() == [
+        "correlation_range",
+        "decay_power",
+        "hole_effect_range",
+        "nugget",
+        "sill",
+    ]
     # ---- Check existence for 'create'
     assert "create" in dir(VariogramInitial)
 
-    #--------------------------
+    # --------------------------
     # EXTRACT: field validator decorator arguments
     # ---- 'model_validators' 'Decorator' object
     model_decor = VariogramInitial.__pydantic_decorators__.model_validators
@@ -707,14 +642,24 @@ def test_VariogramInitial_model_structure(description, VariogramInitial_fields):
     # ---- Check whether field decorators exist
     assert "validate_model_params" in VariogramInitial.__dict__
     # MOCK: parameterized values input from the pydantic model
-    MOCK_V = {"correlation_range": {}, "decay_power": {},
-              "hole_effect_range": {}, "nugget": {}, "sill": {}}
+    MOCK_V = {
+        "correlation_range": {},
+        "decay_power": {},
+        "hole_effect_range": {},
+        "nugget": {},
+        "sill": {},
+    }
     # ASSERT: mode validator correctly sorts the outputs
-    assert (
-        VariogramInitial.validate_model_params(MOCK_V) == MOCK_V
-    )
+    assert VariogramInitial.validate_model_params(MOCK_V) == MOCK_V
     # ---- Check the applicable validation mode
     assert model_decor["validate_model_params"].info.mode == "before"
+
+
+# input = {"dummy1": {}, "dummy2": {}}
+# exception = "Unexpected optimization parameters: ['dummy1', 'dummy2']."
+# from echopop.utils.validate_dict import VariogramInitial
+# VariogramInitial.create(**input)
+
 
 @pytest.mark.parametrize(
     "input, expected, exception",
@@ -731,40 +676,45 @@ def test_VariogramInitial_model_structure(description, VariogramInitial_fields):
         ),
         (
             {"correlation_range": {"vary": True}},
-            {"correlation_range": {"min": 0.0, "value": 0.0, "max": np.inf, 
-                                   "vary": True}},
+            {"correlation_range": {"min": 0.0, "value": 0.0, "max": np.inf, "vary": True}},
             None,
         ),
         (
             {"nugget": {"vary": False}, "sill": {"vary": False}},
-            {"nugget": {"value": 0.0, "vary": False}, 
-             "sill": {"value": 0.0, "vary": False}},
+            {"nugget": {"value": 0.0, "vary": False}, "sill": {"value": 0.0, "vary": False}},
             None,
         ),
         (
             {"nugget": {"vary": True}, "sill": {"vary": True}},
-            {"nugget": {"min": 0.0, "value": 0.0, "max": np.inf, 
-                        "vary": True}, 
-             "sill": {"min": 0.0, "value": 0.0, "max": np.inf, 
-                      "vary": True}},
+            {
+                "nugget": {"min": 0.0, "value": 0.0, "max": np.inf, "vary": True},
+                "sill": {"min": 0.0, "value": 0.0, "max": np.inf, "vary": True},
+            },
             None,
         ),
         (
             {"nugget": {"vary": False}, "sill": {"vary": True}},
-            {"nugget": {"value": 0.0, "vary": False}, 
-             "sill": {"min": 0.0, "value": 0.0, "max": np.inf, 
-                      "vary": True}},
+            {
+                "nugget": {"value": 0.0, "vary": False},
+                "sill": {"min": 0.0, "value": 0.0, "max": np.inf, "vary": True},
+            },
             None,
         ),
         (
-            {"correlation_range": {}, "decay_power": {}, 
-             "hole_effect_range": {}, "nugget": {}, 
-             "sill": {}},
-            {"correlation_range": {"value": 0.0, "vary": False}, 
-             "decay_power": {"value": 0.0, "vary": False}, 
-             "hole_effect_range": {"value": 0.0, "vary": False}, 
-             "nugget": {"value": 0.0, "vary": False}, 
-             "sill": {"value": 0.0, "vary": False}},
+            {
+                "correlation_range": {},
+                "decay_power": {},
+                "hole_effect_range": {},
+                "nugget": {},
+                "sill": {},
+            },
+            {
+                "correlation_range": {"value": 0.0, "vary": False},
+                "decay_power": {"value": 0.0, "vary": False},
+                "hole_effect_range": {"value": 0.0, "vary": False},
+                "nugget": {"value": 0.0, "vary": False},
+                "sill": {"value": 0.0, "vary": False},
+            },
             None,
         ),
         (
@@ -775,12 +725,12 @@ def test_VariogramInitial_model_structure(description, VariogramInitial_fields):
         (
             {"dummy1": {}, "dummy2": {}},
             None,
-            "Unexpected optimization parameters: ['dummy1', 'dummy2']."
+            "Unexpected optimization parameters",
         ),
         (
             {"dummy1": {}, "dummy2": {}, "nugget": {}},
             None,
-            "Unexpected optimization parameters: ['dummy1', 'dummy2']."
+            "Unexpected optimization parameters",
         ),
     ],
     ids=[
@@ -794,7 +744,7 @@ def test_VariogramInitial_model_structure(description, VariogramInitial_fields):
         "Single invalid input",
         "Multiple invalid inputs",
         "Multiple invalid inputs with valid parameters",
-    ]
+    ],
 )
 def test_VariogramInitial_model(input, expected, exception):
 
@@ -819,11 +769,11 @@ def test_VariogramInitial_model(input, expected, exception):
 )
 def test_VariogramModel_model_structure(description):
 
-    #--------------------------
+    # --------------------------
     # ASSERT: 'model_config' parameterization
     # ---- Check existence
     assert "model_config" in dir(VariogramModel)
-    # ---- Validate correct setting 
+    # ---- Validate correct setting
     assert VariogramModel.model_config == dict(arbitrary_types_allowed=True)
 
     # -------------------------
@@ -834,6 +784,7 @@ def test_VariogramModel_model_structure(description):
     assert VariogramModel.create(**dict()) == {}
     # ---- Validate that any arbitrary output yields an empty DataFrame
     assert VariogramModel.create(**dict(dum1="dum2")) == {}
+
 
 @pytest.fixture
 def VariogramOptimize_fields() -> Dict[str, Any]:
@@ -852,13 +803,13 @@ def VariogramOptimize_fields() -> Dict[str, Any]:
             "allow_inf_nan": False,
         },
         "gradient_tolerance": {
-            "default": 1e-6,
+            "default": 1e-4,
             "annotation": realposfloat,
             "gt": 0.0,
             "allow_inf_nan": False,
         },
         "solution_tolerance": {
-            "default": 1e-8,
+            "default": 1e-6,
             "annotation": realposfloat,
             "gt": 0.0,
             "allow_inf_nan": False,
@@ -875,8 +826,7 @@ def VariogramOptimize_fields() -> Dict[str, Any]:
         },
         "x_scale": {
             "default": "jacobian",
-            "annotation": Union[Literal["jacobian"],
-                                np.ndarray[realposfloat]],
+            "annotation": Union[Literal["jacobian"], np.ndarray[realposfloat]],
         },
         "jacobian_approx": {
             "default": "central",
@@ -884,34 +834,35 @@ def VariogramOptimize_fields() -> Dict[str, Any]:
         },
     }
 
+
 @pytest.mark.parametrize(
     "description",
     ["Assess `VariogramOptimize` pydantic model structure"],
     ids=["Assess `VariogramOptimize` pydantic model structure"],
 )
-def test_VariogramOptimize_model_structure(description, 
-                                           VariogramOptimize_fields):
+def test_VariogramOptimize_model_structure(description, VariogramOptimize_fields):
 
-    #--------------------------
+    # --------------------------
     # ASSERT: field annotations
     # ---- Check existence
     assert set(VariogramOptimize_fields).issubset(VariogramOptimize.model_fields)
     # ---- Check typing, defaults, and other expected attributes
     assert all(
-        [VariogramOptimize.model_fields[param]._attributes_set 
-         == VariogramOptimize_fields[param] 
-         for param in VariogramOptimize.model_fields]
-    )    
+        [
+            VariogramOptimize.model_fields[param]._attributes_set == VariogramOptimize_fields[param]
+            for param in VariogramOptimize.model_fields
+        ]
+    )
 
-    #--------------------------
+    # --------------------------
     # ASSERT: '__base__' class inheritance
     assert VariogramOptimize.__base__ == VariogramModel
 
-    #--------------------------
+    # --------------------------
     # ASSERT: 'model_config' parameterization
     # ---- Check existence
     assert "model_config" in dir(VariogramOptimize)
-    # ---- Validate correct setting 
+    # ---- Validate correct setting
     assert VariogramOptimize.model_config == dict(arbitrary_types_allowed=True)
 
     # -------------------------
@@ -919,19 +870,18 @@ def test_VariogramOptimize_model_structure(description,
     # ---- Check existence
     assert "create" in dir(VariogramOptimize)
     # ---- Check default output
-    assert (
-        VariogramOptimize.create()
-        == {"max_fun_evaluations": 500, 
-            "cost_fun_tolerance": 1e-06, 
-            "gradient_tolerance": 1e-06,
-            "solution_tolerance": 1e-08, 
-            "finite_step_size": 1e-08, 
-            "trust_region_solver": "exact", 
-            "x_scale": "jacobian", 
-            "jacobian_approx": "central"}
-    )
+    assert VariogramOptimize.create() == {
+        "max_fun_evaluations": 500,
+        "cost_fun_tolerance": 1e-06,
+        "gradient_tolerance": 1e-04,
+        "solution_tolerance": 1e-06,
+        "finite_step_size": 1e-08,
+        "trust_region_solver": "exact",
+        "x_scale": "jacobian",
+        "jacobian_approx": "central",
+    }
 
-    #--------------------------
+    # --------------------------
     # EXTRACT: field validator decorator arguments
     # ---- 'field_validators' 'Decorator' object
     field_decor = VariogramOptimize.__pydantic_decorators__.field_validators
@@ -939,9 +889,8 @@ def test_VariogramOptimize_model_structure(description,
     # -------------------------
     # ASSERT: field validator decorators
     # ---- Check whether field decorators exist
-    assert (
-        set(["validate_posint", "validate_realposfloat", "validate_xscale"])
-        .issubset(VariogramOptimize.__dict__)
+    assert set(["validate_posint", "validate_realposfloat", "validate_xscale"]).issubset(
+        VariogramOptimize.__dict__
     )
 
     # -------------------------
@@ -949,18 +898,18 @@ def test_VariogramOptimize_model_structure(description,
     # ---- Check output for 'validate_realposfloat' [VALID]
     assert VariogramOptimize.validate_realposfloat(2) == 2.0
     # ---- Check output for 'validate_realposfloat' [INVALID: negative]
-    with pytest.raises(ValueError, 
-                       match=re.escape("Value must be a non-negative float.")):
+    with pytest.raises(ValueError, match=re.escape("Value must be a non-negative float.")):
         assert VariogramOptimize.validate_realposfloat(-2.0)
     # ---- Check output for 'validate_realposfloat' [INVALID: NaN]
-    with pytest.raises(ValueError, 
-                       match=re.escape("Value must be a non-negative real number.")):
+    with pytest.raises(ValueError, match=re.escape("Value must be a non-negative real number.")):
         assert VariogramOptimize.validate_realposfloat(np.inf)
     # ---- Check the applicable fields
-    assert field_decor["validate_realposfloat"].info.fields == ("cost_fun_tolerance", 
-                                                                "gradient_tolerance", 
-                                                                "finite_step_size",
-                                                                "solution_tolerance")
+    assert field_decor["validate_realposfloat"].info.fields == (
+        "cost_fun_tolerance",
+        "gradient_tolerance",
+        "finite_step_size",
+        "solution_tolerance",
+    )
     # ---- Check the applicable validation mode
     assert field_decor["validate_realposfloat"].info.mode == "before"
 
@@ -969,19 +918,16 @@ def test_VariogramOptimize_model_structure(description,
     # ---- Checkout output for 'validate_posfloat' [VALID]
     assert VariogramOptimize.validate_posint(1) == 1
     # ---- Checkout output for 'validate_posfloat' [INVALID: float]
-    with pytest.raises(ValueError, 
-                       match=re.escape("Value must be a non-negative integer.")):
+    with pytest.raises(ValueError, match=re.escape("Value must be a non-negative integer.")):
         assert VariogramOptimize.validate_posint(1.0)
     # ---- Check output for 'validate_posint' [INVALID: negative]
-    with pytest.raises(ValueError, 
-                       match=re.escape("Value must be a non-negative integer.")):
+    with pytest.raises(ValueError, match=re.escape("Value must be a non-negative integer.")):
         assert VariogramOptimize.validate_posint(-1)
     # ---- Check output for 'validate_posint' [INVALID: NaN]
-    with pytest.raises(ValueError, 
-                       match=re.escape("Value must be a non-negative integer.")):
+    with pytest.raises(ValueError, match=re.escape("Value must be a non-negative integer.")):
         assert VariogramOptimize.validate_posint(np.nan)
     # ---- Check the applicable fields
-    assert field_decor["validate_posint"].info.fields == ("max_fun_evaluations", )
+    assert field_decor["validate_posint"].info.fields == ("max_fun_evaluations",)
     # ---- Check the applicable validation mode
     assert field_decor["validate_posint"].info.mode == "before"
 
@@ -990,48 +936,40 @@ def test_VariogramOptimize_model_structure(description,
     # ---- Checkout output for 'validate_xscale' [VALID: Literal['jacobian']]
     assert VariogramOptimize.validate_xscale("jacobian")
     # ---- Checkout output for 'validate_xscale' [INVALID: Literal['other']]
-    with pytest.raises(ValueError, 
-                       match=re.escape(
-                           "Input should be either the Literal "
-                           "'jacobian' or a NumPy array"
-                           )):
+    with pytest.raises(
+        ValueError,
+        match=re.escape("Input should be either the Literal " "'jacobian' or a NumPy array"),
+    ):
         assert VariogramOptimize.validate_xscale("other")
     # ---- Checkout output for 'validate_xscale' [VALID: np.ndarray[1.0]]
     assert VariogramOptimize.validate_xscale(np.array([1.0])) == np.array([1.0])
     # ---- Checkout output for 'validate_xscale' [VALID: np.ndarray[1]]
     assert VariogramOptimize.validate_xscale(np.array([1])) == np.array([1.0])
     # ---- Checkout output for 'validate_xscale' [VALID: np.ndarray[1.0, 2.0]]
-    assert all(
-        VariogramOptimize.validate_xscale(np.array([1.0, 2.0])) 
-        == np.array([1.0, 2.0])
-    )
+    assert all(VariogramOptimize.validate_xscale(np.array([1.0, 2.0])) == np.array([1.0, 2.0]))
     # ---- Checkout output for 'validate_xscale' [VALID: np.ndarray[1, 2]]
-    assert all(
-        VariogramOptimize.validate_xscale(np.array([1, 2])) 
-        == np.array([1.0, 2.0])
-    )
+    assert all(VariogramOptimize.validate_xscale(np.array([1, 2])) == np.array([1.0, 2.0]))
     # ---- Checkout output for 'validate_xscale' [INVALID: np.ndarray[-1.0]]
-    with pytest.raises(ValueError, 
-                       match=re.escape("Value must be a non-negative float.")):
+    with pytest.raises(ValueError, match=re.escape("Value must be a non-negative float.")):
         assert VariogramOptimize.validate_xscale(np.array([-1.0]))
     # ---- Checkout output for 'validate_xscale' [INVALID: 1.0]
-    with pytest.raises(ValueError, 
-                       match=re.escape(
-                           "Input should be either the Literal "
-                           "'jacobian' or a NumPy array"
-                           )):
+    with pytest.raises(
+        ValueError,
+        match=re.escape("Input should be either the Literal " "'jacobian' or a NumPy array"),
+    ):
         assert VariogramOptimize.validate_xscale(1.0)
     # ---- Check output for 'validate_posint' [INVALID: NaN]
-    with pytest.raises(ValueError, 
-                       match=re.escape("Value must be a non-negative real number.")):
+    with pytest.raises(ValueError, match=re.escape("Value must be a non-negative real number.")):
         assert VariogramOptimize.validate_xscale(np.array([np.inf]))
     # ---- Check the applicable fields
-    assert field_decor["validate_xscale"].info.fields == ("x_scale", )
+    assert field_decor["validate_xscale"].info.fields == ("x_scale",)
     # ---- Check the applicable validation mode
     assert field_decor["validate_xscale"].info.mode == "before"
 
+
 def VariogramOptimize_DEFAULT():
     return VariogramOptimize.create(**{})
+
 
 @pytest.mark.parametrize(
     "input, expected, exception",
@@ -1048,46 +986,51 @@ def VariogramOptimize_DEFAULT():
         ),
         (
             {"max_fun_evaluations": 100},
-            {**VariogramOptimize_DEFAULT(),
-             **{"max_fun_evaluations": 100}},
+            {**VariogramOptimize_DEFAULT(), **{"max_fun_evaluations": 100}},
             None,
         ),
         (
-            {"max_fun_evaluations": 100, 
-             "solution_tolerance": 1e-1},
-            {**VariogramOptimize_DEFAULT(),
-             **{"max_fun_evaluations": 100,
-                "solution_tolerance": 1e-1}},
+            {"max_fun_evaluations": 100, "solution_tolerance": 1e-1},
+            {
+                **VariogramOptimize_DEFAULT(),
+                **{"max_fun_evaluations": 100, "solution_tolerance": 1e-1},
+            },
             None,
         ),
         (
-            {"max_fun_evaluations": 100, 
-             "cost_fun_tolerance": 1e-1,
-             "solution_tolerance": 1e-1,
-             "gradient_tolerance": 1e-1, 
-             "finite_step_size": 1e-1, 
-             "trust_region_solver": "base",
-             "x_scale": np.array([1.0]),
-             "jacobian_approx": "forward"},
-            {"max_fun_evaluations": 100, 
-             "cost_fun_tolerance": 1e-1,
-             "solution_tolerance": 1e-1,
-             "gradient_tolerance": 1e-1, 
-             "finite_step_size": 1e-1, 
-             "trust_region_solver": "base",
-             "x_scale": np.array([1.0]),
-             "jacobian_approx": "forward"},
+            {
+                "max_fun_evaluations": 100,
+                "cost_fun_tolerance": 1e-1,
+                "solution_tolerance": 1e-1,
+                "gradient_tolerance": 1e-1,
+                "finite_step_size": 1e-1,
+                "trust_region_solver": "base",
+                "x_scale": np.array([1.0]),
+                "jacobian_approx": "forward",
+            },
+            {
+                "max_fun_evaluations": 100,
+                "cost_fun_tolerance": 1e-1,
+                "solution_tolerance": 1e-1,
+                "gradient_tolerance": 1e-1,
+                "finite_step_size": 1e-1,
+                "trust_region_solver": "base",
+                "x_scale": np.array([1.0]),
+                "jacobian_approx": "forward",
+            },
             None,
         ),
         (
-            {"max_fun_evaluations": -1,
-             "cost_fun_tolerance": -1,
-             "solution_tolerance": -1,
-             "gradient_tolerance": -1,
-             "finite_step_size": -1,
-             "trust_region_solver": "invalid",
-             "x_scale": "invalid",
-             "jacobian_approx": "invalid",},
+            {
+                "max_fun_evaluations": -1,
+                "cost_fun_tolerance": -1,
+                "solution_tolerance": -1,
+                "gradient_tolerance": -1,
+                "finite_step_size": -1,
+                "trust_region_solver": "invalid",
+                "x_scale": "invalid",
+                "jacobian_approx": "invalid",
+            },
             None,
             [
                 "max_fun_evaluations\n  Value error, Value must be a non-negative integer",
@@ -1109,7 +1052,7 @@ def VariogramOptimize_DEFAULT():
         "Change multiple inputs",
         "Change all inputs",
         "All invalid inputs",
-    ]
+    ],
 )
 def test_VariogramOptimize_model(input, expected, exception):
 

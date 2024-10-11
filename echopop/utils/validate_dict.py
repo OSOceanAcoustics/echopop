@@ -1,119 +1,10 @@
 import re
-from typing import Any, Dict, List, Literal, Optional, TypedDict, Union, get_args
+from typing import Any, Dict, List, Literal, Optional, Union, get_args
 
 import numpy as np
-from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator, RootModel
+from pydantic import BaseModel, Field, RootModel, ValidationError, field_validator, model_validator
 
 from .validate import posfloat, posint, realcircle, realposfloat
-
-
-####################################################################################################
-# UTILITY FUNCTGIONS
-# --------------------------------------------------------------------------------------------------
-def describe_type(expected_type: Any) -> str:
-    """
-    Convert a type hint into a human-readable string.
-    """
-
-    if hasattr(expected_type, "__failstate__"):
-        return expected_type.__failstate__
-
-    if hasattr(expected_type, "__origin__"):
-        origin = expected_type.__origin__
-
-        if origin is Literal:
-            return f"one of {expected_type.__args__}"
-
-        if origin is Union:
-            args = expected_type.__args__
-            descriptions = [describe_type(arg) for arg in args if arg is not type(None)]
-            if not descriptions:
-                return "any value"
-            return " or ".join(descriptions)
-
-        if origin is np.ndarray:
-            return "numpy.ndarray of floats"
-
-        if origin is list:
-            item_type = expected_type.__args__[0]
-            return f"list of '{describe_type(item_type)}'"
-
-    if isinstance(expected_type, type):
-        return f"'{expected_type.__name__}'"
-
-    # return str(expected_type)
-    return f"'{expected_type}'"
-
-
-def validate_type(value: Any, expected_type: Any) -> bool:
-    """
-    Validate if the value matches the expected type.
-    """
-
-    # Handle numpy.ndarray
-    if hasattr(expected_type, "__origin__") and expected_type.__origin__ is np.ndarray:
-        return (
-            isinstance(value, np.ndarray)
-            and np.issubdtype(value.dtype, np.number)
-            # and value.dtype == np.float64
-        )
-
-    # Handle base `type` case
-    if isinstance(expected_type, type):
-        # ---- Handle `posint`
-        if expected_type in [posint, posfloat, realposfloat, realcircle]:
-            try:
-                expected_type(value)
-                return True
-            except (TypeError, ValueError):
-                return False
-        else:
-            return isinstance(value, expected_type)
-
-    # Handle Union
-    if hasattr(expected_type, "__origin__") and expected_type.__origin__ is Union:
-        return any(validate_type(value, arg) for arg in expected_type.__args__)
-
-    # Handle Literal
-    if hasattr(expected_type, "__origin__") and expected_type.__origin__ is Literal:
-        # ---- Get allowed values
-        allowed_values = get_args(expected_type)
-        if isinstance(value, np.ndarray):
-            allowed_values_array = np.array(list(allowed_values), dtype=object)
-            value_array = np.array(value, dtype=object)
-            return np.array_equal(np.sort(value_array), np.sort(allowed_values_array))
-        return value in allowed_values
-
-    # Handle List
-    if hasattr(expected_type, "__origin__") and expected_type.__origin__ is list:
-        if not isinstance(value, list):
-            return False
-        item_type = expected_type.__args__[0]
-        return all(validate_type(item, item_type) for item in value)
-
-    return False
-
-
-def validate_typed_dict(data: Dict[str, Any], expected_types: Dict[str, Any]) -> None:
-    """
-    Validate a dictionary against expected types.
-    """
-    for key, expected_type in expected_types.items():
-        if key in data:
-            if not validate_type(data[key], expected_type):
-                expected_description = describe_type(expected_type)
-                actual_description = type(data[key]).__name__
-                if hasattr(expected_type, "__failstate__"):
-                    raise TypeError(
-                        f"Value for '{key}' ({data[key]}, type: '{actual_description}') "
-                        f"{expected_description}."
-                    )
-                else:
-                    raise TypeError(
-                        f"Value for '{key}' ({data[key]}, type: '{actual_description}') does not "
-                        f"match expected type {expected_description}."
-                    )
-
 
 ####################################################################################################
 # PYDANTIC VALIDATORS
@@ -123,6 +14,13 @@ def validate_typed_dict(data: Dict[str, Any], expected_types: Dict[str, Any]) ->
 class FileSettings(BaseModel):
     """
     Parameter file settings
+
+    Parameters
+    ----------
+    directory: str
+        File directory path (as a string).
+    sheetname: str
+        Sheet name of a *.xlsx file (as a string) that will be loaded.
     """
 
     directory: str
@@ -132,6 +30,15 @@ class FileSettings(BaseModel):
 class StratifiedSurveyMeanParameters(BaseModel, arbitrary_types_allowed=True):
     """
     Stratified sampling parameters
+
+    Parameters
+    ----------
+    strata_transect_proportion: posfloat
+        Proportion of transects sampled from each stratum.
+    num_replicates: posint
+        The number of replicates for the stratified analysis.
+    mesh_transects_per_latitude: posint
+        The number of synthetic/virtual transect lines generated per latitude interval.
     """
 
     strata_transect_proportion: posfloat
@@ -409,6 +316,13 @@ class CONFIG_INIT_MODEL(BaseModel, arbitrary_types_allowed=True):
 class XLSXFiles(BaseModel):
     """
     .xlsx file tree structure
+
+    Parameters
+    ----------
+    filename: str
+        Filename (as a string).
+    sheetname: Union[str, List[str]]
+        Sheet name (or list of sheet names) of a *.xlsx file (as a string) that will be loaded.
     """
 
     filename: str
@@ -470,7 +384,8 @@ class CONFIG_DATA_MODEL(BaseModel):
                 self.__class__.__name__, f"configured data files defined in {filename}"
             )
             raise ValueError(new_message) from e
-        
+
+
 class VariogramModel(BaseModel, arbitrary_types_allowed=True):
     """
     Base Pydantic model for variogram analysis inputs
@@ -487,6 +402,7 @@ class VariogramModel(BaseModel, arbitrary_types_allowed=True):
         except ValidationError as e:
             e.__traceback__ = None
             raise e
+
 
 class VariogramEmpirical(VariogramModel, arbitrary_types_allowed=True):
     """
@@ -518,7 +434,7 @@ class VariogramEmpirical(VariogramModel, arbitrary_types_allowed=True):
     @field_validator("azimuth_range", mode="before")
     def validate_realcircle(cls, v):
         return realcircle(v)
-    
+
     def __init__(
         self,
         azimuth_range: realcircle = 360.0,
@@ -540,6 +456,7 @@ class VariogramEmpirical(VariogramModel, arbitrary_types_allowed=True):
             # Drop traceback
             e.__traceback__ = None
             raise e
+
 
 class VariogramOptimize(VariogramModel, arbitrary_types_allowed=True):
     """
@@ -576,22 +493,27 @@ class VariogramOptimize(VariogramModel, arbitrary_types_allowed=True):
     VariogramOptimize: A validated dictionary with the user-defined variogram optimizatization
     parameter values and default values for any missing parameters/keys.
     """
+
     max_fun_evaluations: posint = Field(default=500, gt=0, allow_inf_nan=False)
     cost_fun_tolerance: realposfloat = Field(default=1e-6, gt=0.0, allow_inf_nan=False)
-    gradient_tolerance: realposfloat = Field(default=1e-6, gt=0.0, allow_inf_nan=False)
-    solution_tolerance: realposfloat = Field(default=1e-8, gt=0.0, allow_inf_nan=False)
+    gradient_tolerance: realposfloat = Field(default=1e-4, gt=0.0, allow_inf_nan=False)
+    solution_tolerance: realposfloat = Field(default=1e-6, gt=0.0, allow_inf_nan=False)
     finite_step_size: realposfloat = Field(default=1e-8, gt=0.0, allow_inf_nan=False)
-    trust_region_solver: Literal["base", "exact"] = Field(default="exact")    
+    trust_region_solver: Literal["base", "exact"] = Field(default="exact")
     x_scale: Union[Literal["jacobian"], np.ndarray[realposfloat]] = Field(default="jacobian")
     jacobian_approx: Literal["forward", "central"] = Field(default="central")
 
     @field_validator("max_fun_evaluations", mode="before")
     def validate_posint(cls, v):
         return posint(v)
-    
-    @field_validator("cost_fun_tolerance", "gradient_tolerance",
-                     "finite_step_size", "solution_tolerance",
-                       mode="before")
+
+    @field_validator(
+        "cost_fun_tolerance",
+        "gradient_tolerance",
+        "finite_step_size",
+        "solution_tolerance",
+        mode="before",
+    )
     def validate_realposfloat(cls, v):
         return realposfloat(v)
 
@@ -603,17 +525,19 @@ class VariogramOptimize(VariogramModel, arbitrary_types_allowed=True):
             v_float = [float(x) for x in v]
             # ---- Coerce to 'realposfloat', or raise Error
             try:
-                v = np.array([realposfloat(x) for x in v_float])            
+                v = np.array([realposfloat(x) for x in v_float])
             except ValueError as e:
                 e.__traceback__ = None
                 raise e
         # Validate `Literal['jacobian']` case
         elif isinstance(v, (int, float, str)) and v != "jacobian":
             raise ValueError(
-                "Input should be either the Literal 'jacobian' or a NumPy array of real positive-only float values."
+                "Input should be either the Literal 'jacobian' or a NumPy array of real "
+                "positive-only float values."
             )
         # Return 'v'
         return v
+
 
 class VariogramBase(VariogramModel, arbitrary_types_allowed=True):
     """
@@ -655,6 +579,7 @@ class VariogramBase(VariogramModel, arbitrary_types_allowed=True):
     VariogramBase: A validated dictionary with the user-defined variogram parameter values and
     default values for any missing parameters/keys.
     """
+
     model: Union[str, List[str]] = Field(union_mode="left_to_right")
     n_lags: posint = Field(ge=1, allow_inf_nan=False)
     lag_resolution: Optional[realposfloat] = Field(default=None, gt=0.0, allow_inf_nan=False)
@@ -668,14 +593,23 @@ class VariogramBase(VariogramModel, arbitrary_types_allowed=True):
     @field_validator("n_lags", mode="before")
     def validate_posint(cls, v):
         return posint(v)
-    
-    @field_validator("lag_resolution", "sill", "nugget", "hole_effect_range", "correlation_range", "decay_power",
-                     mode="before")
+
+    @field_validator(
+        "lag_resolution",
+        "sill",
+        "nugget",
+        "hole_effect_range",
+        "correlation_range",
+        "decay_power",
+        mode="before",
+    )
     def validate_realposfloat(cls, v):
         return realposfloat(v)
-class InitialValues(VariogramModel, arbitrary_types_allowed=True):    
+
+
+class InitialValues(VariogramModel, arbitrary_types_allowed=True):
     min: Optional[realposfloat] = Field(default=None)
-    value: realposfloat = Field(default=0.0, allow_inf_nan=False)    
+    value: realposfloat = Field(default=0.0, allow_inf_nan=False)
     max: Optional[posfloat] = Field(default=None)
     vary: bool = Field(default=False)
     """
@@ -690,21 +624,21 @@ class InitialValues(VariogramModel, arbitrary_types_allowed=True):
     max: Optional[posfloat]
         Maximum value (including infinity) allowed during optimization.
     vary: Optional[bool]
-        Boolean value dictating whether a particular parameter will be adjusted 
+        Boolean value dictating whether a particular parameter will be adjusted
         during optimization ['True'] or held constant ['False']
     """
 
     @field_validator("min", "value", mode="before")
     def validate_realposfloat(cls, v):
         return realposfloat(v)
-    
+
     @field_validator("max", mode="before")
     def validate_posfloat(cls, v):
         return posfloat(v)
-    
+
     @model_validator(mode="after")
     def validate_value_sort(self):
-        
+
         # Check whether the 'min' and 'max' keys exist
         min = getattr(self, "min", None)
         max = getattr(self, "max", None)
@@ -717,9 +651,10 @@ class InitialValues(VariogramModel, arbitrary_types_allowed=True):
         if not vary:
             updated_value_dict = InitialValues._DEFAULT_STRUCTURE_EMPTY({"value": value})
             # ---- Update 'min', 'value', 'max'
-            self.min = None; self.max = None
+            self.min = None
+            self.max = None
             self.value = updated_value_dict["value"]
-        
+
         # Evaluate case where 'vary = True' but 'min' and 'max' are not found
         if vary:
             updated_value_dict = InitialValues._DEFAULT_STRUCTURE_OPTIMIZE(
@@ -732,22 +667,20 @@ class InitialValues(VariogramModel, arbitrary_types_allowed=True):
 
             # Ensure valid min-value-max grouping
             # ---- Only apply if parameters are being varied
-            if (
-                not (self.min <= self.value <= self.max) and self.vary
-            ):
+            if not (self.min <= self.value <= self.max) and self.vary:
                 # ---- Raise Error
                 raise ValueError(
                     "Optimization minimum, starting, and maximum values  must satisfy the logic: "
                     "`min` <= value` <= `max`."
                 )
-            
+
         # Return values
         return self
-    
+
     @classmethod
     def _DEFAULT_STRUCTURE_EMPTY(cls, input: Dict[str, Any] = {}):
         return {**dict(vary=False), **input}
-    
+
     @classmethod
     def _DEFAULT_STRUCTURE_OPTIMIZE(cls, input: Dict[str, Any] = {}):
         return {**dict(min=0.0, value=0.0, max=np.inf, vary=True), **input}
@@ -759,7 +692,7 @@ class VariogramInitial(RootModel[InitialValues]):
     @model_validator(mode="before")
     @classmethod
     def validate_model_params(cls, v):
-        
+
         # Get valid parameters
         valid_param_names = cls._VALID_PARAMETERS()
 
@@ -773,14 +706,14 @@ class VariogramInitial(RootModel[InitialValues]):
                 f"following variogram parameters are valid for optimization: "
                 f"{valid_param_names}."
             )
-        
+
         # Return values otherwise
         return v
-    
+
     @classmethod
     def _VALID_PARAMETERS(cls):
         return ["correlation_range", "decay_power", "hole_effect_range", "nugget", "sill"]
-    
+
     @classmethod
     def create(cls, **kwargs):
         """
@@ -791,7 +724,6 @@ class VariogramInitial(RootModel[InitialValues]):
         except ValidationError as e:
             e.__traceback__ = None
             raise e
-
 
 
 class MeshCrop(

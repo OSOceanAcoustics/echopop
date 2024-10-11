@@ -1,6 +1,6 @@
 import copy
 from pathlib import Path
-from typing import List, Literal, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Union
 
 import numpy as np
 from IPython.display import display
@@ -18,13 +18,6 @@ from .graphics import variogram_interactive as egv
 from .spatial.projection import transform_geometry
 from .spatial.transect import edit_transect_columns
 from .utils import load as el, load_nasc as eln, message as em
-from .utils.validate_dict import (
-    KrigingParameters,
-    MeshCrop,
-    VariogramBase,
-    VariogramInitial,
-    VariogramOptimize,
-)
 
 
 class Survey:
@@ -390,14 +383,14 @@ class Survey:
 
     def fit_variogram(
         self,
-        variogram_parameters: VariogramBase = {},
-        optimization_parameters: VariogramOptimize = {},
+        variogram_parameters: Dict[str, Any] = {},
+        optimization_parameters: Dict[str, Any] = {},
         model: Union[str, List[str]] = ["bessel", "exponential"],
         n_lags: int = 30,
         azimuth_range: float = 360.0,
         standardize_coordinates: bool = True,
         force_lag_zero: bool = True,
-        initialize_variogram: VariogramInitial = [
+        initialize_variogram: Union[List[str], Dict[str, Any]] = [
             "nugget",
             "sill",
             "correlation_range",
@@ -543,13 +536,13 @@ class Survey:
     # !!! TODO: develop different name for "crop_method = 'interpolation'"
     def kriging_analysis(
         self,
-        cropping_parameters: MeshCrop = {},
-        kriging_parameters: KrigingParameters = {},
+        cropping_parameters: Dict[str, Any] = {},
+        kriging_parameters: Dict[str, Any] = {},
         coordinate_transform: bool = True,
         extrapolate: bool = False,
         best_fit_variogram: bool = False,
         variable: Literal["biomass"] = "biomass",
-        variogram_parameters: Optional[VariogramBase] = None,
+        variogram_parameters: Optional[Dict[str, Any]] = None,
         verbose: bool = True,
     ):
         """
