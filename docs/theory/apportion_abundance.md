@@ -92,7 +92,7 @@ $$
 
 ## Number proportions
 
-The sex-specific numbers for unaged $\eqref{eq:total_unaged_sex}$ and aged $\eqref{eq:total_aged_sex}$ fish are then summed to calculate the total number unaged ($n^{\textrm{unaged}}$), aged ($n^{\textrm{aged}}$), and all ($n$) fish:
+The sex-specific numbers for unaged $\eqref{eq:total_unaged_sex}$ and aged $\eqref{eq:total_aged_sex}$ fish are then summed to calculate the total number of unaged fish($n^{\textrm{unaged}}$), aged ($n^{\textrm{aged}}$), and all ($n$) fish:
 
 $$
 \begin{equation}
@@ -119,7 +119,7 @@ $$
 \end{equation}
 $$
 
-Similarly, the number proportions of male and female unaged fish of length $\ell$ relative to the total number of fish $\eqref{eq:total_counts}$ are:
+The number proportions of male and female unaged fish of length $\ell$ relative to the total number of fish $\eqref{eq:total_counts}$ are:
 
 $$
 \begin{equation}
@@ -188,7 +188,7 @@ $$
 
 ### Unaged fish
 
-For each transect interval $k$, the total estimated abundance of male, female, and all unaged fish of length $\ell$ are apportioned according to the number proportions $\eqref{eq:number_proportions_unaged_sex_length}$:
+For each transect interval $k$, the total estimated abundance of male, female, and all unaged fish of length $\ell$ are apportioned according to the number proportions in $\eqref{eq:number_proportions_unaged_sex_length}$:
 
 $$
 \begin{equation}
@@ -203,7 +203,7 @@ $$
 
 ### Aged fish
 
-Similarly, for each transect interval $k$, the total estimated abundance of male, female, and all unaged fish of length $\ell$ and age $\alpha$ are apportioned according to the number proportions $\eqref{eq:number_proportions_aged_sex_length_age}$: 
+Similarly, for each transect interval $k$, the total estimated abundance of male, female, and all aged fish of length $\ell$ and age $\alpha$ are apportioned according to the number proportions in $\eqref{eq:number_proportions_aged_sex_length_age}$: 
 
 $$
 \begin{equation}
@@ -219,7 +219,7 @@ $$
 
 ### Combining unaged and aged estimates
 
-Lastly, the estimated abundance of all unaged $\eqref{eq:abundance_unaged}$ and aged $\eqref{eq:abundance_aged}$ of length $\ell$ can be obtained by:
+Lastly, the estimated abundance of all fish (including unaged and aged fish) of length $\ell$ can be obtained by:
 
 $$
 \hat{N}_{\ell}^{k,i} = \hat{N}_{\ell}^{k, \textrm{unaged}} + \sum_{\alpha} \hat{N}_{\ell,\alpha}^{k, \textrm{aged}}
