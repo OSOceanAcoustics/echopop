@@ -2,52 +2,61 @@
 # Back-calculating and apportioning abundance estimates
 
 
+## Back-calculating abundance from kriged biomass estimates
 ```{attention} 
 `Echopop` currently does not support back-calculating abundance from kriged biomass estimates detailed in [](apportion-biomass).
 ```
 
-```{note}
-It is worth noting that all calculations are done for each stratum, $i$. Refer to [](stratification) for more information.
-```
-
-Biomass estimates for each $s$ ($\textrm{M}$ and $\textrm{F}$) along transect interval $k$ are summed across $\ell$ and $\alpha$ via:
+The biomass estimates for male and female fish ($s=M$ and $s=F$, respectively.) along transect interval $k$ across all lengths ($\ell$) and all ages ($\alpha$) are:
 
 $$ 
-B_{\textrm{M}}^{k} = \sum_{\textrm{M}, \ell, \alpha} B_{\textrm{M}, \ell, \alpha}^{k, \textrm{aged}} +  \sum_{\textrm{M}, \ell, \alpha} B_{\textrm{M}, \ell, \alpha}^{k, \textrm{unaged}}
+B_{\textrm{M}}^{k} =
+\sum_{\ell} B_{\textrm{M}, \ell}^{k, \textrm{unaged}} +
+\sum_{\ell, \alpha} B_{\textrm{M}, \ell, \alpha}^{k, \textrm{aged}}
 \label{eq:biomass_M} \tag{1}
 $$
 
 $$
-B_{\textrm{F}}^{k} = \sum_{\textrm{F}, \ell, \alpha} B_{\textrm{F}, \ell, \alpha}^{k, \textrm{aged}} + \sum_{\textrm{F}, \ell, \alpha} B_{\textrm{F}, \ell, \alpha}^{k, \textrm{unaged}}
+B_{\textrm{F}}^{k} =
+\sum_{\ell} B_{\textrm{F}, \ell}^{k, \textrm{unaged}} +
+\sum_{\ell, \alpha} B_{\textrm{F}, \ell, \alpha}^{k, \textrm{aged}}
 \label{eq:biomass_F} \tag{2}
 $$
 
-Similarly, biomass estimates for all fish ($B^{k}$), which is inclusive of both sexed and unsexed fish, are also summed, i.e.,
+The biomass estimates for all fish including both sexed and unsexed fish in the transect interval $k$ is then:
 $$
 B^k = B_\textrm{M}^k + B_\textrm{F}^k.
 $$
 
 
-These kriged biomass estimates are then converted to sexed ($\hat{N}_{s}^{k}$) and total ($\hat{N}^{k}$) abundance by using an averaged length-weight relationship ($\overline{W}(\ell)$). $\overline{W}(\ell)$ can be defined either by using the length-weight regression relationship or a parameterized relationship based on mean leangth ($\bar{\ell}$) derived from the catch data. It is important to note, however, that both $\hat{N}_{s}^{k}$ and $\hat{N}^{k}$ are calculated using a $\overline{W}(\ell)$ fit from <b>all</b> individuals (i.e. male, female, and unsexed).
-
+These kriged biomass estimates can be converted to sexed ($\hat{N}_{s}^{k}$) and total ($\hat{N}^{k}$) abundance by using an averaged length-weight relationship $\overline{W}(\ell)$ via:
 $$
-\hat{N}^{k} = \frac{B^{k}}{\overline{W}(\ell)}
+\hat{N}^{k} = \frac{B^{k}}{\overline{W}(\ell)},
 \label{eq:abundance} \tag{3}
 $$
+where $\overline{W}(\ell)$ is the length-weight regression relationship derived from the catch data. 
+
 
 ```{note} 
-With $\hat{N}_k$, $\hat{\textit{NASC}^{k}}$ can be back-calculated by using the averaged differential backscattering cross-section for the $i^{\text{th}}$ stratum, $\bar{\sigma}_\textrm{bs}^i$, as
-$$
-\hat{\textit{NASC}^k} = \hat{N}^k \times \bar{\sigma}_\textrm{bs}^i
-$$
+In Chu's Echopro implementation, both $\hat{N}_{s}^{k}$ and $\hat{N}^{k}$ are calculated using a $\overline{W}(\ell)$ fit from **all** (male, female, and unsexed) fish samples.
 ```
+
+Given $\hat{N}_k$, $\hat{\textit{NASC}^{k}}$ can be back-calculated by using the averaged differential backscattering cross-section for the $i^{\text{th}}$ stratum, $\bar{\sigma}_\textrm{bs}^i$, as
+$$
+\hat{\textit{NASC}^k} = \hat{N}^k \times \bar{\sigma}_\textrm{bs}^i,
+$$
+when the transect interval $k$ falls in stratum $i$. See [](stratification) for more information.
+
+
+
+## Apportioning back-calculated abundance
 
 Below, the back-calculated $\hat{N}^k$ $\eqref{eq:abundance}$ is apportioned similarly to the [<b>weight proportions</b>](apportion_biomass.md#unaged-biomass-apportioned-with-sex-length-and-age) across sex, length, and age. 
 
 
-## Number of fish samples
+### Number of fish samples
 
-### Unaged fish
+#### Unaged fish
 
 The number of unaged fish of sex $s$ and length $\ell$ is ($n_{s,\ell}^{\textrm{unaged}}$) of length $\ell$ is:
 
@@ -68,7 +77,7 @@ $$
 \end{equation}
 $$
 
-### Aged fish
+#### Aged fish
 
 The total number of fish of sex $s$, length $\ell$, and age $\alpha$ is similarly:
 
@@ -90,7 +99,7 @@ $$
 
 
 
-## Number proportions
+### Number proportions
 
 The sex-specific numbers for unaged $\eqref{eq:total_unaged_sex}$ and aged $\eqref{eq:total_aged_sex}$ fish are then summed to calculate the total number of unaged fish($n^{\textrm{unaged}}$), aged ($n^{\textrm{aged}}$), and all ($n$) fish:
 
@@ -105,7 +114,7 @@ $$
 \end{equation}
 $$
 
-### Unaged fish
+#### Unaged fish
 
 The number proportions of male and female unaged fish of length $\ell$ $\eqref{eq:total_unaged_sex_length}$ relative to the sex-specific totals of unaged fish $\eqref{eq:total_unaged_sex}$ are:
 
@@ -143,7 +152,7 @@ $$
 \end{equation}
 $$
 
-### Aged fish
+#### Aged fish
 
 Similar to the above, the number of male and female aged fish of length $\ell$ and age $\alpha$ $\eqref{eq:total_aged_sex_length_age}$ relative to the sex-specific totals of aged fish $\eqref{eq:total_aged_sex}$ are:
 
@@ -184,9 +193,9 @@ $$
 
 
 
-## Apportioning abundances
+### Apportioning abundances
 
-### Unaged fish
+#### Unaged fish
 
 For each transect interval $k$, the total estimated abundance of male, female, and all unaged fish of length $\ell$ are apportioned according to the number proportions in $\eqref{eq:number_proportions_unaged_sex_length}$:
 
@@ -201,7 +210,7 @@ $$
 \end{equation}
 $$
 
-### Aged fish
+#### Aged fish
 
 Similarly, for each transect interval $k$, the total estimated abundance of male, female, and all aged fish of length $\ell$ and age $\alpha$ are apportioned according to the number proportions in $\eqref{eq:number_proportions_aged_sex_length_age}$: 
 
@@ -217,7 +226,7 @@ $$
 $$
 
 
-### Combining unaged and aged estimates
+#### Combining unaged and aged estimates
 
 Lastly, the estimated abundance of all fish (including unaged and aged fish) of length $\ell$ can be obtained by:
 
