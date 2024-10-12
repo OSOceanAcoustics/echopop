@@ -20,7 +20,8 @@
 | $L$ or $\ell$ | length of animal | m or cm |  |
 | $s$ | sex of animal | |  |
 | $w$ | weight of animal | kg |  |
-| $N$ | number of animal samples | |  |
+| $N$ | Abundance | |  |
+| $n$ | number of animal samples | |  |
 | $x, y$ | geospatial location (latitude, longitude) | degrees |  |
 | $x_k, y_k$ | kriging grid location | |  |
 
