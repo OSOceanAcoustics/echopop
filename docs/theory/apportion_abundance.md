@@ -1,11 +1,12 @@
 (apportion-abundance)=
 # Back-calculating and apportioning abundance estimates
 
+```{attention} 
+Back-calculating and apportioning abundance from kriged biomass estimates as detailed here has not been implemented in `Echopop`.
+```
+
 
 ## Back-calculating abundance from kriged biomass estimates
-```{attention} 
-`Echopop` currently does not support back-calculating abundance from kriged biomass estimates detailed in [](apportion-biomass).
-```
 
 The biomass estimates for male and female fish ($s=M$ and $s=F$, respectively.) along transect interval $k$ across all lengths ($\ell$) and all ages ($\alpha$) are:
 
