@@ -40,18 +40,18 @@ $$
 
 where $\overline{W}(\ell)$ is the length-weight regression relationship derived from the catch data. 
 
-
-```{note} 
-In Chu's Echopro implementation, both $\hat{N}_{s}^{k}$ and $\hat{N}^{k}$ are calculated using a $\overline{W}(\ell)$ fit from **all** (male, female, and unsexed) fish samples.
-```
-
-Given $\hat{N}_k$, $\hat{\textit{NASC}^{k}}$ can be back-calculated by using the averaged differential backscattering cross-section for the $i^{\text{th}}$ stratum, $\bar{\sigma}_\textrm{bs}^i$, as
+$\hat{\textit{NASC}^{k}}$ can be back-calculated by using the averaged differential backscattering cross-section for the $i^{\text{th}}$ stratum, $\bar{\sigma}_\textrm{bs}^i$, as
 
 $$
 \hat{\textit{NASC}^k} = \hat{N}^k \times \bar{\sigma}_\textrm{bs}^i,
 $$
 
 when the transect interval $k$ falls in stratum $i$. See [](stratification) for more information.
+
+
+```{note} 
+In Chu's Echopro implementation, both $\hat{N}_{s}^{k}$ and $\hat{N}^{k}$ are calculated using a $\overline{W}(\ell)$ fit from **all** (male, female, and unsexed) fish samples.
+```
 
 
 
