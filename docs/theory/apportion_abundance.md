@@ -31,7 +31,7 @@ B^k = B_\textrm{M}^k + B_\textrm{F}^k.
 $$
 
 
-These kriged biomass estimates can be converted to sexed ($\hat{N}_{s}^{k}$) and total ($\hat{N}^{k}$) abundance by using an averaged length-weight relationship $\overline{W}(\ell)$ via:
+The estimated abundance $\hat{N}^k$ can be back-calculated from the kriged biomass estimates using an averaged length-weight relationship $\overline{W}(\ell)$ via:
 
 $$
 \hat{N}^{k} = \frac{B^{k}}{\overline{W}(\ell)},
@@ -40,7 +40,7 @@ $$
 
 where $\overline{W}(\ell)$ is the length-weight regression relationship derived from the catch data. 
 
-$\hat{\textit{NASC}^{k}}$ can be back-calculated by using the averaged differential backscattering cross-section for the $i^{\text{th}}$ stratum, $\bar{\sigma}_\textrm{bs}^i$, as
+Similarly, $\hat{\textit{NASC}^{k}}$ can be back-calculated from the estimated abundance using the averaged differential backscattering cross-section of the $i^{\text{th}}$ stratum, $\bar{\sigma}_{bs}^i$, via:
 
 $$
 \hat{\textit{NASC}^k} = \hat{N}^k \times \bar{\sigma}_\textrm{bs}^i,
@@ -50,7 +50,7 @@ when the transect interval $k$ falls in stratum $i$. See [](stratification) for 
 
 
 ```{note} 
-In Chu's Echopro implementation, both $\hat{N}_{s}^{k}$ and $\hat{N}^{k}$ are calculated using a $\overline{W}(\ell)$ fit from **all** (male, female, and unsexed) fish samples.
+In Chu's Echopro implementation, both $\hat{N}_{s}^{k}$ and $\hat{N}^{k}$ are calculated using a single $\overline{W}(\ell)$ fit from **all** (male, female, and unsexed) fish samples, instead of sex-specific fits.
 ```
 
 
