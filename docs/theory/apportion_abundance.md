@@ -3,11 +3,11 @@
 
 
 ```{attention} 
-`Echopop` currently does support kriged abundance back-calculation from biomass estimates. Refer to the <b>[kriged biomass apportionment](apportion_biomass.md)</b> for more information on how `Echopop` incorporates kriging into population estimates.
+`Echopop` currently does not support back-calculating abundance from kriged biomass estimates detailed in [](apportion-biomass).
 ```
 
 ```{note}
-It is worth noting that all calculations are done for each stratum, $i$. Refer to the <b>[stratification](stratification.md)</b> documentation for more information.
+It is worth noting that all calculations are done for each stratum, $i$. Refer to [](stratification) for more information.
 ```
 
 Biomass estimates for each $s$ ($\textrm{M}$ and $\textrm{F}$) along transect interval $k$ are summed across $\ell$ and $\alpha$ via:
@@ -36,13 +36,13 @@ $$
 $$
 
 ```{note} 
-With $\hat{N}_{\textrm{All}}^{k}$ calculated, $\hat{\textit{NASC}^{k}}$ can then be back-calculated by using the averaged $i^{\text{th}}$ differential backscattering cross-section ($\bar{\sigma}_{\textrm{bs}}$):
-$
-\hat{\textit{NASC}^{k}} = \hat{N}^{k} \bar{\sigma}_{\textrm{bs}}
-$
+With $\hat{N}_k$, $\hat{\textit{NASC}^{k}}$ can be back-calculated by using the averaged differential backscattering cross-section for the $i^{\text{th}}$ stratum, $\bar{\sigma}_\textrm{bs}^i$, as
+$$
+\hat{\textit{NASC}^k} = \hat{N}^k \times \bar{\sigma}_\textrm{bs}^i
+$$
 ```
 
-Specifically, the back-calculated $\hat{N}^{k}$ $\eqref{eq:abundance}$ is apportioned similarly to the [<b>weight proportions</b>](apportion_biomass.md#unaged-biomass-apportioned-with-sex-length-and-age) across sex, length, and age. 
+Below, the back-calculated $\hat{N}^k$ $\eqref{eq:abundance}$ is apportioned similarly to the [<b>weight proportions</b>](apportion_biomass.md#unaged-biomass-apportioned-with-sex-length-and-age) across sex, length, and age. 
 
 
 ## Number of fish samples
