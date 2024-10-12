@@ -1,8 +1,8 @@
 (apportion-abundance)=
-# Back-calculating and apportioning abundance estimates
+# Apportioning back-calculated abundance
 
 ```{attention} 
-Back-calculating and apportioning abundance from kriged biomass estimates as detailed here has not been implemented in `Echopop`.
+Back-calculating and apportioning abundance from kriged biomass estimates as described here has not been implemented in `Echopop`.
 ```
 
 
