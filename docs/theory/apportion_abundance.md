@@ -8,7 +8,7 @@ Back-calculating and apportioning abundance from kriged biomass estimates as det
 
 ## Back-calculating abundance from kriged biomass estimates
 
-The biomass estimates for male and female fish ($s=M$ and $s=F$, respectively.) along transect interval $k$ across all lengths ($\ell$) and all ages ($\alpha$) are:
+The biomass estimates for male and female fish ($s=M$ and $s=F$, respectively) along transect interval $k$ across all lengths ($\ell$) and all ages ($\alpha$) are:
 
 $$ 
 B_{\textrm{M}}^{k} =
@@ -64,41 +64,53 @@ Below, the back-calculated $\hat{N}^k$ $\eqref{eq:abundance}$ is apportioned sim
 
 #### Unaged fish
 
-The number of unaged fish of sex $s$ and length $\ell$ is ($n_{s,\ell}^{\textrm{unaged}}$) of length $\ell$ is:
+The numbers of unaged male and female fish of length $\ell$ are:
 
 $$
 \begin{equation}
-    n_{s,\ell}^{\textrm{unaged}} = \sum_{j \in J_{s,\ell}^{\textrm{unaged}}}n_j,
+\begin{aligned}
+    n_{\textrm{M},\ell}^{\textrm{unaged}} &= \sum_{j \in J_{\textrm{M},\ell}^{\textrm{unaged}}}n_j \nonumber \\
+    n_{\textrm{F},\ell}^{\textrm{unaged}} &= \sum_{j \in J_{\textrm{F},\ell}^{\textrm{unaged}}}n_j \nonumber
+\end{aligned}
 \label{eq:total_unaged_sex_length} \tag{4}
 \end{equation}
 $$
-where $s=M$ and $s=F$ indicate male and female fish, respectively.
 
-Therefore, the total number of fish of sex $s$ is:
+Therefore, the total numbers of male and female unaged fish of length $\ell$ are:
 
 $$
 \begin{equation}
-    n_s^{\textrm{unaged}} = \sum_\ell n_{s,\ell}^{\textrm{unaged}}
+\begin{aligned}
+    n_{\textrm{M}}^{\textrm{unaged}} &= \sum_{\ell}n_{\textrm{M},\ell}^{\textrm{unaged}} \nonumber \\
+    n_{\textrm{F}}^{\textrm{unaged}} &= \sum_{\ell}n_{\textrm{F},\ell}^{\textrm{unaged}} \nonumber
+\end{aligned}
 \label{eq:total_unaged_sex} \tag{5}
 \end{equation}
 $$
 
+
 #### Aged fish
 
-The total number of fish of sex $s$, length $\ell$, and age $\alpha$ is similarly:
+The numbers of male and female aged fish of length $\ell$ and age $\alpha$ are:
 
 $$
 \begin{equation}
-    n_{s,\ell,\alpha}^{\textrm{aged}} = \sum_{j \in J_{s,\ell,\alpha}^{\textrm{aged}}} n_j
+\begin{aligned}
+    n_{\textrm{M},\ell,\alpha}^{\textrm{aged}} &= \sum_{j \in J_{\textrm{M},\ell,\alpha}^{\textrm{aged}}}n_j \nonumber \\
+    n_{\textrm{F},\ell,\alpha}^{\textrm{aged}} &= \sum_{j \in J_{\textrm{F},\ell,\alpha}^{\textrm{aged}}}n_j \nonumber
+\end{aligned}
 \label{eq:total_aged_sex_length_age} \tag{6}
 \end{equation}
 $$
 
-The number of aged fish of sex $s$ is then:
+Therefore, the total numbers of male and female aged fish of length $\ell$ and age $\alpha$ are:
 
 $$
 \begin{equation}
-    n_s^{\textrm{aged}} = \sum_{\ell,\alpha}n_{s,\ell,\alpha}^{\textrm{aged}}
+\begin{aligned}
+    n_{\textrm{M}}^{\textrm{aged}} &= \sum_{\ell,\alpha}n_{\textrm{M},\ell,\alpha}^{\textrm{aged}} \nonumber \\
+    n_{\textrm{F}}^{\textrm{aged}} &= \sum_{\ell,\alpha}n_{\textrm{F},\ell,\alpha}^{\textrm{aged}} \nonumber \\    
+\end{aligned}
 \label{eq:total_aged_sex} \tag{7}
 \end{equation}
 $$
