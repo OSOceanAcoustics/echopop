@@ -4,16 +4,14 @@ import numpy as np
 import pytest
 
 from echopop.tests.conftest import assert_dictionary_values_equal
-from echopop.utils.validate import (
+from echopop.utils.validate import posfloat, posint, realcircle, realposfloat
+
+from ..utils.validate_dict import (
     InitialValues,
     VariogramBase,
     VariogramEmpirical,
     VariogramInitial,
     VariogramOptimize,
-    posfloat,
-    posint,
-    realcircle,
-    realposfloat,
 )
 
 

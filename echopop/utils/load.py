@@ -6,16 +6,10 @@ import numpy as np
 import pandas as pd
 import yaml
 
-from ..core import (
-    BIODATA_HAUL_MAP,
-    CONFIG_DATA_MODEL,
-    CONFIG_INIT_MODEL,
-    CONFIG_MAP,
-    DATA_STRUCTURE,
-    LAYER_NAME_MAP,
-    NAME_CONFIG,
-)
+from ..core import BIODATA_HAUL_MAP, DATA_STRUCTURE, LAYER_NAME_MAP, NAME_CONFIG
 from .data_structure_utils import map_imported_datasets
+from .validate_df import DATASET_DF_MODEL
+from .validate_dict import CONFIG_DATA_MODEL, CONFIG_INIT_MODEL
 
 
 def load_configuration(init_config_path: Path, survey_year_config_path: Path):
@@ -56,32 +50,36 @@ def load_configuration(init_config_path: Path, survey_year_config_path: Path):
     # ---- Initialization
     init_config_params = yaml.safe_load(init_config_path.read_text())
     # -------- Validate
-    validate_config_structure(init_config_params, CONFIG_INIT_MODEL)
+    valid_init_config_params = CONFIG_INIT_MODEL(
+        init_config_path.as_posix(), **init_config_params
+    ).model_dump(exclude_none=True)
     # ---- Survey year data
     survey_year_config_params = yaml.safe_load(survey_year_config_path.read_text())
     # -------- Validate
-    validate_config_structure(survey_year_config_params, CONFIG_DATA_MODEL)
+    valid_survey_year_config_params = CONFIG_DATA_MODEL(
+        survey_year_config_path.as_posix(), **survey_year_config_params
+    ).model_dump(exclude_none=True)
 
     # Validate that initialization and survey year configuration parameters do not intersect
-    config_intersect = set(init_config_params.keys()).intersection(
-        set(survey_year_config_params.keys())
+    config_intersect = set(valid_init_config_params.keys()).intersection(
+        set(valid_survey_year_config_params.keys())
     )
 
     # Error evaluation, if applicable
     if config_intersect:
         raise RuntimeError(
-            f"""The initialization and survey year configuration files comprise the following
-            intersecting variables: {config_intersect}"""
+            f"The initialization and survey year configuration files comprise the following"
+            f"intersecting variables: {', '.join(config_intersect)}"
         )
 
     # Format dictionary that will parameterize the `config` class attribute
     # Join the initialization and survey year parameters into a single dictionary
-    config_to_add = {**init_config_params, **survey_year_config_params}
+    config_to_add = {**valid_init_config_params, **valid_survey_year_config_params}
 
     # Amend length/age distribution locations within the configuration attribute
     config_to_add["biometrics"] = {
-        "bio_hake_len_bin": init_config_params["bio_hake_len_bin"],
-        "bio_hake_age_bin": init_config_params["bio_hake_age_bin"],
+        "bio_hake_len_bin": valid_init_config_params["bio_hake_len_bin"],
+        "bio_hake_age_bin": valid_init_config_params["bio_hake_age_bin"],
     }
 
     del config_to_add["bio_hake_len_bin"], config_to_add["bio_hake_age_bin"]
@@ -120,7 +118,8 @@ def load_dataset(
             if LAYER_NAME_MAP[key]["superlayer"]
             else LAYER_NAME_MAP[key]["name"]
         )
-        for key in CONFIG_MAP.keys()
+        # for key in CONFIG_MAP.keys()
+        for key in DATASET_DF_MODEL.keys()
         if key in list(dataset_type)
     ]
     # ---- Map the complete datasets
@@ -142,12 +141,17 @@ def load_dataset(
         dataset_type = [dataset_type]
 
     # Get the subset table if specific `dataset_type` is defined
-    # ---- Get the outermost dictionary keys
-    outer_keys = flat_configuration_table.columns.str.split(".").str[0]
-    # ---- Get the associated column names
-    matching_columns = flat_configuration_table.columns[outer_keys.isin(dataset_type)]
-    # ---- Filter the columns
-    flat_configuration_table = flat_configuration_table.filter(matching_columns)
+    if dataset_type:
+        # ---- Get the outermost dictionary keys
+        outer_keys = flat_configuration_table.columns.str.split(".").str[0]
+        # ---- Get the associated column names
+        matching_columns = flat_configuration_table.columns[outer_keys.isin(dataset_type)]
+        # ---- Filter the columns
+        flat_configuration_table = flat_configuration_table.filter(matching_columns)
+    # ---- Default to `CONFIG_MAP` keys otherwise
+    else:
+        # dataset_type = list(CONFIG_MAP.keys())
+        dataset_type = list(DATASET_DF_MODEL.keys())
     # ---- Parse the flattened configuration table to identify data file names and paths
     parsed_filenames = flat_configuration_table.values.flatten()
     # ---- Evaluate whether either file is missing
@@ -162,7 +166,8 @@ def load_dataset(
         raise FileNotFoundError(f"The following data files do not exist: {missing_data}")
 
     # Get the applicable `CONFIG_MAP` keys for the defined datasets
-    expected_datasets = set(CONFIG_MAP.keys()).intersection(dataset_type)
+    # expected_datasets = set(CONFIG_MAP.keys()).intersection(dataset_type)
+    expected_datasets = set(DATASET_DF_MODEL.keys()).intersection(dataset_type)
 
     # Data validation and import
     # ---- Iterate through known datasets and datalayers
@@ -171,7 +176,8 @@ def load_dataset(
         for datalayer in [*configuration_dict[dataset].keys()]:
 
             # Define validation settings from CONFIG_MAP
-            validation_settings = CONFIG_MAP[dataset][datalayer]
+            # validation_settings = CONFIG_MAP[dataset][datalayer]
+            validation_settings = DATASET_DF_MODEL[dataset][datalayer]
 
             # Define configuration settings w/ file + sheet names
             config_settings = configuration_dict[dataset][datalayer]
@@ -219,19 +225,19 @@ def load_dataset(
 
                 for sheets in sheet_name:
                     # Update if INPFC
-                    if sheets.lower() == "inpfc":
-                        # Update validation settings from CONFIG_MAP
-                        validation_settings = CONFIG_MAP[dataset]["inpfc_strata"]
+                    # if sheets.lower() == "inpfc":
+                    #     # Update validation settings from CONFIG_MAP
+                    #     validation_settings = CONFIG_MAP[dataset]["inpfc_strata"]
 
-                        # Update configuration key map
-                        config_map = [dataset, "inpfc_strata"]
+                    #     # Update configuration key map
+                    #     config_map = [dataset, "inpfc_strata"]
 
-                    elif datalayer == "geo_strata":
-                        # Update validation settings from CONFIG_MAP
-                        validation_settings = CONFIG_MAP[dataset][datalayer]
+                    # elif datalayer == "geo_strata":
+                    #     # Update validation settings from CONFIG_MAP
+                    #     validation_settings = CONFIG_MAP[dataset][datalayer]
 
-                        # Update configuration key map
-                        config_map = [dataset, datalayer]
+                    #     # Update configuration key map
+                    #     config_map = [dataset, datalayer]
 
                     # Read in data and add to `Survey` object
                     read_validated_data(
@@ -286,36 +292,38 @@ def read_validated_data(
         df_initial = df_initial.drop(0)
 
         # Slice only the columns that are relevant to the echopop module functionality
-        df_filtered = df_initial.filter(validation_settings)
+        # df_filtered = df_initial.filter(validation_settings)
+        df = validation_settings.validate_df(df_initial)
 
         # Error evaluation and print message (if applicable)
-        if not set(validation_settings).issubset(set(df_filtered)):
-            missing_columns = set(validation_settings.keys()) - set(df_filtered)
-            raise ValueError(
-                f"Missing kriging/variogram parameters in the Excel file: {missing_columns}"
-            )
+        # if not set(validation_settings).issubset(set(df_filtered)):
+        #     missing_columns = set(validation_settings.keys()) - set(df_filtered)
+        #     raise ValueError(
+        #         f"Missing kriging/variogram parameters in the Excel file: {missing_columns}"
+        #     )
 
-        # Apply data types from validation_settings to the filtered DataFrame
-        df = df_filtered.apply(
-            lambda col: col.astype(
-                validation_settings.get(col.name, type(df_filtered.iloc[0][col.name]))
-            )
-        )
+        # # Apply data types from validation_settings to the filtered DataFrame
+        # df = df_filtered.apply(
+        #     lambda col: col.astype(
+        #         validation_settings.get(col.name, type(df_filtered.iloc[0][col.name]))
+        #     )
+        # )
 
     else:
         # Read Excel file into memory -- this only reads in the required columns
         # df = pd.read_excel(file_name, sheet_name=sheet_name, usecols=validation_settings.keys())
-        df = pd.read_excel(file_name, sheet_name=sheet_name)
+        df = pd.read_excel(file_name, sheet_name=sheet_name).rename(columns=NAME_CONFIG)
         # ---- Rename the columns, if needed, and then filter them
-        df = df.rename(columns=NAME_CONFIG).filter(validation_settings)
+        # df = df.rename(columns=NAME_CONFIG).filter(validation_settings)
+        df = validation_settings.validate_df(df)
 
         # Error evaluation and print message (if applicable)
-        if not set(validation_settings).issubset(set(df)):
-            missing_columns = set(validation_settings.keys()) - set(df)
-            raise ValueError(f"Missing columns in the Excel file: {missing_columns}")
+        # if not set(validation_settings).issubset(set(df)):
+        #     missing_columns = set(validation_settings.keys()) - set(df)
+        #     raise ValueError(f"Missing columns in the Excel file: {missing_columns}")
 
-        # Apply data types from validation_settings to the filtered DataFrame
-        df = df.apply(lambda col: col.astype(validation_settings.get(col.name, type(col[0]))))
+        # # Apply data types from validation_settings to the filtered DataFrame
+        # df = df.apply(lambda col: col.astype(validation_settings.get(col.name, type(col[0]))))
 
     # Assign the data to their correct data attributes/keys
     if LAYER_NAME_MAP[config_map[0]]["superlayer"] == []:
@@ -353,7 +361,7 @@ def read_validated_data(
         if config_map[1] == "no_age1":
             df = df.rename(
                 columns={
-                    "NASC": "NASC_no_age1",
+                    "nasc": "NASC_no_age1",
                     "haul_num": "haul_no_age1",
                     "stratum_num": "stratum_no_age1",
                 }
@@ -361,7 +369,7 @@ def read_validated_data(
         else:
             df = df.rename(
                 columns={
-                    "NASC": "NASC_all_ages",
+                    "nasc": "NASC_all_ages",
                     "haul_num": "haul_all_ages",
                     "stratum_num": "stratum_all_ages",
                 }
@@ -594,6 +602,8 @@ def prepare_input_data(input_dict: dict, configuration_dict: dict):
             input_dict["spatial"]["inpfc_strata_df"]["northlimit_latitude"] * 0.99, latitude_bins
         )
 
+    input_dict["acoustics"]["nasc_df"]
+
     # ACOUSTICS + SPATIAL
     if set(["acoustics", "spatial"]).issubset(imported_data):
         # Bin NASC transects into appropriate INPFC strata
@@ -605,6 +615,30 @@ def prepare_input_data(input_dict: dict, configuration_dict: dict):
                 labels=range(len(latitude_bins) - 1),
             )
         ).astype(int) + 1
+
+        # KS strata
+        # ---- Map hauls to `all_ages`
+        input_dict["acoustics"]["nasc_df"].set_index("haul_all_ages", inplace=True)
+        input_dict["acoustics"]["nasc_df"]["stratum_all_ages"] = (
+            input_dict["spatial"]["strata_df"]
+            .rename(columns={"haul_num": "haul_all_ages"})
+            .set_index("haul_all_ages")["stratum_num"]
+        )
+        input_dict["acoustics"]["nasc_df"]["stratum_all_ages"] = input_dict["acoustics"]["nasc_df"][
+            "stratum_all_ages"
+        ].fillna(1)
+        input_dict["acoustics"]["nasc_df"] = input_dict["acoustics"]["nasc_df"].reset_index()
+        # ---- Map hauls to `no_age1`
+        input_dict["acoustics"]["nasc_df"].set_index("haul_no_age1", inplace=True)
+        input_dict["acoustics"]["nasc_df"]["stratum_no_age1"] = (
+            input_dict["spatial"]["strata_df"]
+            .rename(columns={"haul_num": "haul_no_age1"})
+            .set_index("haul_no_age1")["stratum_num"]
+        )
+        input_dict["acoustics"]["nasc_df"]["stratum_no_age1"] = input_dict["acoustics"]["nasc_df"][
+            "stratum_no_age1"
+        ].fillna(1)
+        input_dict["acoustics"]["nasc_df"] = input_dict["acoustics"]["nasc_df"].reset_index()
 
     # BIOLOGY + SPATIAL
     if set(["biology", "spatial"]).issubset(imported_data):
