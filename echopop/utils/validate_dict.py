@@ -2,7 +2,9 @@ import re
 from typing import Any, Dict, List, Literal, Optional, Union, get_args
 
 import numpy as np
-from pydantic import BaseModel, Field, RootModel, ValidationError, field_validator, model_validator
+from pydantic import (
+    ConfigDict, BaseModel, Field, RootModel, ValidationError, field_validator, model_validator
+)
 
 from .validate import posfloat, posint, realcircle, realposfloat
 
@@ -10,8 +12,52 @@ from .validate import posfloat, posint, realcircle, realposfloat
 # PYDANTIC VALIDATORS
 # --------------------------------------------------------------------------------------------------
 
+class InputModel(BaseModel):
+    """
+    Base Pydantic model for scrutinizing file inputs
+    """
 
-class FileSettings(BaseModel):
+    # Validator method
+    @classmethod
+    def judge(cls, **kwargs):
+        """
+        Validator method
+        """
+        try:
+            return cls(**kwargs)
+        except ValidationError as e:
+            e.__traceback__ = None
+            raise e
+
+    # Factory method
+    @classmethod
+    def create(cls, **kwargs):
+        """
+        Factory creation method
+
+        Notes
+        ----------
+        This is for `pytest` testing.
+        """
+
+        return cls.judge(**kwargs).model_dump(exclude_none=True)
+
+class XLSXFile(InputModel, title="*.xlsx file tree"):
+    """
+    .xlsx file tree structure
+
+    Parameters
+    ----------
+    filename: str
+        Filename (as a string).
+    sheetname: Union[str, List[str]]
+        Sheet name (or list of sheet names) of a *.xlsx file (as a string) that will be loaded.
+    """
+
+    filename: str
+    sheetname: Union[str, List[str]]
+            
+class FileSettings(InputModel, title="parameter file settings"):
     """
     Parameter file settings
 
@@ -27,7 +73,9 @@ class FileSettings(BaseModel):
     sheetname: str
 
 
-class StratifiedSurveyMeanParameters(BaseModel, arbitrary_types_allowed=True):
+class StratifiedSurveyMeanParameters(InputModel, 
+                                     title="stratified survey parameters",
+                                     arbitrary_types_allowed=True):
     """
     Stratified sampling parameters
 
@@ -54,24 +102,48 @@ class StratifiedSurveyMeanParameters(BaseModel, arbitrary_types_allowed=True):
         return posfloat(v)
 
 
-class KrigingParameters(BaseModel, arbitrary_types_allowed=True):
+class KrigingParameters(InputModel, 
+                        arbitrary_types_allowed=True,
+                        title="kriging parameters"):
     """
     Kriging model parameters
+    
+    Parameters
+    ----------
+    A0: posfloat
+        Reference area (nmi^2) of a kriged mesh cell.
+    longitude_reference: float
+        Longitude reference for kriging mesh adjustment.
+    longitude_offset: float
+        Longitudinal offset for kriging mesh adjustment.
+    latitude_offset: float
+        Latitudinal offset for kriging mesh adjustment.
     """
 
-    A0: posfloat
-    longitude_reference: float
-    longitude_offset: float
-    latitude_offset: float
+    A0: posfloat = Field(ge=0.0, allow_inf_nan=False)
+    longitude_reference: float = Field(ge=-180.0, le=180.0, allow_inf_nan=False)
+    longitude_offset: float = Field(allow_inf_nan=False)
+    latitude_offset: float = Field(allow_inf_nan=False)
 
     @field_validator("A0", mode="before")
     def validate_posfloat(cls, v):
         return posfloat(v)
 
 
-class HaulTransectMap(BaseModel, arbitrary_types_allowed=True):
+class HaulTransectMap(InputModel, 
+                      arbitrary_types_allowed=True,
+                      title="haul-transect key mapping"):
     """
     Haul-to-transect key mapping generation parameters
+    
+    Parameters
+    ----------
+    save_file_template: str
+        Save file template name.
+    country_code: List[str]
+        List of country names, abbreviations, or codes.
+    file_settings: Dict[str, FileSettings]
+        A dictionary comprising directory names and sheetnames of associated files.
     """
 
     save_file_template: str
@@ -112,18 +184,41 @@ class HaulTransectMap(BaseModel, arbitrary_types_allowed=True):
         return v
 
 
-class PatternParts(BaseModel):
+class PatternParts(InputModel,
+                   title="region name pattern"):
     """
     String pattern parts
+    
+    Parameters
+    ----------
+    pattern: str
+        Pattern used for parsing region names.
+    label: str
+        Resulting label for each export group/region.
     """
 
     pattern: str
     label: str
 
 
-class TransectRegionMap(BaseModel, arbitrary_types_allowed=True):
+class TransectRegionMap(InputModel, 
+                        arbitrary_types_allowed=True,
+                        title="transect-region mapping parameters"):
     """
     Transect-to-region mapping parameters
+    
+    Parameters
+    ----------
+    save_file_template: str
+        Save file template name.
+    save_file_directory: str
+        File directory name.
+    save_file_sheetname: str
+        File sheetname.
+    pattern: str
+        Region map code/pattern.
+    parts: Dict[str, List[PatternParts]]
+        Dictionary of metadata-pattern paired codes.
     """
 
     save_file_template: str
@@ -185,9 +280,21 @@ class TransectRegionMap(BaseModel, arbitrary_types_allowed=True):
         return v
 
 
-class TSLRegressionParameters(BaseModel):
+class TSLRegressionParameters(InputModel,
+                              title="TS-length regression parameters"):
     """
     Target strength - length regression parameters
+    
+    Parameters
+    ----------
+    number_code: int
+        Numeric species code.
+    TS_L_slope: float
+        TS-length regression slope.
+    TS_L_intercept: float
+        TS-length regression intercept.
+    length_units: str
+        Length units for the TS-length regression.
     """
 
     number_code: int
@@ -196,9 +303,15 @@ class TSLRegressionParameters(BaseModel):
     length_units: str
 
 
-class Geospatial(BaseModel):
+class Geospatial(InputModel,
+                 title="EPSG code"):
     """
     Geospatial parameters
+
+    Parameters
+    ----------
+    init: str
+        EPSG projection code.
     """
 
     init: str
@@ -227,9 +340,28 @@ class Geospatial(BaseModel):
         return v
 
 
-class NASCExports(BaseModel, arbitrary_types_allowed=True):
+class NASCExports(InputModel, 
+                  arbitrary_types_allowed=True,
+                  title="Echoview export processing parameters"):
     """
     NASC export processing parameters
+    
+    Parameters
+    ----------
+    export_file_directory: str
+        Export file directory name.
+    nasc_export_directory: str
+        Directory name where Echoview export files are located.
+    save_file_template: str
+        Save file template name.
+    save_file_sheetname: str
+        File sheetname.
+    regions: Dict[str, List[str]]
+        Acoustic data region names (list or a single string).
+    max_transect_spacing: realposfloat
+        Maximum transect spacing (nmi).
+    file_columns: List[str]
+        File column names included in the final consolidated export *.xlsx file.
     """
 
     export_file_directory: str
@@ -237,7 +369,7 @@ class NASCExports(BaseModel, arbitrary_types_allowed=True):
     save_file_template: str
     save_file_sheetname: str
     regions: Dict[str, List[str]]
-    max_transect_spacing: realposfloat
+    max_transect_spacing: realposfloat = Field(ge=0.0, allow_inf_nan=False)
     file_columns: List[str]
 
     @field_validator("max_transect_spacing", mode="before")
@@ -262,7 +394,8 @@ class NASCExports(BaseModel, arbitrary_types_allowed=True):
         return v
 
 
-class CONFIG_INIT_MODEL(BaseModel, arbitrary_types_allowed=True):
+class CONFIG_INIT_MODEL(InputModel, 
+                        arbitrary_types_allowed=True):
     """
     Initialization parameter configuration YAML validator
     """
@@ -273,19 +406,29 @@ class CONFIG_INIT_MODEL(BaseModel, arbitrary_types_allowed=True):
     bio_hake_len_bin: List[Union[posint, realposfloat]]
     TS_length_regression_parameters: Dict[str, TSLRegressionParameters]
     geospatial: Geospatial
-    nasc_exports: Optional[NASCExports] = None
-    haul_to_transect_mapping: Optional[HaulTransectMap] = None
-    transect_region_mapping: Optional[TransectRegionMap] = None
+    nasc_exports: Optional[NASCExports] = Field(default=None)
+    haul_to_transect_mapping: Optional[HaulTransectMap] = Field(default=None)
+    transect_region_mapping: Optional[TransectRegionMap] = Field(default=None)
 
-    def __init__(self, filename, **kwargs):
-        try:
-            super().__init__(**kwargs)
-        except ValidationError as e:
-            # Customize error message
-            new_message = str(e).replace(
-                self.__class__.__name__, f"configuration parameters defined in {filename}"
-            )
-            raise ValueError(new_message) from e
+    # def __init__(self, filename, **kwargs):
+        
+    #     super().__init__(**kwargs)
+    #     # Modify the 'title' attribute
+    #     self.__config__.title = f"configuration parameters defined in '{filename}'"
+
+        # try:
+        #     super().__init__(**kwargs)
+        # except ValidationError as e:
+        #     raise e
+        
+        # try:
+        #     super().__init__(**kwargs)
+        # except ValidationError as e:
+        #     # Customize error message
+        #     new_message = str(e).replace(
+        #         self.__class__.__name__, self.model_config["title"]
+        #     )
+        #     raise ValueError(new_message) from e
 
     @field_validator("bio_hake_age_bin", "bio_hake_len_bin", mode="before")
     def validate_interval(cls, v):
@@ -332,6 +475,17 @@ class XLSXFiles(BaseModel):
 class BiologicalFiles(BaseModel):
     """
     Biological data files
+
+    Parameters
+    ----------
+    length: Union[Dict[str, XLSXFiles], XLSXFiles]
+        An *.xlsx file (or dictionary of files) containing binned length data.
+    specimen: Union[Dict[str, XLSXFiles], XLSXFiles]
+        An *.xlsx file (or dictionary of files) containing specimen biodata.
+    catch: Union[Dict[str, XLSXFiles], XLSXFiles]
+        An *.xlsx file (or dictionary of files) containing catch/haul biological data.
+    haul_to_transect: Union[Dict[str, XLSXFiles], XLSXFiles]
+        An *.xlsx file (or dictionary of files) containing haul-transect mapping data.
     """
 
     length: Union[Dict[str, XLSXFiles], XLSXFiles]
@@ -340,23 +494,40 @@ class BiologicalFiles(BaseModel):
     haul_to_transect: Union[Dict[str, XLSXFiles], XLSXFiles]
 
 
-class KrigingFiles(BaseModel):
+class KrigingFiles(InputModel, title="kriging file inputs"):
     """
     Kriging data files
+    
+    Parameters
+    ----------
+    isobath_200m: XLSXFile
+        An *.xlsx file (or dictionary of files) containing 200 m isobath coordinates.
+    mesh: XSLXFile
+        An *.xlsx file (or dictionary of files) containing kriging mesh node coordinates.
+    vario_krig_para: XSLXFile
+        An *.xlsx file (or dictionary of files) containing kriging and variogram parameter values.
     """
 
-    vario_krig_para: XLSXFiles
-    isobath_200m: XLSXFiles
-    mesh: XLSXFiles
+    vario_krig_para: XLSXFile
+    isobath_200m: XLSXFile
+    mesh: XLSXFile
 
 
-class StratificationFiles(BaseModel):
+class StratificationFiles(InputModel, title="stratification file inputs"):
     """
     Stratification data files
+    
+    Parameters
+    ----------
+    geo_strata: XSLXFile
+        An *.xlsx file (or dictionary of files) containing geographically defined strata.
+    strata: XLSXFile
+        An *.xlsx file (or dictionary of files) containing length-based (e.g. KS) strata 
+        information.
     """
 
-    strata: XLSXFiles
-    geo_strata: XLSXFiles
+    strata: XLSXFile
+    geo_strata: XLSXFile
 
 
 class CONFIG_DATA_MODEL(BaseModel):
