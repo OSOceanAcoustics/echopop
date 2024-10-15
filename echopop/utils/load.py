@@ -133,13 +133,6 @@ def load_dataset(
     # ---- Generate flat JSON table comprising all configuration parameter names
     flat_configuration_table = pd.json_normalize(configuration_dict).filter(regex="filename")
 
-    # Convert `dataset_type` to list if needed and defined
-    if dataset_type is None:
-        # ---- Default to `CONFIG_MAP` keys otherwise
-        dataset_type = list(CONFIG_MAP.keys())
-    elif not isinstance(dataset_type, list):
-        dataset_type = [dataset_type]
-
     # Get the subset table if specific `dataset_type` is defined
     if dataset_type:
         # ---- Get the outermost dictionary keys
@@ -166,7 +159,6 @@ def load_dataset(
         raise FileNotFoundError(f"The following data files do not exist: {missing_data}")
 
     # Get the applicable `CONFIG_MAP` keys for the defined datasets
-    # expected_datasets = set(CONFIG_MAP.keys()).intersection(dataset_type)
     expected_datasets = set(DATASET_DF_MODEL.keys()).intersection(dataset_type)
 
     # Data validation and import
@@ -224,21 +216,6 @@ def load_dataset(
                 sheet_name = [sheet_name] if isinstance(sheet_name, str) else sheet_name
 
                 for sheets in sheet_name:
-                    # Update if INPFC
-                    # if sheets.lower() == "inpfc":
-                    #     # Update validation settings from CONFIG_MAP
-                    #     validation_settings = CONFIG_MAP[dataset]["inpfc_strata"]
-
-                    #     # Update configuration key map
-                    #     config_map = [dataset, "inpfc_strata"]
-
-                    # elif datalayer == "geo_strata":
-                    #     # Update validation settings from CONFIG_MAP
-                    #     validation_settings = CONFIG_MAP[dataset][datalayer]
-
-                    #     # Update configuration key map
-                    #     config_map = [dataset, datalayer]
-
                     # Read in data and add to `Survey` object
                     read_validated_data(
                         input_dict,
@@ -294,36 +271,11 @@ def read_validated_data(
         # Slice only the columns that are relevant to the echopop module functionality
         # df_filtered = df_initial.filter(validation_settings)
         df = validation_settings.validate_df(df_initial)
-
-        # Error evaluation and print message (if applicable)
-        # if not set(validation_settings).issubset(set(df_filtered)):
-        #     missing_columns = set(validation_settings.keys()) - set(df_filtered)
-        #     raise ValueError(
-        #         f"Missing kriging/variogram parameters in the Excel file: {missing_columns}"
-        #     )
-
-        # # Apply data types from validation_settings to the filtered DataFrame
-        # df = df_filtered.apply(
-        #     lambda col: col.astype(
-        #         validation_settings.get(col.name, type(df_filtered.iloc[0][col.name]))
-        #     )
-        # )
-
     else:
         # Read Excel file into memory -- this only reads in the required columns
-        # df = pd.read_excel(file_name, sheet_name=sheet_name, usecols=validation_settings.keys())
         df = pd.read_excel(file_name, sheet_name=sheet_name).rename(columns=NAME_CONFIG)
         # ---- Rename the columns, if needed, and then filter them
-        # df = df.rename(columns=NAME_CONFIG).filter(validation_settings)
         df = validation_settings.validate_df(df)
-
-        # Error evaluation and print message (if applicable)
-        # if not set(validation_settings).issubset(set(df)):
-        #     missing_columns = set(validation_settings.keys()) - set(df)
-        #     raise ValueError(f"Missing columns in the Excel file: {missing_columns}")
-
-        # # Apply data types from validation_settings to the filtered DataFrame
-        # df = df.apply(lambda col: col.astype(validation_settings.get(col.name, type(col[0]))))
 
     # Assign the data to their correct data attributes/keys
     if LAYER_NAME_MAP[config_map[0]]["superlayer"] == []:
@@ -601,8 +553,6 @@ def prepare_input_data(input_dict: dict, configuration_dict: dict):
         input_dict["spatial"]["inpfc_strata_df"]["latitude_interval"] = pd.cut(
             input_dict["spatial"]["inpfc_strata_df"]["northlimit_latitude"] * 0.99, latitude_bins
         )
-
-    input_dict["acoustics"]["nasc_df"]
 
     # ACOUSTICS + SPATIAL
     if set(["acoustics", "spatial"]).issubset(imported_data):
