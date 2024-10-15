@@ -175,7 +175,7 @@ class Survey:
         """
         Calculate population-level metrics from acoustic transect measurements
         """
-        
+
         # Check dataset integrity
         dataset_integrity(self.input, analysis="transect")
 
@@ -261,7 +261,7 @@ class Survey:
 
         # Check dataset integrity
         dataset_integrity(self.input, analysis=f"stratified:{dataset}")
-        
+
         # Error message for `stratum == 'ks'`
         if stratum == "ks":
             raise ValueError(
@@ -336,7 +336,7 @@ class Survey:
         """
         Semivariogram plotting and parameter optimization GUI method
         """
-        
+
         # Check dataset integrity
         dataset_integrity(self.input, analysis="variogram")
 
@@ -571,7 +571,7 @@ class Survey:
         variable
             Biological variable that will be interpolated via kriging
         """
-        
+
         # Check dataset integrity
         dataset_integrity(self.input, analysis="kriging")
 

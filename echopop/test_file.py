@@ -15,10 +15,10 @@ from echopop.core import (
     NAME_CONFIG,
     REGION_EXPORT_MAP,
 )
-
 from echopop.spatial.transect import export_transect_layers, export_transect_spacing
 from echopop.survey import Survey
 from echopop.utils.data_structure_utils import map_imported_datasets
+from echopop.utils.load import prepare_input_data, read_validated_data
 from echopop.utils.load_nasc import (
     compile_patterns,
     consolidate_exports,
@@ -31,10 +31,11 @@ from echopop.utils.load_nasc import (
 )
 from echopop.utils.operations import compile_patterns, extract_parts_and_labels, group_merge
 from echopop.utils.validate_df import DATASET_DF_MODEL, KSStrata
-from echopop.utils.load import read_validated_data, prepare_input_data
 
-survey = Survey( init_config_path = "C:/Users/Brandyn Lucca/Documents/GitHub/echopop/config_files/initialization_config.yml" ,
-                 survey_year_config_path = "C:/Users/Brandyn Lucca/Documents/GitHub/echopop/config_files/survey_year_2019_config.yml" )
+survey = Survey(
+    init_config_path="C:/Users/Brandyn Lucca/Documents/GitHub/echopop/config_files/initialization_config.yml",
+    survey_year_config_path="C:/Users/Brandyn Lucca/Documents/GitHub/echopop/config_files/survey_year_2019_config.yml",
+)
 survey.load_survey_data()
 survey.transect_analysis()
 survey.stratified_analysis()
@@ -50,12 +51,14 @@ configuration_dict = self.config
 input_dict = self.input
 dataset_type = ["biological", "kriging", "stratification"]
 
-def dataset_integrity(input_dict: dict, 
-                      analysis: Literal["transect", "stratified", "variogram", "kriging"]):
+
+def dataset_integrity(
+    input_dict: dict, analysis: Literal["transect", "stratified", "variogram", "kriging"]
+):
     """
     Determine whether all of the necessary datasets are contained within the `Survey`-class object
     for each analysis
-    
+
     Parameters
     ----------
     input_dict: dict
@@ -63,15 +66,15 @@ def dataset_integrity(input_dict: dict,
     analysis: Literal["transect", "stratified", "variogram", "kriging"]
         The name of the analysis to be performed
     """
-    
+
     # Map the imported datasets
     imported_data = map_imported_datasets(input_dict)
-    
+
     # Initialize `missing`
     missing = None
-    
+
     # Transect analysis
-    if analysis == "transect": 
+    if analysis == "transect":
         try:
             assert set(imported_data).issubset(["acoustics", "biology", "spatial"])
         except AssertionError as e:
@@ -79,7 +82,7 @@ def dataset_integrity(input_dict: dict,
             missing = list(set(["acoustics", "biology", "spatial"]) - set(imported_data))
             # ---- Missing analysis str
             missing_analysis_method = "'transect_analysis'"
-            
+
     # Stratified analysis (transect)
     if analysis == "stratified:transect":
         try:
@@ -106,7 +109,9 @@ def dataset_integrity(input_dict: dict,
             assert set(imported_data).issubset(["acoustics", "biology", "spatial", "statistics"])
         except AssertionError as e:
             # ---- Collect missing values
-            missing = list(set(["acoustics", "biology", "spatial", "statistics"]) - set(imported_data))
+            missing = list(
+                set(["acoustics", "biology", "spatial", "statistics"]) - set(imported_data)
+            )
             # ---- Missing analysis str
             missing_analysis_method = "'kriging_analysis'"
 
@@ -118,8 +123,8 @@ def dataset_integrity(input_dict: dict,
             # ---- Collect missing values
             missing = list(set(["acoustics", "spatial", "statistics"]) - set(imported_data))
             # ---- Missing analysis str
-            missing_analysis_method = "'fit_variogram'/'variogram_gui'"            
-            
+            missing_analysis_method = "'fit_variogram'/'variogram_gui'"
+
     if missing:
         # ---- Format string
         missing_str = ", ".join([f"'{i}'" for i in missing])

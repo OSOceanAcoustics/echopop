@@ -160,7 +160,7 @@ def load_dataset(
 
     # Get the applicable `CONFIG_MAP` keys for the defined datasets
     expected_datasets = set(DATASET_DF_MODEL.keys()).intersection(dataset_type)
-    
+
     # Define root data directory
     data_root_directory = Path(configuration_dict["data_root_dir"])
 
@@ -179,13 +179,13 @@ def load_dataset(
 
             # Create reference index of the dictionary path
             config_map = [dataset, datalayer]
-            
+
             # Create list of region id's associated with biodata (if applicable)
             if dataset == "biological":
                 regions = configuration_dict[dataset][datalayer].keys()
             else:
                 regions = [None]  # Use None for non-biological datasets
-                
+
             # Create the file and sheetnames for the associated datasets
             for region_id in regions:
                 if region_id is not None:
@@ -198,10 +198,10 @@ def load_dataset(
                     # ---- All other datasets
                     file_name = data_root_directory / config_settings["filename"]
                     sheet_name = config_settings["sheetname"]
-            
+
                 # Ensure sheet_name is a list (to handle cases with multiple lists)
                 sheet_name = [sheet_name] if isinstance(sheet_name, str) else sheet_name
-            
+
                 # Validate data for each sheet
                 for sheets in sheet_name:
                     read_validated_data(
@@ -212,7 +212,7 @@ def load_dataset(
                         config_map,
                         validation_settings,
                     )
-    
+
     # If all files could be successfully read in, update the `imported_data` list
     imported_data = map_imported_datasets(input_dict)
 
@@ -403,6 +403,7 @@ def write_haul_to_transect_key(configuration_dict: dict, verbose: bool):
                 f"'{Path(root_directory + save_dir) / save_file}'."
             )
 
+
 def preprocess_biodata(input_dict: dict, configuration_dict: dict) -> None:
     """
     Preprocess just biological data
@@ -414,7 +415,7 @@ def preprocess_biodata(input_dict: dict, configuration_dict: dict) -> None:
     configuration_dict: dict
         Dictionary corresponding to the `config` attribute belonging to `Survey`-class
     """
-    
+
     # Generate length and age vectors
     # ---- Length vector
     length_bins = np.linspace(
@@ -430,7 +431,7 @@ def preprocess_biodata(input_dict: dict, configuration_dict: dict) -> None:
         configuration_dict["biometrics"]["bio_hake_age_bin"][2],
         dtype=np.float64,
     )
-    
+
     # Discretize these values into discrete intervals
     # ---- Calculate binwidths
     # -------- Length
@@ -450,9 +451,7 @@ def preprocess_biodata(input_dict: dict, configuration_dict: dict) -> None:
     # ---- Generate DataFrame for length
     length_bins_df = pd.DataFrame({"length_bins": length_bins})
     # -------- Discretize the bins as categorical intervals
-    length_bins_df["length_intervals"] = pd.cut(
-        length_bins_df["length_bins"], length_centered_bins
-    )
+    length_bins_df["length_intervals"] = pd.cut(length_bins_df["length_bins"], length_centered_bins)
     # ---- Generate DataFrame for age
     age_bins_df = pd.DataFrame({"age_bins": age_bins})
     # -------- Discretize the bins as categorical intervals
@@ -512,7 +511,8 @@ def preprocess_biodata(input_dict: dict, configuration_dict: dict) -> None:
     input_dict["biology"]["length_df"] = input_dict["biology"]["length_df"].bin_variable(
         length_centered_bins, "length"
     )
-    
+
+
 def preprocess_spatial(input_dict: dict) -> None:
     """
     Preprocess just spatial data
@@ -522,7 +522,7 @@ def preprocess_spatial(input_dict: dict) -> None:
     input_dict: dict
         Dictionary corresponding to the `input` attribute belonging to `Survey`-class
     """
-    
+
     # Update column names
     # ---- `geo_strata`
     input_dict["spatial"]["geo_strata_df"].columns = input_dict["spatial"][
@@ -547,6 +547,7 @@ def preprocess_spatial(input_dict: dict) -> None:
         input_dict["spatial"]["inpfc_strata_df"]["northlimit_latitude"] * 0.99, latitude_bins
     )
 
+
 def preprocess_acoustic_spatial(input_dict: dict) -> None:
     """
     Preprocess joint acoustic and spatial data
@@ -556,7 +557,7 @@ def preprocess_acoustic_spatial(input_dict: dict) -> None:
     input_dict: dict
         Dictionary corresponding to the `input` attribute belonging to `Survey`-class
     """
-    
+
     # Bin data
     # ---- Create latitude intervals to bin the strata
     latitude_bins = np.concatenate(
@@ -571,7 +572,7 @@ def preprocess_acoustic_spatial(input_dict: dict) -> None:
             labels=range(len(latitude_bins) - 1),
         )
     ).astype(int) + 1
-    
+
     # KS strata
     # ---- Map hauls to `all_ages`
     input_dict["acoustics"]["nasc_df"].set_index("haul_all_ages", inplace=True)
@@ -596,6 +597,7 @@ def preprocess_acoustic_spatial(input_dict: dict) -> None:
     ].fillna(1)
     input_dict["acoustics"]["nasc_df"] = input_dict["acoustics"]["nasc_df"].reset_index()
 
+
 def preprocess_biology_spatial(input_dict: dict) -> None:
     """
     Preprocess joint biological and spatial data
@@ -605,7 +607,7 @@ def preprocess_biology_spatial(input_dict: dict) -> None:
     input_dict: dict
         Dictionary corresponding to the `input` attribute belonging to `Survey`-class
     """
-    
+
     # Merge haul numbers and spatial information across biological variables
     # ---- Create interval key for haul numbers to assign INPFC stratum
     haul_bins = np.sort(
@@ -648,7 +650,8 @@ def preprocess_biology_spatial(input_dict: dict) -> None:
             )
             # ---- Reset the index
             input_dict["biology"][keys].reset_index(inplace=True)
-   
+
+
 def preprocess_acoustic_biology_spatial(input_dict: dict, configuration_dict: dict) -> None:
     """
     Preprocess joint acoustic, biological, and spatial data
@@ -660,7 +663,7 @@ def preprocess_acoustic_biology_spatial(input_dict: dict, configuration_dict: di
     configuration_dict: dict
         Dictionary corresponding to the `config` attribute belonging to `Survey`-class
     """
-    
+
     # Identify haul sub-groups, if they exist
     groups = [
         col.replace("haul_", "")
@@ -703,6 +706,7 @@ def preprocess_acoustic_biology_spatial(input_dict: dict, configuration_dict: di
         # ---- Reset index
         input_dict["acoustics"]["nasc_df"].reset_index(inplace=True)
 
+
 def preprocess_statistics(input_dict: dict, configuration_dict: dict) -> None:
     """
     Preprocess statistical data and settings
@@ -714,7 +718,7 @@ def preprocess_statistics(input_dict: dict, configuration_dict: dict) -> None:
     configuration_dict: dict
         Dictionary corresponding to the `config` attribute belonging to `Survey`-class
     """
-    
+
     # Reorganize kriging/variogram parameters
     # ---- Kriging
     # -------- Generate dictionary comprising kriging model configuration
@@ -847,13 +851,16 @@ def validate_config_structure(yaml_data, config_spec):
         print(f"Validation error: {e}")
 
 
-def dataset_integrity(input_dict: dict, 
-                      analysis: Literal["transect", "stratified:kriging", 
-                                        "stratified:transect", "variogram", "kriging"]):
+def dataset_integrity(
+    input_dict: dict,
+    analysis: Literal[
+        "transect", "stratified:kriging", "stratified:transect", "variogram", "kriging"
+    ],
+):
     """
     Determine whether all of the necessary datasets are contained within the `Survey`-class object
     for each analysis
-    
+
     Parameters
     ----------
     input_dict: dict
@@ -861,26 +868,26 @@ def dataset_integrity(input_dict: dict,
     analysis: Literal["transect", "stratified", "variogram", "kriging"]
         The name of the analysis to be performed
     """
-    
+
     # Map the imported datasets
     imported_data = map_imported_datasets(input_dict)
-    
+
     # Initialize `missing`
     missing = None
-    
+
     # Transect analysis
-    if analysis == "transect": 
+    if analysis == "transect":
         # ---- Create expected datasets list
         expected_datasets = ["acoustics", "biology", "spatial"]
         # ---- Missing analysis str
         missing_analysis_method = "'transect_analysis'"
-        
+
     # Stratified analysis (transect)
     if analysis == "stratified:transect":
         # ---- Create expected datasets list
         expected_datasets = ["acoustics", "spatial"]
         # ---- Missing analysis str
-        missing_analysis_method = "'stratified_analysis' (for transect data)"   
+        missing_analysis_method = "'stratified_analysis' (for transect data)"
 
     # Stratified analysis (kriging)
     if analysis == "stratified:kriging":
@@ -888,22 +895,22 @@ def dataset_integrity(input_dict: dict,
         expected_datasets = ["acoustics", "spatial", "statistics"]
         # ---- Missing analysis str
         missing_analysis_method = "'stratified_analysis' (for kriged data)"
-            
+
     # Kriging analysis
     if analysis == "kriging":
         # ---- Create expected datasets list
         expected_datasets = ["acoustics", "biology", "spatial", "statistics"]
         # ---- Missing analysis str
-        missing_analysis_method = "'fit_variogram'/'variogram_gui'"  
+        missing_analysis_method = "'fit_variogram'/'variogram_gui'"
 
     # Variogram analysis
     if analysis == "variogram":
         # ---- Create expected datasets list
-        expected_datasets = ["acoustics", "spatial", "statistics"]    
+        expected_datasets = ["acoustics", "spatial", "statistics"]
         # ---- Missing analysis str
-        missing_analysis_method = "'fit_variogram'/'variogram_gui'"        
-                    
-    # Raise Error, if appropriate        
+        missing_analysis_method = "'fit_variogram'/'variogram_gui'"
+
+    # Raise Error, if appropriate
     if not set(expected_datasets).issubset(imported_data):
         # ---- Collect missing values
         missing = set(expected_datasets) - set(imported_data)
@@ -911,6 +918,6 @@ def dataset_integrity(input_dict: dict,
         missing_str = ", ".join([f"'{i}'" for i in missing])
         # ---- Raise error
         raise ValueError(
-            f"The following input datasets are missing for {missing_analysis_method}: " 
+            f"The following input datasets are missing for {missing_analysis_method}: "
             f"{missing_str}."
         ).with_traceback(None)
