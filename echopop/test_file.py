@@ -15,6 +15,7 @@ from echopop.core import (
     NAME_CONFIG,
     REGION_EXPORT_MAP,
 )
+
 from echopop.spatial.transect import export_transect_layers, export_transect_spacing
 from echopop.survey import Survey
 from echopop.utils.data_structure_utils import map_imported_datasets
@@ -30,9 +31,13 @@ from echopop.utils.load_nasc import (
 )
 from echopop.utils.operations import compile_patterns, extract_parts_and_labels, group_merge
 from echopop.utils.validate_df import DATASET_DF_MODEL, KSStrata
+from echopop.utils.load import read_validated_data, prepare_input_data
 
-survey = Survey( init_config_path = "C:/Users/Brandyn/Documents/GitHub/echopop/config_files/initialization_config.yml" ,
-                 survey_year_config_path = "C:/Users/Brandyn/Documents/GitHub/echopop/config_files/survey_year_2019_config.yml" )
+survey = Survey( init_config_path = "C:/Users/Brandyn Lucca/Documents/GitHub/echopop/config_files/initialization_config.yml" ,
+                 survey_year_config_path = "C:/Users/Brandyn Lucca/Documents/GitHub/echopop/config_files/survey_year_2019_config.yml" )
+survey.load_survey_data()
+survey.transect_analysis()
+survey.stratified_analysis()
 
 self = survey
 index_variable: Union[str, List[str]] = ["transect_num", "interval"]
@@ -45,164 +50,80 @@ configuration_dict = self.config
 input_dict = self.input
 dataset_type = ["biological", "kriging", "stratification"]
 
-# Re-initialize the input keys, if needed
-# ---- Get name of the proposed input dictionary keys
-input_keys = [
-    (
-        LAYER_NAME_MAP[key]["superlayer"][0]
-        if LAYER_NAME_MAP[key]["superlayer"]
-        else LAYER_NAME_MAP[key]["name"]
-    )
-    # for key in CONFIG_MAP.keys()
-    for key in DATASET_DF_MODEL.keys()
-    if key in list(dataset_type)
-]
+def dataset_integrity(input_dict: dict, 
+                      analysis: Literal["transect", "stratified", "variogram", "kriging"]):
+    """
+    Determine whether all of the necessary datasets are contained within the `Survey`-class object
+    for each analysis
+    
+    Parameters
+    ----------
+    input_dict: dict
+        Dictionary corresponding to the `input` attribute belonging to `Survey`-class
+    analysis: Literal["transect", "stratified", "variogram", "kriging"]
+        The name of the analysis to be performed
+    """
+    
+    # Map the imported datasets
+    imported_data = map_imported_datasets(input_dict)
+    
+    # Initialize `missing`
+    missing = None
+    
+    # Transect analysis
+    if analysis == "transect": 
+        try:
+            assert set(imported_data).issubset(["acoustics", "biology", "spatial"])
+        except AssertionError as e:
+            # ---- Collect missing values
+            missing = list(set(["acoustics", "biology", "spatial"]) - set(imported_data))
+            # ---- Missing analysis str
+            missing_analysis_method = "'transect_analysis'"
+            
+    # Stratified analysis (transect)
+    if analysis == "stratified:transect":
+        try:
+            assert set(imported_data).issubset(["acoustics", "spatial"])
+        except AssertionError as e:
+            # ---- Collect missing values
+            missing = list(set(["acoustics", "spatial"]) - set(imported_data))
+            # ---- Missing analysis str
+            missing_analysis_method = "'stratified_analysis' (for transect data)"
 
-# ---- Map the complete datasets
-imported_data = map_imported_datasets(input_dict)
-# ---- Re-initialize if data already loaded to avoid duplication issues
-if set(input_keys).issubset(imported_data):
-    # ---- Reset the relevant keys
-    input_dict.update({key: copy.deepcopy(DATA_STRUCTURE["input"][key]) for key in input_keys})
+    # Stratified analysis (kriging)
+    if analysis == "stratified:kriging":
+        try:
+            assert set(imported_data).issubset(["acoustics", "spatial", "statistics"])
+        except AssertionError as e:
+            # ---- Collect missing values
+            missing = list(set(["acoustics", "spatial", "statistics"]) - set(imported_data))
+            # ---- Missing analysis str
+            missing_analysis_method = "'stratified_analysis' (for kriged data)"
 
-# Check whether data files defined from the configuration file exists
-# ---- Generate flat JSON table comprising all configuration parameter names
-flat_configuration_table = pd.json_normalize(configuration_dict).filter(regex="filename")
+    # Kriging analysis
+    if analysis == "kriging":
+        try:
+            assert set(imported_data).issubset(["acoustics", "biology", "spatial", "statistics"])
+        except AssertionError as e:
+            # ---- Collect missing values
+            missing = list(set(["acoustics", "biology", "spatial", "statistics"]) - set(imported_data))
+            # ---- Missing analysis str
+            missing_analysis_method = "'kriging_analysis'"
 
-# Get the subset table if specific `dataset_type` is defined
-if dataset_type:
-    # ---- Get the outermost dictionary keys
-    outer_keys = flat_configuration_table.columns.str.split(".").str[0]
-    # ---- Get the associated column names
-    matching_columns = flat_configuration_table.columns[outer_keys.isin(dataset_type)]
-    # ---- Filter the columns
-    flat_configuration_table = flat_configuration_table.filter(matching_columns)
-# ---- Default to `CONFIG_MAP` keys otherwise
-else:
-    # dataset_type = list(CONFIG_MAP.keys())
-    dataset_type = list(DATASET_DF_MODEL.keys())
-# ---- Parse the flattened configuration table to identify data file names and paths
-parsed_filenames = flat_configuration_table.values.flatten()
-# ---- Evaluate whether either file is missing
-data_existence = [
-    (Path(configuration_dict["data_root_dir"]) / file).exists() for file in parsed_filenames
-]
-
-# Assign the existence status to each configuration file for error evaluation
-# ---- Error evaluation and print message (if applicable)
-if not all(data_existence):
-    missing_data = parsed_filenames[~np.array(data_existence)]
-    raise FileNotFoundError(f"The following data files do not exist: {missing_data}")
-
-# Get the subset table if specific `dataset_type` is defined
-if dataset_type:
-    # ---- Get the outermost dictionary keys
-    outer_keys = flat_configuration_table.columns.str.split(".").str[0]
-    # ---- Get the associated column names
-    matching_columns = flat_configuration_table.columns[outer_keys.isin(dataset_type)]
-    # ---- Filter the columns
-    flat_configuration_table = flat_configuration_table.filter(matching_columns)
-# ---- Default to `CONFIG_MAP` keys otherwise
-else:
-    # dataset_type = list(CONFIG_MAP.keys())
-    dataset_type = list(DATASET_DF_MODEL.keys())
-# ---- Parse the flattened configuration table to identify data file names and paths
-parsed_filenames = flat_configuration_table.values.flatten()
-# ---- Evaluate whether either file is missing
-data_existence = [
-    (Path(configuration_dict["data_root_dir"]) / file).exists() for file in parsed_filenames
-]
-
-# Assign the existence status to each configuration file for error evaluation
-# ---- Error evaluation and print message (if applicable)
-if not all(data_existence):
-    missing_data = parsed_filenames[~np.array(data_existence)]
-    raise FileNotFoundError(f"The following data files do not exist: {missing_data}")
-
-
-# Get the applicable `CONFIG_MAP` keys for the defined datasets
-expected_datasets = set(DATASET_DF_MODEL.keys()).intersection(dataset_type)
-
-dataset = "biological"
-
-config_df = pd.DataFrame(configuration_dict[dataset])
-
-datalayer = config_df.columns[0]
-
-def extract_filename_sheetname(root_dir, df):
-    if isinstance(df.iloc[0, 0], dict):  # Check if first element is a dict (nested case)
-        # Flatten nested dictionaries and extract tuples
-        return [
-            (root_dir / d['filename'], d['sheetname'])
-            for row in df.values
-            for d in row
-        ]
-    else:
-        # Handle case where `sheetname` might be a list
-        return [
-            (root_dir / df.at['filename', col], sheet) if isinstance(df.at['sheetname', col], list)
-            else (root_dir / df.at['filename', col], df.at['sheetname', col])
-            for col in df.columns
-            for sheet in (df.at['sheetname', col] if isinstance(df.at['sheetname', col], list)
-                          else [df.at['sheetname', col]])
-        ]
-
-data_root_directory = Path(configuration_dict["data_root_dir"])
-dataset = "stratification"
-datalayer = "strata"
-
-# Define validation settings from CONFIG_MAP
-validation_settings = DATASET_DF_MODEL[dataset][datalayer]
-
-# Define configuration settings w/ file + sheet names
-config_settings = configuration_dict[dataset][datalayer]
-
-# Create reference index of the dictionary path
-config_map = [dataset, datalayer]
-
-sheetname = config_settings["sh"]
-sheet = [sheetname] if isinstance(sheetname, str) else sheetname
-dataset_dict = {}
-dataset_dict["file_name"] = np.repeat(config_settings["filename"], len(config_settings["sheetname"]))
-
-data_root_directory / config_settings["filename"]
-Path(str(dataset_dict["file_name"]) * len(config_settings["sheetname"]))
-
-
-if isinstance(sheetname, list):
-    dataset_dict["file_name"].append(dataset_dict["file_name"][0])
-
-
-
-if dataset == "biological"
-
-configuration_dict[dataset][datalayer]
-configuration_dict["biological"]["specimen"]
-
-filename, sheetname = extract_filename_sheetname(data_root_directory, )
-
-
-config_df = pd.DataFrame(configuration_dict).filter(expected_datasets).dropna(how="all")
-
-dataset = "biological"
-root_dir = Path(configuration_dict["data_root_dir"])
-
-for dataset in config_df.columns.to_list():
-
-    dataset_df = pd.DataFrame(config_df[dataset].dropna(how="all").to_dict())
-    extract_filename_sheetname(root_dir, dataset_df)
-
-
-[pd.DataFrame(config_df[dataset]) for dataset in ]
-
-{key: extract_filename_sheetname(pd.DataFrame(configuration_dict[dataset])) for key in config_df.columns}
-
-file_sheet_pairs = {key: extract_filename_sheetname(pd.DataFrame(configuration_dict[dataset])) for key in config_df.columns.to_list()}
-{key: extract_filename_sheetname(pd.DataFrame(configuration_dict[dataset])) for key in config_df.columns.to_list()}
-# Define validation settings from CONFIG_MAP
-validation_settings = DATASET_DF_MODEL[dataset][datalayer]
-
-# Create paired filename-sheetname tuples
-
-# Define configuration settings w/ file + sheet names
-config_settings = configuration_dict[dataset][datalayer]
+    # Variogram analysis
+    if analysis == "variogram":
+        try:
+            assert set(imported_data).issubset(["acoustics", "spatial", "statistics"])
+        except AssertionError as e:
+            # ---- Collect missing values
+            missing = list(set(["acoustics", "spatial", "statistics"]) - set(imported_data))
+            # ---- Missing analysis str
+            missing_analysis_method = "'fit_variogram'/'variogram_gui'"            
+            
+    if missing:
+        # ---- Format string
+        missing_str = ", ".join([f"'{i}'" for i in missing])
+        # ---- Raise error
+        raise ValueError(
+            f"The following datasets are missing for {missing_analysis_method}: {missing_str}."
+        )

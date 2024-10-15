@@ -18,6 +18,7 @@ from .graphics import variogram_interactive as egv
 from .spatial.projection import transform_geometry
 from .spatial.transect import edit_transect_columns
 from .utils import load as el, load_nasc as eln, message as em
+from .utils.load import dataset_integrity
 from .utils.validate_dict import (
     KrigingParameters,
     MeshCrop,
@@ -174,6 +175,9 @@ class Survey:
         """
         Calculate population-level metrics from acoustic transect measurements
         """
+        
+        # Check dataset integrity
+        dataset_integrity(self.input, analysis="transect")
 
         # Update settings to reflect the stratum definition
         self.analysis["settings"].update(
@@ -255,6 +259,9 @@ class Survey:
         designed to be compatible with other derived population-level statistics (e.g. kriging).
         """
 
+        # Check dataset integrity
+        dataset_integrity(self.input, analysis=f"stratified:{dataset}")
+        
         # Error message for `stratum == 'ks'`
         if stratum == "ks":
             raise ValueError(
@@ -329,6 +336,9 @@ class Survey:
         """
         Semivariogram plotting and parameter optimization GUI method
         """
+        
+        # Check dataset integrity
+        dataset_integrity(self.input, analysis="variogram")
 
         # Initialize results
         self.results["variogram"] = {}
@@ -463,6 +473,9 @@ class Survey:
         values imported from `self.input["statistics"]["variogram"]["model_config"]`.
         """
 
+        # Check dataset integrity
+        dataset_integrity(self.input, analysis="variogram")
+
         # Validate "variable" input
         if variable not in ["biomass"]:
             raise ValueError(
@@ -558,6 +571,9 @@ class Survey:
         variable
             Biological variable that will be interpolated via kriging
         """
+        
+        # Check dataset integrity
+        dataset_integrity(self.input, analysis="kriging")
 
         # Populate settings dictionary with input argument values/entries
         self.analysis["settings"].update(

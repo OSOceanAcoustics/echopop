@@ -5,7 +5,6 @@ Validation functions.
 # TODO: Compile all package validators here since they may not belong elsewhere
 import numpy as np
 
-
 # CLASS-SPECIFIC CORE API
 class posint(int):
     """Positive-only integer (includes 0)"""

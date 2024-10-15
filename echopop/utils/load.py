@@ -1,6 +1,6 @@
 import copy
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import List, Literal, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -160,6 +160,9 @@ def load_dataset(
 
     # Get the applicable `CONFIG_MAP` keys for the defined datasets
     expected_datasets = set(DATASET_DF_MODEL.keys()).intersection(dataset_type)
+    
+    # Define root data directory
+    data_root_directory = Path(configuration_dict["data_root_dir"])
 
     # Data validation and import
     # ---- Iterate through known datasets and datalayers
@@ -176,47 +179,31 @@ def load_dataset(
 
             # Create reference index of the dictionary path
             config_map = [dataset, datalayer]
-
-            # Define the data layer name
-            # ---- Based on the lattermost portion of the file path string
-            # Create list for parsing the hard-coded API dictionary
+            
+            # Create list of region id's associated with biodata (if applicable)
             if dataset == "biological":
-                for region_id in [*configuration_dict[dataset][datalayer].keys()]:
-
-                    # Get file and sheet name
-                    file_name = (
-                        Path(configuration_dict["data_root_dir"])
-                        / config_settings[region_id]["filename"]
-                    )
-                    sheet_name = config_settings[region_id]["sheetname"]
-
-                    # Update `config_map`
-                    if len(config_map) == 2:
-                        config_map = config_map + [region_id]
-                    else:
-                        config_map[2] = region_id
-
-                    # Validate datatypes within dataset and make appropriate changes to dtypes
-                    # ---- This first enforces the correct dtype for each imported column
-                    # ---- This then assigns the imported data to the correct class attribute
-                    read_validated_data(
-                        input_dict,
-                        configuration_dict,
-                        file_name,
-                        sheet_name,
-                        config_map,
-                        validation_settings,
-                    )
+                regions = configuration_dict[dataset][datalayer].keys()
             else:
-                file_name = Path(configuration_dict["data_root_dir"]) / config_settings["filename"]
-                sheet_name = config_settings["sheetname"]
-
-                # If multiple sheets, iterate through
-                # ---- If multiple sheets, then this needs to be converted accordingly
+                regions = [None]  # Use None for non-biological datasets
+                
+            # Create the file and sheetnames for the associated datasets
+            for region_id in regions:
+                if region_id is not None:
+                    # ---- Biological data
+                    file_name = data_root_directory / config_settings[region_id]["filename"]
+                    sheet_name = config_settings[region_id]["sheetname"]
+                    # ---- Update `config_map` to include region_id
+                    config_map = [dataset, datalayer, region_id]
+                else:
+                    # ---- All other datasets
+                    file_name = data_root_directory / config_settings["filename"]
+                    sheet_name = config_settings["sheetname"]
+            
+                # Ensure sheet_name is a list (to handle cases with multiple lists)
                 sheet_name = [sheet_name] if isinstance(sheet_name, str) else sheet_name
-
+            
+                # Validate data for each sheet
                 for sheets in sheet_name:
-                    # Read in data and add to `Survey` object
                     read_validated_data(
                         input_dict,
                         configuration_dict,
@@ -225,9 +212,12 @@ def load_dataset(
                         config_map,
                         validation_settings,
                     )
+    
+    # If all files could be successfully read in, update the `imported_data` list
+    imported_data = map_imported_datasets(input_dict)
 
     # Update the data format of various inputs within `Survey`
-    prepare_input_data(input_dict, configuration_dict)
+    prepare_input_data(input_dict, configuration_dict, imported_data)
 
 
 def read_validated_data(
@@ -413,8 +403,355 @@ def write_haul_to_transect_key(configuration_dict: dict, verbose: bool):
                 f"'{Path(root_directory + save_dir) / save_file}'."
             )
 
+def preprocess_biodata(input_dict: dict, configuration_dict: dict) -> None:
+    """
+    Preprocess just biological data
 
-def prepare_input_data(input_dict: dict, configuration_dict: dict):
+    Parameters
+    ----------
+    input_dict: dict
+        Dictionary corresponding to the `input` attribute belonging to `Survey`-class
+    configuration_dict: dict
+        Dictionary corresponding to the `config` attribute belonging to `Survey`-class
+    """
+    
+    # Generate length and age vectors
+    # ---- Length vector
+    length_bins = np.linspace(
+        configuration_dict["biometrics"]["bio_hake_len_bin"][0],
+        configuration_dict["biometrics"]["bio_hake_len_bin"][1],
+        configuration_dict["biometrics"]["bio_hake_len_bin"][2],
+        dtype=np.float64,
+    )
+    # ---- Age vector
+    age_bins = np.linspace(
+        configuration_dict["biometrics"]["bio_hake_age_bin"][0],
+        configuration_dict["biometrics"]["bio_hake_age_bin"][1],
+        configuration_dict["biometrics"]["bio_hake_age_bin"][2],
+        dtype=np.float64,
+    )
+    
+    # Discretize these values into discrete intervals
+    # ---- Calculate binwidths
+    # -------- Length
+    length_binwidth = np.mean(np.diff(length_bins / 2.0))
+    # -------- Age
+    age_binwidth = np.mean(np.diff(age_bins / 2.0))
+    # ---- Center the bins within the binwidths
+    # -------- Length
+    length_centered_bins = np.concatenate(
+        ([length_bins[0] - length_binwidth], length_bins + length_binwidth)
+    )
+    # -------- Age
+    age_centered_bins = np.concatenate(([age_bins[0] - age_binwidth], age_bins + age_binwidth))
+
+    # Merge the vector and centered bins into dataframes that will be added into the `input`
+    # attribute
+    # ---- Generate DataFrame for length
+    length_bins_df = pd.DataFrame({"length_bins": length_bins})
+    # -------- Discretize the bins as categorical intervals
+    length_bins_df["length_intervals"] = pd.cut(
+        length_bins_df["length_bins"], length_centered_bins
+    )
+    # ---- Generate DataFrame for age
+    age_bins_df = pd.DataFrame({"age_bins": age_bins})
+    # -------- Discretize the bins as categorical intervals
+    age_bins_df["age_intervals"] = pd.cut(age_bins_df["age_bins"], age_centered_bins)
+    # ---- Update `input` attribute
+    # -------- Length
+    input_dict["biology"]["distributions"]["length_bins_df"] = length_bins_df
+    # -------- Age
+    input_dict["biology"]["distributions"]["age_bins_df"] = age_bins_df
+    # -------- Delete the duplicate configuration keys
+    # del configuration_dict["biometrics"]
+
+    # Relabel sex to literal words among biological data
+    # ---- Specimen
+    input_dict["biology"]["specimen_df"]["sex"] = np.where(
+        input_dict["biology"]["specimen_df"]["sex"] == int(1),
+        "male",
+        np.where(
+            input_dict["biology"]["specimen_df"]["sex"] == int(2),
+            "female",
+            np.where(
+                input_dict["biology"]["specimen_df"]["sex"].isin(["male", "female"]),
+                input_dict["biology"]["specimen_df"]["sex"],
+                "unsexed",
+            ),
+        ),
+    )
+    # -------- Sex group
+    input_dict["biology"]["specimen_df"]["group_sex"] = np.where(
+        input_dict["biology"]["specimen_df"]["sex"] != "unsexed", "sexed", "unsexed"
+    )
+    # ---- Length
+    input_dict["biology"]["length_df"]["sex"] = np.where(
+        input_dict["biology"]["length_df"]["sex"] == int(1),
+        "male",
+        np.where(
+            input_dict["biology"]["length_df"]["sex"] == int(2),
+            "female",
+            np.where(
+                input_dict["biology"]["length_df"]["sex"].isin(["male", "female"]),
+                input_dict["biology"]["length_df"]["sex"],
+                "unsexed",
+            ),
+        ),
+    )
+    # -------- Sex group
+    input_dict["biology"]["length_df"]["group_sex"] = np.where(
+        input_dict["biology"]["length_df"]["sex"] != "unsexed", "sexed", "unsexed"
+    )
+
+    # Discretize the age and length bins of appropriate biological data
+    # ---- Specimen
+    input_dict["biology"]["specimen_df"] = input_dict["biology"]["specimen_df"].bin_variable(
+        [length_centered_bins, age_centered_bins], ["length", "age"]
+    )
+    # ---- Length
+    input_dict["biology"]["length_df"] = input_dict["biology"]["length_df"].bin_variable(
+        length_centered_bins, "length"
+    )
+    
+def preprocess_spatial(input_dict: dict) -> None:
+    """
+    Preprocess just spatial data
+
+    Parameters
+    ----------
+    input_dict: dict
+        Dictionary corresponding to the `input` attribute belonging to `Survey`-class
+    """
+    
+    # Update column names
+    # ---- `geo_strata`
+    input_dict["spatial"]["geo_strata_df"].columns = input_dict["spatial"][
+        "geo_strata_df"
+    ].columns.str.replace(" ", "_")
+    # ---- `inpfc_strata`
+    input_dict["spatial"]["inpfc_strata_df"].columns = input_dict["spatial"][
+        "inpfc_strata_df"
+    ].columns.str.replace(" ", "_")
+    # ---- `inpfc_strata`: rename stratum column name to avoid conflicts
+    input_dict["spatial"]["inpfc_strata_df"].rename(
+        columns={"stratum_num": "stratum_inpfc"}, inplace=True
+    )
+
+    # Bin data
+    # ---- Create latitude intervals to bin the strata
+    latitude_bins = np.concatenate(
+        [[-90], input_dict["spatial"]["inpfc_strata_df"]["northlimit_latitude"], [90]]
+    )
+    # ---- Add categorical intervals
+    input_dict["spatial"]["inpfc_strata_df"]["latitude_interval"] = pd.cut(
+        input_dict["spatial"]["inpfc_strata_df"]["northlimit_latitude"] * 0.99, latitude_bins
+    )
+
+def preprocess_acoustic_spatial(input_dict: dict) -> None:
+    """
+    Preprocess joint acoustic and spatial data
+
+    Parameters
+    ----------
+    input_dict: dict
+        Dictionary corresponding to the `input` attribute belonging to `Survey`-class
+    """
+    
+    # Bin data
+    # ---- Create latitude intervals to bin the strata
+    latitude_bins = np.concatenate(
+        [[-90], input_dict["spatial"]["inpfc_strata_df"]["northlimit_latitude"], [90]]
+    )
+    # ---- Bin NASC transects into appropriate INPFC strata
+    input_dict["acoustics"]["nasc_df"]["stratum_inpfc"] = (
+        pd.cut(
+            input_dict["acoustics"]["nasc_df"]["latitude"],
+            latitude_bins,
+            right=True,
+            labels=range(len(latitude_bins) - 1),
+        )
+    ).astype(int) + 1
+    
+    # KS strata
+    # ---- Map hauls to `all_ages`
+    input_dict["acoustics"]["nasc_df"].set_index("haul_all_ages", inplace=True)
+    input_dict["acoustics"]["nasc_df"]["stratum_all_ages"] = (
+        input_dict["spatial"]["strata_df"]
+        .rename(columns={"haul_num": "haul_all_ages"})
+        .set_index("haul_all_ages")["stratum_num"]
+    )
+    input_dict["acoustics"]["nasc_df"]["stratum_all_ages"] = input_dict["acoustics"]["nasc_df"][
+        "stratum_all_ages"
+    ].fillna(1)
+    input_dict["acoustics"]["nasc_df"] = input_dict["acoustics"]["nasc_df"].reset_index()
+    # ---- Map hauls to `no_age1`
+    input_dict["acoustics"]["nasc_df"].set_index("haul_no_age1", inplace=True)
+    input_dict["acoustics"]["nasc_df"]["stratum_no_age1"] = (
+        input_dict["spatial"]["strata_df"]
+        .rename(columns={"haul_num": "haul_no_age1"})
+        .set_index("haul_no_age1")["stratum_num"]
+    )
+    input_dict["acoustics"]["nasc_df"]["stratum_no_age1"] = input_dict["acoustics"]["nasc_df"][
+        "stratum_no_age1"
+    ].fillna(1)
+    input_dict["acoustics"]["nasc_df"] = input_dict["acoustics"]["nasc_df"].reset_index()
+
+def preprocess_biology_spatial(input_dict: dict) -> None:
+    """
+    Preprocess joint biological and spatial data
+
+    Parameters
+    ----------
+    input_dict: dict
+        Dictionary corresponding to the `input` attribute belonging to `Survey`-class
+    """
+    
+    # Merge haul numbers and spatial information across biological variables
+    # ---- Create interval key for haul numbers to assign INPFC stratum
+    haul_bins = np.sort(
+        np.unique(
+            np.concatenate(
+                [
+                    input_dict["spatial"]["inpfc_strata_df"]["haul_start"] - int(1),
+                    input_dict["spatial"]["inpfc_strata_df"]["haul_end"],
+                ]
+            )
+        )
+    )
+    # ---- Quantize the INPFC dataframe hauls based on strata
+    input_dict["spatial"]["inpfc_strata_df"]["haul_bin"] = pd.cut(
+        (
+            input_dict["spatial"]["inpfc_strata_df"]["haul_start"]
+            + input_dict["spatial"]["inpfc_strata_df"]["haul_end"]
+        )
+        / 2,
+        haul_bins,
+    )
+    # ---- Rename `stratum_num` column
+    input_dict["spatial"]["inpfc_strata_df"].rename(
+        columns={"stratum_num": "stratum_inpfc"}, inplace=True
+    )
+
+    # Get the KS-strata
+    strata_df = input_dict["spatial"]["strata_df"].copy().set_index(["haul_num"])
+
+    # Loop through the KS-strata to map the correct strata values
+    for keys, values in input_dict["biology"].items():
+        if isinstance(values, pd.DataFrame) and "haul_num" in values.columns:
+            # ---- Index based on `haul_num`
+            input_dict["biology"][keys].set_index(["haul_num"], inplace=True)
+            # ---- Map the correct `stratum_num` value
+            input_dict["biology"][keys]["stratum_num"] = strata_df["stratum_num"]
+            # ---- Correct the value datatype
+            input_dict["biology"][keys]["stratum_num"] = (
+                input_dict["biology"][keys]["stratum_num"].fillna(0.0).astype(int)
+            )
+            # ---- Reset the index
+            input_dict["biology"][keys].reset_index(inplace=True)
+   
+def preprocess_acoustic_biology_spatial(input_dict: dict, configuration_dict: dict) -> None:
+    """
+    Preprocess joint acoustic, biological, and spatial data
+
+    Parameters
+    ----------
+    input_dict: dict
+        Dictionary corresponding to the `input` attribute belonging to `Survey`-class
+    configuration_dict: dict
+        Dictionary corresponding to the `config` attribute belonging to `Survey`-class
+    """
+    
+    # Identify haul sub-groups, if they exist
+    groups = [
+        col.replace("haul_", "")
+        for col in input_dict["acoustics"]["nasc_df"].columns
+        if "haul" in col
+    ]
+    # ---- Get unique species to be processed
+    spp = configuration_dict["species"]["number_code"]
+    # ---- Change to list, if needed
+    spp = [spp] if not isinstance(spp, list) else spp
+    # ---- Get the unique values in the table
+    nonzero_trawls = list(
+        set(
+            val
+            for df in input_dict["biology"].values()
+            if isinstance(df, pd.DataFrame)
+            and all(col in df.columns for col in ["haul_num", "species_id"])
+            for val in df.loc[df["species_id"].isin(spp), "haul_num"].unique()
+        )
+    )
+    # ---- Assign the correct KS-strata to NASC region groups
+    for grp in groups:
+        # ---- Index `nasc_df`
+        input_dict["acoustics"]["nasc_df"].set_index(f"haul_{grp}", inplace=True)
+        # ---- Create copy of `strata_df` and index
+        strata_df = input_dict["spatial"]["strata_df"].copy()
+        # ---- Remove zero-trawls
+        strata_df = (
+            strata_df[strata_df["haul_num"].isin(nonzero_trawls)]
+            .filter(["stratum_num", "haul_num"])
+            .rename(columns={"haul_num": f"haul_{grp}"})
+            .set_index([f"haul_{grp}"])
+        )
+        # ---- Merge the strata information based on haul
+        input_dict["acoustics"]["nasc_df"][f"stratum_{grp}"] = strata_df["stratum_num"]
+        # ---- Fill empty with 0.0's
+        input_dict["acoustics"]["nasc_df"][f"stratum_{grp}"] = (
+            input_dict["acoustics"]["nasc_df"][f"stratum_{grp}"].fillna(0).astype(int)
+        )
+        # ---- Reset index
+        input_dict["acoustics"]["nasc_df"].reset_index(inplace=True)
+
+def preprocess_statistics(input_dict: dict, configuration_dict: dict) -> None:
+    """
+    Preprocess statistical data and settings
+
+    Parameters
+    ----------
+    input_dict: dict
+        Dictionary corresponding to the `input` attribute belonging to `Survey`-class
+    configuration_dict: dict
+        Dictionary corresponding to the `config` attribute belonging to `Survey`-class
+    """
+    
+    # Reorganize kriging/variogram parameters
+    # ---- Kriging
+    # -------- Generate dictionary comprising kriging model configuration
+    kriging_params = (
+        input_dict["statistics"]["kriging"]["vario_krig_para_df"]
+        .filter(regex="krig[.]")
+        .rename(columns=lambda x: x.replace("krig.", ""))
+        .rename(columns={"ratio": "anisotropy", "srad": "search_radius"})
+        .to_dict(orient="records")[0]
+    )
+    # -------- Concatenate configuration settings for kriging
+    kriging_params.update(configuration_dict["kriging_parameters"])
+    # ---- Variogram
+    # -------- Generate dictionary comprising variogram model configuration
+    variogram_params = (
+        input_dict["statistics"]["kriging"]["vario_krig_para_df"]
+        .filter(regex="vario[.]")
+        .rename(columns=lambda x: x.replace("vario.", ""))
+        .rename(
+            columns={
+                "lscl": "correlation_range",
+                "powr": "decay_power",
+                "hole": "hole_effect_range",
+                "res": "lag_resolution",
+                "nugt": "nugget",
+            }
+        )
+        .to_dict(orient="records")[0]
+    )
+    # ---- Update the input attribute with the reorganized parameters
+    input_dict["statistics"]["variogram"].update({"model_config": variogram_params})
+    input_dict["statistics"]["kriging"].update({"model_config": kriging_params})
+    # -------- Delete the duplicate dataframe
+    del input_dict["statistics"]["kriging"]["vario_krig_para_df"]
+
+
+def prepare_input_data(input_dict: dict, configuration_dict: dict, imported_data: List[str]):
     """
     Rearranges and organizes data formats of the initial file inputs
 
@@ -424,301 +761,35 @@ def prepare_input_data(input_dict: dict, configuration_dict: dict):
         Dictionary corresponding to the `input` attribute belonging to `Survey`-class
     configuration_dict: dict
         Dictionary corresponding to the `config` attribute belonging to `Survey`-class
+    imported_data: List[str]
+        A list of datasets for determining which pre-processing steps to run
     """
 
-    # Map datasets that are present
-    imported_data = map_imported_datasets(input_dict)
-
     if "biology" in imported_data:
-        # Generate length and age vectors
-        # ---- Length vector
-        length_bins = np.linspace(
-            configuration_dict["biometrics"]["bio_hake_len_bin"][0],
-            configuration_dict["biometrics"]["bio_hake_len_bin"][1],
-            configuration_dict["biometrics"]["bio_hake_len_bin"][2],
-            dtype=np.float64,
-        )
-        # ---- Age vector
-        age_bins = np.linspace(
-            configuration_dict["biometrics"]["bio_hake_age_bin"][0],
-            configuration_dict["biometrics"]["bio_hake_age_bin"][1],
-            configuration_dict["biometrics"]["bio_hake_age_bin"][2],
-            dtype=np.float64,
-        )
-
-        # Discretize these values into discrete intervals
-        # ---- Calculate binwidths
-        # -------- Length
-        length_binwidth = np.mean(np.diff(length_bins / 2.0))
-        # -------- Age
-        age_binwidth = np.mean(np.diff(age_bins / 2.0))
-        # ---- Center the bins within the binwidths
-        # -------- Length
-        length_centered_bins = np.concatenate(
-            ([length_bins[0] - length_binwidth], length_bins + length_binwidth)
-        )
-        # -------- Age
-        age_centered_bins = np.concatenate(([age_bins[0] - age_binwidth], age_bins + age_binwidth))
-
-        # Merge the vector and centered bins into dataframes that will be added into the `input`
-        # attribute
-        # ---- Generate DataFrame for length
-        length_bins_df = pd.DataFrame({"length_bins": length_bins})
-        # -------- Discretize the bins as categorical intervals
-        length_bins_df["length_intervals"] = pd.cut(
-            length_bins_df["length_bins"], length_centered_bins
-        )
-        # ---- Generate DataFrame for age
-        age_bins_df = pd.DataFrame({"age_bins": age_bins})
-        # -------- Discretize the bins as categorical intervals
-        age_bins_df["age_intervals"] = pd.cut(age_bins_df["age_bins"], age_centered_bins)
-        # ---- Update `input` attribute
-        # -------- Length
-        input_dict["biology"]["distributions"]["length_bins_df"] = length_bins_df
-        # -------- Age
-        input_dict["biology"]["distributions"]["age_bins_df"] = age_bins_df
-        # -------- Delete the duplicate configuration keys
-        # del configuration_dict["biometrics"]
-
-        # Relabel sex to literal words among biological data
-        # ---- Specimen
-        input_dict["biology"]["specimen_df"]["sex"] = np.where(
-            input_dict["biology"]["specimen_df"]["sex"] == int(1),
-            "male",
-            np.where(
-                input_dict["biology"]["specimen_df"]["sex"] == int(2),
-                "female",
-                np.where(
-                    input_dict["biology"]["specimen_df"]["sex"].isin(["male", "female"]),
-                    input_dict["biology"]["specimen_df"]["sex"],
-                    "unsexed",
-                ),
-            ),
-        )
-        # -------- Sex group
-        input_dict["biology"]["specimen_df"]["group_sex"] = np.where(
-            input_dict["biology"]["specimen_df"]["sex"] != "unsexed", "sexed", "unsexed"
-        )
-        # ---- Length
-        input_dict["biology"]["length_df"]["sex"] = np.where(
-            input_dict["biology"]["length_df"]["sex"] == int(1),
-            "male",
-            np.where(
-                input_dict["biology"]["length_df"]["sex"] == int(2),
-                "female",
-                np.where(
-                    input_dict["biology"]["length_df"]["sex"].isin(["male", "female"]),
-                    input_dict["biology"]["length_df"]["sex"],
-                    "unsexed",
-                ),
-            ),
-        )
-        # -------- Sex group
-        input_dict["biology"]["length_df"]["group_sex"] = np.where(
-            input_dict["biology"]["length_df"]["sex"] != "unsexed", "sexed", "unsexed"
-        )
-
-        # Discretize the age and length bins of appropriate biological data
-        # ---- Specimen
-        input_dict["biology"]["specimen_df"] = input_dict["biology"]["specimen_df"].bin_variable(
-            [length_centered_bins, age_centered_bins], ["length", "age"]
-        )
-        # ---- Length
-        input_dict["biology"]["length_df"] = input_dict["biology"]["length_df"].bin_variable(
-            length_centered_bins, "length"
-        )
+        preprocess_biodata(input_dict, configuration_dict)
 
     # SPATIAL
     if "spatial" in imported_data:
-        # Update column names
-        # ---- `geo_strata`
-        input_dict["spatial"]["geo_strata_df"].columns = input_dict["spatial"][
-            "geo_strata_df"
-        ].columns.str.replace(" ", "_")
-        # ---- `inpfc_strata`
-        input_dict["spatial"]["inpfc_strata_df"].columns = input_dict["spatial"][
-            "inpfc_strata_df"
-        ].columns.str.replace(" ", "_")
-        # ---- `inpfc_strata`: rename stratum column name to avoid conflicts
-        input_dict["spatial"]["inpfc_strata_df"].rename(
-            columns={"stratum_num": "stratum_inpfc"}, inplace=True
-        )
-
-        # Bin data
-        # ---- Create latitude intervals to bin the strata
-        latitude_bins = np.concatenate(
-            [[-90], input_dict["spatial"]["inpfc_strata_df"]["northlimit_latitude"], [90]]
-        )
-        # ---- Add categorical intervals
-        input_dict["spatial"]["inpfc_strata_df"]["latitude_interval"] = pd.cut(
-            input_dict["spatial"]["inpfc_strata_df"]["northlimit_latitude"] * 0.99, latitude_bins
-        )
+        preprocess_spatial(input_dict)
 
     # ACOUSTICS + SPATIAL
     if set(["acoustics", "spatial"]).issubset(imported_data):
-        # Bin NASC transects into appropriate INPFC strata
-        input_dict["acoustics"]["nasc_df"]["stratum_inpfc"] = (
-            pd.cut(
-                input_dict["acoustics"]["nasc_df"]["latitude"],
-                latitude_bins,
-                right=True,
-                labels=range(len(latitude_bins) - 1),
-            )
-        ).astype(int) + 1
-
-        # KS strata
-        # ---- Map hauls to `all_ages`
-        input_dict["acoustics"]["nasc_df"].set_index("haul_all_ages", inplace=True)
-        input_dict["acoustics"]["nasc_df"]["stratum_all_ages"] = (
-            input_dict["spatial"]["strata_df"]
-            .rename(columns={"haul_num": "haul_all_ages"})
-            .set_index("haul_all_ages")["stratum_num"]
-        )
-        input_dict["acoustics"]["nasc_df"]["stratum_all_ages"] = input_dict["acoustics"]["nasc_df"][
-            "stratum_all_ages"
-        ].fillna(1)
-        input_dict["acoustics"]["nasc_df"] = input_dict["acoustics"]["nasc_df"].reset_index()
-        # ---- Map hauls to `no_age1`
-        input_dict["acoustics"]["nasc_df"].set_index("haul_no_age1", inplace=True)
-        input_dict["acoustics"]["nasc_df"]["stratum_no_age1"] = (
-            input_dict["spatial"]["strata_df"]
-            .rename(columns={"haul_num": "haul_no_age1"})
-            .set_index("haul_no_age1")["stratum_num"]
-        )
-        input_dict["acoustics"]["nasc_df"]["stratum_no_age1"] = input_dict["acoustics"]["nasc_df"][
-            "stratum_no_age1"
-        ].fillna(1)
-        input_dict["acoustics"]["nasc_df"] = input_dict["acoustics"]["nasc_df"].reset_index()
+        preprocess_acoustic_spatial(input_dict)
 
     # BIOLOGY + SPATIAL
     if set(["biology", "spatial"]).issubset(imported_data):
-
-        # Merge haul numbers and spatial information across biological variables
-        # ---- Create interval key for haul numbers to assign INPFC stratum
-        haul_bins = np.sort(
-            np.unique(
-                np.concatenate(
-                    [
-                        input_dict["spatial"]["inpfc_strata_df"]["haul_start"] - int(1),
-                        input_dict["spatial"]["inpfc_strata_df"]["haul_end"],
-                    ]
-                )
-            )
-        )
-        # ---- Quantize the INPFC dataframe hauls based on strata
-        input_dict["spatial"]["inpfc_strata_df"]["haul_bin"] = pd.cut(
-            (
-                input_dict["spatial"]["inpfc_strata_df"]["haul_start"]
-                + input_dict["spatial"]["inpfc_strata_df"]["haul_end"]
-            )
-            / 2,
-            haul_bins,
-        )
-        # ---- Rename `stratum_num` column
-        input_dict["spatial"]["inpfc_strata_df"].rename(
-            columns={"stratum_num": "stratum_inpfc"}, inplace=True
-        )
-
-        # Get the KS-strata
-        strata_df = input_dict["spatial"]["strata_df"].copy().set_index(["haul_num"])
-
-        # Loop through the KS-strata to map the correct strata values
-        for keys, values in input_dict["biology"].items():
-            if isinstance(values, pd.DataFrame) and "haul_num" in values.columns:
-                # ---- Index based on `haul_num`
-                input_dict["biology"][keys].set_index(["haul_num"], inplace=True)
-                # ---- Map the correct `stratum_num` value
-                input_dict["biology"][keys]["stratum_num"] = strata_df["stratum_num"]
-                # ---- Correct the value datatype
-                input_dict["biology"][keys]["stratum_num"] = (
-                    input_dict["biology"][keys]["stratum_num"].fillna(0.0).astype(int)
-                )
-                # ---- Reset the index
-                input_dict["biology"][keys].reset_index(inplace=True)
+        preprocess_biology_spatial(input_dict)
 
     # ACOUSTICS + SPATIAL + BIOLOGICAL
     if set(["acoustics", "biology", "spatial"]).issubset(imported_data):
-        # ---- Identify haul sub-groups, if they exist
-        groups = [
-            col.replace("haul_", "")
-            for col in input_dict["acoustics"]["nasc_df"].columns
-            if "haul" in col
-        ]
-        # ---- Get unique species to be processed
-        spp = configuration_dict["species"]["number_code"]
-        # ---- Change to list, if needed
-        spp = [spp] if not isinstance(spp, list) else spp
-        # ---- Get the unique values in the table
-        nonzero_trawls = list(
-            set(
-                val
-                for df in input_dict["biology"].values()
-                if isinstance(df, pd.DataFrame)
-                and all(col in df.columns for col in ["haul_num", "species_id"])
-                for val in df.loc[df["species_id"].isin(spp), "haul_num"].unique()
-            )
-        )
-        # ---- Assign the correct KS-strata to NASC region groups
-        for grp in groups:
-            # ---- Index `nasc_df`
-            input_dict["acoustics"]["nasc_df"].set_index(f"haul_{grp}", inplace=True)
-            # ---- Create copy of `strata_df` and index
-            strata_df = input_dict["spatial"]["strata_df"].copy()
-            # ---- Remove zero-trawls
-            strata_df = (
-                strata_df[strata_df["haul_num"].isin(nonzero_trawls)]
-                .filter(["stratum_num", "haul_num"])
-                .rename(columns={"haul_num": f"haul_{grp}"})
-                .set_index([f"haul_{grp}"])
-            )
-            # ---- Merge the strata information based on haul
-            input_dict["acoustics"]["nasc_df"][f"stratum_{grp}"] = strata_df["stratum_num"]
-            # ---- Fill empty with 0.0's
-            input_dict["acoustics"]["nasc_df"][f"stratum_{grp}"] = (
-                input_dict["acoustics"]["nasc_df"][f"stratum_{grp}"].fillna(0).astype(int)
-            )
-            # ---- Reset index
-            input_dict["acoustics"]["nasc_df"].reset_index(inplace=True)
+        preprocess_acoustic_biology_spatial(input_dict, configuration_dict)
 
     # STATISTICS
     if (
         set(["statistics"]).issubset(imported_data)
         and "vario_krig_para_df" in input_dict["statistics"]["kriging"]
     ):
-        # Reorganize kriging/variogram parameters
-        # ---- Kriging
-        # -------- Generate dictionary comprising kriging model configuration
-        kriging_params = (
-            input_dict["statistics"]["kriging"]["vario_krig_para_df"]
-            .filter(regex="krig[.]")
-            .rename(columns=lambda x: x.replace("krig.", ""))
-            .rename(columns={"ratio": "anisotropy", "srad": "search_radius"})
-            .to_dict(orient="records")[0]
-        )
-        # -------- Concatenate configuration settings for kriging
-        kriging_params.update(configuration_dict["kriging_parameters"])
-        # ---- Variogram
-        # -------- Generate dictionary comprising variogram model configuration
-        variogram_params = (
-            input_dict["statistics"]["kriging"]["vario_krig_para_df"]
-            .filter(regex="vario[.]")
-            .rename(columns=lambda x: x.replace("vario.", ""))
-            .rename(
-                columns={
-                    "lscl": "correlation_range",
-                    "powr": "decay_power",
-                    "hole": "hole_effect_range",
-                    "res": "lag_resolution",
-                    "nugt": "nugget",
-                }
-            )
-            .to_dict(orient="records")[0]
-        )
-        # ---- Update the input attribute with the reorganized parameters
-        input_dict["statistics"]["variogram"].update({"model_config": variogram_params})
-        input_dict["statistics"]["kriging"].update({"model_config": kriging_params})
-        # -------- Delete the duplicate dataframe
-        del input_dict["statistics"]["kriging"]["vario_krig_para_df"]
+        preprocess_statistics(input_dict, configuration_dict)
 
 
 def validate_config_structure(yaml_data, config_spec):
@@ -774,3 +845,72 @@ def validate_config_structure(yaml_data, config_spec):
         validate_dict(yaml_data, config_spec)
     except (KeyError, TypeError, ValueError) as e:
         print(f"Validation error: {e}")
+
+
+def dataset_integrity(input_dict: dict, 
+                      analysis: Literal["transect", "stratified:kriging", 
+                                        "stratified:transect", "variogram", "kriging"]):
+    """
+    Determine whether all of the necessary datasets are contained within the `Survey`-class object
+    for each analysis
+    
+    Parameters
+    ----------
+    input_dict: dict
+        Dictionary corresponding to the `input` attribute belonging to `Survey`-class
+    analysis: Literal["transect", "stratified", "variogram", "kriging"]
+        The name of the analysis to be performed
+    """
+    
+    # Map the imported datasets
+    imported_data = map_imported_datasets(input_dict)
+    
+    # Initialize `missing`
+    missing = None
+    
+    # Transect analysis
+    if analysis == "transect": 
+        # ---- Create expected datasets list
+        expected_datasets = ["acoustics", "biology", "spatial"]
+        # ---- Missing analysis str
+        missing_analysis_method = "'transect_analysis'"
+        
+    # Stratified analysis (transect)
+    if analysis == "stratified:transect":
+        # ---- Create expected datasets list
+        expected_datasets = ["acoustics", "spatial"]
+        # ---- Missing analysis str
+        missing_analysis_method = "'stratified_analysis' (for transect data)"   
+
+    # Stratified analysis (kriging)
+    if analysis == "stratified:kriging":
+        # ---- Create expected datasets list
+        expected_datasets = ["acoustics", "spatial", "statistics"]
+        # ---- Missing analysis str
+        missing_analysis_method = "'stratified_analysis' (for kriged data)"
+            
+    # Kriging analysis
+    if analysis == "kriging":
+        # ---- Create expected datasets list
+        expected_datasets = ["acoustics", "biology", "spatial", "statistics"]
+        # ---- Missing analysis str
+        missing_analysis_method = "'fit_variogram'/'variogram_gui'"  
+
+    # Variogram analysis
+    if analysis == "variogram":
+        # ---- Create expected datasets list
+        expected_datasets = ["acoustics", "spatial", "statistics"]    
+        # ---- Missing analysis str
+        missing_analysis_method = "'fit_variogram'/'variogram_gui'"        
+                    
+    # Raise Error, if appropriate        
+    if not set(expected_datasets).issubset(imported_data):
+        # ---- Collect missing values
+        missing = set(expected_datasets) - set(imported_data)
+        # ---- Format string
+        missing_str = ", ".join([f"'{i}'" for i in missing])
+        # ---- Raise error
+        raise ValueError(
+            f"The following input datasets are missing for {missing_analysis_method}: " 
+            f"{missing_str}."
+        ).with_traceback(None)
