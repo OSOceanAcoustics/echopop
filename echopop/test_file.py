@@ -1,19 +1,35 @@
-from echopop.survey import Survey
 import copy
-from pathlib import Path
-from typing import List, Literal, Optional, Union
-import numpy as np
-import pandas as pd
 import os
 import re
+from pathlib import Path
+from typing import List, Literal, Optional, Union
 
-from echopop.core import ECHOVIEW_EXPORT_MAP, REGION_EXPORT_MAP, BIODATA_HAUL_MAP, DATA_STRUCTURE, LAYER_NAME_MAP, NAME_CONFIG
+import numpy as np
+import pandas as pd
+
+from echopop.core import (
+    BIODATA_HAUL_MAP,
+    DATA_STRUCTURE,
+    ECHOVIEW_EXPORT_MAP,
+    LAYER_NAME_MAP,
+    NAME_CONFIG,
+    REGION_EXPORT_MAP,
+)
 from echopop.spatial.transect import export_transect_layers, export_transect_spacing
+from echopop.survey import Survey
 from echopop.utils.data_structure_utils import map_imported_datasets
-from echopop.utils.validate_df import KSStrata, DATASET_DF_MODEL
+from echopop.utils.load_nasc import (
+    compile_patterns,
+    consolidate_exports,
+    construct_transect_region_key,
+    filter_export_regions,
+    get_haul_transect_key,
+    get_transect_numbers,
+    validate_echoview_exports,
+    validate_export_directories,
+)
 from echopop.utils.operations import compile_patterns, extract_parts_and_labels, group_merge
-from echopop.utils.load_nasc import validate_echoview_exports, validate_export_directories, get_transect_numbers, filter_export_regions, get_haul_transect_key, compile_patterns, consolidate_exports, construct_transect_region_key
-
+from echopop.utils.validate_df import DATASET_DF_MODEL, KSStrata
 
 survey = Survey( init_config_path = "C:/Users/Brandyn/Documents/GitHub/echopop/config_files/initialization_config.yml" ,
                  survey_year_config_path = "C:/Users/Brandyn/Documents/GitHub/echopop/config_files/survey_year_2019_config.yml" )
@@ -127,7 +143,7 @@ def extract_filename_sheetname(root_dir, df):
             (root_dir / df.at['filename', col], sheet) if isinstance(df.at['sheetname', col], list)
             else (root_dir / df.at['filename', col], df.at['sheetname', col])
             for col in df.columns
-            for sheet in (df.at['sheetname', col] if isinstance(df.at['sheetname', col], list) 
+            for sheet in (df.at['sheetname', col] if isinstance(df.at['sheetname', col], list)
                           else [df.at['sheetname', col]])
         ]
 
@@ -155,10 +171,10 @@ Path(str(dataset_dict["file_name"]) * len(config_settings["sheetname"]))
 
 if isinstance(sheetname, list):
     dataset_dict["file_name"].append(dataset_dict["file_name"][0])
-    
 
 
-if dataset == "biological" 
+
+if dataset == "biological"
 
 configuration_dict[dataset][datalayer]
 configuration_dict["biological"]["specimen"]
@@ -175,7 +191,7 @@ for dataset in config_df.columns.to_list():
 
     dataset_df = pd.DataFrame(config_df[dataset].dropna(how="all").to_dict())
     extract_filename_sheetname(root_dir, dataset_df)
-    
+
 
 [pd.DataFrame(config_df[dataset]) for dataset in ]
 
