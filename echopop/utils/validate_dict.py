@@ -410,26 +410,16 @@ class CONFIG_INIT_MODEL(InputModel,
     haul_to_transect_mapping: Optional[HaulTransectMap] = Field(default=None)
     transect_region_mapping: Optional[TransectRegionMap] = Field(default=None)
 
-    # def __init__(self, filename, **kwargs):
+    def __init__(self, filename, **kwargs):
+        try:
+            super().__init__(**kwargs)
+        except ValidationError as e:
+            # Customize error message
+            new_message = str(e).replace(
+                self.__class__.__name__, f"configured initialization parameters defined in {filename}"
+            )
+            raise ValueError(new_message) from e
         
-    #     super().__init__(**kwargs)
-    #     # Modify the 'title' attribute
-    #     self.__config__.title = f"configuration parameters defined in '{filename}'"
-
-        # try:
-        #     super().__init__(**kwargs)
-        # except ValidationError as e:
-        #     raise e
-        
-        # try:
-        #     super().__init__(**kwargs)
-        # except ValidationError as e:
-        #     # Customize error message
-        #     new_message = str(e).replace(
-        #         self.__class__.__name__, self.model_config["title"]
-        #     )
-        #     raise ValueError(new_message) from e
-
     @field_validator("bio_hake_age_bin", "bio_hake_len_bin", mode="before")
     def validate_interval(cls, v):
         # ---- Check Union typing

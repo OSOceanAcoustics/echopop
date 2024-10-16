@@ -65,12 +65,12 @@ NASC:
   no_age1:
     # file that excludes age1 values
     # filename: Exports/US_CAN_detailsa_2019_table2y+_ALL_final - updated.xlsx
-    filename: Exports/US_CAN_detailsa_2019_table2y+_ALL_final - updated.xlsx
+    filename: Exports/US&CAN_detailsa_2019_table2y+_ALL_final - updated.xlsx
     sheetname: Sheet1
   all_ages:
     # file that includes all ages
     # filename: Exports/US_CAN_detailsa_2019_table1y+_ALL_final - updated.xlsx
-    filename: Exports/US_CAN_detailsa_2019_table1y+_ALL_final - updated.xlsx
+    filename: Exports/US&CAN_detailsa_2019_table1y+_ALL_final - updated.xlsx
     sheetname: Sheet1
 export_regions:
   all_ages:
