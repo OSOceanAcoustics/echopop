@@ -65,20 +65,20 @@ The `initialization_config.yml` configuration file defines various parameters th
   * `transect_region_mapping`: definitions for parsing acoustic region names to parse critical metadata.
     * `pattern`: a regular expression pattern that can contain the following tags: `{REGION_CLASS}`, `{HAUL_NUM}`, and `{COUNTRY}`.
     * `parts`: each tag in `pattern` can be broken down by various regular expressions to extract different information, such as different `{REGION_CLASS}` (e.g. `Hake`, `Age-1 Hake`, `Non-hake`). Each component within `parts` must contain a `pattern` and `label` entry. The tags contained within `parts` **must** match those defined in the overall `pattern` (e.g. `"{REGION_CLASS}{HAUL_NUM}{COUNTRY}"`). For instance, the three entries for this could be formatted via:
-       ```{YAML}
+       ```yaml
         REGION_CLASS:
         - pattern: ^[hH](?![a-zA-Z]|1a)
-            label: Hake
+          label: Hake
         - pattern: ^[hH]1[aA][mM]
-            label: Age-1 Hake Mix
+          label: Age-1 Hake Mix
         HAUL_NUM:
         - pattern: '[0-9]+'
-            label: None
+          label: None
         COUNTRY:
         - pattern: ^[cC]
-            label: CAN
+          label: CAN
         - pattern: ^[uU]
-            label: US
+          label: US
         ```
   * `TS_length_regression_parameters`: TS-length regression parameters.
     * `{SPECIES}`: this should match the `species` parameter defined in the `survey_year_{YEAR}_config.yml` configuration file.
@@ -102,29 +102,29 @@ There is a color-coded schematic that provides a visual overview of how data are
 
 **<span style="color:#00A200">Data are loaded</span>** into `Echopop` via `Survey.load_survey_data()` and `Survey.load_acoustic_data()` for the `[Biological, Kriging, Stratification]` and `[NASC]` datasets, respectively. The names of these datasets are mutated and stored slightly differently within the `Survey.input` attribute:
 
-- `Biological` :arrow_right: `Survey.input["biology"]`
-  - `catch` :arrow_right: `Survey.input["biology"]["catch_df"]`
-  - `length` :arrow_right: `Survey.input["biology"]["length_df"]`
-  - `specimen` :arrow_right: `Survey.input["biology"]["specimen_df"]`
-- `Configuration` :arrow_right: `Survey.input["biology"]`
-  - `bio_hake_len_bin`/`bio_hake_age_bin` :arrow_right: `Survey.input["biology"]["distributions]`
-- `Kriging` :arrow_right: `Survey.input["statistics"]`
-  - `mesh` :arrow_right: `Survey.input["statistics"]["kriging"]["mesh_df"]`
-  - `isobath_200m` :arrow_right: `Survey.input["statistics"]["kriging"]["isobath_200m_df"]`
-  - `vario_krig_para` :arrow_right: `Survey.input["statistics"]["kriging"]["vario_krig_para"]`
-- `NASC` :arrow_right: `Survey.input["acoustics"]`
-  - `{GROUP}` (all) :arrow_right: `Survey.input["acoustics"]["nasc_df"]`
-- `Stratification` :arrow_right: `Survey.input["spatial"]`
-  - `strata` :arrow_right: `Survey.input["spatial"]["strata_df"]`
-  - `geo_strata` :arrow_right: `Survey.input["spatial"]["geo_strata_df"]`
-  - `geo_strata` :arrow_right: `Survey.input["spatial"]["inpfc_strata_df"]`
+- `Biological` ➡️ `Survey.input["biology"]`
+  - `catch` ➡️ `Survey.input["biology"]["catch_df"]`
+  - `length` ➡️ `Survey.input["biology"]["length_df"]`
+  - `specimen` ➡️ `Survey.input["biology"]["specimen_df"]`
+- `Configuration` ➡️ `Survey.input["biology"]`
+  - `bio_hake_len_bin`/`bio_hake_age_bin` ➡️ `Survey.input["biology"]["distributions]`
+- `Kriging` ➡️ `Survey.input["statistics"]`
+  - `mesh` ➡️ `Survey.input["statistics"]["kriging"]["mesh_df"]`
+  - `isobath_200m` ➡️ `Survey.input["statistics"]["kriging"]["isobath_200m_df"]`
+  - `vario_krig_para` ➡️ `Survey.input["statistics"]["kriging"]["vario_krig_para"]`
+- `NASC` ➡️ `Survey.input["acoustics"]`
+  - `{GROUP}` (all) ➡️ `Survey.input["acoustics"]["nasc_df"]`
+- `Stratification` ➡️ `Survey.input["spatial"]`
+  - `strata` ➡️: `Survey.input["spatial"]["strata_df"]`
+  - `geo_strata` ➡️ `Survey.input["spatial"]["geo_strata_df"]`
+  - `geo_strata` ➡️ `Survey.input["spatial"]["inpfc_strata_df"]`
 
 Echoview exports can be **<span style="color:#6666FF">alternatively processed and loaded</span>** into `Echopop` by incorporating the `nasc_exports` parameters within `initialization_config.yml`. These files can also processed outside of the same `Echopop` workflow whereby the processed exports can then be saved and used to parameterize the `NASC` dataset definiations within the `survey_year_{YEAR}_config.yml` configuration file.
 
 Once the kriging and variogram parameters are loaded, the specific model parameterizations are **<span style="color:#BBB982">reformatted and split</span>** into separate dictionaries:
 
-`Survey.input["statistics"]["kriging"]["vario_krig_para"]` :arrow_right: `Survey.input["statistics"]["kriging"]["model_config"]`
-<span style="display:inline-block; width: 48ch;"></span> :arrow_lower_right: `Survey.input["statistics"]["variogram"]["model_config"]`
+`Survey.input["statistics"]["kriging"]["vario_krig_para"]` ➡️ `["kriging"]["model_config"]`
+<span style="display:inline-block; width: 51ch;"></span> ↘️ `["variogram"]["model_config"]`
 
 Once split, `Survey.input["statistics"]["kriging"]["vario_krig_para"]` is removed from `Survey.input["statistics"]["kriging"]`.
 
