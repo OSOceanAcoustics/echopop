@@ -441,6 +441,13 @@ class StratificationFiles(BaseModel):
     strata: XLSXFiles
     geo_strata: XLSXFiles
 
+class SpeciesDefinition(BaseModel):
+    """
+    Species definitions
+    """
+
+    text_code: Optional[str]
+    number_code: Optional[Union[int, float]]
 
 class CONFIG_DATA_MODEL(BaseModel):
     """
@@ -451,7 +458,7 @@ class CONFIG_DATA_MODEL(BaseModel):
     biological: BiologicalFiles
     stratification: StratificationFiles
     NASC: Dict[str, XLSXFiles]
-    # gear_data: Dict[str, XLSXFiles]
+    species: SpeciesDefinition
     kriging: KrigingFiles
     data_root_dir: Optional[str] = None
     CAN_haul_offset: Optional[int] = None

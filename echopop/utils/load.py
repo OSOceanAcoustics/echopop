@@ -41,10 +41,16 @@ def load_configuration(init_config_path: Path, survey_year_config_path: Path):
 
     # Error evaluation and print message (if applicable)
     if not all(config_existence):
+        # ---- Get missing config filenames
         missing_config = [
             files for files, exists in zip(config_files, config_existence) if not exists
         ]
-        raise FileNotFoundError(f"The following configuration files do not exist: {missing_config}")
+        # ---- Join the strings
+        missing_str = ",\n   ".join(config.as_posix() for config in missing_config)
+        # ---- Raise Error
+        raise FileNotFoundError(
+            f"The following configuration files do not exist:\n   {missing_str}."
+        ).with_traceback(None)
 
     # Read configuration files
     # ---- Initialization
@@ -133,6 +139,9 @@ def load_dataset(
     # ---- Generate flat JSON table comprising all configuration parameter names
     flat_configuration_table = pd.json_normalize(configuration_dict).filter(regex="filename")
 
+    # Coerce `dataset_type` into List[str], if needed
+    dataset_type = [dataset_type] if isinstance(dataset_type, str) else dataset_type
+
     # Get the subset table if specific `dataset_type` is defined
     if dataset_type:
         # ---- Get the outermost dictionary keys
@@ -171,7 +180,6 @@ def load_dataset(
         for datalayer in [*configuration_dict[dataset].keys()]:
 
             # Define validation settings from CONFIG_MAP
-            # validation_settings = CONFIG_MAP[dataset][datalayer]
             validation_settings = DATASET_DF_MODEL[dataset][datalayer]
 
             # Define configuration settings w/ file + sheet names
@@ -288,14 +296,17 @@ def read_validated_data(
             df_list = [input_dict[sub_attribute]["inpfc_strata_df"], df]
             input_dict[sub_attribute]["inpfc_strata_df"] = pd.concat(df_list)
         else:
-            if config_map[0] == "kriging":
+            if config_map[0] == "kriging" and config_map[1] == "vario_krig_para":
                 df_list = [input_dict[sub_attribute]["kriging"][config_map[1] + "_df"], df]
                 input_dict[sub_attribute]["kriging"][config_map[1] + "_df"] = pd.concat(
                     df_list
                 ).tail(1)
+            elif config_map[0] == "kriging":
+                df_list = [input_dict[sub_attribute]["kriging"][config_map[1] + "_df"], df]
+                input_dict[sub_attribute]["kriging"][config_map[1] + "_df"] = pd.concat(df_list)                  
             else:
                 df_list = [input_dict[sub_attribute][config_map[1] + "_df"], df]
-                input_dict[sub_attribute][config_map[1] + "_df"] = pd.concat(df_list)
+                input_dict[sub_attribute][config_map[1] + "_df"] = pd.concat(df_list)         
     # TODO: This can be refactored out
     elif sub_attribute == "acoustics":
 

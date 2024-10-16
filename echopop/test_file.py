@@ -19,6 +19,8 @@ from echopop.spatial.transect import export_transect_layers, export_transect_spa
 from echopop.survey import Survey
 from echopop.utils.data_structure_utils import map_imported_datasets
 from echopop.utils.load import prepare_input_data, read_validated_data
+from echopop.utils.validate_df import DATASET_DF_MODEL
+from echopop.utils.data_structure_utils import map_imported_datasets
 from echopop.utils.load_nasc import (
     compile_patterns,
     consolidate_exports,
@@ -29,18 +31,60 @@ from echopop.utils.load_nasc import (
     validate_echoview_exports,
     validate_export_directories,
 )
+from echopop.utils.validate_dict import (
+    KrigingAnalysis,
+    KrigingParameterInputs,
+    MeshCrop,
+    VariogramBase,
+    VariogramEmpirical,
+)
 from echopop.utils.operations import compile_patterns, extract_parts_and_labels, group_merge
 from echopop.utils.validate_df import DATASET_DF_MODEL, KSStrata
+from echopop.utils.validate_dict import VariogramEmpirical
+from echopop.spatial.variogram import initialize_variogram_parameters, initialize_initial_optimization_values, initialize_optimization_config, empirical_variogram, prepare_variogram_matrices
+from echopop.spatial.transect import edit_transect_columns, save_transect_coordinates
+from echopop.spatial.projection import transform_geometry
+import copy 
+from echopop.spatial.mesh import griddify_lag_distances
+from echopop.analysis import process_transect_data, krige
+from echopop.acoustics import aggregate_sigma_bs, nasc_to_biomass
+from echopop.biology import (
+    distribute_length_age,
+    filter_species,
+    fit_length_weight_relationship,
+    fit_length_weights,
+    impute_kriged_values,
+    number_proportions,
+    partition_transect_age,
+    quantize_number_counts,
+    quantize_weights,
+    reallocate_kriged_age1,
+    weight_proportions,
+)
 
 survey = Survey(
-    init_config_path="C:/Users/Brandyn Lucca/Documents/GitHub/echopop/config_files/initialization_config.yml",
-    survey_year_config_path="C:/Users/Brandyn Lucca/Documents/GitHub/echopop/config_files/survey_year_2019_config.yml",
+    init_config_path="C:/Users/Brandyn/Documents/GitHub/echopop/config_files/initialization_config.yml",
+    survey_year_config_path="C:/Users/Brandyn/Documents/GitHub/echopop/config_files/survey_year_2019_config.yml"
 )
 survey.load_survey_data()
+survey.load_acoustic_data()
 survey.transect_analysis()
 survey.stratified_analysis()
+survey.fit_variogram()
+survey.kriging_analysis()
 
+survey.input["acoustics"]
 self = survey
+input_dict = self.input
+analysis_dict = self.analysis["transect"]
+settings_dict = self.analysis["settings"]
+configuration_dict = self.config
+
+dataset = "kriging"
+datalayer = "isobath_200m"
+
+
+
 index_variable: Union[str, List[str]] = ["transect_num", "interval"]
 ingest_exports: Optional[Literal["echoview", "echopype"]] = "echoview"
 region_class_column: str = "region_class"
@@ -51,6 +95,15 @@ configuration_dict = self.config
 input_dict = self.input
 dataset_type = ["biological", "kriging", "stratification"]
 
+transect_dict = self.analysis["transect"]
+settings_dict = self.analysis["settings"]["variogram"]
+isobath_df = self.input["statistics"]["kriging"]["isobath_200m_df"]
+
+self.input["acoustics"]
+self.analysis["transect"]["acoustics"]["adult_transect_df"]
+
+variogram_parameters = valid_variogram_params
+lag_resolution = valid_variogram_params["lag_resolution"]
 
 def dataset_integrity(
     input_dict: dict, analysis: Literal["transect", "stratified", "variogram", "kriging"]
