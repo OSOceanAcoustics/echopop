@@ -1134,9 +1134,9 @@ def partition_transect_age(
 
     # Procedure where age-1 fish were excluded from the acoustic survey biological distributions
     # ---- Merge adult proportions with acoustically derived georeferenced biological data
-    adult_data = (
-        nasc_biology_df.merge(strata_adult_proportions_df, on=[stratum_col], how="left").fillna(0.0)
-    )
+    adult_data = nasc_biology_df.merge(
+        strata_adult_proportions_df, on=[stratum_col], how="left"
+    ).fillna(0.0)
     # ---- Adjust the full number density, biomass density, and NASC estimates
     # -------- NASC
     adult_data["nasc"] = adult_data["nasc"] * adult_data["nasc_proportion"]

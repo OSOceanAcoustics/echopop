@@ -1015,10 +1015,7 @@ def test_NASCExports(input, exception):
     [
         (
             {
-                "save_file_template": "blurgh_{COUNTRY}_{YEAR}_{GROUP}.xlsx",
-                "save_file_directory": "blurgh/blargh",
-                "pattern": "{REGION_CLASS}{COUNTRY}{HAUL_NUM}",
-                "save_file_sheetname": "sheet1",
+                "pattern": "{REGION_CLASS}{COUNTRY}{HAUL_NUM}",  #
                 "parts": {
                     "REGION_CLASS": [{"pattern": "a", "label": "A"}],
                     "HAUL_NUM": [{"pattern": "b", "label": "B"}],
@@ -1029,10 +1026,7 @@ def test_NASCExports(input, exception):
         ),
         (
             {
-                "save_file_directory": "blurgh/blargh",
-                "pattern": "{REGION_CLASS}{COUNTRY}{HAUL_NUM}",
-                "save_file_sheetname": "sheet1",
-                "parts": {
+                "parts": {  #
                     "REGION_CLASS": [{"pattern": "a", "label": "A"}],
                     "HAUL_NUM": [{"pattern": "b", "label": "B"}],
                     "COUNTRY": [{"pattern": "c", "label": "C"}],
@@ -1042,58 +1036,13 @@ def test_NASCExports(input, exception):
         ),
         (
             {
-                "save_file_template": "blurgh_{COUNTRY}_{YEAR}_{GROUP}.xlsx",
-                "pattern": "{REGION_CLASS}{COUNTRY}{HAUL_NUM}",
-                "save_file_sheetname": "sheet1",
-                "parts": {
-                    "REGION_CLASS": [{"pattern": "a", "label": "A"}],
-                    "HAUL_NUM": [{"pattern": "b", "label": "B"}],
-                    "COUNTRY": [{"pattern": "c", "label": "C"}],
-                },
+                "pattern": "{REGION_CLASS}{COUNTRY}{HAUL_NUM}",  #
             },
             ValidationError,
         ),
         (
             {
-                "save_file_template": "blurgh_{COUNTRY}_{YEAR}_{GROUP}.xlsx",
-                "save_file_directory": "blurgh/blargh",
-                "save_file_sheetname": "sheet1",
-                "parts": {
-                    "REGION_CLASS": [{"pattern": "a", "label": "A"}],
-                    "HAUL_NUM": [{"pattern": "b", "label": "B"}],
-                    "COUNTRY": [{"pattern": "c", "label": "C"}],
-                },
-            },
-            ValidationError,
-        ),
-        (
-            {
-                "save_file_template": "blurgh_{COUNTRY}_{YEAR}_{GROUP}.xlsx",
-                "save_file_directory": "blurgh/blargh",
-                "pattern": "{REGION_CLASS}{COUNTRY}{HAUL_NUM}",
-                "parts": {
-                    "REGION_CLASS": [{"pattern": "a", "label": "A"}],
-                    "HAUL_NUM": [{"pattern": "b", "label": "B"}],
-                    "COUNTRY": [{"pattern": "c", "label": "C"}],
-                },
-            },
-            ValidationError,
-        ),
-        (
-            {
-                "save_file_template": "blurgh_{COUNTRY}_{YEAR}_{GROUP}.xlsx",
-                "save_file_directory": "blurgh/blargh",
-                "pattern": "{REGION_CLASS}{COUNTRY}{HAUL_NUM}",
-                "save_file_sheetname": "sheet1",
-            },
-            ValidationError,
-        ),
-        (
-            {
-                "save_file_template": "blurgh_{COUNTRY}.xlsx",
-                "save_file_directory": "blurgh/blargh",
-                "pattern": "{REGION_CLASS}{COUNTRY}{HAUL_NUM}",
-                "save_file_sheetname": "sheet1",
+                "pattern": "{REGION_CLASS}{COUNTRY}{HAUL_NUM}",  #
                 "parts": {
                     "REGION_CLASS": [{"pattern": "a", "label": "A"}],
                     "HAUL_NUM": [{"pattern": "b", "label": "B"}],
@@ -1104,24 +1053,7 @@ def test_NASCExports(input, exception):
         ),
         (
             {
-                "save_file_template": "blurgh_{COUNTRY}_{YEAR}_{GROUP}_{ERRONEOUS}.xlsx",
-                "save_file_directory": "blurgh/blargh",
-                "pattern": "{REGION_CLASS}{COUNTRY}{HAUL_NUM}",
-                "save_file_sheetname": "sheet1",
-                "parts": {
-                    "REGION_CLASS": [{"pattern": "a", "label": "A"}],
-                    "HAUL_NUM": [{"pattern": "b", "label": "B"}],
-                    "COUNTRY": [{"pattern": "c", "label": "C"}],
-                },
-            },
-            ValidationError,
-        ),
-        (
-            {
-                "save_file_template": "blurgh_{COUNTRY}_{YEAR}_{GROUP}.xlsx",
-                "save_file_directory": "blurgh/blargh",
-                "pattern": "{REGION_CLASS}{COUNTRY}{HAUL_NUM}",
-                "save_file_sheetname": "sheet1",
+                "pattern": "{REGION_CLASS}{COUNTRY}{HAUL_NUM}",  #
                 "parts": {
                     "HAUL_NUM": [{"pattern": "b", "label": "B"}],
                     "COUNTRY": [{"pattern": "c", "label": "C"}],
@@ -1131,20 +1063,14 @@ def test_NASCExports(input, exception):
         ),
         (
             {
-                "save_file_template": "blurgh_{COUNTRY}_{YEAR}_{GROUP}.xlsx",
-                "save_file_directory": "blurgh/blargh",
-                "pattern": "{REGION_CLASS}",
-                "save_file_sheetname": "sheet1",
+                "pattern": "{REGION_CLASS}",  #
                 "parts": {"REGION_CLASS": [{"pattern": "a", "label": "A"}]},
             },
             None,
         ),
         (
             {
-                "save_file_template": "blurgh_{COUNTRY}_{YEAR}_{GROUP}.xlsx",
-                "save_file_directory": "blurgh/blargh",
                 "pattern": "{REGION_CLASS}{COUNTRY}{HAUL_NUM}{ERRONEOUS}",
-                "save_file_sheetname": "sheet1",
                 "parts": {
                     "REGION_CLASS": [{"pattern": "a", "label": "A"}],
                     "HAUL_NUM": [{"pattern": "b", "label": "B"}],
@@ -1155,10 +1081,7 @@ def test_NASCExports(input, exception):
         ),
         (
             {
-                "save_file_template": "blurgh_{COUNTRY}_{YEAR}_{GROUP}.xlsx",
-                "save_file_directory": "blurgh/blargh",
                 "pattern": "{REGION_CLASS}",
-                "save_file_sheetname": "sheet1",
                 "parts": {"REGION_CLASS": {"pattern": "a", "label": "A"}},
             },
             ValidationError,
@@ -1166,10 +1089,7 @@ def test_NASCExports(input, exception):
         ({}, ValidationError),
         (
             {
-                "save_file_template": "blurgh_{COUNTRY}_{YEAR}_{GROUP}.xlsx",
-                "save_file_directory": "blurgh/blargh",
                 "pattern": "{REGION_CLASS}{COUNTRY}{HAUL_NUM}",
-                "save_file_sheetname": "sheet1",
                 "parts": {
                     "REGION_CLASS": [{"pattern": "a", "label": "A"}],
                     "HAUL_NUM": [{"pattern": "b", "label": "B"}],
@@ -1182,13 +1102,9 @@ def test_NASCExports(input, exception):
     ],
     ids=[
         "Valid `TransectRegionMap`",
-        "Missing key 'save_file_template'",
-        "Missing key 'save_file_directory'",
         "Missing key 'pattern'",
-        "Missing key 'save_file_sheetname'",
         "Missing key 'parts'",
         "Single filename ID in template (valid)",
-        "Erroneous filename ID in template (invalid)",
         "Mismatch between 'parts' keys and those in pattern",
         "Single pattern ID in template (valid)",
         "Erroneous pattern ID in template (invalid)",

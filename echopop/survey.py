@@ -19,13 +19,6 @@ from .spatial.projection import transform_geometry
 from .spatial.transect import edit_transect_columns
 from .utils import load as el, load_nasc as eln, message as em
 from .utils.load import dataset_integrity
-from .utils.validate_dict import (
-    KrigingParameters,
-    MeshCrop,
-    VariogramBase,
-    VariogramInitial,
-    VariogramOptimize,
-)
 
 
 class Survey:
@@ -238,10 +231,10 @@ class Survey:
         bootstrap_ci: float = 0.95,
         bootstrap_ci_method: Literal[
             "BC", "BCa", "empirical", "percentile", "standard", "t-jackknife", "t-standard"
-        ] = "BCa",
+        ] = "t-jackknife",
         bootstrap_ci_method_alt: Optional[
             Literal["empirical", "percentile", "standard", "t-jackknife", "t-standard"]
-        ] = "t-jackknife",
+        ] = "t-standard",
         bootstrap_adjust_bias: bool = True,
         verbose=True,
     ):
@@ -388,12 +381,6 @@ class Survey:
 
         # Run GUI
         display(SEMIVARIOGRAM_GUI)
-
-        # Update the results
-        # self.analysis["variogram"].update({
-        #     "model_fit": SEMIVARIOGRAM_GUI.results["best_fit"]["model_fit"],
-        #     "model": SEMIVARIOGRAM_GUI.results["variogram"]["model"]
-        # })
 
     def fit_variogram(
         self,

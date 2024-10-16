@@ -303,10 +303,10 @@ def read_validated_data(
                 ).tail(1)
             elif config_map[0] == "kriging":
                 df_list = [input_dict[sub_attribute]["kriging"][config_map[1] + "_df"], df]
-                input_dict[sub_attribute]["kriging"][config_map[1] + "_df"] = pd.concat(df_list)                  
+                input_dict[sub_attribute]["kriging"][config_map[1] + "_df"] = pd.concat(df_list)
             else:
                 df_list = [input_dict[sub_attribute][config_map[1] + "_df"], df]
-                input_dict[sub_attribute][config_map[1] + "_df"] = pd.concat(df_list)         
+                input_dict[sub_attribute][config_map[1] + "_df"] = pd.concat(df_list)
     # TODO: This can be refactored out
     elif sub_attribute == "acoustics":
 
