@@ -78,10 +78,8 @@ $$
 \sum_{s,\ell,\alpha} L^i_{s,\alpha,\ell} = 1
 $$
 
-
-
 ## Jolly-Hampton (1990) stratified sampling 
-Biomass estimates for each transect interval $k$ are summed for each transect ($t$):
+This analysis provides a coefficient of variation ($\textit{CV}$) for the entire survey by reweighting biomass estimates for $k$ based on the length of each transect $t$ stratified by $i$ to derive estimates of the mean and variance. The first step is summing biomass estimates for each $k$ within each $t$:
 
 $$ 
 B^t =
@@ -190,7 +188,7 @@ $$
 \label{eq:weighted_mean} \tag{13}
 $$
 
-The overall survey variance $\eqref{eq:weighted_variance}$ and mean $\eqref{eq:weighted_mean}$ are then both used to calculate the survey coeffient of variation ($\textit{CV}$):
+The overall survey variance $\eqref{eq:weighted_variance}$ and mean $\eqref{eq:weighted_mean}$ are then both used to calculate $\textit{CV}$:
 
 $$
 \textit{CV} =
