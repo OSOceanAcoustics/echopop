@@ -9,6 +9,7 @@ parts:
   - file: install
   - file: input_files
   - file: core_data_structure
+  - file: echopro_vs_echopop
   - file: example_notebooks
     title: Example workflows and analyses
     sections:
@@ -19,8 +20,9 @@ parts:
     - file: theory/acoustics
     - file: theory/bio_estimates
     - file: theory/stratification
-    # - file: theory/kriging
-    - file: theory/apportion
+    # - file: theory/kriging    
+    - file: theory/apportion_biomass
+    - file: theory/apportion_abundance
     - file: theory/kriging_eq
     - file: theory/semivariogram_eq
     # - file: theory/other
