@@ -9,7 +9,6 @@ parts:
   - file: install
   - file: input_files
   - file: core_data_structure
-  - file: echopro_vs_echopop
   - file: example_notebooks
     title: Example workflows and analyses
     sections:
@@ -29,6 +28,7 @@ parts:
   - file: implementation
     title: Software implementation
     sections:
+    - file: implementation/echopro_vs_echopop
     - file: implementation/preprocessing_data
   # - file: algo
   #   title: Algorithmic implementation
