@@ -95,10 +95,12 @@ The `initialization_config.yml` configuration file defines various parameters th
     * `latitude_offset`: latitude offset applied for kriging mesh coordinate standardization.
 
 ## Loading data into `Echopop`
-`````{admonition} Schematic
-:class: note
-There is a color-coded schematic that provides a visual overview of how data are loaded and preprocessed ([***Fig. 1***](#schematic)).
-`````
+```{figure} /images/Echopop_input_schematic.png
+:width: 600px
+:name: schematic
+
+A color-coded schematic that provides a visual overview of how data are loaded and preprocessed. Click on schematic to zoom in.
+```
 
 **<span style="color:#00A200">Data are loaded</span>** into `Echopop` via `Survey.load_survey_data()` and `Survey.load_acoustic_data()` for the `[Biological, Kriging, Stratification]` and `[NASC]` datasets, respectively. The names of these datasets are mutated and stored slightly differently within the `Survey.input` attribute:
 
@@ -133,12 +135,5 @@ Several **<span style="color:#FF8000">preprocessing steps</span>** are conducted
 
 1. When `Survey.input["spatial"]` is fully validated and loaded, the associated dataframes are used to **<span style="color:#FF9494">stratify data</span>** within both `Survey.input["acoustics"]` and `Survey.input["biology"]`. Since the stratification data files are loaded separately from the acoustic data, acoustic transect data are **only** stratified once both datasets are loaded. Acoustic and biological data that contain the column `haul_num` are stratified using both the length- and INPFC-based strata.
 2. When `Survey.biology` is fully validated and loaded, the species information provided in the configuration file is used to identify all valid hauls where that species was captured across all of the biological datasets (i.e. `["catch_df"]`, `["length_df"]`, and `["specimen_df"]`). This is then used to **<span style="color:#319FFF">zero out NASC values</span>** `Survey.input["acoustics"]["nasc_df"]` that do not correspond to hauls associated with the target species.
-
-```{figure} /images/Echopop_input_schematic.png
-:width: 600px
-:name: schematic
-
-Click on schematic to zoom in.
-```
 
 
