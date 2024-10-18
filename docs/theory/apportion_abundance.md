@@ -119,7 +119,7 @@ $$
 
 ### Number proportions
 
-The sex-specific numbers for unaged $\eqref{eq:total_unaged_sex}$ and aged $\eqref{eq:total_aged_sex}$ fish are then summed to calculate the total number of unaged fish($n^{\textrm{unaged}}$), aged ($n^{\textrm{aged}}$), and all ($n$) fish:
+The sex-specific numbers for unaged $\eqref{eq:total_unaged_sex}$ and aged $\eqref{eq:total_aged_sex}$ fish are then summed to calculate the total number of unaged fish ($n^{\textrm{unaged}}$), aged ($n^{\textrm{aged}}$), and all ($n$) fish:
 
 $$
 \begin{equation}
