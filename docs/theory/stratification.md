@@ -79,37 +79,42 @@ $$
 $$
 
 ## Jolly-Hampton (1990) stratified sampling 
-This analysis provides a coefficient of variation ($\textit{CV}$) for the entire survey by reweighting biomass estimates for $k$ based on the length of each transect $t$ stratified by $i$ to derive estimates of the mean and variance. The first step is summing biomass estimates for each $k$ within each $t$:
+This analysis provides a coefficient of variation ($\textit{CV}$) for the entire survey by weighting biomass estimates across all strata to derive estimates of the mean and variance of the biomass density. 
+for $k$ based on the length of each transect $t$ stratified by $i$ to derive estimates of the mean and variance. 
+
+First, the estimated biomass and the total distance $d^t$ for transect $t$ are
 
 $$ 
-B^t =
-    \sum_{k} B^{k,t}
+B^t = \sum_{k \in t} B^k
 \label{eq:biomass_transect} \tag{1}
 $$
 
-Total transect distance $d_{x,y}^t$ for each $t$ is similarly computed:
+and
 
 $$ 
-d_{x,y}^t =
-    \sum_{k} d_{x,y}^{k,t}
+d^t = \sum_{k \in t} d^k,
 \label{eq:distance_transect} \tag{2}
 $$
 
-These transect distances are then summed for each $i$:
+respectively.
+
+Using these quantities, the mean weighted biomass estimates in stratum $i$ is
 
 $$ 
-D_{x,y} =
-    \sum_{t} d_{x,y}^{t}
-\label{eq:distance_stratum} \tag{3}
-$$
-
-Values of $B^t$ $\eqref{eq:biomass_transect}$, $d_{x,y}^t$ $\eqref{eq:distance_transect}$, and $D_{x,y}$ $\eqref{eq:distance_stratum}$ are then all used to compute the mean transect-length-weighted biomass estimates for each $i$:
-
-$$ 
-\tilde{\rho} = 
-    \frac{\sum\limits_{t} B^t d_{x,y}^t}{D_{x,y}}
+\tilde{\rho}_B^i = 
+    \frac{ \sum_t B^t d^t }{ D^i },
 \label{eq:mean_estimate} \tag{4}
 $$
+
+where $D^i = \sum_{t \in i} d^t$ is the total transect distance in stratum $i$.
+
+The stratum-based biomass estimates can similarly be weighted according to the stratum area $A_i$ to give the density estimate across the entire survey area:
+
+$$
+\tilde{\rho}_B = \frac{ \sum_i A_i \tilde{\rho}_B^i }{ \sum_i A_i }.
+$$
+
+
 
 Next $B^t$ $\eqref{eq:biomass_transect}$ for each $t$ is standardized to provide a mean biomass-per-distance estimate:
 
