@@ -1,6 +1,6 @@
 import copy
 from pathlib import Path
-from typing import List, Literal, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Union
 
 import numpy as np
 from IPython.display import display
@@ -18,13 +18,7 @@ from .graphics import variogram_interactive as egv
 from .spatial.projection import transform_geometry
 from .spatial.transect import edit_transect_columns
 from .utils import load as el, load_nasc as eln, message as em
-from .utils.validate_dict import (
-    KrigingParameters,
-    MeshCrop,
-    VariogramBase,
-    VariogramInitial,
-    VariogramOptimize,
-)
+from .utils.load import dataset_integrity
 
 
 class Survey:
@@ -129,7 +123,7 @@ class Survey:
 
         # Compile echoview acoustic backscatter exports if `echoview_exports == True`:
         if ingest_exports is not None and ingest_exports == "echoview":
-            eln.batch_read_echoview_exports(
+            eln.ingest_echoview_exports(
                 self.config,
                 transect_pattern,
                 index_variable,
@@ -156,9 +150,6 @@ class Survey:
             Console messages that will print various messages, updates, etc. when set to True.
         """
 
-        # Create haul-transect-mapping key file
-        el.write_haul_to_transect_key(self.config, verbose)
-
         # Get previously processed datasets
         # ---- Updated datasets
         new_datasets = ["biological", "kriging", "stratification"]
@@ -177,6 +168,9 @@ class Survey:
         """
         Calculate population-level metrics from acoustic transect measurements
         """
+
+        # Check dataset integrity
+        dataset_integrity(self.input, analysis="transect")
 
         # Update settings to reflect the stratum definition
         self.analysis["settings"].update(
@@ -237,10 +231,10 @@ class Survey:
         bootstrap_ci: float = 0.95,
         bootstrap_ci_method: Literal[
             "BC", "BCa", "empirical", "percentile", "standard", "t-jackknife", "t-standard"
-        ] = "BCa",
+        ] = "t-jackknife",
         bootstrap_ci_method_alt: Optional[
             Literal["empirical", "percentile", "standard", "t-jackknife", "t-standard"]
-        ] = "t-jackknife",
+        ] = "t-standard",
         bootstrap_adjust_bias: bool = True,
         verbose=True,
     ):
@@ -257,6 +251,9 @@ class Survey:
         age-class and sex. This also only applies to the transect results and is not currently
         designed to be compatible with other derived population-level statistics (e.g. kriging).
         """
+
+        # Check dataset integrity
+        dataset_integrity(self.input, analysis=f"stratified:{dataset}")
 
         # Error message for `stratum == 'ks'`
         if stratum == "ks":
@@ -333,6 +330,9 @@ class Survey:
         Semivariogram plotting and parameter optimization GUI method
         """
 
+        # Check dataset integrity
+        dataset_integrity(self.input, analysis="variogram")
+
         # Initialize results
         self.results["variogram"] = {}
 
@@ -382,22 +382,16 @@ class Survey:
         # Run GUI
         display(SEMIVARIOGRAM_GUI)
 
-        # Update the results
-        # self.analysis["variogram"].update({
-        #     "model_fit": SEMIVARIOGRAM_GUI.results["best_fit"]["model_fit"],
-        #     "model": SEMIVARIOGRAM_GUI.results["variogram"]["model"]
-        # })
-
     def fit_variogram(
         self,
-        variogram_parameters: VariogramBase = {},
-        optimization_parameters: VariogramOptimize = {},
+        variogram_parameters: Dict[str, Any] = {},
+        optimization_parameters: Dict[str, Any] = {},
         model: Union[str, List[str]] = ["bessel", "exponential"],
         n_lags: int = 30,
         azimuth_range: float = 360.0,
         standardize_coordinates: bool = True,
         force_lag_zero: bool = True,
-        initialize_variogram: VariogramInitial = [
+        initialize_variogram: Union[List[str], Dict[str, Any]] = [
             "nugget",
             "sill",
             "correlation_range",
@@ -465,6 +459,9 @@ class Survey:
         the `variogram_parameters` argument, but omitted from `initialize_variogram`, use default
         values imported from `self.input["statistics"]["variogram"]["model_config"]`.
         """
+
+        # Check dataset integrity
+        dataset_integrity(self.input, analysis="variogram")
 
         # Validate "variable" input
         if variable not in ["biomass"]:
@@ -543,13 +540,13 @@ class Survey:
     # !!! TODO: develop different name for "crop_method = 'interpolation'"
     def kriging_analysis(
         self,
-        cropping_parameters: MeshCrop = {},
-        kriging_parameters: KrigingParameters = {},
+        cropping_parameters: Dict[str, Any] = {},
+        kriging_parameters: Dict[str, Any] = {},
         coordinate_transform: bool = True,
         extrapolate: bool = False,
         best_fit_variogram: bool = False,
         variable: Literal["biomass"] = "biomass",
-        variogram_parameters: Optional[VariogramBase] = None,
+        variogram_parameters: Optional[Dict[str, Any]] = None,
         verbose: bool = True,
     ):
         """
@@ -561,6 +558,9 @@ class Survey:
         variable
             Biological variable that will be interpolated via kriging
         """
+
+        # Check dataset integrity
+        dataset_integrity(self.input, analysis="kriging")
 
         # Populate settings dictionary with input argument values/entries
         self.analysis["settings"].update(

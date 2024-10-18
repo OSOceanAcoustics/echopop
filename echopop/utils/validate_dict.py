@@ -219,9 +219,6 @@ class TransectRegionMap(BaseModel, arbitrary_types_allowed=True):
     Transect-to-region mapping parameters
     """
 
-    save_file_template: str
-    save_file_directory: str
-    save_file_sheetname: str
     pattern: str
     parts: Dict[str, List[PatternParts]]
 
@@ -242,23 +239,6 @@ class TransectRegionMap(BaseModel, arbitrary_types_allowed=True):
             )
         # ---- Return values
         return values
-
-    @field_validator("save_file_template", mode="after")
-    def validate_save_file_template(cls, v):
-        # ---- Find all strings contained within curly braces
-        template_ids = re.findall(r"{(.*?)}", v)
-        # ---- Evaluate valid id's
-        if not set(template_ids).issubset(set(["YEAR", "COUNTRY", "GROUP"])):
-            # ---- Get the unknown IDs
-            unknown_ids = set(template_ids) - set(["YEAR", "COUNTRY", "GROUP"])
-            # ---- Raise Error
-            raise ValueError(
-                f"Transect-to-region mapping save file template ({v}) contains invalid identifiers "
-                f"({list(unknown_ids)}). Valid identifiers within the filename template (bounded "
-                f"by curly braces) include: ['YEAR', 'COUNTRY', 'GROUP']."
-            )
-        # ---- Return value
-        return v
 
     @field_validator("pattern", mode="after")
     def validate_pattern(cls, v):
@@ -423,7 +403,7 @@ class BiologicalFiles(BaseModel):
     length: Union[Dict[str, XLSXFiles], XLSXFiles]
     specimen: Union[Dict[str, XLSXFiles], XLSXFiles]
     catch: Union[Dict[str, XLSXFiles], XLSXFiles]
-    haul_to_transect: Union[Dict[str, XLSXFiles], XLSXFiles]
+    haul_to_transect: Optional[Union[Dict[str, XLSXFiles], XLSXFiles]]
 
 
 class KrigingFiles(BaseModel):
@@ -445,6 +425,15 @@ class StratificationFiles(BaseModel):
     geo_strata: XLSXFiles
 
 
+class SpeciesDefinition(BaseModel):
+    """
+    Species definitions
+    """
+
+    text_code: Optional[str]
+    number_code: Optional[Union[int, float]]
+
+
 class CONFIG_DATA_MODEL(BaseModel):
     """
     Data file configuration YAML validator
@@ -454,7 +443,7 @@ class CONFIG_DATA_MODEL(BaseModel):
     biological: BiologicalFiles
     stratification: StratificationFiles
     NASC: Dict[str, XLSXFiles]
-    gear_data: Dict[str, XLSXFiles]
+    species: SpeciesDefinition
     kriging: KrigingFiles
     data_root_dir: Optional[str] = None
     CAN_haul_offset: Optional[int] = None
