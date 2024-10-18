@@ -123,7 +123,7 @@ class Survey:
 
         # Compile echoview acoustic backscatter exports if `echoview_exports == True`:
         if ingest_exports is not None and ingest_exports == "echoview":
-            eln.batch_read_echoview_exports(
+            eln.ingest_echoview_exports(
                 self.config,
                 transect_pattern,
                 index_variable,

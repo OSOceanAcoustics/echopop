@@ -26,7 +26,7 @@ def read_echoview_export(filename: str, transect_number: int):
 
     See Also
     ----------
-    echopop.load.batch_read_echoview_exports
+    echopop.load.ingest_echoview_exports
         A more detailed description.
     """
 
@@ -419,7 +419,7 @@ def filter_export_regions(
     return transect_data_regions
 
 
-def batch_read_echoview_exports(
+def ingest_echoview_exports(
     configuration_dict: dict,
     transect_pattern: str = r"T(\d+)",
     index_variable: Union[str, List[str]] = ["transect_num", "interval"],
