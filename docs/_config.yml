@@ -47,6 +47,7 @@ sphinx:
   extra_extensions: [
     'sphinx_automodapi.automodapi',
     'numpydoc',
+    'sphinx.ext.autodoc',
     'sphinxcontrib.bibtex',
     'sphinx.ext.intersphinx',
     'sphinx.ext.mathjax',
