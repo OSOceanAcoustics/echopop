@@ -78,7 +78,7 @@ $$
 \sum_{s,\ell,\alpha} L^i_{s,\alpha,\ell} = 1
 $$
 
-## Jolly-Hampton (1990) stratified sampling 
+<!-- ## Jolly-Hampton (1990) stratified sampling 
 This analysis provides a coefficient of variation ($\textit{CV}$) for the entire survey by reweighting biomass estimates for $k$ based on the length of each transect $t$ stratified by $i$ to derive estimates of the mean and variance. The first step is summing biomass estimates for each $k$ within each $t$:
 
 $$ 
@@ -194,7 +194,7 @@ $$
 \textit{CV} =
     \frac{\sqrt{\hat{\sigma}}}{\hat{\mu}}
 \label{eq:cv} \tag{14}
-$$
+$$ -->
 
 ## Stratification schemes used in the hake survey
 For Pacific hake, two types of stratifications are used:
