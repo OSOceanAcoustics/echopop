@@ -100,9 +100,9 @@ Jolly and Hampton {cite:p}`jolly_hampton_1990` proposed a method to provide a co
 Given the biomass $B^k$ for all intervals $k$ in transect $t$ within stratum $i$, the biomass density per unit area is
 
 $$
-\hat{\rho}_B^t = \frac{ B^t }{ D^t },
+\hat{\rho}_B^t = \frac{ B^t }{ d^t },
 $$
-where $B^t=\sum_{k \in t} B^k$ is the total biomass and $D^t=\sum_{k \in t} d^k$ is the total distance of transect $t$.
+where $B^t=\sum_{k \in t} B^k$ is the total biomass and $d^t=\sum_{k \in t} d^k$ is the total distance of transect $t$.
 
 The mean weighted biomass density in stratum $i$ is then
 
@@ -111,7 +111,7 @@ $$
 \label{eq:mean_estimate} \tag{4}
 $$
 
-where $\gamma_t = d^t / D^i$ is the weight of transect $t$, and $D^i = \sum_{t \in i} d^t$ is the total transect distance in stratum $i$.
+where $\gamma_t = d^t / d^i$ is the weight of transect $t$, and $d^i = \sum_{t \in i} d^t$ is the total transect distance in stratum $i$.
 
 Across the entire survey area, the biomass density estimate can similarly be obtained by a weighted mean over all stratum:
 
