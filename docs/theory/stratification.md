@@ -78,9 +78,11 @@ $$
 \sum_{s,\ell,\alpha} L^i_{s,\alpha,\ell} = 1
 $$
 
-## Jolly-Hampton (1990) stratified sampling 
-This analysis provides a coefficient of variation ($\textit{CV}$) for the entire survey by weighting biomass estimates across all strata to derive estimates of the mean and variance of the biomass density. 
-for $k$ based on the length of each transect $t$ stratified by $i$ to derive estimates of the mean and variance. 
+
+
+
+## Jolly-Hampton stratified sampling 
+Jolly and Hampton {cite:p}`jolly_hampton_1990` proposed a method to provide a coefficient of variation ($\textit{CV}$) for the entire survey by weighting biomass estimates across all strata to derive estimates of the mean and variance of the biomass density. 
 
 First, the estimated biomass and the total distance $d^t$ for transect $t$ are
 
