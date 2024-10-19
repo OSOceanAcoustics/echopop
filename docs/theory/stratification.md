@@ -81,6 +81,19 @@ $$
 
 
 
+
+
+## Stratification schemes used in the hake survey
+For Pacific hake, two types of stratifications are used:
+
+- **INPFC**: Stratification set by the International North Pacific Fisheries Commission (INFPC) that is based solely on latitude. The US-Canada bienniel hake survey region encompasses 6 strata.
+- **KS**: Stratification determined based on the Kolomogorov-Smirnov test for differences of the fish length distributions across survey hauls.
+
+
+
+
+
+
 ## Jolly-Hampton stratified sampling 
 Jolly and Hampton {cite:p}`jolly_hampton_1990` proposed a method to provide a coefficient of variation ($\textit{CV}$) for the entire survey by weighting biomass estimates across all strata to derive estimates of the mean and variance of the biomass density. 
 
@@ -128,11 +141,3 @@ The $\textrm{CV}$ can then be calculated using:
 $$
 CV = \frac{ \sqrt{\textrm{Var}(\hat{\rho}_B)} }{\hat{\rho}_B}.
 $$
-
-
-
-## Stratification schemes used in the hake survey
-For Pacific hake, two types of stratifications are used:
-
-- **INPFC**: Stratification set by the International North Pacific Fisheries Commission (INFPC) that is based solely on latitude. The US-Canada bienniel hake survey region encompasses 6 strata.
-- **KS**: Stratification determined based on the Kolomogorov-Smirnov test for differences of the fish length distributions across survey hauls.
