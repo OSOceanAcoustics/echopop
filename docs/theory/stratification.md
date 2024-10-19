@@ -84,124 +84,52 @@ $$
 ## Jolly-Hampton stratified sampling 
 Jolly and Hampton {cite:p}`jolly_hampton_1990` proposed a method to provide a coefficient of variation ($\textit{CV}$) for the entire survey by weighting biomass estimates across all strata to derive estimates of the mean and variance of the biomass density. 
 
-First, the estimated biomass and the total distance $d^t$ for transect $t$ are
+Given the biomass $B^k$ for all intervals $k$ in transect $t$ within stratum $i$, the biomass density per unit area is
 
-$$ 
-B^t = \sum_{k \in t} B^k
-\label{eq:biomass_transect} \tag{1}
 $$
-
-and
-
-$$ 
-d^t = \sum_{k \in t} d^k,
-\label{eq:distance_transect} \tag{2}
+\hat{\rho}_B^t = \frac{ B^t }{ D^t },
 $$
+where $B^t=\sum_{k \in t} B^k$ is the total biomass and $D^t=\sum_{k \in t} d^k$ is the total distance of transect $t$.
 
-respectively.
-
-Using these quantities, the mean weighted biomass estimates in stratum $i$ is
+The mean weighted biomass density in stratum $i$ is then
 
 $$ 
-\tilde{\rho}_B^i = 
-    \frac{ \sum_t B^t d^t }{ D^i },
+\hat{\rho}_B^i = \sum_{t \in i} \gamma_t B^t,
 \label{eq:mean_estimate} \tag{4}
 $$
 
-where $D^i = \sum_{t \in i} d^t$ is the total transect distance in stratum $i$.
+where $\gamma_t = d^t / D^i$ is the weight of transect $t$, and $D^i = \sum_{t \in i} d^t$ is the total transect distance in stratum $i$.
 
-The stratum-based biomass estimates can similarly be weighted according to the stratum area $A_i$ to give the density estimate across the entire survey area:
-
-$$
-\tilde{\rho}_B = \frac{ \sum_i A_i \tilde{\rho}_B^i }{ \sum_i A_i }.
-$$
-
-
-
-Next $B^t$ $\eqref{eq:biomass_transect}$ for each $t$ is standardized to provide a mean biomass-per-distance estimate:
-
-$$ 
-\tilde{\rho}^{~t} = 
-    \frac{B^t}{d_{x,y}^{t}}
-\label{eq:transect_estimate} \tag{5}
-$$
-
-which can then be used to compute the squared deviation from the mean along with $\tilde{\rho}$ $\eqref{eq:mean_estimate}$ for each $t$ within $i$:
+Across the entire survey area, the biomass density estimate can similarly be obtained by a weighted mean over all stratum:
 
 $$
-\tilde{s}^{~t} =
-    (\tilde{\rho}^{~t} - \tilde{\rho})^2
-\label{eq:squared_deviation} \tag{6}
+\hat{\rho}_B = \frac{ \sum_i A_i \hat{\rho}_B^i }{ \sum_i A_i },
 $$
 
-This can then be used to calculate the sum of weighted squared deviations:
+where $A_i$ is the area of stratum $i$.
+
+ 
+When transects are randomly selected within the strata, the variance of the total biomass estimate can be obtained by
 
 $$
-\tilde{s} =
-    \sum\limits_{t} w_t^{2} \tilde{s}^t
-\label{eq:summed_squared_deviation} \tag{7}
+\textrm{Var}(\hat{\rho}_B) = \frac{ \sum_i A_i^2 \textrm{Var}(\hat{\rho}_B^i) }{ \left( \sum_i A_i \right)^2 },
 $$
 
-where the stratified weights ($w_t$) for each $t$ are:
+where
 
 $$
-w_t = 
-    \frac{d_{x,y}^t}{\bar{D}_{x,y}}
-\label{eq:stratified_weights} \tag{8}
+\textrm{Var}(\hat{\rho}_B^i) = \frac{ \sum_{t \in i} \gamma_t^2 \left( \hat{\rho}_B^t - \hat{\rho}_B^i \right)^2 }{ n^i (n^i-1) },
 $$
 
-The variance ($\tilde{\sigma}$) for each $i$ is then calculated:
+where $n^i$ is the number of transects in stratum $i$.
+
+The $\textrm{CV}$ can then be calculated using:
 
 $$
-\tilde{\sigma} =
-    \frac{\tilde{s}}{\nu}
-\label{eq:variance} \tag{9}
+CV = \frac{ \sqrt{\textrm{Var}(\hat{\rho}_B)} }{\hat{\rho}_B}.
 $$
 
-where the $\nu$ represents the degrees of freedom:
 
-$$
-\begin{equation}
-\nu =
-    \begin{cases}
-        n^t(n^t-1), & \text{if } n^t > 1 \\
-        (n^t)^2, & \text{if } n^t = 1
-    \end{cases}
-\tag{10} \label{eq:dof} 
-\end{equation}
-$$
-
-Variance estimates for each $i$ are then weighted by the total area ($A$) for $i$ to compute the overall (weighted) survey variance:
-
-$$
-\hat{\sigma} = 
-    \sum\tilde{\sigma} A^2
-\label{eq:weighted_variance} \tag{11}
-$$
-
-where:
-
-$$
-A =
-    \sum\limits_k A^k
-\label{eq:transect_area} \tag{12}
-$$
-
-Similar to the weighted variance estimates $\eqref{eq:weighted_variance}$, biomass estimates for each $i$ were also weighted by $A$ to calculate the overall (weighted) survey mean:
-
-$$
-\hat{\mu} =
-    \sum \tilde{\rho} A
-\label{eq:weighted_mean} \tag{13}
-$$
-
-The overall survey variance $\eqref{eq:weighted_variance}$ and mean $\eqref{eq:weighted_mean}$ are then both used to calculate $\textit{CV}$:
-
-$$
-\textit{CV} =
-    \frac{\sqrt{\hat{\sigma}}}{\hat{\mu}}
-\label{eq:cv} \tag{14}
-$$ -->
 
 ## Stratification schemes used in the hake survey
 For Pacific hake, two types of stratifications are used:
