@@ -10,7 +10,7 @@ from ..spatial.projection import wgs84_to_utm
 from ..spatial.transect import transect_bearing, transect_extent
 
 
-def crop_mesh(transect_data: pd.DataFrame, mesh_data: pd.DataFrame, settings_dict: dict):
+def crop_mesh(transect_data: pd.DataFrame, mesh_data: pd.DataFrame, cropping_parameters: dict):
     """
     Crop survey kriging mesh.
 
@@ -20,7 +20,7 @@ def crop_mesh(transect_data: pd.DataFrame, mesh_data: pd.DataFrame, settings_dic
         Georeferenced transect data.
     mesh_data: pd.DataFrame
         Kriging mesh.
-    settings_dict: dict
+    cropping_parameters: dict
         Dictionary containing relevant algorithm variables and arguments.
     """
     # Rename the mesh coordinate names, if necessary
@@ -35,11 +35,11 @@ def crop_mesh(transect_data: pd.DataFrame, mesh_data: pd.DataFrame, settings_dic
 
     # Select and return cropped mesh depending on the cropping method
     # ---- Interpolation
-    if settings_dict["crop_method"] == "transect_ends":
-        return transect_ends_crop_method(transect_data.copy(), mesh, settings_dict)
+    if cropping_parameters["crop_method"] == "transect_ends":
+        return transect_ends_crop_method(transect_data.copy(), mesh, cropping_parameters)
     # ---- Convex hull
-    elif settings_dict["crop_method"] == "convex_hull":
-        return hull_crop_method(transect_data.copy(), mesh, settings_dict)
+    elif cropping_parameters["crop_method"] == "convex_hull":
+        return hull_crop_method(transect_data.copy(), mesh, cropping_parameters)
 
 
 def hull_crop_method(transect_data: pd.DataFrame, mesh_data: pd.DataFrame, settings_dict: dict):
@@ -89,7 +89,7 @@ def hull_crop_method(transect_data: pd.DataFrame, mesh_data: pd.DataFrame, setti
 
 
 def transect_ends_crop_method(
-    transect_data: pd.DataFrame, mesh_data: pd.DataFrame, settings_dict: dict
+    transect_data: pd.DataFrame, mesh_data: pd.DataFrame, cropping_parameters: dict
 ):
     """
     Crop the kriging mesh by interpolating the eastern and western boundaries of the survey
@@ -101,15 +101,15 @@ def transect_ends_crop_method(
         Georeferenced transect data.
     mesh_data: pd.DataFrame
         Kriging mesh.
-    settings_dict: dict
+    cropping_parameters: dict
         Dictionary containing relevant algorithm variables and arguments.
     """
 
     # Extract the analysis settings
     # ---- Number of nearest transects
-    latitude_resolution = settings_dict["latitude_resolution"]
+    latitude_resolution = cropping_parameters["latitude_resolution"]
     # ---- Grid buffer distance (nmi)
-    bearing_tolerance = settings_dict["bearing_tolerance"]
+    bearing_tolerance = cropping_parameters["bearing_tolerance"]
 
     # Convert latitude resolution to degrees latitude
     latitude_resolution_deg = latitude_resolution / 60.0
@@ -272,7 +272,7 @@ def transect_ends_crop_method(
             )
         # -------- Append the indices
         region_2_index.append(idx[0])
-    # ---- Region 2
+    # ---- Region 3
     region_3_index = []
     # -------- Compute the change in longitude (degrees)
     delta_longitude = latitude_resolution_deg * np.cos(np.radians(region_3_latitude))
@@ -291,17 +291,24 @@ def transect_ends_crop_method(
         if np.isnan(region_3_extents[0][i]) | np.isnan(region_3_extents[1][i]):
             # -------- Compute the indices for the northern- and southernmost coordinates
             # -------- North
-            lat_w_max = np.argmax(transect_west["latitude"])
+            # lat_w_max = np.argmax(transect_west["latitude"])
+            lat_w_max = np.argmin(transect_west["latitude"])
             # -------- South
-            lat_e_max = np.argmax(transect_east["latitude"])
+            # lat_e_max = np.argmax(transect_east["latitude"])
+            lat_e_max = np.argmin(transect_east["latitude"])
             # -------- Slope
-            slope = (
+            # slope = (
+            #     transect_west["longitude"].iloc[lat_w_max]
+            #     - transect_east["longitude"].iloc[lat_e_max]
+            # ) / (transect_west["latitude"].min() - transect_east["latitude"].min())
+            slope = (transect_west["latitude"].min() - transect_east["latitude"].min()) / (
                 transect_west["longitude"].iloc[lat_w_max]
                 - transect_east["longitude"].iloc[lat_e_max]
-            ) / (transect_west["latitude"].max() - transect_east["latitude"].max())
+            )
             # -------- Set a new border threshold
             longitude_slope_i = (
-                slope * (region_3_latitude[i] - transect_east["latitude"].max())
+                # slope * (region_3_latitude[i] - transect_east["latitude"].max())
+                slope * (region_3_latitude[i] - transect_east["latitude"].min())
                 + transect_east["longitude"].iloc[lat_e_max]
             )
             if np.isnan(region_3_extents[0][i]):

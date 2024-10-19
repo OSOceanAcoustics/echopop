@@ -25,6 +25,11 @@ parts:
     - file: theory/kriging_eq
     - file: theory/semivariogram_eq
     # - file: theory/other
+  - file: implementation
+    title: Software implementation
+    sections:
+    - file: implementation/echopro_vs_echopop
+    - file: implementation/preprocessing_data
   # - file: algo
   #   title: Algorithmic implementation
   #   sections:

@@ -1,6 +1,6 @@
 import copy
 from pathlib import Path
-from typing import List, Literal, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Union
 
 import numpy as np
 from IPython.display import display
@@ -18,7 +18,7 @@ from .graphics import variogram_interactive as egv
 from .spatial.projection import transform_geometry
 from .spatial.transect import edit_transect_columns
 from .utils import load as el, load_nasc as eln, message as em
-from .utils.validate_dict import VariogramBase, VariogramInitial, VariogramOptimize
+from .utils.load import dataset_integrity
 
 
 class Survey:
@@ -123,7 +123,7 @@ class Survey:
 
         # Compile echoview acoustic backscatter exports if `echoview_exports == True`:
         if ingest_exports is not None and ingest_exports == "echoview":
-            eln.batch_read_echoview_exports(
+            eln.ingest_echoview_exports(
                 self.config,
                 transect_pattern,
                 index_variable,
@@ -150,9 +150,6 @@ class Survey:
             Console messages that will print various messages, updates, etc. when set to True.
         """
 
-        # Create haul-transect-mapping key file
-        el.write_haul_to_transect_key(self.config, verbose)
-
         # Get previously processed datasets
         # ---- Updated datasets
         new_datasets = ["biological", "kriging", "stratification"]
@@ -171,6 +168,9 @@ class Survey:
         """
         Calculate population-level metrics from acoustic transect measurements
         """
+
+        # Check dataset integrity
+        dataset_integrity(self.input, analysis="transect")
 
         # Update settings to reflect the stratum definition
         self.analysis["settings"].update(
@@ -231,10 +231,10 @@ class Survey:
         bootstrap_ci: float = 0.95,
         bootstrap_ci_method: Literal[
             "BC", "BCa", "empirical", "percentile", "standard", "t-jackknife", "t-standard"
-        ] = "BCa",
+        ] = "t-jackknife",
         bootstrap_ci_method_alt: Optional[
             Literal["empirical", "percentile", "standard", "t-jackknife", "t-standard"]
-        ] = "t-jackknife",
+        ] = "t-standard",
         bootstrap_adjust_bias: bool = True,
         verbose=True,
     ):
@@ -251,6 +251,9 @@ class Survey:
         age-class and sex. This also only applies to the transect results and is not currently
         designed to be compatible with other derived population-level statistics (e.g. kriging).
         """
+
+        # Check dataset integrity
+        dataset_integrity(self.input, analysis=f"stratified:{dataset}")
 
         # Error message for `stratum == 'ks'`
         if stratum == "ks":
@@ -327,6 +330,9 @@ class Survey:
         Semivariogram plotting and parameter optimization GUI method
         """
 
+        # Check dataset integrity
+        dataset_integrity(self.input, analysis="variogram")
+
         # Initialize results
         self.results["variogram"] = {}
 
@@ -376,29 +382,23 @@ class Survey:
         # Run GUI
         display(SEMIVARIOGRAM_GUI)
 
-        # Update the results
-        # self.analysis["variogram"].update({
-        #     "model_fit": SEMIVARIOGRAM_GUI.results["best_fit"]["model_fit"],
-        #     "model": SEMIVARIOGRAM_GUI.results["variogram"]["model"]
-        # })
-
     def fit_variogram(
         self,
-        variogram_parameters: VariogramBase = {},
-        optimization_parameters: VariogramOptimize = {},
+        variogram_parameters: Dict[str, Any] = {},
+        optimization_parameters: Dict[str, Any] = {},
         model: Union[str, List[str]] = ["bessel", "exponential"],
         n_lags: int = 30,
         azimuth_range: float = 360.0,
         standardize_coordinates: bool = True,
         force_lag_zero: bool = True,
-        initialize_variogram: VariogramInitial = [
+        initialize_variogram: Union[List[str], Dict[str, Any]] = [
             "nugget",
             "sill",
             "correlation_range",
             "hole_effect_range",
             "decay_power",
         ],
-        variable: Literal["biomass", "abundance"] = "biomass",
+        variable: Literal["biomass"] = "biomass",
         verbose: bool = True,
     ):
         """
@@ -460,8 +460,11 @@ class Survey:
         values imported from `self.input["statistics"]["variogram"]["model_config"]`.
         """
 
+        # Check dataset integrity
+        dataset_integrity(self.input, analysis="variogram")
+
         # Validate "variable" input
-        if variable not in ["biomass", "abundance"]:
+        if variable not in ["biomass"]:
             raise ValueError(
                 f"The user input for `variable` ({variable}) is invalid. Only `variable='biomass'` "
                 f"and `variable='abundance'` are valid inputs for the `fit_variogram()` method."
@@ -537,20 +540,13 @@ class Survey:
     # !!! TODO: develop different name for "crop_method = 'interpolation'"
     def kriging_analysis(
         self,
-        bearing_tolerance: float = 15.0,
+        cropping_parameters: Dict[str, Any] = {},
+        kriging_parameters: Dict[str, Any] = {},
         coordinate_transform: bool = True,
-        crop_method: Literal["transect_ends", "convex_hull"] = "transect_ends",
         extrapolate: bool = False,
-        best_fit_variogram: bool = True,
-        kriging_parameters: Optional[dict] = None,
-        latitude_resolution: float = 1.25,
-        mesh_buffer_distance: float = 1.25,
-        num_nearest_transects: int = 4,
-        projection: Optional[str] = None,
-        stratum: str = "ks",
-        variable: str = "biomass_density",
-        variogram_model: Union[str, List[str]] = ["bessel", "exponential"],
-        variogram_parameters: Optional[dict] = None,
+        best_fit_variogram: bool = False,
+        variable: Literal["biomass"] = "biomass",
+        variogram_parameters: Optional[Dict[str, Any]] = None,
         verbose: bool = True,
     ):
         """
@@ -563,90 +559,83 @@ class Survey:
             Biological variable that will be interpolated via kriging
         """
 
-        # Parameterize analysis settings that will be applied to the kriging analysis
+        # Check dataset integrity
+        dataset_integrity(self.input, analysis="kriging")
+
+        # Populate settings dictionary with input argument values/entries
         self.analysis["settings"].update(
             {
                 "kriging": {
-                    "exclude_age1": self.analysis["settings"]["transect"]["exclude_age1"],
+                    "best_fit_variogram": best_fit_variogram,
+                    "cropping_parameters": {**cropping_parameters},
                     "extrapolate": extrapolate,
-                    "kriging_parameters": (
-                        self.input["statistics"]["kriging"]["model_config"]
-                        if kriging_parameters is None
-                        else kriging_parameters
-                    ),
-                    "projection": (
-                        self.config["geospatial"]["init"] if projection is None else projection
-                    ),
+                    "kriging_parameters": {**kriging_parameters},
                     "standardize_coordinates": coordinate_transform,
-                    "stratum": stratum.lower(),
-                    "stratum_name": "stratum_num" if stratum == "ks" else "inpfc",
                     "variable": variable,
-                    "variogram_parameters": (
-                        self.input["statistics"]["variogram"]["model_config"]
-                        if variogram_parameters is None
-                        else variogram_parameters
-                    ),
                     "verbose": verbose,
-                }
-            }
+                },
+            },
         )
 
-        # Update variogram model
-        self.analysis["settings"]["kriging"]["variogram_parameters"]["model"] = variogram_model
+        # Inherited settings/configurations (contingent on previously executed methods)
+        self.analysis["settings"]["kriging"].update(
+            {
+                # ---- From `self.config`
+                "projection": self.config["geospatial"]["init"],
+                # ---- From `self.transect_analysis` settings
+                "exclude_age1": self.analysis["settings"]["transect"]["exclude_age1"],
+                "stratum": self.analysis["settings"]["transect"]["stratum"],
+            },
+        )
 
-        # Update variogram parameters to use fitted if the values are available
-        if best_fit_variogram:
-            if "variogram" in self.results:
-                if "model_fit" in self.results["variogram"]:
-                    # ---- Parameters
-                    self.analysis["settings"]["kriging"].update(
-                        {"variogram_parameters": self.results["variogram"]["model_fit"]}
+        # Calculate additional keys for the settings
+        self.analysis["settings"]["kriging"].update(
+            {
+                "stratum_name": (
+                    "stratum_num"
+                    if self.analysis["settings"]["kriging"]["stratum"] == "ks"
+                    else "inpfc"
+                ),
+                "variogram_parameters": (
+                    {
+                        **self.input["statistics"]["variogram"]["model_config"],
+                        **variogram_parameters,
+                    }
+                    if (
+                        variogram_parameters
+                        and "model_config" in self.input["statistics"]["variogram"]
                     )
-                    # ---- Update model
-                    self.analysis["settings"]["kriging"]["variogram_parameters"]["model"] = (
-                        self.results["variogram"]["model"]
+                    else (
+                        self.input["statistics"]["variogram"]["model_config"]
+                        if (
+                            not variogram_parameters
+                            and "model_config" in self.input["statistics"]["variogram"]
+                        )
+                        else (
+                            {
+                                **self.results["variogram"]["model"],
+                                **self.results["variogram"]["model_fit"],
+                            }
+                            if best_fit_variogram is True
+                            else {}
+                        )
                     )
-                else:
-                    raise ValueError(
-                        "Argument `best_fit_variogram` is invalid. No fitted variogram parameters "
-                        "have been estimated via the `fit_variogram()` Survey-class method. "
-                        "Either run the `fit_variogram()` method first, or set the argument "
-                        "`best_fit_variogram=False`."
-                    )
-
-        # Prepare temporary message concerning coordinate transformation = False
-        if not coordinate_transform:
-            raise ValueError(
-                """Kriging without coordinate standardization is currently """
-                """unavailable due to the kriging parameter `search_radius` being only defined """
-                """for transformed x- and y-coordinates."""
+                ),
+            }
+        )
+        # ---- Further append variogram parameters if they were ran
+        if "variogram" in self.analysis["settings"]:
+            self.analysis["settings"]["kriging"]["variogram_parameters"].update(
+                **self.analysis["settings"]["variogram"]
             )
 
         # Run kriging analysis
         # ----> Generates a georeferenced dataframe for the entire mesh grid, summary statistics,
         # ----> and adds intermediate data products to the analysis attribute
-        # ---- If kriging results are not extrapolated beyond the survey region:
-        if not extrapolate:
-            # ---- Update the analysis settings
-            self.analysis["settings"]["kriging"].update(
-                {
-                    "bearing_tolerance": bearing_tolerance,
-                    "crop_method": crop_method,
-                    "latitude_resolution": latitude_resolution,
-                    "mesh_buffer_distance": mesh_buffer_distance,
-                    "num_nearest_transect": num_nearest_transects,
-                }
-            )
-            # ---- Run kriging algorithm
-            kriged_results, self.analysis = krige(
-                self.input, self.analysis, self.analysis["settings"]["kriging"]
-            )
-        # ---- If kriging results are extrapolated beyond the survey region:
-        else:
-            # ---- Run kriging algorithm
-            kriged_results, self.analysis = krige(
-                self.input, self.analysis, self.analysis["settings"]["kriging"]
-            )
+        # ---- Run kriging algorithm
+        kriged_results, self.analysis = krige(
+            self.input, self.analysis, self.analysis["settings"]["kriging"]
+        )
 
         # Save the results to the `results` attribute
         self.results.update({"kriging": kriged_results})

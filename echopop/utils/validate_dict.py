@@ -219,9 +219,6 @@ class TransectRegionMap(BaseModel, arbitrary_types_allowed=True):
     Transect-to-region mapping parameters
     """
 
-    save_file_template: str
-    save_file_directory: str
-    save_file_sheetname: str
     pattern: str
     parts: Dict[str, List[PatternParts]]
 
@@ -242,23 +239,6 @@ class TransectRegionMap(BaseModel, arbitrary_types_allowed=True):
             )
         # ---- Return values
         return values
-
-    @field_validator("save_file_template", mode="after")
-    def validate_save_file_template(cls, v):
-        # ---- Find all strings contained within curly braces
-        template_ids = re.findall(r"{(.*?)}", v)
-        # ---- Evaluate valid id's
-        if not set(template_ids).issubset(set(["YEAR", "COUNTRY", "GROUP"])):
-            # ---- Get the unknown IDs
-            unknown_ids = set(template_ids) - set(["YEAR", "COUNTRY", "GROUP"])
-            # ---- Raise Error
-            raise ValueError(
-                f"Transect-to-region mapping save file template ({v}) contains invalid identifiers "
-                f"({list(unknown_ids)}). Valid identifiers within the filename template (bounded "
-                f"by curly braces) include: ['YEAR', 'COUNTRY', 'GROUP']."
-            )
-        # ---- Return value
-        return v
 
     @field_validator("pattern", mode="after")
     def validate_pattern(cls, v):
@@ -423,7 +403,7 @@ class BiologicalFiles(BaseModel):
     length: Union[Dict[str, XLSXFiles], XLSXFiles]
     specimen: Union[Dict[str, XLSXFiles], XLSXFiles]
     catch: Union[Dict[str, XLSXFiles], XLSXFiles]
-    haul_to_transect: Union[Dict[str, XLSXFiles], XLSXFiles]
+    haul_to_transect: Optional[Union[Dict[str, XLSXFiles], XLSXFiles]]
 
 
 class KrigingFiles(BaseModel):
@@ -445,6 +425,15 @@ class StratificationFiles(BaseModel):
     geo_strata: XLSXFiles
 
 
+class SpeciesDefinition(BaseModel):
+    """
+    Species definitions
+    """
+
+    text_code: Optional[str]
+    number_code: Optional[Union[int, float]]
+
+
 class CONFIG_DATA_MODEL(BaseModel):
     """
     Data file configuration YAML validator
@@ -454,7 +443,7 @@ class CONFIG_DATA_MODEL(BaseModel):
     biological: BiologicalFiles
     stratification: StratificationFiles
     NASC: Dict[str, XLSXFiles]
-    gear_data: Dict[str, XLSXFiles]
+    species: SpeciesDefinition
     kriging: KrigingFiles
     data_root_dir: Optional[str] = None
     CAN_haul_offset: Optional[int] = None
@@ -1016,3 +1005,157 @@ class VariogramInitial(TypedDict, total=False):
         # --------
         # print("Validate passed.")
         # --------
+
+
+class MeshCrop(
+    BaseModel,
+    arbitrary_types_allowed=True,
+    title="kriging mesh cropping parameters ('cropping_parameters')",
+):
+    crop_method: Literal["transect_ends", "convex_hull"] = Field(default="transect_ends")
+    num_nearest_transects: posint = Field(gt=0, default=4)
+    mesh_buffer_distance: realposfloat = Field(gt=0.0, default=1.25, allow_inf_nan=False)
+    latitude_resolution: realposfloat = Field(gt=0.0, default=1.25, allow_inf_nan=False)
+    bearing_tolerance: realcircle = Field(gt=0.0, default=15.0, le=180.0, allow_inf_nan=False)
+
+    @field_validator("num_nearest_transects", mode="before")
+    def validate_posint(cls, v):
+        return posint(v)
+
+    @field_validator("bearing_tolerance", mode="before")
+    def validate_realcircle(cls, v):
+        return realcircle(v)
+
+    @field_validator("mesh_buffer_distance", "latitude_resolution", mode="before")
+    def validate_realposfloat(cls, v):
+        return realposfloat(v)
+
+    def __init__(
+        self,
+        crop_method: Literal["transect_ends", "convex_hull"] = "transect_ends",
+        num_nearest_transects: posint = 4,
+        mesh_buffer_distance: realposfloat = 1.25,
+        latitude_resolution: realposfloat = 1.25,
+        bearing_tolerance: realcircle = 15.0,
+        **kwargs,
+    ):
+        """
+        Mesh cropping method parameters
+        """
+
+        try:
+            super().__init__(
+                crop_method=crop_method,
+                num_nearest_transects=num_nearest_transects,
+                mesh_buffer_distance=mesh_buffer_distance,
+                latitude_resolution=latitude_resolution,
+                bearing_tolerance=bearing_tolerance,
+            )
+        except ValidationError as e:
+            # Drop traceback
+            e.__traceback__ = None
+            raise e
+
+    # Factory method
+    @classmethod
+    def create(cls, **kwargs):
+        """
+        Factory creation method to create a `MeshCrop` instance
+        """
+        return cls(**kwargs).model_dump(exclude_none=True)
+
+
+class KrigingParameterInputs(
+    BaseModel, arbitrary_types_allowed=True, title="kriging model parameters ('kriging_parameters')"
+):
+    anisotropy: realposfloat = Field(default=0.0, allow_inf_nan=False)
+    kmin: posint = Field(default=3, ge=3)
+    kmax: posint = Field(default=10, ge=3)
+    correlation_range: Optional[realposfloat] = Field(default=None, gt=0.0, allow_inf_nan=False)
+    search_radius: Optional[realposfloat] = Field(default=None, gt=0.0, allow_inf_nan=False)
+
+    @field_validator("kmin", "kmax", mode="before")
+    def validate_posint(cls, v):
+        return posint(v)
+
+    @field_validator("anisotropy", "correlation_range", "search_radius", mode="before")
+    def validate_realposfloat(cls, v):
+        if v is None:
+            return v
+        else:
+            return realposfloat(v)
+
+    @model_validator(mode="before")
+    def validate_k_window(cls, values):
+        # ---- Get `kmin`
+        kmin = values.get("kmin", 3)
+        # ---- Get 'kmax'
+        kmax = values.get("kmax", 10)
+        # ---- Ensure that `kmax >= kmin`
+        if kmax < kmin:
+            # ---- Raise Error
+            raise ValueError(
+                f"Defined 'kmax' ({kmax}) must be greater than or equal to 'kmin' ({kmin})."
+            )
+        # ---- Return values
+        return values
+
+    @model_validator(mode="before")
+    def validate_spatial_correlation_params(cls, values):
+        # ---- Get `correlation_range`
+        correlation_range = values.get("correlation_range", None)
+        # ---- Get 'search_radius'
+        search_radius = values.get("search_radius", None)
+        # ---- Ensure that both parameters are not None
+        if not correlation_range and not search_radius:
+            # ---- Raise Error
+            raise ValueError(
+                "Both 'correlation_range' and 'search_radius' arguments are missing. At least one "
+                "must be defined."
+            )
+        # ---- Return values
+        return values
+
+    # Factory method
+    @classmethod
+    def create(cls, **kwargs):
+        """
+        Factory creation method to create a `KrigingParameters` instance
+        """
+
+        # Collect errors, if any arise
+        try:
+            # ---- Test validate
+            _ = cls(**kwargs)
+            # ---- Edit values if needed
+            if kwargs.get("search_radius") is None and kwargs["correlation_range"] is not None:
+                kwargs["search_radius"] = kwargs["correlation_range"] * 3
+            # ---- Produce the dictionary as an output
+            return cls(**kwargs).model_dump(exclude_none=True)
+        except ValidationError as e:
+            e.__traceback__ = None
+            raise e
+
+
+class KrigingAnalysis(BaseModel, arbitrary_types_allowed=True):
+    best_fit_variogram: bool = Field(default=False)
+    coordinate_transform: bool = Field(default=True)
+    extrapolate: bool = Field(default=False)
+    variable: Literal["biomass"] = Field(default="biomass")
+    verbose: bool = Field(default=True)
+
+    def __init__(self, **kwargs):
+        try:
+            super().__init__(**kwargs)
+        except ValidationError as e:
+            # Drop traceback
+            e.__traceback__ = None
+            raise e
+
+    # Factory method
+    @classmethod
+    def create(cls, **kwargs):
+        """
+        Factory creation method to create a `KrigingAnalysis` instance
+        """
+        return cls(**kwargs).model_dump(exclude_none=True)

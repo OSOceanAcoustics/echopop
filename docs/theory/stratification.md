@@ -201,7 +201,7 @@ $$
 \textit{CV} =
     \frac{\sqrt{\hat{\sigma}}}{\hat{\mu}}
 \label{eq:cv} \tag{14}
-$$
+$$ -->
 
 ## Stratification schemes used in the hake survey
 For Pacific hake, two types of stratifications are used:
