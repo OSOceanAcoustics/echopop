@@ -108,7 +108,6 @@ The mean weighted biomass density in stratum $i$ is then
 
 $$ 
 \hat{\rho}_B^i = \sum_{t \in i} \gamma_t B^t,
-\label{eq:mean_estimate} \tag{4}
 $$
 
 where $\gamma_t = d^t / d^i$ is the weight of transect $t$, and $d^i = \sum_{t \in i} d^t$ is the total transect distance in stratum $i$.
