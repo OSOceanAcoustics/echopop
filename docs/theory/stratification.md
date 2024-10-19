@@ -112,7 +112,7 @@ $$
 
 where $\gamma_t = d^t / d^i$ is the weight of transect $t$, and $d^i = \sum_{t \in i} d^t$ is the total transect distance in stratum $i$.
 
-Across the entire survey area, the biomass density estimate can similarly be obtained by a weighted mean over all stratum:
+Across the entire survey area, the biomass density estimate can similarly be obtained by a weighted mean over all strata:
 
 $$
 \hat{\rho}_B = \frac{ \sum_i A_i \hat{\rho}_B^i }{ \sum_i A_i },
@@ -121,7 +121,7 @@ $$
 where $A_i$ is the area of stratum $i$.
 
  
-When transects are randomly selected within the strata, the variance of the total biomass estimate can be obtained by
+When transects are randomly selected within the strata, the variance of the total biomass can be estimated as
 
 $$
 \textrm{Var}(\hat{\rho}_B) = \frac{ \sum_i A_i^2 \textrm{Var}(\hat{\rho}_B^i) }{ \left( \sum_i A_i \right)^2 },
@@ -133,7 +133,7 @@ $$
 \textrm{Var}(\hat{\rho}_B^i) = \frac{ \sum_{t \in i} \gamma_t^2 \left( \hat{\rho}_B^t - \hat{\rho}_B^i \right)^2 }{ n^i (n^i-1) },
 $$
 
-where $n^i$ is the number of transects in stratum $i$.
+in which $n^i$ is the number of transects in stratum $i$.
 
 The $\textrm{CV}$ can then be calculated using:
 
