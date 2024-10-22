@@ -403,7 +403,7 @@ class BiologicalFiles(BaseModel):
     length: Union[Dict[str, XLSXFiles], XLSXFiles]
     specimen: Union[Dict[str, XLSXFiles], XLSXFiles]
     catch: Union[Dict[str, XLSXFiles], XLSXFiles]
-    haul_to_transect: Optional[Union[Dict[str, XLSXFiles], XLSXFiles]]
+    haul_to_transect: Optional[Union[Dict[str, XLSXFiles], XLSXFiles]] = Field(default=None)
 
 
 class KrigingFiles(BaseModel):
