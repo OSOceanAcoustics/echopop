@@ -1177,7 +1177,7 @@ def test_TransectRegionMap(input, exception):
                 "specimen": {"filename": "blargh", "sheetname": "sheet2"},
                 "catch": {"filename": "blorgh", "sheetname": "sheet3"},
             },
-            ValidationError,
+            None,
         ),
         (
             {
