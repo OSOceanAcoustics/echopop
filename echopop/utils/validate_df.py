@@ -32,9 +32,6 @@ def extract_errors(data, failed_coercion: pd.DataFrame, key="error"):
             # if "error" in data:
             #     errors.append(f"   -{data["error"].capitalize()}")
             else:
-                re.sub(r"[()]", "", data["error"])
-                re.sub(r"\(\)", "", data["error"])
-                ("(a)").replace(".*(.*).*", "")
                 errors.append(f"   -{data['error'].capitalize()}")
         else:
             for k, v in data.items():
@@ -111,7 +108,6 @@ class BaseDataFrame(DataFrameModel):
             for col in df.columns:
                 if re.match(column_name, col):
                     # ---- Retrieve the column name
-                    # col_name = re.match(column_name, col).group(0)
                     # Coerce the column to the appropriate dtype
                     if isinstance(dtype, list):
                         # ---- Initialize the dtype of the validator annotation
@@ -239,6 +235,24 @@ class BaseDataFrame(DataFrameModel):
 
 
 class LengthBiodata(BaseDataFrame):
+    """
+    Binned body length DataFrame
+
+    Parameters
+    ----------
+    haul_num: Union[int, float]
+        Haul number.
+    length: float
+        Body length.
+    length_count: int
+        Number of animals with the corresponding binned length.
+    sex: Union[int, str]
+        Animal sex. This can either be represented by an integer value, or a string corresponding
+        to male ("male", "m"), female ("female", "f"), or unsexed/unidentified ("unsexed", "u").
+    species_id: Union[int, float, str]
+        Species identification code.
+    """
+
     haul_num: Series = Field(nullable=False, metadata=dict(types=[int, float]))
     length: Series[float] = Field(gt=0.0, nullable=False)
     length_count: Series[int] = Field(ge=0, nullable=False)
@@ -278,6 +292,19 @@ class LengthBiodata(BaseDataFrame):
 
 
 class CatchBiodata(BaseDataFrame):
+    """
+    Aggregated catch DataFrame
+
+    Parameters
+    ----------
+    haul_num: Union[int, float]
+        Haul number.
+    haul_weight: float
+        Total weight (kg) of a net haul.
+    species_id: Union[int, float, str]
+        Species identification code.
+    """
+
     haul_num: Series = Field(nullable=False, metadata=dict(types=[int, float]))
     haul_weight: Series[float] = Field(ge=0.0, nullable=False)
     species_id: Series = Field(nullable=False, metadata=dict(types=[int, float, str]))
@@ -300,6 +327,26 @@ class CatchBiodata(BaseDataFrame):
 
 
 class SpecimenBiodata(BaseDataFrame):
+    """
+    Individual specimen length and weight DataFrame
+
+    Parameters
+    ----------
+    age: Union[int, float]
+        Animal age (in whole or decimal years).
+    haul_num: Union[int, float]
+        Haul number.
+    length: float
+        Body length.
+    sex: Union[int, str]
+        Animal sex. This can either be represented by an integer value, or a string corresponding
+        to male ("male", "m"), female ("female", "f"), or unsexed/unidentified ("unsexed", "u").
+    species_id: Union[int, float, str]
+        Species identification code.
+    weight: float
+        Individual specimen weight (kg).
+    """
+
     age: Series = Field(ge=0, nullable=True, metadata=dict(types=[int, float]))
     haul_num: Series = Field(nullable=False, metadata=dict(types=[int, float]))
     length: Series[float] = Field(gt=0.0, nullable=False)
@@ -341,6 +388,17 @@ class SpecimenBiodata(BaseDataFrame):
 
 
 class HaulTransect(BaseDataFrame):
+    """
+    Haul-transect map DataFrame
+
+    Parameters
+    ----------
+    haul_num: Union[int, float]
+        Haul number.
+    transect_num: Union[int, float]
+        Transect number.
+    """
+
     haul_num: Series = Field(nullable=False, metadata=dict(types=[int, float]))
     transect_num: Series = Field(nullable=False, metadata=dict(types=[int, float]))
 
@@ -355,6 +413,20 @@ class HaulTransect(BaseDataFrame):
 
 
 class KSStrata(BaseDataFrame):
+    """
+    Length-based stratification DataFrame
+
+    Parameters
+    ----------
+    fraction*: float
+        Column corresponding to the fraction of the total net haul weight that is hake. This column
+        must include "fraction" in the name.
+    haul*: Union[int, float]
+        Haul number. This column must include "haul" in the name.
+    stratum*: int
+        Length-based stratum index/group. This column must include "stratum" in the name.
+    """
+
     fraction: Series[float] = Field(
         ge=0.0, le=1.0, nullable=False, regex=True, alias=".*fraction.*"
     )
@@ -379,6 +451,19 @@ class KSStrata(BaseDataFrame):
 
 
 class GeoStrata(BaseDataFrame):
+    """
+    Geographic extents of length- and INPFC-based strata DataFrame
+
+    Parameters
+    ----------
+    haul*: Union[int, float]
+        Haul number. This column must include "haul" in the name.
+    northlimit_latitude: float
+        Northern limit of the lstratum.
+    stratum*: int
+        Length-based stratum index/group. This column must include "stratum" in the name.
+    """
+
     haul: Series = Field(nullable=False, regex=True, metadata=dict(types=[int, float]))
     northlimit_latitude: Series[float] = Field(ge=-90.0, le=90.0, nullable=False)
     stratum: Series = Field(nullable=False, regex=True, metadata=dict(types=[int, float, str]))
@@ -401,6 +486,29 @@ class GeoStrata(BaseDataFrame):
 
 
 class AcousticData(BaseDataFrame):
+    """
+    Haul-transect map DataFrame
+
+    Parameters
+    ----------
+    haul*: Union[int, float]
+        Haul number. This column must include "haul" in the name.
+    latitude: float
+        Latitude coordinates.
+    longitude: float
+        Longitude coordinates.
+    nasc: float
+        Nautical area scattering coefficient (NASC, m^2 nmi^-2).
+    transect_num: Union[int, float]
+        Transect number.
+    transect_spacing: float
+        Distance (spacing) between transect lines.
+    vessel_log_start: float
+        Cumulative vessel log distance at the start of each transect interval.
+    vessel_log_start: end
+        Cumulative vessel log distance at the end of each transect interval.
+    """
+
     haul: Series = Field(nullable=False, regex=True, metadata=dict(types=[int, float]))
     latitude: Series[float] = Field(ge=-90.0, le=90.0, nullable=False, regex=True, coerce=True)
     longitude: Series[float] = Field(ge=-180.0, le=180.0, nullable=False, regex=True, coerce=True)
@@ -428,6 +536,17 @@ class AcousticData(BaseDataFrame):
 
 
 class IsobathData(BaseDataFrame):
+    """
+    Haul-transect map DataFrame
+
+    Parameters
+    ----------
+    latitude: float
+        Latitude coordinates.
+    longitude: float
+        Longitude coordinates.
+    """
+
     latitude: Series[float] = Field(
         ge=-90.0, le=90.0, nullable=False, regex=True, alias=".*latitude.*"
     )
@@ -437,12 +556,50 @@ class IsobathData(BaseDataFrame):
 
 
 class KrigedMesh(IsobathData):
+    """
+    Haul-transect map DataFrame
+
+    Parameters
+    ----------
+    fraction*: float
+        Fraction of kriging mesh cell that is within the interpolation polygon.
+    """
+
     fraction: Series[float] = Field(
         ge=0.0, le=1.0, nullable=False, regex=True, coerce=True, alias=".*fraction.*"
     )
 
 
 class VarioKrigingPara(BaseDataFrame):
+    """
+    Haul-transect map DataFrame
+
+    Parameters
+    ----------
+    hole: float
+        Length scale or range of the hole effect.
+    lscl: float
+        The relative length scale, or range at which the correlation between points becomes
+        approximately constant.
+    nugt: float
+        The y-intercept of the variogram representing the short-scale (i.e. smaller than the lag
+        resolution) variance.
+    powr: float
+        The exponent used for variogram models with exponentiated spatial decay terms.
+    res: float
+        The (scaled) distance between lags.
+    sill: float
+        The total variance where the change autocorrelation reaches (or nears) 0.0.
+    ratio: float
+        The directional aspect ratio of anisotropy.
+    srad: float
+        The adaptive search radius used for kriging.
+    kmin: float
+        The minimum number of nearest kriging points.
+    kmax: float
+        The maximum number of nearest kriging points.
+    """
+
     y_offset: Series[float] = Field(ge=-90.0, le=90.0, nullable=False, alias="dataprep.y_offset")
     corr: Series[float] = Field(ge=0.0, nullable=False, alias="vario.corr")
     hole: Series[float] = Field(ge=0.0, nullable=False, alias="vario.hole")

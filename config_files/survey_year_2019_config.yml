@@ -17,7 +17,7 @@ CAN_haul_offset: 200         # The value to be added to the Canadian's haul numb
 # Directory path that contains all input data needed
 
 # data_root_dir: C:/Users/Brandyn Lucca/Documents/Data/echopop_2019
-data_root_dir: C:/Users/Brandyn/Documents/GitHub/EchoPro_data/2019_consolidated_files
+data_root_dir: C:/Users/Brandyn/Documents/GitHub/EchoPro_data/Data/
 
 ##############################################################################
 # Input data files
@@ -64,13 +64,6 @@ NASC:
     # file that includes all ages
     # filename: Exports/US_CAN_NASC_2019_table_all_ages_test.xlsx
     filename: Exports/US_CAN_detailsa_2019_table1y+_ALL_final - updated.xlsx
-    sheetname: Sheet1
-export_regions:
-  all_ages:
-    filename: Stratification/CAN_US_2019_transect_region_haul_all_ages.xlsx
-    sheetname: Sheet1
-  no_age1:
-    filename: Stratification/CAN_US_2019_transect_region_haul_no_age1.xlsx
     sheetname: Sheet1
 kriging:
   mesh:
