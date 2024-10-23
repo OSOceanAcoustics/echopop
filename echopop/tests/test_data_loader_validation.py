@@ -1,18 +1,13 @@
-from pathlib import Path
 import re
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Union
+
+import numpy as np
 import pytest
 import yaml
 from pydantic import ValidationError
-import numpy as np
-from typing import Any, Dict, List, Optional, Union
-import pytest
 
-from ..utils.validate import (
-    posint,
-    posfloat,
-    realposfloat,
-)
-
+from ..utils.validate import posfloat, posint, realposfloat
 from ..utils.validate_dict import (
     CONFIG_DATA_MODEL,
     CONFIG_INIT_MODEL,
@@ -25,12 +20,14 @@ from ..utils.validate_dict import (
     KrigingParameters,
     NASCExports,
     PatternParts,
+    SpeciesDefinition,
     StratificationFiles,
     StratifiedSurveyMeanParameters,
     TransectRegionMap,
     TSLRegressionParameters,
     XLSXFile,
 )
+
 
 ####################################################################################################
 # BASE MODEL STRUCTURE: TEST
@@ -50,13 +47,31 @@ def test_InputModel_model_structure(description):
     assert InputModel.model_config == dict()
 
     # -------------------------
-    # ASSERT: 'create' method
+    # ASSERT: 'judge' method
     # ---- Check existence
     assert "judge" in dir(InputModel)
     # ---- Validate correct output from empty input
     assert InputModel.judge(**dict()) == InputModel()
     # ---- Validate that any arbitrary output yields an empty output
     assert InputModel.judge(**dict(dum1="dum2")) == InputModel()
+    # ---- Validate non-dictionary input
+    with pytest.raises(
+        TypeError,
+        match=re.escape("judge() takes 1 positional argument but 2 were given"),
+    ):
+        assert InputModel.judge(list())
+    # ---- Test empty
+    assert InputModel.judge() == InputModel()
+
+    # -------------------------
+    # ASSERT: 'create' method
+    # ---- Check existence
+    assert "create" in dir(InputModel)
+    # ---- Validate correct output from empty input
+    assert InputModel.create(**dict()) == {}
+    # ---- Validate that any arbitrary output yields an empty output
+    assert InputModel.create(**dict(dum1="dum2")) == {}
+
 
 ####################################################################################################
 # HIGHER MODEL STRUCTURE: FIXTURES
@@ -78,10 +93,11 @@ def BiologicalFiles_fields() -> Dict[str, Any]:
             "frozen": None,
         },
         "haul_to_transect": {
-            "annotation": Union[Dict[str, XLSXFile], XLSXFile],
-            "frozen": None,
+            "annotation": Union[Dict[str, XLSXFile], XLSXFile, None],
+            "default": None,
         },
     }
+
 
 @pytest.fixture
 def FileSettings_fields() -> Dict[str, Any]:
@@ -107,6 +123,7 @@ def Geospatial_fields() -> Dict[str, Any]:
             "frozen": None,
         },
     }
+
 
 @pytest.fixture
 def HaulTransectMap_fields() -> Dict[str, Any]:
@@ -145,6 +162,7 @@ def KrigingFiles_fields() -> Dict[str, Any]:
         },
     }
 
+
 @pytest.fixture
 def KrigingParameters_fields() -> Dict[str, Any]:
 
@@ -169,6 +187,7 @@ def KrigingParameters_fields() -> Dict[str, Any]:
             "allow_inf_nan": False,
         },
     }
+
 
 @pytest.fixture
 def NASCExports_fields() -> Dict[str, Any]:
@@ -205,6 +224,7 @@ def NASCExports_fields() -> Dict[str, Any]:
         },
     }
 
+
 @pytest.fixture
 def PatternParts_fields() -> Dict[str, Any]:
 
@@ -219,6 +239,7 @@ def PatternParts_fields() -> Dict[str, Any]:
         },
     }
 
+
 @pytest.fixture
 def StratificationFiles_fields() -> Dict[str, Any]:
 
@@ -232,6 +253,7 @@ def StratificationFiles_fields() -> Dict[str, Any]:
             "frozen": None,
         },
     }
+
 
 @pytest.fixture
 def StratifiedSurveyMeanParameters_fields() -> Dict[str, Any]:
@@ -250,6 +272,7 @@ def StratifiedSurveyMeanParameters_fields() -> Dict[str, Any]:
             "frozen": None,
         },
     }
+
 
 @pytest.fixture
 def TSLRegressionParameters_fields() -> Dict[str, Any]:
@@ -273,22 +296,11 @@ def TSLRegressionParameters_fields() -> Dict[str, Any]:
         },
     }
 
+
 @pytest.fixture
 def TransectRegionMap_fields() -> Dict[str, Any]:
 
     return {
-        "save_file_template": {
-            "annotation": str,
-            "frozen": None,
-        },
-        "save_file_directory": {
-            "annotation": str,
-            "frozen": None,
-        },
-        "save_file_sheetname": {
-            "annotation": str,
-            "frozen": None,
-        },
         "pattern": {
             "annotation": str,
             "frozen": None,
@@ -311,12 +323,13 @@ def XLSXFile_fields() -> Dict[str, Any]:
         "sheetname": {
             "annotation": Union[str, List[str]],
             "frozen": None,
-        }
+        },
     }
-    
+
+
 ####################################################################################################
 # HIGHER MODEL STRUCTURE: TESTS
-# --------------------------------------------------------------------------------------------------    
+# --------------------------------------------------------------------------------------------------
 @pytest.mark.parametrize(
     "description",
     ["Assess `BiologicalFiles` pydantic model structure"],
@@ -352,8 +365,9 @@ def test_BiologicalFiles_model_structure(description, BiologicalFiles_fields):
     # ---- Check existence
     assert "judge" in dir(BiologicalFiles)
     # ---- Check default output
-    with pytest.raises(ValidationError, match="4 validation errors for biological file inputs"):
-            assert BiologicalFiles.judge(**dict())
+    with pytest.raises(ValidationError, match="3 validation errors for biological file inputs"):
+        assert BiologicalFiles.judge(**dict())
+
 
 @pytest.mark.parametrize(
     "description",
@@ -365,15 +379,11 @@ def test_FileSettings_model_structure(description, FileSettings_fields):
     # --------------------------
     # ASSERT: field annotations
     # ---- Check existence
-    assert (
-        set(FileSettings_fields)
-        .issubset(FileSettings.model_fields)
-    )
+    assert set(FileSettings_fields).issubset(FileSettings.model_fields)
     # ---- Check typing, defaults, and other expected attributes
     assert all(
         [
-            FileSettings.model_fields[param]._attributes_set 
-            == FileSettings_fields[param]
+            FileSettings.model_fields[param]._attributes_set == FileSettings_fields[param]
             for param in FileSettings.model_fields
         ]
     )
@@ -394,9 +404,9 @@ def test_FileSettings_model_structure(description, FileSettings_fields):
     # ---- Check existence
     assert "judge" in dir(FileSettings)
     # ---- Check default output
-    with pytest.raises(ValidationError, 
-                       match="2 validation errors for parameter file settings"):
-            assert FileSettings.judge(**dict())
+    with pytest.raises(ValidationError, match="2 validation errors for parameter file settings"):
+        assert FileSettings.judge(**dict())
+
 
 @pytest.mark.parametrize(
     "description",
@@ -408,10 +418,7 @@ def test_Geospatial_model_structure(description, Geospatial_fields):
     # --------------------------
     # ASSERT: field annotations
     # ---- Check existence
-    assert (
-        set(Geospatial_fields)
-        .issubset(Geospatial.model_fields)
-    )
+    assert set(Geospatial_fields).issubset(Geospatial.model_fields)
     # ---- Check typing, defaults, and other expected attributes
     assert all(
         [
@@ -436,9 +443,8 @@ def test_Geospatial_model_structure(description, Geospatial_fields):
     # ---- Check existence
     assert "judge" in dir(Geospatial)
     # ---- Check default output
-    with pytest.raises(ValidationError, 
-                       match="1 validation error for EPSG code"):
-            assert Geospatial.judge(**dict())
+    with pytest.raises(ValidationError, match="1 validation error for EPSG code"):
+        assert Geospatial.judge(**dict())
 
     # --------------------------
     # EXTRACT: field validator decorator arguments
@@ -454,7 +460,7 @@ def test_Geospatial_model_structure(description, Geospatial_fields):
     # ASSERT: 'validate_init'
     # ---- Check output for 'validate_init' [VALID]
     assert Geospatial.validate_init("epsg:4326") == "epsg:4326"
-    # ---- Check output for 'validate_init' [INVALID: float]    
+    # ---- Check output for 'validate_init' [INVALID: float]
     with pytest.raises(ValueError, match=re.escape("Echopop cannot parse the defined EPSG code")):
         assert Geospatial.validate_init(4326.5)
     # ---- Check output for 'validate_init' [VALID: int]
@@ -466,13 +472,14 @@ def test_Geospatial_model_structure(description, Geospatial_fields):
     with pytest.raises(ValueError, match=re.escape("Echopop cannot parse the defined EPSG code")):
         assert Geospatial.validate_init(np.inf)
     # ---- Check output for 'validate_init' [VALID: capitalized string]
-    assert Geospatial.validate_init("EPSG:4326") == "epsg:4326"    
+    assert Geospatial.validate_init("EPSG:4326") == "epsg:4326"
     # ---- Check output for 'validate_init' [VALID: imputed ':']
     assert Geospatial.validate_init("epsg4326") == "epsg:4326"
     # ---- Check the applicable fields
     assert field_decor["validate_init"].info.fields == ("init",)
     # ---- Check the applicable validation mode
     assert field_decor["validate_init"].info.mode == "before"
+
 
 @pytest.mark.parametrize(
     "description",
@@ -484,15 +491,11 @@ def test_HaulTransectMap_model_structure(description, HaulTransectMap_fields):
     # --------------------------
     # ASSERT: field annotations
     # ---- Check existence
-    assert (
-        set(HaulTransectMap_fields)
-        .issubset(HaulTransectMap.model_fields)
-    )
+    assert set(HaulTransectMap_fields).issubset(HaulTransectMap.model_fields)
     # ---- Check typing, defaults, and other expected attributes
     assert all(
         [
-            HaulTransectMap.model_fields[param]._attributes_set 
-            == HaulTransectMap_fields[param]
+            HaulTransectMap.model_fields[param]._attributes_set == HaulTransectMap_fields[param]
             for param in HaulTransectMap.model_fields
         ]
     )
@@ -506,17 +509,17 @@ def test_HaulTransectMap_model_structure(description, HaulTransectMap_fields):
     # ---- Check existence
     assert "model_config" in dir(HaulTransectMap)
     # ---- Validate correct setting
-    assert HaulTransectMap.model_config == dict(arbitrary_types_allowed=True,
-                                                title="haul-transect key mapping")
+    assert HaulTransectMap.model_config == dict(
+        arbitrary_types_allowed=True, title="haul-transect key mapping"
+    )
 
     # -------------------------
     # ASSERT: 'judge' method
     # ---- Check existence
     assert "judge" in dir(HaulTransectMap)
     # ---- Check default output
-    with pytest.raises(ValidationError, 
-                       match="3 validation errors for haul-transect key mapping"):
-            assert HaulTransectMap.judge(**dict())
+    with pytest.raises(ValidationError, match="3 validation errors for haul-transect key mapping"):
+        assert HaulTransectMap.judge(**dict())
 
     # --------------------------
     # EXTRACT: field validator decorator arguments
@@ -540,7 +543,7 @@ def test_HaulTransectMap_model_structure(description, HaulTransectMap_fields):
     assert HaulTransectMap.validate_save_file_template("{YEAR}") == "{YEAR}"
     # ---- Check output for 'validate_save_file_template' [INVALID: extra identifier]
     with pytest.raises(ValueError, match=re.escape("contains invalid identifiers")):
-        assert HaulTransectMap.validate_save_file_template("{YEAR}{EXTRA}")       
+        assert HaulTransectMap.validate_save_file_template("{YEAR}{EXTRA}")
     # ---- Check the applicable fields
     assert field_decor["validate_save_file_template"].info.fields == ("save_file_template",)
     # ---- Check the applicable validation mode
@@ -569,6 +572,7 @@ def test_HaulTransectMap_model_structure(description, HaulTransectMap_fields):
     assert HaulTransectMap.validate_country_files(MOCK_VALUES) == MOCK_VALUES
     # ---- Check the applicable validation mode
     assert model_decor["validate_country_files"].info.mode == "before"
+
 
 @pytest.mark.parametrize(
     "description",
@@ -606,7 +610,8 @@ def test_KrigingFiles_model_structure(description, KrigingFiles_fields):
     assert "judge" in dir(KrigingFiles)
     # ---- Check default output
     with pytest.raises(ValidationError, match="3 validation errors for kriging file inputs"):
-            assert KrigingFiles.judge(**dict())
+        assert KrigingFiles.judge(**dict())
+
 
 @pytest.mark.parametrize(
     "description",
@@ -618,10 +623,7 @@ def test_KrigingParameters_model_structure(description, KrigingParameters_fields
     # --------------------------
     # ASSERT: field annotations
     # ---- Check existence
-    assert (
-        set(KrigingParameters_fields)
-        .issubset(KrigingParameters.model_fields)
-    )
+    assert set(KrigingParameters_fields).issubset(KrigingParameters.model_fields)
     # ---- Check typing, defaults, and other expected attributes
     assert all(
         [
@@ -639,17 +641,17 @@ def test_KrigingParameters_model_structure(description, KrigingParameters_fields
     # ---- Check existence
     assert "model_config" in dir(KrigingParameters)
     # ---- Validate correct setting
-    assert KrigingParameters.model_config == dict(arbitrary_types_allowed=True,
-                                                  title="kriging parameters")
+    assert KrigingParameters.model_config == dict(
+        arbitrary_types_allowed=True, title="kriging parameters"
+    )
 
     # -------------------------
     # ASSERT: 'judge' method
     # ---- Check existence
     assert "judge" in dir(KrigingParameters)
     # ---- Check default output
-    with pytest.raises(ValidationError, 
-                       match="4 validation errors for kriging parameters"):
-            assert KrigingParameters.judge(**dict())
+    with pytest.raises(ValidationError, match="4 validation errors for kriging parameters"):
+        assert KrigingParameters.judge(**dict())
 
     # --------------------------
     # EXTRACT: field validator decorator arguments
@@ -669,7 +671,7 @@ def test_KrigingParameters_model_structure(description, KrigingParameters_fields
     with pytest.raises(ValueError, match=re.escape("Value must be a non-negative float.")):
         assert KrigingParameters.validate_posfloat(-2.0)
     # ---- Check output for 'validate_float' [INVALID: NaN]
-    assert KrigingParameters.validate_posfloat(np.inf) == np.inf        
+    assert KrigingParameters.validate_posfloat(np.inf) == np.inf
     # ---- Check the applicable fields
     assert field_decor["validate_posfloat"].info.fields == ("A0",)
     # ---- Check the applicable validation mode
@@ -686,15 +688,11 @@ def test_NASCExports_model_structure(description, NASCExports_fields):
     # --------------------------
     # ASSERT: field annotations
     # ---- Check existence
-    assert (
-        set(NASCExports_fields)
-        .issubset(NASCExports.model_fields)
-    )
+    assert set(NASCExports_fields).issubset(NASCExports.model_fields)
     # ---- Check typing, defaults, and other expected attributes
     assert all(
         [
-            NASCExports.model_fields[param]._attributes_set 
-            == NASCExports_fields[param]
+            NASCExports.model_fields[param]._attributes_set == NASCExports_fields[param]
             for param in NASCExports.model_fields
         ]
     )
@@ -708,17 +706,19 @@ def test_NASCExports_model_structure(description, NASCExports_fields):
     # ---- Check existence
     assert "model_config" in dir(NASCExports)
     # ---- Validate correct setting
-    assert NASCExports.model_config == dict(arbitrary_types_allowed=True,
-                                            title="Echoview export processing parameters")
+    assert NASCExports.model_config == dict(
+        arbitrary_types_allowed=True, title="Echoview export processing parameters"
+    )
 
     # -------------------------
     # ASSERT: 'judge' method
     # ---- Check existence
     assert "judge" in dir(NASCExports)
     # ---- Check default output
-    with pytest.raises(ValidationError, 
-                       match="7 validation errors for Echoview export processing parameters"):
-            assert NASCExports.judge(**dict())
+    with pytest.raises(
+        ValidationError, match="7 validation errors for Echoview export processing parameters"
+    ):
+        assert NASCExports.judge(**dict())
 
     # --------------------------
     # EXTRACT: field validator decorator arguments
@@ -757,11 +757,12 @@ def test_NASCExports_model_structure(description, NASCExports_fields):
     assert NASCExports.validate_save_file_template("{YEAR}") == "{YEAR}"
     # ---- Check output for 'validate_save_file_template' [INVALID: extra identifier]
     with pytest.raises(ValueError, match=re.escape("contains invalid identifiers")):
-        assert NASCExports.validate_save_file_template("{YEAR}{EXTRA}")       
+        assert NASCExports.validate_save_file_template("{YEAR}{EXTRA}")
     # ---- Check the applicable fields
     assert field_decor["validate_save_file_template"].info.fields == ("save_file_template",)
     # ---- Check the applicable validation mode
     assert field_decor["validate_save_file_template"].info.mode == "after"
+
 
 @pytest.mark.parametrize(
     "description",
@@ -773,10 +774,7 @@ def test_PatternParts_model_structure(description, PatternParts_fields):
     # --------------------------
     # ASSERT: field annotations
     # ---- Check existence
-    assert (
-        set(PatternParts_fields)
-        .issubset(PatternParts.model_fields)
-    )
+    assert set(PatternParts_fields).issubset(PatternParts.model_fields)
     # ---- Check typing, defaults, and other expected attributes
     assert all(
         [
@@ -801,9 +799,9 @@ def test_PatternParts_model_structure(description, PatternParts_fields):
     # ---- Check existence
     assert "judge" in dir(PatternParts)
     # ---- Check default output
-    with pytest.raises(ValidationError, 
-                       match="2 validation errors for region name pattern"):
-            assert PatternParts.judge(**dict())
+    with pytest.raises(ValidationError, match="2 validation errors for region name pattern"):
+        assert PatternParts.judge(**dict())
+
 
 @pytest.mark.parametrize(
     "description",
@@ -819,7 +817,7 @@ def test_StratificationFiles_model_structure(description, StratificationFiles_fi
     # ---- Check typing, defaults, and other expected attributes
     assert all(
         [
-            StratificationFiles.model_fields[param]._attributes_set 
+            StratificationFiles.model_fields[param]._attributes_set
             == StratificationFiles_fields[param]
             for param in StratificationFiles.model_fields
         ]
@@ -842,27 +840,28 @@ def test_StratificationFiles_model_structure(description, StratificationFiles_fi
     assert "judge" in dir(StratificationFiles)
     # ---- Check default output
     with pytest.raises(ValidationError, match="2 validation errors for stratification file inputs"):
-            assert StratificationFiles.judge(**dict())
+        assert StratificationFiles.judge(**dict())
+
 
 @pytest.mark.parametrize(
     "description",
     ["Assess `StratifiedSurveyMeanParameters` pydantic model structure"],
     ids=["Assess `StratifiedSurveyMeanParameters` pydantic model structure"],
 )
-def test_StratifiedSurveyMeanParameters_model_structure(description, 
-                                                        StratifiedSurveyMeanParameters_fields):
+def test_StratifiedSurveyMeanParameters_model_structure(
+    description, StratifiedSurveyMeanParameters_fields
+):
 
     # --------------------------
     # ASSERT: field annotations
     # ---- Check existence
-    assert (
-        set(StratifiedSurveyMeanParameters_fields)
-        .issubset(StratifiedSurveyMeanParameters.model_fields)
+    assert set(StratifiedSurveyMeanParameters_fields).issubset(
+        StratifiedSurveyMeanParameters.model_fields
     )
     # ---- Check typing, defaults, and other expected attributes
     assert all(
         [
-            StratifiedSurveyMeanParameters.model_fields[param]._attributes_set 
+            StratifiedSurveyMeanParameters.model_fields[param]._attributes_set
             == StratifiedSurveyMeanParameters_fields[param]
             for param in StratifiedSurveyMeanParameters.model_fields
         ]
@@ -877,17 +876,19 @@ def test_StratifiedSurveyMeanParameters_model_structure(description,
     # ---- Check existence
     assert "model_config" in dir(StratifiedSurveyMeanParameters)
     # ---- Validate correct setting
-    assert StratifiedSurveyMeanParameters.model_config == dict(arbitrary_types_allowed=True,
-                                                               title="stratified survey parameters")
+    assert StratifiedSurveyMeanParameters.model_config == dict(
+        arbitrary_types_allowed=True, title="stratified survey parameters"
+    )
 
     # -------------------------
     # ASSERT: 'judge' method
     # ---- Check existence
     assert "judge" in dir(StratifiedSurveyMeanParameters)
     # ---- Check default output
-    with pytest.raises(ValidationError, 
-                       match="3 validation errors for stratified survey parameters"):
-            assert StratifiedSurveyMeanParameters.judge(**dict())
+    with pytest.raises(
+        ValidationError, match="3 validation errors for stratified survey parameters"
+    ):
+        assert StratifiedSurveyMeanParameters.judge(**dict())
 
     # --------------------------
     # EXTRACT: field validator decorator arguments
@@ -910,7 +911,7 @@ def test_StratifiedSurveyMeanParameters_model_structure(description,
         assert StratifiedSurveyMeanParameters.validate_posfloat(-2.0)
     # ---- Check output for 'validate_float' [INVALID: NaN]
     assert StratifiedSurveyMeanParameters.validate_posfloat(np.inf) == np.inf
-        
+
     # ---- Check the applicable fields
     assert field_decor["validate_posfloat"].info.fields == ("strata_transect_proportion",)
     # ---- Check the applicable validation mode
@@ -930,8 +931,10 @@ def test_StratifiedSurveyMeanParameters_model_structure(description,
     with pytest.raises(ValueError, match=re.escape("Value must be a non-negative integer.")):
         assert StratifiedSurveyMeanParameters.validate_posint(np.nan)
     # ---- Check the applicable fields
-    assert field_decor["validate_posint"].info.fields == ("num_replicates", 
-                                                          "mesh_transects_per_latitude",)
+    assert field_decor["validate_posint"].info.fields == (
+        "num_replicates",
+        "mesh_transects_per_latitude",
+    )
     # ---- Check the applicable validation mode
     assert field_decor["validate_posint"].info.mode == "before"
 
@@ -946,15 +949,11 @@ def test_TransectRegionMap_model_structure(description, TransectRegionMap_fields
     # --------------------------
     # ASSERT: field annotations
     # ---- Check existence
-    assert (
-        set(TransectRegionMap_fields)
-        .issubset(TransectRegionMap.model_fields)
-    )
+    assert set(TransectRegionMap_fields).issubset(TransectRegionMap.model_fields)
     # ---- Check typing, defaults, and other expected attributes
     assert all(
         [
-            TransectRegionMap.model_fields[param]._attributes_set 
-            == TransectRegionMap_fields[param]
+            TransectRegionMap.model_fields[param]._attributes_set == TransectRegionMap_fields[param]
             for param in TransectRegionMap.model_fields
         ]
     )
@@ -968,17 +967,19 @@ def test_TransectRegionMap_model_structure(description, TransectRegionMap_fields
     # ---- Check existence
     assert "model_config" in dir(TransectRegionMap)
     # ---- Validate correct setting
-    assert TransectRegionMap.model_config == dict(arbitrary_types_allowed=True,
-                                                  title="transect-region mapping parameters")
+    assert TransectRegionMap.model_config == dict(
+        arbitrary_types_allowed=True, title="transect-region mapping parameters"
+    )
 
     # -------------------------
     # ASSERT: 'judge' method
     # ---- Check existence
     assert "judge" in dir(TransectRegionMap)
     # ---- Check default output
-    with pytest.raises(ValidationError, 
-                       match="5 validation errors for transect-region mapping parameters"):
-            assert TransectRegionMap.judge(**dict())
+    with pytest.raises(
+        ValidationError, match="2 validation errors for transect-region mapping parameters"
+    ):
+        assert TransectRegionMap.judge(**dict())
 
     # --------------------------
     # EXTRACT: field validator decorator arguments
@@ -990,25 +991,7 @@ def test_TransectRegionMap_model_structure(description, TransectRegionMap_fields
     # -------------------------
     # ASSERT: field validator decorators
     # ---- Check whether field decorators exist
-    assert set(["validate_save_file_template", "validate_pattern"]).issubset(
-        TransectRegionMap.__dict__
-    )
-
-    # -------------------------
-    # ASSERT: 'validate_save_file_template'
-    # ---- Check output for 'validate_save_file_template' [VALID]
-    assert TransectRegionMap.validate_save_file_template("") == ""
-    # ---- Check output for 'validate_save_file_template' [VALID]
-    assert TransectRegionMap.validate_save_file_template("{YEAR}{COUNTRY}") == "{YEAR}{COUNTRY}"
-    # ---- Check output for 'validate_save_file_template' [VALID]
-    assert TransectRegionMap.validate_save_file_template("{YEAR}") == "{YEAR}"
-    # ---- Check output for 'validate_save_file_template' [INVALID: extra identifier]
-    with pytest.raises(ValueError, match=re.escape("contains invalid identifiers")):
-        assert TransectRegionMap.validate_save_file_template("{YEAR}{EXTRA}")       
-    # ---- Check the applicable fields
-    assert field_decor["validate_save_file_template"].info.fields == ("save_file_template",)
-    # ---- Check the applicable validation mode
-    assert field_decor["validate_save_file_template"].info.mode == "after"
+    assert set(["validate_pattern"]).issubset(TransectRegionMap.__dict__)
 
     # -------------------------
     # ASSERT: 'validate_pattern'
@@ -1020,7 +1003,7 @@ def test_TransectRegionMap_model_structure(description, TransectRegionMap_fields
     assert TransectRegionMap.validate_pattern("{HAUL_NUM}") == "{HAUL_NUM}"
     # ---- Check output for 'validate_pattern' [INVALID: extra identifier]
     with pytest.raises(ValueError, match=re.escape("contains invalid identifiers")):
-        assert TransectRegionMap.validate_pattern("{YEAR}{EXTRA}")       
+        assert TransectRegionMap.validate_pattern("{YEAR}{EXTRA}")
     # ---- Check the applicable fields
     assert field_decor["validate_pattern"].info.fields == ("pattern",)
     # ---- Check the applicable validation mode
@@ -1060,6 +1043,7 @@ def test_TransectRegionMap_model_structure(description, TransectRegionMap_fields
     # ---- Check the applicable validation mode
     assert model_decor["validate_pattern_parts"].info.mode == "before"
 
+
 @pytest.mark.parametrize(
     "description",
     ["Assess `TSLRegressionParameters` pydantic model structure"],
@@ -1070,14 +1054,11 @@ def test_TSLRegressionParameters_model_structure(description, TSLRegressionParam
     # --------------------------
     # ASSERT: field annotations
     # ---- Check existence
-    assert (
-        set(TSLRegressionParameters_fields)
-        .issubset(TSLRegressionParameters.model_fields)
-    )
+    assert set(TSLRegressionParameters_fields).issubset(TSLRegressionParameters.model_fields)
     # ---- Check typing, defaults, and other expected attributes
     assert all(
         [
-            TSLRegressionParameters.model_fields[param]._attributes_set 
+            TSLRegressionParameters.model_fields[param]._attributes_set
             == TSLRegressionParameters_fields[param]
             for param in TSLRegressionParameters.model_fields
         ]
@@ -1099,9 +1080,10 @@ def test_TSLRegressionParameters_model_structure(description, TSLRegressionParam
     # ---- Check existence
     assert "judge" in dir(TSLRegressionParameters)
     # ---- Check default output
-    with pytest.raises(ValidationError, 
-                       match="4 validation errors for TS-length regression parameters"):
-            assert TSLRegressionParameters.judge(**dict())
+    with pytest.raises(
+        ValidationError, match="4 validation errors for TS-length regression parameters"
+    ):
+        assert TSLRegressionParameters.judge(**dict())
 
 
 @pytest.mark.parametrize(
@@ -1132,7 +1114,7 @@ def test_XLSXFile_model_structure(description, XLSXFile_fields):
     # ---- Check existence
     assert "model_config" in dir(XLSXFile)
     # ---- Validate correct setting
-    assert XLSXFile.model_config == dict(title="*.xlsx file free")
+    assert XLSXFile.model_config == dict(title="*.xlsx file tree")
 
     # -------------------------
     # ASSERT: 'judge' method
@@ -1140,12 +1122,14 @@ def test_XLSXFile_model_structure(description, XLSXFile_fields):
     assert "judge" in dir(XLSXFile)
     # ---- Check default output
     assert XLSXFile.judge(**dict(filename="dummy1", sheetname="dummy2")).model_dump() == {
-        "filename": "dummy1", "sheetname": "dummy2"
+        "filename": "dummy1",
+        "sheetname": "dummy2",
     }
+
 
 ####################################################################################################
 # HIGHER MODEL PARAMETERIZATION: TESTS
-# --------------------------------------------------------------------------------------------------   
+# --------------------------------------------------------------------------------------------------
 @pytest.mark.parametrize(
     "input, exception",
     [
@@ -1188,7 +1172,7 @@ def test_XLSXFile_model_structure(description, XLSXFile_fields):
                 "specimen": {"filename": "blargh", "sheetname": "sheet2"},
                 "catch": {"filename": "blorgh", "sheetname": "sheet3"},
             },
-            ValidationError,
+            None,
         ),
         (
             {
@@ -1248,7 +1232,7 @@ def test_XLSXFile_model_structure(description, XLSXFile_fields):
         ),
     ],
     ids=[
-        "Valid `KrigingFiles` (unnested dictionary)",
+        "Valid `BiologicalFiles` (unnested dictionary)",
         "Missing key 'length'",
         "Missing 'specimen'",
         "Missing 'catch'",
@@ -1276,11 +1260,10 @@ def test_BiologicalFiles(input, exception):
             assert set(BiologicalFiles.create(**input)) == set(input)
         except AssertionError:
             try:
-                assert (
-                    set(input) - set(BiologicalFiles.create(**input))
-                ) == {"excess"}
+                assert (set(input) - set(BiologicalFiles.create(**input))) == {"excess"}
             except AssertionError as e:
                 pytest.fail(f"Unexpected AssertionError: {e}")
+
 
 @pytest.mark.parametrize(
     "input, exception",
@@ -1373,11 +1356,10 @@ def test_Geospatial(input, exception):
             assert set(Geospatial.create(**input)) == set(input)
         except AssertionError:
             try:
-                assert (set(input) - set(Geospatial.create(**input))) == {
-                    "excess"
-                }
+                assert (set(input) - set(Geospatial.create(**input))) == {"excess"}
             except AssertionError as e:
                 pytest.fail(f"Unexpected AssertionError: {e}")
+
 
 @pytest.mark.parametrize(
     "input, exception",
@@ -1524,11 +1506,10 @@ def test_HaulTransectMap(input, exception):
             assert set(HaulTransectMap.create(**input)) == set(input)
         except AssertionError:
             try:
-                assert (
-                    set(input) - set.create(HaulTransectMap(**input))
-                ) == {"excess"}
+                assert (set(input) - set(HaulTransectMap.create(**input))) == {"excess"}
             except AssertionError as e:
                 pytest.fail(f"Unexpected AssertionError: {e}")
+
 
 @pytest.mark.parametrize(
     "input, exception",
@@ -1597,11 +1578,10 @@ def test_KrigingFiles(input, exception):
             assert set(KrigingFiles.create(**input)) == set(input)
         except AssertionError:
             try:
-                assert (set(input) - set(KrigingFiles.create(**input))) == {
-                    "excess"
-                }
+                assert (set(input) - set(KrigingFiles.create(**input))) == {"excess"}
             except AssertionError as e:
                 pytest.fail(f"Unexpected AssertionError: {e}")
+
 
 @pytest.mark.parametrize(
     "input, exception",
@@ -1706,11 +1686,10 @@ def test_KrigingParameters(input, exception):
             assert set(KrigingParameters.create(**input)) == set(input)
         except AssertionError:
             try:
-                assert (
-                    set(input) - set(KrigingParameters.create(**input))
-                ) == {"excess"}
+                assert (set(input) - set(KrigingParameters.create(**input))) == {"excess"}
             except AssertionError as e:
                 pytest.fail(f"Unexpected AssertionError: {e}")
+
 
 @pytest.mark.parametrize(
     "input, exception",
@@ -1873,11 +1852,10 @@ def test_NASCExports(input, exception):
             assert set(NASCExports.create(**input)) == set(input)
         except AssertionError:
             try:
-                assert (set(input) - set(NASCExports.create(**input))) == {
-                    "excess"
-                }
+                assert (set(input) - set(NASCExports.create(**input))) == {"excess"}
             except AssertionError as e:
                 pytest.fail(f"Unexpected AssertionError: {e}")
+
 
 @pytest.mark.parametrize(
     "input, exception",
@@ -1919,11 +1897,10 @@ def test_PatternParts(input, exception):
             assert set(PatternParts.create(**input)) == set(input)
         except AssertionError:
             try:
-                assert (set(input) - set(PatternParts.create(**input))) == {
-                    "excess"
-                }
+                assert (set(input) - set(PatternParts.create(**input))) == {"excess"}
             except AssertionError as e:
                 pytest.fail(f"Unexpected AssertionError: {e}")
+
 
 @pytest.mark.parametrize(
     "input, exception",
@@ -1970,9 +1947,7 @@ def test_StratificationFiles(input, exception):
             assert set(StratificationFiles.create(**input)) == set(input)
         except AssertionError:
             try:
-                assert (
-                    set(input) - set(StratificationFiles.create(**input))
-                ) == {"excess"}
+                assert (set(input) - set(StratificationFiles.create(**input))) == {"excess"}
             except AssertionError as e:
                 pytest.fail(f"Unexpected AssertionError: {e}")
 
@@ -2104,27 +2079,22 @@ def test_StratifiedSurveyMeanParameters(input, exception):
         assert StratifiedSurveyMeanParameters.create(**input)
         # ---- Comparison of result vs expected
         try:
-            assert set(
-                StratifiedSurveyMeanParameters.create(**input)
-            ) == set(input)
+            assert set(StratifiedSurveyMeanParameters.create(**input)) == set(input)
         except AssertionError:
             try:
-                assert (
-                    set(input)
-                    - set(StratifiedSurveyMeanParameters.create(**input))
-                ) == {"excess"}
+                assert (set(input) - set(StratifiedSurveyMeanParameters.create(**input))) == {
+                    "excess"
+                }
             except AssertionError as e:
                 pytest.fail(f"Unexpected AssertionError: {e}")
+
 
 @pytest.mark.parametrize(
     "input, exception",
     [
         (
             {
-                "save_file_template": "blurgh_{COUNTRY}_{YEAR}_{GROUP}.xlsx",
-                "save_file_directory": "blurgh/blargh",
                 "pattern": "{REGION_CLASS}{COUNTRY}{HAUL_NUM}",
-                "save_file_sheetname": "sheet1",
                 "parts": {
                     "REGION_CLASS": [{"pattern": "a", "label": "A"}],
                     "HAUL_NUM": [{"pattern": "b", "label": "B"}],
@@ -2135,9 +2105,12 @@ def test_StratifiedSurveyMeanParameters(input, exception):
         ),
         (
             {
-                "save_file_directory": "blurgh/blargh",
                 "pattern": "{REGION_CLASS}{COUNTRY}{HAUL_NUM}",
-                "save_file_sheetname": "sheet1",
+            },
+            ValidationError,
+        ),
+        (
+            {
                 "parts": {
                     "REGION_CLASS": [{"pattern": "a", "label": "A"}],
                     "HAUL_NUM": [{"pattern": "b", "label": "B"}],
@@ -2148,86 +2121,7 @@ def test_StratifiedSurveyMeanParameters(input, exception):
         ),
         (
             {
-                "save_file_template": "blurgh_{COUNTRY}_{YEAR}_{GROUP}.xlsx",
                 "pattern": "{REGION_CLASS}{COUNTRY}{HAUL_NUM}",
-                "save_file_sheetname": "sheet1",
-                "parts": {
-                    "REGION_CLASS": [{"pattern": "a", "label": "A"}],
-                    "HAUL_NUM": [{"pattern": "b", "label": "B"}],
-                    "COUNTRY": [{"pattern": "c", "label": "C"}],
-                },
-            },
-            ValidationError,
-        ),
-        (
-            {
-                "save_file_template": "blurgh_{COUNTRY}_{YEAR}_{GROUP}.xlsx",
-                "save_file_directory": "blurgh/blargh",
-                "save_file_sheetname": "sheet1",
-                "parts": {
-                    "REGION_CLASS": [{"pattern": "a", "label": "A"}],
-                    "HAUL_NUM": [{"pattern": "b", "label": "B"}],
-                    "COUNTRY": [{"pattern": "c", "label": "C"}],
-                },
-            },
-            ValidationError,
-        ),
-        (
-            {
-                "save_file_template": "blurgh_{COUNTRY}_{YEAR}_{GROUP}.xlsx",
-                "save_file_directory": "blurgh/blargh",
-                "pattern": "{REGION_CLASS}{COUNTRY}{HAUL_NUM}",
-                "parts": {
-                    "REGION_CLASS": [{"pattern": "a", "label": "A"}],
-                    "HAUL_NUM": [{"pattern": "b", "label": "B"}],
-                    "COUNTRY": [{"pattern": "c", "label": "C"}],
-                },
-            },
-            ValidationError,
-        ),
-        (
-            {
-                "save_file_template": "blurgh_{COUNTRY}_{YEAR}_{GROUP}.xlsx",
-                "save_file_directory": "blurgh/blargh",
-                "pattern": "{REGION_CLASS}{COUNTRY}{HAUL_NUM}",
-                "save_file_sheetname": "sheet1",
-            },
-            ValidationError,
-        ),
-        (
-            {
-                "save_file_template": "blurgh_{COUNTRY}.xlsx",
-                "save_file_directory": "blurgh/blargh",
-                "pattern": "{REGION_CLASS}{COUNTRY}{HAUL_NUM}",
-                "save_file_sheetname": "sheet1",
-                "parts": {
-                    "REGION_CLASS": [{"pattern": "a", "label": "A"}],
-                    "HAUL_NUM": [{"pattern": "b", "label": "B"}],
-                    "COUNTRY": [{"pattern": "c", "label": "C"}],
-                },
-            },
-            None,
-        ),
-        (
-            {
-                "save_file_template": "blurgh_{COUNTRY}_{YEAR}_{GROUP}_{ERRONEOUS}.xlsx",
-                "save_file_directory": "blurgh/blargh",
-                "pattern": "{REGION_CLASS}{COUNTRY}{HAUL_NUM}",
-                "save_file_sheetname": "sheet1",
-                "parts": {
-                    "REGION_CLASS": [{"pattern": "a", "label": "A"}],
-                    "HAUL_NUM": [{"pattern": "b", "label": "B"}],
-                    "COUNTRY": [{"pattern": "c", "label": "C"}],
-                },
-            },
-            ValidationError,
-        ),
-        (
-            {
-                "save_file_template": "blurgh_{COUNTRY}_{YEAR}_{GROUP}.xlsx",
-                "save_file_directory": "blurgh/blargh",
-                "pattern": "{REGION_CLASS}{COUNTRY}{HAUL_NUM}",
-                "save_file_sheetname": "sheet1",
                 "parts": {
                     "HAUL_NUM": [{"pattern": "b", "label": "B"}],
                     "COUNTRY": [{"pattern": "c", "label": "C"}],
@@ -2237,10 +2131,7 @@ def test_StratifiedSurveyMeanParameters(input, exception):
         ),
         (
             {
-                "save_file_template": "blurgh_{COUNTRY}_{YEAR}_{GROUP}.xlsx",
-                "save_file_directory": "blurgh/blargh",
                 "pattern": "{REGION_CLASS}",
-                "save_file_sheetname": "sheet1",
                 "parts": {"REGION_CLASS": [{"pattern": "a", "label": "A"}]},
             },
             None,
@@ -2253,13 +2144,6 @@ def test_StratifiedSurveyMeanParameters(input, exception):
                     "HAUL_NUM": [{"pattern": "b", "label": "B"}],
                     "COUNTRY": [{"pattern": "c", "label": "C"}],
                 },
-            },
-            ValidationError,
-        ),
-        (
-            {
-                "pattern": "{REGION_CLASS}",
-                "parts": {"REGION_CLASS": {"pattern": "a", "label": "A"}},
             },
             ValidationError,
         ),
@@ -2279,12 +2163,10 @@ def test_StratifiedSurveyMeanParameters(input, exception):
     ],
     ids=[
         "Valid `TransectRegionMap`",
-        "Missing key 'pattern'",
         "Missing key 'parts'",
-        "Single filename ID in template (valid)",
+        "Missing key 'pattern'",
         "Mismatch between 'parts' keys and those in pattern",
         "Single pattern ID in template (valid)",
-        "Erroneous pattern ID in template (invalid)",
         "Parts components as a list and not a dictionary (invalid)",
         "Empty dictionary",
         "Excess keys (valid)",
@@ -2305,11 +2187,10 @@ def test_TransectRegionMap(input, exception):
             assert set(TransectRegionMap.create(**input)) == set(input)
         except AssertionError:
             try:
-                assert (
-                    set(input) - set(TransectRegionMap.create(**input))
-                ) == {"excess"}
+                assert (set(input) - set(TransectRegionMap.create(**input))) == {"excess"}
             except AssertionError as e:
                 pytest.fail(f"Unexpected AssertionError: {e}")
+
 
 @pytest.mark.parametrize(
     "input, exception",
@@ -2399,9 +2280,7 @@ def test_TSLRegressionParameters(input, exception):
             assert set(TSLRegressionParameters.create(**input)) == set(input)
         except AssertionError:
             try:
-                assert (
-                    set(input) - set(TSLRegressionParameters.create(**input))
-                ) == {"excess"}
+                assert (set(input) - set(TSLRegressionParameters.create(**input))) == {"excess"}
             except AssertionError as e:
                 pytest.fail(f"Unexpected AssertionError: {e}")
 
@@ -2450,9 +2329,7 @@ def test_XLSXFile(input, exception):
             assert set(XLSXFile.create(**input)) == set(input)
         except AssertionError:
             try:
-                assert (set(input) - set(XLSXFile.create(**input))) == {
-                    "excess"
-                }
+                assert (set(input) - set(XLSXFile.create(**input))) == {"excess"}
             except AssertionError as e:
                 pytest.fail(f"Unexpected AssertionError: {e}")
 
@@ -2460,6 +2337,57 @@ def test_XLSXFile(input, exception):
 ####################################################################################################
 # SUPER MODEL STRUCTURE: FIXTURES
 # --------------------------------------------------------------------------------------------------
+@pytest.fixture
+def CONFIG_DATA_MODEL_fields() -> Dict[str, Any]:
+
+    return {
+        "survey_year": {
+            "annotation": int,
+            "frozen": None,
+        },
+        "biological": {
+            "annotation": BiologicalFiles,
+            "frozen": None,
+        },
+        "stratification": {
+            "annotation": StratificationFiles,
+            "frozen": None,
+        },
+        "NASC": {
+            "annotation": Dict[str, XLSXFile],
+            "frozen": None,
+        },
+        "species": {
+            "annotation": SpeciesDefinition,
+            "frozen": None,
+        },
+        "kriging": {
+            "annotation": KrigingFiles,
+            "frozen": None,
+        },
+        "data_root_dir": {
+            "annotation": Union[str, None],
+            "default": None,
+            "frozen": None,
+        },
+        "CAN_haul_offset": {
+            "annotation": Union[int, None],
+            "default": None,
+            "frozen": None,
+        },
+        "ship_id": {
+            "annotation": Union[int, str, float, None],
+            "default": None,
+            "frozen": None,
+        },
+        "export_regions": {
+            "annotation": Union[Dict[str, XLSXFile], None],
+            "default": None,
+            "frozen": None,
+        },
+    }
+
+
 @pytest.fixture
 def CONFIG_INIT_MODEL_fields() -> Dict[str, Any]:
 
@@ -2501,10 +2429,54 @@ def CONFIG_INIT_MODEL_fields() -> Dict[str, Any]:
             "default": None,
         },
     }
-    
+
+
 ####################################################################################################
 # SUPER MODEL STRUCTURE: TESTS
 # --------------------------------------------------------------------------------------------------
+@pytest.mark.parametrize(
+    "description",
+    ["Assess `CONFIG_DATA_MODEL` pydantic model structure"],
+    ids=["Assess `CONFIG_DATA_MODEL` pydantic model structure"],
+)
+def test_CONFIG_DATA_MODEL_model_structure(description, CONFIG_DATA_MODEL_fields):
+
+    # --------------------------
+    # ASSERT: field annotations
+    # ---- Check existence
+    assert set(CONFIG_DATA_MODEL_fields).issubset(CONFIG_DATA_MODEL.model_fields)
+    # ---- Check typing, defaults, and other expected attributes
+    assert all(
+        [
+            CONFIG_DATA_MODEL.model_fields[param]._attributes_set == CONFIG_DATA_MODEL_fields[param]
+            for param in CONFIG_DATA_MODEL.model_fields
+        ]
+    )
+
+    # --------------------------
+    # ASSERT: '__base__' class inheritance
+    assert CONFIG_DATA_MODEL.__base__ == InputModel
+
+    # --------------------------
+    # ASSERT: 'model_config' parameterization
+    # ---- Check existence
+    assert "model_config" in dir(CONFIG_DATA_MODEL)
+    # ---- Validate correct setting
+    assert CONFIG_DATA_MODEL.model_config == dict()
+
+    # -------------------------
+    # ASSERT: 'judge' method
+    # ---- Check existence
+    assert "judge" in dir(CONFIG_DATA_MODEL)
+    # ---- Check default output
+    # ASSERT: '__name__' attribute modification
+    with pytest.raises(
+        ValueError,
+        match=re.escape("configured data files defined in dir/folder/file"),
+    ):
+        assert CONFIG_DATA_MODEL.judge(filename="dir/folder/file", **{})
+
+
 @pytest.mark.parametrize(
     "description",
     ["Assess `CONFIG_INIT_MODEL` pydantic model structure"],
@@ -2515,10 +2487,7 @@ def test_CONFIG_INIT_MODEL_model_structure(description, CONFIG_INIT_MODEL_fields
     # --------------------------
     # ASSERT: field annotations
     # ---- Check existence
-    assert (
-        set(CONFIG_INIT_MODEL_fields)
-        .issubset(CONFIG_INIT_MODEL.model_fields)
-    )
+    assert set(CONFIG_INIT_MODEL_fields).issubset(CONFIG_INIT_MODEL.model_fields)
     # ---- Check typing, defaults, and other expected attributes
     assert all(
         [
@@ -2556,7 +2525,7 @@ def test_CONFIG_INIT_MODEL_model_structure(description, CONFIG_INIT_MODEL_fields
         "bio_hake_len_bin": [0, 1, 2],
         "TS_length_regression_parameters": {
             "elephant": {
-                "number_code": 1, 
+                "number_code": 1,
                 "TS_L_slope": 1.0,
                 "TS_L_intercept": 0.0,
                 "length_units": "km",
@@ -2565,23 +2534,21 @@ def test_CONFIG_INIT_MODEL_model_structure(description, CONFIG_INIT_MODEL_fields
         "geospatial": {
             "init": 4326,
         },
-    }   
-    # ASSERT: '__name__' attribute modification
-    assert (
-        CONFIG_INIT_MODEL(filename="test", **MOCK_VALUES).model_config["title"] 
-        == "configuration parameters defined in 'test'"
-    )
+    }
+    # ASSERT: Valid judgment
+    assert CONFIG_INIT_MODEL.judge(filename="dir/folder/file", **MOCK_VALUES)
 
     # -------------------------
     # ASSERT: 'judge' method
     # ---- Check existence
     assert "judge" in dir(CONFIG_INIT_MODEL)
     # ---- Check default output
-    with pytest.raises(ValidationError, 
-                       match="6 validation errors for kriging parameters"):
-            assert CONFIG_INIT_MODEL.judge(filename="test", **dict())
-
-    CONFIG_INIT_MODEL.Config
+    # ASSERT: '__name__' attribute modification
+    with pytest.raises(
+        ValueError,
+        match=re.escape("configured initialization parameters defined in dir/folder/file"),
+    ):
+        assert CONFIG_INIT_MODEL.judge(filename="dir/folder/file", **{})
 
     # --------------------------
     # EXTRACT: field validator decorator arguments
@@ -2591,21 +2558,44 @@ def test_CONFIG_INIT_MODEL_model_structure(description, CONFIG_INIT_MODEL_fields
     # -------------------------
     # ASSERT: field validator decorators
     # ---- Check whether field decorators exist
-    assert "validate_posfloat" in CONFIG_INIT_MODEL.__dict__
+    assert "validate_interval" in CONFIG_INIT_MODEL.__dict__
 
     # -------------------------
-    # ASSERT: 'valid_posfloat'
-    # ---- Check output for 'validate_posfloat' [VALID]
-    assert CONFIG_INIT_MODEL.validate_posfloat(2) == 2.0
-    # ---- Check output for 'validate_posfloat' [INVALID: negative]
-    with pytest.raises(ValueError, match=re.escape("Value must be a non-negative float.")):
-        assert CONFIG_INIT_MODEL.validate_posfloat(-2.0)
-    # ---- Check output for 'validate_float' [INVALID: NaN]
-    assert CONFIG_INIT_MODEL.validate_posfloat(np.inf) == np.inf        
+    # ASSERT: 'validate_intervalt'
+    # ---- Check output for 'validate_interval' [VALID]
+    assert CONFIG_INIT_MODEL.validate_interval([1.0, 2.0, 5]) == [1.0, 2.0, 5]
+    # ---- Check output for 'validate_interval' [INVALID: negative]
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "Invalid value detected within list. " "Every value must be a non-negative float."
+        ),
+    ):
+        assert CONFIG_INIT_MODEL.validate_interval([1.0, -2.0, -5])
+    # ---- Check output for 'validate_interval' [INVALID: NaN]
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "Invalid value detected within list. " "Every value must be a non-negative real number."
+        ),
+    ):
+        assert CONFIG_INIT_MODEL.validate_interval([1.0, 2.0, np.inf])
+    # ---- Check output for 'validate_interval' [INVALID: < 3 inputs]
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "Interval list must have a length of 3: ['starting_value', 'ending_value', 'number']."
+        ),
+    ):
+        assert CONFIG_INIT_MODEL.validate_interval([1.0, 2.0])
     # ---- Check the applicable fields
-    assert field_decor["validate_posfloat"].info.fields == ("A0",)
+    assert field_decor["validate_interval"].info.fields == (
+        "bio_hake_age_bin",
+        "bio_hake_len_bin",
+    )
     # ---- Check the applicable validation mode
-    assert field_decor["validate_posfloat"].info.mode == "before"
+    assert field_decor["validate_interval"].info.mode == "before"
+
 
 ####################################################################################################
 # CONFIGURATION: TEST
@@ -2614,6 +2604,7 @@ def test_CONFIG_INIT_MODEL_model_structure(description, CONFIG_INIT_MODEL_fields
 test_path = {
     "CONFIG": Path("C:/Users/Brandyn/Documents/GitHub/echopop/echopop/test_data/config_files/")
 }
+
 
 @pytest.mark.parametrize(
     "description",

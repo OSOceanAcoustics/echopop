@@ -1071,6 +1071,54 @@ def test_VariogramOptimize_model(input, expected, exception):
 
 
 @pytest.mark.parametrize(
+    "description",
+    ["Assess `KrigingParameterInputs` pydantic model structure"],
+    ids=["Assess `KrigingParameterInputs` pydantic model structure"],
+)
+def test_KrigingParameterInputs_model_structure(description):
+
+    # --------------------------
+    # ASSERT: 'model_config' parameterization
+    # ---- Check existence
+    assert "model_config" in dir(KrigingParameterInputs)
+    # ---- Validate correct setting
+    assert KrigingParameterInputs.model_config == dict(
+        arbitrary_types_allowed=True, title="kriging model parameters ('kriging_parameters')"
+    )
+
+    # --------------------------
+    # EXTRACT: field validator decorator arguments
+    # ---- 'field_validators' 'Decorator' object
+    field_decor = KrigingParameterInputs.__pydantic_decorators__.field_validators
+
+    # -------------------------
+    # ASSERT: field validator decorators
+    # ---- Check whether field decorators exist
+    assert set(["validate_realposfloat"]).issubset(KrigingParameterInputs.__dict__)
+
+    # -------------------------
+    # ASSERT: 'valid_realposfloat'
+    # ---- Check output for 'validate_realposfloat' [VALID]
+    assert KrigingParameterInputs.validate_realposfloat(2) == 2.0
+    # ---- Check output for 'validate_realposfloat' [INVALID: negative]
+    with pytest.raises(ValueError, match=re.escape("Value must be a non-negative float.")):
+        assert KrigingParameterInputs.validate_realposfloat(-2.0)
+    # ---- Check output for 'validate_realposfloat' [INVALID: NaN]
+    with pytest.raises(ValueError, match=re.escape("Value must be a non-negative real number.")):
+        assert KrigingParameterInputs.validate_realposfloat(np.inf)
+    # ---- Check output for 'validate_realposfloat' [VALID: None]
+    assert KrigingParameterInputs.validate_realposfloat(None) is None
+    # ---- Check the applicable fields
+    assert field_decor["validate_realposfloat"].info.fields == (
+        "anisotropy",
+        "correlation_range",
+        "search_radius",
+    )
+    # ---- Check the applicable validation mode
+    assert field_decor["validate_realposfloat"].info.mode == "before"
+
+
+@pytest.mark.parametrize(
     "input, expected, exception",
     [
         (dict(), None, "Both 'correlation_range' and 'search_radius' arguments are missing"),

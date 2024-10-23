@@ -20,6 +20,7 @@ from .spatial.transect import edit_transect_columns
 from .utils import load as el, load_nasc as eln, message as em
 from .utils.load import dataset_integrity
 
+
 class Survey:
     """
     Echopop base class that imports and prepares parameters for
@@ -536,7 +537,6 @@ class Survey:
         if verbose:
             em.variogram_results_msg(self.analysis["variogram"])
 
-    # !!! TODO: develop different name for "crop_method = 'interpolation'"
     def kriging_analysis(
         self,
         cropping_parameters: Dict[str, Any] = {},

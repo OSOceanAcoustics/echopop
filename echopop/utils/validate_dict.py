@@ -1,16 +1,15 @@
 import re
-from typing import Any, Dict, List, Literal, Optional, Union, get_args
+from typing import Any, Dict, List, Literal, Optional, Union
 
 import numpy as np
-from pydantic import (
-    ConfigDict, BaseModel, Field, RootModel, ValidationError, field_validator, model_validator
-)
+from pydantic import BaseModel, Field, RootModel, ValidationError, field_validator, model_validator
 
 from .validate import posfloat, posint, realcircle, realposfloat
 
 ####################################################################################################
 # PYDANTIC VALIDATORS
 # --------------------------------------------------------------------------------------------------
+
 
 class InputModel(BaseModel):
     """
@@ -42,6 +41,7 @@ class InputModel(BaseModel):
 
         return cls.judge(**kwargs).model_dump(exclude_none=True)
 
+
 class XLSXFile(InputModel, title="*.xlsx file tree"):
     """
     .xlsx file tree structure
@@ -56,7 +56,8 @@ class XLSXFile(InputModel, title="*.xlsx file tree"):
 
     filename: str
     sheetname: Union[str, List[str]]
-            
+
+
 class FileSettings(InputModel, title="parameter file settings"):
     """
     Parameter file settings
@@ -73,9 +74,9 @@ class FileSettings(InputModel, title="parameter file settings"):
     sheetname: str
 
 
-class StratifiedSurveyMeanParameters(InputModel, 
-                                     title="stratified survey parameters",
-                                     arbitrary_types_allowed=True):
+class StratifiedSurveyMeanParameters(
+    InputModel, title="stratified survey parameters", arbitrary_types_allowed=True
+):
     """
     Stratified sampling parameters
 
@@ -102,12 +103,10 @@ class StratifiedSurveyMeanParameters(InputModel,
         return posfloat(v)
 
 
-class KrigingParameters(InputModel, 
-                        arbitrary_types_allowed=True,
-                        title="kriging parameters"):
+class KrigingParameters(InputModel, arbitrary_types_allowed=True, title="kriging parameters"):
     """
     Kriging model parameters
-    
+
     Parameters
     ----------
     A0: posfloat
@@ -130,12 +129,10 @@ class KrigingParameters(InputModel,
         return posfloat(v)
 
 
-class HaulTransectMap(InputModel, 
-                      arbitrary_types_allowed=True,
-                      title="haul-transect key mapping"):
+class HaulTransectMap(InputModel, arbitrary_types_allowed=True, title="haul-transect key mapping"):
     """
     Haul-to-transect key mapping generation parameters
-    
+
     Parameters
     ----------
     save_file_template: str
@@ -184,11 +181,10 @@ class HaulTransectMap(InputModel,
         return v
 
 
-class PatternParts(InputModel,
-                   title="region name pattern"):
+class PatternParts(InputModel, title="region name pattern"):
     """
     String pattern parts
-    
+
     Parameters
     ----------
     pattern: str
@@ -201,12 +197,12 @@ class PatternParts(InputModel,
     label: str
 
 
-class TransectRegionMap(InputModel, 
-                        arbitrary_types_allowed=True,
-                        title="transect-region mapping parameters"):
+class TransectRegionMap(
+    InputModel, arbitrary_types_allowed=True, title="transect-region mapping parameters"
+):
     """
     Transect-to-region mapping parameters
-    
+
     Parameters
     ----------
     save_file_template: str
@@ -260,11 +256,10 @@ class TransectRegionMap(InputModel,
         return v
 
 
-class TSLRegressionParameters(InputModel,
-                              title="TS-length regression parameters"):
+class TSLRegressionParameters(InputModel, title="TS-length regression parameters"):
     """
     Target strength - length regression parameters
-    
+
     Parameters
     ----------
     number_code: int
@@ -283,8 +278,7 @@ class TSLRegressionParameters(InputModel,
     length_units: str
 
 
-class Geospatial(InputModel,
-                 title="EPSG code"):
+class Geospatial(InputModel, title="EPSG code"):
     """
     Geospatial parameters
 
@@ -320,12 +314,12 @@ class Geospatial(InputModel,
         return v
 
 
-class NASCExports(InputModel, 
-                  arbitrary_types_allowed=True,
-                  title="Echoview export processing parameters"):
+class NASCExports(
+    InputModel, arbitrary_types_allowed=True, title="Echoview export processing parameters"
+):
     """
     NASC export processing parameters
-    
+
     Parameters
     ----------
     export_file_directory: str
@@ -374,8 +368,7 @@ class NASCExports(InputModel,
         return v
 
 
-class CONFIG_INIT_MODEL(InputModel, 
-                        arbitrary_types_allowed=True):
+class CONFIG_INIT_MODEL(InputModel, arbitrary_types_allowed=True):
     """
     Initialization parameter configuration YAML validator
     """
@@ -396,10 +389,11 @@ class CONFIG_INIT_MODEL(InputModel,
         except ValidationError as e:
             # Customize error message
             new_message = str(e).replace(
-                self.__class__.__name__, f"configured initialization parameters defined in {filename}"
+                self.__class__.__name__,
+                f"configured initialization parameters defined in {filename}",
             )
             raise ValueError(new_message) from e
-        
+
     @field_validator("bio_hake_age_bin", "bio_hake_len_bin", mode="before")
     def validate_interval(cls, v):
         # ---- Check Union typing
@@ -426,48 +420,32 @@ class CONFIG_INIT_MODEL(InputModel,
             return [posint(value) for value in v]
 
 
-class XLSXFiles(BaseModel):
-    """
-    .xlsx file tree structure
-
-    Parameters
-    ----------
-    filename: str
-        Filename (as a string).
-    sheetname: Union[str, List[str]]
-        Sheet name (or list of sheet names) of a *.xlsx file (as a string) that will be loaded.
-    """
-
-    filename: str
-    sheetname: Union[str, List[str]]
-
-
-class BiologicalFiles(BaseModel):
+class BiologicalFiles(InputModel, title="biological file inputs"):
     """
     Biological data files
 
     Parameters
     ----------
-    length: Union[Dict[str, XLSXFiles], XLSXFiles]
+    length: Union[Dict[str, XLSXFile], XLSXFile]
         An *.xlsx file (or dictionary of files) containing binned length data.
-    specimen: Union[Dict[str, XLSXFiles], XLSXFiles]
+    specimen: Union[Dict[str, XLSXFile], XLSXFile]
         An *.xlsx file (or dictionary of files) containing specimen biodata.
-    catch: Union[Dict[str, XLSXFiles], XLSXFiles]
+    catch: Union[Dict[str, XLSXFile], XLSXFile]
         An *.xlsx file (or dictionary of files) containing catch/haul biological data.
-    haul_to_transect: Union[Dict[str, XLSXFiles], XLSXFiles]
+    haul_to_transect: Union[Dict[str, XLSXFile], XLSXFile]
         An *.xlsx file (or dictionary of files) containing haul-transect mapping data.
     """
 
-    length: Union[Dict[str, XLSXFiles], XLSXFiles]
-    specimen: Union[Dict[str, XLSXFiles], XLSXFiles]
-    catch: Union[Dict[str, XLSXFiles], XLSXFiles]
-    haul_to_transect: Optional[Union[Dict[str, XLSXFiles], XLSXFiles]] = Field(default=None)
+    length: Union[Dict[str, XLSXFile], XLSXFile]
+    specimen: Union[Dict[str, XLSXFile], XLSXFile]
+    catch: Union[Dict[str, XLSXFile], XLSXFile]
+    haul_to_transect: Optional[Union[Dict[str, XLSXFile], XLSXFile]] = Field(default=None)
 
 
 class KrigingFiles(InputModel, title="kriging file inputs"):
     """
     Kriging data files
-    
+
     Parameters
     ----------
     isobath_200m: XLSXFile
@@ -486,13 +464,13 @@ class KrigingFiles(InputModel, title="kriging file inputs"):
 class StratificationFiles(InputModel, title="stratification file inputs"):
     """
     Stratification data files
-    
+
     Parameters
     ----------
     geo_strata: XSLXFile
         An *.xlsx file (or dictionary of files) containing geographically defined strata.
     strata: XLSXFile
-        An *.xlsx file (or dictionary of files) containing length-based (e.g. KS) strata 
+        An *.xlsx file (or dictionary of files) containing length-based (e.g. KS) strata
         information.
     """
 
@@ -509,7 +487,7 @@ class SpeciesDefinition(BaseModel):
     number_code: Optional[Union[int, float]]
 
 
-class CONFIG_DATA_MODEL(BaseModel):
+class CONFIG_DATA_MODEL(InputModel):
     """
     Data file configuration YAML validator
     """
@@ -517,13 +495,13 @@ class CONFIG_DATA_MODEL(BaseModel):
     survey_year: int
     biological: BiologicalFiles
     stratification: StratificationFiles
-    NASC: Dict[str, XLSXFiles]
+    NASC: Dict[str, XLSXFile]
     species: SpeciesDefinition
     kriging: KrigingFiles
     data_root_dir: Optional[str] = None
     CAN_haul_offset: Optional[int] = None
     ship_id: Optional[Union[int, str, float]] = None
-    export_regions: Optional[Dict[str, XLSXFiles]] = None
+    export_regions: Optional[Dict[str, XLSXFile]] = None
 
     def __init__(self, filename, **kwargs):
         try:
