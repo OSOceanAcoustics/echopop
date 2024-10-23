@@ -1023,17 +1023,17 @@ def semivariance(
 
 
 def initialize_variogram_parameters(
-    variogram_parameters: VariogramBase, default_variogram_parameters: Dict[str, Any]
+    variogram_parameters: Dict[str, Any],
+    default_variogram_parameters: Dict[str, Any],
 ):
     """
     Initialize and validate the variogram model parameters
     """
 
     # Update the defaults for the base variogram model parameters
-    VariogramBase.update_defaults(default_variogram_parameters)
-
-    # Initialize and validate the theoretical variogram parameters
-    updated_variogram_parameters = VariogramBase.create(**variogram_parameters)
+    updated_variogram_parameters = VariogramBase.create(
+        **{**default_variogram_parameters, **variogram_parameters}
+    )
 
     # Compute the lag distances and max range
     # ---- Add to the `variogram_parameters` dictionary
@@ -1051,8 +1051,8 @@ def initialize_variogram_parameters(
 
 
 def initialize_initial_optimization_values(
-    initialize_variogram: VariogramInitial,
-    variogram_parameters: VariogramBase,
+    initialize_variogram: Union[List[str], Dict[str, Any]],
+    variogram_parameters: Dict[str, Any],
 ):
     """
     Initialize and validate the variogram parameter initial and boundary values
@@ -1061,21 +1061,28 @@ def initialize_initial_optimization_values(
     # Initialize and validate the optimization variogram parameters
     # ---- Create complete initial values for any cases where `initial` may be missing from the
     # ---- user input
-    updated_initial_values = {
-        key: {**value, "value": value.get("value", variogram_parameters.get(key))}
-        for key, value in (
-            initialize_variogram.items()
-            if isinstance(initialize_variogram, dict)
-            else {k: {} for k in initialize_variogram}.items()
-        )
-    }
+    # -------- List input
+    if isinstance(initialize_variogram, list):
+        updated_initial_values = {
+            k: {"value": variogram_parameters.get(k), "vary": True} for k in initialize_variogram
+        }
+    # -------- Dict input
+    else:
+        updated_initial_values = {
+            k: {
+                **v,
+                "value": v.get("value", variogram_parameters.get(k)),
+                "vary": v.get("vary", True),
+            }
+            for k, v in initialize_variogram.items()
+        }
     # ---- Create the validated dictionary
-    initial_values = VariogramInitial.create(updated_initial_values)
+    initial_values = VariogramInitial.create(**updated_initial_values)
 
-    # Get the variogram arguments
-    args, _ = get_variogram_arguments(variogram_parameters["model"])
+    # Get full set of variogram arguments
+    variogram_args, _ = get_variogram_arguments(variogram_parameters["model"])
     # ---- Get names
-    arg_names = list(args.keys())
+    arg_names = list(variogram_args.keys())
     # ---- Drop `distance_lags`
     arg_names.remove("distance_lags")
     # ---- Find missing arguments from the initial values
@@ -1083,30 +1090,25 @@ def initialize_initial_optimization_values(
 
     # Create complete initial values for any cases where `initial` may be missing from the
     # remaining arguments
-    updated_missing_values = {
-        key: {**value, "value": value.get("value", variogram_parameters.get(key))}
-        for key, value in ({k: {"vary": False} for k in missing_args}.items())
-    }
+    initial_values.update(
+        {k: {"value": variogram_parameters.get(k), "vary": False} for k in missing_args}
+    )
 
     # TODO: THIS NEEDS TO BE CHANGED FROM A DICT TO AN ORDERED DICT TO MAINTAIN CONSISTENT
     # TODO: PARAMETER ORDERING
     # ! CAN YIELD UNSTABLE RESULTS WHEN WRITING TESTS
     # Initialize the Parameters class from the `lmfit` package
-    # ---- Combine the parameter dictionaries
-    full_initialization = {**updated_initial_values, **updated_missing_values}
     # ---- Initialize `paramaeters` object
     parameters = Parameters()
 
     # Iterate through to add to `parameters`
-    _ = {
-        parameters.add(param, **full_initialization[param]) for param in full_initialization.keys()
-    }
+    _ = {parameters.add(param, **initial_values[param]) for param in initial_values.keys()}
 
     # Return the full `parameters` object
     return parameters
 
 
-def initialize_optimization_config(optimization_parameters: VariogramOptimize):
+def initialize_optimization_config(optimization_parameters: Dict[str, Any]):
     """
     Initialize and validate the optimization parameters
     """
