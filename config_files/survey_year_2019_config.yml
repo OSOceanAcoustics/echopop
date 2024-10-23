@@ -16,6 +16,7 @@ CAN_haul_offset: 200         # The value to be added to the Canadian's haul numb
 ##############################################################################
 # Directory path that contains all input data needed
 
+# data_root_dir: C:/Users/Brandyn Lucca/Documents/Data/echopop_2019
 data_root_dir: C:/Users/Brandyn/Documents/GitHub/EchoPro_data/2019_consolidated_files
 
 ##############################################################################
@@ -43,14 +44,6 @@ biological:
     CAN:
       filename: Biological/CAN/2019_biodata_catch_CAN.xlsx
       sheetname: biodata_catch_CAN
-  haul_to_transect:
-    US:
-      # filename: Biological/US/haul_to_transect_mapping_2019_US.xlsx
-      filename: Biological/US/haul_to_transect_mapping_2019.xlsx
-      sheetname: Sheet1
-    CAN:
-      filename: Biological/CAN/haul_to_transect_mapping_2019_CAN.xlsx
-      sheetname: Sheet1
 stratification:
   strata:
     # The two stratification types are found in two sheets: "Base KS" and "INPFC"
@@ -64,35 +57,26 @@ NASC:
   # NASC values
   no_age1:
     # file that excludes age1 values
-    # filename: Exports/US_CAN_detailsa_2019_table2y+_ALL_final - updated.xlsx
-    filename: Exports/US&CAN_detailsa_2019_table2y+_ALL_final - updated.xlsx
+    # filename: Exports/US_CAN_NASC_2019_table_no_age1_test.xlsx
+    filename: Exports/US_CAN_detailsa_2019_table2y+_ALL_final - updated.xlsx
     sheetname: Sheet1
   all_ages:
     # file that includes all ages
-    # filename: Exports/US_CAN_detailsa_2019_table1y+_ALL_final - updated.xlsx
-    filename: Exports/US&CAN_detailsa_2019_table1y+_ALL_final - updated.xlsx
+    # filename: Exports/US_CAN_NASC_2019_table_all_ages_test.xlsx
+    filename: Exports/US_CAN_detailsa_2019_table1y+_ALL_final - updated.xlsx
     sheetname: Sheet1
 export_regions:
   all_ages:
-    # filename: Stratification/US_CAN_2019_transect_region_haul_age1+ auto_final.xlsx
     filename: Stratification/CAN_US_2019_transect_region_haul_all_ages.xlsx
     sheetname: Sheet1
   no_age1:
     filename: Stratification/CAN_US_2019_transect_region_haul_no_age1.xlsx
     sheetname: Sheet1
-gear_data:
-  US:
-    filename: Biological/US/2019_biodata_gear.xlsx
-    sheetname: biodata_gear
-  CAN:
-    filename: Biological/CAN/2019_biodata_gear_CAN.xlsx
-    sheetname: biodata_gear_CAN
 kriging:
   mesh:
     filename: Kriging_files/Kriging_grid_files/krig_grid2_5nm_cut_centroids_2013.xlsx
     sheetname: krigedgrid2_5nm_forChu
   isobath_200m:
-    # filename: Kriging_files/Kriging_grid_files/Smoothing_EasyKrig.xlsx
     filename: Kriging_files/Kriging_grid_files/transformation_isobath_coordinates.xlsx
     sheetname: Smoothing_EasyKrig
   vario_krig_para:

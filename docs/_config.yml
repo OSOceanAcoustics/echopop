@@ -12,6 +12,7 @@ execute:
 
 parse:
   myst_enable_extensions:
+  - amsmath
   - colon_fence
   - dollarmath
   - linkify
@@ -46,7 +47,7 @@ sphinx:
   extra_extensions: [
     'sphinx_automodapi.automodapi',
     'numpydoc',
-    # 'sphinx.ext.autodoc',
+    'sphinx.ext.autodoc',
     'sphinxcontrib.bibtex',
     'sphinx.ext.intersphinx',
     'sphinx.ext.mathjax',

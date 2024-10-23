@@ -18,7 +18,7 @@ from .graphics import variogram_interactive as egv
 from .spatial.projection import transform_geometry
 from .spatial.transect import edit_transect_columns
 from .utils import load as el, load_nasc as eln, message as em
-
+from .utils.load import dataset_integrity
 
 class Survey:
     """
@@ -122,7 +122,7 @@ class Survey:
 
         # Compile echoview acoustic backscatter exports if `echoview_exports == True`:
         if ingest_exports is not None and ingest_exports == "echoview":
-            eln.batch_read_echoview_exports(
+            eln.ingest_echoview_exports(
                 self.config,
                 transect_pattern,
                 index_variable,
@@ -149,9 +149,6 @@ class Survey:
             Console messages that will print various messages, updates, etc. when set to True.
         """
 
-        # Create haul-transect-mapping key file
-        el.write_haul_to_transect_key(self.config, verbose)
-
         # Get previously processed datasets
         # ---- Updated datasets
         new_datasets = ["biological", "kriging", "stratification"]
@@ -170,6 +167,9 @@ class Survey:
         """
         Calculate population-level metrics from acoustic transect measurements
         """
+
+        # Check dataset integrity
+        dataset_integrity(self.input, analysis="transect")
 
         # Update settings to reflect the stratum definition
         self.analysis["settings"].update(
@@ -230,10 +230,10 @@ class Survey:
         bootstrap_ci: float = 0.95,
         bootstrap_ci_method: Literal[
             "BC", "BCa", "empirical", "percentile", "standard", "t-jackknife", "t-standard"
-        ] = "BCa",
+        ] = "t-jackknife",
         bootstrap_ci_method_alt: Optional[
             Literal["empirical", "percentile", "standard", "t-jackknife", "t-standard"]
-        ] = "t-jackknife",
+        ] = "t-standard",
         bootstrap_adjust_bias: bool = True,
         verbose=True,
     ):
@@ -250,6 +250,9 @@ class Survey:
         age-class and sex. This also only applies to the transect results and is not currently
         designed to be compatible with other derived population-level statistics (e.g. kriging).
         """
+
+        # Check dataset integrity
+        dataset_integrity(self.input, analysis=f"stratified:{dataset}")
 
         # Error message for `stratum == 'ks'`
         if stratum == "ks":
@@ -326,6 +329,9 @@ class Survey:
         Semivariogram plotting and parameter optimization GUI method
         """
 
+        # Check dataset integrity
+        dataset_integrity(self.input, analysis="variogram")
+
         # Initialize results
         self.results["variogram"] = {}
 
@@ -374,12 +380,6 @@ class Survey:
 
         # Run GUI
         display(SEMIVARIOGRAM_GUI)
-
-        # Update the results
-        # self.analysis["variogram"].update({
-        #     "model_fit": SEMIVARIOGRAM_GUI.results["best_fit"]["model_fit"],
-        #     "model": SEMIVARIOGRAM_GUI.results["variogram"]["model"]
-        # })
 
     def fit_variogram(
         self,
@@ -458,6 +458,9 @@ class Survey:
         the `variogram_parameters` argument, but omitted from `initialize_variogram`, use default
         values imported from `self.input["statistics"]["variogram"]["model_config"]`.
         """
+
+        # Check dataset integrity
+        dataset_integrity(self.input, analysis="variogram")
 
         # Validate "variable" input
         if variable not in ["biomass"]:
@@ -554,6 +557,9 @@ class Survey:
         variable
             Biological variable that will be interpolated via kriging
         """
+
+        # Check dataset integrity
+        dataset_integrity(self.input, analysis="kriging")
 
         # Populate settings dictionary with input argument values/entries
         self.analysis["settings"].update(

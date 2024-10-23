@@ -41,7 +41,7 @@ from .spatial.variogram import (
 from .statistics import stratified_transect_statistic
 from .utils.validate_dict import (
     KrigingAnalysis,
-    KrigingParameters,
+    KrigingParameterInputs,
     MeshCrop,
     VariogramBase,
     VariogramEmpirical,
@@ -372,7 +372,7 @@ def krige(input_dict: dict, analysis_dict: dict, settings_dict: dict) -> tuple[p
     settings_dict["variogram_parameters"].update({**valid_variogram_parameters})
 
     # Validate kriging parameters
-    valid_kriging_parameters = KrigingParameters.create(
+    valid_kriging_parameters = KrigingParameterInputs.create(
         **{**settings_dict["kriging_parameters"], **settings_dict["variogram_parameters"]}
     )
     # ---- Update the dictionary

@@ -2247,10 +2247,7 @@ def test_StratifiedSurveyMeanParameters(input, exception):
         ),
         (
             {
-                "save_file_template": "blurgh_{COUNTRY}_{YEAR}_{GROUP}.xlsx",
-                "save_file_directory": "blurgh/blargh",
                 "pattern": "{REGION_CLASS}{COUNTRY}{HAUL_NUM}{ERRONEOUS}",
-                "save_file_sheetname": "sheet1",
                 "parts": {
                     "REGION_CLASS": [{"pattern": "a", "label": "A"}],
                     "HAUL_NUM": [{"pattern": "b", "label": "B"}],
@@ -2261,10 +2258,7 @@ def test_StratifiedSurveyMeanParameters(input, exception):
         ),
         (
             {
-                "save_file_template": "blurgh_{COUNTRY}_{YEAR}_{GROUP}.xlsx",
-                "save_file_directory": "blurgh/blargh",
                 "pattern": "{REGION_CLASS}",
-                "save_file_sheetname": "sheet1",
                 "parts": {"REGION_CLASS": {"pattern": "a", "label": "A"}},
             },
             ValidationError,
@@ -2272,10 +2266,7 @@ def test_StratifiedSurveyMeanParameters(input, exception):
         ({}, ValidationError),
         (
             {
-                "save_file_template": "blurgh_{COUNTRY}_{YEAR}_{GROUP}.xlsx",
-                "save_file_directory": "blurgh/blargh",
                 "pattern": "{REGION_CLASS}{COUNTRY}{HAUL_NUM}",
-                "save_file_sheetname": "sheet1",
                 "parts": {
                     "REGION_CLASS": [{"pattern": "a", "label": "A"}],
                     "HAUL_NUM": [{"pattern": "b", "label": "B"}],
@@ -2288,13 +2279,9 @@ def test_StratifiedSurveyMeanParameters(input, exception):
     ],
     ids=[
         "Valid `TransectRegionMap`",
-        "Missing key 'save_file_template'",
-        "Missing key 'save_file_directory'",
         "Missing key 'pattern'",
-        "Missing key 'save_file_sheetname'",
         "Missing key 'parts'",
         "Single filename ID in template (valid)",
-        "Erroneous filename ID in template (invalid)",
         "Mismatch between 'parts' keys and those in pattern",
         "Single pattern ID in template (valid)",
         "Erroneous pattern ID in template (invalid)",

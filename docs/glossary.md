@@ -19,8 +19,11 @@
 | $\alpha$ | age | year |  |
 | $L$ or $\ell$ | length of animal | m or cm |  |
 | $s$ | sex of animal | |  |
-| $w$ | weight of animal | kg |  |
-| $N$ | number of animal samples | |  |
+| $w$ | weight of an animal sample | kg |  |
+| $N$ | Abundance (number of animals) | |  |
+| $n$ | number of animal samples | |  |
+| $r_n$ | number proportion | |  |
+| $r_w$ | weight proportion | |  |
 | $x, y$ | geospatial location (latitude, longitude) | degrees |  |
 | $x_k, y_k$ | kriging grid location | |  |
 

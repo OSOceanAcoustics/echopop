@@ -171,7 +171,9 @@ class BaseDataFrame(DataFrameModel):
             raise SchemaError(cls, df, message) from None
 
     @classmethod
-    def validate_df(cls, df: pd.DataFrame) -> pd.DataFrame:
+    def validate_df(cls, data: pd.DataFrame) -> pd.DataFrame:
+        # ---- Create copy
+        df = data.copy()
         # ---- Get the original annotations
         default_annotations = copy.deepcopy(cls.__annotations__)
         # ---- Format the column names
@@ -220,7 +222,7 @@ class BaseDataFrame(DataFrameModel):
         df.drop(invalid_lst, axis=0, inplace=True)
         # ---- Reset index
         if not df.empty:
-            df.reset_index(inplace=True)
+            df.reset_index(inplace=True, drop=True)
 
         # Coercion check
         coercion_failures = cls.coercion_check(df, column_types)
@@ -295,12 +297,12 @@ class CatchBiodata(BaseDataFrame):
 
 
 class SpecimenBiodata(BaseDataFrame):
-    age: Series = Field(ge=0, nullable=False, metadata=dict(types=[int, float]))
+    age: Series = Field(ge=0, nullable=True, metadata=dict(types=[int, float]))
     haul_num: Series = Field(nullable=False, metadata=dict(types=[int, float]))
     length: Series[float] = Field(gt=0.0, nullable=False)
     sex: Series = Field(nullable=False, metadata=dict(types=[int, str]))
     species_id: Series = Field(nullable=False, metadata=dict(types=[int, float, str]))
-    weight: Series[float] = Field(gt=0.0, nullable=False)
+    weight: Series[float] = Field(gt=0.0, nullable=True)
 
     @check(
         "age",
@@ -400,7 +402,7 @@ class AcousticData(BaseDataFrame):
     latitude: Series[float] = Field(ge=-90.0, le=90.0, nullable=False, regex=True, coerce=True)
     longitude: Series[float] = Field(ge=-180.0, le=180.0, nullable=False, regex=True, coerce=True)
     nasc: Series[float] = Field(ge=0.0, nullable=False, coerce=True)
-    transect: Series = Field(nullable=False, regex=True, metadata=dict(types=[int, float]))
+    transect_num: Series = Field(nullable=False, regex=True, metadata=dict(types=[int, float]))
     transect_spacing: Series[float] = Field(ge=0.0, nullable=False, regex=False, coerce=True)
     vessel_log_start: Series[float] = Field(ge=0.0, nullable=False, coerce=True)
     vessel_log_end: Series[float] = Field(ge=0.0, nullable=False, coerce=True)
@@ -414,7 +416,7 @@ class AcousticData(BaseDataFrame):
         return Series([isinstance(value, (int, float)) for value in v])
 
     @check(
-        "transect",
+        "transect_num",
         name="element-wise datatypes",
         error="Column datatype should be either 'int' or 'float'",
     )
