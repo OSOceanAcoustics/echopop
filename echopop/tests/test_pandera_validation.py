@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from pandera.errors import SchemaError
+from pandera.typing import Series
 
 from ..utils.validate_df import (
     AcousticData,
@@ -19,12 +20,34 @@ from ..utils.validate_df import (
 from .conftest import assert_dataframe_equal
 
 
+####################################################################################################
+# MOCK MODEL FIXTURE
+# --------------------------------------------------------------------------------------------------
+@pytest.fixture(scope="session")
+def mock_model():
+
+    class MOCKModel(BaseDataFrame):
+        dum1: Series[int]
+        dum2: Series[float]
+
+    return MOCKModel
+
+
+@pytest.fixture
+def MOCK_DF() -> pd.DataFrame:
+
+    return pd.DataFrame(dict(dum1=[1, 2, 3]))
+
+
+####################################################################################################
+# BASE DATAFRAME MODEL STRUCTURE
+# --------------------------------------------------------------------------------------------------
 @pytest.mark.parametrize(
     "description",
     ["Assess `BaseDataFrame` pandera model structure"],
     ids=["Assess `BaseDataFrame` pandera model structure"],
 )
-def test_BaseDataFrame_model_structure(description):
+def test_BaseDataFrame_model_structure(description, MOCK_DF, mock_model):
 
     # -------------------------
     # ASSERT: 'Config' attribute
@@ -57,9 +80,22 @@ def test_BaseDataFrame_model_structure(description):
     )
 
     # -------------------------
+    # ASSERT: Base Model Inheritance
+    assert mock_model.__base__ == BaseDataFrame
+
+    # -------------------------
     # ASSERT: 'BaseDataFrame' methods
     # ---- Check that all necessary methods exist
-    assert set(["get_column_types", "judge", "validate_df"]).issubset(dir(BaseDataFrame))
+    assert set(["coercion_check", "get_column_types", "judge", "validate_df"]).issubset(
+        dir(BaseDataFrame)
+    )
+    # ---- Validate 'coercion_check'
+    # -------- Get the column types
+    column_types = mock_model.get_column_types()
+    # ASSERT: Correct typing -- no coercion errors
+    assert mock_model.coercion_check(MOCK_DF, column_types).equals(
+        pd.DataFrame(dict(Column=[], error=[]))
+    )
 
 
 @pytest.mark.parametrize(

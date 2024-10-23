@@ -108,7 +108,6 @@ class BaseDataFrame(DataFrameModel):
             for col in df.columns:
                 if re.match(column_name, col):
                     # ---- Retrieve the column name
-                    # col_name = re.match(column_name, col).group(0)
                     # Coerce the column to the appropriate dtype
                     if isinstance(dtype, list):
                         # ---- Initialize the dtype of the validator annotation

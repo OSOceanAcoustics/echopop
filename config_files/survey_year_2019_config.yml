@@ -65,13 +65,6 @@ NASC:
     # filename: Exports/US_CAN_NASC_2019_table_all_ages_test.xlsx
     filename: Exports/US_CAN_detailsa_2019_table1y+_ALL_final - updated.xlsx
     sheetname: Sheet1
-export_regions:
-  all_ages:
-    filename: Stratification/CAN_US_2019_transect_region_haul_all_ages.xlsx
-    sheetname: Sheet1
-  no_age1:
-    filename: Stratification/CAN_US_2019_transect_region_haul_no_age1.xlsx
-    sheetname: Sheet1
 kriging:
   mesh:
     filename: Kriging_files/Kriging_grid_files/krig_grid2_5nm_cut_centroids_2013.xlsx
