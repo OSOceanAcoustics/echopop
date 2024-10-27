@@ -66,28 +66,28 @@ def plot_livesurvey_grid(
         "number_density_mean": {
             "name": "Mean number density",
             "units": "fish $\\mathregular{nmi^{-2}}$",
-            "colormap": "viridis",
+            "colormap": "cividis",
             "color_threshold": {"minimum": 1e1, "maximum": 1e6},
         },
         "biomass_density_mean": {
             "name": "Mean biomass density",
             "units": "kg $\\mathregular{nmi^{-2}}$",
-            "colormap": "plasma",
+            "colormap": "magma",
             "color_threshold": {"minimum": 1e1, "maximum": 1e6},
         },
-        "biomass": {
-            "name": "Biomass",
-            "units": "kg",
-            "colormap": "cividis",
+        "abundance": {
+            "name": "Abundance",
+            "units": "$\\it{N}$",
+            "colormap": "viridis",
             "color_threshold": {
                 "minimum": 1e1 * grid_gdf["area"].max(),
                 "maximum": 1e6 * grid_gdf["area"].max(),
             },
         },
-        "abundance": {
-            "name": "Abundance",
-            "units": "$\\it{N}$",
-            "colormap": "inferno",
+        "biomass": {
+            "name": "Biomass",
+            "units": "kg",
+            "colormap": "plasma",
             "color_threshold": {
                 "minimum": 1e1 * grid_gdf["area"].max(),
                 "maximum": 1e6 * grid_gdf["area"].max(),
@@ -106,7 +106,7 @@ def plot_livesurvey_grid(
         # ---- Get the colormap
         colormap = plt.colormaps.get_cmap(VARIABLE_MAP[var]["colormap"]).resampled(256)
         # ---- Invert
-        newcolors = colormap(np.linspace(0, 1, 256))[::-1]
+        newcolors = colormap(np.linspace(0, 1, 256))#[::-1]
         # ---- Define `white`
         white = np.array([1, 1, 1, 1])
         # ---- Replace "start" color
@@ -244,12 +244,21 @@ def plot_livesurvey_track(
 
     # Variable label dictionary map
     VARIABLE_MAP = {
+        "nasc": {
+            "name": "Nautical area scattering coefficient",
+            "units": "$\\mathregular{m^{2}~nmi^{-2}}$",
+            "colormap": "YlOrRd",
+            "minimum": 0.0,
+            "cbar_reverse": False,
+            "color_threshold": {"minimum": 1e2, "maximum": 1e4},
+            "size": [25, 150],
+        },
         "number_density": {
             "name": "Mean number density",
             "units": "fish $\\mathregular{nmi^{-2}}$",
-            "colormap": "inferno",
+            "colormap": "Purples",
             "minimum": 0.0,
-            "cbar_reverse": True,
+            "cbar_reverse": False,
             "color_threshold": {
                 "minimum": 1e1,
                 "maximum": 1e6,
@@ -259,30 +268,21 @@ def plot_livesurvey_track(
         "biomass_density": {
             "name": "Mean biomass density",
             "units": "kg $\\mathregular{nmi^{-2}}$",
-            "colormap": "plasma",
+            "colormap": "Greens",
             "minimum": 0.0,
-            "cbar_reverse": True,
+            "cbar_reverse": False,
             "color_threshold": {
                 "minimum": 1e1,
                 "maximum": 1e6,
             },
             "size": [25, 150],
         },
-        "nasc": {
-            "name": "Nautical area scattering coefficient",
-            "units": "$\\mathregular{m^{2}~nmi^{-2}}$",
-            "colormap": "viridis",
-            "minimum": 0.0,
-            "cbar_reverse": False,
-            "color_threshold": {"minimum": 1e2, "maximum": 1e4},
-            "size": [25, 150],
-        },
         "max_Sv": {
             "name": "Max $\\mathregular{S_V}$",
             "units": "dB re. 1 $\\mathregular{m^-1}$",
-            "colormap": "viridis",
+            "colormap": "Blues",
             "minimum": -999,
-            "cbar_reverse": True,
+            "cbar_reverse": False,
             "color_threshold": {"minimum": -80.0, "maximum": -36.0},
             "size": [5, 100],
         },
@@ -331,13 +331,16 @@ def plot_livesurvey_track(
 
     # Iterate through and plot all subplots
     for ax, var in zip(axes.flat, intact_variables):
-        # ---- Get the colormap
-        colormap = plt.colormaps.get_cmap(VARIABLE_MAP[var]["colormap"]).resampled(256)
-        # ---- Invert
-        if VARIABLE_MAP[var]["cbar_reverse"]:
-            newcolors = colormap(np.linspace(0, 1, 256))[::-1]
-        # ---- Create the new custom colormap
-        custom_cmap = ListedColormap(newcolors)
+        # # ---- Get the colormap
+        # colormap = plt.colormaps.get_cmap(VARIABLE_MAP[var]["colormap"]).resampled(256)
+        # # ---- Invert
+        # if VARIABLE_MAP[var]["cbar_reverse"]:
+        #     newcolors = colormap(np.linspace(0, 1, 256))[::-1]
+        # else:
+        #     newcolors = colormap
+        # # ---- Create the new custom colormap
+        # custom_cmap = ListedColormap(newcolors)
+        custom_cmap = VARIABLE_MAP[var]["colormap"]
         # ---- Plot cruisetrack
         # survey_gdf.plot(ax=ax, color="dimgray", linewidth=0.25, linestyle="-")
         # ax.plot(survey_gdf.geometry.x, survey_gdf.geometry.y, color="dimgray",
@@ -346,11 +349,11 @@ def plot_livesurvey_track(
         for ship_id, group in survey_gdf.groupby("ship_id"):
             # Sort the group by latitude or longitude
             # group = group.sort_values(by=["latitude", "longitude"])
-            color = ship_id_colors.get(ship_id, "gray")
+            # color = ship_id_colors.get(ship_id, "gray")
             (line_handle,) = ax.plot(
                 group.geometry.x,
                 group.geometry.y,
-                color=color,
+                color="gray",
                 linewidth=0.25,
                 linestyle="-",
                 label=ship_id,
@@ -375,6 +378,7 @@ def plot_livesurvey_track(
             [geom.x for geom in sub_gdf.geometry],
             [geom.y for geom in sub_gdf.geometry],
             c=sub_gdf[var],
+            # s=20,
             s=scale_sizes(
                 values=sub_gdf[var],
                 min_value=min_value,
@@ -548,9 +552,10 @@ def plot_livesurvey_distributions(
             ax_weight.plot(
                 group["length_bin"],
                 group["proportions"],
-                marker="o",
+                marker=".",
                 label=f"Stratum {stratum}",
                 color=color,
+                lw=1,
                 ms=ms,
             )
         if i == 0:
@@ -561,7 +566,7 @@ def plot_livesurvey_distributions(
             ax_weight.set_ylabel("Within-stratum proportion [0, 1]")
         if i == num_sexes - 1:  # Bottom plot
             ax_weight.set_xlabel("Length bin (cm)")
-        ax_weight.set_ylim(0.0, 1.0)
+        ax_weight.set_ylim(0.0, 0.8)
         # Add label in the top-left corner
         ax_weight.text(
             0.05,
@@ -582,9 +587,10 @@ def plot_livesurvey_distributions(
             ax_count.plot(
                 group["length_bin"],
                 group["number_proportion"],
-                marker="o",
+                marker=".",
                 label=f"Stratum {stratum}",
                 color=color,
+                lw=1,
                 ms=ms,
             )
         if i == 0:
@@ -593,7 +599,7 @@ def plot_livesurvey_distributions(
             ax_count.set_xlabel("")
         if i == num_sexes - 1:  # Bottom plot
             ax_count.set_xlabel("Length bin (cm)")
-        ax_count.set_ylim(0.0, 1.0)
+        ax_count.set_ylim(0.0, 0.8)
         # Add label in the top-left corner
         ax_count.text(
             0.05,
