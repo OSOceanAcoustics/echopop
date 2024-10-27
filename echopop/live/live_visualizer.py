@@ -106,7 +106,7 @@ def plot_livesurvey_grid(
         # ---- Get the colormap
         colormap = plt.colormaps.get_cmap(VARIABLE_MAP[var]["colormap"]).resampled(256)
         # ---- Invert
-        newcolors = colormap(np.linspace(0, 1, 256))#[::-1]
+        newcolors = colormap(np.linspace(0, 1, 256))  # [::-1]
         # ---- Define `white`
         white = np.array([1, 1, 1, 1])
         # ---- Replace "start" color
