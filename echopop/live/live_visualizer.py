@@ -65,7 +65,7 @@ def plot_livesurvey_grid(
     VARIABLE_MAP = {
         "number_density_mean": {
             "name": "Mean number density",
-            "units": "fish $\\mathregular{nmi^{-2}}$",
+            "units": "Number of fish per $\\mathregular{nmi^2}$",
             "colormap": "cividis",
             "color_threshold": {"minimum": 1e1, "maximum": 1e6},
         },
@@ -77,7 +77,7 @@ def plot_livesurvey_grid(
         },
         "abundance": {
             "name": "Abundance",
-            "units": "$\\it{N}$",
+            "units": "Number of fish",
             "colormap": "viridis",
             "color_threshold": {
                 "minimum": 1e1 * grid_gdf["area"].max(),
@@ -255,7 +255,7 @@ def plot_livesurvey_track(
         },
         "number_density": {
             "name": "Mean number density",
-            "units": "fish $\\mathregular{nmi^{-2}}$",
+            "units": "Number of fish per $\\mathregular{nmi^2}$",
             "colormap": "Purples",
             "minimum": 0.0,
             "cbar_reverse": False,
@@ -279,7 +279,7 @@ def plot_livesurvey_track(
         },
         "max_Sv": {
             "name": "Max $\\mathregular{S_V}$",
-            "units": "dB re. 1 $\\mathregular{m^-1}$",
+            "units": "dB re 1 $\\mathregular{m^-1}$",
             "colormap": "Blues",
             "minimum": -999,
             "cbar_reverse": False,
@@ -357,7 +357,7 @@ def plot_livesurvey_track(
                 linewidth=0.25,
                 linestyle="-",
                 label=ship_id,
-                zorder=1,
+                zorder=2,
             )
             handles.append(line_handle)  # Add handle to legend
             # ax.plot(group.geometry.x, group.geometry.y, label=ship_id, linewidth=0.25,
@@ -388,7 +388,9 @@ def plot_livesurvey_track(
             ),
             cmap=custom_cmap,
             norm=norm,
-            zorder=2,
+            zorder=1,
+            alpha=0.6,
+            lw=0,
             # edgecolor="black",
             # linewidths=0.1
         )
