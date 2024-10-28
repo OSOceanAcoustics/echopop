@@ -1,6 +1,6 @@
 import copy
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Tuple, Union
 
 import numpy as np
 from IPython.display import display
@@ -14,12 +14,11 @@ from .analysis import (
     variogram_analysis,
 )
 from .core import DATA_STRUCTURE
-from .graphics import variogram_interactive as egv
+from .graphics import variogram_interactive as egv, plotting as egp
 from .spatial.projection import transform_geometry
 from .spatial.transect import edit_transect_columns
 from .utils import load as el, load_nasc as eln, message as em
 from .utils.load import dataset_integrity
-
 
 class Survey:
     """
@@ -657,6 +656,31 @@ class Survey:
         # Print result if `verbose == True`
         if verbose:
             em.kriging_results_msg(self.results["kriging"], self.analysis["settings"]["kriging"])
+
+    def plot(self,
+             kind: Literal["mesh", "transect"],
+             variable: str,
+             geo_config: Dict[str, Any],
+             figure_width: float = 5.5,
+             axis_limits: Optional[Dict[str, Tuple[float]]] = None,
+             colormap: Optional[str] = None, 
+             data_range: Optional[Tuple[float]] = None,
+             log_base: Optional[float] = None):
+
+        # Get associated plotting function information
+        plot_info = egp.PLOT_MAP(self, kind)
+
+        # Proceed with plotting
+        # ---- Type: spatial
+        if plot_info["type"] == "spatial":
+            # ---- Get the geospatial configuration
+            geo_config = self.config["geospatial"]
+            # ---- Add the coastline to the object geospatial configuration
+            egp.get_coastline(geo_config)
+            # ---- Plot 
+            plot_info.get("function")(plot_info.get("data"), variable, figure_width, geo_config, 
+                                      colormap, data_range, log_base, axis_limits)
+        
 
     def summary(self, results_name: str):
         """
