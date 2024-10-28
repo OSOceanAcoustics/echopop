@@ -521,7 +521,7 @@ def plot_age_length_distribution(
     variable: str,
     sex: Literal["all", "female", "male"],
     figure_width: float,
-    grid: bool = True,
+    grid: bool,
     colormap: Optional[str] = None,
     data_range: Optional[Tuple[float, float]] = None,
     log_base: Optional[float] = None,
@@ -536,6 +536,12 @@ def plot_age_length_distribution(
         colormap = colormap if colormap else "viridis"
         data_range = data_range if data_range else (0, 5e7)
         label = (f"Abundance ({sex} fish, # animals)").capitalize()
+    # ---- Biomass
+    elif variable == "biomass":
+        dataset = data_dict["biomass"]["aged_biomass_df"].copy()
+        colormap = colormap if colormap else "plasma"
+        data_range = data_range if data_range else (0, 5e8)
+        label = (f"Biomass ({sex} fish, kg)").capitalize()
 
     # Prepare the dataset
     # ---- Stack sum

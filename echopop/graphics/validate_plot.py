@@ -198,5 +198,6 @@ class BiologicalHeatmapPlot(PlotModel):
     Base Pydantic model for biological heatmap plots
     """
     
+    variable: Literal["abundance", "biomass"]
     sex: Literal["all", "female", "male"] = Field(default="all")
     grid: bool = Field(default=True)
