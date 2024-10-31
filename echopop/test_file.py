@@ -17,8 +17,8 @@ import pyproj
 from pyproj import Transformer, CRS
 from echopop.spatial.projection import utm_string_generator
 
-init_config = "C:/Users/Brandyn/Documents/GitHub/echopop/config_files/initialization_config.yml"
-file_config = "C:/Users/Brandyn/Documents/GitHub/echopop/config_files/survey_year_2019_config.yml"
+init_config = "C:/Users/Brandyn Lucca/Documents/GitHub/echopop/config_files/initialization_config.yml"
+file_config = "C:/Users/Brandyn Lucca/Documents/GitHub/echopop/config_files/survey_year_2019_config.yml"
 survey = Survey(init_config, file_config)
 survey.load_survey_data()
 survey.load_acoustic_data()
@@ -235,13 +235,15 @@ def add_colorbar(
     return scale
 
 from typing import Literal
+from matplotlib.colors import LogNorm, Normalize, SymLogNorm
 
 cmap = "plasma"
 vmin, vmax = (0, 1e6)
 figsize = (7, 7)
-kwargs = dict(cmap=cmap, vmin=vmin, vmax=vmax, add_colorbar=True, norm=SymLogNorm(linthresh=1))
-geo_config = {}
+kwargs = dict(cmap=cmap)
+            #   , add_colorbar=True, norm=SymLogNorm(linthresh=1))
 type: Literal["hexbins", "pcolor", "scatter"] = "hexbins"
+norm = SymLogNorm(linthresh = 1, vmin=vmin, vmax=vmax)
 
 x = dataset['longitude'].values
 y = dataset['latitude'].values
@@ -250,14 +252,89 @@ z = dataset[variable].values
 xg = np.unique(np.round(x, 1))
 yg = np.unique(np.round(y, 1))
 
-if type == "hexbins":
+import inspect
+
+data_args = dict(x=x, y=y)
+plot_args = {}
+
+class MeshPlot(SpatialPlot):
+
+    type: Literal["hexbin", "pcolormesh", "scatter"]
+    variable: Literal["biomass", "kriged_mean", "kriged_variance", "sample_cv", "sample_variance"]
+
+class HexbinPlot(BaseModel):
+
+    cmap: str
+    extent: Tuple[float, float, float, float]
+    gridsize: Union[int, Tuple[int, int]]
+    vmin: float
+    vmax: float
+    x: np.ndarray[float]
+    y: np.ndarray[float]
+
+    @classmethod
+    def _DEFAULT_ARG_FACTORY(cls, type):
+        
+        # Create reference default parameters
+        
+        return {
+            "age_length_distribution": BiologicalHeatmapPlot,
+            "mesh": MeshPlot,
+            "transect": TransectPlot,
+        }
+    
+
+    if variable == "biomass":
+        colormap = colormap if colormap else "plasma"
+        data_range = data_range if data_range else (1, 1e6)
+        label = "Kriged biomass\n$\\mathregular{kg}$"
+    elif variable == "kriged_mean":
+        colormap = colormap if colormap else "inferno"
+        data_range = data_range if data_range else (1, 1e5)
+        label = "Kriged " + kriged_variable + f" density\n{units} " + "nmi$^{-2}$"
+    elif variable == "kriged_variance":
+        colormap = colormap if colormap else "hot"
+        data_range = data_range if data_range else (0, 5)
+        label = f"Kriged {kriged_variable} density variance" + f"\n({units} " + "nmi$^{-2})^{2}$"
+    elif variable == "sample_cv":
+        colormap = colormap if colormap else "magma"
+        data_range = (
+            data_range if data_range else (0, np.ceil(np.max(dataset[variable]) / 0.1) * 0.1)
+        )
+        label = "Kriged $CV$"
+    elif variable == "sample_variance":
+        colormap = colormap if colormap else "cividis"
+        data_range = data_range if data_range else (0, 1e1)
+        label = f"Sample {kriged_variable} variance" + f"\n{units}" + "$^{-2}$"
+
+
+if type == "hexbin":
+    # ---- Define plotting function
+    plot_func = plt.hexbin
+    # ---- Get function arguments
+    func_args = dict(inspect.signature(plot_func).parameters)
+    # ---- Update the data arguments
+    data_args.update(dict(gridsize = (yg.size - 1, xg.size - 1)))
+    # ----
+
+
     plot_args = dict(
         x=x, y=y, gridsize=(yg.size - 1, xg.size - 1), reduce_C_function=np.sum, cmap=cmap, 
         norm=norm, edgecolor="black", linewidth=0.05
     )
     plot_args.update({param: kwargs.get(param, None) for param in kwargs if param in plt.hexbin.__code__.co_varnames})   
     plot_func = plt.hexbin
-plt.hexbin.__code__.co_varnames
+
+dd = inspect.signature(plot_func)
+dict(dd.parameters)
+inspect.getfullargspec(plot_func)
+inspect.getcallargs(plt.hexbin)
+plt.figure(figsize=figure_dimensions)
+ax = plt.axes(projection=ccrs.PlateCarree())
+# plot_func(**plot_args)
+plot_func(x, y, C=z, gridsize=(yg.size - 1, xg.size - 1), reduce_C_function=np.sum, cmap="viridis", 
+          norm=norm, edgecolor="black", linewidth=0.05)
+plt.show()
 
 pt =  plt.hexbin(x, y, C=z, gridsize=(yg.size - 1, xg.size - 1), reduce_C_function=np.sum, cmap="viridis", norm=norm, edgecolor="black", linewidth=0.05)
 
