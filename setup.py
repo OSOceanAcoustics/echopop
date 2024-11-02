@@ -1,7 +1,5 @@
 from setuptools import setup
 
-from setuptools import setup
-
 # Dynamically read dependencies from requirements file
 with open("requirements.txt") as f:
     requirements = f.readlines()
