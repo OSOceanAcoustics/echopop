@@ -39,4 +39,4 @@ parts:
 - caption: Help & references
   chapters:
   - file: api
-  - file: references
+  - file: zbibliography
