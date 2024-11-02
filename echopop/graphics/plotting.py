@@ -294,17 +294,7 @@ def plot_transect(
             else 10 ** np.round(np.log10(z.max()))
         )
         vmin = kwargs.get("vmin", None) if kwargs.get("vmin", None) else 0.0
-        colorbar_label = (label_prepend + "abundance\n$#~animals").capitalize()
-    # ---- Biomass density
-    elif "biomass" in variable:
-        cmap = kwargs.get("cmap") if kwargs.get("cmap", None) in kwargs else "plasma"
-        vmax = (
-            kwargs.get("vmax", None)
-            if kwargs.get("vmax", None)
-            else 10 ** np.round(np.log10(z.max()))
-        )
-        vmin = kwargs.get("vmin", None) if kwargs.get("vmin", None) else 0.0
-        colorbar_label = (label_prepend + "biomass\n$\\mathregular{kg}$").capitalize()
+        colorbar_label = (label_prepend + "abundance\n$#~animals$").capitalize()
     # ---- Biomass density
     elif "biomass_density" in variable:
         cmap = kwargs.get("cmap") if kwargs.get("cmap", None) in kwargs else "inferno"
@@ -317,6 +307,16 @@ def plot_transect(
         colorbar_label = (
             label_prepend + "biomass density\n$\\mathregular{kg~nmi^{-2}}$"
         ).capitalize()
+    # ---- Biomass density
+    elif "biomass" in variable:
+        cmap = kwargs.get("cmap") if kwargs.get("cmap", None) in kwargs else "plasma"
+        vmax = (
+            kwargs.get("vmax", None)
+            if kwargs.get("vmax", None)
+            else 10 ** np.round(np.log10(z.max()))
+        )
+        vmin = kwargs.get("vmin", None) if kwargs.get("vmin", None) else 0.0
+        colorbar_label = (label_prepend + "biomass\n$\\mathregular{kg}$").capitalize()
     # ---- NASC
     elif "nasc" in variable:
         cmap = kwargs.get("cmap") if kwargs.get("cmap", None) in kwargs else "cividis"
