@@ -1,21 +1,17 @@
-from typing import Any, Dict, Literal, Optional, Tuple, Union
+import inspect
+from typing import Any, Dict, Optional, Tuple, Union
 
-import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import geopandas as gpd
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import pyproj
+import verde as vd
 from cartopy.mpl.geoaxes import GeoAxes
 from matplotlib.axes import Axes
-from matplotlib.colors import LogNorm, Normalize
-from matplotlib.ticker import (
-    AutoLocator,
-    FixedLocator,
-    LogFormatterSciNotation,
-    LogLocator,
-    ScalarFormatter,
-)
+from matplotlib.colors import LogNorm, Normalize, SymLogNorm
+from matplotlib.ticker import FixedLocator
 
 from .validate_plot import PlotModel
 
@@ -53,36 +49,36 @@ def get_survey_bounds(dataframe: pd.DataFrame, geo_config: Dict[str, Any]) -> gp
 
 def add_colorbar(
     axes: GeoAxes,
-    colormap: str,
-    label: str,
-    limits: Tuple[float, float],
-    log: Optional[float] = None,
+    cmap: str,
+    colorbar_label: str,
+    vmin: float,
+    vmax: float,
+    log_base: Optional[float] = None,
+    norm: Optional[Normalize] = None,
     x_pad: Optional[float] = None,
+    **kwargs,
 ):
     """
     Add colorbar to the plot
     """
 
-    # Apply log-transformation, if defined
-    if log:
-        # ---- Define locator
-        locator = LogLocator(base=log)
-        # ---- Define formatter
-        formatter = LogFormatterSciNotation(base=log)
-        # ---- Define scale
-        scale = LogNorm(vmin=np.min(limits), vmax=np.max(limits))
-    else:
-        # ---- Define locator
-        locator = AutoLocator()
-        # ---- Define formatter
-        formatter = ScalarFormatter()
-        # ---- Return 'None' for scale
-        scale = Normalize(vmin=np.min(limits), vmax=np.max(limits))
+    # Adjust locator/formatter/scale
+    if not norm:
+        # ---- Apply log-transformation, if defined
+        if log_base:
+            # ---- Define scale
+            norm = SymLogNorm(linthresh=1.0, vmin=vmin, vmax=vmax, base=log_base)
+        else:
+            # ---- Return 'None' for scale
+            norm = Normalize(vmin=vmin, vmax=vmax)
+
+    # Add pad, if needed
+    x_pad = x_pad if x_pad else 0.0
 
     # Validate the colormap existence and apply the scaling
     try:
         # ---- Create the colormap
-        scaled_colormap = plt.cm.ScalarMappable(cmap=colormap, norm=scale)
+        scaled_colormap = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
     except ValueError as e:
         # ---- Drop traceback
         e.__traceback__ = None
@@ -96,21 +92,23 @@ def add_colorbar(
     cbar = plt.colorbar(
         scaled_colormap,
         ax=axes,
-        ticks=locator,
-        format=formatter,
         shrink=0.5,
         fraction=0.075,
         pad=0.025 + x_pad,
     )
     # ---- Render with label
-    cbar.set_label(label)
+    cbar.set_label(colorbar_label)
 
     # Return scale
-    return scale
+    return norm
 
 
 def format_axes(
-    axes: Union[Axes, GeoAxes], axis_labels: Dict[str, Any], axis_limits: Dict[str, float]
+    axes: Union[Axes, GeoAxes],
+    axis_limits: Dict[str, Any],
+    xlabel: str,
+    ylabel: str,
+    **kwargs,
 ):
     """
     Format plotting axis labels and ticks
@@ -124,18 +122,24 @@ def format_axes(
 
     # Set labels
     # ---- x
-    axes.set_xlabel(axis_labels["x"])
+    axes.set_xlabel(xlabel)
     # ---- y
-    axes.set_ylabel(axis_labels["y"])
+    axes.set_ylabel(ylabel)
+
+    # Get the array of values for each axis
+    # ---- x
+    xvals = np.array(list(axis_limits["x"].values()))
+    # ---- y
+    yvals = np.array(list(axis_limits["y"].values()))
 
     # Set the axis limits
     if isinstance(axes, GeoAxes):
         axes.set_extent(
             [
-                np.min(axis_limits["x"]),
-                np.max(axis_limits["x"]),
-                np.min(axis_limits["y"]),
-                np.max(axis_limits["y"]),
+                xvals.min(),
+                xvals.max(),
+                yvals.min(),
+                yvals.max(),
             ]
         )
 
@@ -166,15 +170,19 @@ def add_transect_lines(dataset: pd.DataFrame, plot_order: int):
     )
 
 
-def apply_aspect_ratio(axis_limits: np.ndarray, figure_width: float) -> Tuple[float, float]:
+def apply_aspect_ratio(figure_width: float, axis_limits: Dict[str, Any]) -> Tuple[float, float]:
     """
     Apply the defined aspect ratio on the figure window size
     """
 
+    # Get the array of values for each axis
+    # ---- x
+    xvals = np.array(list(axis_limits["x"].values()))
+    # ---- y
+    yvals = np.array(list(axis_limits["y"].values()))
+
     # Compute the aspect ratio of the plotting data
-    phi = (np.max(axis_limits["y"]) - np.min(axis_limits["y"])) / (
-        np.max(axis_limits["x"]) - np.min(axis_limits["x"])
-    )
+    phi = (yvals.max() - yvals.min()) / (xvals.max() - xvals.min())
 
     # Adjust the figure width and height
     return (figure_width, figure_width * phi)
@@ -205,10 +213,12 @@ def add_alongtransect_data(
     ax: GeoAxes,
     dataset: pd.DataFrame,
     variable: str,
-    data_range: Tuple[float, float],
-    colormap: str,
-    colormap_norm: Union[LogNorm, Normalize],
+    vmin: float,
+    vmax: float,
+    cmap: str,
+    norm: Union[LogNorm, Normalize],
     plot_order: int,
+    **kwargs,
 ):
     """
     Plot transect estimates
@@ -227,7 +237,7 @@ def add_alongtransect_data(
     data_hurdle = data_hurdle.sort_values(by=[variable]).reset_index(drop=True)
     # ---- Normalize the point sizes
     data_hurdle.loc[:, "normalized_var"] = scale_sizes(
-        data_hurdle.loc[:, variable], np.min(data_range), np.max(data_range), 1, 75
+        data_hurdle.loc[:, variable], vmin, vmax, 1, 75
     )
 
     # Add the scatter plot
@@ -235,8 +245,8 @@ def add_alongtransect_data(
         x=data_hurdle["longitude"],
         y=data_hurdle["latitude"],
         c=data_hurdle[variable],
-        norm=colormap_norm,
-        cmap=colormap,
+        norm=norm,
+        cmap=cmap,
         s=data_hurdle["normalized_var"],
         edgecolor="black",
         linewidth=0.2,
@@ -246,28 +256,25 @@ def add_alongtransect_data(
 
 def plot_transect(
     dataset: pd.DataFrame,
-    variable: str,
-    figure_width: float,
-    geo_config: Dict[str, Any],
-    colormap: Optional[str] = None,
-    data_range: Optional[Tuple[float, float]] = None,
-    log_base: Optional[float] = None,
-    axis_limits: Optional[Dict[str, Tuple[float, float]]] = None,
     **kwargs,
 ):
 
-    # Determine axis limits
-    if not axis_limits:
+    # Get the dataset variable name
+    variable = kwargs.get("variable", None)
+    # ---- Get the z-axis values
+    z = dataset[variable].values
+
+    # Get axis limits
+    if not kwargs.get("axis_limits", None):
         # ---- Get survey bounds
-        survey_bounds = get_survey_bounds(dataset, geo_config)
+        survey_bounds = get_survey_bounds(dataset, kwargs.get("geo_config", None))
         # ---- Additional buffering
         axis_limits = dict(
-            x=(survey_bounds[0] * 1.005, survey_bounds[2] * 0.995),
-            y=(survey_bounds[1] * 0.995, survey_bounds[3] * 1.005),
+            x=dict(xmin=survey_bounds[0] * 1.005, xmax=survey_bounds[2] * 0.995),
+            y=dict(ymin=survey_bounds[1] * 0.995, ymax=survey_bounds[3] * 1.005),
         )
-
-    # Compute the figure dimensions based on the data aspect ratio
-    figure_dimensions = apply_aspect_ratio(axis_limits, figure_width)
+    else:
+        axis_limits = kwargs.get("axis_limits")
 
     # Add prepend label string, if required
     if "_male" in variable:
@@ -277,50 +284,97 @@ def plot_transect(
     else:
         label_prepend = ""
 
-    # Prepare default parameters
-    axis_labels = dict(x="Longitude (\u00B0E)", y="Latitude (\u00B0N)")
-
     # Prepare parameters for plotting
     # ---- Abundance
     if "abundance" in variable:
-        colormap = colormap if colormap else "viridis"
-        data_range = data_range if data_range else (1e0, 1e7)
-        label = (label_prepend + "abundance\n$#~animals").capitalize()
+        cmap = kwargs.get("cmap") if kwargs.get("cmap", None) in kwargs else "viridis"
+        vmax = (
+            kwargs.get("vmax", None)
+            if kwargs.get("vmax", None)
+            else 10 ** np.round(np.log10(z.max()))
+        )
+        vmin = kwargs.get("vmin", None) if kwargs.get("vmin", None) else 0.0
+        colorbar_label = (label_prepend + "abundance\n$#~animals").capitalize()
     # ---- Biomass density
     elif "biomass" in variable:
-        colormap = colormap if colormap else "plasma"
-        data_range = data_range if data_range else (1e0, 1e7)
-        label = (label_prepend + "biomass\n$\\mathregular{kg}$").capitalize()
+        cmap = kwargs.get("cmap") if kwargs.get("cmap", None) in kwargs else "plasma"
+        vmax = (
+            kwargs.get("vmax", None)
+            if kwargs.get("vmax", None)
+            else 10 ** np.round(np.log10(z.max()))
+        )
+        vmin = kwargs.get("vmin", None) if kwargs.get("vmin", None) else 0.0
+        colorbar_label = (label_prepend + "biomass\n$\\mathregular{kg}$").capitalize()
     # ---- Biomass density
     elif "biomass_density" in variable:
-        colormap = colormap if colormap else "inferno"
-        data_range = data_range if data_range else (1e0, 1e7)
-        label = (label_prepend + "biomass density\n$\\mathregular{kg~nmi^{-2}}$").capitalize()
+        cmap = kwargs.get("cmap") if kwargs.get("cmap", None) in kwargs else "inferno"
+        vmax = (
+            kwargs.get("vmax", None)
+            if kwargs.get("vmax", None)
+            else 10 ** np.round(np.log10(z.max()))
+        )
+        vmin = kwargs.get("vmin", None) if kwargs.get("vmin", None) else 0.0
+        colorbar_label = (
+            label_prepend + "biomass density\n$\\mathregular{kg~nmi^{-2}}$"
+        ).capitalize()
     # ---- NASC
     elif "nasc" in variable:
-        colormap = colormap if colormap else "cividis"
-        data_range = data_range if data_range else (1e0, 1e4)
-        label = "NASC\n$\\mathregular{m^{2}~nmi^{-2}}$"
+        cmap = kwargs.get("cmap") if kwargs.get("cmap", None) in kwargs else "cividis"
+        vmax = (
+            kwargs.get("vmax", None)
+            if kwargs.get("vmax", None)
+            else 10 ** np.round(np.log10(z.max()))
+        )
+        vmin = kwargs.get("vmin", None) if kwargs.get("vmin", None) else 0.0
+        colorbar_label = "NASC\n$\\mathregular{m^{2}~nmi^{-2}}$"
     # ---- Number density
     elif "number_density" in variable:
-        colormap = colormap if colormap else "magma"
-        data_range = data_range if data_range else (1e0, 1e7)
-        label = (label_prepend + "number density\n$\\mathregular{animals~nmi^{-2}}$").capitalize()
+        cmap = kwargs.get("cmap") if kwargs.get("cmap", None) in kwargs else "magma"
+        vmax = (
+            kwargs.get("vmax", None)
+            if kwargs.get("vmax", None)
+            else 10 ** np.round(np.log10(z.max()))
+        )
+        vmin = kwargs.get("vmin", None) if kwargs.get("vmin", None) else 0.0
+        colorbar_label = (
+            label_prepend + "number density\n$\\mathregular{animals~nmi^{-2}}$"
+        ).capitalize()
+
+    # Prepare default parameters
+    # ---- x
+    kwargs.update(dict(xlabel=kwargs.get("xlabel", "Longitude (\u00B0E)")))
+    # ---- y
+    kwargs.update(dict(ylabel=kwargs.get("ylabel", "Latitude (\u00B0N)")))
 
     # Initialize figure
-    plt.figure(figsize=figure_dimensions)
+    # ---- Update the 'figsize' if it doesn't yet exist
+    if not kwargs.get("figsize", None):
+        kwargs.update(dict(figsize=kwargs.get("figsize", apply_aspect_ratio(5.5, axis_limits))))
+    # ---- Prepare figure
+    plt.figure(**prune_args(plt.figure, **kwargs))
     # ---- Define GeoAxes
-    ax = plt.axes(projection=ccrs.PlateCarree())
+    ax = plt.axes(
+        projection=kwargs.get("geo_config")["plot_projection"], **prune_args(plt.axes, **kwargs)
+    )
     # ---- Add coastline
-    ax.add_feature(geo_config["coastline"])
+    ax.add_feature(kwargs.get("geo_config")["coastline"])
     # ---- Add transect lines
     add_transect_lines(dataset, plot_order=1)
     # ---- Normalize the colormapping
-    colormap_norm = add_colorbar(ax, colormap, label, data_range, log_base)
+    colormap_norm = add_colorbar(
+        ax, **dict(kwargs), **dict(cmap=cmap, colorbar_label=colorbar_label, vmin=vmin, vmax=vmax)
+    )
     # ---- Add transect data
-    add_alongtransect_data(ax, dataset, variable, data_range, colormap, colormap_norm, plot_order=2)
+    add_alongtransect_data(
+        ax,
+        dataset,
+        **kwargs,
+        **dict(cmap=cmap, norm=colormap_norm, plot_order=2, vmin=vmin, vmax=vmax),
+    )
     # ---- Format the figure area axes
-    format_axes(ax, axis_labels, axis_limits)
+    format_axes(
+        ax, axis_limits=axis_limits, xlabel=kwargs.get("xlabel"), ylabel=kwargs.get("ylabel")
+    )
     # ---- Tighten the layout and display
     plt.tight_layout()
     plt.show()
@@ -328,31 +382,8 @@ def plot_transect(
 
 def plot_mesh(
     dataset: pd.DataFrame,
-    variable: str,
-    figure_width: float,
-    geo_config: Dict[str, Any],
-    colormap: Optional[str] = None,
-    data_range: Optional[Tuple[float, float]] = None,
-    log_base: Optional[float] = None,
-    axis_limits: Optional[Dict[str, Tuple[float, float]]] = None,
     **kwargs,
 ):
-
-    # Determine axis limits
-    if not axis_limits:
-        # ---- Get survey bounds
-        survey_bounds = get_survey_bounds(dataset, geo_config)
-        # ---- Additional buffering
-        axis_limits = dict(
-            x=(survey_bounds[0] * 1.005, survey_bounds[2] * 0.995),
-            y=(survey_bounds[1] * 0.995, survey_bounds[3] * 1.005),
-        )
-
-    # Compute the figure dimensions based on the data aspect ratio
-    figure_dimensions = apply_aspect_ratio(axis_limits, figure_width)
-
-    # Prepare default parameters
-    axis_labels = dict(x="Longitude (\u00B0E)", y="Latitude (\u00B0N)")
 
     # Prepare units
     units = "kg"
@@ -361,61 +392,165 @@ def plot_mesh(
     # Adjust values, if required
     dataset.loc[dataset["biomass"] < 0.0, "biomass"] = 0.0
     dataset.loc[dataset["kriged_mean"] < 0.0, "kriged_mean"] = 0.0
-    if log_base and dataset[variable].min() == 0.0:
-        # ---- Adjust offset
-        dataset.loc[:, variable] = dataset.loc[:, variable] + 1e-1
 
-    # Prepare parameters for plotting
-    if variable == "biomass":
-        colormap = colormap if colormap else "plasma"
-        data_range = data_range if data_range else (1, 1e6)
-        label = "Kriged biomass\n$\\mathregular{kg}$"
-    elif variable == "kriged_mean":
-        colormap = colormap if colormap else "inferno"
-        data_range = data_range if data_range else (1, 1e5)
-        label = "Kriged " + kriged_variable + f" density\n{units} " + "nmi$^{-2}$"
-    elif variable == "kriged_variance":
-        colormap = colormap if colormap else "hot"
-        data_range = data_range if data_range else (0, 5)
-        label = f"Kriged {kriged_variable} density variance" + f"\n({units} " + "nmi$^{-2})^{2}$"
-    elif variable == "sample_cv":
-        colormap = colormap if colormap else "magma"
-        data_range = (
-            data_range if data_range else (0, np.ceil(np.max(dataset[variable]) / 0.1) * 0.1)
+    # Get the dataset variable name
+    variable = kwargs.get("variable", None)
+    # ---- Get the x-axis values
+    x = dataset["longitude"].values
+    # ---- Get the y-axis values
+    y = dataset["latitude"].values
+    # ---- Get the z-axis values
+    z = dataset[variable].values
+
+    # Get axis limits
+    if not kwargs.get("axis_limits", None):
+        # ---- Get survey bounds
+        survey_bounds = get_survey_bounds(dataset, kwargs.get("geo_config", None))
+        # ---- Additional buffering
+        axis_limits = dict(
+            x=dict(xmin=survey_bounds[0] * 1.005, xmax=survey_bounds[2] * 0.995),
+            y=dict(ymin=survey_bounds[1] * 0.995, ymax=survey_bounds[3] * 1.005),
         )
-        label = "Kriged $CV$"
+    else:
+        axis_limits = kwargs.get("axis_limits")
+
+    # Adjust the plotting properties
+    if variable == "biomass":
+        cmap = kwargs.get("cmap") if kwargs.get("cmap", None) in kwargs else "plasma"
+        vmax = (
+            kwargs.get("vmax", None)
+            if kwargs.get("vmax", None)
+            else 10 ** np.round(np.log10(z.max()))
+        )
+        vmin = kwargs.get("vmin", None) if kwargs.get("vmin", None) else 0.0
+        colorbar_label = (
+            kwargs.get("colorbar_label")
+            if kwargs.get("colorbar_label")
+            else "Kriged biomass\n$\\mathregular{kg}$"
+        )
+        reduce_C_function = kwargs.get("reduce_C_function", np.sum)
+    elif variable == "kriged_mean":
+        cmap = kwargs.get("cmap") if kwargs.get("cmap", None) in kwargs else "inferno"
+        vmax = (
+            kwargs.get("vmax", None)
+            if kwargs.get("vmax", None)
+            else 10 ** np.round(np.log10(z.max()))
+        )
+        vmin = kwargs.get("vmin", None) if kwargs.get("vmin", None) else 0.0
+        colorbar_label = (
+            kwargs.get("colorbar_label")
+            if kwargs.get("colorbar_label")
+            else "Kriged " + kriged_variable + f" density\n{units} " + "nmi$^{-2}$"
+        )
+        reduce_C_function = kwargs.get("reduce_C_function", np.mean)
+    elif variable == "kriged_variance":
+        cmap = kwargs.get("cmap") if kwargs.get("cmap", None) in kwargs else "hot"
+        vmax = (
+            kwargs.get("vmax", None) if kwargs.get("vmax", None) else 10 ** np.round((z.max()), 2)
+        )
+        vmin = kwargs.get("vmin", None) if kwargs.get("vmin", None) else 0.0
+        colorbar_label = (
+            kwargs.get("colorbar_label")
+            if kwargs.get("colorbar_label")
+            else f"Kriged {kriged_variable} density variance" + f"\n({units} " + "nmi$^{-2})^{2}$"
+        )
+        reduce_C_function = kwargs.get("reduce_C_function", np.mean)
+    elif variable == "sample_cv":
+        cmap = kwargs.get("cmap") if kwargs.get("cmap", None) in kwargs else "magma"
+        vmax = (
+            kwargs.get("vmax", None) if kwargs.get("vmax", None) else np.ceil(z.max() / 0.1) * 0.1
+        )
+        vmin = kwargs.get("vmin", None) if kwargs.get("vmin", None) else 0.0
+        colorbar_label = (
+            kwargs.get("colorbar_label") if kwargs.get("colorbar_label") else "Kriged $CV$"
+        )
+        reduce_C_function = kwargs.get("reduce_C_function", np.mean)
     elif variable == "sample_variance":
-        colormap = colormap if colormap else "cividis"
-        data_range = data_range if data_range else (0, 1e1)
-        label = f"Sample {kriged_variable} variance" + f"\n{units}" + "$^{-2}$"
+        cmap = kwargs.get("cmap") if kwargs.get("cmap", None) in kwargs else "cividis"
+        vmax = (
+            kwargs.get("vmax", None)
+            if kwargs.get("vmax", None)
+            else 10 ** np.round(np.log10(z.max()))
+        )
+        vmin = kwargs.get("vmin", None) if kwargs.get("vmin", None) else 0.0
+        colorbar_label = (
+            kwargs.get("colorbar_label")
+            if kwargs.get("colorbar_label")
+            else f"Sample {kriged_variable} variance" + f"\n{units}" + "$^{-2}$"
+        )
+        reduce_C_function = kwargs.get("reduce_C_function", np.mean)
+
+    # Prepare default parameters
+    # ---- x
+    kwargs.update(dict(xlabel=kwargs.get("xlabel", "Longitude (\u00B0E)")))
+    # ---- y
+    kwargs.update(dict(ylabel=kwargs.get("ylabel", "Latitude (\u00B0N)")))
+
+    # Get the plot type
+    plot_type = kwargs.get("plot_type", None)
 
     # Initialize figure
-    plt.figure(figsize=figure_dimensions)
+    # ---- Update the 'figsize' if it doesn't yet exist
+    if not kwargs.get("figsize", None):
+        kwargs.update(dict(figsize=kwargs.get("figsize", apply_aspect_ratio(5.5, axis_limits))))
+    # ---- Prepare figure
+    plt.figure(**prune_args(plt.figure, **kwargs))
     # ---- Define GeoAxes
-    ax = plt.axes(projection=ccrs.PlateCarree())
-    # ---- Add coastline
-    ax.add_feature(geo_config["coastline"])
-    # ---- Normalize the colormapping
-    colormap_norm = add_colorbar(ax, colormap, label, data_range, log_base)
-    # ---- Add meshed data
-    ax.scatter(
-        dataset["longitude"],
-        dataset["latitude"],
-        c=dataset[variable],
-        s=2,
-        marker="H",
-        cmap=colormap,
-        norm=colormap_norm,
+    ax = plt.axes(
+        projection=kwargs.get("geo_config")["plot_projection"], **prune_args(plt.axes, **kwargs)
     )
+    # ---- Add coastline
+    ax.add_feature(kwargs.get("geo_config")["coastline"])
+    # ---- Normalize the colormapping
+    colormap_norm = add_colorbar(
+        ax, **dict(kwargs), **dict(cmap=cmap, colorbar_label=colorbar_label, vmin=vmin, vmax=vmax)
+    )
+    # ---- Scatter
+    if plot_type == "scatter":
+        ax.scatter(
+            x=x,
+            y=y,
+            c=z,
+            s=2,
+            marker="s",
+            cmap=cmap,
+            norm=colormap_norm,
+        )
+    # ---- Hexbin
+    elif plot_type == "hexbin":
+        # ---- Get unique x
+        xg = np.unique(np.round(x, 1))
+        # ---- Get unique y
+        yg = np.unique(np.round(y, 1))
+        # ---- Plot
+        plt.hexbin(
+            x=x,
+            y=y,
+            C=z,
+            gridsize=(yg.size, xg.size),
+            linewidth=0.05,
+            cmap=cmap,
+            norm=colormap_norm,
+            reduce_C_function=reduce_C_function,
+        )
+    # ---- Pseudocolor mesh
+    elif plot_type == "pcolormesh":
+        # ---- Create gridded (interpolated) dataset
+        grid_z = spatial_mesh(x, y, z, geo_config=kwargs.get("geo_config"))
+        # ---- Plot
+        grid_z.plot.pcolormesh(norm=colormap_norm, cmap=cmap, add_colorbar=False)
     # ---- Format the figure area axes
-    format_axes(ax, axis_labels, axis_limits)
+    format_axes(
+        ax, axis_limits=axis_limits, xlabel=kwargs.get("xlabel"), ylabel=kwargs.get("ylabel")
+    )
     # ---- Tighten the layout and display
     plt.tight_layout()
     plt.show()
 
 
 def format_heatmap_ticks(
-    ax: Axes, heatmap_data: pd.DataFrame, data_range: Tuple[float, float], log_base: Optional[bool]
+    ax: Axes,
+    heatmap_data: pd.DataFrame,
 ) -> Dict[str, Any]:
 
     # Extract the values for the indices and columns
@@ -423,14 +558,8 @@ def format_heatmap_ticks(
     length_labels = heatmap_data.index.values
     # ---- Age
     age_labels = heatmap_data.columns.values
-    # ---- Update `data_range`
-    if log_base and np.min(data_range) == 0.0:
-        data_range = (0.1, np.max(data_range))
-    # ---- Heatmap data
-    if log_base and heatmap_data.values.min() == 0.0:
-        heatmap_array = heatmap_data.values + 0.1
-    else:
-        heatmap_array = heatmap_data.values
+    # ---- Get heatmap values
+    heatmap_array = heatmap_data.values
 
     # Get the centers of all bins
     # ---- Centers list
@@ -468,7 +597,6 @@ def format_heatmap_ticks(
 
     # Return plotting parameter/data dictionary
     return dict(
-        data_range=data_range,
         extent=extent,
         length_labels=length_labels,
         age_labels=age_labels,
@@ -476,6 +604,60 @@ def format_heatmap_ticks(
         delta_age=delta_age,
         delta_length=delta_length,
     )
+
+
+def spatial_mesh(
+    x: np.typing.NDArray[float],
+    y: np.typing.NDArray[float],
+    z: np.typing.NDArray[float],
+    geo_config: Dict[str, Any],
+):
+
+    # Get the geo_config settings for transformation
+    # ---- Starting
+    init = geo_config.get("init")
+    # ---- Create a projection object
+    projection_init = pyproj.Proj(init)
+    # ---- Transform the coordinates
+    coords_init = projection_init(x, y)
+
+    # Swap to mercator
+    projection = pyproj.Proj(proj="merc", lat_ts=coords_init[1].mean())
+    # ---- Retransform
+    coords = projection(coords_init[0], coords_init[1])
+
+    # Define processing chain
+    # ---- Spacing
+    spacing = 2.5 / 60
+    # ---- Chain
+    chain = vd.Chain(
+        [
+            ("reduce", vd.BlockReduce("mean", spacing * 111e3)),
+            ("spline", vd.KNeighbors(k=5, reduction=np.mean)),
+        ]
+    )
+    # ---- Fit the chain
+    chain.fit(coords, z)
+
+    # Create grid object
+    # ---- Define region
+    region = vd.get_region((x, y))
+    # ---- Create grid
+    coord_grid = chain.grid(
+        region=region,
+        spacing=spacing,
+        projection=projection,
+    )
+    # ---- Mask the grid
+    coord_mask = vd.distance_mask(
+        data_coordinates=(x, y),
+        maxdist=spacing * 111e3,
+        grid=coord_grid,
+        projection=projection,
+    )
+
+    # Return the masked coordinate values
+    return coord_mask["scalars"]
 
 
 def add_heatmap_grid(
@@ -518,30 +700,26 @@ def add_heatmap_grid(
 
 def plot_age_length_distribution(
     data_dict: Dict[str, Any],
-    variable: str,
-    sex: Literal["all", "female", "male"],
-    figure_width: float,
-    grid: bool,
-    colormap: Optional[str] = None,
-    data_range: Optional[Tuple[float, float]] = None,
-    log_base: Optional[float] = None,
-    axis_limits: Optional[Dict[str, Tuple[float, float]]] = None,
     **kwargs,
 ):
+
+    # Get the dataset variable name
+    variable = kwargs.get("variable", None)
+
+    # Get sex
+    sex = kwargs.get("sex", None)
 
     # Get the correct dataset for plotting
     # ---- Abundance
     if variable == "abundance":
         dataset = data_dict["abundance"]["aged_abundance_df"].copy()
-        colormap = colormap if colormap else "viridis"
-        data_range = data_range if data_range else (0, 5e7)
-        label = (f"Abundance ({sex} fish, # animals)").capitalize()
+        cmap = kwargs.get("cmap") if kwargs.get("cmap", None) in kwargs else "viridis"
+        colorbar_label = (f"Abundance ({sex} fish, # animals)").capitalize()
     # ---- Biomass
     elif variable == "biomass":
         dataset = data_dict["biomass"]["aged_biomass_df"].copy()
-        colormap = colormap if colormap else "plasma"
-        data_range = data_range if data_range else (0, 5e8)
-        label = (f"Biomass ({sex} fish, kg)").capitalize()
+        cmap = kwargs.get("cmap") if kwargs.get("cmap", None) in kwargs else "plasma"
+        colorbar_label = (f"Biomass ({sex} fish, kg)").capitalize()
 
     # Prepare the dataset
     # ---- Stack sum
@@ -559,42 +737,62 @@ def plot_age_length_distribution(
         values=variable, columns="age", index="length", aggfunc="sum"
     )
 
-    # Get the axis limits
-    if not axis_limits:
+    # Get limits
+    # ---- vmin
+    vmin = kwargs.get("vmin", None) if kwargs.get("vmin", None) else 0.0
+    # ---- vmax
+    vmax = (
+        kwargs.get("vmax", None)
+        if kwargs.get("vmax", None)
+        else 10 ** np.round(np.log10(heatmap_data.stack().max()))
+    )
+
+    # Get axis limits
+    if not kwargs.get("axis_limits", None):
         # ---- Default to a rectangle
         axis_limits = dict(
-            x=(dataset_sub["age"].min(), dataset_sub["age"].max()),
-            y=(dataset_sub["length"].min() * 0.25, dataset_sub["length"].max() * 0.25),
+            x=dict(xmin=dataset_sub["age"].min(), xmax=dataset_sub["age"].max()),
+            y=dict(
+                xmin=dataset_sub["length"].min() * 0.25, xmax=dataset_sub["length"].max() * 0.25
+            ),
         )
 
     # Prepare default parameters
-    axis_labels = dict(x="Age (years)", y="Fork length (cm)")
-
-    # Compute the figure dimensions based on the data aspect ratio
-    figure_dimensions = apply_aspect_ratio(axis_limits, figure_width)
+    # ---- x
+    kwargs.update(dict(xlabel=kwargs.get("xlabel", "Age (years)")))
+    # ---- y
+    kwargs.update(dict(ylabel=kwargs.get("ylabel", "Fork length (cm)")))
 
     # Initialize figure
-    fig, ax = plt.subplots(figsize=figure_dimensions)
+    # ---- Update the 'figsize' if it doesn't yet exist
+    if not kwargs.get("figsize", None):
+        kwargs.update(dict(figsize=kwargs.get("figsize", apply_aspect_ratio(5.5, axis_limits))))
+    # Initialize figure
+    fig, ax = plt.subplots(**prune_args(plt.subplots, **kwargs))
     # ---- Format the x- and y-axis tick labels and spacing
-    plot_data = format_heatmap_ticks(ax, heatmap_data, data_range, log_base)
+    plot_data = format_heatmap_ticks(ax, heatmap_data)
     # ---- Normalize the colormapping
     colormap_norm = add_colorbar(
-        ax, colormap, label, plot_data["data_range"], log_base, x_pad=0.025
+        ax,
+        **kwargs,
+        **dict(cmap=cmap, colorbar_label=colorbar_label, vmin=vmin, vmax=vmax, x_pad=0.025),
     )
     # ---- Plot the heatmap
     ax.imshow(
         plot_data["heatmap_array"],
         norm=colormap_norm,
-        cmap=colormap,
+        cmap=cmap,
         interpolation=None,
         extent=plot_data["extent"],
         aspect="auto",
     )
     # ---- Add a heatmap grid, if requested
-    if grid:
+    if kwargs.get("grid_heatmap"):
         add_heatmap_grid(ax=ax, **plot_data)
     # ---- Format the figure area axes
-    format_axes(ax, axis_labels, axis_limits)
+    format_axes(
+        ax, axis_limits=axis_limits, xlabel=kwargs.get("xlabel"), ylabel=kwargs.get("ylabel")
+    )
     # ---- Tighten the layout and display
     plt.tight_layout()
     plt.show()
@@ -628,6 +826,10 @@ def PLOT_MAP(cls, kind: str):
 
     # Return the dictionary
     return plotting_info
+
+
+def prune_args(func, **kwargs):
+    return {k: v for k, v in kwargs.items() if k in dict(inspect.signature(func).parameters)}
 
 
 def validate_plot_args(**kwargs):

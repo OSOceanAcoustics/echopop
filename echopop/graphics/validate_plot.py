@@ -1,15 +1,19 @@
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
-from typing import Dict, Literal, Optional, Tuple
+import re
+from typing import Any, Dict, Literal, Optional, Tuple
+
 import cartopy.feature as cfeature
 import numpy as np
-import re
+from cartopy.crs import PlateCarree, Projection
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
+
 
 class BasePlotModel(BaseModel):
     """
     Base Pydantic model for scrutinizing plotting parameters
     """
+
     kind: Literal["age_length_distribution", "mesh", "transect"]
- 
+
     # Validator method
     @classmethod
     def judge(cls, **kwargs):
@@ -21,78 +25,79 @@ class BasePlotModel(BaseModel):
         except ValidationError as e:
             e.__traceback__ = None
             raise e
-            
+
+
 class PlotModel(BasePlotModel):
     """
     Base Pydantic model for scrutinizing plotting parameters
     """
-    
-    figure_width: float = Field(default=5.5, gt=0.0, allow_inf_nan=False)
-    axis_limits: Optional[Dict[str, Tuple[float, float]]] = Field(default=None)
-    colormap: Optional[str] = Field(default=None)
+
+    axis_limits: Optional[Dict[str, Any]] = Field(default=None)
     data_range: Optional[Tuple[float, float]] = Field(default=None)
     log_base: Optional[float] = Field(default=None, gt=0.0, allow_inf_nan=False)
     model_config = ConfigDict(extra="allow")
-       
+
     @field_validator("data_range", mode="before")
     def validate_data_range(cls, v):
-        
+
         # Check whether `v` is None or is a valid tuple
         if v is None:
             return v
-        
+        elif all([i is None for i in v]):
+            return None
+
         # Validate the expected 2-tuple format
         if not isinstance(v, tuple) or len(v) != 2:
             raise ValueError(
                 "Input for `data_range` must comprise a tuple with exactly exactly 2 float values."
-                )
-            
+            )
+
         # Try coercing to a float
         try:
             v_tpl = tuple(float(i) for i in v)
         except Exception as e:
             raise e
-            
+
         # Validate that values are floats and are finite
         if not all(isinstance(i, float) and np.isfinite(i) for i in v_tpl):
-            raise ValueError(
-                "Input values for `data_range` must all be real numbers."
-                )
-            
+            raise ValueError("Input values for `data_range` must all be real numbers.")
+
         # Return coerced value
         return v_tpl
 
     @field_validator("axis_limits", mode="before")
     def validate_axis_limits(cls, v):
-        
+
         # Check whether `v` is None or is a valid tuple
         if v is None:
             return v
-        
+
         # Validate the expected dictionary format
         if not isinstance(v, dict):
-            raise ValueError(
-                "Input for `axis_limits` must be a dictionary."
-            )
-        
+            raise ValueError("Input for `axis_limits` must be a dictionary.")
+
         # Validate all items within the dictionary
         for key, value in v.items():
-            # ---- Validate the expected 2-tuple format
-            if not isinstance(value, tuple) or len(value) != 2:
+            # ---- Validate the expected 2-value format
+            if set(["xmin", "xmax"]).issubset(value):
+                test_values = value
+            elif set(["ymin", "ymax"]).issubset(value):
+                test_values = value
+            elif set(["left", "right"]).issubset(value):
+                test_values = value
+            else:
                 raise ValueError(
-                    f"Input for `axis_limits[{key}]` must comprise a tuple with exactly 2 float "
-                    f"values."
-                    )
-            # ---- Try coercing to a float
-            try:
-                v_tpl = tuple(float(i) for i in value)
-            except Exception as e:
-                raise e
-            # ---- Validate that values are both floats and finite
-            if not all(isinstance(i, float) and np.isfinite(i) for i in v_tpl):
+                    f"Input for `axis_limits['{key}']` must comprise either two values represented "
+                    f"represented by '{key}min'/'{key}max' or 'left'/'right'."
+                )
+            # ---- Check that both values are floats
+            if not all([isinstance(val, (float, int)) for _, val in test_values.items()]):
                 raise ValueError(
-                    f"Input for `axis_limits[{key}]` must all be real numbers."
-                )             
+                    f"Input for `axis_limits['{key}']` must comprise float values for limits."
+                )
+
+        # Return
+        return v
 
     # Factory method
     @classmethod
@@ -103,22 +108,22 @@ class PlotModel(BasePlotModel):
 
         # Scrutinize `kind`
         cls.judge(**kwargs)
-        
+
         # Find the correct sub-class plotting model
         return (
-            cls._SUBCLASS_FACTORY()[kwargs["kind"]]
-            .judge(**kwargs).model_dump(exclude_none=False)
+            cls._SUBCLASS_FACTORY()[kwargs["kind"]].judge(**kwargs).model_dump(exclude_none=False)
         )
-    
+
     @classmethod
     def _SUBCLASS_FACTORY(cls):
-        
+
         return {
             "age_length_distribution": BiologicalHeatmapPlot,
             "mesh": MeshPlot,
             "transect": TransectPlot,
         }
-          
+
+
 class GeoConfigPlot(BaseModel, arbitrary_types_allowed=True):
     """
     Geospatial parameters
@@ -127,13 +132,14 @@ class GeoConfigPlot(BaseModel, arbitrary_types_allowed=True):
     ----------
     init: str
         EPSG projection code.
+    coastline: cartopy.feature.NaturalEarthFeature
+        A land or coastline feature used for geospatial plotting.
     """
 
-    init: str = Field(default="epsg:4326", description="EPSG projection code.")
-    coastline: cfeature.NaturalEarthFeature = Field(
+    coastline: cfeature.Feature = Field(
         default_factory=lambda: cfeature.NaturalEarthFeature(
             category="physical",
-            name="land", 
+            name="land",
             scale="10m",
             facecolor="#C5C9C7",
             edgecolor="#929591",
@@ -141,8 +147,10 @@ class GeoConfigPlot(BaseModel, arbitrary_types_allowed=True):
             zorder=1,
         )
     )
+    init: str = Field(default="epsg:4326", description="EPSG projection code.")
+    plot_projection: Projection = Field(default=PlateCarree())
     model_config = ConfigDict(extra="allow")
-    
+
     @field_validator("init", mode="before")
     def validate_init(cls, v):
         # ---- Convert to a string if read in as an integer
@@ -165,7 +173,7 @@ class GeoConfigPlot(BaseModel, arbitrary_types_allowed=True):
             )
         # ---- Return the pre-validated entry
         return v
-    
+
     # Factory method
     @classmethod
     def create(cls, **kwargs):
@@ -174,30 +182,72 @@ class GeoConfigPlot(BaseModel, arbitrary_types_allowed=True):
         """
 
         return cls(**kwargs).model_dump(exclude_none=False)
-    
+
+
 class SpatialPlot(PlotModel):
     """
     Base Pydantic model for spatial plots
     """
-    
-    geo_config: GeoConfigPlot = Field(default_factory=lambda: GeoConfigPlot.create())    
+
+    geo_config: GeoConfigPlot = Field(default_factory=lambda: GeoConfigPlot.create())
+    model_config = ConfigDict(extra="allow")
+
 
 class TransectPlot(SpatialPlot):
-    
-    variable: Literal["abundance", "abundance_female", "abundance_male", "biomass", 
-                      "biomass_density", "biomass_density_female", "biomass_density_male", 
-                      "biomass_female", "biomass_male", "nasc", "number_density", 
-                      "number_density_female", "number_density_male"]
-    
+
+    plot_type: Literal["scatter"] = Field(default="scatter")
+    variable: Literal[
+        "abundance",
+        "abundance_female",
+        "abundance_male",
+        "biomass",
+        "biomass_density",
+        "biomass_density_female",
+        "biomass_density_male",
+        "biomass_female",
+        "biomass_male",
+        "nasc",
+        "number_density",
+        "number_density_female",
+        "number_density_male",
+    ] = Field(default="biomass")
+
+    @field_validator("plot_type", mode="before")
+    def validate_plot_type(cls, v):
+        if v is None:
+            return "scatter"
+        else:
+            return v
+
+
 class MeshPlot(SpatialPlot):
-    
-    variable: Literal["biomass", "kriged_mean", "kriged_variance", "sample_cv", "sample_variance"]
+
+    plot_type: Optional[Literal["hexbin", "pcolormesh", "scatter"]] = Field(default="hexbin")
+    variable: Literal[
+        "biomass", "kriged_mean", "kriged_variance", "sample_cv", "sample_variance"
+    ] = Field(default="biomass")
+
+    @field_validator("plot_type", mode="before")
+    def validate_plot_type(cls, v):
+        if v is None:
+            return "hexbin"
+        else:
+            return v
+
 
 class BiologicalHeatmapPlot(PlotModel):
     """
     Base Pydantic model for biological heatmap plots
     """
-    
-    variable: Literal["abundance", "biomass"]
+
+    grid_heatmap: bool = Field(default=True)
+    plot_type: Literal["heatmap"] = Field(default="heatmap")
     sex: Literal["all", "female", "male"] = Field(default="all")
-    grid: bool = Field(default=True)
+    variable: Literal["abundance", "biomass"] = Field(default="biomass")
+
+    @field_validator("plot_type", mode="before")
+    def validate_plot_type(cls, v):
+        if v is None:
+            return "heatmap"
+        else:
+            return v
