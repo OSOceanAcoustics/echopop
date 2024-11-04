@@ -1,7 +1,6 @@
 import inspect
 from typing import Any, Dict, Optional, Tuple, Union
 
-import cartopy.feature as cfeature
 import geopandas as gpd
 import matplotlib.pyplot as plt
 import numpy as np
@@ -188,27 +187,6 @@ def apply_aspect_ratio(figure_width: float, axis_limits: Dict[str, Any]) -> Tupl
     return (figure_width, figure_width * phi)
 
 
-def get_coastline(container_dict: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Get coastline datafor plotting
-    """
-
-    # Get the `cartopy` coastline, if it doesn't already exist
-    if "coastline" not in container_dict:
-        # ---- Get the coastline information
-        coastlines = cfeature.NaturalEarthFeature(
-            category="physical",
-            name="land",
-            scale="10m",
-            facecolor="#C5C9C7",
-            edgecolor="#929591",
-            linewidth=0.5,
-            zorder=1,
-        )
-        # ---- Update the dictionary
-        container_dict.update({"coastline": coastlines})
-
-
 def add_alongtransect_data(
     ax: GeoAxes,
     dataset: pd.DataFrame,
@@ -288,32 +266,32 @@ def plot_transect(
     # ---- Abundance
     if "abundance" in variable:
         cmap = kwargs.get("cmap", "viridis")
-        colorbar_label = kwargs.get("colorbar_label",
-                                    (label_prepend + "abundance\n$#~animals$").capitalize()) 
+        colorbar_label = kwargs.get(
+            "colorbar_label", (label_prepend + "abundance\n$#~animals$").capitalize()
+        )
     # ---- Biomass density
     elif "biomass_density" in variable:
         cmap = kwargs.get("cmap", "inferno")
-        colorbar_label = (
-            kwargs.get("colorbar_label",
-                       (label_prepend + "biomass density\n$\\mathregular{kg~nmi^{-2}}$")
-                       .capitalize())
+        colorbar_label = kwargs.get(
+            "colorbar_label",
+            (label_prepend + "biomass density\n$\\mathregular{kg~nmi^{-2}}$").capitalize(),
         )
     # ---- Biomass density
     elif "biomass" in variable:
         cmap = kwargs.get("cmap", "plasma")
-        colorbar_label = kwargs.get("colorbar_label",
-                                    (label_prepend + "biomass\n$\\mathregular{kg}$").capitalize()) 
+        colorbar_label = kwargs.get(
+            "colorbar_label", (label_prepend + "biomass\n$\\mathregular{kg}$").capitalize()
+        )
     # ---- NASC
     elif "nasc" in variable:
         cmap = kwargs.get("cmap", "cividis")
-        colorbar_label = kwargs.get("colorbar_label", "NASC\n$\\mathregular{m^{2}~nmi^{-2}}$") 
+        colorbar_label = kwargs.get("colorbar_label", "NASC\n$\\mathregular{m^{2}~nmi^{-2}}$")
     # ---- Number density
     elif "number_density" in variable:
         cmap = kwargs.get("cmap", "magma")
-        colorbar_label = (
-            kwargs.get("colorbar_label",
-                       (label_prepend + "number density\n$\\mathregular{animals~nmi^{-2}}$")
-                       .capitalize())
+        colorbar_label = kwargs.get(
+            "colorbar_label",
+            (label_prepend + "number density\n$\\mathregular{animals~nmi^{-2}}$").capitalize(),
         )
 
     # Get vmin and vmax
@@ -344,7 +322,7 @@ def plot_transect(
     add_transect_lines(dataset, plot_order=1)
     # ---- Normalize the colormapping
     colormap_norm = add_colorbar(
-        ax, 
+        ax,
         **dict(kwargs, cmap=cmap, colorbar_label=colorbar_label, vmin=vmin, vmax=vmax),
     )
     # ---- Add transect data
@@ -400,36 +378,34 @@ def plot_mesh(
     if variable == "biomass":
         cmap = kwargs.get("cmap", "plasma")
         reduce_C_function = kwargs.get("reduce_C_function", np.sum)
-        colorbar_label = kwargs.get("colorbar_label", 
-                                    "Kriged biomass\n$\\mathregular{kg}$")
+        colorbar_label = kwargs.get("colorbar_label", "Kriged biomass\n$\\mathregular{kg}$")
         vmax = kwargs.get("vmax", 10 ** np.round(np.log10(z.max())))
     elif variable == "kriged_mean":
         cmap = kwargs.get("cmap", "inferno")
         reduce_C_function = kwargs.get("reduce_C_function", np.mean)
-        colorbar_label = (
-            kwargs.get("colorbar_label",
-                       "Kriged " + kriged_variable + f" density\n{units} " + "nmi$^{-2}$")
+        colorbar_label = kwargs.get(
+            "colorbar_label", "Kriged " + kriged_variable + f" density\n{units} " + "nmi$^{-2}$"
         )
         vmax = kwargs.get("vmax", 10 ** np.round(np.log10(z.max())))
     elif variable == "kriged_variance":
         cmap = kwargs.get("cmap", "hot")
         reduce_C_function = kwargs.get("reduce_C_function", np.mean)
-        colorbar_label = (
-            kwargs
-            .get("colorbar_label",
-                 f"Kriged {kriged_variable} density variance" + f"\n({units} " + "nmi$^{-2})^{2}$")
+        colorbar_label = kwargs.get(
+            "colorbar_label",
+            f"Kriged {kriged_variable} density variance" + f"\n({units} " + "nmi$^{-2})^{2}$",
         )
         vmax = kwargs.get("vmax", 10 ** np.round(np.log10(z.max()), 1))
     elif variable == "sample_cv":
         cmap = kwargs.get("cmap", "magma")
         reduce_C_function = kwargs.get("reduce_C_function", np.mean)
         colorbar_label = kwargs.get("colorbar_label", "Kriged $CV$")
-        vmax = kwargs.get("vmax", np.ceil(z.max() / 0.1) * 0.1) 
+        vmax = kwargs.get("vmax", np.ceil(z.max() / 0.1) * 0.1)
     elif variable == "sample_variance":
         cmap = kwargs.get("cmap", "cividis")
         reduce_C_function = kwargs.get("reduce_C_function", np.mean)
-        colorbar_label = kwargs.get("colorbar_label", 
-                                    f"Sample {kriged_variable} variance" + f"\n{units}" + "$^{-2}$")
+        colorbar_label = kwargs.get(
+            "colorbar_label", f"Sample {kriged_variable} variance" + f"\n{units}" + "$^{-2}$"
+        )
         vmax = kwargs.get("vmax", 10 ** np.round(np.log10(z.max())))
 
     # Get vmin
@@ -458,8 +434,7 @@ def plot_mesh(
     ax.add_feature(kwargs.get("geo_config")["coastline"])
     # ---- Normalize the colormapping
     colormap_norm = add_colorbar(
-        ax, 
-        **dict(kwargs, cmap=cmap, colorbar_label=colorbar_label, vmin=vmin, vmax=vmax)
+        ax, **dict(kwargs, cmap=cmap, colorbar_label=colorbar_label, vmin=vmin, vmax=vmax)
     )
     # ---- Scatter
     if plot_type == "scatter":
@@ -670,14 +645,14 @@ def plot_age_length_distribution(
     if variable == "abundance":
         dataset = data_dict["abundance"]["aged_abundance_df"].copy()
         cmap = kwargs.get("cmap", "viridis")
-        colorbar_label = kwargs.get("colorbar_label", 
-                                    (f"Abundance ({sex} fish, # animals)").capitalize())
+        colorbar_label = kwargs.get(
+            "colorbar_label", (f"Abundance ({sex} fish, # animals)").capitalize()
+        )
     # ---- Biomass
     elif variable == "biomass":
         dataset = data_dict["biomass"]["aged_biomass_df"].copy()
         cmap = kwargs.get("cmap", "plasma")
-        colorbar_label = kwargs.get("colorbar_label", 
-                                    (f"Biomass ({sex} fish, kg)").capitalize())
+        colorbar_label = kwargs.get("colorbar_label", (f"Biomass ({sex} fish, kg)").capitalize())
 
     # Prepare the dataset
     # ---- Stack sum
@@ -702,14 +677,15 @@ def plot_age_length_distribution(
     vmax = kwargs.get("vmax", 10 ** np.round(np.log10(heatmap_data.stack().max())))
 
     # Get axis limits
-    if not kwargs.get("axis_limits", None):
-        # ---- Default to a rectangle
+    if "axis_limits" not in kwargs or kwargs.get("axis_limits") is None:
         axis_limits = dict(
             x=dict(xmin=dataset_sub["age"].min(), xmax=dataset_sub["age"].max()),
             y=dict(
-                xmin=dataset_sub["length"].min() * 0.25, xmax=dataset_sub["length"].max() * 0.25
+                ymin=dataset_sub["length"].min() * 0.25, ymax=dataset_sub["length"].max() * 0.25
             ),
         )
+    else:
+        axis_limits = kwargs.get("axis_limits")
 
     # Prepare default parameters
     # ---- x
@@ -728,7 +704,7 @@ def plot_age_length_distribution(
     # ---- Normalize the colormapping
     colormap_norm = add_colorbar(
         ax,
-        **dict(kwargs, cmap=cmap, colorbar_label=colorbar_label, vmin=vmin, vmax=vmax, x_pad=0.025)
+        **dict(kwargs, cmap=cmap, colorbar_label=colorbar_label, vmin=vmin, vmax=vmax, x_pad=0.025),
     )
     # ---- Plot the heatmap
     ax.imshow(

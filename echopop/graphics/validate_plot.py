@@ -1,8 +1,7 @@
 import re
-from typing import Any, Dict, Literal, Optional, Tuple
+from typing import Any, Dict, Literal, Optional
 
 import cartopy.feature as cfeature
-import numpy as np
 from cartopy.crs import PlateCarree, Projection
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
