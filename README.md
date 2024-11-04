@@ -1,3 +1,28 @@
+<div>
+  <!-- <a href="https://doi.org/10.5281/zenodo.3906999">
+    <img src="https://img.shields.io/badge/DOI-10.5281/zenodo.3906999-blue" alt="DOI">
+  </a> -->
+  <a href="https://raw.githubusercontent.com/OSOceanAcoustics/echopop/master/LICENSE">
+    <img alt="GitHub License" src="https://img.shields.io/github/license/OSOceanAcoustics/echopop">
+  </a>
+</div>
+
+<div>
+  <a href="https://echopop.readthedocs.io/en/latest/?badge=latest">
+    <img src="https://readthedocs.org/projects/echopop/badge/?version=latest"/>
+  </a>
+</div>
+
+<div>
+  <a href="https://pypi.org/project/echopop/">
+    <img src="https://img.shields.io/pypi/v/echopop.svg"/>
+  </a>
+  <!-- <a href="https://anaconda.org/conda-forge/echopype">
+    <img src="https://img.shields.io/conda/vn/conda-forge/echopype.svg"/>
+  </a> -->
+</div>
+
+
 # Echopop
 
 Echopop combines acoustic data collected by echosounders with biological "ground truth" information from trawls to produce biological estimates, such as biomass and abundance. Here, "pop" stands for the animal "population."
@@ -12,7 +37,7 @@ Learn more about Echopop in the documentation at https://echopop.readthedocs.io.
 
 ## Contributors
 
-Echopop development is currently co-led by Wu-Jung Lee (@leewujung) and Brandyn Lucca (@brandynluca). Brandon Reyes (@b-reyes) and Emilio Mayorga (@emiliom) contributed significantly to a previous version of Echopop.
+Echopop development is currently co-led by Wu-Jung Lee (@leewujung) and Brandyn Lucca (@brandynlucca). Brandon Reyes (@b-reyes) and Emilio Mayorga (@emiliom) contributed to a previous version of Echopop.
 
 
 
