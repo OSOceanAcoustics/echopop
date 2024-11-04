@@ -287,58 +287,40 @@ def plot_transect(
     # Prepare parameters for plotting
     # ---- Abundance
     if "abundance" in variable:
-        cmap = kwargs.get("cmap") if kwargs.get("cmap", None) in kwargs else "viridis"
-        vmax = (
-            kwargs.get("vmax", None)
-            if kwargs.get("vmax", None)
-            else 10 ** np.round(np.log10(z.max()))
-        )
-        vmin = kwargs.get("vmin", None) if kwargs.get("vmin", None) else 0.0
-        colorbar_label = (label_prepend + "abundance\n$#~animals$").capitalize()
+        cmap = kwargs.get("cmap", "viridis")
+        colorbar_label = kwargs.get("colorbar_label",
+                                    (label_prepend + "abundance\n$#~animals$").capitalize()) 
     # ---- Biomass density
     elif "biomass_density" in variable:
-        cmap = kwargs.get("cmap") if kwargs.get("cmap", None) in kwargs else "inferno"
-        vmax = (
-            kwargs.get("vmax", None)
-            if kwargs.get("vmax", None)
-            else 10 ** np.round(np.log10(z.max()))
-        )
-        vmin = kwargs.get("vmin", None) if kwargs.get("vmin", None) else 0.0
+        cmap = kwargs.get("cmap", "inferno")
         colorbar_label = (
-            label_prepend + "biomass density\n$\\mathregular{kg~nmi^{-2}}$"
-        ).capitalize()
+            kwargs.get("colorbar_label",
+                       (label_prepend + "biomass density\n$\\mathregular{kg~nmi^{-2}}$")
+                       .capitalize())
+        )
     # ---- Biomass density
     elif "biomass" in variable:
-        cmap = kwargs.get("cmap") if kwargs.get("cmap", None) in kwargs else "plasma"
-        vmax = (
-            kwargs.get("vmax", None)
-            if kwargs.get("vmax", None)
-            else 10 ** np.round(np.log10(z.max()))
-        )
-        vmin = kwargs.get("vmin", None) if kwargs.get("vmin", None) else 0.0
-        colorbar_label = (label_prepend + "biomass\n$\\mathregular{kg}$").capitalize()
+        cmap = kwargs.get("cmap", "plasma")
+        colorbar_label = kwargs.get("colorbar_label",
+                                    (label_prepend + "biomass\n$\\mathregular{kg}$").capitalize()) 
     # ---- NASC
     elif "nasc" in variable:
-        cmap = kwargs.get("cmap") if kwargs.get("cmap", None) in kwargs else "cividis"
-        vmax = (
-            kwargs.get("vmax", None)
-            if kwargs.get("vmax", None)
-            else 10 ** np.round(np.log10(z.max()))
-        )
-        vmin = kwargs.get("vmin", None) if kwargs.get("vmin", None) else 0.0
-        colorbar_label = "NASC\n$\\mathregular{m^{2}~nmi^{-2}}$"
+        cmap = kwargs.get("cmap", "cividis")
+        colorbar_label = kwargs.get("colorbar_label", "NASC\n$\\mathregular{m^{2}~nmi^{-2}}$") 
     # ---- Number density
     elif "number_density" in variable:
-        cmap = kwargs.get("cmap") if kwargs.get("cmap", None) in kwargs else "magma"
-        vmax = (
-            kwargs.get("vmax", None)
-            if kwargs.get("vmax", None)
-            else 10 ** np.round(np.log10(z.max()))
-        )
-        vmin = kwargs.get("vmin", None) if kwargs.get("vmin", None) else 0.0
+        cmap = kwargs.get("cmap", "magma")
         colorbar_label = (
-            label_prepend + "number density\n$\\mathregular{animals~nmi^{-2}}$"
-        ).capitalize()
+            kwargs.get("colorbar_label",
+                       (label_prepend + "number density\n$\\mathregular{animals~nmi^{-2}}$")
+                       .capitalize())
+        )
+
+    # Get vmin and vmax
+    # ---- vmin
+    vmin = kwargs.get("vmin", 0.0)
+    # ---- vmax
+    vmax = kwargs.get("vmax", 10 ** np.round(np.log10(z.max())))
 
     # Prepare default parameters
     # ---- x
@@ -362,14 +344,14 @@ def plot_transect(
     add_transect_lines(dataset, plot_order=1)
     # ---- Normalize the colormapping
     colormap_norm = add_colorbar(
-        ax, **dict(kwargs), **dict(cmap=cmap, colorbar_label=colorbar_label, vmin=vmin, vmax=vmax)
+        ax, 
+        **dict(kwargs, cmap=cmap, colorbar_label=colorbar_label, vmin=vmin, vmax=vmax),
     )
     # ---- Add transect data
     add_alongtransect_data(
         ax,
         dataset,
-        **kwargs,
-        **dict(cmap=cmap, norm=colormap_norm, plot_order=2, vmin=vmin, vmax=vmax),
+        **dict(kwargs, cmap=cmap, norm=colormap_norm, plot_order=2, vmin=vmin, vmax=vmax),
     )
     # ---- Format the figure area axes
     format_axes(
@@ -416,69 +398,42 @@ def plot_mesh(
 
     # Adjust the plotting properties
     if variable == "biomass":
-        cmap = kwargs.get("cmap") if kwargs.get("cmap", None) in kwargs else "plasma"
-        vmax = (
-            kwargs.get("vmax", None)
-            if kwargs.get("vmax", None)
-            else 10 ** np.round(np.log10(z.max()))
-        )
-        vmin = kwargs.get("vmin", None) if kwargs.get("vmin", None) else 0.0
-        colorbar_label = (
-            kwargs.get("colorbar_label")
-            if kwargs.get("colorbar_label")
-            else "Kriged biomass\n$\\mathregular{kg}$"
-        )
+        cmap = kwargs.get("cmap", "plasma")
         reduce_C_function = kwargs.get("reduce_C_function", np.sum)
+        colorbar_label = kwargs.get("colorbar_label", 
+                                    "Kriged biomass\n$\\mathregular{kg}$")
+        vmax = kwargs.get("vmax", 10 ** np.round(np.log10(z.max())))
     elif variable == "kriged_mean":
-        cmap = kwargs.get("cmap") if kwargs.get("cmap", None) in kwargs else "inferno"
-        vmax = (
-            kwargs.get("vmax", None)
-            if kwargs.get("vmax", None)
-            else 10 ** np.round(np.log10(z.max()))
-        )
-        vmin = kwargs.get("vmin", None) if kwargs.get("vmin", None) else 0.0
-        colorbar_label = (
-            kwargs.get("colorbar_label")
-            if kwargs.get("colorbar_label")
-            else "Kriged " + kriged_variable + f" density\n{units} " + "nmi$^{-2}$"
-        )
+        cmap = kwargs.get("cmap", "inferno")
         reduce_C_function = kwargs.get("reduce_C_function", np.mean)
+        colorbar_label = (
+            kwargs.get("colorbar_label",
+                       "Kriged " + kriged_variable + f" density\n{units} " + "nmi$^{-2}$")
+        )
+        vmax = kwargs.get("vmax", 10 ** np.round(np.log10(z.max())))
     elif variable == "kriged_variance":
-        cmap = kwargs.get("cmap") if kwargs.get("cmap", None) in kwargs else "hot"
-        vmax = (
-            kwargs.get("vmax", None) if kwargs.get("vmax", None) else 10 ** np.round((z.max()), 2)
-        )
-        vmin = kwargs.get("vmin", None) if kwargs.get("vmin", None) else 0.0
-        colorbar_label = (
-            kwargs.get("colorbar_label")
-            if kwargs.get("colorbar_label")
-            else f"Kriged {kriged_variable} density variance" + f"\n({units} " + "nmi$^{-2})^{2}$"
-        )
+        cmap = kwargs.get("cmap", "hot")
         reduce_C_function = kwargs.get("reduce_C_function", np.mean)
+        colorbar_label = (
+            kwargs
+            .get("colorbar_label",
+                 f"Kriged {kriged_variable} density variance" + f"\n({units} " + "nmi$^{-2})^{2}$")
+        )
+        vmax = kwargs.get("vmax", 10 ** np.round(np.log10(z.max()), 1))
     elif variable == "sample_cv":
-        cmap = kwargs.get("cmap") if kwargs.get("cmap", None) in kwargs else "magma"
-        vmax = (
-            kwargs.get("vmax", None) if kwargs.get("vmax", None) else np.ceil(z.max() / 0.1) * 0.1
-        )
-        vmin = kwargs.get("vmin", None) if kwargs.get("vmin", None) else 0.0
-        colorbar_label = (
-            kwargs.get("colorbar_label") if kwargs.get("colorbar_label") else "Kriged $CV$"
-        )
+        cmap = kwargs.get("cmap", "magma")
         reduce_C_function = kwargs.get("reduce_C_function", np.mean)
+        colorbar_label = kwargs.get("colorbar_label", "Kriged $CV$")
+        vmax = kwargs.get("vmax", np.ceil(z.max() / 0.1) * 0.1) 
     elif variable == "sample_variance":
-        cmap = kwargs.get("cmap") if kwargs.get("cmap", None) in kwargs else "cividis"
-        vmax = (
-            kwargs.get("vmax", None)
-            if kwargs.get("vmax", None)
-            else 10 ** np.round(np.log10(z.max()))
-        )
-        vmin = kwargs.get("vmin", None) if kwargs.get("vmin", None) else 0.0
-        colorbar_label = (
-            kwargs.get("colorbar_label")
-            if kwargs.get("colorbar_label")
-            else f"Sample {kriged_variable} variance" + f"\n{units}" + "$^{-2}$"
-        )
+        cmap = kwargs.get("cmap", "cividis")
         reduce_C_function = kwargs.get("reduce_C_function", np.mean)
+        colorbar_label = kwargs.get("colorbar_label", 
+                                    f"Sample {kriged_variable} variance" + f"\n{units}" + "$^{-2}$")
+        vmax = kwargs.get("vmax", 10 ** np.round(np.log10(z.max())))
+
+    # Get vmin
+    vmin = kwargs.get("vmin", 0.0)
 
     # Prepare default parameters
     # ---- x
@@ -503,7 +458,8 @@ def plot_mesh(
     ax.add_feature(kwargs.get("geo_config")["coastline"])
     # ---- Normalize the colormapping
     colormap_norm = add_colorbar(
-        ax, **dict(kwargs), **dict(cmap=cmap, colorbar_label=colorbar_label, vmin=vmin, vmax=vmax)
+        ax, 
+        **dict(kwargs, cmap=cmap, colorbar_label=colorbar_label, vmin=vmin, vmax=vmax)
     )
     # ---- Scatter
     if plot_type == "scatter":
@@ -713,13 +669,15 @@ def plot_age_length_distribution(
     # ---- Abundance
     if variable == "abundance":
         dataset = data_dict["abundance"]["aged_abundance_df"].copy()
-        cmap = kwargs.get("cmap") if kwargs.get("cmap", None) in kwargs else "viridis"
-        colorbar_label = (f"Abundance ({sex} fish, # animals)").capitalize()
+        cmap = kwargs.get("cmap", "viridis")
+        colorbar_label = kwargs.get("colorbar_label", 
+                                    (f"Abundance ({sex} fish, # animals)").capitalize())
     # ---- Biomass
     elif variable == "biomass":
         dataset = data_dict["biomass"]["aged_biomass_df"].copy()
-        cmap = kwargs.get("cmap") if kwargs.get("cmap", None) in kwargs else "plasma"
-        colorbar_label = (f"Biomass ({sex} fish, kg)").capitalize()
+        cmap = kwargs.get("cmap", "plasma")
+        colorbar_label = kwargs.get("colorbar_label", 
+                                    (f"Biomass ({sex} fish, kg)").capitalize())
 
     # Prepare the dataset
     # ---- Stack sum
@@ -739,13 +697,9 @@ def plot_age_length_distribution(
 
     # Get limits
     # ---- vmin
-    vmin = kwargs.get("vmin", None) if kwargs.get("vmin", None) else 0.0
+    vmin = kwargs.get("vmin", 0.0)
     # ---- vmax
-    vmax = (
-        kwargs.get("vmax", None)
-        if kwargs.get("vmax", None)
-        else 10 ** np.round(np.log10(heatmap_data.stack().max()))
-    )
+    vmax = kwargs.get("vmax", 10 ** np.round(np.log10(heatmap_data.stack().max())))
 
     # Get axis limits
     if not kwargs.get("axis_limits", None):
@@ -774,8 +728,7 @@ def plot_age_length_distribution(
     # ---- Normalize the colormapping
     colormap_norm = add_colorbar(
         ax,
-        **kwargs,
-        **dict(cmap=cmap, colorbar_label=colorbar_label, vmin=vmin, vmax=vmax, x_pad=0.025),
+        **dict(kwargs, cmap=cmap, colorbar_label=colorbar_label, vmin=vmin, vmax=vmax, x_pad=0.025)
     )
     # ---- Plot the heatmap
     ax.imshow(

@@ -33,37 +33,8 @@ class PlotModel(BasePlotModel):
     """
 
     axis_limits: Optional[Dict[str, Any]] = Field(default=None)
-    data_range: Optional[Tuple[float, float]] = Field(default=None)
     log_base: Optional[float] = Field(default=None, gt=0.0, allow_inf_nan=False)
     model_config = ConfigDict(extra="allow")
-
-    @field_validator("data_range", mode="before")
-    def validate_data_range(cls, v):
-
-        # Check whether `v` is None or is a valid tuple
-        if v is None:
-            return v
-        elif all([i is None for i in v]):
-            return None
-
-        # Validate the expected 2-tuple format
-        if not isinstance(v, tuple) or len(v) != 2:
-            raise ValueError(
-                "Input for `data_range` must comprise a tuple with exactly exactly 2 float values."
-            )
-
-        # Try coercing to a float
-        try:
-            v_tpl = tuple(float(i) for i in v)
-        except Exception as e:
-            raise e
-
-        # Validate that values are floats and are finite
-        if not all(isinstance(i, float) and np.isfinite(i) for i in v_tpl):
-            raise ValueError("Input values for `data_range` must all be real numbers.")
-
-        # Return coerced value
-        return v_tpl
 
     @field_validator("axis_limits", mode="before")
     def validate_axis_limits(cls, v):
