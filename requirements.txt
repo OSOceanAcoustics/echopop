@@ -4,6 +4,7 @@ numpy
 pandas
 scipy
 # Spatial data processing stack
+cartopy
 geopandas
 geopy
 shapely
