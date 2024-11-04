@@ -18,3 +18,4 @@ dependencies:
   - pandas
   - shapely
   - scipy
+  - verde
