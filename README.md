@@ -1,7 +1,7 @@
 <div>
-  <!-- <a href="https://doi.org/10.5281/zenodo.3906999">
-    <img src="https://img.shields.io/badge/DOI-10.5281/zenodo.3906999-blue" alt="DOI">
-  </a> -->
+  <a href="https://doi.org/10.5281/zenodo.11454148">
+    <img src="https://zenodo.org/badge/DOI/10.5281/zenodo.11454148.svg" alt="DOI">
+  </a>
   <a href="https://raw.githubusercontent.com/OSOceanAcoustics/echopop/master/LICENSE">
     <img alt="GitHub License" src="https://img.shields.io/github/license/OSOceanAcoustics/echopop">
   </a>
@@ -17,9 +17,9 @@
   <a href="https://pypi.org/project/echopop/">
     <img src="https://img.shields.io/pypi/v/echopop.svg"/>
   </a>
-  <!-- <a href="https://anaconda.org/conda-forge/echopype">
-    <img src="https://img.shields.io/conda/vn/conda-forge/echopype.svg"/>
-  </a> -->
+  <a href="https://anaconda.org/conda-forge/echopop">
+    <img src="https://img.shields.io/conda/vn/conda-forge/echopop.svg"/>
+  </a>
 </div>
 
 
