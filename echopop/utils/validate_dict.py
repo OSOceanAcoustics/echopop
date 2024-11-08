@@ -538,16 +538,15 @@ class VariogramEmpirical(VariogramModel, arbitrary_types_allowed=True):
 
     Parameters
     ----------
-    azimuth_range: float
-        The total azimuth angle range that is allowed for constraining
-        the relative angles between spatial points, particularly for cases where a high degree
-        of directionality is assumed.
+    azimuth_range: realcircle
+        The total azimuth angle range that is allowed for constraining the relative angles between ]
+        spatial points, particularly for cases where a high degree of directionality is assumed
     force_lag_zero: bool
         See the `variogram_parameters` argument in
         :fun:`echopop.spatial.variogram.empirical_variogram` for more details on
-        `force_lag_zero`.
+        `force_lag_zero`
     standardize_coordinates: bool
-        When set to `True`, transect coordinates are standardized using reference coordinates.
+        When set to `True`, transect coordinates are standardized using reference coordinates
 
     Returns
     ----------
