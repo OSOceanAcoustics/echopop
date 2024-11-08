@@ -23,33 +23,53 @@ from .utils.load import dataset_integrity
 
 class Survey:
     """
-    Echopop base class that imports and prepares parameters for
-    a survey. Additionally, it includes functions for accessing
-    the modules associated with the transect and Kriging variable
-    calculations, CV analysis, semi-variogram algorithm, and Kriging.
+    Echopop survey analysis class
+
+    This class includes methods for ingesting, processing, and visualizing spatially distributed
+    acoustic backscatter and biological data. These are used to provide various population
+    and survey uncertainty estimates
 
     Parameters
     ----------
     init_config_path : str or pathlib.Path
-        A string specifying the path to the initialization YAML file
+        A string specifying the path to the initialization ``*.yaml`` file
+
     survey_year_config_path : str or pathlib.Path
-        A string specifying the path to the survey year YAML file
+        A string specifying the path to the survey year ``*.yaml`` file
 
     Attributes
     ----------
-    meta : dict
+    meta: Dict[str, Any]
         Metadata variable that provides summary information concerning the
-        data contained within the class object.
-    config : dict
+        data contained within the class object
+
+    config : Dict[str, Any]
         Configuration settings and parameters that can be referenced for
         various downstream and internal functions defined within the `init_config_path` and
-        `survey_year_config_path` *.yaml files.
-    input: dict
-        Input data based on files included within the `survey_year_config_path` *.yaml file.
-    analysis: dict
-        Analysis variables and intermediate data products.
-    results: dict
-        Overall results produced by each of the analysis methods and workflows.
+        `survey_year_config_path` ``*.yaml`` files
+
+    input: Dict[str, Any]
+        Input data based on files included within the `survey_year_config_path` ``*.yaml`` file
+
+    analysis: Dict[str, Any]
+        Analysis variables and intermediate data products
+
+    results: Dict[str, Any]
+        Overall results produced by each of the analysis methods and workflows
+
+    Notes
+    -----
+
+    See `Survey-class data structure \
+        <https://echopop.readthedocs.io/en/latest/core_data_structure.html>`_
+    for more details on how this object is organized and used.
+
+    See `Configuration file formatting \
+        <https://echopop.readthedocs.io/en/latest/implementation/preprocessing_data.html>`_
+    for more details on how how the user-defined files for ``init_config_path`` and
+    ``survey_year_config_path`` should be organized for successful integration into ``Echopop``
+
+
     """
 
     def __init__(
@@ -82,39 +102,40 @@ class Survey:
     ):
         """
         Loads in active acoustic backscatter survey data from .xlsx files, or processes
-        Echoview `csv` file exports by consolidating them into aforementioned .xlsx files.
+        Echoview ``*.csv`` file exports by consolidating them into aforementioned ``*.xlsx`` files
 
         Parameters
         ----------
         index_variable: Union[str, List[str]]
             Index columns used for defining discrete acoustic backscatter samples and vertical
-            integration.
-        ingest_exports: Literal['echoview', 'echopype']
+            integration
+
+        ingest_exports: Optional[Literal["echoview", "echopype"]]
             The type of acoustic backscatter exports required for generating the associated
-            consolidated .xlsx files.
+            consolidated ``*.xlsx`` files
+
         region_class_column: str
-            Dataframe column denoting the Echoview export region class (e.g. "zooplankton").
+            Dataframe column denoting the Echoview export region class (e.g. "zooplankton")
+
         transect_pattern: str
             A (raw) string that corresponds to the transect number embedded within the base name of
-            the file path associated with each export file. Defaults to ``r'T(\\d+)'``. See a
-            further description below for more details.
-        unique_region_id: str
-            Dataframe column that denotes region-specific names and identifiers.
-        verbose: bool
-            Console messages that will print various messages, updates, etc. when set to True.
+            the file path associated with each export file. The default (raw) string and regular
+            expression ``r"T(\\d+)"`` matches any cases in the filename where there are numbers
+            appended to a leading "T". For instance, the filepath
+            ``"C:/Path/To/Folder/T01random_text.csv"`` would correspond to a transect number of
+            ``56``. However, this sort of pattern would not perform well where this pattern is
+            repeated multiple times throughout the filepath and filename strings. For example,
+            ``"C:/Path/To/Folder/T01/survey_T999_text.csv"`` would correspond to multiple transect
+            numbers: ``[1, 999]``. It is crucial to ensure that ``transect_pattern`` can
+            be readily extracted from the full filepath, so it is therefore important to use a
+            istinctive expression
 
-        Notes
-        ----------
-        The string pattern for `transect_pattern` requires a consistent filename format that can be
-        readily parsed by `read_echoview_exports`. The default value for `transect_pattern`
-        (``r'T(\\d+)'``) enables the function to parse all numbers that trail the letter "T" in the
-        base filename. For example, an example file of
-        "C:/Path/User/Data/random_12_V34-T56-A78_G9.csv" would yield a transect number of '56'
-        since it trails the "T" and does not accidentally use other numbers in the string. However,
-        a filename like "C:/Path/User/Data/randomT_12_T34-T56-T78_G9.csv" would detect multiple
-        transect numbers ('34', '56', and '78') since numbers trail the letter "T" in three places.
-        Therefore, it is important to ensure that embedded transect numbers are differentiable from
-        other digits that may appear in the base filename.
+        unique_region_id: str
+            Dataframe column that denotes region-specific names and identifiers
+
+        verbose: bool
+            Console messages that will print various messages, updates, etc. when ``verbose=True``
+
         """
 
         # Check `ingest_exports` argument
@@ -146,8 +167,10 @@ class Survey:
 
         Parameters
         ----------
+
         verbose: bool
-            Console messages that will print various messages, updates, etc. when set to True.
+            Console messages that will print various messages, updates, etc. when ``verbose=True``
+
         """
 
         # Get previously processed datasets
@@ -167,6 +190,34 @@ class Survey:
     ):
         """
         Calculate population-level metrics from acoustic transect measurements
+
+        Parameters
+        ----------
+
+        species_id: Union[float, list[float]]
+            A number or string code for target species that are incorporated into the ingested
+            datasets
+
+        exclude_age1: bool
+            When ``exclude_age1=True``, age-1 fish are excluded from the overall analysis. This
+            means that age, length, and joint age-length count/weight distributions are computed
+            for age-2+ fish only. However, it is assumed that some age-1 fish "leak" into these
+            calculations, so they are not excluded entirely from the survey population estimates.
+            The default ``species_id=22500`` corresponds to the Pacific hake (*Mercluccius
+            productus*) code used by NWFSC-FEAT
+
+        stratum: Literal["inpfc", "ks"]
+            Define which stratification to use. Options include:
+
+            - *"inpfc"* \n
+            Latitude-based (INPFC)
+
+            - *"ks"* \n
+            Clusters based on fish fork length via Kolmogorov-Smirnov distribution tests
+
+        verbose: bool
+            When ``verbose=True``, optional console messages and reports are provided to users
+
         """
 
         # Check dataset integrity
@@ -227,7 +278,7 @@ class Survey:
         variable: Literal["abundance", "biomass", "nasc"] = "biomass",
         mesh_transects_per_latitude: Optional[int] = None,
         transect_sample: Optional[float] = None,
-        transect_replicates: Optional[float] = None,
+        transect_replicates: Optional[int] = None,
         bootstrap_ci: float = 0.95,
         bootstrap_ci_method: Literal[
             "BC", "BCa", "empirical", "percentile", "standard", "t-jackknife", "t-standard"
@@ -241,15 +292,118 @@ class Survey:
         """
         Calculates the stratified summary statistics for biomass
 
+        Parameters
+        ----------
+
+        dataset: Literal["kriging", "transect"]
+            Define whether population estimates from the kriged mesh (``dataset="kriging"``) or
+            along-transect measurements (``dataset="transect"``)'
+
+        ci_percentile: float
+            The confidence interval percentile used for computing the bootstrap
+            confidence/uncertainty intervals. The default value is ``ci_percentile=0.95``, which
+            corresponds to the 95% confidence interval (*CI*)
+
+        bootstrap_ci_method: Literal["BC", "BCa", "empirical", "percentile", "standard", \
+            "t-jackknife", "t-standard"]'
+            The method for computing the bootstrap *CI*. Each method may produce different
+            estimates for the lower and upper bounds. The default algorithm  is
+            ``bootstrap_ci_method="t-jackknife"``, which is a jackknife method for computing the
+            *CI* assuming a *t*-distribution. However, the choice of ``bootstrap_ci_method``
+            is largely a decision between preferring computation speed versus bias adjustments.
+            For instance, the ``"percentile"`` and ``"standard"`` approaches will produce wider
+            estimates but do not incorporate bias adjustments like the bias-controlled methods
+            (i.e. ``"BC"`` and ``"BCa"``). See
+            :func:`echopop.statistics.bootstrap_confidence_intervals` for more details and
+            references for these calculations
+
+
+        stratum: Literal["inpfc", "ks"]
+            Define which stratification to use. Options include:
+
+            - *"inpfc"* \n
+            Latitude-based (INPFC)
+
+            - *"ks"* \n
+            Clusters based on fish fork length via Kolmogorov-Smirnov distribution tests
+
+        variable: Literal["abundance", "biomass", "nasc"]
+            Population estimate used for the stratification analysis including abundance
+            (``variable="abundance"``), biomass (``variable="biomass"``), and acoustic
+            NASC (``variable="nasc"``)
+
+        verbose: bool
+            When ``verbose=True``, optional console messages and reports are provided to users
+
+        Other Parameters
+        ----------------
+
+        bootstrap_adjust_bias: bool
+            When ``bootstrap_adjust_bias=True``, the bootstrap distribution bias is calculated and
+            subtracted from the bootstrapped samples prior to the *CI* being computed
+
+        bootstrap_ci_method_alt: Optional[Literal["empirical", "percentile", "standard", \
+            "t-jackknife", "t-standard"]]
+            An optional argument that provides an alternative *CI* calculation for cases where
+            certain algorithms (e.g. "BCa") are incompatible with the bootstrapped estimate
+            distributions (e.g. too skewed). This defaults to
+            ``bootstrap_ci_method_alt="t-standard"``
+
+        mesh_transects_per_latitude: Optional[int]
+            The number of "virtual" transects per degree latitude that are created from the
+            kriged mesh estimates when ``dataset="kriging"``. This argument
+            can also be configured within the initialization ``*.yml`` file where:
+
+            .. code-block:: YAML
+
+                stratified_survey_mean_parameters:
+                    mesh_transects_per_latitude: 5
+
+
+        transect_sample: Optional[float]
+            The proportion of transects that are resampled (without replacement)
+            for the Jolly and Hampton (1990) algorithm. This argument can also be
+            configured within the initialization ``*.yml`` file where:
+
+            .. code-block:: YAML
+
+                stratified_survey_mean_parameters:
+                    strata_transect_proportion: 0.75
+
+        transect_replicates: Optional[int]
+            The number of iterations used for the Jolly and Hampton (1990) algorithm.
+            This can be configured within the initialization ``*.yml`` file where:
+
+            .. code-block:: YAML
+
+                stratified_survey_mean_parameters:
+                    num_replicates: 10000
+
         Notes
         -----
-        This function calculates estimates and confidence intervals (95%) for biomass mean,
-        variance, and coefficients of variation (CVs). This currently only calculates this
-        metric for adult animals (age-2+) and is not calculated for other contrasts such as
-        age-class and sex. This also only applies to the transect results and is not currently
-        metric for adult animals (age-2+) and is not calculated for other contrasts such as
-        age-class and sex. This also only applies to the transect results and is not currently
-        designed to be compatible with other derived population-level statistics (e.g. kriging).
+        This method calculates estimates and confidence intervals (95%) for biomass for each
+        stratum and the entire survey using the random stratified sampling algorithm developed by
+        Jolly and Hampton (1990) [1]_. This provides an approach for calculating a survey
+        coefficient of variation (*CV*) that represents the overall sampling uncertainty in the
+        survey. This currently only calculates this metric for adult animals (age-2+) and is not
+        calculated for other contrasts such as age-class and sex. This also only applies to the
+        transect results and is not currently metric for adult animals (age-2+) and is not
+        calculated for other contrasts such as age-class and sex. This also only applies to the
+        transect results and is not currently designed to be compatible with other derived
+        population-level statistics (e.g. kriging).
+
+        See Also
+        --------
+        :func:`echopop.statistics.bootstrap_confidence_intervals`
+            Wrapper function for computing the bootstrap *CI* using the user-defined method
+
+        References
+        ----------
+
+        .. [1] G. M. Jolly and I. Hampton. (1990). *A stratified random transect design for acoustic
+            surveys of fish stocks*. Canadian Journal of Fisheries and Aquatic Sciences, 47(7):
+            1282-1291, doi:10.1139/f90-147.
+
         """
 
         # Check dataset integrity
@@ -258,9 +412,8 @@ class Survey:
         # Error message for `stratum == 'ks'`
         if stratum == "ks":
             raise ValueError(
-                """The Jolly and Hampton (1990) stratified analysis is not"""
-                """ currently compatible for calculating over KS strata. Please change `stratum` """
-                """ to 'inpfc'."""
+                "The Jolly and Hampton (1990) stratified analysis is not currently compatible for "
+                "calculating over KS strata. Please change `stratum` to `'inpfc'`."
             )
 
         # Parameterize analysis settings that will be applied to the stratified analysis
@@ -328,6 +481,15 @@ class Survey:
     def variogram_gui(self):
         """
         Semivariogram plotting and parameter optimization GUI method
+
+        *See :meth:`.fit_variogram` for more details on how the ``Survey.variogram_gui()`` method
+        performs the variogram model fitting*
+
+        See Also
+        --------
+        :meth:`.fit_variogram`
+            Variogram fitting method
+
         """
 
         # Check dataset integrity
@@ -407,57 +569,107 @@ class Survey:
         Parameters
         ----------
         variogram_parameters: VariogramBase
-            A dictionary comprising various arguments required for computing the model variogram.
-            See :fun:`echopop.utils.validate.VariogramBase` and
-            :fun:`echopop.spatial.variogram.variogram` for more details on the required/default
-            parameters.
+            A dictionary containing user-defined variogram parameters. See
+            :class:`echopop.spatial.variogram.VariogramBase` for more details. Valid arguments
+            include:
+
+            - **sill: realposfloat** \n
+            The asymptotic value as lags approach infinity
+
+            - **nugget: realposfloat** \n
+            The semivariogram *y*-intercept that corresponds to variability at lag distances
+            shorter than the lag resolution
+
+            - **correlation_range: realposfloat** \n
+            The relative length scale, or range, at which the autocorrelation between lag distances
+            no longer increases and becomes asymptotic
+
+            - **hole_effect_range: realposfloat** \n
+            The (normalized) length scale/range that holes' are observed, which represent 'null'
+            (or very small) points compared to their neighboring lags
+
+            - **decay_power: realposfloat** \n
+            An exponential term that is used in certain generalized exponential (or related)
+            semivariogram models that modulates the ascending rate for a semivariogram
+
+            - **enhance_semivariance: bool** \n
+            A boolean term that determines whether the correlation decay in certain  cosine-related
+            variogram models are enhanced (or not) with increasing lag distances
+
         optimization_parameters: VariogramOptimize
             A dictionary comprising various arguments for optimizing the variogram fit via
-            non-linear least squares. See :fun:`echopop.utils.validate.VariogramOptimize` for more
+            non-linear least squares. See :class:`echopop.utils.validate.VariogramOptimize` for more
             details on the required/default parameters.
+
         initialize_variogram: VariogramInitial
             A dictionary or list that indicates how each variogram parameter (see
-            :fun:`echopop.spatial.variogram.variogram` for more details) is configured for
+            :func:`echopop.spatial.variogram.variogram` for more details) is configured for
             optimization. Including parameter names in a list will incorporate default initial
-            values imported from the associated file in the configuration *.yaml are used instead.
-            This also occurs when `initialize_variogram` is formatted as a dictionary and the
-            'value' key is not present for defined parameters. Parameter names excluded from either
-            the list or dictionary keys are assumed to be held as fixed values. See
-            :fun:`echopop.utils.validate.VariogramInitial` and
-            :fun:`echopop.utils.validate.InitialValues` for more details.
+            values imported from the associated file in the configuration ``*.yaml`` are used
+            instead. This also occurs when ``initialize_variogram`` is formatted as a dictionary
+            and the `'value'` key is not present for defined parameters. Parameter names excluded
+            from either the list or dictionary keys are assumed to be held as fixed values. See
+            :class:`echopop.utils.validate.VariogramInitial` for more details
+
         model: Union[str, List[str]]
             A string or list of model names. A single name represents a single family model. Two
             inputs represent the desired composite model (e.g. the composite J-Bessel and
-            exponential model). Defaults to: ['bessel', 'exponential']. Available models and their
-            required arguments can be reviewed in the :fun:`echopop.spatial.variogram.variogram`
-            function.
-        azimuth_range: float
-            The total azimuth angle range that is allowed for constraining
-            the relative angles between spatial points, particularly for cases where a high degree
-            of directionality is assumed.
+            exponential model). Defaults to: ``model=["bessel", "exponential"]``. Available
+            models and their required arguments can be reviewed in the
+            :func:`echopop.spatial.variogram.variogram` function
+
+        azimuth_range: realcircle
+            The total azimuth angle range that is allowed for constraining  the relative angles
+            between spatial points, particularly for cases where a high degree of directionality is
+            assumed
+
         n_lags: int
-            See the `variogram_parameters` argument in
-            :fun:`echopop.spatial.variogram.empirical_variogram` for more details on
-            `n_lags`.
+            See the ``variogram_parameters`` argument in
+            :func:`echopop.spatial.variogram.empirical_variogram` for more details on
+            ``n_lags``
+
         force_lag_zero: bool
-            See the `variogram_parameters` argument in
-            :fun:`echopop.spatial.variogram.empirical_variogram` for more details on
-            `force_lag_zero`.
+            See the ``variogram_parameters`` argument in
+            :func:`echopop.spatial.variogram.empirical_variogram` for more details on
+            ``force_lag_zero``
+
         standardize_coordinates: bool
-            When set to `True`, transect coordinates are standardized using reference coordinates.
+            When set to ``True``, transect coordinates are standardized using reference coordinates
+
         variable: Literal["biomass", "abundance"]
             Transect data values used for fitting the variogram. This includes two options:
             "abundance" and "biomass", with the default being "biomass". These inputs correspond
             to fitting the empirical and theoretical variograms on "number density" and "biomass
-            density", respectively.
+            density", respectively. Note that ``Echopop`` currently only accepts
+            ``variable="biomass"``. Support for additional variables will be available in future
+            releases
+
         verbose: bool
-            When set to `True`, optional console messages and reports are provided to users.
+            When set to ``True``, optional console messages and reports are provided to users.
 
         Notes
         -----
-        The variogram model fitting methods makes use of the `lmfit` library. Values included in
-        the `variogram_parameters` argument, but omitted from `initialize_variogram`, use default
-        values imported from `self.input["statistics"]["variogram"]["model_config"]`.
+        The variogram model fitting methods makes use of the ``lmfit`` library. Values included in
+        the ``variogram_parameters`` argument, but omitted from ``initialize_variogram``, use
+        default values imported from ``self.input["statistics"]["variogram"]["model_config"]``.
+
+
+        See Also
+        --------
+
+        :func:`echopop.spatial.variogram.variogram` :
+            Variogram model calculation
+        :func:`echopop.spatial.variogram.empirical_variogram` :
+            Empirical variogram calculation
+        :class:`echopop.utils.validate_dict.VariogramBase` :
+            Variogram model parameters
+        :class:`echopop.utils.validate.VariogramOptimize` :
+            Variogram model parameter optimization arguments
+        :class:`echopop.utils.validate.VariogramInitial` :
+            Variogram model initialization arguments
+        :class:`lmfit.parameter.Parameters` :
+            Variogram parameter optimization leverages the ``Parameters``
+            class from ``lmfit`` for model optimization
         """
 
         # Check dataset integrity
@@ -551,11 +763,102 @@ class Survey:
         """
         Interpolates biomass data using ordinary kriging
 
-
         Parameters
         ----------
-        variable
+
+        cropping_parameters: Dict[str, Any]
+            An optional dictionary containing user-defined arguments for how the kriging mesh will
+            be cropped. This can include the following arguments:
+
+            - **crop_method: Literal["transect_ends", "convex_hull"]** \n
+            The method used for determining the survey extent when ``extrapolate=True``. The
+            options for this include:
+
+                - *"transect_ends"* \n
+                Interpolate the eastern and western extents of transect lines over a latitude
+                resolution (*see `latitude_resolution`*)
+
+
+                - *"convex_hull"* \n
+                Define the survey extent by computing the convex hull of the
+                extents of all transect lines
+
+            - **num_nearest_transects: posint** \n
+            Combines the polygonal extents of the *n*-nearest transect lines. Only used when
+            ``crop_method="convex_hull"``
+
+            - **mesh_buffer_distance: realposfloat** \n
+            A buffer (in nmi) added to the survey extent polygon generated when
+            ``crop_method="convex_hull"``
+
+            - **latitude_resolution: realposfloat** \n
+            The latitude resolution used for interpolated the eastern and  western transect line
+            extents when ``crop_method="transect_ends"``
+
+            - **bearing_tolerance: realcircle** \n
+            An angular tolerance (in degrees) used for grouping transect lines based on their
+            respective bearings for interpolating the survey extent when
+            ``crop_method="transect_ends"``
+
+        extrapolate: bool
+            Project the kriged estimates over the entire kriging mesh instead of only within the
+            survey extent
+
+        kriging_parameters: Dict[str, Any]
+            An optional dictionary containing user-defined kriging parameters that will be used for
+            fitting and interpolation. This can include the following arguments:
+
+            - **anisotropy: realposfloat** \n
+            The relative magnitude of directionality of the spatially autocorrelated process.  It
+            is assumed that variogram parameters (e.g. nugget effect, sill) are the same in  all
+            directions and therefore considered to be isotropic (``anisotropy=0.0``)
+
+            - **correlation_range: Optional[realposfloat]** \n
+            The relative length scale, or range, at which the autocorrelation between lag distances
+            no longer increases and becomes asymptotic
+
+            - **kmax: posint** \n
+            The maximum number of nearest neighbors required for including values for kriging
+            detected within the search radius
+
+            - **kmin: posint** \n
+            The minimum number of nearest neighbors required for including values for kriging
+            within the search radius
+
+            - **search_radius: Optional[realposfloat]** \n
+            The adaptive search radius that identifies the *k*-nearest neighbors around each
+            georeferenced value that are subsequently kriged
+
+        coordinate_transform: bool
+            Standardize and transform the spatial coordinates from latitude and longitude to 'x'
+            and 'y'
+
+        best_fit_variogram: bool
+            Use optimized variogram parameters produced from the :meth:`.fit_variogram` method
+
+        variable: Literal["biomass"]
             Biological variable that will be interpolated via kriging
+
+        variogram_parameters: Optional[Dict[str, Any]]
+            An optional dictionary containing user-defined variogram parameters. See
+            :func:`echopop.utils.validate_dict.VariogramBase` for more details
+
+        verbose: bool
+            Print console messages and results
+
+        Notes
+        -----
+        Although both ``correlation_range`` and ``search_radius`` are considered to be optional, a
+        value for at least one of these variables must be supplied, otherwise a ``ValueError`` will
+        be raised.
+
+        See Also
+        --------
+        :meth:`.fit_variogram` :
+            Variogram fitting method
+        :func:`echopop.utils.validate_dict.VariogramBase` :
+            Variogram model parameters
+
         """
 
         # Check dataset integrity
@@ -664,11 +967,13 @@ class Survey:
 
         Parameters
         ----------
+
         results_name: str
             The name of the results that should be printed into the console. This can either be
             formatted as a single input name (e.g. 'transect' , 'kriging') or a nested/layered
             variable (e.g. 'stratified:transect') where a colon (':') is used as the delimiter that
             separates the two result layer names.
+
         """
         # Break up `results_name` if it contains a ':' delimiter
         if ":" in results_name:

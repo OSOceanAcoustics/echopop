@@ -52,7 +52,14 @@ sphinx:
     'sphinx.ext.intersphinx',
     'sphinx.ext.mathjax',
     'sphinx.ext.ifconfig',
-    'sphinx.ext.githubpages'
+    'sphinx.ext.githubpages',
+    'sphinx.ext.napoleon'
   ]
   config:
+    autodoc_default_options:
+      members: true
+      undoc-members: true
+      inherited-members: true
+    autosummary_generate: true  # Automatically generate stub files for all documented members
     bibtex_reference_style: label
+    numpydoc_class_members_toctree: False
