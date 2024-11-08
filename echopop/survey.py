@@ -193,10 +193,31 @@ class Survey:
 
         Parameters
         ----------
+        
         species_id: Union[float, list[float]]
+            A number or string code for target species that are incorporated into the ingested 
+            datasets
+            
         exclude_age1: bool
+            When ``exclude_age1=True``, age-1 fish are excluded from the overall analysis. This 
+            means that age, length, and joint age-length count/weight distributions are computed 
+            for age-2+ fish only. However, it is assumed that some age-1 fish "leak" into these 
+            calculations, so they are not excluded entirely from the survey population estimates. 
+            The default ``species_id=22500`` corresponds to the Pacific hake (*Mercluccius 
+            productus*) code used by NWFSC-FEAT
+            
         stratum: Literal["inpfc", "ks"]
+            Define which stratification to use. Options include:
+
+            - *"inpfc"* \n
+            Latitude-based (INPFC)
+
+            - *"ks"* \n
+            Clusters based on fish fork length via Kolmogorov-Smirnov distribution tests
+
         verbose: bool
+            When ``verbose=True``, optional console messages and reports are provided to users
+
         """
 
         # Check dataset integrity
