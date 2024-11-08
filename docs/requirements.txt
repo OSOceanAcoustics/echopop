@@ -1,4 +1,6 @@
-sphinx-automodapi
+docutils<0.18
 jupyter-book
 numpydoc
-docutils<0.18
+setuptools
+sphinx-automodapi
+sphinxcontrib-bibtex
