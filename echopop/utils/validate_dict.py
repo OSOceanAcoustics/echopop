@@ -813,6 +813,11 @@ class InitialValues(VariogramModel, arbitrary_types_allowed=True):
         return {**dict(min=0.0, value=0.0, max=np.inf, vary=True), **input}
 
 
+InitialValues(**{"min": 0.05, "initial": 0.1, "max": 1.0, "vary": True})
+cls = InitialValues
+v = {"min": 0.05, "initial": 0.1, "max": 1.0, "vary": True}
+
+
 class VariogramInitial(RootModel[InitialValues]):
     root: Dict[str, InitialValues]
 
