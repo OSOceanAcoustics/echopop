@@ -900,7 +900,7 @@ class Survey:
                 ),
                 "variogram_parameters": (
                     {
-                        **self.input["statistics"]["variogram"]["model_config"],                        
+                        **self.input["statistics"]["variogram"]["model_config"],
                         **variogram_parameters,
                     }
                     if (
@@ -911,7 +911,7 @@ class Survey:
                         {
                             **self.input["statistics"]["variogram"]["model_config"],
                             **{"model": ["exponential", "bessel"], "n_lags": 30},
-                        }                        
+                        }
                         if (
                             not variogram_parameters
                             and "model_config" in self.input["statistics"]["variogram"]
