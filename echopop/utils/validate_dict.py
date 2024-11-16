@@ -914,7 +914,7 @@ class MeshCrop(
 class KrigingParameterInputs(
     BaseModel, arbitrary_types_allowed=True, title="kriging model parameters ('kriging_parameters')"
 ):
-    anisotropy: realposfloat = Field(default=0.0, allow_inf_nan=False)
+    anisotropy: realposfloat = Field(default=1e-3, allow_inf_nan=False)
     kmin: posint = Field(default=3, ge=3)
     kmax: posint = Field(default=10, ge=3)
     correlation_range: Optional[realposfloat] = Field(default=None, gt=0.0, allow_inf_nan=False)
