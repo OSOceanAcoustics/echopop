@@ -30,6 +30,7 @@ parts:
     sections:
     - file: implementation/echopro_vs_echopop
     - file: implementation/preprocessing_data
+    - file: implementation/report_generation.ipynb
   # - file: algo
   #   title: Algorithmic implementation
   #   sections:
