@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Tuple, Union
 
 import geopandas as gpd
 import geopy.distance
@@ -90,7 +90,7 @@ def hull_crop_method(transect_data: pd.DataFrame, mesh_data: pd.DataFrame, setti
 
 def transect_ends_crop_method(
     transect_data: pd.DataFrame, mesh_data: pd.DataFrame, cropping_parameters: dict
-):
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
     Crop the kriging mesh by interpolating the eastern and western boundaries of the survey
     partitioned into three geographical regions.
@@ -297,10 +297,6 @@ def transect_ends_crop_method(
             # lat_e_max = np.argmax(transect_east["latitude"])
             lat_e_max = np.argmin(transect_east["latitude"])
             # -------- Slope
-            # slope = (
-            #     transect_west["longitude"].iloc[lat_w_max]
-            #     - transect_east["longitude"].iloc[lat_e_max]
-            # ) / (transect_west["latitude"].min() - transect_east["latitude"].min())
             slope = (transect_west["latitude"].min() - transect_east["latitude"].min()) / (
                 transect_west["longitude"].iloc[lat_w_max]
                 - transect_east["longitude"].iloc[lat_e_max]
@@ -348,8 +344,11 @@ def transect_ends_crop_method(
         )
     )
 
+    # Extract the transect regions
+    transect_mesh_regions = transect_data.reset_index().loc[:, "mesh_region":"latitude"]
+    
     # Crop the mesh data and return the output
-    return mesh_data.loc[interpolated_indices]
+    return mesh_data.loc[interpolated_indices], transect_mesh_regions
 
 
 def griddify_lag_distances(
