@@ -651,9 +651,16 @@ class FEATReports:
         # Save directory
         if not save_directory:
             # ---- Get the save directory configured within the `Survey` configuration
-            survey_directory = Path(survey.config["data_root_dir"])
-            # ---- Create the save directory
-            save_directory = survey_directory / "reports"
+            try:
+                save_directory = Path(survey.config["report_path"])
+            except KeyError as e:
+                # ---- Drop traceback
+                e.__traceback__ = None
+                raise KeyError(
+                    "Report save directory not defined. Either a value for argument "
+                    "'save_directory' must be fined, or a valid directory must be defined via "
+                    "'report_path' in the file configuration `*.yml` file."
+                )
             # ---- Create the directory, if needed
             save_directory.mkdir(parents=True, exist_ok=True)
             # ---- Assign the save directory
@@ -666,7 +673,7 @@ class FEATReports:
                     f"exist!"
                 )
             # ---- Assign the save directory
-            self.save_directory = save_directory
+            self.save_directory = Path(save_directory)
 
     def generate(self):
         """
