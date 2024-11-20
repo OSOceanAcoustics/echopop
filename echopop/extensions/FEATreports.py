@@ -564,7 +564,7 @@ class FEATReports:
     Methods
     -------
     *generate()*
-        Report factory method thaqt generates the `*.xlsx` files used by the FEAT team
+        Report factory method that generates the `*.xlsx` files used by the FEAT team
 
     Notes
     -----
