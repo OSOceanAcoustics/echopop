@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, Union
+from typing import Any, Dict, List, Literal, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -723,16 +723,15 @@ class FEATReports:
     # REPORT METHODS
     def aged_length_haul_counts_report(
         self,
-        data: Callable[[pd.DataFrame], pd.DataFrame],
         title: str,
-        filename: Callable[[Union[str, Path]], Path],
+        filename: str,
         **kwargs,
     ):
 
         # Get the dataset
         (specimen_data,) = filter_species(
-            data(self).input["biology"]["specimen_df"],
-            data(self).analysis["settings"]["transect"]["species_id"],
+            self.data.input["biology"]["specimen_df"],
+            self.data.analysis["settings"]["transect"]["species_id"],
         )
 
         # Consolidate the dataset to also include "all"
@@ -760,30 +759,30 @@ class FEATReports:
             sex: pivot_haul_tables(full_pvt, sex) for sex in ["all", "female", "male"]
         }
 
+        
         # Write the *.xlsx sheet
-        write_haul_report(haul_pvt_tables, title, filename(self))
+        # ---- Get filepath
+        filepath = self.save_directory / filename 
+        # ---- Write file
+        write_haul_report(haul_pvt_tables, title, filepath)
 
         # Return the filepath name
-        return filename(self).as_posix()
+        return filepath.as_posix()
 
     def kriged_aged_biomass_mesh_report(
         self,
-        data: Callable[[pd.DataFrame], pd.DataFrame],
-        filename: Callable[[Union[str, Path]], Path],
+        filename: str,
         **kwargs,
     ):
 
-        # Get the data dictionary
-        data_dict = data(self)
-
         # Get 'exclude_age1' argument value
-        age1_exclusion = data_dict.analysis["settings"]["transect"]["exclude_age1"]
+        age1_exclusion = self.data.analysis["settings"]["transect"]["exclude_age1"]
 
         # Get the stratum name
-        stratum_name = data_dict.analysis["settings"]["transect"]["stratum_name"]
+        stratum_name = self.data.analysis["settings"]["transect"]["stratum_name"]
 
         # Get the weight distributions
-        weight_distribution = data_dict.analysis["transect"]["biology"]["distributions"]["weight"][
+        weight_distribution = self.data.analysis["transect"]["biology"]["distributions"]["weight"][
             "aged_length_weight_tbl"
         ].copy()
 
@@ -791,7 +790,7 @@ class FEATReports:
         tables = pivot_aged_weight_proportions(weight_distribution, age1_exclusion, stratum_name)
 
         # Get mesh dataframe
-        mesh_df = data_dict.results["kriging"]["mesh_results_df"].copy()
+        mesh_df = self.data.results["kriging"]["mesh_results_df"].copy()
         # ---- Filter
         mesh_df_copy = mesh_df.filter(["latitude", "longitude", stratum_name, "biomass"]).copy()
 
@@ -803,8 +802,12 @@ class FEATReports:
             for sex in ["all", "female", "male"]
         }
 
+        
+        # Get filepaths
+        filepath = tuple([self.save_directory / f for f in filename])
+
         # Write the *.xlsx sheet (full dataset)
-        write_aged_dataframe_report(mesh_pvt_tables, filename(self)[0])
+        write_aged_dataframe_report(mesh_pvt_tables, filepath[0])
 
         # Remove the empty cells
         mesh_pvt_reduced_tables = {
@@ -813,15 +816,14 @@ class FEATReports:
         }
 
         # Write the *.xlsx sheet (reduced dataset)
-        write_aged_dataframe_report(mesh_pvt_reduced_tables, filename(self)[1])
+        write_aged_dataframe_report(mesh_pvt_reduced_tables, filepath[1])
 
         # Return the filepath name
-        return filename(self)[0].as_posix(), filename(self)[1].as_posix()
+        return filepath[0].as_posix(), filepath[1].as_posix()
 
     def kriged_biomass_mesh_report(
         self,
-        data: Callable[[pd.DataFrame], pd.DataFrame],
-        filename: Callable[[Union[str, Path]], Path],
+        filename: str,
         **kwargs,
     ):
 
@@ -830,7 +832,7 @@ class FEATReports:
 
         # Get apportionment information
         apportion_df = (
-            data(self)
+            self.data
             .analysis["transect"]["biology"]["proportions"]["weight"][
                 "aged_unaged_sex_weight_proportions_df"
             ]
@@ -845,7 +847,7 @@ class FEATReports:
         )
 
         # Get mesh results
-        mesh_df = data(self).results["kriging"]["mesh_results_df"].copy()
+        mesh_df = self.data.results["kriging"]["mesh_results_df"].copy()
         # ---- Set the index
         mesh_df.set_index(stratum_name, inplace=True)
 
@@ -879,27 +881,32 @@ class FEATReports:
             ]
         )
 
+        # Get filepaths
+        filepath = tuple([self.save_directory / f for f in filename])
+
         # Save the *.xlsx sheet (full dataset)
-        output_df.to_excel(filename(self)[0], sheet_name="Sheet1", index=None)
+        output_df.to_excel(filepath[0], sheet_name="Sheet1", index=None)
 
         # Reduce the dataframe and then save
         output_df.loc[output_df.biomass > 0.0].to_excel(
-            filename(self)[1], sheet_name="Sheet1", index=None
+            filepath[1], sheet_name="Sheet1", index=None
         )
 
         # Return the filepath name
-        return filename(self)[0].as_posix(), filename(self)[1].as_posix()
+        return filepath[0].as_posix(), filepath[1].as_posix()
 
     def kriged_length_age_biomass_report(
         self,
-        data: Callable[[pd.DataFrame], pd.DataFrame],
         title: str,
-        filename: Callable[[Union[str, Path]], Path],
+        filename: str,
         **kwargs,
     ):
 
+        # Get the dataset
+        dataset = self.data.results["kriging"]["tables"]["overall_apportionment_df"]
+
         # Initialize a pivot table from the dataset
-        dataset = data(self).pivot_table(
+        dataset_pvt = dataset.pivot_table(
             index=["sex", "length_bin"],
             columns=["age_bin"],
             values=["biomass_apportioned"],
@@ -909,52 +916,58 @@ class FEATReports:
 
         # Repivot the datasets for each sex
         tables = {
-            sex: repivot_table(dataset.loc[sex, :] * 1e-9, "biomass")
+            sex: repivot_table(dataset_pvt.loc[sex, :] * 1e-9, "biomass")
             for sex in ["all", "male", "female"]
         }
 
+        # Get filepath
+        filepath = self.save_directory / filename
+        
         # Write the *.xlsx sheet
-        write_age_length_table_report(tables, title, filename(self))
+        write_age_length_table_report(tables, title, filepath)
 
         # Return the filepath name
-        return filename(self).as_posix()
+        return filepath.as_posix()
 
     def kriging_input_report(
         self,
-        data: Callable[[pd.DataFrame], pd.DataFrame],
-        filename: Callable[[Union[str, Path]], Path],
+        filename: str,
         **kwargs,
     ):
 
         # Get the dataset
-        dataset = data(self).sort_values(["transect_num", "longitude", "latitude"])
+        dataset = self.data.analysis["transect"]["acoustics"]["adult_transect_df"].sort_values(
+            ["transect_num", "longitude", "latitude"]
+        )
 
         # Filter the dataset columns
         dataset_filt = dataset.filter(
             ["latitude", "longitude", "biomass_density", "nasc", "number_density"]
         )
 
-        # and save the *.xlsx sheet
-        dataset_filt.to_excel(filename(self), sheet_name="Sheet1", index=None)
+        # Get the filepath
+        filepath = self.save_directory / filename
 
+        # and save the *.xlsx sheet
+        dataset_filt.to_excel(filepath, sheet_name="Sheet1", index=None)
+        
         # Return the filepath name
-        return filename(self).as_posix()
+        return filepath.as_posix()
 
     def total_length_haul_counts_report(
         self,
-        data: Callable[[pd.DataFrame], pd.DataFrame],
         title: str,
-        filename: Callable[[Union[str, Path]], Path],
+        filename: str,
         **kwargs,
     ):
 
         # Get the dataset
         length_data, specimen_data = filter_species(
             [
-                data(self).input["biology"]["length_df"],
-                data(self).input["biology"]["specimen_df"],
+                self.data.input["biology"]["length_df"],
+                self.data.input["biology"]["specimen_df"],
             ],
-            data(self).analysis["settings"]["transect"]["species_id"],
+            self.data.analysis["settings"]["transect"]["species_id"],
         )
 
         # Consolidate the dataset to also include "all"
@@ -1004,35 +1017,34 @@ class FEATReports:
             sex: pivot_haul_tables(full_pvt, sex) for sex in ["all", "female", "male"]
         }
 
+        # Get the filepath
+        filepath = self.save_directory / filename
+        
         # Write the *.xlsx sheet
-        write_haul_report(haul_pvt_tables, title, filename(self))
+        write_haul_report(haul_pvt_tables, title, filepath)
 
         # Return the filepath name
-        return filename(self).as_posix()
+        return filepath.as_posix()
 
     def transect_aged_biomass_report(
         self,
-        data: Callable[[pd.DataFrame], pd.DataFrame],
-        filename: Callable[[Union[str, Path]], Path],
+        filename: str,
         **kwargs,
     ):
 
-        # Get the data dictionary
-        data_dict = data(self)
-
         # Get 'exclude_age1' argument value
-        age1_exclusion = data_dict["settings"]["transect"]["exclude_age1"]
+        age1_exclusion = self.data.analysis["settings"]["transect"]["exclude_age1"]
 
         # Get the stratum name
-        stratum_name = data_dict["settings"]["transect"]["stratum_name"]
+        stratum_name = self.data.analysis["settings"]["transect"]["stratum_name"]
 
         # Get the weight distributions
-        weight_distribution = data_dict["transect"]["biology"]["distributions"]["weight"][
+        weight_distribution = self.data.analysis["transect"]["biology"]["distributions"]["weight"][
             "aged_length_weight_tbl"
         ].copy()
 
         # Get transect dataframe
-        transect_df = data_dict["transect"]["acoustics"]["adult_transect_df"].copy()
+        transect_df = self.data.analysis["transect"]["acoustics"]["adult_transect_df"].copy()
 
         # Reformat the aged weight proportions tables
         tables = pivot_aged_weight_proportions(weight_distribution, age1_exclusion, stratum_name)
@@ -1043,8 +1055,11 @@ class FEATReports:
             for sex in ["all", "female", "male"]
         }
 
+        # Get the filepath
+        filepath = tuple([self.save_directory / f for f in filename])
+
         # Write the *.xlsx sheet (full dataset)
-        write_aged_dataframe_report(transect_pvt_tables, filename(self)[0])
+        write_aged_dataframe_report(transect_pvt_tables, filepath[0])
 
         # Reduce the datasets
         transect_pvt_reduced_tables = {
@@ -1055,68 +1070,91 @@ class FEATReports:
         }
 
         # Write the *.xlsx sheet (reduced dataset)
-        write_aged_dataframe_report(transect_pvt_reduced_tables, filename(self)[1])
+        write_aged_dataframe_report(transect_pvt_reduced_tables, filepath[1])
 
         # Return the filepath name
-        return filename(self)[0].as_posix(), filename(self)[1].as_posix()
+        return filepath[0].as_posix(), filepath[1].as_posix()
 
     def transect_length_age_abundance_report(
         self,
-        data: Callable[[pd.DataFrame], pd.DataFrame],
         title: str,
-        filename: Callable[[Union[str, Path]], Path],
+        filename: str,
         **kwargs,
     ):
+
+        # Get the underlying dataset
+        dataset = (
+            self.data.analysis["transect"]["biology"]["population"]["tables"]["abundance"].copy()
+        )
 
         # Repivot the datasets for each sex
         # ---- First get the complete aged table
         tables = {
             sex: repivot_table(
-                age_length_dataframe=data(self)["aged_abundance_df"].loc[sex, :],
-                length_dataframe=data(self)["unaged_abundance_df"].loc[sex, :],
+                age_length_dataframe=dataset["aged_abundance_df"].loc[sex, :],
+                length_dataframe=dataset["unaged_abundance_df"].loc[sex, :],
                 variable="abundance",
             )
             for sex in ["all", "male", "female"]
         }
 
+        # Get the filepath
+        filepath = self.save_directory / filename
+
         # Write the *.xlsx sheet
-        write_age_length_table_report(tables, title, filename(self))
+        write_age_length_table_report(tables, title, filepath)
 
         # Return the filepath name
-        return filename(self).as_posix()
+        return filepath.as_posix()
 
     def transect_length_age_biomass_report(
         self,
-        data: Callable[[pd.DataFrame], pd.DataFrame],
         title: str,
-        filename: Callable[[Union[str, Path]], Path],
+        filename: str,
         **kwargs,
     ) -> str:
 
+        # Get the underlying dataset
+        dataset = (
+            self.data
+            .analysis["transect"]["biology"]["population"]["tables"]["biomass"]["aged_biomass_df"]
+            .copy()
+        )
+
+
         # Repivot the datasets for each sex
         tables = {
-            sex: repivot_table(data(self).loc[sex, :] * 1e-9, "biomass")
+            sex: repivot_table(dataset.loc[sex, :] * 1e-9, "biomass")
             for sex in ["all", "male", "female"]
         }
 
+        # Get the filepath
+        filepath = self.save_directory / filename
+
         # Write the *.xlsx sheet
-        write_age_length_table_report(tables, title, filename(self))
+        write_age_length_table_report(tables, title, filepath)
 
         # Return the filepath name
-        return filename(self).as_posix()
+        return filepath.as_posix()
 
     def transect_population_results_report(
         self,
-        data: Callable[[pd.DataFrame], pd.DataFrame],
-        filename: Callable[[Union[str, Path]], Path],
+        filename: str,
         **kwargs,
-    ):
+    ):  
 
+        # Get the filepath
+        filepath = self.save_directory / filename
+        
         # Save the *.xlsx sheet
-        data(self).to_excel(filename(self), sheet_name="Sheet1", index=None)
+        self.data.analysis["transect"]["acoustics"]["adult_transect_df"].to_excel(
+            filepath, 
+            sheet_name="Sheet1", 
+            index=None
+        )
 
         # Return the filepath name
-        return filename(self).as_posix()
+        return filepath.as_posix()
 
     @staticmethod
     def report_options():
@@ -1141,79 +1179,61 @@ class FEATReports:
     __METHOD_REFERENCE__ = {
         "aged_length_haul_counts": {
             "function": aged_length_haul_counts_report,
-            "data": lambda v: v.data,
             "title": "Aged Length-Haul Counts ({SEX})",
-            "filename": lambda v: Path(v.save_directory) / "aged_length_haul_counts_table.xlsx",
+            "filename": "aged_length_haul_counts_table.xlsx",
         },
         "kriged_aged_biomass_mesh": {
             "function": kriged_aged_biomass_mesh_report,
-            "data": lambda v: v.data,
             "title": None,
-            "filename": lambda v: (
-                Path(v.save_directory) / "kriged_aged_biomass_mesh_dataframe.xlsx",
-                Path(v.save_directory) / "kriged_aged_biomass_reduced_mesh_dataframe.xlsx",
+            "filename": (
+                "kriged_aged_biomass_mesh_dataframe.xlsx",
+                "kriged_aged_biomass_reduced_mesh_dataframe.xlsx",
             ),
         },
         "kriged_biomass_mesh": {
             "function": kriged_biomass_mesh_report,
-            "data": lambda v: v.data,
             "title": None,
-            "filename": lambda v: (
-                Path(v.save_directory) / "kriged_biomass_mesh_dataframe.xlsx",
-                Path(v.save_directory) / "kriged_biomass_mesh_reduced_dataframe.xlsx",
+            "filename": (
+               "kriged_biomass_mesh_dataframe.xlsx",
+                 "kriged_biomass_mesh_reduced_dataframe.xlsx",
             ),
         },
         "kriged_length_age_biomass": {
             "function": kriged_length_age_biomass_report,
-            "data": (lambda v: v.data.results["kriging"]["tables"]["overall_apportionment_df"]),
             "title": "Kriged Acoustically Weighted Biomass (mmt) ({SEX})",
-            "filename": lambda v: Path(v.save_directory) / "kriged_length_age_biomass_table.xlsx",
+            "filename": "kriged_length_age_biomass_table.xlsx",
         },
         "kriging_input": {
             "function": kriging_input_report,
-            "data": lambda v: v.data.analysis["transect"]["acoustics"]["adult_transect_df"],
             "title": None,
-            "filename": lambda v: Path(v.save_directory) / "kriging_input_dataframe.xlsx",
+            "filename": "kriging_input_dataframe.xlsx",
         },
         "total_length_haul_counts": {
             "function": total_length_haul_counts_report,
-            "data": lambda v: v.data,
             "title": "Un-Aged Length-Haul Counts ({SEX})",
-            "filename": lambda v: Path(v.save_directory) / "total_length_haul_counts_table.xlsx",
+            "filename": "total_length_haul_counts_table.xlsx",
         },
         "transect_aged_biomass": {
             "function": transect_aged_biomass_report,
-            "data": lambda v: v.data.analysis,
             "title": None,
-            "filename": lambda v: (
-                Path(v.save_directory) / "transect_aged_biomass_dataframe.xlsx",
-                Path(v.save_directory) / "transect_aged_biomass_reduced_dataframe.xlsx",
+            "filename": (
+                "transect_aged_biomass_dataframe.xlsx",
+                "transect_aged_biomass_reduced_dataframe.xlsx",
             ),
         },
         "transect_length_age_abundance": {
             "function": transect_length_age_abundance_report,
-            "data": (
-                lambda v: v.data.analysis["transect"]["biology"]["population"]["tables"][
-                    "abundance"
-                ]
-            ),
             "title": "Transect-based Acoustically Weighted Abundance ({SEX})",
-            "filename": lambda v: Path(v.save_directory)
-            / "transect_length_age_abundance_table.xlsx",
+            "filename": "transect_length_age_abundance_table.xlsx",
         },
         "transect_length_age_biomass": {
             "function": transect_length_age_biomass_report,
-            "data": lambda v: v.data.analysis["transect"]["biology"]["population"]["tables"][
-                "biomass"
-            ]["aged_biomass_df"],
             "title": "Transect-based Acoustically Weighted Biomass (mmt) ({SEX})",
-            "filename": lambda v: Path(v.save_directory) / "transect_length_age_biomass_table.xlsx",
+            "filename": "transect_length_age_biomass_table.xlsx",
         },
         "transect_population_results": {
             "function": transect_population_results_report,
-            "data": lambda v: v.data.analysis["transect"]["acoustics"]["adult_transect_df"],
             "title": None,
-            "filename": lambda v: Path(v.save_directory)
-            / "transect_population_results_dataframe.xlsx",
+            "filename": "transect_population_results_dataframe.xlsx",
         },
     }
