@@ -346,7 +346,7 @@ def transect_ends_crop_method(
 
     # Extract the transect regions
     transect_mesh_regions = transect_data.reset_index().loc[:, "mesh_region":"latitude"]
-    
+
     # Crop the mesh data and return the output
     return mesh_data.loc[interpolated_indices], transect_mesh_regions
 
