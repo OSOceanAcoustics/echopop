@@ -7,7 +7,7 @@ import pandas.io.formats.excel as pdif
 from openpyxl import Workbook, load_workbook
 from openpyxl.worksheet.worksheet import Worksheet
 
-from .. import Survey
+from ..survey import Survey
 from ..biology import filter_species
 
 ####################################################################################################
@@ -672,9 +672,6 @@ class FEATReports:
         """
         Report factory method
         """
-
-        # Validate the reports
-        report_methods = self.get_report_type(self.reports)
 
         # Validate the reports
         unknown_requests, report_methods = self.get_report_type(self.reports)
