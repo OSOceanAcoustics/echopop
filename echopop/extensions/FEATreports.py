@@ -676,6 +676,20 @@ class FEATReports:
         # Validate the reports
         report_methods = self.get_report_type(self.reports)
 
+        # Validate the reports
+        unknown_requests, report_methods = self.get_report_type(self.reports)
+
+        # Print unexpected reports
+        if len(unknown_requests) > 0:
+            # ---- Format join
+            unknown_str = "\n   ".join(f"-'{request}'" for request in unknown_requests)
+            # ---- Print
+            print(
+                f"The following requested reports do not match available report-types (use "
+                f"`FEATReports.report_options()` for a complete list/print-out of available "
+                f"reports):\n   {unknown_str}"
+            )
+
         # Run all input report generation functions
         report_files = [v.get("function")(self, **v) for _, v in report_methods.items()]
 
