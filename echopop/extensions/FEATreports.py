@@ -707,7 +707,11 @@ class FEATReports:
     def get_report_type(
         cls,
         requested_reports=List[str],
-    ):
+    ) -> Tuple[List[str], Dict[str, Any]]:
+
+        # Identify superfluous requested reports
+        unknown_reports = [report for report in requested_reports
+                           if report not in cls.__METHOD_REFERENCE__]
 
         # Find matching methods
         mapped_report_methods = {
@@ -717,7 +721,7 @@ class FEATReports:
         }
 
         # Return
-        return mapped_report_methods
+        return unknown_reports, mapped_report_methods
 
     # REPORT METHODS
     def aged_length_haul_counts_report(
