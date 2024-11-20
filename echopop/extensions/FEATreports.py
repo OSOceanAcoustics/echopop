@@ -1128,7 +1128,7 @@ class FEATReports:
         """
 
         # Get reference
-        options = list(self.__METHOD_REFERENCE__.keys())
+        options = list(FEATReports.__METHOD_REFERENCE__.keys())
 
         # Join
         options_str = "\n   ".join(f"-'{report}'" for report in options)
