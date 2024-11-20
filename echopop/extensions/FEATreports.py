@@ -1103,6 +1103,24 @@ class FEATReports:
         # Return the filepath name
         return filename(self).as_posix()
 
+    @staticmethod
+    def report_options():
+        """
+        Helper method for listing viable report-types
+        """
+
+        # Get reference
+        options = list(self.__METHOD_REFERENCE__.keys())
+
+        # Join
+        options_str = "\n   ".join(f"-'{report}'" for report in options)
+
+        # Print
+        print(f"The following report-types are available for export:\n   {options_str}")
+
+        # Return the list
+        return list(options)
+
     # CLASS REFERENCE DICTIONARIES
     # Reference dictionary: report methods
     __METHOD_REFERENCE__ = {
