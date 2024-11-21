@@ -534,13 +534,16 @@ def bootstrap_confidence_intervals(
     Bias-Corrected (BC)[1]_
     Standard[3]_
 
+    References
+    ----------
+
     .. [1] Efron, B. (1981). Nonparametric standard errors and confidence intervals. *Canadian
        Journal of Statistics*, *9*(2), 139-158. https://doi.org/10.2307/3314608
     .. [2] Efron, B., and Tibshirani, R.J. (1993). *An introduction to the Bootstrap*. Springer US.
         https://doi.org/10.1007/978-1-4899-4541-9
     .. [3] Efron, B., and Tibshirani, R.J. (1986). Bootstrap methods for standard errors, confidence
        intervals, and other measures of statistical accuracy. *Statistical Science*, *1*(1).
-       https://doi.org/10.1214/ss/1177013815
+        https://doi.org/10.1214/ss/1177013815
     .. [4] DiCiccio, T.J., and Efron, B. (1996). Bootstrap confidence intervals. *Statistical
        Science*, *11*(3). https://doi.org/10.1214/ss/1032280214
     """
@@ -708,7 +711,7 @@ def confidence_interval(
         https://doi.org/10.1007/978-1-4899-4541-9
     .. [3] Efron, B., and Tibshirani, R.J. (1986). Bootstrap methods for standard errors, confidence
        intervals, and other measures of statistical accuracy. *Statistical Science*, *1*(1).
-       https://doi.org/10.1214/ss/1177013815
+        https://doi.org/10.1214/ss/1177013815
     .. [4] DiCiccio, T.J., and Efron, B. (1996). Bootstrap confidence intervals. *Statistical
        Science*, *11*(3). https://doi.org/10.1214/ss/1032280214
     """

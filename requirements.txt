@@ -1,6 +1,7 @@
 # Data processing and wrangling stack
 lmfit
 numpy
+openpyxl
 pandas
 scipy
 # Spatial data processing stack

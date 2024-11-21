@@ -22,7 +22,10 @@ def kriging(transect_data: pd.DataFrame, mesh_data: pd.DataFrame, settings_dict:
 
     # Extract biological variable values
     # ---- Define the variable name
-    variable_name = settings_dict["variable"]
+    if "density" not in settings_dict["variable"]:
+        variable_name = settings_dict["variable"] + "_density"
+    else:
+        variable_name = settings_dict["variable"]
     # ---- Extract array
     variable_data = transect_data[variable_name].to_numpy()
 
@@ -83,6 +86,8 @@ def kriging(transect_data: pd.DataFrame, mesh_data: pd.DataFrame, settings_dict:
     # ---- Calculate the integrated variable when distributed over area
     # --------- Compute area
     area = settings_dict["kriging_parameters"]["A0"] * mesh_data["fraction_cell_in_polygon"]
+    # -------- Drop erroneous negative values along edge
+    kriged_values[kriged_values[:, 0] < 0, 0] = 0.0
     # -------- Distribute biological variable over area
     survey_estimate = np.nansum(kriged_values[:, 0] * area)
     # ---- Compute the georeferenced CV at each mesh node
@@ -478,7 +483,7 @@ def adaptive_search_radius(
 def kriging_lambda(
     anisotropy: float,
     lagged_semivariogram: np.ndarray,
-    kriging_matrix: np.ndarray,
+    kriging_matrix_input: np.ndarray,
 ):
     """
     Apply singular value decomposition (SVD) to compute kriging (lambda) weights
@@ -489,14 +494,14 @@ def kriging_lambda(
         Anisotropy ratio.
     lagged_semivariogram: np.array
         Lagged semivariogram
-    kriging_matrix: np.array
+    kriging_matrix_input: np.array
         Kriging matrix.
     """
     # Singular value decomposition (SVD)
     # ---- U: left singular vectors (directions of maximum variance)
     # ---- Sigma: singular values (amount of variance captured by each singular vector, U)
     # ---- VH: conjugate transpose of the right singular vectors
-    U, Sigma, VH = np.linalg.svd(kriging_matrix, full_matrices=True)
+    U, Sigma, VH = np.linalg.svd(kriging_matrix_input, full_matrices=True)
 
     # Create Sigma mask informed by the ratio-threshold
     # ---- The ratio between all singular values and their respective

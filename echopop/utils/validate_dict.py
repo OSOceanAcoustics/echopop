@@ -498,6 +498,7 @@ class CONFIG_DATA_MODEL(InputModel):
     NASC: Dict[str, XLSXFile]
     species: SpeciesDefinition
     kriging: KrigingFiles
+    report_path: Optional[str] = None
     data_root_dir: Optional[str] = None
     CAN_haul_offset: Optional[int] = None
     ship_id: Optional[Union[int, str, float]] = None
@@ -538,16 +539,15 @@ class VariogramEmpirical(VariogramModel, arbitrary_types_allowed=True):
 
     Parameters
     ----------
-    azimuth_range: float
-        The total azimuth angle range that is allowed for constraining
-        the relative angles between spatial points, particularly for cases where a high degree
-        of directionality is assumed.
+    azimuth_range: realcircle
+        The total azimuth angle range that is allowed for constraining the relative angles between ]
+        spatial points, particularly for cases where a high degree of directionality is assumed
     force_lag_zero: bool
         See the `variogram_parameters` argument in
         :fun:`echopop.spatial.variogram.empirical_variogram` for more details on
-        `force_lag_zero`.
+        `force_lag_zero`
     standardize_coordinates: bool
-        When set to `True`, transect coordinates are standardized using reference coordinates.
+        When set to `True`, transect coordinates are standardized using reference coordinates
 
     Returns
     ----------
@@ -915,7 +915,7 @@ class MeshCrop(
 class KrigingParameterInputs(
     BaseModel, arbitrary_types_allowed=True, title="kriging model parameters ('kriging_parameters')"
 ):
-    anisotropy: realposfloat = Field(default=0.0, allow_inf_nan=False)
+    anisotropy: realposfloat = Field(default=1e-3, allow_inf_nan=False)
     kmin: posint = Field(default=3, ge=3)
     kmax: posint = Field(default=10, ge=3)
     correlation_range: Optional[realposfloat] = Field(default=None, gt=0.0, allow_inf_nan=False)
