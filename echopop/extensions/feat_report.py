@@ -690,7 +690,7 @@ class FEATReports:
             # ---- Print
             print(
                 f"The following requested reports do not match available report-types (use "
-                f"`FEATReports.report_options()` for a complete list/print-out of available "
+                f"`.report_options()` for a complete list/print-out of available "
                 f"reports):\n   {unknown_str}"
             )
 
