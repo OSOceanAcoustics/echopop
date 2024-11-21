@@ -635,10 +635,10 @@ def plot_age_length_distribution(
 ):
 
     # Get the dataset variable name
-    variable = kwargs.get("variable", None)
+    variable = kwargs.get("variable")
 
     # Get sex
-    sex = kwargs.get("sex", None)
+    sex = kwargs.get("sex")
 
     # Get the correct dataset for plotting
     # ---- Abundance
