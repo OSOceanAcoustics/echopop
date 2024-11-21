@@ -7,8 +7,8 @@ import pandas.io.formats.excel as pdif
 from openpyxl import Workbook, load_workbook
 from openpyxl.worksheet.worksheet import Worksheet
 
-from ..survey import Survey
 from ..biology import filter_species
+from ..survey import Survey
 
 ####################################################################################################
 # FILE WRITING UTILITY
@@ -714,8 +714,9 @@ class FEATReports:
     ) -> Tuple[List[str], Dict[str, Any]]:
 
         # Identify superfluous requested reports
-        unknown_reports = [report for report in requested_reports
-                           if report not in cls.__METHOD_REFERENCE__]
+        unknown_reports = [
+            report for report in requested_reports if report not in cls.__METHOD_REFERENCE__
+        ]
 
         # Find matching methods
         mapped_report_methods = {
@@ -766,10 +767,9 @@ class FEATReports:
             sex: pivot_haul_tables(full_pvt, sex) for sex in ["all", "female", "male"]
         }
 
-        
         # Write the *.xlsx sheet
         # ---- Get filepath
-        filepath = self.save_directory / filename 
+        filepath = self.save_directory / filename
         # ---- Write file
         write_haul_report(haul_pvt_tables, title, filepath)
 
@@ -809,7 +809,6 @@ class FEATReports:
             for sex in ["all", "female", "male"]
         }
 
-        
         # Get filepaths
         filepath = tuple([self.save_directory / f for f in filename])
 
@@ -838,13 +837,9 @@ class FEATReports:
         stratum_name = self.data.analysis["settings"]["transect"]["stratum_name"]
 
         # Get apportionment information
-        apportion_df = (
-            self.data
-            .analysis["transect"]["biology"]["proportions"]["weight"][
-                "aged_unaged_sex_weight_proportions_df"
-            ]
-            .copy()
-        )
+        apportion_df = self.data.analysis["transect"]["biology"]["proportions"]["weight"][
+            "aged_unaged_sex_weight_proportions_df"
+        ].copy()
         # ---- Pivot
         apportion_pvt = apportion_df.pivot_table(index=["stratum_num"], columns=["sex"])
         # ---- Compute the proportions across strata
@@ -929,7 +924,7 @@ class FEATReports:
 
         # Get filepath
         filepath = self.save_directory / filename
-        
+
         # Write the *.xlsx sheet
         write_age_length_table_report(tables, title, filepath)
 
@@ -957,7 +952,7 @@ class FEATReports:
 
         # and save the *.xlsx sheet
         dataset_filt.to_excel(filepath, sheet_name="Sheet1", index=None)
-        
+
         # Return the filepath name
         return filepath.as_posix()
 
@@ -1026,7 +1021,7 @@ class FEATReports:
 
         # Get the filepath
         filepath = self.save_directory / filename
-        
+
         # Write the *.xlsx sheet
         write_haul_report(haul_pvt_tables, title, filepath)
 
@@ -1090,9 +1085,9 @@ class FEATReports:
     ):
 
         # Get the underlying dataset
-        dataset = (
-            self.data.analysis["transect"]["biology"]["population"]["tables"]["abundance"].copy()
-        )
+        dataset = self.data.analysis["transect"]["biology"]["population"]["tables"][
+            "abundance"
+        ].copy()
 
         # Repivot the datasets for each sex
         # ---- First get the complete aged table
@@ -1122,12 +1117,9 @@ class FEATReports:
     ) -> str:
 
         # Get the underlying dataset
-        dataset = (
-            self.data
-            .analysis["transect"]["biology"]["population"]["tables"]["biomass"]["aged_biomass_df"]
-            .copy()
-        )
-
+        dataset = self.data.analysis["transect"]["biology"]["population"]["tables"]["biomass"][
+            "aged_biomass_df"
+        ].copy()
 
         # Repivot the datasets for each sex
         tables = {
@@ -1148,16 +1140,14 @@ class FEATReports:
         self,
         filename: str,
         **kwargs,
-    ):  
+    ):
 
         # Get the filepath
         filepath = self.save_directory / filename
-        
+
         # Save the *.xlsx sheet
         self.data.analysis["transect"]["acoustics"]["adult_transect_df"].to_excel(
-            filepath, 
-            sheet_name="Sheet1", 
-            index=None
+            filepath, sheet_name="Sheet1", index=None
         )
 
         # Return the filepath name
@@ -1201,8 +1191,8 @@ class FEATReports:
             "function": kriged_biomass_mesh_report,
             "title": None,
             "filename": (
-               "kriged_biomass_mesh_dataframe.xlsx",
-                 "kriged_biomass_mesh_reduced_dataframe.xlsx",
+                "kriged_biomass_mesh_dataframe.xlsx",
+                "kriged_biomass_mesh_reduced_dataframe.xlsx",
             ),
         },
         "kriged_length_age_biomass": {

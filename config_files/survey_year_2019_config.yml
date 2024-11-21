@@ -17,7 +17,7 @@ CAN_haul_offset: 200         # The value to be added to the Canadian's haul numb
 # Report generation
 ###################
 # Where the reports are saved
-report_path: C:/Users/Brandyn/Documents/GitHub/EchoPro_data/Data/reports  
+report_path: C:/Users/Brandyn/Documents/GitHub/EchoPro_data/Data/reports
 
 ##############################################################################
 # Directory path that contains all input data needed
