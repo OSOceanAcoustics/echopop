@@ -14,6 +14,7 @@ The `survey_year_{YEAR}_config.yml` configuration file defines general metadata 
     * `number_code`: target species -- numeric (e.g. 123456789)
 * `CAN_haul_offset`: an offset value applied to Canadian haul numbers [**specific to the FEAT hake survey**].
 * `data_root_dir`: root data directory path where all data are stored.
+* `report_path`: an optional directory path where report tables for all results are stored [**specific to the FEAT hake survey**].
 
 #### Input data files
 * `biological`: all biodata.

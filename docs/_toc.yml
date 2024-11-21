@@ -12,7 +12,8 @@ parts:
   - file: example_notebooks
     title: Example workflows and analyses
     sections:
-    - file: example_notebooks/example_echopop_workflow.ipynb 
+    - file: example_notebooks/example_echopop_workflow
+    - file: example_notebooks/report_generation
   - file: theory
     title: Underlying theory
     sections:
