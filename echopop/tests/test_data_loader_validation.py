@@ -2370,6 +2370,11 @@ def CONFIG_DATA_MODEL_fields() -> Dict[str, Any]:
             "default": None,
             "frozen": None,
         },
+        "report_path": {
+            "annotation": Union[str, None],
+            "default": None,
+            "frozen": None,
+        },
         "CAN_haul_offset": {
             "annotation": Union[int, None],
             "default": None,
