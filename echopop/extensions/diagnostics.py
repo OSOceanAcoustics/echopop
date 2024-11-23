@@ -14,7 +14,7 @@ import panel as pn
 from bokeh.models import HoverTool
 from shapely.geometry import LineString
 
-from .. import Survey
+from ..survey import Survey
 
 ####################################################################################################
 # Utility functions
