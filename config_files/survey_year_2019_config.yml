@@ -14,6 +14,12 @@ species:
 CAN_haul_offset: 200         # The value to be added to the Canadian's haul number
 
 ##############################################################################
+# Report generation
+###################
+# Where the reports are saved
+report_path: C:/Users/Brandyn/Documents/GitHub/EchoPro_data/Data/reports
+
+##############################################################################
 # Directory path that contains all input data needed
 
 # data_root_dir: C:/Users/Brandyn Lucca/Documents/Data/echopop_2019
