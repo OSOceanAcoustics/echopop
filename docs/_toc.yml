@@ -14,6 +14,7 @@ parts:
     sections:
     - file: example_notebooks/example_echopop_workflow
     - file: example_notebooks/report_generation
+    - file: example_notebooks/plotting.ipynb
   - file: theory
     title: Underlying theory
     sections:

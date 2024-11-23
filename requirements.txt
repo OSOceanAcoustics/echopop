@@ -5,9 +5,11 @@ openpyxl
 pandas
 scipy
 # Spatial data processing stack
+cartopy
 geopandas
 geopy
 shapely
+verde
 # Visualization stack
 ipympl
 ipywidgets
