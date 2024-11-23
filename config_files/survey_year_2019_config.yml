@@ -22,8 +22,8 @@ report_path: C:/Users/Brandyn/Documents/GitHub/EchoPro_data/Data/reports
 ##############################################################################
 # Directory path that contains all input data needed
 
-data_root_dir: C:/Users/Brandyn Lucca/Documents/Data/echopop_2019
-# data_root_dir: C:/Users/Brandyn/Documents/GitHub/EchoPro_data/Data/
+# data_root_dir: C:/Users/Brandyn Lucca/Documents/Data/echopop_2019
+data_root_dir: C:/Users/Brandyn/Documents/GitHub/EchoPro_data/Data/
 
 ##############################################################################
 # Input data files
