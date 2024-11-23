@@ -316,7 +316,7 @@ class DiagnosticPlot:
             </div>
             """
         # ---- Create hovertool
-        hover_tool = HoverTool(tooltips=TOOLTIPS, mode="mouse")
+        hover_tool = HoverTool(tooltips=TOOLTIPS, mode="mouse", point_policy="snap_to_data")
 
         # Create transect layer
         transect_gv = gv.Path(transect_gdf, label="Transect").opts(color="black", show_legend=True)
