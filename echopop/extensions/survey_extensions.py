@@ -11,6 +11,7 @@ from .feat_report import FEATReports
 # .feat_report
 # --------------------------------------------------------------------------------------------------
 
+
 def _generate_reports(self: Survey, **kwargs) -> None:
 
     # Create `FEATReports` instance
@@ -25,29 +26,35 @@ def _report_options(self) -> List[str]:
     # Get report options
     return FEATReports.report_options()
 
+
 # --------------------------------------------------------------------------------------------------
 # .diagnostics
 # --------------------------------------------------------------------------------------------------
+
 
 def _mesh_cropping_results(self: Survey) -> None:
 
     # Plot cropped mesh results
     return DiagnosticPlot(self).mesh_cropping_results()
 
+
 def _mesh_regions(self: Survey) -> None:
 
     # Plot mesh transect regions
     return DiagnosticPlot(self).mesh_regions()
+
 
 def _nasc_map(self: Survey) -> None:
 
     # Plot high-leverage NASC data
     return DiagnosticPlot(self).nasc_map()
 
+
 def _stratified_results(self: Survey) -> None:
 
     # Plot stratified results
     return DiagnosticPlot(self).stratified_results()
+
 
 ####################################################################################################
 # PATCHERS
@@ -68,6 +75,7 @@ def patch_generate_reports():
     Survey.generate_reports = _generate_reports
     # ---- `report_options()`
     Survey.report_options = _report_options
+
 
 def patch_diagnostic_plots():
     """

@@ -2,7 +2,6 @@ from .survey_extensions import (
     patch_diagnostic_plots as diagnostic_plots,
     patch_generate_reports as generate_reports,
 )
-    
 
 
 # Flex patch import
