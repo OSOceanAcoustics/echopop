@@ -14,7 +14,7 @@ from .analysis import (
     variogram_analysis,
 )
 from .core import DATA_STRUCTURE
-from .graphics import variogram_interactive as egv
+from .graphics import plotting as egp, variogram_interactive as egv
 from .spatial.projection import transform_geometry
 from .spatial.transect import edit_transect_columns
 from .utils import load as el, load_nasc as eln, message as em
@@ -908,7 +908,10 @@ class Survey:
                         and "model_config" in self.input["statistics"]["variogram"]
                     )
                     else (
-                        self.input["statistics"]["variogram"]["model_config"]
+                        {
+                            **self.input["statistics"]["variogram"]["model_config"],
+                            **{"model": ["exponential", "bessel"], "n_lags": 30},
+                        }
                         if (
                             not variogram_parameters
                             and "model_config" in self.input["statistics"]["variogram"]
@@ -960,6 +963,150 @@ class Survey:
         # Print result if `verbose == True`
         if verbose:
             em.kriging_results_msg(self.results["kriging"], self.analysis["settings"]["kriging"])
+
+    def plot(
+        self,
+        kind: Literal["age_length_distribution", "mesh", "transect"],
+        variable: str,
+        plot_parameters: Dict[str, Any] = {},
+        plot_type: Optional[Literal["heatmap", "hexbin", "scatter", "pcolormesh"]] = None,
+    ):
+        """
+        Plotting method for visualizing results
+
+        Note
+        ----------
+        *See `Plotting parameterization` section for more details*
+
+        Parameters
+        ----------
+        kind: Literal["age_length_distribution", "mesh", "transect"]
+            The 'kind' of plot and dataset that will be visualized. Possible plots include:
+
+            - `age_length_distribution`: two-dimensional heatmap of population estimates
+                as a function of age (x-axis) and length (y-axis).
+
+            - `mesh`:  map displaying kriged estimates distributed across the spatial kriging
+                mesh.
+
+            - `transect`: bubbleplot of various along-transect population estimates.
+
+        variable: str
+            The variable used for plotting. *See the `Plotting Variables` section for more details*.
+        plot_parameters: Dict[str, Any]
+            A dictionary comprising various plotting parameters. *See the `Plotting parameters`
+            for more details*.
+        plot_type: Optional[Literal["heatmap", "hexbin", "scatter", "pcolormesh"]]
+            The type of plot. Options are specific to each `kind`:
+
+            - `age_length_distribution`: ["heatmap"]
+            - `mesh`: ["hexbin", "scatter", "pcolormesh"]
+            - `transect`: ["scatter"]
+
+        Other Parameters
+        ----------------
+        Valid variables depend on the input for `kind`:
+
+        "age_length_distribution":
+
+            - **"abundance"**: Animal abundance.
+            - **"biomass"**: Animal biomass.
+
+        "mesh":
+
+            - **"biomass"**: Kriged animal biomass.
+            - **"biomass_density"**: Kriged animal biomass density.
+            - **"kriged_variance"**: Kriging variance, which represents the spatial uncertainty in
+            prediced kriged estimates.
+            - **"kriged_cv"**: Coefficient of variation calculated for each mesh node.
+            - **"local_variance"**: Sample variance of local all transect values within the search
+            radius of each mesh node.
+
+
+        "transect":
+
+            - **"abundance"**: Animal abundance.
+            - **"abundance_female"**/**"abundance_male"**: Sexed animal abundance.
+            - **"biomass"**: Animal biomass.
+            - **"biomass_female"**/**"biomass_male"**: Sexed animal biomass.
+            - **"biomass_density"**: Animal biomass density.
+            - **"biomass_density_female"**/**"biomass_density_male"**: Sexed animal biomass density.
+            - **"nasc"**: Nautical area scattering coefficient (NASC).
+            - **"number_density"**: Animal number density.
+            - **"number_density_female"**/**"number_density_male"**: Sexed animal number density.
+
+        The format for `plotting_parameters` is:
+
+        axis_limits: Optional[Dict[str, Any]]
+
+            A dictionary that contains limits for the x- and y-axes. This should contain two
+            nested dictionaries for `x` and `y`:
+
+            - `xmin`/`ymin` (float): Minimum x- and y-axis values.
+            - `xmax`/`ymax` (float): Maximum x- and y-axis values.
+            - `left`/`right` (float): The left- and right-most axis values. This should not be
+            included if `xmin`/`xmax`/`ymin`/`ymax` are included.
+
+        geo_config: Optional[Dict[str, Any]]
+            A dictionary that contains three keyword arguments:
+
+            - `coastline` (`cartopy.feature.Feature`): A `cartopy.feature.Feature` object that
+            includes land and/or coastline information used for geospatial plots.
+
+            - `init` (str): The initial geospatial projection code (e.g. "EPSG:4326").
+
+            - `plot_projection` (`cartopy.crs.Projection`): A `cartopy.crs.Projection`
+            projection object used for plotting geospatial data.
+
+        grid_heatmap: Optional[bool]
+            An optional boolean value for adding correctly spaced gridlines to the biological
+            heatmap. It is otherwise not used for the spatial plots.
+        sex: Optional[Literal["all", "female", "male"]]
+            An optional argument for defining which fish sex to plot for the biological
+            heatmap. It is otherwise not used for the spatial plots.
+        log_base: Optional[float]
+            Base for rescaling the plot colormap via logarithmic transformation.
+        cmap: Optional[str]
+            Plotting colormap (e.g. "viridis").
+        vmin, vmax: Optional[float]
+            The data range used to rescale the colormap in linear or logarithmic space.
+        **kwargs: Dict[str, Any]
+            Plotting functions can accept additional arguments used within
+            :func:`matplotlib.pyplot.plot`
+
+        See Also
+        ----------------
+        :func:`matplotlib.pyplot.plot`
+            For more details on `matplotlib` plotting function keyword arguments. Keep in mind that
+            these should be used in caution as they may interfere with the primary variables
+            defined for `plotting_parameters`.
+
+        """
+
+        # Get associated plotting function information
+        plot_info = egp.PLOT_MAP(self, kind)
+
+        # Initialize 'parameters' dictionary
+        parameters = plot_parameters.copy()
+
+        # Proceed with plotting
+        # ---- Type: spatial
+        if plot_info["type"] == "spatial":
+            # ---- Get the geospatial configuration
+            geo_config = self.config["geospatial"].copy()
+            # ---- Create copy of user-defined geospatial configuration
+            geo_param = parameters.get("geo_config", {})
+            # ---- Update the parameterization
+            parameters.update({"geo_config": {**geo_config, **geo_param}})
+
+        # Add the primary arguments into the dictionary
+        parameters.update(dict(kind=kind, plot_type=plot_type, variable=variable))
+
+        # Prepare plotting parameters
+        validated_parameters = egp.validate_plot_args(**parameters)
+
+        # Plot
+        plot_info.get("function")(plot_info.get("data"), **validated_parameters)
 
     def summary(self, results_name: str):
         """

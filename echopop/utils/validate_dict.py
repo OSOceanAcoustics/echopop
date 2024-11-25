@@ -498,6 +498,7 @@ class CONFIG_DATA_MODEL(InputModel):
     NASC: Dict[str, XLSXFile]
     species: SpeciesDefinition
     kriging: KrigingFiles
+    report_path: Optional[str] = None
     data_root_dir: Optional[str] = None
     CAN_haul_offset: Optional[int] = None
     ship_id: Optional[Union[int, str, float]] = None
@@ -914,7 +915,7 @@ class MeshCrop(
 class KrigingParameterInputs(
     BaseModel, arbitrary_types_allowed=True, title="kriging model parameters ('kriging_parameters')"
 ):
-    anisotropy: realposfloat = Field(default=0.0, allow_inf_nan=False)
+    anisotropy: realposfloat = Field(default=1e-3, allow_inf_nan=False)
     kmin: posint = Field(default=3, ge=3)
     kmax: posint = Field(default=10, ge=3)
     correlation_range: Optional[realposfloat] = Field(default=None, gt=0.0, allow_inf_nan=False)

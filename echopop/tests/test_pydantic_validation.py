@@ -1124,12 +1124,12 @@ def test_KrigingParameterInputs_model_structure(description):
         (dict(), None, "Both 'correlation_range' and 'search_radius' arguments are missing"),
         (
             dict(correlation_range=1.0),
-            dict(anisotropy=0.0, kmin=3, kmax=10, correlation_range=1.0, search_radius=3.0),
+            dict(anisotropy=1e-3, kmin=3, kmax=10, correlation_range=1.0, search_radius=3.0),
             None,
         ),
         (
             dict(correlation_range=1.0, search_radius=5.0),
-            dict(anisotropy=0.0, kmin=3, kmax=10, correlation_range=1.0, search_radius=5.0),
+            dict(anisotropy=1e-3, kmin=3, kmax=10, correlation_range=1.0, search_radius=5.0),
             None,
         ),
         (
