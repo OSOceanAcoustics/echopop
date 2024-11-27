@@ -299,7 +299,7 @@ class DiagnosticPlot:
             DATACOPY.nasc.max() - DATACOPY.nasc.min()
         )
         # ---- Set sizing
-        DATACOPY["nasc_size"] = DATACOPY["nasc_scale"] * 25 + 2 # (minimum size value)
+        DATACOPY["nasc_size"] = DATACOPY["nasc_scale"] * 25 + 2  # (minimum size value)
 
         # Create TOOLTIP
         TOOLTIPS = """
