@@ -271,8 +271,12 @@ def read_validated_data(
         df = validation_settings.validate_df(df_initial)
     else:
         # Read Excel file into memory -- this only reads in the required columns
-        df = pd.read_excel(file_name, sheet_name=sheet_name).rename(columns=NAME_CONFIG)
-        # ---- Rename the columns, if needed, and then filter them
+        df = pd.read_excel(file_name, sheet_name=sheet_name)
+        # ---- Force the column names to be lower case
+        df.columns = df.columns.str.lower()
+        # ---- Rename the columns
+        df.rename(columns=NAME_CONFIG, inplace=True)
+        # ---- Validate the dataframes
         df = validation_settings.validate_df(df)
 
     # Assign the data to their correct data attributes/keys
