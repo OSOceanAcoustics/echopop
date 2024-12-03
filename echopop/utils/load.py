@@ -644,6 +644,8 @@ def preprocess_biology_spatial(input_dict: dict) -> None:
     input_dict["spatial"]["inpfc_strata_df"].rename(
         columns={"stratum_num": "stratum_inpfc"}, inplace=True
     )
+    # ---- Set the index to `haul_bins`
+    inpfc_df = input_dict["spatial"]["inpfc_strata_df"].copy().set_index(["haul_bin"])
 
     # Get the KS-strata
     strata_df = input_dict["spatial"]["strata_df"].copy().set_index(["haul_num"])
@@ -661,6 +663,19 @@ def preprocess_biology_spatial(input_dict: dict) -> None:
             )
             # ---- Reset the index
             input_dict["biology"][keys].reset_index(inplace=True)
+            # ---- Bin for `stratum_inpfc`
+            input_dict["biology"][keys]["haul_bin"] = pd.cut(
+                input_dict["biology"][keys]["haul_num"],
+                haul_bins
+            )
+            # ---- Set index to `haul_bins`
+            input_dict["biology"][keys].set_index(["haul_bin"], inplace=True)
+            # ---- Merge
+            input_dict["biology"][keys]["stratum_inpfc"] = inpfc_df["stratum_inpfc"]
+            # ---- Reset indices
+            input_dict["biology"][keys].reset_index(inplace=True)
+            # ---- Drop `haul_bin`
+            input_dict["biology"][keys].drop(columns=["haul_bin"], inplace=True)
 
 
 def preprocess_acoustic_biology_spatial(input_dict: dict, configuration_dict: dict) -> None:
