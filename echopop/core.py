@@ -11,6 +11,7 @@ import pandas as pd
 NAME_CONFIG = {
     "Age": "age",
     "Cell portion": "fraction_cell_in_polygon",
+    "Cluster name": "stratum_num",
     "Frequency": "length_count",
     "haul": "haul_num",
     "haul end": "haul_end",
@@ -27,8 +28,11 @@ NAME_CONFIG = {
     "Ship": "ship_id",
     "Spacing": "transect_spacing",
     "Species_Code": "species_id",
+    "species_code": "species_id",
     "Species_Name": "species_name",
+    "strata_index": "stratum_num",
     "Strata Index": "stratum_num",
+    "Strata index": "stratum_num",
     "Stratum": "stratum_num",
     "Transect": "transect_num",
     "VL start": "vessel_log_start",
@@ -36,6 +40,7 @@ NAME_CONFIG = {
     "wt": "fraction_hake",
     "Weight": "weight",
     "Weight_In-Haul": "haul_weight",
+    "weight_in_haul": "haul_weight",
 }
 
 ECHOVIEW_EXPORT_MAP = {

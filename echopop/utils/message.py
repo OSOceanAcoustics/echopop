@@ -243,13 +243,13 @@ def kriging_results_msg(kriging_results_dict: pd.DataFrame, settings_dict: dict)
 
     # Break down strings
     # ---- Mesh cropping
-    mesh_crop = (
-        settings_dict["cropping_parameters"]["crop_method"].capitalize()
-        if not settings_dict["extrapolate"]
-        else None
-    )
-    # ---- Replace '_'
-    mesh_crop = mesh_crop.replace("_", " ")
+    if not settings_dict["extrapolate"]:
+        crop_str = (
+            f"Mesh cropping method: "
+            f"{settings_dict["cropping_parameters"]["crop_method"].capitalize().replace("_", " ")}"
+        )
+    else: 
+        crop_str ="Extrapolated over uncropped grid"
 
     # Generate message output
     return print(
@@ -261,7 +261,7 @@ def kriging_results_msg(kriging_results_dict: pd.DataFrame, settings_dict: dict)
         f"| Age-1 fish excluded: {settings_dict['exclude_age1']}\n"
         f"| Stratum definition: {settings_dict['stratum'].upper()}\n"
         f"| Mesh extrapolation: {settings_dict['extrapolate']}\n"
-        f"    Mesh cropping method: {mesh_crop}\n"
+        f"    {crop_str}\n"
         f"| Mesh and transect coordinate standardization: "
         f"{settings_dict['standardize_coordinates']}\n"
         f"--------------------------------\n"
