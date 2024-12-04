@@ -284,16 +284,16 @@ def nasc_to_biomass(
         # ---- Offset starts
         inpfc_df["haul_start"] = inpfc_df["haul_start"] - int(1)
         # ---- Get the `haul_bins`
-        haul_bins =  np.unique(inpfc_df.loc[:, "haul_start":"haul_end"].stack().values)
-        # NOT CORRECT BINS ! 
-        
+        haul_bins = np.unique(inpfc_df.loc[:, "haul_start":"haul_end"].stack().values)
+        # NOT CORRECT BINS !
+
         # ---- Cut `strata_df` to haul_bins
         strata_df["haul_bin"] = pd.cut(strata_df["haul_num"], haul_bins)
         # ---- Set index
         strata_df.set_index(["haul_bin"], inplace=True)
         # ---- Merge
         strata_df["stratum_inpfc"] = inpfc_df["stratum_inpfc"]
-        # ---- Reset index 
+        # ---- Reset index
         strata_df = strata_df.reset_index().drop(columns=["haul_bin", "stratum_num"])
 
     # Get group-specific column names and create conversion key

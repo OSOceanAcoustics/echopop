@@ -669,8 +669,7 @@ def preprocess_biology_spatial(input_dict: dict) -> None:
             input_dict["biology"][keys].reset_index(inplace=True)
             # ---- Bin for `stratum_inpfc`
             input_dict["biology"][keys]["haul_bin"] = pd.cut(
-                input_dict["biology"][keys]["haul_num"],
-                haul_bins
+                input_dict["biology"][keys]["haul_num"], haul_bins
             )
             # ---- Set index to `haul_bins`
             input_dict["biology"][keys].set_index(["haul_bin"], inplace=True)

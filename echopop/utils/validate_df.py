@@ -1,13 +1,13 @@
 import copy
 import re
+from typing import Optional
 
 import numpy as np
 import pandas as pd
-
 from pandera import DataFrameModel, Field, check
 from pandera.errors import SchemaError, SchemaErrors
 from pandera.typing import Series
-from typing import Optional
+
 
 ####################################################################################################
 # UTILITY FUNCTION
@@ -153,8 +153,9 @@ class BaseDataFrame(DataFrameModel):
         return errors_coerce
 
     @classmethod
-    def judge(cls, df: pd.DataFrame, coercion_failures: pd.DataFrame, 
-              filename: str) -> pd.DataFrame:
+    def judge(
+        cls, df: pd.DataFrame, coercion_failures: pd.DataFrame, filename: str
+    ) -> pd.DataFrame:
         # ---- Collect errors
         errors = []
         try:

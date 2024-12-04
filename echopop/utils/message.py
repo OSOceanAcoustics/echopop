@@ -246,10 +246,10 @@ def kriging_results_msg(kriging_results_dict: pd.DataFrame, settings_dict: dict)
     if not settings_dict["extrapolate"]:
         crop_str = (
             f"Mesh cropping method: "
-            f"{settings_dict["cropping_parameters"]["crop_method"].capitalize().replace("_", " ")}"
+            f"{settings_dict['cropping_parameters']['crop_method'].capitalize().replace('_', ' ')}"
         )
-    else: 
-        crop_str ="Extrapolated over uncropped grid"
+    else:
+        crop_str = "Extrapolated over uncropped grid"
 
     # Generate message output
     return print(
