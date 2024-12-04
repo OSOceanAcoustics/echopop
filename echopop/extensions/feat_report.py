@@ -1153,9 +1153,7 @@ class FEATReports:
         # Reduce the datasets
         self.data.analysis["transect"]["acoustics"]["adult_transect_df"].loc[
             lambda x: x.nasc > 0
-        ].to_excel(
-            filepath[1], sheet_name="Sheet1", index=None
-        )
+        ].to_excel(filepath[1], sheet_name="Sheet1", index=None)
 
         # Return the filepath name
         return filepath[0].as_posix(), filepath[1].as_posix()
@@ -1241,6 +1239,6 @@ class FEATReports:
             "filename": (
                 "EchoPro_un-kriged_output_0.xlsx",
                 "EchoPro_un-kriged_output_1.xlsx",
-            )
+            ),
         },
     }
