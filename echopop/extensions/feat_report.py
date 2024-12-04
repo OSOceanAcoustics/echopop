@@ -1142,16 +1142,23 @@ class FEATReports:
         **kwargs,
     ):
 
-        # Get the filepath
-        filepath = self.save_directory / filename
+        # Get filepaths
+        filepath = tuple([self.save_directory / f for f in filename])
 
         # Save the *.xlsx sheet
         self.data.analysis["transect"]["acoustics"]["adult_transect_df"].to_excel(
-            filepath, sheet_name="Sheet1", index=None
+            filepath[0], sheet_name="Sheet1", index=None
+        )
+
+        # Reduce the datasets
+        self.data.analysis["transect"]["acoustics"]["adult_transect_df"].loc[
+            lambda x: x.nasc > 0
+        ].to_excel(
+            filepath[1], sheet_name="Sheet1", index=None
         )
 
         # Return the filepath name
-        return filepath.as_posix()
+        return filepath[0].as_posix(), filepath[1].as_posix()
 
     @staticmethod
     def report_options():
@@ -1177,60 +1184,63 @@ class FEATReports:
         "aged_length_haul_counts": {
             "function": aged_length_haul_counts_report,
             "title": "Aged Length-Haul Counts ({SEX})",
-            "filename": "aged_length_haul_counts_table.xlsx",
+            "filename": "aged_len_haul_counts_table.xlsx",
         },
         "kriged_aged_biomass_mesh": {
             "function": kriged_aged_biomass_mesh_report,
             "title": None,
             "filename": (
-                "kriged_aged_biomass_mesh_dataframe.xlsx",
-                "kriged_aged_biomass_reduced_mesh_dataframe.xlsx",
+                "EchoPro_kriged_aged_output_0.xlsx",
+                "EchoPro_kriged_aged_output_1.xlsx",
             ),
         },
         "kriged_biomass_mesh": {
             "function": kriged_biomass_mesh_report,
             "title": None,
             "filename": (
-                "kriged_biomass_mesh_dataframe.xlsx",
-                "kriged_biomass_mesh_reduced_dataframe.xlsx",
+                "EchoPro_kriged_output_0.xlsx",
+                "EchoPro_kriged_output_1.xlsx",
             ),
         },
         "kriged_length_age_biomass": {
             "function": kriged_length_age_biomass_report,
             "title": "Kriged Acoustically Weighted Biomass (mmt) ({SEX})",
-            "filename": "kriged_length_age_biomass_table.xlsx",
+            "filename": "kriged_len_age_biomass_table.xlsx",
         },
         "kriging_input": {
             "function": kriging_input_report,
             "title": None,
-            "filename": "kriging_input_dataframe.xlsx",
+            "filename": "kriging_input.xlsx",
         },
         "total_length_haul_counts": {
             "function": total_length_haul_counts_report,
             "title": "Un-Aged Length-Haul Counts ({SEX})",
-            "filename": "total_length_haul_counts_table.xlsx",
+            "filename": "total_len_haul_counts_table.xlsx",
         },
         "transect_aged_biomass": {
             "function": transect_aged_biomass_report,
             "title": None,
             "filename": (
-                "transect_aged_biomass_dataframe.xlsx",
-                "transect_aged_biomass_reduced_dataframe.xlsx",
+                "EchoPro_un-kriged_aged_output_0.xlsx",
+                "EchoPro_un-kriged_aged_output_1.xlsx",
             ),
         },
         "transect_length_age_abundance": {
             "function": transect_length_age_abundance_report,
             "title": "Transect-based Acoustically Weighted Abundance ({SEX})",
-            "filename": "transect_length_age_abundance_table.xlsx",
+            "filename": "un-kriged_len_age_abundance_table.xlsx",
         },
         "transect_length_age_biomass": {
             "function": transect_length_age_biomass_report,
             "title": "Transect-based Acoustically Weighted Biomass (mmt) ({SEX})",
-            "filename": "transect_length_age_biomass_table.xlsx",
+            "filename": "un-kriged_len_age_biomass_table.xlsx",
         },
         "transect_population_results": {
             "function": transect_population_results_report,
             "title": None,
-            "filename": "transect_population_results_dataframe.xlsx",
+            "filename": (
+                "EchoPro_un-kriged_output_0.xlsx",
+                "EchoPro_un-kriged_output_1.xlsx",
+            )
         },
     }
