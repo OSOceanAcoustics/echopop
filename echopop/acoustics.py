@@ -275,15 +275,26 @@ def nasc_to_biomass(
     age_group_cols = settings_dict["transect"]["age_group_columns"]
 
     # Extract the correct strata dataframe
+    # ---- Define `strata_df`
+    strata_df = input_dict["spatial"]["strata_df"].copy()
+    # ---- Determine with the default ('ks') needs to be swapped out for 'inpfc'
     if settings_dict["transect"]["stratum"] == "inpfc":
-        # ---- Get the haul-to-transect key
-        haul_to_transect_key = input_dict["biology"]["haul_to_transect_df"].copy()
-        # ---- Remove NaN fractions
-        haul_to_transect_key.dropna(subset=["fraction_hake"], inplace=True)
-        # ---- Reduce the columns
-        strata_df = haul_to_transect_key.filter(["stratum_inpfc", "haul_num", "fraction_hake"])
-    else:
-        strata_df = input_dict["spatial"]["strata_df"]
+        # ---- Get the INPFC strata
+        inpfc_df = input_dict["spatial"]["inpfc_strata_df"].copy().set_index(["haul_bin"])
+        # ---- Offset starts
+        inpfc_df["haul_start"] = inpfc_df["haul_start"] - int(1)
+        # ---- Get the `haul_bins`
+        haul_bins = np.unique(inpfc_df.loc[:, "haul_start":"haul_end"].stack().values)
+        # NOT CORRECT BINS !
+
+        # ---- Cut `strata_df` to haul_bins
+        strata_df["haul_bin"] = pd.cut(strata_df["haul_num"], haul_bins)
+        # ---- Set index
+        strata_df.set_index(["haul_bin"], inplace=True)
+        # ---- Merge
+        strata_df["stratum_inpfc"] = inpfc_df["stratum_inpfc"]
+        # ---- Reset index
+        strata_df = strata_df.reset_index().drop(columns=["haul_bin", "stratum_num"])
 
     # Get group-specific column names and create conversion key
     name_conversion_key = {age_group_cols["haul_id"]: "haul_num", age_group_cols["nasc_id"]: "nasc"}
