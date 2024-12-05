@@ -1263,6 +1263,7 @@ def impute_kriged_values(
     aged_length_totals: pd.DataFrame,
     unaged_apportioned_table: pd.DataFrame,
     settings_dict: dict,
+    variable: str,
 ):
     """
     Impute unaged population estimates over length-bins where there are no corresponding aged
@@ -1282,9 +1283,9 @@ def impute_kriged_values(
     settings_dict: dict
         Dictionary that contains all of the analysis settings that detail specific algorithm
         arguments and user-defined inputs.
+    variable: str
+        Name of biological variable being imputed.
     """
-    # Extract the biological variable name (independent of area)
-    biology_col = settings_dict["variable"].replace("_density", "")
 
     # Imputation is required when unaged values are present but aged values are absent at shared
     # length bins! This requires an augmented implementation to address this accordingly
@@ -1374,7 +1375,7 @@ def impute_kriged_values(
                 ]
                 # ---- Print
                 print(
-                    f"""Imputed apportioned unaged male {biology_col} at length bins:\n"""
+                    f"""Imputed apportioned unaged male {variable} at length bins:\n"""
                     f"""{', '.join(intervals_list)}"""
                 )
             # ---- Female:
@@ -1386,38 +1387,37 @@ def impute_kriged_values(
                 ]
                 # ---- Print
                 print(
-                    f"""Imputed apportioned unaged female {biology_col} at length bins:\n"""
+                    f"""Imputed apportioned unaged female {variable} at length bins:\n"""
                     f"""{', '.join(intervals_list)}"""
                 )
     # ---- Sum the aged and unaged estimates together
     return (
         (unaged_apportioned_table + aged_age_length_table.unstack("sex"))
         .unstack()
-        .reset_index(name=f"{biology_col}_apportioned")
+        .reset_index(name=f"{variable}_apportioned")
     )
 
 
-def reallocate_kriged_age1(kriging_table: pd.DataFrame, settings_dict: dict):
+def reallocate_kriged_age1(table: pd.DataFrame, settings_dict: dict, variable: str):
     """
     Allocate kriged age-1 population estimates over age-2+ age- and length-bins
 
     Parameters
     ----------
-    kriged_table: pd.DataFrame
+    table: pd.DataFrame
         Population estimates distributed over age- and length-bins.
     settings_dict: dict
         Dictionary that contains all of the analysis settings that detail specific algorithm
         arguments and user-defined inputs.
+    variable: str
+        Biological variable being kriged.
     """
 
-    # Extract the biological variable (independent of area)
-    biology_col = settings_dict["variable"].replace("_density", "")
-
     # Pivot the kriged table
-    kriged_tbl = kriging_table.pivot_table(
+    kriged_tbl = table.pivot_table(
         index=["length_bin"],
         columns=["sex", "age_bin"],
-        values=f"{biology_col}_apportioned",
+        values=variable,
         observed=False,
         aggfunc="sum",
     )
@@ -1429,34 +1429,36 @@ def reallocate_kriged_age1(kriging_table: pd.DataFrame, settings_dict: dict):
     adult_sum = kriged_tbl.sum().unstack("sex").iloc[1:].sum()
 
     # Append the aged results to the kriged table
-    # ---- Set the index of the kriged table dataframe
-    kriging_table.set_index("sex", inplace=True)
+    # ---- Copy
+    data_table = table.copy()
+    # ---- Set the index of the kriged data_table dataframe
+    data_table.set_index("sex", inplace=True)
     # ---- Append the age-1 sums
-    kriging_table["summed_sex_age1"] = age_1_sum
+    data_table["summed_sex_age1"] = age_1_sum
     # ---- Append the adult sums
-    kriging_table["summed_sex_adult"] = adult_sum
+    data_table["summed_sex_adult"] = adult_sum
     # ---- Drop sex as an index
-    kriging_table = kriging_table.reset_index()
+    data_table = data_table.reset_index()
 
     # Calculate the new contribution fractions
     # ---- Calculate the adjusted apportionment that will be distributed over the adult values
-    kriging_table["adjustment"] = (
-        kriging_table["summed_sex_age1"]
-        * kriging_table[f"{biology_col}_apportioned"]
-        / kriging_table["summed_sex_adult"]
+    data_table["adjustment"] = (
+       data_table["summed_sex_age1"]
+        * data_table[variable]
+        / data_table["summed_sex_adult"]
     )
     # ---- Apply the adjustment
-    kriging_table.loc[:, f"{biology_col}_apportioned"] = (
-        kriging_table.loc[:, f"{biology_col}_apportioned"] + kriging_table.loc[:, "adjustment"]
+    data_table.loc[:, variable] = (
+        data_table.loc[:, variable] + data_table.loc[:, "adjustment"]
     )
     # ---- Index by age bins
-    kriging_table.set_index("age_bin", inplace=True)
+    data_table.set_index("age_bin", inplace=True)
     # ---- Zero out the age-1 values
-    kriging_table.loc[[1], f"{biology_col}_apportioned"] = 0.0
+    data_table.loc[[1], variable] = 0.0
     # ---- Remove age as an index
-    kriging_table = kriging_table.reset_index()
+    data_table = data_table.reset_index()
     # ---- Drop temporary columns
-    kriging_table.drop(columns=["summed_sex_age1", "summed_sex_adult", "adjustment"], inplace=True)
+    data_table.drop(columns=["summed_sex_age1", "summed_sex_adult", "adjustment"], inplace=True)
 
     # Return output
-    return kriging_table
+    return data_table
