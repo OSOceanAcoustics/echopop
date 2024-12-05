@@ -413,7 +413,7 @@ def write_age_length_table_report(
     wb = initialize_workbook(filepath)
 
     # Iterate through all sexes
-    for sex in ["all", "female", "male"]:
+    for sex in ["male", "female", "all"]:
 
         # Subset the data dictionary for the particular sheet
         sheet_data = tables_dict[sex]
@@ -452,7 +452,7 @@ def write_haul_report(
     wb = initialize_workbook(filepath)
 
     # Iterate through all sexes
-    for sex in ["all", "female", "male"]:
+    for sex in ["male", "female", "all"]:
 
         # Subset the data dictionary for the particular sheet
         sheet_data = tables_dict[sex]
