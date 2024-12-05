@@ -588,17 +588,21 @@ def apportion_kriged_values(
     unaged_sexed_apportioned = unaged_proportions.merge(aged_unaged_sex_proportions)
     # ---- Set index to stratum column
     unaged_sexed_apportioned.set_index([stratum_col], inplace=True)
+    # ---- Set the index based on `summed_abundance`
+    summed_abundance_indexed = summed_abundance.reindex(unaged_sexed_apportioned.index)
     # ---- Append the stratum-aggregated abundance values
     unaged_sexed_apportioned["abundance_apportioned_unaged"] = (
         unaged_sexed_apportioned["weight_proportion"]
         * unaged_sexed_apportioned["weight_proportion_overall_unaged"]
-        * summed_abundance
+        * summed_abundance_indexed
     )
+    # ---- Set the index based on `summed_biomass`
+    summed_biomass_indexed = summed_biomass.reindex(unaged_sexed_apportioned.index)
     # ---- Append the stratum-aggregated biomass values
     unaged_sexed_apportioned["biomass_apportioned_unaged"] = (
         unaged_sexed_apportioned["weight_proportion"]
         * unaged_sexed_apportioned["weight_proportion_overall_unaged"]
-        * summed_biomass
+        * summed_biomass_indexed
     )
 
     # Distribute biological values over the overall proportions (i.e. relative to aged and unaged
