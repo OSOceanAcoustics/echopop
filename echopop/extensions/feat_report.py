@@ -77,7 +77,7 @@ def append_datatable_rows(worksheet: Worksheet, dataframe: pd.DataFrame) -> None
     """
 
     # Add column names (i.e. age)
-    worksheet.append([""] + dataframe.columns.values.tolist())
+    worksheet.append([0] + dataframe.columns.values.tolist())
 
     # Get the dataset row indices
     ROW_INDICES = dataframe.index.values
