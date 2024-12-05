@@ -887,17 +887,13 @@ class Survey:
                 # ---- From `self.transect_analysis` settings
                 "exclude_age1": self.analysis["settings"]["transect"]["exclude_age1"],
                 "stratum": self.analysis["settings"]["transect"]["stratum"],
+                "stratum_name": self.analysis["settings"]["transect"]["stratum_name"],
             },
         )
 
         # Calculate additional keys for the settings
         self.analysis["settings"]["kriging"].update(
             {
-                "stratum_name": (
-                    "stratum_num"
-                    if self.analysis["settings"]["kriging"]["stratum"] == "ks"
-                    else "inpfc"
-                ),
                 "variogram_parameters": (
                     {
                         **self.input["statistics"]["variogram"]["model_config"],
