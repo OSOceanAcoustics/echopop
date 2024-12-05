@@ -4,11 +4,10 @@ General analysis orchestration functions that bundle related functions and proce
 
 import copy
 import warnings
+from typing import Any, Dict
 
 import numpy as np
 import pandas as pd
-
-from typing import Any, Dict
 
 from .acoustics import aggregate_sigma_bs, nasc_to_biomass
 from .biology import (
@@ -462,9 +461,7 @@ def krige(input_dict: dict, analysis_dict: dict, settings_dict: dict) -> tuple[p
     )
 
     # Stratified the kriging mesh
-    mesh_results = stratify_mesh(
-        input_dict, kriged_results["mesh_results_df"], settings_dict
-    )
+    mesh_results = stratify_mesh(input_dict, kriged_results["mesh_results_df"], settings_dict)
 
     # Back-calculate abundance and NASC from kriged biomass
     kriged_results["mesh_results_df"] = back_calculate_abundance_nasc(
@@ -474,9 +471,10 @@ def krige(input_dict: dict, analysis_dict: dict, settings_dict: dict) -> tuple[p
     # Return kriged (interpolated) results
     return kriged_results, analysis_dict
 
-def back_calculate_abundance_nasc(mesh_results_df: pd.DataFrame, 
-                                  transect_dict: Dict[str, Any], 
-                                  settings_dict: Dict[str, Any]) -> pd.DataFrame: 
+
+def back_calculate_abundance_nasc(
+    mesh_results_df: pd.DataFrame, transect_dict: Dict[str, Any], settings_dict: Dict[str, Any]
+) -> pd.DataFrame:
     """
     Back-calculate abundances and NASC from kriged biomass
     """
@@ -492,19 +490,22 @@ def back_calculate_abundance_nasc(mesh_results_df: pd.DataFrame,
     # ---- Sub-select and set index
     weight_strata = (
         weight_strata[weight_strata["sex"] == "all"]
-        .set_index([stratum_col]).reindex(mesh_results_df.index)
+        .set_index([stratum_col])
+        .reindex(mesh_results_df.index)
     )
 
     # Get the average `sigma_bs` per stratum
     strata_mean_sigma_bs = (
-        transect_dict["acoustics"]["sigma_bs"]["strata_mean_df"]
-        .copy()
-    ).set_index([stratum_col]).reindex(mesh_results_df.index)
+        (transect_dict["acoustics"]["sigma_bs"]["strata_mean_df"].copy())
+        .set_index([stratum_col])
+        .reindex(mesh_results_df.index)
+    )
 
     # Get the aged-unaged proportions
     aged_unaged_proportions = (
-        transect_dict["biology"]["proportions"]["weight"]
-        ['aged_unaged_sex_weight_proportions_df'].copy()
+        transect_dict["biology"]["proportions"]["weight"][
+            "aged_unaged_sex_weight_proportions_df"
+        ].copy()
     ).set_index([stratum_col])
 
     # Pivot the proportions into tables
@@ -526,15 +527,14 @@ def back_calculate_abundance_nasc(mesh_results_df: pd.DataFrame,
     # ---- Male
     mesh_results_df["biomass_male"] = (
         mesh_results_df["biomass"] * unaged_props.loc[:, "male"]
-        + mesh_results_df["biomass"] * aged_props.loc[:, "male"]        
+        + mesh_results_df["biomass"] * aged_props.loc[:, "male"]
     )
 
     # Compute abundance
     # ---- All/female/male
-    mesh_results_df[["abundance", "abundance_female", "abundance_male"]] = (
-        mesh_results_df.loc[:, "biomass":"biomass_male"]
-        .div(weight_strata["average_weight"], axis=0)
-    )
+    mesh_results_df[["abundance", "abundance_female", "abundance_male"]] = mesh_results_df.loc[
+        :, "biomass":"biomass_male"
+    ].div(weight_strata["average_weight"], axis=0)
 
     # Compute NASC
     mesh_results_df["nasc"] = (
@@ -571,7 +571,7 @@ def apportion_kriged_values(
     summed_biomass = kriged_mesh.groupby([stratum_col], observed=False)["biomass"].sum()
     # ---- Sum abundance for each stratum
     summed_abundance = kriged_mesh.groupby([stratum_col], observed=False)["abundance"].sum()
-    
+
     # Extract the weight proportions from the analysis object
     proportions_dict = analysis_dict["transect"]["biology"]["proportions"]
     # ---- Aged
@@ -636,41 +636,44 @@ def apportion_kriged_values(
     )
     # ---- Calculate the new unaged biomass values distributed over age
     unaged_apportioned_biomass_values = (
-        unaged_pivot["biomass_apportioned_unaged"]  
-        * aged_pivot.unstack("sex")["biomass_apportioned"] / aged_length_biomass_totals
+        unaged_pivot["biomass_apportioned_unaged"]
+        * aged_pivot.unstack("sex")["biomass_apportioned"]
+        / aged_length_biomass_totals
     ).fillna(0)
 
     # Imputation is required when unaged values are present but aged values are absent at shared
     # length bins! This requires an augmented implementation to address this accordingly
     # ---- Biomass
     kriged_full_table = impute_kriged_values(
-        aged_pivot["biomass_apportioned"], 
+        aged_pivot["biomass_apportioned"],
         unaged_pivot["biomass_apportioned_unaged"],
-        aged_length_biomass_totals, 
-        unaged_apportioned_biomass_values, 
+        aged_length_biomass_totals,
+        unaged_apportioned_biomass_values,
         settings_dict,
-        variable = "biomass",
+        variable="biomass",
     )
 
     # Additional reapportionment if age-1 fish are excluded
     if settings_dict["exclude_age1"]:
         # ---- Re-allocate biomass
-        kriging_full_table = reallocate_kriged_age1(kriged_full_table, 
-                                                    settings_dict,
-                                                    variable="biomass_apportioned")
+        kriging_full_table = reallocate_kriged_age1(
+            kriged_full_table, settings_dict, variable="biomass_apportioned"
+        )
         # ---- Stack the aged-pivot table
         aged_data = (
             aged_pivot["abundance_apportioned"].stack().reset_index(name="abundance_apportioned")
         )
         # ---- Re-allocate abundance
-        aged_table = reallocate_kriged_age1(aged_data, 
-                                            settings_dict, 
-                                            variable="abundance_apportioned")
+        aged_table = reallocate_kriged_age1(
+            aged_data, settings_dict, variable="abundance_apportioned"
+        )
         # ---- Re-pivot
-        aged_pivot["abundance_apportioned"] = aged_table.pivot_table(index=["sex", "length_bin"], 
-                                                                     columns=["age_bin"], 
-                                                                     values="abundance_apportioned",
-                                                                     observed=False)
+        aged_pivot["abundance_apportioned"] = aged_table.pivot_table(
+            index=["sex", "length_bin"],
+            columns=["age_bin"],
+            values="abundance_apportioned",
+            observed=False,
+        )
         # ---- Validate that apportioning age-1 values over all adult values did not 'leak'
         # -------- Previous apportioned totals by sex
         previous_totals = kriged_full_table.groupby(["sex"])["biomass_apportioned"].sum()

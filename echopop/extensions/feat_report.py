@@ -622,13 +622,13 @@ class FEATReports:
                 Literal[
                     "aged_length_haul_counts",
                     "kriged_aged_biomass_mesh",
-                    "kriging_input",                    
+                    "kriging_input",
                     "kriged_length_age_abundance",
                     "kriged_length_age_biomass",
                     "kriged_mesh_results",
                     "total_length_haul_counts",
                     "transect_aged_biomass",
-                    "transect_length_age_abundance", 
+                    "transect_length_age_abundance",
                     "transect_length_age_biomass",
                     "transect_population_results",
                 ]
@@ -849,9 +849,7 @@ class FEATReports:
         # Get mesh results
         mesh_df = self.data.results["kriging"]["mesh_results_df"].copy()
         # Back-calculate the kriged standard deviation
-        mesh_df.loc[:, "kriged_sd"] = (
-            mesh_df.loc[:, "kriged_mean"] * mesh_df.loc[:, "sample_cv"]
-        )
+        mesh_df.loc[:, "kriged_sd"] = mesh_df.loc[:, "kriged_mean"] * mesh_df.loc[:, "sample_cv"]
         # ---- Set the index
         output_df = mesh_df.filter(
             [
@@ -902,30 +900,39 @@ class FEATReports:
         # ---- Stack
         aged_stk = aged_data.stack(future_stack=True).reset_index(name="abundance")
         # ---- Expand to include 'all'
-        full_aged_stk = pd.concat([aged_stk, 
-                                   aged_stk.groupby(["length_bin", "age_bin"], 
-                                                    observed=False)["abundance"]
-                                   .sum().reset_index().assign(sex="all")], 
-                                  ignore_index=True)
+        full_aged_stk = pd.concat(
+            [
+                aged_stk,
+                aged_stk.groupby(["length_bin", "age_bin"], observed=False)["abundance"]
+                .sum()
+                .reset_index()
+                .assign(sex="all"),
+            ],
+            ignore_index=True,
+        )
         # ---- Re-pivot
-        full_aged_pvt = full_aged_stk.pivot_table(index=["sex", "length_bin"], 
-                                                  columns=["age_bin"], 
-                                                  values="abundance", 
-                                                  observed=False)
+        full_aged_pvt = full_aged_stk.pivot_table(
+            index=["sex", "length_bin"], columns=["age_bin"], values="abundance", observed=False
+        )
 
         # Process the unaged data
         # ---- Stack
         unaged_stk = unaged_data.stack(future_stack=True).reset_index(name="abundance")
         # ---- Expand to include 'all'
-        full_unaged_stk = pd.concat([unaged_stk, 
-                                     unaged_stk.groupby(["length_bin"], 
-                                                        observed=False)["abundance"]
-                                     .sum().reset_index().assign(sex="all")], 
-                                    ignore_index=True)      
+        full_unaged_stk = pd.concat(
+            [
+                unaged_stk,
+                unaged_stk.groupby(["length_bin"], observed=False)["abundance"]
+                .sum()
+                .reset_index()
+                .assign(sex="all"),
+            ],
+            ignore_index=True,
+        )
         # ---- Re-pivot
-        full_unaged_pvt = full_unaged_stk.pivot_table(index=["sex", "length_bin"], 
-                                                      values="abundance", 
-                                                      observed=False)  
+        full_unaged_pvt = full_unaged_stk.pivot_table(
+            index=["sex", "length_bin"], values="abundance", observed=False
+        )
 
         # Repivot the datasets for each sex
         tables = {
@@ -956,10 +963,15 @@ class FEATReports:
         # Get the dataset
         dataset = self.data.results["kriging"]["tables"]["overall_apportionment_df"]
         # ---- Expand to include 'all'
-        dataset = pd.concat([dataset,
-                              dataset.groupby(["age_bin", "length_bin"],
-                                              observed=False)["biomass_apportioned"].sum()
-                              .reset_index().assign(sex="all")])
+        dataset = pd.concat(
+            [
+                dataset,
+                dataset.groupby(["age_bin", "length_bin"], observed=False)["biomass_apportioned"]
+                .sum()
+                .reset_index()
+                .assign(sex="all"),
+            ]
+        )
 
         # Initialize a pivot table from the dataset
         dataset_pvt = dataset.pivot_table(

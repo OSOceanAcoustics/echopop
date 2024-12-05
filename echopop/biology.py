@@ -1443,14 +1443,10 @@ def reallocate_kriged_age1(table: pd.DataFrame, settings_dict: dict, variable: s
     # Calculate the new contribution fractions
     # ---- Calculate the adjusted apportionment that will be distributed over the adult values
     data_table["adjustment"] = (
-       data_table["summed_sex_age1"]
-        * data_table[variable]
-        / data_table["summed_sex_adult"]
+        data_table["summed_sex_age1"] * data_table[variable] / data_table["summed_sex_adult"]
     )
     # ---- Apply the adjustment
-    data_table.loc[:, variable] = (
-        data_table.loc[:, variable] + data_table.loc[:, "adjustment"]
-    )
+    data_table.loc[:, variable] = data_table.loc[:, variable] + data_table.loc[:, "adjustment"]
     # ---- Index by age bins
     data_table.set_index("age_bin", inplace=True)
     # ---- Zero out the age-1 values
