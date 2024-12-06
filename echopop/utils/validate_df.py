@@ -195,13 +195,12 @@ class BaseDataFrame(DataFrameModel):
             for col in df.columns:
                 # ---- Regular expression matching
                 if re.match(column_name, col):
-                    # ---- Retrieve the column name
-                    col_name = re.match(column_name, col).group(0)
-                    # ---- Collect, if valid
+                    # ---- Collect, if valid and `regex = True`            
                     if cls.to_schema().columns[column_name].regex:
                         valid_cols.append(col)
-                    else:
-                        valid_cols.append(col_name)
+                    # ---- Collect if exact match
+                    elif col == column_name:
+                        valid_cols.append(column_name)
                     # ---- Check if null values are allowed
                     if not cls.to_schema().columns[column_name].nullable:
                         # ---- Get the violating indices
@@ -211,7 +210,7 @@ class BaseDataFrame(DataFrameModel):
                                     df[col].isna() | df[col].isin([np.inf, -np.inf])
                                 ].to_list()
                             }
-                        )
+                        )        
         # ---- Initialize the list
         invalid_lst = []
         # ---- Extend the values
