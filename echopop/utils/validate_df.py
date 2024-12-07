@@ -1,6 +1,6 @@
 import copy
 import re
-from typing import Optional
+from typing import Any, Dict, Optional
 
 import numpy as np
 import pandas as pd
@@ -98,56 +98,61 @@ class BaseDataFrame(DataFrameModel):
         return column_types
 
     @classmethod
-    def coercion_check(cls, df: pd.DataFrame, col_types: dict) -> pd.DataFrame:
+    def coercion_check(cls, 
+                       df: pd.DataFrame, 
+                       valid_cols: Dict[str, Any]) -> pd.DataFrame:
 
         # Initialize a DataFrame
         errors_coerce = pd.DataFrame(dict(Column=[], error=[]))
 
         # Coerce the data
-        for column_name, dtype in col_types.items():
-            # ---- Apply coercion based on column patterns
-            for col in df.columns:
-                if re.match(column_name, col):
-                    # ---- Retrieve the column name
-                    # Coerce the column to the appropriate dtype
-                    if isinstance(dtype, list):
-                        # ---- Initialize the dtype of the validator annotation
-                        cls.__annotations__[col] = Series[dtype[0]]
-                        # ---- Check for all valid integers
-                        for typing in dtype:
-                            test = cls._DTYPE_TESTS.get(typing, None)
-                            # ---- Adjust typing annotations
-                            if test and test(df[col]):
-                                cls.__annotations__[col] = Series[typing]
-                                # break
-                            # ---- Coerce the datatypes
-                            try:
-                                df[col] = cls._DTYPE_COERCION.get(typing)(df[col])
-                                break
-                            except Exception as e:
-                                e.__traceback__ = None
-                                message = (
-                                    f"{col.capitalize()} column must be a Series of '{str(dtype)}' "
-                                    f"values. Series values could not be automatically coerced."
-                                )
-                                # errors_coerce.append(e)
-                                errors_coerce = pd.concat(
-                                    [errors_coerce, pd.DataFrame(dict(Column=col, error=message))]
-                                )
-                    # ---- If not a List from the metadata attribute
-                    else:
+        for column, dtype in valid_cols.items():
+            # ---- Test whether the Series is coercible
+            if isinstance(dtype, list):
+                # ---- Iterate through the list
+                for typing in dtype:
+                    # ---- Initialize the `dtype` of the validator annotation
+                    cls.__annotations__[column] = Series[typing]
+                    # ---- Get the `test`
+                    test = cls._DTYPE_TESTS.get(typing, None)
+                    # ---- Apply test
+                    if test and test(df[column]):
+                        # ---- Coerce the datatype (or attempt to)
                         try:
-                            df[col] = df[col].astype(str(dtype))
+                            df[column] = cls._DTYPE_COERCION.get(typing)(df[column])
+                            # ---- If successful, break
+                            break
                         except Exception as e:
+                            # ---- Drop traceback
                             e.__traceback__ = None
+                            # ---- Format message
                             message = (
-                                f"{col.capitalize()} column must be a Series of '{str(dtype)}' "
+                                f"{column.capitalize()} column must be a Series of '{str(dtype)}' "
                                 f"values. Series values could not be automatically coerced."
                             )
-                            # errors_coerce.append(e)
+                            # ---- Add error to collector
                             errors_coerce = pd.concat(
-                                [errors_coerce, pd.DataFrame(dict(Column=[col], error=[message]))]
-                            )
+                                [errors_coerce, pd.DataFrame(dict(Column=column, error=message))]
+                            )      
+            # ---- If not a List supplied by the metadata attribute
+            else:
+                # ---- Attempt coercion
+                try:
+                    df[column] = df[column].astype(str(dtype))
+                except Exception as e:
+                    # ---- Drop traceback
+                    e.__traceback__ = None            
+                    # ---- Format message
+                    message = (
+                        f"{column.capitalize()} column must be a Series of '{str(dtype)}' "
+                        f"values. Series values could not be automatically coerced."
+                    )
+                    # ---- Add error to collector
+                    errors_coerce = pd.concat(
+                        [errors_coerce, 
+                         pd.DataFrame(dict(Column=column, error=message), index=[0])],
+                        ignore_index=True
+                    )      
 
         # Return the DataFrame
         return errors_coerce
@@ -176,11 +181,13 @@ class BaseDataFrame(DataFrameModel):
             raise SchemaError(cls, df, message) from None
 
     @classmethod
-    def validate_df(cls, data: pd.DataFrame, filename: Optional[str] = None) -> pd.DataFrame:
+    def validate_df(cls, data: pd.DataFrame, file_name: Optional[str] = None) -> pd.DataFrame:
         # ---- Create copy
         df = data.copy()
         # ---- Get the original annotations
         default_annotations = copy.deepcopy(cls.__annotations__)
+        # ---- Get the original column schema
+        default_schema = copy.deepcopy(cls.to_schema().columns)
         # ---- Format the column names
         df.columns = [col.lower() for col in df.columns]
         # ---- Get column types
@@ -188,21 +195,49 @@ class BaseDataFrame(DataFrameModel):
         # ---- Initialize invalid index
         invalid_idx = {}
         # ---- Initialize column names
-        valid_cols = []
+        valid_cols = {}
         # ---- Find all indices where there are violating NaN/-Inf/Inf values
-        for column_name, dtype in column_types.items():
+        for column_name, _ in column_types.items():
+            # ---- Create list of annotation names
+            key_list = list(cls.__annotations__)
             # ---- Apply coercion based on column patterns
             for col in df.columns:
                 # ---- Regular expression matching
                 if re.match(column_name, col):
                     # ---- Collect, if valid and `regex = True`            
                     if cls.to_schema().columns[column_name].regex:
-                        valid_cols.append(col)
+                        # ---- Find matching annotation
+                        annotation_match = [key_list[i] for (i, k) in enumerate(list(column_types)) 
+                                            if k == column_name]
+                        # ---- Update the annotations
+                        cls.__annotations__[col] = cls.__annotations__[annotation_match[0]]
+                        # ---- Update the schema name
+                        cls.to_schema().columns[col] = cls.to_schema().columns[column_name]
+                        # ---- Update valid columns
+                        valid_cols.update({
+                            col: column_types[column_name]
+                        })
                     # ---- Collect if exact match
                     elif col == column_name:
-                        valid_cols.append(column_name)
+                        # ---- Find matching annotation
+                        annotation_match = [key_list[i] for (i, k) in enumerate(list(column_types)) 
+                                            if k == column_name]
+                        # ---- Update the annotations
+                        cls.__annotations__[col] = cls.__annotations__[annotation_match[0]]
+                        # ---- Update valid columns
+                        valid_cols.update({
+                            col: column_types[column_name]
+                        })                    
+                    # ---- Replace whitespaces
+                    if col in valid_cols and valid_cols[col] in [int, float]:
+                        # ---- Initial coercion
+                        df.loc[:, col] = pd.to_numeric(df[col], errors="coerce")   
                     # ---- Check if null values are allowed
-                    if not cls.to_schema().columns[column_name].nullable:
+                    if (
+                        col in cls.to_schema().columns 
+                        and not cls.to_schema().columns[col].nullable
+                    ):
+                       
                         # ---- Get the violating indices
                         invalid_idx.update(
                             {
@@ -210,7 +245,7 @@ class BaseDataFrame(DataFrameModel):
                                     df[col].isna() | df[col].isin([np.inf, -np.inf])
                                 ].to_list()
                             }
-                        )        
+                        )    
         # ---- Initialize the list
         invalid_lst = []
         # ---- Extend the values
@@ -229,12 +264,14 @@ class BaseDataFrame(DataFrameModel):
             df.reset_index(inplace=True, drop=True)
 
         # Coercion check
-        coercion_failures = cls.coercion_check(df, column_types)
+        coercion_failures = cls.coercion_check(df, valid_cols)
 
         # Validate
-        df_valid = cls.judge(df.filter(valid_cols), coercion_failures, filename)
+        df_valid = cls.judge(df.filter(valid_cols), coercion_failures, file_name)
         # ---- Return to default annotations
         cls.__annotations__ = default_annotations
+        # ---- Return to the default schema
+        cls.to_schema().columns = default_schema
         # ---- Return the validated DataFrame
         return df_valid
 

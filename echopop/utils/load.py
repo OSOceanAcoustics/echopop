@@ -277,7 +277,7 @@ def read_validated_data(
         # ---- Rename the columns
         df.rename(columns=NAME_CONFIG, inplace=True)
         # ---- Validate the dataframes
-        df = validation_settings.validate_df(df)
+        df = validation_settings.validate_df(df, file_name)
 
     # Assign the data to their correct data attributes/keys
     if LAYER_NAME_MAP[config_map[0]]["superlayer"] == []:

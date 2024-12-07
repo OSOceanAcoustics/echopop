@@ -814,27 +814,27 @@ def age1_metric_proportions(
     # Get stratum column name
     stratum_col = settings_dict["transect"]["stratum_name"]
 
-    # Calculate the age1 number proportion
-    # ---- Initialize the dataframe
+    # Get the aged and unaged proportions
+    # ---- Aged proportions
     age_proportions = proportions_dict["number"]["aged_length_proportions_df"].copy()
-    # ---- Only consider 'all' fish
-    age_proportions = age_proportions[
-        (age_proportions["sex"] == "all") & (age_proportions[stratum_col] != 0)
-    ].reset_index()
-    # ---- Convert to center of length bin
-    age_proportions.loc[:, "length_mid"] = (
-        age_proportions.loc[:, "length_bin"].apply(lambda df: df.mid).astype(float)
-    )
-    # ---- Convert into a pivot table
-    age_proportions_table = age_proportions.pivot_table(
-        index=["length_bin"],
-        columns=[stratum_col, "age_bin"],
-        values="proportion_number_aged",
-        aggfunc="sum",
-        observed=False,
-    )
-    # ---- Sum the number proportions for each age bin within each stratum
-    age1_proportions = age_proportions_table.sum()[:, 1].to_numpy()
+    # ---- Unaged proportions
+    unage_proportions = proportions_dict["number"]["unaged_length_proportions_df"].copy()
+    # ---- Aged weight proportions
+    age_weight_proportions = proportions_dict["weight"]["aged_weight_proportions_df"].copy()
+
+    # Match table shapes
+    # ---- All aged strata
+    all_aged_strata = age_proportions["stratum_num"].unique().tolist()
+    # ---- All unaged strata
+    all_unaged_strata = unage_proportions["stratum_num"].unique().tolist()
+    # # ---- Back-fill missing strata
+    all_strata = list(set(all_aged_strata + all_unaged_strata))
+
+    # Consider the proportions only for `sex="all"` 
+    # ---- Aged
+    age_proportions_all = age_proportions[age_proportions["sex"] == "all"].reset_index(drop=True)   
+    # ---- Unaged
+    unage_proportions_all = unage_proportions[unage_proportions["sex"] == "all"]
 
     # Calculate the new length-averaged sigma_bs for each stratum
     # ---- Extract the length-binned values
@@ -845,8 +845,8 @@ def age1_metric_proportions(
     length_bins["length_sq"] = length_bins["length_sq"] * 10 ** (
         TS_L_parameters["TS_L_intercept"] / 10.0
     )
-    # ---- Repivot the number proportion data
-    age_proportions_alt_table = age_proportions.pivot_table(
+    # ---- Create temporary pivot table for the age proportions to compute the dot product
+    age_proportions_dot_table = age_proportions_all.pivot_table(
         index=["length_bin"],
         columns=[stratum_col],
         values="proportion_number_aged",
@@ -854,15 +854,13 @@ def age1_metric_proportions(
         observed=False,
     )
     # ---- Dot product to calculate the new average sigma_bs for all ages
-    updated_sigma_bs = length_bins["length_sq"].values.dot(age_proportions_alt_table)
+    updated_sigma_bs = length_bins["length_sq"].values.dot(age_proportions_dot_table)
 
-    #
-    # ---- Filter out adult (age-2+ fish)
-    age_proportions_age1_table = age_proportions[
-        age_proportions["age_bin"] == pd.Interval(left=0.5, right=1.5)
-    ]
-    # ---- Repivot for just age-1 fish
-    age_proportions_age1_table = age_proportions_age1_table.pivot_table(
+    # Compute the age-1 proportions
+    # ---- Index the age-1 proportions
+    age1_proportions_all = age_proportions_all.set_index(["age_bin"]).loc[1]
+    # ---- Pivot into a table for the dot product
+    age1_proportions_table = age1_proportions_all.pivot_table(
         index=["length_bin"],
         columns=[stratum_col],
         values="proportion_number_aged",
@@ -870,15 +868,23 @@ def age1_metric_proportions(
         observed=False,
     )
     # ---- Dot product to calculate the average sigma_bs for age-1 fish
-    age1_sigma_bs = length_bins["length_sq"].values.dot(age_proportions_age1_table)
+    age1_sigma_bs = length_bins["length_sq"].values.dot(age1_proportions_table)
     # ---- Calculate age-1 NASC proportioon per stratum
     age1_nasc_proportions = age1_sigma_bs / updated_sigma_bs
+    # ---- Sum the number proportions for each age bin within each stratum
+    age1_strata_proportions = age1_proportions_table.sum(axis=0).to_numpy()
 
-    unage_proportions = proportions_dict["number"]["unaged_length_proportions_df"]
-    # ---- Only consider 'all' fish
-    unage_proportions = unage_proportions[unage_proportions["sex"] == "all"].reset_index()
-    # ---- Convert into a pivot table
-    unage_proportions_table = unage_proportions.pivot_table(
+    # Convert the primary tables into pivot tables
+    # ---- Aged
+    age_proportions_table = age_proportions_all.pivot_table(
+        index=["length_bin"],
+        columns=[stratum_col, "age_bin"],
+        values="proportion_number_aged",
+        aggfunc="sum",
+        observed=False,
+    )
+    # ---- Unaged
+    unage_proportions_table = unage_proportions_all.pivot_table(
         columns=[stratum_col],
         index=["length_bin"],
         values="proportion_number_unaged",
@@ -886,6 +892,7 @@ def age1_metric_proportions(
         observed=False,
     )
 
+    # Compute the length index thresholds
     min_index = np.where(length_bins["length_bins"] == 10.0)[0]
     if len(min_index) == 0:
         min_index = 0
@@ -894,18 +901,15 @@ def age1_metric_proportions(
     max_index = length_bins["length_bins"].size
 
     # Calculate thresholds derived from the summed length distributions of age-1 fish
-    # ---- General length distribution
+    # ---- General length distribution threshold
     age1_length_distribution_threshold = (
         unage_proportions_table.iloc[np.arange(min_index, max_index), :]
-        * age_proportions_age1_table.iloc[np.arange(min_index, max_index), :]
+        * age1_proportions_table.iloc[np.arange(min_index, max_index), :]
     ).sum()
-
     # ---- Just aged length distribution (age-1)
-    age1_specific_length_distribution_threshold = age_proportions_age1_table.sum(axis=0)
+    age1_specific_length_distribution_threshold = age1_proportions_table.sum(axis=0)
 
-    age_weight_proportions = proportions_dict["weight"]["aged_weight_proportions_df"]
-    age_weight_proportions = age_weight_proportions[age_weight_proportions[stratum_col] != 0]
-
+    # Pivot the aged weight proportions table
     age_weight_proportions_table = age_weight_proportions.pivot_table(
         index=["length_bin"],
         columns=["age_bin", stratum_col],
@@ -913,8 +917,8 @@ def age1_metric_proportions(
         aggfunc="sum",
         observed=False,
     )
-
-    age_weight_proportions_repivot = age_weight_proportions.pivot_table(
+    # ---- Repivot a separate table for calculating the aged weight proportions for age-1 fish
+    summed_age_weight_proportions = age_weight_proportions.pivot_table(
         index=["age_bin"],
         columns=[stratum_col],
         values="weight_proportions",
@@ -922,18 +926,19 @@ def age1_metric_proportions(
         observed=False,
     )
 
+    # Calculate the age-1 weight proportions
     age1_weight_proportions = np.where(
         (age1_length_distribution_threshold <= 1e-10)
         & (age1_specific_length_distribution_threshold <= 1e-10),
         0.0,
-        age_weight_proportions_table[1].sum() / age_weight_proportions_repivot.sum(),
+        age_weight_proportions_table[1].sum() / summed_age_weight_proportions.sum(),
     )
 
     # Return output
     # ---- Create DataFrame
     apportioned_age1 = pd.DataFrame({f"{stratum_col}": np.unique(age_proportions[stratum_col])})
     # ---- Number proportions
-    apportioned_age1["number_proportion"] = age1_proportions
+    apportioned_age1["number_proportion"] = age1_strata_proportions
     # ---- Weight proportions
     apportioned_age1["weight_proportion"] = age1_weight_proportions
     # ---- NASC
