@@ -812,7 +812,7 @@ def validate_export_directories(configuration_dict: dict) -> Tuple[str, str, lis
     if not any(Path(file_folder).iterdir()):
         raise FileNotFoundError(f"The export file directory {{{file_folder}}} contains no files!")
     # ---- Get export files
-    export_files = glob.glob(file_folder + "/*")
+    export_files = glob.glob(file_folder + "/*.csv")
 
     # Return
     return save_folder, file_folder, export_files
