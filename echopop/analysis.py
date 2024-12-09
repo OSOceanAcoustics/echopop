@@ -138,6 +138,7 @@ def process_transect_data(
             "weight_stratum_df": fit_length_weights(
                 analysis_dict["biology"]["proportions"]["number"],
                 analysis_dict["biology"]["weight"],
+                settings_dict["transect"]["stratum_name"],
             )
         }
     )

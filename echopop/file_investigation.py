@@ -292,45 +292,32 @@ analysis_dict = self.analysis["transect"]
 configuration_dict = self.config
 settings_dict = self.analysis["settings"]
 
-self.analysis["transect"]["acoustics"]["adult_transect_df"]
+np.sort(length_data.stratum_num.unique())
+specimen_data[specimen_data.stratum_num == 9]
+np.sort(specimen_data.stratum_num.unique())
+np.sort(catch_data.stratum_num.unique())
+specimen_data, catch_data
 
-nasc_interval_df["stratum_num"].unique()
-
+# analysis_dict["biology"]["proportions"].update(
+#     {
+#         "weight": weight_proportions(
+#             catch_data,
+#             analysis_dict["biology"]["proportions"]["number"],
+#             length_weight_df,
+#             analysis_dict["biology"]["distributions"]["weight"],
+#             settings_dict["transect"]["stratum_name"],
+#         )
+#     }
+# )
 proportions_dict = analysis_dict["biology"]["proportions"]["number"]
-length_weight_dict = analysis_dict["biology"]["weight"]
-np.concatenate([weight_all, weight_male, weight_female]).size
-pd.DataFrame(
-    {
-        f"{stratum_col}": np.tile(
-                np.unique(station_proportions[stratum_col]), len(np.unique(station_proportions.sex))
-            ),
-        "sex": np.repeat(
-            ["all", "male", "female"], len(np.unique(station_proportions[stratum_col]))
-        ),
-    }
-)
+distributions_dict = analysis_dict["biology"]["distributions"]["weight"]
+stratum_column = settings_dict["transect"]["stratum_name"]
 
-# strata_adult_proportions, nasc_to_biology = nasc_to_biomass(
-#     input_dict, analysis_dict, configuration_dict, settings_dict
-# )
-self.input["biology"]["specimen_df"]["stratum_num"].unique()
-self.input["biology"]["length_df"]["stratum_num"].unique()
-self.input["biology"]["catch_df"]["stratum_num"].unique()
-self.input["acoustics"]["nasc_df"]["NASC_all_ages"].unique()
-self.input["spatial"]
-# age1_proportions = age1_metric_proportions(
-#     input_dict["biology"]["distributions"],
-#     analysis_dict["biology"]["proportions"],
-#     configuration_dict["TS_length_regression_parameters"]["pacific_hake"],
-#     settings_dict,
-# )
-distributions_dict = input_dict["biology"]["distributions"]
-proportions_dict = analysis_dict["biology"]["proportions"]
-TS_L_parameters = configuration_dict["TS_length_regression_parameters"]["pacific_hake"]
+aged_weights_binned_pvt.sum(axis=0)
 
 # STRATIFIED ANALYSIUS =============================================================================
 self = survey
-dataset: Literal["transect", "kriging"] = "transect"
+dataset: Literal["transect", "kriging"] = "kriging"
 stratum: Literal["inpfc", "ks"] = "inpfc"
 variable: Literal["abundance", "biomass", "nasc"] = "biomass"
 mesh_transects_per_latitude: Optional[int] = None
@@ -365,8 +352,11 @@ results_dict = self.results
 spatial_dict = self.input["spatial"]
 settings_dict = self.analysis["settings"]["stratified"]
 
-data_series = transect_distances
+data_series = transect_distances.loc[j]
 index_matrix = transect_numbers_arr
+When~defining~thes~tratification~files~used~in~EchoPro~for~this~dataset,~the~}$$ `US&CAN strata 2015 shoreside.xlsx`~file~has~missing~column \space names, \space which \space renders \space `Echopop` \space inoperable \space (it \space does \space not \space pass \space the \space validators)     
+     
+transect_areas.loc[j].loc[15]
 [transect_distances[idx] for idx in transect_numbers_arr]
 transect_distances.index.unique()
 transect_summary[transect_summary.duplicated()]

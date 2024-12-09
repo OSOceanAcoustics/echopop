@@ -11,17 +11,17 @@ survey_year: 2013            # survey year being considered
 species:
   text_code: pacific_hake    # target species for the survey year -- species name
   number_code: 22500         # target species for the survey year -- numeric code
-CAN_haul_offset: 200         # The value to be added to the Canadian's haul number
+CAN_haul_offset: 100         # The value to be added to the Canadian's haul number
 
 ##############################################################################
 # Report generation
 ###################
 # Where the reports are saved
-report_path: C:/Users/Brandyn/Documents/GitHub/echopop_2013/reports
+report_path: C:/Users/Brandyn Lucca/Documents/Data/echopop_2013/reports
 
 ##############################################################################
 # Directory path that contains all input data needed
-data_root_dir: C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_2013
+data_root_dir: C:/Users/Brandyn Lucca/Documents/Data/echopop_2013
 
 ##############################################################################
 # Input data files
@@ -76,6 +76,6 @@ kriging:
     sheetname: Smoothing_EasyKrig
   vario_krig_para:
     # NOTE: This file is not currently used
-    filename: Kriging_files/default_vario_krig_settings_orig.xlsx
+    filename: Kriging_files/default_vario_krig_settings_2013_US_CAN.xlsx
     sheetname: Sheet1
 ...

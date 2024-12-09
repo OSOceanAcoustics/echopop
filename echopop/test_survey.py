@@ -18,12 +18,12 @@ import pandas as pd
 import glob
 
 # Initialization configuration
-init_config_path = f"C:/Users/Brandyn/Documents/GitHub/echopop/config_files/initialization_config_\
-{SURVEY_YEAR}.yml"
+init_config_path = f"C:/Users/Brandyn Lucca/Documents/GitHub/echopop/config_files/initialization_\
+config_{SURVEY_YEAR}.yml"
 
 # Filepath/dataset configuration
-survey_year_config_path = f"C:/Users/Brandyn/Documents/GitHub/echopop/config_files/survey_year_\
-{SURVEY_YEAR}_config.yml"
+survey_year_config_path = f"C:/Users/Brandyn Lucca/Documents/GitHub/echopop/config_files\
+/survey_year_{SURVEY_YEAR}_config.yml"
 ####################################################################################################
 # Run
 # ---- Create object
