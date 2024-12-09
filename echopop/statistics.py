@@ -102,13 +102,15 @@ def stratified_transect_statistic(
     sample_dof = num_transects_to_sample * (num_transects_to_sample - sample_offset)
 
     # Transect areas
-    transect_areas = transect_summary.groupby([stratum_col, "transect_num"])["transect_area"].sum()
+    transect_areas = transect_summary.groupby([stratum_col, "transect_num"], 
+                                              observed=False)["transect_area"].sum()
 
     # Get indexed total transect area
     total_transect_area = strata_summary.set_index(stratum_col)["transect_area_total"]
 
     # Get indexed biological value
-    biological_values = transect_data.groupby([stratum_col, "transect_num"])[var_name].sum()
+    biological_values = transect_data.groupby([stratum_col, "transect_num"],
+                                              observed=False)[var_name].sum()
 
     # Get indexed transect numbers
     transect_numbers = transect_summary.set_index(stratum_col)["transect_num"]
@@ -117,7 +119,8 @@ def stratified_transect_statistic(
     # ---- Set temporary index
     transect_summary.set_index([stratum_col, "transect_num"], inplace=True)
     # ---- Compute summed/mean density
-    transect_summary["density"] = transect_data.groupby([stratum_col, "transect_num"])[
+    transect_summary["density"] = transect_data.groupby([stratum_col, "transect_num"],
+                                                        observed=False)[
         settings_dict["variable"]
     ].sum()
 
@@ -199,15 +202,19 @@ def stratified_transect_statistic(
     area_array = total_transect_area.to_numpy()
     # ---- Sum the total area
     total_area = area_array.sum()
+    
+    # Reset index for `transect_summary`
+    transect_summary.reset_index(inplace=True)
 
     # Compute the "population" (i.e. original data) statistics
     # This is necessary for constructing the bootstrapped confidence intervals
     # ---- Mean density
     if settings_dict["variable"] == "nasc":
         # ---- Compute sum per transect line first
-        line_density = transect_data.groupby(["transect_num"])[var_name].sum().to_frame()
+        line_density = transect_data.groupby([stratum_col, 
+                                              "transect_num"])[var_name].sum().to_frame()
         # ---- Create copy of `transect_summary` and set index
-        line_length = transect_summary.copy().set_index("transect_num")
+        line_length = transect_summary.copy().set_index([stratum_col, "transect_num"])
         # ---- Add stratum
         line_density[stratum_col] = line_length[stratum_col]
         # ---- Convert to the density
