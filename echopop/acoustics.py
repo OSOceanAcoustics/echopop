@@ -330,7 +330,6 @@ def nasc_to_biomass(
         adult_proportions["weight_proportion"] = 1 - age1_proportions["weight_proportion"]
         # ------------ Weight
         adult_proportions["nasc_proportion"] = 1 - age1_proportions["nasc_proportion"]
-
     else:
         # ---- Assign filled adult proportions dataframe
         adult_proportions = pd.DataFrame(
