@@ -9,6 +9,7 @@ import pandas as pd
 
 # Name configuration dictionary
 NAME_CONFIG = {
+    "bottom depth": "bottom_depth",
     "cell portion": "fraction_cell_in_polygon",
     "cluster name": "stratum_num",
     "cluster number": "stratum_num",
@@ -22,7 +23,10 @@ NAME_CONFIG = {
     "latitude": "latitude",
     "latitude (upper limit)": "northlimit_latitude",
     "latitude of centroid": "centroid_latitude",
+    "layer height": "layer_height",
+    "layer mean depth": "layer_mean_depth",
     "longitude of centroid": "centroid_longitude",
+    "region id": "region_id",
     "strata": "stratum_num",
     "ship": "ship_id",
     "spacing": "transect_spacing",

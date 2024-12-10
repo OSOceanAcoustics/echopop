@@ -533,14 +533,22 @@ class AcousticData(BaseDataFrame):
 
     Parameters
     ----------
+    bottom_depth: Optional[float]
+        Bottom depth (m).
     haul*: Union[int, float]
         Haul number. This column must include "haul" in the name.
     latitude: float
         Latitude coordinates.
+    layer_height: Optional[float]
+        School/aggregation layer height (m).
+    layer_mean_depth: Optional[float]
+        Mean school/aggregation depth (m).
     longitude: float
         Longitude coordinates.
     nasc: float
         Nautical area scattering coefficient (NASC, m^2 nmi^-2).
+    region_id: Optional[Union[int, float, str]]
+        Echoview region identification value.
     transect_num: Union[int, float]
         Transect number.
     transect_spacing: float
@@ -551,10 +559,14 @@ class AcousticData(BaseDataFrame):
         Cumulative vessel log distance at the end of each transect interval.
     """
 
+    bottom_depth: Optional[Series[float]] = Field(nullable=False, coerce=True)
     haul: Series = Field(nullable=False, regex=True, metadata=dict(types=[int, float]))
     latitude: Series[float] = Field(ge=-90.0, le=90.0, nullable=False, regex=True, coerce=True)
+    layer_height: Optional[Series[float]] = Field(nullable=False, coerce=True)
+    layer_mean_depth: Optional[Series[float]] = Field(nullable=False, coerce=True)
     longitude: Series[float] = Field(ge=-180.0, le=180.0, nullable=False, regex=True, coerce=True)
     nasc: Series[float] = Field(ge=0.0, nullable=False, coerce=True)
+    region_id: Optional[Series] = Field(metadata=dict(types=[int, float, str]))
     transect_num: Series = Field(nullable=False, regex=True, metadata=dict(types=[int, float]))
     transect_spacing: Series[float] = Field(ge=0.0, nullable=False, regex=False, coerce=True)
     vessel_log_start: Series[float] = Field(ge=0.0, nullable=False, coerce=True)
