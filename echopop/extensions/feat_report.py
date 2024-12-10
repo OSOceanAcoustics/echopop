@@ -367,11 +367,46 @@ def write_aged_dataframe_report(
     # Create the workbook, if needed
     wb = initialize_workbook(filepath)
 
+    # Get sheetnames
+    sheetnames = {
+        "all": "Sheet1",
+        "male": "Sheet2",
+        "female": "Sheet3",
+    }
+
+    # Renaming schema
+    column_renaming = {
+        "latitude": "Lat",
+        "longitude": "Lon",
+        "stratum_inpfc": "stratum",
+        "stratum_num": "stratum",
+        "biomass": "wgt_{SEX}",
+    }
+
     # Initialize
-    for sex in ["male", "female", "all"]:
+    for sex in ["all", "male", "female"]:
+
+        # Swap out "{SEX}"
+        column_renaming_copy = column_renaming.copy()
+        # ---- Apply to "biomass"
+        if sex == "all":
+            column_renaming_copy["biomass"] = "wgt_total"
+        else:
+            column_renaming_copy["biomass"] = column_renaming_copy["biomass"].replace("{SEX}", sex)
+
+        # Format columns
+        # ---- Rename
+        tables_dict[sex] = tables_dict[sex].rename(columns=column_renaming_copy)
+        # ---- Reorder columns
+        column_order = ["Lat", "Lon", "stratum", column_renaming_copy["biomass"]]
+        # ---- Filter based on this order
+        column_order = column_order + tables_dict[sex].filter(regex=r"\d+").columns.tolist()
+        # ---- Apply
+        tables_dict[sex] = tables_dict[sex].filter(column_order)
 
         # Add/overwrite the sheet
-        ws = format_file_sheet(sex.capitalize(), wb)
+        # ws = format_file_sheet(sex.capitalize(), wb)
+        ws = format_file_sheet(sheetnames[sex], wb)
 
         # Set up superheader representing 'sex'
         if sex != "all":
@@ -391,13 +426,13 @@ def write_aged_dataframe_report(
     with pd.ExcelWriter(filepath, engine="openpyxl", mode="a", if_sheet_exists="overlay") as writer:
 
         # Iterate through all sexes
-        for sex in ["all", "female", "male"]:
+        for sex in ["all", "male", "female"]:
 
             # Subset the data dictionary for the particular sheet
             sheet_data = tables_dict[sex]
 
             # Add actual column names (i.e. age) and datatable rows
-            sheet_data.to_excel(writer, sheet_name=sex.capitalize(), startrow=1, index=None)
+            sheet_data.to_excel(writer, sheet_name=sheetnames[sex], startrow=1, index=None)
 
 
 def write_age_length_table_report(
@@ -412,6 +447,13 @@ def write_age_length_table_report(
     # Create the workbook, if needed
     wb = initialize_workbook(filepath)
 
+    # Get sheetnames
+    sheetnames = {
+        "male": "Sheet1",
+        "female": "Sheet2",
+        "all": "Sheet3",
+    }
+
     # Iterate through all sexes
     for sex in ["male", "female", "all"]:
 
@@ -419,7 +461,8 @@ def write_age_length_table_report(
         sheet_data = tables_dict[sex]
 
         # Add/overwrite the sheet
-        ws = format_file_sheet(sex.capitalize(), wb)
+        # ws = format_file_sheet(sex.capitalize(), wb)
+        ws = format_file_sheet(sheetnames[sex], wb)
 
         # Set up the headers for the file sheet
         ws.append(format_table_headers(sheet_data))
@@ -451,6 +494,13 @@ def write_haul_report(
     # Create the workbook, if needed
     wb = initialize_workbook(filepath)
 
+    # Get sheet name
+    sheetname = {
+        "male": "Sheet1",
+        "female": "Sheet2",
+        "all": "Sheet3",
+    }
+
     # Iterate through all sexes
     for sex in ["male", "female", "all"]:
 
@@ -458,7 +508,8 @@ def write_haul_report(
         sheet_data = tables_dict[sex]
 
         # Add/overwrite the sheet
-        ws = format_file_sheet(sex.capitalize(), wb)
+        # ws = format_file_sheet(sex.capitalize(), wb)
+        ws = format_file_sheet(sheetname[sex], wb)
 
         # Set up the headers for the file sheet
         ws.append(format_table_headers(sheet_data, col_name=f"Haul Number ({sex.capitalize()})"))
@@ -819,17 +870,17 @@ class FEATReports:
             for sex in ["all", "female", "male"]
         }
 
-        # Get filepaths
-        filepath = tuple([self.save_directory / f for f in filename])
-
-        # Write the *.xlsx sheet (full dataset)
-        write_aged_dataframe_report(mesh_pvt_tables, filepath[0])
-
         # Remove the empty cells
         mesh_pvt_reduced_tables = {
             sex: mesh_pvt_tables[sex].loc[lambda x: x.biomass > 0.0]
             for sex in ["all", "female", "male"]
         }
+
+        # Get filepaths
+        filepath = tuple([self.save_directory / f for f in filename])
+
+        # Write the *.xlsx sheet (full dataset)
+        write_aged_dataframe_report(mesh_pvt_tables, filepath[0])
 
         # Write the *.xlsx sheet (reduced dataset)
         write_aged_dataframe_report(mesh_pvt_reduced_tables, filepath[1])
@@ -848,24 +899,60 @@ class FEATReports:
 
         # Get mesh results
         mesh_df = self.data.results["kriging"]["mesh_results_df"].copy()
+
         # Back-calculate the kriged standard deviation
         mesh_df.loc[:, "kriged_sd"] = mesh_df.loc[:, "kriged_mean"] * mesh_df.loc[:, "sample_cv"]
-        # ---- Set the index
+        # ---- Set index
+        mesh_df.set_index([stratum_name], inplace=True)
+
+        # Get the mean strata `sigma_bs`
+        strata_mean_sigma_bs = (
+            self.data.analysis["transect"]["acoustics"]["sigma_bs"]["strata_mean_df"]
+            .copy()
+            .set_index([stratum_name])
+            .reindex(mesh_df.index)
+        )
+        # ---- Add to the dataframe
+        mesh_df["sig_b"] = 4.0 * np.pi * strata_mean_sigma_bs["sigma_bs_mean"]
+        # ---- Reset the index
+        mesh_df.reset_index(inplace=True)
+
+        # Filter the column names
+        # ---- Select columns
         output_df = mesh_df.filter(
             [
                 "latitude",
                 "longitude",
                 stratum_name,
                 "nasc",
-                "abundance",
-                "abundance_female",
                 "abundance_male",
-                "biomass",
-                "biomass_female",
+                "abundance_female",
+                "abundance",
                 "biomass_male",
+                "biomass_female",
+                "biomass",
+                "sig_b",
                 "sample_cv",
                 "kriged_sd",
             ]
+        )
+        # ---- Rename
+        output_df.rename(
+            columns={
+                "latitude": "Lat",
+                "longitude": "Lon",
+                f"{stratum_name}": "stratum",
+                "nasc": "NASC",
+                "abundance_male": "ntk_male",
+                "abundance_female": "ntk_female",
+                "abundance": "ntk_total",
+                "biomass_male": "wgt_male",
+                "biomass_female": "wgt_female",
+                "biomass": "wgt_total",
+                "sample_cv": "krig_CV",
+                "kriged_sd": "krig_SD",
+            },
+            inplace=True,
         )
 
         # Get filepaths
@@ -875,7 +962,7 @@ class FEATReports:
         output_df.to_excel(filepath[0], sheet_name="Sheet1", index=None)
 
         # Reduce the dataframe and then save
-        output_df.loc[output_df.biomass > 0.0].to_excel(
+        output_df.loc[output_df["NASC"] > 0.0].to_excel(
             filepath[1], sheet_name="Sheet1", index=None
         )
 
@@ -1015,6 +1102,17 @@ class FEATReports:
 
         # Get the filepath
         filepath = self.save_directory / filename
+
+        # Rename the columns
+        dataset_filt = dataset_filt.rename(
+            columns={
+                "latitude": "Lat",
+                "longitude": "Lon",
+                "biomass_density": "Biomass density",
+                "nasc": "NASC",
+                "number_density": "Number density",
+            }
+        )
 
         # and save the *.xlsx sheet
         dataset_filt.to_excel(filepath, sheet_name="Sheet1", index=None)
@@ -1211,15 +1309,153 @@ class FEATReports:
         # Get filepaths
         filepath = tuple([self.save_directory / f for f in filename])
 
-        # Save the *.xlsx sheet
-        self.data.analysis["transect"]["acoustics"]["adult_transect_df"].to_excel(
-            filepath[0], sheet_name="Sheet1", index=None
+        # Get the stratum column name
+        stratum_column = self.data.analysis["settings"]["transect"]["stratum_name"]
+
+        # Get the processed nasc data
+        nasc_data = self.data.analysis["transect"]["acoustics"]["adult_transect_df"].copy()
+        # ---- Set index
+        nasc_data.set_index(["transect_num", "longitude", "latitude", stratum_column], inplace=True)
+
+        # Get the input data
+        input_data = self.data.input["acoustics"]["nasc_df"].copy()
+        # ---- Set index
+        input_data.set_index(["transect_num", "longitude", "latitude"], inplace=True)
+
+        # Get the average strata weights
+        weight_strata_df = (
+            self.data.analysis["transect"]["biology"]["weight"]["weight_stratum_df"].copy()
+        ).set_index([stratum_column])
+
+        # Get the average strata sigma_bs
+        sigma_bs_strata_df = (
+            self.data.analysis["transect"]["acoustics"]["sigma_bs"]["strata_mean_df"].copy()
+        ).set_index([stratum_column])
+
+        # Combine the datasets
+        # ---- Copy
+        output_data = nasc_data.copy()
+        # ---- Merge the initial input data
+        output_data.loc[
+            :,
+            [
+                "bottom_depth",
+                "layer_height",
+                "layer_mean_depth",
+                "vessel_log_start",
+                "region_id",
+                "vessel_log_end",
+            ],
+        ] = input_data.loc[
+            :,
+            [
+                "bottom_depth",
+                "layer_height",
+                "layer_mean_depth",
+                "region_id",
+                "vessel_log_start",
+                "vessel_log_end",
+            ],
+        ]
+        # ---- Reset index
+        output_data.reset_index(inplace=True)
+        # ---- Set index to strata
+        output_data.set_index([stratum_column], inplace=True)
+        # ---- Merge with the average weight values
+        output_data.loc[:, "average_weight"] = weight_strata_df.loc[
+            weight_strata_df["sex"] == "all", "average_weight"
+        ]
+        # ---- Merge with the average sigma_bs values
+        output_data.loc[:, "sig_b"] = 4.0 * np.pi * sigma_bs_strata_df["sigma_bs_mean"]
+        # ---- Reset index
+        output_data.reset_index(inplace=True)
+
+        # Compute the distance
+        output_data["interval"] = output_data["vessel_log_end"] - output_data["vessel_log_start"]
+
+        # Rename and filter
+        # ---- Filter/reorder columns
+        report_df = output_data.filter(
+            [
+                "transect_num",
+                "region_id",
+                "vessel_log_start",
+                "vessel_log_end",
+                "latitude",
+                "longitude",
+                stratum_column,
+                "bottom_depth",
+                "nasc",
+                "abundance_male",
+                "abundance_female",
+                "abundance",
+                "biomass_male",
+                "biomass_female",
+                "biomass",
+                "number_density_male",
+                "number_density_female",
+                "number_density",
+                "biomass_density_male",
+                "biomass_density_female",
+                "biomass_density",
+                "layer_depth_mean",
+                "layer_height",
+                "transect_spacing",
+                "interval",
+                "fraction_hake",
+                "sig_b",
+                "average_weight",
+            ]
+        )
+        # ---- Sort the values
+        report_df.sort_values(
+            [
+                "transect_num",
+                "longitude",
+                "latitude",
+            ],
+            inplace=True,
+        )
+        # ---- Rename columns
+        report_df.rename(
+            columns={
+                "transect_num": "Transect",
+                "region_id": "Region ID",
+                "vessel_log_start": "VL_start",
+                "vessel_log_end": "VL_end",
+                "latitude": "Lat",
+                "longitude": "Lon",
+                f"{stratum_column}": "stratum",
+                "bottom_depth": "Depth",
+                "nasc": "NASC",
+                "abundance_male": "ntk_male",
+                "abundance_female": "ntk_female",
+                "abundance": "ntk_total",
+                "biomass_male": "wgt_male",
+                "biomass_female": "wgt_female",
+                "biomass": "wgt_total",
+                "number_density_male": "nntk_male",
+                "number_density_female": "nntk_female",
+                "number_density": "nntk_total",
+                "biomass_density_male": "nwgt_male",
+                "biomass_density_female": "nwgt_female",
+                "biomass_density": "nwgt_total",
+                "layer_depth_mean": "Layer Depth",
+                "layer_height": "Layer height",
+                "transect_spacing": "Transect spacing",
+                "fraction_hake": "mix_coef",
+                "average_weight": "wgt_per_fish",
+            },
+            inplace=True,
         )
 
+        # Save the *.xlsx sheet
+        report_df.to_excel(filepath[0], sheet_name="Sheet1", index=None)
+
         # Reduce the datasets
-        self.data.analysis["transect"]["acoustics"]["adult_transect_df"].loc[
-            lambda x: x.nasc > 0
-        ].to_excel(filepath[1], sheet_name="Sheet1", index=None)
+        report_df.loc[report_df["NASC"] > 0.0].to_excel(
+            filepath[1], sheet_name="Sheet1", index=None
+        )
 
         # Return the filepath name
         return filepath[0].as_posix(), filepath[1].as_posix()
