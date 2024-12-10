@@ -685,9 +685,13 @@ def apportion_kriged_values(
                 "Apportioned kriged apportioned biomass for age-1 not fully distributed over all "
                 "age-2+ age bins."
             )
+        # ----- Return
+        kriged_output = kriging_full_table.copy()
+    else:
+        kriged_output = kriged_full_table.copy()
 
     # Check equality between original kriged estimates and (imputed) apportioned estimates
-    if (kriging_full_table["biomass_apportioned"].sum() - summed_biomass.sum()) > 1e-6:
+    if (kriged_output["biomass_apportioned"].sum() - summed_biomass.sum()) > 1e-6:
         # ---- If not equal, generate warning
         warnings.warn(
             "Apportioned kriged apportioned biomass does not equal the total kriged mesh "
@@ -697,4 +701,4 @@ def apportion_kriged_values(
         )
 
     # Return output
-    return aged_pivot, unaged_pivot, kriging_full_table
+    return aged_pivot, unaged_pivot, kriged_output
