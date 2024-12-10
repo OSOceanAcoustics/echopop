@@ -58,7 +58,7 @@ The `initialization_config.yml` configuration file defines various parameters th
   * `export_file_directory`: directory path containing Echoview exports. *Note*: this assumes that the directory is contained within `data_root_dir`.
   * `nasc_export_directory`: directory path where processed exports will be saved. *Note*: this assumes that the directory is contained within `data_root_dir`.
   * `save_file_template`: the filename format of the processed export files that can contain the following tags: `{REGION}`, `{YEAR}`, and/or `{GROUP}`.
-  * `safe_file_sheetname`: sheetname of the processed export file.
+  * `save_file_sheetname`: sheetname of the processed export file.
   * `regions`: acoustic data region names.
     * `{GROUP}`: a single string (e.g. `age-1 fish`) or a list of strings that represent how backscatter measurements are integrated for each `{GROUP}` region.
   * `max_transect_spacing`: the maximum spacing between transects (nmi).

@@ -77,7 +77,7 @@ def append_datatable_rows(worksheet: Worksheet, dataframe: pd.DataFrame) -> None
     """
 
     # Add column names (i.e. age)
-    worksheet.append([""] + dataframe.columns.values.tolist())
+    worksheet.append([0] + dataframe.columns.values.tolist())
 
     # Get the dataset row indices
     ROW_INDICES = dataframe.index.values
@@ -234,7 +234,12 @@ def repivot_table(
     """
 
     # Restack the data table
-    data_stk = age_length_dataframe.stack(future_stack=True).sum(axis=1).reset_index(name=variable)
+    data_stk = age_length_dataframe.stack(future_stack=True)
+    # ---- Sum across columns if strata are present
+    if any(["stratum" in name for name in age_length_dataframe.columns.names]):
+        data_stk = data_stk.sum(axis=1)
+    # ---- Reset index
+    data_stk = data_stk.reset_index(name=variable)
 
     # Concatenate unaged data, if needed
     if length_dataframe is not None:
@@ -271,7 +276,7 @@ def repivot_table(
     data_proc = data_pvt.rename_axis(columns=None, index=None)
 
     # Rename the unaged placeholder to "Unaged" and return
-    return data_proc.rename(columns={shifted_bin_mid: "Unaged"})
+    return data_proc.rename(columns={shifted_bin_mid: "Un-aged"})
 
 
 def pivot_aged_weight_proportions(
@@ -363,7 +368,7 @@ def write_aged_dataframe_report(
     wb = initialize_workbook(filepath)
 
     # Initialize
-    for sex in ["all", "female", "male"]:
+    for sex in ["male", "female", "all"]:
 
         # Add/overwrite the sheet
         ws = format_file_sheet(sex.capitalize(), wb)
@@ -408,7 +413,7 @@ def write_age_length_table_report(
     wb = initialize_workbook(filepath)
 
     # Iterate through all sexes
-    for sex in ["all", "female", "male"]:
+    for sex in ["male", "female", "all"]:
 
         # Subset the data dictionary for the particular sheet
         sheet_data = tables_dict[sex]
@@ -447,7 +452,7 @@ def write_haul_report(
     wb = initialize_workbook(filepath)
 
     # Iterate through all sexes
-    for sex in ["all", "female", "male"]:
+    for sex in ["male", "female", "all"]:
 
         # Subset the data dictionary for the particular sheet
         sheet_data = tables_dict[sex]
@@ -513,9 +518,6 @@ class FEATReports:
             - *"aged_length_haul_counts"* \n
             Table comprising distributions of counts from aged fish for each haul
 
-            - *"kriged_biomass_mesh"* \n
-            Dataframe comprising georeferenced kriged mesh results with biomass estimates
-
             - *"kriged_aged_biomass_mesh"* \n
             Dataframe comprising georeferenced kriged mesh results with biomass distributed across
             all age bins
@@ -525,8 +527,14 @@ class FEATReports:
             for the kriging analysis. Note that only the 'biomass' column is currently used within
             `Echopop`
 
+            - *"kriged_length_age_abundance"* \n
+            Table comprising kriged abundance estimates distributed over age and length bins
+
             - *"kriged_length_age_biomass"* \n
             Table comprising kriged biomass estimates distributed over age and length bins
+
+            - *"kriged_mesh_results"* \n
+            Dataframe comprising georeferenced kriged mesh results with biomass estimates
 
             - *"transect_aged_biomass"* \n
             Dataframe comprising georeferenced along-transect biomass estimates with biomass
@@ -582,7 +590,7 @@ class FEATReports:
     >>> survey.kriging_analysis(variogram_parameters=dict(model=["exponential", "bessel"],
     ... n_lags=30), variable="biomass_density", verbose=False)
     >>> from echopop.extensions.FEATreports import FEATreports
-    >>> reports = ["aged_length_haul_counts", "kriged_biomass_mesh"]
+    >>> reports = ["aged_length_haul_counts", "kriged_mesh_results"]
     >>> FEATReports(survey, reports, save_directory="C:/Users/Data").generate()
     The following report tables were generated:
        -'C:/Users/Data/aged_length_haul_counts_table.xlsx'
@@ -614,9 +622,10 @@ class FEATReports:
                 Literal[
                     "aged_length_haul_counts",
                     "kriged_aged_biomass_mesh",
-                    "kriged_biomass_mesh",
-                    "kriged_length_age_biomass",
                     "kriging_input",
+                    "kriged_length_age_abundance",
+                    "kriged_length_age_biomass",
+                    "kriged_mesh_results",
                     "total_length_haul_counts",
                     "transect_aged_biomass",
                     "transect_length_age_abundance",
@@ -633,7 +642,8 @@ class FEATReports:
             reports = [
                 "aged_length_haul_counts",
                 "kriged_aged_biomass_mesh",
-                "kriged_biomass_mesh",
+                "kriged_mesh_results",
+                "kriged_length_age_abundance",
                 "kriged_length_age_biomass",
                 "kriging_input",
                 "total_length_haul_counts",
@@ -827,7 +837,7 @@ class FEATReports:
         # Return the filepath name
         return filepath[0].as_posix(), filepath[1].as_posix()
 
-    def kriged_biomass_mesh_report(
+    def kriged_mesh_results_report(
         self,
         filename: str,
         **kwargs,
@@ -836,45 +846,20 @@ class FEATReports:
         # Get the stratum name
         stratum_name = self.data.analysis["settings"]["transect"]["stratum_name"]
 
-        # Get apportionment information
-        apportion_df = self.data.analysis["transect"]["biology"]["proportions"]["weight"][
-            "aged_unaged_sex_weight_proportions_df"
-        ].copy()
-        # ---- Pivot
-        apportion_pvt = apportion_df.pivot_table(index=["stratum_num"], columns=["sex"])
-        # ---- Compute the proportions across strata
-        stratum_prop = (
-            apportion_pvt["weight_proportion_overall_aged"]
-            + apportion_pvt["weight_proportion_overall_unaged"]
-        )
-
         # Get mesh results
         mesh_df = self.data.results["kriging"]["mesh_results_df"].copy()
-        # ---- Set the index
-        mesh_df.set_index(stratum_name, inplace=True)
-
-        # Merge the mesh and apportionment dataframes
-        merged_mesh = pd.merge(mesh_df, stratum_prop, left_index=True, right_index=True)
-        # ---- Propagate the proportions across biomass estimates
-        merged_mesh.loc[:, "female":"male"] = merged_mesh.loc[:, "female":"male"].mul(
-            merged_mesh["biomass"], axis=0
-        )
-        # ---- Rename the columns
-        merged_mesh.rename(
-            columns={"female": "biomass_female", "male": "biomass_male"}, inplace=True
-        )
-
         # Back-calculate the kriged standard deviation
-        merged_mesh.loc[:, "kriged_sd"] = (
-            merged_mesh.loc[:, "kriged_mean"] * merged_mesh.loc[:, "sample_cv"]
-        )
-
-        # Update and filter the columns that will be exported
-        output_df = merged_mesh.reset_index().filter(
+        mesh_df.loc[:, "kriged_sd"] = mesh_df.loc[:, "kriged_mean"] * mesh_df.loc[:, "sample_cv"]
+        # ---- Set the index
+        output_df = mesh_df.filter(
             [
                 "latitude",
                 "longitude",
                 stratum_name,
+                "nasc",
+                "abundance",
+                "abundance_female",
+                "abundance_male",
                 "biomass",
                 "biomass_female",
                 "biomass_male",
@@ -897,6 +882,77 @@ class FEATReports:
         # Return the filepath name
         return filepath[0].as_posix(), filepath[1].as_posix()
 
+    def kriged_length_age_abundance_report(
+        self,
+        title: str,
+        filename: str,
+        **kwargs,
+    ):
+
+        # Get the dataset
+        dataset = self.data.results["kriging"]["tables"]
+        # ---- Aged data
+        aged_data = dataset["aged_tbl"]["abundance_apportioned"].copy(0)
+        # ---- Unaged data
+        unaged_data = dataset["unaged_tbl"]["abundance_apportioned_unaged"].copy()
+
+        # Process the aged data
+        # ---- Stack
+        aged_stk = aged_data.stack(future_stack=True).reset_index(name="abundance")
+        # ---- Expand to include 'all'
+        full_aged_stk = pd.concat(
+            [
+                aged_stk,
+                aged_stk.groupby(["length_bin", "age_bin"], observed=False)["abundance"]
+                .sum()
+                .reset_index()
+                .assign(sex="all"),
+            ],
+            ignore_index=True,
+        )
+        # ---- Re-pivot
+        full_aged_pvt = full_aged_stk.pivot_table(
+            index=["sex", "length_bin"], columns=["age_bin"], values="abundance", observed=False
+        )
+
+        # Process the unaged data
+        # ---- Stack
+        unaged_stk = unaged_data.stack(future_stack=True).reset_index(name="abundance")
+        # ---- Expand to include 'all'
+        full_unaged_stk = pd.concat(
+            [
+                unaged_stk,
+                unaged_stk.groupby(["length_bin"], observed=False)["abundance"]
+                .sum()
+                .reset_index()
+                .assign(sex="all"),
+            ],
+            ignore_index=True,
+        )
+        # ---- Re-pivot
+        full_unaged_pvt = full_unaged_stk.pivot_table(
+            index=["sex", "length_bin"], values="abundance", observed=False
+        )
+
+        # Repivot the datasets for each sex
+        tables = {
+            sex: repivot_table(
+                age_length_dataframe=full_aged_pvt.loc[sex, :],
+                length_dataframe=full_unaged_pvt.loc[sex, :],
+                variable="abundance",
+            )
+            for sex in ["all", "male", "female"]
+        }
+
+        # Get filepath
+        filepath = self.save_directory / filename
+
+        # Write the *.xlsx sheet
+        write_age_length_table_report(tables, title, filepath)
+
+        # Return the filepath name
+        return filepath.as_posix()
+
     def kriged_length_age_biomass_report(
         self,
         title: str,
@@ -906,12 +962,22 @@ class FEATReports:
 
         # Get the dataset
         dataset = self.data.results["kriging"]["tables"]["overall_apportionment_df"]
+        # ---- Expand to include 'all'
+        dataset = pd.concat(
+            [
+                dataset,
+                dataset.groupby(["age_bin", "length_bin"], observed=False)["biomass_apportioned"]
+                .sum()
+                .reset_index()
+                .assign(sex="all"),
+            ]
+        )
 
         # Initialize a pivot table from the dataset
         dataset_pvt = dataset.pivot_table(
             index=["sex", "length_bin"],
             columns=["age_bin"],
-            values=["biomass_apportioned"],
+            values="biomass_apportioned",
             aggfunc="sum",
             observed=False,
         )
@@ -1142,16 +1208,21 @@ class FEATReports:
         **kwargs,
     ):
 
-        # Get the filepath
-        filepath = self.save_directory / filename
+        # Get filepaths
+        filepath = tuple([self.save_directory / f for f in filename])
 
         # Save the *.xlsx sheet
         self.data.analysis["transect"]["acoustics"]["adult_transect_df"].to_excel(
-            filepath, sheet_name="Sheet1", index=None
+            filepath[0], sheet_name="Sheet1", index=None
         )
 
+        # Reduce the datasets
+        self.data.analysis["transect"]["acoustics"]["adult_transect_df"].loc[
+            lambda x: x.nasc > 0
+        ].to_excel(filepath[1], sheet_name="Sheet1", index=None)
+
         # Return the filepath name
-        return filepath.as_posix()
+        return filepath[0].as_posix(), filepath[1].as_posix()
 
     @staticmethod
     def report_options():
@@ -1177,60 +1248,68 @@ class FEATReports:
         "aged_length_haul_counts": {
             "function": aged_length_haul_counts_report,
             "title": "Aged Length-Haul Counts ({SEX})",
-            "filename": "aged_length_haul_counts_table.xlsx",
+            "filename": "aged_len_haul_counts_table.xlsx",
         },
         "kriged_aged_biomass_mesh": {
             "function": kriged_aged_biomass_mesh_report,
             "title": None,
             "filename": (
-                "kriged_aged_biomass_mesh_dataframe.xlsx",
-                "kriged_aged_biomass_reduced_mesh_dataframe.xlsx",
+                "EchoPro_kriged_aged_output_0.xlsx",
+                "EchoPro_kriged_aged_output_1.xlsx",
             ),
-        },
-        "kriged_biomass_mesh": {
-            "function": kriged_biomass_mesh_report,
-            "title": None,
-            "filename": (
-                "kriged_biomass_mesh_dataframe.xlsx",
-                "kriged_biomass_mesh_reduced_dataframe.xlsx",
-            ),
-        },
-        "kriged_length_age_biomass": {
-            "function": kriged_length_age_biomass_report,
-            "title": "Kriged Acoustically Weighted Biomass (mmt) ({SEX})",
-            "filename": "kriged_length_age_biomass_table.xlsx",
         },
         "kriging_input": {
             "function": kriging_input_report,
             "title": None,
-            "filename": "kriging_input_dataframe.xlsx",
+            "filename": "kriging_input.xlsx",
+        },
+        "kriged_length_age_abundance": {
+            "function": kriged_length_age_abundance_report,
+            "title": "Kriged Acoustically Weighted Abundance ({SEX})",
+            "filename": "kriged_len_age_abundance_table.xlsx",
+        },
+        "kriged_length_age_biomass": {
+            "function": kriged_length_age_biomass_report,
+            "title": "Kriged Acoustically Weighted Biomass (mmt) ({SEX})",
+            "filename": "kriged_len_age_biomass_table.xlsx",
+        },
+        "kriged_mesh_results": {
+            "function": kriged_mesh_results_report,
+            "title": None,
+            "filename": (
+                "EchoPro_kriged_output_0.xlsx",
+                "EchoPro_kriged_output_1.xlsx",
+            ),
         },
         "total_length_haul_counts": {
             "function": total_length_haul_counts_report,
             "title": "Un-Aged Length-Haul Counts ({SEX})",
-            "filename": "total_length_haul_counts_table.xlsx",
+            "filename": "total_len_haul_counts_table.xlsx",
         },
         "transect_aged_biomass": {
             "function": transect_aged_biomass_report,
             "title": None,
             "filename": (
-                "transect_aged_biomass_dataframe.xlsx",
-                "transect_aged_biomass_reduced_dataframe.xlsx",
+                "EchoPro_un-kriged_aged_output_0.xlsx",
+                "EchoPro_un-kriged_aged_output_1.xlsx",
             ),
         },
         "transect_length_age_abundance": {
             "function": transect_length_age_abundance_report,
             "title": "Transect-based Acoustically Weighted Abundance ({SEX})",
-            "filename": "transect_length_age_abundance_table.xlsx",
+            "filename": "un-kriged_len_age_abundance_table.xlsx",
         },
         "transect_length_age_biomass": {
             "function": transect_length_age_biomass_report,
             "title": "Transect-based Acoustically Weighted Biomass (mmt) ({SEX})",
-            "filename": "transect_length_age_biomass_table.xlsx",
+            "filename": "un-kriged_len_age_biomass_table.xlsx",
         },
         "transect_population_results": {
             "function": transect_population_results_report,
             "title": None,
-            "filename": "transect_population_results_dataframe.xlsx",
+            "filename": (
+                "EchoPro_un-kriged_output_0.xlsx",
+                "EchoPro_un-kriged_output_1.xlsx",
+            ),
         },
     }

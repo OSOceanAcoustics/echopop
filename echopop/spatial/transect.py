@@ -70,8 +70,16 @@ def save_transect_coordinates(transect_data: pd.DataFrame, settings_dict: dict):
     # Get the correct haul and stratum names
     age_group_cols = settings_dict["age_group_columns"]
 
+    # Get stratum definition
+    stratum_def = settings_dict["stratum"]
+
     # Get stratum column name
     stratum_col = settings_dict["stratum_name"]
+    # ---- Set up the column renaming scheme
+    if stratum_def == "inpfc":
+        stratum_rename = "stratum_num"
+    else:
+        stratum_rename = stratum_col
 
     # Extract transect numbers, coordinates, and strata
     transect_data_extract = transect_data.filter(
@@ -88,7 +96,10 @@ def save_transect_coordinates(transect_data: pd.DataFrame, settings_dict: dict):
 
     # Rename the group-specific columns and return the output
     return transect_data_extract.rename(
-        columns={age_group_cols["haul_id"]: "haul_num", age_group_cols["stratum_id"]: stratum_col}
+        columns={
+            age_group_cols["haul_id"]: "haul_num",
+            age_group_cols["stratum_id"]: stratum_rename,
+        }
     )
 
 

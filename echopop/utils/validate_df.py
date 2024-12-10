@@ -1,5 +1,6 @@
 import copy
 import re
+from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -152,7 +153,9 @@ class BaseDataFrame(DataFrameModel):
         return errors_coerce
 
     @classmethod
-    def judge(cls, df: pd.DataFrame, coercion_failures: pd.DataFrame) -> pd.DataFrame:
+    def judge(
+        cls, df: pd.DataFrame, coercion_failures: pd.DataFrame, filename: str
+    ) -> pd.DataFrame:
         # ---- Collect errors
         errors = []
         try:
@@ -165,12 +168,15 @@ class BaseDataFrame(DataFrameModel):
             # ---- Join unique errors
             errors_stk = "\n".join(extract_errors(errors[0].message, coercion_failures))
             # ---- Format the error message
-            message = f"The following DataFrame validation errors were flagged: \n" f"{errors_stk}"
+            message = (
+                f"The following DataFrame validation errors were flagged for {filename}: \n"
+                f"{errors_stk}"
+            )
             # ---- Raise Error
             raise SchemaError(cls, df, message) from None
 
     @classmethod
-    def validate_df(cls, data: pd.DataFrame) -> pd.DataFrame:
+    def validate_df(cls, data: pd.DataFrame, filename: Optional[str] = None) -> pd.DataFrame:
         # ---- Create copy
         df = data.copy()
         # ---- Get the original annotations
@@ -227,7 +233,7 @@ class BaseDataFrame(DataFrameModel):
         coercion_failures = cls.coercion_check(df, column_types)
 
         # Validate
-        df_valid = cls.judge(df.filter(valid_cols), coercion_failures)
+        df_valid = cls.judge(df.filter(valid_cols), coercion_failures, filename)
         # ---- Return to default annotations
         cls.__annotations__ = default_annotations
         # ---- Return the validated DataFrame
