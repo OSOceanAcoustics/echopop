@@ -17,11 +17,11 @@ CAN_haul_offset: 100         # The value to be added to the Canadian's haul numb
 # Report generation
 ###################
 # Where the reports are saved
-report_path: C:/Users/Brandyn Lucca/Documents/Data/echopop_2013/reports
+report_path: C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_2013/reports
 
 ##############################################################################
 # Directory path that contains all input data needed
-data_root_dir: C:/Users/Brandyn Lucca/Documents/Data/echopop_2013
+data_root_dir: C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_2013
 
 ##############################################################################
 # Input data files
@@ -67,6 +67,13 @@ NASC:
     # file that includes all ages
     filename: Exports/US_CAN_NASC_2013_table_all_ages_test.xlsx
     sheetname: Sheet1
+export_regions:
+  all_ages:
+    filename: Stratification/US&CAN_2013_transect_region_haul_age1+ auto final_new.xlsx
+    sheetname: Sheet1
+  no_age1:
+    filename: Stratification/US&CAN_2013_transect_region_haul_age2+ auto final_new.xlsx
+    sheetname: Sheet1
 kriging:
   mesh:
     filename: Kriging_files/Kriging_grid_files/krig_grid2_5nm_cut_centroids_2013.xlsx
@@ -76,6 +83,6 @@ kriging:
     sheetname: Smoothing_EasyKrig
   vario_krig_para:
     # NOTE: This file is not currently used
-    filename: Kriging_files/default_vario_krig_settings_2013_US_CAN.xlsx
+    filename: Kriging_files/default_vario_krig_settings_orig.xlsx
     sheetname: Sheet1
 ...

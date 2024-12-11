@@ -196,6 +196,13 @@ class PatternParts(InputModel, title="region name pattern"):
     pattern: str
     label: str
 
+class INPFCRegionMap(RootModel, 
+                     title="INPFC strata region mapping"):
+    """
+    INPFC-region mapping    
+    """
+
+    root: List[int]
 
 class TransectRegionMap(
     InputModel, arbitrary_types_allowed=True, title="transect-region mapping parameters"
@@ -205,20 +212,28 @@ class TransectRegionMap(
 
     Parameters
     ----------
-    save_file_template: str
-        Save file template name.
-    save_file_directory: str
-        File directory name.
-    save_file_sheetname: str
-        File sheetname.
-    pattern: str
-        Region map code/pattern.
+    inpfc_strata_region: Dict[str, INPFCRegionMap]
+        A dictionary of region names that each are parameterized with a list of INPFC strata 
+        associated with each
     parts: Dict[str, List[PatternParts]]
-        Dictionary of metadata-pattern paired codes.
+        Dictionary of metadata-pattern paired codes
+    pattern: str
+        Region map code/pattern
+    save_file_template: Optional[str]
+        Save file template name
+    save_file_directory: Optional[str]
+        File directory name
+    save_file_sheetname: Optional[str]
+        File sheetname
+
     """
 
-    pattern: str
+    inpfc_strata_region: Optional[Dict[str, INPFCRegionMap]]
     parts: Dict[str, List[PatternParts]]
+    pattern: str    
+    save_file_template: Optional[str] = Field(default=None)
+    save_file_directory: Optional[str] = Field(default=None)
+    save_file_sheetname: Optional[str] = Field(default=None)
 
     @model_validator(mode="before")
     def validate_pattern_parts(cls, values):
@@ -253,6 +268,23 @@ class TransectRegionMap(
                 f"by curly braces) include: ['REGION_CLASS', 'HAUL_NUM', 'COUNTRY']."
             )
             # ---- Return value
+        return v
+
+    @field_validator("save_file_template", mode="after")
+    def validate_save_file_template(cls, v):
+        # ---- Find all strings contained within curly braces
+        template_ids = re.findall(r"{(.*?)}", v)
+        # ---- Evaluate valid id's
+        if not set(template_ids).issubset(set(["YEAR", "COUNTRY", "GROUP"])):
+            # ---- Get the unknown IDs
+            unknown_ids = set(template_ids) - set(["YEAR", "COUNTRY", "GROUP"])
+            # ---- Raise Error
+            raise ValueError(
+                f"Transect-to-region mapping save file template ({v}) contains invalid identifiers "
+                f"({list(unknown_ids)}). Valid identifiers within the filename template (bounded "
+                f"by curly braces) include: ['YEAR', 'COUNTRY', 'GROUP']."
+            )
+        # ---- Return value
         return v
 
 

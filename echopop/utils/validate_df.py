@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from pandera import DataFrameModel, Field, check
 from pandera.errors import SchemaError, SchemaErrors
-from pandera.typing import Series
+from pandera.typing import DateTime, Series
 
 
 ####################################################################################################
@@ -692,8 +692,107 @@ class VarioKrigingPara(BaseDataFrame):
     ymax: Series[float] = Field(nullable=False, alias="krig.ymax")
     ymin0: Series[float] = Field(ge=-90.0, le=90.0, nullable=False, alias="krig.ymin0")
     ymax0: Series[float] = Field(ge=-90.0, le=90.0, nullable=False, alias="krig.ymax0")
+    
+####################################################################################################
+# ECHOVIEW EXPORT VALIDATION
+# --------------------------------------------------------------------------------------------------
 
+class EchoviewCells(BaseDataFrame):
+    """
+    Echoview ``cells`` ``*.csv`` file
 
+    Parameters
+    ----------
+    interval: int
+        Cell interval number
+    layer: int
+        Cell layer number
+    prc_nasc: float
+        Proportioned region-to-cell NASC (m^2 nmi^-2)
+    process_id: int
+        Unique identification number assigned to each export file
+    region_class: str
+        Class name
+    region_id: int
+        Identification number of the export region
+    region_name: str
+        Region name
+    standard_deviation: float
+        Standard deviation of sample values (calculated in the linear domain) of the analysis cell
+    sv_mean: float
+        Mean volumetric backscattering strength of the analysis cell (S_V, dB re. 1 m^-1)
+
+    """
+
+    interval: Series[int] = Field(ge=1, nullable=False)
+    layer: Series[int] = Field(ge=1, nullable=False)
+    prc_nasc: Series[float] = Field(ge=0.0, nullable=False)
+    process_id: Series[int]
+    region_class: Series[str]
+    region_id: Series[int]
+    region_name: Series[str]
+    standard_deviation: Series[float] = Field(ge=0.0, nullable=False)
+    sv_mean: Series[float] = Field(ge=-999, nullable=True)
+
+class EchoviewIntervals(BaseDataFrame):
+    """
+    Echoview ``intervals`` ``*.csv`` file
+
+    Parameters
+    ----------
+    date_s: int
+        Date of the first ping in the analysis interval (YYYYMMDD)
+    exclude_below_line_depth_mean: float
+        Mean bottom depth of the analysis interval (m)
+    interval: int
+        Cell interval number
+    lat_s: float
+        Latitude of the first ping in the analysis interval (deicmal degrees)
+    lon_s: float
+        Longitude of the first ping in the analysis interval (decimal degrees)
+    process_id: int
+        Unique identification number assigned to each export file
+    time_s: str
+        Timestamp of the first ping in the analysis interval as a string (HH:MM:OS)
+    vl_end: float
+        Distance from the start of the vessel log to the last ping in the analysis interval
+    vl_start: float
+        Distance from the start of the vessel log to the first ping in the analysis interval
+
+    """
+
+    date_s: Series[int]
+    exclude_below_line_depth_mean: Series[float]
+    interval: Series[int] = Field(ge=1, nullable=False)
+    lat_s: Series[float]
+    lon_s: Series[float]
+    process_id: Series[int]
+    time_s: Series[str]
+    vl_end: Series[float]
+    vl_start: Series[float]
+
+class EchoviewLayers(BaseDataFrame):
+    """
+    Echoview ``layers`` ``*.csv`` file
+
+    Parameters
+    ----------
+    layer: int
+        Cell layer number
+    layer_depth_max: Union[int, float]
+        Maximum depth of the analysis layer (m)
+    layer_depth_min: Union[int, float]
+        Minimum depth of the analysis layer (m)
+    process_id: int
+        Unique identification number assigned to each export file
+    
+    """
+
+    layer: Series[int] = Field(ge=1, nullable=False)
+    layer_depth_max: Series = Field(nullable=False, metadata=dict(types=[int, float]))
+    layer_depth_min: Series = Field(nullable=False, metadata=dict(types=[int, float]))
+    process_id: Series[int]
+    
 ####################################################################################################
 # CONFIGURATION DATAFRAME MAPPING
 # --------------------------------------------------------------------------------------------------
@@ -718,4 +817,10 @@ DATASET_DF_MODEL = {
         "mesh": KrigedMesh,
         "vario_krig_para": VarioKrigingPara,
     },
+}
+
+ECHOVIEW_DF_MODEL = {
+    "cells": EchoviewCells,
+    "intervals": EchoviewIntervals,
+    "layers": EchoviewLayers,
 }
