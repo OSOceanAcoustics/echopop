@@ -555,11 +555,14 @@ def preprocess_spatial(input_dict: dict) -> None:
     # Bin data
     # ---- Create latitude intervals to bin the strata
     latitude_bins = np.concatenate(
-        [[-90], input_dict["spatial"]["inpfc_strata_df"]["northlimit_latitude"], [90]]
+        [[-90], 
+         input_dict["spatial"]["inpfc_strata_df"]["northlimit_latitude"].unique(), 
+         [90]]
     )
     # ---- Add categorical intervals
     input_dict["spatial"]["inpfc_strata_df"]["latitude_interval"] = pd.cut(
-        input_dict["spatial"]["inpfc_strata_df"]["northlimit_latitude"] * 0.99, latitude_bins
+        input_dict["spatial"]["inpfc_strata_df"]["northlimit_latitude"] * 0.99, 
+        latitude_bins,
     )
 
 
@@ -576,7 +579,9 @@ def preprocess_acoustic_spatial(input_dict: dict) -> None:
     # Bin data
     # ---- Create latitude intervals to bin the strata
     latitude_bins = np.concatenate(
-        [[-90], input_dict["spatial"]["inpfc_strata_df"]["northlimit_latitude"], [90]]
+        [[-90], 
+         input_dict["spatial"]["inpfc_strata_df"]["northlimit_latitude"].unique(), 
+         [90]]
     )
     # ---- Bin NASC transects into appropriate INPFC strata
     input_dict["acoustics"]["nasc_df"]["stratum_inpfc"] = (
@@ -649,11 +654,15 @@ def preprocess_biology_spatial(input_dict: dict) -> None:
         columns={"stratum_num": "stratum_inpfc"}, inplace=True
     )
     # ---- Set the index to `haul_bins`
-    inpfc_df = input_dict["spatial"]["inpfc_strata_df"].copy().set_index(["haul_bin"])
-
+    inpfc_df = (
+        input_dict["spatial"]["inpfc_strata_df"].copy()
+        .drop_duplicates("haul_bin")
+        .set_index(["haul_bin"])
+    )
+    
     # Get the KS-strata
     strata_df = input_dict["spatial"]["strata_df"].copy().set_index(["haul_num"])
-
+    
     # Loop through the KS-strata to map the correct strata values
     for keys, values in input_dict["biology"].items():
         if isinstance(values, pd.DataFrame) and "haul_num" in values.columns:
@@ -671,14 +680,20 @@ def preprocess_biology_spatial(input_dict: dict) -> None:
             input_dict["biology"][keys]["haul_bin"] = pd.cut(
                 input_dict["biology"][keys]["haul_num"], haul_bins
             )
+            # ---- NaN mask
+            nan_mask = input_dict["biology"][keys]['haul_bin'].isna()
+            # # ---- Valid haul bins
+            valid_haul_bins = input_dict["biology"][keys].copy().loc[~nan_mask]
             # ---- Set index to `haul_bins`
-            input_dict["biology"][keys].set_index(["haul_bin"], inplace=True)
+            valid_haul_bins.set_index(["haul_bin"], inplace=True)
             # ---- Merge
-            input_dict["biology"][keys]["stratum_inpfc"] = inpfc_df["stratum_inpfc"]
+            valid_haul_bins["stratum_inpfc"] = inpfc_df["stratum_inpfc"]
             # ---- Reset indices
-            input_dict["biology"][keys].reset_index(inplace=True)
+            valid_haul_bins.reset_index(inplace=True)
             # ---- Drop `haul_bin`
-            input_dict["biology"][keys].drop(columns=["haul_bin"], inplace=True)
+            valid_haul_bins.drop(columns=["haul_bin"], inplace=True)
+            # ---- Set
+            input_dict["biology"][keys] = valid_haul_bins
 
 
 def preprocess_acoustic_biology_spatial(input_dict: dict, configuration_dict: dict) -> None:

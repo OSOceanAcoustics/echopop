@@ -1,3 +1,5 @@
+import os
+
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Tuple, Union
 
@@ -22,11 +24,13 @@ def initialize_workbook(filepath: Path) -> Workbook:
 
     # Check if workbook already exists
     if filepath.exists():
-        wb = load_workbook(filepath)
+        # ---- Delete
+        # wb = load_workbook(filepath)
+        os.remove(filepath)
     # ---- If not, generate it and remove the default "Sheet" that is created
-    else:
-        wb = Workbook()
-        wb.remove(wb["Sheet"])
+    # else:
+    wb = Workbook()
+    wb.remove(wb["Sheet"])
 
     # Return
     return wb
@@ -586,6 +590,9 @@ class FEATReports:
 
             - *"kriged_mesh_results"* \n
             Dataframe comprising georeferenced kriged mesh results with biomass estimates
+
+            - *"total_length_haul_counts"* \n
+            Table comprising distributions of counts from un-aged fish for each haul
 
             - *"transect_aged_biomass"* \n
             Dataframe comprising georeferenced along-transect biomass estimates with biomass

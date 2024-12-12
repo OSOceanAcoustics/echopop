@@ -446,7 +446,7 @@ def fit_length_weights(proportions_dict: dict, length_weight_dict: dict,
     # ---- Back-fill any missing strata    
     station_proportions_filled = (
         station_proportions.pivot_table(
-            index=["stratum_num"], 
+            index=[stratum_col], 
             columns=["group", "sex"],
             values="proportion")
         .reindex(length_proportions_table.columns)
@@ -867,9 +867,9 @@ def age1_metric_proportions(
 
     # Match table shapes
     # ---- All aged strata
-    all_aged_strata = age_proportions["stratum_num"].unique().tolist()
+    all_aged_strata = age_proportions[stratum_col].unique().tolist()
     # ---- All unaged strata
-    all_unaged_strata = unage_proportions["stratum_num"].unique().tolist()
+    all_unaged_strata = unage_proportions[stratum_col].unique().tolist()
     # # ---- Back-fill missing strata
     all_strata = list(set(all_aged_strata + all_unaged_strata))
 
@@ -1180,7 +1180,7 @@ def partition_transect_age(
     # ---- Merge adult proportions with acoustically derived georeferenced biological data
     adult_data = nasc_biology_df.merge(
         strata_adult_proportions_df, on=[stratum_col], how="left"
-    ).fillna(0.0)
+    ).infer_objects(copy=False).fillna(0.0)
     # ---- Adjust the full number density, biomass density, and NASC estimates
     # -------- NASC
     adult_data["nasc"] = adult_data["nasc"] * adult_data["nasc_proportion"]

@@ -401,7 +401,12 @@ def griddify_lag_distances(
         # ---- Replace the self-points with NaN
         np.fill_diagonal(y_angles, np.nan)
         # ---- Calculate the azimuth angle grid
-        angularity = np.arctan(y_angles / x_angles) * 180.0 / np.pi + 180 % 180
+        angularity = (
+            np.arctan(
+                np.divide(y_angles, x_angles, where=(x_angles != 0.0) & (~np.isnan(x_angles)))
+            ) 
+            * 180.0 / np.pi + 180 % 180
+        )
         # ---- Return output
         return np.sqrt(x_distance * x_distance + y_distance * y_distance), angularity
     else:

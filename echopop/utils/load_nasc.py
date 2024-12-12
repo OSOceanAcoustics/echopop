@@ -480,8 +480,8 @@ def ingest_echoview_exports(
         - `latitude` (float): Latitude (degrees).
         - `longitude` (float): Longitude (degrees).
         - `transect_spacing` (float): Distance between transects (nmi).
-        - `NASC_no_age` (float): Age-2+ NASC.
-        - `NASC_all_ages` (float): Age-1+ NASC.
+        - `nasc_no_age` (float): Age-2+ NASC.
+        - `nasc_all_ages` (float): Age-1+ NASC.
         - `haul_num` (int): The trawl/haul number associated with each transect interval.
         - `stratum_num` (Optional[int]): Length-based (KS clustered) stratum numbers that are added
         when `include_stratum = True` and `strata = 'ks'`.
@@ -596,15 +596,17 @@ def ingest_echoview_exports(
             .astype(float)
         )
         # ---- Drop unused columns
-        output_nasc = full_interval_strata_df.filter(export_settings["file_columns"])
+        output_nasc = full_interval_strata_df.filter(
+            [e.lower() for e in export_settings["file_columns"]]
+        )
         # ---- Add the region group key
         output_nasc["group"] = key
         # ---- Format the save filename
         save_filename = export_settings["save_file_template"]
         # ---- Parse unique regions
-        unique_country = grouped_region["country"].dropna().unique()
+        unique_country = [i for i in grouped_region["country"].dropna().unique() if i != "None"]
         # ---- REGION replacement
-        save_filename = save_filename.replace("{REGION}", "_".join(unique_country.tolist()))
+        save_filename = save_filename.replace("{REGION}", "_".join(unique_country))
         # ---- YEAR replacement
         save_filename = save_filename.replace("{YEAR}", str(configuration_dict["survey_year"]))
         # --- GROUP replacement

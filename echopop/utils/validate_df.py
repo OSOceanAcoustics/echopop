@@ -788,7 +788,7 @@ class EchoviewLayers(BaseDataFrame):
     
     """
 
-    layer: Series[int] = Field(ge=1, nullable=False)
+    layer: Series[int] = Field(ge=0, nullable=False)
     layer_depth_max: Series = Field(nullable=False, metadata=dict(types=[int, float]))
     layer_depth_min: Series = Field(nullable=False, metadata=dict(types=[int, float]))
     process_id: Series[int]

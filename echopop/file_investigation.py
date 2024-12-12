@@ -1,13 +1,14 @@
 import copy
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Union
+from itertools import product 
 
 import numpy as np
 import pandas as pd
 import yaml
 import re
 
-from echopop.core import BIODATA_HAUL_MAP, DATA_STRUCTURE, LAYER_NAME_MAP, NAME_CONFIG
+from echopop.core import BIODATA_HAUL_MAP, DATA_STRUCTURE, LAYER_NAME_MAP, NAME_CONFIG, REGION_EXPORT_MAP
 from echopop.utils.data_structure_utils import map_imported_datasets
 from echopop.utils.validate_df import DATASET_DF_MODEL
 from echopop.utils.validate_dict import CONFIG_DATA_MODEL, CONFIG_INIT_MODEL
@@ -21,7 +22,6 @@ from echopop.analysis import (
     stratified_summary,
     variogram_analysis,
 )
-from echopop.core import DATA_STRUCTURE
 from echopop.graphics import plotting as egp, variogram_interactive as egv
 from echopop.spatial.projection import transform_geometry
 from echopop.spatial.transect import edit_transect_columns
@@ -43,6 +43,7 @@ from echopop.biology import (
     quantize_weights,
     reallocate_kriged_age1,
     weight_proportions,
+    age1_metric_proportions
 )
 from echopop.spatial.krige import kriging
 from echopop.spatial.mesh import crop_mesh, mesh_to_transects, stratify_mesh
@@ -97,37 +98,148 @@ from typing import List, Tuple, Union
 import numpy as np
 import pandas as pd
 
-from echopop.core import ECHOVIEW_EXPORT_MAP, REGION_EXPORT_MAP
 from echopop.spatial.transect import export_transect_layers, export_transect_spacing
 from echopop.utils.validate_df import KSStrata
 from echopop.utils.operations import compile_patterns, extract_parts_and_labels, group_merge
 from echopop.utils.load_nasc import (
-    validate_echoview_exports,
+    load_export_regions,
     validate_export_directories,
     consolidate_exports,
     construct_transect_region_key,
     filter_export_regions,
     compile_patterns,
-    get_haul_transect_key,
     get_transect_numbers,
     read_echoview_export,
     load_export_regions,
     export_transect_layers,
     extract_parts_and_labels,
+    get_haul_strata_key,
 )
 
+import inspect
+import warnings
+from typing import Any, Dict, List, Optional, Union
+
+from lmfit import Minimizer, Parameters
+from scipy import special
+from echopop.utils.validate_dict import VariogramBase, VariogramInitial, VariogramOptimize
+from echopop.spatial.mesh import griddify_lag_distances
+from pydantic import BaseModel, Field, RootModel, ValidationError, field_validator, model_validator
+from echopop.utils.validate import posfloat, posint, realcircle, realposfloat
+from echopop.utils.validate_dict import *
+FutureWarning: The behavior of DataFrame concatenation with empty or all-NA entries is deprecated. In a future version, this will no longer exclude empty or all-NA columns when determining the result dtypes. To retain the old behavior, exclude the relevant entries before the concat operation.
 # LOAD =============================================================================================
 new_datasets = ["biological", "kriging", "stratification"]
 dataset_type = new_datasets
 
+a = pd.cut(
+    np.unique(input_dict["spatial"]["inpfc_strata_df"]["northlimit_latitude"]) * 0.99, 
+    latitude_bins,
+)
+len(a)
+len(input_dict["spatial"]["inpfc_strata_df"]["stratum_inpfc"].unique())
+pd.cut(
+    input_dict["spatial"]["inpfc_strata_df"]["northlimit_latitude"].unique() * 0.99, 
+    latitude_bins,
+    # labels=input_dict["spatial"]["inpfc_strata_df"]["stratum_inpfc"].unique()
+)
+
 self = survey
+input_dict = self.input
+configuration_dict = self.config
+
+init_config_path = Path(init_config_path)
+survey_year_config_path = Path(survey_year_config_path)
+
+dummy = {
+    "stratified_survey_mean_parameters": {"strata_transect_proportion": 0.85, 
+                                          "num_replicates": 10, 
+                                          "mesh_transects_per_latitude": 4},
+    "kriging_parameters": {"A0": 6.25, 
+                           "longitude_reference": 0.0,
+                           "longitude_offset": 5.0,
+                           "latitude_offset": 5.0},
+    "bio_hake_age_bin": [1, 20, 1],
+    "bio_hake_len_bin": [1, 20, 1],
+    "TS_length_regression_parameters": {
+        "pacific_hake": {"number_code": 22500,
+                         "TS_L_slope": 20.0,
+                         "TS_L_intercept": -70.0,
+                         "length_units": "cm"}},
+    "geospatial": {"init": "epsg:4326"}
+}            
+
+input_dict["biology"][keys].set_index(["haul_num"], inplace=True)
+input_dict["biology"][keys]["stratum_num"] = strata_df["stratum_num"]
+input_dict["biology"][keys].loc[1]
+input_dict["biology"][keys]["stratum_num"] = strata_df["stratum_num"]
+TSLRegressionParameters.create()
+CONFIG_INIT_MODEL(init_config_path, **dummy)
+input_dict["biology"][keys]["haul_bin"].replace(np.nan, pd.Categorical([0, 0]))
+np.isnan(input_dict["biology"][keys].haul_bin[0])
+input_dict["spatial"]["inpfc_strata_df"] = input_dict["spatial"]["inpfc_strata_df"].filter(["haul_start", "haul_end", "northlimit_latitude", "stratum_inpfc", "latitude_interval"])
+survey.input["biology"]
+
+nan_mask = input_dict["biology"][keys]['haul_bin'].isna()
+
+# Create a placeholder for out-of-range values
+out_of_range_label = "Out of Range"
+
+# Add 'Out of Range' category if it's not already present
+current_categories = input_dict["biology"][keys]['haul_bin'].cat.categories
+if out_of_range_label not in current_categories:
+    input_dict["biology"][keys]['haul_bin'] = input_dict["biology"][keys]['haul_bin'].cat.add_categories([out_of_range_label])
+
+
+keys = "length_df"
+values = input_dict["biology"][keys]
+
+input_dict["biology"]["length_df"]
+input_dict["biology"][keys]['haul_bin'] = input_dict["biology"][keys]['haul_bin'].cat.add_categories([0])
+
+input_dict["biology"][keys]['haul_bin'].combine_first(
+    pd.cut(
+        input_dict["biology"][keys]['haul_weight'],
+        bins=input_dict["biology"][keys]['haul_bin'].cat.categories
+    )
+)
+input_dict["biology"][keys] = input_dict["biology"][keys].reset_index().filter(["haul_num", "haul_weight", "species_id", "region"])
+input_dict["biology"][keys]["haul_bin"].fillna(0)
+strata_df["stratum_num"].reindex(input_dict["biology"][keys].index)
+
+inpfc_df["stratum_inpfc"].reindex(input_dict["biology"][keys].index)
+
+self = survey
+configuration_dict = self.config
 index_variable: Union[str, List[str]] = ["transect_num", "interval"]
 ingest_exports: Optional[Literal["echoview", "echopype"]] = "echoview"
+read_transect_region_file: bool = False
 region_class_column: str = "region_class"
 transect_pattern: str = r"T(\d+)"
 unique_region_id: str = "region_id"
 verbose: bool = True
+write_transect_region_file: bool = False
 
+transect_data["region_name"].unique()
+
+key = "all_ages"
+values = region_names[key]
+
+part_name = "COUNTRY"
+patterns = compiled_patterns[part_name]
+pattern = patterns[0]
+transect_regions.loc[lambda x: x.region_id == 63]
+match = pattern.search(remaining_name)
+grouped_region["country"][0]
+transect_region_key.loc[lambda x: ~x.country.isin(["US", "CAN"])]
+
+row = unique_regions.loc[94, :]
+
+unique_regions_coded["country"].isna()
+
+unique_regions.loc[94]
+unique_regions_coded.country[0]
+transect_region_key.loc[lambda x: not x.country]
 # eln.ingest_echoview_exports(
 #     self.config,
 #     transect_pattern,
@@ -138,150 +250,13 @@ verbose: bool = True
 # )
 configuration_dict = self.config
 default_transect_spacing = 10.0
-
-filename = cells_files[63]
-transect_num = 49
-pd.read_csv(filename)
-read_echoview_export(cells_files[63], 5)
-validate_echoview_exports(read_echoview_export(cells_files[64], 5))
-
-cells_files[64]
-
-pd.concat(generate_dataframes(cells_files[61:64], transect_reference), axis=0, ignore_index=True)
-
-pd.concat(
-    [
-        validate_echoview_exports(read_echoview_export(interval_files[85], transect_reference.get(interval_files[85], None))),
-        validate_echoview_exports(read_echoview_export(interval_files[86], transect_reference.get(interval_files[86], None))),
-        validate_echoview_exports(read_echoview_export(interval_files[87], transect_reference.get(interval_files[87], None))),   
-    ],
-    axis=0,
-    ignore_index=True,
-)
-
-export_dataframe = read_echoview_export(interval_files[87], transect_reference.get(interval_files[87], None))
-
-pd.concat(generate_dataframes(interval_files[85:89], transect_reference), axis=0, ignore_index=True)
-
-len(interval_files)
-len(np.unique(interval_files)
-
-dataset = "biological"
-datalayer = "specimen"
-region_id = "US"
-input_dict = self.input
-configuration_dict = self.config
-# sheet_name = sheets
-sheet_name = sheet_name[0]
-
-column = "haul_start"
-dtype = valid_cols[column]
-
-sheet_name = sheet_name[0]
-# cls = SpecimenBiodata
-cls = copy.deepcopy(validation_settings)
-cls = SpecimenBiodata
-# cls = VarioKrigingPara
-dff = df.copy()
-# dff = df_initial.copy()
-data = dff.copy()
-
-column_name = 'weight'
-col = 'weight'
-
-
-
-[isinstance(c, (np.integer, np.floating)) if not isinstance(c, list) else c in valid_cols[col] for c in valid_cols[col]]
-
-
-c in valid_cols[col] or 
-[c for c in valid_cols[col] if c in [int, float] else ]
-
-valid_cols[col].type
-
-df.loc[df[col].astype(str).str.contains(r"\s"), col]
-
-da = pd.DataFrame({
-    "x": [1, 2, 3, "", " ", "  ", "   ", None, 4, 5]
-})
-da.loc[da["x"].str.isnumeric()]
-
-da.loc[da.x.astype(str).str.contains(r"\s"), :]
-
-len(list(cls.to_schema().columns))
-cls.to_schema().columns["krig.dx"]
-len(list(default_annotations))
-
-column = "fraction_hake"
-annotation = valid_cols[column]
-
-column_name = "length"
-col_types = column_types
-
-annotation_test = [re.match(annotation, col).group(0) for annotation in col_types 
-                    if re.match(annotation, col)][0]
-
-col_types
-
-for col in valid_cols:
-    # ---- Match the underlying annotation
-    annotation_test = [re.match(annotation, col).group(0) for annotation in col_types 
-                       if re.match(annotation, col)][0]
-    # ---- Get the `dtype`
-    dtype = col_types[annotation_test]
-    # ---- Test whether the Series is coercible
-    if isinstance(dtype, list):
-        # ---- Iterate through the list
-        for typing in dtype:
-            # ---- Initialize the `dtype` of the validator annotation
-            cls.__annotations__[annotation_test] = Series[typing]
-            # ---- Get the `test`
-            test = cls._DTYPE_TESTS.get(typing, None)
-            # ---- Apply test
-            if test and test(df[col]):
-                # ---- Adjust typing annotation
-                cls.__annotations__[col] = Series[typing]
-            # ---- Coerce the datatype (or attempt to)
-            try:
-                df[col] = cls._DTYPE_COERCION.get(typing)(df[col])
-                # ---- If successful, break
-                break
-            except Exception as e:
-                # ---- Drop traceback
-                e.__traceback__ = None
-                # ---- Format message
-                message = (
-                    f"{col.capitalize()} column must be a Series of '{str(dtype)}' "
-                    f"values. Series values could not be automatically coerced."
-                )
-                # ---- Add error to collector
-                errors_coerce = pd.concat(
-                    [errors_coerce, pd.DataFrame(dict(Column=col, error=message))]
-                )      
-    # ---- If not a List supplied by the metadata attribute
-    else:
-        # ---- Attempt coercion
-        try:
-            df[col] = df[col].astype(str(dtype))
-        except Exception as e:
-            # ---- Drop traceback
-            e.__traceback__ = None            
-            # ---- Format message
-            message = (
-                f"{col.capitalize()} column must be a Series of '{str(dtype)}' "
-                f"values. Series values could not be automatically coerced."
-            )
-            # ---- Add error to collector
-            errors_coerce = pd.concat(
-                [errors_coerce, pd.DataFrame(dict(Column=col, error=message))]
-            )      
-    
-
+Path("C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_2023/Biological/CAN/2023061_DFO_biodata_length.xlsx").exists()
+os.listdir()
 # TRANSECT ANALYSIS ================================================================================
 self = survey
 species_id: Union[float, list[float]] = 22500
 exclude_age1: bool = True
-stratum: Literal["inpfc", "ks"] = "ks"
+stratum: Literal["inpfc", "ks"] = "inpfc"
 verbose: bool = True
 
 # biomass_summary, self.analysis["transect"] = acoustics_to_biology(
@@ -292,16 +267,43 @@ analysis_dict = self.analysis["transect"]
 configuration_dict = self.config
 settings_dict = self.analysis["settings"]
 
-np.sort(length_data.stratum_num.unique())
-specimen_data[specimen_data.stratum_num == 9]
-np.sort(specimen_data.stratum_num.unique())
-np.sort(catch_data.stratum_num.unique())
-specimen_data, catch_data
+nasc_biology_df = nasc_to_biology
+fitted_weight_dict = analysis_dict["biology"]["weight"]
+population_dict = analysis_dict["biology"]["population"]
+strata_adult_proportions_df = strata_adult_proportions
 
+distributions_dict = input_dict["biology"]["distributions"]
+proportions_dict = analysis_dict["biology"]["proportions"]
+TS_L_parameters = configuration_dict["TS_length_regression_parameters"]["pacific_hake"]
+
+nasc_interval_df["fraction_hake"].max()
+nasc_interval_df.loc[lambda x: x.fraction_hake > 0]
+nasc_interval_df.merge(sigma_bs_strata, on=[stratum_col], how="outer")
+
+from itertools import product 
+
+list(product(unique_strata, sigma_bs_strata["species_id"].unique()))
+
+nasc_biology["stratum_num"].unique()
+nasc_interval_df["stratum_num"].unique()
+nasc_interval_df.merge(sigma_bs_strata_bfill.reset_index(), on=[stratum_col])
+
+file = "C:/Users/Brandyn/Documents/GitHub/EchoPro_data/Data/reports/EchoPro_un-kriged_output_0.xlsx"
+filepath = Path(file)
+
+import os
+
+if filepath.exists():
+    os.remove(filepath)
+transect_region_key.dropna
+proportions_dict = analysis_dict["biology"]["proportions"]["number"]
+length_weight_dict = analysis_dict["biology"]["weight"]
+stratum_col = settings_dict["transect"]["stratum_name"]
 # analysis_dict["biology"]["proportions"].update(
 #     {
 #         "weight": weight_proportions(
 #             catch_data,
+
 #             analysis_dict["biology"]["proportions"]["number"],
 #             length_weight_df,
 #             analysis_dict["biology"]["distributions"]["weight"],
@@ -313,8 +315,29 @@ proportions_dict = analysis_dict["biology"]["proportions"]["number"]
 distributions_dict = analysis_dict["biology"]["distributions"]["weight"]
 stratum_column = settings_dict["transect"]["stratum_name"]
 
+# age1_proportions = age1_metric_proportions(
+#     input_dict["biology"]["distributions"],
+#     analysis_dict["biology"]["proportions"],
+#     configuration_dict["TS_length_regression_parameters"]["pacific_hake"],
+#     settings_dict,
+# )
+distributions_dict = input_dict["biology"]["distributions"]
+proportions_dict = analysis_dict["biology"]["proportions"]
+TS_L_parameters = configuration_dict["TS_length_regression_parameters"]["pacific_hake"]
+
+age_weight_proportions_table.loc[:, 1]
+age_proportions_table.loc[:, 1]
 aged_weights_binned_pvt.sum(axis=0)
 
+from echopop.extensions.feat_report import *
+
+self = FEATReports(survey, reports=["kriged_length_age_abundance"])
+v = report_methods["kriged_length_age_abundance"]
+title = v["title"]
+filename = v["filename"]
+tables_dict = tables
+table_title = title
+filepath
 # STRATIFIED ANALYSIUS =============================================================================
 self = survey
 dataset: Literal["transect", "kriging"] = "kriging"
@@ -352,36 +375,49 @@ results_dict = self.results
 spatial_dict = self.input["spatial"]
 settings_dict = self.analysis["settings"]["stratified"]
 
-data_series = transect_distances.loc[j]
-index_matrix = transect_numbers_arr
-When~defining~thes~tratification~files~used~in~EchoPro~for~this~dataset,~the~}$$ `US&CAN strata 2015 shoreside.xlsx`~file~has~missing~column \space names, \space which \space renders \space `Echopop` \space inoperable \space (it \space does \space not \space pass \space the \space validators)     
-     
-transect_areas.loc[j].loc[15]
-[transect_distances[idx] for idx in transect_numbers_arr]
-transect_distances.index.unique()
-transect_summary[transect_summary.duplicated()]
-transect_distances.loc[1029]
+unique_sexes = sex_stratum_proportions["sex"].unique()
+missing_rows = idx_template.reset_index()[~idx_template.reset_index()["stratum_num"].isin(sex_stratum_proportions["stratum_num"])]
 
-transect_numbers_arr.shape
-transect_summary[transect_summary["transect_num"] == 1029]
-transect_distances.loc[transect_distances.index.duplicated()]
+pd.DataFrame(
+    [(row["stratum_num"], row["species_id"], sex) for _, row in missing_rows.iterrows() for sex in unique_sexes],
+    columns=["stratum_num", "species_id", "sex"]
+)
+pd.concat([length_weight_strata.set_index([stratum_col, "sex"]).reindex(idx_template_lw_sex.index).fillna(0.0).reset_index(), length_weight_strata], ignore_index=True)
+            
+# VARIOGRAM ANALYSIS ===============================================================================
+from echopop.spatial.variogram import prepare_variogram_matrices, quantize_lags, semivariance
 
-transect_numbers_arr = [
-    np.random.choice(
-        transect_numbers[j].values, num_transects_to_sample[j], replace=False
-    )
-    for i in range(transect_replicates)
+self = survey
+variogram_parameters: Dict[str, Any] = {}
+optimization_parameters: Dict[str, Any] = {}
+model: Union[str, List[str]] = ["bessel", "exponential"]
+n_lags: int = 30
+azimuth_range: float = 360.0
+standardize_coordinates: bool = True
+force_lag_zero: bool = True
+initialize_variogram: Union[List[str], Dict[str, Any]] = [
+    "nugget",
+    "sill",
+    "correlation_range",
+    "hole_effect_range",
+    "decay_power",
 ]
-print([x.shape for x in transect_numbers_arr])  
-
-[transect_distances[idx] for idx in transect_numbers_arr]
-
-self.input["acoustics"]["nasc_df"]
+variable: Literal["biomass"] = "biomass"
+verbose: bool = True
 
 self.analysis["transect"]["acoustics"]["adult_transect_df"]
+self.results["transect"]
 
-print([x.shape for x in transect_numbers_arr])
+lag_resolution = variogram_parameters["lag_resolution"]
+angles=True
+coordinates_1 = transect_data.copy()
+coordinates_2 = transect_data.copy()
 
+transect_dict = self.analysis["transect"]
+settings_dict = self.analysis["settings"]["variogram"]
+isobath_df = self.input["statistics"]["kriging"]["isobath_200m_df"]
+
+variogram_parameters = {**valid_variogram_params, **empirical_variogram_params}
 
 # KRIGING ANALYSIS =================================================================================
 cropping_parameters: Dict[str, Any] = {}
@@ -393,6 +429,14 @@ variable: Literal["biomass"] = "biomass"
 variogram_parameters: Optional[Dict[str, Any]] = None
 verbose: bool = True
 
+a = transect_info.reset_index()
+x = a["longitude"][0]
+y = a["latitude"][0]
+
+b = transect_data.reset_index()
+b.loc[lambda m: m["longitude"] == x]
+
+b.drop_duplicates()
 # aged_apportioned, unaged_apportioned, kriged_apportioned_table = apportion_kriged_values(
 #     self.analysis, kriged_results["mesh_results_df"], self.analysis["settings"]["kriging"]
 # )

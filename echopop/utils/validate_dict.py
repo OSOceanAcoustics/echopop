@@ -228,7 +228,7 @@ class TransectRegionMap(
 
     """
 
-    inpfc_strata_region: Optional[Dict[str, INPFCRegionMap]]
+    inpfc_strata_region: Optional[Dict[str, INPFCRegionMap]] = Field(default=None)
     parts: Dict[str, List[PatternParts]]
     pattern: str    
     save_file_template: Optional[str] = Field(default=None)
