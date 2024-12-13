@@ -48,5 +48,25 @@
         "strata_types": ["inpfc", "ks"],
         "write_transect_region_file": false,
         "transect_replicates": 10
+    },
+    "2013": {
+        "bootstrap_ci_method": "percentile",
+        "exclude_age1": [true, false],
+        "extrapolate": [false, true],
+        "default_acoustics": true,
+        "read_transect_region_file": true,
+        "strata_types": ["inpfc", "ks"],
+        "write_transect_region_file": true,
+        "transect_replicates": 10
+    },
+    "2012": {
+        "bootstrap_ci_method": "percentile",
+        "exclude_age1": [true, false],
+        "extrapolate": [false, true],
+        "default_acoustics": true,
+        "read_transect_region_file": true,
+        "strata_types": ["inpfc", "ks"],
+        "write_transect_region_file": true,
+        "transect_replicates": 10
     }
 }
