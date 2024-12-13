@@ -22,7 +22,7 @@ import os
 # CURRENT SURVEY YEAR BEING TESTED: 2019
 ####################################################################################################
 # Define current survey year
-SURVEY_YEAR = 2015
+SURVEY_YEAR = 2017
 
 # Initialization configuration
 init_config_path = f"C:/Users/Brandyn/Documents/GitHub/echopop/config_files/initialization_\
@@ -70,7 +70,7 @@ for stratum in parameters["strata_types"]:
                                        transect_replicates=parameters["transect_replicates"], 
                                        verbose=False)
             # ---- Fit variogram
-            survey.fit_variogram()
+            survey.fit_variogram(verbose=False)
             # ---- Iterate across different extrapolation schema
             for extrap in parameters["extrapolate"]: 
                 # ---- Kriging analysis (no variogram fitting)
