@@ -19,6 +19,7 @@ NAME_CONFIG = {
     "haul start": "haul_start",
     "haul  start": "haul_start", 
     "haul": "haul_num",
+    "haul ": "haul_num",
     "inpfc": "stratum_num",
     "latitude": "latitude",
     "latitude (upper limit)": "northlimit_latitude",
