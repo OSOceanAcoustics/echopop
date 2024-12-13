@@ -120,8 +120,9 @@ DATA_STRUCTURE = {
         },
         "spatial": {
             "strata_df": pd.DataFrame(),
-            "geo_strata_df": pd.DataFrame(),
             "inpfc_strata_df": pd.DataFrame(),
+            "geo_strata_df": pd.DataFrame(),
+            "inpfc_geo_strata_df": pd.DataFrame(),
         },
         "statistics": {
             "kriging": {
@@ -182,7 +183,7 @@ LAYER_NAME_MAP = {
     },
     "stratification": {
         "name": "spatial",
-        "data": ["strata", "geo_strata", "inpfc_strata"],
+        "data": ["strata", "inpfc_strata", "geo_strata", "inpfc_geo_strata"],
         "data_label": [
             "strata:KS strata",
             "geo_strata:Georeferenced KS strata",

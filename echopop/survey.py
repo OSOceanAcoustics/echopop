@@ -260,7 +260,9 @@ class Survey:
                     "unique_strata": (
                         np.unique(self.input["spatial"]["strata_df"]["stratum_num"])
                         if stratum == "ks"
-                        else np.unique(self.input["spatial"]["inpfc_strata_df"]["stratum_inpfc"])
+                        else np.unique(
+                            self.input["spatial"]["inpfc_geo_strata_df"]["stratum_inpfc"]
+                        )
                     ),
                     "exclude_age1": exclude_age1,
                 }

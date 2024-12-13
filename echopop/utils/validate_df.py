@@ -196,10 +196,10 @@ class BaseDataFrame(DataFrameModel):
         invalid_idx = {}
         # ---- Initialize column names
         valid_cols = {}
+        # ---- Create list of annotation names
+        key_list = list(cls.__annotations__)
         # ---- Find all indices where there are violating NaN/-Inf/Inf values
         for column_name, _ in column_types.items():
-            # ---- Create list of annotation names
-            key_list = list(cls.__annotations__)
             # ---- Apply coercion based on column patterns
             for col in df.columns:
                 # ---- Regular expression matching
@@ -469,15 +469,21 @@ class KSStrata(BaseDataFrame):
         Length-based stratum index/group. This column must include "stratum" in the name.
     """
 
-    fraction: Series[float] = Field(
-        ge=0.0, le=1.0, nullable=False, regex=True, alias=".*fraction.*"
-    )
-    haul: Series = Field(nullable=False, regex=True, metadata=dict(types=[int, float]))
-    stratum: Series = Field(nullable=False, regex=True, metadata=dict(types=[int, float, str]))
+    fraction: Series[float] = Field(ge=0.0, le=1.0, nullable=False, regex=True,
+                                    alias=r".*fraction.*")
+    haul: Series = Field(nullable=False, 
+                         regex=True,
+                         alias="haul_num",
+                         metadata=dict(types=[int, float]))
+    stratum: Series = Field(nullable=False, 
+                            regex=True,
+                            alias="(stratum_num|stratum_inpfc)", 
+                            metadata=dict(types=[int, float, str]))
 
     @check(
         "haul",
         name="element-wise datatypes",
+        regex=True,
         error="Column datatype should be either 'int' or 'float'",
     )
     def validate_haul(cls, v: Series) -> Series[bool]:
@@ -486,6 +492,7 @@ class KSStrata(BaseDataFrame):
     @check(
         "stratum",
         name="'stratum' element-wise datatypes",
+        regex=True,
         error="Column datatype should be either 'int', 'float', or 'str'",
     )
     def validate_stratum(cls, stratum: Series) -> Series[bool]:
@@ -506,12 +513,19 @@ class GeoStrata(BaseDataFrame):
         Length-based stratum index/group. This column must include "stratum" in the name.
     """
 
-    haul: Series = Field(nullable=False, regex=True, metadata=dict(types=[int, float]))
+    haul: Series = Field(nullable=False, 
+                         alias=r"(haul_start|haul_end)",
+                         regex=True,
+                         metadata=dict(types=[int, float]))
     northlimit_latitude: Series[float] = Field(ge=-90.0, le=90.0, nullable=False)
-    stratum: Series = Field(nullable=False, regex=True, metadata=dict(types=[int, float, str]))
+    stratum: Series = Field(nullable=False, 
+                            regex=True,
+                            alias=r"(.*_num|.*_inpfc)$", 
+                            metadata=dict(types=[int, float, str]))
 
     @check(
         "haul",
+        regex=True,
         name="element-wise datatypes",
         error="Column datatype should be either 'int' or 'float'",
     )
@@ -520,6 +534,7 @@ class GeoStrata(BaseDataFrame):
 
     @check(
         "stratum",
+        regex=True,
         name="'stratum' element-wise datatypes",
         error="Column datatype should be either 'int', 'float', or 'str'",
     )
@@ -560,21 +575,25 @@ class AcousticData(BaseDataFrame):
     """
 
     bottom_depth: Optional[Series[float]] = Field(nullable=False, coerce=True)
-    haul: Series = Field(nullable=False, regex=True, metadata=dict(types=[int, float]))
-    latitude: Series[float] = Field(ge=-90.0, le=90.0, nullable=False, regex=True, coerce=True)
+    haul: Series = Field(nullable=False, 
+                         alias=r"haul_num", 
+                         regex=True,
+                         metadata=dict(types=[int, float]))
+    latitude: Series[float] = Field(ge=-90.0, le=90.0, nullable=False, coerce=True)
     layer_height: Optional[Series[float]] = Field(nullable=False, coerce=True)
     layer_mean_depth: Optional[Series[float]] = Field(nullable=False, coerce=True)
-    longitude: Series[float] = Field(ge=-180.0, le=180.0, nullable=False, regex=True, coerce=True)
+    longitude: Series[float] = Field(ge=-180.0, le=180.0, nullable=False, coerce=True)
     nasc: Series[float] = Field(ge=0.0, nullable=False, coerce=True)
     region_id: Optional[Series] = Field(metadata=dict(types=[int, float, str]))
-    transect_num: Series = Field(nullable=False, regex=True, metadata=dict(types=[int, float]))
-    transect_spacing: Series[float] = Field(ge=0.0, nullable=False, regex=False, coerce=True)
+    transect_num: Series = Field(nullable=False, metadata=dict(types=[int, float]))
+    transect_spacing: Series[float] = Field(ge=0.0, nullable=False, coerce=True)
     vessel_log_start: Series[float] = Field(ge=0.0, nullable=False, coerce=True)
     vessel_log_end: Series[float] = Field(ge=0.0, nullable=False, coerce=True)
 
     @check(
         "haul",
         name="element-wise datatypes",
+        regex=True,
         error="Column datatype should be either 'int' or 'float'",
     )
     def validate_haul(cls, v: Series) -> Series[bool]:
@@ -602,14 +621,14 @@ class IsobathData(BaseDataFrame):
     """
 
     latitude: Series[float] = Field(
-        ge=-90.0, le=90.0, nullable=False, regex=True, alias=".*latitude.*"
+        ge=-90.0, le=90.0, nullable=False, alias=r".*latitude.*", regex=True
     )
     longitude: Series[float] = Field(
-        ge=-180.0, le=180.0, nullable=False, regex=True, alias=".*longitude.*"
+        ge=-180.0, le=180.0, nullable=False, alias=r".*longitude.*", regex=True
     )
 
 
-class KrigedMesh(IsobathData):
+class KrigedMesh(BaseDataFrame):
     """
     Haul-transect map DataFrame
 
@@ -617,10 +636,20 @@ class KrigedMesh(IsobathData):
     ----------
     fraction*: float
         Fraction of kriging mesh cell that is within the interpolation polygon.
+    latitude: float
+        Latitude coordinates.
+    longitude: float
+        Longitude coordinates.
     """
 
     fraction: Series[float] = Field(
-        ge=0.0, le=1.0, nullable=False, regex=True, coerce=True, alias=".*fraction.*"
+        ge=0.0, le=1.0, nullable=False, alias=r".*fraction.*", regex=True, coerce=True
+    )
+    latitude: Series[float] = Field(
+        ge=-90.0, le=90.0, nullable=False, alias=r".*latitude.*", regex=True, coerce=True
+    )
+    longitude: Series[float] = Field(
+        ge=-180.0, le=180.0, nullable=False, alias=r".*longitude.*", regex=True, coerce=True
     )
 
 
@@ -805,8 +834,9 @@ DATASET_DF_MODEL = {
     },
     "stratification": {
         "geo_strata": GeoStrata,
-        "inpfc_strata": GeoStrata,
+        "inpfc_geo_strata": GeoStrata,
         "strata": KSStrata,
+        "inpfc_strata": KSStrata,
     },
     "NASC": {
         "all_ages": AcousticData,
