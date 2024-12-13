@@ -22,7 +22,7 @@ import os
 # CURRENT SURVEY YEAR BEING TESTED: 2019
 ####################################################################################################
 # Define current survey year
-SURVEY_YEAR = 2017
+SURVEY_YEAR = 2013
 
 # Initialization configuration
 init_config_path = f"C:/Users/Brandyn/Documents/GitHub/echopop/config_files/initialization_\
@@ -65,23 +65,41 @@ for stratum in parameters["strata_types"]:
     for excl in parameters["exclude_age1"]:           
             # ---- Transect analysis
             survey.transect_analysis(exclude_age1=excl, stratum=stratum, verbose=False)
+            print(
+                f"{SURVEY_YEAR} transect analysis [{counter}/8] success!"
+            )
             # ---- Stratified analysis (transect analysis)
             survey.stratified_analysis(bootstrap_ci_method=parameters["bootstrap_ci_method"],
                                        transect_replicates=parameters["transect_replicates"], 
                                        verbose=False)
+            print(
+                f"{SURVEY_YEAR} stratified analysis (transect) [{counter}/8] success!"
+            )
             # ---- Fit variogram
             survey.fit_variogram(verbose=False)
+            print(
+                f"{SURVEY_YEAR} variogram fitting [{counter}/8] success!"
+            )
             # ---- Iterate across different extrapolation schema
             for extrap in parameters["extrapolate"]: 
                 # ---- Kriging analysis (no variogram fitting)
                 survey.kriging_analysis(extrapolate=extrap, verbose=False)
+                print(
+                    f"{SURVEY_YEAR} kriging analysis (default variogram) [{counter}/8] success!"
+                )
                 # ---- Apply best-fit variogram
                 survey.kriging_analysis(best_fit_variogram=True, extrapolate=extrap, verbose=False)
+                print(
+                    f"{SURVEY_YEAR} kriging analysis (best-fit variogram) [{counter}/8] success!"
+                )
                 # ---- Stratified analysis (kriging analysis)
                 survey.stratified_analysis(dataset="kriging",
                                            bootstrap_ci_method=parameters["bootstrap_ci_method"],
                                            transect_replicates=parameters["transect_replicates"],
                                            verbose=False)
+                print(
+                    f"{SURVEY_YEAR} stratified analysis (kriging) [{counter}/8] success!"
+                )
                 # ---- Test reports  
                 survey.generate_reports(reports=["aged_length_haul_counts",
                                                 "kriging_input",
