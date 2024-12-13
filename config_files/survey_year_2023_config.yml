@@ -52,7 +52,7 @@ stratification:
   strata:
     # The two stratification types are found in two sheets: "Base KS" and "INPFC"
     filename: Stratification/US&CAN strata 2023_02-Dec-2023.xlsx
-    sheetname: Base KS
+    sheetname: [INPFC, Base KS]
   geo_strata:
     # The two stratification types are found in two sheets: "stratification1" and "INPFC"
     filename: Stratification/Stratification_geographic_Lat_2023_02-Dec-2023.xlsx
