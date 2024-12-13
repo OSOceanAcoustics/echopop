@@ -429,9 +429,13 @@ def stratify_mesh(input_dict: dict, kriged_mesh: pd.DataFrame, settings_dict: di
 
     # Extract the geographic-delimited strata
     if settings_dict["stratum"].lower() == "ks":
-        geo_strata = input_dict["spatial"]["geo_strata_df"]
+        geo_strata = input_dict["spatial"]["geo_strata_df"].copy().drop_duplicates(
+            "latitude_interval"
+        ).sort_values("latitude_interval")
     elif settings_dict["stratum"].lower() == "inpfc":
-        geo_strata = input_dict["spatial"]["inpfc_strata_df"]
+        geo_strata = input_dict["spatial"]["inpfc_geo_strata_df"].copy().drop_duplicates(
+            "latitude_interval"
+        ).sort_values("latitude_interval")
 
     # Define the latitude bin array
     latitude_bins = np.concatenate([[-90.0], geo_strata["northlimit_latitude"], [90.0]])
@@ -479,10 +483,14 @@ def mesh_to_transects(
     # Extract the appropriate stratum definitions/delimiters
     if settings_dict["stratum"].lower() == "inpfc":
         # ---- INPFC
-        strata = spatial_dict["inpfc_strata_df"]
+        strata = spatial_dict["inpfc_geo_strata_df"].copy().drop_duplicates(
+            "latitude_interval"
+        ).sort_values(["latitude_interval"])
     elif settings_dict["stratum"].tolower() == "ks":
         # ---- KS
-        strata = spatial_dict["geo_strata_df"]
+        strata = spatial_dict["geo_strata_df"].copy().drop_duplicates(
+            "latitude_interval"
+        ).sort_values(["latitude_interval"])
     # ---- Create latitude bins
     latitude_bins = latitude_bins = np.concatenate([[-90.0], strata["northlimit_latitude"], [90.0]])
 
