@@ -22,7 +22,7 @@ import os
 # CURRENT SURVEY YEAR BEING TESTED: 2019
 ####################################################################################################
 # Define current survey year
-SURVEY_YEAR = 2013
+SURVEY_YEAR = 2012
 
 # Initialization configuration
 init_config_path = f"C:/Users/Brandyn/Documents/GitHub/echopop/config_files/initialization_\
