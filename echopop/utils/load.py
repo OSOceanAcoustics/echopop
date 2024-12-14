@@ -293,7 +293,7 @@ def read_validated_data(
                 df["haul_num"] += configuration_dict["CAN_haul_offset"]
 
         # A single dataframe per entry is expected, so no other fancy operations are needed
-        if sheet_name.lower() == "inpfc":
+        if "inpfc" in sheet_name.lower():
             # ---- Create the full key name
             keyname = "inpfc_" + config_map[-1] + "_df"
             # ---- Create DataFrame list
