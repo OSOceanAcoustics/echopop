@@ -72,11 +72,6 @@ class BaseDataFrame(DataFrameModel):
         str: lambda v: v.astype(str, errors="ignore"),
     }
 
-    def __init__(self, *args, **kwargs):
-        # Copy class-level __annotations__ to instance
-        self.__annotations__ = self.__class__.__annotations__.copy()
-        super().__init__(*args, **kwargs)
-
     @classmethod
     def get_column_types(cls) -> dict:
         # Get the schema of the DataFrameModel
@@ -267,11 +262,21 @@ class BaseDataFrame(DataFrameModel):
         coercion_failures = cls.coercion_check(df, valid_cols)
 
         # Validate
-        df_valid = cls.judge(df.filter(valid_cols), coercion_failures, file_name)
-        # ---- Return to default annotations
-        cls.__annotations__ = default_annotations
-        # ---- Return to the default schema
-        cls.to_schema().columns = default_schema
+        try:
+            df_valid = cls.judge(df.filter(valid_cols), coercion_failures, file_name)
+            # ---- Return to default annotations
+            cls.__annotations__ = default_annotations
+            # ---- Return to the default schema
+            cls.to_schema().columns = default_schema
+        except Exception as e:
+            # ---- Return to default annotations
+            cls.__annotations__ = default_annotations
+            # ---- Return to the default schema
+            cls.to_schema().columns = default_schema
+            # ---- Amend traceback
+            e.__traceback__ = None
+            # ---- Raise
+            raise e
         # ---- Return the validated DataFrame
         return df_valid
 

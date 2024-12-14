@@ -21,7 +21,6 @@ NAME_CONFIG = {
     "haul": "haul_num",
     "haul ": "haul_num",
     "inpfc": "stratum_num",
-    "latitude": "latitude",
     "latitude (upper limit)": "northlimit_latitude",
     "latitude of centroid": "centroid_latitude",
     "layer height": "layer_height",

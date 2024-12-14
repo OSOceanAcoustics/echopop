@@ -554,6 +554,11 @@ def preprocess_spatial(input_dict: dict) -> None:
         columns={"stratum_num": "stratum_inpfc"}, inplace=True
     )
 
+    # Sort INPFC latitudes
+    # ---- KS
+    input_dict["spatial"]["geo_strata_df"].sort_values(["northlimit_latitude"], inplace=True)
+    # ---- INPFC
+    input_dict["spatial"]["inpfc_geo_strata_df"].sort_values(["northlimit_latitude"], inplace=True)
 
     # Bin the geo-strata latitudes
     # ---- INPFC
