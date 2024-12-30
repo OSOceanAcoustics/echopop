@@ -10,7 +10,7 @@ import pandas as pd
 
 from ..core import ECHOVIEW_TO_ECHOPOP_NAMES, NAME_CONFIG, REGION_EXPORT_MAP
 from ..spatial.transect import export_transect_layers, export_transect_spacing
-from ..utils.validate_df import GeoStrata, ECHOVIEW_DF_MODEL
+from ..utils.validate_df import ECHOVIEW_DF_MODEL, KSStrata
 from .operations import compile_patterns, extract_parts_and_labels, group_merge
 
 
@@ -335,13 +335,15 @@ def get_haul_strata_key(configuration_dict: Dict[str, Any],
     flat_table = pd.json_normalize(configuration_dict)
 
     # Get the configuration specific to KS strata
-    strata_config = flat_table.filter(regex=r"\bgeo_strata\b")
+    strata_config = flat_table.filter(regex=r"\bstrata\b")
 
     # Get the target file and sheet
     # ---- Get filename
     file = strata_config.filter(regex="filename").values.flatten()
     # ---- Get sheetname
-    sheet = strata_config.filter(regex="sheetname").values.flatten()    
+    sheet = strata_config.filter(regex="sheetname").values.flatten()[0]
+    # ---- Find the sheetname with INPFC in it
+    sheetname = [s for s in sheet if "inpfc" in s.lower()][0]
 
     # Create filepath
     # ---- Create filepath
@@ -354,39 +356,39 @@ def get_haul_strata_key(configuration_dict: Dict[str, Any],
             )
 
     # Read in data
-    strata_key = pd.read_excel(inpfc_strata_path, sheet_name=sheet[0][0])
+    strata_key = pd.read_excel(inpfc_strata_path, sheet_name=sheetname)
     # ---- Make column names lowercase
     strata_key.columns = strata_key.columns.str.lower()
     # ---- Rename the columns
     strata_key.rename(columns=NAME_CONFIG, inplace=True)
     # ---- Validate
-    strata_key_filtered = GeoStrata.validate_df(strata_key)
-    # ---- Add a single offset
-    strata_key_filtered["haul_start"] = strata_key_filtered["haul_start"] - int(1)
-    # ---- Create haul bins
-    haul_bins = np.unique(strata_key_filtered.loc[:, "haul_start":"haul_end"].stack().values)
+    strata_key_filtered = KSStrata.validate_df(strata_key).set_index(["haul_num"])
+    # ---- Set index for `transect_regions`
+    trans_regions_copy = transect_regions.copy().set_index(["haul_num"])
     # ---- Cut the transect-region key
-    transect_regions["stratum_num"] = pd.cut(transect_regions["haul_num"], haul_bins, 
-                                             labels=strata_key_filtered["stratum_num"])
+    trans_regions_copy["stratum_inpfc"] = strata_key_filtered["stratum_num"]
+    # ---- Reset index
+    trans_regions_copy.reset_index(inplace=True)
+    # ---- Set new index
+    trans_regions_copy.set_index(["stratum_inpfc"], inplace=True)
 
     # Get the haul-strata-region maps
     strata_map = configuration_dict["transect_region_mapping"]["inpfc_strata_region"]
 
     # Pre-allocate the column
-    transect_regions["country"] = None
+    trans_regions_copy["country"] = None
 
     # Iterate through
     for region in strata_map:
-        # ---- Find indices
-        reg_idx = np.concatenate(
-            np.argwhere(transect_regions["stratum_num"].isin(strata_map[region]))
-        )
-        # ---- Fill
-        transect_regions.loc[reg_idx, "country"] = region
+        # ---- Get strata
+        region_strata = strata_map[region]
+        # ---- Assign country codes
+        trans_regions_copy.loc[region_strata, "country"] = region
 
     # Return the country column Series
-    return transect_regions["country"]
-
+    return trans_regions_copy.reset_index().set_index([
+        "haul_num", "transect_num", "region_id", "region_name", "region_class"
+    ])["country"]
 
 
 def filter_export_regions(
@@ -522,9 +524,17 @@ def ingest_echoview_exports(
         transect_region_key = load_export_regions(region_files, region_names, root_dir)
         # ---- Get the country-code information, if parameterized
         if "inpfc_strata_region" in configuration_dict["transect_region_mapping"]:
-            transect_region_key["country"] = get_haul_strata_key(configuration_dict,
-                                                                 root_dir,
-                                                                 transect_region_key)       
+            # ---- Assign country
+            country_codes = get_haul_strata_key(configuration_dict,
+                                                root_dir,
+                                                transect_region_key)     
+            # ---- Set index 
+            transect_region_key.set_index(["haul_num", "transect_num", "region_id", "region_name", 
+                                           "region_class"], inplace=True)  
+            # ---- Assign
+            transect_region_key["country"] = country_codes
+            # ---- Reset index
+            transect_region_key.reset_index(inplace=True)
     # ---- Construct the transect-region-key
     else:        
         transect_region_key = construct_transect_region_key(transect_data, configuration_dict)

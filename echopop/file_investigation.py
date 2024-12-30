@@ -114,6 +114,7 @@ from echopop.utils.load_nasc import (
     export_transect_layers,
     extract_parts_and_labels,
     get_haul_strata_key,
+    write_transect_region_key,
 )
 
 import inspect
@@ -127,136 +128,86 @@ from echopop.spatial.mesh import griddify_lag_distances
 from pydantic import BaseModel, Field, RootModel, ValidationError, field_validator, model_validator
 from echopop.utils.validate import posfloat, posint, realcircle, realposfloat
 from echopop.utils.validate_dict import *
-FutureWarning: The behavior of DataFrame concatenation with empty or all-NA entries is deprecated. In a future version, this will no longer exclude empty or all-NA columns when determining the result dtypes. To retain the old behavior, exclude the relevant entries before the concat operation.
+from echopop.utils.validate_df import *
+
+
 # LOAD =============================================================================================
+self = survey
 new_datasets = ["biological", "kriging", "stratification"]
 dataset_type = new_datasets
+self.input["spatial"]["strata_df"]
 
-a = pd.cut(
-    np.unique(input_dict["spatial"]["inpfc_strata_df"]["northlimit_latitude"]) * 0.99, 
-    latitude_bins,
-)
-len(a)
-len(input_dict["spatial"]["inpfc_strata_df"]["stratum_inpfc"].unique())
-pd.cut(
-    input_dict["spatial"]["inpfc_strata_df"]["northlimit_latitude"].unique() * 0.99, 
-    latitude_bins,
-    # labels=input_dict["spatial"]["inpfc_strata_df"]["stratum_inpfc"].unique()
-)
+dataset = "stratification"
+datalayer = "geo_strata"
 
-self = survey
+input_dict = self.input
+configuration_dict = self.config
+sheet_name = sheet_name[0]
+flat_table.columns
+self.config.keys()
+
+index_variable: Union[str, List[str]] = ["transect_num", "interval"]
+ingest_exports: Optional[Literal["echoview", "echopype"]] = "echoview"
+read_transect_region_file: bool = parameters["read_transect_region_file"]
+region_class_column: str = "region_class"
+transect_pattern: str = r"T(\d+)"        
+unique_region_id: str = "region_id"
+verbose: bool = True
+write_transect_region_file: bool = parameters["write_transect_region_file"]
+
+transect_regions
+trans_regions_copy.reset_index()
 input_dict = self.input
 configuration_dict = self.config
 
-init_config_path = Path(init_config_path)
-survey_year_config_path = Path(survey_year_config_path)
+dataset = "stratification"
+datalayer = "strata"
 
-dummy = {
-    "stratified_survey_mean_parameters": {"strata_transect_proportion": 0.85, 
-                                          "num_replicates": 10, 
-                                          "mesh_transects_per_latitude": 4},
-    "kriging_parameters": {"A0": 6.25, 
-                           "longitude_reference": 0.0,
-                           "longitude_offset": 5.0,
-                           "latitude_offset": 5.0},
-    "bio_hake_age_bin": [1, 20, 1],
-    "bio_hake_len_bin": [1, 20, 1],
-    "TS_length_regression_parameters": {
-        "pacific_hake": {"number_code": 22500,
-                         "TS_L_slope": 20.0,
-                         "TS_L_intercept": -70.0,
-                         "length_units": "cm"}},
-    "geospatial": {"init": "epsg:4326"}
-}            
+sheet_name = sheet_name[0]
 
-input_dict["biology"][keys].set_index(["haul_num"], inplace=True)
-input_dict["biology"][keys]["stratum_num"] = strata_df["stratum_num"]
-input_dict["biology"][keys].loc[1]
-input_dict["biology"][keys]["stratum_num"] = strata_df["stratum_num"]
-TSLRegressionParameters.create()
-CONFIG_INIT_MODEL(init_config_path, **dummy)
-input_dict["biology"][keys]["haul_bin"].replace(np.nan, pd.Categorical([0, 0]))
-np.isnan(input_dict["biology"][keys].haul_bin[0])
-input_dict["spatial"]["inpfc_strata_df"] = input_dict["spatial"]["inpfc_strata_df"].filter(["haul_start", "haul_end", "northlimit_latitude", "stratum_inpfc", "latitude_interval"])
-survey.input["biology"]
+validation_settings = KSStrata
+cls = copy.deepcopy(KSStrata)
+# dat_orig = df.copy()
+data = dat_orig.copy()
 
-nan_mask = input_dict["biology"][keys]['haul_bin'].isna()
-
-# Create a placeholder for out-of-range values
-out_of_range_label = "Out of Range"
-
-# Add 'Out of Range' category if it's not already present
-current_categories = input_dict["biology"][keys]['haul_bin'].cat.categories
-if out_of_range_label not in current_categories:
-    input_dict["biology"][keys]['haul_bin'] = input_dict["biology"][keys]['haul_bin'].cat.add_categories([out_of_range_label])
+column_name = "haul_num"
 
 
-keys = "length_df"
-values = input_dict["biology"][keys]
+# Get the KS-strata (indexed by haul)
+strata_df = input_dict["spatial"]["strata_df"].copy().set_index(["haul_num"])
 
-input_dict["biology"]["length_df"]
-input_dict["biology"][keys]['haul_bin'] = input_dict["biology"][keys]['haul_bin'].cat.add_categories([0])
+# Get the INPFC strata (indexed by haul)
+inpfc_strata_df = input_dict["spatial"]["inpfc_strata_df"].copy().set_index(["haul_num"])
 
-input_dict["biology"][keys]['haul_bin'].combine_first(
-    pd.cut(
-        input_dict["biology"][keys]['haul_weight'],
-        bins=input_dict["biology"][keys]['haul_bin'].cat.categories
-    )
-)
-input_dict["biology"][keys] = input_dict["biology"][keys].reset_index().filter(["haul_num", "haul_weight", "species_id", "region"])
-input_dict["biology"][keys]["haul_bin"].fillna(0)
-strata_df["stratum_num"].reindex(input_dict["biology"][keys].index)
 
-inpfc_df["stratum_inpfc"].reindex(input_dict["biology"][keys].index)
+# Loop through the KS-strata to map the correct strata values
+for keys, values in input_dict["biology"].items():
+    if isinstance(values, pd.DataFrame) and "haul_num" in values.columns:
+        # ---- Index based on `haul_num`
+        input_dict["biology"][keys].set_index(["haul_num"], inplace=True)
+        # ---- Map the correct `stratum_num` value
+        input_dict["biology"][keys]["stratum_num"] = strata_df["stratum_num"]
+        # ---- Correct the value datatype
+        input_dict["biology"][keys]["stratum_num"] = (
+            input_dict["biology"][keys]["stratum_num"].fillna(0.0).astype(int)
+        )
+        # ---- Map the correct `stratum_inpfc` value
+        input_dict["biology"][keys]["stratum_inpfc"] = inpfc_strata_df["stratum_inpfc"]
+        # ---- NaN mask
+        nan_mask = input_dict["biology"][keys]["stratum_inpfc"].isna()
+        # ---- Valid haul bins
+        valid_haul_bins = input_dict["biology"][keys].copy().loc[~nan_mask]
+        # ---- Change to integer
+        valid_haul_bins["stratum_inpfc"] = valid_haul_bins["stratum_inpfc"].astype(int)
+        # ---- Set
+        input_dict["biology"][keys] = valid_haul_bins.reset_index()
 
-self = survey
-configuration_dict = self.config
-index_variable: Union[str, List[str]] = ["transect_num", "interval"]
-ingest_exports: Optional[Literal["echoview", "echopype"]] = "echoview"
-read_transect_region_file: bool = False
-region_class_column: str = "region_class"
-transect_pattern: str = r"T(\d+)"
-unique_region_id: str = "region_id"
-verbose: bool = True
-write_transect_region_file: bool = False
 
-transect_data["region_name"].unique()
-
-key = "all_ages"
-values = region_names[key]
-
-part_name = "COUNTRY"
-patterns = compiled_patterns[part_name]
-pattern = patterns[0]
-transect_regions.loc[lambda x: x.region_id == 63]
-match = pattern.search(remaining_name)
-grouped_region["country"][0]
-transect_region_key.loc[lambda x: ~x.country.isin(["US", "CAN"])]
-
-row = unique_regions.loc[94, :]
-
-unique_regions_coded["country"].isna()
-
-unique_regions.loc[94]
-unique_regions_coded.country[0]
-transect_region_key.loc[lambda x: not x.country]
-# eln.ingest_echoview_exports(
-#     self.config,
-#     transect_pattern,
-#     index_variable,
-#     unique_region_id,
-#     region_class_column,
-#     verbose,
-# )
-configuration_dict = self.config
-default_transect_spacing = 10.0
-Path("C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_2023/Biological/CAN/2023061_DFO_biodata_length.xlsx").exists()
-os.listdir()
 # TRANSECT ANALYSIS ================================================================================
 self = survey
 species_id: Union[float, list[float]] = 22500
-exclude_age1: bool = True
-stratum: Literal["inpfc", "ks"] = "inpfc"
+exclude_age1: bool = excl
+stratum: Literal["inpfc", "ks"] = stratum
 verbose: bool = True
 
 # biomass_summary, self.analysis["transect"] = acoustics_to_biology(
@@ -330,7 +281,7 @@ age_proportions_table.loc[:, 1]
 aged_weights_binned_pvt.sum(axis=0)
 
 from echopop.extensions.feat_report import *
-
+from echopop.statistics import *
 self = FEATReports(survey, reports=["kriged_length_age_abundance"])
 v = report_methods["kriged_length_age_abundance"]
 title = v["title"]
@@ -345,11 +296,11 @@ stratum: Literal["inpfc", "ks"] = "inpfc"
 variable: Literal["abundance", "biomass", "nasc"] = "biomass"
 mesh_transects_per_latitude: Optional[int] = None
 transect_sample: Optional[float] = None
-transect_replicates: Optional[int] = None
+transect_replicates=parameters["transect_replicates"]
 bootstrap_ci: float = 0.95
 bootstrap_ci_method: Literal[
     "BC", "BCa", "empirical", "percentile", "standard", "t-jackknife", "t-standard"
-] = "t-jackknife"
+] = parameters["bootstrap_ci_method"]
 bootstrap_ci_method_alt: Optional[
     Literal["empirical", "percentile", "standard", "t-jackknife", "t-standard"]
 ] = "t-standard"
@@ -420,6 +371,7 @@ isobath_df = self.input["statistics"]["kriging"]["isobath_200m_df"]
 variogram_parameters = {**valid_variogram_params, **empirical_variogram_params}
 
 # KRIGING ANALYSIS =================================================================================
+self = survey
 cropping_parameters: Dict[str, Any] = {}
 kriging_parameters: Dict[str, Any] = {}
 coordinate_transform: bool = True
@@ -428,6 +380,15 @@ best_fit_variogram: bool = False
 variable: Literal["biomass"] = "biomass"
 variogram_parameters: Optional[Dict[str, Any]] = None
 verbose: bool = True
+
+input_dict = self.input
+analysis_dict = self.analysis
+settings_dict = self.analysis["settings"]["kriging"]
+
+
+kriged_mesh =  kriged_results["mesh_results_df"]
+
+input_dict["spatial"]["inpfc_geo_strata_df"].copy().drop_duplicates("latitude_interval")
 
 a = transect_info.reset_index()
 x = a["longitude"][0]
