@@ -1,8 +1,12 @@
-from .survey_extensions import patch_generate_reports as generate_reports
+from .survey_extensions import (
+    patch_diagnostic_plots as diagnostic_plots,
+    patch_generate_reports as generate_reports,
+)
 
 
 # Flex patch import
 def import_all_patches():
+    diagnostic_plots()
     generate_reports()
 
 
@@ -10,4 +14,4 @@ def import_all_patches():
 import_all_patches()
 
 # Exposed individual patches for selective importing
-__all__ = ["generate_reports"]
+__all__ = ["diagnostic_plots", "generate_reports"]
