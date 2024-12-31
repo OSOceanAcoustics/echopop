@@ -3,7 +3,6 @@ Diagnostic data visualizations
 """
 
 import warnings
-
 from typing import Tuple
 
 import bokeh as bok
@@ -113,7 +112,7 @@ class DiagnosticPlot:
         # Get the isobath data
         isobath_df = self.data.input["statistics"]["kriging"]["isobath_200m_df"]
 
-        # Amend the mesh column names, if needed (this is only for simplifying the column names to 
+        # Amend the mesh column names, if needed (this is only for simplifying the column names to
         # make this diagnostic plotting function easier to generate)
         DATAINPUT["Latitude/longitude"]
         [
@@ -303,7 +302,7 @@ class DiagnosticPlot:
             DATACOPY.nasc.max() - DATACOPY.nasc.min()
         )
         # ---- Set sizing
-        DATACOPY["nasc_size"] = DATACOPY["nasc_scale"] * 25 + 2 # (minimum size value)
+        DATACOPY["nasc_size"] = DATACOPY["nasc_scale"] * 25 + 2  # (minimum size value)
 
         # Create TOOLTIP
         TOOLTIPS = """
@@ -362,7 +361,7 @@ class DiagnosticPlot:
         # Get the full datasets
         # ---- Get stratification information
         strata_info = self.data.input["spatial"]["inpfc_strata_df"].copy()
-        # ---- Validate whether `kriging` results are present 
+        # ---- Validate whether `kriging` results are present
         if "kriging" not in self.data.results["stratified"]:
             # ---- Adjust horizontal offset
             x_offset = 0.0
@@ -373,9 +372,9 @@ class DiagnosticPlot:
                 "`Survey.kriging_analysis` method to compare stratified kriged estimates with "
                 "those computed from just the along-transect dataset."
             )
-        else:   
+        else:
             # ---- Adjust horizontal offset
-            x_offset = 1 / strata_info["stratum_inpfc"].unique().size / 2            
+            x_offset = 1 / strata_info["stratum_inpfc"].unique().size / 2
         # ---- Initialize empty DataFrame
         DATAINPUT_DF = pd.DataFrame()
         # ---- `Update DATAINPUT_DF`
@@ -394,12 +393,10 @@ class DiagnosticPlot:
                     {
                         "stratum": strata_info.stratum_inpfc,
                         "mean": strata_results["estimate"]["strata"][var_type] * 1e-6,
-                        "lower": [k[0] * 1e-6 
-                                    for k in strata_results["ci"]["strata"][var_type]],
-                        "upper": [k[1] * 1e-6 
-                                    for k in strata_results["ci"]["strata"][var_type]],     
+                        "lower": [k[0] * 1e-6 for k in strata_results["ci"]["strata"][var_type]],
+                        "upper": [k[1] * 1e-6 for k in strata_results["ci"]["strata"][var_type]],
                         "agg_type": agg_type.capitalize(),
-                        "var_type": var_name,                   
+                        "var_type": var_name,
                     }
                 )
                 # ---- Concatenate
@@ -409,7 +406,7 @@ class DiagnosticPlot:
         DATAINPUT_DF["x_offset"] = DATAINPUT_DF["stratum"] + DATAINPUT_DF["agg_type"].map(
             {"Transect": -x_offset, "Kriging": x_offset}
         )
-                
+
         # Initialize `panel` extension
         pn.extension()
 
@@ -433,24 +430,21 @@ class DiagnosticPlot:
 
             # Errorbar layer
             error_bars = hv.Segments(
-                filtered_data, 
-                kdims=["x_offset", "lower", "x_offset", "upper"], 
-                vdims=["agg_type"]
-            ).opts(color="agg_type", 
+                filtered_data, kdims=["x_offset", "lower", "x_offset", "upper"], vdims=["agg_type"]
+            ).opts(
+                color="agg_type",
                 cmap={"Transect": "black", "Kriging": "red"},
-            )  
+            )
 
             # Points layer
             point_means = hv.Points(
-                filtered_data, 
-                kdims=["x_offset", "mean"], 
-                vdims=["agg_type"]
+                filtered_data, kdims=["x_offset", "mean"], vdims=["agg_type"]
             ).opts(
-                color="agg_type", 
-                cmap={"Transect": "black", "Kriging": "red"}, 
+                color="agg_type",
+                cmap={"Transect": "black", "Kriging": "red"},
                 size=12,
                 ylim=(0.0, np.inf),
-            )                          
+            )
 
             # Layer the data
             return (error_bars * point_means).opts(
