@@ -2,6 +2,8 @@
 Diagnostic data visualizations
 """
 
+import warnings
+
 from typing import Tuple
 
 import bokeh as bok
@@ -111,7 +113,9 @@ class DiagnosticPlot:
         # Get the isobath data
         isobath_df = self.data.input["statistics"]["kriging"]["isobath_200m_df"]
 
-        # Amend the column names, if needed
+        # Amend the mesh column names, if needed (this is only for simplifying the column names to 
+        # make this diagnostic plotting function easier to generate)
+        DATAINPUT["Latitude/longitude"]
         [
             v.rename(
                 columns={
@@ -156,7 +160,7 @@ class DiagnosticPlot:
         pn.extension()
 
         # Create dropdown selector
-        var_dropdown = pn.widgets.Select(name="Variable", options=var_options)
+        var_dropdown = pn.widgets.Select(name="Coordinate", options=var_options)
 
         # Create plotting function
         @pn.depends(selection=var_dropdown)
@@ -181,7 +185,7 @@ class DiagnosticPlot:
             if tile:
                 plot_layers.append(tile)
             # ---- Full mesh
-            if "full" in data:
+            if "full" in data:  # not shown for isobath-referenced coord
                 plot_layers.append(
                     gv.Points(data["full"], kdims=coord, label="Full mesh").opts(
                         size=8, marker="s", color="gray"
@@ -299,7 +303,7 @@ class DiagnosticPlot:
             DATACOPY.nasc.max() - DATACOPY.nasc.min()
         )
         # ---- Set sizing
-        DATACOPY["nasc_size"] = DATACOPY["nasc_scale"] * 25 + 2  # (minimum size value)
+        DATACOPY["nasc_size"] = DATACOPY["nasc_scale"] * 25 + 2 # (minimum size value)
 
         # Create TOOLTIP
         TOOLTIPS = """
@@ -358,75 +362,60 @@ class DiagnosticPlot:
         # Get the full datasets
         # ---- Get stratification information
         strata_info = self.data.input["spatial"]["inpfc_strata_df"].copy()
-        # ---- Initialize
-        DATAINPUT = {"Biomass": {}, "Biomass density": {}}
-        # ---- Kriging
-        if "kriging" in self.data.results:
-            strat_krig = self.data.results["stratified"]["kriging"].copy()
-            # ---- Add 'biomass'
-            DATAINPUT["Biomass"].update(
-                {
-                    "kriging": pd.DataFrame(
-                        {
-                            "stratum": strata_info.stratum_inpfc,
-                            "total": strat_krig["estimate"]["strata"]["total"] * 1e-6,
-                            "lower": [k[0] * 1e-6 for k in strat_krig["ci"]["strata"]["total"]],
-                            "upper": [k[1] * 1e-6 for k in strat_krig["ci"]["strata"]["total"]],
-                        }
-                    )
-                }
+        # ---- Validate whether `kriging` results are present 
+        if "kriging" not in self.data.results["stratified"]:
+            # ---- Adjust horizontal offset
+            x_offset = 0.0
+            # ---- Raise Warning message
+            warnings.warn(
+                "Stratified kriging results are not available for plotting via the "
+                "`Survey.stratified_results` diagnostic plotting method. Use the "
+                "`Survey.kriging_analysis` method to compare stratified kriged estimates with "
+                "those computed from just the along-transect dataset."
             )
-            # ---- Add 'biomass density'
-            DATAINPUT["Biomass density"].update(
-                {
-                    "kriging": pd.DataFrame(
-                        {
-                            "stratum": strata_info.stratum_inpfc,
-                            "density": strat_krig["estimate"]["strata"]["density"] * 1e-6,
-                            "lower": [k[0] * 1e-6 for k in strat_krig["ci"]["strata"]["density"]],
-                            "upper": [k[1] * 1e-6 for k in strat_krig["ci"]["strata"]["density"]],
-                        }
-                    )
-                }
-            )
-        # ---- Transect
-        if "transect" in self.data.results:
-            strat_krig = self.data.results["stratified"]["transect"].copy()
-            # ---- Add 'biomass'
-            DATAINPUT["Biomass"].update(
-                {
-                    "transect": pd.DataFrame(
-                        {
-                            "stratum": strata_info.stratum_inpfc,
-                            "total": strat_krig["estimate"]["strata"]["total"] * 1e-6,
-                            "lower": [k[0] * 1e-6 for k in strat_krig["ci"]["strata"]["total"]],
-                            "upper": [k[1] * 1e-6 for k in strat_krig["ci"]["strata"]["total"]],
-                        }
-                    )
-                }
-            )
-            # ---- Add 'biomass density'
-            DATAINPUT["Biomass density"].update(
-                {
-                    "transect": pd.DataFrame(
-                        {
-                            "stratum": strata_info.stratum_inpfc,
-                            "density": strat_krig["estimate"]["strata"]["density"] * 1e-6,
-                            "lower": [k[0] * 1e-6 for k in strat_krig["ci"]["strata"]["density"]],
-                            "upper": [k[1] * 1e-6 for k in strat_krig["ci"]["strata"]["density"]],
-                        }
-                    )
-                }
-            )
+        else:   
+            # ---- Adjust horizontal offset
+            x_offset = 1 / strata_info["stratum_inpfc"].unique().size / 2            
+        # ---- Initialize empty DataFrame
+        DATAINPUT_DF = pd.DataFrame()
+        # ---- `Update DATAINPUT_DF`
+        for agg_type in ["kriging", "transect"]:
+            # ---- Create DataFrame copy
+            strata_results = self.data.results["stratified"][agg_type].copy()
+            # ---- Parameterize `DATAINPUT`
+            for var_type in ["density", "total"]:
+                # ---- Set name
+                if var_type == "density":
+                    var_name = "Biomass density"
+                else:
+                    var_name = "Biomass"
+                # ---- Create temporary DataFrame
+                temp_df = pd.DataFrame(
+                    {
+                        "stratum": strata_info.stratum_inpfc,
+                        "mean": strata_results["estimate"]["strata"][var_type] * 1e-6,
+                        "lower": [k[0] * 1e-6 
+                                    for k in strata_results["ci"]["strata"][var_type]],
+                        "upper": [k[1] * 1e-6 
+                                    for k in strata_results["ci"]["strata"][var_type]],     
+                        "agg_type": agg_type.capitalize(),
+                        "var_type": var_name,                   
+                    }
+                )
+                # ---- Concatenate
+                DATAINPUT_DF = pd.concat([DATAINPUT_DF, temp_df], ignore_index=True)
 
+        # Apply x-axis offset
+        DATAINPUT_DF["x_offset"] = DATAINPUT_DF["stratum"] + DATAINPUT_DF["agg_type"].map(
+            {"Transect": -x_offset, "Kriging": x_offset}
+        )
+                
         # Initialize `panel` extension
         pn.extension()
 
         # Initialize widgets
         # ---- Variable options
         var_options = ["Biomass", "Biomass density"]
-        # ---- Get column names
-        var_columns = {"Biomass": "total", "Biomass density": "density"}
         # ---- y-axis names
         y_axis_label = {
             "Biomass": "Biomass (kmt) [mean ± 95% CI]",
@@ -440,54 +429,33 @@ class DiagnosticPlot:
         def update_plot(selection):
 
             # Parse dataset
-            data = DATAINPUT[selection]
-            # ---- Get data column
-            value = var_columns[selection]
+            filtered_data = DATAINPUT_DF[DATAINPUT_DF["var_type"] == selection]
 
-            # Initialize plotting layers
-            plot_layers = []
+            # Errorbar layer
+            error_bars = hv.Segments(
+                filtered_data, 
+                kdims=["x_offset", "lower", "x_offset", "upper"], 
+                vdims=["agg_type"]
+            ).opts(color="agg_type", 
+                cmap={"Transect": "black", "Kriging": "red"},
+            )  
 
-            # Plot the data
-            # ---- Kriging
-            if "kriging" in data:
-                # ---- Add errorbar
-                kriging_pt_err = hv.Segments(
-                    data["kriging"], kdims=["stratum", "lower", "stratum", "upper"], label="Kriging"
-                ).opts(color="red")
-                # ---- Point estimates
-                kriging_pts = hv.Points(
-                    data["kriging"], kdims=["stratum", value], label="Kriging"
-                ).opts(
-                    size=12,
-                    color="red",
-                    ylim=(0.0, np.inf),
-                    xticks=data["kriging"]["stratum"].tolist(),
-                )
-                # ---- Add to layer
-                plot_layers.append(kriging_pt_err * kriging_pts)
-                # ---- Transect
-                if "transect" in data:
-                    # ---- Add errorbar
-                    transect_pt_err = hv.Segments(
-                        data["transect"],
-                        kdims=["stratum", "lower", "stratum", "upper"],
-                        label="Transect",
-                    ).opts(color="black")
-                    # ---- Point estimates
-                    transect_pts = hv.Points(
-                        data["transect"],
-                        kdims=["stratum", var_columns[selection]],
-                        label="Transect",
-                    ).opts(
-                        size=12,
-                        color="black",
-                    )
-                    # ---- Add to layer
-                    plot_layers.append(transect_pt_err * transect_pts)
-                # ---- Layer the data
-                return hv.Overlay(plot_layers).opts(
-                    height=600, width=800, xlabel="INPFC stratum", ylabel=y_axis_label[selection]
-                )
+            # Points layer
+            point_means = hv.Points(
+                filtered_data, 
+                kdims=["x_offset", "mean"], 
+                vdims=["agg_type"]
+            ).opts(
+                color="agg_type", 
+                cmap={"Transect": "black", "Kriging": "red"}, 
+                size=12,
+                ylim=(0.0, np.inf),
+            )                          
+
+            # Layer the data
+            return (error_bars * point_means).opts(
+                height=600, width=800, xlabel="INPFC stratum", ylabel=y_axis_label[selection]
+            )
 
         # Return the stacked Column object
         return pn.Column(var_dropdown, update_plot)
