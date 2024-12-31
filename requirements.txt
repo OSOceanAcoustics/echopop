@@ -8,12 +8,19 @@ scipy
 cartopy
 geopandas
 geopy
+pyproj
 shapely
 verde
 # Visualization stack
+bokeh
+geoviews
+holoviews
 ipympl
 ipywidgets
+jupyter_bokeh>=3.0.5
 jupyter_contrib_nbextensions
+matplotlib
+panel
 traitlets
 # Validation stack
 pandera
