@@ -1,12 +1,12 @@
 from .math import spherical_hn
-from scipy.special import _spherical_bessel as ssb
+from scipy.special import j1
 
 def pcdwba(
     scattering_type: str,
     shape: str,
 ):
     """
-    Phase-compensated distorted wave Born approximation
+    Phase-compensated distorted wave Born approximation (DWBA)
     
     Defined as [1]_,
     
@@ -29,4 +29,5 @@ def pcdwba(
     zooplankton
     
     """
+    # == Scat_models/DWBAbscat1.m
     pass

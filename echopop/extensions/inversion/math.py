@@ -2,7 +2,10 @@
 Mathematical and numerical utility functions.
 """
 
-from scipy.special import _spherical_bessel as ssb
+from scipy.special import spherical_jn, spherical_yn
+import numpy as np
+from typing import Any, Dict, Literal
+from numpy.typing import ArrayLike
 
 def spherical_hn(n, z, derivative=False):
     """
@@ -40,13 +43,33 @@ def spherical_hn(n, z, derivative=False):
     .. [2] https://dlmf.nist.gov/10.51#E2
     
     """
+    # == lib/sphhn.m
     
     # Define internal function
     def _spherical_hn(n, z):
-        return ssb.spherical_jn(n, z) + 1j * ssb.spherical_yn(n, z)
+        return spherical_jn(n, z) + 1j * spherical_yn(n, z)
     
     # Computing derivative
     if derivative:
         return (n/z) * _spherical_hn(n, z) - _spherical_hn(n+1, z)
     else:
         return _spherical_hn(n, z)
+
+def length_average(): 
+    """
+    Compute the length-averaged linear backscattering cross-section (:math:`\sigma_{bs}(L)`) 
+    """
+    # == Scat_models/length_ave.m
+    pass
+
+def orientation_average(
+    angle: ArrayLike[float],
+    form_function: ArrayLike[complex],
+    distribution_kwargs: Dict[str, Any],
+    distribution: Literal["gaussian", "uniform"] = "gaussian",  
+):
+    """
+    Compute the orientation-averaged linear backscattering cross-section :math:`\sigma_{bs}(\theta)`
+    """
+    # == Scat_models/orient_ave.m
+    pass
