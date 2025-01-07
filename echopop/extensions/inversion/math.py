@@ -55,11 +55,29 @@ def spherical_hn(n, z, derivative=False):
     else:
         return _spherical_hn(n, z)
 
-def length_average(): 
+def length_average(
+    length: ArrayLike[float],
+    form_function: ArrayLike[complex],
+    distribution_kwargs: Dict[str, Any],
+    distribution: Literal["gaussian", "uniform"] = "gaussian",      
+): 
     """
     Compute the length-averaged linear backscattering cross-section (:math:`\sigma_{bs}(L)`) 
     """
     # == Scat_models/length_ave.m
+    
+    # PHASE 1) EXTRACT RELEVANT PARAMETERS (e.g. ka)
+    # PHASE 2) GENERATE PDF BASED ON SELECTED DISTRIBUTION
+    if distribution == "gaussian": 
+        pass
+    elif distribution == "uniform":
+        pass
+    else:
+        raise ValueError("Invalid distribution type. Choose 'gaussian' or 'uniform'.")
+    # PHASE 3) SQUARE SIGMA_BS
+    # PHASE 4) COMPUTE SIGMA_BS OVER CONFIGURED PDF BINS AT EACH DEFINED FREQUENCY
+    
+    # RETURNS: sqrt(sum(sigma_bs))
     pass
 
 def orientation_average(
@@ -72,4 +90,17 @@ def orientation_average(
     Compute the orientation-averaged linear backscattering cross-section :math:`\sigma_{bs}(\theta)`
     """
     # == Scat_models/orient_ave.m
+    
+    # PHASE 1) EXTRACT RELEVANT PARAMETERS (e.g. ka)
+    # PHASE 2) GENERATE PDF BASED ON SELECTED DISTRIBUTION
+    if distribution == "gaussian": 
+        pass
+    elif distribution == "uniform":
+        pass
+    else:
+        raise ValueError("Invalid distribution type. Choose 'gaussian' or 'uniform'.")
+    # PHASE 3) SQUARE SIGMA_BS
+    # PHASE 4) COMPUTE SIGMA_BS OVER CONFIGURED PDF BINS AT EACH DEFINED FREQUENCY
+    
+    # RETURNS: sqrt(sum(sigma_bs))
     pass
