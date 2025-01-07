@@ -363,6 +363,9 @@ def krige(input_dict: dict, analysis_dict: dict, settings_dict: dict) -> tuple[p
         arguments and user-defined inputs.
     """
 
+    # Initialize kriging analysis dictionary
+    analysis_dict.update({"kriging": {}})
+
     # Validate cropping method parameters
     validated_cropping_methods = MeshCrop.create(**settings_dict["cropping_parameters"])
     # ---- Update the dictionary
@@ -420,7 +423,16 @@ def krige(input_dict: dict, analysis_dict: dict, settings_dict: dict) -> tuple[p
         )
     else:
         # ---- Compute the cropped mesh
-        mesh_full = crop_mesh(transect_data, mesh_data, validated_cropping_methods)
+        mesh_full, transect_mesh_regions = crop_mesh(
+            transect_data, mesh_data, validated_cropping_methods
+        )
+        # ---- Append 'transect_mesh_regions' to analysis variable
+        analysis_dict["kriging"].update(
+            {
+                "transect_mesh_regions_df": transect_mesh_regions,
+            }
+        )
+        # ---- Print message, if verbose
         if (settings_dict["verbose"]) and (
             validated_cropping_methods["crop_method"] == "convex_hull"
         ):
@@ -454,7 +466,7 @@ def krige(input_dict: dict, analysis_dict: dict, settings_dict: dict) -> tuple[p
         # -------- y
         mesh_full["y"] = mesh_full["latitude"]
     # --- Append to the analysis attribute
-    analysis_dict.update({"kriging": {"mesh_df": mesh_full, "transect_df": transect_data}})
+    analysis_dict["kriging"].update({"mesh_df": mesh_full, "transect_df": transect_data})
 
     # Kriged results
     kriged_results = kriging(
