@@ -7,7 +7,7 @@ import numpy as np
 from typing import Any, Dict, Literal
 from numpy.typing import ArrayLike
 
-def spherical_hn(n, z, derivative=False):
+def spherical_hn(n, z, derivative=False) -> ArrayLike:
     """
     Spherical Bessel function of the third kind (Hankel function) or its derivative
     
@@ -60,7 +60,7 @@ def length_average(
     form_function: ArrayLike[complex],
     distribution_kwargs: Dict[str, Any],
     distribution: Literal["gaussian", "uniform"] = "gaussian",      
-): 
+) -> ArrayLike: 
     """
     Compute the length-averaged linear backscattering cross-section (:math:`\sigma_{bs}(L)`) 
     """
@@ -85,7 +85,7 @@ def orientation_average(
     form_function: ArrayLike[complex],
     distribution_kwargs: Dict[str, Any],
     distribution: Literal["gaussian", "uniform"] = "gaussian",  
-):
+) -> ArrayLike:
     """
     Compute the orientation-averaged linear backscattering cross-section :math:`\sigma_{bs}(\theta)`
     """
