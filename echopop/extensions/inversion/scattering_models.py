@@ -1,10 +1,12 @@
 from .math import spherical_hn
 from scipy.special import j1
+from numpy.typing import ArrayLike
+
+from typing import Any, Dict
 
 def pcdwba(
-    scattering_type: str,
-    shape: str,
-):
+    scattering_parameters: Dict[str, Any],
+) -> ArrayLike:
     """
     Phase-compensated distorted wave Born approximation (DWBA)
     
@@ -30,4 +32,9 @@ def pcdwba(
     
     """
     # == Scat_models/DWBAbscat1.m
+    
+    # PHASE 1) EXTRACT AND PREPARE PARAMETERS
+    # PHASE 2) COMPUTE CALCULATIONS
+    
+    # RETURNS: np.ndarray of complex form function values    
     pass

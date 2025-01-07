@@ -4,41 +4,74 @@ from lmfit import Parameters
 from typing import Any, Dict, List, Union
 
 import pandas as pd
+from pathlib import Path
 
 ####################################################################################################
 # Validation / preparation
 ####################################################################################################
 
-def inversion_configuration_validator() -> Dict[str, Any]:
+class inversion_configuration_validator(BaseModel):
     """
     Pydantic model for validating configuration parameters
     """
+    
+    # RETURNS: Dict[str, Any]
     pass
 
-def dataset_validator() -> pd.DataFrame:
+class dataset_validator(DataFrameModel):
     """
     Pandera model for validating dataset values
     """
+    
+    # RETURNS: pd.DataFrame
     pass
 
-def prepare_scattering_model_inputs() -> Dict[str, Any]: 
+def prepare_scattering_model_inputs(scattering_config: Dict[str, Any]) -> Dict[str, Any]: 
     """
     Prepare scattering model parameter inputs
     """
     # == functions/set_para.m
     # == functions/inversion_para.m
     
-    # PHASE 1) INGEST VALUES FROM CONFIGURATION AND DATASET FILE
-    # PHASE 2) COMPUTE INTERMEDIATE VARIABLES (e.g. acoustic wavenumber, position matrix)
-    # PHASE 3) PASS TO SCATTERER CLASS
+    # PHASE 1) INGEST VALUES FROM CONFIGURATION FILE
+    # PHASE 2) VALIDATE USING `inversion_configuration_validator`
+    # PHASE 3) COMPUTE INTERMEDIATE VARIABLES (e.g. acoustic wavenumber, position matrix)
+    # PHASE 4) PASS TO SCATTERER CLASS
     #          --> EXTERNAL TO THIS FUNCTION
+    
+    # RETURNS: Validated scattering model inputs
     pass    
+
+def prepare_dataset(dataset: pd.DataFrame) -> Dict[str, Any]:
+    """
+    Prepare dataset inputs
+    """
+    
+    # PHASE 1) INGEST DATASET (*.xlsx)
+    # PHASE 2) VALIDATE USING `dataset_validator`
+    # PHASE 3) PARTITION DATASET BASED ON DIFFERENT ECHOMETRICS (e.g. mean Sv, median Sv)
+    
+    # RETURNS: Validated dataset DataFrame objects used for inversion
+    pass
+
+def prepare_inversion_settings(inversion_config: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Prepare inversion configuration and parameterization
+    """
+    
+    # PHASE 1) INGEST VALUES FROM CONFIGURATION FILE
+    # PHASE 2) VALIDATE USING `inversion_configuration_validator`
+    # PHASE 3) COMPUTE INTERMEDIATE VARIABLES (e.g. acoustic wavenumber, position matrix)
+    
+    # RETURNS: Validated inversion and optimization parameters
+    pass
+
 
 ####################################################################################################
 # Data ingestion
 ####################################################################################################
 
-def yaml_configuration_reader() -> Dict[str, Union[float, int, Parameters, pd.DataFrame, str]]:
+def yaml_configuration_reader(config_file: Union[str, Path]) -> Dict[str, Union[float, int, Parameters, pd.DataFrame, str]]:
     """
     Read and validate the input parameterization YAML configuration
     """
@@ -47,12 +80,11 @@ def yaml_configuration_reader() -> Dict[str, Union[float, int, Parameters, pd.Da
     # == functions/get_simu_para.m
 
     # PHASE 1) READ CONFIGURATION FILE
-    # PHASE 2) VALIDATE CONFIGURATION SETTINGS
-    # PHASE 3) PASS CONFIGURATION SETTINGS TO SCATTERER CLASS AS APPROPRIATE `lmfit::PARAMETERS`
-    #          --> EXTERNAL TO THIS FUNCTION
+    
+    # RETURNS: Raw Dict[str, Any]
     pass
 
-def dataset_reader() -> pd.DataFrame:
+def dataset_reader(data_file: Union[str, Path]) -> pd.DataFrame:
     """
     Read aggregate acoustic backscatter measurements
     """
@@ -61,7 +93,6 @@ def dataset_reader() -> pd.DataFrame:
     # == functions/load_BIOMAPPER_data.m
     
     # PHASE 1) READ IN FILES
-    # PHASE 2) VALIDATE DATASET FILE
-    # PHASE 3) PASS DATASET TO SCATTERER CLASS
-    #          --> EXTERNAL TO THIS FUNCTION
+    
+    # RETURNS: Raw pd.DataFrame (or Dict[str, Any]: see `prepare_dataset`)
     pass
