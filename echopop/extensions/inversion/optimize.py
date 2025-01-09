@@ -3,7 +3,7 @@ from lmfit import Minimizer, Parameters
 from typing import Any, Callable, Dict, Literal, Union
 from numpy.typing import ArrayLike
 
-def mad(
+def mae(
     prediction: ArrayLike[float],
     measurement: ArrayLike[float],
 ):
@@ -23,6 +23,11 @@ def rmse(
     # == functions/cost_functionALL.m
     pass
 
+def normalize_optimization_parameters(parameters: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Normalize the optimization parameters
+    """
+    pass
 
 def prepare_optimization(
     scattering_model_parameters: Dict[str, Any],

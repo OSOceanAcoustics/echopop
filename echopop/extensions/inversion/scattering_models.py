@@ -2,6 +2,8 @@ from .math import spherical_hn
 from scipy.special import j1
 from numpy.typing import ArrayLike
 
+from pydantic import BaseModel
+
 from typing import Any, Dict
 
 def pcdwba(
@@ -37,4 +39,12 @@ def pcdwba(
     # PHASE 2) COMPUTE CALCULATIONS
     
     # RETURNS: np.ndarray of complex form function values    
+    pass
+
+class validate_pcdwba(BaseModel):
+    """
+    Pydantic model for validating scattering model parameters specific to the PCDWBA
+    """
+    
+    # RETURNS: Dict[str, Any]
     pass

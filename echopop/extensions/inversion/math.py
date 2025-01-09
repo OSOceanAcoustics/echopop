@@ -58,7 +58,7 @@ def spherical_hn(n, z, derivative=False) -> ArrayLike:
 def length_average(
     length: ArrayLike[float],
     form_function: ArrayLike[complex],
-    distribution_kwargs: Dict[str, Any],
+    distribution_kwargs: Dict[str, float],
     distribution: Literal["gaussian", "uniform"] = "gaussian",      
 ) -> ArrayLike: 
     """
@@ -83,7 +83,7 @@ def length_average(
 def orientation_average(
     angle: ArrayLike[float],
     form_function: ArrayLike[complex],
-    distribution_kwargs: Dict[str, Any],
+    distribution_kwargs: Dict[str, float],
     distribution: Literal["gaussian", "uniform"] = "gaussian",  
 ) -> ArrayLike:
     """
@@ -103,4 +103,18 @@ def orientation_average(
     # PHASE 4) COMPUTE SIGMA_BS OVER CONFIGURED PDF BINS AT EACH DEFINED FREQUENCY
     
     # RETURNS: sqrt(sum(sigma_bs))
+    pass
+
+def fit_rayleigh_pdf(
+    measured: ArrayLike[float],
+    density: ArrayLike[float],
+    mean: float,
+    standard_deviation: float,
+    lower_bounds: float,
+    upper_bounds: float,
+    arg_distribution: Literal["exponential", "gaussian"] = "gaussian",
+):
+    """
+    Fit a single-parameter Rayleigh probability density function to the measured data
+    """
     pass
