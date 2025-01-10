@@ -33,6 +33,7 @@ def _report_options(self) -> List[str]:
 # .diagnostics
 # --------------------------------------------------------------------------------------------------
 
+
 def _mesh_cropping_results(self: Survey) -> None:
 
     # Plot cropped mesh results
@@ -56,14 +57,17 @@ def _stratified_results(self: Survey) -> None:
     # Plot stratified results
     return DiagnosticPlot(self).stratified_results()
 
+
 # --------------------------------------------------------------------------------------------------
 # .inversion
 # --------------------------------------------------------------------------------------------------
 
+
 def _inversion_placeholder_method(self: Survey) -> None:
 
-    # Inversion placeholder 
+    # Inversion placeholder
     pass
+
 
 ####################################################################################################
 # PATCHERS
@@ -72,6 +76,7 @@ def _inversion_placeholder_method(self: Survey) -> None:
 # --------------------------------------------------------------------------------------------------
 # .feat_report
 # --------------------------------------------------------------------------------------------------
+
 
 def patch_generate_reports():
     """
@@ -90,9 +95,11 @@ def patch_generate_reports():
     # ---- `report_options()`
     Survey.report_options = _report_options
 
+
 # --------------------------------------------------------------------------------------------------
 # .diagnostics
 # --------------------------------------------------------------------------------------------------
+
 
 def patch_diagnostic_plots():
     """
@@ -119,9 +126,11 @@ def patch_diagnostic_plots():
     # ---- `stratified_results()`
     Survey.stratified_results = _stratified_results
 
+
 # --------------------------------------------------------------------------------------------------
 # .inversion
 # --------------------------------------------------------------------------------------------------
+
 
 def patch_inversion_placeholder_method():
     """
