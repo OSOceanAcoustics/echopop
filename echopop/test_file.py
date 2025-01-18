@@ -1,6 +1,9 @@
 import numpy as np
 import pandas as pd
-
+from scipy.special import j1
+from echopop.extensions.inversion.scattering_models import pcdwba
+from echopop.extensions.inversion.scatterer import uniformly_bent_cylinder, compute_Sv
+from echopop.extensions.inversion.math import wavenumber, reflection_coefficient, orientation_average, length_average
 ####################################################################################################
 # PARAMETERIZE DATASETS
 # ---------------------
@@ -139,3 +142,64 @@ data_df = pd.DataFrame(
         "high": 1.060,
     },
 }
+####################################################################################################
+# Test params
+water_sound_speed = 1500 # seawater sound speed, m s^-1
+water_density = 1.0279 # seawater density, kg m^-3
+L = 19.083 # SL2 length, mm
+L_std = 0.0900 # SL2 length standard deviation [ L_std / L]
+L_a = 18.2 # length-to-radius ratio
+n = 7 # number of frequencies/ka values
+n_int = 50 # minimum number of integration points
+# theta = np.array([-0.9022, -0.8380, 2.8210, 2.8852]) # incident angle (broadside incidence = pi/2)
+theta_mean = 56.8070 # mean orientation
+g = 1.015 # density contrast
+h = 1.020 # sound speed contrast
+taper_order = 10 # shape tapering order
+rho_L = 3.0 # radius of curvature ratio
+center_frequency = np.array([18e3])
+frequencies = np.array([12.9780e3, 14.9780e3, 16.9780e3, 18.9780e3, 20.9780e3, 22.9780e3, 24.9780e3]) # transmit frequencies, Hz
+n_theta = 60 # number of orientation values to use
+theta_sd = 35 # number of degrees offset for the incidence angle
+ni_wavelen = 10 # ????
+theta_distribution = "gaussian"
+length_mean = L
+length_deviation = 1.7174699999999998 # SL2 length standard deviation, mm
+length_bin_count = 100 # number of length bins for averaging
+number_density = 9.8795e3 # animal number density (animals m^-3)
+####################################################################################################
+# Compute acoustic property metrics
+# ---------------------------------
+# Compute acoustic wavenumber
+k = wavenumber(frequencies, water_sound_speed)
+# Convert length to m
+L_m = L * 1e-3
+# Initial ka
+ka = k*L_m/L_a
+ka_center = wavenumber(center_frequency, water_sound_speed)*L_m/L_a
+# Make this relative to body size (i.e. ka)
+if len(center_frequency) == 1:
+    # Compute the maximum relationship between wavenumber and body length
+    kLmax = np.max(k*L_m)*(1+3.1*L_std)
+    # Compute the appropriate number of integration points
+    # ---- !!! TODO: THERE IS A POTENTIAL ISSUE HERE; THE MATLAB CODE IS INCONSISTENT IN HANDLING UNITS FOR THE LENGTH (cm -> mm -> m, etc)
+    n_int = int(np.max(np.array([n_int, np.ceil(kLmax*ni_wavelen/(2*np.pi))])))
+
+####################################################################################################
+# Build position vector
+taper, gamma_tilt, beta_tilt, r_pos, dr_pos = uniformly_bent_cylinder(n_int, rho_L, taper_order)
+####################################################################################################
+# Compute over a vector of angles (centered on 90 degrees)
+theta_values = np.linspace(theta_mean - 3.1*theta_sd, theta_mean + 3.1*theta_sd, n_theta) 
+theta_radians = theta_values * np.pi / 180.0
+
+length_values = np.linspace(length_mean - 3*(L_std*length_mean), length_mean + 3*(L_std*length_mean), length_bin_count)
+####################################################################################################
+# PCDWBA
+# ------
+#
+fbs = pcdwba(taper, gamma_tilt, beta_tilt, r_pos, dr_pos, L_m, L_a, g, h, ka, theta_radians)
+####################################################################################################
+# Compute S_V
+Sv_prediction = compute_Sv(number_density, theta_values, theta_mean, theta_sd, length_values, 
+                           length_mean, length_deviation, fbs, ka, ka_center)
