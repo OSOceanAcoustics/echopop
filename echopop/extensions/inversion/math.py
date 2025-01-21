@@ -85,7 +85,7 @@ def length_average(
     length_mean: float,
     length_deviation: float,
     distribution: Literal["gaussian", "uniform"] = "gaussian",
-) -> Tuple[np.ndarray[float], np.ndarray[float]]:
+) -> np.ndarray[float]:
     """
     Compute the length-averaged linear backscattering cross-section (:math:`\sigma_{bs}(L)`)
     """
@@ -125,14 +125,20 @@ def length_average(
     sigma_bs = form_function ** 2
 
     # Length-weighted averaged sigma_bs
+    # ---- Get valid values
+    n_vals = np.apply_along_axis(valid_array_row_length, 1, arr=ka)
     # ---- Compute the length-weighted ka 
-    ka_weighted = length_norm * ka_center
+    ka_weighted = length_norm * ka_center.reshape(-1, 1)
     # ---- Trim values so they fall within the valid/defined bandwidth
-    ka_weighted_trim = ka_weighted[(ka_weighted >= ka.min()) & (ka_weighted <= ka.max())]
+    ka_weighted_trim = np.where((ka_weighted >= np.nanmin(ka)) & (ka_weighted <= np.nanmax(ka)), 
+                                ka_weighted, 
+                                np.nan)
     # ---- Evluate
-    sigma_bs_L = length_norm ** 2 * PDF * np.interp(ka_weighted_trim, ka, sigma_bs)
+    sigma_bs_L = np.array([(length_norm ** 2 * PDF 
+                  * np.interp(ka_weighted_trim[i], ka[i, :n_vals[i]], form_function[i] ** 2)).sum() 
+                  for i in range(len(form_function))])
     # ---- Return the weighted average
-    return PDF, sigma_bs_L.sum()
+    return sigma_bs_L
 
 def orientation_average(
     angle: np.ndarray[float],
@@ -140,7 +146,7 @@ def orientation_average(
     theta_mean: float,
     theta_sd: float,
     distribution: Literal["gaussian", "uniform"] = "gaussian",
-) -> Tuple[np.ndarray[float], np.ndarray[float]]:
+) -> np.ndarray[float]:
     """
     Compute the orientation-averaged linear backscattering cross-section :math:`\sigma_{bs}(\theta)`
     """
@@ -173,11 +179,9 @@ def orientation_average(
 
     # Return the weighted form function
     # ---- If complex
-    if np.all(np.iscomplex(form_function)):
-        return PDF, np.sqrt(np.matmul((form_function.real ** 2 + form_function.imag ** 2), PDF))
-    # ---- If not
-    else:
-        return PDF, np.sqrt(np.matmul(form_function, PDF))
+    return [np.sqrt(np.matmul((f[0].real ** 2 + f[0].imag ** 2), PDF)) 
+            if np.all(np.iscomplex(f)) else np.sqrt(np.matmul(f, PDF)) 
+            for f in form_function]
 
 def fit_rayleigh_pdf(
     measured: np.ndarray[float],
@@ -192,3 +196,11 @@ def fit_rayleigh_pdf(
     Fit a single-parameter Rayleigh probability density function to the measured data
     """
     pass
+
+
+def valid_array_row_length(arr: np.ndarray[float]) -> int:
+    """
+    Returns the number of valid (i.e. not NaN) length of each row within an array
+    """
+    
+    return np.sum(~np.isnan(arr))
