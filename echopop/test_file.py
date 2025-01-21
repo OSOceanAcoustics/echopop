@@ -138,12 +138,7 @@ data_df = pd.DataFrame(
 # Scattering model parameters
 # ---------------------------
 scattering_parameters = {
-    "number_density": {
-      "distribution": "uniform",
-      "initial": 3.0,
-      "low": 1.0,
-      "high": 1000.0  
-    },
+    "number_density": {"distribution": "uniform", "initial": 3.0, "low": 1.0, "high": 1000.0},
     "theta_mean": {
         "distribution": "uniform",
         "initial": 10.0,
@@ -198,12 +193,12 @@ scattering_parameters = {
 # Optimization parameters
 # -----------------------
 optimization_parameters = {
-    "max_iterations": 30, # maximum number of iterations; == MaxIter
-    "max_fun_evaluations": 200, # maximum number of function evaluations == MaxFunEvals
-    "fdgradient_max":1.0, # maximum change in variables for finite-differences gradients == DiffMaxChange
-    "fgradient_min": 1e-3, # minimum change in variables for finite-differences gradients == DiffMinChange
-    "cost_fun_tolerance": 1e-3, # cost-function tolerance for termination == TolFun
-    "gradient_tolerance": 1e-3, #gradient step tolerance for termination == TolX
+    "max_iterations": 30,  # maximum number of iterations; == MaxIter
+    "max_fun_evaluations": 200,  # maximum number of function evaluations == MaxFunEvals
+    "fdgradient_max": 1.0,  # maximum change in variables for finite-differences gradients == DiffMaxChange
+    "fgradient_min": 1e-3,  # minimum change in variables for finite-differences gradients == DiffMinChange
+    "cost_fun_tolerance": 1e-3,  # cost-function tolerance for termination == TolFun
+    "gradient_tolerance": 1e-3,  # gradient step tolerance for termination == TolX
 }
 # --------------------------------
 # Simulation/processing parameters
