@@ -128,20 +128,75 @@ data_df = pd.DataFrame(
         ],
     }
 )
-# ---------------------
+# ---------------------------
 # Scattering model parameters
-# ---------------------
-{
+# ---------------------------
+scattering_parameters = {
+    "number_density": {
+      "distribution": "uniform",
+      "initial": 3.0,
+      "low": 1.0,
+      "high": 1000.0  
+    },
+    "theta_mean": {
+        "distribution": "uniform",
+        "initial": 10.0,
+        "low": 0.0,
+        "high": 90.0,
+    },
+    "theta_sd": {
+        "distribution": "uniform",
+        "initial": 20.0,
+        "low": 0.0,
+        "high": 90.0,
+    },
+    "length_mean": {
+        "distribution": "uniform",
+        "initial": 30e-3,
+        "low": 8e-3,
+        "high": 30e-3,
+    },
+    "length_sd_norm": {
+        "distribution": "uniform",
+        "initial": 0.15,
+        "low": 0.05,
+        "high": 0.15,
+    },
     "g": {
         "distribution": "uniform",
+        "initial": 1.015,
         "low": 1.015,
         "high": 1.060,
     },
     "h": {
         "distribution": "uniform",
+        "initial": 1.020,
         "low": 1.015,
         "high": 1.060,
     },
+    "radius_of_curvature_ratio": {
+        "distribution": "uniform",
+        "initial": 3.0,
+        "low": 0.5,
+        "high": 100.0,
+    },
+    "length_radius_ratio": {
+        "distribution": "uniform",
+        "initial": 18.2,
+        "low": 14.0,
+        "high": 20.0,
+    },
+}
+# ---------------------------
+# Optimization parameters
+# ---------------------------
+optimization_parameters = {
+    "max_iterations": 30, # maximum number of iterations; == MaxIter
+    "max_fun_evaluations": 200, # maximum number of function evaluations == MaxFunEvals
+    "fdgradient_max":1.0, # maximum change in variables for finite-differences gradients == DiffMaxChange
+    "fgradient_min": 1e-3, # minimum change in variables for finite-differences gradients == DiffMinChange
+    "cost_fun_tolerance": 1e-3, # cost-function tolerance for termination == TolFun
+    "gradient_tolerance": 1e-3, #gradient step tolerance for termination == TolX
 }
 ####################################################################################################
 # Test params
