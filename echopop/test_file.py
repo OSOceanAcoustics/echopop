@@ -204,9 +204,9 @@ optimization_parameters = {
 # Simulation/processing parameters
 # --------------------------------
 processing_parameters = {
-    "data_source": "measured", # options: "measured", "simulated"
-    "inversion_source": "acoustics", # options: "acoustics", "biological"
-    "center_frequencies": np.array([18e3, 38e3, 120e3]), # center frequencies (array), Hz
+    "data_source": "measured",  # options: "measured", "simulated"
+    "inversion_source": "acoustics",  # options: "acoustics", "biological"
+    "center_frequencies": np.array([18e3, 38e3, 120e3]),  # center frequencies (array), Hz
 }
 ####################################################################################################
 # Test params
