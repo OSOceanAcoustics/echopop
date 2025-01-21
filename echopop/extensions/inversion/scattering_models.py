@@ -1,17 +1,18 @@
 from typing import Any, Dict, List, Union
 
+import numpy as np
 from numpy.typing import ArrayLike
 from pydantic import BaseModel
 from scipy.special import j1
-import numpy as np
 
 from .math import reflection_coefficient, spherical_hn, valid_array_row_length
 
+
 def pcdwba(
-    taper: float, 
-    gamma_tilt: np.ndarray[float], 
-    beta_tilt: np.ndarray[float], 
-    r_pos: np.ndarray[float], 
+    taper: float,
+    gamma_tilt: np.ndarray[float],
+    beta_tilt: np.ndarray[float],
+    r_pos: np.ndarray[float],
     dr_pos: np.ndarray[float],
     length_radius_ratio: float,
     g: Union[np.ndarray[float], float],
@@ -47,13 +48,15 @@ def pcdwba(
     # Get the array sizes for later broadcasting
     # ---- Number of frequencies/wavenumbers
     n_k = (
-        np.apply_along_axis(valid_array_row_length, axis=1, arr=ka) 
-        if isinstance(ka, np.ndarray) else len(ka)
+        np.apply_along_axis(valid_array_row_length, axis=1, arr=ka)
+        if isinstance(ka, np.ndarray)
+        else len(ka)
     )
     # ---- Number of segments and minimum number of integration points
     n_segments = (
-        np.apply_along_axis(valid_array_row_length, axis=1, arr=r_pos) 
-        if r_pos.ndim > 1 else len(r_pos)
+        np.apply_along_axis(valid_array_row_length, axis=1, arr=r_pos)
+        if r_pos.ndim > 1
+        else len(r_pos)
     )
     # ---- Number of orientation values
     n_theta = len(theta)
@@ -63,39 +66,37 @@ def pcdwba(
 
     # Pre-allocate output (this will be indexed by center frequency)
     f_bs = []
-    
+
     # Iterate across frequencies
     for i in range(len(n_k)):
         # ---- Reindex 'ka'
-        ka_i = ka[i, :n_k[i]]
-        # ---- Adjust `ka` to account for body shape tapering 
-        ka_tapered = ka_i .reshape(-1, 1) * taper[i, :n_segments[i]] / h
+        ka_i = ka[i, : n_k[i]]
+        # ---- Adjust `ka` to account for body shape tapering
+        ka_tapered = ka_i.reshape(-1, 1) * taper[i, : n_segments[i]] / h
         # ka_tapered = ka.reshape(-1, 1) * taper / h
         # ---- Adjust along-axis tilt angles and slopes to be relative to the incident planar wave
         # -------- Along-axis curvature slopes
-        delta_gamma_cos = np.cos(gamma_tilt[i, :n_segments[i]].reshape(-1, 1) - theta)
+        delta_gamma_cos = np.cos(gamma_tilt[i, : n_segments[i]].reshape(-1, 1) - theta)
         # -------- Along-axis tilt angles between segments
-        delta_theta_cos = np.abs(np.cos(beta_tilt[i, :n_segments[i]].reshape(-1, 1) - theta))
+        delta_theta_cos = np.abs(np.cos(beta_tilt[i, : n_segments[i]].reshape(-1, 1) - theta))
         # ---- Generate the exponentiated matrix
-        M1 = length_radius_ratio * ka_i.reshape(-1, 1) * (r_pos[i, :n_segments[i]] / h)
-        # ---- Generate the matrix that accounts for the material properties and position vector 
+        M1 = length_radius_ratio * ka_i.reshape(-1, 1) * (r_pos[i, : n_segments[i]] / h)
+        # ---- Generate the matrix that accounts for the material properties and position vector
         # ---- variability
-        M2 = h ** 2 * C_b * dr_pos[i, :n_segments[i]] / 4
+        M2 = h**2 * C_b * dr_pos[i, : n_segments[i]] / 4
         # ---- Normalize the `ka` vector
-        ka_norm = np.linspace(-2 * ka_i[-1], 2*ka_i[-1], 2*n_segments[i])
+        ka_norm = np.linspace(-2 * ka_i[-1], 2 * ka_i[-1], 2 * n_segments[i])
         # ---- Pre-compute the cylindrical Bessel function of the first kind of order 1
         J1 = j1(ka_norm)
         # ---- Broadcast `ka_tapered` for multiplication with `delta_gamma_cos`
         ARG = (
-            2 * ka_tapered[:, :, np.newaxis] 
-            * delta_theta_cos[np.newaxis, :, :] + np.finfo(float).eps
+            2 * ka_tapered[:, :, np.newaxis] * delta_theta_cos[np.newaxis, :, :]
+            + np.finfo(float).eps
         )
         # -------- Flatten for subsequent interpolation
         ARG_flat = ARG.ravel(order="F").reshape((n_k[i] * n_segments[i], n_theta), order="F")
         # ---- Interpolate the values
-        J1_interp = np.array([
-            np.interp(ARG_flat[:, m], ka_norm, J1) for m in range(n_theta)
-        ])
+        J1_interp = np.array([np.interp(ARG_flat[:, m], ka_norm, J1) for m in range(n_theta)])
         # -------- Reshape and normalize
         J1_norm = (J1_interp.T / ARG_flat).reshape((n_k[i], n_segments[i], n_theta), order="F")
         # ---- Exponentiate the terms to compute the phase
@@ -107,6 +108,7 @@ def pcdwba(
 
     # Return the form function
     return f_bs
+
 
 class validate_pcdwba(BaseModel):
     """
