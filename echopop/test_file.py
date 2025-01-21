@@ -192,10 +192,11 @@ scattering_parameters = {
         "low": 14.0,
         "high": 20.0,
     },
+    "taper_order": 10.0,
 }
-# ---------------------------
+# -----------------------
 # Optimization parameters
-# ---------------------------
+# -----------------------
 optimization_parameters = {
     "max_iterations": 30, # maximum number of iterations; == MaxIter
     "max_fun_evaluations": 200, # maximum number of function evaluations == MaxFunEvals
@@ -203,6 +204,14 @@ optimization_parameters = {
     "fgradient_min": 1e-3, # minimum change in variables for finite-differences gradients == DiffMinChange
     "cost_fun_tolerance": 1e-3, # cost-function tolerance for termination == TolFun
     "gradient_tolerance": 1e-3, #gradient step tolerance for termination == TolX
+}
+# --------------------------------
+# Simulation/processing parameters
+# --------------------------------
+processing_parameters = {
+    "data_source": "measured", # options: "measured", "simulated"
+    "inversion_source": "acoustics", # options: "acoustics", "biological"
+    "center_frequencies": np.array([18e3, 38e3, 120e3]), # center frequencies (array), Hz
 }
 ####################################################################################################
 # Test params
