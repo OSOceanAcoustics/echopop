@@ -1,16 +1,10 @@
 import numpy as np
 import pandas as pd
 from scipy.special import j1
-
-from echopop.extensions.inversion.math import (
-    length_average,
-    orientation_average,
-    reflection_coefficient,
-    wavenumber,
-)
-from echopop.extensions.inversion.scatterer import compute_Sv, uniformly_bent_cylinder
 from echopop.extensions.inversion.scattering_models import pcdwba
-
+from echopop.extensions.inversion.scatterer import uniformly_bent_cylinder, compute_Sv
+from echopop.extensions.inversion.scatterer import compute_Sv, compute_ts
+from echopop.extensions.inversion.math import wavenumber, orientation_average, length_average, generate_frequency_interval
 ####################################################################################################
 # PARAMETERIZE DATASETS
 # ---------------------
@@ -151,106 +145,62 @@ data_df = pd.DataFrame(
 }
 ####################################################################################################
 # Test params
-water_sound_speed = 1500  # seawater sound speed, m s^-1
-water_density = 1.0279  # seawater density, kg m^-3
-L = 16.351316286953450e-3  # SL2 length, mm
-L_std = 0.0900  # SL2 length standard deviation [ L_std / L]
-L_a = 18.2  # length-to-radius ratio
-frequency_interval = 2e3  # Hz
-n = 7  # number of frequencies/ka values
-n_integration = 50  # minimum number of integration points
+water_sound_speed = 1500 # seawater sound speed, m s^-1
+water_density = 1.0279 # seawater density, kg m^-3
+L = 16.351316286953450e-3 # SL2 length, mm
+L_std = 0.0900 # SL2 length standard deviation [ L_std / L]
+length_radius_ratio = 18.2 # length-to-radius ratio
+frequency_interval = 2e3 # Hz
+n = 7 # number of frequencies/ka values
+n_integration = 50 # minimum number of integration points
 # theta = np.array([-0.9022, -0.8380, 2.8210, 2.8852]) # incident angle (broadside incidence = pi/2)
-theta_mean = 43.9199  # mean orientation
-g = 1.015  # density contrast
-h = 1.020  # sound speed contrast
-taper_order = 10  # shape tapering order
-rho_L = 3.0  # radius of curvature ratio
-center_frequency = np.array([18e3, 38e3, 120e3])
+theta_mean = 43.9199 # mean orientation
+g = 1.015 # density contrast
+h = 1.020 # sound speed contrast
+taper_order = 10 # shape tapering order
+radius_of_curvature_ratio = 3.0 # radius of curvature ratio
+center_frequencies = np.array([18e3, 38e3, 120e3])
 # frequencies = np.array([12.9780e3, 14.9780e3, 16.9780e3, 18.9780e3, 20.9780e3, 22.9780e3, 24.9780e3]) # transmit frequencies, Hz
-n_theta = 60  # number of orientation values to use
-theta_sd = 35  # number of degrees offset for the incidence angle
-ni_wavelen = 10  # number of sample points per wave length
+n_theta = 60 # number of orientation values to use
+theta_sd = 35 # number of degrees offset for the incidence angle
+ni_wavelen = 10 # number of sample points per wave length
 theta_distribution = "gaussian"
 length_mean = L
-length_deviation = 0.09 * L  # SL2 length standard deviation, mm
-length_bin_count = 100  # number of length bins for averaging
-number_density = 4.720963086533185e3  # animal number density (animals m^-3)
+length_deviation = 0.09 * L # SL2 length standard deviation, mm
+length_bin_count = 100 # number of length bins for averaging
+number_density = 4.720963086533185e3 # animal number density (animals m^-3)
 ####################################################################################################
 # Compute acoustic property metrics
 # ---------------------------------
-# Compute frequency values that will be averaged together
-# ---- Normalize the length standard deviation
+
+# Normalize the length standard deviation
 length_sd_norm = length_deviation / length_mean
 
+# Generate frequency intervals centered on the central frequencies
+frequencies = generate_frequency_interval(center_frequencies, length_sd_norm, frequency_interval)
 
-# ---- Generate new frequency values
-def generate_frequency_interval(
-    frequency: np.ndarray[float], length_sd_norm: float, frequency_interval: float
-):
-    frequency_lst = [
-        np.arange(
-            freq * (1 - 3.1 * length_sd_norm),
-            freq * (1 + 3.1 * length_sd_norm) + frequency_interval,
-            frequency_interval,
-        )
-        for freq in frequency
-    ]
-
-    # Find the maximum length of the generated arrays
-    max_length = max(len(arr) for arr in frequency_lst)
-
-    # Create a padded 2D array with NaN for shorter arrays
-    padded_results = np.full((len(frequency_lst), max_length), np.nan)
-    for i, arr in enumerate(frequency_lst):
-        padded_results[i, : len(arr)] = arr
-
-    return padded_results
-
-
-frequencies = generate_frequency_interval(center_frequency, length_sd_norm, frequency_interval)
-
-# Compute acoustic wavenumber
+# Compute the acoustic wavenumbers weighted by target size
+# ---- Center frequencies
+ka_center = wavenumber(center_frequencies, water_sound_speed) * length_mean / length_radius_ratio
+# ---- Frequency intervals
+# -------- Just wavenumber (`k`)
 k = wavenumber(frequencies, water_sound_speed)
-# Convert length to m
-# L_m = L * 1e-3
-# Initial ka
-ka = k * length_mean / L_a
-ka_center = wavenumber(center_frequency, water_sound_speed) * length_mean / L_a
+# -------- Now `ka`
+ka = k * length_mean / length_radius_ratio
 
-kLmax = np.nanmax(k * length_mean, axis=1) * (1 + 3.1 * length_sd_norm)
-# Calculate the number of integration points
-n_int = np.where(
-    kLmax < n_integration, n_integration, np.ceil(kLmax * ni_wavelen / (2 * np.pi))
-).astype(int)
-
-####################################################################################################
-# Build position vector
-taper, gamma_tilt, beta_tilt, r_pos, dr_pos = uniformly_bent_cylinder(n_int, rho_L, taper_order)
 ####################################################################################################
 # Compute over a vector of angles (centered on 90 degrees)
-theta_values = np.linspace(theta_mean - 3.1 * theta_sd, theta_mean + 3.1 * theta_sd, n_theta)
+theta_values = np.linspace(theta_mean - 3.1*theta_sd, theta_mean + 3.1*theta_sd, n_theta) 
 theta_radians = theta_values * np.pi / 180.0
 
-length_values = np.linspace(
-    length_mean - 3 * (L_std * length_mean),
-    length_mean + 3 * (L_std * length_mean),
-    length_bin_count,
-)
+length_values = np.linspace(length_mean - 3*(L_std*length_mean), length_mean + 3*(L_std*length_mean), length_bin_count)
 ####################################################################################################
-# PCDWBA
+# PCDWBA (TS modeling step)
 # ------
-fbs = pcdwba(taper, gamma_tilt, beta_tilt, r_pos, dr_pos, length_mean, L_a, g, h, ka, theta_radians)
+fbs = compute_ts(taper_order, length_sd_norm, length_mean, length_radius_ratio, 
+                 radius_of_curvature_ratio, theta_radians, k, ka, g, h, n_integration, ni_wavelen, 
+                 model="pcdwba")
 ####################################################################################################
 # Compute S_V
-Sv_prediction = compute_Sv(
-    number_density,
-    theta_values,
-    theta_mean,
-    theta_sd,
-    length_values,
-    length_mean,
-    length_deviation,
-    fbs,
-    ka,
-    ka_center,
-)
+Sv_prediction = compute_Sv(number_density, theta_values, theta_mean, theta_sd, length_values, 
+                           length_mean, length_deviation, fbs, ka, ka_center)
