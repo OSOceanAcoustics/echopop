@@ -121,9 +121,6 @@ def length_average(
     else:
         raise ValueError("Invalid distribution type. Choose 'gaussian' or 'uniform'.")
 
-    # Compute `sigma_bs` (orientation-averaged backscattering cross-section)
-    sigma_bs = form_function ** 2
-
     # Length-weighted averaged sigma_bs
     # ---- Get valid values
     n_vals = np.apply_along_axis(valid_array_row_length, 1, arr=ka)
