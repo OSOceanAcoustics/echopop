@@ -7,7 +7,13 @@ from typing import Any, Dict, Literal, Union
 import numpy as np
 import pandas as pd
 
-from .math import wavenumber, length_average, orientation_average, valid_array_row_length, generate_frequency_interval
+from .math import (
+    generate_frequency_interval,
+    length_average,
+    orientation_average,
+    valid_array_row_length,
+    wavenumber,
+)
 from .scattering_models import pcdwba
 
 # class Scatterer:
@@ -73,37 +79,38 @@ def compute_ts(
     ka: Union[np.ndarray[float], float],
     g: float,
     h: float,
-    n_integration: int,    
+    n_integration: int,
     ni_wavelen: int,
     model: Literal["pcdwba"] = "pcdwba",
 ) -> np.ndarray[complex]:
     """
     Compute the acoustic target strength (TS, dB re. 1 m^2) of a backscattering object.
     """
-    # NOTE: !!! THE IS SPECIFIC TO THE PCDWBA. THESE LINES WILL NOT BE APPLICABLE TO OTHER MODELS. 
+    # NOTE: !!! THE IS SPECIFIC TO THE PCDWBA. THESE LINES WILL NOT BE APPLICABLE TO OTHER MODELS.
     # THIS THEREFORE WILL REQUIRE REFACTORING (e.g. SCATTERING MODEL FUNCTION VALIDATORS)
-        
+
     # Calculate the appropriate number of integration points
-    # ---- Compute threshold 
-    kL_max = np.nanmax(k*length_mean, axis=1) * (1+3.1 * length_sd_norm)
+    # ---- Compute threshold
+    kL_max = np.nanmax(k * length_mean, axis=1) * (1 + 3.1 * length_sd_norm)
     # ---- Adjust number of integration points based on `kL_max`, if needed
-    n_int = np.where(kL_max < n_integration, 
-                     n_integration, 
-                     np.ceil(kL_max * ni_wavelen/(2*np.pi))).astype(int)
-    
+    n_int = np.where(
+        kL_max < n_integration, n_integration, np.ceil(kL_max * ni_wavelen / (2 * np.pi))
+    ).astype(int)
+
     # Create shape to build position vector and other required arrays
-    taper, gamma_tilt, beta_tilt, r_pos, dr_pos = uniformly_bent_cylinder(n_int, 
-                                                                          radius_of_curvature_ratio, 
-                                                                          taper_order)
-    
-    # TS modeling 
+    taper, gamma_tilt, beta_tilt, r_pos, dr_pos = uniformly_bent_cylinder(
+        n_int, radius_of_curvature_ratio, taper_order
+    )
+
+    # TS modeling
     if model == "pcdwba":
-        f_bs = pcdwba(taper, gamma_tilt, beta_tilt, r_pos, dr_pos, length_radius_ratio, g, h, ka, 
-                      theta)
-        
-    # Return output 
+        f_bs = pcdwba(
+            taper, gamma_tilt, beta_tilt, r_pos, dr_pos, length_radius_ratio, g, h, ka, theta
+        )
+
+    # Return output
     return f_bs
-    
+
 
 def compute_Sv(
     number_density: float,

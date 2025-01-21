@@ -220,26 +220,29 @@ def valid_array_row_length(arr: np.ndarray[float]) -> int:
 
     return np.sum(~np.isnan(arr))
 
-def generate_frequency_interval(frequency: np.ndarray[float], 
-                                length_sd_norm: float, 
-                                frequency_interval: float) -> np.ndarray[float]:
+
+def generate_frequency_interval(
+    frequency: np.ndarray[float], length_sd_norm: float, frequency_interval: float
+) -> np.ndarray[float]:
     """
     Generate frequency interval 2D array centered on an array input of center frequencies.
     """
-    
+
     frequency_lst = [
-        np.arange(freq * (1-3.1*length_sd_norm), 
-                  freq * (1+3.1*length_sd_norm) + frequency_interval,
-                  frequency_interval)
+        np.arange(
+            freq * (1 - 3.1 * length_sd_norm),
+            freq * (1 + 3.1 * length_sd_norm) + frequency_interval,
+            frequency_interval,
+        )
         for freq in frequency
     ]
 
     # Find the maximum length of the generated arrays
     max_length = max(len(arr) for arr in frequency_lst)
-    
+
     # Create a padded 2D array with NaN for shorter arrays
     padded_results = np.full((len(frequency_lst), max_length), np.nan)
     for i, arr in enumerate(frequency_lst):
-        padded_results[i, :len(arr)] = arr
-    
+        padded_results[i, : len(arr)] = arr
+
     return padded_results
