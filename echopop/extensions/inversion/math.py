@@ -5,7 +5,6 @@ Mathematical and numerical utility functions.
 from typing import Any, Dict, Literal, Tuple, Union
 
 import numpy as np
-
 from scipy.special import spherical_jn, spherical_yn
 
 
@@ -57,6 +56,7 @@ def spherical_hn(n, z, derivative=False) -> np.ndarray:
     else:
         return _spherical_hn(n, z)
 
+
 def wavenumber(
     frequency: Union[np.ndarray, float],
     water_sound_speed: float,
@@ -64,18 +64,20 @@ def wavenumber(
     """
     Compute the acoustic wavenumber
     """
-    
-    return 2 * np.pi * frequency / water_sound_speed 
+
+    return 2 * np.pi * frequency / water_sound_speed
+
 
 def reflection_coefficient(
     g: Union[np.ndarray, float],
     h: Union[np.ndarray, float],
-) -> np.ndarray[float]: 
+) -> np.ndarray[float]:
     """
     Compute the reflection coefficient based on material properties
     """
 
-    return (1-g*h*h)/(g*h*h)-(g-1)/g
+    return (1 - g * h * h) / (g * h * h) - (g - 1) / g
+
 
 def length_average(
     length: np.ndarray[float],
@@ -94,10 +96,10 @@ def length_average(
     if len(form_function) == 1:
         # ---- If complex
         if np.all(np.iscomplex(form_function)):
-            return np.sqrt(form_function.real ** 2 + form_function.imag ** 2)  
+            return np.sqrt(form_function.real**2 + form_function.imag**2)
         # ---- If not complex
         else:
-            return form_function            
+            return form_function
 
     # Normalize the length values, if needed
     length_norm = length / length_mean
@@ -105,40 +107,49 @@ def length_average(
     length_sd_norm = length_deviation / length_mean
 
     # Weight based on distribution input
-    # ---- Gaussian (Normal)    
+    # ---- Gaussian (Normal)
     if distribution == "gaussian":
         # ---- Get the interval
         length_interval = np.diff(length_norm).mean()
         # ---- Compute the PDF
         PDF = (
-            length_interval * np.exp(-0.5*(length_norm-1)**2 / length_sd_norm ** 2) 
-            / (np.sqrt(2*np.pi)*length_sd_norm)
+            length_interval
+            * np.exp(-0.5 * (length_norm - 1) ** 2 / length_sd_norm**2)
+            / (np.sqrt(2 * np.pi) * length_sd_norm)
         )
     # ---- Uniform
     elif distribution == "uniform":
         # ---- Compute the PDF
-        PDF = np.ones(len(form_function))/len(form_function)
+        PDF = np.ones(len(form_function)) / len(form_function)
     else:
         raise ValueError("Invalid distribution type. Choose 'gaussian' or 'uniform'.")
 
     # Compute `sigma_bs` (orientation-averaged backscattering cross-section)
-    sigma_bs = form_function ** 2
+    sigma_bs = form_function**2
 
     # Length-weighted averaged sigma_bs
     # ---- Get valid values
     n_vals = np.apply_along_axis(valid_array_row_length, 1, arr=ka)
-    # ---- Compute the length-weighted ka 
+    # ---- Compute the length-weighted ka
     ka_weighted = length_norm * ka_center.reshape(-1, 1)
     # ---- Trim values so they fall within the valid/defined bandwidth
-    ka_weighted_trim = np.where((ka_weighted >= np.nanmin(ka)) & (ka_weighted <= np.nanmax(ka)), 
-                                ka_weighted, 
-                                np.nan)
-    # ---- Evluate
-    sigma_bs_L = np.array([(length_norm ** 2 * PDF 
-                  * np.interp(ka_weighted_trim[i], ka[i, :n_vals[i]], form_function[i] ** 2)).sum() 
-                  for i in range(len(form_function))])
+    ka_weighted_trim = np.where(
+        (ka_weighted >= np.nanmin(ka)) & (ka_weighted <= np.nanmax(ka)), ka_weighted, np.nan
+    )
+    # ---- Evaluate
+    sigma_bs_L = np.array(
+        [
+            (
+                length_norm**2
+                * PDF
+                * np.interp(ka_weighted_trim[i], ka[i, : n_vals[i]], form_function[i] ** 2)
+            ).sum()
+            for i in range(len(form_function))
+        ]
+    )
     # ---- Return the weighted average
     return sigma_bs_L
+
 
 def orientation_average(
     angle: np.ndarray[float],
@@ -155,10 +166,10 @@ def orientation_average(
     if len(form_function) == 1:
         # ---- If complex
         if np.all(np.iscomplex(form_function)):
-            return np.sqrt(form_function.real ** 2 + form_function.imag ** 2)  
+            return np.sqrt(form_function.real**2 + form_function.imag**2)
         # ---- If not complex
         else:
-            return form_function  
+            return form_function
 
     # Weight based on distribution input
     # ---- Gaussian (Normal)
@@ -167,21 +178,28 @@ def orientation_average(
         orientation_interval = np.diff(angle).mean()
         # ---- Compute the PDF
         PDF = (
-            orientation_interval * np.exp(-0.5*(angle-theta_mean)**2 / theta_sd ** 2) 
-            / (np.sqrt(2*np.pi)*theta_sd)
+            orientation_interval
+            * np.exp(-0.5 * (angle - theta_mean) ** 2 / theta_sd**2)
+            / (np.sqrt(2 * np.pi) * theta_sd)
         )
     # ---- Uniform
     elif distribution == "uniform":
         # ---- Compute the PDF
-        PDF = np.ones(len(form_function))/len(form_function)
+        PDF = np.ones(len(form_function)) / len(form_function)
     else:
         raise ValueError("Invalid distribution type. Choose 'gaussian' or 'uniform'.")
 
     # Return the weighted form function
     # ---- If complex
-    return [np.sqrt(np.matmul((f[0].real ** 2 + f[0].imag ** 2), PDF)) 
-            if np.all(np.iscomplex(f)) else np.sqrt(np.matmul(f, PDF)) 
-            for f in form_function]
+    return [
+        (
+            np.sqrt(np.matmul((f[0].real ** 2 + f[0].imag ** 2), PDF))
+            if np.all(np.iscomplex(f))
+            else np.sqrt(np.matmul(f, PDF))
+        )
+        for f in form_function
+    ]
+
 
 def fit_rayleigh_pdf(
     measured: np.ndarray[float],
@@ -202,5 +220,5 @@ def valid_array_row_length(arr: np.ndarray[float]) -> int:
     """
     Returns the number of valid (i.e. not NaN) length of each row within an array
     """
-    
+
     return np.sum(~np.isnan(arr))

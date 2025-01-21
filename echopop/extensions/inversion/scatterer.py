@@ -5,13 +5,10 @@ Scatterer class used for parameterizing and computing acoustic scattering models
 from typing import Any, Dict, Literal, Union
 
 import numpy as np
-from .math import length_average, orientation_average
-
 import pandas as pd
 
+from .math import length_average, orientation_average, valid_array_row_length
 from .scattering_models import pcdwba
-from .math import valid_array_row_length
-
 
 # class Scatterer:
 
@@ -66,6 +63,7 @@ from .math import valid_array_row_length
 # UTILITY FUNCTIONS
 ####################################################################################################
 
+
 def compute_Sv(
     number_density: float,
     theta_values: np.ndarray[float],
@@ -77,24 +75,18 @@ def compute_Sv(
     form_function: np.ndarray[complex],
     ka: np.ndarray[float],
     ka_center: np.ndarray[float],
-) -> Dict[str, Any]: 
+) -> Dict[str, Any]:
     """
     Predict the volumetric backscattering strength from theoretical scattering estimates
     """
 
     # Orientation-averaged linear scattering coefficient
-    f_bs_orientation = orientation_average(theta_values, 
-                                           form_function, 
-                                           theta_mean,
-                                           theta_sd)
+    f_bs_orientation = orientation_average(theta_values, form_function, theta_mean, theta_sd)
 
     # Length-averaged sigma_bs (normalized to length)
-    sigma_bs_length = length_average(length_values, 
-                                     ka, 
-                                     ka_center, 
-                                     f_bs_orientation,
-                                     length_mean, 
-                                     length_deviation)
+    sigma_bs_length = length_average(
+        length_values, ka, ka_center, f_bs_orientation, length_mean, length_deviation
+    )
     # ---- Convert to sigma_bs (linear backscattering cross-section)
     sigma_bs = sigma_bs_length * (length_mean) ** 2
 
@@ -102,7 +94,8 @@ def compute_Sv(
     Sv_prediction = 10 * np.log10(number_density * sigma_bs)
 
     # Return predicted Sv
-    return Sv_prediction    
+    return Sv_prediction
+
 
 def uniformly_bent_cylinder(
     n_segments: Union[int, np.ndarray[int]],
@@ -140,13 +133,13 @@ def uniformly_bent_cylinder(
         z = np.linspace(-1.0, 1.0, n_segments)
 
     # Compute the taper vector
-    taper = np.sqrt(1-z**taper_order)
+    taper = np.sqrt(1 - z**taper_order)
 
     # Bend the cylinder
     # ---- z-axis
     z_curved = np.sin(gamma) * z
     # ---- Dorsoventral axis (x-axis)
-    x_curved = 1 - np.sqrt(1-z_curved**2)
+    x_curved = 1 - np.sqrt(1 - z_curved**2)
 
     # Normalize the curvature
     # ---- z-axis
@@ -157,13 +150,13 @@ def uniformly_bent_cylinder(
     # Calculate the slope between curved segments
     gamma_tilt = np.arctan2(z_norm, x_norm)
 
-    # Caluculate the orientation angles between curved segments 
+    # Calculate the orientation angles between curved segments
     # ---- z-axis differences
     dz = np.diff(z_norm)
     # ---- x-axis differences
     dx = np.diff(x_norm) + np.finfo(float).eps
     # ---- alpha tilt angles
-    alpha_tilt = np.arctan(dz/dx)
+    alpha_tilt = np.arctan(dz / dx)
     # ---- Get the valid number of values per row
     n_valid = np.apply_along_axis(valid_array_row_length, 1, arr=alpha_tilt)
     # ---- Preallocate array
@@ -172,28 +165,32 @@ def uniformly_bent_cylinder(
     if alpha_tilt.ndim > 1:
         for i in range(alpha_tilt.shape[0]):
             if n_valid[i] == max_n - 1:
-                new_column = np.append(new_column, np.arctan(dz[i, -1]/dx[i, -1]))
+                new_column = np.append(new_column, np.arctan(dz[i, -1] / dx[i, -1]))
             else:
                 new_column = np.append(new_column, np.nan)
-                alpha_tilt[i, n_valid[i]] = np.arctan(dz[i, n_valid[i] - 1]/dx[i, n_valid[i] - 1])
-        # ---- Now concatentate the missing column
+                alpha_tilt[i, n_valid[i]] = np.arctan(dz[i, n_valid[i] - 1] / dx[i, n_valid[i] - 1])
+        # ---- Now concatenate the missing column
         alpha_tilt = np.concatenate([alpha_tilt, new_column.reshape(-1, 1)], axis=1)
     else:
-        alpha_tilt = np.append(alpha_tilt, np.arctan(dz[-1]/dx[-1]))
+        alpha_tilt = np.append(alpha_tilt, np.arctan(dz[-1] / dx[-1]))
     # ---- beta tilt angles
-    beta_tilt = np.where(alpha_tilt >= 0.0, alpha_tilt - np.pi/2, alpha_tilt + np.pi/2)
+    beta_tilt = np.where(alpha_tilt >= 0.0, alpha_tilt - np.pi / 2, alpha_tilt + np.pi / 2)
 
     # Compute the along-axis Euclidean distances to construct the position vector
     # ---- Position vector
     r_pos = np.sqrt(x_norm**2 + z_norm**2)
     # ---- Generate values that are appended to the first valid column
     if r_pos.ndim > 1:
-        dr_pos = np.concatenate([np.sqrt(dx[:, 0]*dx[:, 0] + dz[:, 0]*dz[:, 0]).reshape(-1, 1), 
-                                 np.sqrt(dx*dx + dz*dz)], 
-                                axis=1)
+        dr_pos = np.concatenate(
+            [
+                np.sqrt(dx[:, 0] * dx[:, 0] + dz[:, 0] * dz[:, 0]).reshape(-1, 1),
+                np.sqrt(dx * dx + dz * dz),
+            ],
+            axis=1,
+        )
     else:
         # ---- Compute the derivative of the position vector derivative
-        dr_pos = np.append(np.sqrt(dx[0]*dx[0] + dz[0]*dz[0]), np.sqrt(dx*dx + dz*dz))
-    
+        dr_pos = np.append(np.sqrt(dx[0] * dx[0] + dz[0] * dz[0]), np.sqrt(dx * dx + dz * dz))
+
     # Return the relevant parameters
     return taper, gamma_tilt, beta_tilt, r_pos, dr_pos
