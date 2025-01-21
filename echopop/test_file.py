@@ -210,8 +210,6 @@ kLmax = np.nanmax(k*length_mean, axis=1)*(1+3.1*length_sd_norm)
 # Calculate the number of integration points
 n_int = np.where(kLmax < n_integration, n_integration, np.ceil(kLmax*ni_wavelen/(2*np.pi))).astype(int)
 
-n_int = np.array([50, 30, 40])
-
 ####################################################################################################
 # Build position vector
 taper, gamma_tilt, beta_tilt, r_pos, dr_pos = uniformly_bent_cylinder(n_int, rho_L, taper_order)
@@ -224,49 +222,8 @@ length_values = np.linspace(length_mean - 3*(L_std*length_mean), length_mean + 3
 ####################################################################################################
 # PCDWBA
 # ------
-length_radius_ratio = L_a
-theta = theta_radians
 fbs = pcdwba(taper, gamma_tilt, beta_tilt, r_pos, dr_pos, length_mean, L_a, g, h, ka, theta_radians)
 ####################################################################################################
 # Compute S_V
 Sv_prediction = compute_Sv(number_density, theta_values, theta_mean, theta_sd, length_values, 
                            length_mean, length_deviation, fbs, ka, ka_center)
-
-np.arctan(dz/dx).shape
-np.concatenate([np.arctan(dz/dx), np.arctan(dz[-1]/dx[-1])], axis=1)
-A = np.arctan(dz/dx)
-
-dx[:, 0]
-np.concatenate([np.sqrt(dx[:, 0]*dx[:, 0] + dz[:, 0]*dz[:, 0]).reshape(-1, 1), np.sqrt(dx*dx + dz*dz)], axis=1)
-
-np.concatenate([A, np.ones((A.shape[0],1),dtype=A.dtype)], axis=1)
-
-[ka[i, :n_k[i]].reshape(-1, 1) * taper[i] / h for i in range(len(n_k))]
-
-ka[0, :n_k[0]].reshape(-1, 1) * taper[0] / h
-
-(ka[0].reshape(-1, 1) * taper[0] / h).reshape
-beta_tilt.shape
-gamma_tilt.shape
-(gamma_tilt.reshape(-1, 1) - theta).shape
-def process_and_multiply(ka, taper):
-    # Initialize an empty 3D array to store the results
-    result = np.full((ka.shape[0], taper.shape[1], taper.shape[1]), np.nan)
-    
-    # Iterate over each row in ka to copy valid values into result
-    for i, row in enumerate(ka):
-        valid_values = row[~np.isnan(row)]  # Extract valid (non-NaN) values
-        
-        # Fill the result with valid values, padded to match taper's shape
-        result[i, :len(valid_values), :len(valid_values)] = valid_values[:, np.newaxis]  # Reshape to 2D
-        
-    # Multiply result with taper across all valid elements
-    result *= taper[:, np.newaxis]
-    
-    return result
-
-# Example usage with ka and taper of different shapes
-process_and_multiply(ka, taper)
-np.concatenate([alpha_tilt, new_column.reshape(-1, 1)], axis=1)
-np.ndindex(ka.shape)
-ka.reshape(-1, 1).squeeze() * taper.reshape(1, -1).squeeze()
