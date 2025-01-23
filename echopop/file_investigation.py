@@ -131,6 +131,97 @@ from echopop.utils.validate_dict import *
 from echopop.utils.validate_df import *
 
 
+###############################
+from pandera import dataframe_parser, dataframe_check, DataFrameModel
+
+class AcousticData(BaseDataFrame):
+    
+    distance_s: Series[float] = Field(
+        ge=0.0, 
+        nullable=False, 
+        coerce=True,
+    )  
+    bottom_depth: Optional[Series[float]] = Field(nullable=False, coerce=True)
+    
+    @dataframe_parser
+    def self_validate(cls, df):
+        if "distance_s" not in df.columns:
+            # ---- Define intersecting column name sets
+            overlap = set(["dist_s", "vl_s", "vl_start", "vessel_log_start"]).intersection(df.columns)
+            # ---- Check for duplicates
+            if len(overlap) > 1:
+                
+                return pd.DataFrame({
+                    "Column": ["distance_s"],
+                    "error": [
+                        KeyError(
+                            f"Multiple overlapping column names associated with the expected column " 
+                            f"`distance_s` were found: {overlap}. Please either rename or remove overlapping "
+                            f"columns to avoid ambiguity."
+                        )                        
+                    ]
+                })
+                # raise KeyError(
+                #     f"Multiple overlapping column names associated with the expected column " 
+                #     f"`distance_s` were found: {overlap}. Please either rename or remove overlapping "
+                #     f"columns to avoid ambiguity."
+                # )
+                                        
+            df.columns = df.columns.str.replace(
+                r"(?:vl_start|vl_s|dist_s)", 
+                "distance_s", 
+                regex=True, 
+            )
+        
+        return df     
+    
+    @dataframe_parser
+    def mutate_distance_column_types(cls, df):
+        
+        if "distance_s" in df.columns:
+            df["distance_s"] = df["distance_s"].astype(float)
+            
+        return df
+
+AcousticData.__dict__
+
+data = pd.DataFrame({"vl_start": [1, 2, 3], "bottom_depth": [1, 2, 3], "dist_s": [1,2,3]})
+ee.append([])
+
+# raise AcousticData.self_validate(data)["error"][0]
+errors = []
+try:
+    _ = cls.validate(df, lazy=True)
+except SchemaErrors as e:
+    e.__traceback__ = None
+    errors.append(e)
+    
+    
+coercion_failures = pd.concat([coercion_failures, AcousticData.self_validate(data)], ignore_index=True)
+
+extract_errors([], coercion_failures)
+
+cls = AcousticData
+
+
+
+AcousticData.validate_df(
+    pd.DataFrame(
+        {
+            "bottom_depth": [1, 2, 3, 4],
+            "longitude": [1, 2, 3, 4],
+            "latitude": [1, 2, 3, 4],
+            "vessel_log_end": [1, 2, 3, 4],
+            "transect_spacing": 10,
+            "nasc": 0,
+            "transect_num": 1,
+            "haul_num": 1,
+            "dist_e": 2
+        }
+    )
+)
+
+
 # LOAD =============================================================================================
 self = survey
 new_datasets = ["biological", "kriging", "stratification"]
