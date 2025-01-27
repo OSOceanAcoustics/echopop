@@ -115,7 +115,7 @@ class BaseDataFrame(DataFrameModel):
     def _inverse_missing_columns(cls, err: SchemaError) -> str:
         """Extract missing regex column names not found in DataFrame"""
         return (
-            f"    - '{err.schema.metadata["annotation"]}': "
+            f"    - '{err.schema.metadata['annotation']}': "
             + f" No valid column name found matching the accepted regex pattern [{err.schema.name}]"
         )
 
@@ -157,7 +157,7 @@ class BaseDataFrame(DataFrameModel):
     @classmethod
     def _type_error(cls, err: SchemaError) -> str:
         """Extract column names with a TypeError that has been raised"""
-        return f"    - '{err.schema.name}': {err.failure_cases["failure_case"][0]}."
+        return f"    - '{err.schema.name}': {err.failure_cases['failure_case'][0]}."
 
     @classmethod
     def _callable(cls, err: SchemaError, df: pd.DataFrame) -> str:
