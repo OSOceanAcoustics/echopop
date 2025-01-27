@@ -691,11 +691,11 @@ class AcousticData(BaseDataFrame):
         error=lambda df: (
             f"'distance_s': Multiple overlapping column names associated with the expected column "
             f"`distance_s` were found: "
-            f"{
+            f"""{
                 list(set(
                     ['dist_s', 'distance_s', 'vl_s', 'vl_start', 'vessel_log_start']
                 ).intersection(df.columns))
-            }. "
+            }. """
             f"Please either rename or remove overlapping columns to avoid ambiguity"
         ),
         description="distance_s",
@@ -705,16 +705,16 @@ class AcousticData(BaseDataFrame):
         overlap = list(set(distance_aliases).intersection(df.columns))
 
         return len(overlap) == 1
-
+    
     @dataframe_check(
         error=lambda df: (
             f"'distance_e': Multiple overlapping column names associated with the expected column "
             f"`distance_e` were found: "
-            f"{
+            f"""{
                 list(set(
                     ['dist_s', 'distance_s', 'vl_s', 'vl_start', 'vessel_log_start']
                 ).intersection(df.columns))
-            }. "
+            }. """
             f"Please either rename or remove overlapping columns to avoid ambiguity"
         ),
         description="distance_e",
@@ -979,11 +979,11 @@ class EchoviewIntervals(BaseDataFrame):
         error=lambda df: (
             f"'distance_s': Multiple overlapping column names associated with the expected column "
             f"`distance_s` were found: "
-            f"{
+            f"""{
                 list(set(
                     ['dist_s', 'distance_s', 'vl_s', 'vl_start', 'vessel_log_start']
                 ).intersection(df.columns))
-            }. "
+            }. """
             f"Please either rename or remove overlapping columns to avoid ambiguity"
         ),
         description="distance_s",
@@ -998,11 +998,11 @@ class EchoviewIntervals(BaseDataFrame):
         error=lambda df: (
             f"'distance_e': Multiple overlapping column names associated with the expected column "
             f"`distance_e` were found: "
-            f"{
+            f"""{
                 list(set(['dist_e', 'distance_e', 'vl_e', 'vl_end', 'vessel_log_end']).intersection(
                     df.columns
                 ))
-            }. "
+            }. """
             f"Please either rename or remove overlapping columns to avoid ambiguity"
         ),
         description="distance_e",
