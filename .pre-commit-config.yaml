@@ -33,7 +33,7 @@ repos:
       - id: flake8
 
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.3.0
+    rev: v2.4.0
     hooks:
       - id: codespell
         args: ["--skip=*.ipynb", "--ignore-words=.codespell-ignore-words.txt", "-w", "docs/source", "echopype", "echopop"]
