@@ -190,7 +190,9 @@ class BaseDataFrame(DataFrameModel):
         # Format the error codes
         if error_codes:
             # ---- Stack
-            error_codes_msg = "\n" + f"{'\n'.join(error_codes)}"
+            error_codes_stk = "\n".join(error_codes)
+            # ---- Format message
+            error_codes_msg = "\n" + f"{error_codes_stk}"
         else:
             error_codes_msg = ""
 
