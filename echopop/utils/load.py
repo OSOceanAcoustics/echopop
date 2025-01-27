@@ -265,7 +265,7 @@ def read_validated_data(
 
         # Slice only the columns that are relevant to the echopop module functionality
         # df_filtered = df_initial.filter(validation_settings)
-        df = validation_settings.validate_df(df_initial)
+        df = validation_settings.validate_df(df_initial, file_name)
     else:
         # Read Excel file into memory -- this only reads in the required columns
         df = pd.read_excel(file_name, sheet_name=sheet_name)
@@ -304,19 +304,18 @@ def read_validated_data(
             if config_map[0] == "kriging" and config_map[1] == "vario_krig_para":
                 df_list = [input_dict[sub_attribute]["kriging"][config_map[1] + "_df"], df]
                 input_dict[sub_attribute]["kriging"][config_map[1] + "_df"] = pd.concat(
-                    df_list,
-                    ignore_index=True
+                    df_list, ignore_index=True
                 ).tail(1)
             elif config_map[0] == "kriging":
                 df_list = [input_dict[sub_attribute]["kriging"][config_map[1] + "_df"], df]
                 input_dict[sub_attribute]["kriging"][config_map[1] + "_df"] = pd.concat(
-                    df_list,
-                    ignore_index=True
+                    df_list, ignore_index=True
                 )
             else:
                 df_list = [input_dict[sub_attribute][config_map[1] + "_df"], df]
-                input_dict[sub_attribute][config_map[1] + "_df"] = pd.concat(df_list, 
-                                                                             ignore_index=True)
+                input_dict[sub_attribute][config_map[1] + "_df"] = pd.concat(
+                    df_list, ignore_index=True
+                )
     elif sub_attribute == "acoustics":
 
         # Toggle through including and excluding age-1
@@ -568,7 +567,7 @@ def preprocess_spatial(input_dict: dict) -> None:
     )
     # -------- Add categorical intervals
     input_dict["spatial"]["inpfc_geo_strata_df"]["latitude_interval"] = pd.cut(
-        input_dict["spatial"]["inpfc_geo_strata_df"]["northlimit_latitude"], 
+        input_dict["spatial"]["inpfc_geo_strata_df"]["northlimit_latitude"],
         latitude_bins_inpfc,
     )
     # ---- KS
@@ -577,7 +576,7 @@ def preprocess_spatial(input_dict: dict) -> None:
     )
     # -------- Add categorical intervals
     input_dict["spatial"]["geo_strata_df"]["latitude_interval"] = pd.cut(
-        input_dict["spatial"]["geo_strata_df"]["northlimit_latitude"], 
+        input_dict["spatial"]["geo_strata_df"]["northlimit_latitude"],
         latitude_bins_ks,
     )
 
@@ -595,9 +594,7 @@ def preprocess_acoustic_spatial(input_dict: dict) -> None:
     # Bin data
     # ---- Create latitude intervals to bin the strata
     latitude_bins = np.concatenate(
-        [[-90], 
-         input_dict["spatial"]["inpfc_geo_strata_df"]["northlimit_latitude"].unique(), 
-         [90]]
+        [[-90], input_dict["spatial"]["inpfc_geo_strata_df"]["northlimit_latitude"].unique(), [90]]
     )
     # ---- Bin NASC transects into appropriate INPFC strata
     input_dict["acoustics"]["nasc_df"]["stratum_inpfc"] = (
@@ -649,7 +646,6 @@ def preprocess_biology_spatial(input_dict: dict) -> None:
 
     # Get the INPFC strata (indexed by haul)
     inpfc_strata_df = input_dict["spatial"]["inpfc_strata_df"].copy().set_index(["haul_num"])
-
 
     # Loop through the KS-strata to map the correct strata values
     for keys, values in input_dict["biology"].items():

@@ -3,10 +3,10 @@ import os
 import re
 from pathlib import Path
 from typing import Any, Dict, List, Tuple, Union
-from pandera.api.base.model import MetaModel
 
 import numpy as np
 import pandas as pd
+from pandera.api.base.model import MetaModel
 
 from ..core import ECHOVIEW_TO_ECHOPOP_NAMES, NAME_CONFIG, REGION_EXPORT_MAP
 from ..spatial.transect import export_transect_layers, export_transect_spacing
@@ -110,6 +110,7 @@ def read_echoview_export(filename: str, transect_number: int, validator: MetaMod
     # Return dataframe
     return export_valid
 
+
 def get_transect_numbers(export_files: list, transect_pattern: str, file_directory: str):
     """
     Extract transect numbers from export file strings.
@@ -161,15 +162,13 @@ def consolidate_exports(transect_reference: dict, default_transect_spacing: floa
     """
 
     # Helper generator function for producing a single dataframe from entire file directory
-    def generate_dataframes(files, 
-                            validator,
-                            transect_reference=transect_reference):
+    def generate_dataframes(files, validator, transect_reference=transect_reference):
         # ---- Iterate through directory
         for filename in files:
             # ---- Get transect number
             transect_num = transect_reference.get(filename, None)
             # ---- Read in file and impute, if necessary plus validate columns and dtypes
-            yield read_echoview_export(filename, transect_num,validator)
+            yield read_echoview_export(filename, transect_num, validator)
 
     # Read in and concatenate all dataframes
     # ---- Intervals
@@ -179,8 +178,7 @@ def consolidate_exports(transect_reference: dict, default_transect_spacing: floa
     validator = ECHOVIEW_DF_MODEL["intervals"]
     # -------- Read in files
     intervals_df = pd.concat(
-        generate_dataframes(interval_files, validator), 
-        axis=0, ignore_index=True
+        generate_dataframes(interval_files, validator), axis=0, ignore_index=True
     )
     # ---- Cells
     # -------- Cells files
@@ -188,20 +186,14 @@ def consolidate_exports(transect_reference: dict, default_transect_spacing: floa
     # -------- Get validator
     validator = ECHOVIEW_DF_MODEL["cells"]
     # -------- Read in files
-    cells_df = pd.concat(
-        generate_dataframes(cells_files, validator), 
-        axis=0, ignore_index=True
-    )
+    cells_df = pd.concat(generate_dataframes(cells_files, validator), axis=0, ignore_index=True)
     # ---- Layer
     # -------- Layer files
     layer_files = [file for file in transect_reference.keys() if "(layers)" in file]
     # -------- Get validator
     validator = ECHOVIEW_DF_MODEL["layers"]
     # -------- Read in files
-    layers_df = pd.concat(
-        generate_dataframes(layer_files, validator), 
-        axis=0, ignore_index=True
-    )
+    layers_df = pd.concat(generate_dataframes(layer_files, validator), axis=0, ignore_index=True)
 
     # Consolidate all three datasets
     # ---- Adjust the strings to avoid odd formatting
@@ -320,17 +312,17 @@ def load_export_regions(region_files: dict, region_names: dict, root_directory: 
     )
 
 
-def get_haul_strata_key(configuration_dict: Dict[str, Any],
-                        root_dir: str,
-                        transect_region_key: pd.DataFrame) -> pd.Series:
+def get_haul_strata_key(
+    configuration_dict: Dict[str, Any], root_dir: str, transect_region_key: pd.DataFrame
+) -> pd.Series:
     """
     Get the INPFC stratum and haul mapping
-    
+
     """
 
     # Create copy
     transect_regions = transect_region_key.copy()
-    
+
     # Flatten the configuration settings
     flat_table = pd.json_normalize(configuration_dict)
 
@@ -353,7 +345,7 @@ def get_haul_strata_key(configuration_dict: Dict[str, Any],
         raise FileExistsError(
             f"The INPFC latitude-based stratification file '{inpfc_strata_path.as_posix()}' does "
             "not exist!"
-            )
+        )
 
     # Read in data
     strata_key = pd.read_excel(inpfc_strata_path, sheet_name=sheetname)
@@ -386,9 +378,9 @@ def get_haul_strata_key(configuration_dict: Dict[str, Any],
         trans_regions_copy.loc[region_strata, "country"] = region
 
     # Return the country column Series
-    return trans_regions_copy.reset_index().set_index([
-        "haul_num", "transect_num", "region_id", "region_name", "region_class"
-    ])["country"]
+    return trans_regions_copy.reset_index().set_index(
+        ["haul_num", "transect_num", "region_id", "region_name", "region_class"]
+    )["country"]
 
 
 def filter_export_regions(
@@ -445,7 +437,7 @@ def ingest_echoview_exports(
     index_variable: Union[str, List[str]],
     read_transect_region_file: bool,
     region_class_column: str,
-    unique_region_id: str,    
+    unique_region_id: str,
     verbose: bool,
     write_transect_region_file: bool,
 ):
@@ -477,8 +469,8 @@ def ingest_echoview_exports(
     pd.DataFrame:
         A `pandas.DataFrame` that includes the following columns:
         - `transect_num` (int): Transect number.
-        - `vessel_log_start` (float): The starting vessel log distance for each transect interval.
-        - `vessel_log_end` (float): The ending vessel log distance for each transect interval.
+        - `distance_s` (float): The starting interval distance for each transect interval.
+        - `distance_e` (float): The ending interval distance for each transect interval.
         - `latitude` (float): Latitude (degrees).
         - `longitude` (float): Longitude (degrees).
         - `transect_spacing` (float): Distance between transects (nmi).
@@ -520,23 +512,23 @@ def ingest_echoview_exports(
         region_names = export_settings["regions"]
         # ---- Root directory
         root_dir = configuration_dict["data_root_dir"]
-        # ---- Read in the file        
+        # ---- Read in the file
         transect_region_key = load_export_regions(region_files, region_names, root_dir)
         # ---- Get the country-code information, if parameterized
         if "inpfc_strata_region" in configuration_dict["transect_region_mapping"]:
             # ---- Assign country
-            country_codes = get_haul_strata_key(configuration_dict,
-                                                root_dir,
-                                                transect_region_key)     
-            # ---- Set index 
-            transect_region_key.set_index(["haul_num", "transect_num", "region_id", "region_name", 
-                                           "region_class"], inplace=True)  
+            country_codes = get_haul_strata_key(configuration_dict, root_dir, transect_region_key)
+            # ---- Set index
+            transect_region_key.set_index(
+                ["haul_num", "transect_num", "region_id", "region_name", "region_class"],
+                inplace=True,
+            )
             # ---- Assign
             transect_region_key["country"] = country_codes
             # ---- Reset index
             transect_region_key.reset_index(inplace=True)
     # ---- Construct the transect-region-key
-    else:        
+    else:
         transect_region_key = construct_transect_region_key(transect_data, configuration_dict)
 
     # Write the file, if configured
@@ -544,10 +536,7 @@ def ingest_echoview_exports(
         # ---- Root directory
         root_dir = configuration_dict["data_root_dir"]
         # --- Write the files
-        write_transect_region_key(configuration_dict,
-                                  root_dir,
-                                  transect_region_key,
-                                  verbose)        
+        write_transect_region_key(configuration_dict, root_dir, transect_region_key, verbose)
 
     # Get region info
     # ---- Region names
@@ -571,7 +560,8 @@ def ingest_echoview_exports(
         # ---- Vertically sum backscatter
         nasc_intervals = (
             transect_regions.groupby(list(index_variable + [unique_region_id]))["nasc"]
-            .sum().reset_index()
+            .sum()
+            .reset_index()
         )
         # ---- Partition specific grouped regions
         grouped_region = transect_region_key[transect_region_key["group"] == key]
@@ -589,7 +579,7 @@ def ingest_echoview_exports(
         full_interval_strata_df = interval_copy.merge(transect_layer_summary, how="left")
         # ---- Sort
         full_interval_strata_df = full_interval_strata_df.sort_values(
-            ["transect_num", "vessel_log_start", "vessel_log_end"]
+            ["transect_num", "distance_s", "distance_e"]
         )
         # ---- Fill NaN region id column with 999
         full_interval_strata_df[unique_region_id] = (
@@ -739,23 +729,24 @@ def construct_transect_region_key(transect_data: pd.DataFrame, configuration_dic
     return pd.concat(full_transect_region_map).sort_values(["haul_num"])
 
 
-def write_transect_region_key(configuration_dict: Dict[str, Any],
-                              root_dir: str,
-                              transect_region_key: pd.DataFrame,
-                              verbose: bool) -> None:
+def write_transect_region_key(
+    configuration_dict: Dict[str, Any],
+    root_dir: str,
+    transect_region_key: pd.DataFrame,
+    verbose: bool,
+) -> None:
 
     # Get the configuration information
     meta = configuration_dict["transect_region_mapping"]
 
     # Get the file template
-    file_template = meta["save_file_template"]   
+    file_template = meta["save_file_template"]
     # ---- Parse unique regions
     unique_country = transect_region_key["country"].dropna().unique()
     # ---- REGION replacement
     file_template = file_template.replace("{COUNTRY}", "_".join(unique_country.tolist()))
     # ---- YEAR replacement
-    file_template = file_template.replace("{YEAR}",
-                                          str(configuration_dict["survey_year"]))
+    file_template = file_template.replace("{YEAR}", str(configuration_dict["survey_year"]))
 
     # Get the sheetname
     sheetname = meta["save_file_sheetname"]
@@ -767,12 +758,10 @@ def write_transect_region_key(configuration_dict: Dict[str, Any],
     for group, ids in configuration_dict["nasc_exports"]["regions"].items():
         # --- GROUP replacement
         file_template_group = file_template.replace("{GROUP}", group)
-        # --- Convert to lowercase 
+        # --- Convert to lowercase
         ids_proc = [i.lower() for i in ids]
         # ---- Filter out any erroneous groups
-        transect_filtered = transect_region_key.loc[
-            transect_region_key.region_class.isin(ids_proc)
-        ]
+        transect_filtered = transect_region_key.loc[transect_region_key.region_class.isin(ids_proc)]
         # ---- Assign group
         transect_filtered.loc[:, "group"] = group
         # ---- Format the path
@@ -785,7 +774,7 @@ def write_transect_region_key(configuration_dict: Dict[str, Any],
                 f"Updated export region, transect, and haul key map for '{group}' saved at "
                 f"'{file_path.as_posix()}'."
             )
-            
+
 
 def validate_export_directories(configuration_dict: dict) -> Tuple[str, str, list]:
 

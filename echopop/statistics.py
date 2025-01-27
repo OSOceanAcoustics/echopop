@@ -54,15 +54,14 @@ def stratified_transect_statistic(
     strata_copy = strata_summary.copy()
 
     # Get indexed transect distance
-    transect_distances = summary_copy.set_index([stratum_col, 
-                                                 "transect_num"])["transect_distance"]
+    transect_distances = summary_copy.set_index([stratum_col, "transect_num"])["transect_distance"]
     # ---- Drop any transects where distance is 0.0 (i.e. from a single mesh node)
     if np.any(transect_distances == 0.0):
         # ---- Pick out transects where distance = 0.0 nmi
         zero_distances = transect_distances[transect_distances == 0.0]
         # ---- Update `transect_distances`
         transect_distances = transect_distances[transect_distances > 0.0]
-        # ---- Set identical index 
+        # ---- Set identical index
         transect_copy.set_index([stratum_col, "transect_num"], inplace=True)
         # ---- Update `transect_data`
         transect_copy.drop(zero_distances.index, inplace=True)
@@ -73,7 +72,9 @@ def stratified_transect_statistic(
         # ---- Get the 'poor' transect strata
         zero_distances_strata = (
             summary_copy.loc[zero_distances.index]
-            .reset_index().groupby([stratum_col], observed=False).size()
+            .reset_index()
+            .groupby([stratum_col], observed=False)
+            .size()
         )
         # ---- Update `transect_summary`
         summary_copy.drop(zero_distances.index, inplace=True)
@@ -81,7 +82,7 @@ def stratified_transect_statistic(
         summary_copy.reset_index(inplace=True)
         # ---- Update `strata_summary`
         # -------- Set index
-        strata_copy.set_index([stratum_col], inplace=True) 
+        strata_copy.set_index([stratum_col], inplace=True)
         # -------- Subtract the 'poor' transects from the total transect counts
         strata_copy["transect_count"] = strata_copy["transect_count"] - zero_distances_strata
         # -------- Reset index
@@ -117,15 +118,17 @@ def stratified_transect_statistic(
     sample_dof = num_transects_to_sample * (num_transects_to_sample - sample_offset)
 
     # Transect areas
-    transect_areas = summary_copy.groupby([stratum_col, "transect_num"], 
-                                          observed=False)["transect_area"].sum()
+    transect_areas = summary_copy.groupby([stratum_col, "transect_num"], observed=False)[
+        "transect_area"
+    ].sum()
 
     # Get indexed total transect area
     total_transect_area = strata_copy.set_index(stratum_col)["transect_area_total"]
 
     # Get indexed biological value
-    biological_values = transect_copy.groupby([stratum_col, "transect_num"],
-                                              observed=False)[var_name].sum()
+    biological_values = transect_copy.groupby([stratum_col, "transect_num"], observed=False)[
+        var_name
+    ].sum()
 
     # Get indexed transect numbers
     transect_numbers = summary_copy.set_index(stratum_col)["transect_num"]
@@ -134,8 +137,7 @@ def stratified_transect_statistic(
     # ---- Set temporary index
     summary_copy.set_index([stratum_col, "transect_num"], inplace=True)
     # ---- Compute summed/mean density
-    summary_copy["density"] = transect_copy.groupby([stratum_col, "transect_num"],
-                                                    observed=False)[
+    summary_copy["density"] = transect_copy.groupby([stratum_col, "transect_num"], observed=False)[
         settings_dict["variable"]
     ].sum()
 
@@ -156,16 +158,14 @@ def stratified_transect_statistic(
 
         # Create an index array/matrix containing resampled (without replacement) transect numbers
         if num_transects_to_sample.loc[j] == 1:
-            # ---- Repeat 
+            # ---- Repeat
             transects = np.array([transect_numbers.loc[j]])
         else:
             transects = transect_numbers[j].values
         # ---- Resample the transect numbers/indices
         transect_numbers_arr = np.array(
             [
-                np.random.choice(
-                    transects, num_transects_to_sample[j], replace=False
-                )
+                np.random.choice(transects, num_transects_to_sample[j], replace=False)
                 for i in range(transect_replicates)
             ]
         )
@@ -217,7 +217,7 @@ def stratified_transect_statistic(
     area_array = total_transect_area.to_numpy()
     # ---- Sum the total area
     total_area = area_array.sum()
-    
+
     # Reset index for `transect_summary`
     summary_copy.reset_index(inplace=True)
 
@@ -226,8 +226,9 @@ def stratified_transect_statistic(
     # ---- Mean density
     if settings_dict["variable"] == "nasc":
         # ---- Compute sum per transect line first
-        line_density = transect_copy.groupby([stratum_col, 
-                                              "transect_num"])[var_name].sum().to_frame()
+        line_density = (
+            transect_copy.groupby([stratum_col, "transect_num"])[var_name].sum().to_frame()
+        )
         # ---- Create copy of `transect_summary` and set index
         line_length = summary_copy.copy().set_index([stratum_col, "transect_num"])
         # ---- Add stratum

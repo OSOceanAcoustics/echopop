@@ -33,12 +33,11 @@ def correct_transect_intervals(transect_data: pd.DataFrame, interval_threshold: 
 
     # Calculate the along-transect interval distance
     # ---- Entire dataframe
-    transect_data_copy["interval"] = transect_data_copy["vessel_log_start"].diff(periods=-1).abs()
+    transect_data_copy["interval"] = transect_data_copy["distance_s"].diff(periods=-1).abs()
     # ---- Replace the trailing NaN
     transect_data_copy["interval"] = transect_data_copy["interval"].replace(
         np.nan,
-        transect_data_copy["vessel_log_end"].iloc[-1]
-        - transect_data_copy["vessel_log_start"].iloc[-1],
+        transect_data_copy["distance_e"].iloc[-1] - transect_data_copy["distance_s"].iloc[-1],
     )
 
     # Replace (likely) erroneous interval lengths associated at the ends of each transect
@@ -47,7 +46,7 @@ def correct_transect_intervals(transect_data: pd.DataFrame, interval_threshold: 
     # ---- Find indices where interval deviations from the median exceed the difference threshold
     transect_data_copy["interval"] = np.where(
         np.abs(transect_data_copy["interval"] - median_interval) > interval_threshold,
-        transect_data_copy["vessel_log_end"] - transect_data_copy["vessel_log_start"],
+        transect_data_copy["distance_e"] - transect_data_copy["distance_s"],
         transect_data_copy["interval"],
     )
 

@@ -348,8 +348,9 @@ def number_proportions(count_dict: dict) -> dict:
     }
 
 
-def fit_length_weights(proportions_dict: dict, length_weight_dict: dict,
-                       stratum_col: str) -> pd.DataFrame:
+def fit_length_weights(
+    proportions_dict: dict, length_weight_dict: dict, stratum_col: str
+) -> pd.DataFrame:
     """
     Calculate the weight proportion for each length-bin across all and sexed fish
 
@@ -381,7 +382,7 @@ def fit_length_weights(proportions_dict: dict, length_weight_dict: dict,
     aged_unaged_proportions["number_proportion_unaged"] = (
         1.0 - aged_unaged_proportions["number_proportion_aged"]
     )
-    
+
     # Calculate the number length proportions that will be later converted into weight
     # ---- Aged length bins
     aged_length_distribution = (
@@ -443,16 +444,15 @@ def fit_length_weights(proportions_dict: dict, length_weight_dict: dict,
         sep="_",
         suffix="\\w+",
     ).reset_index()
-    # ---- Back-fill any missing strata    
+    # ---- Back-fill any missing strata
     station_proportions_filled = (
         station_proportions.pivot_table(
-            index=[stratum_col], 
-            columns=["group", "sex"],
-            values="proportion")
+            index=[stratum_col], columns=["group", "sex"], values="proportion"
+        )
         .reindex(length_proportions_table.columns)
         .fillna(0.0)
         .unstack()
-        .reset_index(name="proportion")     
+        .reset_index(name="proportion")
     )
     # ---- Convert to Table (to replicate indexed matrix operations)
     station_proportions_table = station_proportions_filled.pivot_table(
@@ -491,11 +491,10 @@ def fit_length_weights(proportions_dict: dict, length_weight_dict: dict,
         {
             f"{stratum_col}": np.tile(
                 station_proportions_filled[stratum_col].unique(),
-                len(station_proportions_filled["sex"].unique())
+                len(station_proportions_filled["sex"].unique()),
             ),
             "sex": np.repeat(
-                ["all", "male", "female"], 
-                len(station_proportions_filled[stratum_col].unique())
+                ["all", "male", "female"], len(station_proportions_filled[stratum_col].unique())
             ),
             "average_weight": np.concatenate([weight_all, weight_male, weight_female]),
         }
@@ -622,13 +621,21 @@ def weight_proportions(
     aged_weights_binned = distributions_dict["aged_length_weight_tbl"].copy()
     # ---- Extract the unaged/length quantized weights
     unaged_weights_binned = distributions_dict["unaged_length_weight_tbl"].copy()
-    
-     # Collect all strata
-    all_strata = pd.DataFrame({f"{stratum_column}": np.unique(np.concatenate([
-        catch_data[stratum_column].unique(),
-        aged_weights_binned.unstack().reset_index()[stratum_column].unique(),
-        unaged_weights_binned.unstack().reset_index()[stratum_column].unique(),
-    ])).tolist()})
+
+    # Collect all strata
+    all_strata = pd.DataFrame(
+        {
+            f"{stratum_column}": np.unique(
+                np.concatenate(
+                    [
+                        catch_data[stratum_column].unique(),
+                        aged_weights_binned.unstack().reset_index()[stratum_column].unique(),
+                        unaged_weights_binned.unstack().reset_index()[stratum_column].unique(),
+                    ]
+                )
+            ).tolist()
+        }
+    )
 
     # Prepare the tottal catch strata data
     # ---- Total catch per strata
@@ -640,17 +647,18 @@ def weight_proportions(
     # ---- Back-fill for all strata
     catch_strata_weights_filled = (
         catch_strata_weights.set_index([stratum_column])
-        .reindex(all_strata[stratum_column]).fillna(0.0)
+        .reindex(all_strata[stratum_column])
+        .fillna(0.0)
     )
-               
+
     # Back-fill missing strata for aged fish
     # ---- Repivot and back-fill
     aged_weights_binned_filled = (
-        aged_weights_binned.
-        stack(future_stack=True)
-        .T.unstack("sex").
-        reindex(all_strata[stratum_column])
-        .fillna(0.0).T.unstack()
+        aged_weights_binned.stack(future_stack=True)
+        .T.unstack("sex")
+        .reindex(all_strata[stratum_column])
+        .fillna(0.0)
+        .T.unstack()
     )
     # ---- Sum these weights for each sex (male/female)
     aged_weights_sex = aged_weights_binned_filled.sum().unstack(0)
@@ -660,25 +668,26 @@ def weight_proportions(
     # Back-fill missing strata for unaged fish
     # ---- Repivot and back-fill
     unaged_weights_binned_filled = (
-        unaged_weights_binned.stack(future_stack=True).T
-        .reindex(all_strata[stratum_column]).infer_objects(copy=False)
-        .fillna(0.0).T.unstack()
-    ) 
+        unaged_weights_binned.stack(future_stack=True)
+        .T.reindex(all_strata[stratum_column])
+        .infer_objects(copy=False)
+        .fillna(0.0)
+        .T.unstack()
+    )
     # ---- Sum these weights for each sex (male/female)
     unaged_weights_sex = unaged_weights_binned_filled.sum()
     # ---- Calculate the stratum totals
-    unaged_strata_weights = unaged_weights_sex.unstack(0).sum(axis=0)    
+    unaged_strata_weights = unaged_weights_sex.unstack(0).sum(axis=0)
     # ---- Standardize the unaged sexed weights
     unaged_weights_sex_standardized = (
-        (unaged_weights_sex / unaged_strata_weights).unstack(0) 
+        (unaged_weights_sex / unaged_strata_weights).unstack(0)
         * catch_strata_weights_filled.values.T
-    ).fillna(0.0)       
-    
+    ).fillna(0.0)
+
     # Calculate the specimen (aged) weight proportions
     # ---- Re-pivot the aged weight bins table
     aged_weights_binned_pvt = (
-        aged_weights_binned_filled
-        .stack([stratum_column, "sex"], future_stack=True)
+        aged_weights_binned_filled.stack([stratum_column, "sex"], future_stack=True)
         .reset_index(name="weight")
         .pivot_table(
             columns=[stratum_column],
@@ -873,9 +882,9 @@ def age1_metric_proportions(
     # # ---- Back-fill missing strata
     all_strata = list(set(all_aged_strata + all_unaged_strata))
 
-    # Consider the proportions only for `sex="all"` 
+    # Consider the proportions only for `sex="all"`
     # ---- Aged
-    age_proportions_all = age_proportions[age_proportions["sex"] == "all"].reset_index(drop=True)   
+    age_proportions_all = age_proportions[age_proportions["sex"] == "all"].reset_index(drop=True)
     # ---- Unaged
     unage_proportions_all = unage_proportions[unage_proportions["sex"] == "all"]
 
@@ -889,13 +898,17 @@ def age1_metric_proportions(
         TS_L_parameters["TS_L_intercept"] / 10.0
     )
     # ---- Create temporary pivot table for the age proportions to compute the dot product
-    age_proportions_dot_table = age_proportions_all.pivot_table(
-        index=["length_bin"],
-        columns=[stratum_col],
-        values="proportion_number_aged",
-        aggfunc="sum",
-        observed=False,
-    ).T.reindex(all_strata).T.fillna(0.0)
+    age_proportions_dot_table = (
+        age_proportions_all.pivot_table(
+            index=["length_bin"],
+            columns=[stratum_col],
+            values="proportion_number_aged",
+            aggfunc="sum",
+            observed=False,
+        )
+        .T.reindex(all_strata)
+        .T.fillna(0.0)
+    )
     # ---- Dot product to calculate the new average sigma_bs for all ages
     updated_sigma_bs = length_bins["length_sq"].values.dot(age_proportions_dot_table)
 
@@ -914,10 +927,10 @@ def age1_metric_proportions(
     age1_proportions_table = age1_proportions_table.T.reindex(all_strata).T.fillna(0.0)
     # ---- Dot product to calculate the average sigma_bs for age-1 fish
     age1_sigma_bs = length_bins["length_sq"].values.dot(age1_proportions_table)
-    # ---- Calculate age-1 NASC proportioon per stratum    
-    age1_nasc_proportions = np.divide(age1_sigma_bs, 
-                                      updated_sigma_bs, 
-                                      where=updated_sigma_bs != 0.0)
+    # ---- Calculate age-1 NASC proportioon per stratum
+    age1_nasc_proportions = np.divide(
+        age1_sigma_bs, updated_sigma_bs, where=updated_sigma_bs != 0.0
+    )
     # ---- Sum the number proportions for each age bin within each stratum
     age1_strata_proportions = age1_proportions_table.sum(axis=0).to_numpy()
 
@@ -1178,9 +1191,11 @@ def partition_transect_age(
 
     # Procedure where age-1 fish were excluded from the acoustic survey biological distributions
     # ---- Merge adult proportions with acoustically derived georeferenced biological data
-    adult_data = nasc_biology_df.merge(
-        strata_adult_proportions_df, on=[stratum_col], how="left"
-    ).infer_objects(copy=False).fillna(0.0)
+    adult_data = (
+        nasc_biology_df.merge(strata_adult_proportions_df, on=[stratum_col], how="left")
+        .infer_objects(copy=False)
+        .fillna(0.0)
+    )
     # ---- Adjust the full number density, biomass density, and NASC estimates
     # -------- NASC
     adult_data["nasc"] = adult_data["nasc"] * adult_data["nasc_proportion"]

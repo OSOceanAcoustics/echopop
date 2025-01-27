@@ -15,6 +15,7 @@ from ..utils.validate_dict import (
     FileSettings,
     Geospatial,
     HaulTransectMap,
+    INPFCRegionMap,
     InputModel,
     KrigingFiles,
     KrigingParameters,
@@ -301,6 +302,10 @@ def TSLRegressionParameters_fields() -> Dict[str, Any]:
 def TransectRegionMap_fields() -> Dict[str, Any]:
 
     return {
+        "inpfc_strata_region": {
+            "annotation": Optional[Dict[str, INPFCRegionMap]],
+            "default": None,
+        },
         "pattern": {
             "annotation": str,
             "frozen": None,
@@ -308,6 +313,18 @@ def TransectRegionMap_fields() -> Dict[str, Any]:
         "parts": {
             "annotation": Dict[str, List[PatternParts]],
             "frozen": None,
+        },
+        "save_file_template": {
+            "annotation": Optional[str],
+            "default": None,
+        },
+        "save_file_directory": {
+            "annotation": Optional[str],
+            "default": None,
+        },
+        "save_file_sheetname": {
+            "annotation": Optional[str],
+            "default": None,
         },
     }
 

@@ -1,12 +1,11 @@
 import os
-
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
 import pandas.io.formats.excel as pdif
-from openpyxl import Workbook, load_workbook
+from openpyxl import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
 
 from ..biology import filter_species
@@ -1349,9 +1348,9 @@ class FEATReports:
                 "bottom_depth",
                 "layer_height",
                 "layer_mean_depth",
-                "vessel_log_start",
+                "distance_s",
                 "region_id",
-                "vessel_log_end",
+                "distance_e",
             ],
         ] = input_data.loc[
             :,
@@ -1360,8 +1359,8 @@ class FEATReports:
                 "layer_height",
                 "layer_mean_depth",
                 "region_id",
-                "vessel_log_start",
-                "vessel_log_end",
+                "distance_s",
+                "distance_e",
             ],
         ]
         # ---- Reset index
@@ -1378,7 +1377,7 @@ class FEATReports:
         output_data.reset_index(inplace=True)
 
         # Compute the distance
-        output_data["interval"] = output_data["vessel_log_end"] - output_data["vessel_log_start"]
+        output_data["interval"] = output_data["distance_e"] - output_data["distance_s"]
 
         # Rename and filter
         # ---- Filter/reorder columns
@@ -1386,8 +1385,8 @@ class FEATReports:
             [
                 "transect_num",
                 "region_id",
-                "vessel_log_start",
-                "vessel_log_end",
+                "distance_s",
+                "distance_e",
                 "latitude",
                 "longitude",
                 stratum_column,
@@ -1428,8 +1427,8 @@ class FEATReports:
             columns={
                 "transect_num": "Transect",
                 "region_id": "Region ID",
-                "vessel_log_start": "VL_start",
-                "vessel_log_end": "VL_end",
+                "distance_s": "VL_start",
+                "distance_e": "VL_end",
                 "latitude": "Lat",
                 "longitude": "Lon",
                 f"{stratum_column}": "stratum",

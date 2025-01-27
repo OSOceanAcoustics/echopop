@@ -17,7 +17,7 @@ NAME_CONFIG = {
     "haul": "haul_num",
     "haul end": "haul_end",
     "haul start": "haul_start",
-    "haul  start": "haul_start", 
+    "haul  start": "haul_start",
     "haul": "haul_num",
     "haul ": "haul_num",
     "inpfc": "stratum_num",

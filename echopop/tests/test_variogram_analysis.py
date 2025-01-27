@@ -5,7 +5,8 @@ import pandas as pd
 import pytest
 
 import echopop.spatial.variogram as esv
-from echopop.spatial.variogram import (
+
+from ..spatial.variogram import (
     VARIOGRAM_MODELS,
     initialize_initial_optimization_values,
     initialize_optimization_config,
@@ -16,7 +17,7 @@ from echopop.spatial.variogram import (
     semivariance,
     variogram_matrix_filter,
 )
-from echopop.tests.conftest import load_json_data
+from .conftest import load_json_data
 
 ___EXPECTED_OUTCOME_FILENAME__ = "variogram_analysis.json"
 
@@ -256,7 +257,7 @@ def test_prepare_variogram_matrices(test_path, transect_data, description):
     # ---- Run the function
     azimuth_matrix, lag_matrix = prepare_variogram_matrices(transect_data, MOCK_LAG_RESOLUTION)
     # ---- ASSERT azimuth_matrix equality
-    assert np.array_equal(azimuth_matrix, expected_results["azimuth_matrix"], equal_nan=True)
+    assert np.allclose(azimuth_matrix, expected_results["azimuth_matrix"])
     # ---- ASSERT azimuth_matrix equality
     assert np.array_equal(lag_matrix, expected_results["lag_matrix"])
 

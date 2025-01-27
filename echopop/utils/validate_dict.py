@@ -196,13 +196,14 @@ class PatternParts(InputModel, title="region name pattern"):
     pattern: str
     label: str
 
-class INPFCRegionMap(RootModel, 
-                     title="INPFC strata region mapping"):
+
+class INPFCRegionMap(RootModel, title="INPFC strata region mapping"):
     """
-    INPFC-region mapping    
+    INPFC-region mapping
     """
 
     root: List[int]
+
 
 class TransectRegionMap(
     InputModel, arbitrary_types_allowed=True, title="transect-region mapping parameters"
@@ -213,7 +214,7 @@ class TransectRegionMap(
     Parameters
     ----------
     inpfc_strata_region: Dict[str, INPFCRegionMap]
-        A dictionary of region names that each are parameterized with a list of INPFC strata 
+        A dictionary of region names that each are parameterized with a list of INPFC strata
         associated with each
     parts: Dict[str, List[PatternParts]]
         Dictionary of metadata-pattern paired codes
@@ -230,7 +231,7 @@ class TransectRegionMap(
 
     inpfc_strata_region: Optional[Dict[str, INPFCRegionMap]] = Field(default=None)
     parts: Dict[str, List[PatternParts]]
-    pattern: str    
+    pattern: str
     save_file_template: Optional[str] = Field(default=None)
     save_file_directory: Optional[str] = Field(default=None)
     save_file_sheetname: Optional[str] = Field(default=None)

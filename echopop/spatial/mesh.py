@@ -403,8 +403,10 @@ def griddify_lag_distances(
         angularity = (
             np.arctan(
                 np.divide(y_angles, x_angles, where=(x_angles != 0.0) & (~np.isnan(x_angles)))
-            ) 
-            * 180.0 / np.pi + 180 % 180
+            )
+            * 180.0
+            / np.pi
+            + 180 % 180
         )
         # ---- Return output
         return np.sqrt(x_distance * x_distance + y_distance * y_distance), angularity
@@ -428,13 +430,19 @@ def stratify_mesh(input_dict: dict, kriged_mesh: pd.DataFrame, settings_dict: di
 
     # Extract the geographic-delimited strata
     if settings_dict["stratum"].lower() == "ks":
-        geo_strata = input_dict["spatial"]["geo_strata_df"].copy().drop_duplicates(
-            "latitude_interval"
-        ).sort_values("latitude_interval")
+        geo_strata = (
+            input_dict["spatial"]["geo_strata_df"]
+            .copy()
+            .drop_duplicates("latitude_interval")
+            .sort_values("latitude_interval")
+        )
     elif settings_dict["stratum"].lower() == "inpfc":
-        geo_strata = input_dict["spatial"]["inpfc_geo_strata_df"].copy().drop_duplicates(
-            "latitude_interval"
-        ).sort_values("latitude_interval")
+        geo_strata = (
+            input_dict["spatial"]["inpfc_geo_strata_df"]
+            .copy()
+            .drop_duplicates("latitude_interval")
+            .sort_values("latitude_interval")
+        )
 
     # Define the latitude bin array
     latitude_bins = np.concatenate([[-90.0], geo_strata["northlimit_latitude"], [90.0]])
@@ -482,14 +490,20 @@ def mesh_to_transects(
     # Extract the appropriate stratum definitions/delimiters
     if settings_dict["stratum"].lower() == "inpfc":
         # ---- INPFC
-        strata = spatial_dict["inpfc_geo_strata_df"].copy().drop_duplicates(
-            "latitude_interval"
-        ).sort_values(["latitude_interval"])
+        strata = (
+            spatial_dict["inpfc_geo_strata_df"]
+            .copy()
+            .drop_duplicates("latitude_interval")
+            .sort_values(["latitude_interval"])
+        )
     elif settings_dict["stratum"].tolower() == "ks":
         # ---- KS
-        strata = spatial_dict["geo_strata_df"].copy().drop_duplicates(
-            "latitude_interval"
-        ).sort_values(["latitude_interval"])
+        strata = (
+            spatial_dict["geo_strata_df"]
+            .copy()
+            .drop_duplicates("latitude_interval")
+            .sort_values(["latitude_interval"])
+        )
     # ---- Create latitude bins
     latitude_bins = latitude_bins = np.concatenate([[-90.0], strata["northlimit_latitude"], [90.0]])
 
