@@ -2,19 +2,16 @@ import numpy as np
 import pandas as pd
 from scipy.special import j1
 
-from echopop.extensions.inversion.math import (
-    generate_frequency_interval,
-    wavenumber,
-)
-from echopop.extensions.inversion.scatterer import compute_Sv, compute_ts
+from echopop.extensions.inversion.math import generate_frequency_interval, wavenumber
 from echopop.extensions.inversion.optimize import (
     invert_population,
     normalize_parameters,
+    optimize_scattering_model,
     prepare_optimization,
-    optimize_scattering_model, 
     simulate_Sv,
-    simulate_Sv_fit
+    simulate_Sv_fit,
 )
+from echopop.extensions.inversion.scatterer import compute_Sv, compute_ts
 
 ####################################################################################################
 # PARAMETERIZE DATASETS
@@ -25,8 +22,8 @@ metadata_df = pd.DataFrame(
     {
         "interval": np.repeat([1, 2, 3, 4, 5, 6], 3),
         "layer": np.tile([1, 2, 3], 6),
-        "layer_thickness": 70.,
-        "layer_volume": 3970.,
+        "layer_thickness": 70.0,
+        "layer_volume": 3970.0,
         "transect_num": np.repeat([1, 2], 9),
         "longitude": np.repeat([1.0, 2.0, 3.0, 4.0, 5.0, 6.0], 3),
         "latitude": np.repeat([3.0, 5.0], 9),
@@ -145,8 +142,13 @@ data_df = pd.DataFrame(
 # Scattering model parameters
 # ---------------------------
 scattering_parameters = {
-    "number_density": {"distribution": "uniform", "initial": 3.0, "low": 1.0, "high": 1000.0, 
-                       "vary": True},
+    "number_density": {
+        "distribution": "uniform",
+        "initial": 3.0,
+        "low": 1.0,
+        "high": 1000.0,
+        "vary": True,
+    },
     "theta_mean": {
         "distribution": "uniform",
         "initial": 10.0,
@@ -228,17 +230,19 @@ processing_parameters = {
     "data_source": "measured",  # options: "measured", "simulated"
     "ts_model": "pcdwba",
     "inversion_source": "acoustics",  # options: "acoustics", "biological"
-    "center_frequencies": np.array([18e3, 38e3, 70e3, 120e3, 200e3]),  # center frequencies (array), Hz
-    "taper_order": 10, # shape tapering order
-    "frequency_interval": 2e3, # Hz
-    "n_integration": 50, # number of integration points for the TS model
-    "water_sound_speed": 1500, # seawater sound speed, m s^-1
-    "water_density": 1.0279, # seawater density, kg m^-3
-    "n_theta": 60, # number of orientation values to use
-    "ni_wavelen": 10, # number of sample points per wave length
-    "theta_distribution": "gaussian", # distribution type for theta distribution
-    "length_distribution": "gaussian", # distribution type for length distribution
-    "length_bin_count": 100, # number of length bins for averaging
+    "center_frequencies": np.array(
+        [18e3, 38e3, 70e3, 120e3, 200e3]
+    ),  # center frequencies (array), Hz
+    "taper_order": 10,  # shape tapering order
+    "frequency_interval": 2e3,  # Hz
+    "n_integration": 50,  # number of integration points for the TS model
+    "water_sound_speed": 1500,  # seawater sound speed, m s^-1
+    "water_density": 1.0279,  # seawater density, kg m^-3
+    "n_theta": 60,  # number of orientation values to use
+    "ni_wavelen": 10,  # number of sample points per wave length
+    "theta_distribution": "gaussian",  # distribution type for theta distribution
+    "length_distribution": "gaussian",  # distribution type for length distribution
+    "length_bin_count": 100,  # number of length bins for averaging
 }
 ####################################################################################################
 # Test params
@@ -261,19 +265,18 @@ Sv_measured = data_df.iloc[7, 2:].to_numpy()
 scattering_params_norm = normalize_parameters(scattering_parameters)
 
 # Prepare parameters and minimization procedure
-parameters, minimizer = prepare_optimization(scattering_parameters, 
-                                             processing_parameters, 
-                                             Sv_measured)
+parameters, minimizer = prepare_optimization(
+    scattering_parameters, processing_parameters, Sv_measured
+)
 
 # Run inversion
 # ---- Compute the initial fit (for comparison -- pre-optimized values)
 initial_fit = simulate_Sv_fit(parameters, Sv_measured, processing_parameters)
 
 # Optimize
-best_fit_params, best_fit_Sv, fit_error = optimize_scattering_model(minimizer, 
-                                                                    Sv_measured,
-                                                                    optimization_parameters, 
-                                                                    processing_parameters)
+best_fit_params, best_fit_Sv, fit_error = optimize_scattering_model(
+    minimizer, Sv_measured, optimization_parameters, processing_parameters
+)
 # ----- Compute delta
 delta = initial_fit - fit_error
 
@@ -284,6 +287,6 @@ optimized_scattering_params = best_fit_params.params.valuesdict()
 # print(fit_report(optimized_scattering_params))
 
 # Generate population estimate array
-population_estimate = invert_population(optimized_scattering_params, 
-                                        metadata_df.loc[7], 
-                                        processing_parameters)
+population_estimate = invert_population(
+    optimized_scattering_params, metadata_df.loc[7], processing_parameters
+)
