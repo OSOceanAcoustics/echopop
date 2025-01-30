@@ -112,36 +112,41 @@ def append_table_aggregates(
     """
 
     # Get the aged sums
-    if "Unaged" in dataframe.columns:
+    # ----
+    if "Un-aged" in dataframe.columns:
+        # ---- Aged sum
         sum_age = dataframe.loc["Subtotal"].values[:-2]
         # ---- Unaged sum
-        sum_unaged = dataframe.loc["Subtotal", "Unaged"]
+        sum_unaged = dataframe.loc["Subtotal", "Un-aged"]
     else:
+        # ---- Aged sum
         sum_age = dataframe.loc["Subtotal"].values[:-1]
         # ---- Unaged sum
         sum_unaged = 0.0
 
     # Total number across all fish
-    total_aged = sum_age.sum() + sum_unaged
+    total_aged = sum_age.sum()
 
     # Calculate the age-1 proportion
     # ---- Proportion
-    age1_proportion = dataframe.loc["Subtotal", 1] / sum_age.sum()
+    age1_proportion = dataframe.loc["Subtotal", 1] / total_aged
     # ---- Compute age-2+ values
-    age2_aged = total_aged * (1 - age1_proportion)
+    age2_aged = (total_aged + sum_unaged) * (1 - age1_proportion)
 
     # Add next row
     # ---- Age 1+
-    age_1_row = ["Total (age1+)", total_aged]
+    age_1_row = ["Total (age1+)", total_aged + sum_unaged]
     # ---- Add the "Over Age" value
-    age_1_row = age_1_row + ["", "Over Age:", sum_age.sum(), ""]
+    age_1_row = age_1_row + ["", "Over Age:", sum_age.sum() + sum_unaged, ""]
     # ---- Add sexed
     if sex == "all":
-        age_1_row = age_1_row + [
-            "Male+Female:",
-            tables_dict["female"].iloc[:-1, :-1].sum().sum()
-            + tables_dict["male"].iloc[:-1, :-1].sum().sum(),
-        ]
+        # ---- Calculate total
+        sexed_total = (
+            tables_dict["female"].iloc[:-1, :-1].sum().sum() 
+            + tables_dict["male"].iloc[:-1, :-1].sum().sum()
+        )
+        # ---- Append
+        age_1_row = age_1_row + ["Male+Female:", sexed_total]
     # ---- Append
     worksheet.append(age_1_row)
 
@@ -149,15 +154,13 @@ def append_table_aggregates(
     # ---- Age-2+
     age_all_row = ["Total (age2+)", age2_aged]
     # ---- Add sexed
-
     if sex == "all":
         age_all_row = (
             age_all_row
             + [""] * 4
             + [
                 "Male+Female:",
-                tables_dict["female"].iloc[:-1, 1:-1].sum().sum()
-                + tables_dict["male"].iloc[:-1, 1:-1].sum().sum(),
+                sexed_total * (1 - age1_proportion)
             ]
         )
     # ---- Append

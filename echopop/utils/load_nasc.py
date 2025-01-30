@@ -423,6 +423,11 @@ def filter_export_regions(
 
     # Impute region IDs for cases where multiple regions overlap within the same interval
     if impute_regions:
+        # ---- Sort values
+        transect_data_regions = transect_data_regions.sort_values(["transect_num", 
+                                                                   "interval", 
+                                                                   unique_region_id], 
+                                                                  ignore_index=True)
         # ---- Re-assign the region ID based on the first element
         transect_data_regions.loc[:, unique_region_id] = transect_data_regions.groupby(
             ["interval", "transect_num"]

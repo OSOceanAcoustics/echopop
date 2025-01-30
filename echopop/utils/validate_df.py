@@ -216,6 +216,8 @@ class BaseDataFrame(DataFrameModel):
         error_codes = []
         # ---- Missing columns (if any; column names will be collated into a single error message)
         missing_cols = []
+        # ---- Wrong datatypes
+        wrong_dtypes = []
 
         # Iterate through the SchemaErrors
         for err in errors.schema_errors:
@@ -227,9 +229,11 @@ class BaseDataFrame(DataFrameModel):
                 error_codes.extend([cls._inverse_missing_columns(err)])
             # ---- Wrong datatype
             elif err.reason_code.name == "WRONG_DATATYPE":
+                wrong_dtypes.extend([err.schema.name])
                 error_codes.extend([cls._wrong_dtype(err)])
             # ---- Coercion error
             elif err.reason_code.name == "DATATYPE_COERCION":
+                wrong_dtypes.extend([err.schema.name])
                 error_codes.extend([cls._coercion(err)])
             # ---- Non-nullable error
             elif err.reason_code.name == "SERIES_CONTAINS_NULLS":
@@ -238,14 +242,21 @@ class BaseDataFrame(DataFrameModel):
             elif err.reason_code.name in ["CHECK_ERROR", "DATAFRAME_CHECK"]:
                 # ---- Error-generating function (generally: @dataframe_check)
                 if isinstance(err.schema.checks[0].error, Callable):
-                    error_codes.extend([cls._callable(err, df)])
+                    if (
+                        not err.schema.checks[0].description in missing_cols and 
+                        not err.schema.checks[0].description in wrong_dtypes
+                    ):                    
+                        error_codes.extend([cls._callable(err, df)])
                 # ---- Inequality checks
-                elif err.schema.checks[0].name in [
-                    "less_than",
-                    "greater_than",
-                    "greater_than_or_equal_to",
-                    "less_than_or_equal_to",
-                ]:
+                elif (
+                            err.schema.checks[0].name in [
+                                "less_than",
+                                "greater_than",
+                                "greater_than_or_equal_to",
+                                "less_than_or_equal_to",
+                            ] and 
+                            err.schema.name not in wrong_dtypes
+                ):
                     # ---- Failure due to a more systematic TypeError issue
                     if "TypeError" in str(err.failure_cases["failure_case"][0]):
                         error_codes.extend([cls._type_error(err)])
@@ -254,9 +265,11 @@ class BaseDataFrame(DataFrameModel):
                         error_codes.extend([cls._invalid_inequality(err)])
                 # ---- Mixed datatype check
                 elif err.schema.checks[0].name == "mixed_type":
-                    error_codes.extend([cls._mixed_dtypes(err)])
+                    if err.schema.name not in wrong_dtypes:
+                        wrong_dtypes.extend([err.schema.name])
+                        error_codes.extend([cls._mixed_dtypes(err)])
                 # ---- Generic output from @check and @dataframe_check decorators
-                else:
+                elif err.schema.name not in wrong_dtypes:
                     error_codes.extend([cls._generic_check(err)])
             # ---- Catch-all miscellaneous errors that do not require specific handling
             else:
@@ -293,6 +306,7 @@ class BaseDataFrame(DataFrameModel):
             return df_proc
         # ---- Upon failure
         except SchemaErrors as e:
+            # errors.append(e)
             # ---- Raise the error
             cls.process_errors(e, df, filename)
 
@@ -673,7 +687,7 @@ class AcousticData(BaseDataFrame):
 
     @check(
         "haul_num",
-        name="multi_type",
+        name="mixed_type",
         error="Column datatype should be either 'int' or 'float'",
     )
     def validate_haul(cls, v: Series) -> Series[bool]:
@@ -681,7 +695,7 @@ class AcousticData(BaseDataFrame):
 
     @check(
         "transect_num",
-        name="multi_type",
+        name="mixed_type",
         error="Column datatype should be either 'int' or 'float'",
     )
     def validate_transect(cls, v: Series) -> Series[bool]:

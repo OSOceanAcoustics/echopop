@@ -1022,11 +1022,11 @@ def distribute_length_age(
 
     # Extract the correct number proportions
     # ---- Unaged, length (Station 1)
-    unaged_number_proportions = proportions_dict["number"]["unaged_length_proportions_df"]
-    # -------- Drop unusexed sex categories
-    unaged_number_proportions = unaged_number_proportions[
-        unaged_number_proportions.sex != "unsexed"
-    ]
+    unaged_number_proportions = proportions_dict["number"]["unaged_length_proportions_df"].copy()
+    # -------- Drop unusexed sex categories (i.e. their contribution to the total)
+    # unaged_number_proportions = unaged_number_proportions[
+    #     unaged_number_proportions.sex != "unsexed"
+    # ]
     # ---- Aged, length (Station 2)
     aged_number_proportions = proportions_dict["number"]["aged_length_proportions_df"]
     # -------- Drop unusexed sex categories
@@ -1066,6 +1066,14 @@ def distribute_length_age(
         unaged_apportioned_abundance["abundance_total"]
         * unaged_apportioned_abundance["proportion_number_overall_unaged"]
     ).fillna(0.0)
+    # -------- Drop unusexed sex categories (i.e. their contribution to the total)
+    unaged_apportioned_abundance.loc[
+        lambda x: x["sex"] == "all", "abundance_unaged"
+    ] = unaged_apportioned_abundance.loc[
+        lambda x: x["sex"] == "all", "abundance_unaged"
+    ] - unaged_apportioned_abundance.loc[
+        lambda x: x["sex"] == "unsexed", "abundance_unaged"
+    ].fillna(0.0)
     # ---- Drop unused columns
     unaged_apportioned_abundance = unaged_apportioned_abundance[
         ["sex", "length_bin", "abundance_unaged"]
@@ -1077,7 +1085,7 @@ def distribute_length_age(
         values="abundance_unaged",
         aggfunc="sum",
         observed=False,
-    )
+    ).loc[["all", "female", "male"]]
     # ---- Initialize apportioned aged abundance
     aged_apportioned_abundance = aged_number_proportions.set_index([stratum_col])
     # ---- Merge with the grouped sex proportions for each stratum
@@ -1092,7 +1100,7 @@ def distribute_length_age(
         ["sex", "length_bin", "age_bin", "abundance_aged"]
     ].reset_index()
     # ---- Convert to pivot table
-    aged_apportioned_abundance_tbl = aged_apportioned_abundance.pivot_table(
+    aged_apportioned_abundance_tbl = aged_apportioned_abundance.reset_index().pivot_table(
         index=["sex", "length_bin"],
         columns=[stratum_col, "age_bin"],
         values="abundance_aged",
