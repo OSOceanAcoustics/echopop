@@ -421,10 +421,11 @@ def krige(input_dict: dict, analysis_dict: dict, settings_dict: dict) -> tuple[p
         mesh_full = mesh_df.copy().rename(
             columns={f"{mesh_longitude}": "longitude", f"{mesh_latitude}": "latitude"}
         )
-    else:
+    else:        
         # ---- Compute the cropped mesh
         mesh_full, transect_mesh_regions = crop_mesh(
-            transect_data, mesh_data, validated_cropping_methods
+            transect_data, mesh_data, {**validated_cropping_methods, 
+                                       "projection": settings_dict["projection"]}
         )
         # ---- Append 'transect_mesh_regions' to analysis variable
         analysis_dict["kriging"].update(
@@ -439,7 +440,8 @@ def krige(input_dict: dict, analysis_dict: dict, settings_dict: dict) -> tuple[p
             # ---- Print alert
             print(
                 f"Kriging mesh cropped to prevent extrapolation beyond the defined "
-                f"`mesh_buffer_distance` value ({settings_dict['mesh_buffer_distance']} nmi)."
+                f"`mesh_buffer_distance` value "
+                f"({validated_cropping_methods['mesh_buffer_distance']} nmi)."
             )
 
     # Standardize the x- and y-coordinates, if necessary
