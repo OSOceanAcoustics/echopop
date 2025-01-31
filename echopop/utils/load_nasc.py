@@ -132,7 +132,7 @@ def get_transect_numbers(export_files: list, transect_pattern: str, file_directo
         # ---- Extract transect number, if present
         if parsed_transect:
             try:
-                return int(parsed_transect.group(1)), file
+                return float(parsed_transect.group(1)), file
             # ---- Return None if the transect number is not parseable
             except ValueError:
                 return None, file
@@ -249,7 +249,18 @@ def load_export_regions(region_files: dict, region_names: dict, root_directory: 
             raise FileNotFoundError(f"Region definition file '{str(full_path)}' not found!")
 
         # Read file
-        new_region_df = pd.read_excel(full_path, sheet_name=sheetname)
+        if filename.lower().endswith(".csv"):
+            # ---- Initially read in the file
+            new_region_df = pd.read_csv(full_path)
+            # ---- Adjust column name cases
+            new_region_df.columns = new_region_df.columns.str.lower()
+            # ---- Adjust column names, if needed
+            new_region_df.rename(columns={"transect": "transect_num", 
+                                          "region id": "region_id", 
+                                          "assigned haul": "haul_num",},
+                                 inplace=True)
+        else:           
+            new_region_df = pd.read_excel(full_path, sheet_name=sheetname)
 
         # Fix strings if required
         new_region_df = new_region_df.replace('"', "", regex=True).replace(
@@ -264,7 +275,8 @@ def load_export_regions(region_files: dict, region_names: dict, root_directory: 
 
         # Validate column presence/structure
         # ---- Expected columns
-        expected_columns = list(new_column_names.values())
+        # expected_columns = list(new_column_names.values())
+        expected_columns = ["region_id", "haul_num", "transect_num"]
         # ---- Missing columns
         missing_columns = [col for col in expected_columns if col not in new_region_df.columns]
         # ---- Raise Error
@@ -273,30 +285,42 @@ def load_export_regions(region_files: dict, region_names: dict, root_directory: 
 
         # Validate column datatypes
         # ---- Drop NaN values
-        new_region_df = new_region_df.dropna(subset=["transect_num", "haul_num", "region_class"])
+        new_region_df = new_region_df.dropna(subset=["transect_num", "haul_num", "region_id"])
         # ---- Assign datatypes
-        new_region_df = new_region_df.astype(
-            {info["name"]: info["type"] for info in region_settings.values()}
-        )
+        # new_region_df = new_region_df.astype(
+        #     {info["name"]: info["type"] for info in region_settings.values() 
+        #      if info["name"] in new_region_df.columns}            
+        # )
 
         # Add group ID key
         new_region_df["group"] = group
 
         # Convert the region class column to lowercase
-        new_region_df["region_class"] = new_region_df["region_class"].str.lower()
+        if "region_class" in new_region_df.columns:
+            new_region_df["region_class"] = new_region_df["region_class"].str.lower()
 
         # Filter the region dataframe based on regular expression filter
-        # ---- Create filter
-        pattern = "|".join(
-            [r"(?<!-)\b{}\b".format(re.escape(name.lower())) for name in region_names]
-        )
-        # ---- Apply filter and return
-        return new_region_df[
-            new_region_df["region_class"].str.contains(pattern, case=False, regex=True)
-        ]
+        if "region_class" in new_region_df.columns:
+            # ---- Create filter
+            pattern = "|".join(
+                [r"(?<!-)\b{}\b".format(re.escape(name.lower())) for name in region_names]
+            )
+            # ---- Apply filter and return
+            return new_region_df[
+                new_region_df["region_class"].str.contains(pattern, case=False, regex=True)
+            ]
+        else:
+            return new_region_df
 
     # Return the vertically concatenated DataFrame
-    # ---- Iterate and return
+    # ---- If there are not multiple groups, mutate the region files dictionary to match the groups
+    if set(["filename"]).issubset(region_files):
+        # ---- Transform dictionary
+        region_files = {group: region_files for group in region_names}
+        # ---- Add sheetname entry (None) if csv
+        region_files = {k: {**v, "sheetname": None} if "sheetname" not in v else v 
+                        for k, v in region_files.items()}
+        
     return pd.concat(
         [
             read_export_region(
@@ -377,10 +401,15 @@ def get_haul_strata_key(
         # ---- Assign country codes
         trans_regions_copy.loc[region_strata, "country"] = region
 
+    # Get columns present that can be used for indexing
+    cols_idx = list(
+        set(trans_regions_copy.columns).intersection(
+            set(["haul_num", "transect_num", "region_id", "region_name", "region_class"])
+        )
+    )
+
     # Return the country column Series
-    return trans_regions_copy.reset_index().set_index(
-        ["haul_num", "transect_num", "region_id", "region_name", "region_class"]
-    )["country"]
+    return trans_regions_copy.reset_index().set_index(cols_idx)["country"]
 
 
 def filter_export_regions(
@@ -523,11 +552,14 @@ def ingest_echoview_exports(
         if "inpfc_strata_region" in configuration_dict["transect_region_mapping"]:
             # ---- Assign country
             country_codes = get_haul_strata_key(configuration_dict, root_dir, transect_region_key)
-            # ---- Set index
-            transect_region_key.set_index(
-                ["haul_num", "transect_num", "region_id", "region_name", "region_class"],
-                inplace=True,
+            # ---- Get columns present that can be used for indexing
+            cols_idx = list(
+                set(transect_region_key.columns).intersection(
+                    set(["haul_num", "transect_num", "region_id", "region_name", "region_class"])
+                )
             )
+            # ---- Set index
+            transect_region_key.set_index(cols_idx, inplace=True)
             # ---- Assign
             transect_region_key["country"] = country_codes
             # ---- Reset index

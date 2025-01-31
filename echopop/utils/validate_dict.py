@@ -1,8 +1,10 @@
 import re
 from typing import Any, Dict, List, Literal, Optional, Union
+from pathlib import Path
 
 import numpy as np
 from pydantic import BaseModel, Field, RootModel, ValidationError, field_validator, model_validator
+from pydantic_core import PydanticCustomError
 
 from .validate import posfloat, posint, realcircle, realposfloat
 
@@ -56,6 +58,34 @@ class XLSXFile(InputModel, title="*.xlsx file tree"):
 
     filename: str
     sheetname: Union[str, List[str]]
+
+    @field_validator("filename", mode="before")
+    def validate_file_extension(cls, v):
+        if not v.lower().endswith(".xlsx"):
+            raise ValueError(
+                f"The file '{v}' must be a '.xlsx'."
+                )
+        return v
+
+class CSVFile(InputModel, title="*.xlsx file tree"):
+    """
+    .csv file tree structure
+
+    Parameters
+    ----------
+    filename: str
+        Filename (as a string) with a *.csv file extension.
+    """
+
+    filename: str
+
+    @field_validator("filename", mode="before")
+    def validate_file_extension(cls, v):
+        if not v.lower().endswith(".csv"):
+            raise ValueError(
+                f"The file '{v}' must be a '.csv'."
+                )
+        return v
 
 
 class FileSettings(InputModel, title="parameter file settings"):
@@ -535,7 +565,8 @@ class CONFIG_DATA_MODEL(InputModel):
     data_root_dir: Optional[str] = None
     CAN_haul_offset: Optional[int] = None
     ship_id: Optional[Union[int, str, float]] = None
-    export_regions: Optional[Union[XLSXFile, Dict[str, XLSXFile]]] = None
+    export_regions: Optional[Union[Union[CSVFile, XLSXFile], 
+                                   Dict[str, Union[CSVFile, XLSXFile]]]] = None
 
     def __init__(self, filename, **kwargs):
         try:
@@ -546,6 +577,52 @@ class CONFIG_DATA_MODEL(InputModel):
                 self.__class__.__name__, f"configured data files defined in {filename}"
             )
             raise ValueError(new_message) from e
+
+    @field_validator("export_regions", mode="before")
+    def validate_viable_filetypes(cls, filedir):
+
+        # Iterate through
+        if "filename" in filedir:
+            try: 
+                _ = CSVFile(**filedir).model_dump(exclude_none=True)
+            except ValidationError:
+                try:
+                    _ = XLSXFile(**filedir).model_dump(exclude_none=True)
+                except ValidationError:
+                    # ---- Get filename
+                    if isinstance(filedir, str):
+                        filename = filedir
+                    else:
+                        filename = filedir["filename"]
+                    # ---- Raise custom Validation error
+                    raise PydanticCustomError(
+                        "invalid_filetype",
+                        f"The 'export_regions' file '{filename}' must be a '.csv' or '.xlsx'.",
+                        dict(wrong_value=filename)
+                    )
+        else:
+            # Iterate through
+            for _, v in filedir.items():
+                try:
+                    _ = CSVFile(**v).model_dump(exclude_none=True)
+                except ValidationError:
+                    try:
+                        _ = XLSXFile(**v).model_dump(exclude_none=True)
+                    except ValidationError:
+                        # ---- Get filename
+                        if isinstance(v, str):
+                            filename = v
+                        else:
+                            filename = v["filename"]
+                        # ---- Raise custom Validation error
+                        raise PydanticCustomError(
+                            "invalid_filetype",
+                            f"The 'export_regions' file '{filename}' must be a '.csv' or '.xlsx'.",
+                            dict(wrong_value=filename)
+                        )
+                    
+        # Return
+        return filedir
 
 
 class VariogramModel(BaseModel, arbitrary_types_allowed=True):
