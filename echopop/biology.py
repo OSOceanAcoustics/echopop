@@ -1028,7 +1028,7 @@ def distribute_length_age(
     #     unaged_number_proportions.sex != "unsexed"
     # ]
     # ---- Aged, length (Station 2)
-    aged_number_proportions = proportions_dict["number"]["aged_length_proportions_df"]
+    aged_number_proportions = proportions_dict["number"]["aged_length_proportions_df"].copy()
     # -------- Drop unusexed sex categories
     aged_number_proportions = aged_number_proportions[aged_number_proportions.sex != "unsexed"]
 
