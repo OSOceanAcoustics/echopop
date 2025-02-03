@@ -263,9 +263,9 @@ def plot_transect(
 
     # Prepare axis labels and other parameters
     # ---- x
-    xlabel = kwargs.pop("xlabel") if "xlabel" in kwargs else "Longitude (\u00B0E)"
+    xlabel = kwargs.pop("xlabel") if "xlabel" in kwargs else "Longitude (\u00b0E)"
     # ---- y
-    ylabel = kwargs.pop("ylabel") if "ylabel" in kwargs else "Latitude (\u00B0N)"
+    ylabel = kwargs.pop("ylabel") if "ylabel" in kwargs else "Latitude (\u00b0N)"
     # ---- colorbar
     colorbar_label = kwargs.pop("colorbar_label")
     # ---- cmap
@@ -386,9 +386,9 @@ def plot_mesh(
 
     # Prepare axis labels and other parameters
     # ---- x
-    xlabel = kwargs.pop("xlabel") if "xlabel" in kwargs else "Longitude (\u00B0E)"
+    xlabel = kwargs.pop("xlabel") if "xlabel" in kwargs else "Longitude (\u00b0E)"
     # ---- y
-    ylabel = kwargs.pop("ylabel") if "ylabel" in kwargs else "Latitude (\u00B0N)"
+    ylabel = kwargs.pop("ylabel") if "ylabel" in kwargs else "Latitude (\u00b0N)"
     # ---- colorbar
     colorbar_label = kwargs.pop("colorbar_label")
     # ---- cmap

@@ -146,8 +146,8 @@ class DiagnosticPlot:
         # ---- Axis options
         var_axes = {
             "Latitude/longitude": {
-                "xlab": "Longitude (\u00B0E)",
-                "ylab": "Latitude (\u00B0N)",
+                "xlab": "Longitude (\u00b0E)",
+                "ylab": "Latitude (\u00b0N)",
             },
             "Isobath-referenced": {
                 "xlab": "Normalized x",
@@ -269,7 +269,7 @@ class DiagnosticPlot:
         # Stack the plotting layers for visualization
         # ---- Stack
         plot_stacked = (self.tile * HOVERPATH * gv.Overlay(plot_layers)).opts(
-            width=800, height=800, xlabel="Longitude (\u00B0E)", ylabel="Latitude (\u00B0N)"
+            width=800, height=800, xlabel="Longitude (\u00b0E)", ylabel="Latitude (\u00b0N)"
         )
         # ---- Return
         return plot_stacked
@@ -351,7 +351,7 @@ class DiagnosticPlot:
 
         # Stack all of the layers to complete the plot
         full_plot = (transect_gv * self.tile * points_gv).opts(
-            height=800, width=800, xlabel="Longitude (\u00B0E)", ylabel="Latitude (\u00B0N)"
+            height=800, width=800, xlabel="Longitude (\u00b0E)", ylabel="Latitude (\u00b0N)"
         )
         # ---- Return plot
         return full_plot
