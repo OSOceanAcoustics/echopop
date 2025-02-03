@@ -61,9 +61,9 @@ class XLSXFile(InputModel, title="*.xlsx file tree"):
 
     @field_validator("filename", mode="before")
     def validate_file_extension(cls, v):
-        if not v.lower().endswith(".xlsx"):
+        if not v.lower().endswith(".xlsx") or not v.lower().endswith(".xls"):
             raise ValueError(
-                f"The file '{v}' must be a '.xlsx'."
+                f"The file '{v}' must be a '.xls'/'.xlsx'."
                 )
         return v
 
@@ -597,7 +597,7 @@ class CONFIG_DATA_MODEL(InputModel):
                     # ---- Raise custom Validation error
                     raise PydanticCustomError(
                         "invalid_filetype",
-                        f"The 'export_regions' file '{filename}' must be a '.csv' or '.xlsx'.",
+                        f"The 'export_regions' file '{filename}' must be a '.csv' or '.xlsx'/'.xls'.",
                         dict(wrong_value=filename)
                     )
         else:
@@ -617,7 +617,7 @@ class CONFIG_DATA_MODEL(InputModel):
                         # ---- Raise custom Validation error
                         raise PydanticCustomError(
                             "invalid_filetype",
-                            f"The 'export_regions' file '{filename}' must be a '.csv' or '.xlsx'.",
+                            f"The 'export_regions' file '{filename}' must be a '.csv' or '.xlsx'/'.xls'.",
                             dict(wrong_value=filename)
                         )
                     
