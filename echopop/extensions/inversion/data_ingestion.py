@@ -1,7 +1,7 @@
+import glob
 from pathlib import Path
 from typing import Any, Dict, List, Tuple, Union
 
-import glob
 import pandas as pd
 from lmfit import Parameters
 from pandera import DataFrameModel
@@ -29,6 +29,7 @@ class dataset_validator(DataFrameModel):
     # RETURNS: pd.DataFrame
     pass
 
+
 def validate_inversion_export_directories(configuration_dict: dict) -> Tuple[str, str, list]:
 
     # Get the data root directory
@@ -49,7 +50,7 @@ def validate_inversion_export_directories(configuration_dict: dict) -> Tuple[str
     if not Path(save_folder).exists():
         raise FileNotFoundError(
             f"Save directory for inversion files ({save_folder}) does not exist."
-            )
+        )
 
     # Construct the directorypaths: Export files
     # ---- Export file directory
@@ -120,37 +121,60 @@ def prepare_inversion_settings(inversion_config: Dict[str, Any]) -> Dict[str, An
 ####################################################################################################
 # Data ingestion
 ####################################################################################################
-def read_echoview_inversion_file(data_file: Union[str, Path], 
-                                 transect_number: Union[int, float]) -> pd.DataFrame:
-    
+def read_echoview_inversion_file(
+    data_file: Union[str, Path], transect_number: Union[int, float]
+) -> pd.DataFrame:
+
     # Set of valid columns required for the inversion analysis
-    valid_cols = ["Interval", "Layer", "Sv_mean", "NASC", "Height_mean", "Depth_mean", "Lon_M", 
-                  "Lat_M", "Frequency"]
-    
+    valid_cols = [
+        "Interval",
+        "Layer",
+        "Sv_mean",
+        "NASC",
+        "Height_mean",
+        "Depth_mean",
+        "Lon_M",
+        "Lat_M",
+        "Frequency",
+    ]
+
     # Read in the correct file and subsetted columns
-    export_file = pd.read_csv(data_file, 
-                              index_col=None, 
-                              header=0, 
-                              skipinitialspace=True,
-                              usecols=lambda x: x in valid_cols)
-    
+    export_file = pd.read_csv(
+        data_file,
+        index_col=None,
+        header=0,
+        skipinitialspace=True,
+        usecols=lambda x: x in valid_cols,
+    )
+
     # Change the case of the column names to lower case
     export_file.columns = map(str.lower, export_file.columns)
-    
+
     # Rename certain columns
     export_file.rename(columns={"lat_m": "latitude", "lon_m": "longitude"}, inplace=True)
-    
+
     # Append transect number
     export_file["transect_num"] = transect_number
-    
+
     # Assign datatypes
-    export_file = export_file.astype({"transect_num": float, "interval": int, "layer": int, 
-                                      "sv_mean": float,"nasc": float, "height_mean": float, 
-                                      "depth_mean": float, "longitude": float, "latitude": float, 
-                                      "frequency": float})
-    
+    export_file = export_file.astype(
+        {
+            "transect_num": float,
+            "interval": int,
+            "layer": int,
+            "sv_mean": float,
+            "nasc": float,
+            "height_mean": float,
+            "depth_mean": float,
+            "longitude": float,
+            "latitude": float,
+            "frequency": float,
+        }
+    )
+
     # Return the export file
     return export_file
+
 
 def yaml_configuration_reader(
     config_file: Union[str, Path],
@@ -168,11 +192,13 @@ def yaml_configuration_reader(
     pass
 
 
-def dataset_reader(inversion_files: Union[str, Path], 
-                   transect_reference: Dict[str, Union[int, float]]) -> pd.DataFrame:
+def dataset_reader(
+    inversion_files: Union[str, Path], transect_reference: Dict[str, Union[int, float]]
+) -> pd.DataFrame:
     """
     Read aggregate acoustic backscatter measurements
     """
+
     # Helper generator function for producing a single dataframe from entire file directory
     def generate_dataframes(files, transect_reference=transect_reference):
         # ---- Iterate through directory
@@ -181,12 +207,13 @@ def dataset_reader(inversion_files: Union[str, Path],
             transect_num = transect_reference.get(filename, None)
             # ---- Read in file and impute, if necessary plus validate columns and dtypes
             yield read_echoview_inversion_file(filename, transect_num)
-    
+
     # Read in the files
     export_df = pd.concat(
-        generate_dataframes(inversion_files, transect_reference), axis=0, ignore_index=True,
+        generate_dataframes(inversion_files, transect_reference),
+        axis=0,
+        ignore_index=True,
     )
-    
+
     # Return the files
     return export_df
-
