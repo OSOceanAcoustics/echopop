@@ -8,26 +8,26 @@ from .math import generate_frequency_interval, wavenumber
 from .scatterer import compute_Sv, compute_ts
 
 
-def mae(
-    prediction: ArrayLike[float],
-    measurement: ArrayLike[float],
-):
-    """
-    Mean absolute deviation (MAD) in logarithmic space (dB)
-    """
-    # == functions/cost_functionALL.m
-    pass
+# def mae(
+#     prediction: ArrayLike[float],
+#     measurement: ArrayLike[float],
+# ):
+#     """
+#     Mean absolute deviation (MAD) in logarithmic space (dB)
+#     """
+#     # == functions/cost_functionALL.m
+#     pass
 
 
-def rmse(
-    prediction: ArrayLike[float],
-    measurement: ArrayLike[float],
-):
-    """
-    Root mean square deviation (RMSE) in logarithmic space (dB)
-    """
-    # == functions/cost_functionALL.m
-    pass
+# def rmse(
+#     prediction: ArrayLike[float],
+#     measurement: ArrayLike[float],
+# ):
+#     """
+#     Root mean square deviation (RMSE) in logarithmic space (dB)
+#     """
+#     # == functions/cost_functionALL.m
+#     pass
 
 
 def normalize_parameters(
