@@ -286,6 +286,55 @@ optimized_scattering_params = best_fit_params.params.valuesdict()
 # from lmfit import fit_report
 # print(fit_report(optimized_scattering_params))
 
+from echopop.utils.load_nasc import validate_export_directories, get_transect_numbers
+from pathlib import Path
+import glob
+# files = glob.glob("**/*", recursive=True)
+
+export_settings = {
+    "data_root_dir": "C:/Users/Brandyn Lucca/Documents/Data/echopop_inversion/",
+    "inversion_exports":{        
+        "inversion_save_directory": "proc_files/2023/",
+        "inversion_file_directory": "raw_files/2023/"
+        },
+    "Sv_threshold": -130.0,
+    "frequencies": [18.0, 38.0, 70.0, 120.0, 200.0],
+    }
+configuration_dict = export_settings
+transect_pattern = r"x(\d+)"
+# Get inversion file settings
+inversion_file_settings = configuration_dict["inversion_exports"]
+
+# Validate relevant directories and file existence
+save_folder, file_directory, inversion_files = validate_inversion_export_directories(
+    configuration_dict
+    )
+
+# Get the transect numbers
+transect_reference = get_transect_numbers(inversion_files, 
+                                          transect_pattern, 
+                                          file_directory)
+
+# Helper generator function for producing a single dataframe from entire file directory
+def generate_dataframes(files, transect_reference=transect_reference):
+    # ---- Iterate through directory
+    for filename in files:
+        # ---- Get transect number
+        transect_num = transect_reference.get(filename, None)
+        # ---- Read in file and impute, if necessary plus validate columns and dtypes
+        yield read_echoview_inversion_file(filename, transect_num)
+
+# Read in the files
+export_df = pd.concat(
+    generate_dataframes(inversion_files, transect_reference), axis=0, ignore_index=True,
+)
+
+export_df.loc[(export_df.interval == 4) & (export_df.layer == 2) & (export_df.transect_num == 100)]
+
+# Extract metadata (flat index DataFrame)
+metadata_df = export_df[['idx1', 'idx2', 'idx3']].drop_duplicates().reset_index(drop=True)
+
+
 # Generate population estimate array
 population_estimate = invert_population(
     optimized_scattering_params, metadata_df.loc[7], processing_parameters
