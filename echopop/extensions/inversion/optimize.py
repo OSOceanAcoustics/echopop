@@ -7,7 +7,6 @@ from numpy.typing import ArrayLike
 from .math import generate_frequency_interval, wavenumber
 from .scatterer import compute_Sv, compute_ts
 
-
 # def mae(
 #     prediction: ArrayLike[float],
 #     measurement: ArrayLike[float],

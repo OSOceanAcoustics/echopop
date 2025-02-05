@@ -78,7 +78,7 @@ def prepare_inversion_settings(inversion_config: Dict[str, Any]) -> Dict[str, An
 
 
 def yaml_configuration_reader(
-    config_file: Union[str, Path]
+    config_file: Union[str, Path],
 ) -> Dict[str, Union[float, int, Parameters, pd.DataFrame, str]]:
     """
     Read and validate the input parameterization YAML configuration
