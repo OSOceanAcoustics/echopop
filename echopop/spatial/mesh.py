@@ -57,7 +57,7 @@ def hull_crop_method(transect_data: pd.DataFrame, mesh_data: pd.DataFrame, setti
     """
     # Extract the analysis settings
     # ---- Number of nearest transects
-    num_nearest_transects = settings_dict["num_nearest_transect"]
+    num_nearest_transects = settings_dict["num_nearest_transects"]
     # ---- Grid buffer distance (nmi)
     mesh_buffer_distance = settings_dict["mesh_buffer_distance"]
 
