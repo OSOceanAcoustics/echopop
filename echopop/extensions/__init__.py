@@ -1,6 +1,7 @@
 from .survey_extensions import (
     patch_diagnostic_plots as diagnostic_plots,
     patch_generate_reports as generate_reports,
+    patch_invert_population as inversion,
 )
 
 
@@ -8,10 +9,11 @@ from .survey_extensions import (
 def import_all_patches():
     diagnostic_plots()
     generate_reports()
+    inversion()
 
 
 # ---- Automatic import for `import echopop.extensions`
 import_all_patches()
 
 # Exposed individual patches for selective importing
-__all__ = ["diagnostic_plots", "generate_reports"]
+__all__ = ["diagnostic_plots", "generate_reports", "inversion"]

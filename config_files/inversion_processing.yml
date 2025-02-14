@@ -1,0 +1,222 @@
+# This YAML file is a configuration file specifying various processing parameters, input filepaths,
+# and other settings used to create a recipe for inverting biologically meaningful parameters from 
+# survey acoustic backscatter measurements
+
+---
+####################################################################################################
+# FILE SETTINGS
+###############
+# General file settings including where files are located and where final results should be exported
+
+# - Files specific to inversion datasets
+inversion_file_settings:
+  # - Root data directory
+  data_root_dir: C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_inversion/
+  # - Folder containing formatted Echoview exports
+  file_directory: raw_files/2023/
+  # - Folder where output files will be written
+  save_directory: proc_files/2023/
+
+# - Accompanying files used for geostatistical analyses
+geostatistic_file_settings:
+  # - Root data directory
+  data_root_dir: C:/Users/Brandyn/Documents/GitHub/EchoPro_data/Data/
+  # - Kriging mesh grid
+  mesh:
+    filename: Kriging_files/Kriging_grid_files/krig_grid2_5nm_cut_centroids_2013.xlsx
+    sheetname: krigedgrid2_5nm_forChu
+  # - Reference isobath coordinates [OPTIONAL]
+  isobath_reference:
+    filename: Kriging_files/Kriging_grid_files/transformation_isobath_coordinates.xlsx
+    sheetname: Smoothing_EasyKrig
+
+##############################################################################
+# DATA PROCESSING 
+#################
+# General parameters required for processing acoustic files
+
+# !TODO: Look at Sv-frequency prediction curve shapes as another QA/QC on inverted values
+# !TODO: Way to test/validate inversion algorithm via forward modeling and checking output parameters
+processing_parameters:
+  # - Necessary parameters for the acoustic input files
+  acoustic_files: 
+    # - Minimum Sv threshold (dB re. 1 m^-1) !!! [[[ENABLE f-SPECIFIC THRESHOLDS?]]]
+    sv_threshold: -90.0
+    # - Maximum Sv threshold (dB re. 1 m^-1) !!! [[[UNUSED]]]
+    sv_maximum_threshold: -50.0
+    # - Transmit frequencies (kHz)
+    center_frequencies: [38, 120, 200]
+    # - Method for aggregating the acoustic files [OPTIONS: interval OR transect]
+    aggregate: transect
+    # - Transect number pattern
+    transect_pattern: x(\d+)
+  # - Necessary parameters for acoustic backscatter modeling
+  acoustic_models:
+    # - Minimum number of frequencies required for inversion
+    minimum_frequency_count: 2
+    # - Seawater sound speed, m s^-1
+    sound_speed_sw: 1500.0
+    # - Seawater density, kg m^-3
+    density_sw: 1027.9
+    # - Target strength model [OPTIONS: pcdwba]
+    ts_model: pcdwba
+    # - Target shape tapering order
+    taper_order: 10.0
+    # - Frequency interval used for the PCDWBA (Hz)
+    frequency_interval: 2.0
+    # - Number of integration points for the PCDWBA
+    n_integration: 50
+    # - Number of sample points per wavelength
+    n_wavelength: 10
+    # - Number of bins in the orientation distribution
+    orientation_bin_count: 60
+    # - Number of bins in the length distribution
+    length_bin_count: 100
+    # - Distribution for orientations [OPTIONS: gaussian OR uniform]
+    orientation_distribution: gaussian
+    # - Distribution for lengths [OPTIONS: gaussian OR uniform]
+    length_distribution: gaussian
+  # - Simulation configuration
+  simulation:
+    # - Monte Carlo initialization of scattering parameters -- this overrides the "initial" 
+    # - starting value in the `scattering_parameters` configuration
+    monte_carlo: False
+    # - Number of realizations
+    n_realizations: 5
+    # - Scale parameters for optimization [True/False]
+    scale_parameters: True
+  # - Configuration for inverting acoustic backscatter into population estimates
+  inversion: 
+    # - Reference frequency (kHz) for determining which values to use for population inversion
+    reference_frequency: 120.0
+
+##############################################################################
+# SCATTERING MODEL PARAMETERS FOR INVERSION
+###########################################
+# Scattering model parameters that can be inverted (i.e. optimizing via fitting Sv). This requires 
+# four arguments per parameter: 1) "initial" (starting value), 2) "low" (lower bound), 3) "high" 
+# (upper bound), 4) "optimize" (True/False stating whether this value will be held constant or be
+# allowed to vary for the optimization)
+
+scattering_parameters:
+  # - Number density (animals m^-3)
+  number_density:
+    initial: 500.0
+    low: 10.0
+    high: 10000.0
+    optimize: True
+  # - Orientation mean (degrees)
+  theta_mean:
+    initial: 10.0
+    low: 0.0
+    high: 90.0
+    optimize: True
+  # - Orientation standard deviation (degrees)
+  theta_sd:
+    initial: 20.0
+    low: 0.0
+    high: 90.0
+    optimize: False
+  # - Length mean (m)
+  length_mean:
+    initial: 0.03
+    low: 0.008
+    high: 0.04
+    optimize: True
+  # - Normalized length standard deviation (length standard deviation divided by length)
+  length_sd_norm:
+    initial: 0.15
+    low: 0.05
+    high: 0.15
+    optimize: False
+  # - Density contrast
+  g:
+    initial: 1.015
+    low: 1.015
+    high: 1.060
+    optimize: False
+  # - Sound speed contrast
+  h:
+    initial: 1.020
+    low: 1.015
+    high: 1.060
+    optimize: False
+  # - Normalized radius of curvature (radius of curvature divided by length)
+  radius_of_curvature_ratio:
+    initial: 3.0
+    low: 0.5
+    high: 100.0
+    optimize: True
+  # - Length-to-radius ratio
+  length_radius_ratio:
+    initial: 18.2
+    low: 14.0
+    high: 20.0
+    optimize: True
+
+##############################################################################
+# OPTIMIZATION PARAMETERS
+#########################
+# General optimization settings
+
+optimization_parameters:
+  # - Maximun number of function evaluations
+  max_nfev: 500
+  # - Gradient termination tolerance
+  gtol: 0.001
+  # - Cost function termination tolerance
+  ftol: 0.001
+  # - Termination tolerance
+  xtol: 0.001
+  # - Relative step size for finite differences
+  diff_step: 0.0001
+
+##############################################################################
+# KRIGING AND VARIOGRAM PARAMETERS
+##################################
+# General configuration for running geostatistical analyses
+
+# - Geospatial settings required for projections
+geospatial:
+  # - EPSG Geodetic Parameter Dataset code [epsg:#### between 1024 and 32767]
+  init: epsg:4326
+
+# - Kriging parameters
+kriging_parameters:
+  # - Base area of kriging mesh grid cells (nmi^2)
+  A0: 6.25 
+  # - Longitudinal reference for kriging mesh adjustment
+  longitude_reference: -124.78338
+  # - Longitudinal offset for kriging mesh adjustment
+  longitude_offset: -124.78338
+  # - Latitudinal offset for kriging mesh adjustment
+  latitude_offset: 45.0
+  # - Anisotropy 
+  anisotropy: 0.001
+  # - Minimum number of nearest neighbors for kriging
+  kmin: 3
+  # - Maximum number of nearest neighbors for kriging
+  kmax: 10
+
+# - Variogram parameters
+variogram_parameters:
+  # - Azimuth range
+  azimuth_range: 360.0
+  # - Variogram model
+  model: ["bessel", "exponential"]
+  # - Number of lag points
+  n_lags: 30
+  # - Normalized lag resolution
+  lag_resolution: 0.002
+  # - Normalized hole effect range [initial value]
+  hole_effect_range: 0.0
+  # - (Partial) sill [initial value]
+  sill: 1.0
+  # - Nugget effect [initial value]
+  nugget: 0.0
+  # - Normalized correlation range [initial value]
+  correlation_range: 0.01
+  # - Semivariance exponential decay coefficient [initial value]
+  decay_power: 1.5
+
+...

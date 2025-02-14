@@ -3,7 +3,7 @@ Mathematical and numerical utility functions.
 """
 
 from typing import Any, Dict, Literal, Tuple, Union
-
+import pandas as pd
 import numpy as np
 from scipy.special import spherical_jn, spherical_yn
 
@@ -93,13 +93,13 @@ def length_average(
     """
 
     # Skip weighted averaging if only a single value is present
-    if len(form_function) == 1:
-        # ---- If complex
-        if np.all(np.iscomplex(form_function)):
-            return np.sqrt(form_function.real**2 + form_function.imag**2)
-        # ---- If not complex
-        else:
-            return form_function
+    # if len(form_function) == 1:
+    #     # ---- If complex
+    #     if np.all(np.iscomplex(form_function)):
+    #         return np.sqrt(form_function.real**2 + form_function.imag**2)
+    #     # ---- If not complex
+    #     else:
+    #         return form_function
 
     # Normalize the length values, if needed
     length_norm = length / length_mean
@@ -134,19 +134,53 @@ def length_average(
         (ka_weighted >= np.nanmin(ka)) & (ka_weighted <= np.nanmax(ka)), ka_weighted, np.nan
     )
     # ---- Evaluate
-    sigma_bs_L = np.array(
-        [
-            (
-                length_norm**2
-                * PDF
-                * np.interp(ka_weighted_trim[i], ka[i, : n_vals[i]], form_function[i] ** 2)
-            ).sum()
-            for i in range(len(form_function))
-        ]
-    )
+    # -------- One frequency
+    if len(form_function) == 1:
+        sigma_bs_L = np.array(
+            [
+                (
+                    length_norm**2 
+                    * PDF 
+                    * np.interp(ka_weighted_trim[0], ka[0], form_function[0] ** 2)
+                ).sum()
+            ]
+        )
+    # -------- More than one frequency
+    else:
+        sigma_bs_L = np.array(
+            [
+                (
+                    length_norm**2
+                    * PDF
+                    * np.interp(ka_weighted_trim[i], ka[i, : n_vals[i]], form_function[i] ** 2)
+                ).sum()
+                for i in range(len(form_function))
+            ]
+        )
     # ---- Return the weighted average
     return sigma_bs_L
 
+def inverse_normalize_series(series: pd.Series, ranges_dict: Dict[str, Any]):
+    """
+    Apply inverse min-max normalization to a `pandas.Series`
+    """
+
+    # Create copy
+    series_copy = series.copy() 
+    
+    # Get the columns that will be inverse transformed
+    transform_cols = list(ranges_dict.keys())
+    
+    # Convert `ranges_dict` to a `pd.DataFrame`
+    ranges_df = pd.DataFrame(ranges_dict).T
+
+    # Apply inverse transformation
+    series_copy[transform_cols] = (
+        series_copy[transform_cols] * (ranges_df["high"] - ranges_df["low"]) + ranges_df["low"]
+    )
+
+    # Return the inverse min-max normalized series
+    return series_copy
 
 def orientation_average(
     angle: np.ndarray[float],
@@ -159,14 +193,14 @@ def orientation_average(
     Compute the orientation-averaged linear backscattering cross-section :math:`\sigma_{bs}(\theta)`
     """
 
-    # Skip weighted averaging if only a single value is present
-    if len(form_function) == 1:
-        # ---- If complex
-        if np.all(np.iscomplex(form_function)):
-            return np.sqrt(form_function.real**2 + form_function.imag**2)
-        # ---- If not complex
-        else:
-            return form_function
+    # # Skip weighted averaging if only a single value is present
+    # if len(form_function) == 1:
+    #     # ---- If complex
+    #     if np.all(np.iscomplex(form_function)):
+    #         return [np.sqrt(f.real**2 + f.imag**2) for f in form_function[0]]
+    #     # ---- If not complex
+    #     else:
+    #         return form_function
 
     # Weight based on distribution input
     # ---- Gaussian (Normal)
@@ -197,6 +231,90 @@ def orientation_average(
         for f in form_function
     ]
 
+def transect_mask(coordinates_df: pd.DataFrame,
+                  mask: pd.Series,
+                  filter_dict: Dict[str, Any]) -> pd.Series:
+    """
+    Generate transect mask
+    """
+    # Transect-based filtering
+    if "transect_min" in filter_dict:
+        mask &= coordinates_df.index.get_level_values(0) >= filter_dict["transect_min"]
+    if "transect_max" in filter_dict:
+        mask &= coordinates_df.index.get_level_values(0) <= filter_dict["transect_max"]
+    if "transect" in filter_dict:
+        mask &= coordinates_df.index.get_level_values(0).isin(filter_dict["transect"])
+
+    return mask
+
+def coordinate_mask(coordinates_df: pd.DataFrame,
+                    mask: pd.Series,
+                    filter_dict: Dict[str, Any]) -> pd.Series:
+    """
+    Generate coordinate mask
+    """
+    # Longitude-based filtering
+    if "longitude_min" in filter_dict:
+        mask &= coordinates_df["longitude"] >= filter_dict["longitude_min"]
+    if "longitude_max" in filter_dict:
+        mask &= coordinates_df["longitude"] <= filter_dict["longitude_max"]
+
+    # Latitude-based filtering
+    if "latitude_min" in filter_dict:
+        mask &= coordinates_df["latitude"] >= filter_dict["latitude_min"]
+    if "latitude_max" in filter_dict:
+        mask &= coordinates_df["latitude"] <= filter_dict["latitude_max"]
+
+    return mask
+
+def create_composite_mask(coordinates_df: pd.DataFrame, 
+                          filter_dict: Dict[str, Any]) -> pd.Series:
+    """
+    Create composite transect and coordinate mask
+    """
+
+    # Start with all True mask
+    mask = pd.Series(True, index=coordinates_df.index)
+
+    # Transect-based filtering
+    mask &= transect_mask(coordinates_df, mask, filter_dict)
+
+    # Coordinate-based filtering
+    mask &= coordinate_mask(coordinates_df, mask, filter_dict)
+
+    # Return the composite mask
+    return mask    
+
+def reduce_dataset(metadata_dfs: Dict[str, pd.DataFrame], 
+                   measurements_df: pd.DataFrame,
+                   filter_dict: Dict[str, Any]) -> Tuple[Dict[str, pd.DataFrame], pd.DataFrame]:
+    """
+    Mask the dataset to only include specified transects, longitudes, and latitudes
+    """
+    # Get coordinates
+    coordinates_df = metadata_dfs["coordinates_df"]
+
+    # Create composite mask
+    df_mask = create_composite_mask(coordinates_df, filter_dict)
+
+    # Apply mask to metadata attributes
+    updated_metadata = {name: df.loc[df_mask] for name, df in metadata_dfs.items()}
+
+    # Apply mask to dataset
+    # ---- For MultiIndex
+    if isinstance(measurements_df.index, pd.MultiIndex):
+        updated_measurements = measurements_df[df_mask.reindex_like(measurements_df)]
+    # ---- For single index
+    else:
+        # ---- Initialize transect mask
+        mask_transect = pd.Series(True, index=measurements_df.index)
+        # ---- Transect-based filtering
+        mask_transect &= transect_mask(measurements_df, mask_transect, filter_dict)
+        # ---- Apply mask
+        updated_measurements = measurements_df[mask_transect.reindex_like(measurements_df)]
+
+    # Return both
+    return updated_metadata, updated_measurements
 
 def fit_rayleigh_pdf(
     measured: np.ndarray[float],
