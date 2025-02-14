@@ -1,5 +1,5 @@
 # This YAML file is a configuration file specifying various processing parameters, input filepaths,
-# and other settings used to create a recipe for inverting biologically meaningful parameters from 
+# and other settings used to create a recipe for inverting biologically meaningful parameters from
 # survey acoustic backscatter measurements
 
 ---
@@ -31,7 +31,7 @@ geostatistic_file_settings:
     sheetname: Smoothing_EasyKrig
 
 ##############################################################################
-# DATA PROCESSING 
+# DATA PROCESSING
 #################
 # General parameters required for processing acoustic files
 
@@ -39,7 +39,7 @@ geostatistic_file_settings:
 # !TODO: Way to test/validate inversion algorithm via forward modeling and checking output parameters
 processing_parameters:
   # - Necessary parameters for the acoustic input files
-  acoustic_files: 
+  acoustic_files:
     # - Minimum Sv threshold (dB re. 1 m^-1) !!! [[[ENABLE f-SPECIFIC THRESHOLDS?]]]
     sv_threshold: -90.0
     # - Maximum Sv threshold (dB re. 1 m^-1) !!! [[[UNUSED]]]
@@ -78,7 +78,7 @@ processing_parameters:
     length_distribution: gaussian
   # - Simulation configuration
   simulation:
-    # - Monte Carlo initialization of scattering parameters -- this overrides the "initial" 
+    # - Monte Carlo initialization of scattering parameters -- this overrides the "initial"
     # - starting value in the `scattering_parameters` configuration
     monte_carlo: False
     # - Number of realizations
@@ -86,15 +86,15 @@ processing_parameters:
     # - Scale parameters for optimization [True/False]
     scale_parameters: True
   # - Configuration for inverting acoustic backscatter into population estimates
-  inversion: 
+  inversion:
     # - Reference frequency (kHz) for determining which values to use for population inversion
     reference_frequency: 120.0
 
 ##############################################################################
 # SCATTERING MODEL PARAMETERS FOR INVERSION
 ###########################################
-# Scattering model parameters that can be inverted (i.e. optimizing via fitting Sv). This requires 
-# four arguments per parameter: 1) "initial" (starting value), 2) "low" (lower bound), 3) "high" 
+# Scattering model parameters that can be inverted (i.e. optimizing via fitting Sv). This requires
+# four arguments per parameter: 1) "initial" (starting value), 2) "low" (lower bound), 3) "high"
 # (upper bound), 4) "optimize" (True/False stating whether this value will be held constant or be
 # allowed to vary for the optimization)
 
@@ -160,7 +160,7 @@ scattering_parameters:
 # General optimization settings
 
 optimization_parameters:
-  # - Maximun number of function evaluations
+  # - Maximum number of function evaluations
   max_nfev: 500
   # - Gradient termination tolerance
   gtol: 0.001
@@ -184,14 +184,14 @@ geospatial:
 # - Kriging parameters
 kriging_parameters:
   # - Base area of kriging mesh grid cells (nmi^2)
-  A0: 6.25 
+  A0: 6.25
   # - Longitudinal reference for kriging mesh adjustment
   longitude_reference: -124.78338
   # - Longitudinal offset for kriging mesh adjustment
   longitude_offset: -124.78338
   # - Latitudinal offset for kriging mesh adjustment
   latitude_offset: 45.0
-  # - Anisotropy 
+  # - Anisotropy
   anisotropy: 0.001
   # - Minimum number of nearest neighbors for kriging
   kmin: 3

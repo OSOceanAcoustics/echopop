@@ -1,18 +1,20 @@
 import copy
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
+
+from ...analysis import krige
+from ...spatial.projection import transform_geometry
+from ...utils import message as em
 from .data_ingestion import (
-    ingest_inversion_files, 
-    load_analysis_files, 
-    load_inversion_configuration
+    ingest_inversion_files,
+    load_analysis_files,
+    load_inversion_configuration,
 )
 from .math import reduce_dataset
-from .spatial import inversion_variogram_analysis, krige_inverted_data
-from .optimize import estimate_population, group_optimizer, prepare_minimizer
 from .message import inversion_kriging_results_msg
-from ...spatial.projection import transform_geometry
-from ...analysis import krige
-from ...utils import message as em
+from .optimize import estimate_population, group_optimizer, prepare_minimizer
+from .spatial import inversion_variogram_analysis, krige_inverted_data
+
 
 class AcousticInversion:
     """
@@ -21,7 +23,7 @@ class AcousticInversion:
 
     def __init__(
         self,
-        inversion_configuration_filepath: Union[str, Path],        
+        inversion_configuration_filepath: Union[str, Path],
     ):
 
         # Load the configuration file
@@ -35,14 +37,16 @@ class AcousticInversion:
 
         # Load the metadata and dataset
         self.input["metadata"], self.input["sv_df"] = ingest_inversion_files(
-            **self.inversion_config["inversion_file_settings"], 
-            **self.inversion_config["processing_parameters"]["acoustic_files"]
+            **self.inversion_config["inversion_file_settings"],
+            **self.inversion_config["processing_parameters"]["acoustic_files"],
         )
 
         # Update the parameterization to include the literal center frequencies ingested
-        self.inversion_config["processing_parameters"]["acoustic_models"].update({
-            "center_frequencies": self.input["sv_df"].columns.to_numpy() * 1e3,
-        })
+        self.inversion_config["processing_parameters"]["acoustic_models"].update(
+            {
+                "center_frequencies": self.input["sv_df"].columns.to_numpy() * 1e3,
+            }
+        )
 
         # Read in additional analysis files
         load_analysis_files(self.input, self.inversion_config)
@@ -50,12 +54,14 @@ class AcousticInversion:
         # Analysis
         self.analysis = {}
 
-        # Initialize results 
+        # Initialize results
         self.results = {}
 
-    def invert_population(self,
-                          verbose: bool = True,
-                          subset_dataset: Optional[Dict[str, Any]] = None,):
+    def invert_population(
+        self,
+        verbose: bool = True,
+        subset_dataset: Optional[Dict[str, Any]] = None,
+    ):
         """
         Invert population estimates from active acoustic backscatter measurements
         """
@@ -66,31 +72,29 @@ class AcousticInversion:
         # Create a copy of the ingested dataset
         measurements_df = self.input["sv_df"].copy()
 
-         # Subset data, if needed
+        # Subset data, if needed
         if subset_dataset:
-             self.analysis["inversion"], measurements_df = reduce_dataset(self.input["metadata"], 
-                                                                          measurements_df, 
-                                                                          subset_dataset)
+            self.analysis["inversion"], measurements_df = reduce_dataset(
+                self.input["metadata"], measurements_df, subset_dataset
+            )
         else:
             self.analysis["inversion"] = copy.deepcopy(self.input["metadata"])
-             
+
         # Get specific keyword arguments
         # ---- Center frequencies
-        center_frequencies = (
-            self.inversion_config["processing_parameters"]["acoustic_models"]["center_frequencies"]
-        )
+        center_frequencies = self.inversion_config["processing_parameters"]["acoustic_models"][
+            "center_frequencies"
+        ]
         # ---- Minimum Sv threshold
-        sv_threshold = (
-            self.inversion_config["processing_parameters"]["acoustic_files"]["sv_threshold"]
-        )
+        sv_threshold = self.inversion_config["processing_parameters"]["acoustic_files"][
+            "sv_threshold"
+        ]
         # ---- Aggregate
-        aggregate = (
-            self.inversion_config["processing_parameters"]["acoustic_files"]["aggregate"]
-        )
+        aggregate = self.inversion_config["processing_parameters"]["acoustic_files"]["aggregate"]
 
         # Prepare the optimizer parameterization
         measurements_df = prepare_minimizer(
-            data_df=measurements_df, 
+            data_df=measurements_df,
             center_frequencies=center_frequencies,
             aggregate=aggregate,
             sv_threshold=sv_threshold,
@@ -111,35 +115,34 @@ class AcousticInversion:
                 sv_threshold,
                 verbose,
             ),
-            result_type="expand"
+            result_type="expand",
         )
 
         # Store the best-fit inverted results
         self.results["inversion"]["inverted_parameters_df"] = inversion_results
 
-        # Generate population results 
+        # Generate population results
         self.results["inversion"]["transect_df"] = estimate_population(
             inversion_results,
-            density_sw = (
+            density_sw=(
                 self.inversion_config["processing_parameters"]["acoustic_models"]["density_sw"]
             ),
             aggregate=aggregate,
             **self.analysis["inversion"],
-            **self.inversion_config["processing_parameters"]["inversion"],            
+            **self.inversion_config["processing_parameters"]["inversion"],
         )
 
         # Copy these results to a "transect" key to enable plotting later on
         # [TEMPORARY -- JURY-RIGGED TO ENABLE PLOTTING LATER ON]
         self.analysis["transect"] = {}
         self.analysis["transect"]["acoustics"] = {}
-        self.analysis["transect"]["acoustics"]["adult_transect_df"] = (
-            self.results["inversion"]["transect_df"]
-        )
+        self.analysis["transect"]["acoustics"]["adult_transect_df"] = self.results["inversion"][
+            "transect_df"
+        ]
         # ---- Adjust column name
         self.analysis["transect"]["acoustics"]["adult_transect_df"]["biomass_density"] = (
             self.results["inversion"]["transect_df"]["biomass_areal_density"]
         )
-        
 
     def fit_inversion_variogram(
         self,
@@ -157,7 +160,7 @@ class AcousticInversion:
             "hole_effect_range",
             "decay_power",
         ],
-        verbose: bool = True,        
+        verbose: bool = True,
     ) -> None:
         """
         Compute the best-fit variogram parameters for inverted biomass densities
@@ -266,11 +269,10 @@ class AcousticInversion:
         :class:`lmfit.parameter.Parameters` :
             Variogram parameter optimization leverages the ``Parameters``
             class from ``lmfit`` for model optimization
-        """        
+        """
 
         # Initialize Survey-class object
-        self.analysis.update({"variogram": {}, 
-                              "settings": {}})
+        self.analysis.update({"variogram": {}, "settings": {}})
 
         # Parameterize analysis settings that will be applied to the variogram fitting and analysis
         self.analysis["settings"].update(
@@ -324,9 +326,9 @@ class AcousticInversion:
         if standardize_coordinates:
             # ---- Transform geometry
             transect_data, _, _ = transform_geometry(
-                transect_data, 
-                self.input["isobath_reference"], 
-                self.analysis["settings"]["variogram"]
+                transect_data,
+                self.input["isobath_reference"],
+                self.analysis["settings"]["variogram"],
             )
             # ---- Print message if verbose
             if verbose:
@@ -365,9 +367,13 @@ class AcousticInversion:
 
         # Add variogram result
         self.results.update(
-            {"variogram": {"model_fit": best_fit_variogram["best_fit_parameters"], 
-                           "n_lags": default_variogram_parameters["n_lags"],
-                           "model": default_variogram_parameters["model"]}}
+            {
+                "variogram": {
+                    "model_fit": best_fit_variogram["best_fit_parameters"],
+                    "n_lags": default_variogram_parameters["n_lags"],
+                    "model": default_variogram_parameters["model"],
+                }
+            }
         )
 
         # Print result if `verbose == True`
@@ -474,8 +480,10 @@ class AcousticInversion:
                 "kriging": {
                     "cropping_parameters": {"crop_method": "convex_hull", **cropping_parameters},
                     "extrapolate": extrapolate,
-                    "kriging_parameters": {**self.inversion_config["kriging_parameters"],
-                                        **kriging_parameters},
+                    "kriging_parameters": {
+                        **self.inversion_config["kriging_parameters"],
+                        **kriging_parameters,
+                    },
                     "projection": self.inversion_config["geospatial"]["init"],
                     "standardize_coordinates": (
                         self.analysis["settings"]["variogram"]["standardize_coordinates"]
@@ -501,9 +509,7 @@ class AcousticInversion:
         if self.analysis["settings"]["variogram"]["standardize_coordinates"]:
             # ---- Transform geometry
             mesh_data, _, _ = transform_geometry(
-                mesh_data, 
-                self.input["isobath_reference"], 
-                self.analysis["settings"]["variogram"]
+                mesh_data, self.input["isobath_reference"], self.analysis["settings"]["variogram"]
             )
             # ---- Print message if verbose
             if verbose:
@@ -520,7 +526,7 @@ class AcousticInversion:
 
         # Get the transect data
         transect_df = self.analysis["variogram"]["transect_df"].copy()
-            
+
         # Run kriging analysis
         # ----> Generates a georeferenced dataframe for the entire mesh grid, summary statistics,
         # ----> and adds intermediate data products to the analysis attribute
@@ -531,8 +537,9 @@ class AcousticInversion:
 
         # Save the results to the `results` attribute
         self.results.update({"kriging": kriged_results})
-        
+
         # Print result if `verbose == True`
         if verbose:
-           inversion_kriging_results_msg(self.results["kriging"], 
-                                         self.analysis["settings"]["kriging"])
+            inversion_kriging_results_msg(
+                self.results["kriging"], self.analysis["settings"]["kriging"]
+            )

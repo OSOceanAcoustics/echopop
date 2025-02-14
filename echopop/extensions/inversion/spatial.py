@@ -5,6 +5,9 @@ from typing import Any, Dict
 import numpy as np
 import pandas as pd
 
+from ...spatial.krige import kriging
+from ...spatial.mesh import crop_mesh
+from ...spatial.projection import transform_geometry
 from ...spatial.variogram import (
     empirical_variogram,
     initialize_initial_optimization_values,
@@ -12,9 +15,6 @@ from ...spatial.variogram import (
     initialize_variogram_parameters,
     optimize_variogram,
 )
-from ...spatial.projection import transform_geometry
-from ...spatial.mesh import crop_mesh
-from ...spatial.krige import kriging
 from ...utils.validate_dict import (
     KrigingAnalysis,
     KrigingParameterInputs,
@@ -23,13 +23,14 @@ from ...utils.validate_dict import (
     VariogramEmpirical,
 )
 
+
 def inversion_variogram_analysis(
     transect_df: pd.DataFrame,
     variogram_parameters: dict,
     default_variogram_parameters: dict,
     optimization_parameters: dict,
     initialize_variogram: dict,
-    settings_dict: dict, 
+    settings_dict: dict,
 ):
     """
     Fit optimized variogram to inverted georeferenced data
@@ -83,6 +84,7 @@ def inversion_variogram_analysis(
         },
     }
 
+
 def krige_inverted_data(
     transect_df: pd.DataFrame,
     mesh_df: pd.DataFrame,
@@ -95,21 +97,23 @@ def krige_inverted_data(
     # Validate cropping method parameters
     validated_cropping_methods = MeshCrop.create(**settings_dict["cropping_parameters"])
     # ---- Update the dictionary
-    settings_dict["cropping_parameters"].update({**validated_cropping_methods,
-                                                "projection": settings_dict["projection"]})
+    settings_dict["cropping_parameters"].update(
+        {**validated_cropping_methods, "projection": settings_dict["projection"]}
+    )
 
     # Validate the variogram parameters
     valid_variogram_parameters = VariogramBase.create(**settings_dict["variogram_parameters"])
     # ---- Update the dictionary
-    settings_dict["variogram_parameters"].update({**settings_dict["variogram_parameters"],
-                                                **valid_variogram_parameters})
+    settings_dict["variogram_parameters"].update(
+        {**settings_dict["variogram_parameters"], **valid_variogram_parameters}
+    )
 
     # Validate kriging parameters
     valid_kriging_parameters = {
         **settings_dict["kriging_parameters"],
         **KrigingParameterInputs.create(
             **{**settings_dict["kriging_parameters"], **settings_dict["variogram_parameters"]}
-        )
+        ),
     }
     # ---- Update the dictionary
     settings_dict["kriging_parameters"].update({**valid_kriging_parameters})
@@ -128,9 +132,7 @@ def krige_inverted_data(
         )
     else:
         # ---- Compute the cropped mesh
-        mesh_full = crop_mesh(
-            transect_df, mesh_df, settings_dict["cropping_parameters"]
-        )
+        mesh_full = crop_mesh(transect_df, mesh_df, settings_dict["cropping_parameters"])
         # ---- Print message, if verbose
         if (settings_dict["verbose"]) and (
             validated_cropping_methods["crop_method"] == "convex_hull"
@@ -145,10 +147,7 @@ def krige_inverted_data(
     analysis_dict.update({"mesh_df": mesh_full})
 
     # Kriged results
-    kriged_results = kriging(
-        transect_df, mesh_full, settings_dict
-    )
+    kriged_results = kriging(transect_df, mesh_full, settings_dict)
 
     # Return kriged (interpolated) results
     return kriged_results
-    

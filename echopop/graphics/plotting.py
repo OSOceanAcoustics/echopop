@@ -789,5 +789,6 @@ def plot_unused_param_check(kwargs):
         # ---- Join as a list
         mismatch_str = ", ".join(f"'{param}'" for param in mismatch)
         # ---- Print unused parameters (as a warning)
-        warnings.warn(f"The following plotting parameters were NOT used: {mismatch_str}!",
-                      stacklevel=-1)
+        warnings.warn(
+            f"The following plotting parameters were NOT used: {mismatch_str}!", stacklevel=-1
+        )

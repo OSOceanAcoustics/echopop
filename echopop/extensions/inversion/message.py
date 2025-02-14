@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 
+
 def inversion_kriging_results_msg(kriging_results_dict: pd.DataFrame, settings_dict: dict) -> None:
 
     # Extract dictionary results
@@ -22,7 +23,7 @@ def inversion_kriging_results_msg(kriging_results_dict: pd.DataFrame, settings_d
         f"(INVERTED) KRIGING RESULTS (MESH)\n"
         f"--------------------------------\n"
         f"| Kriged variable: {
-            ('Inverted ' 
+            ('Inverted '
             + settings_dict['variable'].replace('_', ' ')).capitalize()
         } "
         f"(kg/nmi^2)\n"

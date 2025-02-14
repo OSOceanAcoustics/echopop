@@ -3,8 +3,9 @@ Mathematical and numerical utility functions.
 """
 
 from typing import Any, Dict, Literal, Tuple, Union
-import pandas as pd
+
 import numpy as np
+import pandas as pd
 from scipy.special import spherical_jn, spherical_yn
 
 
@@ -139,8 +140,8 @@ def length_average(
         sigma_bs_L = np.array(
             [
                 (
-                    length_norm**2 
-                    * PDF 
+                    length_norm**2
+                    * PDF
                     * np.interp(ka_weighted_trim[0], ka[0], form_function[0] ** 2)
                 ).sum()
             ]
@@ -160,17 +161,18 @@ def length_average(
     # ---- Return the weighted average
     return sigma_bs_L
 
+
 def inverse_normalize_series(series: pd.Series, ranges_dict: Dict[str, Any]):
     """
     Apply inverse min-max normalization to a `pandas.Series`
     """
 
     # Create copy
-    series_copy = series.copy() 
-    
+    series_copy = series.copy()
+
     # Get the columns that will be inverse transformed
     transform_cols = list(ranges_dict.keys())
-    
+
     # Convert `ranges_dict` to a `pd.DataFrame`
     ranges_df = pd.DataFrame(ranges_dict).T
 
@@ -181,6 +183,7 @@ def inverse_normalize_series(series: pd.Series, ranges_dict: Dict[str, Any]):
 
     # Return the inverse min-max normalized series
     return series_copy
+
 
 def orientation_average(
     angle: np.ndarray[float],
@@ -231,9 +234,10 @@ def orientation_average(
         for f in form_function
     ]
 
-def transect_mask(coordinates_df: pd.DataFrame,
-                  mask: pd.Series,
-                  filter_dict: Dict[str, Any]) -> pd.Series:
+
+def transect_mask(
+    coordinates_df: pd.DataFrame, mask: pd.Series, filter_dict: Dict[str, Any]
+) -> pd.Series:
     """
     Generate transect mask
     """
@@ -247,9 +251,10 @@ def transect_mask(coordinates_df: pd.DataFrame,
 
     return mask
 
-def coordinate_mask(coordinates_df: pd.DataFrame,
-                    mask: pd.Series,
-                    filter_dict: Dict[str, Any]) -> pd.Series:
+
+def coordinate_mask(
+    coordinates_df: pd.DataFrame, mask: pd.Series, filter_dict: Dict[str, Any]
+) -> pd.Series:
     """
     Generate coordinate mask
     """
@@ -267,8 +272,8 @@ def coordinate_mask(coordinates_df: pd.DataFrame,
 
     return mask
 
-def create_composite_mask(coordinates_df: pd.DataFrame, 
-                          filter_dict: Dict[str, Any]) -> pd.Series:
+
+def create_composite_mask(coordinates_df: pd.DataFrame, filter_dict: Dict[str, Any]) -> pd.Series:
     """
     Create composite transect and coordinate mask
     """
@@ -283,11 +288,14 @@ def create_composite_mask(coordinates_df: pd.DataFrame,
     mask &= coordinate_mask(coordinates_df, mask, filter_dict)
 
     # Return the composite mask
-    return mask    
+    return mask
 
-def reduce_dataset(metadata_dfs: Dict[str, pd.DataFrame], 
-                   measurements_df: pd.DataFrame,
-                   filter_dict: Dict[str, Any]) -> Tuple[Dict[str, pd.DataFrame], pd.DataFrame]:
+
+def reduce_dataset(
+    metadata_dfs: Dict[str, pd.DataFrame],
+    measurements_df: pd.DataFrame,
+    filter_dict: Dict[str, Any],
+) -> Tuple[Dict[str, pd.DataFrame], pd.DataFrame]:
     """
     Mask the dataset to only include specified transects, longitudes, and latitudes
     """
@@ -315,6 +323,7 @@ def reduce_dataset(metadata_dfs: Dict[str, pd.DataFrame],
 
     # Return both
     return updated_metadata, updated_measurements
+
 
 def fit_rayleigh_pdf(
     measured: np.ndarray[float],

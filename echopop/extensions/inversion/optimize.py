@@ -1,10 +1,10 @@
+import time
+import warnings
 from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, Union
 
 import numpy as np
-from lmfit import Minimizer, Parameters
 import pandas as pd
-import time
-import warnings
+from lmfit import Minimizer, Parameters
 
 from .math import generate_frequency_interval, inverse_normalize_series, wavenumber
 from .scatterer import compute_Sv, compute_ts
@@ -32,7 +32,7 @@ from .scatterer import compute_Sv, compute_ts
 
 
 def normalize_parameters(
-    parameter_sets: Dict[str, Any], 
+    parameter_sets: Dict[str, Any],
     inverse: bool = False,
     inverse_reference: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
@@ -51,38 +51,35 @@ def normalize_parameters(
 
     # Min-max normalization
     if inverse is False:
-        return (
-                {
-                    realization: {
-                        key: (
-                            {
-                                **value,
-                                "initial": (
-                                    (value["initial"] - value["low"]) 
-                                    / (value["high"] - value["low"])
-                                    if value["high"] != value["low"]
-                                    else 0.0
-                                ),
-                                "low": 0.0, "high": 1.0,
-                            }
-                            if isinstance(value, dict)
-                            else value
-                        )  # Skip scalar entries
-                        for key, value in sets.items()
+        return {
+            realization: {
+                key: (
+                    {
+                        **value,
+                        "initial": (
+                            (value["initial"] - value["low"]) / (value["high"] - value["low"])
+                            if value["high"] != value["low"]
+                            else 0.0
+                        ),
+                        "low": 0.0,
+                        "high": 1.0,
                     }
-                    for realization, sets in parameter_sets.items()
-                }
-        )
+                    if isinstance(value, dict)
+                    else value
+                )  # Skip scalar entries
+                for key, value in sets.items()
+            }
+            for realization, sets in parameter_sets.items()
+        }
     # Min-max inverse normalization
     else:
-        return (
-            {
-                key: (
-                    value * (inverse_reference[key]["high"] - inverse_reference[key]["low"]) + inverse_reference[key]["low"]
-                )    
-                for key, value in parameter_sets.items()
-            }
-        )
+        return {
+            key: (
+                value * (inverse_reference[key]["high"] - inverse_reference[key]["low"])
+                + inverse_reference[key]["low"]
+            )
+            for key, value in parameter_sets.items()
+        }
 
 
 def simulate_Sv(
@@ -98,9 +95,9 @@ def simulate_Sv(
 
     # Rescale to the original scale
     if config["scale_parameters"]:
-        parameters_dict = normalize_parameters(parameters_dict, 
-                                               inverse=True, 
-                                               inverse_reference=config["parameter_bounds"])
+        parameters_dict = normalize_parameters(
+            parameters_dict, inverse=True, inverse_reference=config["parameter_bounds"]
+        )
 
     # Compute acoustic property metrics
     # ---------------------------------
@@ -121,9 +118,7 @@ def simulate_Sv(
 
     # Compute the acoustic wavenumbers weighted by target size
     # ---- Center frequencies
-    k_center = wavenumber(
-        config["center_frequencies"], config["sound_speed_sw"]
-    )
+    k_center = wavenumber(config["center_frequencies"], config["sound_speed_sw"])
     # ---- Compute ka (center frequencies)
     ka_center = k_center * parameters_dict["length_mean"] / parameters_dict["length_radius_ratio"]
     # ---- Frequency intervals
@@ -189,7 +184,7 @@ def simulate_Sv_fit(
     config: Dict[str, Any],
 ) -> Dict[str, Any]:
     """
-    Cost-function representing the scattering model fit (Sv, dB re. 1 m^-1) 
+    Cost-function representing the scattering model fit (Sv, dB re. 1 m^-1)
     """
 
     # Pre-allocate weight array
@@ -207,21 +202,24 @@ def simulate_Sv_fit(
     # Return the summed absolute error
     return Q
 
-def parameterize(Sv_measured: pd.Series,
-                 scattering_parameters: Dict[str, Any], 
-                 simulation_parameters: Dict[str, Any],
-                 center_frequencies: np.ndarray[float], 
-                 sv_threshold: float,
-                 processing_parameters: Dict[str, Any],
-                 **kwargs) -> List[Minimizer]:
+
+def parameterize(
+    Sv_measured: pd.Series,
+    scattering_parameters: Dict[str, Any],
+    simulation_parameters: Dict[str, Any],
+    center_frequencies: np.ndarray[float],
+    sv_threshold: float,
+    processing_parameters: Dict[str, Any],
+    **kwargs,
+) -> List[Minimizer]:
     """
     Generate `lmfit.Minimizer` object used for optimizing theroetical Sv (dB re. m^-1) based on
     measured values
     """
-    
+
     # Prepare parameters and minimization procedure
     parameters = prepare_optimization(
-        scattering_parameters, 
+        scattering_parameters,
         simulation_parameters=simulation_parameters,
     )
 
@@ -236,28 +234,32 @@ def parameterize(Sv_measured: pd.Series,
 
     # Generate `Minimizer` function class required for bounded optimization
     # ---- This will generate per realization within a List
-    return (
-        [Minimizer(simulate_Sv_fit, 
-                   parameters[idx], 
-                   fcn_args=(Sv_measured, 
-                             {**processing_parameters, 
-                              **{"center_frequencies": center_frequencies[valid_idx]}}), 
-                   nan_policy="omit") 
-         for idx in parameters]
-    )
+    return [
+        Minimizer(
+            simulate_Sv_fit,
+            parameters[idx],
+            fcn_args=(
+                Sv_measured,
+                {**processing_parameters, **{"center_frequencies": center_frequencies[valid_idx]}},
+            ),
+            nan_policy="omit",
+        )
+        for idx in parameters
+    ]
+
 
 def prepare_minimizer(
     data_df: pd.DataFrame,
     center_frequencies: np.ndarray[float],
     aggregate: str,
     sv_threshold: float,
-    scattering_parameters: Dict[str, Any], 
-    simulation_parameters: Dict[str, Any],    
-    processing_parameters: Dict[str, Any],    
+    scattering_parameters: Dict[str, Any],
+    simulation_parameters: Dict[str, Any],
+    processing_parameters: Dict[str, Any],
     **kwargs,
 ) -> pd.DataFrame:
     """
-    Wrapper function that creates a list of `lmfit.Minimizer` objects for configured realizations 
+    Wrapper function that creates a list of `lmfit.Minimizer` objects for configured realizations
     that will be used to predict Sv (dB re. m^-1)
     """
 
@@ -268,13 +270,17 @@ def prepare_minimizer(
     data_df["minimizer"] = data_df["minimizer"].astype(object)
 
     # Create list of `Minimizer` objects depending on number of defined realizations
-    data_df["minimizer"] = data_df.apply(parameterize, 
-                                         axis=1, 
-                                         args=(scattering_parameters,
-                                               simulation_parameters,
-                                               center_frequencies,
-                                               sv_threshold,
-                                               processing_parameters))    
+    data_df["minimizer"] = data_df.apply(
+        parameterize,
+        axis=1,
+        args=(
+            scattering_parameters,
+            simulation_parameters,
+            center_frequencies,
+            sv_threshold,
+            processing_parameters,
+        ),
+    )
 
     # Define label (for verbosity)
     if aggregate == "interval":
@@ -282,8 +288,9 @@ def prepare_minimizer(
     else:
         data_df["label"] = data_df.index.map(lambda tup: f"Transect: {tup};")
 
-    # Return the dataset 
+    # Return the dataset
     return data_df
+
 
 def estimate_population(
     inverted_data: pd.DataFrame,
@@ -293,15 +300,15 @@ def estimate_population(
     density_sw: float,
     aggregate: Literal["interval", "transect"],
     reference_frequency: Optional[float] = None,
-    **kwargs,    
-) -> pd.DataFrame: 
+    **kwargs,
+) -> pd.DataFrame:
     """
     Generate population estimates based on inverted TS model parameters
     """
 
     # Compute the average body radius [single animal]
     radius_mean = inverted_data["length_mean"] / inverted_data["length_radius_ratio"]
-    
+
     # Estimate the average volume assuming an uniformly bent cylinder [single animal]
     body_volume = np.pi * radius_mean**2 * inverted_data["length_mean"]
 
@@ -314,7 +321,7 @@ def estimate_population(
     # Subset the layer thicknesses for the correct reference frequency
     layer_thickness = layer_height_df[reference_frequency].copy()
     # ---- Drop the empty cells
-    layer_thickness_filled = layer_thickness[layer_thickness > 0.].reset_index(name="thickness")
+    layer_thickness_filled = layer_thickness[layer_thickness > 0.0].reset_index(name="thickness")
 
     # Apportion values if inversion done on a transect-by-transect basis
     if aggregate == "transect":
@@ -331,36 +338,38 @@ def estimate_population(
         # ---- Set the index
         nasc_intervals.set_index(["interval"], append=True, inplace=True)
         # ---- Calculate the summed layer height per interval
-        interval_thickness = layer_thickness_filled.groupby(
-            ["transect_num", "interval"]
-        )["thickness"].sum().reset_index()
+        interval_thickness = (
+            layer_thickness_filled.groupby(["transect_num", "interval"])["thickness"]
+            .sum()
+            .reset_index()
+        )
         # ---- Calculate the average thickness per transect
-        average_thickness = interval_thickness.groupby(
-            "transect_num"
-        )["thickness"].mean()
+        average_thickness = interval_thickness.groupby("transect_num")["thickness"].mean()
         # ---- Get number of unique intervals per transect
         n_intervals = layer_thickness_filled.groupby(["transect_num"])["interval"].nunique()
         # ---- Compute the adjusted areal number density (animals nmi^-2)
         areal_number_density = (
-            inverted_data["number_density"] 
-            * nasc_intervals["weight"] * average_thickness * n_intervals
-        ).fillna(0.0) * 1852 ** 2
+            inverted_data["number_density"]
+            * nasc_intervals["weight"]
+            * average_thickness
+            * n_intervals
+        ).fillna(0.0) * 1852**2
     else:
         # ---- Index the filled layer thicknesses by 'interval'
         layer_thickness_filled.set_index(["transect_num", "interval", "layer"], inplace=True)
         # ---- Compute the areal number density for each layer
         layer_density = inverted_data["number_density"] * layer_thickness_filled["thickness"]
         # ---- Reset index
-        layer_density = layer_density.copy().fillna(0.).reset_index(name="number_density")
+        layer_density = layer_density.copy().fillna(0.0).reset_index(name="number_density")
         # ---- Vertically integrate across intervals
-        areal_number_density = layer_density.groupby(
-            ["transect_num", "interval"]
-        )["number_density"].sum()
+        areal_number_density = layer_density.groupby(["transect_num", "interval"])[
+            "number_density"
+        ].sum()
         # ---- Compute the adjusted areal number density (animals nmi^-2)
-        areal_number_density = areal_number_density * 1852 ** 2
+        areal_number_density = areal_number_density * 1852**2
 
     # Convert to areal biomass density (kg nmi^-2)
-    areal_biomass_density = (areal_number_density * weight_mean).fillna(0.)
+    areal_biomass_density = (areal_number_density * weight_mean).fillna(0.0)
 
     # Prepare the output
     output_df = coordinates_df.copy()
@@ -369,10 +378,11 @@ def estimate_population(
     # ---- Biomass density
     output_df["biomass_areal_density"] = areal_biomass_density
     # ---- Fill NaN values
-    output_df.fillna(0., inplace=True)
-    
+    output_df.fillna(0.0, inplace=True)
+
     # Return the output DataFrame with the index reset
     return output_df.sort_index().reset_index()
+
 
 def prepare_optimization(
     scattering_parameters: Dict[str, Any],
@@ -383,26 +393,24 @@ def prepare_optimization(
     """
 
     # Generate parameter sets
-    parameter_sets = monte_carlo_initialization(scattering_parameters, simulation_parameters)    
+    parameter_sets = monte_carlo_initialization(scattering_parameters, simulation_parameters)
 
     # Scale parameters, if defined
     if simulation_parameters["scale_parameters"]:
         # ---- Normalize
-        parameter_sets = normalize_parameters(
-            parameter_sets
-        )
-    
+        parameter_sets = normalize_parameters(parameter_sets)
+
     # Format the dictionary into the required `lmfit.Parameters` object
     parameters = {
-        realization: format_parameters(values)
-        for realization, values in parameter_sets.items()
+        realization: format_parameters(values) for realization, values in parameter_sets.items()
     }
 
     # Return the objects
     return parameters
 
+
 def format_parameters(parameters_dict: Dict[str, Any]):
-    
+
     # Initialize the Parameters class from the `lmfit` package
     # ---- Initialize `parameters` object
     parameters = Parameters()
@@ -419,8 +427,10 @@ def format_parameters(parameters_dict: Dict[str, Any]):
     # Return the `lmfit.Parameters` object
     return parameters
 
-def monte_carlo_initialization(scattering_parameters: Dict[str, Any],
-                               simulation_parameters: Dict[str, Any]) -> Dict[str, Any]:
+
+def monte_carlo_initialization(
+    scattering_parameters: Dict[str, Any], simulation_parameters: Dict[str, Any]
+) -> Dict[str, Any]:
     """
     Monte Carlo simulation of initial values for scattering parameters
     """
@@ -436,13 +446,13 @@ def monte_carlo_initialization(scattering_parameters: Dict[str, Any],
                             {
                                 "initial": np.random.uniform(value["low"], value["high"]),
                                 "low": value["low"],
-                                "high": value["high"]
+                                "high": value["high"],
                             }
                             if value["optimize"]
                             else value
                         )
                         for key, value in scattering_parameters.items()
-                    },                    
+                    },
                 ),
                 range(simulation_parameters["n_realizations"]),
             )
@@ -452,6 +462,7 @@ def monte_carlo_initialization(scattering_parameters: Dict[str, Any],
         parameter_sets = {0: scattering_parameters}
     # Return the parameter sets
     return parameter_sets
+
 
 def optimize_scattering_model(
     minimizer: Minimizer,
@@ -478,15 +489,16 @@ def optimize_scattering_model(
     # Return the best-fit parameters S_V value array, and fit
     return parameters_optimized, best_fit_Sv, Q
 
+
 def group_optimizer(
     Sv_measured: pd.Series,
     processing_parameters: Dict[str, Any],
     optimization_parameters: Dict[str, Any],
     simulation_parameters: Dict[str, Any],
-    center_frequencies: np.ndarray[float], 
+    center_frequencies: np.ndarray[float],
     sv_threshold: float,
     verbose: bool = True,
-    **kwargs
+    **kwargs,
 ):
     """
     Optimize the scattering model parameters across grouped by a defined index within a DataFrame
@@ -494,7 +506,7 @@ def group_optimizer(
 
     # Catch start time in case `verbose=True`
     start_time = time.time()
-    
+
     # Find which values are below the defined threshold
     valid_idx = np.argwhere(Sv_measured[:-2] > sv_threshold).flatten()
 
@@ -511,8 +523,13 @@ def group_optimizer(
         # ---- Fit errors
         fit_errors = np.ones(simulation_parameters["n_realizations"]) * np.nan
         # ---- Parameter sets (column names/structure)
-        parameter_sets = pd.DataFrame(Sv_measured.minimizer[0].params.valuesdict(), 
-                                      index=range(simulation_parameters["n_realizations"])) * np.nan        
+        parameter_sets = (
+            pd.DataFrame(
+                Sv_measured.minimizer[0].params.valuesdict(),
+                index=range(simulation_parameters["n_realizations"]),
+            )
+            * np.nan
+        )
 
         # Iterate through the realizations
         for realization in range(simulation_parameters["n_realizations"]):
@@ -520,18 +537,20 @@ def group_optimizer(
                 warnings.filterwarnings(action="ignore", category=RuntimeWarning)
                 # ---- Optimize
                 best_fit_params, _, fit_errors[realization] = optimize_scattering_model(
-                    Sv_measured["minimizer"][realization], 
-                    Sv, 
-                    optimization_parameters, 
-                    {**processing_parameters, 
-                    **{"center_frequencies": center_frequencies[valid_idx]}}
+                    Sv_measured["minimizer"][realization],
+                    Sv,
+                    optimization_parameters,
+                    {
+                        **processing_parameters,
+                        **{"center_frequencies": center_frequencies[valid_idx]},
+                    },
                 )
                 # ---- Create `pandas.Series` and update `parameter_sets` DataFrame
                 parameter_sets.loc[realization] = pd.Series(best_fit_params.params.valuesdict())
 
         # Find the parameter set with the lowest Q
         best_fit_set = parameter_sets.loc[np.argmin(fit_errors)]
-        
+
         # Add error, Q, to series
         best_fit_set["Q"] = np.min(fit_errors)
     else:
@@ -541,17 +560,18 @@ def group_optimizer(
             f"was fewer than the minimum frequency count "
             f"[{processing_parameters["minimum_frequency_count"]}]. Values were not optimized."
         )
-        
+
         # Create `pandas.Series`
         best_fit_set = pd.Series(Sv_measured.minimizer[0].params.valuesdict()) * np.nan
-       
+
         # Add error, Q, to series
         best_fit_set["Q"] = np.nan
 
     # Inverse transformation if values are scaled
     if processing_parameters["scale_parameters"]:
-        best_fit_set = inverse_normalize_series(best_fit_set, 
-                                                processing_parameters["parameter_bounds"])
+        best_fit_set = inverse_normalize_series(
+            best_fit_set, processing_parameters["parameter_bounds"]
+        )
 
     # Catch end time in case `verbose=True`
     end_time = time.time()
@@ -565,17 +585,17 @@ def group_optimizer(
         # ---- Parameter values
         parameter_values = f"\n{best_fit_set[:-1].to_frame().T}"
         # ---- Get elapsed time (s)
-        elapsed_time = f" Elapsed time: {np.round(end_time - start_time, 2)} s;" 
-        # ---- Number of frequencies        
+        elapsed_time = f" Elapsed time: {np.round(end_time - start_time, 2)} s;"
+        # ---- Number of frequencies
         valid_freq = (
-            "[" 
-            + "/".join(f"{freq * 1e-3}" for freq in center_frequencies[valid_idx]) + " kHz" 
+            "["
+            + "/".join(f"{freq * 1e-3}" for freq in center_frequencies[valid_idx])
+            + " kHz"
             + "]"
         )
-        
-        # Print out     
-        print(row + elapsed_time + error_value + valid_freq + frequency_msg + parameter_values) 
-    
+
+        # Print out
+        print(row + elapsed_time + error_value + valid_freq + frequency_msg + parameter_values)
+
     # Return
     return best_fit_set
-    

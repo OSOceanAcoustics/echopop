@@ -2,20 +2,16 @@ import glob
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Tuple, Union
 
-import yaml
 import numpy as np
 import pandas as pd
+import yaml
 from lmfit import Parameters
 from pandera import DataFrameModel
 from pydantic import BaseModel
-from ...utils.validate_dict import (
-    Geospatial, 
-    KrigingParameters,
-    VariogramBase, 
-    VariogramEmpirical
-)
-from ...utils.validate_df import IsobathData, KrigedMesh
+
 from ...utils.load_nasc import get_transect_numbers
+from ...utils.validate_df import IsobathData, KrigedMesh
+from ...utils.validate_dict import Geospatial, KrigingParameters, VariogramBase, VariogramEmpirical
 
 ####################################################################################################
 # Validation / preparation
@@ -41,8 +37,7 @@ class dataset_validator(DataFrameModel):
 
 
 def validate_inversion_export_directories(
-    data_root_dir: Union[str, Path],
-    file_directory: Union[str, Path]
+    data_root_dir: Union[str, Path], file_directory: Union[str, Path]
 ) -> Tuple[str, list]:
 
     # Get the data root directory
@@ -67,6 +62,7 @@ def validate_inversion_export_directories(
 
     # Return
     return file_folder, inversion_files
+
 
 ####################################################################################################
 # Data ingestion
@@ -151,7 +147,7 @@ def load_inversion_configuration(inversion_config_path: Union[str, Path]):
     # Validate the configuration file
     if not isinstance(inversion_config_path, Path):
         inversion_config_path = Path(inversion_config_path)
-    
+
     # Validate configuration files
     config_existence = inversion_config_path.exists()
 
@@ -172,15 +168,20 @@ def load_inversion_configuration(inversion_config_path: Union[str, Path]):
     )
 
     # Update the inversion parameter configuration
-    inversion_params["processing_parameters"]["inversion"].update({
-        "index_columns": ["transect_num"] 
-        if inversion_params["processing_parameters"]["acoustic_files"]["aggregate"] == "transect" 
-        else ["transect_num", "interval"]        
-    })
+    inversion_params["processing_parameters"]["inversion"].update(
+        {
+            "index_columns": (
+                ["transect_num"]
+                if inversion_params["processing_parameters"]["acoustic_files"]["aggregate"]
+                == "transect"
+                else ["transect_num", "interval"]
+            )
+        }
+    )
 
     # Update the Monte Carlo argument if it is not enabled
     if not inversion_params["processing_parameters"]["simulation"]["monte_carlo"]:
-        inversion_params["processing_parameters"]["simulation"]["n_realizations"] = 1    
+        inversion_params["processing_parameters"]["simulation"]["n_realizations"] = 1
 
     # Parse the bounds for all parameters and update the configuration
     parameter_limits = get_parameter_limits(inversion_params["scattering_parameters"])
@@ -201,13 +202,14 @@ def load_inversion_configuration(inversion_config_path: Union[str, Path]):
     # Pass 'inversion_params' to the class instance
     return inversion_params
 
+
 def get_parameter_limits(
     scattering_parameters: Dict[str, Any],
 ) -> Dict[str, Any]:
     """
     Extract the lower and upper bounds for scattering model parameters
     """
-    
+
     # Get the upper and lower values in case of rescaling
     parameter_limits = {
         key: {"low": value["low"], "high": value["high"]}
@@ -243,15 +245,16 @@ def dataset_reader(
     # Return the files
     return export_df
 
+
 def aggregate_interval(
     data_df: pd.DataFrame,
 ) -> pd.DataFrame:
     """
     Aggregate integration over intervals along each transect
     """
-    
+
     # Drop empty cells
-    data_reduced_df = data_df.copy()[data_df["sv_mean"] > -999.] 
+    data_reduced_df = data_df.copy()[data_df["sv_mean"] > -999.0]
 
     # Multiply `sv` by the cell height
     data_reduced_df["sv_h"] = data_reduced_df["sv"] * data_reduced_df["height_mean"]
@@ -259,19 +262,21 @@ def aggregate_interval(
     # Vertically integrate `sv_h`
     sv_interval = (
         data_reduced_df.groupby(["frequency", "transect_num", "interval"])["sv_h"]
-        .sum().to_frame(name="sv")
-    )  
+        .sum()
+        .to_frame(name="sv")
+    )
 
     # Convert to the logarithmic domain
-    sv_interval = (10 * np.log10(sv_interval))
+    sv_interval = 10 * np.log10(sv_interval)
 
     # Reset the index
     sv_interval.reset_index(inplace=True)
 
     # Pivot the DataFrame and return the dataset
-    return sv_interval.pivot_table(index=["transect_num", "interval"], 
-                                   columns=["frequency"], 
-                                   values="sv").fillna(-999.)    
+    return sv_interval.pivot_table(
+        index=["transect_num", "interval"], columns=["frequency"], values="sv"
+    ).fillna(-999.0)
+
 
 def aggregate_transect(
     data_df: pd.DataFrame,
@@ -281,7 +286,7 @@ def aggregate_transect(
     """
 
     # Drop empty cells
-    data_reduced_df = data_df.copy()[data_df["sv_mean"] > -999.] 
+    data_reduced_df = data_df.copy()[data_df["sv_mean"] > -999.0]
 
     # Compute cell area (distance * thickness)
     data_reduced_df["area"] = data_reduced_df["distance"] * data_reduced_df["height_mean"]
@@ -296,19 +301,25 @@ def aggregate_transect(
     data_reduced_df.set_index(["frequency", "transect_num"], inplace=True)
 
     # Compute the areal normalization weights
-    data_reduced_df["area_weight"] = data_reduced_df["area"] / total_area.reindex(data_reduced_df.index)
+    data_reduced_df["area_weight"] = data_reduced_df["area"] / total_area.reindex(
+        data_reduced_df.index
+    )
 
     # Compute the area-weight
     data_reduced_df["sv_area"] = data_reduced_df["sv"] * data_reduced_df["area_weight"]
 
     # Compute the NASC-weight
-    data_reduced_df["nasc_weight"] = data_reduced_df["nasc"] / total_nasc.reindex(data_reduced_df.index)
+    data_reduced_df["nasc_weight"] = data_reduced_df["nasc"] / total_nasc.reindex(
+        data_reduced_df.index
+    )
 
     # Compute the NASC-based weights for all coordinates
     # ---- Longitude
-    data_reduced_df["longitude_nasc"] = data_reduced_df["longitude"] * data_reduced_df["nasc_weight"] 
+    data_reduced_df["longitude_nasc"] = (
+        data_reduced_df["longitude"] * data_reduced_df["nasc_weight"]
+    )
     # ---- Latitude
-    data_reduced_df["latitude_nasc"] = data_reduced_df["latitude"] * data_reduced_df["nasc_weight"] 
+    data_reduced_df["latitude_nasc"] = data_reduced_df["latitude"] * data_reduced_df["nasc_weight"]
 
     # Reset the index
     data_reduced_df.reset_index(inplace=True)
@@ -319,25 +330,26 @@ def aggregate_transect(
     )
 
     # Convert to the logarithmic domain
-    sv_transect = (10 * np.log10(sv_transect))
+    sv_transect = 10 * np.log10(sv_transect)
 
     # Compute the NASC-weighted coordinates
     # ---- Longitude
-    sv_transect["longitude"] = (
-        data_reduced_df.groupby(["frequency", "transect_num"])["longitude_nasc"].sum()
-    )
+    sv_transect["longitude"] = data_reduced_df.groupby(["frequency", "transect_num"])[
+        "longitude_nasc"
+    ].sum()
     # ---- Latitude
-    sv_transect["latitude"] = (
-        data_reduced_df.groupby(["frequency", "transect_num"])["latitude_nasc"].sum()
-    )
+    sv_transect["latitude"] = data_reduced_df.groupby(["frequency", "transect_num"])[
+        "latitude_nasc"
+    ].sum()
 
     # Reset the index
     sv_transect.reset_index(inplace=True)
 
     # Pivot the DataFrame and return the dataset
-    return sv_transect.pivot_table(index=["transect_num"], 
-                                   columns=["frequency"], 
-                                   values="sv").fillna(-999.)
+    return sv_transect.pivot_table(
+        index=["transect_num"], columns=["frequency"], values="sv"
+    ).fillna(-999.0)
+
 
 def integrate_measurements(
     measurement_data: pd.DataFrame,
@@ -352,10 +364,10 @@ def integrate_measurements(
     measurement_data = measurement_data.copy()
 
     # Apply minimum threshold
-    measurement_data.loc[measurement_data["sv_mean"] < sv_threshold, "sv_mean"] = -999.
+    measurement_data.loc[measurement_data["sv_mean"] < sv_threshold, "sv_mean"] = -999.0
 
-    # Linearize Sv to sv 
-    measurement_data["sv"] = 10.0 ** (measurement_data["sv_mean"]/10.0)    
+    # Linearize Sv to sv
+    measurement_data["sv"] = 10.0 ** (measurement_data["sv_mean"] / 10.0)
 
     # Aggregation methods
     if aggregate == "interval":
@@ -371,42 +383,42 @@ def integrate_measurements(
     # Return the dataset
     return sv_indexed
 
+
 def extract_metadata(
-    measurement_data: pd.DataFrame,
-    sv_threshold: float,
-    **kwargs
-) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]: 
+    measurement_data: pd.DataFrame, sv_threshold: float, **kwargs
+) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """
     Extract metadata
     """
 
     # Sum up NASC per frequency for later reference in case of weighted apportionment
-    nasc_table = measurement_data.pivot_table(index=["transect_num", "interval"],
-                                              columns=["frequency"],
-                                              values="nasc",
-                                              aggfunc="sum")
+    nasc_table = measurement_data.pivot_table(
+        index=["transect_num", "interval"], columns=["frequency"], values="nasc", aggfunc="sum"
+    )
 
     # Sum up total layer height per interval
     metadata_layer_df = measurement_data.copy()
     # ---- Zero out empty cells
-    metadata_layer_df.loc[metadata_layer_df["sv_mean"] < sv_threshold, "height_mean"] = 0.
+    metadata_layer_df.loc[metadata_layer_df["sv_mean"] < sv_threshold, "height_mean"] = 0.0
     # ---- Pivot table
     interval_height_table = metadata_layer_df.pivot_table(
-        index=["transect_num", "interval", "layer"], 
-        columns=["frequency"], 
+        index=["transect_num", "interval", "layer"],
+        columns=["frequency"],
         values="height_mean",
-        aggfunc="sum"
+        aggfunc="sum",
     )
-    
+
     # Drop duplicate values
-    metadata_df = measurement_data.drop_duplicates(["transect_num", "interval", 
-                                                    "longitude", "latitude"])
+    metadata_df = measurement_data.drop_duplicates(
+        ["transect_num", "interval", "longitude", "latitude"]
+    )
 
     # Set index
     metadata_df.set_index(["transect_num", "interval"], inplace=True)
 
     # Extract coordinates and return
-    return  metadata_df.filter(["longitude", "latitude"]), nasc_table, interval_height_table
+    return metadata_df.filter(["longitude", "latitude"]), nasc_table, interval_height_table
+
 
 def ingest_inversion_files(
     data_root_dir: Union[str, Path],
@@ -415,10 +427,10 @@ def ingest_inversion_files(
     aggregate: Literal["interval", "transect"],
     center_frequencies: np.ndarray[float],
     sv_threshold: float,
-    **kwargs
+    **kwargs,
 ) -> Tuple[Dict[str, pd.DataFrame], pd.DataFrame]:
     """
-    Ingest the inversion input files 
+    Ingest the inversion input files
     """
 
     # Validate relevant directories and file existence
@@ -436,19 +448,23 @@ def ingest_inversion_files(
     input_filtered_df = input_df[input_df["frequency"].isin(center_frequencies)]
 
     # Retrieve the metadata DataFrame
-    metadata_df, nasc_table, interval_height_table = extract_metadata(input_filtered_df, 
-                                                                      sv_threshold)
+    metadata_df, nasc_table, interval_height_table = extract_metadata(
+        input_filtered_df, sv_threshold
+    )
 
     # Integrate Sv across the defined aggregation index
     input_integrated_df = integrate_measurements(input_filtered_df, aggregate, sv_threshold)
 
     # Organize the metadata DataFrames into a single dictionary
-    metadata_dict = {"coordinates_df": metadata_df, 
-                     "nasc_df": nasc_table, 
-                     "layer_height_df": interval_height_table}
+    metadata_dict = {
+        "coordinates_df": metadata_df,
+        "nasc_df": nasc_table,
+        "layer_height_df": interval_height_table,
+    }
 
     # Return the datasets
     return metadata_dict, input_integrated_df
+
 
 def load_analysis_files(
     input_dict: Dict[str, Any],
@@ -467,20 +483,23 @@ def load_analysis_files(
         # ---- Read and validate kriging mesh
         if "mesh" in file_config:
             # ---- Read in temporary DataFrame
-            df_tmp = pd.read_excel(data_root_directory / file_config["mesh"]["filename"], 
-                                sheet_name=file_config["mesh"]["sheetname"])
+            df_tmp = pd.read_excel(
+                data_root_directory / file_config["mesh"]["filename"],
+                sheet_name=file_config["mesh"]["sheetname"],
+            )
             ## ---- Rename, if needed
-            df_tmp.rename(columns={"centroid_longitude": "longitude", 
-                                   "centroid_latitude": "latitude"},
-                          inplace=True)
+            df_tmp.rename(
+                columns={"centroid_longitude": "longitude", "centroid_latitude": "latitude"},
+                inplace=True,
+            )
             # ---- Validate
             input_dict.update({"mesh": KrigedMesh.validate_df(df_tmp)})
         # ---- Read and validate isobath reference coordinates
         if "isobath_reference" in file_config:
             # ---- Read in temporary DataFrame
             df_tmp = pd.read_excel(
-                data_root_directory / file_config["isobath_reference"]["filename"], 
-                sheet_name=file_config["isobath_reference"]["sheetname"]
+                data_root_directory / file_config["isobath_reference"]["filename"],
+                sheet_name=file_config["isobath_reference"]["sheetname"],
             )
             # ---- Validate
             input_dict.update({"isobath_reference": IsobathData.validate_df(df_tmp)})
@@ -488,27 +507,29 @@ def load_analysis_files(
     # Check for geospatial settings/configuration
     if "geospatial" in configuration_dict:
         # ---- Validate geospatial settings
-        configuration_dict.update({
-            "geospatial": Geospatial.create(**configuration_dict["geospatial"])
-        })
+        configuration_dict.update(
+            {"geospatial": Geospatial.create(**configuration_dict["geospatial"])}
+        )
 
     # Check for variogram parameterization/configuration
     if "variogram_parameters" in configuration_dict:
         # ---- Create temporary dictionary
-        tmp_dict = {k: v["initial"] 
-                    if isinstance(v, dict) and "initial" in v else v 
-                    for k, v in configuration_dict["variogram_parameters"].items()}
+        tmp_dict = {
+            k: v["initial"] if isinstance(v, dict) and "initial" in v else v
+            for k, v in configuration_dict["variogram_parameters"].items()
+        }
         # ---- Validate the values
         tmp_validated_dict = VariogramBase.create(**tmp_dict)
         # ---- Validate the remaining keys
         tmp_validated_dict.update(**{**VariogramEmpirical.create(**tmp_dict)})
         # ---- If validators all succeeded, update the original values
-        configuration_dict["variogram_parameters"].update({
-            k: (
-                {**v, "initial": tmp_validated_dict[k]}
-                if isinstance(v, dict)
-                else tmp_validated_dict.get(k, v)
-            )
-            for k, v in configuration_dict["variogram_parameters"].items()
-        })
-
+        configuration_dict["variogram_parameters"].update(
+            {
+                k: (
+                    {**v, "initial": tmp_validated_dict[k]}
+                    if isinstance(v, dict)
+                    else tmp_validated_dict.get(k, v)
+                )
+                for k, v in configuration_dict["variogram_parameters"].items()
+            }
+        )
