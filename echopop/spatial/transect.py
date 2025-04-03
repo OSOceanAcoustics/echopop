@@ -228,7 +228,7 @@ def transect_coordinate_centroid(spatial_grouped: gpd.GeoSeries):
     """
 
     # Compute the union of all coordinates within `spatial_grouped`
-    centroid_point = spatial_grouped.unary_union.centroid
+    centroid_point = spatial_grouped.union_all().centroid
 
     # Return output
     return Point(centroid_point)
