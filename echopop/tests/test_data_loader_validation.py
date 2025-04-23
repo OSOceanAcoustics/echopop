@@ -11,6 +11,7 @@ from ..utils.validate import posfloat, posint, realposfloat
 from ..utils.validate_dict import (
     CONFIG_DATA_MODEL,
     CONFIG_INIT_MODEL,
+    BiologicalFile,
     BiologicalFiles,
     FileSettings,
     Geospatial,
@@ -321,7 +322,7 @@ def XLSXFile_fields() -> Dict[str, Any]:
             "frozen": None,
         },
         "sheetname": {
-            "annotation": Union[str, List[str]],
+            "annotation": Union[str, List[str], Dict[str, str]],
             "frozen": None,
         },
     }
@@ -2346,7 +2347,7 @@ def CONFIG_DATA_MODEL_fields() -> Dict[str, Any]:
             "frozen": None,
         },
         "biological": {
-            "annotation": BiologicalFiles,
+            "annotation": Union[BiologicalFile, BiologicalFiles],
             "frozen": None,
         },
         "stratification": {
@@ -2381,7 +2382,7 @@ def CONFIG_DATA_MODEL_fields() -> Dict[str, Any]:
             "frozen": None,
         },
         "ship_id": {
-            "annotation": Union[int, str, float, None],
+            "annotation": Union[int, str, float, Dict[Any, Any], None],
             "default": None,
             "frozen": None,
         },

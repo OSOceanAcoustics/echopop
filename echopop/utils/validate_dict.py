@@ -55,7 +55,7 @@ class XLSXFile(InputModel, title="*.xlsx file tree"):
     """
 
     filename: str
-    sheetname: Union[str, List[str]]
+    sheetname: Union[str, List[str], Dict[str, str]]
 
 
 class FileSettings(InputModel, title="parameter file settings"):
@@ -420,6 +420,45 @@ class CONFIG_INIT_MODEL(InputModel, arbitrary_types_allowed=True):
             return [posint(value) for value in v]
 
 
+class BiologicalSheets(InputModel, title="consolidated biological file input sheetnames"):
+    """
+    Consolidated biological data file input
+
+    Parameters
+    ----------
+    length:str
+       An *.xlsx sheet containing binned length data.
+    specimen: str
+        An *.xlsx sheet containing specimen biodata.
+    catch: str
+        An *.xlsx sheet containing catch/haul biological data.
+    """
+
+    length: str
+    specimen: str
+    catch: str
+
+
+class BiologicalFile(InputModel, title="consolidated biological file input"):
+    """
+    Consolidated biological data file input
+
+    Parameters
+    ----------
+    length: Union[Dict[str, XLSXFile], XLSXFile]
+        An *.xlsx file (or dictionary of files) containing binned length data.
+    specimen: Union[Dict[str, XLSXFile], XLSXFile]
+        An *.xlsx file (or dictionary of files) containing specimen biodata.
+    catch: Union[Dict[str, XLSXFile], XLSXFile]
+        An *.xlsx file (or dictionary of files) containing catch/haul biological data.
+    haul_to_transect: Union[Dict[str, XLSXFile], XLSXFile]
+        An *.xlsx file (or dictionary of files) containing haul-transect mapping data.
+    """
+
+    filename: str
+    sheetname: BiologicalSheets
+
+
 class BiologicalFiles(InputModel, title="biological file inputs"):
     """
     Biological data files
@@ -493,7 +532,7 @@ class CONFIG_DATA_MODEL(InputModel):
     """
 
     survey_year: int
-    biological: BiologicalFiles
+    biological: Union[BiologicalFile, BiologicalFiles]
     stratification: StratificationFiles
     NASC: Dict[str, XLSXFile]
     species: SpeciesDefinition
@@ -501,7 +540,7 @@ class CONFIG_DATA_MODEL(InputModel):
     report_path: Optional[str] = None
     data_root_dir: Optional[str] = None
     CAN_haul_offset: Optional[int] = None
-    ship_id: Optional[Union[int, str, float]] = None
+    ship_id: Optional[Union[int, str, float, Dict[Any, Any]]] = None
     export_regions: Optional[Dict[str, XLSXFile]] = None
 
     def __init__(self, filename, **kwargs):
