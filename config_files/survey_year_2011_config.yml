@@ -67,6 +67,10 @@ NASC:
     # file that includes all ages
     filename: Exports/US_CAN_NASC_2011_table_all_ages.xlsx
     sheetname: Sheet1
+transect_filter:
+  # Transect interval filtering
+  filename: C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_2011/Kriging_files/Kriging_grid_files/Transect Bounds to 2011.xlsx
+  sheetname: "1995-2011"
 export_regions:
   filename: Stratification/US&CAN_T_reg_haul_final.csv
 kriging:

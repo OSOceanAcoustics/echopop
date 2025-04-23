@@ -565,6 +565,7 @@ class CONFIG_DATA_MODEL(InputModel):
     data_root_dir: Optional[str] = None
     CAN_haul_offset: Optional[int] = None
     ship_id: Optional[Union[int, str, float]] = None
+    transect_filter: Optional[XLSXFile] = None
     export_regions: Optional[Union[Union[CSVFile, XLSXFile], 
                                    Dict[str, Union[CSVFile, XLSXFile]]]] = None
 

@@ -17,6 +17,7 @@ from pathlib import Path
 import glob
 import json
 import os
+import sys
 
 ####################################################################################################
 # CURRENT SURVEY YEAR BEING TESTED: 2019
@@ -54,6 +55,13 @@ if parameters["default_acoustics"]:
     survey.load_acoustic_data()
 else:
     Survey(init_config_path, survey_year_config_path).load_acoustic_data()
+# ---- Test whether transect data must be subset
+if "transect_filter" in parameters:
+    # ---- Conditional import
+    if "filter_transect_intervals" not in dir():
+        from echopop.spatial.transect import filter_transect_intervals
+    # ---- Filter transect intervals
+    filter_transect_intervals(survey, parameters["transect_filter"]["subset_filter"])
 # ---- Load survey data
 survey.load_survey_data()
 # ---- Initial transect analysis test

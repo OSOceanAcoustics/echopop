@@ -157,6 +157,9 @@
       "ks"
     ],
     "write_transect_region_file": false,
-    "transect_replicates": 10
+    "transect_replicates": 10,
+    "transect_filter": {
+      "subset_filter": "survey == 201103"
+    }
   }  
 }
