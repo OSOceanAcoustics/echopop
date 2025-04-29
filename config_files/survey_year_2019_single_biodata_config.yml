@@ -32,8 +32,8 @@ report_path: C:/Users/Brandyn/Documents/GitHub/EchoPro_data/Data/reports
 ##############################################################################
 # Directory path that contains all input data needed
 
-data_root_dir: C:/Users/Brandyn Lucca/Documents/Data/echopop_2019
-# data_root_dir: C:/Users/Brandyn/Documents/GitHub/EchoPro_data/Data/
+# data_root_dir: C:/Users/Brandyn Lucca/Documents/Data/echopop_2019
+data_root_dir: C:/Users/Brandyn/Documents/GitHub/EchoPro_data/Data/
 
 ##############################################################################
 # Input data files
@@ -48,7 +48,7 @@ stratification:
   strata:
     # The two stratification types are found in two sheets: "Base KS" and "INPFC"
     filename: Stratification/US_CAN strata 2019_final.xlsx
-    sheetname: Base KS
+    sheetname: [INPFC, Base KS]
   geo_strata:
     # The two stratification types are found in two sheets: "stratification1" and "INPFC"
     filename: Stratification/Stratification_geographic_Lat_2019_final.xlsx

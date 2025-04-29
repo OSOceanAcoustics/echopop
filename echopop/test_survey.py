@@ -23,7 +23,7 @@ import sys
 # CURRENT SURVEY YEAR BEING TESTED: 2019
 ####################################################################################################
 # Define current survey year
-SURVEY_YEAR = 2015
+SURVEY_YEAR = 2019
 
 # Initialization configuration
 init_config_path = f"C:/Users/Brandyn/Documents/GitHub/echopop/config_files/initialization_\
@@ -31,7 +31,7 @@ config_{SURVEY_YEAR}.yml"
 
 # Filepath/dataset configuration
 survey_year_config_path = f"C:/Users/Brandyn/Documents/GitHub/echopop/config_files\
-/survey_year_{SURVEY_YEAR}_config.yml"
+/survey_year_{SURVEY_YEAR}_single_biodata_config.yml"
 
 # Load json settings
 # ---- File open

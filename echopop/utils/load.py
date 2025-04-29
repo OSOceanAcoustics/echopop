@@ -173,50 +173,41 @@ def load_dataset(
     # Data validation and import
     # ---- Iterate through known datasets and datalayers
     for dataset in list(expected_datasets):
-
-        for datalayer in [*configuration_dict[dataset].keys()]:
+        # ---- Define datalayers
+        if dataset == "biological":
+            if "filename" and "sheetname" in configuration_dict[dataset]:
+                datalayers = {
+                    k: {"filename": configuration_dict[dataset]["filename"], "sheetname": v}
+                    for k, v in configuration_dict[dataset]["sheetname"].items()
+                }
+        else:
+            datalayers = configuration_dict[dataset]
+        # ---- Iterate through
+        for datalayer, config_settings in datalayers.items():
 
             # Define validation settings from CONFIG_MAP
             validation_settings = DATASET_DF_MODEL[dataset][datalayer]
 
-            # Define configuration settings w/ file + sheet names
-            config_settings = configuration_dict[dataset][datalayer]
-
             # Create reference index of the dictionary path
             config_map = [dataset, datalayer]
 
-            # Create list of region id's associated with biodata (if applicable)
-            if dataset == "biological":
-                regions = configuration_dict[dataset][datalayer].keys()
-            else:
-                regions = [None]  # Use None for non-biological datasets
-
             # Create the file and sheetnames for the associated datasets
-            for region_id in regions:
-                if region_id is not None:
-                    # ---- Biological data
-                    file_name = data_root_directory / config_settings[region_id]["filename"]
-                    sheet_name = config_settings[region_id]["sheetname"]
-                    # ---- Update `config_map` to include region_id
-                    config_map = [dataset, datalayer, region_id]
-                else:
-                    # ---- All other datasets
-                    file_name = data_root_directory / config_settings["filename"]
-                    sheet_name = config_settings["sheetname"]
+            file_name = data_root_directory / config_settings["filename"]
+            sheet_name = config_settings["sheetname"]
 
-                # Ensure sheet_name is a list (to handle cases with multiple lists)
-                sheet_name = [sheet_name] if isinstance(sheet_name, str) else sheet_name
+            # Ensure sheet_name is a list (to handle cases with multiple lists)
+            sheet_name = [sheet_name] if isinstance(sheet_name, str) else sheet_name
 
-                # Validate data for each sheet
-                for sheets in sheet_name:
-                    read_validated_data(
-                        input_dict,
-                        configuration_dict,
-                        file_name,
-                        sheets,
-                        config_map,
-                        validation_settings,
-                    )
+            # Validate data for each sheet
+            for sheets in sheet_name:
+                read_validated_data(
+                    input_dict,
+                    configuration_dict,
+                    file_name,
+                    sheets,
+                    config_map,
+                    validation_settings,
+                )
 
     # If all files could be successfully read in, update the `imported_data` list
     imported_data = map_imported_datasets(input_dict)
@@ -268,13 +259,42 @@ def read_validated_data(
         df = validation_settings.validate_df(df_initial, file_name)
     else:
         # Read Excel file into memory -- this only reads in the required columns
-        df = pd.read_excel(file_name, sheet_name=sheet_name)
+        df_initial = pd.read_excel(file_name, sheet_name=sheet_name)
         # ---- Force the column names to be lower case
-        df.columns = df.columns.str.lower()
+        df_initial.columns = df_initial.columns.str.lower()
         # ---- Rename the columns
-        df.rename(columns=NAME_CONFIG, inplace=True)
+        df_initial.rename(columns=NAME_CONFIG, inplace=True)
+        # ---- Filter the dataset accordingly, if required
+        if "ship_id" in configuration_dict and config_map[0] == "biological":
+            # ---- Collect ship configuration
+            ship_config = configuration_dict["ship_id"]
+            # ---- Get ship IDs
+            ship_ids = [*ship_config.keys()]
+            # ---- Apply ship-based filter
+            if "ship_id" in df_initial.columns:
+                df_filtered = df_initial.loc[df_initial["ship_id"].isin(ship_ids)]
+            # ---- Collect survey IDs, if present
+            survey_ids = [
+                v["survey"] for v in configuration_dict["ship_id"].values() if "survey" in v
+            ]
+            # ---- Apply survey-based filter
+            if survey_ids and "survey" in df_initial.columns:
+                df_filtered = df_filtered.loc[df_filtered["survey"].isin(survey_ids)]
+            # ---- Collect haul offsets, if any are present
+            haul_offsets = {
+                k: v["haul_offset"]
+                for k, v in configuration_dict["ship_id"].items()
+                if "haul_offset" in v
+            }
+            # ---- Apply haul number offsets, if defined
+            if haul_offsets:
+                df_filtered["haul_num"] = df_filtered["haul_num"] + df_filtered["ship_id"].map(
+                    haul_offsets
+                ).fillna(0)
+        else:
+            df_filtered = df_initial.copy()
         # ---- Validate the dataframes
-        df = validation_settings.validate_df(df, file_name)
+        df = validation_settings.validate_df(df_filtered)
 
     # Assign the data to their correct data attributes/keys
     if LAYER_NAME_MAP[config_map[0]]["superlayer"] == []:
@@ -284,15 +304,7 @@ def read_validated_data(
 
     # Step 2: Determine whether the dataframe already exists
     if sub_attribute in ["biology", "statistics", "spatial"]:
-        if sub_attribute == "biology":
-            # Add US / CAN as a region index
-            df["region"] = config_map[2]
-
-            # Apply CAN haul number offset
-            if config_map[2] == "CAN":
-                df["haul_num"] += configuration_dict["CAN_haul_offset"]
-
-        # A single dataframe per entry is expected, so no other fancy operations are needed
+        # ---- A single dataframe per entry is expected, so no other fancy operations are needed
         if "inpfc" in sheet_name.lower():
             # ---- Create the full key name
             keyname = "inpfc_" + config_map[-1] + "_df"
@@ -317,8 +329,7 @@ def read_validated_data(
                     df_list, ignore_index=True
                 )
     elif sub_attribute == "acoustics":
-
-        # Toggle through including and excluding age-1
+        # ---- Toggle through including and excluding age-1
         if config_map[1] == "no_age1":
             df = df.rename(
                 columns={
