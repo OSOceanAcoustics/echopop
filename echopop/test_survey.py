@@ -66,6 +66,7 @@ if "transect_filter" in parameters:
 survey.load_survey_data()
 # ---- Initial transect analysis test
 survey.transect_analysis()
+survey.kriging_analysis()
 # ---- Counter
 counter = 1
 # ---- Iterate across multiple strata types
