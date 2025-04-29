@@ -23,7 +23,7 @@ import sys
 # CURRENT SURVEY YEAR BEING TESTED: 2019
 ####################################################################################################
 # Define current survey year
-SURVEY_YEAR = 2011
+SURVEY_YEAR = 2015
 
 # Initialization configuration
 init_config_path = f"C:/Users/Brandyn/Documents/GitHub/echopop/config_files/initialization_\
@@ -66,7 +66,6 @@ if "transect_filter" in parameters:
 survey.load_survey_data()
 # ---- Initial transect analysis test
 survey.transect_analysis()
-survey.kriging_analysis()
 # ---- Counter
 counter = 1
 # ---- Iterate across multiple strata types

@@ -36,7 +36,7 @@ biological:
       sheetname: biodata_length_CAN
   specimen:
     US:
-      filename: Biological/aged shoreside US/2015_biodata_specimen.xlsx
+      filename: Biological/aged shoreside US/2015_biodata_specimen_bml.xlsx
       sheetname: 2015_biodata_specimen
     CAN:
       filename: Biological/aged shoreside CAN/2015_biodata_specimen_CAN.xlsx
