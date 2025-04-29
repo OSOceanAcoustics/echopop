@@ -18,25 +18,7 @@ import glob
 import json
 import os
 import sys
-import copy
-from pathlib import Path
-from typing import List, Literal, Optional, Union
 
-import numpy as np
-import pandas as pd
-import yaml
-
-from echopop.core import BIODATA_HAUL_MAP, DATA_STRUCTURE, LAYER_NAME_MAP, NAME_CONFIG
-from echopop.utils.data_structure_utils import map_imported_datasets
-from echopop.utils.validate_df import DATASET_DF_MODEL
-from echopop.utils.validate_dict import CONFIG_DATA_MODEL, CONFIG_INIT_MODEL
-import copy
-from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional, Union
-
-import numpy as np
-from IPython.display import display
-import echopop.utils.load
 ####################################################################################################
 # CURRENT SURVEY YEAR BEING TESTED: 2019
 ####################################################################################################
