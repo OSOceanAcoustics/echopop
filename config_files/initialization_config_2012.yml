@@ -1,0 +1,107 @@
+# This YAML file is a configuration file for all
+# initialization parameters used in Echopop
+
+---
+  #####################################################################################################################
+  # Survey data processing#
+  ########################
+  # Jolly and Hampton (1990) stratified mean calculation
+  stratified_survey_mean_parameters:
+    strata_transect_proportion: 0.75                          # percent of Jolly-Hampton transects in each stratum
+    num_replicates: 10000                                     # number of resample replicates
+    mesh_transects_per_latitude: 5                            # number of virtual transects per degree latitude in kriging mesh
+
+  #####################################################################################################################
+  # Biological data processing#
+  ########################
+  # Jolly and Hampton (1990) stratified mean calculation
+  bio_hake_len_bin: [                   # length sequence array 2 - 80 cm. This specifies the bin centers!
+                  2,                    # start of bin centers
+                  80,                   # end of bin centers
+                  40                    # number of bins in total
+  ]
+
+  bio_hake_age_bin: [                   # age sequence array: year - age  1-22
+                  1,                    # start of sequence
+                  22,                   # end of sequence
+                  22                    # number of points in the sequence
+  ]
+
+  #####################################################################################################################
+  # Acoustic transect export processing#
+  ########################
+  nasc_exports:
+    export_file_directory: /raw_nasc
+    nasc_export_directory: /Exports     # Acoustic export directory
+    save_file_template: "{REGION}_NASC_{YEAR}_table_{GROUP}.xlsx"
+    save_file_sheetname: Sheet1
+    regions:                            # Main acoustic data region names (list or single string)
+      all_ages: [Age-1 Hake,            # Age-1+
+                  Age-1 Hake Mix,
+                  Hake,
+                  Hake Mix]
+      no_age1: [Hake, Hake Mix]         # Age-2+
+    max_transect_spacing: 10.0          # Maximum transect spacing (nmi)
+    file_columns: [transect_num, region_id, distance_s, distance_e, latitude, longitude,
+                    stratum_num, transect_spacing, layer_mean_depth, layer_height, bottom_depth,
+                    NASC, haul_num]
+  transect_region_mapping:
+    parts:
+      REGION_CLASS:
+        - pattern: ^[hH](?![a-zA-Z]|1a)
+          label: Hake
+        - pattern: ^[hH]1[aA][mM]
+          label: Age-1 Hake Mix
+        - pattern: ^[hH]1[aA]
+          label: Age-1 Hake
+        - pattern: ^[hH][mM]
+          label: Hake Mix
+        - pattern: hake_mix
+          label: Hake Mix
+        - pattern: hake
+          label: Hake
+      HAUL_NUM:
+        - pattern: '[0-9]+'
+          label: None
+      COUNTRY:
+        - pattern: ^[cC]
+          label: CAN
+        - pattern: ^[uU]
+          label: US
+    pattern: "{REGION_CLASS}{HAUL_NUM}{COUNTRY}"
+    inpfc_strata_region:
+      CAN: [6]
+      US: [1, 2, 3, 4, 5]
+    save_file_template: "{COUNTRY}_{YEAR}_transect_region_haul_{GROUP}.xlsx"
+    save_file_directory: /Stratification
+    save_file_sheetname: Sheet1
+
+
+  #####################################################################################################################
+  # Log-linear regression#
+  ########################
+  # Target strength (TS) - length (L) regression: TS=m*log10(L)+b
+  TS_length_regression_parameters:
+    pacific_hake:                         # corresponding species text code
+      number_code: 22500                  # species number code
+      TS_L_slope: 20.0                    # the 'm' or 'slope' parameter
+      TS_L_intercept: -68.0               # the 'b' or 'y-intercept'
+      length_units: cm                    # units for L used in regression/relationship
+
+  #####################################################################################################################
+  # Geospatial settings#
+  ########################
+  geospatial:
+    init: epsg:4326                       # EPSG integer code for geodetic parameter dataset
+
+  #####################################################################################################################
+  # Kriging parameters#
+  #####################
+  kriging_parameters:
+    A0: 6.25                              # base area of the grid cell
+    longitude_reference: -124.78338       # longitude reference for kriging mesh adjustment
+    longitude_offset: -124.78338          # longitudinal offset for kriging mesh adjustment
+    latitude_offset: 45.0                 # latitudinal offset for kriging mesh adjustment
+
+  #####################################################################################################################
+...

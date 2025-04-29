@@ -251,6 +251,12 @@ def kriging_results_msg(kriging_results_dict: pd.DataFrame, settings_dict: dict)
     else:
         crop_str = "Extrapolated over uncropped grid"
 
+    # Amend variable name for density
+    if "density" in settings_dict["variable"]:
+        density_var = settings_dict["variable"].replace("_", " ")
+    else:
+        density_var = settings_dict["variable"] + " density"
+
     # Generate message output
     return print(
         f"--------------------------------\n"

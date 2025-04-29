@@ -12,18 +12,23 @@ NAME_CONFIG = {
     "bottom depth": "bottom_depth",
     "cell portion": "fraction_cell_in_polygon",
     "cluster name": "stratum_num",
+    "cluster number": "stratum_num",
     "frequency": "length_count",
     "haul": "haul_num",
     "haul end": "haul_end",
     "haul start": "haul_start",
+    "haul  start": "haul_start",
     "haul": "haul_num",
-    "latitude": "latitude",
+    "haul ": "haul_num",
+    "inpfc": "stratum_num",
     "latitude (upper limit)": "northlimit_latitude",
     "latitude of centroid": "centroid_latitude",
     "layer height": "layer_height",
     "layer mean depth": "layer_mean_depth",
     "longitude of centroid": "centroid_longitude",
+    "region calss": "region_class",
     "region id": "region_id",
+    "region name": "region_name",
     "strata": "stratum_num",
     "ship": "ship_id",
     "spacing": "transect_spacing",
@@ -32,7 +37,9 @@ NAME_CONFIG = {
     "strata_index": "stratum_num",
     "strata index": "stratum_num",
     "stratum": "stratum_num",
+    "tranect": "transect_num",
     "transect": "transect_num",
+    "trawl #": "haul_num",
     "vl start": "vessel_log_start",
     "vl end": "vessel_log_end",
     "wt": "fraction_hake",
@@ -40,26 +47,16 @@ NAME_CONFIG = {
     "weight_in_haul": "haul_weight",
 }
 
-ECHOVIEW_EXPORT_MAP = {
-    "Region_ID": dict(name="region_id", type=int),
-    "Region_name": dict(name="region_name", type=str),
-    "Region_class": dict(name="region_class", type=str),
-    "Interval": dict(name="interval", type=int),
-    "Layer": dict(name="layer", type=int),
-    "Sv_mean": dict(name="sv_mean", type=float),
-    "PRC_NASC": dict(name="nasc", type=float),
-    "transect_num": dict(name="transect_num", type=int),
-    "VL_start": dict(name="vessel_log_start", type=float),
-    "VL_end": dict(name="vessel_log_end", type=float),
-    "Lat_S": dict(name="latitude", type=float),
-    "Lat_M": dict(name="latitude", type=float),
-    "Lat_E": dict(name="latitude", type=float),
-    "Lon_S": dict(name="longitude", type=float),
-    "Lon_M": dict(name="longitude", type=float),
-    "Lon_E": dict(name="longitude", type=float),
-    "Layer_depth_min": dict(name="layer_depth_min", type=float),
-    "Layer_depth_max": dict(name="layer_depth_max", type=float),
-    "Exclude_below_line_depth_mean": dict(name="max_depth", type=float),
+# Echoview export names to `Echopop` names
+ECHOVIEW_TO_ECHOPOP_NAMES = {
+    "date_s": "ping_date",
+    "exclude_below_line_depth_mean": "max_depth",
+    "lat_s": "latitude",
+    "lon_s": "longitude",
+    "prc_nasc": "nasc",
+    "time_s": "ping_time",
+    "vl_end": "vessel_log_end",
+    "vl_start": "vessel_log_start",
 }
 
 REGION_EXPORT_MAP = {
@@ -123,8 +120,9 @@ DATA_STRUCTURE = {
         },
         "spatial": {
             "strata_df": pd.DataFrame(),
-            "geo_strata_df": pd.DataFrame(),
             "inpfc_strata_df": pd.DataFrame(),
+            "geo_strata_df": pd.DataFrame(),
+            "inpfc_geo_strata_df": pd.DataFrame(),
         },
         "statistics": {
             "kriging": {
@@ -185,7 +183,7 @@ LAYER_NAME_MAP = {
     },
     "stratification": {
         "name": "spatial",
-        "data": ["strata", "geo_strata", "inpfc_strata"],
+        "data": ["strata", "inpfc_strata", "geo_strata", "inpfc_geo_strata"],
         "data_label": [
             "strata:KS strata",
             "geo_strata:Georeferenced KS strata",

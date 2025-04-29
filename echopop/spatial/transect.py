@@ -1,4 +1,5 @@
-from typing import List, Union
+from typing import List, Optional, TYPE_CHECKING, Union
+import re
 
 import geopandas as gpd
 import geopy.distance
@@ -6,6 +7,8 @@ import numpy as np
 import pandas as pd
 from shapely.geometry import Point, Polygon
 from shapely.ops import unary_union
+
+if TYPE_CHECKING: from ..survey import Survey
 
 from ..spatial.projection import wgs84_to_utm
 
@@ -33,12 +36,11 @@ def correct_transect_intervals(transect_data: pd.DataFrame, interval_threshold: 
 
     # Calculate the along-transect interval distance
     # ---- Entire dataframe
-    transect_data_copy["interval"] = transect_data_copy["vessel_log_start"].diff(periods=-1).abs()
+    transect_data_copy["interval"] = transect_data_copy["distance_s"].diff(periods=-1).abs()
     # ---- Replace the trailing NaN
     transect_data_copy["interval"] = transect_data_copy["interval"].replace(
         np.nan,
-        transect_data_copy["vessel_log_end"].iloc[-1]
-        - transect_data_copy["vessel_log_start"].iloc[-1],
+        transect_data_copy["distance_e"].iloc[-1] - transect_data_copy["distance_s"].iloc[-1],
     )
 
     # Replace (likely) erroneous interval lengths associated at the ends of each transect
@@ -47,7 +49,7 @@ def correct_transect_intervals(transect_data: pd.DataFrame, interval_threshold: 
     # ---- Find indices where interval deviations from the median exceed the difference threshold
     transect_data_copy["interval"] = np.where(
         np.abs(transect_data_copy["interval"] - median_interval) > interval_threshold,
-        transect_data_copy["vessel_log_end"] - transect_data_copy["vessel_log_start"],
+        transect_data_copy["distance_e"] - transect_data_copy["distance_s"],
         transect_data_copy["interval"],
     )
 
@@ -131,6 +133,64 @@ def edit_transect_columns(transect_dict: dict, settings_dict: dict):
 
     # Return the output
     return transect_info.reset_index()
+
+def filter_transect_intervals(
+    survey_obj: "Survey", 
+    subset_filter: Optional[str] = None,
+) -> pd.DataFrame:
+    """
+    Filter transect intervals based on a subset filter.
+    """
+
+    # Get configuration settings
+    transect_filter_settings = survey_obj.config["transect_filter"]
+
+    # Read in file
+    transect_filter_df = pd.read_excel(transect_filter_settings["filename"], 
+                                       sheet_name=transect_filter_settings["sheetname"])
+
+    # Lowercase column names
+    transect_filter_df.columns = transect_filter_df.columns.str.lower()
+    # ---- Apply hard-coded renaming
+    transect_filter_df.rename(columns={"transect": "transect_num"}, inplace=True)
+
+    # Get the validated input data
+    df = survey_obj.input["acoustics"]["nasc_df"].copy()
+    # ---- Retain original column
+    df_columns = df.columns.tolist()
+
+    # Apply a filter, if needed
+    if subset_filter is not None:
+        # ---- Extract tokens from string
+        tokens = re.findall(r'\b[a-zA-Z_][a-zA-Z0-9_]*\b', subset_filter)
+        # ---- Provide typical Python operator keywords
+        keywords = {"and", "or", "not", "in", "notin", "True", "False"}
+        # ---- Check for column names
+        column_names = [t for t in tokens if t not in keywords and not t.isnumeric()]
+        # ---- Check if all referenced columns exist
+        missing = [col for col in column_names if col not in transect_filter_df.columns]     
+        # ---- Raise error, if needed
+        if missing:
+            raise ValueError(f"Invalid column(s): {', '.join(missing)}")
+        # ---- Apply filter
+        else:
+            transect_filter_df = transect_filter_df.copy().query(subset_filter)
+
+    # Perform a cross join to pair each row in `df` with every row in `fi`
+    df_expanded = df.merge(transect_filter_df[["transect_num", "log_start", "log_end"]], 
+                           on="transect_num", 
+                           how="left")
+
+    # Check for overlap
+    mask = (
+        (df_expanded["distance_e"] >= df_expanded["log_start"]) & 
+        (df_expanded["distance_s"] <= df_expanded["log_end"])
+    )
+
+    # Apply mask to original dataset
+    survey_obj.input["acoustics"]["nasc_df"] = (
+        df_expanded[mask].filter(df_columns).reset_index(drop=True)
+    )
 
 
 def transect_spatial_features(transect_data: pd.DataFrame):
@@ -228,7 +288,7 @@ def transect_coordinate_centroid(spatial_grouped: gpd.GeoSeries):
     """
 
     # Compute the union of all coordinates within `spatial_grouped`
-    centroid_point = spatial_grouped.unary_union.centroid
+    centroid_point = spatial_grouped.union_all().centroid
 
     # Return output
     return Point(centroid_point)

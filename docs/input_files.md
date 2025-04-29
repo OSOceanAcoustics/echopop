@@ -86,8 +86,8 @@ NASC (Nautical Area Scattering Coefficient) values that do not include age-1 val
 `Echopop` column | `EchoPro` column | Data type | Units | Description
 --- | --- | --- | --- |  --- 
 transect_num | Transect | integer <br> float | | Transect number <br> Rows with missing values are removed
-vessel_log_start | VL start | float | nmi <br> [0.0, ∞) |  Vessel log cumulative distance at start of transect interval <br> Missing values are replaced with `NaN`
-vessel_log_end | VL end | float | nmi <br> [0.0, ∞) | Vessel log cumulative distance at end of transect interval <br> Missing values are replaced with `NaN`
+distance_s | VL start | float | nmi <br> [0.0, ∞) |  Vessel log cumulative distance at start of transect interval <br> Missing values are replaced with `NaN`
+distance_e | VL end | float | nmi <br> [0.0, ∞) | Vessel log cumulative distance at end of transect interval <br> Missing values are replaced with `NaN`
 latitude | Latitude | float | decimal degrees <br> [-90.0, 90.0] | Transect interval center latitude <br> Missing values are replaced with `NaN`
 longitude | Longitude | float | decimal degrees <br> [-180.0, 180.0] | Transect interval center longitude <br> Missing values are replaced with `NaN`
 transect_spacing | Spacing | float | nmi <br> [0.0, ∞) | Distance (spacing) between transects <br> Missing values are replaced with the user-defined <br> value for `max_transect_spacing` in the <br>`initialization_config.yml` configuration file

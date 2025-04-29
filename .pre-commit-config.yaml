@@ -2,7 +2,9 @@ exclude: |
   (?x)^(
     echopop/test_data/|
     docs/|
-    project_docs
+    project_docs|
+    echopop/file_investigation.py|
+    echopop/test_survey.py
   )
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks

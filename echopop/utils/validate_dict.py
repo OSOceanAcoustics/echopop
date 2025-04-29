@@ -1,8 +1,10 @@
 import re
 from typing import Any, Dict, List, Literal, Optional, Union
+from pathlib import Path
 
 import numpy as np
 from pydantic import BaseModel, Field, RootModel, ValidationError, field_validator, model_validator
+from pydantic_core import PydanticCustomError
 
 from .validate import posfloat, posint, realcircle, realposfloat
 
@@ -197,6 +199,14 @@ class PatternParts(InputModel, title="region name pattern"):
     label: str
 
 
+class INPFCRegionMap(RootModel, title="INPFC strata region mapping"):
+    """
+    INPFC-region mapping
+    """
+
+    root: List[int]
+
+
 class TransectRegionMap(
     InputModel, arbitrary_types_allowed=True, title="transect-region mapping parameters"
 ):
@@ -205,20 +215,28 @@ class TransectRegionMap(
 
     Parameters
     ----------
-    save_file_template: str
-        Save file template name.
-    save_file_directory: str
-        File directory name.
-    save_file_sheetname: str
-        File sheetname.
-    pattern: str
-        Region map code/pattern.
+    inpfc_strata_region: Dict[str, INPFCRegionMap]
+        A dictionary of region names that each are parameterized with a list of INPFC strata
+        associated with each
     parts: Dict[str, List[PatternParts]]
-        Dictionary of metadata-pattern paired codes.
+        Dictionary of metadata-pattern paired codes
+    pattern: str
+        Region map code/pattern
+    save_file_template: Optional[str]
+        Save file template name
+    save_file_directory: Optional[str]
+        File directory name
+    save_file_sheetname: Optional[str]
+        File sheetname
+
     """
 
-    pattern: str
+    inpfc_strata_region: Optional[Dict[str, INPFCRegionMap]] = Field(default=None)
     parts: Dict[str, List[PatternParts]]
+    pattern: str
+    save_file_template: Optional[str] = Field(default=None)
+    save_file_directory: Optional[str] = Field(default=None)
+    save_file_sheetname: Optional[str] = Field(default=None)
 
     @model_validator(mode="before")
     def validate_pattern_parts(cls, values):
@@ -253,6 +271,23 @@ class TransectRegionMap(
                 f"by curly braces) include: ['REGION_CLASS', 'HAUL_NUM', 'COUNTRY']."
             )
             # ---- Return value
+        return v
+
+    @field_validator("save_file_template", mode="after")
+    def validate_save_file_template(cls, v):
+        # ---- Find all strings contained within curly braces
+        template_ids = re.findall(r"{(.*?)}", v)
+        # ---- Evaluate valid id's
+        if not set(template_ids).issubset(set(["YEAR", "COUNTRY", "GROUP"])):
+            # ---- Get the unknown IDs
+            unknown_ids = set(template_ids) - set(["YEAR", "COUNTRY", "GROUP"])
+            # ---- Raise Error
+            raise ValueError(
+                f"Transect-to-region mapping save file template ({v}) contains invalid identifiers "
+                f"({list(unknown_ids)}). Valid identifiers within the filename template (bounded "
+                f"by curly braces) include: ['YEAR', 'COUNTRY', 'GROUP']."
+            )
+        # ---- Return value
         return v
 
 
@@ -552,6 +587,52 @@ class CONFIG_DATA_MODEL(InputModel):
                 self.__class__.__name__, f"configured data files defined in {filename}"
             )
             raise ValueError(new_message) from e
+
+    @field_validator("export_regions", mode="before")
+    def validate_viable_filetypes(cls, filedir):
+
+        # Iterate through
+        if "filename" in filedir:
+            try: 
+                _ = CSVFile(**filedir).model_dump(exclude_none=True)
+            except ValidationError:
+                try:
+                    _ = XLSXFile(**filedir).model_dump(exclude_none=True)
+                except ValidationError:
+                    # ---- Get filename
+                    if isinstance(filedir, str):
+                        filename = filedir
+                    else:
+                        filename = filedir["filename"]
+                    # ---- Raise custom Validation error
+                    raise PydanticCustomError(
+                        "invalid_filetype",
+                        f"The 'export_regions' file '{filename}' must be a '.csv' or '.xlsx'.",
+                        dict(wrong_value=filename)
+                    )
+        else:
+            # Iterate through
+            for _, v in filedir.items():
+                try:
+                    _ = CSVFile(**v).model_dump(exclude_none=True)
+                except ValidationError:
+                    try:
+                        _ = XLSXFile(**v).model_dump(exclude_none=True)
+                    except ValidationError:
+                        # ---- Get filename
+                        if isinstance(v, str):
+                            filename = v
+                        else:
+                            filename = v["filename"]
+                        # ---- Raise custom Validation error
+                        raise PydanticCustomError(
+                            "invalid_filetype",
+                            f"The 'export_regions' file '{filename}' must be a '.csv' or '.xlsx'.",
+                            dict(wrong_value=filename)
+                        )
+                    
+        # Return
+        return filedir
 
 
 class VariogramModel(BaseModel, arbitrary_types_allowed=True):

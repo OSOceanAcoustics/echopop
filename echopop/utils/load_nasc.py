@@ -2,45 +2,56 @@ import glob
 import os
 import re
 from pathlib import Path
-from typing import List, Tuple, Union
+from typing import Any, Dict, List, Tuple, Union
 
 import numpy as np
 import pandas as pd
+from pandera.api.base.model import MetaModel
 
-from ..core import ECHOVIEW_EXPORT_MAP, REGION_EXPORT_MAP
+from ..core import ECHOVIEW_TO_ECHOPOP_NAMES, NAME_CONFIG, REGION_EXPORT_MAP
 from ..spatial.transect import export_transect_layers, export_transect_spacing
-from ..utils.validate_df import KSStrata
+from ..utils.validate_df import ECHOVIEW_DF_MODEL, KSStrata
 from .operations import compile_patterns, extract_parts_and_labels, group_merge
 
 
-def read_echoview_export(filename: str, transect_number: int):
+def read_echoview_export(filename: str, transect_number: int, validator: MetaModel):
     """
     Read Echoview export file
 
     Parameters
     ----------
     filename: str
-        Export file path.
+        Export file path
     transect_number: int
-        Transect number associated with the export file.
+        Transect number associated with the export file
+    validator: MetaModel
+        A ``pandera`` ``DataFrameModel``-class validator
 
     See Also
     ----------
     echopop.load.ingest_echoview_exports
-        A more detailed description.
+        A more detailed description
     """
 
     # Read csv file
     export_file = pd.read_csv(filename, index_col=None, header=0, skipinitialspace=True)
+    # ---- Set the column names to lowercase
+    export_file.columns = export_file.columns.str.lower()
+
+    # Validate
+    export_valid = validator.validate_df(export_file, filename)
 
     # Assign transect number column
-    export_file["transect_num"] = transect_number
+    export_valid["transect_num"] = transect_number
+
+    # Assign the names
+    export_valid.rename(columns=ECHOVIEW_TO_ECHOPOP_NAMES, inplace=True)
 
     # Get coordinate column names, if present
     # ---- Extract longitude column name
-    lon_col = next((col for col in export_file.columns if "lon" in col.lower()), None)
+    lon_col = next((col for col in export_valid.columns if "lon" in col.lower()), None)
     # ---- Extract latitude column name
-    lat_col = next((col for col in export_file.columns if "lat" in col.lower()), None)
+    lat_col = next((col for col in export_valid.columns if "lat" in col.lower()), None)
 
     # Automatic "bad data" removal/imputation for georeferenced (Latitude/Longitude) data
     # ---- Helper imputation function
@@ -91,42 +102,13 @@ def read_echoview_export(filename: str, transect_number: int):
 
     # ---- Impute latitude
     if lat_col is not None:
-        impute_bad_data(export_file, lat_col)
+        impute_bad_data(export_valid, lat_col)
     # ---- Impute longitude
     if lon_col is not None:
-        impute_bad_data(export_file, lon_col)
+        impute_bad_data(export_valid, lon_col)
 
     # Return dataframe
-    return export_file
-
-
-def validate_echoview_exports(export_dataframe: pd.DataFrame):
-    """
-    Validate column names and data types of the Echoview export dataframe.
-    """
-
-    # Get the export dataframe columns present in the `ECHOVIEW_EXPORT_MAP` API
-    valid_columns = {
-        old: new_info
-        for old, new_info in ECHOVIEW_EXPORT_MAP.items()
-        if old in export_dataframe.columns
-    }
-
-    # Drop unnecessary columns
-    export_dataframe_filtered = export_dataframe.copy().filter(valid_columns.keys())
-
-    # Validate the datatypes
-    for old, new_info in valid_columns.items():
-        # ---- Get expected datatype for the matched key name
-        expected_dtype = new_info["type"]
-        # ---- Transform the datatype, if needed
-        export_dataframe_filtered[old] = export_dataframe_filtered[old].astype(expected_dtype)
-
-    # Transform the column names
-    # ---- Get the new names
-    rename_dict = {old: new_info["name"] for old, new_info in valid_columns.items()}
-    # ---- Rename the columns
-    return export_dataframe_filtered.rename(columns=rename_dict)
+    return export_valid
 
 
 def get_transect_numbers(export_files: list, transect_pattern: str, file_directory: str):
@@ -150,7 +132,7 @@ def get_transect_numbers(export_files: list, transect_pattern: str, file_directo
         # ---- Extract transect number, if present
         if parsed_transect:
             try:
-                return int(parsed_transect.group(1)), file
+                return float(parsed_transect.group(1)), file
             # ---- Return None if the transect number is not parseable
             except ValueError:
                 return None, file
@@ -180,36 +162,38 @@ def consolidate_exports(transect_reference: dict, default_transect_spacing: floa
     """
 
     # Helper generator function for producing a single dataframe from entire file directory
-    def generate_dataframes(files, transect_reference=transect_reference):
+    def generate_dataframes(files, validator, transect_reference=transect_reference):
         # ---- Iterate through directory
         for filename in files:
             # ---- Get transect number
             transect_num = transect_reference.get(filename, None)
             # ---- Read in file and impute, if necessary plus validate columns and dtypes
-            yield validate_echoview_exports(read_echoview_export(filename, transect_num))
+            yield read_echoview_export(filename, transect_num, validator)
 
     # Read in and concatenate all dataframes
     # ---- Intervals
     # -------- Interval files
     interval_files = [file for file in transect_reference.keys() if "(intervals)" in file]
+    # -------- Get validator
+    validator = ECHOVIEW_DF_MODEL["intervals"]
     # -------- Read in files
     intervals_df = pd.concat(
-        generate_dataframes(interval_files, transect_reference), axis=0, ignore_index=True
+        generate_dataframes(interval_files, validator), axis=0, ignore_index=True
     )
     # ---- Cells
     # -------- Cells files
     cells_files = [file for file in transect_reference.keys() if "(cells)" in file]
+    # -------- Get validator
+    validator = ECHOVIEW_DF_MODEL["cells"]
     # -------- Read in files
-    cells_df = pd.concat(
-        generate_dataframes(cells_files, transect_reference), axis=0, ignore_index=True
-    )
+    cells_df = pd.concat(generate_dataframes(cells_files, validator), axis=0, ignore_index=True)
     # ---- Layer
     # -------- Layer files
     layer_files = [file for file in transect_reference.keys() if "(layers)" in file]
+    # -------- Get validator
+    validator = ECHOVIEW_DF_MODEL["layers"]
     # -------- Read in files
-    layers_df = pd.concat(
-        generate_dataframes(layer_files, transect_reference), axis=0, ignore_index=True
-    )
+    layers_df = pd.concat(generate_dataframes(layer_files, validator), axis=0, ignore_index=True)
 
     # Consolidate all three datasets
     # ---- Adjust the strings to avoid odd formatting
@@ -265,7 +249,18 @@ def load_export_regions(region_files: dict, region_names: dict, root_directory: 
             raise FileNotFoundError(f"Region definition file '{str(full_path)}' not found!")
 
         # Read file
-        new_region_df = pd.read_excel(full_path, sheet_name=sheetname)
+        if filename.lower().endswith(".csv"):
+            # ---- Initially read in the file
+            new_region_df = pd.read_csv(full_path)
+            # ---- Adjust column name cases
+            new_region_df.columns = new_region_df.columns.str.lower()
+            # ---- Adjust column names, if needed
+            new_region_df.rename(columns={"transect": "transect_num", 
+                                          "region id": "region_id", 
+                                          "assigned haul": "haul_num",},
+                                 inplace=True)
+        else:           
+            new_region_df = pd.read_excel(full_path, sheet_name=sheetname)
 
         # Fix strings if required
         new_region_df = new_region_df.replace('"', "", regex=True).replace(
@@ -280,7 +275,8 @@ def load_export_regions(region_files: dict, region_names: dict, root_directory: 
 
         # Validate column presence/structure
         # ---- Expected columns
-        expected_columns = list(new_column_names.values())
+        # expected_columns = list(new_column_names.values())
+        expected_columns = ["region_id", "haul_num", "transect_num"]
         # ---- Missing columns
         missing_columns = [col for col in expected_columns if col not in new_region_df.columns]
         # ---- Raise Error
@@ -289,29 +285,42 @@ def load_export_regions(region_files: dict, region_names: dict, root_directory: 
 
         # Validate column datatypes
         # ---- Drop NaN values
-        new_region_df = new_region_df.dropna(subset=["transect_num", "haul_num", "region_class"])
+        new_region_df = new_region_df.dropna(subset=["transect_num", "haul_num", "region_id"])
         # ---- Assign datatypes
-        new_region_df = new_region_df.astype(
-            {info["name"]: info["type"] for info in region_settings.values()}
-        )
+        # new_region_df = new_region_df.astype(
+        #     {info["name"]: info["type"] for info in region_settings.values() 
+        #      if info["name"] in new_region_df.columns}            
+        # )
 
         # Add group ID key
         new_region_df["group"] = group
 
         # Convert the region class column to lowercase
-        new_region_df["region_class"] = new_region_df["region_class"].str.lower()
+        if "region_class" in new_region_df.columns:
+            new_region_df["region_class"] = new_region_df["region_class"].str.lower()
 
         # Filter the region dataframe based on regular expression filter
-        # ---- Create filter
-        pattern = "|".join(
-            [r"(?<!-)\b{}\b".format(re.escape(name.lower())) for name in region_names]
-        )
-        # ---- Apply filter and return
-        return new_region_df[
-            new_region_df["region_class"].str.contains(pattern, case=False, regex=True)
-        ]
+        if "region_class" in new_region_df.columns:
+            # ---- Create filter
+            pattern = "|".join(
+                [r"(?<!-)\b{}\b".format(re.escape(name.lower())) for name in region_names]
+            )
+            # ---- Apply filter and return
+            return new_region_df[
+                new_region_df["region_class"].str.contains(pattern, case=False, regex=True)
+            ]
+        else:
+            return new_region_df
 
     # Return the vertically concatenated DataFrame
+    # ---- If there are not multiple groups, mutate the region files dictionary to match the groups
+    if set(["filename"]).issubset(region_files):
+        # ---- Transform dictionary
+        region_files = {group: region_files for group in region_names}
+        # ---- Add sheetname entry (None) if csv
+        region_files = {k: {**v, "sheetname": None} if "sheetname" not in v else v 
+                        for k, v in region_files.items()}
+        
     return pd.concat(
         [
             read_export_region(
@@ -327,10 +336,16 @@ def load_export_regions(region_files: dict, region_names: dict, root_directory: 
     )
 
 
-def get_haul_transect_key(configuration_dict: dict, root_dir: str):
+def get_haul_strata_key(
+    configuration_dict: Dict[str, Any], root_dir: str, transect_region_key: pd.DataFrame
+) -> pd.Series:
     """
-    Get the haul-to-transect KS stratification key.
+    Get the INPFC stratum and haul mapping
+
     """
+
+    # Create copy
+    transect_regions = transect_region_key.copy()
 
     # Flatten the configuration settings
     flat_table = pd.json_normalize(configuration_dict)
@@ -342,33 +357,59 @@ def get_haul_transect_key(configuration_dict: dict, root_dir: str):
     # ---- Get filename
     file = strata_config.filter(regex="filename").values.flatten()
     # ---- Get sheetname
-    sheet = strata_config.filter(regex="sheetname").values.flatten()
-
-    # Get configuration map settings specific to the KS strata
-    # ---- Dictionary to DataFrame
-    # CONFIG_DF = pd.DataFrame(CONFIG_MAP)
-    # ---- Find 'strata'
-    # strata_config = CONFIG_DF.loc["strata"].dropna()
-    # ---- Get the first valid index
-    # strata_reference = strata_config[strata_config.first_valid_index()]
+    sheet = strata_config.filter(regex="sheetname").values.flatten()[0]
+    # ---- Find the sheetname with INPFC in it
+    sheetname = [s for s in sheet if "inpfc" in s.lower()][0]
 
     # Create filepath
     # ---- Create filepath
-    haul_key_path = Path(root_dir) / file[0]
+    inpfc_strata_path = Path(root_dir) / file[0]
     # ---- Validate
-    if not haul_key_path.exists():
-        raise FileExistsError(f"The haul-to-transect file {{{str(haul_key_path)}}} does not exist!")
+    if not inpfc_strata_path.exists():
+        raise FileExistsError(
+            f"The INPFC latitude-based stratification file '{inpfc_strata_path.as_posix()}' does "
+            "not exist!"
+        )
 
     # Read in data
-    haul_key = pd.read_excel(haul_key_path, sheet_name=sheet[0])
-    # ---- Retain only the necessary columns
-    # haul_key_filtered = haul_key.filter(strata_reference.keys())
-    # ---- Assign datatypes
-    # haul_key_filtered = haul_key_filtered.astype(strata_reference, errors="ignore")
-    haul_key_filtered = KSStrata.validate_df(haul_key)
+    strata_key = pd.read_excel(inpfc_strata_path, sheet_name=sheetname)
+    # ---- Make column names lowercase
+    strata_key.columns = strata_key.columns.str.lower()
+    # ---- Rename the columns
+    strata_key.rename(columns=NAME_CONFIG, inplace=True)
+    # ---- Validate
+    strata_key_filtered = KSStrata.validate_df(strata_key).set_index(["haul_num"])
+    # ---- Set index for `transect_regions`
+    trans_regions_copy = transect_regions.copy().set_index(["haul_num"])
+    # ---- Cut the transect-region key
+    trans_regions_copy["stratum_inpfc"] = strata_key_filtered["stratum_num"]
+    # ---- Reset index
+    trans_regions_copy.reset_index(inplace=True)
+    # ---- Set new index
+    trans_regions_copy.set_index(["stratum_inpfc"], inplace=True)
 
-    # Return output
-    return haul_key_filtered
+    # Get the haul-strata-region maps
+    strata_map = configuration_dict["transect_region_mapping"]["inpfc_strata_region"]
+
+    # Pre-allocate the column
+    trans_regions_copy["country"] = None
+
+    # Iterate through
+    for region in strata_map:
+        # ---- Get strata
+        region_strata = strata_map[region]
+        # ---- Assign country codes
+        trans_regions_copy.loc[region_strata, "country"] = region
+
+    # Get columns present that can be used for indexing
+    cols_idx = list(
+        set(trans_regions_copy.columns).intersection(
+            set(["haul_num", "transect_num", "region_id", "region_name", "region_class"])
+        )
+    )
+
+    # Return the country column Series
+    return trans_regions_copy.reset_index().set_index(cols_idx)["country"]
 
 
 def filter_export_regions(
@@ -411,6 +452,11 @@ def filter_export_regions(
 
     # Impute region IDs for cases where multiple regions overlap within the same interval
     if impute_regions:
+        # ---- Sort values
+        transect_data_regions = transect_data_regions.sort_values(["transect_num", 
+                                                                   "interval", 
+                                                                   unique_region_id], 
+                                                                  ignore_index=True)
         # ---- Re-assign the region ID based on the first element
         transect_data_regions.loc[:, unique_region_id] = transect_data_regions.groupby(
             ["interval", "transect_num"]
@@ -421,11 +467,13 @@ def filter_export_regions(
 
 def ingest_echoview_exports(
     configuration_dict: dict,
-    transect_pattern: str = r"T(\d+)",
-    index_variable: Union[str, List[str]] = ["transect_num", "interval"],
-    unique_region_id: str = "region_id",
-    region_class_column: str = "region_class",
-    verbose: bool = True,
+    transect_pattern: str,
+    index_variable: Union[str, List[str]],
+    read_transect_region_file: bool,
+    region_class_column: str,
+    unique_region_id: str,
+    verbose: bool,
+    write_transect_region_file: bool,
 ):
     """
     Import a directory comprising Echoview exports via batch processing
@@ -439,11 +487,15 @@ def ingest_echoview_exports(
         See :func:`echopop.survey.load_acoustic_data`.
     index_variable: Union[str, List[str]]
         See :func:`echopop.survey.load_acoustic_data`.
+    read_transect_region_file: bool
+        See :func:`echopop.survey.load_acoustic_data`.
     region_class_column: str
         See :func:`echopop.survey.load_acoustic_data`.
     unique_region_id: str
         See :func:`echopop.survey.load_acoustic_data`.
     verbose: bool
+        See :func:`echopop.survey.load_acoustic_data`.
+    write_transect_region_file: bool
         See :func:`echopop.survey.load_acoustic_data`.
 
     Returns
@@ -451,13 +503,13 @@ def ingest_echoview_exports(
     pd.DataFrame:
         A `pandas.DataFrame` that includes the following columns:
         - `transect_num` (int): Transect number.
-        - `vessel_log_start` (float): The starting vessel log distance for each transect interval.
-        - `vessel_log_end` (float): The ending vessel log distance for each transect interval.
+        - `distance_s` (float): The starting interval distance for each transect interval.
+        - `distance_e` (float): The ending interval distance for each transect interval.
         - `latitude` (float): Latitude (degrees).
         - `longitude` (float): Longitude (degrees).
         - `transect_spacing` (float): Distance between transects (nmi).
-        - `NASC_no_age` (float): Age-2+ NASC.
-        - `NASC_all_ages` (float): Age-1+ NASC.
+        - `nasc_no_age` (float): Age-2+ NASC.
+        - `nasc_all_ages` (float): Age-1+ NASC.
         - `haul_num` (int): The trawl/haul number associated with each transect interval.
         - `stratum_num` (Optional[int]): Length-based (KS clustered) stratum numbers that are added
         when `include_stratum = True` and `strata = 'ks'`.
@@ -486,7 +538,42 @@ def ingest_echoview_exports(
     interval_template = interval_template.rename(columns={"max_depth": "bottom_depth"})
 
     # Process and construct the transect-region map key
-    transect_region_key = construct_transect_region_key(transect_data, configuration_dict)
+    # ---- Ingest a pre-defined transect-region key
+    if read_transect_region_file:
+        # ---- Transect-region mapping file metadata
+        region_files = configuration_dict["export_regions"]
+        # ---- Region names
+        region_names = export_settings["regions"]
+        # ---- Root directory
+        root_dir = configuration_dict["data_root_dir"]
+        # ---- Read in the file
+        transect_region_key = load_export_regions(region_files, region_names, root_dir)
+        # ---- Get the country-code information, if parameterized
+        if "inpfc_strata_region" in configuration_dict["transect_region_mapping"]:
+            # ---- Assign country
+            country_codes = get_haul_strata_key(configuration_dict, root_dir, transect_region_key)
+            # ---- Get columns present that can be used for indexing
+            cols_idx = list(
+                set(transect_region_key.columns).intersection(
+                    set(["haul_num", "transect_num", "region_id", "region_name", "region_class"])
+                )
+            )
+            # ---- Set index
+            transect_region_key.set_index(cols_idx, inplace=True)
+            # ---- Assign
+            transect_region_key["country"] = country_codes
+            # ---- Reset index
+            transect_region_key.reset_index(inplace=True)
+    # ---- Construct the transect-region-key
+    else:
+        transect_region_key = construct_transect_region_key(transect_data, configuration_dict)
+
+    # Write the file, if configured
+    if write_transect_region_file:
+        # ---- Root directory
+        root_dir = configuration_dict["data_root_dir"]
+        # --- Write the files
+        write_transect_region_key(configuration_dict, root_dir, transect_region_key, verbose)
 
     # Get region info
     # ---- Region names
@@ -511,7 +598,6 @@ def ingest_echoview_exports(
         nasc_intervals = (
             transect_regions.groupby(list(index_variable + [unique_region_id]))["nasc"]
             .sum()
-            .to_frame("NASC")
             .reset_index()
         )
         # ---- Partition specific grouped regions
@@ -530,7 +616,7 @@ def ingest_echoview_exports(
         full_interval_strata_df = interval_copy.merge(transect_layer_summary, how="left")
         # ---- Sort
         full_interval_strata_df = full_interval_strata_df.sort_values(
-            ["transect_num", "vessel_log_start", "vessel_log_end"]
+            ["transect_num", "distance_s", "distance_e"]
         )
         # ---- Fill NaN region id column with 999
         full_interval_strata_df[unique_region_id] = (
@@ -541,19 +627,23 @@ def ingest_echoview_exports(
             full_interval_strata_df["haul_num"].fillna(0).astype(int)
         )
         # ---- Fill float/continuous columns
-        full_interval_strata_df[["NASC", "layer_mean_depth", "layer_height", "bottom_depth"]] = (
-            full_interval_strata_df[["NASC", "layer_mean_depth", "layer_height", "bottom_depth"]]
+        full_interval_strata_df[["nasc", "layer_mean_depth", "layer_height", "bottom_depth"]] = (
+            full_interval_strata_df[["nasc", "layer_mean_depth", "layer_height", "bottom_depth"]]
             .fillna(0)
             .astype(float)
         )
         # ---- Drop unused columns
-        output_nasc = full_interval_strata_df.filter(export_settings["file_columns"])
+        output_nasc = full_interval_strata_df.filter(
+            [e.lower() for e in export_settings["file_columns"]]
+        )
         # ---- Add the region group key
         output_nasc["group"] = key
         # ---- Format the save filename
         save_filename = export_settings["save_file_template"]
+        # ---- Parse unique regions
+        unique_country = [i for i in grouped_region["country"].dropna().unique() if i != "None"]
         # ---- REGION replacement
-        save_filename = save_filename.replace("{REGION}", "US_CAN")
+        save_filename = save_filename.replace("{REGION}", "_".join(unique_country))
         # ---- YEAR replacement
         save_filename = save_filename.replace("{YEAR}", str(configuration_dict["survey_year"]))
         # --- GROUP replacement
@@ -676,102 +766,50 @@ def construct_transect_region_key(transect_data: pd.DataFrame, configuration_dic
     return pd.concat(full_transect_region_map).sort_values(["haul_num"])
 
 
-def write_transect_region_key(transect_data: pd.DataFrame, configuration_dict: dict, verbose: bool):
+def write_transect_region_key(
+    configuration_dict: Dict[str, Any],
+    root_dir: str,
+    transect_region_key: pd.DataFrame,
+    verbose: bool,
+) -> None:
 
-    # Get pattern configuration for filtering region names
-    pattern_config = configuration_dict["transect_region_mapping"]["parts"]
+    # Get the configuration information
+    meta = configuration_dict["transect_region_mapping"]
 
-    # Get unique region names
-    unique_regions = pd.DataFrame({"region_name": transect_data["region_name"].unique()})
+    # Get the file template
+    file_template = meta["save_file_template"]
+    # ---- Parse unique regions
+    unique_country = transect_region_key["country"].dropna().unique()
+    # ---- REGION replacement
+    file_template = file_template.replace("{COUNTRY}", "_".join(unique_country.tolist()))
+    # ---- YEAR replacement
+    file_template = file_template.replace("{YEAR}", str(configuration_dict["survey_year"]))
 
-    # Compile string label patterns
-    compiled_patterns = compile_patterns(pattern_config)
+    # Get the sheetname
+    sheetname = meta["save_file_sheetname"]
 
-    # Helper function for extracting
-    def extract_parts(row):
-        """Extract parts and labels from the region_name and return as a Series."""
-        extracted_labels = extract_parts_and_labels(
-            row["region_name"], compiled_patterns, pattern_config
-        )
+    # Get save directory
+    save_dir = meta["save_file_directory"]
 
-        # Initialize column dictionary
-        column_data = {"region_name": row["region_name"]}
-
-        # Dynamically create the column names based on the pattern configuration
-        column_data.update(
-            {
-                f"{part_name.lower()}": extracted_labels.get(part_name, "")
-                for part_name in pattern_config.keys()
-            }
-        )
-
-        # Return the column dictionary as a series
-        return pd.Series(column_data)
-
-    # Extract the various components from the configuration string
-    unique_regions_coded = unique_regions.apply(extract_parts, axis=1)
-    # ---- Set the index
-    unique_regions_coded.set_index("region_name", inplace=True)
-
-    # Index the data based on region name
-    transect_data_filtered = transect_data.set_index("region_name")
-
-    # Assign the haul numbers and country IDs
-    transect_data_filtered.loc[:, unique_regions_coded.columns] = unique_regions_coded
-
-    # Pull out transect region mapping
-    transect_region_settings = configuration_dict["transect_region_mapping"]
-    # ---- Get the save directory
-    save_dir = transect_region_settings["save_file_directory"]
-    # ---- Get sheetname
-    sheet = transect_region_settings["save_file_sheetname"]
-    # ---- Get root directory
-    root_dir = configuration_dict["data_root_dir"]
-
-    # Pull out NASC export region settings
-    nasc_regions = configuration_dict["nasc_exports"]["regions"]
-
-    # Extract save file template and format
-    # ---- Template
-    template = transect_region_settings["save_file_template"]
-    # ---- Get unique country codes
-    country_codes = "_".join(np.unique(transect_data_filtered["country"]).tolist()).strip("_")
-    # ---- Get survey year
-    survey_year = configuration_dict["survey_year"]
-    # ---- Swap out elements in template
-    file_template = template.replace("{COUNTRY}", country_codes).replace("{YEAR}", str(survey_year))
-
-    # Iterate through each expected NASC region groups
-    for region in nasc_regions.keys():
-        # ---- Format region pattern
-        region_pattern = (
-            rf"^(?:{'|'.join([re.escape(name.lower()) for name in nasc_regions[region]])})"
-        )
-        # ---- Swap out the {GROUP} component of the filename string
-        filename = file_template.replace("{GROUP}", region)
-        # ---- Filter the dataframe
-        transect_region = transect_data_filtered[
-            transect_data_filtered["region_class"].str.contains(
-                region_pattern, case=False, regex=True
-            )
-        ]
-        # ---- Filter out specific column names
-        transect_out = (
-            transect_region.reset_index()
-            .filter(["transect_num", "region_id", "haul_num", "region_name", "region_class"])
-            .sort_values(["transect_num", "haul_num"])
-        )
-        # ---- Reduce the duplicates
-        transect_out = transect_out.drop_duplicates()
-        # ---- Write xlsx file
-        transect_out.to_excel(
-            excel_writer=str(Path(root_dir + save_dir) / filename), sheet_name=sheet, index=False
-        )
+    # Iterate through the groups
+    for group, ids in configuration_dict["nasc_exports"]["regions"].items():
+        # --- GROUP replacement
+        file_template_group = file_template.replace("{GROUP}", group)
+        # --- Convert to lowercase
+        ids_proc = [i.lower() for i in ids]
+        # ---- Filter out any erroneous groups
+        transect_filtered = transect_region_key.loc[transect_region_key.region_class.isin(ids_proc)]
+        # ---- Assign group
+        transect_filtered.loc[:, "group"] = group
+        # ---- Format the path
+        file_path = Path(root_dir + save_dir) / file_template_group
+        # ---- Write file
+        transect_filtered.to_excel(excel_writer=file_path, sheet_name=sheetname, index=False)
         # ---- Print out message
         if verbose:
             print(
-                f"Updated export region, transect, and haul key map for '{region}' saved at "
-                f"'{str(Path(root_dir + save_dir) / filename)}'."
+                f"Updated export region, transect, and haul key map for '{group}' saved at "
+                f"'{file_path.as_posix()}'."
             )
 
 
@@ -812,7 +850,7 @@ def validate_export_directories(configuration_dict: dict) -> Tuple[str, str, lis
     if not any(Path(file_folder).iterdir()):
         raise FileNotFoundError(f"The export file directory {{{file_folder}}} contains no files!")
     # ---- Get export files
-    export_files = glob.glob(file_folder + "/*")
+    export_files = glob.glob(file_folder + "/*.csv")
 
     # Return
     return save_folder, file_folder, export_files

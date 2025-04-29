@@ -31,7 +31,7 @@
   # Acoustic transect export processing#
   ########################
   nasc_exports:
-    export_file_directory: /raw_nasc
+    export_file_directory: /raw_nasc_2017
     nasc_export_directory: /Exports     # Acoustic export directory
     save_file_template: "{REGION}_NASC_{YEAR}_table_{GROUP}.xlsx"
     save_file_sheetname: Sheet1
@@ -42,7 +42,7 @@
                   Hake Mix]
       no_age1: [Hake, Hake Mix]         # Age-2+
     max_transect_spacing: 10.0          # Maximum transect spacing (nmi)
-    file_columns: [transect_num, region_id, vessel_log_start, vessel_log_end, latitude, longitude,
+    file_columns: [transect_num, region_id, distance_s, distance_e, latitude, longitude,
                     stratum_num, transect_spacing, layer_mean_depth, layer_height, bottom_depth,
                     NASC, haul_num]
   transect_region_mapping:
