@@ -7,66 +7,67 @@
 ##############################################################################
 # Parameters
 
-survey_year: 2015            # survey year being considered
+survey_year: 2011            # survey year being considered
+
+ship_id:
+  160:
+    survey: 201103
+    name: NOAA Ship Bell M Shimada
+    description: NOAA Fisheries Survey Vessel
+  499:
+    survey: 201103
+    name: W.E. Ricker
+    description: Canadian Coast Guard
+    haul_offset: 100
 species:
   text_code: pacific_hake    # target species for the survey year -- species name
   number_code: 22500         # target species for the survey year -- numeric code
-CAN_haul_offset: 200         # The value to be added to the Canadian's haul number
+CAN_haul_offset: 100         # The value to be added to the Canadian's haul number
 
 ##############################################################################
 # Report generation
 ###################
 # Where the reports are saved
-report_path: C:/Users/Brandyn/Documents/GitHub/EchPro_data/echopop_2015/reports
+report_path: C:/Users/Brandyn/Documents/GitHub/echopop_2011/reports
 
 ##############################################################################
 # Directory path that contains all input data needed
-data_root_dir: C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_2015
+data_root_dir: C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_2011
 
 ##############################################################################
 # Input data files
 
 biological:
-  length:
-    US:
-      filename: Biological/aged shoreside US/2015_biodata_length.xlsx
-      sheetname: 2015_Biodata_length
-    CAN:
-      filename: Biological/aged shoreside CAN/2015_biodata_length_CAN.xlsx
-      sheetname: biodata_length_CAN
-  specimen:
-    US:
-      filename: Biological/aged shoreside US/2015_biodata_specimen_bml.xlsx
-      sheetname: 2015_biodata_specimen
-    CAN:
-      filename: Biological/aged shoreside CAN/2015_biodata_specimen_CAN.xlsx
-      sheetname: biodata_specimen_CAN
-  catch:
-    US:
-      filename: Biological/aged shoreside US/2015_biodata_catch.xlsx
-      sheetname: 2015_Biodata_Catch
-    CAN:
-      filename: Biological/aged shoreside CAN/2015_biodata_catch_CAN.xlsx
-      sheetname: biodata_catch_CAN
+  filename: Biological/1995-2023_biodata_redo.xlsx
+  sheetname:
+    catch: biodata_catch
+    length: biodata_length
+    specimen: biodata_specimen
 stratification:
   strata:
     # The two stratification types are found in two sheets: "Base KS" and "INPFC"
-    filename: Stratification/shoreside_snapshot-1/US&CAN strata 2015 shoreside.xlsx
-    sheetname: [INPFC, Base KS]
+    filename: Stratification/US&CAN strata 2011.xlsx
+    sheetname: ["stratification #0 (INPFC)", "stratification by haul #1"]
   geo_strata:
     # The two stratification types are found in two sheets: "stratification1" and "INPFC"
-    filename: Stratification/shoreside_snapshot-1/Stratification_geographic_Lat_2015_shoreside.xlsx
-    sheetname: [INPFC , stratification1]
+    filename: Stratification/Stratification_geographic_Lat_rev.xlsx
+    sheetname: ["stratification #0 (INPFC)", "stratification #1"]
 NASC:
   # NASC values
   no_age1:
     # file that excludes age1 values
-    filename: Exports/US_CAN_NASC_2015_table_no_age1.xlsx
+    filename: Exports/US_CAN_NASC_2011_table_no_age1.xlsx
     sheetname: Sheet1
   all_ages:
     # file that includes all ages
-    filename: Exports/US_CAN_NASC_2015_table_all_ages.xlsx
+    filename: Exports/US_CAN_NASC_2011_table_all_ages.xlsx
     sheetname: Sheet1
+transect_filter:
+  # Transect interval filtering
+  filename: C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_2011/Kriging_files/Kriging_grid_files/Transect Bounds to 2011.xlsx
+  sheetname: "1995-2011"
+export_regions:
+  filename: Stratification/US&CAN_T_reg_haul_final.csv
 kriging:
   mesh:
     filename: Kriging_files/Kriging_grid_files/krig_grid2_5nm_cut_centroids_2013.xlsx
@@ -76,6 +77,6 @@ kriging:
     sheetname: Smoothing_EasyKrig
   vario_krig_para:
     # NOTE: This file is not currently used
-    filename: Kriging_files/default_vario_krig_settings_2015_US_CAN.xlsx
+    filename: Kriging_files/default_vario_krig_settings_final.xlsx
     sheetname: Sheet1
 ...

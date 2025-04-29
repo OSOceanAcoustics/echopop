@@ -43,6 +43,24 @@ class InputModel(BaseModel):
 
         return cls.judge(**kwargs).model_dump(exclude_none=True)
 
+class CSVFile(InputModel, title="*.xlsx file tree"):
+    """
+    .csv file tree structure
+    Parameters
+    ----------
+    filename: str
+        Filename (as a string) with a *.csv file extension.
+    """
+
+    filename: str
+
+    @field_validator("filename", mode="before")
+    def validate_file_extension(cls, v):
+        if not v.lower().endswith(".csv"):
+            raise ValueError(
+                f"The file '{v}' must be a '.csv'."
+                )
+        return v
 
 class XLSXFile(InputModel, title="*.xlsx file tree"):
     """
@@ -59,6 +77,13 @@ class XLSXFile(InputModel, title="*.xlsx file tree"):
     filename: str
     sheetname: Union[str, List[str], Dict[str, str]]
 
+    @field_validator("filename", mode="before")
+    def validate_file_extension(cls, v):
+        if not v.lower().endswith(".xlsx"):
+            raise ValueError(
+                f"The file '{v}' must be a '.xlsx'."
+                )
+        return v
 
 class FileSettings(InputModel, title="parameter file settings"):
     """
@@ -74,8 +99,6 @@ class FileSettings(InputModel, title="parameter file settings"):
 
     directory: str
     sheetname: str
-
-
 class StratifiedSurveyMeanParameters(
     InputModel, title="stratified survey parameters", arbitrary_types_allowed=True
 ):
@@ -290,7 +313,6 @@ class TransectRegionMap(
         # ---- Return value
         return v
 
-
 class TSLRegressionParameters(InputModel, title="TS-length regression parameters"):
     """
     Target strength - length regression parameters
@@ -493,7 +515,6 @@ class BiologicalFile(InputModel, title="consolidated biological file input"):
     filename: str
     sheetname: BiologicalSheets
 
-
 class BiologicalFiles(InputModel, title="biological file inputs"):
     """
     Biological data files
@@ -576,7 +597,9 @@ class CONFIG_DATA_MODEL(InputModel):
     data_root_dir: Optional[str] = None
     CAN_haul_offset: Optional[int] = None
     ship_id: Optional[Union[int, str, float, Dict[Any, Any]]] = None
-    export_regions: Optional[Dict[str, XLSXFile]] = None
+    transect_filter: Optional[XLSXFile] = None
+    export_regions: Optional[Union[Union[CSVFile, XLSXFile], 
+                                    Dict[str, Union[CSVFile, XLSXFile]]]] = None
 
     def __init__(self, filename, **kwargs):
         try:

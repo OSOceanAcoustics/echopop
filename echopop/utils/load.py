@@ -305,9 +305,13 @@ def read_validated_data(
     # Step 2: Determine whether the dataframe already exists
     if sub_attribute in ["biology", "statistics", "spatial"]:
         # ---- A single dataframe per entry is expected, so no other fancy operations are needed
-        if sheet_name.lower() == "inpfc":
-            df_list = [input_dict[sub_attribute]["inpfc_strata_df"], df]
-            input_dict[sub_attribute]["inpfc_strata_df"] = pd.concat(df_list)
+        if "inpfc" in sheet_name.lower():
+            # ---- Create the full key name
+            keyname = "inpfc_" + config_map[-1] + "_df"
+            # ---- Create DataFrame list
+            df_list = [input_dict[sub_attribute][keyname], df]
+            # ---- Concatenate/update
+            input_dict[sub_attribute][keyname] = pd.concat(df_list, ignore_index=True)
         else:
             if config_map[0] == "kriging" and config_map[1] == "vario_krig_para":
                 df_list = [input_dict[sub_attribute]["kriging"][config_map[1] + "_df"], df]
@@ -355,7 +359,6 @@ def read_validated_data(
             "Unexpected data attribute structure. Check the settings in "
             "the configuration YAML and core.py."
         )
-
 
 def write_haul_to_transect_key(configuration_dict: dict, verbose: bool):
     """
