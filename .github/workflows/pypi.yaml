@@ -54,7 +54,7 @@ jobs:
   test-built-dist:
     name: Test echopop package
     needs: build-artifact
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
     - uses: actions/setup-python@v5.1.0
       name: Install Python
