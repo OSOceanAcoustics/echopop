@@ -14,7 +14,7 @@ on:
 jobs:
   build-artifact:
     name: Build echopop package
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: github.repository == 'OSOceanAcoustics/echopop'
     steps:
     - name: Checkout
