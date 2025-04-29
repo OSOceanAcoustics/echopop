@@ -1,4 +1,5 @@
 import abc
+
 import pandas as pd
 
 
@@ -10,10 +11,10 @@ class InversionBase(abc.ABC):
     """
 
     def __init__(self, df_model_params: pd.DataFrame):
-        
+
         # Ingest model parameters
         # -- this is a dataframe for convenience to manage strata
-        self.df_model_params = df_model_params  
+        self.df_model_params = df_model_params
 
         # Add a "stratum" column if not already exists
         if "stratum" not in df_model_params:
@@ -22,7 +23,7 @@ class InversionBase(abc.ABC):
         self.inversion_method = ""  # inversion method set in child class
 
     @abc.abstractmethod
-    def invert(self, df_nasc: pd.DataFrame) ->  pd.DataFrame:
+    def invert(self, df_nasc: pd.DataFrame) -> pd.DataFrame:
         """
         Perform inversion on each row of the input dataframe.
 

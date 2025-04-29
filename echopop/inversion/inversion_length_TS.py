@@ -1,5 +1,7 @@
-from typing import Literal, Dict
+from typing import Dict, Literal
+
 import pandas as pd
+
 from .inversion_base import InversionBase
 
 
@@ -10,16 +12,16 @@ class InversionLengthTS(InversionBase):
 
     def __init__(self, df_model_params: pd.DataFrame):
         super().__init__(df_model_params)
-        
+
         # Set inversion method
         self.inversion_method = "length_TS_regression"
 
         # Check df_model_params
         # -- check if df_model_params contain all required parameters
-        # -- for length-TS regression these are slope and intercept        
+        # -- for length-TS regression these are slope and intercept
 
     # same as the current aggregate_sigma_bs but with explicit inputs
-    def get_stratified_sigma_bs(self, df_length: pd.DataFrame) -> pd.DataFrame:        
+    def get_stratified_sigma_bs(self, df_length: pd.DataFrame) -> pd.DataFrame:
         # Calculate predicted sigma_bs based on length and length_count
         # -- convert TS to the linear domain ('sigma_bs')
 
@@ -28,7 +30,6 @@ class InversionLengthTS(InversionBase):
         df_sigma_bs_stratum: pd.DataFrame
 
         return df_sigma_bs_stratum
-
 
     def invert(self, df_nasc: pd.DataFrame, df_length: pd.DataFrame) -> pd.DataFrame:
         """

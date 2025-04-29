@@ -1,7 +1,7 @@
-from typing import Union, Dict, Tuple
 from pathlib import Path
-import pandas as pd
+from typing import Dict, Tuple, Union
 
+import pandas as pd
 
 # Break up load_data() and read_validated_data() into 3 separate functions to load biological, stratification, and kriging data
 # Don't worry about validating input files for now
@@ -11,9 +11,7 @@ import pandas as pd
 # TODO: combine in content of preprocess_biodata()
 # TODO: filter to only output data from 1 species
 def load_biological_data(
-    root_path: Union[str, Path],
-    file_path_dict: Dict,
-    species_code: str
+    root_path: Union[str, Path], file_path_dict: Dict, species_code: str
 ) -> Dict[pd.DataFrame]:
     """
     Load biological data from master biological data spreadsheet.
@@ -119,7 +117,7 @@ def load_kriging_variogram_params(
     file_path_dict: Dict,
     kriging_const: dict,
 ) -> Tuple[Dict, Dict]:
-    # put what's in 
+    # put what's in
     kriging_params_dict: dict
     variogram_params_dict: dict
     return kriging_params_dict, variogram_params_dict

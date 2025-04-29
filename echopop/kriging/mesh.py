@@ -1,6 +1,6 @@
 from typing import Optional, Tuple
-import pandas as pd
 
+import pandas as pd
 
 # Include:
 # - other functions needed to create mesh, e.g., crop_mesh

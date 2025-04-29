@@ -1,13 +1,13 @@
-from typing import List, Union, Generator, Optional
 from pathlib import Path
-import pandas as pd
+from typing import Generator, List, Optional, Union
 
+import pandas as pd
 
 
 def read_echoview_export(filename: Union[str, Path]) -> pd.DataFrame:
     """
     Generic reader for Echoview export CSVs. Used for files like analysis, cells, layers, intervals.
-    
+
     Parameters
     ----------
     filename : str or Path
@@ -60,7 +60,9 @@ def read_echoview_nasc(filename: Union[str, Path], transect_num: int) -> pd.Data
 
 
 # based on the current generate_dataframes
-def echoview_nasc_to_df(files: list[Path], transect_num: list[int]) -> Generator[pd.DataFrame, None, None]:
+def echoview_nasc_to_df(
+    files: list[Path], transect_num: list[int]
+) -> Generator[pd.DataFrame, None, None]:
     """
     Generator that reads and returns Echoview NASC dataframes for given files and transects.
 
@@ -77,14 +79,13 @@ def echoview_nasc_to_df(files: list[Path], transect_num: list[int]) -> Generator
         Parsed and validated DataFrame for each file/transect.
     """
     # don't need the yield structure
-    return [
-        read_echoview_nasc(f, tnum)
-        for f, tnum in zip(files, transect_num)
-    ]
-    
+    return [read_echoview_nasc(f, tnum) for f, tnum in zip(files, transect_num)]
+
 
 # based on the current export_transect_spacing
-def update_transect_spacing(intervals_df: pd.DataFrame, default_transect_spacing: float) -> pd.DataFrame:
+def update_transect_spacing(
+    intervals_df: pd.DataFrame, default_transect_spacing: float
+) -> pd.DataFrame:
     """
     Fill missing or invalid transect spacing values in interval data.
 
@@ -105,9 +106,7 @@ def update_transect_spacing(intervals_df: pd.DataFrame, default_transect_spacing
 
 # ONLY do data ingestion and organization, not writing out anything
 def merge_echoview_nasc(
-    nasc_path: Union[str, Path],
-    nasc_filename_pattern: str,
-    default_transect_spacing: float
+    nasc_path: Union[str, Path], nasc_filename_pattern: str, default_transect_spacing: float
 ) -> pd.DataFrame:
     """
     Ingest and merge all Echoview NASC files (intervals, cells, layers).
@@ -145,9 +144,15 @@ def merge_echoview_nasc(
     # Read and concat intervals, cells, and layers dataframes
     # -- use current code in consolidate_exports
     # -- but do not worry about validator at this time
-    df_intervals: pd.DataFrame = pd.concat(echoview_nasc_to_df(ev_nasc_files["intervals"], transect_num), ...)
-    df_cells: pd.DataFrame = pd.concat(echoview_nasc_to_df(ev_nasc_files["cells"], transect_num), ...)
-    df_layers: pd.DataFrame = pd.concat(echoview_nasc_to_df(ev_nasc_files["layers"], transect_num), ...)
+    df_intervals: pd.DataFrame = pd.concat(
+        echoview_nasc_to_df(ev_nasc_files["intervals"], transect_num), ...
+    )
+    df_cells: pd.DataFrame = pd.concat(
+        echoview_nasc_to_df(ev_nasc_files["cells"], transect_num), ...
+    )
+    df_layers: pd.DataFrame = pd.concat(
+        echoview_nasc_to_df(ev_nasc_files["layers"], transect_num), ...
+    )
 
     # Wrangle cells_df columns
 
@@ -178,12 +183,11 @@ def read_transect_region_file() -> pd.DataFrame:
     pass
 
 
-# NOTE: can keep it but likely won't use in workflow, 
+# NOTE: can keep it but likely won't use in workflow,
 #       since years with this info the files are already made
 # same as the current
 def construct_transect_region_key(
-    df_merged: pd.DataFrame,
-    region_class_mapping: dict
+    df_merged: pd.DataFrame, region_class_mapping: dict
 ) -> pd.DataFrame:
     """
     Build key assigning transects to region classes using mappings.
@@ -222,8 +226,7 @@ def load_transect_region_key(file_path: Union[str, Path]) -> pd.DataFrame:
 
 
 def compute_depth_layer_height(
-    df_cells: pd.DataFrame,
-    region_names: Optional[List[str]] = None
+    df_cells: pd.DataFrame, region_names: Optional[List[str]] = None
 ) -> pd.DataFrame:
     """
     Compute mean depth and layer height from NASC cell data with selected regions.
@@ -265,6 +268,6 @@ def consolidate_echoview_nasc(
     pd.DataFrame
         Final NASC dataframe (filtered and cleaned).
     """
-    # survey_identifier constrols the `filter_transect_intervals` component
+    # survey_identifier controls the `filter_transect_intervals` component
 
     pass

@@ -2,7 +2,9 @@
 THIS WILL BE REMOVED SOON
 KEPT AS REFERENCE FOR NOW
 """
-from typing import Union, Literal, Dict
+
+from typing import Dict, Literal, Union
+
 import numpy as np
 import pandas as pd
 
@@ -19,7 +21,7 @@ def get_stratified_sigma_bs(
     ts_length_regression_dict: dict,  # only 1 species so do not need species code and related checking
     stratum_type: Literal["ks", "inpfc"],  # only do 1 type at each call
 ) -> pd.DataFrame:
-    
+
     # Organize bio data
     # -- meld the specimen and length dataframes together for downstream calculations
     # -- regroup the length-specific length counts
