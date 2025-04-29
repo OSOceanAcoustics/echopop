@@ -95,10 +95,12 @@ class Survey:
         self,
         index_variable: Union[str, List[str]] = ["transect_num", "interval"],
         ingest_exports: Optional[Literal["echoview", "echopype"]] = None,
+        read_transect_region_file: bool = False,
         region_class_column: str = "region_class",
         transect_pattern: str = r"T(\d+)",
         unique_region_id: str = "region_id",
         verbose: bool = True,
+        write_transect_region_file: bool = False,
     ):
         """
         Loads in active acoustic backscatter survey data from .xlsx files, or processes
@@ -113,6 +115,14 @@ class Survey:
         ingest_exports: Optional[Literal["echoview", "echopype"]]
             The type of acoustic backscatter exports required for generating the associated
             consolidated ``*.xlsx`` files
+
+        read_transect_region_file: bool
+            When ``read_transect_region_file=True``, files defined in the ``export_regions`` key in
+            the file `*.yaml` configuration file is ingested. This file provides a
+            ``pandas.DataFrame`` that maps the export region identifiers, transect numbers, and
+            haul numbers. The default case (``read_transect_region_file=False``) will internally
+            handle this mapping using information provided by the ``transect_region_mapping`` key
+            in the initialization ``*.yaml`` configuration file
 
         region_class_column: str
             Dataframe column denoting the Echoview export region class (e.g. "zooplankton")
@@ -136,6 +146,16 @@ class Survey:
         verbose: bool
             Console messages that will print various messages, updates, etc. when ``verbose=True``
 
+        write_transect_region_file: bool
+            When ``write_transect_region_file=True``, a transect-haul-region mapping key
+            ``pandas.DataFrame`` will be written using the ``save_file_template``,
+            ``save_file_directory``, and ``save_file_sheetname`` keys defined within the
+            ``transect_region_mapping`` key in the initialization ``*.yaml`` configuration file.
+            These three ``save_*`` keyword arguments are required when
+            ``write_transect_region_file=True`` and will raise an Error if these are missing. The
+            default case (``write_transect_region_file=False``) will only store this mapping
+            within the ``Survey``-class object instance and will not generate a new file
+
         """
 
         # Check `ingest_exports` argument
@@ -148,9 +168,11 @@ class Survey:
                 self.config,
                 transect_pattern,
                 index_variable,
-                unique_region_id,
+                read_transect_region_file,
                 region_class_column,
+                unique_region_id,
                 verbose,
+                write_transect_region_file,
             )
             # ---- Update key for `export_regions`
             self.meta["provenance"]["imported_datasets"].update(["export_regions"])
@@ -238,7 +260,9 @@ class Survey:
                     "unique_strata": (
                         np.unique(self.input["spatial"]["strata_df"]["stratum_num"])
                         if stratum == "ks"
-                        else np.unique(self.input["spatial"]["inpfc_strata_df"]["stratum_inpfc"])
+                        else np.unique(
+                            self.input["spatial"]["inpfc_geo_strata_df"]["stratum_inpfc"]
+                        )
                     ),
                     "exclude_age1": exclude_age1,
                 }

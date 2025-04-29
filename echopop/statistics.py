@@ -46,30 +46,47 @@ def stratified_transect_statistic(
     stratum_col = settings_dict["stratum_name"]
     # ---- Get the variable name
     var_name = settings_dict["variable"]
+    # ---- Create copy of transect data
+    transect_copy = transect_data.copy()
+    # ---- Create transect summary copy
+    summary_copy = transect_summary.copy()
+    # ---- Create strata summary copy
+    strata_copy = strata_summary.copy()
 
     # Get indexed transect distance
-    transect_distances = transect_summary.set_index(["transect_num"])["transect_distance"]
+    transect_distances = summary_copy.set_index([stratum_col, "transect_num"])["transect_distance"]
     # ---- Drop any transects where distance is 0.0 (i.e. from a single mesh node)
     if np.any(transect_distances == 0.0):
         # ---- Pick out transects where distance = 0.0 nmi
-        zero_distances = transect_distances[transect_distances == 0.0].index.to_numpy()
+        zero_distances = transect_distances[transect_distances == 0.0]
         # ---- Update `transect_distances`
         transect_distances = transect_distances[transect_distances > 0.0]
+        # ---- Set identical index
+        transect_copy.set_index([stratum_col, "transect_num"], inplace=True)
         # ---- Update `transect_data`
-        transect_data = transect_data[~transect_data["transect_num"].isin(zero_distances)]
+        transect_copy.drop(zero_distances.index, inplace=True)
+        # ---- Reset
+        transect_copy.reset_index(inplace=True)
+        # ---- Set identical index
+        summary_copy.set_index([stratum_col, "transect_num"], inplace=True)
         # ---- Get the 'poor' transect strata
         zero_distances_strata = (
-            transect_summary.loc[zero_distances].groupby([stratum_col], observed=False).size()
+            summary_copy.loc[zero_distances.index]
+            .reset_index()
+            .groupby([stratum_col], observed=False)
+            .size()
         )
         # ---- Update `transect_summary`
-        transect_summary = transect_summary[~transect_summary["transect_num"].isin(zero_distances)]
+        summary_copy.drop(zero_distances.index, inplace=True)
+        # ---- Reset
+        summary_copy.reset_index(inplace=True)
         # ---- Update `strata_summary`
         # -------- Set index
-        strata_summary.set_index([stratum_col], inplace=True)
+        strata_copy.set_index([stratum_col], inplace=True)
         # -------- Subtract the 'poor' transects from the total transect counts
-        strata_summary["transect_count"] = strata_summary["transect_count"] - zero_distances_strata
+        strata_copy["transect_count"] = strata_copy["transect_count"] - zero_distances_strata
         # -------- Reset index
-        strata_summary.reset_index(inplace=True)
+        strata_copy.reset_index(inplace=True)
 
         if settings_dict["verbose"]:
             if settings_dict["dataset"] == "kriging":
@@ -91,7 +108,7 @@ def stratified_transect_statistic(
 
     # Calculate the number of transects per stratum
     num_transects_to_sample = np.round(
-        strata_summary.set_index(stratum_col)["transect_count"] * transect_sample
+        strata_copy.set_index(stratum_col)["transect_count"] * transect_sample
     ).astype(int)
 
     # Offset term used for later variance calculation
@@ -101,19 +118,26 @@ def stratified_transect_statistic(
     sample_dof = num_transects_to_sample * (num_transects_to_sample - sample_offset)
 
     # Transect areas
-    transect_areas = transect_summary.groupby(["transect_num"])["transect_area"].sum()
+    transect_areas = summary_copy.groupby([stratum_col, "transect_num"], observed=False)[
+        "transect_area"
+    ].sum()
 
     # Get indexed total transect area
-    total_transect_area = strata_summary.set_index(stratum_col)["transect_area_total"]
+    total_transect_area = strata_copy.set_index(stratum_col)["transect_area_total"]
 
     # Get indexed biological value
-    biological_values = transect_data.groupby(["transect_num"])[var_name].sum()
+    biological_values = transect_copy.groupby([stratum_col, "transect_num"], observed=False)[
+        var_name
+    ].sum()
 
     # Get indexed transect numbers
-    transect_numbers = transect_summary.set_index(stratum_col)["transect_num"]
+    transect_numbers = summary_copy.set_index(stratum_col)["transect_num"]
 
-    # Calculate the mean density
-    transect_summary["density"] = transect_data.groupby(["transect_num"])[
+    # Calculate the summed/mean density per transect
+    # ---- Set temporary index
+    summary_copy.set_index([stratum_col, "transect_num"], inplace=True)
+    # ---- Compute summed/mean density
+    summary_copy["density"] = transect_copy.groupby([stratum_col, "transect_num"], observed=False)[
         settings_dict["variable"]
     ].sum()
 
@@ -133,11 +157,15 @@ def stratified_transect_statistic(
     for j in total_transect_area.index:
 
         # Create an index array/matrix containing resampled (without replacement) transect numbers
+        if num_transects_to_sample.loc[j] == 1:
+            # ---- Repeat
+            transects = np.array([transect_numbers.loc[j]])
+        else:
+            transects = transect_numbers[j].values
+        # ---- Resample the transect numbers/indices
         transect_numbers_arr = np.array(
             [
-                np.random.choice(
-                    transect_numbers[j].values, num_transects_to_sample[j], replace=False
-                )
+                np.random.choice(transects, num_transects_to_sample[j], replace=False)
                 for i in range(transect_replicates)
             ]
         )
@@ -145,19 +173,19 @@ def stratified_transect_statistic(
         # Assign the indexed transect distance and biological variables to each transect
         # ---- Transect lengths
         distance_replicates = np.apply_along_axis(
-            transect_array, 0, transect_numbers_arr, transect_distances
+            transect_array, 0, transect_numbers_arr, transect_distances.loc[j]
         )
         # -------- Calculate the summed transect length
         length_arr[:, j - 1] = distance_replicates.sum(axis=1)
         # ---- Transect areas
         area_replicates = np.apply_along_axis(
-            transect_array, 0, transect_numbers_arr, transect_areas
+            transect_array, 0, transect_numbers_arr, transect_areas.loc[j]
         )
         # -------- Calculate the summed transect length
         area_arr[:, j - 1] = area_replicates.sum(axis=1)
         # ---- Biological variable
         biology_replicates = np.apply_along_axis(
-            transect_array, 0, transect_numbers_arr, biological_values
+            transect_array, 0, transect_numbers_arr, biological_values.loc[j]
         )
 
         # Calculate the stratified weights for along-transect values (within transect weights)
@@ -190,14 +218,19 @@ def stratified_transect_statistic(
     # ---- Sum the total area
     total_area = area_array.sum()
 
+    # Reset index for `transect_summary`
+    summary_copy.reset_index(inplace=True)
+
     # Compute the "population" (i.e. original data) statistics
     # This is necessary for constructing the bootstrapped confidence intervals
     # ---- Mean density
     if settings_dict["variable"] == "nasc":
         # ---- Compute sum per transect line first
-        line_density = transect_data.groupby(["transect_num"])[var_name].sum().to_frame()
+        line_density = (
+            transect_copy.groupby([stratum_col, "transect_num"])[var_name].sum().to_frame()
+        )
         # ---- Create copy of `transect_summary` and set index
-        line_length = transect_summary.copy().set_index("transect_num")
+        line_length = summary_copy.copy().set_index([stratum_col, "transect_num"])
         # ---- Add stratum
         line_density[stratum_col] = line_length[stratum_col]
         # ---- Convert to the density
@@ -212,10 +245,10 @@ def stratified_transect_statistic(
         survey_density_mean = stratum_density_means.mean()
     else:
         # ---- Get density column name
-        density_name = [col for col in transect_data.columns if "_density" in col]
+        density_name = [col for col in transect_copy.columns if "_density" in col]
         # ---- Calculate mean per stratum
         stratum_density_means = (
-            transect_data.groupby([stratum_col], observed=False)[density_name]
+            transect_copy.groupby([stratum_col], observed=False)[density_name]
             .mean()
             .to_numpy()
             .flatten()
@@ -224,7 +257,7 @@ def stratified_transect_statistic(
         survey_density_mean = stratum_density_means.mean()
     # ---- Total
     # -------- By stratum
-    stratum_total = transect_data.groupby([stratum_col], observed=False)[var_name].sum().to_numpy()
+    stratum_total = transect_copy.groupby([stratum_col], observed=False)[var_name].sum().to_numpy()
     # -------- By survey
     survey_total = stratum_total.sum()
     # ---- Compute the stratum total proportions relative to survey sum
@@ -288,7 +321,7 @@ def stratified_transect_statistic(
     stratified_results = {
         "variable": settings_dict["variable"],
         "ci_percentile": 0.95,
-        "num_transects": strata_summary["transect_count"].sum(),
+        "num_transects": strata_copy["transect_count"].sum(),
         "stratum_area": area_array,
         "total_area": total_area,
         "estimate": {

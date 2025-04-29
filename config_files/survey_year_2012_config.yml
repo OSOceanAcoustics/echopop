@@ -7,24 +7,21 @@
 ##############################################################################
 # Parameters
 
-survey_year: 2019            # survey year being considered
+survey_year: 2012            # survey year being considered
 species:
   text_code: pacific_hake    # target species for the survey year -- species name
   number_code: 22500         # target species for the survey year -- numeric code
-CAN_haul_offset: 200         # The value to be added to the Canadian's haul number
+CAN_haul_offset: 100         # The value to be added to the Canadian's haul number
 
 ##############################################################################
 # Report generation
 ###################
 # Where the reports are saved
-report_path: C:/Users/Brandyn/Documents/GitHub/EchoPro_data/Data/reports
-# report_path: C:/Users/Brandyn Lucca/Documents/Data/echopop_2019/reports
+report_path: C:/Users/Brandyn/Documents/GitHub/echopop_2012/reports
 
 ##############################################################################
 # Directory path that contains all input data needed
-
-# data_root_dir: C:/Users/Brandyn Lucca/Documents/Data/echopop_2019
-data_root_dir: C:/Users/Brandyn/Documents/GitHub/EchoPro_data/Data/
+data_root_dir: C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_2012
 
 ##############################################################################
 # Input data files
@@ -32,45 +29,50 @@ data_root_dir: C:/Users/Brandyn/Documents/GitHub/EchoPro_data/Data/
 biological:
   length:
     US:
-      filename: Biological/US/2019_biodata_length.xlsx
-      sheetname: biodata_length
+      filename: Biological/US/biodata_length.xlsx
+      sheetname: Sheet1
     CAN:
-      filename: Biological/CAN/2019_biodata_length_CAN.xlsx
-      sheetname: biodata_length_CAN
+      filename: Biological/CAN/biodata_length_Canada.xlsx
+      sheetname: Sheet1
   specimen:
     US:
-      filename: Biological/US/2019_biodata_specimen_AGES.xlsx
-      sheetname: biodata_specimen
+      filename: Biological/US/biodata_specimen.xlsx
+      sheetname: Sheet1
     CAN:
-      filename: Biological/CAN/2019_biodata_specimen_CAN_AGES.xlsx
-      sheetname: biodata_specimen_CAN
+      filename: Biological/CAN/biodata_specimen_Canada.xlsx
+      sheetname: Sheet1
   catch:
     US:
-      filename: Biological/US/2019_biodata_catch.xlsx
-      sheetname: biodata_catch
+      filename: Biological/US/biodata_catch.xlsx
+      sheetname: Sheet1
     CAN:
-      filename: Biological/CAN/2019_biodata_catch_CAN.xlsx
-      sheetname: biodata_catch_CAN
+      filename: Biological/CAN/biodata_catch_Canada.xlsx
+      sheetname: Sheet1
 stratification:
   strata:
     # The two stratification types are found in two sheets: "Base KS" and "INPFC"
-    filename: Stratification/US_CAN strata 2019_final.xlsx
-    sheetname: [INPFC, Base KS]
+    filename: Stratification/US&CAN strata 2012 11-30-2012.xlsx
+    sheetname: [INPFC, length strata byhaul_stratum1]
   geo_strata:
     # The two stratification types are found in two sheets: "stratification1" and "INPFC"
-    filename: Stratification/Stratification_geographic_Lat_2019_final.xlsx
+    filename: Stratification/Stratification_geographic_Lat.xlsx
     sheetname: [INPFC , stratification1]
 NASC:
   # NASC values
   no_age1:
     # file that excludes age1 values
-    # filename: Exports/US_CAN_NASC_2019_table_no_age1_test.xlsx
-    filename: Exports/US_CAN_detailsa_2019_table2y+_ALL_final - updated.xlsx
+    filename: Exports/US_CAN_NASC_2012_table_no_age1.xlsx
     sheetname: Sheet1
   all_ages:
     # file that includes all ages
-    # filename: Exports/US_CAN_NASC_2019_table_all_ages_test.xlsx
-    filename: Exports/US_CAN_detailsa_2019_table1y+_ALL_final - updated.xlsx
+    filename: Exports/US_CAN_NASC_2012_table_all_ages.xlsx
+    sheetname: Sheet1
+export_regions:
+  all_ages:
+    filename: Stratification/US&CAN_2012_transect_region_haul_age1+ auto final_new.xlsx
+    sheetname: Sheet1
+  no_age1:
+    filename: Stratification/US&CAN_2012_transect_region_haul_age2+ auto final_new.xlsx
     sheetname: Sheet1
 kriging:
   mesh:
@@ -81,6 +83,6 @@ kriging:
     sheetname: Smoothing_EasyKrig
   vario_krig_para:
     # NOTE: This file is not currently used
-    filename: Kriging_files/default_vario_krig_settings_2019_US_CAN.xlsx
+    filename: Kriging_files/default_vario_krig_settings_orig.xlsx
     sheetname: Sheet1
 ...

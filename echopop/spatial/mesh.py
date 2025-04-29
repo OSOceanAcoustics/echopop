@@ -55,16 +55,26 @@ def hull_crop_method(transect_data: pd.DataFrame, mesh_data: pd.DataFrame, setti
     settings_dict: dict
         Dictionary containing relevant algorithm variables and arguments.
     """
+    # Rename the mesh coordinate names, if necessary
+    # ---- Longitude
+    mesh_longitude = [col for col in mesh_data.columns if "lon" in col.lower()][0]
+    # ---- Latitude
+    mesh_latitude = [col for col in mesh_data.columns if "lat" in col.lower()][0]
+    # ---- Rename the dataframe
+    mesh = mesh_data.copy().rename(
+        columns={f"{mesh_longitude}": "longitude", f"{mesh_latitude}": "latitude"}
+    )
+
     # Extract the analysis settings
     # ---- Number of nearest transects
-    num_nearest_transects = settings_dict["num_nearest_transect"]
+    num_nearest_transects = settings_dict["num_nearest_transects"]
     # ---- Grid buffer distance (nmi)
     mesh_buffer_distance = settings_dict["mesh_buffer_distance"]
 
     # Convert the mesh dataframes to a geodataframe
     mesh_gdf = gpd.GeoDataFrame(
-        mesh_data,
-        geometry=gpd.points_from_xy(mesh_data["longitude"], mesh_data["latitude"]),
+        mesh,
+        geometry=gpd.points_from_xy(mesh["longitude"], mesh["latitude"]),
         crs=settings_dict["projection"],
     )
 
@@ -85,7 +95,7 @@ def hull_crop_method(transect_data: pd.DataFrame, mesh_data: pd.DataFrame, setti
     mesh_gdf_masked = mesh_gdf[within_polygon_mask]
 
     # Return the masked mesh dataframe
-    return mesh_gdf_masked.drop(columns="geometry")
+    return mesh_gdf_masked.drop(columns="geometry"), None
 
 
 def transect_ends_crop_method(
@@ -400,7 +410,14 @@ def griddify_lag_distances(
         # ---- Replace the self-points with NaN
         np.fill_diagonal(y_angles, np.nan)
         # ---- Calculate the azimuth angle grid
-        angularity = np.arctan(y_angles / x_angles) * 180.0 / np.pi + 180 % 180
+        angularity = (
+            np.arctan(
+                np.divide(y_angles, x_angles, where=(x_angles != 0.0) & (~np.isnan(x_angles)))
+            )
+            * 180.0
+            / np.pi
+            + 180 % 180
+        )
         # ---- Return output
         return np.sqrt(x_distance * x_distance + y_distance * y_distance), angularity
     else:
@@ -423,9 +440,19 @@ def stratify_mesh(input_dict: dict, kriged_mesh: pd.DataFrame, settings_dict: di
 
     # Extract the geographic-delimited strata
     if settings_dict["stratum"].lower() == "ks":
-        geo_strata = input_dict["spatial"]["geo_strata_df"]
+        geo_strata = (
+            input_dict["spatial"]["geo_strata_df"]
+            .copy()
+            .drop_duplicates("latitude_interval")
+            .sort_values("latitude_interval")
+        )
     elif settings_dict["stratum"].lower() == "inpfc":
-        geo_strata = input_dict["spatial"]["inpfc_strata_df"]
+        geo_strata = (
+            input_dict["spatial"]["inpfc_geo_strata_df"]
+            .copy()
+            .drop_duplicates("latitude_interval")
+            .sort_values("latitude_interval")
+        )
 
     # Define the latitude bin array
     latitude_bins = np.concatenate([[-90.0], geo_strata["northlimit_latitude"], [90.0]])
@@ -473,10 +500,20 @@ def mesh_to_transects(
     # Extract the appropriate stratum definitions/delimiters
     if settings_dict["stratum"].lower() == "inpfc":
         # ---- INPFC
-        strata = spatial_dict["inpfc_strata_df"]
+        strata = (
+            spatial_dict["inpfc_geo_strata_df"]
+            .copy()
+            .drop_duplicates("latitude_interval")
+            .sort_values(["latitude_interval"])
+        )
     elif settings_dict["stratum"].tolower() == "ks":
         # ---- KS
-        strata = spatial_dict["geo_strata_df"]
+        strata = (
+            spatial_dict["geo_strata_df"]
+            .copy()
+            .drop_duplicates("latitude_interval")
+            .sort_values(["latitude_interval"])
+        )
     # ---- Create latitude bins
     latitude_bins = latitude_bins = np.concatenate([[-90.0], strata["northlimit_latitude"], [90.0]])
 
