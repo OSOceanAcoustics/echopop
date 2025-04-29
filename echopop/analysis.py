@@ -421,11 +421,12 @@ def krige(input_dict: dict, analysis_dict: dict, settings_dict: dict) -> tuple[p
         mesh_full = mesh_df.copy().rename(
             columns={f"{mesh_longitude}": "longitude", f"{mesh_latitude}": "latitude"}
         )
-    else:        
+    else:
         # ---- Compute the cropped mesh
         mesh_full, transect_mesh_regions = crop_mesh(
-            transect_data, mesh_data, {**validated_cropping_methods, 
-                                       "projection": settings_dict["projection"]}
+            transect_data,
+            mesh_data,
+            {**validated_cropping_methods, "projection": settings_dict["projection"]},
         )
         # ---- Append 'transect_mesh_regions' to analysis variable
         analysis_dict["kriging"].update(
@@ -597,7 +598,7 @@ def apportion_kriged_values(
     unaged_abundance_proportions = proportions_dict["number"]["unaged_length_proportions_df"].copy()
 
     # Prepare the weight/biomass proportions
-    # ---- Aged    
+    # ---- Aged
     aged_biomass_proportions = proportions_dict["weight"]["aged_weight_proportions_df"].copy()
     # ---- Unaged
     unaged_biomass_proportions = proportions_dict["weight"]["unaged_weight_proportions_df"].copy()
@@ -609,31 +610,36 @@ def apportion_kriged_values(
     # Apportion abundances
     # ---- Pivot unaged
     unaged_abundance_proportions_pvt = unaged_abundance_proportions.pivot_table(
-        columns=["sex", "length_bin"], 
-        index=[stratum_col], 
-        values="proportion_number_overall_unaged", 
-        observed=False
+        columns=["sex", "length_bin"],
+        index=[stratum_col],
+        values="proportion_number_overall_unaged",
+        observed=False,
     )
     # ---- Apportion the abundances
     unaged_apportioned_abundance = (
-        (summed_abundance * unaged_abundance_proportions_pvt.transpose()).fillna(0.0)
-    ).stack().reset_index(name="abundance_apportioned_unaged")
+        ((summed_abundance * unaged_abundance_proportions_pvt.transpose()).fillna(0.0))
+        .stack()
+        .reset_index(name="abundance_apportioned_unaged")
+    )
     # ---- Set index for latter merging
     unaged_apportioned_abundance.set_index([stratum_col, "sex", "length_bin"], inplace=True)
     # ---- Pivot aged
     aged_abundance_proportions_pvt = aged_abundance_proportions.pivot_table(
         columns=["sex", "age_bin", "length_bin"],
         index=[stratum_col],
-        values = "proportion_number_overall_aged",
+        values="proportion_number_overall_aged",
         observed=False,
     )
     # ---- Apportion the abundances
     aged_apportioned_abundance = (
-        (summed_abundance * aged_abundance_proportions_pvt.transpose()).fillna(0.0)
-    ).stack().reset_index(name="abundance_apportioned")
+        ((summed_abundance * aged_abundance_proportions_pvt.transpose()).fillna(0.0))
+        .stack()
+        .reset_index(name="abundance_apportioned")
+    )
     # ---- Set index for latter merging
-    aged_apportioned_abundance.set_index([stratum_col, "sex", "age_bin", "length_bin"], 
-                                         inplace=True)
+    aged_apportioned_abundance.set_index(
+        [stratum_col, "sex", "age_bin", "length_bin"], inplace=True
+    )
 
     # Compute the apportioned unaged kriged biological values per stratum
     # ---- Merge the unaged proportions
@@ -656,8 +662,7 @@ def apportion_kriged_values(
     # Distribute biological values over the overall proportions (i.e. relative to aged and unaged
     # fish) for aged fish
     # ---- Set index to stratum column
-    aged_biomass_proportions.set_index([stratum_col, "sex", "age_bin", "length_bin"], 
-                                       inplace=True)
+    aged_biomass_proportions.set_index([stratum_col, "sex", "age_bin", "length_bin"], inplace=True)
     # ---- Compute the distributed abundance values
     aged_biomass_proportions["abundance_apportioned"] = aged_apportioned_abundance
     # ---- Reset the index

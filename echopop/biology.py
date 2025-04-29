@@ -1073,7 +1073,9 @@ def distribute_length_age(
         lambda x: x["sex"] == "all", "abundance_unaged"
     ] - unaged_apportioned_abundance.loc[
         lambda x: x["sex"] == "unsexed", "abundance_unaged"
-    ].fillna(0.0)
+    ].fillna(
+        0.0
+    )
     # ---- Drop unused columns
     unaged_apportioned_abundance = unaged_apportioned_abundance[
         ["sex", "length_bin", "abundance_unaged"]

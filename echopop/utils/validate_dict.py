@@ -1,6 +1,6 @@
 import re
-from typing import Any, Dict, List, Literal, Optional, Union
 from pathlib import Path
+from typing import Any, Dict, List, Literal, Optional, Union
 
 import numpy as np
 from pydantic import BaseModel, Field, RootModel, ValidationError, field_validator, model_validator
@@ -43,6 +43,7 @@ class InputModel(BaseModel):
 
         return cls.judge(**kwargs).model_dump(exclude_none=True)
 
+
 class CSVFile(InputModel, title="*.xlsx file tree"):
     """
     .csv file tree structure
@@ -57,10 +58,9 @@ class CSVFile(InputModel, title="*.xlsx file tree"):
     @field_validator("filename", mode="before")
     def validate_file_extension(cls, v):
         if not v.lower().endswith(".csv"):
-            raise ValueError(
-                f"The file '{v}' must be a '.csv'."
-                )
+            raise ValueError(f"The file '{v}' must be a '.csv'.")
         return v
+
 
 class XLSXFile(InputModel, title="*.xlsx file tree"):
     """
@@ -80,10 +80,9 @@ class XLSXFile(InputModel, title="*.xlsx file tree"):
     @field_validator("filename", mode="before")
     def validate_file_extension(cls, v):
         if not v.lower().endswith(".xlsx"):
-            raise ValueError(
-                f"The file '{v}' must be a '.xlsx'."
-                )
+            raise ValueError(f"The file '{v}' must be a '.xlsx'.")
         return v
+
 
 class FileSettings(InputModel, title="parameter file settings"):
     """
@@ -99,6 +98,8 @@ class FileSettings(InputModel, title="parameter file settings"):
 
     directory: str
     sheetname: str
+
+
 class StratifiedSurveyMeanParameters(
     InputModel, title="stratified survey parameters", arbitrary_types_allowed=True
 ):
@@ -313,6 +314,7 @@ class TransectRegionMap(
         # ---- Return value
         return v
 
+
 class TSLRegressionParameters(InputModel, title="TS-length regression parameters"):
     """
     Target strength - length regression parameters
@@ -515,6 +517,7 @@ class BiologicalFile(InputModel, title="consolidated biological file input"):
     filename: str
     sheetname: BiologicalSheets
 
+
 class BiologicalFiles(InputModel, title="biological file inputs"):
     """
     Biological data files
@@ -598,8 +601,9 @@ class CONFIG_DATA_MODEL(InputModel):
     CAN_haul_offset: Optional[int] = None
     ship_id: Optional[Union[int, str, float, Dict[Any, Any]]] = None
     transect_filter: Optional[XLSXFile] = None
-    export_regions: Optional[Union[Union[CSVFile, XLSXFile], 
-                                    Dict[str, Union[CSVFile, XLSXFile]]]] = None
+    export_regions: Optional[
+        Union[Union[CSVFile, XLSXFile], Dict[str, Union[CSVFile, XLSXFile]]]
+    ] = None
 
     def __init__(self, filename, **kwargs):
         try:
@@ -616,7 +620,7 @@ class CONFIG_DATA_MODEL(InputModel):
 
         # Iterate through
         if "filename" in filedir:
-            try: 
+            try:
                 _ = CSVFile(**filedir).model_dump(exclude_none=True)
             except ValidationError:
                 try:
@@ -631,7 +635,7 @@ class CONFIG_DATA_MODEL(InputModel):
                     raise PydanticCustomError(
                         "invalid_filetype",
                         f"The 'export_regions' file '{filename}' must be a '.csv' or '.xlsx'.",
-                        dict(wrong_value=filename)
+                        dict(wrong_value=filename),
                     )
         else:
             # Iterate through
@@ -651,9 +655,9 @@ class CONFIG_DATA_MODEL(InputModel):
                         raise PydanticCustomError(
                             "invalid_filetype",
                             f"The 'export_regions' file '{filename}' must be a '.csv' or '.xlsx'.",
-                            dict(wrong_value=filename)
+                            dict(wrong_value=filename),
                         )
-                    
+
         # Return
         return filedir
 

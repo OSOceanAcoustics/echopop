@@ -10,8 +10,8 @@ from pandera.api.base.model import MetaModel
 
 from ..core import ECHOVIEW_TO_ECHOPOP_NAMES, NAME_CONFIG, REGION_EXPORT_MAP
 from ..spatial.transect import export_transect_layers, export_transect_spacing
-from .validate_df import ECHOVIEW_DF_MODEL, KSStrata
 from .operations import compile_patterns, extract_parts_and_labels, group_merge
+from .validate_df import ECHOVIEW_DF_MODEL, KSStrata
 
 
 def read_echoview_export(filename: str, transect_number: int, validator: MetaModel):
@@ -255,11 +255,15 @@ def load_export_regions(region_files: dict, region_names: dict, root_directory: 
             # ---- Adjust column name cases
             new_region_df.columns = new_region_df.columns.str.lower()
             # ---- Adjust column names, if needed
-            new_region_df.rename(columns={"transect": "transect_num", 
-                                          "region id": "region_id", 
-                                          "assigned haul": "haul_num",},
-                                 inplace=True)
-        else:           
+            new_region_df.rename(
+                columns={
+                    "transect": "transect_num",
+                    "region id": "region_id",
+                    "assigned haul": "haul_num",
+                },
+                inplace=True,
+            )
+        else:
             new_region_df = pd.read_excel(full_path, sheet_name=sheetname)
 
         # Fix strings if required
@@ -288,8 +292,8 @@ def load_export_regions(region_files: dict, region_names: dict, root_directory: 
         new_region_df = new_region_df.dropna(subset=["transect_num", "haul_num", "region_id"])
         # ---- Assign datatypes
         # new_region_df = new_region_df.astype(
-        #     {info["name"]: info["type"] for info in region_settings.values() 
-        #      if info["name"] in new_region_df.columns}            
+        #     {info["name"]: info["type"] for info in region_settings.values()
+        #      if info["name"] in new_region_df.columns}
         # )
 
         # Add group ID key
@@ -318,9 +322,11 @@ def load_export_regions(region_files: dict, region_names: dict, root_directory: 
         # ---- Transform dictionary
         region_files = {group: region_files for group in region_names}
         # ---- Add sheetname entry (None) if csv
-        region_files = {k: {**v, "sheetname": None} if "sheetname" not in v else v 
-                        for k, v in region_files.items()}
-        
+        region_files = {
+            k: {**v, "sheetname": None} if "sheetname" not in v else v
+            for k, v in region_files.items()
+        }
+
     return pd.concat(
         [
             read_export_region(
@@ -453,10 +459,9 @@ def filter_export_regions(
     # Impute region IDs for cases where multiple regions overlap within the same interval
     if impute_regions:
         # ---- Sort values
-        transect_data_regions = transect_data_regions.sort_values(["transect_num", 
-                                                                   "interval", 
-                                                                   unique_region_id], 
-                                                                  ignore_index=True)
+        transect_data_regions = transect_data_regions.sort_values(
+            ["transect_num", "interval", unique_region_id], ignore_index=True
+        )
         # ---- Re-assign the region ID based on the first element
         transect_data_regions.loc[:, unique_region_id] = transect_data_regions.groupby(
             ["interval", "transect_num"]

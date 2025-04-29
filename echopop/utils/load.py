@@ -360,6 +360,7 @@ def read_validated_data(
             "the configuration YAML and core.py."
         )
 
+
 def write_haul_to_transect_key(configuration_dict: dict, verbose: bool):
     """
     Function for writing the haul-transect mapping key .xlsx file.

@@ -1,5 +1,5 @@
-from typing import List, Optional, TYPE_CHECKING, Union
 import re
+from typing import TYPE_CHECKING, List, Optional, Union
 
 import geopandas as gpd
 import geopy.distance
@@ -8,7 +8,8 @@ import pandas as pd
 from shapely.geometry import Point, Polygon
 from shapely.ops import unary_union
 
-if TYPE_CHECKING: from ..survey import Survey
+if TYPE_CHECKING:
+    from ..survey import Survey
 
 from ..spatial.projection import wgs84_to_utm
 
@@ -134,8 +135,9 @@ def edit_transect_columns(transect_dict: dict, settings_dict: dict):
     # Return the output
     return transect_info.reset_index()
 
+
 def filter_transect_intervals(
-    survey_obj: "Survey", 
+    survey_obj: "Survey",
     subset_filter: Optional[str] = None,
 ) -> pd.DataFrame:
     """
@@ -146,8 +148,9 @@ def filter_transect_intervals(
     transect_filter_settings = survey_obj.config["transect_filter"]
 
     # Read in file
-    transect_filter_df = pd.read_excel(transect_filter_settings["filename"], 
-                                       sheet_name=transect_filter_settings["sheetname"])
+    transect_filter_df = pd.read_excel(
+        transect_filter_settings["filename"], sheet_name=transect_filter_settings["sheetname"]
+    )
 
     # Lowercase column names
     transect_filter_df.columns = transect_filter_df.columns.str.lower()
@@ -162,13 +165,13 @@ def filter_transect_intervals(
     # Apply a filter, if needed
     if subset_filter is not None:
         # ---- Extract tokens from string
-        tokens = re.findall(r'\b[a-zA-Z_][a-zA-Z0-9_]*\b', subset_filter)
+        tokens = re.findall(r"\b[a-zA-Z_][a-zA-Z0-9_]*\b", subset_filter)
         # ---- Provide typical Python operator keywords
         keywords = {"and", "or", "not", "in", "notin", "True", "False"}
         # ---- Check for column names
         column_names = [t for t in tokens if t not in keywords and not t.isnumeric()]
         # ---- Check if all referenced columns exist
-        missing = [col for col in column_names if col not in transect_filter_df.columns]     
+        missing = [col for col in column_names if col not in transect_filter_df.columns]
         # ---- Raise error, if needed
         if missing:
             raise ValueError(f"Invalid column(s): {', '.join(missing)}")
@@ -177,14 +180,13 @@ def filter_transect_intervals(
             transect_filter_df = transect_filter_df.copy().query(subset_filter)
 
     # Perform a cross join to pair each row in `df` with every row in `fi`
-    df_expanded = df.merge(transect_filter_df[["transect_num", "log_start", "log_end"]], 
-                           on="transect_num", 
-                           how="left")
+    df_expanded = df.merge(
+        transect_filter_df[["transect_num", "log_start", "log_end"]], on="transect_num", how="left"
+    )
 
     # Check for overlap
-    mask = (
-        (df_expanded["distance_e"] >= df_expanded["log_start"]) & 
-        (df_expanded["distance_s"] <= df_expanded["log_end"])
+    mask = (df_expanded["distance_e"] >= df_expanded["log_start"]) & (
+        df_expanded["distance_s"] <= df_expanded["log_end"]
     )
 
     # Apply mask to original dataset

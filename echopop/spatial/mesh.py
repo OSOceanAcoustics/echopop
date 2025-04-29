@@ -64,7 +64,7 @@ def hull_crop_method(transect_data: pd.DataFrame, mesh_data: pd.DataFrame, setti
     mesh = mesh_data.copy().rename(
         columns={f"{mesh_longitude}": "longitude", f"{mesh_latitude}": "latitude"}
     )
-    
+
     # Extract the analysis settings
     # ---- Number of nearest transects
     num_nearest_transects = settings_dict["num_nearest_transects"]

@@ -142,7 +142,7 @@ def append_table_aggregates(
     if sex == "all":
         # ---- Calculate total
         sexed_total = (
-            tables_dict["female"].iloc[:-1, :-1].sum().sum() 
+            tables_dict["female"].iloc[:-1, :-1].sum().sum()
             + tables_dict["male"].iloc[:-1, :-1].sum().sum()
         )
         # ---- Append
@@ -155,14 +155,7 @@ def append_table_aggregates(
     age_all_row = ["Total (age2+)", age2_aged]
     # ---- Add sexed
     if sex == "all":
-        age_all_row = (
-            age_all_row
-            + [""] * 4
-            + [
-                "Male+Female:",
-                sexed_total * (1 - age1_proportion)
-            ]
-        )
+        age_all_row = age_all_row + [""] * 4 + ["Male+Female:", sexed_total * (1 - age1_proportion)]
     # ---- Append
     worksheet.append(age_all_row)
 

@@ -243,19 +243,20 @@ class BaseDataFrame(DataFrameModel):
                 # ---- Error-generating function (generally: @dataframe_check)
                 if isinstance(err.schema.checks[0].error, Callable):
                     if (
-                        not err.schema.checks[0].description in missing_cols and 
-                        not err.schema.checks[0].description in wrong_dtypes
-                    ):                    
+                        not err.schema.checks[0].description in missing_cols
+                        and not err.schema.checks[0].description in wrong_dtypes
+                    ):
                         error_codes.extend([cls._callable(err, df)])
                 # ---- Inequality checks
                 elif (
-                            err.schema.checks[0].name in [
-                                "less_than",
-                                "greater_than",
-                                "greater_than_or_equal_to",
-                                "less_than_or_equal_to",
-                            ] and 
-                            err.schema.name not in wrong_dtypes
+                    err.schema.checks[0].name
+                    in [
+                        "less_than",
+                        "greater_than",
+                        "greater_than_or_equal_to",
+                        "less_than_or_equal_to",
+                    ]
+                    and err.schema.name not in wrong_dtypes
                 ):
                     # ---- Failure due to a more systematic TypeError issue
                     if "TypeError" in str(err.failure_cases["failure_case"][0]):
@@ -719,7 +720,7 @@ class AcousticData(BaseDataFrame):
         overlap = list(set(distance_aliases).intersection(df.columns))
 
         return len(overlap) == 1
-    
+
     @dataframe_check(
         error=lambda df: (
             f"'distance_e': Multiple overlapping column names associated with the expected column "
