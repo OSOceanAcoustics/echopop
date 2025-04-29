@@ -273,7 +273,7 @@ def kriging_results_msg(kriging_results_dict: pd.DataFrame, settings_dict: dict)
         f"--------------------------------\n"
         f"GENERAL RESULTS\n"
         f"--------------------------------\n"
-        f"| Mean {settings_dict['variable'].replace('_', '' '')}: "
+        f"| Mean {density_var}: "
         f"{np.round(kriging_mesh_results['survey_mean'], 2)} kg/nmi^2\n"
         f"| Total survey {settings_dict['variable'].replace('_density', '')} estimate: "
         f"{np.round(kriging_mesh_results['survey_estimate'] * 1e-6, 2)} kmt\n"
