@@ -12,7 +12,7 @@ import pandas as pd
 # TODO: filter to only output data from 1 species
 def load_biological_data(
     root_path: Union[str, Path], file_path_dict: Dict, species_code: str
-) -> Dict[pd.DataFrame]:
+) -> Dict[str, pd.DataFrame]:
     """
     Load biological data from master biological data spreadsheet.
 
@@ -39,7 +39,7 @@ def load_biological_data(
 def load_stratification(
     root_path: Union[str, Path],
     file_path_dict: Dict,
-) -> Dict[pd.DataFrame]:
+) -> Dict[str, pd.DataFrame]:
     """
     Load stratification schemes from CSV
 
@@ -76,14 +76,14 @@ def load_stratification(
 
 # same as the current preprocess_biology_spatial()
 def join_biological_stratification(
-    df_bio_dict: Dict[pd.DataFrame], df_strata_dict: Dict[pd.DataFrame]
-) -> Dict[pd.DataFrame]:
+    df_bio_dict: Dict[str, pd.DataFrame], df_strata_dict:Dict[str, pd.DataFrame]
+) -> Dict[str, pd.DataFrame]:
     return df_bio_dict
 
 
 # same as the current preprocess_acoustic_spatial()
 def join_acoustic_stratification(
-    df_nasc: pd.DataFrame, df_strata_dict: Dict[pd.DataFrame]
+    df_nasc: pd.DataFrame, df_strata_dict: Dict[str, pd.DataFrame]
 ) -> pd.DataFrame:
     return df_nasc
 
@@ -91,16 +91,16 @@ def join_acoustic_stratification(
 # same as the current preprocess_acoustic_biology_spatial()
 def join_acoustic_all(
     df_nasc: pd.DataFrame,
-    df_bio_dict: Dict[pd.DataFrame],
-    df_strata_dict: Dict[pd.DataFrame],
+    df_bio_dict: Dict[str, pd.DataFrame],
+    df_strata_dict: Dict[str, pd.DataFrame],
 ) -> pd.DataFrame:
     return df_nasc
 
 
 def consolidate_all_data(
     df_nasc: pd.DataFrame,
-    df_bio_dict: Dict[pd.DataFrame],
-    df_strata_dict: Dict[pd.DataFrame],
+    df_bio_dict: Dict[str, pd.DataFrame],
+    df_strata_dict: Dict[str, pd.DataFrame],
 ) -> pd.DataFrame:
     """
     Consolidate all input data.

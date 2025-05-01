@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import yaml
 
-from ..core import BIODATA_HAUL_MAP, DATA_STRUCTURE, LAYER_NAME_MAP, NAME_CONFIG
+from ..core_tmp import BIODATA_HAUL_MAP, DATA_STRUCTURE, LAYER_NAME_MAP, NAME_CONFIG
 from .data_structure_utils import map_imported_datasets
 from .validate_df import DATASET_DF_MODEL
 from .validate_dict import CONFIG_DATA_MODEL, CONFIG_INIT_MODEL
