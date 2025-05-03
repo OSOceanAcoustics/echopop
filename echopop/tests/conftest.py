@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from _pytest.assertion.util import assertrepr_compare
-
+from echopop.tests.fixtures.fixtures_echoview_ingestion import *
 # Set up path to the `test_data` folder
 from echopop import Survey
 
@@ -14,6 +14,8 @@ from echopop import Survey
 HERE = Path(__file__).parent.absolute()
 TEST_DATA_ROOT = HERE.parent / "test_data"
 
+# Fixture plugins from sub-module
+# pytest_plugins = "tests.fixtures.fixtures_echoview_ingestion"
 
 # FIXTURES
 # ---- Test root/config/input file paths
