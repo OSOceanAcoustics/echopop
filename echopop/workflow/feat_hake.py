@@ -61,14 +61,14 @@ bio_path_dict: dict  # the "biological" section of year_config.yml
                      # this will be simplified now that we read from the master spreadsheet
 strata_path_dict: dict  # the "stratification" section of year_config.yml
 
-df_bio_dict = load_data.load_biological_data(root_path, bio_path_dict, species_code)
-df_strata_dict = load_data.load_stratification(root_path, strata_path_dict)
+dict_df_bio = load_data.load_biological_data(root_path, bio_path_dict, species_code)
+dict_df_strata = load_data.load_stratification(root_path, strata_path_dict)
 
 # Consolidate all input data into df_acoustic_dict
 df_nasc_no_age1 = load_data.consolidate_all_data(
     df_nasc=df_nasc_no_age1,
-    df_bio_dict=df_bio_dict,
-    df_strata_dict=df_strata_dict
+    df_bio_dict=dict_df_bio,
+    df_strata_dict=dict_df_strata
 )
 
 
@@ -77,19 +77,19 @@ df_nasc_no_age1 = load_data.consolidate_all_data(
 # ===========================================
 # Compute biological composition based on stratum
 length_bins: np.array  # length bin specification
-df_length_weight, df_regression = get_proportions.length_weight_regression(df_bio_dict["specimen"], length_bins)
+df_length_weight, df_regression = get_proportions.length_weight_regression(dict_df_bio["specimen"], length_bins)
 # df_regression seems unused afterwards -- good as a record?
 
 # Get counts ----------------
 df_aged_counts = get_proportions.fish_count(  # previously "aged_number_distribution"
-    df_specimen=df_bio_dict["specimen"],
-    df_length=df_bio_dict["length"],
+    df_specimen=dict_df_bio["specimen"],
+    df_length=dict_df_bio["length"],
     aged=True,
     sexed=True,
 )
 df_unaged_counts = get_proportions.fish_count(  # previously "unaged_number_distribution"
-    df_specimen=df_bio_dict["specimen"],
-    df_length=df_bio_dict["length"],
+    df_specimen=dict_df_bio["specimen"],
+    df_length=dict_df_bio["length"],
     aged=False,
     sexed=True,
 )
@@ -103,7 +103,7 @@ df_unaged_counts = get_proportions.fish_count(  # previously "unaged_number_dist
 
 # in the output dataframes: *_overall = *_aged + *_unaged
 # only handle 1 species at a time
-df_number_proportion_dict: dict = get_proportions.number_proportions(
+dict_df_number_proportion: dict = get_proportions.number_proportions(
     df_aged_counts,
     df_unaged_counts,
 )
@@ -111,20 +111,20 @@ df_number_proportion_dict: dict = get_proportions.number_proportions(
 
 
 # Get weight proportions ----------------
-df_weight_distr_dict: dict
+dict_df_weight_distr: dict
 
 # aged fish - weight distribution over sex/length/age
-df_weight_distr_dict["aged"] = get_proportions.weight_distributions_over_lenghth_age(
-    df_specimen=df_bio_dict["specimen"],
-    df_length=df_bio_dict["length"],
+dict_df_weight_distr["aged"] = get_proportions.weight_distributions_over_lenghth_age(
+    df_specimen=dict_df_bio["specimen"],
+    df_length=dict_df_bio["length"],
     df_length_weight=df_length_weight,
     aged=True,
 )
 
 # unaged fish - weight distribution over sex/length
-df_weight_distr_dict["unaged"] = get_proportions.weight_distributions_over_lenghth_age(
-    df_specimen=df_bio_dict["specimen"],
-    df_length=df_bio_dict["length"],
+dict_df_weight_distr["unaged"] = get_proportions.weight_distributions_over_lenghth_age(
+    df_specimen=dict_df_bio["specimen"],
+    df_length=dict_df_bio["length"],
     df_length_weight=df_length_weight,
     aged=False,
 )
@@ -132,13 +132,13 @@ df_weight_distr_dict["unaged"] = get_proportions.weight_distributions_over_lengh
 # Get averaged weight for all sex, male, female for all strata
 df_averaged_weight = get_proportions.stratum_averaged_weight(
     df_length_weight=df_length_weight,
-    df_bio_dict=df_bio_dict,  # use "specimen" and "length"
+    df_bio_dict=dict_df_bio,  # use "specimen" and "length"
 )
 
 # Get weight proportion for all sex, male, female for all strata
-df_weight_proportion_dict: dict = get_proportions.weight_proportions(
-    df_catch=df_bio_dict["catch"],
-    df_weight_proportion_dict=df_weight_distr_dict,  # weight proportions
+dict_df_weight_proportion: dict = get_proportions.weight_proportions(
+    df_catch=dict_df_bio["catch"],
+    df_weight_proportion_dict=dict_df_weight_distr,  # weight proportions
     df_length_weight=df_length_weight,  # length-weight regression
 )
 
@@ -151,12 +151,12 @@ df_weight_proportion_dict: dict = get_proportions.weight_proportions(
 
 # Inititate object to perform inversion
 # inversion parameters are stored as object attributes
-invert_hake = InversionLengthTS(df_model_params=df_bio_dict["model_params"])
+invert_hake = InversionLengthTS(df_model_params=dict_df_bio["model_params"])
 
 # Perform inversion using the supplied df_length
 # df_length will be used to compute the mean sigma_bs for each stratum,
 # which is then used in .invert() to compute number density on a stratum-by-stratum basis
-df_nasc_no_age1 = invert_hake.invert(df_nasc=df_nasc_no_age1, df_length=df_bio_dict["length"])
+df_nasc_no_age1 = invert_hake.invert(df_nasc=df_nasc_no_age1, df_length=dict_df_bio["length"])
 
 
 
