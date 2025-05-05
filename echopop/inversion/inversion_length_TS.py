@@ -22,6 +22,10 @@ class InversionLengthTS(InversionBase):
 
     # same as the current aggregate_sigma_bs but with explicit inputs
     def get_stratified_sigma_bs(self, df_length: pd.DataFrame) -> pd.DataFrame:
+        # Add a stratum column to df_length if it doesn't exist
+        if "stratum" not in df_length.columns:
+            df_length["stratum"] = 0
+
         # Calculate predicted sigma_bs based on length and length_count
         # -- convert TS to the linear domain ('sigma_bs')
 
@@ -63,6 +67,14 @@ class InversionLengthTS(InversionBase):
 
         # Compute mean sigma_bs for each stratum
         df_sigma_bs_stratum = self.get_stratified_sigma_bs(df_length)
+
+        # Add a stratum column to df_nasc if it doesn't exist
+        if "stratum" not in df_nasc.columns:
+            df_nasc["stratum"] = 0
+
+        # Make sure both df_nasc and df_length have the same stratum values
+        if not df_nasc["stratum"].equals(df_length["stratum"]):
+            raise ValueError("Stratum values in df_nasc and df_length do not match.")
 
         # Perform inversion (compute number density based on stratified sigma_bs)
 
