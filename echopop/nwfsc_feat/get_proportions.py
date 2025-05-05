@@ -70,7 +70,7 @@ def number_proportions(
 # TODO: keeping inputs/outputs are dataframes for now,
 #       think about changing to xarray dataarray later
 # The current `quantize_weights` function
-def weight_distributions(
+def weight_distributions_over_lenghth_age(
     df_specimen: pd.DataFrame,
     df_length: pd.DataFrame,
     df_length_weight: pd.DataFrame,  # from get_length_weight_regression() above
@@ -124,7 +124,6 @@ def stratum_averaged_weight() -> pd.DataFrame:
 # The current weight_proportions()
 def weight_proportions(
     df_catch: pd.DataFrame,
-    df_number_proportion_dict: dict,  # number proportions: do we actually need this?
     df_weight_proportion_dict: dict,  # weight proportions
     df_length_weight: pd.DataFrame,  # length-weight regression
 ) -> Dict[pd.DataFrame]:

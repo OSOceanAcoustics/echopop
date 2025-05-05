@@ -111,10 +111,10 @@ df_number_proportion_dict: dict = get_proportions.number_proportions(
 
 
 # Get weight proportions ----------------
-df_weight_proportion_dict: dict
+df_weight_distr_dict: dict
 
 # aged fish - weight distribution over sex/length/age
-df_weight_proportion_dict["aged"] = get_proportions.weight_distributions(
+df_weight_distr_dict["aged"] = get_proportions.weight_distributions_over_lenghth_age(
     df_specimen=df_bio_dict["specimen"],
     df_length=df_bio_dict["length"],
     df_length_weight=df_length_weight,
@@ -122,7 +122,7 @@ df_weight_proportion_dict["aged"] = get_proportions.weight_distributions(
 )
 
 # unaged fish - weight distribution over sex/length
-df_weight_proportion_dict["unaged"] = get_proportions.weight_distributions(
+df_weight_distr_dict["unaged"] = get_proportions.weight_distributions_over_lenghth_age(
     df_specimen=df_bio_dict["specimen"],
     df_length=df_bio_dict["length"],
     df_length_weight=df_length_weight,
@@ -138,8 +138,7 @@ df_averaged_weight = get_proportions.stratum_averaged_weight(
 # Get weight proportion for all sex, male, female for all strata
 df_weight_proportion_dict: dict = get_proportions.weight_proportions(
     df_catch=df_bio_dict["catch"],
-    df_number_proportion_dict=df_number_proportion_dict,  # number proportions: do we actually need this?
-    df_weight_proportion_dict=df_weight_proportion_dict,  # weight proportions
+    df_weight_proportion_dict=df_weight_distr_dict,  # weight proportions
     df_length_weight=df_length_weight,  # length-weight regression
 )
 
