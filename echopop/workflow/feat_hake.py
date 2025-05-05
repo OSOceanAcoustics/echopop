@@ -1,13 +1,13 @@
-from typing import Dict, Union, Tuple
 from pathlib import Path
+from typing import Dict, Tuple, Union
+
 import numpy as np
 import pandas as pd
 import xarray as xr
 
-from echopop.nwfsc_feat import get_proportions, ingest_nasc, load_data
-from echopop.kriging import Kriging
 from echopop.inversion import InversionLengthTS
-
+from echopop.kriging import Kriging
+from echopop.nwfsc_feat import get_proportions, ingest_nasc, load_data
 
 # ===========================================
 # Organize NASC file
@@ -16,8 +16,7 @@ nasc_filename_pattern = "SOME_PATTERN"
 region_class_filepath = "SOME_PATH"  # pattern-label mapping under transect_region_mapping/parts
 survey_identifier = "YEAR_MONTH"
 
-df_merged = ingest_nasc.merge_echoview_nasc(
-    nasc_path, nasc_filename_pattern)
+df_merged = ingest_nasc.merge_echoview_nasc(nasc_path, nasc_filename_pattern)
 
 # Optional: only use for years needing this as external resources
 df_transect_region_key = ingest_nasc.load_transect_region_key(region_class_filepath)
@@ -47,8 +46,6 @@ df_nasc_no_age1 = ingest_nasc.consolidate_echoview_nasc(
 # -- just read them in without validation is fine: these are all files under our control
 
 
-
-
 # ===========================================
 # Execute what's in Survey.load_survey_data()
 # All *_dict below are a subdict from the original config yaml
@@ -58,7 +55,7 @@ species_code = "SPECIES_CODE"
 df_nasc_no_age1: pd.DataFrame  # extracted nasc data from above, can also be df_nasc_all_ages
 
 bio_path_dict: dict  # the "biological" section of year_config.yml
-                     # this will be simplified now that we read from the master spreadsheet
+# this will be simplified now that we read from the master spreadsheet
 strata_path_dict: dict  # the "stratification" section of year_config.yml
 
 dict_df_bio = load_data.load_biological_data(root_path, bio_path_dict, species_code)
@@ -66,18 +63,16 @@ dict_df_strata = load_data.load_stratification(root_path, strata_path_dict)
 
 # Consolidate all input data into df_acoustic_dict
 df_nasc_no_age1 = load_data.consolidate_all_data(
-    df_nasc=df_nasc_no_age1,
-    df_bio_dict=dict_df_bio,
-    df_strata_dict=dict_df_strata
+    df_nasc=df_nasc_no_age1, df_bio_dict=dict_df_bio, df_strata_dict=dict_df_strata
 )
-
-
 
 
 # ===========================================
 # Compute biological composition based on stratum
 length_bins: np.array  # length bin specification
-df_length_weight, df_regression = get_proportions.length_weight_regression(dict_df_bio["specimen"], length_bins)
+df_length_weight, df_regression = get_proportions.length_weight_regression(
+    dict_df_bio["specimen"], length_bins
+)
 # df_regression seems unused afterwards -- good as a record?
 
 # Get counts ----------------
@@ -93,9 +88,9 @@ df_unaged_counts = get_proportions.fish_count(  # previously "unaged_number_dist
     aged=False,
     sexed=True,
 )
-# Previously there was also "aged_number_distribution_filtered" 
-# but it is simply df_aged_counts with unsexed fish removed, 
-# I think it is better to have that explicitly in the code, 
+# Previously there was also "aged_number_distribution_filtered"
+# but it is simply df_aged_counts with unsexed fish removed,
+# I think it is better to have that explicitly in the code,
 # so removed OUTSIDE of the get_fish_count function
 
 
@@ -107,7 +102,6 @@ dict_df_number_proportion: dict = get_proportions.number_proportions(
     df_aged_counts,
     df_unaged_counts,
 )
-
 
 
 # Get weight proportions ----------------
@@ -143,13 +137,10 @@ dict_df_weight_proportion: dict = get_proportions.weight_proportions(
 )
 
 
-
-
-
 # ===========================================
 # NASC to number density
 
-# Inititate object to perform inversion
+# Initiate object to perform inversion
 # inversion parameters are stored as object attributes
 invert_hake = InversionLengthTS(df_model_params=dict_df_bio["model_params"])
 
@@ -159,18 +150,15 @@ invert_hake = InversionLengthTS(df_model_params=dict_df_bio["model_params"])
 df_nasc_no_age1 = invert_hake.invert(df_nasc=df_nasc_no_age1, df_length=dict_df_bio["length"])
 
 
-
-
-
 # ===========================================
 # Perform kriging using class Kriging
 # put back FEAT-specific kriging files
 
 # Load kriging-related params
 kriging_const: dict  # from initalization_config.yaml:
-                     # A0, longitude_reference, longitude/latitude_offset
+# A0, longitude_reference, longitude/latitude_offset
 kriging_path_dict: dict  # the "kriging" section of year_config.yml
-                         # combined with the "kriging" section of init_config.yml
+# combined with the "kriging" section of init_config.yml
 kriging_param_dict, variogram_param_dict = load_data.load_kriging_variogram_params(
     root_path=root_path,
     file_path_dict=kriging_path_dict,
@@ -194,7 +182,4 @@ kriging.latlon_to_xy()
 
 # Perform kriging
 # This adds kriging result columns to df_in
-df_nasc_no_age1_kriged = kriging.krige(
-    df_in=df_nasc_no_age1,
-    variables="biomass"
-)
+df_nasc_no_age1_kriged = kriging.krige(df_in=df_nasc_no_age1, variables="biomass")
