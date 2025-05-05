@@ -113,7 +113,7 @@ df_number_proportion_dict: dict = get_proportions.number_proportions(
 # Get weight proportions ----------------
 df_weight_proportion_dict: dict
 
-# aged fish - weight distribution over sex and legnth
+# aged fish - weight distribution over sex/length/age
 df_weight_proportion_dict["aged"] = get_proportions.weight_distributions(
     df_specimen=df_bio_dict["specimen"],
     df_length=df_bio_dict["length"],
@@ -121,7 +121,7 @@ df_weight_proportion_dict["aged"] = get_proportions.weight_distributions(
     aged=True,
 )
 
-# unaged fish - weight distribution over sex and legnth
+# unaged fish - weight distribution over sex/length
 df_weight_proportion_dict["unaged"] = get_proportions.weight_distributions(
     df_specimen=df_bio_dict["specimen"],
     df_length=df_bio_dict["length"],
@@ -135,15 +135,12 @@ df_averaged_weight = get_proportions.stratum_averaged_weight(
     df_bio_dict=df_bio_dict,  # use "specimen" and "length"
 )
 
-# Get weight proportionaveraged weight for all sex, male, female for all strata
-# NOTE: keeping inputs/outputs are dataframes for now,
-#       think about changing to xarray dataarray later
-da_weight_proportion = get_proportions.weight_proportions(
-    df_bio_dict=df_bio_dict,  # use "catch" 
-    df_number_proportion=df_number_proportion,  # number proportions
+# Get weight proportion for all sex, male, female for all strata
+df_weight_proportion_dict: dict = get_proportions.weight_proportions(
+    df_catch=df_bio_dict["catch"],
+    df_number_proportion_dict=df_number_proportion_dict,  # number proportions: do we actually need this?
+    df_weight_proportion_dict=df_weight_proportion_dict,  # weight proportions
     df_length_weight=df_length_weight,  # length-weight regression
-    df_averaged_weight=df_averaged_weight,
-    df_weight_proportion_dict=df_weight_proportion_dict, # weight proportions: "aged" and "unaged"
 )
 
 

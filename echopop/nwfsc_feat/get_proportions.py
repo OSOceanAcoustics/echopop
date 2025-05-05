@@ -111,6 +111,21 @@ def stratum_averaged_weight() -> pd.DataFrame:
     return df_fitted_weight
 
 
-# from the current weight_proportions()
-def weight_proportions():
+# NOTE: keeping inputs/outputs are dataframes for now,
+#       think about changing to xarray dataarray later
+#       When we are ready to use xarray, consider the following:
+#       -- dimensions: stratum, sex, length, age
+#       -- types of proportions:
+#          -- Aged fish by stratum/sex/age/length
+#          -- Unaged fish by stratum/sex/length
+#          -- Combined aged+unaged proportions by sex
+#          -- Overall aged vs unaged proportions
+#       -- Some of the above can be derived from others
+# The current weight_proportions()
+def weight_proportions(
+    df_catch: pd.DataFrame,
+    df_number_proportion_dict: dict,  # number proportions: do we actually need this?
+    df_weight_proportion_dict: dict,  # weight proportions
+    df_length_weight: pd.DataFrame,  # length-weight regression
+) -> Dict[pd.DataFrame]:
     pass
