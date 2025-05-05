@@ -103,7 +103,7 @@ df_unaged_counts = get_proportions.fish_count(  # previously "unaged_number_dist
 
 # in the output dataframes: *_overall = *_aged + *_unaged
 # only handle 1 species at a time
-dict_df_number_proportion: dict = get_proportions.number_proportions(
+dict_df_number_proportion: Dict[pd.DataFrame] = get_proportions.number_proportions(
     df_aged_counts,
     df_unaged_counts,
 )
@@ -111,7 +111,7 @@ dict_df_number_proportion: dict = get_proportions.number_proportions(
 
 
 # Get weight proportions ----------------
-dict_df_weight_distr: dict
+dict_df_weight_distr: Dict[pd.DataFrame]
 
 # aged fish - weight distribution over sex/length/age
 dict_df_weight_distr["aged"] = get_proportions.weight_distributions_over_lenghth_age(
@@ -132,13 +132,13 @@ dict_df_weight_distr["unaged"] = get_proportions.weight_distributions_over_lengh
 # Get averaged weight for all sex, male, female for all strata
 df_averaged_weight = get_proportions.stratum_averaged_weight(
     df_length_weight=df_length_weight,
-    df_bio_dict=dict_df_bio,  # use "specimen" and "length"
+    dict_df_bio=dict_df_bio,  # use "specimen" and "length"
 )
 
 # Get weight proportion for all sex, male, female for all strata
-dict_df_weight_proportion: dict = get_proportions.weight_proportions(
+dict_df_weight_proportion: Dict[pd.DataFrame] = get_proportions.weight_proportions(
     df_catch=dict_df_bio["catch"],
-    df_weight_proportion_dict=dict_df_weight_distr,  # weight proportions
+    dict_df_weight_proportion=dict_df_weight_distr,  # weight proportions
     df_length_weight=df_length_weight,  # length-weight regression
 )
 
