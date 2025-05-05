@@ -153,7 +153,6 @@ df_nasc_no_age1 = invert_hake.invert(df_nasc=df_nasc_no_age1, df_length=df_bio_d
 
 # ===========================================
 # Perform kriging using class Kriging
-# TODO:
 # put back FEAT-specific kriging files
 
 # Load kriging-related params
