@@ -67,7 +67,9 @@ def number_proportions(
     pass
 
 
-# from the current quantize_weights()
+# TODO: keeping inputs/outputs are dataframes for now,
+#       think about changing to xarray dataarray later
+# The current `quantize_weights` function
 def weight_distributions(
     df_specimen: pd.DataFrame,
     df_length: pd.DataFrame,
@@ -86,8 +88,12 @@ def weight_distributions(
         return df_sex_length  # the current length_table_sexed
 
 
-# from the current fit_length_weights()
-# TODO: write out the math will make the function logic cleaner
+# TODO: keeping inputs/outputs are dataframes for now,
+#       think about changing to xarray dataarray later
+#       When we are ready to use xarray, output can be a dataarray:
+#       -- dimensions: stratum, sex
+#       -- values in the dataarray are the averaged weights for each sex and stratum combination
+# The current `fit_length_weights` function
 def stratum_averaged_weight() -> pd.DataFrame:
     """
     Calculate the weight proportion for each length-bin across all and sexed fish

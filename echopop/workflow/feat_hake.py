@@ -111,9 +111,6 @@ df_number_proportion_dict: dict = get_proportions.number_proportions(
 
 
 # Get weight proportions ----------------
-# The current `quantize_weights` function
-# NOTE: keeping inputs/outputs are dataframes for now,
-#       think about changing to xarray dataarray later
 df_weight_proportion_dict: dict
 
 # aged fish - weight distribution over sex and legnth
@@ -133,9 +130,6 @@ df_weight_proportion_dict["unaged"] = get_proportions.weight_distributions(
 )
 
 # Get averaged weight for all sex, male, female for all strata
-# The current `fit_length_weights` function
-# NOTE: keeping inputs/outputs are dataframes for now,
-#       think about changing to xarray dataarray later
 df_averaged_weight = get_proportions.stratum_averaged_weight(
     df_length_weight=df_length_weight,
     df_bio_dict=df_bio_dict,  # use "specimen" and "length"
