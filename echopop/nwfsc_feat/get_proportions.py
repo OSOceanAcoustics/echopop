@@ -1,4 +1,4 @@
-from typing import Literal, Tuple
+from typing import Literal, Tuple, Dict
 
 import numpy as np
 import pandas as pd
@@ -32,14 +32,37 @@ def fish_count(
     pass
 
 
+# TODO: keeping inputs/outputs are dataframes for now,
+#       think about changing to xarray dataarray later
+#       When we are ready to use xarray, consider the following:
+#       -- dimensions: stratum, sex, age_bin, length_bin
+#       -- types of proportions
+#          -- Age proportions across all strata
+#          -- Sex proportions (male/female/unsexed) by stratum
+#          -- Length proportions for aged fish by stratum and sex
+#          -- Length proportions for unaged fish by stratum and sex
+#       -- Some of the above can be derived from others
+#       -- Some of the above can be used to form *_overall
 # from the current number_proportions()
-# TODO: write out the math will make the function logic cleaner
-def number_proportion(
-    df_aged,
-    df_unaged,
-    df_weight,  # only include the necessary dfs -- I lost track
-    proportion_type: Literal["age", "sex", "unaged_length", "unaged_length"],
-) -> pd.DataFrame:
+def number_proportions(
+    df_aged_counts,
+    df_unaged_counts,
+) -> Dict[pd.DataFrame]:
+    """
+    Calculate number proportions for aged and unaged fish.
+
+    Parameters
+    ----------
+    df_aged : pd.DataFrame
+        Counts of aged fish by stratum, sex, length bin, and age bin
+    df_unaged : pd.DataFrame
+        Counts of unaged fish by stratum, sex, and length bin
+
+    Returns
+    -------
+    xr.Dataset
+        Dataset containing proportions with dimensions (stratum, sex, length, age)
+    """
     # NOTE: Do only 1 species in one call
     pass
 
@@ -50,25 +73,38 @@ def weight_distributions(
     df_length: pd.DataFrame,
     df_length_weight: pd.DataFrame,  # from get_length_weight_regression() above
     aged: bool,
-) -> xr.DataArray:
+) -> pd.DataFrame:
     # NOTE: I cannot figure out what's going on in here
     # but I think the output is better represented as a N-D array
     # you can use xarray.Dataset to organize this type of data
     # it will also help with the slicing you have to do in the downstream weight_proportions
     if aged:
-        da_sex_length_age: xr.DataArray  # dimensions: stratum, sex, length, age
-        return da_sex_length_age  # the current specimen_table_sexed
+        df_sex_length_age: pd.DataFrame  # if xr.DataArray - dimensions: stratum, sex, length, age
+        return df_sex_length_age  # the current specimen_table_sexed
     else:
-        da_sex_length: xr.DataArray  # dimensions: stratum, sex, length, age
-        return da_sex_length  # the current length_table_sexed
+        df_sex_length: pd.DataFrame  # if xr.DataArray - dimensions: stratum, sex, length, age
+        return df_sex_length  # the current length_table_sexed
 
 
 # from the current fit_length_weights()
 # TODO: write out the math will make the function logic cleaner
 def stratum_averaged_weight() -> pd.DataFrame:
-    pass
+    """
+    Calculate the weight proportion for each length-bin across all and sexed fish
+
+    Parameters
+    ----------
+    proportions_dict: dict
+        Dictionary containing multiple dataframes with aged and unaged quantized/binned proportions
+    length_weight_dict: dict
+        Dictionary containing length-weight regression terms and fitted values
+    stratum_col: str
+        Name of stratum column
+    """
+    df_fitted_weight: pd.DataFrame
+    return df_fitted_weight
 
 
 # from the current weight_proportions()
-def weight_proportion():
+def weight_proportions():
     pass

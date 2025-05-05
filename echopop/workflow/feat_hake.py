@@ -100,36 +100,57 @@ df_unaged_counts = get_proportions.fish_count(  # previously "unaged_number_dist
 
 
 # Get number proportions ----------------
-# TODO: DISCUSS THIS!
-# TODO: what does _overall stand for?
-da_number_proportion = get_proportions.number_proportion()
+
+# in the output dataframes: *_overall = *_aged + *_unaged
+# only handle 1 species at a time
+df_number_proportion_dict: dict = get_proportions.number_proportions(
+    df_aged_counts,
+    df_unaged_counts,
+)
+
 
 
 # Get weight proportions ----------------
-# aged fish - weight distribution
-da_sex_length_age: xr.DataArray = get_proportions.weight_distributions(
+# The current `quantize_weights` function
+# NOTE: keeping inputs/outputs are dataframes for now,
+#       think about changing to xarray dataarray later
+df_weight_proportion_dict: dict
+
+# aged fish - weight distribution over sex and legnth
+df_weight_proportion_dict["aged"] = get_proportions.weight_distributions(
     df_specimen=df_bio_dict["specimen"],
     df_length=df_bio_dict["length"],
     df_length_weight=df_length_weight,
     aged=True,
 )
 
-# unaged fish - weight distribution
-da_sex_length: xr.DataArray = get_proportions.weight_distributions(
+# unaged fish - weight distribution over sex and legnth
+df_weight_proportion_dict["unaged"] = get_proportions.weight_distributions(
     df_specimen=df_bio_dict["specimen"],
     df_length=df_bio_dict["length"],
     df_length_weight=df_length_weight,
     aged=False,
 )
 
-# Get stratum averaged weight for all sex, male, female
-df_averaged_weight = get_proportions.stratum_averaged_weight()
+# Get averaged weight for all sex, male, female for all strata
+# The current `fit_length_weights` function
+# NOTE: keeping inputs/outputs are dataframes for now,
+#       think about changing to xarray dataarray later
+df_averaged_weight = get_proportions.stratum_averaged_weight(
+    df_length_weight=df_length_weight,
+    df_bio_dict=df_bio_dict,  # use "specimen" and "length"
+)
 
-
-# Get weight proportions ----------------
-# TODO: DISCUSS THIS!
-# TODO: what does _overall stand for?
-da_weight_proportion = get_proportions.weight_proportion()
+# Get weight proportionaveraged weight for all sex, male, female for all strata
+# NOTE: keeping inputs/outputs are dataframes for now,
+#       think about changing to xarray dataarray later
+da_weight_proportion = get_proportions.weight_proportions(
+    df_bio_dict=df_bio_dict,  # use "catch" 
+    df_number_proportion=df_number_proportion,  # number proportions
+    df_length_weight=df_length_weight,  # length-weight regression
+    df_averaged_weight=df_averaged_weight,
+    df_weight_proportion_dict=df_weight_proportion_dict, # weight proportions: "aged" and "unaged"
+)
 
 
 
