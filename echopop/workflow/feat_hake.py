@@ -216,6 +216,7 @@ df_nasc_all_age_kriged = kriging.krige(df_in=df_nasc_all_ages, variables="biomas
 # ===========================================
 # Apportion kriged biomass across sex, length bins, and age bins,
 # and from there derive kriged abundance and kriged number density.
+# Reference flow diagram: https://docs.google.com/presentation/d/1FOr2-iMQYj21VzVRDC-YUuqpOP0_urtI/edit?slide=id.p1#slide=id.p1
 
 # Age 1 kriged biomass -------------
 # Apportion biomass
