@@ -49,25 +49,26 @@ def apportion_biomass(
     -------
     pd.DataFrame
         DataFrame containing the apportioned biomass across sex, age_bin, and length bin.
+
+        TODO: sketch of ds_kriged_apportioned
+        - dimensions: sex, length_bin, age_bin
+        - coorindates: sex, length_bin, age_bin
+        - variables:
+          - biomass_aged: (stratum, sex, length_bin, age_bin)
+          - biomass_unaged: (sex, length_bin)
+
+    NOTE: Wouldn't it be possible to apportion kriged biomass on a grid-by-grid basis?
+          This way we can have very meaningful maps.
+          The xr.Dataset structure would look like:
+          - dimensions: x, y, sex, length_bin, age_bin
+          - coorindates: lon, lat, sex, length_bin, age_bin
+          - variables:
+            - stratum: (lat, lon)
+            - biomass_aged: (lat, lon, stratum, sex, length_bin, age_bin)
+            - biomass_unaged: (lat, lon, sex, length_bin)
+
     """
-
     ds_kriged_apportioned: xr.Dataset
-    # dimensions: sex, length_bin, age_bin
-    # coorindates: sex, length_bin, age_bin
-    # variables:
-    # -- biomass_aged: (stratum, sex, length_bin, age_bin)
-    # -- biomass_unaged: (sex, length_bin)
-
-    # NOTE: Wouldn't it be possible to apportion kriged biomass on a grid-by-grid basis?
-    #       This way the map is a lot more meaningful.
-    #       If this can be done, the xr.Dataset structure would look like:
-    # dimensions: x, y, sex, length_bin, age_bin
-    # coorindates: lon, lat, sex, length_bin, age_bin
-    # variables:
-    # -- stratum: (lat, lon)
-    # -- biomass_aged: (lat, lon, stratum, sex, length_bin, age_bin)
-    # -- biomass_unaged: (lat, lon, sex, length_bin)
-
     return ds_kriged_apportioned
 
 
@@ -101,14 +102,20 @@ def back_calculate_abundance(
 ) -> xr.Dataset:
     """
     Back-calculate abundance from apportioned biomass across sex, age_bin, and length bin.
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame containing the apportioned biomass across sex, age_bin, and length bin.
+
+        TODO: sketch of ds_kriged_apportioned
+        - dimensions: sex, length_bin, age_bin
+        - coorindates: sex, length_bin, age_bin
+        - variables:
+          - biomass_aged: (stratum, sex, length_bin, age_bin)
+          - biomass_unaged: (sex, length_bin)
+          - abundance_aged: (stratum, sex, length_bin, age_bin) -- added in this function
+          - abundance_unaged: (sex, length_bin) -- added in this function
     """
     ds_kriged_apportioned: xr.Dataset
-    # dimensions: sex, length_bin, age_bin
-    # coorindates: sex, length_bin, age_bin
-    # variables:
-    # -- biomass_aged: (stratum, sex, length_bin, age_bin)
-    # -- biomass_unaged: (sex, length_bin)
-    # -- abundance_aged: (stratum, sex, length_bin, age_bin) -- added in this function
-    # -- abundance_unaged: (sex, length_bin) -- added in this function
-
     return ds_kriged_apportioned
