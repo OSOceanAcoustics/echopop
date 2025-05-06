@@ -7,7 +7,7 @@ import xarray as xr
 
 from echopop.inversion import InversionLengthTS
 from echopop.kriging import Kriging
-from echopop.nwfsc_feat import get_proportions, ingest_nasc, load_data, apportion
+from echopop.nwfsc_feat import apportion, get_proportions, ingest_nasc, load_data
 
 # ===========================================
 # Organize NASC file
@@ -186,16 +186,12 @@ df_nasc_no_age1_kriged = kriging.krige(df_in=df_nasc_no_age1, variables="biomass
 df_nasc_all_age_kriged = kriging.krige(df_in=df_nasc_all_ages, variables="biomass")
 
 
-
-
-
-
 # ===========================================
-# Apportion kriged biomass across sex, length bins, and age bins, 
+# Apportion kriged biomass across sex, length bins, and age bins,
 # and from there derive kriged abundance and kriged number density.
 
 # Assemble an xr.Dataset of number and weight proportions
-# NOTE: this can be removed once the following functions are implemented 
+# NOTE: this can be removed once the following functions are implemented
 #       to use xarray Dataset/DataArray as input/output directly:
 #       -- get_proportions.number_proportions()
 #       -- get_proportions.weight_distributions_over_lenghth_age()
