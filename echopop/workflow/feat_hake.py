@@ -7,7 +7,7 @@ import xarray as xr
 
 from echopop.inversion import InversionLengthTS
 from echopop.kriging import Kriging
-from echopop.nwfsc_feat import get_proportions, ingest_nasc, load_data
+from echopop.nwfsc_feat import get_proportions, ingest_nasc, load_data, apportion
 
 # ===========================================
 # Organize NASC file
@@ -183,3 +183,58 @@ kriging.latlon_to_xy()
 # Perform kriging
 # This adds kriging result columns to df_in
 df_nasc_no_age1_kriged = kriging.krige(df_in=df_nasc_no_age1, variables="biomass")
+df_nasc_all_age_kriged = kriging.krige(df_in=df_nasc_all_ages, variables="biomass")
+
+
+
+
+
+
+# ===========================================
+# Apportion kriged biomass across sex, length bins, and age bins, 
+# and from there derive kriged abundance and kriged number density.
+
+# Assemble an xr.Dataset of number and weight proportions
+# NOTE: this can be removed once the following functions are implemented 
+#       to use xarray Dataset/DataArray as input/output directly:
+#       -- get_proportions.number_proportions()
+#       -- get_proportions.weight_distributions_over_lenghth_age()
+#       -- get_proportions.stratum_averaged_weight()
+#       -- get_proportions.weight_proportions()
+ds_proportions: xr.Dataset = apportion.assemble_proportions(
+    dict_df_number_proportion=dict_df_number_proportion,
+    dict_df_weight_proportion=dict_df_weight_proportion,
+)
+
+# Age 1 kriged biomass -------------
+# Apportion biomass
+ds_kriged_biomass_age1: xr.Dataset = apportion.apportion_biomass(
+    df_nasc=df_nasc_no_age1_kriged,
+    ds_proportions=ds_proportions,
+)
+
+# Fill missing length bins of aged fish using length distributions of unaged fish
+ds_kriged_biomass_age1: xr.Dataset = apportion.fill_missing_aged_from_unaged(
+    ds_proportions=ds_proportions,
+    ds_kriged_apportioned=ds_kriged_biomass_age1,
+)
+
+
+# All age (age 2+) kriged biomass -------------
+# Apportion biomass
+ds_kriged_biomass_all_ages: xr.Dataset = apportion.apportion_biomass(
+    df_nasc=df_nasc_all_age_kriged,
+    ds_proportions=ds_proportions,
+)
+
+# Fill missing length bins of aged fish using length distributions of unaged fish
+ds_kriged_biomass_age1: xr.Dataset = apportion.fill_missing_aged_from_unaged(
+    ds_kriged_apportioned=df_nasc_all_age_kriged,
+    ds_proportions=ds_proportions,
+)
+
+# Reallocate age-1 fish to age-2+ fish
+ds_kriged_biomass_all_ages: xr.Dataset = apportion.reallocate_age1(
+    ds_kriged_apportioned=ds_kriged_biomass_age1,
+    ds_proportions=ds_proportions,
+)
