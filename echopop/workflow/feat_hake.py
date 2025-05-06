@@ -228,13 +228,13 @@ ds_kriged_biomass_all_ages: xr.Dataset = apportion.apportion_biomass(
 )
 
 # Fill missing length bins of aged fish using length distributions of unaged fish
-ds_kriged_biomass_age1: xr.Dataset = apportion.fill_missing_aged_from_unaged(
-    ds_kriged_apportioned=df_nasc_all_age_kriged,
+ds_kriged_biomass_all_ages: xr.Dataset = apportion.fill_missing_aged_from_unaged(
+    ds_kriged_apportioned=ds_kriged_biomass_all_ages,
     ds_proportions=ds_proportions,
 )
 
 # Reallocate age-1 fish to age-2+ fish
 ds_kriged_biomass_all_ages: xr.Dataset = apportion.reallocate_age1(
-    ds_kriged_apportioned=ds_kriged_biomass_age1,
+    ds_kriged_apportioned=ds_kriged_biomass_all_ages,
     ds_proportions=ds_proportions,
 )
