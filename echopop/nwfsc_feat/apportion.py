@@ -37,21 +37,30 @@ def assemble_proportions(
     return ds_proportions
 
 
+# The biomass parts of the current `apportion_kriged_values` function
 def apportion_biomass(
     df_nasc: pd.DataFrame,
     ds_proportions: xr.Dataset,
 ) -> xr.Dataset:
     """
-    Apportion biomass across stratum, sex, age_bin, and length bin.
+    Apportion biomass across sex, age_bin, and length bin.
 
     Returns
     -------
     pd.DataFrame
-        DataFrame containing the apportioned biomass across age and length bins.
-        Each
+        DataFrame containing the apportioned biomass across sex, age_bin, and length bin.
     """
 
     ds_kriged_apportioned: xr.Dataset
+    # dimensions: sex, length_bin, age_bin
+    # coorindates: sex, length_bin, age_bin
+    # variables:
+    # -- biomass_aged: (stratum, sex, length_bin, age_bin)
+    # -- biomass_unaged: (sex, length_bin)
+
+    # NOTE: Wouldn't it be possible to apportion kriged biomass on a grid-by-grid basis?
+    #       This way the map is a lot more meaningful.
+    #       If this can be done, the xr.Dataset structure would look like:
     # dimensions: x, y, sex, length_bin, age_bin
     # coorindates: lon, lat, sex, length_bin, age_bin
     # variables:
@@ -83,3 +92,23 @@ def reallocate_age1(
     Reallocate age-1 biomass to age-2+ fish.
     """
     pass
+
+
+# The abundance parts of the current `apportion_kriged_values` function
+def back_calculate_abundance(
+    ds_kriged_apportioned: xr.Dataset,
+    ds_proportions: xr.Dataset,
+) -> xr.Dataset:
+    """
+    Back-calculate abundance from apportioned biomass across sex, age_bin, and length bin.
+    """
+    ds_kriged_apportioned: xr.Dataset
+    # dimensions: sex, length_bin, age_bin
+    # coorindates: sex, length_bin, age_bin
+    # variables:
+    # -- biomass_aged: (stratum, sex, length_bin, age_bin)
+    # -- biomass_unaged: (sex, length_bin)
+    # -- abundance_aged: (stratum, sex, length_bin, age_bin) -- added in this function
+    # -- abundance_unaged: (sex, length_bin) -- added in this function
+
+    return ds_kriged_apportioned
