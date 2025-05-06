@@ -1,4 +1,5 @@
 from typing import Dict
+
 import pandas as pd
 import xarray as xr
 
@@ -46,7 +47,7 @@ def apportion_biomass(
     Returns
     -------
     pd.DataFrame
-        DataFrame containing the apportioned biomass across age and length bins. 
+        DataFrame containing the apportioned biomass across age and length bins.
         Each
     """
 
