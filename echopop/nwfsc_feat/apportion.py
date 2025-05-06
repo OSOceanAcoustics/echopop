@@ -1,5 +1,3 @@
-from typing import Dict
-
 import pandas as pd
 import xarray as xr
 
