@@ -20,9 +20,9 @@ df_merged = ingest_nasc.merge_echoview_nasc(nasc_path, nasc_filename_pattern)
 # Optional: only use for years needing this as external resources
 df_transect_region_key = ingest_nasc.load_transect_region_key(region_class_filepath)
 
-# Use df.to_csv to save df_transect_region_key, 
+# Use df.to_csv to save df_transect_region_key,
 # in place of the specialized transect_region_key file
-# Keep read_transect_region_file and make sure 
+# Keep read_transect_region_file and make sure
 # its output is the same as construct_transect_region_key
 
 

@@ -3,7 +3,7 @@ from typing import Dict, Tuple, Union
 
 import pandas as pd
 
-# Break up load_data() and read_validated_data() into 3 separate functions 
+# Break up load_data() and read_validated_data() into 3 separate functions
 # to load biological, stratification, and kriging data
 # Don't worry about validating input files for now
 

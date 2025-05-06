@@ -18,7 +18,7 @@ def read_echoview_export(filename: Union[str, Path]) -> pd.DataFrame:
     pd.DataFrame
         Parsed CSV as a DataFrame.
     """
-    # Select only 1 type is sufficient since the list passed are 
+    # Select only 1 type is sufficient since the list passed are
     # from transects with a complete set  of 4 csv files
     pass
 
@@ -30,7 +30,7 @@ def get_transect_num(ev_nasc_files: dict[str, list[Path]]) -> list[int]:
     Parameters
     ----------
     ev_nasc_files : dict
-        Dictionary with keys "analysis", "cells", "intervals", "layers" and values 
+        Dictionary with keys "analysis", "cells", "intervals", "layers" and values
         being lists of Path objects.
 
     Returns
