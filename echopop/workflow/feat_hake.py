@@ -135,9 +135,24 @@ dict_df_weight_proportion: Dict[pd.DataFrame] = get_proportions.weight_proportio
     df_length_weight=df_length_weight,  # length-weight regression
 )
 
+# Assemble an xr.Dataset of number and weight proportions
+# I (WJ) think what you have in `distribute_length_age` is essentially this step
+# This is a temporary step to convert the dataframes to xarray
+# NOTE: This is a temporary step to convert the dataframes to xarray.
+#       This can be removed once the following functions are implemented
+#       to use xarray Dataset/DataArray as input/output directly:
+#       -- get_proportions.number_proportions()
+#       -- get_proportions.weight_distributions_over_lenghth_age()
+#       -- get_proportions.stratum_averaged_weight()
+#       -- get_proportions.weight_proportions()
+ds_proportions: xr.Dataset = get_proportions.assemble_proportions(
+    dict_df_number_proportion=dict_df_number_proportion,
+    dict_df_weight_proportion=dict_df_weight_proportion,
+)
+
 
 # ===========================================
-# NASC to number density
+# NASC to number density and biomass
 
 # Initiate object to perform inversion
 # inversion parameters are stored as object attributes
@@ -147,6 +162,19 @@ invert_hake = InversionLengthTS(df_model_params=dict_df_bio["model_params"])
 # df_length will be used to compute the mean sigma_bs for each stratum,
 # which is then used in .invert() to compute number density on a stratum-by-stratum basis
 df_nasc_no_age1 = invert_hake.invert(df_nasc=df_nasc_no_age1, df_length=dict_df_bio["length"])
+df_nasc_all_ages = invert_hake.invert(df_nasc=df_nasc_all_ages, df_length=dict_df_bio["length"])
+
+
+# Apportion abundance and biomass for transect intervals
+# TODO: these apportioned transect results are not used in kriging, is this correct?
+ds_nasc_no_age1_apportioned: xr.Dataset = apportion.apportion_transect_biomass_abundance(
+    df_nasc=df_nasc_no_age1,
+    ds_proportions=ds_proportions,
+)
+ds_nasc_all_age_apportioned: xr.Dataset = apportion.apportion_transect_biomass_abundance(
+    df_nasc=df_nasc_all_ages,
+    ds_proportions=ds_proportions,
+)
 
 
 # ===========================================
@@ -189,21 +217,9 @@ df_nasc_all_age_kriged = kriging.krige(df_in=df_nasc_all_ages, variables="biomas
 # Apportion kriged biomass across sex, length bins, and age bins,
 # and from there derive kriged abundance and kriged number density.
 
-# Assemble an xr.Dataset of number and weight proportions
-# NOTE: this can be removed once the following functions are implemented
-#       to use xarray Dataset/DataArray as input/output directly:
-#       -- get_proportions.number_proportions()
-#       -- get_proportions.weight_distributions_over_lenghth_age()
-#       -- get_proportions.stratum_averaged_weight()
-#       -- get_proportions.weight_proportions()
-ds_proportions: xr.Dataset = apportion.assemble_proportions(
-    dict_df_number_proportion=dict_df_number_proportion,
-    dict_df_weight_proportion=dict_df_weight_proportion,
-)
-
 # Age 1 kriged biomass -------------
 # Apportion biomass
-ds_kriged_biomass_age1: xr.Dataset = apportion.apportion_biomass(
+ds_kriged_biomass_age1: xr.Dataset = apportion.apportion_kriged_biomass(
     df_nasc=df_nasc_no_age1_kriged,
     ds_proportions=ds_proportions,
 )
@@ -215,7 +231,7 @@ ds_kriged_biomass_age1: xr.Dataset = apportion.fill_missing_aged_from_unaged(
 )
 
 # Back-calculate abundance
-ds_kriged_biomass_age1: xr.Dataset = apportion.back_calculate_abundance(
+ds_kriged_biomass_age1: xr.Dataset = apportion.back_calculate_kriged_abundance(
     ds_kriged_apportioned=ds_kriged_biomass_age1,
     ds_proportions=ds_proportions,
 )
@@ -223,7 +239,7 @@ ds_kriged_biomass_age1: xr.Dataset = apportion.back_calculate_abundance(
 
 # All age (age 2+) kriged biomass -------------
 # Apportion biomass
-ds_kriged_biomass_all_ages: xr.Dataset = apportion.apportion_biomass(
+ds_kriged_biomass_all_ages: xr.Dataset = apportion.apportion_kriged_biomass(
     df_nasc=df_nasc_all_age_kriged,
     ds_proportions=ds_proportions,
 )
@@ -241,7 +257,7 @@ ds_kriged_biomass_all_ages: xr.Dataset = apportion.reallocate_age1(
 )
 
 # Back-calculate abundance
-ds_kriged_biomass_all_ages: xr.Dataset = apportion.back_calculate_abundance(
+ds_kriged_biomass_all_ages: xr.Dataset = apportion.back_calculate_kriged_abundance(
     ds_kriged_apportioned=ds_kriged_biomass_all_ages,
     ds_proportions=ds_proportions,
 )

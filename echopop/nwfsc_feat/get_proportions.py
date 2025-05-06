@@ -127,3 +127,36 @@ def weight_proportions(
     df_length_weight: pd.DataFrame,  # length-weight regression
 ) -> Dict[pd.DataFrame]:
     pass
+
+
+def assemble_proportions(
+    dict_df_number_proportion: Dict[pd.DataFrame],
+    dict_df_weight_proportion: Dict[pd.DataFrame],
+) -> xr.Dataset:
+    """
+    Assemble xr.Dataset of number and weight proportions from dictionaries of dataframes.
+
+    Parameters
+    ----------
+    dict_df_number_proportion : dict
+        Dictionary containing multiple dataframes with aged and unaged number proportions
+    dict_df_weight_proportion : dict
+        Dictionary containing multiple dataframes with aged and unaged weight proportions
+
+    Returns
+    -------
+    xr.Dataset
+        Dataset containing proportions across stratum, sex, age_bin, and length bin.
+
+        # TODO: sketch of ds_proportions
+        - dimensions: stratum, sex, length_bin, age_bin
+        - variables:
+          - abundance_unaged: (stratum, sex, length_bin)
+          - abundance_aaged: (stratum, sex, length_bin, age_bin)
+          - biomass_aged: (stratum, sex, length_bin, age_bin)
+          - biomass_unaged: (stratum, sex, length_bin)
+
+
+    """
+    ds_proportions: xr.Dataset
+    return ds_proportions
