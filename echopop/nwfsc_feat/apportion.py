@@ -32,8 +32,8 @@ def apportion_transect_biomass_abundance(
            - biomass_unaged (location, sex, length_bin)
            - abundance_aged (location, sex, length_bin, age_bin)
            - abundance_unaged (location, sex, length_bin)
-        
-        NOTE: from ds_transect_apportioned you can easily derive 
+
+        NOTE: from ds_transect_apportioned you can easily derive
               the current `biomass_summary_df`
         NOTE: the current `abundance_unaged_age1_tbl` should be part of `ds_proportions`
     """
