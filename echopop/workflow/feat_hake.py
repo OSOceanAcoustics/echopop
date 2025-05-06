@@ -20,8 +20,10 @@ df_merged = ingest_nasc.merge_echoview_nasc(nasc_path, nasc_filename_pattern)
 # Optional: only use for years needing this as external resources
 df_transect_region_key = ingest_nasc.load_transect_region_key(region_class_filepath)
 
-# Use df.to_csv to save df_transect_region_key, in place of the specialized transect_region_key file
-# Keep read_transect_region_file and make sure its output is the same as construct_transect_region_key
+# Use df.to_csv to save df_transect_region_key, 
+# in place of the specialized transect_region_key file
+# Keep read_transect_region_file and make sure 
+# its output is the same as construct_transect_region_key
 
 
 # Age-1+
@@ -216,7 +218,7 @@ df_nasc_all_age_kriged = kriging.krige(df_in=df_nasc_all_ages, variables="biomas
 # ===========================================
 # Apportion kriged biomass across sex, length bins, and age bins,
 # and from there derive kriged abundance and kriged number density.
-# Reference flow diagram: https://docs.google.com/presentation/d/1FOr2-iMQYj21VzVRDC-YUuqpOP0_urtI/edit?slide=id.p1#slide=id.p1
+# Reference flow diagram: https://docs.google.com/presentation/d/1FOr2-iMQYj21VzVRDC-YUuqpOP0_urtI/edit?slide=id.p1#slide=id.p1  # noqa
 
 # Age 1 kriged biomass -------------
 # Apportion biomass

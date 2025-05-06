@@ -18,7 +18,8 @@ def read_echoview_export(filename: Union[str, Path]) -> pd.DataFrame:
     pd.DataFrame
         Parsed CSV as a DataFrame.
     """
-    # Select only 1 type is sufficient since the list passed are from transects with a complete set  of 4 csv files
+    # Select only 1 type is sufficient since the list passed are 
+    # from transects with a complete set  of 4 csv files
     pass
 
 
@@ -29,7 +30,8 @@ def get_transect_num(ev_nasc_files: dict[str, list[Path]]) -> list[int]:
     Parameters
     ----------
     ev_nasc_files : dict
-        Dictionary with keys "analysis", "cells", "intervals", "layers" and values being lists of Path objects.
+        Dictionary with keys "analysis", "cells", "intervals", "layers" and values 
+        being lists of Path objects.
 
     Returns
     -------
@@ -247,7 +249,8 @@ def compute_depth_layer_height(
 
 
 # Last section of the current ingest_echoview_exports()
-# TODO: in the current code you created interval_copy from the updated df_interval, can you not use df_merged to get the same info?
+# TODO: in the current code you created interval_copy from the updated df_interval,
+#       can you not use df_merged to get the same info?
 def consolidate_echoview_nasc(
     df_merged: pd.DataFrame,
     region_names: List[str],
