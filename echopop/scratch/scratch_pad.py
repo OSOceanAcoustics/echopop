@@ -9,19 +9,269 @@ import re
 
 from echopop.kriging import Kriging
 from echopop.nwfsc_feat import get_proportions, ingest_nasc, load_data
+from echopop.nwfsc_feat.ingest_nasc import read_echoview_nasc, map_transect_num, validate_transect_exports, clean_echoview_cells_df
 from echopop.ingest.common import read_csv_file
 from echopop.core.echopop_columns import ECHOVIEW_TO_ECHOPOP
 import functools
 # ===========================================
 # Organize NASC file
-nasc_path = Path("C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_2019/raw_nasc")
-type(nasc_path.glob("*.csv"))  # <class 'generator'>
+nasc_path: Path = Path("C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_2019/raw_nasc")
+filename_transect_pattern: str = r"T(\d+)"
+default_transect_spacing = 10. # nmi
+default_transect_spacing_latitude = 60. # deg N
+
 ev_export_paths: dict = {
     "analysis": nasc_path.glob("*(analysis).csv"),  # Removed leading / only
     "cells": nasc_path.glob("*(cells).csv"),
     "intervals": nasc_path.glob("*(intervals).csv"),
     "layers": nasc_path.glob("*(layers).csv"),
 }
+
+transect_num_df = map_transect_num(ev_export_paths, filename_transect_pattern)
+valid_transect_num_df = validate_transect_exports(transect_num_df)
+
+df_intervals = pd.concat(
+    echoview_nasc_to_df(valid_transect_num_df[valid_transect_num_df["file_type"] == "intervals"])
+)
+df_cells: pd.DataFrame = pd.concat(
+    echoview_nasc_to_df(valid_transect_num_df[valid_transect_num_df["file_type"] == "cells"])
+)
+df_layers: pd.DataFrame = pd.concat(
+    echoview_nasc_to_df(valid_transect_num_df[valid_transect_num_df["file_type"] == "layers"])
+)
+
+clean_echoview_cells_df(df_cells, inplace=True)
+
+# Sort/reindex each fileset
+sort_echoview_export_df(df_intervals, inplace=True)
+sort_echoview_export_df(df_cells, inplace=True)
+sort_echoview_export_df(df_layers, inplace=True)
+
+def update_transect_spacing(
+    transect_data: pd.DataFrame, 
+    default_transect_spacing: float,
+    latitude_threshold: float = 60.0,
+    inplace: bool = False
+) -> Optional[pd.DataFrame]:
+    """
+    Calculate and update the maximum spacing between transects.
+    
+    Parameters
+    ----------
+    transect_data : pd.DataFrame
+        DataFrame containing transect data with 'transect_num', 'latitude' columns
+    default_transect_spacing : float
+        Default spacing to use (in nautical miles)
+    latitude_threshold : float, default 60.0
+        Maximum latitude to consider for spacing calculations
+    inplace : bool, default False
+        If True, modify the input DataFrame in-place and return None
+    
+    Returns
+    -------
+    pd.DataFrame or None
+        Updated DataFrame if inplace=False, None otherwise
+    """
+    # Work on a copy or the original based on inplace parameter
+    df = transect_data if inplace else transect_data.copy()
+    
+    # Get unique transect numbers
+    transect_number = np.unique(df["transect_num"])
+    
+    # Initialize max transect spacing column
+    df["transect_spacing"] = default_transect_spacing
+    
+    # Iterate through the transects to determine the maximum spacing
+    for i in range(len(transect_number)):
+        if i >= 2:
+            # ---- For 2 transects prior to the current transect
+            lag_2_index = df.index[
+                (df["transect_num"] == transect_number[i - 2])
+                & (df["latitude"] < latitude_threshold)
+            ]
+            # ---- For 1 transect prior to the current transect
+            lag_1_index = df.index[
+                (df["transect_num"] == transect_number[i - 1])
+            ]
+            # ---- Current transect
+            current_index = df.index[
+                (df["transect_num"] == transect_number[i])
+                & (df["latitude"] < latitude_threshold)
+            ]
+            
+            # Check if we have data for all three transects
+            if len(lag_2_index) > 0 and len(lag_1_index) > 0 and len(current_index) > 0:
+                # ---- Calculate the mean transect latitude (lag-2)
+                lag_2_latitude = df.loc[lag_2_index, "latitude"].mean()
+                # ---- Calculate the mean transect latitude (current)
+                current_latitude = df.loc[current_index, "latitude"].mean()
+                # ---- Compute the difference in the latitudes of adjacent transects
+                delta_latitude = np.abs(current_latitude - lag_2_latitude)
+                # ---- Get latitude range for the lag-2 transect
+                latitude_2_range = (
+                    df.loc[lag_2_index, "latitude"].max()
+                    - df.loc[lag_2_index, "latitude"].min()
+                )
+                # ---- Get latitude range for current transect
+                latitude_range = (
+                    df.loc[current_index, "latitude"].max()
+                    - df.loc[current_index, "latitude"].min()
+                )
+                # ---- Assign maximum spacing
+                if (
+                    (delta_latitude <= 2.0 * default_transect_spacing * 1.1 / 30.0)
+                    & (latitude_2_range < 1 / 6)
+                    & (latitude_range < 1 / 6)
+                ):
+                    df.loc[lag_1_index, "transect_spacing"] = delta_latitude * 30.0
+    
+    # Return the updated dataframe or None if inplace
+    return None if inplace else df
+
+out1 = update_transect_spacing(df_intervals, 10.)
+out1[out1.transect_num == 15]
+out1 = export_transect_spacing(df_intervals, default_transect_spacing=10.)
+update_transect_spacing(df_intervals, 10., inplace=True)
+df_intervals.loc[df_intervals["transect_num"] == 15]
+
+
+transect_data = df_intervals.copy()
+i = 14
+
+# ---- For 2 transects prior to the current transect
+lag_2_index = transect_data.index[
+    (transect_data["transect_num"] == transect_number[i - 2])
+    & (transect_data["latitude"] < latitude_threshold)
+]
+# ---- For 1 transect prior to the current transect
+lag_1_index = transect_data.index[
+    (transect_data["transect_num"] == transect_number[i - 1])
+]
+# ---- Current transect
+current_index = transect_data.index[
+    (transect_data["transect_num"] == transect_number[i])
+    & (transect_data["latitude"] < latitude_threshold)
+]
+# ---- Calculate the mean transect latitude (lag-2)
+lag_2_latitude = transect_data.loc[lag_2_index, "latitude"].mean()
+# ---- Calculate the mean transect latitude (lag-2)
+current_latitude = transect_data.loc[current_index, "latitude"].mean()
+# ---- Compute the difference in the latitudes of adjacent transects
+delta_latitude = np.abs(current_latitude - lag_2_latitude)
+# ---- Get latitude range for the lag-2 transect
+latitude_2_range = (
+    transect_data.loc[lag_2_index, "latitude"].max()
+    - transect_data.loc[lag_2_index, "latitude"].min()
+)
+# ---- Get latitude range for current transect
+latitude_range = (
+    transect_data.loc[current_index, "latitude"].max()
+    - transect_data.loc[current_index, "latitude"].min()
+)
+# ---- Assign maximum spacing
+if (
+    (delta_latitude <= 2.0 * default_transect_spacing * 1.1 / 30.0)
+    & (latitude_2_range < 1 / 6)
+    & (latitude_range < 1 / 6)
+):
+    transect_data.loc[lag_1_index, "transect_spacing"] = delta_latitude * 30.0
+
+transect_data[transect_data.transect_num == 15]
+    
+transect_data = out1.copy()
+transect_number = np.unique(transect_data["transect_num"])
+transect_data["transect_spacing"] = default_transect_spacing
+
+
+out1.transect_spacing.max()
+out1[out1.transect_num == 15]
+out2.transect_spacing.max()
+
+ev_export_paths: dict = {
+    "analysis": nasc_path.glob("*(analysis).csv"),  # Removed leading / only
+    "cells": nasc_path.glob("*(cells).csv"),
+    "intervals": nasc_path.glob("*(intervals).csv"),
+    "layers": nasc_path.glob("*(layers).csv"),
+}
+
+transect_num_df = map_transect_num(ev_export_paths, filename_transect_pattern)
+valid_transect_num_df = validate_transect_exports(transect_num_df)
+
+df_intervals = pd.concat(
+    echoview_nasc_to_df(valid_transect_num_df[valid_transect_num_df["file_type"] == "intervals"])
+)
+df_cells: pd.DataFrame = pd.concat(
+    echoview_nasc_to_df(valid_transect_num_df[valid_transect_num_df["file_type"] == "cells"])
+)
+df_layers: pd.DataFrame = pd.concat(
+    echoview_nasc_to_df(valid_transect_num_df[valid_transect_num_df["file_type"] == "layers"])
+)
+
+clean_echoview_cells_df(df_cells, inplace=True)
+
+
+
+
+
+# # ONLY do data ingestion and organization, not writing out anything
+# def merge_echoview_nasc(
+#     nasc_path: Path, nasc_filename_pattern: str, default_transect_spacing: float
+# ) -> pd.DataFrame:
+#     """
+#     Ingest and merge all Echoview NASC files (intervals, cells, layers).
+
+#     Parameters
+#     ----------
+#     nasc_path : Path
+#         Directory containing Echoview export files (*.csv).
+#     default_transect_spacing : float
+#         Default spacing to impute where missing.
+
+#     Returns
+#     -------
+#     pd.DataFrame
+#         Merged dataframe from intervals, cells, and layers.
+#     """
+    
+#     # Get all echoview NASC files: analysis, cells, intervals, layers
+#     # -- do not need to validate, since non-existing folders/files will error out automatically
+#     # -- use .glob to get all NASC-related files
+#     ev_nasc_files: dict = {
+#         "analysis": nasc_path.glob("*\.csv"),  # PATTERN built from nasc_filename_pattern
+#         "cells": nasc_path.glob("PATTERN"),
+#         "intervals": nasc_path.glob("PATTERN"),
+#         "layers": nasc_path.glob("PATTERN"),
+#     }
+
+#     # Get all transect numbers
+#     # -- for each transect number, there should be 4 files
+#     # -- store only transect numbers with a complete set (4) csv files
+#     # -- raise warning for transect numbers with an incomplete set (<4) csv files
+#     transect_num: list = get_transect_num(ev_nasc_files)
+
+#     # Read and concat intervals, cells, and layers dataframes
+#     # -- use current code in consolidate_exports
+#     # -- but do not worry about validator at this time
+    # df_intervals: pd.DataFrame = pd.concat(
+    #     echoview_nasc_to_df(ev_nasc_files["intervals"], transect_num), ...
+    # )
+    # df_cells: pd.DataFrame = pd.concat(
+    #     echoview_nasc_to_df(ev_nasc_files["cells"], transect_num), ...
+    # )
+    # df_layers: pd.DataFrame = pd.concat(
+    #     echoview_nasc_to_df(ev_nasc_files["layers"], transect_num), ...
+    # )
+
+#     # Wrangle cells_df columns
+
+#     # Update transect spacing
+#     # TODO: what does update_transect_spacing do?
+#     df_intervals = update_transect_spacing(df_intervals, default_transect_spacing)
+
+#     # Explicitly merge the 3 dataframes
+#     # -- do not need group_merge as a separate method
+#     df_merged: pd.DataFrame
+#     return df_merged
 
 # Get the transect numbers
 transect_pattern: str = r"T(\d+)"
@@ -33,74 +283,6 @@ df = read_csv_file(filename)
 df.rename(columns=ECHOVIEW_TO_ECHOPOP, inplace=True)
 df["transect_num"] = transect_number
 
-def read_echoview_export(filename: Path, 
-                         validator: Optional[Any] = None) -> pd.DataFrame:
-    """
-    Generic reader for Echoview export CSVs. Used for files like analysis, cells, layers, 
-    intervals.
-
-    Parameters
-    ----------
-    filename : pathlib.Path
-        Full path to the NASC CSV file.
-    validator : Any
-        File-specific validator, if defined.
-
-    Returns
-    -------
-    pd.DataFrame
-        Cleaned and formatted data.
-    """
-
-    # Read the CSV file
-    df = read_csv_file(filename)
-
-    # Rename columns used by Echopop
-    df.rename(columns=ECHOVIEW_TO_ECHOPOP, inplace=True)
-
-    # TODO: Validation step would be here
-
-    return df
-
-
-def read_echoview_nasc(filename: Path,
-                       transect_num: float,
-                       validator: Optional[Any] = None) -> pd.DataFrame:
-    """
-    Generic reader for Echoview export CSVs. Used for files like analysis, cells, layers, 
-    intervals.
-
-    Parameters
-    ----------
-    filename : pathlib.Path
-        Full path to the NASC CSV file.
-    transect_num : float
-        Transect number to use for filtering or labeling.
-
-    Returns
-    -------
-    pd.DataFrame
-        Cleaned and formatted data.
-    """
-
-    # Read in the defined CSV file
-    nasc_df = read_echoview_export(filename, validator)
-    
-    # Add transect number
-    nasc_df["transect_num"] = transect_num
-    
-    # Fix latitude and longitude
-    # ---- Latitude
-    impute_bad_coordinates(nasc_df, "latitude")
-    # ---- Longitude
-    impute_bad_coordinates(nasc_df, "longitude")
-
-    # Return the cleaned DataFrame
-    return nasc_df
-
-[read_echoview_nasc(path, t_num) for t_num, path in transect_reference["intervals"]]
-[read_echoview_nasc(f, tnum) for f, tnum in transect_reference["intervals"]]
-transect_reference["intervals"]
 # # Get all echoview NASC files: analysis, cells, intervals, layers
 # # -- do not need to validate, since non-existing folders/files will error out automatically
 # # -- use .glob to get all NASC-related files

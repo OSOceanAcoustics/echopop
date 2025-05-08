@@ -10,7 +10,7 @@ import os
 # Mock Paths
 # ----------
 @pytest.fixture
-def mock_paths():
+def mock_export_paths():
     """Create mock Path objects for testing."""
     paths = {
         "analysis": [
@@ -31,18 +31,60 @@ def mock_paths():
         "layers": [
             Path("T1_survey_data_(layers).csv"),
             Path("T2_survey_data_(layers).csv"),
-            Path("T3_survey_data_(layers).csv"),
+            # T3 missing layers file
         ],
     }
     
-    # Convert lists to mock glob iterators
-    mock_dict = {}
-    for key, path_list in paths.items():
-        mock_generator = MagicMock()
-        mock_generator.__iter__.return_value = iter(path_list)
-        mock_dict[key] = mock_generator
-    
-    return mock_dict
+    # Convert lists to generators to mimic Path.glob behavior
+    return {key: (path for path in path_list) for key, path_list in paths.items()}
+
+# ==================================================================================================
+# Retrieving transect numbers and validating filesets
+# ---------------------------------------------------
+@pytest.fixture
+def mock_transect_df():
+    """Create a mock transect DataFrame for testing validate_transect_exports."""
+    data = [
+        # Complete transect T1
+        {"file_type": "analysis", "file_path": Path("/mock/Transect_T1_analysis.csv"), "transect_num": 1.0},
+        {"file_type": "cells", "file_path": Path("/mock/Transect_T1_cells.csv"), "transect_num": 1.0},
+        {"file_type": "intervals", "file_path": Path("/mock/Transect_T1_intervals.csv"), "transect_num": 1.0},
+        {"file_type": "layers", "file_path": Path("/mock/Transect_T1_layers.csv"), "transect_num": 1.0},
+        
+        # Complete transect T2
+        {"file_type": "analysis", "file_path": Path("/mock/Transect_T2_analysis.csv"), "transect_num": 2.0},
+        {"file_type": "cells", "file_path": Path("/mock/Transect_T2_cells.csv"), "transect_num": 2.0},
+        {"file_type": "intervals", "file_path": Path("/mock/Transect_T2_intervals.csv"), "transect_num": 2.0},
+        {"file_type": "layers", "file_path": Path("/mock/Transect_T2_layers.csv"), "transect_num": 2.0},
+        
+        # Incomplete transect T3 (missing layers)
+        {"file_type": "analysis", "file_path": Path("/mock/Transect_T3_analysis.csv"), "transect_num": 3.0},
+        {"file_type": "cells", "file_path": Path("/mock/Transect_T3_cells.csv"), "transect_num": 3.0},
+        {"file_type": "intervals", "file_path": Path("/mock/Transect_T3_intervals.csv"), "transect_num": 3.0},
+    ]
+    return pd.DataFrame(data)
+
+# ==================================================================================================
+# Fileset reading generator
+# -------------------------
+@pytest.fixture
+def mock_filtered_df():
+    """Create a mock filtered DataFrame for testing."""
+    return pd.DataFrame({
+        "file_type": ["intervals", "intervals", "intervals"], 
+        "file_path": [
+            Path("/mock/T1_survey_data_(intervals).csv"),
+            Path("/mock/T2_survey_data_(intervals).csv"),
+            Path("/mock/T3_survey_data_(intervals).csv")
+        ],
+        "transect_num": [1.0, 2.0, 3.0]
+    })
+
+@pytest.fixture
+def mock_empty_df():
+    """Create an empty DataFrame with the correct column structure."""
+    return pd.DataFrame(columns=["file_type", "file_path", "transect_num"])
+
 
 # ==================================================================================================
 # Coordinate imputation/repair
@@ -82,6 +124,45 @@ def no_bad_coords():
         'longitude': [-125.1, -125.2, -125.3, -125.4, -125.5]
     })
 
+# ==================================================================================================
+# Fix region column strings
+# -------------------------
+@pytest.fixture
+def test_cells_df():
+    """Create test DataFrame for clean_echoview_cells_df tests."""
+    return pd.DataFrame({
+        "region_class": ['"Fish"', ' "Plankton" ', '  Krill  ', np.nan],
+        "region_name": ['"Region1"', ' Area51 ', '  Zone99  ', np.nan],
+        "other_column": [1, 2, 3, 4]
+    })
+
+# ==================================================================================================
+# Sorting and reindexing the export data rows
+# -------------------------------------------
+@pytest.fixture
+def test_export_df():
+    """Create a test DataFrame for Echoview export sorting."""
+    return pd.DataFrame({
+        'interval': [3, 1, 2],
+        'region_name': ['B', 'A', 'C'],
+        'data_value': [10, 20, 30]
+    })
+
+# ==================================================================================================
+# Transect spacing imputation/calculation
+# ---------------------------------------
+@pytest.fixture
+def test_transect_data():
+    """Create test transect data for spacing calculations."""
+    # Create data for 4 transects
+    return pd.DataFrame({
+        "transect_num": [1.0, 1.0, 2.0, 2.0, 3.0, 3.0, 4.0, 4.0],
+        "latitude": [34.5, 34.6, 34.7, 34.8, 34.9, 35.0, 35.1, 35.2],
+        "longitude": [-121.1, -121.2, -121.3, -121.4, -121.5, -121.6, -121.7, -121.8],
+        "process_id": [148293] * 8,
+        "interval": range(1489, 1497)
+    })
+    
 # ==================================================================================================
 # Reading Echoview data files
 # ---------------------------

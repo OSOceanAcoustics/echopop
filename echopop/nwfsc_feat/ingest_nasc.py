@@ -6,49 +6,124 @@ import numpy as np
 import re
 import functools
 from ..ingest import read_csv_file
-from ..core.echopop_columns import ECHOVIEW_TO_ECHOPOP
+from ..core.echoview import ECHOVIEW_TO_ECHOPOP, ECHOVIEW_DATABASE_EXPORT_FILESET, ECHOVIEW_EXPORT_ROW_SORT
 
 def map_transect_num(
-    ev_export_paths: Dict[str, Generator], transect_pattern: str = r"T(\d+)" 
-) -> Dict[float, Dict[str, Path]]:
+    ev_export_paths: Dict[str, Generator], transect_pattern: str = r"T(\d+)"
+) -> pd.DataFrame:
     """
-    Extract and map transect numbers to complete sets of Echoview export files.
+    Extract transect numbers from Echoview export filenames without using loops.
 
     Parameters
     ----------
     ev_export_paths : Dict[str, Generator]
         Dictionary with keys "analysis", "cells", "intervals", "layers", with values being 
-        `pathlib.Path.glob` generators pointing torward Echoview export *.csv files.
+        `pathlib.Path.glob` generators pointing toward Echoview export *.csv files.
     transect_pattern : str
-        Regex pattern to extract transect numbers from fil
-        e names.
+        Regex pattern to extract transect numbers from file names.
 
     Returns
     -------
-    Dict[str, List[float, pathlib.Path]]:
-        Dictionary with transect numbers as keys and dictionaries of file types ('analysis', 
-        'cells', 'intervals', and 'layers') and filepaths as values.
+    pd.DataFrame
+        DataFrame with columns for file_type, file_path, and transect_num.
     """
+    # Compile the transect pattern regex
+    compiled_pattern = re.compile(transect_pattern)
+    
+    # Extract all file info using a list comprehension and flatten the result
+    records = [
+        {"file_type": file_type, "file_path": path, "transect_num": float(compiled_pattern.search(str(path)).group(1))}
+        for file_type, paths in ev_export_paths.items()
+        for path in list(paths)
+        if compiled_pattern.search(str(path))
+    ]
+    
+    # Convert to DataFrame
+    return pd.DataFrame(records)
 
-    # Compite the transect pattern regex
-    compiled_pattern = re.compile(transect_pattern) 
-
-    # Reduce dictitonary into a dictionary with list of tuples with transect number and filepath
-    transect_file_mapping = functools.reduce(
-        lambda acc, item: {
-            **acc,
-            item[0]: acc.get(item[0], []) + [
-                (float(compiled_pattern.search(str(path)).group(1)), path)
-                for path in list(item[1])
-                if compiled_pattern.search(str(path))
-            ]
-        },
-        ev_export_paths.items(),
-        {}
+def validate_transect_exports(transect_files_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Validate that each transect number has all required export file types without using loops.
+    
+    For each transect number, there should be exactly four files:
+    one each for "analysis", "cells", "intervals", and "layers".
+    
+    Parameters
+    ----------
+    transect_files_df : pd.DataFrame
+        DataFrame with columns "file_type", "file_path", and "transect_num".
+        
+    Returns
+    -------
+    pd.DataFrame
+        Filtered DataFrame containing only valid transect numbers that have all required file types.
+    """
+    # Create a pivot table to count file types by transect number
+    type_count = pd.crosstab(
+        transect_files_df["transect_num"], 
+        transect_files_df["file_type"]
     )
     
-    # Return the transect_file_mapping
-    return transect_file_mapping
+    # Check that each transect has all required file types
+    valid_mask = (type_count[list(ECHOVIEW_DATABASE_EXPORT_FILESET)] == 1).all(axis=1)
+    valid_transects = type_count.index[valid_mask].tolist()
+    
+    # Filter the original DataFrame to include only valid transect numbers
+    filtered_df = transect_files_df[transect_files_df["transect_num"].isin(valid_transects)].copy()
+    
+    # Log the removed transect numbers
+    all_transects = transect_files_df["transect_num"].unique()
+    removed_transects = np.setdiff1d(all_transects, valid_transects)
+    if len(removed_transects) > 0:
+        print(f"Removed transect numbers with incomplete file sets: {sorted(removed_transects)}")
+        
+    return filtered_df
+
+def clean_echoview_cells_df(
+    cells_df: pd.DataFrame,
+    inplace: bool = False
+) -> Optional[pd.DataFrame]:
+    """
+    Clean the various region class and name entries
+
+    Parameters
+    ----------
+    cells_df : pd.DataFrame
+        Cells export DataFrame
+    inplace : bool, default False
+        If True, perform operation in-place and return None
+
+    Returns
+    -------
+    pd.DataFrame or None
+        DataFrame with cleaned strings for the region class and name strings if inplace=False
+        None if inplace=True
+    """
+    
+    # Work on the original or a copy based on inplace parameter
+    df = cells_df if inplace else cells_df.copy()    
+
+    # Check column overlap
+    region_cols = list(set({"region_class", "region_name"}).intersection(df.columns))
+
+    if not region_cols:
+        # No relevant columns found, return unchanged
+        return None if inplace else df
+    
+    # Adjust "region_class" and/or "region_name" if needed
+    df[region_cols] = (
+        df[region_cols]
+        .replace('"', "", regex=True)
+        .replace(r"^\s*(.*?)\s*$", r"\1", regex=True)
+    )
+
+    # Set to lowercase
+    if "region_class" in df.columns:
+        df["region_class"] = df["region_class"].str.lower()
+
+    # Return None for inplace=True, df otherwise
+    return None if inplace else df
+
 
 def impute_bad_coordinates(data: pd.DataFrame, column: str) -> None:
     """
@@ -147,6 +222,122 @@ def read_echoview_export(filename: Path,
 
     return df
 
+def sort_echoview_export_df(
+    export_df: pd.DataFrame,
+    inplace: bool = False
+) -> pd.DataFrame:
+    """
+    Sort the file rows and reset indices 
+    
+    Parameters
+    ----------
+    export_df : pd.DataFrame
+        Echoview export DataFrame that can be either "analysis", "cells", "intervals", or "layers". 
+    inplace : bool, default False
+        If True, perform operation in-place and return None
+        
+    Returns
+    -------
+    pd.DataFrame or None
+        Sorted and reindexed DataFrame if inplace=False, None otherwise 
+    """
+
+    # Work on the original or a copy based on inplace parameter
+    df = export_df if inplace else export_df.copy()
+
+    # Check columns against the appropriate sorting columns
+    sort_cols = list(set(ECHOVIEW_EXPORT_ROW_SORT).intersection(df.columns))
+
+    # Sort the columns
+    df.sort_values(sort_cols, inplace=True)
+
+    # Reindex
+    df.reset_index(drop=True, inplace=True)
+    
+    # Return None for inplace=True, df otherwise
+    return None if inplace else df
+
+def update_transect_spacing(
+    transect_data: pd.DataFrame, 
+    default_transect_spacing: float,
+    latitude_threshold: float = 60.0,
+    inplace: bool = False
+) -> Optional[pd.DataFrame]:
+    """
+    Calculate and update the maximum spacing between transects.
+    
+    Parameters
+    ----------
+    transect_data : pd.DataFrame
+        DataFrame containing transect data with 'transect_num', 'latitude' columns
+    default_transect_spacing : float
+        Default spacing to use (in nautical miles)
+    latitude_threshold : float, default 60.0
+        Maximum latitude to consider for spacing calculations
+    inplace : bool, default False
+        If True, modify the input DataFrame in-place and return None
+    
+    Returns
+    -------
+    pd.DataFrame or None
+        Updated DataFrame if inplace=False, None otherwise
+    """
+    # Work on a copy or the original based on inplace parameter
+    df = transect_data if inplace else transect_data.copy()
+    
+    # Get unique transect numbers
+    transect_number = np.unique(df["transect_num"])
+    
+    # Initialize max transect spacing column
+    df["transect_spacing"] = default_transect_spacing
+    
+    # Iterate through the transects to determine the maximum spacing
+    for i in range(len(transect_number)):
+        if i >= 2:
+            # ---- For 2 transects prior to the current transect
+            lag_2_index = df.index[
+                (df["transect_num"] == transect_number[i - 2])
+                & (df["latitude"] < latitude_threshold)
+            ]
+            # ---- For 1 transect prior to the current transect
+            lag_1_index = df.index[
+                (df["transect_num"] == transect_number[i - 1])
+            ]
+            # ---- Current transect
+            current_index = df.index[
+                (df["transect_num"] == transect_number[i])
+                & (df["latitude"] < latitude_threshold)
+            ]
+            
+            # Check if we have data for all three transects
+            if len(lag_2_index) > 0 and len(lag_1_index) > 0 and len(current_index) > 0:
+                # ---- Calculate the mean transect latitude (lag-2)
+                lag_2_latitude = df.loc[lag_2_index, "latitude"].mean()
+                # ---- Calculate the mean transect latitude (current)
+                current_latitude = df.loc[current_index, "latitude"].mean()
+                # ---- Compute the difference in the latitudes of adjacent transects
+                delta_latitude = np.abs(current_latitude - lag_2_latitude)
+                # ---- Get latitude range for the lag-2 transect
+                latitude_2_range = (
+                    df.loc[lag_2_index, "latitude"].max()
+                    - df.loc[lag_2_index, "latitude"].min()
+                )
+                # ---- Get latitude range for current transect
+                latitude_range = (
+                    df.loc[current_index, "latitude"].max()
+                    - df.loc[current_index, "latitude"].min()
+                )
+                # ---- Assign maximum spacing
+                if (
+                    (delta_latitude <= 2.0 * default_transect_spacing * 1.1 / 30.0)
+                    & (latitude_2_range < 1 / 6)
+                    & (latitude_range < 1 / 6)
+                ):
+                    df.loc[lag_1_index, "transect_spacing"] = delta_latitude * 30.0
+    
+    # Return the updated dataframe or None if inplace
+    return None if inplace else df    
+
 def read_echoview_nasc(filename: Path,
                        transect_num: float,
                        validator: Optional[Any] = None) -> pd.DataFrame:
@@ -164,7 +355,7 @@ def read_echoview_nasc(filename: Path,
     Returns
     -------
     pd.DataFrame
-        Cleaned and formatted data.
+        Cleaned and formatted DataFrame
     """
 
     # Read in the defined CSV file
@@ -175,9 +366,11 @@ def read_echoview_nasc(filename: Path,
     
     # Fix latitude and longitude
     # ---- Latitude
-    impute_bad_coordinates(nasc_df, "latitude")
+    if "latitude" in nasc_df.columns:
+        impute_bad_coordinates(nasc_df, "latitude")
     # ---- Longitude
-    impute_bad_coordinates(nasc_df, "longitude")
+    if "longitude" in nasc_df.columns:
+        impute_bad_coordinates(nasc_df, "longitude")
 
     # Return the cleaned DataFrame
     return nasc_df
@@ -238,23 +431,23 @@ def read_echoview_nasc(filename: Path,
 
 
 def echoview_nasc_to_df(
-    file_transect_pairs: list[tuple[float, Path]]  # List of (transect_num, filepath) tuples
+    filtered_df: pd.DataFrame 
 ) -> list[pd.DataFrame]:
     """
-    Reads and returns Echoview NASC dataframes for given file/transect pairs.
-
+    Reads and returns Echoview NASC dataframes for each file in the input DataFrame.
+    
     Parameters
     ----------
-    file_transect_pairs : list of tuple
-        List of (transect_num: float, filepath: pathlib.Path) tuples.
-
+    filtered_df : pd.DataFrame
+        DataFrame with columns "file_path" and "transect_num".
+        
     Returns
     -------
     list[pd.DataFrame]
-        List of parsed and validated DataFrames for each file/transect.
+        List of parsed and validated DataFrames for each file.
     """
-    # Note: We swap the order since the tuples are (transect_num, filepath)
-    return [read_echoview_nasc(path, t_num) for t_num, path in file_transect_pairs]
+    return [read_echoview_nasc(row["file_path"], row["transect_num"]) 
+            for _, row in filtered_df.iterrows()]
 
 # # based on the current generate_dataframes
 # def echoview_nasc_to_df(
@@ -340,15 +533,15 @@ def echoview_nasc_to_df(
 #     # Read and concat intervals, cells, and layers dataframes
 #     # -- use current code in consolidate_exports
 #     # -- but do not worry about validator at this time
-#     df_intervals: pd.DataFrame = pd.concat(
-#         echoview_nasc_to_df(ev_nasc_files["intervals"], transect_num), ...
-#     )
-#     df_cells: pd.DataFrame = pd.concat(
-#         echoview_nasc_to_df(ev_nasc_files["cells"], transect_num), ...
-#     )
-#     df_layers: pd.DataFrame = pd.concat(
-#         echoview_nasc_to_df(ev_nasc_files["layers"], transect_num), ...
-#     )
+    # df_intervals: pd.DataFrame = pd.concat(
+    #     echoview_nasc_to_df(ev_nasc_files["intervals"], transect_num), ...
+    # )
+    # df_cells: pd.DataFrame = pd.concat(
+    #     echoview_nasc_to_df(ev_nasc_files["cells"], transect_num), ...
+    # )
+    # df_layers: pd.DataFrame = pd.concat(
+    #     echoview_nasc_to_df(ev_nasc_files["layers"], transect_num), ...
+    # )
 
 #     # Wrangle cells_df columns
 

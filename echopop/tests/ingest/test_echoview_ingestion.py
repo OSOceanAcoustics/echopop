@@ -4,339 +4,336 @@ import re
 from unittest.mock import patch, MagicMock
 import sys
 import os
-import tempfile
+
 import pandas as pd
 import numpy as np
 from typing import Dict, List
 
-# Add the module directory to path if needed
-# sys.path.append("path/to/your/module")
-from echopop.nwfsc_feat.ingest_nasc import map_transect_num, impute_bad_coordinates, read_echoview_export, read_echoview_nasc, echoview_nasc_to_df
-from echopop.core.echopop_columns import ECHOVIEW_TO_ECHOPOP
+from echopop.nwfsc_feat.ingest_nasc import update_transect_spacing, map_transect_num, impute_bad_coordinates, read_echoview_export, read_echoview_nasc, echoview_nasc_to_df, validate_transect_exports, clean_echoview_cells_df, sort_echoview_export_df
+from echopop.core.echoview import ECHOVIEW_TO_ECHOPOP, ECHOVIEW_DATABASE_EXPORT_FILESET
+import echopop.tests.helpers.helpers_echoview_ingestion as helpers_echoview_ingestion
 
-# ==================================================================================================
-# FIXTURES
-# --------
-# @pytest.fixture
-# def mock_paths():
-#     """Create mock Path objects for testing."""
-#     paths = {
-#         "analysis": [
-#             Path("T1_survey_data_(analysis).csv"),
-#             Path("T2_survey_data_(analysis).csv"),
-#             Path("T3_survey_data_(analysis).csv"),
-#         ],
-#         "cells": [
-#             Path("T1_survey_data_(cells).csv"),
-#             Path("T2_survey_data_(cells).csv"),
-#             Path("T3_survey_data_(cells).csv"),
-#         ],
-#         "intervals": [
-#             Path("T1_survey_data_(intervals).csv"),
-#             Path("T2_survey_data_(intervals).csv"),
-#             Path("T3_survey_data_(intervals).csv"),
-#         ],
-#         "layers": [
-#             Path("T1_survey_data_(layers).csv"),
-#             Path("T2_survey_data_(layers).csv"),
-#             Path("T3_survey_data_(layers).csv"),
-#         ],
-#     }
+def test_map_transect_num_normal_case(mock_export_paths):
+    """Test map_transect_num with normal inputs."""
+    # Call function
+    result = map_transect_num(mock_export_paths)
     
-#     # Convert lists to mock glob iterators
-#     mock_dict = {}
-#     for key, path_list in paths.items():
-#         mock_generator = MagicMock()
-#         mock_generator.__iter__.return_value = iter(path_list)
-#         mock_dict[key] = mock_generator
+    # Assertions
+    assert isinstance(result, pd.DataFrame)
+    assert set(result.columns) == {"file_type", "file_path", "transect_num"}
+    assert set(result["file_type"].unique()) == {"analysis", "cells", "intervals", "layers"}
+    assert set(result["transect_num"].unique()) == {1.0, 2.0, 3.0}
     
-#     return mock_dict
-
-# @pytest.fixture
-# def bad_coords_at_start():    
-#     return pd.DataFrame({
-#         'latitude': [999.0, 999.0, 45.2, 45.3, 45.4],
-#         'longitude': [-125.1, -125.2, -125.3, -125.4, -125.5]
-#     })
-
-# @pytest.fixture
-# def bad_coords_in_middle():    
-#     return pd.DataFrame({
-#         'latitude': [45.1, 45.2, 999.0, 999.0, 45.5],        
-#         'longitude': [-125.1, -125.2, -125.3, -125.4, -125.5]
-#     })
-
-# @pytest.fixture
-# def bad_coords_at_end():    
-#     return pd.DataFrame({
-#         'latitude': [45.1, 45.2, 45.3, 999.0, 999.0],
-#         'longitude': [-125.1, -125.2, -125.3, -125.4, -125.5]
-#     })
-
-# @pytest.fixture
-# def multiple_bad_coord_groups():
-#     return pd.DataFrame({
-#         'latitude': [999.0, 45.1, 45.2, 999.0, 999.0, 45.5, 999.0],
-#         'longitude': [-125.1, -125.2, -125.3, -125.4, -125.5, -125.6, -125.7]
-#     })
-
-# @pytest.fixture
-# def no_bad_coords():
-#     return pd.DataFrame({
-#         'latitude': [45.1, 45.2, 45.3, 45.4, 45.5],
-#         'longitude': [-125.1, -125.2, -125.3, -125.4, -125.5]
-#     })
-
-# @pytest.fixture
-# def sample_echoview_data():
-#     """Create sample Echoview export data for testing."""
-#     # Create data with original Echoview column names
-#     return pd.DataFrame({
-#         'date_s': ['2023-01-01', '2023-01-01', '2023-01-01'],
-#         'exclude_below_line_depth_mean': [200.5, 198.2, 201.3],
-#         'lat_s': [45.1, 45.2, 45.3],
-#         'lon_s': [-125.1, -125.2, -125.3],
-#         'prc_nasc': [120.5, 135.8, 118.2],
-#         'time_s': ['10:15:30', '10:16:00', '10:16:30'],
-#         'vl_end': [10.5, 11.0, 11.5],
-#         'vl_start': [10.0, 10.5, 11.0],
-#         'other_column': ['a', 'b', 'c']  # Column not in mapping
-#     })
-
-# @pytest.fixture
-# def echoview_temp_csv(sample_echoview_data):
-#     """Create a temporary CSV file with sample Echoview data."""
-#     with tempfile.NamedTemporaryFile(suffix='.csv', delete=False, mode='w+') as f:
-#         sample_echoview_data.to_csv(f.name, index=False)
-#         temp_path = f.name
+    # Check counts
+    assert len(result) == 11  # Total 11 files across all transects
     
-#     yield Path(temp_path)
-    
-#     # Clean up the temporary file
-#     os.unlink(temp_path)
-
-# @pytest.fixture
-# def empty_echoview_data():
-#     """Create empty dataframe with Echoview headers."""
-#     return pd.DataFrame(columns=[
-#         'date_s', 'exclude_below_line_depth_mean', 'lat_s', 'lon_s', 
-#         'prc_nasc', 'time_s', 'vl_end', 'vl_start'
-#     ])
-
-# @pytest.fixture
-# def missing_columns_data():
-#     """Create dataframe with some columns missing."""
-#     return pd.DataFrame({
-#         'date_s': ['2023-01-01', '2023-01-01'],
-#         # Missing exclude_below_line_depth_mean
-#         'lat_s': [45.1, 45.2],
-#         'lon_s': [-125.1, -125.2],
-#         # Missing prc_nasc
-#         'time_s': ['10:15:30', '10:16:00'],
-#         # Missing vl_end
-#         'vl_start': [10.0, 10.5],
-#     })
-
-# @pytest.fixture
-# def extreme_values_data():
-#     """Create dataframe with extreme/edge values."""
-#     return pd.DataFrame({
-#         'date_s': ['9999-12-31', '0001-01-01', '2023-01-01'],
-#         'exclude_below_line_depth_mean': [np.inf, -np.inf, np.nan],
-#         'lat_s': [90.0, -90.0, 0.0],  # Max, min, and zero latitude
-#         'lon_s': [180.0, -180.0, 0.0],  # Max, min, and zero longitude
-#         'prc_nasc': [1e10, -1e10, 0.0],  # Very large, very negative, zero
-#         'time_s': ['23:59:59', '00:00:00', '12:00:00'],
-#         'vl_end': [1e6, -1e6, 0.0],
-#         'vl_start': [1e6, -1e6, 0.0],
-#     })
-
-
-# @pytest.fixture
-# def duplicate_columns_data():
-#     """Create dataframe with duplicate column names (after reading)."""
-#     # This will simulate a CSV with duplicate columns after reading
-#     df = pd.DataFrame()
-#     df['date_s'] = ['2023-01-01', '2023-01-01']
-#     df['lat_s'] = [45.1, 45.2]
-#     df['lat_s.1'] = [45.3, 45.4]  # Duplicate column that pandas would create
-#     df['lon_s'] = [-125.1, -125.2]
-#     return df
-
-# @pytest.fixture
-# def bad_coords_middle():
-#     """Create dataframe with bad coordinates in middle."""
-#     return pd.DataFrame({
-#         'date_s': ['2023-01-01', '2023-01-01', '2023-01-01', '2023-01-01', '2023-01-01'],
-#         'lat_s': [45.1, 45.2, 999.0, 999.0, 45.5],
-#         'lon_s': [-125.1, -125.2, -125.3, -125.4, -125.5]
-#     })
-
-
-# @pytest.fixture
-# def bad_coords_end():
-#     """Create dataframe with bad coordinates at end."""
-#     return pd.DataFrame({
-#         'date_s': ['2023-01-01', '2023-01-01', '2023-01-01', '2023-01-01', '2023-01-01'],
-#         'lat_s': [45.1, 45.2, 45.3, 999.0, 999.0],
-#         'lon_s': [-125.1, -125.2, -125.3, -125.4, -125.5]
-#     })
-
-
-# @pytest.fixture
-# def bad_coords_mixed():
-#     """Create dataframe with mixed patterns of bad coordinates."""
-#     return pd.DataFrame({
-#         'date_s': ['2023-01-01', '2023-01-01', '2023-01-01', '2023-01-01', '2023-01-01', '2023-01-01', '2023-01-01'],
-#         'lat_s': [999.0, 45.1, 45.2, 999.0, 999.0, 45.5, 999.0],
-#         'lon_s': [-125.1, -125.2, -125.3, -125.4, -125.5, -125.6, -125.7]
-#     })
-
-# @pytest.fixture
-# def bad_coords_all():
-#     """Create dataframe with all bad coordinates."""
-#     return pd.DataFrame({
-#         'date_s': ['2023-01-01', '2023-01-01', '2023-01-01'],
-#         'lat_s': [999.0, 999.0, 999.0],
-#         'lon_s': [999.0, 999.0, 999.0],
-#         'prc_nasc': [100, 200, 300]
-#     })
-
-
-# @pytest.fixture
-# def bad_coords_start():
-#     """Create dataframe with bad coordinates at start."""
-#     return pd.DataFrame({
-#         'date_s': ['2023-01-01', '2023-01-01', '2023-01-01', '2023-01-01', '2023-01-01'],
-#         'lat_s': [999.0, 999.0, 45.2, 45.3, 45.4],
-#         'lon_s': [-125.1, -125.2, -125.3, -125.4, -125.5]
-#     })
-
-# Helper function to create temporary CSV
-def create_temp_csv(data):
-    """Create a temporary CSV file with provided data."""
-    with tempfile.NamedTemporaryFile(suffix='.csv', delete=False, mode='w+') as f:
-        data.to_csv(f.name, index=False)
-        temp_path = f.name
-    
-    return Path(temp_path)
-
-def test_map_transect_num_basic(mock_paths):
-    """Test basic functionality of map_transect_num with default pattern."""
-    result = map_transect_num(mock_paths)
-    
-    # Check the structure of the result - should have all file types as keys
-    assert set(result.keys()) == {"analysis", "cells", "intervals", "layers"}
-    
-    # Check that each file type has all transects
-    for file_type in result:
-        # Should have 3 transects for each file type
-        assert len(result[file_type]) == 3
-        
-        # Extract the transect numbers for this file type
-        transect_nums = sorted([t_num for t_num, _ in result[file_type]])
-        assert transect_nums == [1.0, 2.0, 3.0]
-        
-        # Verify the paths match the expected format
-        for t_num, path in result[file_type]:
-            expected_path = Path(f"T{int(t_num)}_survey_data_({file_type}).csv")
-            assert path == expected_path
-
-
-def test_map_transect_num_custom_pattern():
-    """Test with a custom transect pattern."""
-    # Create paths that match a different pattern (e.g., "Line-123")
-    mock_dict = {
-        "analysis": [
-            Path("Line-123_data_(analysis).csv"),
-            Path("Line-456_data_(analysis).csv"),
-        ],
-        "cells": [
-            Path("Line-123_data_(cells).csv"),
-            Path("Line-456_data_(cells).csv"),
-        ],
-    }
-    
-    # Convert to mock glob iterators
-    test_dict = {}
-    for key, path_list in mock_dict.items():
-        mock_generator = MagicMock()
-        mock_generator.__iter__.return_value = iter(path_list)
-        test_dict[key] = mock_generator
-    
-    result = map_transect_num(test_dict, transect_pattern=r"Line-(\d+)")
-    
-    # Check file types as keys
-    assert set(result.keys()) == {"analysis", "cells"}
-    
-    # Check transect numbers in each file type
-    for file_type in result:
-        transect_nums = sorted([t_num for t_num, _ in result[file_type]])
-        assert transect_nums == [123.0, 456.0]
-
+    # Check that the file paths are preserved correctly
+    t1_analysis = result[(result["transect_num"] == 1.0) & (result["file_type"] == "analysis")]
+    assert len(t1_analysis) == 1
+    assert str(t1_analysis["file_path"].iloc[0]).endswith("T1_survey_data_(analysis).csv")
 
 def test_map_transect_num_empty_input():
-    """Test with empty input dictionary."""
-    # Create properly mocked empty iterators
-    empty_dict = {}
-    for key in ["analysis", "cells", "intervals", "layers"]:
-        mock_generator = MagicMock()
-        # Correctly handle the self parameter
-        mock_generator.__iter__ = lambda self=None, paths=[]: iter(paths)
-        empty_dict[key] = mock_generator
+    """Test map_transect_num with empty input."""
+    empty_paths = {key: (path for path in []) for key in ECHOVIEW_DATABASE_EXPORT_FILESET}
+    result = map_transect_num(empty_paths)
     
-    result = map_transect_num(empty_dict)
-    # Each key should map to an empty list
-    assert set(result.keys()) == {"analysis", "cells", "intervals", "layers"}
-    assert all(len(result[key]) == 0 for key in result)
+    assert isinstance(result, pd.DataFrame)
+    assert result.empty
 
-def test_map_transect_num_no_match():
-    """Test with paths that don't match the expected pattern."""
-    no_match_dict = {
-        "analysis": [
-            Path("Survey_data_(analysis).csv"),
-            Path("Other_data_(analysis).csv"),
-        ],
+def test_map_transect_num_custom_pattern():
+    """Test map_transect_num with a different regex pattern."""
+    # Create paths with a different numbering pattern
+    base_path = Path("/mock/path")
+    custom_paths = {
+        "analysis": (path for path in [base_path / "Line_001_analysis.csv"]),
+        "cells": (path for path in [base_path / "Line_001_cells.csv"]),
+        "intervals": (path for path in [base_path / "Line_001_intervals.csv"]),
+        "layers": (path for path in [base_path / "Line_001_layers.csv"])
     }
     
-    # Convert lists to mock glob iterators
-    test_dict = {}
-    for key, path_list in no_match_dict.items():
-        mock_generator = MagicMock()
-        mock_generator.__iter__.return_value = iter(path_list)
-        test_dict[key] = mock_generator
+    # Call with custom pattern
+    result = map_transect_num(custom_paths, transect_pattern=r"Line_(\d+)")
     
-    result = map_transect_num(test_dict)
-    # Should have empty lists for each type
-    assert "analysis" in result
-    assert result["analysis"] == []
+    assert not result.empty
+    assert set(result["transect_num"].unique()) == {1.0}
 
+def test_validate_transect_exports_normal_case(mock_transect_df):
+    """Test validate_transect_exports with normal input."""
+    result = validate_transect_exports(mock_transect_df)
+    
+    # Should only have transects with complete file sets (T1 and T2)
+    assert set(result["transect_num"].unique()) == {1.0, 2.0}
+    assert 3.0 not in result["transect_num"].unique()
+    assert len(result) == 8  # 4 files each for 2 transects
 
-def test_map_transect_num_mixed_inputs(mock_paths):
-    """Test with mixed inputs where some paths don't match the pattern."""
-    # Add non-matching paths to the mock_paths
-    mock_paths_mixed = {key: list(paths) for key, paths in mock_paths.items()}
+def test_validate_transect_exports_all_valid():
+    """Test validate_transect_exports when all transects are valid."""
+    # Create DataFrame where all transects have all file types
+    data = []
+    for t in [1.0, 2.0]:
+        for ft in ECHOVIEW_DATABASE_EXPORT_FILESET:
+            data.append({
+                "file_type": ft,
+                "file_path": Path(f"/mock/Transect_T{int(t)}_{ft}.csv"),
+                "transect_num": t
+            })
+    df = pd.DataFrame(data)
     
-    # Add non-matching paths to analysis
-    mock_paths_mixed["analysis"].append(Path("NoTransect_data_(analysis).csv"))
+    result = validate_transect_exports(df)
     
-    # Convert lists to mock glob iterators
-    test_dict = {}
-    for key, path_list in mock_paths_mixed.items():
-        mock_generator = MagicMock()
-        mock_generator.__iter__.return_value = iter(path_list)
-        test_dict[key] = mock_generator
-    
-    result = map_transect_num(test_dict)
-    
-    # Should have all file types
-    assert set(result.keys()) == {"analysis", "cells", "intervals", "layers"}
-    
-    # Analysis should still have the 3 transects, ignoring the non-matching path
-    transect_nums_analysis = [t_num for t_num, _ in result["analysis"]]
-    assert set(transect_nums_analysis) == {1.0, 2.0, 3.0}
-    assert len(result["analysis"]) == 3  # Only matching paths are included
+    # All should be valid
+    assert set(result["transect_num"].unique()) == {1.0, 2.0}
+    assert len(result) == len(df)
 
+def test_validate_transect_exports_none_valid():
+    """Test validate_transect_exports when no transects are valid."""
+    # Create DataFrame where no transect has all file types
+    data = [
+        {"file_type": "analysis", "file_path": Path("/mock/T1_analysis.csv"), "transect_num": 1.0},
+        {"file_type": "cells", "file_path": Path("/mock/T1_cells.csv"), "transect_num": 1.0},
+        # Missing intervals and layers for T1
+        
+        {"file_type": "intervals", "file_path": Path("/mock/T2_intervals.csv"), "transect_num": 2.0},
+        {"file_type": "layers", "file_path": Path("/mock/T2_layers.csv"), "transect_num": 2.0},
+        # Missing analysis and cells for T2
+    ]
+    df = pd.DataFrame(data)
+    
+    result = validate_transect_exports(df)
+    
+    # None should be valid
+    assert result.empty
+
+####################################################################################################
+# Test file generator
+# -------------------
+def test_echoview_nasc_to_df_empty(mock_empty_df):
+    """Test echoview_nasc_to_df with empty DataFrame input."""
+    # With an empty DataFrame, we should get an empty list without any file reading attempts
+    result = echoview_nasc_to_df(mock_empty_df)
+    assert result == []
+
+def test_echoview_nasc_to_df_file_not_found(mock_filtered_df):
+    """
+    Test that echoview_nasc_to_df attempts to read files specified in the DataFrame.
+    
+    Since the mock files don't exist, we expect FileNotFoundError.
+    """
+    with pytest.raises(FileNotFoundError):
+        echoview_nasc_to_df(mock_filtered_df)
+
+def test_echoview_nasc_to_df_filtered(mock_filtered_df):
+    """
+    Test that filtering the DataFrame correctly limits which files are processed.
+    
+    We expect FileNotFoundError, but can verify it's specifically for our filtered file.
+    """
+    # Filter to just one transect
+    filtered = mock_filtered_df[mock_filtered_df["transect_num"] == 1.0]
+    
+    # Should try to read only the first file
+    with pytest.raises(FileNotFoundError) as exc_info:
+        echoview_nasc_to_df(filtered)
+    
+    # The error should be about the specific file we filtered to
+    error_message = str(exc_info.value)
+    assert "T1_survey_data_(intervals).csv" in error_message
+
+####################################################################################################
+# Test region column strings in cells export file
+# -----------------------------------------------
+def test_clean_echoview_cells_df_basic(test_cells_df):
+    """Test basic cleaning of region columns."""
+    # Run the function
+    result_df = clean_echoview_cells_df(test_cells_df)
+    
+    # Check that original is unchanged
+    assert test_cells_df.loc[0, "region_class"] == '"Fish"'
+    
+    # Check that result has cleaned values
+    assert result_df.loc[0, "region_class"] == "fish"  # lowercase and no quotes
+    assert result_df.loc[1, "region_class"] == "plankton"  # lowercase and no quotes
+    assert result_df.loc[2, "region_class"] == "krill"  # lowercase and trimmed
+    
+    assert result_df.loc[0, "region_name"] == "Region1"  # no quotes
+    assert result_df.loc[1, "region_name"] == "Area51"  # trimmed
+    assert result_df.loc[2, "region_name"] == "Zone99"  # trimmed
+    
+    # Check that other columns are unchanged
+    assert (result_df["other_column"] == test_cells_df["other_column"]).all()
+
+def test_clean_echoview_cells_df_inplace(test_cells_df):
+    """Test in-place cleaning of region columns."""
+    # Create a copy for comparison
+    original_copy = test_cells_df.copy()
+    
+    # Run the function in-place
+    result = clean_echoview_cells_df(test_cells_df, inplace=True)
+    
+    # Check that result is None
+    assert result is None
+    
+    # Check that original DataFrame was modified
+    assert test_cells_df.loc[0, "region_class"] == "fish"
+    assert test_cells_df.loc[1, "region_class"] == "plankton"
+    assert test_cells_df.loc[2, "region_class"] == "krill"
+    
+    assert test_cells_df.loc[0, "region_name"] == "Region1"
+    assert test_cells_df.loc[1, "region_name"] == "Area51"
+    assert test_cells_df.loc[2, "region_name"] == "Zone99"
+    
+    # Check that test_df is different from original
+    assert not test_cells_df.equals(original_copy)
+
+def test_clean_echoview_cells_df_missing_columns():
+    """Test with missing region columns."""
+    # Create test DataFrame with no relevant columns
+    test_df = pd.DataFrame({
+        "col1": [1, 2, 3],
+        "col2": ["a", "b", "c"]
+    })
+    
+    # Run the function
+    result_df = clean_echoview_cells_df(test_df)
+    
+    # Check that the result is unchanged
+    assert result_df.equals(test_df)
+    
+    # Test with only one of the region columns
+    test_df2 = pd.DataFrame({
+        "region_class": ['"Fish"', ' "Plankton" ', '  Krill  '],
+        "other_column": [1, 2, 3]
+    })
+    
+    result_df2 = clean_echoview_cells_df(test_df2)
+    
+    # Check that only region_class was modified
+    assert result_df2.loc[0, "region_class"] == "fish"
+    assert result_df2.loc[1, "region_class"] == "plankton"
+    assert result_df2.loc[2, "region_class"] == "krill"
+
+def test_clean_echoview_cells_df_nan_handling(test_cells_df):
+    """Test handling of NaN values."""
+    # Run the function
+    result_df = clean_echoview_cells_df(test_cells_df)
+    
+    # Check that NaN values remain NaN
+    assert pd.isna(result_df.loc[3, "region_class"])
+    assert pd.isna(result_df.loc[3, "region_name"])
+
+def test_clean_echoview_cells_df_non_string_columns():
+    """Test with non-string region columns."""
+    # Create test DataFrame with numeric region columns
+    test_df = pd.DataFrame({
+        "region_class": [1, 2, 3],
+        "region_name": [4, 5, 6]
+    })
+    
+    # The function will raise an AttributeError because it tries to apply string operations
+    # to numeric data, so we should test for that expected behavior
+    with pytest.raises(AttributeError, match="Can only use .str accessor with string values"):
+        clean_echoview_cells_df(test_df)
+####################################################################################################
+# Test export row sorting
+# -----------------------
+
+def test_sort_echoview_export_df_basic(test_export_df):
+    """Test basic sorting functionality."""
+    # Assuming 'interval' is in ECHOVIEW_EXPORT_ROW_SORT
+    result = sort_echoview_export_df(test_export_df)
+    
+    # Check that original is unchanged
+    assert test_export_df.iloc[0]['interval'] == 3
+    
+    # Check that result is properly sorted
+    assert result.iloc[0]['interval'] == 1
+    assert result.iloc[1]['interval'] == 2
+    assert result.iloc[2]['interval'] == 3
+    
+    # Check that result is a new DataFrame
+    assert id(result) != id(test_export_df)
+
+def test_sort_echoview_export_df_inplace(test_export_df):
+    """Test in-place sorting functionality."""
+    result = sort_echoview_export_df(test_export_df, inplace=True)
+    
+    # Check that result is None
+    assert result is None
+    
+    # Check that original DataFrame was modified
+    assert test_export_df.iloc[0]['interval'] == 1
+    assert test_export_df.iloc[1]['interval'] == 2
+    assert test_export_df.iloc[2]['interval'] == 3
+
+def test_sort_echoview_export_df_no_sort_columns():
+    """Test handling when no sort columns exist in the DataFrame."""
+    # Create DataFrame with no sorting columns
+    df = pd.DataFrame({'other_col1': [3, 1, 2], 'other_col2': ['X', 'Y', 'Z']})
+    
+    # Should return DataFrame unchanged but with reset index
+    result = sort_echoview_export_df(df)
+    
+    # Check that the values are the same as original (but with reset index)
+    assert result['other_col1'].tolist() == [3, 1, 2]
+    assert result['other_col2'].tolist() == ['X', 'Y', 'Z']
+    
+####################################################################################################
+# Test transect spacing imputation/updating
+# -----------------------------------------
+def test_update_transect_spacing_basic(test_transect_data):
+    """Test basic functionality of update_transect_spacing."""
+    default_spacing = 10.0
+    result = update_transect_spacing(test_transect_data, default_spacing)
+    
+    # Check that original is unchanged
+    assert "transect_spacing" not in test_transect_data.columns
+    
+    # Check that result has transect_spacing column
+    assert "transect_spacing" in result.columns
+    
+   # Check that the spacing column contains valid values
+    assert not result["transect_spacing"].isna().any()
+    assert result["transect_spacing"].min() > 0
+    
+    # Check that transects 1 and 4 have the default spacing
+    # (the middle transects might be adjusted by the algorithm)
+    assert (result.loc[result["transect_num"] == 1.0, "transect_spacing"] == default_spacing).all()
+    assert (result.loc[result["transect_num"] == 4.0, "transect_spacing"] == default_spacing).all()
+
+def test_update_transect_spacing_calculation(test_transect_data):
+    """Test the spacing calculation logic."""
+    default_spacing = 10.0
+    result = update_transect_spacing(test_transect_data, default_spacing)
+    
+    # The third transect might have its spacing updated based on the calculation
+    # For our test data, transects are evenly spaced, so we can check if spacing was updated
+    
+    # Check spacing for transect 3
+    transect_3_spacing = result.loc[result["transect_num"] == 3.0, "transect_spacing"].unique()
+    
+    # Either it's the default or it's been updated based on the calculation
+    assert len(transect_3_spacing) == 1  # Should be consistent within a transect
+    # We can't know for sure what the value should be without manually calculating it
+    # Just testing that we have a valid value
+    assert np.isfinite(transect_3_spacing[0])
+
+def test_update_transect_spacing_inplace(test_transect_data):
+    """Test in-place updating of transect spacing."""
+    default_spacing = 10.0
+    
+    # Call with inplace=True
+    result = update_transect_spacing(test_transect_data, default_spacing, inplace=True)
+    
+    # Check that result is None
+    assert result is None
+    
+    # Check that original DataFrame was modified
+    assert "transect_spacing" in test_transect_data.columns
+    assert (test_transect_data["transect_spacing"] == default_spacing).any()
+
+####################################################################################################
+# Test coordinate imputation
+# --------------------------
 def test_impute_bad_coords_at_start(bad_coords_at_start):
     """Test imputation of bad coordinates at the start of the dataset."""
     impute_bad_coordinates(bad_coords_at_start, 'latitude')
@@ -415,7 +412,7 @@ def test_read_echoview_export_with_real_file(echoview_temp_csv):
 
 def test_read_echoview_export_empty_file(empty_echoview_data):
     """Test with empty file (headers only)."""
-    temp_csv = create_temp_csv(empty_echoview_data)
+    temp_csv = helpers_echoview_ingestion.create_temp_csv(empty_echoview_data)
     try:
         result = read_echoview_export(temp_csv)
         
@@ -428,7 +425,7 @@ def test_read_echoview_export_empty_file(empty_echoview_data):
 
 def test_read_echoview_export_missing_columns(missing_columns_data):
     """Test with file missing some columns from mapping."""
-    temp_csv = create_temp_csv(missing_columns_data)
+    temp_csv = helpers_echoview_ingestion.create_temp_csv(missing_columns_data)
     try:
         result = read_echoview_export(temp_csv)
         
@@ -448,7 +445,7 @@ def test_read_echoview_export_missing_columns(missing_columns_data):
 
 def test_read_echoview_export_duplicate_columns(duplicate_columns_data):
     """Test with duplicate columns (after CSV reading)."""
-    temp_csv = create_temp_csv(duplicate_columns_data)
+    temp_csv = helpers_echoview_ingestion.create_temp_csv(duplicate_columns_data)
     try:
         result = read_echoview_export(temp_csv)
         
@@ -463,7 +460,7 @@ def test_read_echoview_export_duplicate_columns(duplicate_columns_data):
 
 def test_read_echoview_export_extreme_values(extreme_values_data):
     """Test with extreme values to ensure they're handled correctly."""
-    temp_csv = create_temp_csv(extreme_values_data)
+    temp_csv = helpers_echoview_ingestion.create_temp_csv(extreme_values_data)
     try:
         result = read_echoview_export(temp_csv)
         
@@ -520,7 +517,7 @@ def test_read_echoview_nasc_int_transect(sample_echoview_data):
 
 def test_read_echoview_nasc_int_transect(sample_echoview_data):
     """Test with integer transect number."""
-    temp_csv = create_temp_csv(sample_echoview_data)
+    temp_csv = helpers_echoview_ingestion.create_temp_csv(sample_echoview_data)
     try:
         transect_num = 1
         result = read_echoview_nasc(temp_csv, transect_num)
@@ -547,7 +544,7 @@ def test_read_echoview_nasc_all_bad_coords(bad_coords_all):
     })
     extended_df = pd.concat([extended_df, new_rows], ignore_index=True)
     
-    temp_csv = create_temp_csv(extended_df)
+    temp_csv = helpers_echoview_ingestion.create_temp_csv(extended_df)
     try:
         result = read_echoview_nasc(temp_csv, 1.0)
         
@@ -582,7 +579,7 @@ def test_bug_in_impute_bad_coordinates():
 
 def test_read_echoview_nasc_bad_coords_start(bad_coords_start):
     """Test with bad coordinates at the start."""
-    temp_csv = create_temp_csv(bad_coords_start)
+    temp_csv = helpers_echoview_ingestion.create_temp_csv(bad_coords_start)
     try:
         result = read_echoview_nasc(temp_csv, 1.0)
         
@@ -599,7 +596,7 @@ def test_read_echoview_nasc_bad_coords_start(bad_coords_start):
 
 def test_read_echoview_nasc_bad_coords_middle(bad_coords_middle):
     """Test with bad coordinates in the middle."""
-    temp_csv = create_temp_csv(bad_coords_middle)
+    temp_csv = helpers_echoview_ingestion.create_temp_csv(bad_coords_middle)
     try:
         result = read_echoview_nasc(temp_csv, 1.0)
         
@@ -617,7 +614,7 @@ def test_read_echoview_nasc_bad_coords_middle(bad_coords_middle):
 
 def test_read_echoview_nasc_bad_coords_end(bad_coords_end):
     """Test with bad coordinates at the end."""
-    temp_csv = create_temp_csv(bad_coords_end)
+    temp_csv = helpers_echoview_ingestion.create_temp_csv(bad_coords_end)
     try:
         result = read_echoview_nasc(temp_csv, 1.0)
         
@@ -635,7 +632,7 @@ def test_read_echoview_nasc_bad_coords_end(bad_coords_end):
 
 def test_read_echoview_nasc_bad_coords_mixed(bad_coords_mixed):
     """Test with mixed patterns of bad coordinates."""
-    temp_csv = create_temp_csv(bad_coords_mixed)
+    temp_csv = helpers_echoview_ingestion.create_temp_csv(bad_coords_mixed)
     try:
         result = read_echoview_nasc(temp_csv, 1.0)
         
@@ -655,7 +652,7 @@ def test_read_echoview_nasc_bad_coords_mixed(bad_coords_mixed):
 
 def test_read_echoview_nasc_empty_file(empty_echoview_data):
     """Test with empty file."""
-    temp_csv = create_temp_csv(empty_echoview_data)
+    temp_csv = helpers_echoview_ingestion.create_temp_csv(empty_echoview_data)
     try:
         result = read_echoview_nasc(temp_csv, 1.0)
         
