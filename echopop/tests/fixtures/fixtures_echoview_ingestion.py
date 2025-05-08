@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 import tempfile
 import os
+import shutil
 
 # ==================================================================================================
 # Mock Paths
@@ -162,7 +163,118 @@ def test_transect_data():
         "process_id": [148293] * 8,
         "interval": range(1489, 1497)
     })
+
+# ==================================================================================================
+# Merge Echoview exports into a consolidated file
+# -----------------------------------------------
+@pytest.fixture
+def sample_intervals_df():
+    """Create a sample intervals DataFrame."""
+    return pd.DataFrame({
+        'transect_num': [1.0, 1.0, 2.0],
+        'interval': [1, 2, 3],
+        'process_id': [101, 101, 102],
+        'latitude': [34.5, 34.6, 34.7],
+        'longitude': [-121.1, -121.2, -121.3],
+        'vessel_log_start': [100.1, 100.2, 200.1]
+    })
+
+@pytest.fixture
+def sample_cells_df():
+    """Create a sample cells DataFrame."""
+    return pd.DataFrame({
+        'transect_num': [1.0, 1.0, 2.0],
+        'interval': [1, 2, 3],
+        'process_id': [101, 101, 102],
+        'region_class': ['fish', 'plankton', 'fish'],
+        'region_name': ['A', 'B', 'C'],
+        'nasc': [10.5, 15.2, 20.7]
+    })
+
+@pytest.fixture
+def sample_layers_df():
+    """Create a sample layers DataFrame."""
+    return pd.DataFrame({
+        'transect_num': [1.0, 1.0, 2.0],
+        'interval': [1, 2, 3],
+        'process_id': [101, 101, 102],
+        'layer_name': ['surface', 'middle', 'bottom'],
+        'min_depth': [0.0, 10.5, 0.0],
+        'max_depth': [10.5, 50.2, 25.8]
+    })
+
+# ==================================================================================================
+# Read in, clean, and merge Echoview exports (database format)
+# ------------------------------------------------------------
+@pytest.fixture
+def mock_nasc_directory():
+    """Create a temporary directory with mock Echoview export files."""
+    # Create a temporary directory
+    temp_dir = tempfile.mkdtemp()
     
+    # Create sample data for different file types
+    intervals_data = pd.DataFrame({
+        'date_s': ['2023-01-01', '2023-01-01', '2023-01-02'],
+        'lat_s': [45.1, 45.2, 46.1],
+        'lon_s': [-125.1, -125.2, -126.1],
+        'interval': [1, 2, 1],
+        'process_id': [101, 101, 102],
+        'vl_start': [10.0, 10.5, 20.0],
+        'vl_end': [10.5, 11.0, 20.5]
+    })
+    
+    cells_data = pd.DataFrame({
+        'date_s': ['2023-01-01', '2023-01-01', '2023-01-02'],
+        'lat_s': [45.1, 45.2, 46.1],
+        'lon_s': [-125.1, -125.2, -126.1],
+        'interval': [1, 2, 1],
+        'process_id': [101, 101, 102],
+        'region_class': ['"Fish"', '"Plankton"', '"Fish"'],
+        'region_name': ['"RegionA"', '"RegionB"', '"RegionA"'],
+        'prc_nasc': [125.5, 130.2, 140.8]
+    })
+    
+    layers_data = pd.DataFrame({
+        'date_s': ['2023-01-01', '2023-01-01', '2023-01-02'],
+        'lat_s': [45.1, 45.2, 46.1],
+        'lon_s': [-125.1, -125.2, -126.1],
+        'interval': [1, 2, 1],
+        'process_id': [101, 101, 102],
+        'layer_name': ['Surface', 'Bottom', 'Surface'],
+        'layer_depth_min': [0.0, 50.0, 0.0],
+        'layer_depth_max': [50.0, 100.0, 50.0]
+    })
+    
+    analysis_data = pd.DataFrame({
+        'date_s': ['2023-01-01', '2023-01-01', '2023-01-02'],
+        'lat_s': [45.1, 45.2, 46.1],
+        'lon_s': [-125.1, -125.2, -126.1],
+        'interval': [1, 2, 1],
+        'process_id': [101, 101, 102]
+    })
+    
+    # Create files for two transects
+    for t in [1, 2]:
+        # Save each file type
+        intervals_file = os.path.join(temp_dir, f"T{t}_data_(intervals).csv")
+        cells_file = os.path.join(temp_dir, f"T{t}_data_(cells).csv")
+        layers_file = os.path.join(temp_dir, f"T{t}_data_(layers).csv")
+        analysis_file = os.path.join(temp_dir, f"T{t}_data_(analysis).csv")
+        
+        # Filter data by transect (using process_id as a proxy)
+        transect_filter = intervals_data['process_id'] == (100 + t)
+        
+        # Save to files
+        intervals_data[transect_filter].to_csv(intervals_file, index=False)
+        cells_data[transect_filter].to_csv(cells_file, index=False)
+        layers_data[transect_filter].to_csv(layers_file, index=False)
+        analysis_data[transect_filter].to_csv(analysis_file, index=False)
+    
+    yield Path(temp_dir)
+    
+    # Clean up
+    shutil.rmtree(temp_dir)
+
 # ==================================================================================================
 # Reading Echoview data files
 # ---------------------------

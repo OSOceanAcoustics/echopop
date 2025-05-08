@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Dict, Generator, List, Optional, Union
+from typing import Any, Dict, Generator, List, Optional, Tuple, Union
 
 import pandas as pd
 import numpy as np
@@ -375,61 +375,6 @@ def read_echoview_nasc(filename: Path,
     # Return the cleaned DataFrame
     return nasc_df
 
-
-# def read_echoview_export(filename: str, transect_number: int, validator: MetaModel, 
-#                          column_mapping: Optional[dict] = None) -> pd.DataFrame:
-#     """
-#     Read Echoview export file, validate it, and prepare it for further processing.
-    
-#     Parameters
-#     ----------
-#     filename: str
-#         Export file path
-#     transect_number: int
-#         Transect number associated with the export file
-#     validator: MetaModel
-#         A ``pandera`` ``DataFrameModel``-class validator
-#     column_mapping: Optional[dict]
-#         Dictionary mapping Echoview column names to EchoPop column names
-        
-#     Returns
-#     -------
-#     pd.DataFrame
-#         Validated and processed DataFrame
-        
-#     See Also
-#     --------
-#     echopop.load.ingest_echoview_exports
-#         A more detailed description
-#     """
-#     # Read and prepare the CSV file
-#     export_file = read_csv_file(filename)
-    
-#     # Validate
-#     export_valid = validator.validate_df(export_file, filename)
-    
-#     # Assign transect number column
-#     export_valid["transect_num"] = transect_number
-    
-#     # Assign the names if column_mapping is provided
-#     if column_mapping:
-#         export_valid.rename(columns=column_mapping, inplace=True)
-    
-#     # Get coordinate column names, if present
-#     lon_col = next((col for col in export_valid.columns if "lon" in col.lower()), None)
-#     lat_col = next((col for col in export_valid.columns if "lat" in col.lower()), None)
-    
-#     # Impute latitude
-#     if lat_col is not None:
-#         impute_bad_coordinates(export_valid, lat_col)
-        
-#     # Impute longitude
-#     if lon_col is not None:
-#         impute_bad_coordinates(export_valid, lon_col)
-    
-#     return export_valid
-
-
 def echoview_nasc_to_df(
     filtered_df: pd.DataFrame 
 ) -> list[pd.DataFrame]:
@@ -449,111 +394,137 @@ def echoview_nasc_to_df(
     return [read_echoview_nasc(row["file_path"], row["transect_num"]) 
             for _, row in filtered_df.iterrows()]
 
-# # based on the current generate_dataframes
-# def echoview_nasc_to_df(
-#     files: list[Path], transect_num: list[int]
-# ) -> Generator[pd.DataFrame, None, None]:
-#     """
-#     Generator that reads and returns Echoview NASC dataframes for given files and transects.
-
-#     Parameters
-#     ----------
-#     files : list of Path
-#         List of NASC CSV file paths.
-#     transect_num : list of int
-#         Transect numbers to include.
-
-#     Yields
-#     ------
-#     pd.DataFrame
-#         Parsed and validated DataFrame for each file/transect.
-#     """
-#     # don't need the yield structure
-#     return [read_echoview_nasc(f, tnum) for f, tnum in zip(files, transect_num)]
-
-
-# # based on the current export_transect_spacing
-# def update_transect_spacing(
-#     intervals_df: pd.DataFrame, default_transect_spacing: float
-# ) -> pd.DataFrame:
-#     """
-#     Fill missing or invalid transect spacing values in interval data.
-
-#     Parameters
-#     ----------
-#     intervals_df : pd.DataFrame
-#         Interval data exported from Echoview.
-#     default_transect_spacing : float
-#         Fallback value for missing spacing.
-
-#     Returns
-#     -------
-#     pd.DataFrame
-#         Updated DataFrame with consistent spacing values.
-#     """
-#     pass
-
-
-# # ONLY do data ingestion and organization, not writing out anything
-# def merge_echoview_nasc(
-#     nasc_path: Path, nasc_filename_pattern: str, default_transect_spacing: float
-# ) -> pd.DataFrame:
-#     """
-#     Ingest and merge all Echoview NASC files (intervals, cells, layers).
-
-#     Parameters
-#     ----------
-#     nasc_path : Path
-#         Directory containing Echoview export files (*.csv).
-#     default_transect_spacing : float
-#         Default spacing to impute where missing.
-
-#     Returns
-#     -------
-#     pd.DataFrame
-#         Merged dataframe from intervals, cells, and layers.
-#     """
+# ! This function is necessary because of how `pandas.DataFrame.merge()` can unexpectedly change 
+# ! column dtypes. This avoids that issue
+def merge_exports(
+    df_intervals: pd.DataFrame,
+    df_cells: pd.DataFrame,
+    df_layers: pd.DataFrame
+) -> pd.DataFrame:
+    """
+    Merge Echoview export dataframes with explicit outer joins.
     
-#     # Get all echoview NASC files: analysis, cells, intervals, layers
-#     # -- do not need to validate, since non-existing folders/files will error out automatically
-#     # -- use .glob to get all NASC-related files
-#     ev_nasc_files: dict = {
-#         "analysis": nasc_path.glob("*\.csv"),  # PATTERN built from nasc_filename_pattern
-#         "cells": nasc_path.glob("PATTERN"),
-#         "intervals": nasc_path.glob("PATTERN"),
-#         "layers": nasc_path.glob("PATTERN"),
-#     }
+    Parameters
+    ----------
+    df_intervals : pd.DataFrame
+        Intervals export dataframe
+    df_cells : pd.DataFrame
+        Cells export dataframe
+    df_layers : pd.DataFrame
+        Layers export dataframe
+    
+    Returns
+    -------
+    pd.DataFrame
+        Merged dataframe with preserved data types
+    """    
+    # Store original datatypes
+    # ---- Intervals
+    intervals_dtypes = df_intervals.dtypes.to_dict()
+    # ---- Cells
+    cells_dtypes = df_cells.dtypes.to_dict()
+    # ---- Layers
+    layers_dtypes = df_layers.dtypes.to_dict()
 
-#     # Get all transect numbers
-#     # -- for each transect number, there should be 4 files
-#     # -- store only transect numbers with a complete set (4) csv files
-#     # -- raise warning for transect numbers with an incomplete set (<4) csv files
-#     transect_num: list = get_transect_num(ev_nasc_files)
+    # Combine all dtypes, prioritizing cells over intervals over layers
+    all_dtypes = {**layers_dtypes, **intervals_dtypes, **cells_dtypes}
 
-#     # Read and concat intervals, cells, and layers dataframes
-#     # -- use current code in consolidate_exports
-#     # -- but do not worry about validator at this time
-    # df_intervals: pd.DataFrame = pd.concat(
-    #     echoview_nasc_to_df(ev_nasc_files["intervals"], transect_num), ...
-    # )
-    # df_cells: pd.DataFrame = pd.concat(
-    #     echoview_nasc_to_df(ev_nasc_files["cells"], transect_num), ...
-    # )
-    # df_layers: pd.DataFrame = pd.concat(
-    #     echoview_nasc_to_df(ev_nasc_files["layers"], transect_num), ...
-    # )
+    # Explicit merges with hard-coded keys
+    merged_df = (
+        df_cells
+        .merge(df_intervals,how="outer")
+        .merge(df_layers, how="outer")
+    )
 
-#     # Wrangle cells_df columns
+    # Drop NA
+    merged_df.dropna(inplace=True)
 
-#     # Update transect spacing
-#     # TODO: what does update_transect_spacing do?
-#     df_intervals = update_transect_spacing(df_intervals, default_transect_spacing)
+    # Restore the original datatypes
+    merged_df = merged_df.astype(all_dtypes)
 
-#     # Explicitly merge the 3 dataframes
-#     # -- do not need group_merge as a separate method
-#     df_merged: pd.DataFrame
-#     return df_merged
+    # Return the output
+    return merged_df
+    
+def merge_echoview_nasc(
+    nasc_path: Path,
+    filename_transect_pattern: str = r"T(\d+)",
+    default_transect_spacing: float = 10.,
+    default_latitude_threshold: float = 60.,
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    """
+    Ingest and merge all Echoview NASC files (intervals, cells, layers).
 
+    Parameters
+    ----------
+    nasc_path : Path
+        Directory containing Echoview export files (*.csv).
+    filename_transect_pattern: str, default = r"T(\d+)"
+        Regular expression used for extrating the transect number from the filename. 
+    default_transect_spacing : float, default = 10.
+        Default spacing (nmi) to impute where missing.
+    default_latitude_threshold : float, default = 60.
+        Default latitude threshold used for determining how far north transect spacings should be 
+        calculated versus using the default value.
+
+    Returns
+    -------
+    Tuple[pd.DataFrame, pd.DataFrame]
+        A tuple containing two DataFrames:
+        - df_intervals: The processed intervals DataFrame with added transect spacing
+        - merged_exports_df: The merged DataFrame from intervals, cells, and layers
+    """
+    
+    # Get all echoview NASC files: analysis, cells, intervals, layers
+    ev_export_paths: dict = {
+        "analysis": nasc_path.glob("*(analysis).csv"),  # Removed leading / only
+        "cells": nasc_path.glob("*(cells).csv"),
+        "intervals": nasc_path.glob("*(intervals).csv"),
+        "layers": nasc_path.glob("*(layers).csv"),
+    }    
+
+    # Create a DataFrame with mapped transect numbers to validate the presence of complete filesets
+    # ---- Get the trasnect numbers
+    transect_num_df = map_transect_num(ev_export_paths, filename_transect_pattern)
+    # ---- Validate the filesets
+    valid_transect_num_df = validate_transect_exports(transect_num_df)
+
+    # Read and concatenate the Echoview exports (assuming a database format)
+    # ---- Cells
+    df_cells: pd.DataFrame = pd.concat(
+        echoview_nasc_to_df(valid_transect_num_df[valid_transect_num_df["file_type"] == "cells"])
+    )    
+    # ---- Intervals
+    df_intervals = pd.concat(
+        echoview_nasc_to_df(
+            valid_transect_num_df[valid_transect_num_df["file_type"] == "intervals"]
+        )
+    )    
+    # ---- Layers
+    df_layers: pd.DataFrame = pd.concat(
+        echoview_nasc_to_df(valid_transect_num_df[valid_transect_num_df["file_type"] == "layers"])
+    )
+
+    # Clean the cells export file
+    clean_echoview_cells_df(df_cells, inplace=True)   
+
+    # Sort and reindex the intervals DataFrame
+    sort_echoview_export_df(df_intervals, inplace=True)
+
+    # Impute and update the transect spacing 
+    update_transect_spacing(df_intervals, default_transect_spacing, default_latitude_threshold, 
+                            inplace=True)
+
+    # Merge the acoustic export files
+    # ! This function is necessary because of how `pandas.DataFrame.merge()` can unexpectedly change 
+    # ! column dtypes. This avoids that issue
+    merged_exports_df = merge_exports(df_intervals, df_cells, df_layers)
+
+    # Resort the merged DataFrame
+    sort_echoview_export_df(merged_exports_df, inplace=True)
+
+    # Return two DataFrames: the complete intervals and the cells that will be integrated
+    return df_intervals, merged_exports_df
+    
 
 # def read_transect_region_file() -> pd.DataFrame:
 #     """

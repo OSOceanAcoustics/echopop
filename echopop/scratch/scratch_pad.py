@@ -42,175 +42,205 @@ df_layers: pd.DataFrame = pd.concat(
 
 clean_echoview_cells_df(df_cells, inplace=True)
 
+## Merge the exports
+merged_exports = merge_exports(df_intervals, df_cells, df_layers)
+
+# Resort and reindex
+sort_echoview_export_df(merged_exports, inplace=TR)
+
 # Sort/reindex each fileset
 sort_echoview_export_df(df_intervals, inplace=True)
-sort_echoview_export_df(df_cells, inplace=True)
-sort_echoview_export_df(df_layers, inplace=True)
-
-def update_transect_spacing(
-    transect_data: pd.DataFrame, 
-    default_transect_spacing: float,
-    latitude_threshold: float = 60.0,
-    inplace: bool = False
-) -> Optional[pd.DataFrame]:
-    """
-    Calculate and update the maximum spacing between transects.
-    
-    Parameters
-    ----------
-    transect_data : pd.DataFrame
-        DataFrame containing transect data with 'transect_num', 'latitude' columns
-    default_transect_spacing : float
-        Default spacing to use (in nautical miles)
-    latitude_threshold : float, default 60.0
-        Maximum latitude to consider for spacing calculations
-    inplace : bool, default False
-        If True, modify the input DataFrame in-place and return None
-    
-    Returns
-    -------
-    pd.DataFrame or None
-        Updated DataFrame if inplace=False, None otherwise
-    """
-    # Work on a copy or the original based on inplace parameter
-    df = transect_data if inplace else transect_data.copy()
-    
-    # Get unique transect numbers
-    transect_number = np.unique(df["transect_num"])
-    
-    # Initialize max transect spacing column
-    df["transect_spacing"] = default_transect_spacing
-    
-    # Iterate through the transects to determine the maximum spacing
-    for i in range(len(transect_number)):
-        if i >= 2:
-            # ---- For 2 transects prior to the current transect
-            lag_2_index = df.index[
-                (df["transect_num"] == transect_number[i - 2])
-                & (df["latitude"] < latitude_threshold)
-            ]
-            # ---- For 1 transect prior to the current transect
-            lag_1_index = df.index[
-                (df["transect_num"] == transect_number[i - 1])
-            ]
-            # ---- Current transect
-            current_index = df.index[
-                (df["transect_num"] == transect_number[i])
-                & (df["latitude"] < latitude_threshold)
-            ]
-            
-            # Check if we have data for all three transects
-            if len(lag_2_index) > 0 and len(lag_1_index) > 0 and len(current_index) > 0:
-                # ---- Calculate the mean transect latitude (lag-2)
-                lag_2_latitude = df.loc[lag_2_index, "latitude"].mean()
-                # ---- Calculate the mean transect latitude (current)
-                current_latitude = df.loc[current_index, "latitude"].mean()
-                # ---- Compute the difference in the latitudes of adjacent transects
-                delta_latitude = np.abs(current_latitude - lag_2_latitude)
-                # ---- Get latitude range for the lag-2 transect
-                latitude_2_range = (
-                    df.loc[lag_2_index, "latitude"].max()
-                    - df.loc[lag_2_index, "latitude"].min()
-                )
-                # ---- Get latitude range for current transect
-                latitude_range = (
-                    df.loc[current_index, "latitude"].max()
-                    - df.loc[current_index, "latitude"].min()
-                )
-                # ---- Assign maximum spacing
-                if (
-                    (delta_latitude <= 2.0 * default_transect_spacing * 1.1 / 30.0)
-                    & (latitude_2_range < 1 / 6)
-                    & (latitude_range < 1 / 6)
-                ):
-                    df.loc[lag_1_index, "transect_spacing"] = delta_latitude * 30.0
-    
-    # Return the updated dataframe or None if inplace
-    return None if inplace else df
-
-out1 = update_transect_spacing(df_intervals, 10.)
-out1[out1.transect_num == 15]
-out1 = export_transect_spacing(df_intervals, default_transect_spacing=10.)
 update_transect_spacing(df_intervals, 10., inplace=True)
-df_intervals.loc[df_intervals["transect_num"] == 15]
+
+out1 = group_merge(df_cells, [df_intervals, df_layers])
+out2 = merge_exports(df_intervals, df_cells, df_layers)
+
+out1.reset_index(drop=True).equals(out2.sort_values(["transect_num", "interval", "layer"]).reset_index(drop=True))
 
 
-transect_data = df_intervals.copy()
-i = 14
+out1.transect_num
+sort_echoview_export_df(out2).equals(out1)
+out1.equals(sort_echoview_export_df(out2))
+out2.sort_values(["transect_num", "interval", "layer"]).reset_index(drop=True).equals(out1)
 
-# ---- For 2 transects prior to the current transect
-lag_2_index = transect_data.index[
-    (transect_data["transect_num"] == transect_number[i - 2])
-    & (transect_data["latitude"] < latitude_threshold)
-]
-# ---- For 1 transect prior to the current transect
-lag_1_index = transect_data.index[
-    (transect_data["transect_num"] == transect_number[i - 1])
-]
-# ---- Current transect
-current_index = transect_data.index[
-    (transect_data["transect_num"] == transect_number[i])
-    & (transect_data["latitude"] < latitude_threshold)
-]
-# ---- Calculate the mean transect latitude (lag-2)
-lag_2_latitude = transect_data.loc[lag_2_index, "latitude"].mean()
-# ---- Calculate the mean transect latitude (lag-2)
-current_latitude = transect_data.loc[current_index, "latitude"].mean()
-# ---- Compute the difference in the latitudes of adjacent transects
-delta_latitude = np.abs(current_latitude - lag_2_latitude)
-# ---- Get latitude range for the lag-2 transect
-latitude_2_range = (
-    transect_data.loc[lag_2_index, "latitude"].max()
-    - transect_data.loc[lag_2_index, "latitude"].min()
+out2.transect_num.unique()
+
+out2.equals(out1)
+out11 = out1.sort_values(["transect_num", "interval", "layer"]).reset_index(drop=True)
+out22 = out2.sort_values(["transect_num", "interval", "layer"]).reset_index(drop=True)
+out22.equals(out1)
+# Store original datatypes using dictionary comprehensions
+cells_dtypes = df_cells.dtypes.to_dict()
+intervals_dtypes = df_intervals.dtypes.to_dict()
+layers_dtypes = df_layers.dtypes.to_dict()
+
+# Combine all dtypes, prioritizing integer types
+all_dtypes = {**layers_dtypes, **intervals_dtypes, **cells_dtypes}
+
+# Get the common column names
+interval_cells_cols = list(set(df_intervals.columns).intersection(df_cells.columns))
+
+interval_cells_df = df_intervals.merge(df_cells, on=interval_cells_cols, how="outer")
+
+interval_cells_layers_cols = list(set(df_layers.columns).intersection(interval_cells_df.columns))
+merged_df = interval_cells_df.merge(df_layers, on=interval_cells_layers_cols, how="outer")
+
+# Drop NA's
+merged_df.dropna(inplace=True)
+
+# Separate integer and non-integer columns
+integer_cols = {col: dtype for col, dtype in all_dtypes.items() 
+                if col in merged_df.columns and pd.api.types.is_integer_dtype(dtype)}
+
+non_integer_cols = {col: dtype for col, dtype in all_dtypes.items() 
+                    if col in merged_df.columns and not pd.api.types.is_integer_dtype(dtype)}
+
+# Convert non-integer columns
+merged_df = merged_df.astype(non_integer_cols)
+
+merged_df.astype(all_dtypes)
+# Explicit merges with hard-coded keys
+merged_df = (
+    df_intervals
+    .merge(df_cells, how="outer")
+).drop_duplicates()
+
+
+    .merge(df_layers)
+    df_cells
+    .merge(df_intervals, on=["transect_num", "interval"], how="outer")
+    .merge(df_layers, how="outer")
 )
-# ---- Get latitude range for current transect
-latitude_range = (
-    transect_data.loc[current_index, "latitude"].max()
-    - transect_data.loc[current_index, "latitude"].min()
-)
-# ---- Assign maximum spacing
-if (
-    (delta_latitude <= 2.0 * default_transect_spacing * 1.1 / 30.0)
-    & (latitude_2_range < 1 / 6)
-    & (latitude_range < 1 / 6)
-):
-    transect_data.loc[lag_1_index, "transect_spacing"] = delta_latitude * 30.0
 
-transect_data[transect_data.transect_num == 15]
+# Separate integer and non-integer columns
+integer_cols = {col: dtype for col, dtype in all_dtypes.items() 
+                if col in merged_df.columns and pd.api.types.is_integer_dtype(dtype)}
+
+non_integer_cols = {col: dtype for col, dtype in all_dtypes.items() 
+                    if col in merged_df.columns and not pd.api.types.is_integer_dtype(dtype)}
+
+# Convert non-integer columns
+merged_df = merged_df.astype(non_integer_cols)
+
+# Handle integer columns without loops
+if integer_cols:
+    # Get column names that should be integers
+    int_col_names = list(integer_cols.keys())
     
-transect_data = out1.copy()
-transect_number = np.unique(transect_data["transect_num"])
-transect_data["transect_spacing"] = default_transect_spacing
+    # Create mask of columns with no NaN values
+    no_na_mask = merged_df[int_col_names].notna().all()
+    
+    # Filter to only columns without NaN values
+    valid_int_cols = no_na_mask[no_na_mask].index.tolist()
+    
+    # Create conversion dictionary and convert in one operation
+    if valid_int_cols:
+        int_conversion_dict = {col: integer_cols[col] for col in valid_int_cols}
+        merged_df.loc[:, valid_int_cols] = merged_df.loc[:, valid_int_cols].astype(int_conversion_dict)
 
+# Restore datatypes without loops using dict comprehension and masking
+integer_cols = {col: dtype for col, dtype in all_dtypes.items() 
+                if col in merged_df.columns and pd.api.types.is_integer_dtype(dtype)}
 
-out1.transect_spacing.max()
-out1[out1.transect_num == 15]
-out2.transect_spacing.max()
+non_integer_cols = {col: dtype for col, dtype in all_dtypes.items() 
+                    if col in merged_df.columns and not pd.api.types.is_integer_dtype(dtype)}
 
-ev_export_paths: dict = {
-    "analysis": nasc_path.glob("*(analysis).csv"),  # Removed leading / only
-    "cells": nasc_path.glob("*(cells).csv"),
-    "intervals": nasc_path.glob("*(intervals).csv"),
-    "layers": nasc_path.glob("*(layers).csv"),
-}
+# Convert non-integer columns directly
+merged_df = merged_df.astype(non_integer_cols)
 
-transect_num_df = map_transect_num(ev_export_paths, filename_transect_pattern)
-valid_transect_num_df = validate_transect_exports(transect_num_df)
+# Convert integer columns only if they don't contain NaN
+for col, dtype in integer_cols.items():
+    if merged_df[col].notna().all():
+        merged_df[col] = merged_df[col].astype(dtype)
 
-df_intervals = pd.concat(
-    echoview_nasc_to_df(valid_transect_num_df[valid_transect_num_df["file_type"] == "intervals"])
+merged_df.dropna()
+
+        
+df_intervals.merge(df_cells, on=["transect_num", "interval", "process_id"], how="outer")
+
+df_cells.merge(df_intervals, how="")
+
+# Explicit merges with hard-coded keys
+merged_df = (
+    df_cells
+    .merge(df_intervals, on=["transect_num", "interval", "process_id"], how="outer")
+    .merge(df_layers, on=["transect_num", "interval", "process_id"], how="outer")
 )
-df_cells: pd.DataFrame = pd.concat(
-    echoview_nasc_to_df(valid_transect_num_df[valid_transect_num_df["file_type"] == "cells"])
+
+# Restore datatypes without loops using dict comprehension and masking
+integer_cols = {col: dtype for col, dtype in all_dtypes.items() 
+                if col in merged_df.columns and pd.api.types.is_integer_dtype(dtype)}
+
+non_integer_cols = {col: dtype for col, dtype in all_dtypes.items() 
+                    if col in merged_df.columns and not pd.api.types.is_integer_dtype(dtype)}
+
+
+# Validate inputs
+if not isinstance(dataframe, pd.DataFrame):
+    raise ValueError("dataframe must be a pandas DataFrame")
+if not isinstance(dataframes_to_add, list) or not all(
+    isinstance(df, pd.DataFrame) for df in dataframes_to_add
+):
+    raise ValueError("dataframes_to_add must be a list of pandas DataFrames")
+
+# Store original data types of columns in the parent dataframe
+original_dtypes = {id(dataframe): dataframe.dtypes}
+original_dtypes.update({id(df): df.dtypes for df in dataframes_to_add})
+
+# Merge all dictionaries into a single dictionary with unique keys
+unique_dtypes = {}
+for dtypes_dict in original_dtypes.values():
+    unique_dtypes.update(dtypes_dict.to_dict())
+
+# Ensure inner_on and outer_on are lists
+inner_on = inner_on if inner_on is not None else []
+outer_on = outer_on if outer_on is not None else []
+
+inner_on_lst = [inner_on] if isinstance(inner_on, str) else inner_on
+outer_on_lst = [outer_on] if isinstance(outer_on, str) else outer_on
+
+# If inner_on is None, find common columns across all dataframes_to_add
+if not inner_on:
+    common_columns_inner = set.intersection(*(set(df.columns) for df in dataframes_to_add))
+    inner_on_lst = list(common_columns_inner)
+
+# Merge dataframes within dataframes_to_add on inner_on
+if inner_on_lst:
+    merged_inner_frames = reduce(
+        lambda left, right: pd.merge(left, right, on=inner_on_lst, how=how), dataframes_to_add
+    )
+else:
+    merged_inner_frames = pd.DataFrame()
+
+# If outer_on is None, find common columns between dataframe and merged_inner_frames
+if not outer_on:
+    common_columns_outer = set(dataframe.columns).intersection(set(merged_inner_frames.columns))
+    outer_on_lst = list(common_columns_outer)
+
+# Merge dataframe with merged_inner_frames
+merged_frame = dataframe.merge(merged_inner_frames, on=outer_on_lst, how=how)
+
+# Perform merge with drop_na option
+if drop_na:
+    merged_frame = merged_frame.dropna()
+
+# Restore original dtypes of columns in merged_frame
+for col in merged_frame.columns:
+    dtype_to_restore = unique_dtypes.get(col)
+    if dtype_to_restore is not None:
+        if pd.api.types.is_integer_dtype(dtype_to_restore):
+            # Check if column contains NaN or inf values
+            if merged_frame[col].isnull().any() or not merged_frame[col].notna().all():
+                continue  # Skip conversion if NaN or inf present
+            merged_frame[col] = merged_frame[col].astype(dtype_to_restore)
+
+return merged_frame
+
+(
+    df_cells
+    .merge(df_intervals, on=["transect_num", "interval"], how="outer")
+    .merge(df_layers, on=["transect_num", "interval"], how="outer")
 )
-df_layers: pd.DataFrame = pd.concat(
-    echoview_nasc_to_df(valid_transect_num_df[valid_transect_num_df["file_type"] == "layers"])
-)
-
-clean_echoview_cells_df(df_cells, inplace=True)
-
-
-
 
 
 # # ONLY do data ingestion and organization, not writing out anything
@@ -268,8 +298,8 @@ clean_echoview_cells_df(df_cells, inplace=True)
 #     # TODO: what does update_transect_spacing do?
 #     df_intervals = update_transect_spacing(df_intervals, default_transect_spacing)
 
-#     # Explicitly merge the 3 dataframes
-#     # -- do not need group_merge as a separate method
+# Explicitly merge the 3 dataframes
+# -- do not need group_merge as a separate method
 #     df_merged: pd.DataFrame
 #     return df_merged
 

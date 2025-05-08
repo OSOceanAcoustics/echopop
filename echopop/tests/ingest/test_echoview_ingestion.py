@@ -9,7 +9,7 @@ import pandas as pd
 import numpy as np
 from typing import Dict, List
 
-from echopop.nwfsc_feat.ingest_nasc import update_transect_spacing, map_transect_num, impute_bad_coordinates, read_echoview_export, read_echoview_nasc, echoview_nasc_to_df, validate_transect_exports, clean_echoview_cells_df, sort_echoview_export_df
+from echopop.nwfsc_feat.ingest_nasc import merge_echoview_nasc, merge_exports, update_transect_spacing, map_transect_num, impute_bad_coordinates, read_echoview_export, read_echoview_nasc, echoview_nasc_to_df, validate_transect_exports, clean_echoview_cells_df, sort_echoview_export_df
 from echopop.core.echoview import ECHOVIEW_TO_ECHOPOP, ECHOVIEW_DATABASE_EXPORT_FILESET
 import echopop.tests.helpers.helpers_echoview_ingestion as helpers_echoview_ingestion
 
@@ -330,6 +330,142 @@ def test_update_transect_spacing_inplace(test_transect_data):
     # Check that original DataFrame was modified
     assert "transect_spacing" in test_transect_data.columns
     assert (test_transect_data["transect_spacing"] == default_spacing).any()
+
+####################################################################################################
+# Test Echoview export file merging
+# ---------------------------------
+def test_merge_exports_basic(sample_intervals_df, sample_cells_df, sample_layers_df):
+    """Test basic merge functionality."""
+    # Execute the merge
+    result = merge_exports(sample_intervals_df, sample_cells_df, sample_layers_df)
+    
+    # Check that the result is a DataFrame
+    assert isinstance(result, pd.DataFrame)
+    
+    # Check that the merged DataFrame has the expected columns
+    expected_columns = set(sample_intervals_df.columns) | set(sample_cells_df.columns) | set(sample_layers_df.columns)
+    assert set(result.columns) == expected_columns
+    
+    # Check row count (should be 3 after outer merge and dropna)
+    assert len(result) == 3
+
+def test_merge_exports_dtypes(sample_intervals_df, sample_cells_df, sample_layers_df):
+    """Test that datatypes are preserved in the merge."""
+    # Add different datatypes to test preservation
+    sample_cells_df['int_col'] = [1, 2, 3]
+    sample_intervals_df['float_col'] = [1.1, 2.2, 3.3]
+    sample_layers_df['str_col'] = ['a', 'b', 'c']
+    
+    # Execute the merge
+    result = merge_exports(sample_intervals_df, sample_cells_df, sample_layers_df)
+    
+    # Check dtype preservation
+    assert pd.api.types.is_integer_dtype(result['int_col'].dtype)
+    assert pd.api.types.is_float_dtype(result['float_col'].dtype)
+    assert pd.api.types.is_string_dtype(result['str_col'].dtype)
+
+def test_merge_exports_na_handling(sample_intervals_df, sample_cells_df, sample_layers_df):
+    """Test handling of NA values."""
+    # Add an extra row to intervals that won't match
+    extra_row = pd.DataFrame({
+        'transect_num': [3.0],
+        'interval': [4],
+        'process_id': [103],
+        'latitude': [34.8],
+        'longitude': [-121.4],
+        'vessel_log_start': [300.1]
+    })
+    sample_intervals_df = pd.concat([sample_intervals_df, extra_row])
+    
+    # Execute the merge
+    result = merge_exports(sample_intervals_df, sample_cells_df, sample_layers_df)
+    
+    # Check that the NA row was dropped
+    assert len(result) == 3
+    assert 3.0 not in result['transect_num'].values
+
+def test_merge_exports_empty(sample_intervals_df, sample_cells_df, sample_layers_df):
+    """Test merge with an empty DataFrame."""
+    # Create empty layers DataFrame
+    empty_layers_df = pd.DataFrame(columns=sample_layers_df.columns)
+    
+    # Execute the merge - should result in an empty DataFrame after dropna
+    result = merge_exports(sample_intervals_df, sample_cells_df, empty_layers_df)
+    
+    # Check that result is empty
+    assert len(result) == 0
+
+####################################################################################################
+# Test Export reading, cleaning, and merging
+# ------------------------------------------
+def test_merge_echoview_nasc_basic(mock_nasc_directory):
+    """Test basic functionality of merge_echoview_nasc."""
+    # Call the function
+    df_intervals, merged_df = merge_echoview_nasc(
+        mock_nasc_directory,
+        filename_transect_pattern=r"T(\d+)"
+    )
+    
+    # Basic validation of output types
+    assert isinstance(df_intervals, pd.DataFrame)
+    assert isinstance(merged_df, pd.DataFrame)
+    
+    # Check that df_intervals has the expected structure
+    assert "transect_num" in df_intervals.columns
+    assert "transect_spacing" in df_intervals.columns
+    assert "latitude" in df_intervals.columns
+    assert "longitude" in df_intervals.columns
+    
+    # Check that merged_df has columns from all input dataframes
+    assert "region_class" in merged_df.columns  # from cells
+    assert "region_name" in merged_df.columns   # from cells
+    assert "layer_name" in merged_df.columns if "layer_name" in merged_df.columns else "layer_depth_min" in merged_df.columns  # from layers
+    assert "transect_spacing" in merged_df.columns  # calculated field
+    
+    # Check that region_class values have been cleaned (lowercase, no quotes)
+    region_classes = merged_df["region_class"].unique()
+    assert all(not rc.startswith('"') and not rc.endswith('"') for rc in region_classes if isinstance(rc, str))
+    assert all(rc == rc.lower() for rc in region_classes if isinstance(rc, str))
+
+def test_merge_echoview_nasc_transect_numbers(mock_nasc_directory):
+    """Test that transect numbers are correctly identified and preserved."""
+    # Call the function
+    df_intervals, merged_df = merge_echoview_nasc(
+        mock_nasc_directory,
+        filename_transect_pattern=r"T(\d+)"
+    )
+    
+    # Check that both transects (1 and 2) are present
+    assert set(df_intervals["transect_num"].unique()) == {1.0, 2.0}
+    assert set(merged_df["transect_num"].unique()) == {1.0, 2.0}
+
+def test_merge_echoview_nasc_dataframe_structure(mock_nasc_directory):
+    """Test the structure and content of the returned DataFrames."""
+    # Call the function
+    df_intervals, merged_df = merge_echoview_nasc(
+        mock_nasc_directory,
+        filename_transect_pattern=r"T(\d+)"
+    )
+    
+    # Check that df_intervals has all rows from the input interval files
+    # In our mock data we have 2 transects with a total of 3 intervals
+    assert len(df_intervals) == 3
+    
+    # Check that merged_df has all the essential columns
+    essential_columns = [
+        "transect_num", "interval", "process_id",
+        "latitude", "longitude", "region_class", "nasc"
+    ]
+    for col in essential_columns:
+        assert col in merged_df.columns
+    
+    # Check that the data is properly sorted (e.g., by transect_num and interval)
+    assert df_intervals.equals(df_intervals.sort_values(["transect_num", "interval"]).reset_index(drop=True))
+    
+    # Check that non-string columns have appropriate data types
+    assert pd.api.types.is_numeric_dtype(df_intervals["transect_num"])
+    assert pd.api.types.is_numeric_dtype(df_intervals["interval"])
+    assert pd.api.types.is_numeric_dtype(merged_df["nasc"])
 
 ####################################################################################################
 # Test coordinate imputation
