@@ -1,60 +1,12 @@
 import pytest
 import tempfile
 import os
-from echopop.ingest import read_csv_file
-
-# import copy
-# from pathlib import Path
-
-# import numpy as np
-# import pytest
-# import yaml
-
-# from .. import Survey
-# from ..core_tmp import LAYER_NAME_MAP
-# from ..utils.load import load_configuration
-# from .conftest import assert_dictionary_structure_equal
+import pandas as pd
+from echopop.ingest import read_csv_file, read_xlsx_file
 
 # ==================================================================================================
-# FIXTURES
-# --------
-@pytest.fixture
-def sample_csv_content():
-    """
-    Provide sample CSV content with mixed-case column names for testing.
-    
-    Returns
-    -------
-        str: Sample CSV data with 3 columns and 2 rows
-    """
-    return "Column1,COLUMN2,CoLuMn3\n1,2,3\n4,5,6"
-
-@pytest.fixture
-def sample_csv_file(sample_csv_content):
-    """
-    Create a temporary CSV file for testing.
-    
-    Parameters
-    ----------
-        sample_csv_content: Content to write to the CSV file
-        
-    Yields
-    ------
-        str: Path to the temporary CSV file
-        
-    Notes
-    -----
-        File is automatically deleted after the test
-    """
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
-        f.write(sample_csv_content)  # Now properly indented under 'with'
-        filename = f.name
-    yield filename
-    os.unlink(filename)
-
-# ==================================================================================================
-# READ_CSV_FILE
-# -------------
+# Test *.csv reader
+# -----------------
 def test_read_csv_file(sample_csv_file):
     """
     Test that read_csv_file correctly reads a CSV and converts column names to lowercase.
@@ -88,6 +40,62 @@ def test_read_csv_file_nonexistent():
     """
     with pytest.raises(FileNotFoundError):
         read_csv_file("nonexistent_file.csv")
+
+# ==================================================================================================
+# Test *.xlsx reader
+# ------------------
+def test_read_xlsx_file_basic(sample_excel_file):
+    """Test basic functionality of reading an Excel file."""
+    # Call the function
+    result = read_xlsx_file(sample_excel_file, 'Sheet1')
+    
+    # Check that result is a DataFrame
+    assert isinstance(result, pd.DataFrame)
+    
+    # Check data content
+    assert len(result) == 3
+    assert result['column1'].tolist() == [1, 2, 3]
+    assert result['column2'].tolist() == ['a', 'b', 'c']
+    assert result['mixedcase_column'].tolist() == [1.1, 2.2, 3.3]
+
+def test_read_xlsx_file_column_names(sample_excel_file):
+    """Test that column names are converted to lowercase."""
+    # Call the function
+    result = read_xlsx_file(sample_excel_file, 'Sheet1')
+    
+    # Check that all column names are lowercase
+    assert all(col == col.lower() for col in result.columns)
+    
+    # Check specific column names
+    assert 'column1' in result.columns
+    assert 'column2' in result.columns
+    assert 'mixedcase_column' in result.columns
+
+def test_read_xlsx_file_different_sheet(sample_excel_file):
+    """Test reading a different sheet from the Excel file."""
+    # Call the function with Sheet2
+    result = read_xlsx_file(sample_excel_file, 'Sheet2')
+    
+    # Check data content from Sheet2
+    assert len(result) == 3
+    assert 'sheet2_col1' in result.columns
+    assert 'sheet2_col2' in result.columns
+    assert result['sheet2_col1'].tolist() == [4, 5, 6]
+    assert result['sheet2_col2'].tolist() == ['d', 'e', 'f']
+
+def test_read_xlsx_file_nonexistent_file():
+    """Test behavior when file doesn't exist."""
+    nonexistent_file = "nonexistent_file.xlsx"
+    
+    # Check that attempting to read a non-existent file raises FileNotFoundError
+    with pytest.raises(FileNotFoundError):
+        read_xlsx_file(nonexistent_file, 'Sheet1')
+
+def test_read_xlsx_file_nonexistent_sheet(sample_excel_file):
+    """Test behavior when sheet doesn't exist."""
+    # Check that attempting to read a non-existent sheet raises ValueError
+    with pytest.raises(ValueError):
+        read_xlsx_file(sample_excel_file, 'NonexistentSheet')
 
 # def test_load_configuration(test_path, tmp_path):
 

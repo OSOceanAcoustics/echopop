@@ -7,15 +7,13 @@ import pandas as pd
 import pytest
 from _pytest.assertion.util import assertrepr_compare
 from echopop.tests.fixtures.fixtures_echoview_ingestion import *
+from echopop.tests.fixtures.fixtures_data_loader import *
 # Set up path to the `test_data` folder
 from echopop import Survey
 
 # Set up path to the `test_data` folder
 HERE = Path(__file__).parent.absolute()
 TEST_DATA_ROOT = HERE.parent / "test_data"
-
-# Fixture plugins from sub-module
-# pytest_plugins = "tests.fixtures.fixtures_echoview_ingestion"
 
 # FIXTURES
 # ---- Test root/config/input file paths

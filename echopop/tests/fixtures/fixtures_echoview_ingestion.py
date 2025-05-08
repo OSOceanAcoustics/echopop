@@ -276,6 +276,47 @@ def mock_nasc_directory():
     shutil.rmtree(temp_dir)
 
 # ==================================================================================================
+# Read transect-region-haul key file
+# ----------------------------------
+@pytest.fixture
+def sample_mapping_data():
+    """Create sample data for transect-region-haul mapping."""
+    return pd.DataFrame({
+        'transect_num': [1, 2, 3, 4],
+        'region_id': ['A1', 'B2', 'C3', 'D4'],
+        'haul_num': [101, 102, 103, 104],
+        'extra_col': ['extra1', 'extra2', 'extra3', 'extra4']
+    })
+
+@pytest.fixture
+def csv_mapping_file(sample_mapping_data):
+    """Create a temporary CSV file with sample mapping data."""
+    with tempfile.NamedTemporaryFile(suffix='.csv', delete=False) as temp_file:
+        temp_filename = temp_file.name
+    
+    sample_mapping_data.to_csv(temp_filename, index=False)
+    
+    yield Path(temp_filename)
+    
+    # Clean up
+    os.unlink(temp_filename)
+
+@pytest.fixture
+def excel_mapping_file(sample_mapping_data):
+    """Create a temporary Excel file with sample mapping data."""
+    with tempfile.NamedTemporaryFile(suffix='.xlsx', delete=False) as temp_file:
+        temp_filename = temp_file.name
+    
+    # Create Excel file with the data
+    with pd.ExcelWriter(temp_filename) as writer:
+        sample_mapping_data.to_excel(writer, sheet_name='MappingSheet', index=False)
+    
+    yield Path(temp_filename)
+    
+    # Clean up
+    os.unlink(temp_filename)
+
+# ==================================================================================================
 # Reading Echoview data files
 # ---------------------------
 @pytest.fixture

@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 import re
 import functools
-from ..ingest import read_csv_file
+from ..ingest import read_csv_file, read_xlsx_file
 from ..core.echoview import ECHOVIEW_TO_ECHOPOP, ECHOVIEW_DATABASE_EXPORT_FILESET, ECHOVIEW_EXPORT_ROW_SORT
 
 def map_transect_num(
@@ -525,22 +525,53 @@ def merge_echoview_nasc(
     # Return two DataFrames: the complete intervals and the cells that will be integrated
     return df_intervals, merged_exports_df
     
+def read_transect_region_haul_key(
+    filename: Path,
+    sheetname: str,
+    rename_dict: Optional[Dict[str, str]] = None
+) -> pd.DataFrame:
+    """
+    Load the key that maps hauls to export regions to transect numbers.
+    
+    This function reads a CSV or Excel file containing the mapping between
+    transect numbers, region IDs, and haul numbers. It can handle both file
+    formats and allows column renaming.
+    
+    Parameters
+    ----------
+    filename : Path
+        Path to the CSV or Excel file containing the mapping data.
+    sheetname : str
+        Name of the sheet to read (only used for Excel files).
+    rename_dict : Optional[Dict[str, str]], default None
+        Dictionary for renaming columns, where keys are original column names
+        and values are new column names.
+        
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame containing only the columns "transect_num", "region_id", and "haul_num".
+        
+    Notes
+    -----
+    The input file must contain columns that can be mapped to "transect_num",
+    "region_id", and "haul_num", either directly or via the rename_dict.
+    """
 
-# def read_transect_region_file() -> pd.DataFrame:
-#     """
-#     Read external transect region definition file (if provided).
+    # Determine appropriate file reader
+    if filename.suffix == ".csv":
+        transect_region_df = read_csv_file(filename)
+    else:
+        transect_region_df = read_xlsx_file(filename, sheetname)
 
-#     Parameters
-#     ----------
-#     filepath : str or Path
-#         Path to the file defining transect-region mapping.
+    # Rename column names, if defined
+    if rename_dict:
+        transect_region_df.rename(columns=rename_dict, inplace=True)
 
-#     Returns
-#     -------
-#     pd.DataFrame
-#         DataFrame with region-classified transects.
-#     """
-#     pass
+    # TODO: Insert validation here
+
+    # Return a filtered DataFrame
+    return transect_region_df.filter(["transect_num", "region_id", "haul_num"])
 
 
 # # NOTE: can keep it but likely won't use in workflow,

@@ -8,12 +8,12 @@ def read_csv_file(filename: str) -> pd.DataFrame:
     Parameters
     ----------
     filename: str
-        Path to the *.csvfile
+        Path to the *.csvfile.
         
     Returns
     -------
     pandas.DataFrame
-        DataFrame with lowercase column names
+        DataFrame with lowercase column names.
     """
 
     # Read in the CSV file
@@ -22,7 +22,7 @@ def read_csv_file(filename: str) -> pd.DataFrame:
     # Set column names to lowercase
     export_file.columns = export_file.columns.str.lower()
 
-    # Export the resulting `pandas.DataFrame`
+    # Return the resulting `pandas.DataFrame`
     return export_file
 
 # TODO: Add validation settings as a kwarg
@@ -33,13 +33,21 @@ def read_xlsx_file(filename: str, sheetname: str) -> pd.DataFrame:
     Parameters
     ----------
     filename: str
-        Path to the *.xlsx file
+        Path to the *.xlsx file.
     sheetname: str
-        Name of the sheet to read
+        Name of the sheet to read.
         
     Returns
     -------
     pandas.DataFrame
         DataFrame with lowercase column names
     """    
-    pass
+
+    # Read in the XLSX file
+    export_file = pd.read_excel(filename, sheetname, index_col=None, header=0)
+
+    # Set column names to lowercase
+    export_file.columns = export_file.columns.str.lower()
+
+    # Return the resulting `pandas.DataFrame`
+    return export_file
