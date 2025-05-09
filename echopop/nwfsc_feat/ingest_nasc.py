@@ -574,6 +574,313 @@ def read_transect_region_haul_key(
     return transect_region_df.filter(["transect_num", "region_id", "haul_num"])
 
 
+def write_transect_region_key(
+    transect_region_haul_key_df: pd.DataFrame,
+    filename: str,
+    verbose: bool,
+) -> None: 
+    """
+    Write transect-region-haul key
+
+    Parameters
+    ----------
+    transect_region_haul_key_df : pd.DataFrame
+    filename: str
+    verbose : bool
+    """
+    pass
+
+def compile_patterns(pattern_dict: Dict[str, str]) -> Dict[str, str]:
+    """
+    Compile regex patterns from a pattern dictionary.
+    
+    Processes a dictionary of pattern specifications and returns a dictionary
+    of compiled regex patterns for efficient matching.
+    
+    Parameters
+    ----------
+    pattern_dict : Dict[str, str]
+        Dictionary where keys are component names and values are either:
+        - Dict mapping labels to regex pattern strings
+        - Set of regex pattern strings
+    
+    Returns
+    -------
+    Dict[str, str]
+        Dictionary where keys are component names and values are lists of
+        compiled regex patterns
+    
+    Notes
+    -----
+    Handles both dictionary-based patterns (where label is the key and pattern is the value)
+    and set-based patterns (where patterns are directly in a set).
+    """
+
+    # Initialize pattern dictionary
+    compiled_patterns = {}
+
+    # Iterate through the pattern dictionary to compile everything into regex 
+    for part_name, part_patterns in pattern_dict.items():
+        compiled_patterns[part_name] = []
+        
+        if isinstance(part_patterns, dict):
+            for label, pattern in part_patterns.items():
+                compiled_patterns[part_name].append(
+                    re.compile(pattern, re.IGNORECASE)
+                )
+        elif isinstance(part_patterns, set):
+            for pattern in part_patterns:
+                compiled_patterns[part_name].append(
+                    re.compile(pattern, re.IGNORECASE)
+                )
+
+    # Return the output dictionary
+    return compiled_patterns
+
+def extract_parts_and_labels(region_name: str, compiled_patterns: Dict, pattern_dict: Dict) -> Dict:
+    """
+    Extract components and their labels from a region name using compiled patterns.
+    
+    Analyzes a region name string to identify components based on the provided
+    patterns and returns a dictionary of extracted labels.
+    
+    Parameters
+    ----------
+    region_name : str
+        The region name string to analyze
+    compiled_patterns : Dict
+        Dictionary of compiled regex patterns from compile_patterns()
+    pattern_dict : Dict
+        Original pattern dictionary for label lookup
+    
+    Returns
+    -------
+    Dict
+        Dictionary mapping component names to their extracted labels
+    
+    Notes
+    -----
+    This function progressively processes the region name, removing matched
+    portions as it goes to avoid duplicate matches.
+    """
+
+    # Initialize the labels dictionary
+    labels = {}
+    remaining_name = region_name
+
+    for part_name, patterns in compiled_patterns.items():
+        for pattern in patterns:
+            match = pattern.search(remaining_name)
+            if match:
+                matched_value = match.group(0)
+                
+                if isinstance(pattern_dict[part_name], dict):
+                    label = next(
+                        (key for key, value in pattern_dict[part_name].items() 
+                         if value == pattern.pattern),
+                        matched_value
+                    )
+                elif isinstance(pattern_dict[part_name], set):
+                    label = matched_value
+                
+                labels[part_name] = label if label != "None" else matched_value
+                remaining_name = remaining_name.replace(matched_value, "", 1)
+                break
+            
+    # Return the labels
+    return labels
+
+def extract_region_components(df: pd.DataFrame, pattern_dict: Dict[str, str]) -> pd.DataFrame:
+    """
+    Extract and process components from region names using pattern dictionary.
+    
+    Takes a DataFrame with region names and extracts components based on
+    provided patterns, returning a new DataFrame with the extracted components.
+    
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame containing a 'region_name' column
+    pattern_dict : Dict
+        Dictionary of pattern specifications for component extraction
+    
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame indexed by region_name with columns for each extracted component
+        
+    Notes
+    -----
+    Only processes unique region names to improve efficiency. The resulting
+    DataFrame uses lowercase column names derived from the pattern dictionary keys.
+    """
+    # Initialize an input DataFrame
+    unique_regions = pd.DataFrame({"region_name": df["region_name"].unique()})
+
+    # Compile the regex patterns to parse export region names
+    regex_patterns = compile_patterns(pattern_dict)
+    
+    # Process each row to extract components
+    def process_row(row):
+        extracted = extract_parts_and_labels(row["region_name"], regex_patterns, pattern_dict)
+        result = {"region_name": row["region_name"]}
+        result.update({
+            part_name.lower(): extracted.get(part_name)
+            for part_name in pattern_dict.keys()
+        })
+        return pd.Series(result)
+    
+    # Apply to all rows and set index
+    result = unique_regions.apply(process_row, axis=1)
+    
+    # Return the indexed DataFrame
+    return result.set_index("region_name")
+
+def process_extracted_data(extracted_df: pd.DataFrame, 
+                           can_haul_offset: Optional[int] = None) -> pd.DataFrame:
+    """
+    Process extracted data with type conversions and Canadian haul offsets.
+    
+    Takes a DataFrame of extracted components and applies type conversions
+    and Canadian haul number offsets.
+    
+    Parameters
+    ----------
+    extracted_df : pd.DataFrame
+        DataFrame with extracted region components
+    can_haul_offset : Optional[int], default None
+        Offset to add to haul numbers for Canadian regions
+    
+    Returns
+    -------
+    pd.DataFrame
+        Processed DataFrame with correct data types and haul number offsets
+    
+    Notes
+    -----
+    Applies type conversions based on a predefined mapping and adds the
+    specified offset to haul numbers where country is 'CAN'.
+    """
+    # Define and apply type conversions
+    valid_dtypes = {
+        "region_class": str,
+        "haul_num": float,
+        "country": str,
+    }
+    
+    processed = extracted_df.apply(
+        lambda col: col.astype(valid_dtypes.get(col.name, type(col.iloc[0])))
+    )
+    
+    # Apply Canadian haul offset if applicable
+    if "country" in processed.columns:
+        processed.loc[processed["country"] == "CAN", "haul_num"] = (
+            processed.loc[processed["country"] == "CAN", "haul_num"] + can_haul_offset
+        )
+    
+    return processed
+
+def create_filtered_mapping(df: pd.DataFrame, filter_list: List[str]) -> pd.DataFrame:
+    """
+    Filter DataFrame by region class patterns and create a mapping.
+    
+    Filters the DataFrame to include only rows with region classes in the
+    provided filter list and creates a mapping of unique regions.
+    
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame with processed region data
+    filter_list : List[str]
+        List of region class names to include in the filter
+    
+    Returns
+    -------
+    pd.DataFrame
+        Filtered and grouped DataFrame containing unique region mappings
+        
+    Notes
+    -----
+    The returned DataFrame is grouped by transect_num, haul_num, and region_id,
+    with first instances of region_class and region_name, sorted by haul_num.
+    """
+    # Create regex pattern from filter list
+    region_pattern = rf"^(?:{'|'.join([re.escape(name.lower()) for name in filter_list])})"
+    
+    # Filter and process
+    filtered = df[df["region_class"].str.contains(region_pattern, case=False, regex=True)].copy()
+
+    # Change class names to lower case
+    filtered.loc[:, "region_class"] = filtered.loc[:, "region_class"].str.lower()
+    
+    # Create final mapping
+    return (
+        filtered.groupby(["transect_num", "haul_num", "region_id"])[
+            ["region_class", "region_name"]
+        ]
+        .first()
+        .reset_index()
+        .sort_values(["haul_num"])
+    )
+
+def process_region_names(df: pd.DataFrame, pattern_dict: Dict, 
+                        can_haul_offset: Optional[int] = None,
+                        filter_list: List[str] = None) -> pd.DataFrame:
+    """
+    Process region names in a DataFrame using regex patterns.
+    
+    Coordinates the extraction and processing of region name components
+    from a DataFrame according to specified patterns, with optional
+    filtering and mapping.
+    
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame containing a 'region_name' column to process
+    pattern_dict : Dict
+        Dictionary of pattern specifications for component extraction:
+        - Keys are component names (e.g., 'REGION_CLASS', 'HAUL_NUM', 'COUNTRY')
+        - Values are either:
+          * Dict mapping labels to regex pattern strings
+          * Set of regex pattern strings
+    can_haul_offset : Optional[int], Default None
+        Offset to add to haul numbers for Canadian regions
+    
+    Returns
+    -------
+    pd.DataFrame
+        If filter_list is provided: a mapping of unique regions filtered by region class
+        Otherwise: the original DataFrame with extracted components added
+    
+    Example
+    -------
+    >>> pattern_dict = {
+    ...     "REGION_CLASS": {
+    ...         "Hake": "^(?:h(?![a-z]|1a)|hake(?![_]))",
+    ...         "Hake Mix": "^(?:hm(?![a-z]|1a)|hake_mix(?![_]))"
+    ...     },
+    ...     "HAUL_NUM": {"[0-9]+"},
+    ...     "COUNTRY": {"CAN": "^[cC]", "US": "^[uU]"}
+    ... }
+    >>> process_region_names(df, pattern_dict, filter_list=["Hake", "Hake Mix"])
+    """
+    # Step 1: Extract components from region names
+    extracted_regions = extract_region_components(df, pattern_dict)
+    
+    # Step 2: Process the extracted data
+    processed_regions = process_extracted_data(extracted_regions, can_haul_offset)
+    
+    # Step 3: Map to original data
+    # ---- Index DataFrame based on region names
+    mapped_df = df.set_index("region_name")
+    # ---- Concatenate the processed region metadata
+    mapped_df.loc[:, processed_regions.columns] = processed_regions
+    # ---- Reset the index
+    mapped_df.reset_index(inplace=True)
+    
+    # Return the mapped DataFrame
+    return mapped_df
+
 # # NOTE: can keep it but likely won't use in workflow,
 # #       since years with this info the files are already made
 # # same as the current
@@ -597,23 +904,6 @@ def read_transect_region_haul_key(
 #     """
 #     pass
 
-
-# # TODO: consider renaming this based on what the operation
-# def load_transect_region_key(file_path: Union[str, Path]) -> pd.DataFrame:
-#     """
-#     Load mapping between transects and region classes.
-
-#     Parameters
-#     ----------
-#     file_path : str or Path
-#         path to the transect_region_key
-
-#     Returns
-#     -------
-#     pd.DataFrame
-#         Mapping of transects to region classes.
-#     """
-#     pass
 
 
 # def compute_depth_layer_height(

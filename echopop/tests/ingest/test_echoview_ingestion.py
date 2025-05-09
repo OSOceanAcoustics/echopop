@@ -9,7 +9,7 @@ import pandas as pd
 import numpy as np
 from typing import Dict, List
 
-from echopop.nwfsc_feat.ingest_nasc import read_transect_region_haul_key, merge_echoview_nasc, merge_exports, update_transect_spacing, map_transect_num, impute_bad_coordinates, read_echoview_export, read_echoview_nasc, echoview_nasc_to_df, validate_transect_exports, clean_echoview_cells_df, sort_echoview_export_df
+from echopop.nwfsc_feat.ingest_nasc import process_region_names, read_transect_region_haul_key, merge_echoview_nasc, merge_exports, update_transect_spacing, map_transect_num, impute_bad_coordinates, read_echoview_export, read_echoview_nasc, echoview_nasc_to_df, validate_transect_exports, clean_echoview_cells_df, sort_echoview_export_df
 from echopop.core.echoview import ECHOVIEW_TO_ECHOPOP, ECHOVIEW_DATABASE_EXPORT_FILESET
 import echopop.tests.helpers.helpers_echoview_ingestion as helpers_echoview_ingestion
 
@@ -878,3 +878,43 @@ def test_read_echoview_nasc_empty_file(empty_echoview_data):
         assert len(result) == 0
     finally:
         os.unlink(temp_csv)
+
+def test_process_region_names():
+    """Test the process_region_names function without filtering."""
+    # Setup test data
+    df = pd.DataFrame({
+        "region_name": ["hake54C", "H18C", "hm2C"],
+        "region_id": ["R1", "R2", "R3"],
+        "transect_num": [1.0, 2.0, 3.0]
+    })
+    
+    pattern_dict = {
+        "REGION_CLASS": {
+            "Hake": "^(?:h(?![a-z]|1a)|hake(?![_]))",
+            "Hake Mix": "^(?:hm(?![a-z]|1a)|hake_mix(?![_]))"
+        },
+        "HAUL_NUM": {
+            "[0-9]+",
+        },
+        "COUNTRY": {
+            "CAN": "^[cC]",
+            "US": "^[uU]",
+        }
+    }
+    
+    # Call function
+    result = process_region_names(df, pattern_dict, can_haul_offset=200)
+    
+    # Assertions
+    assert len(result) == 3
+    assert "region_class" in result.columns
+    assert "haul_num" in result.columns
+    assert "country" in result.columns
+    assert "region_id" in result.columns  # Original column preserved
+    assert "transect_num" in result.columns  # Original column preserved
+    
+    # Test Canadian offset
+    canadian_rows = result[result["country"] == "CAN"]
+    if not canadian_rows.empty:
+        original_haul = int(canadian_rows["region_name"].iloc[0].split("C")[0].replace("hake", "").replace("H", ""))
+        assert canadian_rows["haul_num"].iloc[0] == original_haul + 200
