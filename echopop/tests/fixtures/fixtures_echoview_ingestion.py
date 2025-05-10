@@ -444,3 +444,71 @@ def bad_coords_start():
         'lat_s': [999.0, 999.0, 45.2, 45.3, 45.4],
         'lon_s': [-125.1, -125.2, -125.3, -125.4, -125.5]
     })
+
+# ==================================================================================================
+# Export layer intervals from Echoview exports
+# --------------------------------------------
+@pytest.fixture
+def sample_transect_data():
+    """Create sample transect data for testing."""
+    return pd.DataFrame({
+        "transect_num": [1, 1, 2, 2],
+        "interval": [1, 2, 1, 2],
+        "max_depth": [100, 120, 90, 110],
+        "layer_depth_min": [10, 20, 15, 25],
+        "layer_depth_max": [50, 60, 45, 55],
+    })
+
+# ==================================================================================================
+# Transect-region-haul key map generator
+# --------------------------------------
+@pytest.fixture
+def sample_region_data():
+    """Create sample region data for testing."""
+    return pd.DataFrame({
+        "transect_num": [1, 1, 2, 2, 3],
+        "haul_num": [1, 1, 2, 2, 3],
+        "region_id": [1, 2, 1, 2, 1],
+        "region_class": ["Age-1 Hake", "Hake", "Age-1 Hake Mix", "Age-1 Hake", "Hake Mix"],
+        "region_name": ["R1", "R2", "R3", "R4", "R5"]
+    })
+
+# ==================================================================================================
+# NASC consolidation
+# ------------------
+@pytest.fixture
+def sample_merged_data():
+    """Create sample merged Echoview data."""
+    return pd.DataFrame({
+        "transect_num": [1, 1, 2, 2],
+        "interval": [1, 2, 1, 2],
+        "region_id": [1, 2, 1, 2],
+        "region_class": ["Hake", "Age-1 Hake", "Hake Mix", "Age-1 Hake"],
+        "nasc": [100.0, 150.0, 200.0, 250.0],
+        "layer_depth_min": [10, 20, 15, 25],
+        "layer_depth_max": [50, 60, 45, 55],
+        "max_depth": [100, 120, 90, 110],
+    })
+
+@pytest.fixture
+def sample_interval_data():
+    """Create sample interval data."""
+    return pd.DataFrame({
+        "transect_num": [1, 1, 2, 2],
+        "interval": [1, 2, 1, 2],
+        "distance_s": [0, 1, 0, 1],
+        "distance_e": [1, 2, 1, 2],
+        "latitude": [45.0, 45.1, 45.2, 45.3],
+        "longitude": [-124.0, -124.1, -124.2, -124.3],
+        "transect_spacing": [1.0, 1.0, 1.0, 1.0],
+    })
+
+@pytest.fixture
+def sample_haul_key():
+    """Create sample haul key data."""
+    return pd.DataFrame({
+        "transect_num": [1, 1, 2, 2],
+        "interval": [1, 2, 1, 2],
+        "region_id": [1, 2, 1, 2],
+        "haul_num": [10, 11, 12, 13],
+    })

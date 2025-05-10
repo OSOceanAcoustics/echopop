@@ -780,7 +780,75 @@ def process_extracted_data(extracted_df: pd.DataFrame,
     
     return processed
 
-def create_filtered_mapping(df: pd.DataFrame, filter_list: List[str]) -> pd.DataFrame:
+def compute_region_layer_depths(
+    transect_data: pd.DataFrame,
+) -> pd.DataFrame:
+    """
+    Calculate summary statistics for acoustic transect layers.
+
+    Parameters
+    ----------
+    transect_data : pd.DataFrame
+        DataFrame containing transect measurements. Must include the following columns:
+        - max_depth: Maximum depth measurements
+        - layer_depth_min: Minimum depth of the layer
+        - layer_depth_max: Maximum depth of the layer
+        - All columns specified in index_variable
+        
+    Returns
+    -------
+    pd.DataFrame
+        A DataFrame containing the following columns:
+        - All columns specified in index_variable
+        - bottom_depth : Maximum depth for each group
+        - layer_mean_depth : Average depth of the layer
+        - layer_height : Height of the layer (max - min depth)
+
+    Raises
+    ------
+    TypeError
+        If index_variable is neither a string nor a list
+    ValueError
+        If any required columns are missing from transect_data
+
+    """
+    # Convert string input to list
+    # if isinstance(index_variable, str):
+    #     index_variable = [index_variable]
+    # elif not isinstance(index_variable, list):
+    #     raise TypeError(
+    #         f"index_variable must be either a str or list, got {type(index_variable)}"
+    #     )
+    index_variable = ["transect_num", "interval"]
+    # Validate required columns
+    required_columns = {"max_depth", "layer_depth_min", "layer_depth_max"}.union(index_variable)
+    missing_columns = required_columns - set(transect_data.columns)
+    if missing_columns:
+        raise ValueError(
+            f"Missing required columns in transect_data: {sorted(missing_columns)}"
+        )
+
+    # Calculate summary statistics
+    grouped = transect_data.groupby(index_variable)
+    
+    # Create summary DataFrame
+    summary = pd.DataFrame()
+    
+    # Calculate bottom depth
+    summary["bottom_depth"] = grouped["max_depth"].max()
+    
+    # Calculate layer statistics
+    layer_stats = grouped.agg({
+        "layer_depth_min": "min",
+        "layer_depth_max": "max"
+    })
+    
+    summary["layer_mean_depth"] = (layer_stats["layer_depth_min"] + layer_stats["layer_depth_max"]) / 2
+    summary["layer_height"] = layer_stats["layer_depth_max"] - layer_stats["layer_depth_min"]
+
+    return summary.reset_index()
+
+def generate_transect_region_haul_key(df: pd.DataFrame, filter_list: List[str]) -> pd.DataFrame:
     """
     Filter DataFrame by region class patterns and create a mapping.
     
@@ -804,18 +872,22 @@ def create_filtered_mapping(df: pd.DataFrame, filter_list: List[str]) -> pd.Data
     The returned DataFrame is grouped by transect_num, haul_num, and region_id,
     with first instances of region_class and region_name, sorted by haul_num.
     """
-    # Create regex pattern from filter list
-    region_pattern = rf"^(?:{'|'.join([re.escape(name.lower()) for name in filter_list])})"
     
-    # Filter and process
-    filtered = df[df["region_class"].str.contains(region_pattern, case=False, regex=True)].copy()
+    # Convert filter list to lowercase for case-insensitive comparison
+    filter_set = {name.lower() for name in filter_list}
 
-    # Change class names to lower case
-    filtered.loc[:, "region_class"] = filtered.loc[:, "region_class"].str.lower()
+    # Create df copy
+    df_copy = df.copy()
+
+    # Change class names to lowercase
+    df_copy.loc[:, "region_class"] = df_copy.loc[:, "region_class"].str.lower()
+
+    # Filter
+    df_filtered = df_copy[df_copy["region_class"].str.lower().isin(filter_set)].copy()
     
     # Create final mapping
     return (
-        filtered.groupby(["transect_num", "haul_num", "region_id"])[
+        df_filtered.groupby(["transect_num", "haul_num", "region_id"])[
             ["region_class", "region_name"]
         ]
         .first()
@@ -881,74 +953,137 @@ def process_region_names(df: pd.DataFrame, pattern_dict: Dict,
     # Return the mapped DataFrame
     return mapped_df
 
-# # NOTE: can keep it but likely won't use in workflow,
-# #       since years with this info the files are already made
-# # same as the current
-# def construct_transect_region_key(
-#     df_merged: pd.DataFrame, region_class_mapping: dict
-# ) -> pd.DataFrame:
-#     """
-#     Build key assigning transects to region classes using mappings.
+def consolidate_echvoiew_nasc(
+    df_merged: pd.DataFrame,
+    interval_df: pd.DataFrame,
+    region_class_names: List[str],
+    impute_region_ids: bool = True,
+    transect_region_haul_key_df: Optional[pd.DataFrame] = None,
+) -> pd.DataFrame:
+    """
+    Consolidate Echoview NASC data with interval and region information.
 
-#     Parameters
-#     ----------
-#     df_merged : pd.DataFrame
-#         Output of merge_echoview_nasc.
-#     region_class_mapping : dict
-#         Dict from config defining region name -> region class mapping.
+    Parameters
+    ----------
+    df_merged : pd.DataFrame
+        DataFrame containing merged Echoview data with columns:
+        - region_class : Region classification names
+        - region_id : Region identifier
+        - nasc : Nautical area scattering coefficient
+        - transect_num : Transect number
+        - interval : Interval identifier
+    interval_df : pd.DataFrame
+        DataFrame containing interval information with columns:
+        - interval : Interval identifier
+        - transect_num : Transect number
+        - distance_s : Starting distance
+        - distance_e : Ending distance
+        - latitude : Latitude coordinates
+        - longitude : Longitude coordinates
+        - transect_spacing : Spacing between transects
+    region_class_names : List[str]
+        List of region class names to include in the analysis
+    impute_region_ids : bool, optional
+        Whether to impute region IDs for overlapping regions, by default True
+    transect_region_haul_key_df : pd.DataFrame, optional
+        DataFrame containing haul information to merge, by default None
 
-#     Returns
-#     -------
-#     pd.DataFrame
-#         Mapping of transects to region classes.
-#     """
-#     pass
+    Returns
+    -------
+    pd.DataFrame
+        Consolidated DataFrame containing:
+        - transect_num : Transect number
+        - region_id : Region identifier (999 for NaN)
+        - distance_s : Starting distance
+        - distance_e : Ending distance
+        - latitude : Latitude coordinates
+        - longitude : Longitude coordinates
+        - transect_spacing : Spacing between transects
+        - layer_mean_depth : Mean layer depth
+        - layer_height : Layer height
+        - bottom_depth : Bottom depth
+        - nasc : Summed nautical area scattering coefficient
+        - haul_num : Haul number (0 for NaN)
 
+    Notes
+    -----
+    All numeric columns (nasc, layer_mean_depth, layer_height, bottom_depth) 
+    are filled with 0 for NaN values.
+    """
+    
+    # Create DataFrame copy
+    df_copy = df_merged.copy()
+    # ---- Change region class names to lowercase
+    df_copy.loc[:, "region_class"] = df_copy.loc[:, "region_class"].str.lower()
 
+    # Create set of region class names
+    region_class_name_set = {name.lower() for name in region_class_names}
 
-# def compute_depth_layer_height(
-#     df_cells: pd.DataFrame, region_names: Optional[List[str]] = None
-# ) -> pd.DataFrame:
-#     """
-#     Compute mean depth and layer height from NASC cell data with selected regions.
+    # Filter the NASC values for only the target region class names
+    transect_regions = df_copy[
+        df_copy["region_class"].str.lower().isin(region_class_name_set)
+    ]
+    # ---- Further sorting
+    transect_regions = transect_regions.sort_values(
+        ["transect_num", "interval", "region_id"], ignore_index=True
+    )    
 
-#     Parameters
-#     ----------
-#     df_cells : pd.DataFrame
-#         Cell-level NASC data.
-#     region_names : list of str, optional
-#         Regions to filter before computing mean depth and layer height.
+    # Impute region IDs for cases where multiple regions overlap within the same interval
+    if impute_region_ids:
+        transect_regions.loc[:, "region_id"] = transect_regions.groupby(
+            ["interval", "transect_num"]
+        )["region_id"].transform("first")
 
-#     Returns
-#     -------
-#     pd.DataFrame
-#         Dataframe with mean depth, height per region or transect.
-#     """
-#     pass
+    # Get the layer depth means and intervals
+    transect_layer_summary = compute_region_layer_depths(transect_regions)
 
+    # Vertically sum backscatter
+    nasc_intervals = (
+        transect_regions.groupby(["transect_num", "interval", "region_id"])["nasc"]
+        .sum()
+        .reset_index()
+    )    
 
-# # Last section of the current ingest_echoview_exports()
-# # TODO: in the current code you created interval_copy from the updated df_interval, can you not use df_merged to get the same info?
-# def consolidate_echoview_nasc(
-#     df_merged: pd.DataFrame,
-#     region_names: List[str],
-#     survey_identifier: str,
-# ) -> pd.DataFrame:
-#     """
-#     Consolidate NASC data for selected regions into final output.
+    # Create copy of interval export template
+    interval_copy = (
+        interval_df.copy().set_index(["interval", "transect_num"]).sort_index()
+    )
 
-#     Parameters
-#     ----------
-#     df_merged : pd.DataFrame
-#         Output from merge_echoview_nasc.
-#     region_names : list of str
-#         List of region names to include.
+    # Merge haul information into the integrated NASC DataFrame
+    nasc_hauls = nasc_intervals.merge(
+        transect_region_haul_key_df
+    ).set_index(["interval", "transect_num"])
 
-#     Returns
-#     -------
-#     pd.DataFrame
-#         Final NASC dataframe (filtered and cleaned).
-#     """
-#     # survey_identifier controls the `filter_transect_intervals` component
+    # Append the haul numbers and integrated NASC values to the interval template
+    interval_copy.loc[:, nasc_hauls.columns] = nasc_hauls
+    # ---- Reset the index
+    interval_copy.reset_index(inplace=True)
 
-#     pass
+    # Combine with the transect layer summaries
+    full_interval_strata_df = interval_copy.merge(transect_layer_summary, how="left")
+    # ---- Sort
+    full_interval_strata_df = full_interval_strata_df.sort_values(
+        ["transect_num", "distance_s", "distance_e"]
+    )
+    # ---- Fill NaN region id column with 999
+    full_interval_strata_df["region_id"] = (
+        full_interval_strata_df["region_id"].fillna(999).astype(int)
+    )
+    # ---- Fill haul with 0's
+    full_interval_strata_df["haul_num"] = (
+        full_interval_strata_df["haul_num"].fillna(0)
+    )
+    # ---- Fill float/continuous columns
+    full_interval_strata_df[["nasc", "layer_mean_depth", "layer_height", "bottom_depth"]] = (
+        full_interval_strata_df[["nasc", "layer_mean_depth", "layer_height", "bottom_depth"]]
+        .fillna(0)
+        .astype(float)
+    )
+    # ---- Drop unused columns
+    output_nasc = full_interval_strata_df.filter(
+        ["transect_num", "region_id", "distance_s", "distance_e", "latitude", "longitude", 
+        "transect_spacing", "layer_mean_depth", "layer_height", "bottom_depth", "nasc", "haul_num"]
+    )
+
+    # Return the consdolidated NASC file
+    return output_nasc

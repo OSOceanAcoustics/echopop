@@ -9,7 +9,7 @@ import re
 
 from echopop.kriging import Kriging
 from echopop.nwfsc_feat import get_proportions, ingest_nasc, load_data
-from echopop.nwfsc_feat.ingest_nasc import read_echoview_nasc, map_transect_num, validate_transect_exports, clean_echoview_cells_df
+from echopop.nwfsc_feat.ingest_nasc import process_region_names, merge_echoview_nasc, read_transect_region_haul_key, read_echoview_nasc, map_transect_num, validate_transect_exports, clean_echoview_cells_df
 from echopop.ingest.common import read_csv_file
 from echopop.core.echopop_columns import ECHOVIEW_TO_ECHOPOP
 import functools
@@ -34,7 +34,9 @@ CAN_haul_offset = 200
 region_name_pattern = "{REGION_CLASS}{HAUL_NUM}{COUNTRY}"
 region_name_expr_dict = {
     "REGION_CLASS": {
-        "Age-1 Hake": "^(?:h1a(?![a-z]|1a))",
+        # "Age-1 Hake": "^(?:h1a(?![a-z]|1a))",
+        # "Age-1 Hake": "^(?:h1a$)",
+        "Age-1 Hake": "^(?:h1a(?![a-z]|m))",
         "Age-1 Hake Mix": "^(?:h1am(?![a-z]|1a))",
         "Hake": "^(?:h(?![a-z]|1a)|hake(?![_]))",
         "Hake Mix": "^(?:hm(?![a-z]|1a)|hake_mix(?![_]))"
@@ -66,11 +68,56 @@ transect_region_haul_key_no_age1 = read_transect_region_haul_key(
     transect_region_file_rename
 )
 
-process_region_names(
+exports_with_regions_df = process_region_names(
     exports_df, 
     region_name_expr_dict, 
     CAN_haul_offset, 
 )
+
+# When there is no transect-region-haul key file 
+transect_region_haul_key_read_in = generate_transect_region_haul_key(
+    exports_with_regions_df, 
+    filter_list=filter_list
+)
+
+from echopop.survey import Survey
+from echopop.extensions import generate_reports
+import pandas as pd
+from pathlib import Path
+import glob
+import json
+import os
+import sys
+from echopop.utils.load_nasc import export_transect_layers, filter_export_regions, consolidate_exports, write_transect_region_key, validate_export_directories, get_transect_numbers, load_export_regions, get_haul_strata_key, construct_transect_region_key
+SURVEY_YEAR = 2019
+
+# Initialization configuration
+init_config_path = f"C:/Users/Brandyn/Documents/GitHub/echopop/config_files/initialization_\
+config_{SURVEY_YEAR}.yml"
+
+# Filepath/dataset configuration
+survey_year_config_path = f"C:/Users/Brandyn/Documents/GitHub/echopop/config_files\
+/survey_year_{SURVEY_YEAR}_config.yml"
+
+# Load json settings
+# ---- File open
+with open(Path(os.getcwd() + "\\echopop\\compatibility_parameters_test.json").as_posix()) as f:
+    json_dict = json.load(f)
+# ---- Load
+parameters = json_dict[f"{SURVEY_YEAR}"]
+survey = Survey(init_config_path, survey_year_config_path)
+self = survey
+configuration_dict = self.config
+key = "all_ages"
+values = region_names[key]
+
+df_merged = exports_df.copy()
+interval_template = interval_template.copy()
+region_class_names = ["Age-1 Hake", "Age-1 Hake Mix", "Hake", "Hake Mix"]
+impute_regions = True
+transect_region_haul_key_df = transect_region_haul_key_read_in.copy()
+interval_df = interval_template.copy()
+
 
 
 pattern_dict = region_name_expr_dict
@@ -136,3 +183,22 @@ unique_regions_map = (
     .reset_index()
     .sort_values(["haul_num"])
 )
+
+    # Create regex pattern from filter list
+    region_pattern = rf"^(?:{'|'.join([re.escape(name.lower()) for name in filter_list])})"
+    
+    # Filter and process
+    filtered = df[df["region_class"].str.contains(region_pattern, case=False, regex=True)].copy()
+
+    # Change class names to lower case
+    filtered.loc[:, "region_class"] = filtered.loc[:, "region_class"].str.lower()
+    
+    # Create final mapping
+    return (
+        filtered.groupby(["transect_num", "haul_num", "region_id"])[
+            ["region_class", "region_name"]
+        ]
+        .first()
+        .reset_index()
+        .sort_values(["haul_num"])
+    )

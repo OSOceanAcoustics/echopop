@@ -9,7 +9,7 @@ import pandas as pd
 import numpy as np
 from typing import Dict, List
 
-from echopop.nwfsc_feat.ingest_nasc import process_region_names, read_transect_region_haul_key, merge_echoview_nasc, merge_exports, update_transect_spacing, map_transect_num, impute_bad_coordinates, read_echoview_export, read_echoview_nasc, echoview_nasc_to_df, validate_transect_exports, clean_echoview_cells_df, sort_echoview_export_df
+from echopop.nwfsc_feat.ingest_nasc import consolidate_echvoiew_nasc, generate_transect_region_haul_key, compute_region_layer_depths, process_region_names, read_transect_region_haul_key, merge_echoview_nasc, merge_exports, update_transect_spacing, map_transect_num, impute_bad_coordinates, read_echoview_export, read_echoview_nasc, echoview_nasc_to_df, validate_transect_exports, clean_echoview_cells_df, sort_echoview_export_df
 from echopop.core.echoview import ECHOVIEW_TO_ECHOPOP, ECHOVIEW_DATABASE_EXPORT_FILESET
 import echopop.tests.helpers.helpers_echoview_ingestion as helpers_echoview_ingestion
 
@@ -918,3 +918,191 @@ def test_process_region_names():
     if not canadian_rows.empty:
         original_haul = int(canadian_rows["region_name"].iloc[0].split("C")[0].replace("hake", "").replace("H", ""))
         assert canadian_rows["haul_num"].iloc[0] == original_haul + 200
+
+def test_export_transect_layers_basic(sample_transect_data):
+    """Test basic functionality."""
+    result = compute_region_layer_depths(sample_transect_data)
+    
+    assert isinstance(result, pd.DataFrame)
+    assert set(result.columns) == {"transect_num", "interval", "bottom_depth", 
+                                 "layer_mean_depth", "layer_height"}
+    assert len(result) == 4
+
+def test_export_transect_layers_calculations(sample_transect_data):
+    """Test if calculations are correct."""
+    result = compute_region_layer_depths(sample_transect_data)
+    
+    # Test for transect 1, interval 1
+    row = result.loc[(result.transect_num == 1) & (result.interval == 1)].iloc[0]
+    assert row["bottom_depth"] == 100
+    assert row["layer_mean_depth"] == 30  # (10 + 50) / 2
+    assert row["layer_height"] == 40  # 50 - 10
+
+def test_export_transect_layers_missing_columns():
+    """Test error handling for missing columns."""
+    df = pd.DataFrame({
+        "transect_num": [1, 2],
+        "interval": [1, 1],
+        "max_depth": [100, 90],
+    })
+    
+    with pytest.raises(ValueError, match="Missing required columns in transect_data"):
+        compute_region_layer_depths(df)
+        
+def test_export_transect_layers_missing_index_columns():
+    """Test error handling for missing required index columns."""
+    df = pd.DataFrame({
+        "max_depth": [100, 90],
+        "layer_depth_min": [10, 15],
+        "layer_depth_max": [50, 45],
+    })
+    
+    with pytest.raises(ValueError, match="Missing required columns in transect_data"):
+        compute_region_layer_depths(df)
+
+def test_export_transect_layers_output_structure(sample_transect_data):
+    """Test output DataFrame structure and sorting."""
+    result = compute_region_layer_depths(sample_transect_data)
+    
+    # Check column order
+    expected_columns = ["transect_num", "interval", "bottom_depth", 
+                       "layer_mean_depth", "layer_height"]
+    assert list(result.columns) == expected_columns
+    
+    # Check if data is sorted by transect_num and interval
+    assert result["transect_num"].is_monotonic_increasing
+    assert result.groupby("transect_num")["interval"].is_monotonic_increasing.all()
+
+def test_generate_transect_region_haul_key_basic(sample_region_data):
+    """Test basic functionality with single filter."""
+    result = generate_transect_region_haul_key(sample_region_data, ["Age-1 Hake"])
+    
+    assert isinstance(result, pd.DataFrame)
+    assert len(result) == 2  # Should only match exact "Age-1 Hake" entries
+    assert list(result.columns) == ["transect_num", "haul_num", "region_id", "region_class", "region_name"]
+    assert all(result["region_class"].str.lower() == "age-1 hake")
+
+def test_generate_transect_region_haul_key_multiple_filters(sample_region_data):
+    """Test with multiple filters."""
+    result = generate_transect_region_haul_key(sample_region_data, ["Age-1 Hake", "Hake"])
+    
+    assert len(result) == 3  # Should match both "Age-1 Hake" and "Hake" entries
+    assert set(result["region_class"].str.lower()) == {"age-1 hake", "hake"}
+
+def test_generate_transect_region_haul_key_case_insensitive(sample_region_data):
+    """Test case-insensitive matching."""
+    result = generate_transect_region_haul_key(sample_region_data, ["age-1 HAKE"])
+    
+    assert len(result) == 2
+    assert all(result["region_class"].str.lower() == "age-1 hake")
+
+def test_generate_transect_region_haul_key_no_matches(sample_region_data):
+    """Test behavior when no matches are found."""
+    result = generate_transect_region_haul_key(sample_region_data, ["NonExistent"])
+    
+    assert len(result) == 0
+    assert isinstance(result, pd.DataFrame)
+    assert list(result.columns) == ["transect_num", "haul_num", "region_id", "region_class", "region_name"]
+
+def test_generate_transect_region_haul_key_sorting(sample_region_data):
+    """Test that results are properly sorted by haul_num."""
+    result = generate_transect_region_haul_key(sample_region_data, ["Age-1 Hake", "Hake"])
+    
+    assert result["haul_num"].is_monotonic_increasing
+
+def test_generate_transect_region_haul_key_empty_filter(sample_region_data):
+    """Test behavior with empty filter list."""
+    result = generate_transect_region_haul_key(sample_region_data, [])
+    
+    assert len(result) == 0
+    assert isinstance(result, pd.DataFrame)
+
+def test_generate_transect_region_haul_key_exact_matching(sample_region_data):
+    """Test that only exact matches are included."""
+    result = generate_transect_region_haul_key(sample_region_data, ["Age-1 Hake"])
+    
+    # Should not include "Age-1 Hake Mix"
+    assert not any("mix" in cls.lower() for cls in result["region_class"])
+    assert all(result["region_class"].str.lower() == "age-1 hake")
+
+def test_generate_transect_region_haul_key_grouping(sample_region_data):
+    """Test that grouping works correctly."""
+    # Add duplicate entries with different region names
+    dup_data = sample_region_data.copy()
+    dup_data.loc[len(dup_data)] = [1, 1, 1, "Age-1 Hake", "R1_duplicate"]
+    
+    result = generate_transect_region_haul_key(dup_data, ["Age-1 Hake"])
+    
+    # Should only keep first instance of each group
+    assert len(result) == 2
+    assert result.groupby(["transect_num", "haul_num", "region_id"]).size().max() == 1
+
+def test_consolidate_echvoiew_nasc_basic(sample_merged_data, sample_interval_data, sample_haul_key):
+    """Test basic functionality with all data provided."""
+    result = consolidate_echvoiew_nasc(
+        sample_merged_data,
+        sample_interval_data,
+        ["Hake", "Age-1 Hake"],
+        transect_region_haul_key_df=sample_haul_key
+    )
+    
+    assert isinstance(result, pd.DataFrame)
+    assert set(result.columns) == {
+        "transect_num", "region_id", "distance_s", "distance_e", 
+        "latitude", "longitude", "transect_spacing", "layer_mean_depth",
+        "layer_height", "bottom_depth", "nasc", "haul_num"
+    }    
+    assert len(result) == len(sample_interval_data)
+
+def test_consolidate_echvoiew_nasc_imputation(sample_merged_data, sample_interval_data, sample_haul_key):
+    """Test region ID imputation."""
+    # Add overlapping regions
+    overlap_data = sample_merged_data.copy()
+    overlap_data.loc[len(overlap_data)] = [1, 1, 3, "Hake", 300.0, 10, 50, 100]
+    
+    result = consolidate_echvoiew_nasc(
+        overlap_data,
+        sample_interval_data,
+        ["Hake"],
+        impute_region_ids=True,
+        transect_region_haul_key_df=sample_haul_key
+    )
+    
+    # Check if overlapping regions have same region_id
+    assert len(result.groupby(["transect_num"])["region_id"].nunique()) == 2
+
+def test_consolidate_echvoiew_nasc_filtering(sample_merged_data, sample_interval_data, sample_haul_key):
+    """Test region class filtering."""
+    result = consolidate_echvoiew_nasc(
+        sample_merged_data,
+        sample_interval_data,
+        ["Hake"],  # Only include Hake
+        transect_region_haul_key_df=sample_haul_key
+    )
+    
+    # Check if only Hake regions are included
+    assert all(result.loc[result["region_id"] != 999, "nasc"] > 0)
+
+def test_consolidate_echvoiew_nasc_case_insensitive(sample_merged_data, sample_interval_data, sample_haul_key):
+    """Test case-insensitive region class matching."""
+    result = consolidate_echvoiew_nasc(
+        sample_merged_data,
+        sample_interval_data,
+        ["hake", "AGE-1 HAKE"],
+        transect_region_haul_key_df=sample_haul_key
+    )
+    
+    # Should match same regions regardless of case
+    assert len(result.loc[result["region_id"] != 999]) > 0
+
+def test_consolidate_echvoiew_nasc_sorting(sample_merged_data, sample_interval_data, sample_haul_key):
+    """Test output sorting."""
+    result = consolidate_echvoiew_nasc(
+        sample_merged_data,
+        sample_interval_data,
+        ["Hake", "Age-1 Hake"],
+        transect_region_haul_key_df=sample_haul_key
+    )
+    
+    assert result["transect_num"].is_monotonic_increasing
+    assert result.groupby("transect_num")["distance_s"].is_monotonic_increasing.all()
