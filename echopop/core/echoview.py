@@ -12,9 +12,9 @@ Key Mappings
 - 'lon_s' → 'longitude' : longitude of first ping in the interval/domains (DD.ddddd format)
 - 'prc_nasc' → 'nasc' : region-integrated NASC (m^2 nmi^-2)
 - 'time_s' → 'ping_time' : time of first ping in the interval/domain (HH:mm:ss.SSSS format)
-- 'vl_end' → 'vessel_log_end' : vessel log distance of the last ping in the interval/domain 
+- 'vl_end' → 'distance_e' : vessel log distance of the last ping in the interval/domain 
 (nmi)
-- 'vl_start' → 'date_of_birth' : vessel log distance of the first ping in the interval/domain 
+- 'vl_start' → 'disance_s' : vessel log distance of the first ping in the interval/domain 
 (nmi)
 """
 ECHOVIEW_TO_ECHOPOP = {
@@ -24,8 +24,8 @@ ECHOVIEW_TO_ECHOPOP = {
     "lon_s": "longitude",
     "prc_nasc": "nasc",
     "time_s": "ping_time",
-    "vl_end": "vessel_log_end",
-    "vl_start": "vessel_log_start",
+    "vl_end": "distance_e",
+    "vl_start": "distance_s",
 }
 
 """

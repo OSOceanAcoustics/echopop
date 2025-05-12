@@ -1,28 +1,15 @@
 from pathlib import Path
-from typing import Dict, Generator, List, Optional, Set, Tuple, Union
-
-import numpy as np
-import pandas as pd
-import xarray as xr
-import glob
-import re
-
-from echopop.kriging import Kriging
-from echopop.nwfsc_feat import get_proportions, ingest_nasc, load_data
-from echopop.nwfsc_feat.ingest_nasc import process_region_names, merge_echoview_nasc, read_transect_region_haul_key, read_echoview_nasc, map_transect_num, validate_transect_exports, clean_echoview_cells_df
-from echopop.ingest.common import read_csv_file
-from echopop.core.echopop_columns import ECHOVIEW_TO_ECHOPOP
-import functools
+from echopop.nwfsc_feat.ingest_nasc import consolidate_echvoiew_nasc, generate_transect_region_haul_key, process_region_names, merge_echoview_nasc, read_transect_region_haul_key, read_echoview_nasc, map_transect_num, validate_transect_exports, clean_echoview_cells_df
 # ===========================================
 # Organize NASC file
-nasc_path: Path = Path("C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_2019/raw_nasc")
+nasc_path: Path = Path("C:/Users/Brandyn Lucca/Documents/Data/echopop_2019/Raw_NASC")
 filename_transect_pattern: str = r"T(\d+)"
 default_transect_spacing = 10. # nmi
 default_transect_spacing_latitude = 60. # deg N
 
-transect_region_filepath_all_ages: Path = Path("C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_2019/Stratification/US_CAN_2019_transect_region_haul_age1+ auto_final.xlsx")
+transect_region_filepath_all_ages: Path = Path("C:/Users/Brandyn Lucca/Documents/Data/echopop_2019/Stratification/US&CAN_2019_transect_region_haul_age1+ auto_final.xlsx")
 transect_region_sheetname_all_ages: str = "Sheet1"
-transect_region_filepath_no_age1: Path = Path("C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_2019/Stratification/US_CAN_2019_transect_region_haul_age2+ auto_20191205.xlsx")
+transect_region_filepath_no_age1: Path = Path("C:/Users/Brandyn Lucca/Documents/Data/echopop_2019/Stratification/US&CAN_2019_transect_region_haul_age2+ auto_20191205.xlsx")
 transect_region_sheetname_no_age1: str = "Sheet1"
 transect_region_file_rename: dict = {
     "tranect": "transect_num",
@@ -31,7 +18,7 @@ transect_region_file_rename: dict = {
 }
 
 CAN_haul_offset = 200
-region_name_pattern = "{REGION_CLASS}{HAUL_NUM}{COUNTRY}"
+# region_name_pattern = "{REGION_CLASS}{HAUL_NUM}{COUNTRY}"
 region_name_expr_dict = {
     "REGION_CLASS": {
         # "Age-1 Hake": "^(?:h1a(?![a-z]|1a))",
@@ -49,7 +36,8 @@ region_name_expr_dict = {
         "US": "^[uU]",
     }
 }
-
+filter_list_no_age1 = ["Hake", "Hake Mix"]
+filter_list_all_ages = ["Age-1 Hake", "Age-1", "Hake", "Hake Mix"]
 
 interval_template, exports_df = merge_echoview_nasc(nasc_path, 
                                                     filename_transect_pattern, 
@@ -68,6 +56,7 @@ transect_region_haul_key_no_age1 = read_transect_region_haul_key(
     transect_region_file_rename
 )
 
+# TODO: Why include ALL of the empty rows
 exports_with_regions_df = process_region_names(
     exports_df, 
     region_name_expr_dict, 
@@ -75,130 +64,105 @@ exports_with_regions_df = process_region_names(
 )
 
 # When there is no transect-region-haul key file 
-transect_region_haul_key_read_in = generate_transect_region_haul_key(
+transect_region_haul_key_no_age1 = generate_transect_region_haul_key(
     exports_with_regions_df, 
-    filter_list=filter_list
+    filter_list=filter_list_no_age1
 )
 
-from echopop.survey import Survey
-from echopop.extensions import generate_reports
-import pandas as pd
-from pathlib import Path
-import glob
-import json
-import os
-import sys
-from echopop.utils.load_nasc import export_transect_layers, filter_export_regions, consolidate_exports, write_transect_region_key, validate_export_directories, get_transect_numbers, load_export_regions, get_haul_strata_key, construct_transect_region_key
-SURVEY_YEAR = 2019
+transect_region_haul_key_all_ages = generate_transect_region_haul_key(
+    exports_with_regions_df, 
+    filter_list=filter_list_all_ages
+)
 
-# Initialization configuration
-init_config_path = f"C:/Users/Brandyn/Documents/GitHub/echopop/config_files/initialization_\
-config_{SURVEY_YEAR}.yml"
+# Consolidate
+df_nasc_no_age1 = consolidate_echvoiew_nasc(
+    df_merged=exports_with_regions_df,
+    interval_df=interval_template,
+    region_class_names=filter_list_no_age1,
+    impute_region_ids=True,
+    transect_region_haul_key_df=transect_region_haul_key_no_age1,
+)
 
-# Filepath/dataset configuration
-survey_year_config_path = f"C:/Users/Brandyn/Documents/GitHub/echopop/config_files\
-/survey_year_{SURVEY_YEAR}_config.yml"
+df_nasc_all_ages = consolidate_echvoiew_nasc(
+    df_merged=exports_with_regions_df,
+    interval_df=interval_template,
+    region_class_names=filter_list_all_ages,
+    impute_region_ids=True,
+    transect_region_haul_key_df=transect_region_haul_key_all_ages,
+)
 
-# Load json settings
-# ---- File open
-with open(Path(os.getcwd() + "\\echopop\\compatibility_parameters_test.json").as_posix()) as f:
-    json_dict = json.load(f)
-# ---- Load
-parameters = json_dict[f"{SURVEY_YEAR}"]
-survey = Survey(init_config_path, survey_year_config_path)
-self = survey
-configuration_dict = self.config
-key = "all_ages"
-values = region_names[key]
+# TODO: 
+# --- Transect interval filtering 
+# --- Stratify (KS)
+# --- Reading in pre-consolidated files
+pre_consolidated_export_all_ages = Path("C:/Users/Brandyn Lucca/Documents/Data/echopop_2019/Exports/US_CAN_detailsa_2019_table1y+_ALL_final - updated.xlsx")
+file_sheetname = "Sheet1"
+pre_consolidated_export_all_ages.exists()
 
-df_merged = exports_df.copy()
-interval_template = interval_template.copy()
-region_class_names = ["Age-1 Hake", "Age-1 Hake Mix", "Hake", "Hake Mix"]
-impute_regions = True
-transect_region_haul_key_df = transect_region_haul_key_read_in.copy()
-interval_df = interval_template.copy()
-
-
-
-pattern_dict = region_name_expr_dict
-df = exports_df.copy()
-# Get unique region names
-unique_regions = pd.DataFrame({"region_name": df["region_name"].unique()})
-
-# Compile patterns directly from the provided dictionary
-regex_patterns = compile_patterns(pattern_dict)
-
-
-# Apply valid types
-valid_dtypes = {
-    "region_class": str,
-    "haul_num": float,
-    "country": str,
+# --- Column mapping [optional input; otherwise need to manually change column names -- NOT built-in]
+FEAT_TO_ECHOPOP_COLUMNS = {
+    "transect": "transect_num",
+    "region id": "region_id",
+    # "vl start": "distance_s",
+    # "vl end": "distance_e",
+    "vessel_log_start": "distance_s",
+    "vessel_log_end": "distance_e",
+    "spacing": "transect_spacing",
+    "layer mean depth": "layer_mean_depth",
+    "layer height": "layer_height",
+    "bottom depth": "bottom_depth",
+    "assigned haul": "haul_num"
 }
-# ---- Replace missing `haul_num` with 0
-# if "haul_num" in unique_regions_coded:
-#     unique_regions_coded["haul_num"] = unique_regions_coded["haul_num"]
-# ---- Apply conversion
-unique_regions_filtered = unique_regions_coded.apply(
-    lambda col: col.astype(valid_dtypes.get(col.name, type(col.iloc[0])))
-)
-# ---- Apply haul number offset if so defined
-if "country" in unique_regions_coded:
-    unique_regions_filtered.loc[unique_regions_filtered["country"] == "CAN", "haul_num"] = (
-        unique_regions_filtered.loc[unique_regions_filtered["country"] == "CAN", "haul_num"]
-        + CAN_haul_offset
-    )
 
-# Map the regions-hauls
-# ---- Index the data based on region name
-transect_data_filtered = exports_df.set_index("region_name")
-# ---- Map the values
-transect_data_filtered.loc[:, unique_regions_filtered.columns] = unique_regions_filtered
-# ---- Reset the index
-transect_data_filtered.reset_index(inplace=True)
-# ---- Drop NA's
-# transect_data_filtered_test.dropna(subset=["region_class"], inplace=True)
+# 
+import pandas as pd
+from typing import Optional
+from echopop.nwfsc_feat.ingest_nasc import read_echoview_export, impute_bad_coordinates
 
-filter_list = ["Age-1 Hake", "Age-1 Hake Mix", "Hake", "Hake Mix"]
-# filter_list = ["Hake", "Hake Mix"]
-# ---- Format region pattern
-region_pattern = (
-    rf"^(?:{'|'.join([re.escape(name.lower()) for name in filter_list])})"
-)
-# ---- Drop the NA's
-# ---- Filter the dataframe
-transect_region = transect_data_filtered[
-    transect_data_filtered["region_class"].str.contains(
-        region_pattern, case=False, regex=True
-    )
-]
-# ---- Ensure that `region_class` is lowercase
-transect_region.loc[:, "region_class"] = transect_region.loc[:, "region_class"].str.lower()
-# ---- Find the unique keys
-unique_regions_map = (
-    transect_region.groupby(["transect_num", "haul_num", "region_id"])[
-        ["region_class", "region_name"]
-    ]
-    .first()
-    .reset_index()
-    .sort_values(["haul_num"])
-)
+# INPUTS
+filename = pre_consolidated_export_all_ages
+sheetname = file_sheetname
+column_name_map: Optional[dict] = FEAT_TO_ECHOPOP_COLUMNS
+validator = None
+# -----
 
-    # Create regex pattern from filter list
-    region_pattern = rf"^(?:{'|'.join([re.escape(name.lower()) for name in filter_list])})"
+def read_xlsx_file(filename, sheetname, column_name_map=None, validator=None):
+    """
+    Read data from an Excel file and perform basic cleaning operations.
     
-    # Filter and process
-    filtered = df[df["region_class"].str.contains(region_pattern, case=False, regex=True)].copy()
-
-    # Change class names to lower case
-    filtered.loc[:, "region_class"] = filtered.loc[:, "region_class"].str.lower()
+    Parameters
+    ----------
+    filename : str or Path
+        Path to the Excel file
+    sheetname : str
+        Name of the sheet to read
+    column_name_map : dict, optional
+        Dictionary mapping original column names to new column names
+    validator : callable, optional
+        Function to validate the dataframe
     
-    # Create final mapping
-    return (
-        filtered.groupby(["transect_num", "haul_num", "region_id"])[
-            ["region_class", "region_name"]
-        ]
-        .first()
-        .reset_index()
-        .sort_values(["haul_num"])
-    )
+    Returns
+    -------
+    pandas.DataFrame
+        Cleaned DataFrame with renamed columns and imputed coordinates
+    """
+    # Read in the defined file
+    consolidated_file = pd.read_excel(filename, sheet_name=sheetname, index_col=None, header=0) 
+
+    # Set column names to lowercase
+    consolidated_file.columns = consolidated_file.columns.str.lower()
+
+    # Rename columns
+    if column_name_map:
+        consolidated_file.rename(columns=column_name_map, inplace=True)
+
+    # Fix latitude and longitude
+    # ---- Latitude
+    if "latitude" in consolidated_file.columns:
+        impute_bad_coordinates(consolidated_file, "latitude")
+    # ---- Longitude
+    if "longitude" in consolidated_file.columns:
+        impute_bad_coordinates(consolidated_file, "longitude")
+
+    # Return the cleaned DataFrame
+    return consolidated_file

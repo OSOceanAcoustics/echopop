@@ -37,7 +37,7 @@ def map_transect_num(
         for path in list(paths)
         if compiled_pattern.search(str(path))
     ]
-    
+
     # Convert to DataFrame
     return pd.DataFrame(records)
 
