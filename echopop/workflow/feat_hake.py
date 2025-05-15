@@ -8,41 +8,132 @@ import xarray as xr
 from echopop.kriging import Kriging
 from echopop.nwfsc_feat import get_proportions, ingest_nasc, load_data
 
-# ===========================================
+# ==================================================================================================
 # Organize NASC file
-nasc_path = "SOME_PATH"
-nasc_filename_pattern = "SOME_PATTERN"
-region_class_filepath = "SOME_PATH"  # pattern-label mapping under transect_region_mapping/parts
-survey_identifier = "YEAR_MONTH"
+# ------------------
+nasc_path: Path = Path("Path/to/file")
+filename_transect_pattern: str = r"T(\d+)"
+default_transect_spacing = 10. # nmi
+default_transect_spacing_latitude = 60. # deg N
 
-df_merged = ingest_nasc.merge_echoview_nasc(nasc_path, nasc_filename_pattern)
+interval_template, exports_df = ingest_nasc.merge_echoview_nasc(nasc_path, 
+                                                                filename_transect_pattern, 
+                                                                default_transect_spacing, 
+                                                                default_transect_spacing_latitude)
 
-# Optional: only use for years needing this as external resources
-df_transect_region_key = ingest_nasc.load_transect_region_key(region_class_filepath)
+# ==================================================================================================
+# Read in transect-region-haul keys
+# ---------------------------------
+transect_region_filepath_all_ages: Path = Path("Path/to/file")
+transect_region_sheetname_all_ages: str = "Sheet1"
+transect_region_filepath_no_age1: Path = Path("Path/to/file")
+transect_region_sheetname_no_age1: str = "Sheet1"
+transect_region_file_rename: dict = {
+    "tranect": "transect_num",
+    "region id": "region_id",
+    "trawl #": "haul_num",
+}
+CAN_haul_offset = 200
+region_name_expr_dict = {
+    "REGION_CLASS": {
+        # "Age-1 Hake": "^(?:h1a(?![a-z]|1a))",
+        # "Age-1 Hake": "^(?:h1a$)",
+        "Age-1 Hake": "^(?:h1a(?![a-z]|m))",
+        "Age-1 Hake Mix": "^(?:h1am(?![a-z]|1a))",
+        "Hake": "^(?:h(?![a-z]|1a)|hake(?![_]))",
+        "Hake Mix": "^(?:hm(?![a-z]|1a)|hake_mix(?![_]))"
+    },
+    "HAUL_NUM": {
+        "[0-9]+",
+    },
+    "COUNTRY": {
+        "CAN": "^[cC]",
+        "US": "^[uU]",
+    }
+}
+filter_list_no_age1 = ["Hake", "Hake Mix"]
+filter_list_all_ages = ["Age-1 Hake", "Age-1", "Hake", "Hake Mix"]
 
-# Use df.to_csv to save df_transect_region_key, in place of the specialized transect_region_key file
-# Keep read_transect_region_file and make sure its output is the same as construct_transect_region_key
-
-
-# Age-1+
-df_nasc_all_ages = ingest_nasc.consolidate_echoview_nasc(
-    df_merged,
-    region_names=["Age-1 Hake", "Age-1 Hake Mix", "Hake", "Hake Mix"],
-    survey_identifier=survey_identifier,
+# Read in the key files
+transect_region_haul_key_all_ages = ingest_nasc.read_transect_region_haul_key(
+    transect_region_filepath_all_ages,
+    transect_region_sheetname_all_ages,
+    transect_region_file_rename
 )
 
-# Age-2+ (no age 1)
-df_nasc_no_age1 = ingest_nasc.consolidate_echoview_nasc(
-    df_merged,
-    region_names=["Hake", "Hake Mix"],
-    survey_identifier=survey_identifier,
+transect_region_haul_key_no_age1 = ingest_nasc.read_transect_region_haul_key(
+    transect_region_filepath_no_age1,
+    transect_region_sheetname_no_age1,
+    transect_region_file_rename
 )
 
-# Use df.to_csv to save df_nasc_all_ages and df_nasc_no_age1 if needed
+# Process the region name codes to define the region classes
+exports_with_regions_df = ingest_nasc.process_region_names(
+    exports_df, 
+    region_name_expr_dict, 
+    CAN_haul_offset, 
+)
 
-# Use regular pd.read_csv to read df_nasc_*, effectively break up the current load_data()
-# -- there is no need to have a one-size-fits-all load_data function
-# -- just read them in without validation is fine: these are all files under our control
+# OPTIONAL: generate transect-region-haul key from the ingested Echoview exports
+transect_region_haul_key_no_age1 = ingest_nasc.generate_transect_region_haul_key(
+    exports_with_regions_df, 
+    filter_list=filter_list_no_age1
+)
+
+transect_region_haul_key_all_ages = ingest_nasc.generate_transect_region_haul_key(
+    exports_with_regions_df, 
+    filter_list=filter_list_all_ages
+)
+
+# ==================================================================================================
+# Consolidate the Echvoiew NASC export files
+# ------------------------------------------
+df_nasc_no_age1 = ingest_nasc.consolidate_echvoiew_nasc(
+    df_merged=exports_with_regions_df,
+    interval_df=interval_template,
+    region_class_names=filter_list_no_age1,
+    impute_region_ids=True,
+    transect_region_haul_key_df=transect_region_haul_key_no_age1,
+)
+
+df_nasc_all_ages = ingest_nasc.consolidate_echvoiew_nasc(
+    df_merged=exports_with_regions_df,
+    interval_df=interval_template,
+    region_class_names=filter_list_all_ages,
+    impute_region_ids=True,
+    transect_region_haul_key_df=transect_region_haul_key_all_ages,
+)
+
+# OPTIONAL: Read in an already consolidated NASC data file
+nasc_filename: Path = Path("Path/to/file")
+nasc_sheet = "Sheet1"
+FEAT_TO_ECHOPOP_COLUMNS = {
+    "transect": "transect_num",
+    "region id": "region_id",
+    "vessel_log_start": "distance_s",
+    "vessel_log_end": "distance_e",
+    "spacing": "transect_spacing",
+    "layer mean depth": "layer_mean_depth",
+    "layer height": "layer_height",
+    "bottom depth": "bottom_depth",
+    "assigned haul": "haul_num"
+}
+
+nasc_all_ages_df = ingest_nasc.read_nasc_file(filename=nasc_filename, 
+                                              sheetname=nasc_sheet,
+                                              column_name_map=FEAT_TO_ECHOPOP_COLUMNS)
+
+# OPTIONAL: Filter the transect data based on transect boundary files
+transect_filter_filename: Path = Path("Path/to/file")
+transect_filter_sheet = "Sheet1"
+subset_filter: str = "survey == 201003"
+
+nasc_all_ages_cleaned_df = ingest_nasc.filter_transect_intervals(
+    nasc_df=nasc_all_ages_df,
+    transect_filter_df=transect_filter_filename,
+    subset_filter=subset_filter,
+    transect_filter_sheet=transect_filter_sheet
+)
 
 
 # ===========================================

@@ -1150,8 +1150,9 @@ def consolidate_echvoiew_nasc(
 
 def filter_transect_intervals(
     nasc_df: pd.DataFrame,
-    transect_filter_df: pd.DataFrame,
-    subset_filter: Optional[str] = None
+    transect_filter_df: Union[pd.DataFrame, Path],
+    subset_filter: Optional[str] = None,
+    transect_filter_sheet: Optional[str] = None,
 ) -> pd.DataFrame:
     """
     Filter transect intervals based on log start and end values.
@@ -1160,11 +1161,13 @@ def filter_transect_intervals(
     ----------
     nasc_df : pandas.DataFrame
         DataFrame containing NASC data with columns 'transect_num', 'distance_s', and 'distance_e'
-    transect_filter_df : pandas.DataFrame
+    transect_filter_df : Union[pandas.DataFrame, Path]
         DataFrame containing transect filter data with columns 'transect_num', 'log_start', 
-        and 'log_end'
+        and 'log_end', or a filepath that reads in a file.
     subset_filter : str, optional
         Query string to filter the transect_filter_df (e.g., "region_id == 'A'")
+    transect_filter_sheet : str, optional
+        Optional sheetname if a filename is input
     
     Returns
     -------
@@ -1189,8 +1192,14 @@ def filter_transect_intervals(
     """
     # Make copies to avoid modifying the inputs
     nasc_df = nasc_df.copy()
-    transect_filter_df = transect_filter_df.copy()
-    
+
+    # Read in transect filter file
+    if isinstance(transect_filter_df, Path):
+        # Read in the defined file
+        transect_filter_df = pd.read_excel(transect_filter_df, 
+                                           sheet_name=transect_filter_sheet, 
+                                           index_col=None, header=0) 
+
     # Lowercase column names in transect filter DataFrame
     transect_filter_df.columns = transect_filter_df.columns.str.lower()
     

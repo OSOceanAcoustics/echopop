@@ -16,7 +16,6 @@ transect_region_file_rename: dict = {
     "region id": "region_id",
     "trawl #": "haul_num",
 }
-
 CAN_haul_offset = 200
 # region_name_pattern = "{REGION_CLASS}{HAUL_NUM}{COUNTRY}"
 region_name_expr_dict = {
