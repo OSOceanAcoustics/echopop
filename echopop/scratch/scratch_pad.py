@@ -126,9 +126,9 @@ column_name_map: Optional[dict] = FEAT_TO_ECHOPOP_COLUMNS
 validator = None
 # -----
 
-def read_xlsx_file(filename, sheetname, column_name_map=None, validator=None):
+def read_nasc_file(filename, sheetname, column_name_map=None, validator=None):
     """
-    Read data from an Excel file and perform basic cleaning operations.
+    Read NASC data from a consolidated XLSX file
     
     Parameters
     ----------
@@ -140,6 +140,14 @@ def read_xlsx_file(filename, sheetname, column_name_map=None, validator=None):
         Dictionary mapping original column names to new column names
     validator : callable, optional
         Function to validate the dataframe
+
+    Examples
+    --------
+    >>> column_map = {"transect": "transect_num", "region id": "region_id"}
+    >>> df = read_nasc_file("data.xlsx", "Sheet1", column_map)
+    
+    >>> # Without column mapping
+    >>> df = read_nasc_file("data.xlsx", "Sheet1")
     
     Returns
     -------
@@ -166,3 +174,7 @@ def read_xlsx_file(filename, sheetname, column_name_map=None, validator=None):
 
     # Return the cleaned DataFrame
     return consolidated_file
+
+pre_consolidated_export_all_ages = Path("C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_2019/Exports/US_CAN_detailsa_2019_table1y+_ALL_final - updated.xlsx")
+file_sheetname = "Sheet1"
+read_nasc_file(pre_consolidated_export_all_ages, file_sheetname, column_name_map)

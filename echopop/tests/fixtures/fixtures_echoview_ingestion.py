@@ -460,6 +460,26 @@ def sample_transect_data():
     })
 
 # ==================================================================================================
+# Consolidated XLSX file
+# ----------------------
+@pytest.fixture
+def sample_excel_path(tmp_path):
+    """Create a simple Excel file for testing"""
+    df = pd.DataFrame({
+        'transect': [1, 2, 3],
+        'region id': ['A', 'B', 'C'],
+        'latitude': [45.0, 46.0, 47.0],
+        'longitude': [-125.0, -126.0, -127.0]
+    })
+    
+    # Create file in the pytest-provided temp directory
+    file_path = tmp_path / "test_data.xlsx"
+    df.to_excel(file_path, sheet_name="Sheet1", index=False)
+    
+    # Return path as string
+    return str(file_path)
+    
+# ==================================================================================================
 # Transect-region-haul key map generator
 # --------------------------------------
 @pytest.fixture

@@ -79,6 +79,56 @@ def validate_transect_exports(transect_files_df: pd.DataFrame) -> pd.DataFrame:
         
     return filtered_df
 
+def read_nasc_file(filename, sheetname, column_name_map=None, validator=None):
+    """
+    Read NASC data from a consolidated XLSX file
+    
+    Parameters
+    ----------
+    filename : str or Path
+        Path to the Excel file
+    sheetname : str
+        Name of the sheet to read
+    column_name_map : dict, optional
+        Dictionary mapping original column names to new column names
+    validator : callable, optional
+        Function to validate the dataframe
+
+    Examples
+    --------
+    >>> column_map = {"transect": "transect_num", "region id": "region_id"}
+    >>> df = read_nasc_file("data.xlsx", "Sheet1", column_map)
+    
+    >>> # Without column mapping
+    >>> df = read_nasc_file("data.xlsx", "Sheet1")
+    
+    Returns
+    -------
+    pandas.DataFrame
+        Cleaned DataFrame with renamed columns and imputed coordinates
+    """
+    # Read in the defined file
+    consolidated_file = pd.read_excel(filename, sheet_name=sheetname, index_col=None, header=0) 
+
+    # Set column names to lowercase
+    consolidated_file.columns = consolidated_file.columns.str.lower()
+
+    # Rename columns
+    if column_name_map:
+        consolidated_file.rename(columns=column_name_map, inplace=True)
+
+    # Fix latitude and longitude
+    # ---- Latitude
+    if "latitude" in consolidated_file.columns:
+        impute_bad_coordinates(consolidated_file, "latitude")
+    # ---- Longitude
+    if "longitude" in consolidated_file.columns:
+        impute_bad_coordinates(consolidated_file, "longitude")
+
+    # Return the cleaned DataFrame
+    return consolidated_file
+
+
 def clean_echoview_cells_df(
     cells_df: pd.DataFrame,
     inplace: bool = False
@@ -213,7 +263,11 @@ def read_echoview_export(filename: Path,
     """
 
     # Read the CSV file
-    df = read_csv_file(filename)
+    # df = read_csv_file(filename)
+    df = pd.read_csv(filename, index_col=None, header=0, skipinitialspace=True)
+
+    # Set column names to lowercase
+    df.columns = df.columns.str.lower()
 
     # Rename columns used by Echopop
     df.rename(columns=ECHOVIEW_TO_ECHOPOP, inplace=True)
@@ -560,9 +614,15 @@ def read_transect_region_haul_key(
 
     # Determine appropriate file reader
     if filename.suffix == ".csv":
-        transect_region_df = read_csv_file(filename)
+        # transect_region_df = read_csv_file(filename)
+        transect_region_df = pd.read_csv(filename, index_col=None, header=0, skipinitialspace=True)
+
     else:
-        transect_region_df = read_xlsx_file(filename, sheetname)
+        # transect_region_df = read_xlsx_file(filename, sheetname)
+        transect_region_df = pd.read_excel(filename, sheetname, index_col=None, header=0)
+
+    # Lowercase
+    transect_region_df.columns = transect_region_df.columns.str.lower()
 
     # Rename column names, if defined
     if rename_dict:
@@ -1087,3 +1147,94 @@ def consolidate_echvoiew_nasc(
 
     # Return the consdolidated NASC file
     return output_nasc
+
+def filter_transect_intervals(
+    nasc_df: pd.DataFrame,
+    transect_filter_df: pd.DataFrame,
+    subset_filter: Optional[str] = None
+) -> pd.DataFrame:
+    """
+    Filter transect intervals based on log start and end values.
+    
+    Parameters
+    ----------
+    nasc_df : pandas.DataFrame
+        DataFrame containing NASC data with columns 'transect_num', 'distance_s', and 'distance_e'
+    transect_filter_df : pandas.DataFrame
+        DataFrame containing transect filter data with columns 'transect_num', 'log_start', 
+        and 'log_end'
+    subset_filter : str, optional
+        Query string to filter the transect_filter_df (e.g., "region_id == 'A'")
+    
+    Returns
+    -------
+    pandas.DataFrame
+        Filtered DataFrame containing only rows that overlap with the specified transect intervals
+        
+    Examples
+    --------
+    >>> nasc_data = pd.DataFrame({
+    ...     'transect_num': [1, 1, 2, 2],
+    ...     'distance_s': [0, 1, 0, 1],
+    ...     'distance_e': [1, 2, 1, 2],
+    ...     'nasc': [10, 20, 30, 40]
+    ... })
+    >>> filter_data = pd.DataFrame({
+    ...     'transect_num': [1, 2],
+    ...     'log_start': [0.5, 0.5],
+    ...     'log_end': [1.5, 1.5],
+    ...     'region_id': ['A', 'B']
+    ... })
+    >>> result = filter_transect_intervals(nasc_data, filter_data)
+    """
+    # Make copies to avoid modifying the inputs
+    nasc_df = nasc_df.copy()
+    transect_filter_df = transect_filter_df.copy()
+    
+    # Lowercase column names in transect filter DataFrame
+    transect_filter_df.columns = transect_filter_df.columns.str.lower()
+    
+    # Rename 'transect' to 'transect_num' if it exists
+    if 'transect' in transect_filter_df.columns and 'transect_num' not in transect_filter_df.columns:
+        transect_filter_df.rename(columns={"transect": "transect_num"}, inplace=True)
+    
+    # Store original columns
+    original_columns = nasc_df.columns.tolist()
+    
+    # Apply a filter, if needed
+    if subset_filter is not None:
+        # Extract tokens from string
+        tokens = re.findall(r"\b[a-zA-Z_][a-zA-Z0-9_]*\b", subset_filter)
+        
+        # Provide typical Python operator keywords
+        keywords = {"and", "or", "not", "in", "notin", "True", "False"}
+        
+        # Check for column names
+        column_names = [t for t in tokens if t not in keywords and not t.isnumeric() 
+                        and t in transect_filter_df.columns]
+        
+        # Check if all referenced columns exist
+        missing = [col for col in column_names if col not in transect_filter_df.columns]
+        
+        # Raise error, if needed
+        if missing:
+            raise ValueError(f"Invalid column(s): {', '.join(missing)}")
+        else:
+            transect_filter_df = transect_filter_df.query(subset_filter)
+    
+    # Perform a join to pair each row in nasc_df with matching rows in transect_filter_df
+    expanded_df = nasc_df.merge(
+        transect_filter_df[["transect_num", "log_start", "log_end"]], 
+        on="transect_num", 
+        how="left"
+    )
+    
+    # Check for overlap between the distance range and log range
+    mask = (expanded_df["distance_e"] >= expanded_df["log_start"]) & (
+        expanded_df["distance_s"] <= expanded_df["log_end"]
+    )
+    
+    # Apply mask and keep only original columns
+    filtered_df = expanded_df[mask].filter(original_columns).reset_index(drop=True)
+    
+    return filtered_df

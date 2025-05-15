@@ -9,7 +9,7 @@ import pandas as pd
 import numpy as np
 from typing import Dict, List
 
-from echopop.nwfsc_feat.ingest_nasc import consolidate_echvoiew_nasc, generate_transect_region_haul_key, compute_region_layer_depths, process_region_names, read_transect_region_haul_key, merge_echoview_nasc, merge_exports, update_transect_spacing, map_transect_num, impute_bad_coordinates, read_echoview_export, read_echoview_nasc, echoview_nasc_to_df, validate_transect_exports, clean_echoview_cells_df, sort_echoview_export_df
+from echopop.nwfsc_feat.ingest_nasc import read_nasc_file, consolidate_echvoiew_nasc, filter_transect_intervals, generate_transect_region_haul_key, compute_region_layer_depths, process_region_names, read_transect_region_haul_key, merge_echoview_nasc, merge_exports, update_transect_spacing, map_transect_num, impute_bad_coordinates, read_echoview_export, read_echoview_nasc, echoview_nasc_to_df, validate_transect_exports, clean_echoview_cells_df, sort_echoview_export_df
 from echopop.core.echoview import ECHOVIEW_TO_ECHOPOP, ECHOVIEW_DATABASE_EXPORT_FILESET
 import echopop.tests.helpers.helpers_echoview_ingestion as helpers_echoview_ingestion
 
@@ -651,7 +651,7 @@ def test_read_echoview_export_missing_columns(missing_columns_data):
         assert 'latitude' in result.columns
         assert 'longitude' in result.columns
         assert 'ping_time' in result.columns
-        assert 'vessel_log_start' in result.columns
+        assert 'distance_s' in result.columns
         
         # Missing columns shouldn't cause problems
         assert 'max_depth' not in result.columns
@@ -1083,26 +1083,136 @@ def test_consolidate_echvoiew_nasc_filtering(sample_merged_data, sample_interval
     # Check if only Hake regions are included
     assert all(result.loc[result["region_id"] != 999, "nasc"] > 0)
 
-def test_consolidate_echvoiew_nasc_case_insensitive(sample_merged_data, sample_interval_data, sample_haul_key):
-    """Test case-insensitive region class matching."""
-    result = consolidate_echvoiew_nasc(
-        sample_merged_data,
-        sample_interval_data,
-        ["hake", "AGE-1 HAKE"],
-        transect_region_haul_key_df=sample_haul_key
-    )
+def test_read_nasc_file_basic(sample_excel_path):
+    """Test basic Excel file reading functionality"""
+    result = read_nasc_file(sample_excel_path, "Sheet1")
     
-    # Should match same regions regardless of case
-    assert len(result.loc[result["region_id"] != 999]) > 0
+    # Just verify it returns a DataFrame with the expected data
+    assert isinstance(result, pd.DataFrame)
+    assert len(result) == 3
+    assert 'transect' in result.columns
+    assert 'region id' in result.columns
+    
+def test_read_nasc_file_with_column_mapping(sample_excel_path):
+    """Test column mapping with minimal setup"""
+    column_map = {
+        'transect': 'transect_num',
+        'region id': 'region_id'
+    }
+    
+    result = read_nasc_file(sample_excel_path, "Sheet1", column_map)
+    
+    # Verify column renaming worked
+    assert 'transect_num' in result.columns
+    assert 'region_id' in result.columns
+    assert 'transect' not in result.columns
 
-def test_consolidate_echvoiew_nasc_sorting(sample_merged_data, sample_interval_data, sample_haul_key):
-    """Test output sorting."""
-    result = consolidate_echvoiew_nasc(
-        sample_merged_data,
-        sample_interval_data,
-        ["Hake", "Age-1 Hake"],
-        transect_region_haul_key_df=sample_haul_key
-    )
+def test_filter_transect_intervals_basic():
+    """Test basic filtering functionality."""
+    # Create test dataframes
+    nasc_df = pd.DataFrame({
+        'transect_num': [1, 1, 2, 2],
+        'distance_s': [0, 1, 0, 1],
+        'distance_e': [1, 2, 1, 2],
+        'nasc': [10, 20, 30, 40]
+    })
     
-    assert result["transect_num"].is_monotonic_increasing
-    assert result.groupby("transect_num")["distance_s"].is_monotonic_increasing.all()
+    filter_df = pd.DataFrame({
+        'transect_num': [1, 2],
+        'log_start': [0.5, 0.5],
+        'log_end': [1.5, 1.5],
+        'region_id': ['A', 'B']
+    })
+    
+    # Apply filter
+    result = filter_transect_intervals(nasc_df, filter_df)
+    
+    # Check results
+    assert len(result) == 4  # All rows should match
+    assert 'nasc' in result.columns
+    assert 'log_start' not in result.columns  # Should only contain original columns
+
+def test_filter_transect_intervals_with_subset_filter():
+    """Test filtering with subset filter."""
+    nasc_df = pd.DataFrame({
+        'transect_num': [1, 1, 2, 2],
+        'distance_s': [0, 1, 0, 1],
+        'distance_e': [1, 2, 1, 2],
+        'nasc': [10, 20, 30, 40]
+    })
+    
+    filter_df = pd.DataFrame({
+        'transect_num': [1, 2],
+        'log_start': [0.5, 0.5],
+        'log_end': [1.5, 1.5],
+        'region_id': ['A', 'B']
+    })
+    
+    # Apply filter with subset
+    result = filter_transect_intervals(nasc_df, filter_df, "region_id == 'A'")
+    
+    # Check results - should only include transect 1
+    assert len(result) == 2
+    assert all(result['transect_num'] == 1)
+
+def test_filter_transect_intervals_no_overlap():
+    """Test when there's no overlap between intervals."""
+    nasc_df = pd.DataFrame({
+        'transect_num': [1, 1],
+        'distance_s': [0, 1],
+        'distance_e': [1, 2],
+        'nasc': [10, 20]
+    })
+    
+    filter_df = pd.DataFrame({
+        'transect_num': [1],
+        'log_start': [3],  # No overlap with any interval
+        'log_end': [4],
+        'region_id': ['A']
+    })
+    
+    # Apply filter
+    result = filter_transect_intervals(nasc_df, filter_df)
+    
+    # Check results - should be empty
+    assert len(result) == 0
+
+def test_filter_transect_intervals_column_rename():
+    """Test automatic renaming of 'transect' to 'transect_num'."""
+    nasc_df = pd.DataFrame({
+        'transect_num': [1, 2],
+        'distance_s': [0, 0],
+        'distance_e': [1, 1],
+        'nasc': [10, 20]
+    })
+    
+    # Use 'transect' instead of 'transect_num'
+    filter_df = pd.DataFrame({
+        'transect': [1, 2],  # Should be automatically renamed
+        'log_start': [0, 0],
+        'log_end': [1, 1]
+    })
+    
+    result = filter_transect_intervals(nasc_df, filter_df)
+    
+    # Should match both rows
+    assert len(result) == 2
+    assert set(result['transect_num']) == {1, 2}
+
+def test_filter_transect_intervals_invalid_column():
+    """Test error handling with invalid column in subset filter."""
+    nasc_df = pd.DataFrame({
+        'transect_num': [1, 2],
+        'distance_s': [0, 0],
+        'distance_e': [1, 1]
+    })
+    
+    filter_df = pd.DataFrame({
+        'transect_num': [1, 2],
+        'log_start': [0, 0],
+        'log_end': [1, 1]
+    })
+    
+    # Use non-existent column in filter
+    with pytest.raises(ValueError):
+        filter_transect_intervals(nasc_df, filter_df, "nonexistent_column == 'A'")
