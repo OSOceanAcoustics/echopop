@@ -6,7 +6,8 @@ import pytest
 from pandera.errors import SchemaError
 from pandera.typing import Series
 
-from ..utils.validate_df import (
+from echopop.tests.conftest import assert_dataframe_equal
+from echopop.utils.validate_df import (
     AcousticData,
     BaseDataFrame,
     CatchBiodata,
@@ -17,7 +18,6 @@ from ..utils.validate_df import (
     LengthBiodata,
     SpecimenBiodata,
 )
-from .conftest import assert_dataframe_equal
 
 pytestmark = pytest.mark.skip(reason="Temporarily disable this module")
 

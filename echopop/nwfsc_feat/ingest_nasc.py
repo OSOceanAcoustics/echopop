@@ -529,7 +529,7 @@ def merge_echoview_nasc(
     ----------
     nasc_path : Path
         Directory containing Echoview export files (*.csv).
-    filename_transect_pattern: str, default = r"T(\d+)"
+    filename_transect_pattern: str, default = r"T(\\d+)"
         Regular expression used for extracting the transect number from the filename.
     default_transect_spacing : float, default = 10.
         Default spacing (nmi) to impute where missing.

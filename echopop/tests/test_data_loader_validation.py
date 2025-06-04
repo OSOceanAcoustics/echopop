@@ -7,8 +7,8 @@ import pytest
 import yaml
 from pydantic import ValidationError
 
-from ..utils.validate import posfloat, posint, realposfloat
-from ..utils.validate_dict import (
+from echopop.utils.validate import posfloat, posint, realposfloat
+from echopop.utils.validate_dict import (
     CONFIG_DATA_MODEL,
     CONFIG_INIT_MODEL,
     BiologicalFile,
