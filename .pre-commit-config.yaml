@@ -4,7 +4,11 @@ exclude: |
     docs/|
     project_docs|
     echopop/file_investigation.py|
-    echopop/test_survey.py
+    echopop/test_survey.py|
+    echopop/scratch|
+    echopop/nwfsc_feat|
+    echopop/workflow|
+    echopop/inversion
   )
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks

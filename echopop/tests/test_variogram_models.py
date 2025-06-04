@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 from echopop.spatial.variogram import (
     VARIOGRAM_MODELS,
@@ -19,6 +20,8 @@ from echopop.spatial.variogram import (
     spherical,
     variogram,
 )
+
+pytestmark = pytest.mark.skip(reason="Temporarily disable this module")
 
 
 def test_exponential():

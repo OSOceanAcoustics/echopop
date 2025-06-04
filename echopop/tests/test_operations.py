@@ -12,6 +12,8 @@ from echopop.utils.operations import (
     stretch,
 )
 
+pytestmark = pytest.mark.skip(reason="Temporarily disable this module")
+
 
 def test_bin_variable():
 

@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 from pandera.api.base.model import MetaModel
 
-from ..core import ECHOVIEW_TO_ECHOPOP_NAMES, NAME_CONFIG, REGION_EXPORT_MAP
+from ..core_tmp import ECHOVIEW_TO_ECHOPOP_NAMES, NAME_CONFIG, REGION_EXPORT_MAP
 from ..spatial.transect import export_transect_layers, export_transect_spacing
 from .operations import compile_patterns, extract_parts_and_labels, group_merge
 from .validate_df import ECHOVIEW_DF_MODEL, KSStrata

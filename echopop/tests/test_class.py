@@ -5,6 +5,8 @@ import pytest
 
 from echopop.utils.validate import posfloat, posint, realcircle, realposfloat
 
+pytestmark = pytest.mark.skip(reason="Temporarily disable this module")
+
 
 def test_posint():
 

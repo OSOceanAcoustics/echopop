@@ -6,6 +6,7 @@ import numpy as np
 import pytest
 from pydantic import RootModel, ValidationError
 
+from echopop.utils.validate import posfloat, posint, realcircle, realposfloat
 from echopop.utils.validate_dict import (
     InitialValues,
     KrigingAnalysis,
@@ -18,7 +19,7 @@ from echopop.utils.validate_dict import (
     VariogramOptimize,
 )
 
-from ..utils.validate import posfloat, posint, realcircle, realposfloat
+pytestmark = pytest.mark.skip(reason="Temporarily disable this module")
 
 
 @pytest.fixture

@@ -13,7 +13,7 @@ from .analysis import (
     stratified_summary,
     variogram_analysis,
 )
-from .core import DATA_STRUCTURE
+from .core_tmp import DATA_STRUCTURE
 from .graphics import plotting as egp, variogram_interactive as egv
 from .spatial.projection import transform_geometry
 from .spatial.transect import edit_transect_columns
