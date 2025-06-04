@@ -79,7 +79,8 @@ def validate_transect_exports(transect_files_df: pd.DataFrame) -> pd.DataFrame:
         
     return filtered_df
 
-def read_nasc_file(filename, sheetname, column_name_map=None, validator=None):
+def read_nasc_file(filename, sheetname, impute_coordinates=True, column_name_map=None, 
+                   validator=None):
     """
     Read NASC data from a consolidated XLSX file
     
@@ -89,8 +90,10 @@ def read_nasc_file(filename, sheetname, column_name_map=None, validator=None):
         Path to the Excel file
     sheetname : str
         Name of the sheet to read
+    impute_coordinates : bool
+        Instruct whether bad spatial coordinates should be imputed or not
     column_name_map : dict, optional
-        Dictionary mapping original column names to new column names
+        Dictionary mapping original column names to new column names    
     validator : callable, optional
         Function to validate the dataframe
 
@@ -119,10 +122,10 @@ def read_nasc_file(filename, sheetname, column_name_map=None, validator=None):
 
     # Fix latitude and longitude
     # ---- Latitude
-    if "latitude" in consolidated_file.columns:
+    if "latitude" in consolidated_file.columns and impute_coordinates:
         impute_bad_coordinates(consolidated_file, "latitude")
     # ---- Longitude
-    if "longitude" in consolidated_file.columns:
+    if "longitude" in consolidated_file.columns and impute_coordinates:
         impute_bad_coordinates(consolidated_file, "longitude")
 
     # Return the cleaned DataFrame
@@ -394,6 +397,7 @@ def update_transect_spacing(
 
 def read_echoview_nasc(filename: Path,
                        transect_num: float,
+                       impute_coordinates: bool = True,
                        validator: Optional[Any] = None) -> pd.DataFrame:
     """
     Generic reader for Echoview export CSVs. Used for files like analysis, cells, layers, 
@@ -405,6 +409,8 @@ def read_echoview_nasc(filename: Path,
         Full path to the NASC CSV file.
     transect_num : float
         Transect number to use for filtering or labeling.
+    impute_coordinates : bool
+        Instruct whether bad spatial coordinates should be imputed or not
 
     Returns
     -------
@@ -420,17 +426,18 @@ def read_echoview_nasc(filename: Path,
     
     # Fix latitude and longitude
     # ---- Latitude
-    if "latitude" in nasc_df.columns:
+    if "latitude" in nasc_df.columns and impute_coordinates:
         impute_bad_coordinates(nasc_df, "latitude")
     # ---- Longitude
-    if "longitude" in nasc_df.columns:
+    if "longitude" in nasc_df.columns and impute_coordinates:
         impute_bad_coordinates(nasc_df, "longitude")
 
     # Return the cleaned DataFrame
     return nasc_df
 
 def echoview_nasc_to_df(
-    filtered_df: pd.DataFrame 
+    filtered_df: pd.DataFrame,
+    impute_coordinates: bool = True
 ) -> list[pd.DataFrame]:
     """
     Reads and returns Echoview NASC dataframes for each file in the input DataFrame.
@@ -438,14 +445,16 @@ def echoview_nasc_to_df(
     Parameters
     ----------
     filtered_df : pd.DataFrame
-        DataFrame with columns "file_path" and "transect_num".
+        DataFrame with columns "file_path" and "transect_num"
+    impute_coordinates : bool
+        Instruct whether bad spatial coordinates should be imputed or not
         
     Returns
     -------
     list[pd.DataFrame]
         List of parsed and validated DataFrames for each file.
     """
-    return [read_echoview_nasc(row["file_path"], row["transect_num"]) 
+    return [read_echoview_nasc(row["file_path"], row["transect_num"], impute_coordinates) 
             for _, row in filtered_df.iterrows()]
 
 # ! This function is necessary because of how `pandas.DataFrame.merge()` can unexpectedly change 
@@ -504,6 +513,7 @@ def merge_echoview_nasc(
     filename_transect_pattern: str = r"T(\d+)",
     default_transect_spacing: float = 10.,
     default_latitude_threshold: float = 60.,
+    impute_coordinates: bool = True,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
     Ingest and merge all Echoview NASC files (intervals, cells, layers).
@@ -519,6 +529,8 @@ def merge_echoview_nasc(
     default_latitude_threshold : float, default = 60.
         Default latitude threshold used for determining how far north transect spacings should be 
         calculated versus using the default value.
+    impute_coordinates : bool
+        Instruct whether bad spatial coordinates should be imputed or not
 
     Returns
     -------
@@ -545,17 +557,20 @@ def merge_echoview_nasc(
     # Read and concatenate the Echoview exports (assuming a database format)
     # ---- Cells
     df_cells: pd.DataFrame = pd.concat(
-        echoview_nasc_to_df(valid_transect_num_df[valid_transect_num_df["file_type"] == "cells"])
+        echoview_nasc_to_df(valid_transect_num_df[valid_transect_num_df["file_type"] == "cells"],
+                            impute_coordinates)
     )    
     # ---- Intervals
     df_intervals = pd.concat(
         echoview_nasc_to_df(
-            valid_transect_num_df[valid_transect_num_df["file_type"] == "intervals"]
+            valid_transect_num_df[valid_transect_num_df["file_type"] == "intervals"],
+            impute_coordinates
         )
     )    
     # ---- Layers
     df_layers: pd.DataFrame = pd.concat(
-        echoview_nasc_to_df(valid_transect_num_df[valid_transect_num_df["file_type"] == "layers"])
+        echoview_nasc_to_df(valid_transect_num_df[valid_transect_num_df["file_type"] == "layers"],
+                            impute_coordinates)
     )
 
     # Clean the cells export file
