@@ -35,11 +35,11 @@
 # def test_read_csv_file(sample_csv_file):
 #     """Test that read_csv_file correctly reads a CSV and converts column names to lowercase."""
 #     df = read_csv_file(sample_csv_file)
-    
+
 #     # Check that all column names are lowercase
 #     assert all(col == col.lower() for col in df.columns)
 #     assert list(df.columns) == ['column1', 'column2', 'column3']
-    
+
 #     # Check data was read correctly
 #     assert df.shape == (2, 3)
 #     assert df.iloc[0, 0] == 1
@@ -101,7 +101,7 @@
 # def test_read_echoview_export_basic(sample_csv_file, mock_validator):
 #     """Test basic functionality of read_echoview_export."""
 #     df = read_echoview_export(sample_csv_file, 5, mock_validator)
-    
+
 #     # Check that transect number was added
 #     assert 'transect_num' in df.columns
 #     assert df['transect_num'].unique() == [5]
@@ -110,11 +110,11 @@
 #     """Test read_echoview_export with column mapping."""
 #     column_mapping = {'column1': 'nasc', 'column2': 'depth_mean'}
 #     df = read_echoview_export(sample_csv_file, 10, mock_validator, column_mapping)
-    
+
 #     # Check that column names were mapped correctly
 #     assert 'nasc' in df.columns
 #     assert 'depth_mean' in df.columns
-    
+
 #     # Original column names shouldn't be present
 #     assert 'column1' not in df.columns
 #     assert 'column2' not in df.columns
@@ -126,10 +126,10 @@
 #     with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
 #         f.write(data)
 #         filename = f.name
-    
+
 #     try:
 #         df = read_echoview_export(filename, 1, mock_validator)
-        
+
 #         # Check that bad coordinates were imputed
 #         assert df['latitude'].iloc[1] != 999.0
 #         # Linear interpolation should give us the average of 45.1 and 45.3
@@ -141,9 +141,9 @@
 #     """Test that validation is called with correct parameters."""
 #     validator = MagicMock()
 #     validator.validate_df.return_value = pd.DataFrame({'column1': [1, 4], 'column2': [2, 5], 'column3': [3, 6]})
-    
+
 #     df = read_echoview_export(sample_csv_file, 1, validator)
-    
+
 #     # Verify validator was called with the right arguments
 #     validator.validate_df.assert_called_once()
 #     args, _ = validator.validate_df.call_args

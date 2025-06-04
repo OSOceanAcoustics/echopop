@@ -77,7 +77,7 @@ def load_stratification(
 
 # same as the current preprocess_biology_spatial()
 def join_biological_stratification(
-    df_bio_dict: Dict[str, pd.DataFrame], df_strata_dict:Dict[str, pd.DataFrame]
+    df_bio_dict: Dict[str, pd.DataFrame], df_strata_dict: Dict[str, pd.DataFrame]
 ) -> Dict[str, pd.DataFrame]:
     return df_bio_dict
 

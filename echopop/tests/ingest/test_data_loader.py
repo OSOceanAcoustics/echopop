@@ -1,8 +1,11 @@
-import pytest
-import tempfile
 import os
+import tempfile
+
 import pandas as pd
+import pytest
+
 from echopop.ingest import read_csv_file, read_xlsx_file
+
 
 # ==================================================================================================
 # Test *.csv reader
@@ -10,36 +13,38 @@ from echopop.ingest import read_csv_file, read_xlsx_file
 def test_read_csv_file(sample_csv_file):
     """
     Test that read_csv_file correctly reads a CSV and converts column names to lowercase.
-    
+
     This test verifies:
     1. All column names are converted to lowercase
     2. The expected column names are present
     3. Data is read correctly with proper dimensions and values
-    
+
     Parameters
     ----------
         sample_csv_file: Path to test CSV file
     """
     df = read_csv_file(sample_csv_file)
-    
+
     # Check that all column names are lowercase
     assert all(col == col.lower() for col in df.columns), "Column names should be lowercase"
-    assert list(df.columns) == ['column1', 'column2', 'column3'], "Incorrect column names"
-    
+    assert list(df.columns) == ["column1", "column2", "column3"], "Incorrect column names"
+
     # Check data was read correctly
     assert df.shape == (2, 3), "DataFrame should have 2 rows and 3 columns"
     assert df.iloc[0, 0] == 1, "First value should be 1"
     assert df.iloc[1, 2] == 6, "Last value should be 6"
 
+
 def test_read_csv_file_nonexistent():
     """
     Test that read_csv_file raises an appropriate error for nonexistent files.
-    
+
     This test verifies that the function properly handles the case of a missing file
     by raising a FileNotFoundError.
     """
     with pytest.raises(FileNotFoundError):
         read_csv_file("nonexistent_file.csv")
+
 
 # ==================================================================================================
 # Test *.xlsx reader
@@ -47,55 +52,60 @@ def test_read_csv_file_nonexistent():
 def test_read_xlsx_file_basic(sample_excel_file):
     """Test basic functionality of reading an Excel file."""
     # Call the function
-    result = read_xlsx_file(sample_excel_file, 'Sheet1')
-    
+    result = read_xlsx_file(sample_excel_file, "Sheet1")
+
     # Check that result is a DataFrame
     assert isinstance(result, pd.DataFrame)
-    
+
     # Check data content
     assert len(result) == 3
-    assert result['column1'].tolist() == [1, 2, 3]
-    assert result['column2'].tolist() == ['a', 'b', 'c']
-    assert result['mixedcase_column'].tolist() == [1.1, 2.2, 3.3]
+    assert result["column1"].tolist() == [1, 2, 3]
+    assert result["column2"].tolist() == ["a", "b", "c"]
+    assert result["mixedcase_column"].tolist() == [1.1, 2.2, 3.3]
+
 
 def test_read_xlsx_file_column_names(sample_excel_file):
     """Test that column names are converted to lowercase."""
     # Call the function
-    result = read_xlsx_file(sample_excel_file, 'Sheet1')
-    
+    result = read_xlsx_file(sample_excel_file, "Sheet1")
+
     # Check that all column names are lowercase
     assert all(col == col.lower() for col in result.columns)
-    
+
     # Check specific column names
-    assert 'column1' in result.columns
-    assert 'column2' in result.columns
-    assert 'mixedcase_column' in result.columns
+    assert "column1" in result.columns
+    assert "column2" in result.columns
+    assert "mixedcase_column" in result.columns
+
 
 def test_read_xlsx_file_different_sheet(sample_excel_file):
     """Test reading a different sheet from the Excel file."""
     # Call the function with Sheet2
-    result = read_xlsx_file(sample_excel_file, 'Sheet2')
-    
+    result = read_xlsx_file(sample_excel_file, "Sheet2")
+
     # Check data content from Sheet2
     assert len(result) == 3
-    assert 'sheet2_col1' in result.columns
-    assert 'sheet2_col2' in result.columns
-    assert result['sheet2_col1'].tolist() == [4, 5, 6]
-    assert result['sheet2_col2'].tolist() == ['d', 'e', 'f']
+    assert "sheet2_col1" in result.columns
+    assert "sheet2_col2" in result.columns
+    assert result["sheet2_col1"].tolist() == [4, 5, 6]
+    assert result["sheet2_col2"].tolist() == ["d", "e", "f"]
+
 
 def test_read_xlsx_file_nonexistent_file():
     """Test behavior when file doesn't exist."""
     nonexistent_file = "nonexistent_file.xlsx"
-    
+
     # Check that attempting to read a non-existent file raises FileNotFoundError
     with pytest.raises(FileNotFoundError):
-        read_xlsx_file(nonexistent_file, 'Sheet1')
+        read_xlsx_file(nonexistent_file, "Sheet1")
+
 
 def test_read_xlsx_file_nonexistent_sheet(sample_excel_file):
     """Test behavior when sheet doesn't exist."""
     # Check that attempting to read a non-existent sheet raises ValueError
     with pytest.raises(ValueError):
-        read_xlsx_file(sample_excel_file, 'NonexistentSheet')
+        read_xlsx_file(sample_excel_file, "NonexistentSheet")
+
 
 # def test_load_configuration(test_path, tmp_path):
 
