@@ -27,6 +27,7 @@ def map_transect_num(
     pd.DataFrame
         DataFrame with columns for file_type, file_path, and transect_num.
     """
+    
     # Compile the transect pattern regex
     compiled_pattern = re.compile(transect_pattern)
     

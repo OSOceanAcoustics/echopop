@@ -1,12 +1,12 @@
-from pathlib import Path
-from typing import Dict, Tuple, Union
+from typing import Dict
 
 import numpy as np
 import pandas as pd
 import xarray as xr
 
+from echopop.inversion import InversionLengthTS
 from echopop.kriging import Kriging
-from echopop.nwfsc_feat import get_proportions, ingest_nasc, load_data
+from echopop.nwfsc_feat import apportion, get_proportions, ingest_nasc, load_data
 
 # ==================================================================================================
 # Organize NASC file
@@ -173,12 +173,12 @@ bio_path_dict: dict  # the "biological" section of year_config.yml
 # this will be simplified now that we read from the master spreadsheet
 strata_path_dict: dict  # the "stratification" section of year_config.yml
 
-df_bio_dict = load_data.load_biological_data(root_path, bio_path_dict, species_code)
-df_strata_dict = load_data.load_stratification(root_path, strata_path_dict)
+dict_df_bio = load_data.load_biological_data(root_path, bio_path_dict, species_code)
+dict_df_strata = load_data.load_stratification(root_path, strata_path_dict)
 
 # Consolidate all input data into df_acoustic_dict
 df_nasc_no_age1 = load_data.consolidate_all_data(
-    df_nasc=df_nasc_no_age1, df_bio_dict=df_bio_dict, df_strata_dict=df_strata_dict
+    df_nasc=df_nasc_no_age1, df_bio_dict=dict_df_bio, df_strata_dict=dict_df_strata
 )
 
 
@@ -186,20 +186,20 @@ df_nasc_no_age1 = load_data.consolidate_all_data(
 # Compute biological composition based on stratum
 length_bins: np.array  # length bin specification
 df_length_weight, df_regression = get_proportions.length_weight_regression(
-    df_bio_dict["specimen"], length_bins
+    dict_df_bio["specimen"], length_bins
 )
 # df_regression seems unused afterwards -- good as a record?
 
 # Get counts ----------------
 df_aged_counts = get_proportions.fish_count(  # previously "aged_number_distribution"
-    df_specimen=df_bio_dict["specimen"],
-    df_length=df_bio_dict["length"],
+    df_specimen=dict_df_bio["specimen"],
+    df_length=dict_df_bio["length"],
     aged=True,
     sexed=True,
 )
 df_unaged_counts = get_proportions.fish_count(  # previously "unaged_number_distribution"
-    df_specimen=df_bio_dict["specimen"],
-    df_length=df_bio_dict["length"],
+    df_specimen=dict_df_bio["specimen"],
+    df_length=dict_df_bio["length"],
     aged=False,
     sexed=True,
 )
@@ -210,45 +210,91 @@ df_unaged_counts = get_proportions.fish_count(  # previously "unaged_number_dist
 
 
 # Get number proportions ----------------
-# TODO: DISCUSS THIS!
-# TODO: what does _overall stand for?
-da_number_proportion = get_proportions.number_proportion()
+
+# in the output dataframes: *_overall = *_aged + *_unaged
+# only handle 1 species at a time
+dict_df_number_proportion: Dict[pd.DataFrame] = get_proportions.number_proportions(
+    df_aged_counts,
+    df_unaged_counts,
+)
 
 
 # Get weight proportions ----------------
-# aged fish - weight distribution
-da_sex_length_age: xr.DataArray = get_proportions.weight_distributions(
-    df_specimen=df_bio_dict["specimen"],
-    df_length=df_bio_dict["length"],
+dict_df_weight_distr: Dict[pd.DataFrame]
+
+# aged fish - weight distribution over sex/length/age
+dict_df_weight_distr["aged"] = get_proportions.weight_distributions_over_lenghth_age(
+    df_specimen=dict_df_bio["specimen"],
+    df_length=dict_df_bio["length"],
     df_length_weight=df_length_weight,
     aged=True,
 )
 
-# unaged fish - weight distribution
-da_sex_length: xr.DataArray = get_proportions.weight_distributions(
-    df_specimen=df_bio_dict["specimen"],
-    df_length=df_bio_dict["length"],
+# unaged fish - weight distribution over sex/length
+dict_df_weight_distr["unaged"] = get_proportions.weight_distributions_over_lenghth_age(
+    df_specimen=dict_df_bio["specimen"],
+    df_length=dict_df_bio["length"],
     df_length_weight=df_length_weight,
     aged=False,
 )
 
-# Get stratum averaged weight for all sex, male, female
-df_averaged_weight = get_proportions.stratum_averaged_weight()
+# Get averaged weight for all sex, male, female for all strata
+df_averaged_weight = get_proportions.stratum_averaged_weight(
+    df_length_weight=df_length_weight,
+    dict_df_bio=dict_df_bio,  # use "specimen" and "length"
+)
 
+# Get weight proportion for all sex, male, female for all strata
+dict_df_weight_proportion: Dict[pd.DataFrame] = get_proportions.weight_proportions(
+    df_catch=dict_df_bio["catch"],
+    dict_df_weight_proportion=dict_df_weight_distr,  # weight proportions
+    df_length_weight=df_length_weight,  # length-weight regression
+)
 
-# Get weight proportions ----------------
-# TODO: DISCUSS THIS!
-# TODO: what does _overall stand for?
-da_weight_proportion = get_proportions.weight_proportion()
+# Assemble an xr.Dataset of number and weight proportions
+# I (WJ) think what you have in `distribute_length_age` is essentially this step
+# This is a temporary step to convert the dataframes to xarray
+# NOTE: This is a temporary step to convert the dataframes to xarray.
+#       This can be removed once the following functions are implemented
+#       to use xarray Dataset/DataArray as input/output directly:
+#       -- get_proportions.number_proportions()
+#       -- get_proportions.weight_distributions_over_lenghth_age()
+#       -- get_proportions.stratum_averaged_weight()
+#       -- get_proportions.weight_proportions()
+ds_proportions: xr.Dataset = get_proportions.assemble_proportions(
+    dict_df_number_proportion=dict_df_number_proportion,
+    dict_df_weight_proportion=dict_df_weight_proportion,
+)
 
 
 # ===========================================
-# NASC to number density
+# NASC to number density and biomass
+
+# Initiate object to perform inversion
+# inversion parameters are stored as object attributes
+invert_hake = InversionLengthTS(df_model_params=dict_df_bio["model_params"])
+
+# Perform inversion using the supplied df_length
+# df_length will be used to compute the mean sigma_bs for each stratum,
+# which is then used in .invert() to compute number density on a stratum-by-stratum basis
+df_nasc_no_age1 = invert_hake.invert(df_nasc=df_nasc_no_age1, df_length=dict_df_bio["length"])
+df_nasc_all_ages = invert_hake.invert(df_nasc=df_nasc_all_ages, df_length=dict_df_bio["length"])
+
+
+# Apportion abundance and biomass for transect intervals
+# TODO: these apportioned transect results are not used in kriging, is this correct?
+ds_nasc_no_age1_apportioned: xr.Dataset = apportion.apportion_transect_biomass_abundance(
+    df_nasc=df_nasc_no_age1,
+    ds_proportions=ds_proportions,
+)
+ds_nasc_all_age_apportioned: xr.Dataset = apportion.apportion_transect_biomass_abundance(
+    df_nasc=df_nasc_all_ages,
+    ds_proportions=ds_proportions,
+)
 
 
 # ===========================================
 # Perform kriging using class Kriging
-# TODO:
 # put back FEAT-specific kriging files
 
 # Load kriging-related params
@@ -279,4 +325,56 @@ kriging.latlon_to_xy()
 
 # Perform kriging
 # This adds kriging result columns to df_in
-df_out = kriging.krige(df_in=df_nasc_no_age1, variables="biomass")
+df_nasc_no_age1_kriged = kriging.krige(df_in=df_nasc_no_age1, variables="biomass")
+df_nasc_all_age_kriged = kriging.krige(df_in=df_nasc_all_ages, variables="biomass")
+
+
+# ===========================================
+# Apportion kriged biomass across sex, length bins, and age bins,
+# and from there derive kriged abundance and kriged number density.
+# Reference flow diagram: https://docs.google.com/presentation/d/1FOr2-iMQYj21VzVRDC-YUuqpOP0_urtI/edit?slide=id.p1#slide=id.p1  # noqa
+
+# Age 1 kriged biomass -------------
+# Apportion biomass
+ds_kriged_biomass_age1: xr.Dataset = apportion.apportion_kriged_biomass(
+    df_nasc=df_nasc_no_age1_kriged,
+    ds_proportions=ds_proportions,
+)
+
+# Fill missing length bins of aged fish using length distributions of unaged fish
+ds_kriged_biomass_age1: xr.Dataset = apportion.fill_missing_aged_from_unaged(
+    ds_kriged_apportioned=ds_kriged_biomass_age1,
+    ds_proportions=ds_proportions,
+)
+
+# Back-calculate abundance
+ds_kriged_biomass_age1: xr.Dataset = apportion.back_calculate_kriged_abundance(
+    ds_kriged_apportioned=ds_kriged_biomass_age1,
+    ds_proportions=ds_proportions,
+)
+
+
+# All age (age 2+) kriged biomass -------------
+# Apportion biomass
+ds_kriged_biomass_all_ages: xr.Dataset = apportion.apportion_kriged_biomass(
+    df_nasc=df_nasc_all_age_kriged,
+    ds_proportions=ds_proportions,
+)
+
+# Fill missing length bins of aged fish using length distributions of unaged fish
+ds_kriged_biomass_all_ages: xr.Dataset = apportion.fill_missing_aged_from_unaged(
+    ds_kriged_apportioned=ds_kriged_biomass_all_ages,
+    ds_proportions=ds_proportions,
+)
+
+# Reallocate age-1 fish to age-2+ fish
+ds_kriged_biomass_all_ages: xr.Dataset = apportion.reallocate_age1(
+    ds_kriged_apportioned=ds_kriged_biomass_all_ages,
+    ds_proportions=ds_proportions,
+)
+
+# Back-calculate abundance
+ds_kriged_biomass_all_ages: xr.Dataset = apportion.back_calculate_kriged_abundance(
+    ds_kriged_apportioned=ds_kriged_biomass_all_ages,
+    ds_proportions=ds_proportions,
+)
