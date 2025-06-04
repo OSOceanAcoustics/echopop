@@ -1,10 +1,6 @@
 import os
-import re
-import sys
 import tempfile
 from pathlib import Path
-from typing import Dict, List
-from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pandas as pd
@@ -788,20 +784,6 @@ def test_read_echoview_nasc(echoview_temp_csv):
 
 def test_read_echoview_nasc_int_transect(sample_echoview_data):
     """Test with integer transect number."""
-    temp_csv = create_temp_csv(sample_echoview_data)
-    try:
-        transect_num = 1
-        result = read_echoview_nasc(temp_csv, transect_num)
-
-        # Check transect_num is stored as a float
-        assert result["transect_num"].dtype == float
-        assert all(result["transect_num"] == 1.0)
-    finally:
-        os.unlink(temp_csv)
-
-
-def test_read_echoview_nasc_int_transect(sample_echoview_data):
-    """Test with integer transect number."""
     temp_csv = helpers_echoview_ingestion.create_temp_csv(sample_echoview_data)
     try:
         transect_num = 1
@@ -1230,7 +1212,7 @@ def test_read_nasc_file_with_column_mapping(sample_excel_path):
     """Test column mapping with minimal setup"""
     column_map = {"transect": "transect_num", "region id": "region_id"}
 
-    result = read_nasc_file(sample_excel_path, "Sheet1", column_map)
+    result = read_nasc_file(sample_excel_path, "Sheet1", column_name_map=column_map)
 
     # Verify column renaming worked
     assert "transect_num" in result.columns
@@ -1347,5 +1329,5 @@ def test_filter_transect_intervals_invalid_column():
     filter_df = pd.DataFrame({"transect_num": [1, 2], "log_start": [0, 0], "log_end": [1, 1]})
 
     # Use non-existent column in filter
-    with pytest.raises(ValueError):
+    with pytest.raises(pd.errors.UndefinedVariableError):
         filter_transect_intervals(nasc_df, filter_df, "nonexistent_column == 'A'")

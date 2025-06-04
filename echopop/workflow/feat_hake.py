@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Dict
 
 import numpy as np
@@ -30,11 +31,13 @@ interval_df, exports_df = ingest_nasc.merge_echoview_nasc(
 # Read in transect-region-haul keys
 # ---------------------------------
 transect_region_filepath_all_ages: Path = Path(
-    "C:/Users/Brandyn/Documents/GitHub/Data/Stratification/US_CAN_2019_transect_region_haul_age1+ auto_final.xlsx"
+    "C:/Users/Brandyn/Documents/GitHub/Data/Stratification/"
+    "US_CAN_2019_transect_region_haul_age1+ auto_final.xlsx"
 )
 transect_region_sheetname_all_ages: str = "Sheet1"
 transect_region_filepath_no_age1: Path = Path(
-    "C:/Users/Brandyn/Documents/GitHub/Data/Stratification/US_CAN_2019_transect_region_haul_age2+ auto_20191205.xlsx"
+    "C:/Users/Brandyn/Documents/GitHub/Data/Stratification/"
+    "US_CAN_2019_transect_region_haul_age2+ auto_20191205.xlsx"
 )
 transect_region_sheetname_no_age1: str = "Sheet1"
 transect_region_file_rename: dict = {
@@ -45,7 +48,8 @@ transect_region_file_rename: dict = {
 
 # Read in the transect-region-haul key files for each group
 # Outputs:
-# ---- DataFrame containing columns for `transect_num` [float], `region_id` [float], `haul_num` [float]
+# ---- DataFrame containing columns for `transect_num` [float], `region_id` [float], 
+# ---- `haul_num` [float]
 transect_region_haul_key_all_ages = ingest_nasc.read_transect_region_haul_key(
     transect_region_filepath_all_ages,
     transect_region_sheetname_all_ages,
@@ -79,7 +83,8 @@ region_name_expr_dict = {
 # Process the region name codes to define the region classes
 # e.g. H5C - Region 2 corresponds to "Hake, Haul #5, Canada"
 # Outputs:
-# ---- `exports_df` with appended columns representing the updated haul number, region class, and region name
+# ---- `exports_df` with appended columns representing the updated haul number, region class, and 
+# ---- region name
 exports_with_regions_df = ingest_nasc.process_region_names(
     exports_df,
     region_name_expr_dict,
@@ -93,7 +98,8 @@ region_list_no_age1 = ["Hake", "Hake Mix"]
 region_list_all_ages = ["Age-1 Hake", "Age-1", "Hake", "Hake Mix"]
 
 # Outputs:
-# ---- DataFrame containing columns for `transect_num` [float], `region_id` [float], `haul_num` [float]
+# ---- DataFrame containing columns for `transect_num` [float], `region_id` [float], 
+# ---- `haul_num` [float]
 transect_region_haul_key_no_age1 = ingest_nasc.generate_transect_region_haul_key(
     exports_with_regions_df, filter_list=region_list_no_age1
 )
@@ -107,7 +113,8 @@ transect_region_haul_key_all_ages = ingest_nasc.generate_transect_region_haul_ke
 # ------------------------------------------
 
 # Outputs:
-# ---- DataFrame containing columns for `transect_num` [float], etc. required for transect data analysis
+# ---- DataFrame containing columns for `transect_num` [float], etc. required for transect data 
+# ---- analysis
 df_nasc_no_age1 = ingest_nasc.consolidate_echvoiew_nasc(
     df_merged=exports_with_regions_df,
     interval_df=interval_df,
@@ -144,7 +151,8 @@ FEAT_TO_ECHOPOP_COLUMNS = {
 }
 
 # Outputs:
-# ---- DataFrame containing columns for `transect_num` [float], etc. required for transect data analysis
+# ---- DataFrame containing columns for `transect_num` [float], etc. required for transect data 
+# ---- analysis
 nasc_all_ages_df = ingest_nasc.read_nasc_file(
     filename=nasc_filename, sheetname=nasc_sheet, column_name_map=FEAT_TO_ECHOPOP_COLUMNS
 )
