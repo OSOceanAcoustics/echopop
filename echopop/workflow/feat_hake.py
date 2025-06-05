@@ -10,6 +10,7 @@ from echopop.kriging import Kriging
 from echopop.nwfsc_feat import apportion, get_proportions, ingest_nasc, load_data
 
 # ==================================================================================================
+# ==================================================================================================
 # Organize NASC file
 # ------------------
 nasc_path: Path = Path("C:/Users/Brandyn/Documents/GitHub/Data/raw_nasc/")
