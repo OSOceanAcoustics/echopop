@@ -534,7 +534,7 @@ exclude_filters: Dict[str, Any] = [{"sex": "unsexed"}, None] # Positional filter
 
 # Outputs: 
 # ---- `Dict[str, pandas.DataFrame]` with the number proportions computed for aged and unaged fish. 
-# ----- This includes columsn for `proportion` (within group) and `proportion_overall` 
+# ----- This includes columns for `proportion` (within group) and `proportion_overall` 
 # ---- (across groups)
 dict_df_number_proportion: Dict[str, pd.DataFrame] = get_proportions.number_proportions(
     aged_counts_sexed, unaged_counts_sexed, 

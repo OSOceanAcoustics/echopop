@@ -6,10 +6,10 @@ import numpy as np
 import pandas as pd
 import pytest
 from _pytest.assertion.util import assertrepr_compare
-from echopop.tests.fixtures import *  # noqa: F401, F403
 
 # Set up path to the `test_data` folder
 from echopop import Survey
+from echopop.tests.fixtures import *  # noqa: F401, F403
 
 # Set up path to the `test_data` folder
 HERE = Path(__file__).parent.absolute()
