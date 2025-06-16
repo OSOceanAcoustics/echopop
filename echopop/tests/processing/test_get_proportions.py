@@ -809,3 +809,176 @@ def test_stratum_averaged_weight(proportion_test_dict, test_weight_table):
     # Check that female weights are different from male weights
     if "female" in result.columns and "male" in result.columns:
         assert not result["female"].equals(result["male"])
+
+def test_aggregate_stratum_weights_dictionary(weight_distr_dict):
+    """Test aggregating stratum weights from a dictionary of DataFrames."""
+    # Call function with dictionary input
+    result = get_proportions.aggregate_stratum_weights(weight_distr_dict)
+    
+    # Check result structure
+    assert isinstance(result, pd.DataFrame)
+    assert 'aged' in result.columns
+    assert 'unaged' in result.columns
+    
+    # Check values for first stratum with approx to handle float precision
+    assert pytest.approx(result.loc[1, 'aged']) == 21.9  # 10.5 + 8.3 + 3.1
+    assert pytest.approx(result.loc[1, 'unaged']) == 11.0  # 5.2 + 4.3 + 1.5
+    
+    # Check values for second stratum
+    assert pytest.approx(result.loc[2, 'aged']) == 32.4  # 15.2 + 12.7 + 4.5
+    assert pytest.approx(result.loc[2, 'unaged']) == 16.1  # 7.8 + 6.1 + 2.2
+
+
+def test_aggregate_stratum_weights_single_df(weights_df_multilevel):
+    """Test aggregating stratum weights from a single DataFrame."""
+    # Call function with single DataFrame input
+    result = get_proportions.aggregate_stratum_weights(weights_df_multilevel)
+    
+    # Check result structure
+    assert isinstance(result, pd.DataFrame)
+    assert 'data' in result.columns  # Default name for single DataFrame
+    
+    # Check values with approx to handle float precision
+    assert pytest.approx(result.loc[1, 'data']) == 21.9  # 10.5 + 8.3 + 3.1
+    assert pytest.approx(result.loc[2, 'data']) == 32.4  # 15.2 + 12.7 + 4.5
+
+
+def test_aggregate_stratum_weights_empty(empty_weights_df_multilevel):
+    """Test aggregating stratum weights with an empty DataFrame."""
+    # With empty DataFrame
+    result_empty = get_proportions.aggregate_stratum_weights(empty_weights_df_multilevel)
+    assert isinstance(result_empty, pd.DataFrame)
+    
+    # The function returns zero values instead of an empty DataFrame
+    assert not result_empty.empty
+    assert result_empty.shape == (2, 1)  # 2 rows (for stratum 1 and 2), 1 column ('data')
+    assert (result_empty['data'] == 0.0).all()  # All values are 0.0
+        
+    # With empty dictionary
+    result_empty_dict = get_proportions.aggregate_stratum_weights({})
+    assert isinstance(result_empty_dict, pd.DataFrame)
+    assert result_empty_dict.empty  # This should be truly empty
+
+
+def test_aggregate_stratum_weights_missing_level(weights_df_missing_stratum):
+    """Test handling when stratum_num level is missing."""
+    # Should print a warning but not fail
+    result = get_proportions.aggregate_stratum_weights({"test": weights_df_missing_stratum})
+    
+    # Result should be empty DataFrame since no valid data found
+    assert isinstance(result, pd.DataFrame)
+    assert result.empty
+
+def test_standardize_weights_by_stratum_basic(simple_weights_df, simple_stratum_weights):
+    """Test basic functionality of standardizing weights by stratum."""
+    # Call the function
+    result = get_proportions.standardize_weights_by_stratum(simple_weights_df, 
+                                                            simple_stratum_weights)
+    
+    # Check result is a DataFrame
+    assert isinstance(result, pd.DataFrame)
+    
+    # Get the sum of weights per stratum in original data
+    stratum1_sum = simple_weights_df[("female", 1)] + simple_weights_df[("male", 1)]
+    stratum2_sum = simple_weights_df[("female", 2)] + simple_weights_df[("male", 2)]
+    
+    # Check the values are transformed correctly
+    # For female, stratum 1: original proportion * reference weight
+    female_stratum1_proportion = simple_weights_df[("female", 1)][0] / stratum1_sum[0]
+    female_stratum1_standardized = female_stratum1_proportion * 100.0
+    assert result.loc["female", 1] == pytest.approx(female_stratum1_standardized)    
+    
+    # For male, stratum 2: original proportion * reference weight
+    male_stratum2_proportion = simple_weights_df[("male", 2)][0] / stratum2_sum[0]
+    male_stratum2_standardized = male_stratum2_proportion * 150.0
+    assert result.loc["male", 2] == pytest.approx(male_stratum2_standardized)
+
+
+def test_standardize_weights_by_stratum_error_handling(weights_df_multilevel):
+    """Test error handling with invalid reference data."""
+    # Create reference without stratum_num
+    invalid_reference = pd.DataFrame({
+        'region': [1, 2],
+        'weight': [100.0, 150.0]
+    })
+    
+    # Should raise ValueError
+    with pytest.raises(ValueError, match="must have a stratum_num column or index"):
+        get_proportions.standardize_weights_by_stratum(weights_df_multilevel, invalid_reference)
+
+def test_weight_proportions_basic(weight_distr_dict, catch_data_df):
+    """Test basic functionality of weight proportions calculation."""
+    # Call the function
+    result = get_proportions.weight_proportions(
+        weight_data=weight_distr_dict,
+        catch_data=catch_data_df,
+        group="aged"
+    )
+    
+    # Check that the result has the expected structure
+    assert isinstance(result, pd.DataFrame)
+    
+    # Calculate expected values
+    total_stratum1 = 80.0 + 18.8  # Catch weight + aged group weight
+    total_stratum2 = 110.0 + 27.9  # Catch weight + aged group weight
+    
+    # Check values individually instead of comparing entire DataFrames
+    # Expected values for female, stratum 1 and 2
+    assert pytest.approx(result.iloc[0, 0], abs=1e-3) == 10.5/total_stratum1
+    assert pytest.approx(result.iloc[0, 1], abs=1e-3) == 15.2/total_stratum2
+    
+    # Expected values for male, stratum 1 and 2
+    assert pytest.approx(result.iloc[1, 0], abs=1e-3) == 8.3/total_stratum1  
+    assert pytest.approx(result.iloc[1, 1], abs=1e-3) == 12.7/total_stratum2
+
+def test_weight_proportions_empty_catch(weight_distr_dict):
+    """Test handling of empty catch data."""
+    # Create empty catch DataFrame
+    empty_catch = pd.DataFrame(columns=['stratum_num', 'haul_weight'])
+    
+    # Should handle empty catch data gracefully 
+    result = get_proportions.weight_proportions(
+        weight_data=weight_distr_dict,
+        catch_data=empty_catch,
+        group="aged"
+    )
+    
+    # Result should be a DataFrame and reflect the structure of the input
+    assert isinstance(result, pd.DataFrame)
+
+
+def test_weight_proportions_missing_group(weight_distr_dict, catch_data_df):
+    """Test error handling when a non-existent group is specified."""
+    # Should raise KeyError for non-existent group
+    with pytest.raises(KeyError):
+        get_proportions.weight_proportions(
+            weight_data=weight_distr_dict,
+            catch_data=catch_data_df,
+            group="non_existent_group"
+        )
+
+def test_standardize_weight_proportions_basic(
+    standardized_data_fixture,
+    standardized_weight_reference,
+    catch_data_df,
+    proportion_dict_fixture,
+    binned_weight_table_fixture
+):
+    """Test basic functionality of standardized weight proportions."""
+    # Call the function directly - this just tests if it runs without errors
+    result = get_proportions.standardize_weight_proportions(
+        weight_data=standardized_data_fixture,
+        reference_data=standardized_weight_reference,
+        catch_data=catch_data_df,
+        proportion_dict=proportion_dict_fixture,
+        binned_weight_table=binned_weight_table_fixture,
+        group="unaged",
+        group_columns=["sex"]
+    )    
+    
+    # Verify it returns a DataFrame
+    assert isinstance(result, pd.DataFrame)
+    
+    # Verify the DataFrame has the expected structure
+    assert 1 in result.columns  # Should have stratum 1
+    assert 2 in result.columns  # Should have stratum 2

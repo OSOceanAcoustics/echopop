@@ -17,7 +17,7 @@ from echopop.nwfsc_feat import biology, ingest_nasc, get_proportions, load_data,
 # ==================================================================================================
 # Organize NASC file
 # ------------------
-nasc_path: Path = Path("C:/Users/Brandyn/Documents/GitHub/Data/raw_nasc/")
+nasc_path: Path = Path("C:/Users/Brandyn Lucca/Documents//Data/echopop_2019/raw_nasc/")
 filename_transect_pattern: str = r"T(\d+)"
 default_transect_spacing: float = 10.0  # nmi
 default_transect_spacing_latitude: float = 60.0  # deg N
@@ -36,13 +36,13 @@ interval_df, exports_df = ingest_nasc.merge_echoview_nasc(
 # Read in transect-region-haul keys
 # ---------------------------------
 transect_region_filepath_all_ages: Path = Path(
-    "C:/Users/Brandyn/Documents/GitHub/Data/Stratification/"
-    "US_CAN_2019_transect_region_haul_age1+ auto_final.xlsx"
+    "C:/Users/Brandyn Lucca/Documents//Data/echopop_2019/Stratification/"
+    "US&CAN_2019_transect_region_haul_age1+ auto_final.xlsx"
 )
 transect_region_sheetname_all_ages: str = "Sheet1"
 transect_region_filepath_no_age1: Path = Path(
-    "C:/Users/Brandyn/Documents/GitHub/Data/Stratification/"
-    "US_CAN_2019_transect_region_haul_age2+ auto_20191205.xlsx"
+    "C:/Users/Brandyn Lucca/Documents//Data/echopop_2019/Stratification/"
+    "US&CAN_2019_transect_region_haul_age2+ auto_20191205.xlsx"
 )
 transect_region_sheetname_no_age1: str = "Sheet1"
 transect_region_file_rename: dict = {
@@ -140,7 +140,7 @@ df_nasc_all_ages: pd.DataFrame = ingest_nasc.consolidate_echvoiew_nasc(
 # [OPTIONAL] Read in a pre-consolidated NASC data file
 # ----------------------------------------------------
 nasc_filename: Path = Path(
-    "C:/Users/Brandyn/Documents/GitHub/Data/Exports/US_CAN_NASC_2019_table_all_ages.xlsx"
+    "C:/Users/Brandyn Lucca/Documents/Data/echopop_2019/Exports/US_CAN_NASC_2019_table_all_ages.xlsx"
 )
 nasc_sheet: str = "Sheet1"
 FEAT_TO_ECHOPOP_COLUMNS: Dict[str, str] = {
@@ -183,7 +183,7 @@ nasc_all_ages_cleaned_df: pd.DataFrame = ingest_nasc.filter_transect_intervals(
 # ==================================================================================================
 # Load in the biolodical data
 # ---------------------------
-ROOT_PATH: Path = Path("C:/Users/Brandyn/Documents/GitHub/Data")
+ROOT_PATH: Path = Path("C:/Users/Brandyn LUcca/Documents/Data/echopop_2019/")
 biodata_filepath: Path = ROOT_PATH / "Biological/1995-2023_biodata_redo.xlsx"
 biodata_sheet_map: Dict[str, str] = {
     "catch": "biodata_catch", 
@@ -594,170 +594,35 @@ stratum_weights: pd.DataFrame = (
     .sum().reset_index(name="weight")
 )
 
-def aggregate_stratum_weights(dict_df_weight_distr):
-    """
-    Aggregate weights by stratum across all groups in the dictionary.
-    
-    Parameters
-    ----------
-    dict_df_weight_distr : Dict[str, pd.DataFrame]
-        Dictionary of DataFrames with multi-level columns including stratum_num
-        
-    Returns
-    -------
-    pd.DataFrame
-        DataFrame with stratum weights for each group
-    """
-    results = {}
-    
-    for group_name, df in dict_df_weight_distr.items():
-        # Find which level contains stratum_num
-        stratum_level = None
-        for i, name in enumerate(df.columns.names):
-            if name == 'stratum_num':
-                stratum_level = i
-                break
-        
-        if stratum_level is None:
-            print(f"Warning: No stratum_num level found in {group_name}")
-            continue
-            
-        # Aggregate weights by stratum - this returns a Series indexed by stratum_num
-        stratum_weights = df.T.groupby(level=stratum_level).sum().T.sum()
-        
-        # Store the series with appropriate name
-        results[f'{group_name}'] = stratum_weights
-    
-    # Combine all results into a DataFrame
-    if not results:
-        return pd.DataFrame(index=pd.Index([], name='stratum_num'))
-        
-    final_df = pd.DataFrame(results)
-    
-    # Fill NaN values with 0
-    final_df.fillna(0, inplace=True)
-    
-    return final_df
-
-def standardize_weights_by_stratum(weights_df, reference_weights_df):
-    """
-    Standardize weights in a DataFrame using reference weights by stratum.
-    
-    Parameters
-    ----------
-    weights_df : pd.DataFrame
-        DataFrame with multi-level columns including stratum_num and sex
-    reference_weights_df : pd.DataFrame
-        DataFrame with stratum_num as index and weight column
-        
-    Returns
-    -------
-    pd.DataFrame
-        DataFrame with weights standardized to match reference weight distribution
-    """
-
-    # Create copy
-    reference_copy = reference_weights_df.copy()
-    
-    # Set index of reference_weights to stratum_num if it's not already
-    if reference_copy.index.name != 'stratum_num':
-        if 'stratum_num' in reference_copy.columns:
-            reference_copy.set_index('stratum_num', inplace=True)
-        else:
-            raise ValueError("reference_weights_df must have a stratum_num column or index")
-    
-    # Sum weights by stratum and sex
-    summed_weights = weights_df.sum()
-    
-    # Calculate within-stratum proportions for each sex
-    strata_totals = summed_weights.unstack("stratum_num").sum(axis=0)
-    
-    # Simple standardization: divide by strata totals and multiply by reference weights
-    standardized = (
-        (summed_weights / strata_totals).unstack('stratum_num') * reference_copy["weight"]        
-    ).fillna(0.0)
-    
-    # Fill any NaN values with 0
-    return standardized
-
 ##########
+weight_data: Dict[str, pd.DataFrame] = dict_df_weight_distr
+group: str = "aged"
+group_columns: List[str] = ["sex", "age_bin"]
+catch_data: Dict[str, pd.DataFrame] = dict_df_bio_binned_ks["catch"]
 
-# Compute the total weights collected from the different groups
-stratum_summary = aggregate_stratum_weights(dict_df_weight_distr)
-# ---- Standardize the stratum weights for each sex among unaged fish per stratum
+
+
+############
+# Standardize the stratum weights for each sex among unaged fish per stratum
 standardized_unaged_sex_weights = standardize_weights_by_stratum(
     dict_df_weight_distr["unaged"], stratum_weights
 )
+catch_data: Dict[str, pd.DataFrame] = dict_df_bio_binned_ks["catch"]
+data: pd.DataFrame = standardized_unaged_sex_weights.copy()
+reference_data: pd.DataFrame = weight_proportions(dict_df_weight_distr, 
+                                                  catch_data=dict_df_bio_binned_ks["catch"] ,
+                                                  group="aged")
+proportion_dict: Dict[str, pd.DataFrame] = proportion_dict
+binned_weight_table: pd.DataFrame = binned_weight_table
+group: str = "unaged"
+group_columns: List[str] = ["sex"]
 
-# Compute the aged weight proportions
-# ---- Re-pivot
-aged_weights = dict_df_weight_distr["aged"].stack(["age_bin", "stratum_num", "sex"], 
-                                                  future_stack=True).unstack("stratum_num")
-# ---- Calculate the weight proportions
-aged_weight_proportions = aged_weights / stratum_summary["aged"]
-# ---- Aggregate weight proportions per sex
-aged_sex_weight_proportions = (
-    aged_weight_proportions.stack().unstack(["stratum_num", "sex", "age_bin"])
-    .sum().unstack("age_bin").sum(axis=1)
-)
-
-# Tabulate the total weights per strata
-total_stratum_weights = (
-    stratum_weights.set_index(["stratum_num"])["weight"] + stratum_summary["aged"]
-)
-
-# Calculate the overall weight proportions relative to the total stratum weights among aged fish
-aged_weight_proportions_overall = aged_weights / total_stratum_weights
-# ---- Aggregate weight proportions per sex
-aged_sex_weight_proportions_overall = (
-    aged_weight_proportions_overall.stack().unstack(["stratum_num", "sex", "age_bin"])
-    .sum().unstack("age_bin").sum(axis=1)
-)
-
-# Calculate the overall weight proportions relative to the total stratum weights among unaged fish
-# ---- For the standardized values
-unaged_standardized_sex_weight_proportions_overall = (
-    standardized_unaged_sex_weights / total_stratum_weights
-)
-# ---- Re-compute the proportions based on the unaged sex proportions
-unaged_weight_sex_proportions = (
-    unaged_standardized_sex_weight_proportions_overall / 
-    unaged_standardized_sex_weight_proportions_overall.sum(axis=0).to_numpy()
-).astype(float).fillna(0.)
-
-length_proportions_df = calculate_within_group_proportions(
-    proportion_dict, 
-    group_cols=["stratum_num", "sex"]
-)
-
-length_proportions_all = create_pivot_table(
-    length_proportions_df, 
-    index_cols=["group", "length_bin"], 
-    strat_cols=["stratum_num"], 
-    value_col="proportion"
-)
-
-# Calculate the average weights per length bin within each stratum among unaged fish
-unaged_weights = (
-    length_proportions_all.loc["unaged"].T * 
-    binned_weight_table.set_index(["length_bin"])["weight_fitted"]
-)
-# ---- Compute the average weight proportions
-unaged_weight_proportions = (unaged_weights.T / unaged_weights.sum(axis=1)).astype(float).fillna(0.)
-
-# Calculate the aged and unaged weight proportions
-# ---- Aged
-overall_aged_weight_proportions = aged_sex_weight_proportions_overall.unstack("sex").sum(axis=1)
-# ---- Unaged
-overall_unaged_weight_proportions = 1 - overall_aged_weight_proportions
-
-# Compute the unaged sex weight proportions relative to all samples
-unwaged_weight_sex_proportions_overall = (
-    unaged_weight_sex_proportions * overall_unaged_weight_proportions
-)
-# ---- Distribute across the within-group proportions
-unwaged_weight_proportions_overall = pd.concat([unaged_weight_proportions]*2, keys=["female", "male"], names=["sex"])
-unwaged_weight_proportions_overall * unwaged_weight_sex_proportions_overall 
+A = standardize_weight_proportions(data, 
+                                   reference_data, 
+                                   proportion_dict, 
+                                   binned_weight_table, 
+                                   group, 
+                                   group_columns)
 
 
 # Get weight proportion for all sex, male, female for all strata
@@ -786,8 +651,8 @@ ds_proportions: xr.Dataset = get_proportions.assemble_proportions(
 ########
 from echopop.survey import Survey
 from echopop.biology import filter_species
-survey = Survey(init_config_path = "C:/Users/Brandyn/Documents/GitHub/echopop/config_files/initialization_config_2019.yml",
-                survey_year_config_path = "C:/Users/Brandyn/Documents/GitHub/echopop/config_files/survey_year_2019_single_biodata_config.yml")
+survey = Survey(init_config_path = "C:/Users/Brandyn Lucca/Documents/GitHub/echopop/config_files/initialization_config_2019.yml",
+                survey_year_config_path = "C:/Users/Brandyn Lucca/Documents/GitHub/echopop/config_files/survey_year_2019_single_biodata_config.yml")
 survey.load_acoustic_data()
 survey.load_survey_data()
 survey.transect_analysis()
@@ -811,6 +676,7 @@ proportions_dict = analysis_dict["biology"]["proportions"]["number"]
 length_weight_df = analysis_dict["biology"]["weight"]["length_weight_regression"]["weight_fitted_df"]
 stratum_column = "stratum_num"
 
+analysis_dict["biology"]["proportions"]["weight"]
 
 ########
 
