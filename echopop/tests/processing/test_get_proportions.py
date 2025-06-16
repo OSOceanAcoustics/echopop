@@ -325,13 +325,6 @@ def test_compute_binned_counts_multiple_groupby_combinations(data_multiple_group
     assert result1["count"].sum() == result2["count"].sum()  # Same total count
 
 
-import numpy as np
-import pandas as pd
-import pytest
-
-from echopop.nwfsc_feat import get_proportions
-
-
 @pytest.fixture
 def aged_dataframe():
     """Create sample aged count data with stratum, length, age, and sex."""
@@ -822,12 +815,12 @@ def test_aggregate_stratum_weights_dictionary(weight_distr_dict):
     assert "unaged" in result.columns
 
     # Check values for first stratum with approx to handle float precision
-    assert pytest.approx(result.loc[1, "aged"]) == 21.9  # 10.5 + 8.3 + 3.1
-    assert pytest.approx(result.loc[1, "unaged"]) == 11.0  # 5.2 + 4.3 + 1.5
+    assert pytest.approx(result.loc[1, "aged"]) == 18.8  # 10.5 + 8.3
+    assert pytest.approx(result.loc[1, "unaged"]) == 9.5  # 5.2 + 4.3
 
     # Check values for second stratum
-    assert pytest.approx(result.loc[2, "aged"]) == 32.4  # 15.2 + 12.7 + 4.5
-    assert pytest.approx(result.loc[2, "unaged"]) == 16.1  # 7.8 + 6.1 + 2.2
+    assert pytest.approx(result.loc[2, "aged"]) == 27.9  # 15.2 + 12.7
+    assert pytest.approx(result.loc[2, "unaged"]) == 13.9  # 7.8 + 6.1
 
 
 def test_aggregate_stratum_weights_single_df(weights_df_multilevel):
@@ -923,12 +916,12 @@ def test_weight_proportions_basic(weight_distr_dict, catch_data_df):
 
     # Check values individually instead of comparing entire DataFrames
     # Expected values for female, stratum 1 and 2
-    assert pytest.approx(result.iloc[0, 0], abs=1e-3) == 10.5 / total_stratum1
-    assert pytest.approx(result.iloc[0, 1], abs=1e-3) == 15.2 / total_stratum2
+    assert pytest.approx(result.iloc[0, 0]) == 10.5 / total_stratum1
+    assert pytest.approx(result.iloc[0, 1]) == 15.2 / total_stratum2
 
     # Expected values for male, stratum 1 and 2
-    assert pytest.approx(result.iloc[1, 0], abs=1e-3) == 8.3 / total_stratum1
-    assert pytest.approx(result.iloc[1, 1], abs=1e-3) == 12.7 / total_stratum2
+    assert pytest.approx(result.iloc[1, 0]) == 8.3 / total_stratum1
+    assert pytest.approx(result.iloc[1, 1]) == 12.7 / total_stratum2
 
 
 def test_weight_proportions_empty_catch(weight_distr_dict):
@@ -979,3 +972,12 @@ def test_standardize_weight_proportions_basic(
     # Verify the DataFrame has the expected structure
     assert 1 in result.columns  # Should have stratum 1
     assert 2 in result.columns  # Should have stratum 2
+
+    # Assert the index names
+    assert set(result.index.names) <= set(["length_bin", "sex"])
+
+    # Assert results
+    assert list(result.loc["female", 30]) == pytest.approx([0.1500000, 0.0235294])
+    assert list(result.loc["female", 40]) == pytest.approx([0.0000000, 0.0564706])
+    assert list(result.loc["male", 30]) == pytest.approx([0.2500000, 0.0352941])
+    assert list(result.loc["male", 40]) == pytest.approx([0.0000000, 0.0847059])

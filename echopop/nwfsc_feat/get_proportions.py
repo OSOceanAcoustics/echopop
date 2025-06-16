@@ -1010,7 +1010,7 @@ def standardize_weight_proportions(
     ...     group_columns=["sex"]
     ... )
     """
-       
+    
     # Compute the total weights per stratum from the biological data
     stratum_weights = (
         catch_data.groupby(["stratum_num"])["haul_weight"]
@@ -1022,7 +1022,7 @@ def standardize_weight_proportions(
 
     # Get the total stratified weights across groups
     total_stratum_weights = (
-        stratum_weights.set_index(["stratum_num"])["weight"] + stratum_summary[group]
+        stratum_weights.set_index(["stratum_num"])["weight"] + stratum_summary["data"]
     )
 
     # Calculate the overall weight proportions relative to the total stratified weights
@@ -1070,20 +1070,25 @@ def standardize_weight_proportions(
     weight_proportions_overall = stratum_data_proportions * fitted_weight_proportions
 
     # Get all group keys
-    group_keys = (
-        reference_data.index.to_frame(index=False)[group_columns]
+    group_keys_list = list(
+        weight_data.index.to_frame(index=False)[group_columns]
         .drop_duplicates()
         .itertuples(index=False, name=None)
     )
     
     # Create and concatenate DataFrames for each element within `group_columns`
+    # weight_proportions_overall = pd.concat(
+    #     [weight_proportions_overall] * len(list(group_keys)),
+    #     keys=list(
+    #         weight_data.index.to_frame(index=False)[group_columns]
+    #         .drop_duplicates()
+    #         .itertuples(index=False, name=None)
+    #     ),
+    #     names=group_columns
+    # ) * weight_proportions_grouped
     weight_proportions_overall = pd.concat(
-        [weight_proportions_overall] * len(list(group_keys)),
-        keys=list(
-            weight_data.index.to_frame(index=False)[group_columns]
-            .drop_duplicates()
-            .itertuples(index=False, name=None)
-        ),
+        [weight_proportions_overall] * len(group_keys_list),  # Create exactly the right number of copies
+        keys=group_keys_list,
         names=group_columns
     ) * weight_proportions_grouped
     

@@ -340,7 +340,6 @@ def test_length_binned_weights_preserves_original_data(
     sample_specimen_data, sample_length_distribution, single_regression_coefficients
 ):
     """Test that original data is not modified."""
-    original_columns = list(sample_specimen_data.columns)
     original_data = sample_specimen_data.copy()
 
     biology.length_binned_weights(

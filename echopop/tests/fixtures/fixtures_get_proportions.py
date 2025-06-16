@@ -3,8 +3,6 @@ import pandas as pd
 import pytest
 from scipy import interpolate as interp
 
-from echopop.nwfsc_feat import get_proportions
-
 
 @pytest.fixture
 def sample_specimen_data():
@@ -458,56 +456,70 @@ def expected_proportions():
 
 @pytest.fixture
 def proportion_dict_fixture():
-    """Create sample proportion dictionary for testing."""
-    # Sample data with number proportions by length bin within groups
-    return {
-        "unaged": pd.DataFrame(
-            {
-                "group": ["unaged", "unaged", "unaged", "unaged"],
-                "stratum_num": [1, 1, 2, 2],
-                "sex": ["male", "female", "male", "female"],
-                "length_bin": [30, 40, 30, 40],
-                "proportion": [0.6, 0.4, 0.5, 0.5],
-            }
-        )
-    }
+    """Create proportion_dict with 'unaged' key for group."""
+    unaged_data = pd.DataFrame(
+        {
+            "stratum_num": [1, 1, 2, 2],
+            "sex": ["male", "female", "male", "female"],
+            "length_bin": [30, 30, 30, 40],
+            "proportion": [0.4, 0.6, 0.5, 0.5],
+            "proportion_overall": [0.3, 0.2, 0.3, 0.2],
+        }
+    )
+
+    # Return as dictionary with 'unaged' key
+    return {"unaged": unaged_data}
 
 
 @pytest.fixture
 def binned_weight_table_fixture():
-    """Create sample weight table with fitted weights by length bin."""
+    """Create binned_weight_table with sex column."""
     return pd.DataFrame(
-        {"length_bin": [30, 40], "weight_fitted": [0.5, 1.2]}  # Weight in kg for each length bin
+        {"length_bin": [30, 40], "weight_fitted": [0.5, 1.2], "sex": ["all", "all"]}
     )
 
 
 @pytest.fixture
 def standardized_weight_reference():
-    """Create sample reference data for standardized weights."""
-    # Reference proportions for each stratum
-    index = pd.MultiIndex.from_tuples(
-        [("sex", "male"), ("sex", "female"), ("sex", "unsexed")], names=["group", "category"]
+    """Create reference data with proper MultiIndex structure."""
+    # Create index for reference data
+    idx = pd.MultiIndex.from_product(
+        [
+            ["(20.0, 30.0]", "(30.0, 40.0]"],  # length_bin
+            ["(1.5, 2.5]"],  # age_bin
+            ["male", "female", "unsexed"],  # sex
+        ],
+        names=["length_bin", "age_bin", "sex"],
     )
 
-    # Sample proportions that sum to less than 1 for each stratum
-    return pd.DataFrame(
-        {
-            1: [0.3, 0.2, 0.1],  # Sum: 0.6, leaving 0.4 for unaged
-            2: [0.4, 0.3, 0.1],  # Sum: 0.8, leaving 0.2 for unaged
-        },
-        index=index,
-    )
+    # Create MultiIndex columns with stratum_num
+    cols = pd.Index([1, 2], name="stratum_num")
+
+    # Create data
+    data = np.zeros((len(idx), len(cols)))
+    data[0, 0] = 0.3  # First row, stratum 1
+    data[1, 0] = 0.2  # Second row, stratum 1
+    data[2, 0] = 0.1  # Third row, stratum 1
+    data[0, 1] = 0.4  # First row, stratum 2
+    data[1, 1] = 0.3  # Second row, stratum 2
+    data[2, 1] = 0.1  # Third row, stratum 2
+
+    return pd.DataFrame(data, index=idx, columns=cols)
 
 
 @pytest.fixture
 def standardized_data_fixture():
-    """Create sample data for standardized weight proportions."""
-    index = pd.MultiIndex.from_tuples(
-        [("sex", "male"), ("sex", "female")], names=["group", "category"]
-    )
+    """Create a properly structured weight_data fixture."""
+    # Create a DataFrame with sex as row index and stratum_num as columns
+    data = {1: [0.15, 0.25], 2: [0.08, 0.12]}  # stratum 1 values  # stratum 2 values
 
-    # Sample proportions for unaged fish
-    return pd.DataFrame({1: [0.25, 0.15], 2: [0.12, 0.08]}, index=index)  # Sum: 0.4  # Sum: 0.2
+    # Create DataFrame with proper index name
+    df = pd.DataFrame(data, index=pd.Index(["female", "male"], name="sex"))
+
+    # Ensure column index is properly named
+    df.columns.name = "stratum_num"
+
+    return df
 
 
 @pytest.fixture

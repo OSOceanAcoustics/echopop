@@ -17,7 +17,7 @@ from echopop.nwfsc_feat import biology, ingest_nasc, get_proportions, load_data,
 # ==================================================================================================
 # Organize NASC file
 # ------------------
-nasc_path: Path = Path("C:/Users/Brandyn Lucca/Documents//Data/echopop_2019/raw_nasc/")
+nasc_path: Path = Path("C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_2019/raw_nasc/")
 filename_transect_pattern: str = r"T(\d+)"
 default_transect_spacing: float = 10.0  # nmi
 default_transect_spacing_latitude: float = 60.0  # deg N
@@ -36,13 +36,13 @@ interval_df, exports_df = ingest_nasc.merge_echoview_nasc(
 # Read in transect-region-haul keys
 # ---------------------------------
 transect_region_filepath_all_ages: Path = Path(
-    "C:/Users/Brandyn Lucca/Documents//Data/echopop_2019/Stratification/"
-    "US&CAN_2019_transect_region_haul_age1+ auto_final.xlsx"
+    "C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_2019/Stratification/"
+    "US_CAN_2019_transect_region_haul_age1+ auto_final.xlsx"
 )
 transect_region_sheetname_all_ages: str = "Sheet1"
 transect_region_filepath_no_age1: Path = Path(
-    "C:/Users/Brandyn Lucca/Documents//Data/echopop_2019/Stratification/"
-    "US&CAN_2019_transect_region_haul_age2+ auto_20191205.xlsx"
+    "C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_2019/Stratification/"
+    "US_CAN_2019_transect_region_haul_age2+ auto_20191205.xlsx"
 )
 transect_region_sheetname_no_age1: str = "Sheet1"
 transect_region_file_rename: dict = {
@@ -140,7 +140,7 @@ df_nasc_all_ages: pd.DataFrame = ingest_nasc.consolidate_echvoiew_nasc(
 # [OPTIONAL] Read in a pre-consolidated NASC data file
 # ----------------------------------------------------
 nasc_filename: Path = Path(
-    "C:/Users/Brandyn Lucca/Documents/Data/echopop_2019/Exports/US_CAN_NASC_2019_table_all_ages.xlsx"
+    "C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_2019//Exports/US_CAN_NASC_2019_table_all_ages.xlsx"
 )
 nasc_sheet: str = "Sheet1"
 FEAT_TO_ECHOPOP_COLUMNS: Dict[str, str] = {
@@ -183,7 +183,7 @@ nasc_all_ages_cleaned_df: pd.DataFrame = ingest_nasc.filter_transect_intervals(
 # ==================================================================================================
 # Load in the biolodical data
 # ---------------------------
-ROOT_PATH: Path = Path("C:/Users/Brandyn LUcca/Documents/Data/echopop_2019/")
+ROOT_PATH: Path = Path("C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_2019/")
 biodata_filepath: Path = ROOT_PATH / "Biological/1995-2023_biodata_redo.xlsx"
 biodata_sheet_map: Dict[str, str] = {
     "catch": "biodata_catch", 
@@ -218,10 +218,10 @@ biodata_label_map: Dict[Any, Dict] = {
 # Outputs:
 # ---- Dictionary comprising different biological datasets defined via `biodata_sheet_map`
 dict_df_bio = load_data.load_biological_data(biodata_filepath, 
-                                             biodata_sheet_map, 
-                                             FEAT_TO_ECHOPOP_BIODATA_COLUMNS, 
-                                             subset_dict, 
-                                             biodata_label_map)
+                                            biodata_sheet_map, 
+                                            FEAT_TO_ECHOPOP_BIODATA_COLUMNS, 
+                                            subset_dict, 
+                                            biodata_label_map)
 
 # ==================================================================================================
 # Load in strata files
@@ -240,8 +240,8 @@ FEAT_TO_ECHOPOP_STRATA_COLUMNS = {
 # Outputs:
 # ---- Dictionary comprising stratification information
 dict_df_strata = load_data.load_strata(strata_filepath, 
-                                       strata_sheet_map, 
-                                       FEAT_TO_ECHOPOP_STRATA_COLUMNS)
+                                    strata_sheet_map, 
+                                    FEAT_TO_ECHOPOP_STRATA_COLUMNS)
 
 # ==================================================================================================
 # Load in geographical strata files
@@ -259,8 +259,8 @@ FEAT_TO_ECHOPOP_GEOSTRATA_COLUMNS = {
 # Outputs:
 # ---- Dictionary comprising geoigraphical stratification information
 dict_df_geostrata = load_data.load_geostrata(geostrata_filepath, 
-                                             geostrata_sheet_map, 
-                                             FEAT_TO_ECHOPOP_GEOSTRATA_COLUMNS)
+                                            geostrata_sheet_map, 
+                                            FEAT_TO_ECHOPOP_GEOSTRATA_COLUMNS)
 
 # ==================================================================================================
 # Stratify data based on haul numbers
@@ -270,14 +270,14 @@ dict_df_geostrata = load_data.load_geostrata(geostrata_filepath,
 # ---- DataFrame merged with stratum number (KS or INPFC)
 # -------- INPFC (from strata)
 nasc_all_ages_df_inpfc = load_data.join_strata_by_haul(nasc_all_ages_df, 
-                                                       dict_df_strata["inpfc"])
+                                                    dict_df_strata["inpfc"])
 dict_df_bio_inpfc = load_data.join_strata_by_haul(dict_df_bio,
-                                                  dict_df_strata["inpfc"])
+                                                dict_df_strata["inpfc"])
 # -------- KS (from strata)
 nasc_all_ages_df_ks = load_data.join_strata_by_haul(nasc_all_ages_df, 
                                                     dict_df_strata["ks"])
 dict_df_bio_ks = load_data.join_strata_by_haul(dict_df_bio,
-                                               dict_df_strata["ks"])
+                                            dict_df_strata["ks"])
 
 # ==================================================================================================
 # Load kriging mesh file
@@ -304,10 +304,10 @@ mesh_df = load_data.load_mesh_data(mesh_filepath, mesh_sheet_name, FEAT_TO_ECHOP
 # ---- DataFrame merged with geographically distributed stratum number (KS or INPFC)
 # -------- INPFC (from geostrata)
 nasc_all_ages_df_inpfc = load_data.join_geostrata_by_latitude(nasc_all_ages_df, 
-                                                              dict_df_geostrata["inpfc"])
+                                                            dict_df_geostrata["inpfc"])
 # -------- KS (from geostrata)
 nasc_all_ages_df_ks = load_data.join_geostrata_by_latitude(nasc_all_ages_df, 
-                                                           dict_df_geostrata["inpfc"])
+                                                        dict_df_geostrata["inpfc"])
 
 # MESH
 # ---- DataFrame merged with geographically distributed stratum number (KS or INPFC)
@@ -576,7 +576,7 @@ dict_df_weight_distr["unaged"] = get_proportions.binned_weights(
 # Calculate the average weights pre stratum when combining different datasets
 # ---------------------------------------------------------------------------
 proportion_dict: Dict[str, pd.DataFrame] = dict_df_number_proportion
-binned_weight_table: pd.DataFrame = binned_weight_table.loc[lambda x: x.sex == "all"]
+binned_weight_table: pd.DataFrame = binned_weight_table
 
 # Output:
 # ---- `pandas.DataFrame` indexed by stratum with the average weights per stratum for male, female, 
@@ -586,102 +586,64 @@ df_averaged_weight = get_proportions.stratum_averaged_weight(
 )
 
 # ==================================================================================================
-# Compute the weight binned weight proportions
-# --------------------------------------------
-proportions_dict: Dict[str, pd.DataFrame] = dict_df_weight_distr
+# Compute the length-binned weight proportions for aged fish
+# ----------------------------------------------------------
+weight_data: Dict[str, pd.DataFrame] = dict_df_weight_distr
+catch_data: pd.DataFrame = dict_df_bio_binned_ks["catch"]
+group: str = "aged"
+
+# Initialize Dictionary container
+dict_df_weight_proportion: Dict[str, Any] = {}
+
+# Output:
+# ---- `pandas.DataFrame` indexed by, in this case, length, age, and sex across all strata 
+# ---- containing weight proportions
+dict_df_weight_proportion["aged"] = get_proportions.weight_proportions(
+    weight_data, catch_data, group
+)
+
+# ==================================================================================================
+# Compute the standardized haul weights for unaged fish
+# -----------------------------------------------------
+weight_data: pd.DataFrame = dict_df_weight_distr["unaged"]
 stratum_weights: pd.DataFrame = (
     dict_df_bio_binned_ks["catch"].groupby(["stratum_num"])["haul_weight"]
     .sum().reset_index(name="weight")
 )
 
-##########
-weight_data: Dict[str, pd.DataFrame] = dict_df_weight_distr
-group: str = "aged"
-group_columns: List[str] = ["sex", "age_bin"]
-catch_data: Dict[str, pd.DataFrame] = dict_df_bio_binned_ks["catch"]
-
-
-
-############
-# Standardize the stratum weights for each sex among unaged fish per stratum
-standardized_unaged_sex_weights = standardize_weights_by_stratum(
-    dict_df_weight_distr["unaged"], stratum_weights
+# Output:
+# ---- `pandas.DataFrame` indexed by, in this case, sex across all strata containing the 
+# ---- standardized haul weights
+standardized_sexed_unaged_weights_df = get_proportions.standardize_weights_by_stratum(
+    weight_data, stratum_weights
 )
+
+# ==================================================================================================
+# Compute the standardized weight proportionsfor unaged fish
+# ----------------------------------------------------------
+weight_data: pd.DataFrame = standardized_sexed_unaged_weights_df
 catch_data: Dict[str, pd.DataFrame] = dict_df_bio_binned_ks["catch"]
-data: pd.DataFrame = standardized_unaged_sex_weights.copy()
-reference_data: pd.DataFrame = weight_proportions(dict_df_weight_distr, 
-                                                  catch_data=dict_df_bio_binned_ks["catch"] ,
-                                                  group="aged")
+reference_data: pd.DataFrame = dict_df_weight_proportion["aged"]
 proportion_dict: Dict[str, pd.DataFrame] = proportion_dict
-binned_weight_table: pd.DataFrame = binned_weight_table
+binned_weight_table: pd.DataFrame = binned_weights_df_all
 group: str = "unaged"
 group_columns: List[str] = ["sex"]
 
-A = standardize_weight_proportions(data, 
-                                   reference_data, 
-                                   proportion_dict, 
-                                   binned_weight_table, 
-                                   group, 
-                                   group_columns)
-
-
-# Get weight proportion for all sex, male, female for all strata
-# dict_df_weight_proportion: Dict[pd.DataFrame] = get_proportions.weight_proportions(
-#     df_catch=dict_df_bio["catch"],
-#     dict_df_weight_proportion=dict_df_weight_distr,  # weight proportions
-#     df_length_weight=df_length_weight,  # length-weight regression
-# )
-
-# Assemble an xr.Dataset of number and weight proportions
-# I (WJ) think what you have in `distribute_length_age` is essentially this step
-# This is a temporary step to convert the dataframes to xarray
-# NOTE: This is a temporary step to convert the dataframes to xarray.
-#       This can be removed once the following functions are implemented
-#       to use xarray Dataset/DataArray as input/output directly:
-#       -- get_proportions.number_proportions()
-#       -- get_proportions.weight_distributions_over_lenghth_age()
-#       -- get_proportions.stratum_averaged_weight()
-#       -- get_proportions.weight_proportions()
-ds_proportions: xr.Dataset = get_proportions.assemble_proportions(
-    dict_df_number_proportion=dict_df_number_proportion,
-    dict_df_weight_proportion=dict_df_weight_proportion,
+# Output:
+# ---- `pandas.DataFrame` indexed by, in this case, length, and sex across all strata containing 
+# ---- the standardized weight proportions based on the sexed ratios and fitted length-weight 
+# ---- distributions computed using the aged measurements
+dict_df_weight_proportion["unaged"] = get_proportions.standardize_weight_proportions(
+    weight_data, reference_data, catch_data, 
+    proportion_dict, binned_weight_table, group, group_columns
 )
 
-
-########
-from echopop.survey import Survey
-from echopop.biology import filter_species
-survey = Survey(init_config_path = "C:/Users/Brandyn Lucca/Documents/GitHub/echopop/config_files/initialization_config_2019.yml",
-                survey_year_config_path = "C:/Users/Brandyn Lucca/Documents/GitHub/echopop/config_files/survey_year_2019_single_biodata_config.yml")
-survey.load_acoustic_data()
-survey.load_survey_data()
-survey.transect_analysis()
-
-input_dict = survey.input
-analysis_dict=survey.analysis["transect"]
-settings_dict = survey.analysis["settings"]
-length_data, specimen_data, catch_data = filter_species(
-    [
-        input_dict["biology"]["length_df"],
-        input_dict["biology"]["specimen_df"],
-        input_dict["biology"]["catch_df"],
-    ],
-    settings_dict["transect"]["species_id"],
-)
-# ---- For cases where all samples were aged (i.e. in `specimen_data` and absent from
-# ---- `length_data`), these hauls are removed from `catch_data`
-catch_data = catch_data[catch_data.haul_num.isin(length_data.haul_num)]
-distributions_dict = analysis_dict["biology"]["distributions"]["weight"]
-proportions_dict = analysis_dict["biology"]["proportions"]["number"]
-length_weight_df = analysis_dict["biology"]["weight"]["length_weight_regression"]["weight_fitted_df"]
-stratum_column = "stratum_num"
-
-analysis_dict["biology"]["proportions"]["weight"]
-
-########
-
+# ==================================================================================================
+# ==================================================================================================
+# NASC TO POPULATION ESTIMATE CONVERSION
+# ==================================================================================================
 # ===========================================
-# NASC to number density and biomass
+
 
 # Initiate object to perform inversion
 # inversion parameters are stored as object attributes
