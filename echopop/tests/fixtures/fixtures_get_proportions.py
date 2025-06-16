@@ -2,7 +2,9 @@ import numpy as np
 import pandas as pd
 import pytest
 from scipy import interpolate as interp
+
 from echopop.nwfsc_feat import get_proportions
+
 
 @pytest.fixture
 def sample_specimen_data():
@@ -335,22 +337,20 @@ def test_weight_table():
         }
     )
 
+
 @pytest.fixture
 def weights_df_fixture():
     """Create a DataFrame with the correct structure for weight distributions."""
     # Create multi-level columns for sex and stratum_num
     columns = pd.MultiIndex.from_tuples(
-        [
-            ("female", 1), ("female", 2), 
-            ("male", 1), ("male", 2)
-        ],
-        names=["sex", "stratum_num"]
+        [("female", 1), ("female", 2), ("male", 1), ("male", 2)], names=["sex", "stratum_num"]
     )
-    
+
     # Create simple data
     data = [[10.5, 15.2, 8.3, 12.7]]
-    
+
     return pd.DataFrame(data=data, columns=columns)
+
 
 @pytest.fixture
 def weight_distr_dict(weights_df_fixture):
@@ -358,20 +358,21 @@ def weight_distr_dict(weights_df_fixture):
     # Create a variation for the unaged group
     unaged_df = weights_df_fixture.copy()
     unaged_df.iloc[0] = [5.2, 7.8, 4.3, 6.1]
-    
-    return {
-        "aged": weights_df_fixture,
-        "unaged": unaged_df
-    }
+
+    return {"aged": weights_df_fixture, "unaged": unaged_df}
+
 
 @pytest.fixture
 def catch_data_df():
     """Create simple catch data with the correct structure."""
-    return pd.DataFrame({
-        'stratum_num': [1, 1, 2, 2],
-        'haul_num': [101, 102, 201, 202],
-        'haul_weight': [50.0, 30.0, 65.0, 45.0]
-    })
+    return pd.DataFrame(
+        {
+            "stratum_num": [1, 1, 2, 2],
+            "haul_num": [101, 102, 201, 202],
+            "haul_weight": [50.0, 30.0, 65.0, 45.0],
+        }
+    )
+
 
 @pytest.fixture
 def weights_df_multilevel():
@@ -386,22 +387,19 @@ def weights_df_multilevel():
             ("sex", "unsexed", "stratum_num", 1),
             ("sex", "unsexed", "stratum_num", 2),
         ],
-        names=["group", "category", "strata", "stratum_num"]
+        names=["group", "category", "strata", "stratum_num"],
     )
-    
+
     # Create data with one row
     data = np.array([[10.5, 15.2, 8.3, 12.7, 3.1, 4.5]])
-    
+
     return pd.DataFrame(data=data, columns=columns)
 
 
 @pytest.fixture
 def reference_stratum_weights():
     """Create reference stratum weights DataFrame for testing."""
-    return pd.DataFrame({
-        'stratum_num': [1, 2],
-        'weight': [100.0, 150.0]
-    })
+    return pd.DataFrame({"stratum_num": [1, 2], "weight": [100.0, 150.0]})
 
 
 @pytest.fixture
@@ -412,9 +410,9 @@ def empty_weights_df_multilevel():
             ("sex", "male", "stratum_num", 1),
             ("sex", "male", "stratum_num", 2),
         ],
-        names=["group", "category", "strata", "stratum_num"]
+        names=["group", "category", "strata", "stratum_num"],
     )
-    
+
     return pd.DataFrame(columns=columns)
 
 
@@ -428,12 +426,13 @@ def weights_df_missing_stratum():
             ("sex", "female", "region", 1),
             ("sex", "female", "region", 2),
         ],
-        names=["group", "category", "geography", "region_id"]
+        names=["group", "category", "geography", "region_id"],
     )
-    
+
     data = np.array([[10.5, 15.2, 8.3, 12.7]])
-    
+
     return pd.DataFrame(data=data, columns=columns)
+
 
 @pytest.fixture
 def expected_proportions():
@@ -441,99 +440,97 @@ def expected_proportions():
     # Calculated based on the test data:
     # For stratum 1: total weight = 80.0 + 21.9 = 101.9
     # For stratum 2: total weight = 110.0 + 32.4 = 142.4
-    
+
     # For male, stratum 1: 10.5 / 101.9 = ~0.103
     # For male, stratum 2: 15.2 / 142.4 = ~0.107
     # Similar calculations for female and unsexed
-    
+
     # Structure follows the data_pvt in the function
-    index = pd.MultiIndex.from_tuples([
-        ('sex', 'male'),
-        ('sex', 'female'),
-        ('sex', 'unsexed')
-    ], names=['group', 'category'])
-    
-    return pd.DataFrame({
-        1: [10.5/101.9, 8.3/101.9, 3.1/101.9],
-        2: [15.2/142.4, 12.7/142.4, 4.5/142.4]
-    }, index=index)
-    
+    index = pd.MultiIndex.from_tuples(
+        [("sex", "male"), ("sex", "female"), ("sex", "unsexed")], names=["group", "category"]
+    )
+
+    return pd.DataFrame(
+        {1: [10.5 / 101.9, 8.3 / 101.9, 3.1 / 101.9], 2: [15.2 / 142.4, 12.7 / 142.4, 4.5 / 142.4]},
+        index=index,
+    )
+
+
 @pytest.fixture
 def proportion_dict_fixture():
     """Create sample proportion dictionary for testing."""
     # Sample data with number proportions by length bin within groups
     return {
-        'unaged': pd.DataFrame({
-            'group': ['unaged', 'unaged', 'unaged', 'unaged'],
-            'stratum_num': [1, 1, 2, 2],
-            'sex': ['male', 'female', 'male', 'female'],
-            'length_bin': [30, 40, 30, 40],
-            'proportion': [0.6, 0.4, 0.5, 0.5]
-        })
+        "unaged": pd.DataFrame(
+            {
+                "group": ["unaged", "unaged", "unaged", "unaged"],
+                "stratum_num": [1, 1, 2, 2],
+                "sex": ["male", "female", "male", "female"],
+                "length_bin": [30, 40, 30, 40],
+                "proportion": [0.6, 0.4, 0.5, 0.5],
+            }
+        )
     }
 
 
 @pytest.fixture
 def binned_weight_table_fixture():
     """Create sample weight table with fitted weights by length bin."""
-    return pd.DataFrame({
-        'length_bin': [30, 40],
-        'weight_fitted': [0.5, 1.2]  # Weight in kg for each length bin
-    })
+    return pd.DataFrame(
+        {"length_bin": [30, 40], "weight_fitted": [0.5, 1.2]}  # Weight in kg for each length bin
+    )
 
 
 @pytest.fixture
 def standardized_weight_reference():
     """Create sample reference data for standardized weights."""
     # Reference proportions for each stratum
-    index = pd.MultiIndex.from_tuples([
-        ('sex', 'male'),
-        ('sex', 'female'),
-        ('sex', 'unsexed')
-    ], names=['group', 'category'])
-    
+    index = pd.MultiIndex.from_tuples(
+        [("sex", "male"), ("sex", "female"), ("sex", "unsexed")], names=["group", "category"]
+    )
+
     # Sample proportions that sum to less than 1 for each stratum
-    return pd.DataFrame({
-        1: [0.3, 0.2, 0.1],  # Sum: 0.6, leaving 0.4 for unaged
-        2: [0.4, 0.3, 0.1]   # Sum: 0.8, leaving 0.2 for unaged
-    }, index=index)
+    return pd.DataFrame(
+        {
+            1: [0.3, 0.2, 0.1],  # Sum: 0.6, leaving 0.4 for unaged
+            2: [0.4, 0.3, 0.1],  # Sum: 0.8, leaving 0.2 for unaged
+        },
+        index=index,
+    )
 
 
 @pytest.fixture
 def standardized_data_fixture():
     """Create sample data for standardized weight proportions."""
-    index = pd.MultiIndex.from_tuples([
-        ('sex', 'male'),
-        ('sex', 'female')
-    ], names=['group', 'category'])
-    
+    index = pd.MultiIndex.from_tuples(
+        [("sex", "male"), ("sex", "female")], names=["group", "category"]
+    )
+
     # Sample proportions for unaged fish
-    return pd.DataFrame({
-        1: [0.25, 0.15],  # Sum: 0.4
-        2: [0.12, 0.08]   # Sum: 0.2
-    }, index=index)
-    
+    return pd.DataFrame({1: [0.25, 0.15], 2: [0.12, 0.08]}, index=index)  # Sum: 0.4  # Sum: 0.2
+
+
 @pytest.fixture
 def simple_weights_df():
     """Create a simple multi-level column DataFrame with stratum_num in columns."""
     # Create multi-level columns with sex and stratum_num
     columns = pd.MultiIndex.from_tuples(
         [
-            ("female", 1), ("female", 2),
-            ("male", 1), ("male", 2),
+            ("female", 1),
+            ("female", 2),
+            ("male", 1),
+            ("male", 2),
         ],
-        names=["sex", "stratum_num"]
+        names=["sex", "stratum_num"],
     )
-    
+
     # Create simple data with one row
     data = np.array([[10.5, 15.2, 8.3, 12.7]])
-    
+
     return pd.DataFrame(data=data, columns=columns)
+
 
 @pytest.fixture
 def simple_stratum_weights():
     """Create simple stratum weights DataFrame for testing."""
-    return pd.DataFrame({
-        'stratum_num': [1, 2],
-        'weight': [100.0, 150.0]
-    })
+    return pd.DataFrame({"stratum_num": [1, 2], "weight": [100.0, 150.0]})
