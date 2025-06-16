@@ -1,63 +1,64 @@
+from typing import Union
+
 import numpy as np
 import pandas as pd
-from typing import Any, Dict, List, Union
+
 
 def fit_length_weight_regression(data: pd.DataFrame) -> pd.Series:
     """
     Fit a log-linear length-weight regression to biological data.
-    
+
     This function fits a linear regression to log10-transformed length and weight
     data, following the standard allometric relationship: log(weight) = a + b*log(length).
     The function can be used standalone or as part of a groupby operation.
-    
+
     Parameters
     ----------
     data : pd.DataFrame
         DataFrame containing 'length' and 'weight' columns.
-    
+
     Returns
     -------
     pd.Series
         Series with regression coefficients:
         - 'slope': The slope coefficient (b) from log(weight) = a + b*log(length)
         - 'intercept': The intercept coefficient (a) from log(weight) = a + b*log(length)
-    
+
     Examples
     --------
     >>> # Standalone usage
     >>> coeffs = fit_length_weight_regression(length_weight_dataset)
-    
+
     >>> # With groupby
     >>> grouped_coeffs = data.groupby('sex').apply(fit_length_weight_regression)
     """
     # Remove missing values
     clean_data = data.dropna(subset=["length", "weight"])
-    
+
     # Fit the length-weight log-linear regression
     regression_coefficients = pd.Series(
-        np.polyfit(np.log10(clean_data["length"]),
-                   np.log10(clean_data["weight"]),
-                   1),
-        index=["slope", "intercept"]
+        np.polyfit(np.log10(clean_data["length"]), np.log10(clean_data["weight"]), 1),
+        index=["slope", "intercept"],
     )
-    
+
     return regression_coefficients
+
 
 def length_binned_weights(
     data: pd.DataFrame,
     length_distribution: pd.DataFrame,
     regression_coefficients: Union[pd.Series, pd.DataFrame],
     impute_bins: bool = True,
-    minimum_count_threshold: int = 0
+    minimum_count_threshold: int = 0,
 ) -> pd.DataFrame:
     """
     Compute length-binned average weights using regression coefficients and observed data.
-    
+
     This function calculates fitted weights for length bins by combining modeled weights
     (from length-weight regression) with observed mean weights. For bins with sufficient
     sample sizes, observed means are used; for bins with low sample sizes, modeled weights
     are used if imputation is enabled.
-    
+
     Parameters
     ----------
     data : pd.DataFrame
@@ -74,31 +75,31 @@ def length_binned_weights(
     minimum_count_threshold : int, default 0
         Minimum number of specimens required to use observed mean instead of modeled weight.
         Only relevant when impute_bins=True.
-    
+
     Returns
     -------
     pd.DataFrame
         DataFrame with fitted weights for each length bin and group combination.
         Contains grouping columns (if any), 'length_bin', and 'weight_fitted'.
-    
+
     Examples
     --------
     >>> # Single coefficient set
     >>> coeffs = fit_length_weight_regression(specimen_data)
     >>> fitted = compute_binned_weights(specimen_data, length_dist, coeffs)
-    
+
     >>> # Grouped coefficients (e.g., by sex)
     >>> sex_coeffs = specimen_data.groupby('sex').apply(fit_length_weight_regression)
-    >>> fitted = compute_binned_weights(specimen_data, length_dist, sex_coeffs, 
+    >>> fitted = compute_binned_weights(specimen_data, length_dist, sex_coeffs,
     ...                                minimum_count_threshold=5)
-    
+
     >>> # No imputation - use only observed means
     >>> fitted = compute_binned_weights(specimen_data, length_dist, coeffs,
     ...                                impute_bins=False)
     """
     # Make a copy to avoid modifying original data
     data = data.copy()
-    
+
     # Handle different coefficient input types
     if isinstance(regression_coefficients, pd.Series):
         # Single set of coefficients - convert to DataFrame for consistent processing
@@ -119,16 +120,18 @@ def length_binned_weights(
 
     # Predict weight per bin using allometric relationship: weight = 10^intercept * length^slope
     weight_fitted_df["weight_modeled"] = (
-        10.0 ** weight_fitted_df["intercept"] 
-        * weight_fitted_df["bin"] ** weight_fitted_df["slope"]
+        10.0 ** weight_fitted_df["intercept"] * weight_fitted_df["bin"] ** weight_fitted_df["slope"]
     )
 
     # Get the column names if any grouping is required
-    cols = [name for name in regression_coefficients.index.names if name is not None] + ["length_bin"]
+    cols = [name for name in regression_coefficients.index.names if name is not None] + [
+        "length_bin"
+    ]
 
     # Binify, if column `"length_bin"` missing
     if "length_bin" not in data.columns:
         from echopop.nwfsc_feat import utils
+
         utils.binify(data, length_distribution, "length", True)
 
     # Quantize weight counts per length bin
@@ -142,9 +145,9 @@ def length_binned_weights(
     )
 
     # Merge with the fitted weights
-    binned_weight_distribution["weight_modeled"] = (
-        weight_fitted_df.set_index(cols)["weight_modeled"]
-    )
+    binned_weight_distribution["weight_modeled"] = weight_fitted_df.set_index(cols)[
+        "weight_modeled"
+    ]
 
     # Create distribution mask based on imputation settings
     if impute_bins:
@@ -162,7 +165,7 @@ def length_binned_weights(
     binned_weight_distribution["weight_fitted"] = np.where(
         distribution_mask,
         binned_weight_distribution["weight_modeled"],
-        binned_weight_distribution["weight_mean"]
+        binned_weight_distribution["weight_mean"],
     )
 
     # Reset the index and pare down the output columns

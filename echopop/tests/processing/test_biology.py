@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -69,8 +71,11 @@ def test_fit_length_weight_regression_minimal_data(minimal_data):
 
 def test_fit_length_weight_regression_single_row_error(single_row_data):
     """Test error handling with insufficient data."""
-    with pytest.warns(np.RankWarning):
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
         biology.fit_length_weight_regression(single_row_data)
+        # Just check that we got at least one warning about poorly conditioned polyfit
+        assert any("poorly conditioned" in str(warning.message) for warning in w)
 
 
 def test_fit_length_weight_regression_empty_after_dropna():
