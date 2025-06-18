@@ -1,0 +1,418 @@
+# Expressions for transect processing steps
+
+## Data binning
+
+```python
+utils.binify(...)
+```
+
+When given a value for age ($a$), the bin assignment ($\alpha$) is:
+
+$$
+a \in (\alpha_{j-1} - \Delta \alpha,~ \alpha_j + \Delta \alpha] 
+\quad \text{where} \quad (\alpha_{j-1} - \Delta \alpha) < a \leq (\alpha_j + \Delta \alpha)
+$$
+
+Length values ($L$) are similarly binned ($\ell$):
+
+$L \in (\ell_{i-1} - \Delta \ell, ~\ell_i + \Delta \ell] \quad \text{where} \quad (\ell_{i-1} - \Delta \ell) < L \leq (\ell_i + \Delta \ell)$
+
+Here, $\Delta \alpha$ and $\Delta \ell$ represent the half-width of the bins, calculated as the average difference between consecutive bin edges.
+where:
+
+The distributions of $\alpha$ and $\ell$ are represented as $\mathbf{\vec{\alpha}}$ and $\mathbf{\vec{\ell}}$, respectively: 
+
+$$
+\mathbf{\vec{\ell}} = \begin{bmatrix}
+\ell_1 \\
+\ell_2 \\
+\ell_3 \\
+\vdots
+\end{bmatrix}
+$$
+
+$$
+\mathbf{\vec{\alpha}} = \begin{bmatrix}
+\alpha_1 \\
+\alpha_2 \\
+\alpha_3 \\
+\vdots
+\end{bmatrix}
+$$
+
+## Length-weight regression fitting
+
+```python
+biology.fit_length_weight_regression(...)
+```
+
+The log-linear relationship between specimen wet weight ($w$) and $L$ is modeled via:
+
+$$
+\log_{10}[w(L)] = \beta_0 + \beta_1 \cdot \log_{10}(L)~.
+$$
+
+Here, $\beta_0$ and $\beta_1$ are the regression coefficients (intercept and slope), and the summation minimizes the squared error between the observed and predicted log-transformed weights:
+
+Here, $\beta_0$ and $\beta_1$ are the regression coefficients, representing the intercept and slope of the log-linear relationship between $w$ and $L$. The equation minimizes the sum of squared differences (errors) between the observed log-transformed weights $\log_{10}(w_i)$ and the predicted values $\beta_0 + \beta_1 \log_{10}(L_i)$ across all specimens ($i = 1, \dots, n$).
+
+$$
+(\beta_0, \beta_1) = \underset{(\beta_0, \beta_1)}{\argmin} 
+\sum_{i=1}^{n} \left( \log_{10}(w_i) - (\beta_0 + \beta_1 \log_{10}(L_i)) \right)^2~.
+$$
+
+This process can also be performed separately for sex $s$, resulting in sex-specific regression coefficients $\beta_{0,s}$ and $\beta_{1,s}$. 
+
+## Quantize counts
+
+```python
+get_proportions.compute_binned_counts(...)
+```
+
+The number of animals in a given combiantion of age $\alpha$, length $\ell$, sex $s$, and stratum $h$ is computed as:
+
+$$
+n_g = \sum_{i \in g} 1~,
+$$
+
+where $n_g$ represents the total count of specimens belonging to the multi-dimensional bin $g$, where $g$ can include combinations of variables such as age ($\alpha$), length ($\ell$), sex ($s$), and stratum ($h$). For instance:
+
+$$
+\begin{aligned}
+g &= (\alpha, \ell, s, h) \\
+g &= (\ell, s, h)
+\end{aligned}~.
+$$
+
+Variables included within $g$ are specified via:
+
+```python
+get_proportions.compute_binned_counts(..., groupby_cols)
+```
+
+So for aged fish, `groupby_cols=["stratum_num", "length_bin", "age_bin", "sex"]` translates to:
+
+$$
+n_{\alpha, \ell, s, h} = \sum_{i \in (\alpha, \ell, s, h)} 1~.
+$$
+
+Similarly for unaged fish, `groupby_cols=["stratum_num", "length_bin", "sex"]` translates to:
+
+$$
+n_{\ell, s, h} = \sum_{i \in (\ell, s, h)} 1~.
+$$
+
+## Calculate the mean weight per length bin
+
+```python
+biology.length_binned_weights(...)
+```
+
+The fitted average weights per length bin for all, $\hat{W}(\ell)$, and sex-specific, $\hat{W}_s(\ell)$, fish can be computed via two different methods: 1) calculating the mean $w_\ell$/$w_{s, \ell}$ and 2) applying the log-linear regression coefficients. The latter is only used when:
+
+```python
+biology.length_binned_weights(..., minimum_threshold_count, impute_bins)
+```
+
+When `impute_bins=True`, `minimum_threshold_count` (default: `0`) set a threshold for when fitted weights are imputed for particular $\ell$. For example, `minimum_threshold_count=5` would result in the applying the fitted log-linear regression to $\ell$ where the bin counts ($n_\ell$) are less (or equal to in the case of `minimum_threshold_count = 0)`) this minimum threshold. Otherwise, the mean weight is used. This can be expressed by:
+
+$$
+\hat{W}(\ell) =
+\begin{cases}
+10^{\beta_0} \cdot \ell^{\beta_1}, & \text{if } n_{\ell} < \text{threshold}, \\
+\frac{1}{n_{\ell}} \sum\limits_{i \in \ell} w_i, & \text{if } n_{\ell} \geq \text{threshold}.
+\end{cases}~,
+$$
+
+where $\hat{W}(\ell)$ is the fitted average weight for each $\ell$. Since only the aged data are used for this fitting, $n_\ell$ is therefore:
+
+$$
+n_\ell = \sum_{\alpha} \sum_{s} n_{\alpha, \ell, s}~,
+$$
+
+when computed for all fish.
+
+This calculation is also done for each $s$ where:
+
+$$
+\hat{W}_s(\ell) =
+\begin{cases}
+10^{\beta_{0,s}} \cdot \ell^{\beta_{1,s}}, & \text{if } n_{\ell, s} < \text{threshold}, \\
+\frac{1}{n_{\ell, s}} \sum\limits_{i \in \ell, s} w_i, & \text{if } n_{\ell, s} \geq \text{threshold}.
+\end{cases}~,
+$$
+
+where: 
+
+$$
+n_{\ell, s} = \sum_{\alpha} n_{\alpha, \ell, s}~.
+$$
+
+## Number proportions
+
+```python
+get_proportions.number_proportions(...)
+```
+
+Number proportions ($\pi$) are calculated both within and across each dataset. These proportions can be expressed as $\pi_g^{c/C}$ where the proportion of counts in each multi-dimensional bin $g$ in category $c$ (e.g. aged fish) is normalized by the total count across all categories $C$ (e.g. aged or all fish). This is expressed via:
+
+$$
+\pi_g^{c/C} = \frac{n_g^c}{\displaystyle \sum_{c \in C} \sum_{g \in c} n_g^{c}} 
+\quad \text{for } g \in c~.
+$$
+
+The category $c$ is defined via:
+
+```python
+get_proportions.number_proportions(..., column_aliases)
+```
+
+which maps each $c$ to the resulting output dictionary of `get_proportions.number_proportions`. So `column_aliases = ["aged", "unaged"]` would define $c$ as $\text{aged}$ and $\text{uanged}$ for the calculations of $\pi^{\text{aged}/C}$ and $\pi^{\text{unaged}/C}$, respectively.
+
+Counts aggregated over the set $C$ are, by default, defined with respect to two contexts: (1) within-group aggregation, and (2) aggregation across groups. These are represented by two columns in the `pandas.DataFrame` generated by `get_proportions.number_proportions`. The `proportion` column represents the within-group proportion calculation, e.g. $\pi^{\text{aged}/\text{aged}}_{\alpha, \ell, s, h}$:
+
+$$
+\begin{aligned}
+\pi_{\alpha, \ell, s, h}^{\text{aged}/\text{aged}} 
+&= \frac{n_{\alpha, \ell, s, h}^{\text{aged}}}
+       {\displaystyle \sum_{c \in \{\text{aged}\}} \sum_{\alpha, \ell, s, h} n_{\alpha, \ell, s, h}^{c}} \\
+&= \frac{n_{\alpha, \ell, s, h}^{\text{aged}}}
+       {\displaystyle \sum_{\alpha, \ell, s, h} n_{\alpha, \ell, s, h}^{\text{aged}}}
+\end{aligned}~.
+$$
+
+In contrast, `proportion_overall` represents the across-group proportion calculation where counts are normalized to the combined total of all groups, e.g. $\pi^{\text{unaged}/\text{all}}_{\ell, s, h}$:
+
+$$
+\begin{aligned}
+\pi^{\text{unaged}/\text{all}}_{\ell, s, h} 
+&= \frac{n^{\text{unaged}}_{\ell, s, h}}
+       {\displaystyle \sum_{c \in \{\text{aged}, \text{unaged}\}} \sum_{\ell, s, h} n^{c}_{\ell, s, h}} \\
+&= \frac{n^{\text{unaged}}_{\ell, s, h}}
+     {\displaystyle \sum_{\ell, s, h} \left( \sum_{\alpha} n^{\text{aged}}_{\alpha, \ell, s, h} + n^{\text{unaged}}_{\ell, s, h} \right)}.
+\end{aligned}~.
+$$
+
+### Grouped/partitioned number proportions
+
+Proportion calculations can also be partitioned across subsets of the reference set $C$ by specifying one or more grouping variables (i.e. specific column names):
+
+```python
+get_proportions.number_proportions(..., group_columns)
+```
+
+The previous equations assume the total counts in the denominator are aggregated over the entirety of $C$, without regard to subgroupings. However, grouping variables instruct the function to compute the proportions within each level of the specified grouping. For instance, `group_columns = ["stratum_num"]` would calculate separate proportions for each stratum $h$.
+
+To formalize this, the subset of $C$ relevant for relevant for a given multi-dimensional bin $g$ is defined as:
+
+$$
+C_{\gamma}(g) :=
+\begin{cases}
+\{ g^* \in C : g^*_{\gamma} = g_{\gamma} \}, & \text{if } \gamma \neq \varnothing \\[8pt]
+C, & \text{if } \gamma = \varnothing
+\end{cases}~,
+$$
+
+where $\gamma$ denotes the grouping variable, representing a subset of the dimensions of $g$. For example, if $\gamma = \{\text{stratum\_num}\}$, then $g_\gamma$ is the stratum number value of $g$. So if $g_\gamma = h = 7$, this means $g$ belongs to stratum 7.
+
+The subset $C_{\gamma}(g)$ is the ndefined as all bins $g^* \in C$ whose grouping variable components $g^*_\gamma$ exactly match $g_\gamma$. In the example above, this means $C_\gamma(g)$ contains all multi-dimensional bins within $C$ belonging to $h=7$. Therefore, the subset $C_\gamma(g)$ partitions the reference set $C$ into groups based on those defined by `group_columns`. When `group_columns = []` or `group_columns = None`, meaning $\gamma = \varnothing$, $C_\gamma(g)$ defaults to the entire reference set $C$ with no partitioning.
+
+The grouped proportion is then computing by normalizing counts to the total over subset $C_{\gamma}(g)$:
+
+$$
+\pi_g^{c/C_\gamma}(\gamma) =
+\frac{n_g^c}
+     {\displaystyle \sum_{c \in C} \sum_{g^* \in C_{\gamma}(g)} n_{g^*}^c}
+\quad \text{for } g \in c~.
+$$
+
+### Filtered number proportions
+In some cases, specific groups may be intentionally excluded from the output by applying filters to omit their contributions to the numerator of the proportion calculations. This is done via:
+
+```python
+get_proportions.number_proportions(..., exclude_filters)
+```
+
+The `exclude_filters` argument effectively removes any bins matching the given criteria **from the numerator only**, while leaving the **denominator untouched**. That is, excluded values are omitted from the output proportions but are still included in the total count used for normalization. For example, if `exclude_filters = {"sex": "unsexed"}`, then all bins where $s = \text{unsexed}$ are excluded from the output and do not appear in any numerator $n_g^c$. However, these same bins are still included in the denominator, since they are part of the full dataset used to define $C$, and are therefore still summed across all $g^* \in C_\gamma(g)$.
+
+To formalize this, let $\mathcal{E} \subset C$ represent the set of bins excluded via `exclude_filters`. Then the grouped proportion is redefined only using non-excluded bins, while the denominator remains unchanged. The condition $g \in C \setminus \mathcal{E}$ restricts the output to non-excluded entries, meaning $n_g^c$ appears in the numerator only if $g \notin \mathcal{E}$. However, $n_{g^*}^c$ in the denominator is summed across all bins $g^* \in C_\gamma(g)$. This ensures that the calculated proportions are normalized over the complete dataset, even if filtered components are excluded from the results. Therefore, $\pi_g^{c/C_\gamma}(\gamma)$ can be refined as:
+
+$$
+\pi_g^{c/C_\gamma} =
+\frac{n_g^c}
+     {\displaystyle \sum_{c \in C} \sum_{g^* \in C_{\gamma}(g)} n_{g^*}^c}
+\quad \text{for } g \in c \setminus \mathcal{E}~.
+$$
+
+Because excluded bins are omitted from the numerator but still included in the denominator, the resulting number proportions may **not sum to 1.00** across the output bins. This is expected given that the proportions now represent the share of each non-excluded bin relative to the total count (inclusive of the excluded bins) used for normalization. 
+
+## Distribute weights over defined bins
+
+```python
+get_proportions.binned_weights(...)
+```
+
+Weights can be summed across multi-dimensional bins $g$ via:
+
+$$
+w_{g} = \sum_{i \in g} w_i~.
+$$
+
+$$
+w_{g} = \sum_{i \in g \cap \mathcal{F}} w_i~.
+$$
+
+For example, aged specimens are summed via:
+
+$$
+\begin{aligned}
+    w_{\alpha, \ell, h} &= \sum_{i \in (\alpha, \ell, h)} w_i~ \\
+    w_{\alpha, \ell, s, h} &= \sum_{i \in (\alpha, \ell, s, h)} w_i~
+\end{aligned}~,
+$$
+
+where $w_{\alpha, \ell, h}$ and $w_{\alpha, \ell, s, h}$ are the summed weights across all fish and specifically for sex $s$.
+
+### Interpolating binned weights
+
+The argument `interpolate` indicates whether or not weights are interpolated across $g$ via:
+
+```python
+get_proportions.binned_weights(..., length_weight_dataset, interpolate=True)
+```
+
+The length-fitted weights, $W(\ell)$ and $W_s(\ell)$, can be used to estimate weights ($\hat{w}$) when weight measurements are unavailable. Since the $W(\ell)$ and $W_s(\ell)$ were fitted based on the center $L$ of each $\ell$, weights can be interpolated for values of $L$:
+
+$$
+\hat{w}(L) = \text{Interp}\big(L, W(\ell)\big)~.
+$$
+
+These values can then be summed similar to the previous expressions via:
+
+$$ 
+w_{g} = \sum_{i \in g} \hat{w}(L_i)~.
+$$
+
+For example, unaged weights are summed via:
+
+$$
+w_{\ell, s, h} = \sum_{i \in (\ell, s, h)} \hat{w}(L_i)~.
+$$
+
+### Filtered binned weights
+In some cases, this weight bin summation may only be desired for specific data slices and multi-dimensional bins $g$. This type of inclusive filter can be defined via:
+
+```python
+get_proportions.binned_weights(..., include_filter)
+```
+
+To formalize this, let $\mathcal{F}$ represent the set of specimens that satisfy the include_filter. The summation is then performed only over specimens that meet these criteria. The condition $i \in g \cap \mathcal{F}$ restricts the summation to only those specimens $i$ that are both in the target group $g$ and satisfy the inclusion filter. Therefore, the filtered sum of weights $w_g$ is defined as:
+
+$$ 
+w_{g} = \sum_{i \in g \cap \mathcal{F}} \hat{w}(L_i)~. 
+$$
+
+For example, if `include_filter = {"sex": ["female", "male"]}`, then only bins where $s \in \{\text{male, female}\}$ are included in the equations and therefore the outputs.
+
+## Stratum-averaged weights
+
+```python
+get_proportions.stratum_averaged_weight(...)
+```
+
+Stratum-averaged weights are calculated by combining $\pi_{\alpha, \ell, s, h}^{\text{aged}/\text{aged}_h}(h)$/$\pi_{\alpha, \ell, s, h}^{\text{aged}/\text{all}_h}(h)$ and $\pi_{\ell, s, h}^{\text{unaged}/\text{unaged}_h}(h)$/$\pi_{\ell, s, h}^{\text{unaged}/\text{all}_h}(h)$ with $W(\ell)$. This first involves calculating the relative proportions of each group:
+
+$$
+\pi^{c/\text{all}_h}_{s,h}(h) =
+    \sum_{g \in C_h(s,h)}
+    \pi^{c/\text{all}_h}_g(h)~,
+$$
+
+where $s \in \{\text{all}, \text{female}, \text{male}\}$ and:
+
+$$ 
+\sum_{c \in C} \pi^{c/\text{all}_h}_{s,h}(h) = 1.0 ~.
+$$
+
+These overall proportions are then used to re-weight and standardize the weight proportions for $c \in \{\text{aged}, \text{unaged}\}$. This involves first adjusting the overall unaged proportions:
+
+$$
+\hat{\pi}^{\text{unaged}/\text{all}_h}_{s,h}(h)=
+\frac
+{\sum_s \pi^{\text{unaged}/\text{all}_h}_{s, h}(h)}
+{\pi^{\text{unaged}/\text{all}_h}_{s, h}(h) + \sum_s \pi^{\text{unaged}/\text{all}_h}_{s, h}(h)}~.
+$$
+
+The quantity $\hat{\pi}^{\text{unaged}/\text{all}_h}_{s,h}(h)$ is then used to adjust the overall aged proportions:
+
+$$
+\hat{\pi}^{\text{aged}/\text{all}_h}_{s,h}(h)=
+\frac
+{\pi^{\text{aged}/\text{all}_h}_{s, h}(h)}
+{\pi^{\text{aged}/\text{all}_h}_{s, h}(h) + \hat{\pi}^{\text{unaged}/\text{all}_h}_{s,h}(h)}~.
+$$
+
+The within-group proportions for $c=\text{aged}$ and $c=\text{unaged}$ (distributed over $\ell$ for each $s$ and $h$) are then calculated via:
+
+$$
+\pi_{\ell, s, h}^{c/c_h}(h) = 
+\sum_{g \in C_h(\ell, s, h)} \pi^{c/c_h}_g(h)~.
+$$
+
+The adjusted overall across- and within-group proportions are then combined to compute the average weights within each stratum. When $s = \text{all}$:
+
+$$
+\hat{W}_{h} =
+    \hat{W}(\ell) \cdot
+    \left[
+        \pi_{\ell, s, h}^{\text{aged}/\text{aged}_h}(h) \times
+        \sum_s \pi^{\text{aged}/\text{all}_h}_{s, h}(h) +
+        \pi_{\ell, s, h}^{\text{unaged}/\text{unaged}_h}(h) \times
+        \sum_s \pi^{\text{unaged}/\text{all}_h}_{s, h}(h)
+    \right]
+$$
+
+Otherwise, a similar calculation is done for $s \in \{\text{female}, \text{male}\}$ using the adjusted proportion calculations via:
+
+$$
+\hat{W}_{s, h} =
+    \hat{W}_s(\ell) \cdot
+    \left[
+        \pi_{\ell, s, h}^{\text{aged}/\text{aged}_h}(h) \times
+        \sum_s \hat{\pi}^{\text{aged}/\text{all}_h}_{s,h}(h) +
+        \pi_{\ell, s, h}^{\text{unaged}/\text{unaged}_h}(h) \times
+        \sum_s \hat{\pi}^{\text{aged}/\text{all}_h}_{s,h}(h)
+    \right]
+$$
+
+## Weight proportions
+
+$$
+w_h = \sum_{i \in H_h} w_i
+$$
+
+$$
+w^c_h = \sum_{g \in C_h} w_g~,
+$$
+
+$$
+\textbf{W} = w_h + w^c_h
+$$
+
+$$ 
+\omega^{c/C_\gamma}_g(\gamma) = \frac{w_g}{\sum\limits_{g \in C_\gamma} w_g}~. 
+$$
+
+
+## Standardizing summed weights
+
+$$
+\tilde{w}
+$$
+
+
+## Standardized weight proportions
+
+$$
+\tilde{\omega}
+$$
