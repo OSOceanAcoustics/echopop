@@ -230,7 +230,7 @@ $$
 \mathcal{E} := \{ (\alpha, \ell, s, h) \in \text{aged} : s = \text{unsexed}\}~,
 $$
 
-which results in the proportion calculations being limited to only $s \in \{\text{female}, 
+which results in the proportion calculations being limited to only $s \in \{\text{female},
 \text{male}\}$ for the within- ($\text{aged}/\text{aged}$) and across-group ($\text{aged}/\text{all}$). Both the aged and unaged proportions are also calculated for each stratum where:
 
 $$
@@ -261,7 +261,7 @@ $$
     }
     {
         \sum\limits_{{c \in \{\text{aged}, \text{unaged}\}}_h}
-        \sum\limits_{g^* \in C_h(\alpha, \ell, s, h)} 
+        \sum\limits_{g^* \in C_h(\alpha, \ell, s, h)}
         n^{c}_{g^*}
     }
     \quad \text{for } (\alpha, \ell, s, h) \in \text{aged} \setminus \mathcal{E}
@@ -287,7 +287,7 @@ $$
     }
     {
         \sum\limits_{{c \in \{\text{aged}, \text{unaged}\}}_h}
-        \sum\limits_{g^* \in C_h(\ell, s, h)} 
+        \sum\limits_{g^* \in C_h(\ell, s, h)}
         n^{c}_{g^*}
     }
 \end{aligned}
@@ -408,11 +408,11 @@ $$
 The adjusted overall across- and within-group proportions are then combined to compute the average weights within each stratum. When $s = \text{all}$:
 
 $$
-\hat{W}_h = \hat{W}(\ell) \cdot 
+\hat{W}_h = \hat{W}(\ell) \cdot
 \left[
         \pi_{\ell, s, h}^{\text{aged}/\text{aged}} \times
         \sum_s \pi^{\text{aged}/\text{all}}_{s, h} +
-        \pi_{\ell, s, h}^{\text{unaged}/\text{unaged}} \times 
+        \pi_{\ell, s, h}^{\text{unaged}/\text{unaged}} \times
         \sum_s \pi^{\text{unaged}/\text{all}}_{s, h}
 \right]~.
 $$
@@ -498,7 +498,7 @@ $$
 get_proportions.standardize_weight_proportions(...)
 ```
 
-The standardized unaged weight proportions, $\tilde{w}^{\text{unaged}}_{s, h}$, are used to 
+The standardized unaged weight proportions, $\tilde{w}^{\text{unaged}}_{s, h}$, are used to
 
 $$
 \tilde{\omega}
