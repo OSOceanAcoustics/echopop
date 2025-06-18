@@ -9,7 +9,7 @@ utils.binify(...)
 When given a value for age ($a$), the bin assignment ($\alpha$) is:
 
 $$
-a \in (\alpha_{j-1} - \Delta \alpha,~ \alpha_j + \Delta \alpha] 
+a \in (\alpha_{j-1} - \Delta \alpha,~ \alpha_j + \Delta \alpha]
 \quad \text{where} \quad (\alpha_{j-1} - \Delta \alpha) < a \leq (\alpha_j + \Delta \alpha)
 $$
 
@@ -20,7 +20,7 @@ $L \in (\ell_{i-1} - \Delta \ell, ~\ell_i + \Delta \ell] \quad \text{where} \qua
 Here, $\Delta \alpha$ and $\Delta \ell$ represent the half-width of the bins, calculated as the average difference between consecutive bin edges.
 where:
 
-The distributions of $\alpha$ and $\ell$ are represented as $\mathbf{\vec{\alpha}}$ and $\mathbf{\vec{\ell}}$, respectively: 
+The distributions of $\alpha$ and $\ell$ are represented as $\mathbf{\vec{\alpha}}$ and $\mathbf{\vec{\ell}}$, respectively:
 
 $$
 \mathbf{\vec{\ell}} = \begin{bmatrix}
@@ -57,11 +57,11 @@ Here, $\beta_0$ and $\beta_1$ are the regression coefficients (intercept and slo
 Here, $\beta_0$ and $\beta_1$ are the regression coefficients, representing the intercept and slope of the log-linear relationship between $w$ and $L$. The equation minimizes the sum of squared differences (errors) between the observed log-transformed weights $\log_{10}(w_i)$ and the predicted values $\beta_0 + \beta_1 \log_{10}(L_i)$ across all specimens ($i = 1, \dots, n$).
 
 $$
-(\beta_0, \beta_1) = \underset{(\beta_0, \beta_1)}{\argmin} 
+(\beta_0, \beta_1) = \underset{(\beta_0, \beta_1)}{\argmin}
 \sum_{i=1}^{n} \left( \log_{10}(w_i) - (\beta_0 + \beta_1 \log_{10}(L_i)) \right)^2~.
 $$
 
-This process can also be performed separately for sex $s$, resulting in sex-specific regression coefficients $\beta_{0,s}$ and $\beta_{1,s}$. 
+This process can also be performed separately for sex $s$, resulting in sex-specific regression coefficients $\beta_{0,s}$ and $\beta_{1,s}$.
 
 ## Quantize counts
 
@@ -69,7 +69,7 @@ This process can also be performed separately for sex $s$, resulting in sex-spec
 get_proportions.compute_binned_counts(...)
 ```
 
-The number of animals in a given combiantion of age $\alpha$, length $\ell$, sex $s$, and stratum $h$ is computed as:
+The number of animals in a given combination of age $\alpha$, length $\ell$, sex $s$, and stratum $h$ is computed as:
 
 $$
 n_g = \sum_{i \in g} 1~,
@@ -142,7 +142,7 @@ $$
 \end{cases}~,
 $$
 
-where: 
+where:
 
 $$
 n_{\ell, s} = \sum_{\alpha} n_{\alpha, \ell, s}~.
@@ -157,7 +157,7 @@ get_proportions.number_proportions(...)
 Number proportions ($\pi$) are calculated both within and across each dataset. These proportions can be expressed as $\pi_g^{c/C}$ where the proportion of counts in each multi-dimensional bin $g$ in category $c$ (e.g. aged fish) is normalized by the total count across all categories $C$ (e.g. aged or all fish). This is expressed via:
 
 $$
-\pi_g^{c/C} = \frac{n_g^c}{\displaystyle \sum_{c \in C} \sum_{g \in c} n_g^{c}} 
+\pi_g^{c/C} = \frac{n_g^c}{\displaystyle \sum_{c \in C} \sum_{g \in c} n_g^{c}}
 \quad \text{for } g \in c~.
 $$
 
@@ -173,7 +173,7 @@ Counts aggregated over the set $C$ are, by default, defined with respect to two 
 
 $$
 \begin{aligned}
-\pi_{\alpha, \ell, s, h}^{\text{aged}/\text{aged}} 
+\pi_{\alpha, \ell, s, h}^{\text{aged}/\text{aged}}
 &= \frac{n_{\alpha, \ell, s, h}^{\text{aged}}}
        {\displaystyle \sum_{c \in \{\text{aged}\}} \sum_{\alpha, \ell, s, h} n_{\alpha, \ell, s, h}^{c}} \\
 &= \frac{n_{\alpha, \ell, s, h}^{\text{aged}}}
@@ -185,7 +185,7 @@ In contrast, `proportion_overall` represents the across-group proportion calcula
 
 $$
 \begin{aligned}
-\pi^{\text{unaged}/\text{all}}_{\ell, s, h} 
+\pi^{\text{unaged}/\text{all}}_{\ell, s, h}
 &= \frac{n^{\text{unaged}}_{\ell, s, h}}
        {\displaystyle \sum_{c \in \{\text{aged}, \text{unaged}\}} \sum_{\ell, s, h} n^{c}_{\ell, s, h}} \\
 &= \frac{n^{\text{unaged}}_{\ell, s, h}}
@@ -215,7 +215,7 @@ $$
 
 where $\gamma$ denotes the grouping variable, representing a subset of the dimensions of $g$. For example, if $\gamma = \{\text{stratum\_num}\}$, then $g_\gamma$ is the stratum number value of $g$. So if $g_\gamma = h = 7$, this means $g$ belongs to stratum 7.
 
-The subset $C_{\gamma}(g)$ is the ndefined as all bins $g^* \in C$ whose grouping variable components $g^*_\gamma$ exactly match $g_\gamma$. In the example above, this means $C_\gamma(g)$ contains all multi-dimensional bins within $C$ belonging to $h=7$. Therefore, the subset $C_\gamma(g)$ partitions the reference set $C$ into groups based on those defined by `group_columns`. When `group_columns = []` or `group_columns = None`, meaning $\gamma = \varnothing$, $C_\gamma(g)$ defaults to the entire reference set $C$ with no partitioning.
+The subset $C_{\gamma}(g)$ is the undefined as all bins $g^* \in C$ whose grouping variable components $g^*_\gamma$ exactly match $g_\gamma$. In the example above, this means $C_\gamma(g)$ contains all multi-dimensional bins within $C$ belonging to $h=7$. Therefore, the subset $C_\gamma(g)$ partitions the reference set $C$ into groups based on those defined by `group_columns`. When `group_columns = []` or `group_columns = None`, meaning $\gamma = \varnothing$, $C_\gamma(g)$ defaults to the entire reference set $C$ with no partitioning.
 
 The grouped proportion is then computing by normalizing counts to the total over subset $C_{\gamma}(g)$:
 
@@ -244,7 +244,7 @@ $$
 \quad \text{for } g \in c \setminus \mathcal{E}~.
 $$
 
-Because excluded bins are omitted from the numerator but still included in the denominator, the resulting number proportions may **not sum to 1.00** across the output bins. This is expected given that the proportions now represent the share of each non-excluded bin relative to the total count (inclusive of the excluded bins) used for normalization. 
+Because excluded bins are omitted from the numerator but still included in the denominator, the resulting number proportions may **not sum to 1.00** across the output bins. This is expected given that the proportions now represent the share of each non-excluded bin relative to the total count (inclusive of the excluded bins) used for normalization.
 
 ## Distribute weights over defined bins
 
@@ -289,7 +289,7 @@ $$
 
 These values can then be summed similar to the previous expressions via:
 
-$$ 
+$$
 w_{g} = \sum_{i \in g} \hat{w}(L_i)~.
 $$
 
@@ -308,8 +308,8 @@ get_proportions.binned_weights(..., include_filter)
 
 To formalize this, let $\mathcal{F}$ represent the set of specimens that satisfy the include_filter. The summation is then performed only over specimens that meet these criteria. The condition $i \in g \cap \mathcal{F}$ restricts the summation to only those specimens $i$ that are both in the target group $g$ and satisfy the inclusion filter. Therefore, the filtered sum of weights $w_g$ is defined as:
 
-$$ 
-w_{g} = \sum_{i \in g \cap \mathcal{F}} \hat{w}(L_i)~. 
+$$
+w_{g} = \sum_{i \in g \cap \mathcal{F}} \hat{w}(L_i)~.
 $$
 
 For example, if `include_filter = {"sex": ["female", "male"]}`, then only bins where $s \in \{\text{male, female}\}$ are included in the equations and therefore the outputs.
@@ -330,7 +330,7 @@ $$
 
 where $s \in \{\text{all}, \text{female}, \text{male}\}$ and:
 
-$$ 
+$$
 \sum_{c \in C} \pi^{c/\text{all}_h}_{s,h}(h) = 1.0 ~.
 $$
 
@@ -355,7 +355,7 @@ $$
 The within-group proportions for $c=\text{aged}$ and $c=\text{unaged}$ (distributed over $\ell$ for each $s$ and $h$) are then calculated via:
 
 $$
-\pi_{\ell, s, h}^{c/c_h}(h) = 
+\pi_{\ell, s, h}^{c/c_h}(h) =
 \sum_{g \in C_h(\ell, s, h)} \pi^{c/c_h}_g(h)~.
 $$
 
@@ -399,8 +399,8 @@ $$
 \textbf{W} = w_h + w^c_h
 $$
 
-$$ 
-\omega^{c/C_\gamma}_g(\gamma) = \frac{w_g}{\sum\limits_{g \in C_\gamma} w_g}~. 
+$$
+\omega^{c/C_\gamma}_g(\gamma) = \frac{w_g}{\sum\limits_{g \in C_\gamma} w_g}~.
 $$
 
 
