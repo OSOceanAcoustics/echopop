@@ -509,7 +509,7 @@ $$
 \tilde{w}^\text{all}_h = w^\text{aged}_h + \sum\limits_s \tilde{w}^{\text{unaged}}_{s, h}~.
 $$
 
-These stratum totals are then used to calculate the overall sexed weight proportions 
+These stratum totals are then used to calculate the overall sexed weight proportions
 
 $$
 \tilde{\omega}^{\text{unaged}/\text{all}}_{s,h}=
@@ -522,13 +522,13 @@ $$
 }~.
 $$
 
-The within-group unaged weight proportions summed for each sex are then back-calculated from $\tilde{\omega}^{\text{unaged}/\text{all}}_{s,h}$: 
+The within-group unaged weight proportions summed for each sex are then back-calculated from $\tilde{\omega}^{\text{unaged}/\text{all}}_{s,h}$:
 
 $$
 \tilde{\omega}^{\text{unaged}/\text{unaged}}_{s,h}=
 \frac
 {
-    \tilde{\omega}^{\text{unaged}/\text{all}}_{s,h}    
+    \tilde{\omega}^{\text{unaged}/\text{all}}_{s,h}
 }
 {
     \sum\limits_s \tilde{\omega}^{\text{unaged}/\text{all}}_{s,h}
@@ -537,7 +537,7 @@ $$
 
 The within-group weight proportions across length bins are generated using the associated number proportions, $\pi^{\text{unaged}/\text{unaged}}_{\ell, s, h}$ and fitted weights computed from all fish, $\hat{W}(\ell)$. First, the average fitted weight per length bin is computed via:
 
-$$ 
+$$
 \hat{w}_{\ell, h}^{\text{unaged}} = \pi^{\text{unaged}/\text{unaged}}_{\ell, s, h} \cdot \hat{W}(\ell)~,
 $$
 
