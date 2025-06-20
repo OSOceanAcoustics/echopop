@@ -10,12 +10,14 @@ When given a value for age ($a$), the bin assignment ($\alpha$) is:
 
 $$
 a \in (\alpha_{j-1} - \Delta \alpha,~ \alpha_j + \Delta \alpha]
-\quad \text{where} \quad (\alpha_{j-1} - \Delta \alpha) < a \leq (\alpha_j + \Delta \alpha)
+\quad \text{where} \quad (\alpha_{j-1} - \Delta \alpha) < a \leq (\alpha_j + \Delta \alpha)~.
 $$
 
 Length values ($L$) are similarly binned ($\ell$):
 
-$L \in (\ell_{i-1} - \Delta \ell, ~\ell_i + \Delta \ell] \quad \text{where} \quad (\ell_{i-1} - \Delta \ell) < L \leq (\ell_i + \Delta \ell)$
+$$
+L \in (\ell_{i-1} - \Delta \ell, ~\ell_i + \Delta \ell] \quad \text{where} \quad (\ell_{i-1} - \Delta \ell) < L \leq (\ell_i + \Delta \ell)~.
+$$
 
 Here, $\Delta \alpha$ and $\Delta \ell$ represent the half-width of the bins, calculated as the average difference between consecutive bin edges.
 where:
@@ -28,7 +30,7 @@ $$
 \ell_2 \\
 \ell_3 \\
 \vdots
-\end{bmatrix}
+\end{bmatrix}~,
 $$
 
 $$
@@ -37,7 +39,7 @@ $$
 \alpha_2 \\
 \alpha_3 \\
 \vdots
-\end{bmatrix}
+\end{bmatrix}~.
 $$
 
 ## Length-weight regression fitting
@@ -49,12 +51,12 @@ biology.fit_length_weight_regression(...)
 The log-linear relationship between specimen wet weight ($w$) and $L$ is modeled via:
 
 $$
-\log_{10}[w(L)] = \beta_0 + \beta_1 \cdot \log_{10}(L)~.
+\log_{10}\big(w(L)\big) = \beta_0 + \beta_1 \cdot \log_{10}(L)~.
 $$
 
 Here, $\beta_0$ and $\beta_1$ are the regression coefficients (intercept and slope), and the summation minimizes the squared error between the observed and predicted log-transformed weights:
 
-Here, $\beta_0$ and $\beta_1$ are the regression coefficients, representing the intercept and slope of the log-linear relationship between $w$ and $L$. The equation minimizes the sum of squared differences (errors) between the observed log-transformed weights $\log_{10}(w_i)$ and the predicted values $\beta_0 + \beta_1 \log_{10}(L_i)$ across all specimens ($i = 1, \dots, n$).
+Here, $\beta_0$ and $\beta_1$ are the regression coefficients, representing the intercept and slope of the log-linear relationship between $w$ and $L$. The equation minimizes the sum of squared differences (errors) between the observed log-transformed weights $\log_{10}(w_i)$ and the predicted values $\beta_0 + \beta_1 \log_{10}(L_i)$ across all specimens ($i = 1, \dots, n$):
 
 $$
 (\beta_0, \beta_1) = \underset{(\beta_0, \beta_1)}{\argmin}
@@ -75,13 +77,16 @@ $$
 n_g = \sum_{i \in g} 1~,
 $$
 
-where $n_g$ represents the total count of specimens belonging to the multi-dimensional bin $g$, where $g$ can include combinations of variables such as age ($\alpha$), length ($\ell$), sex ($s$), and stratum ($h$). For instance:
+where $n_g$ represents the total count of specimens belonging to the multi-dimensional bin $g$, where $g$ can include combinations of variables such as age ($\alpha$), length ($\ell$), sex ($s$), and stratum ($h$). For instance, aged fish can be distributed across the multi-dimensional bin $(\alpha, \ell, s, h)$ where:
 
 $$
-\begin{aligned}
-g &= (\alpha, \ell, s, h) \\
-g &= (\ell, s, h)
-\end{aligned}~.
+g = (\alpha, \ell, s, h)~,
+$$
+
+whereas unaged fish can be distributed across $(\ell, s, h)$ where:
+
+$$
+g = (\ell, s, h)~.
 $$
 
 Variables included within $g$ are specified via:
@@ -108,7 +113,7 @@ $$
 biology.length_binned_weights(...)
 ```
 
-The fitted average weights per length bin for all, $\hat{W}(\ell)$, and sex-specific, $\hat{W}_s(\ell)$, fish can be computed via two different methods: 1) calculating the mean $w_\ell$/$w_{s, \ell}$ and 2) applying the log-linear regression coefficients. The latter is only used when:
+The fitted average weights per length bin for all, $\hat{W}(\ell)$, and sex-specific, $\hat{W}_s(\ell)$, fish can be computed via two different methods: 1) calculating mean $w_\ell$ and $w_{s, \ell}$ and 2) applying the log-linear regression coefficients. The latter is only used when:
 
 ```python
 biology.length_binned_weights(..., minimum_threshold_count, impute_bins)
@@ -154,7 +159,7 @@ $$
 get_proportions.number_proportions(...)
 ```
 
-Number proportions ($\pi$) are calculated both within and across each dataset. These proportions can be expressed as $\pi_g^{c/C}$ where the proportion of counts in each multi-dimensional bin $g$ in category $c$ (e.g. aged fish) is normalized by the total count across all categories $C$ (e.g. aged or all fish). This is expressed via:
+Number proportions ($\pi$) are calculated both within and across each dataset. These proportions can be expressed as $\pi_g^{c/C}$ where the proportion of counts in each multi-dimensional bin $g$ in sub-category $c$ (e.g. aged fish) is normalized by the total count across the complete set of categories $C$ (e.g. aged or all fish). This is expressed via:
 
 $$
 \pi_g^{c/C} = \frac{n_g^c}{\displaystyle \sum_{c \in C} \sum_{g \in c} n_g^{c}}
@@ -189,14 +194,14 @@ C, & \text{if } \gamma = \varnothing
 \end{cases}~,
 $$
 
-where $\gamma$ denotes the grouping variable, representing a subset of the dimensions of $g$. For example, if $\gamma = \{\text{stratum\_num}\}$, then $g_\gamma$ is the stratum number value of $g$. So if $g_\gamma = h = 7$, this means $g$ belongs to stratum 7.
+where $\gamma$ denotes the grouping variable, representing a subset of the dimensions of $g$. For example, if $\gamma = \{\text{stratum}\}$, then $g_\gamma$ is the stratum number ($h$) value of $g$. So if $g_\gamma = h = 7$, this means $g$ belongs to stratum 7.
 
-The subset $C_{\gamma}(g)$ is the undefined as all bins $g^* \in C$ whose grouping variable components $g^*_\gamma$ exactly match $g_\gamma$. In the example above, this means $C_\gamma(g)$ contains all multi-dimensional bins within $C$ belonging to $h=7$. Therefore, the subset $C_\gamma(g)$ partitions the reference set $C$ into groups based on those defined by `group_columns`. When `group_columns = []` or `group_columns = None`, meaning $\gamma = \varnothing$, $C_\gamma(g)$ defaults to the entire reference set $C$ with no partitioning.
+The subset $C_{\gamma}(g)$ is then defined as all bins $g^* \in C$ whose grouping variable components $g^*_\gamma$ exactly match $g_\gamma$. In the example above, this means $C_\gamma(g) \implies C_{h=7}(g)$, which thus maps to all multi-dimensional bins within $C$ belonging to $h=7$. Therefore, the subset $C_\gamma(g)$ partitions the reference set $C$ into groups based on those defined by `group_columns`. When `group_columns = []` or `group_columns = None`, meaning $\gamma = \varnothing$, $C_\gamma(g)$ defaults to the entire reference set $C$ with no partitioning.
 
 The grouped proportion is then computing by normalizing counts to the total over subset $C_{\gamma}(g)$:
 
 $$
-\pi_g^{c/C}(\gamma) =
+\pi_g^{c/C} =
 \frac{n_g^c}
      {\displaystyle \sum_{c \in C_\gamma} \sum_{g^* \in C_{\gamma}(g)} n_{g^*}^c}
 \quad \text{for } g \in c~.
@@ -240,7 +245,7 @@ C_\gamma(g) &\implies C_h(g)
 \end{aligned}~.
 $$
 
-Two different proportions are calculated for the aged and unaged fish: (1) within-group (`proportion`) and (2) across-group (`proportion_overall`). For aged fish, these are calculated via:
+Two different proportions are calculated for the aged and unaged fish: (1) within-group (`proportion`) and (2) across-group (`proportion_overall`). For aged fish, $c=\text{aged}$, and $C=\{\text{aged}\}$ and $C=\{\text{aged, unaged}\}$ for the within- and across-group proportions, respectively. Thus:
 
 $$
 \begin{aligned}
@@ -250,7 +255,7 @@ $$
         n^{\text{aged}}_{\alpha, \ell, s, h}
     }
     {
-        \sum\limits_{g^*\in C_h(\alpha, \ell, s, h)}
+        \sum\limits_{g^*\in \{\text{aged}\}_h(\alpha, \ell, s, h)}
         n^{\text{aged}}_{g^*}
     }
     \quad \text{for } (\alpha, \ell, s, h) \in \text{aged} \setminus \mathcal{E} \\
@@ -261,14 +266,14 @@ $$
     }
     {
         \sum\limits_{{c \in \{\text{aged}, \text{unaged}\}}_h}
-        \sum\limits_{g^* \in C_h(\alpha, \ell, s, h)}
+        \sum\limits_{g^* \in \{\text{aged}, \text{unaged}\}_h(\ell, s, h)}
         n^{c}_{g^*}
     }
     \quad \text{for } (\alpha, \ell, s, h) \in \text{aged} \setminus \mathcal{E}
 \end{aligned}~.
 $$
 
-Unlike the aged proportion calculations, the unaged proportions do not incorporate $\mathcal{E}$; however, they are otherwise calculated similarly via:
+Unlike the aged proportion calculations, the unaged proportions do not incorporate $\mathcal{E}$; however, they are otherwise calculated similarly. For unaged fish, $c=\text{unaged}$, and $C=\{\text{unaged}\}$ and $C=\{\text{aged, unaged}\}$ for the within- and across-group proportions, respectively. Thus:
 
 $$
 \begin{aligned}
@@ -278,7 +283,7 @@ $$
         n^{\text{unaged}}_{\ell, s, h}
     }
     {
-        \displaystyle \sum_{g^* \in C_h(\ell, s, h)} n^{\text{unaged}}_{g^*}
+        \displaystyle \sum_{g^* \in \{\text{unaged}\}_h(\ell, s, h)} n^{\text{unaged}}_{g^*}
     } \\
 \pi^{\text{unaged}/\text{all}}_{\ell, s, h} &=
     \frac
@@ -287,10 +292,10 @@ $$
     }
     {
         \sum\limits_{{c \in \{\text{aged}, \text{unaged}\}}_h}
-        \sum\limits_{g^* \in C_h(\ell, s, h)}
+        \sum\limits_{g^* \in \{\text{aged}, \text{unaged}\}_h(\ell, s, h)}
         n^{c}_{g^*}
     }
-\end{aligned}
+\end{aligned}~.
 $$
 
 ## Distribute weights over defined bins
@@ -322,7 +327,7 @@ $$
 These values can then be summed similar to the previous expressions via:
 
 $$
-w_{g} = \sum_{i \in g} \hat{w}(L_i)~.
+\hat{w}_{g} = \sum_{i \in g} \hat{w}(L_i)~.
 $$
 
 ### Filtered binned weights
@@ -355,7 +360,7 @@ $$
 The binned unaged weights are calculated via:
 
 $$
-w_{\ell, s, h} =
+\hat{w}_{\ell, s, h} =
 n^{\text{unaged}}_{\ell, s, h}
 \sum_{i \in (\ell, s, h) \cap \mathcal{F}} \hat{w}(L_i) ~.
 $$
@@ -447,7 +452,7 @@ where $\textbf{t}$ represents the complete set of hauls.
 The aged stratum weights are calculated directly from the input `pandas.DataFrame` (`weight_data`) via:
 
 $$
-w^{\text{aged}}_h = \sum_{g \in C_h(\alpha, \ell, s, h)} w_g~,
+w^{\text{aged}}_h = \sum_{g \in \{\text{aged}\}_h(\alpha, \ell, s, h)} w_g~,
 $$
 
 The total stratum weight is therefore defined as:
@@ -459,7 +464,7 @@ $$
 The aged weight proportions can be then be calculated using:
 
 $$
-\omega^{\text{aged}}_{\alpha, \ell, s, h} =
+\omega^{\text{aged}/\text{all}}_{\alpha, \ell, s, h} =
 \frac
 {
     w_{\alpha, \ell, s, h}
@@ -482,24 +487,92 @@ $$
 \left(
 \frac
 {
-    \sum_{g \in C_h(s, h)} w_g
+    \sum\limits_{g \in \{\text{unaged}\}_h(s, h)} \hat{w}_g
 }
 {
-    \sum_{g \in C_h(h)} w_g
+    \sum\limits_{g \in \{\text{unaged}\}_h(h)} \hat{w}_g
 }
 \right)
-w^{\text{unaged}}_h
+w^{\text{unaged}}_h~.
 $$
 
 
-## (Unaged) Standardized weight sums
+## (Unaged) Standardized weight proportions
 
 ```python
 get_proportions.standardize_weight_proportions(...)
 ```
 
-The standardized unaged weight proportions, $\tilde{w}^{\text{unaged}}_{s, h}$, are used to
+The standardized unaged weight proportions, $\tilde{w}^{\text{unaged}}_{s, h}$, are used to calculate a new total stratum weight via:
 
 $$
-\tilde{\omega}
+\tilde{w}^\text{all}_h = w^\text{aged}_h + \sum\limits_s \tilde{w}^{\text{unaged}}_{s, h}~.
+$$
+
+These stratum totals are then used to calculate the overall sexed weight proportions 
+
+$$
+\tilde{\omega}^{\text{unaged}/\text{all}}_{s,h}=
+\frac
+{
+    \tilde{w}^{\text{unaged}}_{s, h}
+}
+{
+    \tilde{w}^\text{all}_h
+}~.
+$$
+
+The within-group unaged weight proportions summed for each sex are then back-calculated from $\tilde{\omega}^{\text{unaged}/\text{all}}_{s,h}$: 
+
+$$
+\tilde{\omega}^{\text{unaged}/\text{unaged}}_{s,h}=
+\frac
+{
+    \tilde{\omega}^{\text{unaged}/\text{all}}_{s,h}    
+}
+{
+    \sum\limits_s \tilde{\omega}^{\text{unaged}/\text{all}}_{s,h}
+}~.
+$$
+
+The within-group weight proportions across length bins are generated using the associated number proportions, $\pi^{\text{unaged}/\text{unaged}}_{\ell, s, h}$ and fitted weights computed from all fish, $\hat{W}(\ell)$. First, the average fitted weight per length bin is computed via:
+
+$$ 
+\hat{w}_{\ell, h}^{\text{unaged}} = \pi^{\text{unaged}/\text{unaged}}_{\ell, s, h} \cdot \hat{W}(\ell)~,
+$$
+
+which is in turn used to compute the within-group proportions:
+
+$$
+\omega^{\text{unaged}/\text{unaged}}_{\ell, h}=
+\frac
+{
+    \hat{w}_{\ell, h}^{\text{unaged}}
+}
+{
+    \sum\limits_{\ell} \hat{w}_{\ell, h}^{\text{unaged}}
+}~.
+$$
+
+Next, the overall proportion of unaged weights per stratum can be simply calculated by:
+
+$$
+\omega^{\text{unaged}/\text{all}}_{h} =
+1.00 - \sum\limits_{\alpha, \ell, s} \omega^{\text{aged}/\text{all}}_{\alpha, \ell, s, h}~.
+$$
+
+This enables the calculation of the overall length-binned weight proportions via:
+
+$$
+\omega^{\text{unaged}/\text{all}}_{\ell, h}=
+\omega^{\text{unaged}/\text{unaged}}_{\ell, h} \times
+\omega^{\text{unaged}/\text{all}}_{h}~.
+$$
+
+The last component of this calculation finally involves distributed the sex proportions over $\omega^{\text{unaged}/\text{all}}_{\ell, h}$:
+
+$$
+\omega^{\text{unaged}/\text{all}}_{\ell, s, h}=
+\omega^{\text{unaged}/\text{all}}_{\ell, h} \times
+\tilde{\omega}^{\text{unaged}/\text{unaged}}_{s,h}~.
 $$
