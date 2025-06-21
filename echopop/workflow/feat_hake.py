@@ -189,7 +189,7 @@ subset_dict: Dict[Any, Any] = {
 FEAT_TO_ECHOPOP_BIODATA_COLUMNS = {
     "frequency": "length_count",
     "haul": "haul_num",
-    "weight_in_haul": "haul_weight",
+    "weight_in_haul": "weight",
 }
 biodata_label_map: Dict[Any, Dict] = {
     "sex": {
