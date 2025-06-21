@@ -52,25 +52,15 @@ def large_bins():
 
 
 @pytest.fixture
-def numeric_bin_distribution():
-    """Create numeric bin distribution with intervals."""
-    bins = np.array([10, 15, 20, 25, 30])
-    binwidth = np.mean(np.diff(bins) / 2.0)
-    centered_bins = np.concatenate([[bins[0] - binwidth], bins + binwidth])
-    intervals = pd.cut(bins, centered_bins)
-
-    return pd.DataFrame({"bin": bins, "interval": intervals})
+def numeric_bins():
+    """Create numeric bins for testing."""
+    return np.array([10, 15, 20, 25, 30])
 
 
 @pytest.fixture
-def secondary_bin_distribution():
-    """Create secondary bin distribution with intervals."""
-    bins = np.array([1, 2, 3, 4, 5])
-    binwidth = np.mean(np.diff(bins) / 2.0)
-    centered_bins = np.concatenate([[bins[0] - binwidth], bins + binwidth])
-    intervals = pd.cut(bins, centered_bins)
-
-    return pd.DataFrame({"bin": bins, "interval": intervals})
+def secondary_bins():
+    """Create secondary bins for testing."""
+    return np.array([1, 2, 3, 4, 5])
 
 
 @pytest.fixture
@@ -152,20 +142,15 @@ def large_dataframe():
 
 
 @pytest.fixture
-def invalid_bin_distribution():
-    """Create bin distribution without interval column."""
-    return pd.DataFrame({"bin": [10, 15, 20, 25], "other_col": ["a", "b", "c", "d"]})
+def invalid_bins():
+    """Create invalid bins for error testing."""
+    return np.array([10])  # Single element array
 
 
 @pytest.fixture
-def non_interval_bin_distribution():
-    """Create bin distribution with non-interval data."""
-    return pd.DataFrame(
-        {
-            "bin": [10, 15, 20, 25],
-            "interval": ["(5,15]", "(15,25]", "(20,30]", "(25,35]"],  # String, not Interval
-        }
-    )
+def small_bins():
+    """Create small bins for testing."""
+    return np.array([10, 20, 30])
 
 
 @pytest.fixture

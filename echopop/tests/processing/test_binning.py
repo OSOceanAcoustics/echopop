@@ -147,12 +147,10 @@ def test_binwidth_consistency_across_methods():
     assert np.isclose(first_interval.left, expected_left)
 
 
-def test_binify_single_dataframe_inplace(target_dataframe, numeric_bin_distribution):
+def test_binify_single_dataframe_inplace(target_dataframe, numeric_bins):
     """Test binify with single DataFrame inplace operation."""
     original_shape = target_dataframe.shape
-    result = echoutils.binify(
-        target_dataframe, numeric_bin_distribution, "numeric_col", inplace=True
-    )
+    result = echoutils.binify(target_dataframe, numeric_bins, "numeric_col")
 
     assert result is None
     assert "numeric_col_bin" in target_dataframe.columns
@@ -160,25 +158,9 @@ def test_binify_single_dataframe_inplace(target_dataframe, numeric_bin_distribut
     assert target_dataframe["numeric_col_bin"].notna().all()
 
 
-def test_binify_single_dataframe_copy(target_dataframe, numeric_bin_distribution):
-    """Test binify with single DataFrame returning copy."""
-    original_columns = list(target_dataframe.columns)
-    result = echoutils.binify(
-        target_dataframe, numeric_bin_distribution, "numeric_col", inplace=False
-    )
-
-    assert isinstance(result, pd.DataFrame)
-    assert "numeric_col_bin" in result.columns
-    assert "numeric_col_bin" not in target_dataframe.columns
-    assert list(target_dataframe.columns) == original_columns
-    assert result["numeric_col_bin"].notna().all()
-
-
-def test_binify_dictionary_inplace(mixed_dataframes_dict, numeric_bin_distribution):
+def test_binify_dictionary_inplace(mixed_dataframes_dict, numeric_bins):
     """Test binify with dictionary of DataFrames inplace."""
-    result = echoutils.binify(
-        mixed_dataframes_dict, numeric_bin_distribution, "numeric_col", inplace=True
-    )
+    result = echoutils.binify(mixed_dataframes_dict, numeric_bins, "numeric_col")
 
     assert result is None
     assert "numeric_col_bin" in mixed_dataframes_dict["target_data"].columns
@@ -186,138 +168,100 @@ def test_binify_dictionary_inplace(mixed_dataframes_dict, numeric_bin_distributi
     assert "numeric_col_bin" not in mixed_dataframes_dict["partial_data"].columns
 
 
-def test_binify_dictionary_copy(mixed_dataframes_dict, numeric_bin_distribution):
-    """Test binify with dictionary of DataFrames returning copy."""
-    original_target_cols = list(mixed_dataframes_dict["target_data"].columns)
-    result = echoutils.binify(
-        mixed_dataframes_dict, numeric_bin_distribution, "numeric_col", inplace=False
-    )
-
-    assert isinstance(result, dict)
-    assert "numeric_col_bin" in result["target_data"].columns
-    assert "numeric_col_bin" not in result["non_target_data"].columns
-    assert "numeric_col_bin" not in result["partial_data"].columns
-
-    # Original data unchanged
-    assert list(mixed_dataframes_dict["target_data"].columns) == original_target_cols
-    assert "numeric_col_bin" not in mixed_dataframes_dict["target_data"].columns
-
-
-def test_binify_secondary_column(mixed_dataframes_dict, secondary_bin_distribution):
+def test_binify_secondary_column(mixed_dataframes_dict, secondary_bins):
     """Test binify with secondary column instead of primary."""
-    echoutils.binify(
-        mixed_dataframes_dict, secondary_bin_distribution, "secondary_col", inplace=True
-    )
+    echoutils.binify(mixed_dataframes_dict, secondary_bins, "secondary_col")
 
     assert "secondary_col_bin" in mixed_dataframes_dict["target_data"].columns
     assert "secondary_col_bin" in mixed_dataframes_dict["partial_data"].columns
     assert "secondary_col_bin" not in mixed_dataframes_dict["non_target_data"].columns
 
 
-def test_binify_missing_column_single_df(non_target_dataframe, numeric_bin_distribution):
+def test_binify_missing_column_single_df(non_target_dataframe, numeric_bins):
     """Test binify with single DataFrame missing target column."""
     original_columns = list(non_target_dataframe.columns)
-    result = echoutils.binify(
-        non_target_dataframe, numeric_bin_distribution, "numeric_col", inplace=False
-    )
+    original_data = non_target_dataframe.copy()
+    
+    result = echoutils.binify(non_target_dataframe, numeric_bins, "numeric_col")
 
-    # Should return copy of original data
-    assert isinstance(result, pd.DataFrame)
-    assert list(result.columns) == original_columns
-    assert "numeric_col_bin" not in result.columns
-
-
-def test_binify_missing_column_single_df_inplace(non_target_dataframe, numeric_bin_distribution):
-    """Test binify inplace with single DataFrame missing target column."""
-    original_columns = list(non_target_dataframe.columns)
-    result = echoutils.binify(
-        non_target_dataframe, numeric_bin_distribution, "numeric_col", inplace=True
-    )
-
+    # Should modify dataframe in place but not add the bin column since target column is missing
     assert result is None
     assert list(non_target_dataframe.columns) == original_columns
     assert "numeric_col_bin" not in non_target_dataframe.columns
+    # Data should remain unchanged
+    pd.testing.assert_frame_equal(non_target_dataframe, original_data)
 
 
-def test_binify_empty_dataframe(empty_dataframe, numeric_bin_distribution):
+def test_binify_empty_dataframe(empty_dataframe, numeric_bins):
     """Test binify with empty DataFrame."""
-    result = echoutils.binify(
-        empty_dataframe, numeric_bin_distribution, "numeric_col", inplace=False
-    )
+    original_data = empty_dataframe.copy()
+    result = echoutils.binify(empty_dataframe, numeric_bins, "numeric_col")
 
-    assert isinstance(result, pd.DataFrame)
-    assert len(result) == 0
+    assert result is None
+    assert len(empty_dataframe) == 0
+    # Should remain unchanged since no target column exists
+    pd.testing.assert_frame_equal(empty_dataframe, original_data)
 
 
-def test_binify_single_row(single_row_dataframe, numeric_bin_distribution):
+def test_binify_single_row(single_row_dataframe, numeric_bins):
     """Test binify with single-row DataFrame."""
-    result = echoutils.binify(
-        single_row_dataframe, numeric_bin_distribution, "numeric_col", inplace=False
-    )
+    result = echoutils.binify(single_row_dataframe, numeric_bins, "numeric_col")
 
-    assert isinstance(result, pd.DataFrame)
-    assert "numeric_col_bin" in result.columns
-    assert len(result) == 1
+    assert result is None
+    assert "numeric_col_bin" in single_row_dataframe.columns
+    assert len(single_row_dataframe) == 1
 
 
-def test_binify_large_dataset(large_dataframe, numeric_bin_distribution):
+def test_binify_large_dataset(large_dataframe, numeric_bins):
     """Test binify performance with large dataset."""
-    result = echoutils.binify(
-        large_dataframe, numeric_bin_distribution, "numeric_col", inplace=False
-    )
+    result = echoutils.binify(large_dataframe, numeric_bins, "numeric_col")
 
-    assert isinstance(result, pd.DataFrame)
-    assert "numeric_col_bin" in result.columns
-    assert len(result) == len(large_dataframe)
+    assert result is None
+    assert "numeric_col_bin" in large_dataframe.columns
+    assert len(large_dataframe) == 1000  # Original size
 
 
-def test_binify_mixed_objects_dict(mixed_objects_dict, numeric_bin_distribution):
+def test_binify_mixed_objects_dict(mixed_objects_dict, numeric_bins):
     """Test binify with dictionary containing non-DataFrame objects."""
-    result = echoutils.binify(
-        mixed_objects_dict, numeric_bin_distribution, "numeric_col", inplace=False
-    )
+    result = echoutils.binify(mixed_objects_dict, numeric_bins, "numeric_col")
 
-    assert isinstance(result, dict)
-    assert "numeric_col_bin" in result["dataframe_1"].columns
-    assert "numeric_col_bin" not in result["dataframe_2"].columns
-    assert result["metadata"] == {"source": "test", "version": 1.0}
-    assert result["config"] == [1, 2, 3]
-
-
-def test_binify_invalid_bin_distribution(target_dataframe, invalid_bin_distribution):
-    """Test error handling for bin distribution without interval column."""
-    with pytest.raises(KeyError, match="interval"):
-        echoutils.binify(target_dataframe, invalid_bin_distribution, "numeric_col")
+    assert result is None
+    assert "numeric_col_bin" in mixed_objects_dict["dataframe_1"].columns
+    assert "numeric_col_bin" not in mixed_objects_dict["dataframe_2"].columns
+    # Non-DataFrame objects should remain unchanged
+    assert mixed_objects_dict["metadata"] == {"source": "test", "version": 1.0}
+    assert mixed_objects_dict["config"] == [1, 2, 3]
 
 
-def test_binify_non_interval_distribution(target_dataframe, non_interval_bin_distribution):
-    """Test error handling for non-interval bin distribution."""
-    with pytest.raises(ValueError, match="must contain pandas Interval objects"):
-        echoutils.binify(target_dataframe, non_interval_bin_distribution, "numeric_col")
+def test_binify_invalid_bins(target_dataframe):
+    """Test error handling for invalid bins array."""
+    invalid_bins = np.array([10])  # Single element
+    with pytest.raises(Exception):  # Will fail in binned_distribution
+        echoutils.binify(target_dataframe, invalid_bins, "numeric_col")
 
 
-def test_binify_invalid_data_type(numeric_bin_distribution):
+def test_binify_invalid_data_type(numeric_bins):
     """Test error handling for invalid data type."""
     with pytest.raises(TypeError, match="data must be DataFrame or dict of DataFrames"):
-        echoutils.binify("invalid_data", numeric_bin_distribution, "numeric_col")
+        echoutils.binify("invalid_data", numeric_bins, "numeric_col")
 
 
-def test_binify_bin_column_name_format(target_dataframe, numeric_bin_distribution):
+def test_binify_bin_column_name_format(target_dataframe, numeric_bins, secondary_bins):
     """Test that bin column name is formatted correctly."""
-    echoutils.binify(target_dataframe, numeric_bin_distribution, "numeric_col", inplace=True)
+    echoutils.binify(target_dataframe, numeric_bins, "numeric_col")
     assert "numeric_col_bin" in target_dataframe.columns
 
     # Test with different column name
-    echoutils.binify(target_dataframe, numeric_bin_distribution, "secondary_col", inplace=True)
+    echoutils.binify(target_dataframe, secondary_bins, "secondary_col")
     assert "secondary_col_bin" in target_dataframe.columns
 
 
-def test_binify_preserves_original_data(target_dataframe, numeric_bin_distribution):
+def test_binify_preserves_original_data(target_dataframe, numeric_bins):
     """Test that original data structure is preserved."""
     original_index = target_dataframe.index.copy()
     original_dtypes = target_dataframe.dtypes.copy()
 
-    echoutils.binify(target_dataframe, numeric_bin_distribution, "numeric_col", inplace=True)
+    echoutils.binify(target_dataframe, numeric_bins, "numeric_col")
 
     # Check that original columns and index are preserved
     pd.testing.assert_index_equal(target_dataframe.index, original_index)
@@ -325,48 +269,43 @@ def test_binify_preserves_original_data(target_dataframe, numeric_bin_distributi
         assert target_dataframe[col].dtype == original_dtypes[col]
 
 
-def test_binify_deterministic_results(target_dataframe, numeric_bin_distribution):
+def test_binify_deterministic_results(target_dataframe, numeric_bins):
     """Test that binify produces deterministic results."""
-    result1 = echoutils.binify(
-        target_dataframe.copy(), numeric_bin_distribution, "numeric_col", inplace=False
-    )
-    result2 = echoutils.binify(
-        target_dataframe.copy(), numeric_bin_distribution, "numeric_col", inplace=False
-    )
+    df_copy1 = target_dataframe.copy()
+    df_copy2 = target_dataframe.copy()
+    
+    echoutils.binify(df_copy1, numeric_bins, "numeric_col")
+    echoutils.binify(df_copy2, numeric_bins, "numeric_col")
 
-    pd.testing.assert_frame_equal(result1, result2)
+    pd.testing.assert_frame_equal(df_copy1, df_copy2)
 
 
-def test_binify_handles_na_values(dataframe_with_na, numeric_bin_distribution):
+def test_binify_handles_na_values(dataframe_with_na, numeric_bins):
     """Test binify behavior with NaN values in target column."""
-    result = echoutils.binify(
-        dataframe_with_na, numeric_bin_distribution, "numeric_col", inplace=False
-    )
+    result = echoutils.binify(dataframe_with_na, numeric_bins, "numeric_col")
 
-    assert "numeric_col_bin" in result.columns
-    assert result["numeric_col_bin"].isna().sum() == 2  # Two NaN values
-    assert result["numeric_col_bin"].notna().sum() == 3  # Three valid values
+    assert result is None
+    assert "numeric_col_bin" in dataframe_with_na.columns
+    assert dataframe_with_na["numeric_col_bin"].isna().sum() == 2  # Two NaN values
+    assert dataframe_with_na["numeric_col_bin"].notna().sum() == 3  # Three valid values
 
 
-def test_binify_interval_assignment(target_dataframe, numeric_bin_distribution):
+def test_binify_interval_assignment(target_dataframe, numeric_bins):
     """Test that intervals are assigned correctly."""
-    result = echoutils.binify(
-        target_dataframe, numeric_bin_distribution, "numeric_col", inplace=False
-    )
+    original_data = target_dataframe.copy()
+    echoutils.binify(target_dataframe, numeric_bins, "numeric_col")
 
     # Check that binned values are within expected intervals
-    for i, numeric_val in enumerate(result["numeric_col"]):
-        if pd.notna(numeric_val) and pd.notna(result["numeric_col_bin"].iloc[i]):
-            interval = result["numeric_col_bin"].iloc[i]
+    for i, numeric_val in enumerate(original_data["numeric_col"]):
+        if pd.notna(numeric_val) and pd.notna(target_dataframe["numeric_col_bin"].iloc[i]):
+            interval = target_dataframe["numeric_col_bin"].iloc[i]
             assert interval.left < numeric_val <= interval.right
 
 
-def test_binify_multiple_columns_sequentially(
-    target_dataframe, numeric_bin_distribution, secondary_bin_distribution
-):
+def test_binify_multiple_columns_sequentially(target_dataframe, numeric_bins, secondary_bins):
     """Test binify with multiple columns applied sequentially."""
-    echoutils.binify(target_dataframe, numeric_bin_distribution, "numeric_col", inplace=True)
-    echoutils.binify(target_dataframe, secondary_bin_distribution, "secondary_col", inplace=True)
+    echoutils.binify(target_dataframe, numeric_bins, "numeric_col")
+    echoutils.binify(target_dataframe, secondary_bins, "secondary_col")
 
     assert "numeric_col_bin" in target_dataframe.columns
     assert "secondary_col_bin" in target_dataframe.columns
@@ -374,16 +313,23 @@ def test_binify_multiple_columns_sequentially(
     assert target_dataframe["secondary_col_bin"].notna().all()
 
 
-def test_binify_different_bin_distributions(target_dataframe):
-    """Test binify with different bin distribution sizes."""
-    # Create small bin distribution
-    small_bins = np.array([10, 20, 30])
-    small_binwidth = np.mean(np.diff(small_bins) / 2.0)
-    small_centered = np.concatenate([[small_bins[0] - small_binwidth], small_bins + small_binwidth])
-    small_intervals = pd.cut(small_bins, small_centered)
-    small_dist = pd.DataFrame({"bin": small_bins, "interval": small_intervals})
+def test_binify_different_bin_sizes(target_dataframe, small_bins):
+    """Test binify with different bin array sizes."""
+    result = echoutils.binify(target_dataframe, small_bins, "numeric_col")
 
-    result = echoutils.binify(target_dataframe, small_dist, "numeric_col", inplace=False)
+    assert result is None
+    assert "numeric_col_bin" in target_dataframe.columns
+    assert target_dataframe["numeric_col_bin"].notna().any()
 
-    assert "numeric_col_bin" in result.columns
-    assert result["numeric_col_bin"].notna().any()
+
+def test_binify_with_linspace_bins(target_dataframe):
+    """Test binify with numpy linspace bins."""
+    age_bins = np.linspace(start=1., stop=22., num=22)
+    # Add age column to test data
+    target_dataframe['age'] = [5, 8, 12, 15, 18, 20]
+    
+    result = echoutils.binify(target_dataframe, age_bins, "age")
+    
+    assert result is None
+    assert "age_bin" in target_dataframe.columns
+    assert target_dataframe["age_bin"].notna().all()
