@@ -351,13 +351,16 @@ utils.binify(
 # Fit length-weight regression to the binned data
 # -----------------------------------------------
 
+# Dictionary for length-weight regression coefficients
+dict_length_weight_coefs = {}
+
 # For all fish
-length_weight_coefs_all: pd.Series = biology.fit_length_weight_regression(
+dict_length_weight_coefs["all"] = biology.fit_length_weight_regression(
     data=dict_df_bio["specimen"]
 )
 
 # Sex-specific
-length_weight_coefs_sex = dict_df_bio["specimen"].groupby(["sex"]).apply(
+dict_length_weight_coefs["sex"] = dict_df_bio["specimen"].groupby(["sex"]).apply(
     biology.fit_length_weight_regression,
     include_groups=False
 )
