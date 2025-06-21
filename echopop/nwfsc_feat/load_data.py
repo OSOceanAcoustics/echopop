@@ -406,6 +406,7 @@ def join_strata_by_haul(
     data: Union[pd.DataFrame, Dict[str, pd.DataFrame]],
     strata_df: Dict[str, pd.DataFrame],
     default_stratum: float = 0.0,
+    stratum_name: str = "stratum_num",
 ) -> Union[pd.DataFrame, Dict[str, pd.DataFrame]]:
     """
     Join stratification data by haul number or other matching column.
@@ -418,6 +419,8 @@ def join_strata_by_haul(
         Specific stratification DataFrame with stratum-haul key information
     default_stratum : float
         Default stratum value when there are no matching/corresponding values
+    stratum_name : str, default="stratum_num"
+        Name of the column containing stratum information
     
     Returns
     -------
@@ -447,8 +450,11 @@ def join_strata_by_haul(
             how="left"
         )
 
+        # Rename the stratum column name, if needed
+        df_merged.rename(columns={"stratum_num": stratum_name}, inplace=True)
+
         # Replace missing strata with `default_stratum`
-        df_merged["stratum_num"] = df_merged["stratum_num"].fillna(default_stratum)
+        df_merged[stratum_name] = df_merged[stratum_name].fillna(default_stratum)
             
         return df_merged
     
@@ -463,6 +469,7 @@ def join_strata_by_haul(
 def join_geostrata_by_latitude(
     data: Union[pd.DataFrame, Dict[str, pd.DataFrame]],
     geostrata_df: pd.DataFrame,
+    stratum_name: str = "stratum_num",
 ) -> Union[pd.DataFrame, Dict[str, pd.DataFrame]]:
     """
     Join geographic stratification data by latitude intervals.
@@ -473,8 +480,8 @@ def join_geostrata_by_latitude(
         DataFrame or dictionary of DataFrames with latitude information
     geostrata_df : pd.DataFrame
         Geographic stratification DataFrame with latitude boundaries and stratum info
-    default_stratum : float
-        Default stratum value when there are no matching/corresponding values
+    stratum_name : str, default="stratum_num"
+        Name of the column containing stratum information
     
     Returns
     -------
@@ -507,7 +514,7 @@ def join_geostrata_by_latitude(
         result = df.copy()
         
         # Create latitude intervals
-        result["stratum_num"] = pd.cut(
+        result[stratum_name] = pd.cut(
             result["latitude"],
             latitude_bins,
             right=False,
