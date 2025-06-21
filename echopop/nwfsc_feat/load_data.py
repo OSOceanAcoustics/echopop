@@ -413,7 +413,7 @@ def join_strata_by_haul(
         Default stratum value when there are no matching/corresponding values
     stratum_name : str, default="stratum_num"
         Name of the column containing stratum information
-    
+
     Returns
     -------
     Same type as input data with stratification added
@@ -436,18 +436,14 @@ def join_strata_by_haul(
             df = df.drop(columns=list(existing_cols))
 
         # Merge
-        df_merged = df.merge(
-            strata_df, 
-            on=["haul_num"],
-            how="left"
-        )
+        df_merged = df.merge(strata_df, on=["haul_num"], how="left")
 
         # Rename the stratum column name, if needed
         df_merged.rename(columns={"stratum_num": stratum_name}, inplace=True)
 
         # Replace missing strata with `default_stratum`
         df_merged[stratum_name] = df_merged[stratum_name].fillna(default_stratum)
-            
+
         return df_merged
 
     # Apply based on input type
@@ -475,7 +471,7 @@ def join_geostrata_by_latitude(
         Geographic stratification DataFrame with latitude boundaries and stratum info
     stratum_name : str, default="stratum_num"
         Name of the column containing stratum information
-    
+
     Returns
     -------
     Same type as input data with geostratification added
