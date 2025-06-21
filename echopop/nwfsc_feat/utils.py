@@ -86,86 +86,95 @@ def binned_distribution(
 
 def binify(
     data: Union[pd.DataFrame, Dict[str, pd.DataFrame]],
-    bin_distribution: pd.DataFrame,
+    bins: npt.NDArray[np.number],
     bin_column: str,
-    inplace: bool = True,
-) -> Union[pd.DataFrame, Dict[str, pd.DataFrame], None]:
+) -> None:
     """
     Apply binning to biological data using predefined bin distributions.
 
     This function bins continuous variables (like length or age) in biological datasets
-    using interval distributions created from binning operations. Can handle single
+    using bin edge arrays. It creates interval distributions internally and can handle single
     DataFrames or dictionaries of DataFrames, automatically skipping DataFrames that
-    don't contain the target column.
+    don't contain the target column. The data is modified in place.
 
     Parameters
     ----------
     data : pd.DataFrame or dict of pd.DataFrame
         Target data to bin. Can be a single DataFrame or dictionary of DataFrames.
-    bin_distribution : pd.DataFrame
-        DataFrame containing binning intervals, expected to have an 'interval' column
-        with pandas Interval objects (typically from create_centered_bins).
+        Data will be modified in place.
+    bins : npt.NDArray[np.number]
+        Array of bin edge values. Must be 1-dimensional and contain at least 2 elements.
+        Values should be in ascending order for proper binning behavior.
     bin_column : str
         Name of the column in data to apply binning to (e.g., 'length', 'age').
-    inplace : bool, default True
-        If True, modifies data in place and returns None.
-        If False, returns modified copy without changing original data.
 
     Returns
     -------
-    None, pd.DataFrame, or dict of pd.DataFrame
-        If inplace=True: Returns None (data modified in place).
-        If inplace=False: Returns modified copy of input data.
+    None
+        Data is modified in place, nothing is returned.
+
+    Examples
+    --------
+    >>> import pandas as pd
+    >>> import numpy as np
+    >>> from echopop.nwfsc_feat.utils import binify
+    >>> 
+    >>> # Create sample data
+    >>> bio_data = pd.DataFrame({
+    ...     'length': [25.5, 30.2, 35.8, 40.1, 45.3],
+    ...     'weight': [150, 220, 310, 420, 580]
+    ... })
+    >>> 
+    >>> # Create bin edges
+    >>> length_bins = np.array([20, 30, 40, 50])
+    >>> 
+    >>> # Apply binning (modifies bio_data in place)
+    >>> binify(bio_data, length_bins, 'length')
+    >>> print('length_bin' in bio_data.columns)
+    True
+    >>> 
+    >>> # Works with numpy linspace too
+    >>> age_bins = np.linspace(start=1., stop=22., num=22)
+    >>> bio_data['age'] = [5, 8, 12, 15, 18]
+    >>> binify(bio_data, age_bins, 'age')
+    >>> print('age_bin' in bio_data.columns)
+    True
+    >>> 
+    >>> # Works with dictionary of DataFrames too
+    >>> data_dict = {'catch': bio_data.copy(), 'length': bio_data.copy()}
+    >>> binify(data_dict, length_bins, 'length')
+    >>> print('length_bin' in data_dict['catch'].columns)
+    True
     """
+    # Create bin distribution internally using binned_distribution function
+    bin_distribution = binned_distribution(bins, return_dataframe=True)
+    
     # Extract bin categories
     try:
-        bins = bin_distribution["interval"].cat.categories
+        bin_intervals = bin_distribution["interval"].cat.categories
     except AttributeError:
-        raise ValueError("bin_distribution['interval'] must contain pandas Interval objects")
+        raise ValueError("Failed to create proper interval categories from bins")
 
     # Format new bin column name
     bin_column_name = f"{bin_column}_bin"
 
-    def _apply_binning(df: pd.DataFrame) -> Optional[pd.DataFrame]:
-        """Apply binning to a single DataFrame, return None if column missing."""
+    def _apply_binning(df: pd.DataFrame) -> None:
+        """Apply binning to a single DataFrame in place, skip if column missing."""
         if bin_column not in df.columns:
-            return None  # Skip DataFrames without target column
+            return  # Skip DataFrames without target column
 
-        if inplace:
-            df[bin_column_name] = pd.cut(df[bin_column], bins=bins)
-            return df
-        else:
-            df_copy = df.copy()
-            df_copy[bin_column_name] = pd.cut(df_copy[bin_column], bins=bins)
-            return df_copy
+        df[bin_column_name] = pd.cut(df[bin_column], bins=bin_intervals)
 
     # Handle different input types
     if isinstance(data, pd.DataFrame):
         # Single DataFrame
-        result = _apply_binning(data)
-        if result is None:
-            # Column missing - just return original or None
-            return None if inplace else data.copy()
-        return None if inplace else result
+        _apply_binning(data)
 
     elif isinstance(data, dict):
-        # Dictionary of DataFrames
-        if inplace:
-            # Modify each DataFrame in place
-            for key, df in data.items():
-                if isinstance(df, pd.DataFrame):
-                    _apply_binning(df)  # Automatically skips if column missing
-            return None
-        else:
-            # Return dictionary of modified copies
-            result_dict = {}
-            for key, df in data.items():
-                if isinstance(df, pd.DataFrame):
-                    binned_df = _apply_binning(df)
-                    result_dict[key] = binned_df if binned_df is not None else df.copy()
-                else:
-                    result_dict[key] = df
-            return result_dict
+        # Dictionary of DataFrames - modify each DataFrame in place
+        for key, df in data.items():
+            if isinstance(df, pd.DataFrame):
+                _apply_binning(df)  # Automatically skips if column missing
 
     else:
         raise TypeError(f"data must be DataFrame or dict of DataFrames, got {type(data)}")

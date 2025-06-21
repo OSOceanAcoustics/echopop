@@ -337,37 +337,15 @@ kriging_params_dict, variogram_params_dict = load_data.load_kriging_variogram_pa
 age_bins: npt.NDArray[np.number] = np.linspace(start=1., stop=22., num=22)
 length_bins: npt.NDArray[np.number] = np.linspace(start=2., stop=80., num=40)
 
-# Outputs:
-# ---- `pandas.DataFrame` that includes the `pandas`-formatted intervals used for cutting data
-# ---- NOTE: This function has an argument `return_dataframe` that will return a Tuple rather than 
-# ---- a `pandas.DataFrame` when set to `False`. This was primarily for debugging purposes, so it 
-# ---- can be removed if it ends up never being used
-age_distribution: pd.DataFrame = utils.binned_distribution(age_bins)
-length_distribution: pd.DataFrame = utils.binned_distribution(length_bins)
-
-# ==================================================================================================
-# 'Binify' the biological data [age, length]
-# ------------------------------------------
-# Note: this argument can be done 'inplace'
-data: Union[pd.DataFrame, Dict[str, pd.DataFrame]] = dict_df_bio_ks 
-bin_distribution: pd.DataFrame = length_distribution.copy()
-bin_column: str = "length"
-inplace: bool = False
-
-# Outputs:
-# ---- `Union[pd.DataFrame, Dict[str, pd.DataFrame], None]`
-# ---- `pandas.DataFrame` if a single `pandas.DataFrame` input
-# ---- The same structured `Dict[str, pandas.DataFrame]` if a `Dict[str, pandas.DataFrame]` input
-# ---- `None` when `inplace=True`
-
-# Length
-dict_df_bio_binned_ks: Dict[str, pd.DataFrame] = utils.binify(
-    data, bin_distribution, bin_column, inplace
+# 
+# ---- Length
+utils.binify(
+    data=dict_df_bio, bins=length_bins, bin_column="length", 
 )
 
 # Age
 utils.binify(
-    data=dict_df_bio_binned_ks, bin_distribution=age_distribution, bin_column="age", inplace=True
+    data=dict_df_bio, bins=age_bins, bin_column="age",
 )
 
 # ==================================================================================================
