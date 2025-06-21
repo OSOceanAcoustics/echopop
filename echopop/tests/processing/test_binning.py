@@ -181,7 +181,7 @@ def test_binify_missing_column_single_df(non_target_dataframe, numeric_bins):
     """Test binify with single DataFrame missing target column."""
     original_columns = list(non_target_dataframe.columns)
     original_data = non_target_dataframe.copy()
-    
+
     result = echoutils.binify(non_target_dataframe, numeric_bins, "numeric_col")
 
     # Should modify dataframe in place but not add the bin column since target column is missing
@@ -273,7 +273,7 @@ def test_binify_deterministic_results(target_dataframe, numeric_bins):
     """Test that binify produces deterministic results."""
     df_copy1 = target_dataframe.copy()
     df_copy2 = target_dataframe.copy()
-    
+
     echoutils.binify(df_copy1, numeric_bins, "numeric_col")
     echoutils.binify(df_copy2, numeric_bins, "numeric_col")
 
@@ -324,12 +324,12 @@ def test_binify_different_bin_sizes(target_dataframe, small_bins):
 
 def test_binify_with_linspace_bins(target_dataframe):
     """Test binify with numpy linspace bins."""
-    age_bins = np.linspace(start=1., stop=22., num=22)
+    age_bins = np.linspace(start=1.0, stop=22.0, num=22)
     # Add age column to test data
-    target_dataframe['age'] = [5, 8, 12, 15, 18, 20]
-    
+    target_dataframe["age"] = [5, 8, 12, 15, 18, 20]
+
     result = echoutils.binify(target_dataframe, age_bins, "age")
-    
+
     assert result is None
     assert "age_bin" in target_dataframe.columns
     assert target_dataframe["age_bin"].notna().all()

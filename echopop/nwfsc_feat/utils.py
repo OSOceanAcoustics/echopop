@@ -118,28 +118,28 @@ def binify(
     >>> import pandas as pd
     >>> import numpy as np
     >>> from echopop.nwfsc_feat.utils import binify
-    >>> 
+    >>>
     >>> # Create sample data
     >>> bio_data = pd.DataFrame({
     ...     'length': [25.5, 30.2, 35.8, 40.1, 45.3],
     ...     'weight': [150, 220, 310, 420, 580]
     ... })
-    >>> 
+    >>>
     >>> # Create bin edges
     >>> length_bins = np.array([20, 30, 40, 50])
-    >>> 
+    >>>
     >>> # Apply binning (modifies bio_data in place)
     >>> binify(bio_data, length_bins, 'length')
     >>> print('length_bin' in bio_data.columns)
     True
-    >>> 
+    >>>
     >>> # Works with numpy linspace too
     >>> age_bins = np.linspace(start=1., stop=22., num=22)
     >>> bio_data['age'] = [5, 8, 12, 15, 18]
     >>> binify(bio_data, age_bins, 'age')
     >>> print('age_bin' in bio_data.columns)
     True
-    >>> 
+    >>>
     >>> # Works with dictionary of DataFrames too
     >>> data_dict = {'catch': bio_data.copy(), 'length': bio_data.copy()}
     >>> binify(data_dict, length_bins, 'length')
@@ -148,7 +148,7 @@ def binify(
     """
     # Create bin distribution internally using binned_distribution function
     bin_distribution = binned_distribution(bins, return_dataframe=True)
-    
+
     # Extract bin categories
     try:
         bin_intervals = bin_distribution["interval"].cat.categories
