@@ -95,9 +95,9 @@ def realistic_fish_data():
 
 
 @pytest.fixture
-def sample_specimen_data():
+def sample_specimen_data(sample_length_distribution):
     """Create sample specimen data with length and weight."""
-    return pd.DataFrame(
+    data = pd.DataFrame(
         {
             "length": [12.5, 18.3, 22.7, 27.1, 15.8, 24.2, 19.5, 26.8, 14.2, 21.3],
             "weight": [25.3, 45.7, 68.2, 89.5, 32.1, 72.8, 52.1, 85.2, 28.9, 61.4],
@@ -117,6 +117,11 @@ def sample_specimen_data():
             "haul_id": [1, 1, 2, 2, 3, 3, 4, 4, 5, 5],
         }
     )
+    # Add length bins
+    data["length_bin"] = pd.cut(
+        data["length"], bins=sample_length_distribution["interval"].cat.categories
+    )
+    return data
 
 
 @pytest.fixture
@@ -157,26 +162,36 @@ def grouped_regression_coefficients():
 
 
 @pytest.fixture
-def reduced_specimen_data():
+def reduced_specimen_data(sample_length_distribution):
     """Create minimal specimen data for edge case testing."""
-    return pd.DataFrame({"length": [15.0, 25.0], "weight": [30.0, 75.0], "sex": ["male", "female"]})
+    data = pd.DataFrame({"length": [15.0, 25.0], "weight": [30.0, 75.0], "sex": ["male", "female"]})
+    # Add length bins
+    data["length_bin"] = pd.cut(
+        data["length"], bins=sample_length_distribution["interval"].cat.categories
+    )
+    return data
 
 
 @pytest.fixture
-def specimen_data_missing_weights():
+def specimen_data_missing_weights(sample_length_distribution):
     """Create specimen data with some missing weights."""
-    return pd.DataFrame(
+    data = pd.DataFrame(
         {
             "length": [12.5, 18.3, 22.7, 27.1, 15.8],
             "weight": [25.3, np.nan, 68.2, np.nan, 32.1],
             "sex": ["male", "female", "male", "female", "male"],
         }
     )
+    # Add length bins
+    data["length_bin"] = pd.cut(
+        data["length"], bins=sample_length_distribution["interval"].cat.categories
+    )
+    return data
 
 
 @pytest.fixture
-def large_specimen_dataset():
-    """Create larger specimen dataset for performance testing."""
+def large_specimen_dataset(sample_length_distribution):
+    """Create larger specimen dataset for performance testing with length_bin column."""
     np.random.seed(42)
     n = 500
 
@@ -184,7 +199,7 @@ def large_specimen_dataset():
     lengths = np.random.uniform(10, 30, n)
     weights = 0.01 * (lengths**3.0) * np.random.uniform(0.8, 1.2, n)
 
-    return pd.DataFrame(
+    data = pd.DataFrame(
         {
             "length": lengths,
             "weight": weights,
@@ -193,6 +208,13 @@ def large_specimen_dataset():
             "haul_id": np.random.randint(1, 11, n),
         }
     )
+    
+    # Add length_bin column
+    data["length_bin"] = pd.cut(
+        data["length"], bins=sample_length_distribution["interval"].cat.categories, labels=sample_length_distribution["interval"]
+    )
+    
+    return data
 
 
 @pytest.fixture
@@ -202,15 +224,28 @@ def empty_specimen_data():
 
 
 @pytest.fixture
-def uneven_specimen_data():
-    """Create specimen data with uneven distribution across bins."""
-    return pd.DataFrame(
+def null_specimen_data():
+    """Create empty specimen DataFrame with correct columns."""
+    return pd.DataFrame(columns=["length", "weight", "sex", "species_id", "haul_id", "length_bin"])
+
+
+@pytest.fixture
+def uneven_specimen_data(sample_length_distribution):
+    """Create specimen data with uneven distribution across bins with length_bin column."""
+    data = pd.DataFrame(
         {
             "length": [12.0, 12.1, 12.2, 22.5, 27.8],  # Most data in first bin
             "weight": [24.5, 25.1, 24.8, 68.0, 92.3],
             "sex": ["male", "male", "female", "female", "male"],
         }
     )
+    
+    # Add length_bin column
+    data["length_bin"] = pd.cut(
+        data["length"], bins=sample_length_distribution["interval"].cat.categories, labels=sample_length_distribution["interval"]
+    )
+    
+    return data
 
 
 @pytest.fixture
@@ -226,9 +261,9 @@ def coefficients_with_multiple_groups():
 
 
 @pytest.fixture
-def specimen_data_multiple_groups():
-    """Create specimen data with multiple grouping variables."""
-    return pd.DataFrame(
+def specimen_data_multiple_groups(sample_length_distribution):
+    """Create specimen data with multiple grouping variables and length_bin column."""
+    data = pd.DataFrame(
         {
             "length": [12.5, 18.3, 22.7, 27.1, 15.8, 24.2, 19.5, 26.8],
             "weight": [25.3, 45.7, 68.2, 89.5, 32.1, 72.8, 52.1, 85.2],
@@ -236,6 +271,13 @@ def specimen_data_multiple_groups():
             "stratum": ["A", "B", "A", "B", "A", "B", "A", "B"],
         }
     )
+    
+    # Add length_bin column
+    data["length_bin"] = pd.cut(
+        data["length"], bins=sample_length_distribution["interval"].cat.categories, labels=sample_length_distribution["interval"]
+    )
+    
+    return data
 
 
 @pytest.fixture

@@ -60,10 +60,10 @@ def length_binned_weights(
     are used if imputation is enabled.
 
     Parameters
-    ----------
+    ----------    
     data : pd.DataFrame
-        Specimen data containing 'length' and 'weight' columns.
-        Must have 'length_bin' column or function will create it using binify.
+        Specimen data containing 'length', 'weight', and 'length_bin' columns.
+        The 'length_bin' column must already exist in the data.
     length_distribution : pd.DataFrame
         DataFrame with length bin information, containing 'bin' and 'interval' columns.
     regression_coefficients : pd.Series or pd.DataFrame
@@ -121,18 +121,10 @@ def length_binned_weights(
     # Predict weight per bin using allometric relationship: weight = 10^intercept * length^slope
     weight_fitted_df["weight_modeled"] = (
         10.0 ** weight_fitted_df["intercept"] * weight_fitted_df["bin"] ** weight_fitted_df["slope"]
-    )
-
-    # Get the column names if any grouping is required
+    )    # Get the column names if any grouping is required
     cols = [name for name in regression_coefficients.index.names if name is not None] + [
         "length_bin"
     ]
-
-    # Binify, if column `"length_bin"` missing
-    if "length_bin" not in data.columns:
-        from echopop.nwfsc_feat import utils
-
-        utils.binify(data, length_distribution, "length", True)
 
     # Quantize weight counts per length bin
     binned_weight_distribution = (
