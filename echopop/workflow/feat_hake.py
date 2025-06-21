@@ -350,14 +350,14 @@ utils.binify(
 # ==================================================================================================
 # Fit length-weight regression to the binned data
 # -----------------------------------------------
-length_weight_dataset: pd.DataFrame = dict_df_bio_binned_ks["specimen"].copy()
 
-# Outputs: 
-# ---- `pandas.Series` that includes the fitted slope and intercepts for the length-weight 
-# ---- log-linear regressions. This can either be ran directly on a `pandas.DataFrame` or via 
-# ---- `pandas.DataFrame.groupby`
-length_weight_coefs_all: pd.Series = biology.fit_length_weight_regression(length_weight_dataset)
-length_weight_coefs_sex = length_weight_dataset.groupby(["sex"]).apply(
+# For all fish
+length_weight_coefs_all: pd.Series = biology.fit_length_weight_regression(
+    data=dict_df_bio["specimen"]
+)
+
+# Sex-specific
+length_weight_coefs_sex = dict_df_bio["specimen"].groupby(["sex"]).apply(
     biology.fit_length_weight_regression,
     include_groups=False
 )
@@ -398,58 +398,9 @@ binned_weight_table = pd.concat(
 # ==================================================================================================
 # Compute the count distributions per age- and length-bins
 # --------------------------------------------------------
-# !!! When it comes down to this operation, it seems like overkill to have this set operation  
-# !!! defined as a totally separate function when the operation is pretty straightforward. It is 
-# !!! perhaps just a tad repetitive.
-
-# Get the binned aged (age-length-bins) and unaged (length-bins) counts
-# ---- Aged (all fish) -- inclusive of unsexed
-# aged_counts_all = (
-#     dict_df_bio_binned_ks["specimen"]
-#     .groupby(["stratum_num", "length_bin", "age_bin"], observed=False)["length"].size()
-#     .to_frame("count")
-# )
-# # ---- Aged (sexed fish) -- in this case exclude "unsexed" to leave only "female"/"male"
-# aged_counts_sexed = (
-#     dict_df_bio_binned_ks["specimen"]
-#     .loc[dict_df_bio_binned_ks["specimen"].sex != "unsexed"]
-#     .groupby(["stratum_num", "length_bin", "age_bin", "sex"], observed=False)["length"].size()
-#     .to_frame("count")
-# )
-# # ---- Aged (all fish) -- no unsexed [equivalent to the `binned_aged_counts_filtered_df`]
-# aged_counts_no_unsexed_all = (
-#     dict_df_bio_binned_ks["specimen"]
-#     .loc[dict_df_bio_binned_ks["specimen"].sex != "unsexed"]
-#     .groupby(["stratum_num", "length_bin", "age_bin"], observed=False)["length"].size()
-#     .to_frame("count")
-# )
-# # ---- Unaged (all fish)
-# unaged_counts_all = (
-#     dict_df_bio_binned_ks["length"]
-#     .loc[dict_df_bio_binned_ks["length"].sex != "unsexed"]
-#     .groupby(["stratum_num", "length_bin"], observed=False)["length"].sum()
-#     .to_frame("count")
-# )
-# # ---- Unaged (sexed fish)
-# unaged_counts_sexed = (
-#     dict_df_bio_binned_ks["length"]
-#     .loc[dict_df_bio_binned_ks["length"].sex != "unsexed"]
-#     .groupby(["stratum_num", "length_bin", "sex"], observed=False)["length_count"].sum()
-#     .to_frame("count")
-# )
-
 base_groupby_cols: List[str] = ["stratum_num", "length_bin"]
 aged_df: pd.DataFrame = dict_df_bio_binned_ks["specimen"].copy().dropna(subset=["age", "length", "weight"])
 unaged_df: pd.DataFrame = dict_df_bio_binned_ks["length"].copy().dropna(subset=["length"])
-
-# Get the binned aged (age-length-bins) and unaged (length-bins) counts
-# ---- Aged (all fish) -- inclusive of unsexed
-# aged_counts_all = get_proportions.compute_binned_counts(
-#     data=aged_df, 
-#     groupby_cols=base_groupby_cols + ["age_bin"], 
-#     count_col="length",
-#     agg_func="size"
-# )
 # ---- Aged (sexed fish) -- in this case exclude "unsexed" to leave only "female"/"male"
 aged_counts_sexed = get_proportions.compute_binned_counts(
     data=aged_df, 
@@ -458,30 +409,6 @@ aged_counts_sexed = get_proportions.compute_binned_counts(
     agg_func="size"
 )
 
-# # ---- Aged (all fish) -- no unsexed [equivalent to the `binned_aged_counts_filtered_df`]
-# aged_counts_no_unsexed_all = get_proportions.compute_binned_counts(
-#     data=aged_df, 
-#     groupby_cols=base_groupby_cols + ["age_bin"], 
-#     count_col="length",
-#     agg_func="size",
-#     exclude_filters=exclude_filter
-# )
-# # ---- Aged (sexed fish) -- no unsexed (just "female"/"male")
-# aged_counts_no_unsexed_sexed = get_proportions.compute_binned_counts(
-#     data=aged_df, 
-#     groupby_cols=base_groupby_cols + ["age_bin"], 
-#     count_col="length",
-#     agg_func="size",
-#     exclude_filters=exclude_filter
-# )
-# # ---- Unaged (all fish)
-# unaged_counts_all = get_proportions.compute_binned_counts(
-#     data=unaged_df, 
-#     groupby_cols=base_groupby_cols, 
-#     count_col="length_count",
-#     agg_func="sum",
-#     exclude_filters=exclude_filter
-# )
 # ---- Unaged (sexed fish)
 unaged_counts_sexed = get_proportions.compute_binned_counts(
     data=unaged_df, 
@@ -497,10 +424,7 @@ group_columns = ["stratum_num"]
 column_aliases = ["aged", "unaged"]
 exclude_filters: Dict[str, Any] = [{"sex": "unsexed"}, None] # Positional filter match dataframe order
 
-# Outputs: 
-# ---- `Dict[str, pandas.DataFrame]` with the number proportions computed for aged and unaged fish. 
-# ----- This includes columns for `proportion` (within group) and `proportion_overall` 
-# ---- (across groups)
+#
 dict_df_number_proportion: Dict[str, pd.DataFrame] = get_proportions.number_proportions(
     aged_counts_sexed, unaged_counts_sexed, 
     group_columns=group_columns,
@@ -511,10 +435,6 @@ dict_df_number_proportion: Dict[str, pd.DataFrame] = get_proportions.number_prop
 # ==================================================================================================
 # Distribute (bin) weight over age, length, and sex
 # -------------------------------------------------
-
-# Outputs: 
-# ---- `pandas.DataFrame` with the binned weights distributed across defined bins/strata/sex/etc.
-
 # Pre-allocate a dictionary
 dict_df_weight_distr: Dict[str, Any] = {}
 
@@ -543,9 +463,7 @@ dict_df_weight_distr["unaged"] = get_proportions.binned_weights(
 proportion_dict: Dict[str, pd.DataFrame] = dict_df_number_proportion
 binned_weight_table: pd.DataFrame = binned_weight_table
 
-# Output:
-# ---- `pandas.DataFrame` indexed by stratum with the average weights per stratum for male, female, 
-# ---- and all fish
+#
 df_averaged_weight = get_proportions.stratum_averaged_weight(
     proportion_dict, binned_weight_table
 )
@@ -560,9 +478,7 @@ group: str = "aged"
 # Initialize Dictionary container
 dict_df_weight_proportion: Dict[str, Any] = {}
 
-# Output:
-# ---- `pandas.DataFrame` indexed by, in this case, length, age, and sex across all strata 
-# ---- containing weight proportions
+# 
 dict_df_weight_proportion["aged"] = get_proportions.weight_proportions(
     weight_data, catch_data, group
 )
@@ -576,9 +492,7 @@ stratum_weights: pd.DataFrame = (
     .sum().reset_index(name="weight")
 )
 
-# Output:
-# ---- `pandas.DataFrame` indexed by, in this case, sex across all strata containing the 
-# ---- standardized haul weights
+# 
 standardized_sexed_unaged_weights_df = get_proportions.standardize_weights_by_stratum(
     weight_data, stratum_weights
 )
@@ -594,10 +508,7 @@ binned_weight_table: pd.DataFrame = binned_weights_df_all
 group: str = "unaged"
 group_columns: List[str] = ["sex"]
 
-# Output:
-# ---- `pandas.DataFrame` indexed by, in this case, length, and sex across all strata containing 
-# ---- the standardized weight proportions based on the sexed ratios and fitted length-weight 
-# ---- distributions computed using the aged measurements
+# 
 dict_df_weight_proportion["unaged"] = get_proportions.standardize_weight_proportions(
     weight_data, reference_data, catch_data, 
     proportion_dict, binned_weight_table, group, group_columns
