@@ -320,9 +320,8 @@ FEAT_TO_ECHOPOP_GEOSTATS_PARAMS_COLUMNS = {
 }
 column_name_map = FEAT_TO_ECHOPOP_GEOSTATS_PARAMS_COLUMNS
 
-# Outputs:
-# ---- Dictionaries comprising kriging and variogram model parameterization
-kriging_params_dict, variogram_params_dict = load_data.load_kriging_variogram_params(
+# 
+dict_kriging_params, dict_variogram_params = load_data.load_kriging_variogram_params(
     geostatistic_params_filepath,
     geostatistic_params_sheet_name,
     FEAT_TO_ECHOPOP_GEOSTATS_PARAMS_COLUMNS
