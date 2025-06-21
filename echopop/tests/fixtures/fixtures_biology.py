@@ -208,12 +208,14 @@ def large_specimen_dataset(sample_length_distribution):
             "haul_id": np.random.randint(1, 11, n),
         }
     )
-    
+
     # Add length_bin column
     data["length_bin"] = pd.cut(
-        data["length"], bins=sample_length_distribution["interval"].cat.categories, labels=sample_length_distribution["interval"]
+        data["length"],
+        bins=sample_length_distribution["interval"].cat.categories,
+        labels=sample_length_distribution["interval"],
     )
-    
+
     return data
 
 
@@ -239,12 +241,14 @@ def uneven_specimen_data(sample_length_distribution):
             "sex": ["male", "male", "female", "female", "male"],
         }
     )
-    
+
     # Add length_bin column
     data["length_bin"] = pd.cut(
-        data["length"], bins=sample_length_distribution["interval"].cat.categories, labels=sample_length_distribution["interval"]
+        data["length"],
+        bins=sample_length_distribution["interval"].cat.categories,
+        labels=sample_length_distribution["interval"],
     )
-    
+
     return data
 
 
@@ -271,12 +275,14 @@ def specimen_data_multiple_groups(sample_length_distribution):
             "stratum": ["A", "B", "A", "B", "A", "B", "A", "B"],
         }
     )
-    
+
     # Add length_bin column
     data["length_bin"] = pd.cut(
-        data["length"], bins=sample_length_distribution["interval"].cat.categories, labels=sample_length_distribution["interval"]
+        data["length"],
+        bins=sample_length_distribution["interval"].cat.categories,
+        labels=sample_length_distribution["interval"],
     )
-    
+
     return data
 
 

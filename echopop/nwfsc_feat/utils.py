@@ -1,5 +1,5 @@
 from functools import reduce
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -7,9 +7,7 @@ import pandas as pd
 from scipy import interpolate as interp
 
 
-def binned_distribution(
-    bins: npt.NDArray[np.number], return_dataframe: bool = True
-) -> Union[pd.DataFrame, Tuple[npt.NDArray[np.number], npt.NDArray[np.number]]]:
+def binned_distribution(bins: npt.NDArray[np.number]) -> pd.DataFrame:
     """
     Create centered bins for data binning operations.
 
@@ -22,23 +20,13 @@ def binned_distribution(
     bins : npt.NDArray[np.number]
         Array of bin edge values. Must be 1-dimensional and contain at least 2 elements.
         Values should be in ascending order for proper binning behavior.
-    return_dataframe : bool, default True
-        If True, returns a DataFrame with bins and intervals.
-        If False, returns a tuple of (bins, centered_bins) arrays.
-        [!!! NOTE: THIS HAS BEEN ADDED AS AN ARGUMENT FOR PRIMARILY TESTING PURPOSES BEFORE
-        DETERMINING THE MOST APPROPRIATE OUTPUT]
 
     Returns
     -------
-    pd.DataFrame or tuple
-        If return_dataframe is True:
-            DataFrame with columns:
-            - 'bin': Original bin values
-            - 'interval': pd.Interval objects representing the binning intervals
-        If return_dataframe is False:
-            Tuple containing:
-            - bins: Original bin array
-            - centered_bins: Array of centered bin edges for use with pd.cut()
+    pd.DataFrame
+        DataFrame with columns:
+        - 'bin': Original bin values
+        - 'interval': pd.Interval objects representing the binning intervals
 
     Raises
     ------
@@ -56,11 +44,9 @@ def binned_distribution(
     Index(['bin', 'interval'], dtype='object')
 
     >>> bins = np.linspace(0, 10, 11)
-    >>> bins_array, centered_array = binned_distribution(bins, return_dataframe=False)
-    >>> len(centered_array) == len(bins_array) + 1
-    True
-
-    Notes
+    >>> result = binned_distribution(bins)
+    >>> len(result) == len(bins)
+    True    Notes
     -----
     The function calculates the bin width as the mean of half the differences between
     consecutive bin values. This approach works well for both evenly and unevenly
@@ -76,12 +62,9 @@ def binned_distribution(
     # Create centered bins by extending the range
     centered_bins = np.concatenate([[bins[0] - binwidth], bins + binwidth])
 
-    if return_dataframe:
-        # Generate DataFrame with bins and intervals
-        intervals = pd.cut(bins, centered_bins)
-        return pd.DataFrame({"bin": bins, "interval": intervals})
-    else:
-        return bins, centered_bins
+    # Generate DataFrame with bins and intervals
+    intervals = pd.cut(bins, centered_bins)
+    return pd.DataFrame({"bin": bins, "interval": intervals})
 
 
 def binify(
@@ -118,37 +101,36 @@ def binify(
     >>> import pandas as pd
     >>> import numpy as np
     >>> from echopop.nwfsc_feat.utils import binify
-    >>> 
+    >>>
     >>> # Create sample data
     >>> bio_data = pd.DataFrame({
     ...     'length': [25.5, 30.2, 35.8, 40.1, 45.3],
     ...     'weight': [150, 220, 310, 420, 580]
     ... })
-    >>> 
+    >>>
     >>> # Create bin edges
     >>> length_bins = np.array([20, 30, 40, 50])
-    >>> 
+    >>>
     >>> # Apply binning (modifies bio_data in place)
     >>> binify(bio_data, length_bins, 'length')
     >>> print('length_bin' in bio_data.columns)
     True
-    >>> 
+    >>>
     >>> # Works with numpy linspace too
     >>> age_bins = np.linspace(start=1., stop=22., num=22)
     >>> bio_data['age'] = [5, 8, 12, 15, 18]
     >>> binify(bio_data, age_bins, 'age')
     >>> print('age_bin' in bio_data.columns)
     True
-    >>> 
+    >>>
     >>> # Works with dictionary of DataFrames too
     >>> data_dict = {'catch': bio_data.copy(), 'length': bio_data.copy()}
     >>> binify(data_dict, length_bins, 'length')
     >>> print('length_bin' in data_dict['catch'].columns)
     True
-    """
-    # Create bin distribution internally using binned_distribution function
-    bin_distribution = binned_distribution(bins, return_dataframe=True)
-    
+    """  # Create bin distribution internally using binned_distribution function
+    bin_distribution = binned_distribution(bins)
+
     # Extract bin categories
     try:
         bin_intervals = bin_distribution["interval"].cat.categories

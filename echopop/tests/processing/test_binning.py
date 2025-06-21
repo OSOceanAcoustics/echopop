@@ -15,37 +15,6 @@ def test_create_centered_bins_dataframe_output(simple_bins):
     np.testing.assert_array_equal(result["bin"].values, simple_bins)
 
 
-def test_create_centered_bins_array_output(simple_bins):
-    """Test functionality with array tuple output."""
-    bins_out, centered_bins = echoutils.binned_distribution(simple_bins, return_dataframe=False)
-
-    assert isinstance(bins_out, np.ndarray)
-    assert isinstance(centered_bins, np.ndarray)
-    np.testing.assert_array_equal(bins_out, simple_bins)
-    assert len(centered_bins) == len(simple_bins) + 1
-
-
-def test_binwidth_calculation(simple_bins):
-    """Test that binwidth is calculated correctly."""
-    bins_out, centered_bins = echoutils.binned_distribution(simple_bins, return_dataframe=False)
-
-    # For evenly spaced bins [1,2,3,4,5], diff = [1,1,1,1], binwidth = 0.5
-    expected_binwidth = 0.5
-    actual_binwidth = centered_bins[1] - simple_bins[0]
-
-    assert np.isclose(actual_binwidth, expected_binwidth)
-
-
-def test_centered_bins_extend_range(simple_bins):
-    """Test that centered bins properly extend the original range."""
-    bins_out, centered_bins = echoutils.binned_distribution(simple_bins, return_dataframe=False)
-
-    # First centered bin should be less than first original bin
-    assert centered_bins[0] < simple_bins[0]
-    # Last centered bin should be greater than last original bin
-    assert centered_bins[-1] > simple_bins[-1]
-
-
 def test_float_bins(float_bins):
     """Test functionality with floating point bins."""
     result = echoutils.binned_distribution(float_bins)
@@ -118,35 +87,6 @@ def test_large_array_performance(large_bins):
     assert all(pd.notna(result["interval"]))
 
 
-def test_return_dataframe_parameter():
-    """Test that return_dataframe parameter works correctly."""
-    bins = np.array([1, 2, 3, 4, 5])
-
-    # Test DataFrame return
-    df_result = echoutils.binned_distribution(bins, return_dataframe=True)
-    assert isinstance(df_result, pd.DataFrame)
-
-    # Test tuple return
-    tuple_result = echoutils.binned_distribution(bins, return_dataframe=False)
-    assert isinstance(tuple_result, tuple)
-    assert len(tuple_result) == 2
-
-
-def test_binwidth_consistency_across_methods():
-    """Test that binwidth calculation is consistent."""
-    bins = np.array([1, 2, 3, 4, 5])
-
-    # Get results from both methods
-    df_result = echoutils.binned_distribution(bins, return_dataframe=True)
-    bins_out, centered_bins = echoutils.binned_distribution(bins, return_dataframe=False)
-
-    # Extract intervals from DataFrame and compare with centered_bins
-    first_interval = df_result["interval"].iloc[0]
-    expected_left = centered_bins[0]
-
-    assert np.isclose(first_interval.left, expected_left)
-
-
 def test_binify_single_dataframe_inplace(target_dataframe, numeric_bins):
     """Test binify with single DataFrame inplace operation."""
     original_shape = target_dataframe.shape
@@ -181,7 +121,7 @@ def test_binify_missing_column_single_df(non_target_dataframe, numeric_bins):
     """Test binify with single DataFrame missing target column."""
     original_columns = list(non_target_dataframe.columns)
     original_data = non_target_dataframe.copy()
-    
+
     result = echoutils.binify(non_target_dataframe, numeric_bins, "numeric_col")
 
     # Should modify dataframe in place but not add the bin column since target column is missing
@@ -273,7 +213,7 @@ def test_binify_deterministic_results(target_dataframe, numeric_bins):
     """Test that binify produces deterministic results."""
     df_copy1 = target_dataframe.copy()
     df_copy2 = target_dataframe.copy()
-    
+
     echoutils.binify(df_copy1, numeric_bins, "numeric_col")
     echoutils.binify(df_copy2, numeric_bins, "numeric_col")
 
@@ -324,12 +264,12 @@ def test_binify_different_bin_sizes(target_dataframe, small_bins):
 
 def test_binify_with_linspace_bins(target_dataframe):
     """Test binify with numpy linspace bins."""
-    age_bins = np.linspace(start=1., stop=22., num=22)
+    age_bins = np.linspace(start=1.0, stop=22.0, num=22)
     # Add age column to test data
-    target_dataframe['age'] = [5, 8, 12, 15, 18, 20]
-    
+    target_dataframe["age"] = [5, 8, 12, 15, 18, 20]
+
     result = echoutils.binify(target_dataframe, age_bins, "age")
-    
+
     assert result is None
     assert "age_bin" in target_dataframe.columns
     assert target_dataframe["age_bin"].notna().all()
