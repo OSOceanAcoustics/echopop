@@ -117,7 +117,7 @@ def number_proportions(
     >>> result = number_proportions(data_dict)
     """
 
-    # Handle different input patterns  
+    # Handle different input patterns
     if isinstance(data, dict):
         # Dictionary input - convert to list and extract keys for aliases
         df_list = list(data.values())
@@ -158,11 +158,11 @@ def number_proportions(
             )
         ),
         columns=group_columns,
-    )    # Create dynamic column names based on number of DataFrames
+    )  # Create dynamic column names based on number of DataFrames
     # Set default column_aliases if not already set
     if column_aliases is None:
         column_aliases = [f"df_{i}" for i in range(len(df_list))]
-    
+
     # Ensure we have enough aliases for all DataFrames
     if len(column_aliases) >= len(df_list):
         total_cols = [f"total_{i}" for i in column_aliases[: len(df_list)]]
@@ -205,7 +205,9 @@ def number_proportions(
         df = df_list[i].copy().set_index(group_columns)
 
         # Reindex, if needed, for correct broadcasting
-        count_total_ridx = count_total_idx.reindex(df.index.values)        # Get the alias for this dataframe (for column naming)
+        count_total_ridx = count_total_idx.reindex(
+            df.index.values
+        )  # Get the alias for this dataframe (for column naming)
         alias = column_aliases[i]
 
         # Calculate within-group proportion

@@ -411,7 +411,9 @@ def test_number_proportions_column_aliases(aged_dataframe, unaged_dataframe):
 
 def test_number_proportions_default_aliases(aged_dataframe, unaged_dataframe):
     """Test default aliases when column_aliases not provided."""
-    result = get_proportions.number_proportions(data={"df_0": aged_dataframe, "df_1": unaged_dataframe})
+    result = get_proportions.number_proportions(
+        data={"df_0": aged_dataframe, "df_1": unaged_dataframe}
+    )
 
     assert "df_0" in result
     assert "df_1" in result
@@ -419,7 +421,9 @@ def test_number_proportions_default_aliases(aged_dataframe, unaged_dataframe):
 
 def test_number_proportions_with_exclusion(aged_dataframe):
     """Test exclude_filters parameter in number_proportions."""
-    result = get_proportions.number_proportions(data=aged_dataframe, exclude_filters={"sex": "unsexed"})
+    result = get_proportions.number_proportions(
+        data=aged_dataframe, exclude_filters={"sex": "unsexed"}
+    )
 
     # Check that unsexed rows are excluded
     assert not (result["sex"] == "unsexed").any()
@@ -444,8 +448,9 @@ def test_number_proportions_with_exclusion(aged_dataframe):
 def test_number_proportions_custom_group_columns(aged_dataframe, unaged_dataframe):
     """Test custom group_columns parameter in number_proportions."""
     result = get_proportions.number_proportions(
-        data={"aged": aged_dataframe, "unaged": unaged_dataframe}, group_columns=["stratum_num", "sex"]
-    )    # Check that grouping includes both stratum and sex
+        data={"aged": aged_dataframe, "unaged": unaged_dataframe},
+        group_columns=["stratum_num", "sex"],
+    )  # Check that grouping includes both stratum and sex
     assert len(result["aged"].groupby(["stratum_num", "sex"]).groups) == 6
     assert len(result["unaged"].groupby(["stratum_num", "sex"]).groups) == 6
 
