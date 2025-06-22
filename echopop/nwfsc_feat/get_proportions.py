@@ -62,7 +62,7 @@ def compute_binned_counts(
 
 
 def number_proportions(
-    *dataframes: pd.DataFrame,
+    data: Union[Dict[str, pd.DataFrame], pd.DataFrame],
     group_columns: List[str] = ["stratum_num"],
     column_aliases: Optional[List[str]] = None,
     exclude_filters: Optional[Union[Dict[str, Any], List[Optional[Dict[str, Any]]]]] = None,
@@ -76,13 +76,16 @@ def number_proportions(
 
     Parameters
     ----------
-    *dataframes : pd.DataFrame
-        One or more DataFrames containing count data. Each must have a 'count' column.
+    data : Union[Dict[str, pd.DataFrame], pd.DataFrame]
+        Either a dictionary of DataFrames or a single DataFrame containing count data.
+        When providing a dictionary, keys will be used as column aliases if column_aliases is None.
     group_columns : List[str], default ["stratum_num"]
         Columns to group by for calculating totals.
     column_aliases : List[str], optional
         Custom names for the dataframes, used in column naming and dictionary keys.
-        If not provided, will use default names like "df_0", "df_1", etc.
+        If not provided:
+        - For dictionary input: uses dictionary keys
+        - For single DataFrame input: uses "data"
     exclude_filters : Optional[Union[Dict[str, Any], List[Optional[Dict[str, Any]]]]], default None
         Filters to exclude rows from dataframes:
         - If Dict: Apply the same filter to all dataframes (current behavior)
@@ -94,7 +97,7 @@ def number_proportions(
     Union[pd.DataFrame, Dict[str, pd.DataFrame]]
         If only one DataFrame is provided, returns that DataFrame with added proportion columns.
         If multiple DataFrames are provided, returns a dictionary with keys based on column_aliases
-        or default names ("df_0", "df_1", etc.)
+        or default names.
 
     Notes
     -----
@@ -107,17 +110,24 @@ def number_proportions(
     Examples
     --------
     >>> # Single DataFrame
-    >>> result = number_proportions(aged_counts_df)  # Uses default "stratum_num" grouping
+    >>> result = number_proportions(aged_counts_df)
     >>>
-    >>> # Multiple DataFrames with aliases
-    >>> result = number_proportions(
-    ...     aged_counts_df, unaged_counts_df,
-    ...     column_aliases=["aged", "unaged"]
-    ... )
+    >>> # Dictionary of DataFrames (keys become aliases)
+    >>> data_dict = {"aged": aged_counts_df, "unaged": unaged_counts_df}
+    >>> result = number_proportions(data_dict)
     """
 
-    # Convert args to list for consistent processing
-    df_list = list(dataframes)
+    # Handle different input patterns  
+    if isinstance(data, dict):
+        # Dictionary input - convert to list and extract keys for aliases
+        df_list = list(data.values())
+        if column_aliases is None:
+            column_aliases = list(data.keys())
+    else:
+        # Single DataFrame input
+        df_list = [data]
+        if column_aliases is None:
+            column_aliases = ["data"]
 
     # Apply filters if provided
     if exclude_filters is not None:
@@ -148,10 +158,13 @@ def number_proportions(
             )
         ),
         columns=group_columns,
-    )
-
-    # Create dynamic column names based on number of DataFrames
-    if column_aliases and len(column_aliases) >= len(df_list):
+    )    # Create dynamic column names based on number of DataFrames
+    # Set default column_aliases if not already set
+    if column_aliases is None:
+        column_aliases = [f"df_{i}" for i in range(len(df_list))]
+    
+    # Ensure we have enough aliases for all DataFrames
+    if len(column_aliases) >= len(df_list):
         total_cols = [f"total_{i}" for i in column_aliases[: len(df_list)]]
     else:
         total_cols = [f"total_df_{i}" for i in range(len(df_list))]
@@ -192,10 +205,8 @@ def number_proportions(
         df = df_list[i].copy().set_index(group_columns)
 
         # Reindex, if needed, for correct broadcasting
-        count_total_ridx = count_total_idx.reindex(df.index.values)
-
-        # Get the alias for this dataframe (for column naming)
-        alias = column_aliases[i] if column_aliases and i < len(column_aliases) else f"df_{i}"
+        count_total_ridx = count_total_idx.reindex(df.index.values)        # Get the alias for this dataframe (for column naming)
+        alias = column_aliases[i]
 
         # Calculate within-group proportion
         df["proportion"] = (df["count"] / count_total_ridx[total_col]).astype(float).fillna(0.0)

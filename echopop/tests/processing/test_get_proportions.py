@@ -354,7 +354,7 @@ def unaged_dataframe():
 
 def test_number_proportions_single_dataframe(aged_dataframe):
     """Test the number_proportions function with a single dataframe."""
-    result = get_proportions.number_proportions(aged_dataframe)
+    result = get_proportions.number_proportions(data=aged_dataframe)
 
     # Check that result is a DataFrame and has the right columns
     assert isinstance(result, pd.DataFrame)
@@ -373,7 +373,7 @@ def test_number_proportions_single_dataframe(aged_dataframe):
 def test_number_proportions_multiple_dataframes(aged_dataframe, unaged_dataframe):
     """Test the number_proportions function with multiple dataframes."""
     result = get_proportions.number_proportions(
-        aged_dataframe, unaged_dataframe, column_aliases=["aged", "unaged"]
+        data={"aged": aged_dataframe, "unaged": unaged_dataframe}
     )
 
     # Check that result is a dictionary with the right keys
@@ -402,7 +402,7 @@ def test_number_proportions_multiple_dataframes(aged_dataframe, unaged_dataframe
 def test_number_proportions_column_aliases(aged_dataframe, unaged_dataframe):
     """Test column_aliases parameter in number_proportions."""
     result = get_proportions.number_proportions(
-        aged_dataframe, unaged_dataframe, column_aliases=["specimen", "length"]
+        data={"specimen": aged_dataframe, "length": unaged_dataframe}
     )
 
     assert "specimen" in result
@@ -411,7 +411,7 @@ def test_number_proportions_column_aliases(aged_dataframe, unaged_dataframe):
 
 def test_number_proportions_default_aliases(aged_dataframe, unaged_dataframe):
     """Test default aliases when column_aliases not provided."""
-    result = get_proportions.number_proportions(aged_dataframe, unaged_dataframe)
+    result = get_proportions.number_proportions(data={"df_0": aged_dataframe, "df_1": unaged_dataframe})
 
     assert "df_0" in result
     assert "df_1" in result
@@ -419,7 +419,7 @@ def test_number_proportions_default_aliases(aged_dataframe, unaged_dataframe):
 
 def test_number_proportions_with_exclusion(aged_dataframe):
     """Test exclude_filters parameter in number_proportions."""
-    result = get_proportions.number_proportions(aged_dataframe, exclude_filters={"sex": "unsexed"})
+    result = get_proportions.number_proportions(data=aged_dataframe, exclude_filters={"sex": "unsexed"})
 
     # Check that unsexed rows are excluded
     assert not (result["sex"] == "unsexed").any()
@@ -444,15 +444,13 @@ def test_number_proportions_with_exclusion(aged_dataframe):
 def test_number_proportions_custom_group_columns(aged_dataframe, unaged_dataframe):
     """Test custom group_columns parameter in number_proportions."""
     result = get_proportions.number_proportions(
-        aged_dataframe, unaged_dataframe, group_columns=["stratum_num", "sex"]
-    )
-
-    # Check that grouping includes both stratum and sex
-    assert len(result["df_0"].groupby(["stratum_num", "sex"]).groups) == 6
-    assert len(result["df_1"].groupby(["stratum_num", "sex"]).groups) == 6
+        data={"aged": aged_dataframe, "unaged": unaged_dataframe}, group_columns=["stratum_num", "sex"]
+    )    # Check that grouping includes both stratum and sex
+    assert len(result["aged"].groupby(["stratum_num", "sex"]).groups) == 6
+    assert len(result["unaged"].groupby(["stratum_num", "sex"]).groups) == 6
 
     # Check that proportions sum to 1.0 for each stratum-sex combination
-    df1 = result["df_0"]
+    df1 = result["aged"]
     for _, group in df1.groupby(["stratum_num", "sex"]):
         assert group["proportion"].sum() == pytest.approx(1.0)
 
@@ -460,7 +458,7 @@ def test_number_proportions_custom_group_columns(aged_dataframe, unaged_datafram
 def test_number_proportions_proportion_calculations(aged_dataframe, unaged_dataframe):
     """Test the correctness of proportion calculations in number_proportions."""
     result = get_proportions.number_proportions(
-        aged_dataframe, unaged_dataframe, column_aliases=["aged", "unaged"]
+        data={"aged": aged_dataframe, "unaged": unaged_dataframe}
     )
 
     # Get stratum 1 totals
@@ -485,14 +483,10 @@ def test_number_proportions_proportion_calculations(aged_dataframe, unaged_dataf
 
 def test_number_proportions_validation():
     """Test validation errors in number_proportions."""
-    # No dataframes provided
-    with pytest.raises(ValueError, match="At least one DataFrame must be provided"):
-        get_proportions.number_proportions()
-
     # DataFrame without count column
     invalid_df = pd.DataFrame({"stratum_num": [1, 2], "value": [10, 20]})
     with pytest.raises(ValueError, match="DataFrame 0 does not have a 'count' column"):
-        get_proportions.number_proportions(invalid_df)
+        get_proportions.number_proportions(data=invalid_df)
 
 
 def test_apply_weight_interpolation_global(length_dataset_with_bins, real_interpolators):

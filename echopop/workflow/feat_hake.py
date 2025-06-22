@@ -394,34 +394,36 @@ binned_weight_table = pd.concat([df_binned_weights_df_all, df_binned_weights_df_
 # Compute the count distributions per age- and length-bins
 # --------------------------------------------------------
 base_groupby_cols: List[str] = ["stratum_num", "length_bin"]
-aged_df: pd.DataFrame = dict_df_bio_binned_ks["specimen"].copy().dropna(subset=["age", "length", "weight"])
-unaged_df: pd.DataFrame = dict_df_bio_binned_ks["length"].copy().dropna(subset=["length"])
-# ---- Aged (sexed fish) -- in this case exclude "unsexed" to leave only "female"/"male"
-aged_counts_sexed = get_proportions.compute_binned_counts(
-    data=aged_df, 
-    groupby_cols=base_groupby_cols + ["age_bin", "sex"], 
+
+# Dictionary for number counts
+dict_df_counts = {}
+
+# Aged
+dict_df_counts["aged"] = get_proportions.compute_binned_counts(
+    data=dict_df_bio["specimen"].dropna(subset=["age", "length", "weight"]), 
+    groupby_cols=["stratum_ks", "length_bin", "age_bin", "sex"], 
     count_col="length",
     agg_func="size"
 )
 
-# ---- Unaged (sexed fish)
-unaged_counts_sexed = get_proportions.compute_binned_counts(
-    data=unaged_df, 
-    groupby_cols=base_groupby_cols + ["sex"], 
-    count_col="length_count",
-    agg_func="sum"
+# Unaged
+dict_df_counts["unaged"] = get_proportions.compute_binned_counts(
+    data=dict_df_bio["length"].copy().dropna(subset=["length"]), 
+    groupby_cols=["stratum_ks", "length_bin", "sex"], 
+    count_col="length",
+    agg_func="size"
 )
 
 # ==================================================================================================
 # Compute the number proportions
 # ------------------------------
-group_columns = ["stratum_num"]
+group_columns = ["stratum_ks"]
 column_aliases = ["aged", "unaged"]
 exclude_filters: Dict[str, Any] = [{"sex": "unsexed"}, None] # Positional filter match dataframe order
 
 #
 dict_df_number_proportion: Dict[str, pd.DataFrame] = get_proportions.number_proportions(
-    aged_counts_sexed, unaged_counts_sexed, 
+    **dict_df_counts, 
     group_columns=group_columns,
     column_aliases=column_aliases,
     exclude_filters=exclude_filters
