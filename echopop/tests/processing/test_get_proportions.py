@@ -575,12 +575,12 @@ def test_apply_weight_interpolation_missing_interpolator(length_dataset_with_bin
 
 
 def test_binned_weights_with_interpolation(
-    length_dataset_with_bins, length_weight_dataset_with_bins
+    length_dataset_with_bins, length_weight_dataset_wide_format
 ):
     """Test binned_weights with interpolation."""
     result = get_proportions.binned_weights(
         length_dataset=length_dataset_with_bins,
-        length_weight_dataset=length_weight_dataset_with_bins,  # Required for interpolation
+        length_weight_dataset=length_weight_dataset_wide_format,  # Required for interpolation
         interpolate=True,
         table_index=["length_bin"],
         table_cols=["sex", "stratum"],
@@ -636,11 +636,11 @@ def test_binned_weights_raises_error_without_dataset(length_dataset_with_bins):
         )
 
 
-def test_binned_weights_with_filtering(length_dataset_with_bins, length_weight_dataset_with_bins):
+def test_binned_weights_with_filtering(length_dataset_with_bins, length_weight_dataset_wide_format):
     """Test binned_weights with filtering applied."""
     result = get_proportions.binned_weights(
         length_dataset=length_dataset_with_bins,
-        length_weight_dataset=length_weight_dataset_with_bins,
+        length_weight_dataset=length_weight_dataset_wide_format,
         interpolate=True,
         table_index=["length_bin"],
         table_cols=["sex"],
@@ -667,12 +667,12 @@ def test_binned_weights_with_filtering(length_dataset_with_bins, length_weight_d
 
 
 def test_binned_weights_global_interpolation(
-    length_dataset_with_bins, length_weight_dataset_with_bins
+    length_dataset_with_bins, length_weight_dataset_wide_format
 ):
     """Test binned_weights with global interpolation (no contrast vars)."""
     result = get_proportions.binned_weights(
         length_dataset=length_dataset_with_bins,
-        length_weight_dataset=length_weight_dataset_with_bins,  # Required for interpolation
+        length_weight_dataset=length_weight_dataset_wide_format,  # Required for interpolation
         interpolate=True,
         table_index=["length_bin"],
         table_cols=["stratum"],
@@ -687,12 +687,12 @@ def test_binned_weights_global_interpolation(
     assert not result.empty
 
 
-def test_binned_weights_integration(length_dataset_with_bins, length_weight_dataset_with_bins):
+def test_binned_weights_integration(length_dataset_with_bins, length_weight_dataset_wide_format):
     """Full integration test of binned_weights with both interpolation and no interpolation."""
     # Test with interpolation
     result_interp = get_proportions.binned_weights(
         length_dataset=length_dataset_with_bins,
-        length_weight_dataset=length_weight_dataset_with_bins,
+        length_weight_dataset=length_weight_dataset_wide_format,
         interpolate=True,
         table_index=["length_bin"],
         table_cols=["sex", "stratum"],
