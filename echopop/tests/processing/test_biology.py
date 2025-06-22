@@ -164,72 +164,76 @@ def test_fit_length_weight_regression_column_types():
 
 
 def test_length_binned_weights_basic_functionality(
-    sample_specimen_data, sample_length_distribution, single_regression_coefficients
+    sample_specimen_data, sample_length_bins, single_regression_coefficients
 ):
     """Test basic functionality of biology.length_binned_weights."""
     result = biology.length_binned_weights(
-        sample_specimen_data, sample_length_distribution, single_regression_coefficients
+        sample_specimen_data, sample_length_bins, single_regression_coefficients
     )
 
     assert isinstance(result, pd.DataFrame)
-    assert "length_bin" in result.columns
-    assert "weight_fitted" in result.columns
+    # Should return pivot table with length_bin as index and "all" as column
+    assert result.index.name == "length_bin"
+    assert "all" in result.columns
     assert len(result) > 0
-    assert not result["weight_fitted"].isna().any()
+    assert not result["all"].isna().any()
 
 
 def test_length_binned_weights_with_prebinned_data(
-    specimen_data_with_bins, sample_length_distribution, single_regression_coefficients
+    specimen_data_with_bins, sample_length_bins, single_regression_coefficients
 ):
     """Test function with data that already has length_bin column."""
     result = biology.length_binned_weights(
-        specimen_data_with_bins, sample_length_distribution, single_regression_coefficients
+        specimen_data_with_bins, sample_length_bins, single_regression_coefficients
     )
 
     assert isinstance(result, pd.DataFrame)
-    assert "weight_fitted" in result.columns
+    # Should return pivot table with "all" column for single coefficient
+    assert "all" in result.columns
     assert len(result) > 0
 
 
 def test_length_binned_weights_grouped_coefficients(
-    sample_specimen_data, sample_length_distribution, grouped_regression_coefficients
+    sample_specimen_data, sample_length_bins, grouped_regression_coefficients
 ):
     """Test with grouped regression coefficients."""
     result = biology.length_binned_weights(
-        sample_specimen_data, sample_length_distribution, grouped_regression_coefficients
+        sample_specimen_data, sample_length_bins, grouped_regression_coefficients
     )
 
     assert isinstance(result, pd.DataFrame)
-    assert "sex" in result.columns
-    assert "length_bin" in result.columns
-    assert "weight_fitted" in result.columns
-    assert len(result) > len(sample_length_distribution)  # Multiple groups
+    # Should have sex values as columns in pivot table
+    assert result.columns.name == "sex"
+    assert "male" in result.columns
+    assert "female" in result.columns
+    assert len(result) > 0
 
 
 def test_length_binned_weights_impute_bins_false(
-    sample_specimen_data, sample_length_distribution, single_regression_coefficients
+    sample_specimen_data, sample_length_bins, single_regression_coefficients
 ):
     """Test with impute_bins=False."""
     result = biology.length_binned_weights(
         sample_specimen_data,
-        sample_length_distribution,
+        sample_length_bins,
         single_regression_coefficients,
         impute_bins=False,
     )
 
     assert isinstance(result, pd.DataFrame)
-    assert "weight_fitted" in result.columns
+    # Should return pivot table with "all" column
+    assert "all" in result.columns
     # With impute_bins=False, should only use observed means
 
 
 def test_length_binned_weights_minimum_count_threshold(
-    sample_specimen_data, sample_length_distribution, single_regression_coefficients
+    sample_specimen_data, sample_length_bins, single_regression_coefficients
 ):
     """Test with different minimum_count_threshold values."""
     # High threshold - should use more modeled weights
     result_high = biology.length_binned_weights(
         sample_specimen_data,
-        sample_length_distribution,
+        sample_length_bins,
         single_regression_coefficients,
         minimum_count_threshold=10,
     )
@@ -237,7 +241,7 @@ def test_length_binned_weights_minimum_count_threshold(
     # Low threshold - should use more observed means
     result_low = biology.length_binned_weights(
         sample_specimen_data,
-        sample_length_distribution,
+        sample_length_bins,
         single_regression_coefficients,
         minimum_count_threshold=1,
     )
@@ -248,26 +252,27 @@ def test_length_binned_weights_minimum_count_threshold(
 
 
 def test_length_binned_weights_zero_threshold(
-    sample_specimen_data, sample_length_distribution, single_regression_coefficients
+    sample_specimen_data, sample_length_bins, single_regression_coefficients
 ):
     """Test with minimum_count_threshold=0."""
     result = biology.length_binned_weights(
         sample_specimen_data,
-        sample_length_distribution,
+        sample_length_bins,
         single_regression_coefficients,
         minimum_count_threshold=0,
     )
 
     assert isinstance(result, pd.DataFrame)
-    assert "weight_fitted" in result.columns
+    # Should return pivot table with "all" column
+    assert "all" in result.columns
 
 
 def test_length_binned_weights_minimal_data(
-    reduced_specimen_data, sample_length_distribution, single_regression_coefficients
+    reduced_specimen_data, sample_length_bins, single_regression_coefficients
 ):
     """Test with minimal specimen data."""
     result = biology.length_binned_weights(
-        reduced_specimen_data, sample_length_distribution, single_regression_coefficients
+        reduced_specimen_data, sample_length_bins, single_regression_coefficients
     )
 
     assert isinstance(result, pd.DataFrame)
@@ -275,36 +280,39 @@ def test_length_binned_weights_minimal_data(
 
 
 def test_length_binned_weights_missing_weights(
-    specimen_data_missing_weights, sample_length_distribution, single_regression_coefficients
+    specimen_data_missing_weights, sample_length_bins, single_regression_coefficients
 ):
     """Test handling of missing weight values."""
     result = biology.length_binned_weights(
-        specimen_data_missing_weights, sample_length_distribution, single_regression_coefficients
+        specimen_data_missing_weights, sample_length_bins, single_regression_coefficients
     )
 
     assert isinstance(result, pd.DataFrame)
-    assert "weight_fitted" in result.columns
+    # Should return pivot table with "all" column
+    assert "all" in result.columns
 
 
 def test_length_binned_weights_large_dataset(
-    large_specimen_dataset, sample_length_distribution, single_regression_coefficients
+    large_specimen_dataset, sample_length_bins, single_regression_coefficients
 ):
     """Test performance with large dataset."""
     result = biology.length_binned_weights(
-        large_specimen_dataset, sample_length_distribution, single_regression_coefficients
+        large_specimen_dataset, sample_length_bins, single_regression_coefficients
     )
 
     assert isinstance(result, pd.DataFrame)
-    assert len(result) == len(sample_length_distribution)
-    assert not result["weight_fitted"].isna().any()
+    assert len(result) == len(sample_length_bins)
+    # Should return pivot table with "all" column
+    assert "all" in result.columns
+    assert not result["all"].isna().any()
 
 
 def test_length_binned_weights_empty_data(
-    null_specimen_data, sample_length_distribution, single_regression_coefficients
+    null_specimen_data, sample_length_bins, single_regression_coefficients
 ):
     """Test with empty specimen data."""
     result = biology.length_binned_weights(
-        null_specimen_data, sample_length_distribution, single_regression_coefficients
+        null_specimen_data, sample_length_bins, single_regression_coefficients
     )
 
     assert isinstance(result, pd.DataFrame)
@@ -312,43 +320,44 @@ def test_length_binned_weights_empty_data(
 
 
 def test_length_binned_weights_uneven_distribution(
-    uneven_specimen_data, sample_length_distribution, single_regression_coefficients
+    uneven_specimen_data, sample_length_bins, single_regression_coefficients
 ):
     """Test with uneven distribution of specimens across bins."""
     result = biology.length_binned_weights(
         uneven_specimen_data,
-        sample_length_distribution,
+        sample_length_bins,
         single_regression_coefficients,
         minimum_count_threshold=2,
     )
 
     assert isinstance(result, pd.DataFrame)
-    assert "weight_fitted" in result.columns
+    # Should return pivot table with "all" column
+    assert "all" in result.columns
 
 
 def test_length_binned_weights_multiple_groups(
-    specimen_data_multiple_groups, sample_length_distribution, coefficients_with_multiple_groups
+    specimen_data_multiple_groups, sample_length_bins, coefficients_with_multiple_groups
 ):
     """Test with multiple grouping variables."""
     result = biology.length_binned_weights(
-        specimen_data_multiple_groups, sample_length_distribution, coefficients_with_multiple_groups
+        specimen_data_multiple_groups, sample_length_bins, coefficients_with_multiple_groups
     )
 
     assert isinstance(result, pd.DataFrame)
-    assert "sex" in result.columns
-    assert "stratum" in result.columns
-    assert "length_bin" in result.columns
-    assert "weight_fitted" in result.columns
+    # Should have multi-level columns with sex and stratum
+    assert result.columns.names == ["sex", "stratum"]
+    assert result.index.name == "length_bin"
+    assert len(result) > 0
 
 
 def test_length_binned_weights_preserves_original_data(
-    sample_specimen_data, sample_length_distribution, single_regression_coefficients
+    sample_specimen_data, sample_length_bins, single_regression_coefficients
 ):
     """Test that original data is not modified."""
     original_data = sample_specimen_data.copy()
 
     biology.length_binned_weights(
-        sample_specimen_data, sample_length_distribution, single_regression_coefficients
+        sample_specimen_data, sample_length_bins, single_regression_coefficients
     )
 
     # Original data should be unchanged (function makes copy)
@@ -356,32 +365,32 @@ def test_length_binned_weights_preserves_original_data(
 
 
 def test_length_binned_weights_deterministic_results(
-    sample_specimen_data, sample_length_distribution, single_regression_coefficients
+    sample_specimen_data, sample_length_bins, single_regression_coefficients
 ):
     """Test that function produces deterministic results."""
     result1 = biology.length_binned_weights(
-        sample_specimen_data, sample_length_distribution, single_regression_coefficients
+        sample_specimen_data, sample_length_bins, single_regression_coefficients
     )
 
     result2 = biology.length_binned_weights(
-        sample_specimen_data, sample_length_distribution, single_regression_coefficients
+        sample_specimen_data, sample_length_bins, single_regression_coefficients
     )
 
     pd.testing.assert_frame_equal(result1, result2)
 
 
-def test_length_binned_weights_coefficient_types(sample_specimen_data, sample_length_distribution):
+def test_length_binned_weights_coefficient_types(sample_specimen_data, sample_length_bins):
     """Test with both Series and DataFrame coefficient inputs."""
     # Series input
     series_coeffs = pd.Series([3.0, -5.0], index=["slope", "intercept"])
     result_series = biology.length_binned_weights(
-        sample_specimen_data, sample_length_distribution, series_coeffs
+        sample_specimen_data, sample_length_bins, series_coeffs
     )
 
     # DataFrame input (converted from Series)
     df_coeffs = pd.DataFrame([series_coeffs])
     result_df = biology.length_binned_weights(
-        sample_specimen_data, sample_length_distribution, df_coeffs
+        sample_specimen_data, sample_length_bins, df_coeffs
     )
 
     assert isinstance(result_series, pd.DataFrame)
@@ -389,66 +398,69 @@ def test_length_binned_weights_coefficient_types(sample_specimen_data, sample_le
 
 
 def test_length_binned_weights_realistic_coefficients(
-    sample_specimen_data, sample_length_distribution
+    sample_specimen_data, sample_length_bins
 ):
     """Test with realistic regression coefficients."""
     # Generate coefficients from actual data
     coeffs = biology.fit_length_weight_regression(sample_specimen_data)
 
-    result = biology.length_binned_weights(sample_specimen_data, sample_length_distribution, coeffs)
+    result = biology.length_binned_weights(sample_specimen_data, sample_length_bins, coeffs)
 
     assert isinstance(result, pd.DataFrame)
-    assert "weight_fitted" in result.columns
-    assert result["weight_fitted"].min() > 0  # Weights should be positive
+    # Should return pivot table with "all" column
+    assert "all" in result.columns
+    assert result["all"].min() > 0  # Weights should be positive
 
 
 def test_length_binned_weights_column_filtering(
-    sample_specimen_data, sample_length_distribution, single_regression_coefficients
+    sample_specimen_data, sample_length_bins, single_regression_coefficients
 ):
     """Test that output contains only expected columns."""
     result = biology.length_binned_weights(
-        sample_specimen_data, sample_length_distribution, single_regression_coefficients
+        sample_specimen_data, sample_length_bins, single_regression_coefficients
     )
 
-    expected_cols = ["length_bin", "weight_fitted"]
-    assert all(col in result.columns for col in expected_cols)
+    # Should return pivot table with "all" column and length_bin as index
+    assert result.index.name == "length_bin"
+    assert "all" in result.columns
 
 
 def test_length_binned_weights_weight_values_reasonable(
-    sample_specimen_data, sample_length_distribution, single_regression_coefficients
+    sample_specimen_data, sample_length_bins, single_regression_coefficients
 ):
     """Test that fitted weight values are reasonable."""
     result = biology.length_binned_weights(
-        sample_specimen_data, sample_length_distribution, single_regression_coefficients
+        sample_specimen_data, sample_length_bins, single_regression_coefficients
     )
 
     # Weight values should be positive and finite
-    assert (result["weight_fitted"] > 0).all()
-    assert np.isfinite(result["weight_fitted"]).all()
+    assert (result["all"] > 0).all()
+    assert np.isfinite(result["all"]).all()
 
 
 def test_length_binned_weights_integration_with_fit_regression(
-    sample_specimen_data, sample_length_distribution
+    sample_specimen_data, sample_length_bins
 ):
     """Test integration with fit_length_weight_regression function."""
     # Generate coefficients using the regression function
     coeffs = biology.fit_length_weight_regression(sample_specimen_data)
 
     # Use those coefficients in biology.length_binned_weights
-    result = biology.length_binned_weights(sample_specimen_data, sample_length_distribution, coeffs)
+    result = biology.length_binned_weights(sample_specimen_data, sample_length_bins, coeffs)
 
     assert isinstance(result, pd.DataFrame)
     assert len(result) > 0
-    assert "weight_fitted" in result.columns
+    # Should return pivot table with "all" column
+    assert "all" in result.columns
 
 
 def test_length_binned_weights_different_imputation_strategies(
-    uneven_specimen_data, sample_length_distribution, single_regression_coefficients
+    uneven_specimen_data, sample_length_bins, single_regression_coefficients
 ):
     """Test different imputation strategies produce different results."""
     result_impute = biology.length_binned_weights(
         uneven_specimen_data,
-        sample_length_distribution,
+        sample_length_bins,
         single_regression_coefficients,
         impute_bins=True,
         minimum_count_threshold=3,
@@ -456,7 +468,7 @@ def test_length_binned_weights_different_imputation_strategies(
 
     result_no_impute = biology.length_binned_weights(
         uneven_specimen_data,
-        sample_length_distribution,
+        sample_length_bins,
         single_regression_coefficients,
         impute_bins=False,
     )

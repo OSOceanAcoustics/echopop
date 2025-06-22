@@ -368,35 +368,27 @@ dict_length_weight_coefs["sex"] = dict_df_bio["specimen"].groupby(["sex"]).apply
 # ==================================================================================================
 # Compute the mean weights per length bin
 # ---------------------------------------
-data: pd.DataFrame = dict_df_bio_binned_ks["specimen"].copy()
-regression_coefficients: Union[pd.Series, pd.DataFrame] = length_weight_coefs_all
-impute_bins: bool = True
-minimum_count_threshold: int = 5
 
-# Outputs: 
-# ---- `pandas.DataFrame` with the fitted mean weights per length bin with the corresponding 
-# ---- index column, if it exists (e.g. `"sex"`)
-
-# All fish
-binned_weights_df_all = biology.length_binned_weights(
-    data, length_distribution, regression_coefficients, impute_bins, minimum_count_threshold
-)
-
-# Sex-specific
-binned_weights_df_sexed = biology.length_binned_weights(
-    data=dict_df_bio_binned_ks["specimen"], 
-    length_distribution=length_distribution,
-    regression_coefficients=length_weight_coefs_sex, 
-    impute_bins=True, 
+# All fish (single coefficient set)
+df_binned_weights_df_all = biology.length_binned_weights(
+    data=dict_df_bio["specimen"],
+    length_bins=length_bins,
+    regression_coefficients=dict_length_weight_coefs["all"],
+    impute_bins=True,
     minimum_count_threshold=5
 )
 
-# Concatenate the sex-specific and all-specimen dataframes
-binned_weight_table = pd.concat(
-    [binned_weights_df_sexed.copy(),
-    binned_weights_df_all.assign(sex="all")],
-    ignore_index=True
+# Sex-specific (grouped coefficients)
+df_binned_weights_df_sexed = biology.length_binned_weights(
+    data=dict_df_bio["specimen"],
+    length_bins=length_bins,
+    regression_coefficients=dict_length_weight_coefs["sex"],
+    impute_bins=True,
+    minimum_count_threshold=5
 )
+
+# Combine the pivot tables by adding the "all" column to the sex-specific table
+binned_weight_table = pd.concat([df_binned_weights_df_all, df_binned_weights_df_sexed], axis=1)
 
 # ==================================================================================================
 # Compute the count distributions per age- and length-bins
@@ -507,7 +499,13 @@ weight_data: pd.DataFrame = standardized_sexed_unaged_weights_df
 catch_data: Dict[str, pd.DataFrame] = dict_df_bio_binned_ks["catch"]
 reference_data: pd.DataFrame = dict_df_weight_proportion["aged"]
 proportion_dict: Dict[str, pd.DataFrame] = proportion_dict
-binned_weight_table: pd.DataFrame = binned_weights_df_all
+# Convert pivot table back to long format for compatibility
+binned_weight_table: pd.DataFrame = binned_weights_df_all.melt(
+    value_vars=binned_weights_df_all.columns, 
+    ignore_index=False,
+    var_name="sex",
+    value_name="weight_fitted"
+).reset_index()
 group: str = "unaged"
 group_columns: List[str] = ["sex"]
 

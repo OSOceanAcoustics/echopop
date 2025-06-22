@@ -147,6 +147,12 @@ def sample_length_distribution():
 
 
 @pytest.fixture
+def sample_length_bins():
+    """Create sample length bins array."""
+    return np.array([10, 15, 20, 25, 30])
+
+
+@pytest.fixture
 def single_regression_coefficients():
     """Create single set of regression coefficients."""
     return pd.Series([3.0, -5.0], index=["slope", "intercept"])
