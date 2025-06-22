@@ -100,7 +100,7 @@ def length_binned_weights(
     >>> fitted = length_binned_weights(specimen_data, length_bins, sex_coeffs,
     ...                               minimum_count_threshold=5)
     >>> # fitted.columns might be ["female", "male"]
-    
+
     >>> # No imputation - use only observed means
     >>> fitted = length_binned_weights(specimen_data, length_bins, coeffs,
     ...                               impute_bins=False)
@@ -163,7 +163,9 @@ def length_binned_weights(
             distribution_mask = binned_weight_distribution["count"] == 0
     else:
         # No imputation - always use observed means (mask is all False)
-        distribution_mask = pd.Series(False, index=binned_weight_distribution.index)    # Apply mask to determine final fitted weights
+        distribution_mask = pd.Series(
+            False, index=binned_weight_distribution.index
+        )  # Apply mask to determine final fitted weights
     binned_weight_distribution["weight_fitted"] = np.where(
         distribution_mask,
         binned_weight_distribution["weight_modeled"],
@@ -172,17 +174,17 @@ def length_binned_weights(
 
     # Reset the index to get grouping columns as regular columns
     long_format_df = binned_weight_distribution.reset_index()
-    
+
     # Determine grouping columns and create pivot table
     grouping_cols = [name for name in regression_coefficients.index.names if name is not None]
-    
+
     if grouping_cols:
         # Create pivot table with grouping columns as pivot columns
         pivot_df = create_pivot_table(
             df=long_format_df,
             index_cols=["length_bin"],
             strat_cols=grouping_cols,
-            value_col="weight_fitted"
+            value_col="weight_fitted",
         )
     else:
         # No grouping variables - create pivot table with "all" column
@@ -191,7 +193,7 @@ def length_binned_weights(
             df=long_format_df,
             index_cols=["length_bin"],
             strat_cols=["all"],
-            value_col="weight_fitted"
+            value_col="weight_fitted",
         )
-    
+
     return pivot_df

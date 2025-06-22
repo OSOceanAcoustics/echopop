@@ -389,17 +389,13 @@ def test_length_binned_weights_coefficient_types(sample_specimen_data, sample_le
 
     # DataFrame input (converted from Series)
     df_coeffs = pd.DataFrame([series_coeffs])
-    result_df = biology.length_binned_weights(
-        sample_specimen_data, sample_length_bins, df_coeffs
-    )
+    result_df = biology.length_binned_weights(sample_specimen_data, sample_length_bins, df_coeffs)
 
     assert isinstance(result_series, pd.DataFrame)
     assert isinstance(result_df, pd.DataFrame)
 
 
-def test_length_binned_weights_realistic_coefficients(
-    sample_specimen_data, sample_length_bins
-):
+def test_length_binned_weights_realistic_coefficients(sample_specimen_data, sample_length_bins):
     """Test with realistic regression coefficients."""
     # Generate coefficients from actual data
     coeffs = biology.fit_length_weight_regression(sample_specimen_data)
