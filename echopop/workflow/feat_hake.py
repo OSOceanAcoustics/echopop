@@ -417,16 +417,11 @@ dict_df_counts["unaged"] = get_proportions.compute_binned_counts(
 # ==================================================================================================
 # Compute the number proportions
 # ------------------------------
-group_columns = ["stratum_ks"]
-column_aliases = ["aged", "unaged"]
-exclude_filters: Dict[str, Any] = [{"sex": "unsexed"}, None] # Positional filter match dataframe order
-
-#
 dict_df_number_proportion: Dict[str, pd.DataFrame] = get_proportions.number_proportions(
-    **dict_df_counts, 
-    group_columns=group_columns,
-    column_aliases=column_aliases,
-    exclude_filters=exclude_filters
+    data=dict_df_counts, 
+    group_columns=["stratum_ks"],
+    column_aliases=["aged", "unaged"],
+    exclude_filters=[{"sex": "unsexed"}, None] 
 )
 
 # ==================================================================================================
@@ -437,17 +432,17 @@ dict_df_weight_distr: Dict[str, Any] = {}
 
 # Aged
 dict_df_weight_distr["aged"] = get_proportions.binned_weights(
-    dict_df_bio_binned_ks["specimen"].copy(),
+    length_dataset=dict_df_bio["specimen"],
     include_filter = {"sex": ["female", "male"]},
     interpolate=False,
     contrast_vars="sex",
-    table_cols=["stratum_num", "sex", "age_bin"]
+    table_cols=["stratum_ks", "sex", "age_bin"]
 )
 
 # Unaged
 dict_df_weight_distr["unaged"] = get_proportions.binned_weights(
-    dict_df_bio_binned_ks["length"].copy(),
-    length_weight_dataset=binned_weights_df_sexed.copy(),
+    length_dataset=dict_df_bio["length"],
+    length_weight_dataset=binned_weight_table,
     include_filter = {"sex": ["female", "male"]},
     interpolate=True,
     contrast_vars="sex",

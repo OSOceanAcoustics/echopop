@@ -347,7 +347,7 @@ def binned_weights(
         These will be included as columns in the pivot table.
     length_weight_dataset : pd.DataFrame, optional
         Dataset with length-weight relationships. Required when interpolate=True.
-        Must contain 'length_bin' and 'weight_fitted' columns for interpolation.
+        Must be a wide-format pivot table with 'length_bin' as index and sex categories as columns.
         Not used when interpolate=False.
     include_filter : Dict[str, Any], optional
         Filter to apply to both datasets (e.g., to include only certain sexes)
@@ -390,9 +390,7 @@ def binned_weights(
     ...     table_cols=["stratum_num", "sex", "age_bin"],
     ...     include_filter={"sex": ["female", "male"]}
     ... )
-    """
-
-    # Validation check
+    """  # Validation check
     if interpolate and length_weight_dataset is None:
         raise ValueError("length_weight_dataset must be provided when interpolate=True")
 
@@ -404,19 +402,26 @@ def binned_weights(
     result_dataset = length_dataset.copy()
 
     if interpolate:
+        # Convert wide-format length_weight_dataset (pivot table) to long format
+        # for use with interpolation functions
+        # Expected format: length_bin as index, sex categories as columns
+        length_weight_long = length_weight_dataset.reset_index().melt(
+            id_vars=["length_bin"], var_name="sex", value_name="weight_fitted"
+        )
+
         # Apply filters if provided
         if include_filter:
             # ---- This is applied here since `length_weight_dataset` is optional
-            length_weight_dataset = utils.apply_filters(length_weight_dataset, include_filter)
+            length_weight_long = utils.apply_filters(length_weight_long, include_filter)
 
         # Extract length from the interval categories
-        length_weight_dataset.loc[:, "length"] = (
-            length_weight_dataset.loc[:, "length_bin"].apply(lambda x: x.mid).astype(float)
+        length_weight_long.loc[:, "length"] = (
+            length_weight_long.loc[:, "length_bin"].apply(lambda x: x.mid).astype(float)
         )
 
         # Create interpolators
         interpolators = utils.group_interpolator_creator(
-            grouped_data=length_weight_dataset,
+            grouped_data=length_weight_long,
             independent_var="length",
             dependent_var="weight_fitted",
             contrast_vars=contrast_vars,
