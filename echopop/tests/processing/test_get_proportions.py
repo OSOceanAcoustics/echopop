@@ -926,7 +926,9 @@ def test_weight_proportions_basic(weight_distr_dict, catch_data_df):
 def test_weight_proportions_empty_catch(weight_distr_dict):
     """Test handling of empty catch data."""
     # Create empty catch DataFrame
-    empty_catch = pd.DataFrame(columns=["stratum_num", "weight"])  # Changed from haul_weight to weight
+    empty_catch = pd.DataFrame(
+        columns=["stratum_num", "weight"]
+    )  # Changed from haul_weight to weight
 
     # Should handle empty catch data gracefully
     result = get_proportions.weight_proportions(
@@ -957,10 +959,10 @@ def test_standardize_weight_proportions_basic(
     # Call the function directly - this just tests if it runs without errors
     result = get_proportions.standardize_weight_proportions(
         weight_data=standardized_data_fixture,
-        reference_data=standardized_weight_reference,
+        reference_weight_proportions=standardized_weight_reference,
         catch_data=catch_data_df,
-        proportion_dict=proportion_dict_fixture,
-        binned_weight_table=binned_weight_table_fixture,
+        number_proportions=proportion_dict_fixture,
+        binned_weights=binned_weight_table_fixture,
         group="unaged",
         group_columns=["sex"],
     )

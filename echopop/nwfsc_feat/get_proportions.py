@@ -889,9 +889,11 @@ def aggregate_stratum_weights(input_data, stratum_col="stratum_num"):
     return final_df
 
 
-def standardize_weights_by_stratum(weights_df: Union[pd.Series, pd.DataFrame], 
-                                   reference_weights_df: pd.DataFrame,
-                                   stratum_col: str = "stratum_num"):    
+def standardize_weights_by_stratum(
+    weights_df: Union[pd.Series, pd.DataFrame],
+    reference_weights_df: pd.DataFrame,
+    stratum_col: str = "stratum_num",
+):
     """
     Standardize weights in a DataFrame using reference weights by stratum.
 
@@ -934,7 +936,7 @@ def standardize_weights_by_stratum(weights_df: Union[pd.Series, pd.DataFrame],
         reference_copy = reference_copy.to_frame()
 
     # Set index of reference_weights to stratum_num if it's not already
-    if reference_copy.index.name == None:
+    if reference_copy.index.name is None:
         if stratum_col in reference_copy.columns:
             reference_copy.set_index(stratum_col, inplace=True)
         else:
@@ -954,8 +956,8 @@ def standardize_weights_by_stratum(weights_df: Union[pd.Series, pd.DataFrame],
     if stratum_col not in (set([weights_df.columns.name]) | set(weights_df.columns.names)):
         raise ValueError(
             f"weights_df must have the defined `stratum_col` ({stratum_col}) as a column index!"
-        )        
-    
+        )
+
     # Sum weights by stratum and sex
     summed_weights = weights_df.sum()
 
@@ -1031,13 +1033,13 @@ def weight_proportions(
 
 def standardize_weight_proportions(
     weight_data: pd.DataFrame,
-    reference_data: pd.DataFrame,
+    reference_weight_proportions: pd.DataFrame,
     catch_data: pd.DataFrame,
-    proportion_dict: Dict[str, pd.DataFrame],
-    binned_weight_table: pd.DataFrame,
+    number_proportions: Dict[str, pd.DataFrame],
+    binned_weights: pd.DataFrame,
     group: str,
     group_columns: List[str],
-    stratum_col : str = "stratum_num",
+    stratum_col: str = "stratum_num",
 ) -> pd.DataFrame:
     """
     Calculate detailed weight proportions with adjustments for fitted weights and reference data.
@@ -1049,13 +1051,13 @@ def standardize_weight_proportions(
     ----------
     weight_data : pd.DataFrame
         DataFrame containing weight distribution data for the specific group.
-    reference_data : pd.DataFrame
+    reference_weight_proportions : pd.DataFrame
         DataFrame with reference data proportions to compare against.
     catch_data : pd.DataFrame
         DataFrame containing catch data with stratum_num and haul_weight columns.
-    proportion_dict : Dict[str, pd.DataFrame]
+    number_proportions : Dict[str, pd.DataFrame]
         Dictionary containing proportion data by various grouping factors.
-    binned_weight_table : pd.DataFrame
+    binned_weights : pd.DataFrame
         DataFrame containing fitted weights by length bins.
     group : str
         Identifier for the group being analyzed (e.g., 'unaged').
@@ -1083,17 +1085,13 @@ def standardize_weight_proportions(
     """
 
     # Compute the total weights per stratum from the biological data
-    stratum_weights = (
-        catch_data.groupby([stratum_col])["weight"].sum().reset_index(name="weight")
-    )  
+    stratum_weights = catch_data.groupby([stratum_col])["weight"].sum().to_frame()
 
     # Compute the total weights among the different groups
-    stratum_summary = aggregate_stratum_weights(weight_data)
+    stratum_summary = aggregate_stratum_weights(weight_data, stratum_col)
 
     # Get the total stratified weights across groups
-    total_stratum_weights = (
-        stratum_weights.set_index([stratum_col])["weight"] + stratum_summary["data"]
-    )
+    total_stratum_weights = stratum_weights["weight"] + stratum_summary["data"]
 
     # Calculate the overall weight proportions relative to the total stratified weights
     weight_proportions_grouped_overall = weight_data / total_stratum_weights
@@ -1107,20 +1105,20 @@ def standardize_weight_proportions(
 
     # Get the length-binned number proportions
     length_proportions_df = calculate_within_group_proportions(
-        proportion_dict, group_cols=["stratum_num"] + group_columns
+        number_proportions, group_cols=[stratum_col] + group_columns
     )
 
     # Reindex the number proportions to generate pivot table
     length_proportions_all = utils.create_pivot_table(
         length_proportions_df,
         index_cols=["group", "length_bin"],
-        strat_cols=["stratum_num"],
+        strat_cols=[stratum_col],
         value_col="proportion",
     )
 
     # Calculate the average weights per length bin within each stratum
     fitted_weights = (
-        length_proportions_all.loc[group].T * binned_weight_table["weight_fitted"].to_numpy()
+        length_proportions_all.loc[group].T * binned_weights["weight_fitted"].to_numpy()
     )
 
     # Compute the average within-group weight proportions
@@ -1129,13 +1127,13 @@ def standardize_weight_proportions(
     )
 
     # Get the overall weight proportions per stratum for the reference data
-    stratum_reference_proportions = reference_data.sum()
+    stratum_reference_proportions = reference_weight_proportions.sum()
 
     # Compute the complementary proportions
     stratum_data_proportions = 1 - stratum_reference_proportions
 
     # Distribute the relative proportions of the defined group relative to total stratified weights
-    weight_proportions_overall = stratum_data_proportions * fitted_weight_proportions
+    weight_length_proportions_overall = stratum_data_proportions * fitted_weight_proportions
 
     # Get all group keys
     group_keys_list = list(
@@ -1144,19 +1142,11 @@ def standardize_weight_proportions(
         .itertuples(index=False, name=None)
     )
 
-    # Create and concatenate DataFrames for each element within `group_columns`
-    # weight_proportions_overall = pd.concat(
-    #     [weight_proportions_overall] * len(list(group_keys)),
-    #     keys=list(
-    #         weight_data.index.to_frame(index=False)[group_columns]
-    #         .drop_duplicates()
-    #         .itertuples(index=False, name=None)
-    #     ),
-    #     names=group_columns
-    # ) * weight_proportions_grouped
+    # Distribution the overall sex proportions over the within-group proportions to get the overall
+    # proportions
     weight_proportions_overall = (
         pd.concat(
-            [weight_proportions_overall]
+            [weight_length_proportions_overall]
             * len(group_keys_list),  # Create exactly the right number of copies
             keys=group_keys_list,
             names=group_columns,

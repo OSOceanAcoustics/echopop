@@ -479,7 +479,7 @@ dict_df_weight_proportion["aged"] = get_proportions.weight_proportions(
 # ==================================================================================================
 # Compute the standardized haul weights for unaged fish
 # -----------------------------------------------------
- 
+
 standardized_sexed_unaged_weights_df = get_proportions.standardize_weights_by_stratum(
     weights_df=dict_df_weight_distr["unaged"], 
     reference_weights_df=dict_df_bio["catch"].groupby(["stratum_ks"])["weight"].sum(),
@@ -489,24 +489,16 @@ standardized_sexed_unaged_weights_df = get_proportions.standardize_weights_by_st
 # ==================================================================================================
 # Compute the standardized weight proportionsfor unaged fish
 # ----------------------------------------------------------
-weight_data: pd.DataFrame = standardized_sexed_unaged_weights_df
-catch_data: Dict[str, pd.DataFrame] = dict_df_bio_binned_ks["catch"]
-reference_data: pd.DataFrame = dict_df_weight_proportion["aged"]
-proportion_dict: Dict[str, pd.DataFrame] = proportion_dict
-# Convert pivot table back to long format for compatibility
-binned_weight_table: pd.DataFrame = binned_weights_df_all.melt(
-    value_vars=binned_weights_df_all.columns, 
-    ignore_index=False,
-    var_name="sex",
-    value_name="weight_fitted"
-).reset_index()
-group: str = "unaged"
-group_columns: List[str] = ["sex"]
 
-# 
 dict_df_weight_proportion["unaged"] = get_proportions.standardize_weight_proportions(
-    weight_data, reference_data, catch_data, 
-    proportion_dict, binned_weight_table, group, group_columns
+    weight_data=standardized_sexed_unaged_weights_df, 
+    reference_weight_proportions=dict_df_weight_proportion["aged"], 
+    catch_data=dict_df_bio["catch"], 
+    number_proportions=dict_df_number_proportion,
+    binned_weights=df_binned_weights_df_all,
+    group="unaged",
+    group_columns = ["sex"],
+    stratum_col = "stratum_ks"
 )
 
 # ==================================================================================================
