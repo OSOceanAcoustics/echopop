@@ -62,7 +62,7 @@ def length_binned_weights(
     are used if imputation is enabled.
 
     Parameters
-    ----------    
+    ----------
     data : pd.DataFrame
         Specimen data containing 'length', 'weight', and 'length_bin' columns.
         The 'length_bin' column must already exist in the data.
@@ -100,7 +100,7 @@ def length_binned_weights(
     ...                                impute_bins=False)
     """
     # Make a copy to avoid modifying original data
-    data = data.copy()    # Create length distribution from bins
+    data = data.copy()  # Create length distribution from bins
     length_distribution = binned_distribution(length_bins)
 
     # Handle different coefficient input types
@@ -124,7 +124,7 @@ def length_binned_weights(
     # Predict weight per bin using allometric relationship: weight = 10^intercept * length^slope
     weight_fitted_df["weight_modeled"] = (
         10.0 ** weight_fitted_df["intercept"] * weight_fitted_df["bin"] ** weight_fitted_df["slope"]
-    )    # Get the column names if any grouping is required
+    )  # Get the column names if any grouping is required
     cols = [name for name in regression_coefficients.index.names if name is not None] + [
         "length_bin"
     ]

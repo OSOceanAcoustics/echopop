@@ -677,9 +677,9 @@ def calculate_within_group_proportions(
 
 
 def stratum_averaged_weight(
-    proportions_dict: Dict[str, pd.DataFrame], 
+    proportions_dict: Dict[str, pd.DataFrame],
     binned_weight_table: pd.DataFrame,
-    stratum_col: str = "stratum_num"
+    stratum_col: str = "stratum_num",
 ) -> pd.DataFrame:
     """
     Calculate stratum-specific average weights across multiple datasets with different proportions.
@@ -755,7 +755,7 @@ def stratum_averaged_weight(
     1      0.7750    0.8500   0.7000
     2      0.7850    0.8550   0.7100
     """
-    
+
     # Get the grouping keys from the number proportions
     group_keys = list(proportions_dict.keys())
 
