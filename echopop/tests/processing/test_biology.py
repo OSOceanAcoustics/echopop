@@ -172,11 +172,11 @@ def test_length_binned_weights_basic_functionality(
     )
 
     assert isinstance(result, pd.DataFrame)
-    # Should return pivot table with length_bin as index and "all" as column
-    assert result.index.name == "length_bin"
-    assert "all" in result.columns
+    # Should return long format with length_bin and weight_fitted columns
+    expected_columns = ["length_bin", "weight_fitted"]
+    assert list(result.columns) == expected_columns
     assert len(result) > 0
-    assert not result["all"].isna().any()
+    assert not result["weight_fitted"].isna().any()
 
 
 def test_length_binned_weights_with_prebinned_data(
@@ -188,8 +188,9 @@ def test_length_binned_weights_with_prebinned_data(
     )
 
     assert isinstance(result, pd.DataFrame)
-    # Should return pivot table with "all" column for single coefficient
-    assert "all" in result.columns
+    # Should return long format with length_bin and weight_fitted columns
+    expected_columns = ["length_bin", "weight_fitted"]
+    assert list(result.columns) == expected_columns
     assert len(result) > 0
 
 
@@ -202,10 +203,11 @@ def test_length_binned_weights_grouped_coefficients(
     )
 
     assert isinstance(result, pd.DataFrame)
-    # Should have sex values as columns in pivot table
-    assert result.columns.name == "sex"
-    assert "male" in result.columns
-    assert "female" in result.columns
+    # Should have sex, length_bin, and weight_fitted columns in long format
+    expected_columns = ["sex", "length_bin", "weight_fitted"]
+    assert list(result.columns) == expected_columns
+    assert "male" in result["sex"].values
+    assert "female" in result["sex"].values
     assert len(result) > 0
 
 
@@ -221,8 +223,9 @@ def test_length_binned_weights_impute_bins_false(
     )
 
     assert isinstance(result, pd.DataFrame)
-    # Should return pivot table with "all" column
-    assert "all" in result.columns
+    # Should return long format with length_bin and weight_fitted columns
+    expected_columns = ["length_bin", "weight_fitted"]
+    assert list(result.columns) == expected_columns
     # With impute_bins=False, should only use observed means
 
 
@@ -263,8 +266,9 @@ def test_length_binned_weights_zero_threshold(
     )
 
     assert isinstance(result, pd.DataFrame)
-    # Should return pivot table with "all" column
-    assert "all" in result.columns
+    # Should return long format with length_bin and weight_fitted columns
+    expected_columns = ["length_bin", "weight_fitted"]
+    assert list(result.columns) == expected_columns
 
 
 def test_length_binned_weights_minimal_data(
@@ -288,8 +292,9 @@ def test_length_binned_weights_missing_weights(
     )
 
     assert isinstance(result, pd.DataFrame)
-    # Should return pivot table with "all" column
-    assert "all" in result.columns
+    # Should return long format with length_bin and weight_fitted columns
+    expected_columns = ["length_bin", "weight_fitted"]
+    assert list(result.columns) == expected_columns
 
 
 def test_length_binned_weights_large_dataset(
@@ -302,9 +307,10 @@ def test_length_binned_weights_large_dataset(
 
     assert isinstance(result, pd.DataFrame)
     assert len(result) == len(sample_length_bins)
-    # Should return pivot table with "all" column
-    assert "all" in result.columns
-    assert not result["all"].isna().any()
+    # Should return long format with length_bin and weight_fitted columns
+    expected_columns = ["length_bin", "weight_fitted"]
+    assert list(result.columns) == expected_columns
+    assert not result["weight_fitted"].isna().any()
 
 
 def test_length_binned_weights_empty_data(
@@ -331,8 +337,9 @@ def test_length_binned_weights_uneven_distribution(
     )
 
     assert isinstance(result, pd.DataFrame)
-    # Should return pivot table with "all" column
-    assert "all" in result.columns
+    # Should return long format with length_bin and weight_fitted columns
+    expected_columns = ["length_bin", "weight_fitted"]
+    assert list(result.columns) == expected_columns
 
 
 def test_length_binned_weights_multiple_groups(
@@ -344,9 +351,9 @@ def test_length_binned_weights_multiple_groups(
     )
 
     assert isinstance(result, pd.DataFrame)
-    # Should have multi-level columns with sex and stratum
-    assert result.columns.names == ["sex", "stratum"]
-    assert result.index.name == "length_bin"
+    # Should have sex, stratum, length_bin, and weight_fitted columns in long format
+    expected_columns = ["sex", "stratum", "length_bin", "weight_fitted"]
+    assert list(result.columns) == expected_columns
     assert len(result) > 0
 
 
@@ -403,9 +410,10 @@ def test_length_binned_weights_realistic_coefficients(sample_specimen_data, samp
     result = biology.length_binned_weights(sample_specimen_data, sample_length_bins, coeffs)
 
     assert isinstance(result, pd.DataFrame)
-    # Should return pivot table with "all" column
-    assert "all" in result.columns
-    assert result["all"].min() > 0  # Weights should be positive
+    # Should return long format with length_bin and weight_fitted columns
+    expected_columns = ["length_bin", "weight_fitted"]
+    assert list(result.columns) == expected_columns
+    assert result["weight_fitted"].min() > 0  # Weights should be positive
 
 
 def test_length_binned_weights_column_filtering(
@@ -416,9 +424,9 @@ def test_length_binned_weights_column_filtering(
         sample_specimen_data, sample_length_bins, single_regression_coefficients
     )
 
-    # Should return pivot table with "all" column and length_bin as index
-    assert result.index.name == "length_bin"
-    assert "all" in result.columns
+    # Should return long format with length_bin and weight_fitted columns
+    expected_columns = ["length_bin", "weight_fitted"]
+    assert list(result.columns) == expected_columns
 
 
 def test_length_binned_weights_weight_values_reasonable(
@@ -430,8 +438,8 @@ def test_length_binned_weights_weight_values_reasonable(
     )
 
     # Weight values should be positive and finite
-    assert (result["all"] > 0).all()
-    assert np.isfinite(result["all"]).all()
+    assert (result["weight_fitted"] > 0).all()
+    assert np.isfinite(result["weight_fitted"]).all()
 
 
 def test_length_binned_weights_integration_with_fit_regression(
@@ -446,8 +454,9 @@ def test_length_binned_weights_integration_with_fit_regression(
 
     assert isinstance(result, pd.DataFrame)
     assert len(result) > 0
-    # Should return pivot table with "all" column
-    assert "all" in result.columns
+    # Should return long format with length_bin and weight_fitted columns
+    expected_columns = ["length_bin", "weight_fitted"]
+    assert list(result.columns) == expected_columns
 
 
 def test_length_binned_weights_different_imputation_strategies(

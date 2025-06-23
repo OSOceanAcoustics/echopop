@@ -223,7 +223,7 @@ def length_weight_dataset_with_bins(grouped_length_weight_data):
 
 @pytest.fixture
 def length_weight_dataset_wide_format(grouped_length_weight_data):
-    """Create length-weight dataset as wide-format pivot table for binned_weights function."""
+    """Create length-weight dataset in long format for binned_weights function."""
     from pandas import Interval
 
     df = grouped_length_weight_data.copy()
@@ -240,13 +240,9 @@ def length_weight_dataset_wide_format(grouped_length_weight_data):
     # Add fitted weights (simulate a simple length-weight relationship)
     df["weight_fitted"] = df["length"] ** 3 * 0.01
 
-    # Convert to wide format pivot table as expected by the binned_weights function
-    # This should match the format of binned_weight_table in the workflow
-    pivot_table = df.pivot_table(
-        index="length_bin", columns="sex", values="weight_fitted", aggfunc="mean"
-    ).fillna(0.0)
-
-    return pivot_table
+    # Return long format DataFrame (not pivot table) as expected by binned_weights function
+    # This should match the long format returned by length_binned_weights
+    return df[["sex", "length_bin", "weight_fitted"]]
 
 
 @pytest.fixture

@@ -161,6 +161,10 @@ def number_proportions(
     )  # Create dynamic column names based on number of DataFrames
     # Set default column_aliases if not already set
     if column_aliases is None:
+        if isinstance(data, dict):
+            column_aliases = list(data.keys())
+        else:
+            column_aliases = "data"
         column_aliases = [f"df_{i}" for i in range(len(df_list))]
 
     # Ensure we have enough aliases for all DataFrames
@@ -347,7 +351,7 @@ def binned_weights(
         These will be included as columns in the pivot table.
     length_weight_dataset : pd.DataFrame, optional
         Dataset with length-weight relationships. Required when interpolate=True.
-        Must be a wide-format pivot table with 'length_bin' as index and sex categories as columns.
+        Must contain 'length_bin' and 'weight_fitted' columns for interpolation.
         Not used when interpolate=False.
     include_filter : Dict[str, Any], optional
         Filter to apply to both datasets (e.g., to include only certain sexes)
@@ -390,7 +394,9 @@ def binned_weights(
     ...     table_cols=["stratum_num", "sex", "age_bin"],
     ...     include_filter={"sex": ["female", "male"]}
     ... )
-    """  # Validation check
+    """
+
+    # Validation check
     if interpolate and length_weight_dataset is None:
         raise ValueError("length_weight_dataset must be provided when interpolate=True")
 
@@ -402,26 +408,19 @@ def binned_weights(
     result_dataset = length_dataset.copy()
 
     if interpolate:
-        # Convert wide-format length_weight_dataset (pivot table) to long format
-        # for use with interpolation functions
-        # Expected format: length_bin as index, sex categories as columns
-        length_weight_long = length_weight_dataset.reset_index().melt(
-            id_vars=["length_bin"], var_name="sex", value_name="weight_fitted"
-        )
-
         # Apply filters if provided
         if include_filter:
             # ---- This is applied here since `length_weight_dataset` is optional
-            length_weight_long = utils.apply_filters(length_weight_long, include_filter)
+            length_weight_dataset = utils.apply_filters(length_weight_dataset, include_filter)
 
         # Extract length from the interval categories
-        length_weight_long.loc[:, "length"] = (
-            length_weight_long.loc[:, "length_bin"].apply(lambda x: x.mid).astype(float)
+        length_weight_dataset.loc[:, "length"] = (
+            length_weight_dataset.loc[:, "length_bin"].apply(lambda x: x.mid).astype(float)
         )
 
         # Create interpolators
         interpolators = utils.group_interpolator_creator(
-            grouped_data=length_weight_long,
+            grouped_data=length_weight_dataset,
             independent_var="length",
             dependent_var="weight_fitted",
             contrast_vars=contrast_vars,
@@ -678,7 +677,9 @@ def calculate_within_group_proportions(
 
 
 def stratum_averaged_weight(
-    proportions_dict: Dict[str, pd.DataFrame], binned_weight_table: pd.DataFrame
+    proportions_dict: Dict[str, pd.DataFrame], 
+    binned_weight_table: pd.DataFrame,
+    stratum_col: str = "stratum_num"
 ) -> pd.DataFrame:
     """
     Calculate stratum-specific average weights across multiple datasets with different proportions.
@@ -754,29 +755,30 @@ def stratum_averaged_weight(
     1      0.7750    0.8500   0.7000
     2      0.7850    0.8550   0.7100
     """
+    
     # Get the grouping keys from the number proportions
     group_keys = list(proportions_dict.keys())
 
     # Create aggregate table with summed proportions per group (e.g. strata)
     aggregate_proportions = utils.create_grouped_table(
         proportions_dict,
-        group_cols=["stratum_num", "sex", "length_bin"],
+        group_cols=[stratum_col, "sex", "length_bin"],
         index_cols=["group"],
-        strat_cols=["stratum_num"],
+        strat_cols=[stratum_col],
         value_col="proportion_overall",
     )
 
     # Compute the within-grouped proportions
     # ---- Execute calculation
     length_proportions_df = calculate_within_group_proportions(
-        proportions_dict, group_cols=["stratum_num", "sex"]
+        proportions_dict, group_cols=[stratum_col, "sex"]
     )
 
     # ---- Convert into a table for just the within-grouped proportions
     length_proportions_group = utils.create_pivot_table(
         length_proportions_df,
         index_cols=["group", "sex", "length_bin"],
-        strat_cols=["stratum_num"],
+        strat_cols=[stratum_col],
         value_col="within_group_proportion",
     )
 
@@ -784,7 +786,7 @@ def stratum_averaged_weight(
     length_proportions_all = utils.create_pivot_table(
         length_proportions_df,
         index_cols=["group", "length_bin"],
-        strat_cols=["stratum_num"],
+        strat_cols=[stratum_col],
         value_col="proportion",
     )
 
@@ -796,9 +798,9 @@ def stratum_averaged_weight(
     # Create table for the overall sexed group proportions
     group_proportions = utils.create_grouped_table(
         proportions_dict,
-        group_cols=["stratum_num", "sex"],
+        group_cols=[stratum_col, "sex"],
         index_cols=["group", "sex"],
-        strat_cols=["stratum_num"],
+        strat_cols=[stratum_col],
         value_col="proportion_overall",
     )
 
