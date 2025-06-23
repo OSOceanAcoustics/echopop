@@ -889,7 +889,9 @@ def aggregate_stratum_weights(input_data, stratum_col="stratum_num"):
     return final_df
 
 
-def standardize_weights_by_stratum(weights_df, reference_weights_df):
+def standardize_weights_by_stratum(weights_df: Union[pd.Series, pd.DataFrame], 
+                                   reference_weights_df: pd.DataFrame,
+                                   stratum_col: str = "stratum_num"):    
     """
     Standardize weights in a DataFrame using reference weights by stratum.
 
@@ -899,10 +901,12 @@ def standardize_weights_by_stratum(weights_df, reference_weights_df):
 
     Parameters
     ----------
-    weights_df : pd.DataFrame
-        DataFrame with multi-level columns including stratum_num and sex
+    weights_df : Union[pd.Series, pd.DataFrame]
+        Either a Series or DataFrame with one- or multi-level columns including the stratum name
     reference_weights_df : pd.DataFrame
-        DataFrame with stratum_num as index or column and weight column
+        DataFrame with stratum as index or column and weight column
+    stratum_col : str, default "stratum_num"
+        Column name for stratum identifier
 
     Returns
     -------
@@ -913,33 +917,54 @@ def standardize_weights_by_stratum(weights_df, reference_weights_df):
     --------
     >>> standardized_weights = standardize_weights_by_stratum(
     ...     weights_df=dict_df_weight_distr["unaged"],
-    ...     reference_weights_df=stratum_weights
+    ...     reference_weights_df=stratum_weights,
+    ...     stratum_col="stratum_ks"
     ... )
 
     Notes
     -----
-    The reference_weights_df must have either a 'stratum_num' index or a 'stratum_num'
-    column and a 'weight' column.
+    The reference_weights_df must have either the specified stratum_col as index or as a
+    column along with a 'weight' column.
     """
     # Create copy
     reference_copy = reference_weights_df.copy()
 
-    # Set index of reference_weights to stratum_num if it's not already
-    if reference_copy.index.name != "stratum_num":
-        if "stratum_num" in reference_copy.columns:
-            reference_copy.set_index("stratum_num", inplace=True)
-        else:
-            raise ValueError("reference_weights_df must have a stratum_num column or index")
+    # Convert to a DataFrame, if needed
+    if isinstance(reference_copy, pd.Series):
+        reference_copy = reference_copy.to_frame()
 
+    # Set index of reference_weights to stratum_num if it's not already
+    if reference_copy.index.name == None:
+        if stratum_col in reference_copy.columns:
+            reference_copy.set_index(stratum_col, inplace=True)
+        else:
+            raise ValueError(
+                f"reference_weights_df must have the defined `stratum_col` ({stratum_col}) "
+                f"column or index!"
+            )
+
+    # Check for appropriate indexing
+    if stratum_col not in (set([reference_copy.index.name]) | set(reference_copy.index.names)):
+        raise ValueError(
+            f"reference_weights_df must have the defined `stratum_col` ({stratum_col}) "
+            f"column or index!"
+        )
+
+    # Check that stratum indices match
+    if stratum_col not in (set([weights_df.columns.name]) | set(weights_df.columns.names)):
+        raise ValueError(
+            f"weights_df must have the defined `stratum_col` ({stratum_col}) as a column index!"
+        )        
+    
     # Sum weights by stratum and sex
     summed_weights = weights_df.sum()
 
     # Calculate within-stratum proportions for each sex
-    strata_totals = summed_weights.unstack("stratum_num").sum(axis=0)
+    strata_totals = summed_weights.unstack(stratum_col).sum(axis=0)
 
     # Simple standardization: divide by strata totals and multiply by reference weights
     standardized = (
-        (summed_weights / strata_totals).unstack("stratum_num") * reference_copy["weight"]
+        (summed_weights / strata_totals).unstack(stratum_col) * reference_copy["weight"]
     ).fillna(0.0)
 
     # Fill any NaN values with 0
@@ -1012,6 +1037,7 @@ def standardize_weight_proportions(
     binned_weight_table: pd.DataFrame,
     group: str,
     group_columns: List[str],
+    stratum_col : str = "stratum_num",
 ) -> pd.DataFrame:
     """
     Calculate detailed weight proportions with adjustments for fitted weights and reference data.
@@ -1035,6 +1061,8 @@ def standardize_weight_proportions(
         Identifier for the group being analyzed (e.g., 'unaged').
     group_columns : List[str]
         List of column names used for grouping (e.g., ['sex']).
+    stratum_col : str, default "stratum_num"
+        Column name for stratum identifier.
 
     Returns
     -------
@@ -1056,13 +1084,15 @@ def standardize_weight_proportions(
 
     # Compute the total weights per stratum from the biological data
     stratum_weights = (
-        catch_data.groupby(["stratum_num"])["haul_weight"].sum().reset_index(name="weight")
-    )  # Compute the total weights among the different groups
+        catch_data.groupby([stratum_col])["weight"].sum().reset_index(name="weight")
+    )  
+
+    # Compute the total weights among the different groups
     stratum_summary = aggregate_stratum_weights(weight_data)
 
     # Get the total stratified weights across groups
     total_stratum_weights = (
-        stratum_weights.set_index(["stratum_num"])["weight"] + stratum_summary["data"]
+        stratum_weights.set_index([stratum_col])["weight"] + stratum_summary["data"]
     )
 
     # Calculate the overall weight proportions relative to the total stratified weights

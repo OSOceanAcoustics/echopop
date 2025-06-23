@@ -895,7 +895,7 @@ def test_standardize_weights_by_stratum_error_handling(weights_df_multilevel):
     invalid_reference = pd.DataFrame({"region": [1, 2], "weight": [100.0, 150.0]})
 
     # Should raise ValueError
-    with pytest.raises(ValueError, match="must have a stratum_num column or index"):
+    with pytest.raises(ValueError, match="must have the defined `stratum_col`.*column or index"):
         get_proportions.standardize_weights_by_stratum(weights_df_multilevel, invalid_reference)
 
 
@@ -926,7 +926,7 @@ def test_weight_proportions_basic(weight_distr_dict, catch_data_df):
 def test_weight_proportions_empty_catch(weight_distr_dict):
     """Test handling of empty catch data."""
     # Create empty catch DataFrame
-    empty_catch = pd.DataFrame(columns=["stratum_num", "haul_weight"])
+    empty_catch = pd.DataFrame(columns=["stratum_num", "weight"])  # Changed from haul_weight to weight
 
     # Should handle empty catch data gracefully
     result = get_proportions.weight_proportions(

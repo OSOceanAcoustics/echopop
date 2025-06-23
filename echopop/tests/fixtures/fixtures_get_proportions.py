@@ -391,7 +391,7 @@ def catch_data_df():
         {
             "stratum_num": [1, 1, 2, 2],
             "haul_num": [101, 102, 201, 202],
-            "haul_weight": [50.0, 30.0, 65.0, 45.0],
+            "weight": [50.0, 30.0, 65.0, 45.0],  # Changed from haul_weight to weight
         }
     )
 
