@@ -464,16 +464,16 @@ df_averaged_weight = get_proportions.stratum_averaged_weight(
 # ==================================================================================================
 # Compute the length-binned weight proportions for aged fish
 # ----------------------------------------------------------
-weight_data: Dict[str, pd.DataFrame] = dict_df_weight_distr
-catch_data: pd.DataFrame = dict_df_bio_binned_ks["catch"]
-group: str = "aged"
 
 # Initialize Dictionary container
 dict_df_weight_proportion: Dict[str, Any] = {}
 
-# 
+# Aged
 dict_df_weight_proportion["aged"] = get_proportions.weight_proportions(
-    weight_data, catch_data, group
+    weight_data=dict_df_weight_distr, 
+    catch_data=dict_df_bio["catch"], 
+    group="aged",
+    stratum_col="stratum_ks"
 )
 
 # ==================================================================================================

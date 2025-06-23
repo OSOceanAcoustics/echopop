@@ -822,7 +822,7 @@ def stratum_averaged_weight(
     return fitted_weight_df
 
 
-def aggregate_stratum_weights(input_data):
+def aggregate_stratum_weights(input_data, stratum_col="stratum_num"):
     """
     Aggregate weights by stratum across all groups in the input.
 
@@ -834,6 +834,8 @@ def aggregate_stratum_weights(input_data):
     input_data : Union[Dict[str, pd.DataFrame], pd.DataFrame]
         Either a DataFrame with multi-level columns including stratum_num
         or a dictionary of such DataFrames
+    stratum_col : str, default "stratum_num"
+        Column name for stratum identifier
 
     Returns
     -------
@@ -858,18 +860,18 @@ def aggregate_stratum_weights(input_data):
         dict_df_weight_distr = input_data
 
     for group_name, df in dict_df_weight_distr.items():
-        # Find which level contains stratum_num
+        # Find which level contains stratum_col
         stratum_level = None
         for i, name in enumerate(df.columns.names):
-            if name == "stratum_num":
+            if name == stratum_col:
                 stratum_level = i
                 break
 
         if stratum_level is None:
-            print(f"Warning: No stratum_num level found in {group_name}")
+            print(f"Warning: No {stratum_col} level found in {group_name}")
             continue
 
-        # Aggregate weights by stratum - this returns a Series indexed by stratum_num
+        # Aggregate weights by stratum - this returns a Series indexed by stratum_col
         stratum_weights = df.T.groupby(level=stratum_level).sum().T.sum()
 
         # Store the series with appropriate name
@@ -877,7 +879,7 @@ def aggregate_stratum_weights(input_data):
 
     # Combine all results into a DataFrame
     if not results:
-        return pd.DataFrame(index=pd.Index([], name="stratum_num"))
+        return pd.DataFrame(index=pd.Index([], name=stratum_col))
 
     final_df = pd.DataFrame(results)
 
@@ -948,6 +950,7 @@ def weight_proportions(
     weight_data: Dict[str, pd.DataFrame],
     catch_data: pd.DataFrame,
     group: str,
+    stratum_col: str = "stratum_num",
 ) -> pd.DataFrame:
     """
     Calculate stratified weight proportions of a dataset relative to total stratified weights.
@@ -960,9 +963,11 @@ def weight_proportions(
     weight_data : Dict[str, pd.DataFrame]
         Dictionary of DataFrames containing weight distributions for all groups
     catch_data : pd.DataFrame
-        DataFrame with catch data including stratum_num and haul_weight columns
+        DataFrame with catch data including stratum and haul_weight columns
     group : str
         Identifier for the group being analyzed (e.g., 'aged', 'unaged')
+    stratum_col : str, default "stratum_num"
+        Column name for stratum identifier
 
     Returns
     -------
@@ -976,25 +981,25 @@ def weight_proportions(
     ...     catch_data=dict_df_bio_binned_ks["catch"],
     ...     group="aged"
     ... )
-    """
+    """    
     # Compute the total weights per stratum from the biological data
     stratum_weights = (
-        catch_data.groupby(["stratum_num"])["haul_weight"].sum().reset_index(name="weight")
+        catch_data.groupby([stratum_col])["weight"].sum().reset_index(name="weight")
     )
 
     # Compute the total weights among the different groups
-    stratum_summary = aggregate_stratum_weights(weight_data)
+    stratum_summary = aggregate_stratum_weights(weight_data, stratum_col)
 
     # Get the total stratified weights across groups
     total_stratum_weights = (
-        stratum_weights.set_index(["stratum_num"])["weight"] + stratum_summary[group]
+        stratum_weights.set_index([stratum_col])["weight"] + stratum_summary[group]
     )
 
     # Prepare the data: reindex the DataFrame
     data_pvt = (
         weight_data[group]
         .stack(list(range(weight_data[group].columns.nlevels)), future_stack=True)
-        .unstack("stratum_num")
+        .unstack(stratum_col)
     )
 
     # Compute the weight proportions relative to the global stratified total weights
@@ -1054,10 +1059,8 @@ def standardize_weight_proportions(
     # Compute the total weights per stratum from the biological data
     stratum_weights = (
         catch_data.groupby(["stratum_num"])["haul_weight"].sum().reset_index(name="weight")
-    )
-
-    # Compute the total weights among the different groups
-    stratum_summary = aggregate_stratum_weights(weight_data)
+    )    # Compute the total weights among the different groups
+    stratum_summary = aggregate_stratum_weights(weight_data, stratum_col)
 
     # Get the total stratified weights across groups
     total_stratum_weights = (
