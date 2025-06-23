@@ -677,9 +677,9 @@ def calculate_within_group_proportions(
 
 
 def stratum_averaged_weight(
-    proportions_dict: Dict[str, pd.DataFrame], 
+    proportions_dict: Dict[str, pd.DataFrame],
     binned_weight_table: pd.DataFrame,
-    stratum_col: str = "stratum_num"
+    stratum_col: str = "stratum_num",
 ) -> pd.DataFrame:
     """
     Calculate stratum-specific average weights across multiple datasets with different proportions.
@@ -755,7 +755,7 @@ def stratum_averaged_weight(
     1      0.7750    0.8500   0.7000
     2      0.7850    0.8550   0.7100
     """
-    
+
     # Get the grouping keys from the number proportions
     group_keys = list(proportions_dict.keys())
 
@@ -981,25 +981,23 @@ def weight_proportions(
     ...     catch_data=dict_df_bio_binned_ks["catch"],
     ...     group="aged"
     ... )
-    """    
+    """
     # Compute the total weights per stratum from the biological data
-    stratum_weights = (
-        catch_data.groupby([stratum_col])["weight"].sum().reset_index(name="weight")
-    )
+    stratum_weights = catch_data.groupby(["stratum_num"])["weight"].sum().reset_index(name="weight")
 
     # Compute the total weights among the different groups
-    stratum_summary = aggregate_stratum_weights(weight_data, stratum_col)
+    stratum_summary = aggregate_stratum_weights(weight_data)
 
     # Get the total stratified weights across groups
     total_stratum_weights = (
-        stratum_weights.set_index([stratum_col])["weight"] + stratum_summary[group]
+        stratum_weights.set_index(["stratum_num"])["weight"] + stratum_summary[group]
     )
 
     # Prepare the data: reindex the DataFrame
     data_pvt = (
         weight_data[group]
         .stack(list(range(weight_data[group].columns.nlevels)), future_stack=True)
-        .unstack(stratum_col)
+        .unstack("stratum_num")
     )
 
     # Compute the weight proportions relative to the global stratified total weights
@@ -1059,8 +1057,8 @@ def standardize_weight_proportions(
     # Compute the total weights per stratum from the biological data
     stratum_weights = (
         catch_data.groupby(["stratum_num"])["haul_weight"].sum().reset_index(name="weight")
-    )    # Compute the total weights among the different groups
-    stratum_summary = aggregate_stratum_weights(weight_data, stratum_col)
+    )  # Compute the total weights among the different groups
+    stratum_summary = aggregate_stratum_weights(weight_data)
 
     # Get the total stratified weights across groups
     total_stratum_weights = (

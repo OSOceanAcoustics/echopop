@@ -990,23 +990,20 @@ def test_weight_proportions_custom_stratum_col(weight_distr_dict):
     )
     custom_aged_df = pd.DataFrame(data=[[10.5, 15.2, 8.3, 12.7]], columns=columns)
     custom_unaged_df = pd.DataFrame(data=[[5.2, 7.8, 4.3, 6.1]], columns=columns)
-    
+
     weight_data_custom = {"aged": custom_aged_df, "unaged": custom_unaged_df}
-    
+
     # Create catch data with custom stratum column name
-    catch_data_custom = pd.DataFrame({
-        "stratum_id": [1, 2],
-        "weight": [80.0, 110.0]
-    })
-    
+    catch_data_custom = pd.DataFrame({"stratum_id": [1, 2], "weight": [80.0, 110.0]})
+
     # Test with custom stratum column
     result = get_proportions.weight_proportions(
-        weight_data=weight_data_custom, 
-        catch_data=catch_data_custom, 
+        weight_data=weight_data_custom,
+        catch_data=catch_data_custom,
         group="aged",
-        stratum_col="stratum_id"
+        stratum_col="stratum_id",
     )
-    
+
     # Should return a DataFrame with proper structure
     assert isinstance(result, pd.DataFrame)
     assert len(result) > 0
