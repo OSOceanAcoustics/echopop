@@ -983,21 +983,21 @@ def weight_proportions(
     ... )
     """
     # Compute the total weights per stratum from the biological data
-    stratum_weights = catch_data.groupby(["stratum_num"])["weight"].sum().reset_index(name="weight")
+    stratum_weights = catch_data.groupby([stratum_col])["weight"].sum().reset_index(name="weight")
 
     # Compute the total weights among the different groups
-    stratum_summary = aggregate_stratum_weights(weight_data)
+    stratum_summary = aggregate_stratum_weights(weight_data, stratum_col)
 
     # Get the total stratified weights across groups
     total_stratum_weights = (
-        stratum_weights.set_index(["stratum_num"])["weight"] + stratum_summary[group]
+        stratum_weights.set_index([stratum_col])["weight"] + stratum_summary[group]
     )
 
     # Prepare the data: reindex the DataFrame
     data_pvt = (
         weight_data[group]
         .stack(list(range(weight_data[group].columns.nlevels)), future_stack=True)
-        .unstack("stratum_num")
+        .unstack(stratum_col)
     )
 
     # Compute the weight proportions relative to the global stratified total weights
