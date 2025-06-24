@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import Dict, Optional, Tuple, Union
+from typing import Dict, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -13,6 +14,7 @@ def load_biological_data(
     biodata_label_map: Optional[Dict[str, Dict]] = None,
 ) -> Dict[str, pd.DataFrame]:
     """
+    Load biological data from a single Excel file with multiple sheets.
     Load biological data from a single Excel file with multiple sheets.
 
     Parameters
@@ -519,6 +521,9 @@ def join_geostrata_by_latitude(
 
 
 def load_kriging_variogram_params(
+    geostatistic_params_filepath: Union[str, Path],
+    sheet_name: str,
+    column_name_map: Dict[str, str] = {},
     geostatistic_params_filepath: Union[str, Path],
     sheet_name: str,
     column_name_map: Dict[str, str] = {},

@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import Any, Dict, List
+from typing import Any, Dict, List
 
 import numpy as np
 import numpy.typing as npt
@@ -47,11 +48,13 @@ transect_region_file_rename: dict = {
 
 # Read in the transect-region-haul key files for each group
 transect_region_haul_key_all_ages: pd.DataFrame = ingest_nasc.read_transect_region_haul_key(
+transect_region_haul_key_all_ages: pd.DataFrame = ingest_nasc.read_transect_region_haul_key(
     transect_region_filepath_all_ages,
     transect_region_sheetname_all_ages,
     transect_region_file_rename,
 )
 
+transect_region_haul_key_no_age1: pd.DataFrame = ingest_nasc.read_transect_region_haul_key(
 transect_region_haul_key_no_age1: pd.DataFrame = ingest_nasc.read_transect_region_haul_key(
     transect_region_filepath_no_age1, transect_region_sheetname_no_age1, transect_region_file_rename
 )
@@ -77,6 +80,8 @@ region_name_expr_dict: Dict[str, dict] = {
 
 # Process the region name codes to define the region classes
 # e.g. H5C - Region 2 corresponds to "Hake, Haul #5, Canada"
+df_exports_with_regions: pd.DataFrame = ingest_nasc.process_region_names(
+    df_exports,
 df_exports_with_regions: pd.DataFrame = ingest_nasc.process_region_names(
     df_exports,
     region_name_expr_dict,
