@@ -1,15 +1,16 @@
 from pathlib import Path
 from typing import Dict, Optional, Tuple, Union
 
-import pandas as pd
 import numpy as np
+import pandas as pd
+
 
 def load_biological_data(
-    biodata_filepath: Path, 
+    biodata_filepath: Path,
     biodata_sheet_map: Dict[str, str],
     column_name_map: Dict[str, str] = None,
     subset_dict: Optional[Dict] = None,
-    biodata_label_map: Optional[Dict[str, Dict]] = None
+    biodata_label_map: Optional[Dict[str, Dict]] = None,
 ) -> Dict[str, pd.DataFrame]:
     """
     Load biological data from a single Excel file with multiple sheets.
@@ -19,14 +20,16 @@ def load_biological_data(
     biodata_filepath : Path
         Path to the Excel file containing biological data
     biodata_sheet_map : dict
-        Dictionary mapping dataset names to sheet names 
-        (e.g., {"specimen": "biodata_specimen", "length": "biodata_length", "catch": "biodata_catch"})
+        Dictionary mapping dataset names to sheet names
+        (e.g., {"specimen": "biodata_specimen", "length": "biodata_length", "catch":
+        "biodata_catch"})
     column_name_map : dict, optional
         Dictionary mapping original column names to new column names
         (e.g., {"frequency": "length_count", "haul": "haul_num"})
     subset_dict : dict, optional
         Subset dictionary containing ships and species_code for filtering
-        Format: {"ships": {ship_id: {"survey": survey_id, "haul_offset": offset}}, "species_code": [codes]}
+        Format: {"ships": {ship_id: {"survey": survey_id, "haul_offset": offset}}, "species_code":
+        [codes]}
     biodata_label_map : dict, optional
         Dictionary mapping column names to value replacement dictionaries
         (e.g., {"sex": {1: "male", 2: "female", 3: "unsexed"}})
@@ -44,10 +47,10 @@ def load_biological_data(
     >>> label_map = {"sex": {1: "male", 2: "female", 3: "unsexed"}}
     >>> bio_data = load_biological_data("biodata.xlsx", sheet_map, col_map, subset, label_map)
     """
-    
+
     if not biodata_filepath.exists():
         raise FileNotFoundError(f"Biological data file not found: {biodata_filepath}")
-    
+
     # Load each biological dataset
     biodata_dict = {
         dataset_name: load_single_biological_sheet(
@@ -55,20 +58,20 @@ def load_biological_data(
         )
         for dataset_name, sheet_name in biodata_sheet_map.items()
     }
-    
+
     # Apply label mappings if provided
     if biodata_label_map:
         biodata_dict = preprocess_biological_data(biodata_dict, biodata_label_map)
-    
+
     return biodata_dict
 
+
 def preprocess_biological_data(
-    bio_data: Dict[str, pd.DataFrame], 
-    biodata_label_map: Optional[Dict[str, Dict]] = None
+    bio_data: Dict[str, pd.DataFrame], biodata_label_map: Optional[Dict[str, Dict]] = None
 ) -> Dict[str, pd.DataFrame]:
     """
     Apply label mappings to biological data.
-    
+
     Parameters
     ----------
     bio_data : dict
@@ -76,7 +79,7 @@ def preprocess_biological_data(
     biodata_label_map : dict, optional
         Dictionary mapping column names to value replacement dictionaries
         Example: {"sex": {1: "male", 2: "female", 3: "unsexed"}}
-        
+
     Returns
     -------
     dict
@@ -84,33 +87,35 @@ def preprocess_biological_data(
     """
     if not biodata_label_map:
         return bio_data
-        
+
     result = {k: df.copy() for k, df in bio_data.items()}
-    
+
     # For each column mapping in the label map
     for col, mapping in biodata_label_map.items():
         # Apply to each dataframe that has that column
         for name, df in result.items():
             if isinstance(df, pd.DataFrame) and col in df.columns:
                 df[col] = df[col].map(mapping).fillna(df[col])
-    
+
     return result
 
+
 def apply_ship_survey_filters(
-    df: pd.DataFrame, 
+    df: pd.DataFrame,
     subset_dict: Optional[Dict] = None,
 ) -> pd.DataFrame:
     """
     Apply ship ID, survey ID, and haul offset filters to biological data.
-    
+
     Parameters
     ----------
     df : pd.DataFrame
         Input DataFrame to filter
     subset_dict : dict, optional
         Subset dictionary containing ships and species_code settings
-        Format: {"ships": {ship_id: {"survey": survey_id, "haul_offset": offset}}, "species_code": [codes]}
-        
+        Format: {"ships": {ship_id: {"survey": survey_id, "haul_offset": offset}}, "species_code":
+        [codes]}
+
     Returns
     -------
     pd.DataFrame
@@ -133,20 +138,14 @@ def apply_ship_survey_filters(
         if "ship_id" in df_filtered.columns:
             df_filtered = df_filtered.loc[df_filtered["ship_id"].isin(ship_ids)]
         # ---- Collect survey IDs, if present
-        survey_ids = [
-            v["survey"] for v in ship_config.values() if "survey" in v
-        ]
+        survey_ids = [v["survey"] for v in ship_config.values() if "survey" in v]
         # ---- Apply survey-based filter
         if survey_ids and "survey" in df_filtered.columns:
             df_filtered = df_filtered.loc[df_filtered["survey"].isin(survey_ids)]
         # ---- Collect haul offsets, if any are present
-        haul_offsets = {
-            k: v["haul_offset"]
-            for k, v in ship_config.items()
-            if "haul_offset" in v
-        }
+        haul_offsets = {k: v["haul_offset"] for k, v in ship_config.items() if "haul_offset" in v}
         # ---- Apply haul number offsets, if defined
-        if haul_offsets and "ship" in df_filtered.columns: 
+        if haul_offsets and "ship" in df_filtered.columns:
             df_filtered["haul_num"] = df_filtered["haul_num"] + df_filtered["ship"].map(
                 haul_offsets
             ).fillna(0)
@@ -157,15 +156,16 @@ def apply_ship_survey_filters(
 
     return df_filtered
 
+
 def load_single_biological_sheet(
     biodata_filepath: Path,
     sheet_name: str,
     column_name_map: Dict = {},
-    subset_dict: Optional[Dict] = None
+    subset_dict: Optional[Dict] = None,
 ) -> pd.DataFrame:
     """
     Load and process a single biological data sheet.
-    
+
     Parameters
     ----------
     biodata_filepath : Path
@@ -176,8 +176,9 @@ def load_single_biological_sheet(
         Dictionary mapping original column names to new column names
     subset_dict : dict, optional
         Subset dictionary containing ships and species_code settings
-        Format: {"ships": {ship_id: {"survey": survey_id, "haul_offset": offset}}, "species_code": [codes]}
-        
+        Format: {"ships": {ship_id: {"survey": survey_id, "haul_offset": offset}}, "species_code":
+        [codes]}
+
     Returns
     -------
     pd.DataFrame
@@ -194,17 +195,18 @@ def load_single_biological_sheet(
 
     # Apply ship and survey filtering
     df_filtered = apply_ship_survey_filters(df_initial, subset_dict)
-    
+
     return df_filtered
 
+
 def load_single_stratum_sheet(
-    strata_filepath: Path, 
-    sheet_name: str, 
+    strata_filepath: Path,
+    sheet_name: str,
     column_name_map: Dict[str, str] = {},
 ) -> pd.DataFrame:
     """
     Load a single stratification sheet from an Excel file.
-    
+
     Parameters
     ----------
     strata_filepath : Path
@@ -221,15 +223,16 @@ def load_single_stratum_sheet(
     """
     # Read Excel file into memory
     df = pd.read_excel(strata_filepath, sheet_name=sheet_name, index_col=None, header=0)
-    
+
     # Force the column names to be lower case
     df.columns = df.columns.str.lower()
-    
+
     # Rename columns if mapping is provided
     if column_name_map:
         df.rename(columns=column_name_map, inplace=True)
-    
+
     return df
+
 
 def load_strata(
     strata_filepath: Path,
@@ -261,19 +264,18 @@ def load_strata(
     >>> col_map = {"fraction_hake": "nasc_proportion", "haul": "haul_num"}
     >>> strata_data = load_stratification("strata_file.xlsx", sheet_map, col_map)
     """
-    
+
     if not strata_filepath.exists():
         raise FileNotFoundError(f"Stratification file not found: {strata_filepath}")
-    
+
     # Load each stratification sheet - dictionary comprehension instead of for loop
     strata_dict = {
-        strata_type: load_single_stratum_sheet(
-            strata_filepath, sheet_name, column_name_map
-        )
+        strata_type: load_single_stratum_sheet(strata_filepath, sheet_name, column_name_map)
         for strata_type, sheet_name in strata_sheet_map.items()
     }
-    
+
     return strata_dict
+
 
 def load_geostrata(
     geostrata_filepath: Union[str, Path],
@@ -303,69 +305,57 @@ def load_geostrata(
 
     if not geostrata_filepath.exists():
         raise FileNotFoundError(f"Geographic stratification file not found: {geostrata_filepath}")
-    
+
     # First load each sheet
     raw_geostrata_dict = {
-        strata_type: load_single_stratum_sheet(
-            geostrata_filepath, sheet_name, column_name_map
-        )
+        strata_type: load_single_stratum_sheet(geostrata_filepath, sheet_name, column_name_map)
         for strata_type, sheet_name in geostrata_sheet_map.items()
     }
-    
+
     # Then process each dataframe with the extracted function
     processed_geostrata_dict = {
-        strata_type: preprocess_geostrata_data(df)
-        for strata_type, df in raw_geostrata_dict.items()
+        strata_type: preprocess_geostrata_data(df) for strata_type, df in raw_geostrata_dict.items()
     }
-    
+
     return processed_geostrata_dict
 
-def preprocess_geostrata_data(
-    df: pd.DataFrame
-) -> pd.DataFrame:
+
+def preprocess_geostrata_data(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Process a geographic stratification DataFrame by adding latitude intervals 
+    Process a geographic stratification DataFrame by adding latitude intervals
     and renaming columns as needed.
-    
+
     Parameters
     ----------
     df : pd.DataFrame
         DataFrame with geographic stratification data
-        
+
     Returns
     -------
     pd.DataFrame
         Processed DataFrame with latitude intervals added
     """
     result_df = df.copy()
-    
+
     if "northlimit_latitude" in result_df.columns:
         # Sort by latitude
         result_df.sort_values(["northlimit_latitude"], inplace=True)
-        
+
         # Create latitude bins
-        latitude_bins = np.concatenate([
-            [-90], 
-            result_df["northlimit_latitude"].unique(), 
-            [90]
-        ])
-        
+        latitude_bins = np.concatenate([[-90], result_df["northlimit_latitude"].unique(), [90]])
+
         # Add categorical intervals
-        result_df["latitude_interval"] = pd.cut(
-            result_df["northlimit_latitude"],
-            latitude_bins
-        )
-        
+        result_df["latitude_interval"] = pd.cut(result_df["northlimit_latitude"], latitude_bins)
+
     return result_df
 
+
 def load_mesh_data(
-    mesh_filepath: Union[str, Path],
-    sheet_name: str,
-    column_name_map: Dict[str, str] = {}
+    mesh_filepath: Union[str, Path], sheet_name: str, column_name_map: Dict[str, str] = {}
 ) -> pd.DataFrame:
     """
     Load mesh data from an Excel file.
-    
+
     Parameters
     ----------
     mesh_filepath : str or Path
@@ -374,19 +364,20 @@ def load_mesh_data(
         Name of the sheet containing the mesh data
     column_name_map : dict, optional
         Dictionary mapping original column names to new column names
-        
+
     Returns
     -------
     pd.DataFrame
         DataFrame containing the mesh data with centroid coordinates and fractions
-        
+
     Examples
     --------
     >>> mesh_df = load_mesh_data("mesh_file.xlsx", "Grid")
-    >>> mesh_df = load_mesh_data("mesh_file.xlsx", column_name_map={"centroid_latitude": "latitude"})
+    >>> mesh_df = load_mesh_data("mesh_file.xlsx", column_name_map={"centroid_latitude":
+    "latitude"})
     """
     mesh_filepath = Path(mesh_filepath)
-        
+
     if not mesh_filepath.exists():
         raise FileNotFoundError(f"Mesh data file not found: {mesh_filepath}")
 
@@ -399,8 +390,9 @@ def load_mesh_data(
     # Rename columns if mapping is provided
     if column_name_map:
         df.rename(columns=column_name_map, inplace=True)
-    
+
     return df
+
 
 def join_strata_by_haul(
     data: Union[pd.DataFrame, Dict[str, pd.DataFrame]],
@@ -410,7 +402,7 @@ def join_strata_by_haul(
 ) -> Union[pd.DataFrame, Dict[str, pd.DataFrame]]:
     """
     Join stratification data by haul number or other matching column.
-    
+
     Parameters
     ----------
     data : pd.DataFrame or Dict[str, pd.DataFrame]
@@ -421,7 +413,7 @@ def join_strata_by_haul(
         Default stratum value when there are no matching/corresponding values
     stratum_name : str, default="stratum_num"
         Name of the column containing stratum information
-    
+
     Returns
     -------
     Same type as input data with stratification added
@@ -436,7 +428,7 @@ def join_strata_by_haul(
             return df
         if "haul_num" not in strata_df.columns:
             return df
-            
+
         # Check if stratification columns already exist
         existing_cols = set(strata_cols).intersection(set(df.columns))
         if existing_cols:
@@ -444,20 +436,16 @@ def join_strata_by_haul(
             df = df.drop(columns=list(existing_cols))
 
         # Merge
-        df_merged = df.merge(
-            strata_df, 
-            on=["haul_num"],
-            how="left"
-        )
+        df_merged = df.merge(strata_df, on=["haul_num"], how="left")
 
         # Rename the stratum column name, if needed
         df_merged.rename(columns={"stratum_num": stratum_name}, inplace=True)
 
         # Replace missing strata with `default_stratum`
         df_merged[stratum_name] = df_merged[stratum_name].fillna(default_stratum)
-            
+
         return df_merged
-    
+
     # Apply based on input type
     if isinstance(data, pd.DataFrame):
         return join_single_df(data)
@@ -465,6 +453,7 @@ def join_strata_by_haul(
         return {key: join_single_df(df) for key, df in data.items()}
     else:
         raise TypeError("Input 'data' must be DataFrame or dictionary of DataFrames")
+
 
 def join_geostrata_by_latitude(
     data: Union[pd.DataFrame, Dict[str, pd.DataFrame]],
@@ -473,7 +462,7 @@ def join_geostrata_by_latitude(
 ) -> Union[pd.DataFrame, Dict[str, pd.DataFrame]]:
     """
     Join geographic stratification data by latitude intervals.
-    
+
     Parameters
     ----------
     data : pd.DataFrame or Dict[str, pd.DataFrame]
@@ -482,7 +471,7 @@ def join_geostrata_by_latitude(
         Geographic stratification DataFrame with latitude boundaries and stratum info
     stratum_name : str, default="stratum_num"
         Name of the column containing stratum information
-    
+
     Returns
     -------
     Same type as input data with geostratification added
@@ -491,11 +480,7 @@ def join_geostrata_by_latitude(
     geostrata_df = geostrata_df.copy().sort_values("northlimit_latitude")
 
     # Create latitude bins
-    latitude_bins = np.concatenate([
-        [-90], 
-        geostrata_df["northlimit_latitude"].unique(), 
-        [90]
-    ])
+    latitude_bins = np.concatenate([[-90], geostrata_df["northlimit_latitude"].unique(), [90]])
 
     # Get geostrata columns (excluding northlimit_latitude)
     geostrata_cols = [col for col in geostrata_df.columns if col != "northlimit_latitude"]
@@ -504,26 +489,26 @@ def join_geostrata_by_latitude(
     def join_single_df(df):
         if not isinstance(df, pd.DataFrame) or "latitude" not in df.columns:
             return df
-                
+
         # Check if geostratification columns already exist
         existing_cols = set(geostrata_cols).intersection(set(df.columns))
         if existing_cols:
             # Drop existing geostratification columns if overwrite is True
             df = df.drop(columns=list(existing_cols))
-        
+
         result = df.copy()
-        
+
         # Create latitude intervals
         result[stratum_name] = pd.cut(
             result["latitude"],
             latitude_bins,
             right=False,
             labels=list(geostrata_df["stratum_num"]) + [1],
-            ordered=False
+            ordered=False,
         )
 
         return result
-    
+
     # Apply based on input type
     if isinstance(data, pd.DataFrame):
         return join_single_df(data)
@@ -531,6 +516,7 @@ def join_geostrata_by_latitude(
         return {key: join_single_df(df) for key, df in data.items()}
     else:
         raise TypeError("Input 'data' must be DataFrame or dictionary of DataFrames")
+
 
 def load_kriging_variogram_params(
     geostatistic_params_filepath: Union[str, Path],
@@ -554,22 +540,21 @@ def load_kriging_variogram_params(
     tuple
         Tuple containing (kriging_params_dict, variogram_params_dict)
     """
-    
+
     if not geostatistic_params_filepath.exists():
         raise FileNotFoundError(
             f"Kriging parameter file not found: {geostatistic_params_filepath.as_posix()}"
         )
-    
+
     # Read Excel file into memory and then transpose
-    df_initial = pd.read_excel(geostatistic_params_filepath, 
-                               sheet_name=sheet_name, 
-                               index_col=None, 
-                               header=None).T
+    df_initial = pd.read_excel(
+        geostatistic_params_filepath, sheet_name=sheet_name, index_col=None, header=None
+    ).T
 
     # Take the values from the first row and redefine them as the column headers
     df_initial.columns = df_initial.iloc[0]
     df_initial = df_initial.drop(0)
-    
+
     # Extract kriging parameters
     kriging_params = (
         df_initial.filter(regex="krig[.]")
@@ -577,7 +562,7 @@ def load_kriging_variogram_params(
         .rename(columns=column_name_map)
         .to_dict(orient="records")[0]
     )
-    
+
     # Extract variogram parameters
     variogram_params = (
         df_initial.filter(regex="vario[.]")
@@ -585,6 +570,5 @@ def load_kriging_variogram_params(
         .rename(columns=column_name_map)
         .to_dict(orient="records")[0]
     )
-    
+
     return kriging_params, variogram_params
-    
