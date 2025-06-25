@@ -8,8 +8,13 @@ import xarray as xr
 
 from echopop import inversion
 from echopop.kriging import Kriging
-from echopop.nwfsc_feat import biology, ingest_nasc, get_proportions, load_data, utils
-# from echopop.nwfsc_feat import apportion, get_proportions, ingest_nasc, load_data
+from echopop.nwfsc_feat import biology, ingest_nasc, get_proportions, load_data, transect, utils
+
+# ==================================================================================================
+# ==================================================================================================
+# DEFINE DATA ROOT DIRECTORY
+# --------------------------
+DATA_ROOT = Path("C:/Users/Brandyn Lucca/Documents/Data/echopop_2019")
 
 # ==================================================================================================
 # ==================================================================================================
@@ -20,7 +25,7 @@ from echopop.nwfsc_feat import biology, ingest_nasc, get_proportions, load_data,
 
 # Merge exports
 df_intervals, df_exports = ingest_nasc.merge_echoview_nasc(
-    nasc_path = Path("C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_2019/raw_nasc/"),
+    nasc_path = DATA_ROOT / "raw_nasc/",
     filename_transect_pattern = r"T(\d+)",
     default_transect_spacing = 10.0,
     default_latitude_threshold = 60.0,
@@ -29,16 +34,12 @@ df_intervals, df_exports = ingest_nasc.merge_echoview_nasc(
 # ==================================================================================================
 # Read in transect-region-haul keys
 # ---------------------------------
-transect_region_filepath_all_ages: Path = Path(
-    "C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_2019/Stratification/"
-    "US_CAN_2019_transect_region_haul_age1+ auto_final.xlsx"
+transect_region_filepath_all_ages = (
+    DATA_ROOT / "Stratification/US&CAN_2019_transect_region_haul_age1+ auto_final.xlsx"
 )
-transect_region_sheetname_all_ages: str = "Sheet1"
-transect_region_filepath_no_age1: Path = Path(
-    "C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_2019/Stratification/"
-    "US_CAN_2019_transect_region_haul_age2+ auto_20191205.xlsx"
+transect_region_filepath_no_age1 = (
+    DATA_ROOT / "Stratification/US&CAN_2019_transect_region_haul_age2+ auto_20191205.xlsx"
 )
-transect_region_sheetname_no_age1: str = "Sheet1"
 transect_region_file_rename: dict = {
     "tranect": "transect_num",
     "region id": "region_id",
@@ -47,13 +48,15 @@ transect_region_file_rename: dict = {
 
 # Read in the transect-region-haul key files for each group
 transect_region_haul_key_all_ages: pd.DataFrame = ingest_nasc.read_transect_region_haul_key(
-    transect_region_filepath_all_ages,
-    transect_region_sheetname_all_ages,
-    transect_region_file_rename,
+    filename=transect_region_filepath_all_ages,
+    sheetname="Sheet1",
+    rename_dict=transect_region_file_rename,
 )
 
 transect_region_haul_key_no_age1: pd.DataFrame = ingest_nasc.read_transect_region_haul_key(
-    transect_region_filepath_no_age1, transect_region_sheetname_no_age1, transect_region_file_rename
+    filename=transect_region_filepath_no_age1,
+    sheetname="Sheet1", 
+    rename_dict=transect_region_file_rename,
 )
 
 # ==================================================================================================
@@ -134,12 +137,9 @@ FEAT_TO_ECHOPOP_COLUMNS: Dict[str, str] = {
 
 #
 df_nasc_all_ages: pd.DataFrame = ingest_nasc.read_nasc_file(
-    filename=Path(
-    "C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_2019//Exports/"
-    "US_CAN_NASC_2019_table_all_ages.xlsx"
-    ), 
-    sheetname="Sheet1", 
-    column_name_map=FEAT_TO_ECHOPOP_COLUMNS
+    filename=DATA_ROOT / "Exports/US_CAN_NASC_2019_table_all_ages.xlsx",
+    sheetname="Sheet1",
+    column_name_map=FEAT_TO_ECHOPOP_COLUMNS,
 )
 
 # ==================================================================================================
@@ -157,8 +157,6 @@ df_nasc_all_ages_cleaned: pd.DataFrame = ingest_nasc.filter_transect_intervals(
 # ==================================================================================================
 # Load in the biolodical data
 # ---------------------------
-ROOT_PATH: Path = Path("C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_2019/")
-
 biodata_sheet_map: Dict[str, str] = {
     "catch": "biodata_catch", 
     "length": "biodata_length",
@@ -191,7 +189,7 @@ biodata_label_map: Dict[Any, Dict] = {
 
 # 
 dict_df_bio = load_data.load_biological_data(
-    biodata_filepath=ROOT_PATH / "Biological/1995-2023_biodata_redo.xlsx", 
+    biodata_filepath=DATA_ROOT / "Biological/1995-2023_biodata_redo.xlsx", 
     biodata_sheet_map=biodata_sheet_map, 
     column_name_map=FEAT_TO_ECHOPOP_BIODATA_COLUMNS, 
     subset_dict=subset_dict, 
@@ -213,7 +211,7 @@ FEAT_TO_ECHOPOP_STRATA_COLUMNS = {
 
 #
 df_dict_strata = load_data.load_strata(
-    strata_filepath=ROOT_PATH / "Stratification/US_CAN strata 2019_final.xlsx", 
+    strata_filepath=DATA_ROOT / "Stratification/US_CAN strata 2019_final.xlsx", 
     strata_sheet_map=strata_sheet_map, 
     column_name_map=FEAT_TO_ECHOPOP_STRATA_COLUMNS
 )
@@ -232,7 +230,7 @@ FEAT_TO_ECHOPOP_GEOSTRATA_COLUMNS = {
 
 # 
 df_dict_geostrata = load_data.load_geostrata(
-    geostrata_filepath=ROOT_PATH / "Stratification/Stratification_geographic_Lat_2019_final.xlsx", 
+    geostrata_filepath=DATA_ROOT / "Stratification/Stratification_geographic_Lat_2019_final.xlsx", 
     geostrata_sheet_map=geostrata_sheet_map, 
     column_name_map=FEAT_TO_ECHOPOP_GEOSTRATA_COLUMNS
 )
@@ -243,8 +241,8 @@ df_dict_geostrata = load_data.load_geostrata(
 
 # Add INPFC
 # ---- NASC
-df_nasc_all_ages = load_data.join_strata_by_haul(df_nasc_all_ages, 
-                                                 df_dict_strata["inpfc"],
+df_nasc_all_ages = load_data.join_strata_by_haul(data=df_nasc_all_ages, 
+                                                 strata_df=df_dict_strata["inpfc"],
                                                  stratum_name="stratum_inpfc") 
 # ---- Biodata
 dict_df_bio = load_data.join_strata_by_haul(dict_df_bio,
@@ -276,7 +274,7 @@ FEAT_TO_ECHOPOP_MESH_COLUMNS = {
 
 # 
 df_mesh = load_data.load_mesh_data(
-    mesh_filepath=ROOT_PATH / "Kriging_files/Kriging_grid_files/krig_grid2_5nm_cut_centroids_2013.xlsx", 
+    mesh_filepath=DATA_ROOT / "Kriging_files/Kriging_grid_files/krig_grid2_5nm_cut_centroids_2013.xlsx", 
     sheet_name="krigedgrid2_5nm_forChu", 
     column_name_map=FEAT_TO_ECHOPOP_MESH_COLUMNS
 )
@@ -321,7 +319,7 @@ FEAT_TO_ECHOPOP_GEOSTATS_PARAMS_COLUMNS = {
 # 
 dict_kriging_params, dict_variogram_params = load_data.load_kriging_variogram_params(
     geostatistic_params_filepath=(
-        ROOT_PATH / "Kriging_files/default_vario_krig_settings_2019_US_CAN.xlsx"
+        DATA_ROOT / "Kriging_files/default_vario_krig_settings_2019_US_CAN.xlsx"
     ),
     sheet_name="Sheet1",
     column_name_map=FEAT_TO_ECHOPOP_GEOSTATS_PARAMS_COLUMNS
@@ -540,6 +538,7 @@ invert_hake.sigma_bs_haul
 # If the above haul-averaged `sigma_bs` values were calculated, then the inversion can can 
 # completed without calling in additional biodata
 df_nasc_all_ages = invert_hake.invert(df_nasc=df_nasc_all_ages)
+df_nasc_no_age1 = invert_hake.invert(df_nasc=df_nasc_no_age1)
 # ---- The average `sigma_bs` for each stratum can be inspected at:
 cached_values = invert_hake.sigma_bs_strata
 
@@ -549,6 +548,30 @@ invert_hake.invert(df_nasc=df_nasc_no_age1,
                    df_length=[dict_df_bio["length"], dict_df_bio["specimen"]])
 # ---- These yield subtle, but non-zero differences in the average `sigma_bs` per stratum
 invert_hake.sigma_bs_strata - cached_values
+
+# ==================================================================================================
+# Set transect interval distances
+# -------------------------------
+
+# Calculate along-transect interval distances which is required for getting the area-per-interval 
+# and therefore going from number density to abundance
+transect.set_interval_distance(df_nasc=df_nasc_all_ages, interval_threshold=0.05)
+transect.set_interval_distance(df_nasc=df_nasc_no_age1, interval_threshold=0.05)
+
+# ==================================================================================================
+# Calculate transect interval areas
+# ---------------------------------
+df_nasc_all_ages["area_interval"] = (
+    df_nasc_all_ages["transect_spacing"] * df_nasc_all_ages["distance_interval"]
+)
+df_nasc_no_age1["area_interval"] = (
+    df_nasc_no_age1["transect_spacing"] * df_nasc_no_age1["distance_interval"]
+)
+
+# ==================================================================================================
+# Calculate overall and group-specific abundances 
+# -----------------------------------------------
+
 
 
 # Apportion abundance and biomass for transect intervals

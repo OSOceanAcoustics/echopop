@@ -7,4 +7,5 @@ from echopop.tests.fixtures.fixtures_geostatistics_loader import *  # noqa: F401
 from echopop.tests.fixtures.fixtures_get_proportions import *  # noqa: F401, F403
 from echopop.tests.fixtures.fixtures_inversion import *  # noqa: F401, F403
 from echopop.tests.fixtures.fixtures_stratification_loader import *  # noqa: F401, F403
+from echopop.tests.fixtures.fixtures_transect import *  # noqa: F401, F403
 from echopop.tests.fixtures.fixtures_utils import *  # noqa: F401, F403
