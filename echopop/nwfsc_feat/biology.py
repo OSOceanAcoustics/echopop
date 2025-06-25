@@ -166,6 +166,7 @@ def length_binned_weights(
     # Reset the index and pare down the output columns
     return binned_weight_distribution.reset_index().filter(cols + ["weight_fitted"])
 
+
 def set_population_metrics(
     df_nasc: pd.DataFrame,
     metrics: List[str] = ["abundance", "biomass", "biomass_density"],
@@ -185,22 +186,18 @@ def set_population_metrics(
             if isinstance(df_average_weight, pd.DataFrame):
                 df_average_weight = df_average_weight.copy()
                 if (
-                    (
-                        hasattr(df_average_weight.index, "name") and
-                        df_average_weight.index.name != groupby_column 
-                    ) and groupby_column in df_average_weight.columns
-                ):
+                    hasattr(df_average_weight.index, "name")
+                    and df_average_weight.index.name != groupby_column
+                ) and groupby_column in df_average_weight.columns:
                     # ---- Set initial index
                     df_average_weight.set_index(groupby_column, inplace=True)
                 # ---- Reindex
                 df_average_weight = df_average_weight.reindex_like(df_nasc)
-        
-    # Abundance    
+
+    # Abundance
     if "abundance" in metrics:
-        df_nasc["abundance"] = (
-            np.round(df_nasc["area_interval"] * df_nasc["number_density"])
-        )
-        
+        df_nasc["abundance"] = np.round(df_nasc["area_interval"] * df_nasc["number_density"])
+
     # Biomass
     if "biomass" in metrics:
         # ---- Temporary abundance, if not already present
@@ -209,10 +206,8 @@ def set_population_metrics(
         else:
             abundance_tmp = df_nasc["abundance"]
         # ---- Complete calculation
-        df_nasc["biomass"] = (
-            abundance_tmp * df_average_weight
-        )
-        
+        df_nasc["biomass"] = abundance_tmp * df_average_weight
+
     # Biomass density
     if "biomass_density" in metrics:
         df_nasc["biomass_density"] = df_nasc["number_density"] * df_average_weight
