@@ -1,4 +1,4 @@
-from typing import Union
+from typing import List, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -165,3 +165,54 @@ def length_binned_weights(
 
     # Reset the index and pare down the output columns
     return binned_weight_distribution.reset_index().filter(cols + ["weight_fitted"])
+
+def set_population_metrics(
+    df_nasc: pd.DataFrame,
+    metrics: List[str] = ["abundance", "biomass", "biomass_density"],
+    groupby_column: Optional[List[str]] = None,
+    df_average_weight: Optional[Union[pd.DataFrame, float]] = None,
+) -> None:
+    """
+    Convert acoustically derived number densities into other population metrics
+    """
+
+    # Handle additional inputs so indices, if needed, are aligned
+    if groupby_column is not None:
+        # ---- Group the input DataFrame
+        df_nasc.set_index(groupby_column, inplace=True)
+        if df_average_weight is not None:
+            # ---- Create copy
+            if isinstance(df_average_weight, pd.DataFrame):
+                df_average_weight = df_average_weight.copy()
+                if (
+                    (
+                        hasattr(df_average_weight.index, "name") and
+                        df_average_weight.index.name != groupby_column 
+                    ) and groupby_column in df_average_weight.columns
+                ):
+                    # ---- Set initial index
+                    df_average_weight.set_index(groupby_column, inplace=True)
+                # ---- Reindex
+                df_average_weight = df_average_weight.reindex_like(df_nasc)
+        
+    # Abundance    
+    if "abundance" in metrics:
+        df_nasc["abundance"] = (
+            np.round(df_nasc["area_interval"] * df_nasc["number_density"])
+        )
+        
+    # Biomass
+    if "biomass" in metrics:
+        # ---- Temporary abundance, if not already present
+        if "abundance" not in df_nasc.columns:
+            abundance_tmp = np.round(df_nasc["area_interval"] * df_nasc["number_density"])
+        else:
+            abundance_tmp = df_nasc["abundance"]
+        # ---- Complete calculation
+        df_nasc["biomass"] = (
+            abundance_tmp * df_average_weight
+        )
+        
+    # Biomass density
+    if "biomass_density" in metrics:
+        df_nasc["biomass_density"] = df_nasc["number_density"] * df_average_weight
