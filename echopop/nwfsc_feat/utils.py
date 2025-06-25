@@ -541,7 +541,7 @@ def impute_missing_sigma_bs(
         # Return the imputed values
         return sigma_bs_stratum_impute
     else:
-        return sigma_bs_df.to_frame("sigma_bs")
+        return sigma_bs_df
 
 
 def quantize_length_data(df, group_columns: List[str]):

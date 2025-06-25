@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-import pytest
 
 from echopop import acoustics
 from echopop.nwfsc_feat import utils
@@ -77,14 +76,14 @@ def test_impute_missing_sigma_bs_basic(all_strata, incomplete_sigma_bs_df):
     assert not result["sigma_bs"].isna().any()
 
 
-@pytest.mark.skip(reason="Function has bug: calls .to_frame() on DataFrame when no missing strata")
 def test_impute_missing_sigma_bs_no_missing(all_strata, sigma_bs_df):
     """Test when no strata are missing."""
     # Use only strata that are present
     present_strata = [1, 3, 5]
     result = utils.impute_missing_sigma_bs(present_strata, sigma_bs_df)
 
-    # Should return the input DataFrame (the function returns sigma_bs_df.to_frame("sigma_bs") which fails)
+    # Should return the input DataFrame (the function returns sigma_bs_df.to_frame("sigma_bs")
+    # which fails)
     # But according to the error, the function tries to call .to_frame() on a DataFrame
     # So let's just check that it returns a DataFrame with the right data
     assert isinstance(result, pd.DataFrame)
