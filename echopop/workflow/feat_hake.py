@@ -525,8 +525,9 @@ invert_hake = inversion.InversionLengthTS(model_parameters)
 # [OPTIONAL] Compute the mean `sigma_bs` per haul
 # -----------------------------------------------
 
-# This step is used in EchoPro, but I am not precisely sure as to why it is deemed to be required.
-# Otherwise, the mean `sigma_bs` can be computed directly from the data (as shown below)
+# This step is used in EchoPro
+# Otherwise, the mean `sigma_bs` can be computed directly from the data (as shown below), although 
+# computing the mean average sigma_bs per haul better accounts for pseudoreplication 
 invert_hake.set_haul_sigma_bs(df_length=[dict_df_bio["length"], dict_df_bio["specimen"]])
 # ---- This DataFrame can be inspected at:
 invert_hake.sigma_bs_haul
@@ -581,11 +582,7 @@ biology.set_population_metrics(df_nasc=df_nasc_no_age1,
                                stratify_by="stratum_ks",
                                df_average_weight=df_averaged_weight["all"])
 
-df_nasc_no_age1.iloc[-1]
-df_nasc["area_interval"].iloc[-1] * df_nasc["number_density"].iloc[-1]
-df_nasc["biomass"].iloc[-1]
-df_nasc["abundance"] * df_average_weight
-df_nasc.loc[0, "abundance"]
+
 # Apportion abundance and biomass for transect intervals
 # TODO: these apportioned transect results are not used in kriging, is this correct?
 ds_nasc_no_age1_apportioned: xr.Dataset = apportion.apportion_transect_biomass_abundance(
