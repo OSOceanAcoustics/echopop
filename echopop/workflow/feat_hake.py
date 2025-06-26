@@ -14,7 +14,7 @@ from echopop.nwfsc_feat import biology, ingest_nasc, get_proportions, load_data,
 # ==================================================================================================
 # DEFINE DATA ROOT DIRECTORY
 # --------------------------
-DATA_ROOT = Path("C:/Users/Brandyn Lucca/Documents/Data/echopop_2019")
+DATA_ROOT = Path("C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_2019")
 
 # ==================================================================================================
 # ==================================================================================================
@@ -35,10 +35,10 @@ df_intervals, df_exports = ingest_nasc.merge_echoview_nasc(
 # Read in transect-region-haul keys
 # ---------------------------------
 transect_region_filepath_all_ages = (
-    DATA_ROOT / "Stratification/US&CAN_2019_transect_region_haul_age1+ auto_final.xlsx"
+    DATA_ROOT / "Stratification/US_CAN_2019_transect_region_haul_age1+ auto_final.xlsx"
 )
 transect_region_filepath_no_age1 = (
-    DATA_ROOT / "Stratification/US&CAN_2019_transect_region_haul_age2+ auto_20191205.xlsx"
+    DATA_ROOT / "Stratification/US_CAN_2019_transect_region_haul_age2+ auto_20191205.xlsx"
 )
 transect_region_file_rename: dict = {
     "tranect": "transect_num",
@@ -569,11 +569,23 @@ df_nasc_no_age1["area_interval"] = (
 )
 
 # ==================================================================================================
-# Calculate overall and group-specific abundances 
-# -----------------------------------------------
+# Calculate remaining population metrics across all animals 
+# ---------------------------------------------------------
+biology.set_population_metrics(df_nasc=df_nasc_all_ages, 
+                               metrics=["abundance", "biomass", "biomass_density"],
+                               stratify_by="stratum_ks",
+                               df_average_weight=df_averaged_weight["all"])
 
+biology.set_population_metrics(df_nasc=df_nasc_no_age1, 
+                               metrics=["abundance", "biomass", "biomass_density"],
+                               stratify_by="stratum_ks",
+                               df_average_weight=df_averaged_weight["all"])
 
-
+df_nasc_no_age1.iloc[-1]
+df_nasc["area_interval"].iloc[-1] * df_nasc["number_density"].iloc[-1]
+df_nasc["biomass"].iloc[-1]
+df_nasc["abundance"] * df_average_weight
+df_nasc.loc[0, "abundance"]
 # Apportion abundance and biomass for transect intervals
 # TODO: these apportioned transect results are not used in kriging, is this correct?
 ds_nasc_no_age1_apportioned: xr.Dataset = apportion.apportion_transect_biomass_abundance(
