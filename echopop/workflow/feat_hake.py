@@ -582,9 +582,14 @@ biology.set_population_metrics(df_nasc=df_nasc_no_age1,
                                stratify_by="stratum_ks",
                                df_average_weight=df_averaged_weight["all"])
 
+# ==================================================================================================
+# Apportion age-1 vs age-2+ population estimates 
+# ----------------------------------------------
+# TODO: This apportionment step is required for kriging
+
 
 # Apportion abundance and biomass for transect intervals
-# TODO: these apportioned transect results are not used in kriging, is this correct?
+
 ds_nasc_no_age1_apportioned: xr.Dataset = apportion.apportion_transect_biomass_abundance(
     df_nasc=df_nasc_no_age1,
     ds_proportions=ds_proportions,
