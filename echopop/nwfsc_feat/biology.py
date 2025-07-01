@@ -109,9 +109,15 @@ def length_binned_weights(
         regression_df = pd.DataFrame([regression_coefficients])
         # Reset index to avoid grouping complications
         regression_df.reset_index(drop=True, inplace=True)
+        # Assign metadata variables required for the output
+        is_grouped = False
+        group_cols = []
     else:
         # Already a DataFrame from groupby operation
         regression_df = regression_coefficients.reset_index()
+        # Assign metadata variables required for the output
+        is_grouped = True
+        group_cols = [name for name in regression_coefficients.index.names if name is not None]
 
     # Initialize fitted weights dataframe
     weight_fitted_df = length_distribution.copy()
@@ -124,10 +130,10 @@ def length_binned_weights(
     # Predict weight per bin using allometric relationship: weight = 10^intercept * length^slope
     weight_fitted_df["weight_modeled"] = (
         10.0 ** weight_fitted_df["intercept"] * weight_fitted_df["bin"] ** weight_fitted_df["slope"]
-    )  # Get the column names if any grouping is required
-    cols = [name for name in regression_coefficients.index.names if name is not None] + [
-        "length_bin"
-    ]
+    )
+
+    # Get the column names if any grouping is required
+    cols = group_cols + ["length_bin"]
 
     # Quantize weight counts per length bin
     binned_weight_distribution = (
@@ -163,5 +169,15 @@ def length_binned_weights(
         binned_weight_distribution["weight_mean"],
     )
 
-    # Reset the index and pare down the output columns
-    return binned_weight_distribution.reset_index().filter(cols + ["weight_fitted"])
+    # Reset index and prepare output
+    result = binned_weight_distribution.reset_index()
+
+    # Mutate, if needed, or otherwise return the pivoted DataFrame
+    if is_grouped:
+        pivot_result = result.pivot(index="length_bin", columns=group_cols, values="weight_fitted")
+        return pivot_result
+    else:
+        if isinstance(result, pd.Series):
+            return result.to_frame("all")
+        else:
+            return result

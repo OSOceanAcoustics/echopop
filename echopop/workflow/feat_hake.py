@@ -1,6 +1,5 @@
 from pathlib import Path
 from typing import Any, Dict, List
-from typing import Any, Dict, List
 
 import numpy as np
 import numpy.typing as npt
@@ -48,13 +47,11 @@ transect_region_file_rename: dict = {
 
 # Read in the transect-region-haul key files for each group
 transect_region_haul_key_all_ages: pd.DataFrame = ingest_nasc.read_transect_region_haul_key(
-transect_region_haul_key_all_ages: pd.DataFrame = ingest_nasc.read_transect_region_haul_key(
     transect_region_filepath_all_ages,
     transect_region_sheetname_all_ages,
     transect_region_file_rename,
 )
 
-transect_region_haul_key_no_age1: pd.DataFrame = ingest_nasc.read_transect_region_haul_key(
 transect_region_haul_key_no_age1: pd.DataFrame = ingest_nasc.read_transect_region_haul_key(
     transect_region_filepath_no_age1, transect_region_sheetname_no_age1, transect_region_file_rename
 )
@@ -80,8 +77,6 @@ region_name_expr_dict: Dict[str, dict] = {
 
 # Process the region name codes to define the region classes
 # e.g. H5C - Region 2 corresponds to "Hake, Haul #5, Canada"
-df_exports_with_regions: pd.DataFrame = ingest_nasc.process_region_names(
-    df_exports,
 df_exports_with_regions: pd.DataFrame = ingest_nasc.process_region_names(
     df_exports,
     region_name_expr_dict,
@@ -357,8 +352,9 @@ utils.binify(
 dict_length_weight_coefs = {}
 
 # For all fish
-dict_length_weight_coefs["all"] = biology.fit_length_weight_regression(
-    data=dict_df_bio["specimen"]
+dict_length_weight_coefs["all"] = dict_df_bio["specimen"].assign(sex="all").groupby(["sex"]).apply(
+    biology.fit_length_weight_regression,
+    include_groups=False
 )
 
 # Sex-specific
@@ -371,17 +367,8 @@ dict_length_weight_coefs["sex"] = dict_df_bio["specimen"].groupby(["sex"]).apply
 # Compute the mean weights per length bin
 # ---------------------------------------
 
-# All fish (single coefficient set)
-df_binned_weights_df_all = biology.length_binned_weights(
-    data=dict_df_bio["specimen"],
-    length_bins=length_bins,
-    regression_coefficients=dict_length_weight_coefs["all"],
-    impute_bins=True,
-    minimum_count_threshold=5
-)
-
 # Sex-specific (grouped coefficients)
-df_binned_weights_df_sexed = biology.length_binned_weights(
+df_binned_weights_sex = biology.length_binned_weights(
     data=dict_df_bio["specimen"],
     length_bins=length_bins,
     regression_coefficients=dict_length_weight_coefs["sex"],
@@ -389,11 +376,17 @@ df_binned_weights_df_sexed = biology.length_binned_weights(
     minimum_count_threshold=5
 )
 
+# All fish (single coefficient set)
+df_binned_weights_all = biology.length_binned_weights(
+    data=dict_df_bio["specimen"].assign(sex="all"),
+    length_bins=length_bins,
+    regression_coefficients=dict_length_weight_coefs["all"],
+    impute_bins=True,
+    minimum_count_threshold=5,
+)
+
 # Combine the pivot tables by adding the "all" column to the sex-specific table
-binned_weight_table = pd.concat([df_binned_weights_df_all.assign(sex="all"), 
-                                 df_binned_weights_df_sexed], 
-                                axis=0,
-                                ignore_index=True)
+binned_weight_table = pd.concat([df_binned_weights_sex, df_binned_weights_all], axis=1)
 
 # ==================================================================================================
 # Compute the count distributions per age- and length-bins
@@ -456,10 +449,7 @@ dict_df_weight_distr["unaged"] = get_proportions.binned_weights(
 # ==================================================================================================
 # Calculate the average weights pre stratum when combining different datasets
 # ---------------------------------------------------------------------------
-proportions_dict: Dict[str, pd.DataFrame] = dict_df_number_proportion
-binned_weight_table: pd.DataFrame = binned_weight_table
 
-#
 df_averaged_weight = get_proportions.stratum_averaged_weight(
     proportions_dict=dict_df_number_proportion, 
     binned_weight_table=binned_weight_table,
@@ -500,7 +490,7 @@ dict_df_weight_proportion["unaged"] = get_proportions.standardize_weight_proport
     reference_weight_proportions=dict_df_weight_proportion["aged"], 
     catch_data=dict_df_bio["catch"], 
     number_proportions=dict_df_number_proportion,
-    binned_weights=df_binned_weights_df_all,
+    binned_weights=binned_weight_table["all"],
     group="unaged",
     group_columns = ["sex"],
     stratum_col = "stratum_ks"

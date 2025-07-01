@@ -224,6 +224,20 @@ def apply_filters(
     return df[mask]
 
 
+def is_df_wide(df):
+    """Check if DataFrame is in wide format using pandas structural information."""
+    # Wide format indicators:
+    # 1. Columns have a name (indicating they represent categories)
+    # 2. Columns are MultiIndex
+    # 3. Index contains the ID variables
+
+    return (
+        isinstance(df.columns, pd.MultiIndex)
+        or df.columns.name is not None
+        or (df.index.name is not None or isinstance(df.index, pd.MultiIndex))
+    )
+
+
 def group_interpolator_creator(
     grouped_data: pd.DataFrame,
     independent_var: str,

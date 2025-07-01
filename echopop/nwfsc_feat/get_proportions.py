@@ -413,14 +413,22 @@ def binned_weights(
             # ---- This is applied here since `length_weight_dataset` is optional
             length_weight_dataset = utils.apply_filters(length_weight_dataset, include_filter)
 
+        # Pivot to a long format for the interpolator, if needed
+        if utils.is_df_wide(length_weight_dataset):
+            length_weight_dataset_valid = length_weight_dataset.stack().reset_index(
+                name="weight_fitted"
+            )
+        else:
+            length_weight_dataset_valid = length_weight_dataset.copy()
+
         # Extract length from the interval categories
-        length_weight_dataset.loc[:, "length"] = (
-            length_weight_dataset.loc[:, "length_bin"].apply(lambda x: x.mid).astype(float)
+        length_weight_dataset_valid.loc[:, "length"] = (
+            length_weight_dataset_valid.loc[:, "length_bin"].map(lambda x: x.mid).astype(float)
         )
 
         # Create interpolators
         interpolators = utils.group_interpolator_creator(
-            grouped_data=length_weight_dataset,
+            grouped_data=length_weight_dataset_valid,
             independent_var="length",
             dependent_var="weight_fitted",
             contrast_vars=contrast_vars,
@@ -790,10 +798,8 @@ def stratum_averaged_weight(
         value_col="proportion",
     )
 
-    # Convert the binned weights (with `sex="all"` included) into a table
-    binned_weights = utils.create_pivot_table(
-        binned_weight_table, ["sex", "length_bin"], [], "weight_fitted"
-    )
+    # Convert the binned weights (with `sex="all"` included) into the correctly formatted table
+    binned_weights = binned_weight_table.unstack("length_bin").to_frame("weight_fitted")
 
     # Create table for the overall sexed group proportions
     group_proportions = utils.create_grouped_table(
@@ -811,12 +817,12 @@ def stratum_averaged_weight(
 
     # Calculate final weights
     fitted_weight_df = calculate_grouped_weights(
-        binned_weights,
-        length_proportions_group,
-        length_proportions_all,
-        aggregate_proportions,
-        adjusted_proportions,
-        group_keys,
+        binned_weight_table_pvt=binned_weights,
+        length_proportions_pvt=length_proportions_group,
+        length_proportions_pvt_all=length_proportions_all,
+        aggregate_table=aggregate_proportions,
+        adjusted_proportions=adjusted_proportions,
+        group_keys=group_keys,
     )
 
     return fitted_weight_df
@@ -1117,9 +1123,7 @@ def standardize_weight_proportions(
     )
 
     # Calculate the average weights per length bin within each stratum
-    fitted_weights = (
-        length_proportions_all.loc[group].T * binned_weights["weight_fitted"].to_numpy()
-    )
+    fitted_weights = length_proportions_all.loc[group].T * binned_weights.to_numpy()
 
     # Compute the average within-group weight proportions
     fitted_weight_proportions = (

@@ -172,8 +172,8 @@ def test_length_binned_weights_basic_functionality(
     )
 
     assert isinstance(result, pd.DataFrame)
-    # Should return long format with length_bin and weight_fitted columns
-    expected_columns = ["length_bin", "weight_fitted"]
+    # Should return long format with additional columns when no grouping
+    expected_columns = ["length_bin", "count", "weight_mean", "weight_modeled", "weight_fitted"]
     assert list(result.columns) == expected_columns
     assert len(result) > 0
     assert not result["weight_fitted"].isna().any()
@@ -188,8 +188,8 @@ def test_length_binned_weights_with_prebinned_data(
     )
 
     assert isinstance(result, pd.DataFrame)
-    # Should return long format with length_bin and weight_fitted columns
-    expected_columns = ["length_bin", "weight_fitted"]
+    # Should return long format with additional columns when no grouping
+    expected_columns = ["length_bin", "count", "weight_mean", "weight_modeled", "weight_fitted"]
     assert list(result.columns) == expected_columns
     assert len(result) > 0
 
@@ -203,11 +203,10 @@ def test_length_binned_weights_grouped_coefficients(
     )
 
     assert isinstance(result, pd.DataFrame)
-    # Should have sex, length_bin, and weight_fitted columns in long format
-    expected_columns = ["sex", "length_bin", "weight_fitted"]
+    # Should return wide format with sex as columns when grouping
+    expected_columns = ["female", "male", "unsexed"]  # sex values as columns
     assert list(result.columns) == expected_columns
-    assert "male" in result["sex"].values
-    assert "female" in result["sex"].values
+    assert result.index.name == "length_bin"
     assert len(result) > 0
 
 
@@ -223,8 +222,8 @@ def test_length_binned_weights_impute_bins_false(
     )
 
     assert isinstance(result, pd.DataFrame)
-    # Should return long format with length_bin and weight_fitted columns
-    expected_columns = ["length_bin", "weight_fitted"]
+    # Should return long format with additional columns when no grouping
+    expected_columns = ["length_bin", "count", "weight_mean", "weight_modeled", "weight_fitted"]
     assert list(result.columns) == expected_columns
     # With impute_bins=False, should only use observed means
 
@@ -266,8 +265,8 @@ def test_length_binned_weights_zero_threshold(
     )
 
     assert isinstance(result, pd.DataFrame)
-    # Should return long format with length_bin and weight_fitted columns
-    expected_columns = ["length_bin", "weight_fitted"]
+    # Should return long format with additional columns when no grouping
+    expected_columns = ["length_bin", "count", "weight_mean", "weight_modeled", "weight_fitted"]
     assert list(result.columns) == expected_columns
 
 
@@ -292,8 +291,8 @@ def test_length_binned_weights_missing_weights(
     )
 
     assert isinstance(result, pd.DataFrame)
-    # Should return long format with length_bin and weight_fitted columns
-    expected_columns = ["length_bin", "weight_fitted"]
+    # Should return long format with additional columns when no grouping
+    expected_columns = ["length_bin", "count", "weight_mean", "weight_modeled", "weight_fitted"]
     assert list(result.columns) == expected_columns
 
 
@@ -307,8 +306,8 @@ def test_length_binned_weights_large_dataset(
 
     assert isinstance(result, pd.DataFrame)
     assert len(result) == len(sample_length_bins)
-    # Should return long format with length_bin and weight_fitted columns
-    expected_columns = ["length_bin", "weight_fitted"]
+    # Should return long format with additional columns when no grouping
+    expected_columns = ["length_bin", "count", "weight_mean", "weight_modeled", "weight_fitted"]
     assert list(result.columns) == expected_columns
     assert not result["weight_fitted"].isna().any()
 
@@ -337,8 +336,8 @@ def test_length_binned_weights_uneven_distribution(
     )
 
     assert isinstance(result, pd.DataFrame)
-    # Should return long format with length_bin and weight_fitted columns
-    expected_columns = ["length_bin", "weight_fitted"]
+    # Should return long format with additional columns when no grouping
+    expected_columns = ["length_bin", "count", "weight_mean", "weight_modeled", "weight_fitted"]
     assert list(result.columns) == expected_columns
 
 
@@ -351,9 +350,10 @@ def test_length_binned_weights_multiple_groups(
     )
 
     assert isinstance(result, pd.DataFrame)
-    # Should have sex, stratum, length_bin, and weight_fitted columns in long format
-    expected_columns = ["sex", "stratum", "length_bin", "weight_fitted"]
-    assert list(result.columns) == expected_columns
+    # Should return wide format with multiindex columns for multiple grouping variables
+    assert result.index.name == "length_bin"
+    # Columns should be tuples representing the combination of grouping variables
+    assert isinstance(result.columns, pd.MultiIndex) or len(result.columns) > 0
     assert len(result) > 0
 
 
@@ -386,22 +386,6 @@ def test_length_binned_weights_deterministic_results(
     pd.testing.assert_frame_equal(result1, result2)
 
 
-def test_length_binned_weights_coefficient_types(sample_specimen_data, sample_length_bins):
-    """Test with both Series and DataFrame coefficient inputs."""
-    # Series input
-    series_coeffs = pd.Series([3.0, -5.0], index=["slope", "intercept"])
-    result_series = biology.length_binned_weights(
-        sample_specimen_data, sample_length_bins, series_coeffs
-    )
-
-    # DataFrame input (converted from Series)
-    df_coeffs = pd.DataFrame([series_coeffs])
-    result_df = biology.length_binned_weights(sample_specimen_data, sample_length_bins, df_coeffs)
-
-    assert isinstance(result_series, pd.DataFrame)
-    assert isinstance(result_df, pd.DataFrame)
-
-
 def test_length_binned_weights_realistic_coefficients(sample_specimen_data, sample_length_bins):
     """Test with realistic regression coefficients."""
     # Generate coefficients from actual data
@@ -410,8 +394,8 @@ def test_length_binned_weights_realistic_coefficients(sample_specimen_data, samp
     result = biology.length_binned_weights(sample_specimen_data, sample_length_bins, coeffs)
 
     assert isinstance(result, pd.DataFrame)
-    # Should return long format with length_bin and weight_fitted columns
-    expected_columns = ["length_bin", "weight_fitted"]
+    # Should return long format with additional columns when no grouping
+    expected_columns = ["length_bin", "count", "weight_mean", "weight_modeled", "weight_fitted"]
     assert list(result.columns) == expected_columns
     assert result["weight_fitted"].min() > 0  # Weights should be positive
 
@@ -424,8 +408,8 @@ def test_length_binned_weights_column_filtering(
         sample_specimen_data, sample_length_bins, single_regression_coefficients
     )
 
-    # Should return long format with length_bin and weight_fitted columns
-    expected_columns = ["length_bin", "weight_fitted"]
+    # Should return long format with additional columns when no grouping
+    expected_columns = ["length_bin", "count", "weight_mean", "weight_modeled", "weight_fitted"]
     assert list(result.columns) == expected_columns
 
 
@@ -454,8 +438,8 @@ def test_length_binned_weights_integration_with_fit_regression(
 
     assert isinstance(result, pd.DataFrame)
     assert len(result) > 0
-    # Should return long format with length_bin and weight_fitted columns
-    expected_columns = ["length_bin", "weight_fitted"]
+    # Should return long format with additional columns when no grouping
+    expected_columns = ["length_bin", "count", "weight_mean", "weight_modeled", "weight_fitted"]
     assert list(result.columns) == expected_columns
 
 

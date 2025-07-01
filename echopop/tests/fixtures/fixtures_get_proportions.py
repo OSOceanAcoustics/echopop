@@ -350,14 +350,15 @@ def proportion_test_dict():
 
 @pytest.fixture
 def test_weight_table():
-    """Create sample weight table for testing stratum_averaged_weight."""
-    return pd.DataFrame(
-        {
-            "sex": ["female", "male", "all", "female", "male", "all"],
-            "length_bin": ["(10, 20]", "(10, 20]", "(10, 20]", "(20, 30]", "(20, 30]", "(20, 30]"],
-            "weight_fitted": [0.5, 0.4, 0.45, 1.2, 1.0, 1.1],
-        }
-    )
+    """Create sample weight table for testing stratum_averaged_weight in wide format."""
+    # Create wide format table with length_bin as index and sex as columns
+    data = {
+        "female": [0.5, 1.2],
+        "male": [0.4, 1.0],
+        "all": [0.45, 1.1],
+    }
+    index = pd.Index(["(10, 20]", "(20, 30]"], name="length_bin")
+    return pd.DataFrame(data, index=index)
 
 
 @pytest.fixture
@@ -497,10 +498,10 @@ def proportion_dict_fixture():
 
 @pytest.fixture
 def binned_weight_table_fixture():
-    """Create binned_weight_table with sex column."""
-    return pd.DataFrame(
-        {"length_bin": [30, 40], "weight_fitted": [0.5, 1.2], "sex": ["all", "all"]}
-    )
+    """Create binned_weight_table Series for the 'all' column."""
+    # Return just the "all" column as a Series with length_bin as index
+    index = pd.Index([30, 40], name="length_bin")
+    return pd.Series([0.5, 1.2], index=index, name="all")
 
 
 @pytest.fixture
