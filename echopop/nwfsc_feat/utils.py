@@ -1,4 +1,3 @@
-from functools import reduce
 from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
@@ -167,6 +166,78 @@ def binify(
         raise TypeError(f"data must be DataFrame or dict of DataFrames, got {type(data)}")
 
 
+def _filter_rows(df: pd.DataFrame, filter_dict: Dict[str, Any], include: bool) -> pd.DataFrame:
+    """Helper function to filter DataFrame rows."""
+
+    # Get index DataFrame
+    index_df = df.index.to_frame(index=False)
+
+    # Get native column
+    df_reset = df.reset_index()
+
+    # Filter only for keys that exist in columns or index
+    valid_filters = {
+        k: v for k, v in filter_dict.items() if k in df_reset.columns or k in index_df.columns
+    }
+
+    if not valid_filters:
+        return df
+
+    # Create mask
+    mask = np.logical_and.reduce(
+        [
+            (
+                df_reset[col].isin(np.atleast_1d(vals))
+                if col in df_reset.columns
+                else index_df[col]
+                .apply(
+                    lambda x: any(
+                        (v in x if isinstance(x, pd.Interval) else v == x)
+                        for v in np.atleast_1d(vals)
+                    )
+                )
+                .values
+            )
+            for col, vals in valid_filters.items()
+        ]
+    )
+
+    # Apply inclusion/exclusion logic
+    if not include:
+        mask = ~mask
+
+    # Check for matching names
+    index_cols = df.index.names
+    # ---- Apply mask
+    if all(name is None for name in index_cols):
+        return df_reset[mask].filter(list(df.columns))
+
+
+def _filter_columns(df: pd.DataFrame, filter_dict: Dict[str, Any], include: bool) -> pd.DataFrame:
+    """Helper function to filter DataFrame columns."""
+
+    # Get column DataFrame
+    col_index_df = df.columns.to_frame(index=False)
+
+    # Filter only for keys that exist in column names/levels
+    valid_filters = {k: v for k, v in filter_dict.items() if k in col_index_df.columns}
+
+    if not valid_filters:
+        return df
+
+    # Create column mask
+    col_mask = np.logical_and.reduce(
+        [col_index_df[col].isin(np.atleast_1d(vals)) for col, vals in valid_filters.items()]
+    )
+
+    # Apply inclusion/exclusion logic
+    if not include:
+        col_mask = ~col_mask
+
+    # Apply column filter
+    return df.loc[:, col_mask]
+
+
 def apply_filters(
     df: pd.DataFrame,
     include_filter: Optional[Dict[str, Any]] = None,
@@ -175,19 +246,20 @@ def apply_filters(
     """
     Apply inclusion and exclusion filters to a DataFrame.
 
-    Filters rows based on column values, supporting both inclusion and
-    exclusion criteria with single values or lists of values.
+    Filters rows and columns based on index/column values, supporting both inclusion and
+    exclusion criteria with single values or lists of values. Handles interval-based
+    filtering for categorical interval indices.
 
     Parameters
     ----------
     df : pd.DataFrame
         Input DataFrame to filter
     include_filter : Dict[str, Any], optional
-        Dictionary of column:value(s) pairs. Rows will be kept if they match.
-        If value is a list, rows matching any value in the list will be kept.
+        Dictionary of column/index:value(s) pairs. Rows/columns will be kept if they match.
+        If value is a list, rows/columns matching any value in the list will be kept.
     exclude_filter : Dict[str, Any], optional
-        Dictionary of column:value(s) pairs. Rows will be excluded if they match.
-        If value is a list, rows matching any value in the list will be excluded.
+        Dictionary of column/index:value(s) pairs. Rows/columns will be excluded if they match.
+        If value is a list, rows/columns matching any value in the list will be excluded.
 
     Returns
     -------
@@ -196,32 +268,41 @@ def apply_filters(
 
     Examples
     --------
-    >>> # Keep only females and males
+    >>> # Row filtering: Keep only females and males from sex column
     >>> apply_filters(df, include_filter={"sex": ["female", "male"]})
 
-    >>> # Exclude unsexed specimens and small fish
+    >>> # Row filtering: Exclude unsexed specimens and small fish
     >>> apply_filters(df, exclude_filter={"sex": "unsexed", "length": 10})
+
+    >>> # Index filtering: Keep rows where length_bin contains values 1-5
+    >>> apply_filters(df, include_filter={"length_bin": [1, 2, 3, 4, 5]})
+
+    >>> # Column filtering: Keep only female and male columns (wide format)
+    >>> apply_filters(df, include_filter={"sex": ["female", "male"]})
+
+    >>> # Multi-index filtering: Filter by age_bin, length_bin, and sex simultaneously
+    >>> apply_filters(df, include_filter={"age_bin": [1], "length_bin": [1, 2, 3], "sex": ["male"]})
+
+    >>> # Combined filtering: Include certain length bins but exclude unsexed
+    >>> apply_filters(df, include_filter={"length_bin": [1, 2, 3]}, \
+        exclude_filter={"sex": "unsexed"})
     """
 
-    # Initialize boolean mask
-    mask = pd.Series(True, index=df.index)
+    # Create copy
+    result = df.copy()
 
     # Inclusion filter
     if include_filter:
-        include_conditions = [
-            df[k].isin(v) if isinstance(v, list) else df[k] == v for k, v in include_filter.items()
-        ]
-        mask &= reduce(lambda a, b: a & b, include_conditions)
+        result = _filter_columns(result, include_filter, True)
+        result = _filter_rows(result, include_filter, True)
 
     # Exclusion filter
     if exclude_filter:
-        exclude_conditions = [
-            ~df[k].isin(v) if isinstance(v, list) else df[k] != v for k, v in exclude_filter.items()
-        ]
-        mask &= reduce(lambda a, b: a & b, exclude_conditions)
+        result = _filter_columns(result, exclude_filter, False)
+        result = _filter_rows(result, exclude_filter, False)
 
     # Return masked DataFrame
-    return df[mask]
+    return result
 
 
 def is_df_wide(df):
