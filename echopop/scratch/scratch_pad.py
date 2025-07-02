@@ -1,124 +1,72 @@
-#################
-biodata_filepath = Path("C:/Users/Brandyn/Documents/GitHub/Data/Biological/1995-2023_biodata_redo.xlsx")
-biodata_sheet_map = {
-    "catch": "biodata_catch", 
-    "length": "biodata_length",
-    "specimen": "biodata_specimen",
-}
-species_code = 22500
-subset_dict = {
-    "ships": {
-        160: {
-            "survey": 201906
-        },
-        584: {
-            "survey": 2019097,
-            "haul_offset": 200
-        }
+import abc
+import numpy as np
+import pandas as pd
+from typing import Union, Dict, List, Optional, Any
+
+# Import the existing acoustics functions
+from ..acoustics import ts_length_regression, to_linear, to_dB, impute_missing_sigma_bs
+
+
+# ==============================================================================
+# MY IMPLEMENTATIONS OF INVERSION CLASSES
+# ==============================================================================
+model_parameters = {
+    "ts_length_regression": {
+        "slope": 20.,
+        "intercept": -68.
     },
-    "species_code": [22500]
+    "stratify_by": "stratum_ks",
+    "strata": df_dict_strata["ks"].stratum_num.unique(),
+    "impute_missing_strata": True,
 }
 
-FEAT_TO_ECHOPOP_BIODATA_COLUMNS = {
-    "frequency": "length_count",
-    "haul": "haul_num",
-    "weight_in_haul": "haul_weight",
-}
-
-column_name_map = FEAT_TO_ECHOPOP_BIODATA_COLUMNS
-sheet_name = sheet_map["catch"]
-biodata_label_map = {
-    "sex": {
-        1: "male",
-        2: "female",
-        3: "unsexed"
+strata_options = np.array([1, 2, 3, 4, 5])
+sigma_bs_stratum = pd.DataFrame(
+    {
+        "stratum_num": [1, 2, 3],
+        "species_id": np.repeat(94832, 3),
+        "sigma_bs_mean": [1.0, 2.0, 3.0],
     }
-}
-
-ROOT_PATH = Path("C:/Users/Brandyn/Documents/GitHub/Data")
-
-biodata_filepath = ROOT_PATH / "Biological/1995-2023_biodata_redo.xlsx"
-
-dict_df_bio = load_biological_data(biodata_filepath, biodata_sheet_map, FEAT_TO_ECHOPOP_BIODATA_COLUMNS, subset_dict, biodata_label_map)
-
-ROOT_PATH = Path("C:/Users/Brandyn/Documents/GitHub/Data")
-FEAT_TO_ECHOPOP_STRATA_COLUMNS = {
-    "fraction_hake": "nasc_proportion",
-    "haul": "haul_num",
-    "stratum": "stratum_num",
-}
-
-strata_filepath = ROOT_PATH / "Stratification/US_CAN strata 2019_final.xlsx"
-strata_sheet_map = {
-    "inpfc": "INPFC",
-    "ks": "Base KS",
-}
-column_name_map = FEAT_TO_ECHOPOP_STRATA_COLUMNS
-
-dict_df_strata = load_strata(strata_filepath, strata_sheet_map, column_name_map)
-
-FEAT_TO_ECHOPOP_GEOSTRATA_COLUMNS = {
-    "latitude (upper limit)": "northlimit_latitude",
-    "stratum": "stratum_num",
-}
-geostrata_filepath = ROOT_PATH / "Stratification/Stratification_geographic_Lat_2019_final.xlsx"
-geostrata_sheet_map = {
-    "inpfc": "INPFC",
-    "ks": "stratification1",
-}
-column_name_map = FEAT_TO_ECHOPOP_STRATA_COLUMNS
-
-dict_df_geostrata = load_geostrata(geostrata_filepath, geostrata_sheet_map, FEAT_TO_ECHOPOP_GEOSTRATA_COLUMNS)
-
-data = dict_df_bio
-strata_df = dict_df_strata["ks"].copy()
-
-join_strata_by_haul(nasc_all_ages_df, dict_df_strata["inpfc"])
-join_strata_by_haul(nasc_all_ages_df, dict_df_strata["ks"])
-join_strata_by_haul(dict_df_bio, dict_df_strata["inpfc"])
-join_strata_by_haul(dict_df_bio, dict_df_strata["ks"])
-
-data = nasc_all_ages_df.copy()
-geostrata_df = dict_df_geostrata["ks"].copy()
-FEAT_TO_ECHOPOP_MESH_COLUMNS = {
-    "centroid_latitude": "latitude",
-    "centroid_longitude": "longitude",
-    "fraction_cell_in_polygon": "fraction",
-}
-
-column_name_map = FEAT_TO_ECHOPOP_MESH_COLUMNS
-mesh_filepath = ROOT_PATH / "Kriging_files/Kriging_grid_files/krig_grid2_5nm_cut_centroids_2013.xlsx"
-mesh_sheet_name = "krigedgrid2_5nm_forChu"
-
-mesh_df = load_mesh_data(mesh_filepath, mesh_sheet_name, FEAT_TO_ECHOPOP_MESH_COLUMNS)
-
-join_geostrata_by_latitude(mesh_df, dict_df_geostrata["inpfc"])
-
-geostatistic_params_filepath = ROOT_PATH / "Kriging_files/default_vario_krig_settings_2019_US_CAN.xlsx"
-geostatistic_params_sheet_name = "Sheet1"
-FEAT_TO_ECHOPOP_GEOSTATS_PARAMS_COLUMNS = {
-    "hole": "hole_effect_range",
-    "lscl": "correlation_range",
-    "nugt": "nugget",
-    "powr": "decay_power",
-    "ratio": "anisotropy",
-    "res": "lag_resolution",
-    "srad": "search_radius",
-}
-column_name_map = FEAT_TO_ECHOPOP_GEOSTATS_PARAMS_COLUMNS
-
-kriging_params_dict, variogram_params_dict = load_kriging_variogram_params(
-    geostatistic_params_filepath,
-    geostatistic_params_sheet_name,
-    FEAT_TO_ECHOPOP_GEOSTATS_PARAMS_COLUMNS
 )
 
-####################################################################################################
+
+# ==============================================================================
+# TRANSECT INTERVAL CORRECTION FUNCTIONS
+# ==============================================================================
 
 
+proportions_dict = dict_df_weight_proportion
+group_columns = ["sex"]
+group_by = "stratum_ks"
+df_nasc = df_nasc_no_age1.copy().set_index([stratify_by])
+df_average_weight = df_averaged_weight["all"].copy()
+####
+# FILTER BY LEVEL
+###
+# proportions_dict["aged"].xs("male", level="sex")
+# proportions_dict["aged"].loc[:, :, 1]
 
+# proportions_dict["aged"].xs("age_bin", axis=)
 
+# value = 1
+# target_vals = proportions_dict["aged"].index.get_level_values("age_bin")
+# mask = pd.Series([value in interval if hasattr(interval, '__contains__') 
+#                     else interval == value 
+#                     for interval in target_vals])
 
+# proportions_dict["aged"].iloc[mask]
 
+# level_name = "age_bin"
+# level_vals = proportions_dict["aged"].index.get_level_values(level_name)
+# mask = [value in val if hasattr(val, '__contains__') else val == value 
+#         for val in level_vals]
+# proportions_dict["aged"][mask]
 
+###
+# ABUNDANCE / BIOMASS CALCULATION
+###
+
+df_nasc["abundance"] = np.round(df_nasc["area_interval"] * df_nasc["number_density"])
+df_nasc["biomass"] = df_nasc["abundance"] * df_averaged_weight["all"].reindex_like(df_nasc)
+df_nasc["biomass_density"] = df_nasc["number_density"] * df_averaged_weight["all"].reindex_like(df_nasc)
 
