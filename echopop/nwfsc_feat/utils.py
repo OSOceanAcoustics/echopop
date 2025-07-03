@@ -210,7 +210,9 @@ def _filter_rows(df: pd.DataFrame, filter_dict: Dict[str, Any], include: bool) -
     index_cols = df.index.names
     # ---- Apply mask
     if all(name is None for name in index_cols):
-        return df_reset[mask].filter(list(df.columns))
+        return df_reset[mask].filter(df.columns)
+    else:
+        return df_reset[mask].set_index(index_cols).filter(df.columns)
 
 
 def _filter_columns(df: pd.DataFrame, filter_dict: Dict[str, Any], include: bool) -> pd.DataFrame:

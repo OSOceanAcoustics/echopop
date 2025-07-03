@@ -535,14 +535,7 @@ invert_hake.sigma_bs_haul
 df_nasc_all_ages = invert_hake.invert(df_nasc=df_nasc_all_ages)
 df_nasc_no_age1 = invert_hake.invert(df_nasc=df_nasc_no_age1)
 # ---- The average `sigma_bs` for each stratum can be inspected at:
-cached_values = invert_hake.sigma_bs_strata
-
-# Alternatively, these can be computed directly by skipping the intermediate averaging applied 
-# to hauls first before being averaged for each stratum
-invert_hake.invert(df_nasc=df_nasc_no_age1, 
-                   df_length=[dict_df_bio["length"], dict_df_bio["specimen"]])
-# ---- These yield subtle, but non-zero differences in the average `sigma_bs` per stratum
-invert_hake.sigma_bs_strata - cached_values
+invert_hake.sigma_bs_strata
 
 # ==================================================================================================
 # Set transect interval distances
@@ -577,8 +570,35 @@ biology.set_population_metrics(df_nasc=df_nasc_no_age1,
                                df_average_weight=df_averaged_weight["all"])
 
 # ==================================================================================================
-# Apportion age-1 vs age-2+ population estimates 
-# ----------------------------------------------
+# Get proportions for each stratum specific to age-1
+# --------------------------------------------------
+
+# Age-1 NASC proportions
+age1_nasc_proportions = get_proportions.get_nasc_proportions_slice(
+    number_proportions=dict_df_number_proportion["aged"],
+    stratify_by=["stratum_ks"],
+    ts_length_regression_parameters={"slope": 20., 
+                                     "intercept": -68.},
+    include_filter = {"age_bin": [1]}
+)
+
+# Age-1 number proportions
+age1_number_proportions = get_proportions.get_number_proportions_slice(
+    number_proportions=dict_df_number_proportion["aged"],
+    stratify_by=["stratum_ks"],
+    include_filter = {"age_bin": [1]}
+)
+
+# Age-1 weight proportions
+age1_weight_proportions = get_proportions.get_weight_proportions_slice(
+    weight_proportions=dict_df_weight_proportion["aged"],
+    stratify_by=["stratum_ks"],
+    include_filter={"age_bin": [1]},
+    number_proportions=dict_df_number_proportion,
+    length_threshold_min=10.0,
+    weight_proportion_threshold=1e-10
+)
+
 # TODO: This apportionment step is required for kriging
 
 
