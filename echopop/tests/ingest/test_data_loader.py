@@ -104,6 +104,55 @@ def test_read_xlsx_file_nonexistent_sheet(sample_excel_file):
         read_xlsx_file(sample_excel_file, "NonexistentSheet")
 
 
+# ==================================================================================================
+# Test load_isobath_data
+# ----------------------
+def test_load_isobath_data_basic(sample_isobath_file):
+    """Test basic functionality of loading isobath data."""
+    from echopop.nwfsc_feat.load_data import load_isobath_data
+
+    df = load_isobath_data(sample_isobath_file, "isobath_data")
+
+    # Check that all column names are lowercase
+    assert all(col == col.lower() for col in df.columns), "Column names should be lowercase"
+    assert list(df.columns) == ["longitude", "latitude", "depth_200m", "other_data"], "Incorrect column names"
+
+    # Check data was read correctly
+    assert df.shape == (4, 4), "DataFrame should have 4 rows and 4 columns"
+    assert df.iloc[0, 0] == -124.5, "First longitude should be -124.5"
+    assert df.iloc[0, 1] == 46.2, "First latitude should be 46.2"
+
+
+def test_load_isobath_data_with_column_mapping(sample_isobath_file):
+    """Test load_isobath_data with column name mapping."""
+    from echopop.nwfsc_feat.load_data import load_isobath_data
+
+    column_map = {"depth_200m": "depth", "other_data": "value"}
+    df = load_isobath_data(sample_isobath_file, "isobath_data", column_name_map=column_map)
+
+    # Check that columns were renamed correctly
+    assert "depth" in df.columns, "Column should be renamed to 'depth'"
+    assert "value" in df.columns, "Column should be renamed to 'value'"
+    assert "depth_200m" not in df.columns, "Original column name should be replaced"
+    assert "other_data" not in df.columns, "Original column name should be replaced"
+
+
+def test_load_isobath_data_nonexistent_file():
+    """Test that load_isobath_data raises FileNotFoundError for nonexistent files."""
+    from echopop.nwfsc_feat.load_data import load_isobath_data
+
+    with pytest.raises(FileNotFoundError):
+        load_isobath_data("nonexistent_file.xlsx", "Sheet1")
+
+
+def test_load_isobath_data_nonexistent_sheet(sample_isobath_file):
+    """Test that load_isobath_data raises error for nonexistent sheet."""
+    from echopop.nwfsc_feat.load_data import load_isobath_data
+
+    with pytest.raises(ValueError):
+        load_isobath_data(sample_isobath_file, "NonexistentSheet")
+
+
 # def test_load_configuration(test_path, tmp_path):
 
 #     # Read in the initialization and file configuration

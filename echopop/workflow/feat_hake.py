@@ -8,13 +8,13 @@ import xarray as xr
 
 from echopop import inversion
 from echopop.kriging import Kriging
-from echopop.nwfsc_feat import biology, ingest_nasc, get_proportions, load_data, transect, utils
+from echopop.nwfsc_feat import biology, ingest_nasc, get_proportions, load_data, spatial, transect, utils
 
 # ==================================================================================================
 # ==================================================================================================
 # DEFINE DATA ROOT DIRECTORY
 # --------------------------
-DATA_ROOT = Path("C:/Users/Brandyn Lucca/Documents/Data/echopop_2019")
+DATA_ROOT = Path("C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_2019")
 
 # ==================================================================================================
 # ==================================================================================================
@@ -605,8 +605,8 @@ age1_weight_proportions = get_proportions.get_weight_proportions_slice(
 # ==================================================================================================
 # Load reference line (isobath)
 # -----------------------------
-# > load_data.load_isobath_data
-df_isobath = load_isobath_data(
+
+df_isobath = load_data.load_isobath_data(
     isobath_filepath=DATA_ROOT / "Kriging_files/Kriging_grid_files/transformation_isobath_coordinates.xlsx", 
     sheet_name="Smoothing_EasyKrig", 
 )
@@ -615,7 +615,7 @@ df_isobath = load_isobath_data(
 # Standardize coordinates
 # -----------------------
 # > spatial.standardize_coordinates
-df_nasc_all_ages, delta_longitude, delta_latitude = standardize_coordinates(
+df_nasc_all_ages, delta_longitude, delta_latitude = spatial.standardize_coordinates(
     data_df = df_nasc_all_ages,
     reference_df = df_isobath,
     longitude_offset = -124.78338,
@@ -626,7 +626,7 @@ df_nasc_all_ages, delta_longitude, delta_latitude = standardize_coordinates(
 # Compute the lag distance and azimuth angle matrices
 # ---------------------------------------------------
 # > spatial.lag_distance_matrix
-lag_distance_matrix, azimuth_matrix = lag_distance_matrix(
+distance_matrix, azimuth_matrix = lag_distance_matrix(
     coordinates_1=df_nasc_all_ages,
     self=True,
     azimuth_matrix=True   
