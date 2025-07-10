@@ -16,7 +16,7 @@ def sample_model_parameters():
         "sill": 0.8,
         "correlation_range": 0.3,
         "hole_effect_range": 0.4,
-        "decay_power": 1.5
+        "decay_power": 1.5,
     }
 
 
@@ -29,7 +29,7 @@ def sample_variogram_arguments():
         "correlation_range": 0.25,
         "hole_effect_range": 0.35,
         "decay_power": 2.0,
-        "model": ["exponential"]
+        "model": ["exponential"],
     }
 
 
@@ -42,7 +42,7 @@ def sample_composite_arguments():
         "correlation_range": 0.3,
         "hole_effect_range": 0.4,
         "decay_power": 1.8,
-        "model": ["bessel", "exponential"]
+        "model": ["bessel", "exponential"],
     }
 
 
@@ -61,7 +61,16 @@ def sample_large_distance_lags():
 @pytest.fixture
 def sample_single_model_names():
     """Create list of single model names for testing."""
-    return ["exponential", "gaussian", "jbessel", "kbessel", "linear", "nugget", "sinc", "spherical"]
+    return [
+        "exponential",
+        "gaussian",
+        "jbessel",
+        "kbessel",
+        "linear",
+        "nugget",
+        "sinc",
+        "spherical",
+    ]
 
 
 @pytest.fixture
@@ -73,18 +82,14 @@ def sample_composite_model_names():
         ("cosine", "exponential"),
         ("cosine", "gaussian"),
         ("exponential", "linear"),
-        ("gaussian", "linear")
+        ("gaussian", "linear"),
     ]
 
 
 @pytest.fixture
 def sample_minimal_parameters():
     """Create minimal parameters for simple models."""
-    return {
-        "nugget": 0.0,
-        "sill": 1.0,
-        "correlation_range": 0.5
-    }
+    return {"nugget": 0.0, "sill": 1.0, "correlation_range": 0.5}
 
 
 @pytest.fixture
@@ -99,5 +104,5 @@ def sample_extended_parameters():
         "ytox_ratio": 1.2,
         "ztox_ratio": 0.8,
         "dim": 2.0,
-        "enhance_semivariance": True
+        "enhance_semivariance": True,
     }
