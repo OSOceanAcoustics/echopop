@@ -1,0 +1,22 @@
+name: echopop
+channels:
+  - conda-forge
+dependencies:
+  - python>=3.9
+  - pip
+  # Jupyter stack
+  - ipympl
+  - ipywidgets
+  - jupyter_contrib_nbextensions
+  # 9/27/23. See https://github.com/microsoft/azuredatastudio/issues/24436#issuecomment-1723328100
+  - traitlets
+  # Computational stack
+  - cartopy
+  - geopandas
+  - geopy
+  - lmfit
+  - pydantic>=1.10.0
+  - pandas
+  - shapely
+  - scipy
+  - verde

@@ -1,0 +1,91 @@
+# This YAML file is a configuration file specifying
+# input filenames & some process parameter settings.
+# Relative file paths defined below are concatenated
+# with the data_root_dir path also set below.
+
+---
+##############################################################################
+# Parameters
+
+survey_year: 2000            # survey year being considered
+species:
+  text_code: pacific_hake    # target species for the survey year -- species name
+  number_code: 22500         # target species for the survey year -- numeric code
+CAN_haul_offset: 200         # The value to be added to the Canadian's haul number
+
+##############################################################################
+# Directory path that contains all input data needed
+
+data_root_dir: echopop/test_data/input_files
+
+##############################################################################
+# Input data files
+
+biological:
+  length:
+    US:
+      filename: Biological/US/biodata_length.xlsx
+      sheetname: biodata_length
+    CAN:
+      filename: Biological/CAN/biodata_length_CAN.xlsx
+      sheetname: biodata_length_CAN
+  specimen:
+    US:
+      filename: Biological/US/biodata_specimen_AGES.xlsx
+      sheetname: biodata_specimen
+    CAN:
+      filename: Biological/CAN/biodata_specimen_CAN_AGES.xlsx
+      sheetname: biodata_specimen_CAN
+  catch:
+    US:
+      filename: Biological/US/biodata_catch.xlsx
+      sheetname: biodata_catch
+    CAN:
+      filename: Biological/CAN/biodata_catch_CAN.xlsx
+      sheetname: biodata_catch_CAN
+  haul_to_transect:
+    US:
+      filename: Biological/US/haul_to_transect_mapping.xlsx
+      sheetname: Sheet1
+    CAN:
+      filename: Biological/CAN/haul_to_transect_mapping_CAN.xlsx
+      sheetname: Sheet1
+stratification:
+  strata:
+    # The two stratification types are found in two sheets: "Base KS" and "INPFC"
+    filename: Stratification/US_CAN strata_final.xlsx
+    sheetname: Base KS
+  geo_strata:
+    # The two stratification types are found in two sheets: "stratification1" and "INPFC"
+    filename: Stratification/Stratification_geographic_Lat_final.xlsx
+    sheetname: [ INPFC , stratification1 ]
+NASC:
+  # NASC values
+  no_age1:
+    # file that excludes age1 values
+    filename: Exports/US_CAN_detailsa_table2y+_ALL_final - updated.xlsx
+    sheetname: Sheet1
+  all_ages:
+    # file that includes all ages
+    filename: Exports/US_CAN_detailsa_table1y+_ALL_final - updated.xlsx
+    sheetname: Sheet1
+gear_data:
+  US:
+    filename: Biological/US/biodata_gear.xlsx
+    sheetname: biodata_gear
+  CAN:
+    filename: Biological/CAN/biodata_gear_CAN.xlsx
+    sheetname: biodata_gear_CAN
+kriging:
+  mesh:
+    filename: Kriging_files/Kriging_grid_files/krig_grid2_5nm_cut_centroids_2013.xlsx
+    sheetname: krigedgrid2_5nm_forChu
+  isobath_200m:
+    # filename: Kriging_files/Kriging_grid_files/Smoothing_EasyKrig.xlsx
+    filename: Kriging_files/Kriging_grid_files/transformation_isobath_coordinates.xlsx
+    sheetname: Smoothing_EasyKrig
+  vario_krig_para:
+    # NOTE: This file is not currently used
+    filename: Kriging_files/default_vario_krig_settings_US_CAN.xlsx
+    sheetname: Sheet1
+...

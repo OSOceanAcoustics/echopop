@@ -1,0 +1,45 @@
+# Table of contents
+# Learn more at https://jupyterbook.org/customize/toc.html
+
+format: jb-book
+root: index
+parts:
+- caption: Documentation
+  chapters:
+  - file: install
+  - file: input_files
+  - file: core_data_structure
+  - file: example_notebooks
+    title: Example workflows and analyses
+    sections:
+    - file: example_notebooks/example_echopop_workflow
+    - file: example_notebooks/report_generation
+    - file: example_notebooks/plotting
+    - file: example_notebooks/diagnostic_plotting
+  - file: theory
+    title: Underlying theory
+    sections:
+    - file: theory/acoustics
+    - file: theory/bio_estimates
+    - file: theory/stratification
+    # - file: theory/kriging    
+    - file: theory/apportion_biomass
+    - file: theory/apportion_abundance
+    - file: theory/kriging_eq
+    - file: theory/semivariogram_eq
+    # - file: theory/other
+  - file: implementation
+    title: Software implementation
+    sections:
+    - file: implementation/echopro_vs_echopop
+    - file: implementation/preprocessing_data
+  # - file: algo
+  #   title: Algorithmic implementation
+  #   sections:
+  #   - file: algo1
+  #   - file: algo2
+  - file: glossary
+- caption: Help & references
+  chapters:
+  - file: api
+  - file: zbibliography
