@@ -574,10 +574,9 @@ def load_kriging_variogram_params(
 
     return kriging_params, variogram_params
 
+
 def load_isobath_data(
-    isobath_filepath: Union[str, Path], 
-    sheet_name: str, 
-    column_name_map: Dict[str, str] = {}
+    isobath_filepath: Union[str, Path], sheet_name: str, column_name_map: Dict[str, str] = {}
 ) -> pd.DataFrame:
     """
     Load isobath data from an Excel file.

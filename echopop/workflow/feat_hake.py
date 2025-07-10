@@ -6,6 +6,7 @@ import numpy.typing as npt
 import pandas as pd
 import xarray as xr
 
+from lmfit import Parameters
 from echopop import inversion
 from echopop.kriging import Kriging
 from echopop.nwfsc_feat import biology, ingest_nasc, get_proportions, load_data, spatial, transect, utils
@@ -623,34 +624,46 @@ df_nasc_all_ages, delta_longitude, delta_latitude = spatial.standardize_coordina
 )
 
 # ==================================================================================================
-# Compute the lag distance and azimuth angle matrices
-# ---------------------------------------------------
-# > spatial.lag_distance_matrix
-distance_matrix, azimuth_matrix = lag_distance_matrix(
-    coordinates_1=df_nasc_all_ages,
-    self=True,
-    azimuth_matrix=True   
+# Compute the empirical variogram
+# -------------------------------
+
+lags, gamma, lag_counts, lag_covariance = spatial.empirical_variogram(
+    transect_df=df_nasc_all_ages,
+    n_lags=30,
+    lag_resolution=dict_variogram_params["lag_resolution"],
+    azimuth_filter=True,
+    azimuth_angle_threshold=180.,
+    variable="biomass_density",
+    coordinates=("x", "y"),
+    force_lag_zero=True    
 )
 
-# Filter 
+# ==================================================================================================
+# Fit theoretical/modeled variogram to the transect data
+# ------------------------------------------------------
 
-# Load kriging-related params
-kriging_const: dict  # from initalization_config.yaml:
-# A0, longitude_reference, longitude/latitude_offset
-kriging_path_dict: dict  # the "kriging" section of year_config.yml
-# combined with the "kriging" section of init_config.yml
-kriging_param_dict, variogram_param_dict = load_data.load_kriging_variogram_params(
-    root_path=root_path,
-    file_path_dict=kriging_path_dict,
-    kriging_const=kriging_const,
+# Set up `lmfit` parameters
+variogram_parameters = Parameters()
+variogram_parameters.add_many(
+    ("nugget", dict_variogram_params["nugget"], True, 0., None),
+    ("sill", dict_variogram_params["sill"], True, 0., None),
+    ("correlation_range", dict_variogram_params["correlation_range"], True, 0., None),
+    ("hole_effect_range", dict_variogram_params["hole_effect_range"], True, 0., None),
+    ("decay_power", dict_variogram_params["decay_power"], True, 0., None),
 )
 
-kriging = Kriging(
-    kriging_param_dict=kriging_param_dict,
-    variogram_param_dict=variogram_param_dict,
-    mesh_template="PATH_TO_MESH_TEMPLATE",
-    isobath_template="PATH_TO_ISOBATH_REFERENCE",
+# Set up optimization parameters used for fitting the variogram
+dict_optimization = {"max_nfev": 500, "ftol": 1e-06, "gtol": 0.0001, "xtol": 1e-06, 
+                     "diff_step": 1e-08, "tr_solver": "exact", "x_scale": "jac", 
+                     "jac": "3-point"}
+
+# Get the best-fit variogram parameters
+dict_best_fit_variogram_parameters, fit_initial, fit_optimized = spatial.fit_variogram(
+    lags=lags, lag_counts=lag_counts, gamma=gamma, variogram_parameters=variogram_parameters, 
+    model=["bessel", "exponential"], optimizer_kwargs=dict_optimization
 )
+
+
 
 # Create kriging mesh including cropping based on transects
 # Created mesh is stored in kriging.df_mesh

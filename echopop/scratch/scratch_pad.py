@@ -41,192 +41,32 @@ force_lag_zero: bool = True
 
 
 ##################################################
-def empirical_variogram(
-    transect_df: pd.DataFrame,
-    n_lags: int,
-    lag_resolution: float,
-    azimuth_filter: bool,
-    azimuth_angle_threshold: float,
-    variable: str = "biomass_density",
-    coordinates: Tuple[str, str] = ("x", "y"),
-    force_lag_zero: bool = True    
-) -> Tuple[np.ndarray[float], np.ndarray[float], np.ndarray[int], float]:
-    """
-    Compute the empirical variogram from transect data.
-
-    Parameters
-    ----------
-    transect_df : pd.DataFrame
-        A dataframe containing georeferenced coordinates associated with a particular variable (e.g.
-        biomass). This DataFrame must have at least two valid columns comprising the overall 2D 
-        coordinates (e.g. 'x' and 'y').
-    n_lags : int
-        The number of lags used for computing the (semi)variogram.
-    lag_resolution : float
-        The distance interval represented by each lag interval. 
-    azimuth_filter : bool
-        When True, a 2D array of azimuth angles are generated. This subsequent array represents the 
-        relative azimuth angles between spatial points, and can serve as a filter for case where 
-        a high degree of directionality is assumed. This accompanies the argument 
-        'azimuth_angle_threshold' that defines the threshold azimuth angle.
-    azimuth_angle_threshold : float
-        This threshold is used for filtering the azimuth angles. 
-    variable : str, default = 'biomass_density'
-        The variable used for computing the empirical variogram (e.g. 'biomass_density'), which 
-        must exist as a column in 'transect_df'.
-    coordinates : Tuple[str, str], default = ('x', 'y')
-        A tuple containing the 'transect_df' column names defining the coordinates. The order of 
-        this input matters where they should be defined as the (horizontal axis, vertical axis).
-    force_lag_zero : bool, default = True 
-        When True, the nugget effect is assumed to be 0.0 for the empirical variogram. This adds 
-        lag 0 to the subsequent array outputs where semivariance (or 'gamma_h') is also equal to 
-        0.
-
-    Returns
-    ----------
-    Tuple[np.ndarray[float], np.ndarray[float], np.ndarray[int], float]
-        A tuple containing arrays with the lag intervals, semivariance, and lag counts. The mean 
-        lag covariance between the head and tail points computed for all input data is also 
-        provided.
-        
-    """
-    # Initialize lag array
-    lags = np.concatenate([np.arange(1, n_lags) * lag_resolution])
-
-    # Calculate the distance (and azimuth) matrix
-    distance_matrix, azimuth_matrix = lag_distance_matrix(
-        coordinates_1=transect_df,
-        coordinate_names = coordinates,
-        self=True,
-        azimuth_matrix=azimuth_filter
-    )
-
-    # Convert lag distances to lag numbers
-    lag_matrix = np.round(distance_matrix / lag_resolution).astype(int) + 1
-
-    # Extract estimates column
-    estimates = transect_df[variable].to_numpy()
-
-    # Create a triangle mask with the diaganol offset to the left by 1
-    # ---- Initial mask
-    triangle_mask = np.tri(len(estimates), k=-1, dtype=bool)
-    # ---- Vertically and then horizontally flip to force the 'True' and 'False' positions
-    triangle_mask_flp = np.flip(np.flip(triangle_mask), axis=1)
-
-    # Quantize the lags
-    lag_counts, lag_estimates, lag_estimates_squared, lag_deviations = quantize_lags(
-        estimates, lag_matrix, triangle_mask_flp, azimuth_matrix, n_lags, azimuth_angle_threshold
-    )
-
-    # Compute the mean and standard deviation of the head estimates for each lag bin
-    # ---- Apply a mask using the triangle bitmap
-    head_mask = np.where(triangle_mask_flp, lag_matrix, -1)
-
-    # Helper function for computing the binned summations for each row
-    def bincount_row(row, n_lags):
-        return np.bincount(row[row != -1], minlength=n_lags)[1:n_lags]
-
-    # Pre-allocate vectors/arrays that will be iteratively filled
-    head_index = np.zeros((len(estimates), n_lags - 1))
-    # ---- Find the head indices of each lag for each row
-    head_index = np.apply_along_axis(bincount_row, axis=1, arr=head_mask, n_lags=n_lags)
-
-    # Compute the standardized semivariance [gamma(h)]
-    gamma_h, lag_covariance = semivariance(
-        estimates, lag_estimates, lag_estimates_squared, lag_counts, lag_deviations, head_index
-    )
-
-    # Prepend a 0.0 and force the nugget effect to be 0.0, if necessary
-    # ---- Return the computed lags, empirical variogram estimate [gamma(h)], and lag counts
-    if force_lag_zero:
-        return (
-            np.concatenate([[0], lags]),
-            np.concatenate([[0.], gamma_h]),
-            np.concatenate([[len(estimates) - 1], lag_counts]),
-            lag_covariance
-        )
-    else:
-        return lags, gamma_h, lag_counts, lag_covariance
-
-gamma_h = np.concatenate([[0], gamma_h])
-lag_counts = np.concatenate([[len(estimates) - 1], lag_counts])
-
-####
-from echopop.spatial.variogram import initialize_initial_optimization_values, get_variogram_arguments
 from lmfit import Minimizer, Parameters
-initialization_variogram = ['nugget', 'sill', 'correlation_range', 'hole_effect_range', 'decay_power']
-dict_optimization = {'max_nfev': 500, 'ftol': 1e-06, 'gtol': 0.0001, 'xtol': 1e-06, 'diff_step': 1e-08, 'tr_solver': 'exact', 'x_scale': 'jac', 'jac': '3-point'}
-parameters = initialize_initial_optimization_values(
-    initialization_variogram, 
-    {"model": ["exponential", "bessel"],
-     "n_lags": 30, "nugget": 0., "sill": 0.91, "hole_effect_range": 0.0, 
-     "correlation_range": 0.007, "decay_power": 1.5},
+from echopop.spatial.variogram import get_variogram_arguments, variogram
+
+# Set up `lmfit` parameters
+variogram_parameters = Parameters()
+variogram_parameters.add_many(
+    ("nugget", dict_variogram_params["nugget"], True, 0., None),
+    ("sill", dict_variogram_params["sill"], True, 0., None),
+    ("correlation_range", dict_variogram_params["correlation_range"], True, 0., None),
+    ("hole_effect_range", dict_variogram_params["hole_effect_range"], True, 0., None),
+    ("decay_power", dict_variogram_params["decay_power"], True, 0., None),
 )
+
+# Set up optimization parameters used for fitting the variogram
+dict_optimization = {"max_nfev": 500, "ftol": 1e-06, "gtol": 0.0001, "xtol": 1e-06, 
+                     "diff_step": 1e-08, "tr_solver": "exact", "x_scale": "jac", 
+                     "jac": "3-point"}
+
 model = ["exponential", "bessel"]
-range = 0.06
-####
+lags = lags
+lag_counts = lag_counts
+gamma = gamma
 
-# Compute the lag weights
-lag_weights = lag_counts / lag_counts.sum()
+fit_variogram(lags, lag_counts, gamma, variogram_parameters, model, dict_optimization)
 
-# Vertically stack the lags, semivariance, and weights
-data_stack = np.vstack((lags, gamma_h, lag_weights))
-
-# Index lag distances that are within the parameterized range
-# within_range = np.where(lags <= variogram_parameters["range"])[0]
-within_range = np.where(lags <= range)[0]
-
-# Truncate the data stack
-truncated_stack = data_stack[:, within_range]
-
-# Get model name
-# _, variogram_fun = get_variogram_arguments(variogram_parameters["model"])
-_, variogram_fun = get_variogram_arguments(model)
-
-# Create helper cost-function that is weighted using the kriging weights (`w`), lag
-# distances (`x`), and empirical semivariance (`y`)
-def cost_function(parameters, x, y, w):
-    yr = variogram_fun["model_function"](x, **parameters)
-    return (yr - y) * w
-
-# Compute the initial fit based on the pre-optimized parameter values
-initial_fit = cost_function(
-    parameters,
-    x=truncated_stack[0],
-    y=truncated_stack[1],
-    w=truncated_stack[2],
-)
-
-# Compute the initial mean absolute deviation (MAD)
-mad_initial = np.mean(np.abs(initial_fit))
-
-# Generate `Minimizer` function class required for bounded optimization
-minimizer = Minimizer(
-    cost_function,
-    parameters,
-    fcn_args=(truncated_stack[0], truncated_stack[1], truncated_stack[2]),
-)
-
-# Minimize the cost-function to compute the best-fit/optimized variogram parameters
-parameters_optimized = minimizer.minimize(
-    method="least_squares", **dict_optimization
-)
-
-# Calculate the optimized MAD
-mad_optimized = np.mean(np.abs(parameters_optimized.residual))
-
-# Extract the best-fit parameter values
-best_fit_params = parameters_optimized.params.valuesdict()
-
-return (
-    best_fit_params,
-    (
-        list(optimization_settings["parameters"].keys()),
-        list(optimization_settings["parameters"].valuesdict().values()),
-        mad_initial,
-    ),
-    (list(best_fit_params.keys()), list(best_fit_params.values()), mad_optimized),
-)
+########
 
 ####################################################################################################
 from echopop.survey import Survey

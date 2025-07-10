@@ -11,3 +11,5 @@ from echopop.tests.fixtures.fixtures_stratification_loader import *  # noqa: F40
 from echopop.tests.fixtures.fixtures_transect import *  # noqa: F401, F403
 from echopop.tests.fixtures.fixtures_utils import *  # noqa: F401, F403
 from echopop.tests.fixtures.fixtures_variogram import *  # noqa: F401, F403
+from echopop.tests.fixtures.fixtures_variogram_fitting import *  # noqa: F401, F403
+from echopop.tests.fixtures.fixtures_variogram_modeling import *  # noqa: F401, F403

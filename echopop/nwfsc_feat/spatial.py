@@ -1,46 +1,49 @@
-from scipy import interpolate
-from typing import List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
+from lmfit import Minimizer, Parameters
+from scipy import interpolate
+
+from ..spatial.variogram import variogram
 
 
 def standardize_coordinates(
     data_df: pd.DataFrame,
-    longitude_offset: float = 0.,
-    latitude_offset: float = 0.,
+    longitude_offset: float = 0.0,
+    latitude_offset: float = 0.0,
     reference_df: Optional[pd.DataFrame] = None,
     delta_longitude: Optional[float] = None,
     delta_latitude: Optional[float] = None,
 ) -> Tuple[pd.DataFrame, Union[float, None], Union[float, None]]:
     """
     Standardize the longitude and latitude coordinates of a dataset.
-    
+
     Parameters
     ----------
     data_df : pd.DataFrame
         DataFrame with longitude and latitude coordinates
     longitude_offset : float, default=0.
         Offset to apply to the longitude coordinates
-    latitude_offset : float, default=0. 
+    latitude_offset : float, default=0.
         Offset to apply to the latitude coordinates
     reference_df : pd.DataFrame, optional
-        Reference DataFrame with longitude and latitude coordinates for interpolation that is 
+        Reference DataFrame with longitude and latitude coordinates for interpolation that is
         used as an additional offset to longitude
     delta_longitude : float, optional
         Total longitudinal distance (degrees) used for standardizing coordinates
     delta_latitude : float, optional
         Total latitudinal distance (degrees) used for standardizing coordinates
-        
+
     Returns
     -------
     pd.DataFrame
         DataFrame with the new standardized coordinates 'x' and 'y'.
     float or None
-        Total longitudinal distance (degrees) used for standardizing coordinates that can be used 
+        Total longitudinal distance (degrees) used for standardizing coordinates that can be used
         for the transformation of other georeferenced datasets.
     float or None
-        Total latitudinal distance (degrees) used for standardizing coordinates that can be used 
+        Total latitudinal distance (degrees) used for standardizing coordinates that can be used
         for the transformation of other georeferenced datasets.
     """
 
@@ -51,18 +54,16 @@ def standardize_coordinates(
         )
         reference_offset = reference_interp(data_df["latitude"])
     else:
-        reference_offset = 0.
+        reference_offset = 0.0
 
     # Transform longitude
-    transformed_longitude = (
-        data_df["longitude"] - reference_offset + longitude_offset
-    )
+    transformed_longitude = data_df["longitude"] - reference_offset + longitude_offset
 
     # Calculate the geospatial distances along the longitudinal and latitudinal axes [if missing]
     # ---- Longitude
     if delta_longitude is None:
         delta_longitude = transformed_longitude.max() - transformed_longitude.min()
-    # ---- Latitude 
+    # ---- Latitude
     if delta_latitude is None:
         delta_latitude = data_df.latitude.max() - data_df.latitude.min()
 
@@ -70,19 +71,15 @@ def standardize_coordinates(
     # ---- longitude --> x
     data_df["x"] = (
         np.cos(np.pi / 180.0 * data_df["latitude"])
-        * (
-            transformed_longitude
-            - longitude_offset
-        )
+        * (transformed_longitude - longitude_offset)
         / delta_longitude
     )
     # ---- latitude --> y
-    data_df["y"] = (
-        data_df["latitude"] - latitude_offset
-    ) / delta_latitude
+    data_df["y"] = (data_df["latitude"] - latitude_offset) / delta_latitude
 
     # Return the output tuple
     return (data_df, delta_longitude, delta_latitude)
+
 
 def lag_distance_matrix(
     coordinates_1: Union[pd.DataFrame, np.ndarray],
@@ -93,7 +90,7 @@ def lag_distance_matrix(
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Calculate the lag distance matrix between two sets of coordinates.
-    
+
     Parameters
     ----------
     coordinates_1 : pd.DataFrame or np.ndarray
@@ -106,7 +103,7 @@ def lag_distance_matrix(
         If True, calculates distances within the same set of coordinates.
     azimuth_matrix : bool, default=False
         If True, returns both distance and azimuth angles; if False, returns only distances.
-    
+
     Returns
     -------
     Tuple[np.ndarray, np.ndarray]
@@ -117,7 +114,7 @@ def lag_distance_matrix(
     # Get coordinate names
     if coordinate_names is not None:
         x_name, y_name = coordinate_names
-    
+
     # Set reference to self if 'coordinates_2' is not defined
     if coordinates_2 is None:
         coordinates_2 = coordinates_1
@@ -128,42 +125,48 @@ def lag_distance_matrix(
         # ---- x-coordinates
         x_coords = (coordinates_1, coordinates_1)
         # ---- y-coordinates
-        y_coords = (coordinates_2, coordinates_2)  
+        y_coords = (coordinates_2, coordinates_2)
     # ---- Case: Distances (as arrays) and self is False
     elif not self and all(isinstance(x, np.ndarray) for x in [coordinates_1, coordinates_2]):
         # ---- x-coordinates
         x_coords = (coordinates_1, coordinates_2)
         # ---- y-coordinates
-        y_coords = (coordinates_1, coordinates_2)     
+        y_coords = (coordinates_1, coordinates_2)
     # ---- Case: DataFrames
     elif all(isinstance(x, pd.DataFrame) for x in [coordinates_1, coordinates_2]):
         # ---- x-coordinates
         x_coords = (coordinates_1[x_name].to_numpy(), coordinates_2[x_name].to_numpy())
         # ---- y-coordinates
-        y_coords = (coordinates_1[y_name].to_numpy(), coordinates_2[y_name].to_numpy())  
+        y_coords = (coordinates_1[y_name].to_numpy(), coordinates_2[y_name].to_numpy())
     #  Resolve the distances
     # ---- x-distance
     x_distance = np.subtract.outer(*x_coords)
     # ---- y-distance
     y_distance = np.subtract.outer(*y_coords)
-        
+
     # Get the azimuth angle matrix, if required
     if azimuth_matrix:
         # ---- Create copies of 'x_distance' and 'y_distance'
-        x_angles = x_distance.copy(); y_angles = y_distance.copy()
+        x_angles = x_distance.copy()
+        y_angles = y_distance.copy()
         # ---- Replace the self-points with 'NaN'
-        np.fill_diagonal(x_angles, np.nan); np.fill_diagonal(y_angles, np.nan)
+        np.fill_diagonal(x_angles, np.nan)
+        np.fill_diagonal(y_angles, np.nan)
         # ---- Calculate the azimuth angle grid
         azimuth_grid = (
             np.arctan(
-                np.divide(y_angles, x_angles, where=(x_angles != 0.) & (~np.isnan(x_angles)))
-            ) * 180. / np.pi + 180. % 180.
+                np.divide(y_angles, x_angles, where=(x_angles != 0.0) & (~np.isnan(x_angles)))
+            )
+            * 180.0
+            / np.pi
+            + 180.0 % 180.0
         )
         # ---- Return the resulting tuple of matrices for Euclidean distances and azimuth angles
         return np.sqrt(x_distance * x_distance + y_distance * y_distance), azimuth_grid
     else:
         # ---- Return Euclidean distance matrix
         return np.sqrt(x_distance * x_distance + y_distance * y_distance), np.array([])
+
 
 def filter_lag_matrix(
     data_matrix: np.ndarray[int],
@@ -173,30 +176,30 @@ def filter_lag_matrix(
 ) -> np.ndarray[int]:
     """
     Filter the lag matrix based on a boolean mask and optional azimuth angle matrix.
-    
+
     Parameters
     ----------
     data_matrix : np.ndarray
         The lag distance matrix to be filtered.
     mask_matrix : np.ndarray[bool]
-        A boolean mask indicating which elements to keep in the lag matrix. This is typically a 
+        A boolean mask indicating which elements to keep in the lag matrix. This is typically a
         triangle boolean matrix.
     azimuth_matrix : np.ndarray[float], optional
-        An optional azimuth angle matrix that can be used to filter the lag matrix based on 
+        An optional azimuth angle matrix that can be used to filter the lag matrix based on
         azimuth angles.
     azimuth_angle_threshold : float, optional
-        If provided, this threshold is used to filter the azimuth angles in the azimuth matrix. 
-        This defines the total azimuth angle range that is allowed for constraining the 
-        relative angles between spatial points, particularly for cases where a high degree of 
+        If provided, this threshold is used to filter the azimuth angles in the azimuth matrix.
+        This defines the total azimuth angle range that is allowed for constraining the
+        relative angles between spatial points, particularly for cases where a high degree of
         directionality is assumed.
-    
+
     Returns
     -------
     np.ndarray
-        The filtered lag matrix, where elements not meeting the mask or azimuth criteria are 
+        The filtered lag matrix, where elements not meeting the mask or azimuth criteria are
         extracted as a 1D array.
     """
-    
+
     # Convert array to matrix, if needed
     if data_matrix.ndim == 1:
         data_matrix = np.tile(data_matrix, (len(data_matrix), 1))
@@ -208,26 +211,26 @@ def filter_lag_matrix(
                 data_matrix = np.tile(data_matrix, (len(data_matrix), 1))
             else:
                 data_matrix = np.tile(data_matrix, (1, len(data_matrix)))
-                
+
     # If 'azimuth_matrix' is supplied, then apply threshold as additional bitmap
     if (
-        azimuth_matrix is not None and 
-        len(azimuth_matrix) > 0 and 
-        azimuth_angle_threshold is not None
+        azimuth_matrix is not None
+        and len(azimuth_matrix) > 0
+        and azimuth_angle_threshold is not None
     ):
         # ---- Replace any 'NaN' values with 0's
         azimuth_matrix[np.isnan(azimuth_matrix)] = 0.0
         # ---- Create bitmap
-        azimuth_mask = (
-            (azimuth_matrix >= -azimuth_angle_threshold) & 
-            (azimuth_matrix < azimuth_angle_threshold)
+        azimuth_mask = (azimuth_matrix >= -azimuth_angle_threshold) & (
+            azimuth_matrix < azimuth_angle_threshold
         )
     else:
         # ---- Create empty azimuth mask
         azimuth_mask = np.ones_like(data_matrix, dtype=bool)
-        
+
     # Mask the data matrix and broadcast into a 1D array
     return data_matrix[mask_matrix & azimuth_mask]
+
 
 def quantize_lags(
     estimates: np.ndarray[float],
@@ -238,7 +241,7 @@ def quantize_lags(
     azimuth_angle_threshold: Optional[float] = None,
 ) -> Tuple[np.ndarray[int], np.ndarray[float], np.ndarray[float], np.ndarray[float]]:
     """
-    Quantize lag counts, sums, square-sums, and deviations required for computing the empirical 
+    Quantize lag counts, sums, square-sums, and deviations required for computing the empirical
     variogram
 
     Parameters
@@ -248,23 +251,23 @@ def quantize_lags(
     lag_matrix : np.ndarray[int]
         A 2D array of integer lag values.
     mask_matrix : np.ndarray[bool]
-        A boolean mask indicating which elements to keep in the lag matrix. This is typically a 
+        A boolean mask indicating which elements to keep in the lag matrix. This is typically a
         triangle boolean matrix.
     azimuth_matrix : np.ndarray[float]
-        A 2D array of azimuth angle values. Alternatively, this may also be a 1D array of length 0 
+        A 2D array of azimuth angle values. Alternatively, this may also be a 1D array of length 0
         for the case where the azimuth angle matrix is not defined.
     n_lags : int
         Number of lags used for the variogram analysis.
     azimuth_angle_threshold : float, optional
-        If provided, this threshold is used to filter the azimuth angles in the azimuth matrix. 
-        This defines the total azimuth angle range that is allowed for constraining the 
-        relative angles between spatial points, particularly for cases where a high degree of 
+        If provided, this threshold is used to filter the azimuth angles in the azimuth matrix.
+        This defines the total azimuth angle range that is allowed for constraining the
+        relative angles between spatial points, particularly for cases where a high degree of
         directionality is assumed.
-    
+
     Returns
     -------
     Tuple[np.ndarray[int], np.ndarray[float], np.ndarray[float], np.ndarray[float]]
-        A tuple comprising the binned lag counts, summed estimates, square-summed estimates, and 
+        A tuple comprising the binned lag counts, summed estimates, square-summed estimates, and
         deviations.
     """
 
@@ -274,8 +277,9 @@ def quantize_lags(
 
     # Validate that dimensions are 2D
     if (
-        lag_matrix.ndim < 2 or mask_matrix.ndim < 2 or 
-        (azimuth_matrix.ndim < 2 and len(azimuth_matrix) > 0)
+        lag_matrix.ndim < 2
+        or mask_matrix.ndim < 2
+        or (azimuth_matrix.ndim < 2 and len(azimuth_matrix) > 0)
     ):
         error = (
             "The function `quantize_lags` requires arrays to be 2D. The following 1D arrays have "
@@ -291,18 +295,16 @@ def quantize_lags(
         raise ValueError(error + ", ".join(invalid_arrays))
 
     # Filter the lag matrix based on the mask and azimuth angle threshold
-    equivalent_lags = filter_lag_matrix(lag_matrix, 
-                                        mask_matrix, 
-                                        azimuth_matrix, 
-                                        azimuth_angle_threshold)
+    equivalent_lags = filter_lag_matrix(
+        lag_matrix, mask_matrix, azimuth_matrix, azimuth_angle_threshold
+    )
     # ---- Compute the binned sums
     lag_counts = np.bincount(equivalent_lags)[1:n_lags]
 
     # Sum the estimates for each lag
-    estimates_lagged = filter_lag_matrix(estimates, 
-                                         mask_matrix, 
-                                         azimuth_matrix, 
-                                         azimuth_angle_threshold)
+    estimates_lagged = filter_lag_matrix(
+        estimates, mask_matrix, azimuth_matrix, azimuth_angle_threshold
+    )
     # ---- Compute the binned sums
     lag_estimates = np.bincount(equivalent_lags, weights=estimates_lagged)[1:n_lags]
 
@@ -313,10 +315,12 @@ def quantize_lags(
     lag_bitmap = equivalent_lags < n_lags
 
     # Filter the estimates matrix
-    estimates_matrix = filter_lag_matrix(np.arange(len(estimates))[:, np.newaxis],
-                                        mask_matrix,
-                                        azimuth_matrix, 
-                                        azimuth_angle_threshold)
+    estimates_matrix = filter_lag_matrix(
+        np.arange(len(estimates))[:, np.newaxis],
+        mask_matrix,
+        azimuth_matrix,
+        azimuth_angle_threshold,
+    )
 
     # Calculate the deviations between the indexed and lag-specific estimates
     deviations = (estimates[estimates_matrix][lag_bitmap] - estimates_lagged[lag_bitmap]) ** 2
@@ -326,6 +330,7 @@ def quantize_lags(
 
     # Return the calculated quantities
     return lag_counts, lag_estimates, lag_estimates_squared, lag_deviations
+
 
 def semivariance(
     estimates: np.ndarray[float],
@@ -352,11 +357,11 @@ def semivariance(
         Statistical deviation within each lag bin.
     head_index : np.ndarray[int]
         A 2D array containing the head indices of each lag for each row.
-    
+
     Returns
     -------
     Tuple[np.ndarray[float], np.ndarray[float]]
-        A tuple comprising 1D arrays with the semivariance estimates and mean lag covariance at 
+        A tuple comprising 1D arrays with the semivariance estimates and mean lag covariance at
         each lag.
     """
 
@@ -396,6 +401,7 @@ def semivariance(
     # Return the outputs
     return gamma_h, mean_lag_covariance
 
+
 def empirical_variogram(
     transect_df: pd.DataFrame,
     n_lags: int,
@@ -404,101 +410,230 @@ def empirical_variogram(
     azimuth_angle_threshold: float,
     variable: str = "biomass_density",
     coordinates: Tuple[str, str] = ("x", "y"),
-    force_lag_zero: bool = True    
+    force_lag_zero: bool = True,
 ) -> Tuple[np.ndarray[float], np.ndarray[float], np.ndarray[int], float]:
     """
     Compute the empirical variogram from transect data.
-    
+
     Parameters
     ----------
     transect_df : pd.DataFrame
         A dataframe containing georeferenced coordinates associated with a particular variable (e.g.
-        biomass). This DataFrame must have at least two valid columns comprising the overall 2D 
+        biomass). This DataFrame must have at least two valid columns comprising the overall 2D
         coordinates (e.g. 'x' and 'y').
     n_lags : int
         The number of lags used for computing the (semi)variogram.
     lag_resolution : float
-        The distance interval represented by each lag interval. 
+        The distance interval represented by each lag interval.
     azimuth_filter : bool
-        When True, a 2D array of azimuth angles are generated. This subsequent array represents the 
-        relative azimuth angles between spatial points, and can serve as a filter for case where 
-        a high degree of directionality is assumed. This accompanies the argument 
+        When True, a 2D array of azimuth angles are generated. This subsequent array represents the
+        relative azimuth angles between spatial points, and can serve as a filter for case where
+        a high degree of directionality is assumed. This accompanies the argument
         'azimuth_angle_threshold' that defines the threshold azimuth angle.
     azimuth_angle_threshold : float
-        This threshold is used for filtering the azimuth angles. 
+        This threshold is used for filtering the azimuth angles.
     variable : str, default = 'biomass_density'
-        The variable used for computing the empirical variogram (e.g. 'biomass_density'), which 
+        The variable used for computing the empirical variogram (e.g. 'biomass_density'), which
         must exist as a column in 'transect_df'.
     coordinates : Tuple[str, str], default = ('x', 'y')
-        A tuple containing the 'transect_df' column names defining the coordinates. The order of 
+        A tuple containing the 'transect_df' column names defining the coordinates. The order of
         this input matters where they should be defined as the (horizontal axis, vertical axis).
-    force_lag_zero : bool, default = True 
-        When True, the nugget effect is assumed to be 0.0 for the empirical variogram. This adds 
-        lag 0 to the subsequent array outputs where semivariance (or 'gamma_h') is also equal to 
+    force_lag_zero : bool, default = True
+        When True, the nugget effect is assumed to be 0.0 for the empirical variogram. This adds
+        lag 0 to the subsequent array outputs where semivariance (or 'gamma_h') is also equal to
         0.
-        
+
     Returns
     -------
     Tuple[np.ndarray[float], np.ndarray[float], np.ndarray[int], float]
-        A tuple containing arrays with the lag intervals, semivariance, and lag counts. The mean 
-        lag covariance between the head and tail points computed for all input data is also 
+        A tuple containing arrays with the lag intervals, semivariance, and lag counts. The mean
+        lag covariance between the head and tail points computed for all input data is also
         provided.
-        
+
     """
     # Initialize lag array
     lags = np.concatenate([np.arange(1, n_lags) * lag_resolution])
-    
+
     # Calculate the distance (and azimuth) matrix
     distance_matrix, azimuth_matrix = lag_distance_matrix(
         coordinates_1=transect_df,
-        coordinate_names = coordinates,
+        coordinate_names=coordinates,
         self=True,
-        azimuth_matrix=azimuth_filter
+        azimuth_matrix=azimuth_filter,
     )
-    
+
     # Convert lag distances to lag numbers
     lag_matrix = np.round(distance_matrix / lag_resolution).astype(int) + 1
-    
+
     # Extract estimates column
     estimates = transect_df[variable].to_numpy()
-    
+
     # Create a triangle mask with the diaganol offset to the left by 1
     # ---- Initial mask
     triangle_mask = np.tri(len(estimates), k=-1, dtype=bool)
     # ---- Vertically and then horizontally flip to force the 'True' and 'False' positions
     triangle_mask_flp = np.flip(np.flip(triangle_mask), axis=1)
-    
+
     # Quantize the lags
     lag_counts, lag_estimates, lag_estimates_squared, lag_deviations = quantize_lags(
         estimates, lag_matrix, triangle_mask_flp, azimuth_matrix, n_lags, azimuth_angle_threshold
     )
-    
+
     # Compute the mean and standard deviation of the head estimates for each lag bin
     # ---- Apply a mask using the triangle bitmap
     head_mask = np.where(triangle_mask_flp, lag_matrix, -1)
-    
+
     # Helper function for computing the binned summations for each row
     def bincount_row(row, n_lags):
         return np.bincount(row[row != -1], minlength=n_lags)[1:n_lags]
-    
+
     # Pre-allocate vectors/arrays that will be iteratively filled
     head_index = np.zeros((len(estimates), n_lags - 1))
     # ---- Find the head indices of each lag for each row
     head_index = np.apply_along_axis(bincount_row, axis=1, arr=head_mask, n_lags=n_lags)
-    
+
     # Compute the standardized semivariance [gamma(h)]
     gamma_h, lag_covariance = semivariance(
         estimates, lag_estimates, lag_estimates_squared, lag_counts, lag_deviations, head_index
     )
-    
+
     # Prepend a 0.0 and force the nugget effect to be 0.0, if necessary
     # ---- Return the computed lags, empirical variogram estimate [gamma(h)], and lag counts
     if force_lag_zero:
         return (
             np.concatenate([[0], lags]),
-            np.concatenate([[0.], gamma_h]),
+            np.concatenate([[0.0], gamma_h]),
             np.concatenate([[len(estimates) - 1], lag_counts]),
-            lag_covariance
+            lag_covariance,
         )
     else:
         return lags, gamma_h, lag_counts, lag_covariance
+
+
+def fit_variogram(
+    lags: np.ndarray[float],
+    lag_counts: np.ndarray[int],
+    gamma: np.ndarray[float],
+    variogram_parameters: Parameters,
+    model: Union[str, List[str]] = ["bessel", "exponential"],
+    optimizer_kwargs: Dict[str, Any] = {},
+) -> Tuple[Dict[str, Any], float, float]:
+    """
+    Compute the best-fit variogram parameters for input data
+
+    Parameters
+    ----------
+    lags : np.ndarray[float]
+        A 1D array of the lag distances.
+    lag_counts : np.ndarray[int]
+        A 1D array of the lag counts.
+    gamma : np.ndarray[float]
+        A 1D array comprising the semivariance estimates for each lag.
+    variogram_parameters : Parameters
+        A :class:`lmfit.parameter.Parameters` object containing the parameters required for the
+        defined variogram model. See :func:`echopop.spatial.variogram.variogram` for more details.
+        Valid parameters include:
+
+            - **sill : float** \n
+            The asymptotic value as lags approach infinity
+
+            - **nugget : float** \n
+            The semivariogram *y*-intercept that corresponds to variability at lag distances
+            shorter than the lag resolution
+
+            - **correlation_range : float** \n
+            The relative length scale, or range, at which the autocorrelation between lag distances
+            no longer increases and becomes asymptotic
+
+            - **hole_effect_range : float** \n
+            The (normalized) length scale/range that holes' are observed, which represent 'null'
+            (or very small) points compared to their neighboring lags
+
+            - **decay_power : float** \n
+            An exponential term that is used in certain generalized exponential (or related)
+            semivariogram models that modulates the ascending rate for a semivariogram
+
+            - **enhance_semivariance : bool** \n
+            A boolean term that determines whether the correlation decay in certain  cosine-related
+            variogram models are enhanced (or not) with increasing lag distances
+    model : Union[str, List[str]], default=['bessel', 'exponential']
+        A string or list of model names. A single name represents a single family model. Two inputs
+        represent the desired composite model (e.g. the composite J-Bessel and exponential model).
+        Defaults to: ``model=["bessel", "exponential"]``. Available models and their required
+        arguments can be reviewed in the :func:`echopop.spatial.variogram.variogram` function.
+    optimizer_kwargs : Dict[str, Any], default={}
+        A dictionary comprising the various function arguments used by
+        :class:`lmfit.minimizer.Minimizer` for Least-Squares minimization that incorporates the
+        Trust Reflective method. See :class:`lmfit.minimizer.Minimizer` for more details.
+
+    Returns
+    -------
+    Tuple[Dict[str, Any], float, float]
+        A tuple containing a dictionary with the best-fit keyword variogram parameter values,
+        the mean absolute deviation (MAD) of the initial parameter values, and the MAD of the
+        best-fit parameter values.
+
+    See Also
+    --------
+    :func:`echopop.spatial.variogram.variogram` :
+        Variogram model parameters.
+    :class:`lmfit.parameter.Parameters` :
+        Variogram parameter optimization leverages the ``Parameters`` class from ``lmfit`` for
+        model optimization.
+    :class:`lmfit.minimizer.Minimizer` :
+        Optimization keyword arguments used for the Least-Squares fitting.
+    """
+    # Normalize the lag counts to get the lag weights
+    lag_weights = lag_counts / lag_counts.sum()
+
+    # Vertically stack the lags, semivariance, and weights
+    data_stack = np.vstack((lags, gamma, lag_weights))
+
+    # Recover the lag resolution
+    delta_lag = np.diff(lags).mean()
+
+    # Compute the range
+    range = lags.max() + delta_lag
+
+    # Index lag distances that are within the parameterized range
+    within_range = np.where(lags <= range)[0]
+
+    # Truncate the data stack
+    truncated_stack = data_stack[:, within_range]
+
+    # Create helper cost-function that is weighted using the kriging weights (`w`), lag
+    # distances (`x`), and empirical semivariance (`y`)
+    def cost_function(parameters, x, y, w, model):
+        yr = variogram(x, {**parameters, **{"model": model}})
+        return (yr - y) * w
+
+    # Compute the initial fit based on the pre-optimized parameter values
+    initial_fit = cost_function(
+        variogram_parameters,
+        x=truncated_stack[0],
+        y=truncated_stack[1],
+        w=truncated_stack[2],
+        model=model,
+    )
+
+    # Compute the initial mean absolute deviation (MAD)
+    mad_initial = np.mean(np.abs(initial_fit))
+
+    # Generate `Minimizer` function class required for bounded optimization
+    minimizer = Minimizer(
+        cost_function,
+        variogram_parameters,
+        fcn_args=(truncated_stack[0], truncated_stack[1], truncated_stack[2], model),
+    )
+
+    # Minimize the cost-function to compute the best-fit/optimized variogram parameters
+    parameters_optimized = minimizer.minimize(method="least_squares", **optimizer_kwargs)
+
+    # Calculate the optimized MAD
+    mad_optimized = np.mean(np.abs(parameters_optimized.residual))
+
+    # Extract the best-fit parameter values
+    best_fit_params = parameters_optimized.params.valuesdict()
+
+    # Return the final tuple
+    return best_fit_params, mad_initial, mad_optimized

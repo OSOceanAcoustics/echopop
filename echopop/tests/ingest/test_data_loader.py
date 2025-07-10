@@ -115,7 +115,12 @@ def test_load_isobath_data_basic(sample_isobath_file):
 
     # Check that all column names are lowercase
     assert all(col == col.lower() for col in df.columns), "Column names should be lowercase"
-    assert list(df.columns) == ["longitude", "latitude", "depth_200m", "other_data"], "Incorrect column names"
+    assert list(df.columns) == [
+        "longitude",
+        "latitude",
+        "depth_200m",
+        "other_data",
+    ], "Incorrect column names"
 
     # Check data was read correctly
     assert df.shape == (4, 4), "DataFrame should have 4 rows and 4 columns"

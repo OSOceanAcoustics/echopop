@@ -83,12 +83,14 @@ def sample_isobath_file():
         temp_filename = temp_file.name
 
     # Create DataFrame with isobath data
-    isobath_df = pd.DataFrame({
-        "LONGITUDE": [-124.5, -124.3, -124.1, -123.9],
-        "LATITUDE": [46.2, 46.4, 46.6, 46.8],
-        "DEPTH_200M": [200, 200, 200, 200],
-        "OTHER_DATA": [1, 2, 3, 4]
-    })
+    isobath_df = pd.DataFrame(
+        {
+            "LONGITUDE": [-124.5, -124.3, -124.1, -123.9],
+            "LATITUDE": [46.2, 46.4, 46.6, 46.8],
+            "DEPTH_200M": [200, 200, 200, 200],
+            "OTHER_DATA": [1, 2, 3, 4],
+        }
+    )
 
     # Write to Excel file
     with pd.ExcelWriter(temp_filename) as writer:
