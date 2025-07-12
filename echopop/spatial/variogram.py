@@ -646,12 +646,12 @@ def variogram(
     """
 
     # Determine model source
-    if variogram_parameters is not None:
-        # ---- Get the variogram arguments and function from `variogram_parameters`
-        model_source = variogram_parameters["model"]
-    elif model is not None:
+    if model is not None:
         # ---- Get the variogram arguments and function from `model`
         model_source = model
+    elif variogram_parameters is not None:
+        # ---- Get the variogram arguments and function from `variogram_parameters`
+        model_source = variogram_parameters["model"]
     else:
         raise ValueError("Argument `model` is missing.")
 

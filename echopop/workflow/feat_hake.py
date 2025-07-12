@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import Any, Dict, List
+from functools import partial
 
 import numpy as np
 import numpy.typing as npt
@@ -615,7 +616,6 @@ df_isobath = load_data.load_isobath_data(
 # ==================================================================================================
 # Standardize coordinates
 # -----------------------
-# > spatial.standardize_coordinates
 df_nasc_all_ages, delta_longitude, delta_latitude = spatial.standardize_coordinates(
     data_df = df_nasc_all_ages,
     reference_df = df_isobath,
@@ -658,12 +658,71 @@ dict_optimization = {"max_nfev": 500, "ftol": 1e-06, "gtol": 0.0001, "xtol": 1e-
                      "jac": "3-point"}
 
 # Get the best-fit variogram parameters
-dict_best_fit_variogram_parameters, fit_initial, fit_optimized = spatial.fit_variogram(
+dict_best_fit_variogram_params, fit_initial, fit_optimized = spatial.fit_variogram(
     lags=lags, lag_counts=lag_counts, gamma=gamma, variogram_parameters=variogram_parameters, 
     model=["bessel", "exponential"], optimizer_kwargs=dict_optimization
 )
 
+# ==================================================================================================
+# Standardize mesh coordinates
+# ----------------------------
+df_mesh, _, _ = spatial.standardize_coordinates(
+    data_df = df_mesh,
+    reference_df = df_isobath,
+    longitude_offset = -124.78338,
+    latitude_offset = 45.,   
+    delta_longitude=delta_longitude,
+    delta_latitude=delta_latitude
+)
 
+# ==================================================================================================
+# Get the western extent of the transect bounds
+# ---------------------------------------------
+transect_western_extents = spatial.get_survey_western_extents(
+    transect_df=df_nasc_all_ages,
+    coordinate_names=("x", "y"),
+    latitude_threshold=51.
+)
+
+# ==================================================================================================
+# Krige the biomass density to get kriged biomass
+# -----------------------------------------------
+
+# Pre-define arguments within a partial function defining the western boundary search strategy
+boundary_search_strategy = partial(spatial.western_boundary_search_strategy, 
+                                   western_extent=transect_western_extents,
+                                   kriging_mesh=df_mesh,
+                                   coordinate_names=("x", "y"))
+
+# Define the requisite kriging parameters
+kriging_parameters = {
+    "search_radius": 0.021,
+    "anisotropy": 0.001,
+    "k_min": 3,
+    "k_max": 10,
+}  
+
+# Krige
+kriged_estimates = spatial.krige(
+    transect_df=df_nasc_all_ages,
+    kriging_mesh=df_mesh,
+    coordinate_names=("x", "y"),
+    variable="biomass_density",
+    kriging_parameters=kriging_parameters,
+    variogram_parameters={"model": ["bessel", "exponential"], **dict_best_fit_variogram_params},
+    adaptive_search_strategy=boundary_search_strategy,
+)    
+
+# ==================================================================================================
+# Project various estimators onto the kriging mesh grid
+# -----------------------------------------------------
+kriged_results, survey_cv = spatial.project_kriging_results(
+    kriged_estimates=kriged_estimates,
+    kriging_mesh=df_mesh,
+    transect_df=df_nasc_all_ages,
+    default_mesh_cell_area=6.25,
+    variable="biomass_density"
+)
 
 # Create kriging mesh including cropping based on transects
 # Created mesh is stored in kriging.df_mesh

@@ -440,7 +440,8 @@ def join_strata_by_haul(
         df_merged = df.merge(strata_df, on=["haul_num"], how="left")
 
         # Rename the stratum column name, if needed
-        df_merged.rename(columns={"stratum_num": stratum_name}, inplace=True)
+        if stratum_name not in df_merged.columns:
+            df_merged.rename(columns={"stratum_num": stratum_name}, inplace=True)
 
         # Replace missing strata with `default_stratum`
         df_merged[stratum_name] = df_merged[stratum_name].fillna(default_stratum)
