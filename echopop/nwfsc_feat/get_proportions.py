@@ -16,7 +16,7 @@ def compute_binned_counts(
     exclude_filters: Dict[str, Any] = None,
 ) -> pd.DataFrame:
     """
-    Compute binned counts with grouping and optional filtering.
+    Compute binned counts with grouping and optional exclusion filters.
 
     Parameters
     ----------
