@@ -10,7 +10,17 @@ import xarray as xr
 from lmfit import Parameters
 from echopop import inversion
 from echopop.kriging import Kriging
-from echopop.nwfsc_feat import biology, ingest_nasc, get_proportions, load_data, spatial, transect, utils
+from echopop.nwfsc_feat import (
+    biology, 
+    FEAT,
+    ingest_nasc, 
+    get_proportions, 
+    load_data, 
+    mesh,
+    spatial,
+    transect, 
+    utils
+)
 
 # ==================================================================================================
 # ==================================================================================================
@@ -664,10 +674,32 @@ dict_best_fit_variogram_params, fit_initial, fit_optimized = spatial.fit_variogr
 )
 
 # ==================================================================================================
+# Mesh cropping using the FEAT methods
+# ------------------------------------
+df_mesh_cropped, _ = mesh.transect_ends_crop(
+    transect_df=df_nasc_all_ages,
+    mesh_df=df_mesh,
+    latitude_resolution=1.25/60,
+    transect_mesh_region_function=FEAT.transect_mesh_region_2019
+)
+
+# ==================================================================================================
+# [OPTIONAL] Mesh cropping using the hull convex
+# ----------------------------------------------
+df_mesh_convex_cropped = mesh.hull_crop(
+    transect_df=df_nasc_all_ages,
+    mesh_df=df_mesh,
+    num_nearest_transects=3,
+    mesh_buffer_distance=2.5,
+    projection="epsg:4326"    
+)
+
+
+# ==================================================================================================
 # Standardize mesh coordinates
 # ----------------------------
-df_mesh, _, _ = spatial.standardize_coordinates(
-    data_df = df_mesh,
+df_mesh_cropped, _, _ = spatial.standardize_coordinates(
+    data_df = df_mesh_cropped,
     reference_df = df_isobath,
     longitude_offset = -124.78338,
     latitude_offset = 45.,   
@@ -691,7 +723,7 @@ transect_western_extents = spatial.get_survey_western_extents(
 # Pre-define arguments within a partial function defining the western boundary search strategy
 boundary_search_strategy = partial(spatial.western_boundary_search_strategy, 
                                    western_extent=transect_western_extents,
-                                   kriging_mesh=df_mesh,
+                                   kriging_mesh=df_mesh_cropped,
                                    coordinate_names=("x", "y"))
 
 # Define the requisite kriging parameters
@@ -705,7 +737,7 @@ kriging_parameters = {
 # Krige
 kriged_estimates = spatial.krige(
     transect_df=df_nasc_all_ages,
-    kriging_mesh=df_mesh,
+    kriging_mesh=df_mesh_cropped,
     coordinate_names=("x", "y"),
     variable="biomass_density",
     kriging_parameters=kriging_parameters,
@@ -718,7 +750,7 @@ kriged_estimates = spatial.krige(
 # -----------------------------------------------------
 kriged_results, survey_cv = spatial.project_kriging_results(
     kriged_estimates=kriged_estimates,
-    kriging_mesh=df_mesh,
+    kriging_mesh=df_mesh_cropped,
     transect_df=df_nasc_all_ages,
     default_mesh_cell_area=6.25,
     variable="biomass_density"

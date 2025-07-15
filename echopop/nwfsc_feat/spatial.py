@@ -1635,7 +1635,8 @@ def project_kriging_results(
         warnings.warn(
             f"{N0} invalid kriged estimates (< 0.0) found. These have been replaced with '0.0'; "
             f"however, this truncation may distort error distributions. If this is problematic, "
-            f"adjust the choice of variogram and kriging algorithm parameterization."
+            f"adjust the choice of variogram and kriging algorithm parameterization.",
+            stacklevel=2
         )
     # ---- Kriged estimates
     mesh_results["estimate"] = kriged_estimates[:, 0]
