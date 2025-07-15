@@ -1,14 +1,16 @@
 from typing import List, Tuple
+
 import numpy as np
 
+
 def transect_mesh_region_2019(
-    region : np.number
+    region: np.number,
 ) -> Tuple[np.number, np.number, List[np.number], List[np.number]]:
     """
     Generate region-specific transect boundaries for the 2019 NWFSC survey.
 
-    This function defines the spatial boundaries for three distinct survey regions used in the 
-    2019 Northwest Fisheries Science Center (NWFSC) survey. Each region has specific transect 
+    This function defines the spatial boundaries for three distinct survey regions used in the
+    2019 Northwest Fisheries Science Center (NWFSC) survey. Each region has specific transect
     numbering schemes and boundary definitions.
 
     Parameters
@@ -16,7 +18,7 @@ def transect_mesh_region_2019(
     region : np.number
         Region identifier (1, 2, or 3):
         - Region 1: Parallel transects to latitudes from south of SCB to west of Haida Gwaii
-        - Region 2: Transects parallel to longitudes north of Haida Gwaii  
+        - Region 2: Transects parallel to longitudes north of Haida Gwaii
         - Region 3: Parallel transects to latitudes west of Haida Gwaii
 
     Returns
@@ -44,14 +46,14 @@ def transect_mesh_region_2019(
     - .6 indicates southern boundary (for region 2)
     - .9 indicates northern boundary (for region 2)
     """
-    
+
     # Initialize variables
     transect_start = None
     transect_end = None
-    transect_lower_bound = [] # W/S
-    transect_upper_bound = [] # E/N
+    transect_lower_bound = []  # W/S
+    transect_upper_bound = []  # E/N
 
-    # Region 1: parallel transects to latitudes from south of SCB to west of Haida Gwaii 
+    # Region 1: parallel transects to latitudes from south of SCB to west of Haida Gwaii
     if region == 1:
         # ---- Southern-most transect
         transect_start = 1
@@ -60,7 +62,7 @@ def transect_mesh_region_2019(
         # ---- Western boundary
         transect_lower_bound = [i + 0.1 for i in range(transect_start, transect_end + 1)]
         # ---- Eastern boundary
-        transect_upper_bound = [i + 0.4 for i in range(transect_start, transect_end + 1)] 
+        transect_upper_bound = [i + 0.4 for i in range(transect_start, transect_end + 1)]
     # Region 2: transects parallel to longitudes north of Haida Gwaii
     elif region == 2:
         # ---- Western-most transect
@@ -70,7 +72,7 @@ def transect_mesh_region_2019(
         # ---- Southern boundary
         transect_lower_bound = [i + 0.6 for i in range(transect_start, transect_end + 1)]
         # ---- Northern boundary
-        transect_upper_bound = [i + 0.9 for i in range(transect_start, transect_end + 1)] 
+        transect_upper_bound = [i + 0.9 for i in range(transect_start, transect_end + 1)]
     # Region 3: parallel transects to latitudes west of Haida Gwaii
     else:
         # ---- Southern-most transect
@@ -80,6 +82,6 @@ def transect_mesh_region_2019(
         # ---- Western boundary
         transect_lower_bound = [i + 0.1 for i in range(transect_start, transect_end + 1)]
         # ---- Eastern boundary
-        transect_upper_bound = [i + 0.4 for i in range(transect_start, transect_end + 1)] 
+        transect_upper_bound = [i + 0.4 for i in range(transect_start, transect_end + 1)]
 
     return transect_start, transect_end, transect_lower_bound, transect_upper_bound
