@@ -819,3 +819,56 @@ ds_kriged_biomass_all_ages: xr.Dataset = apportion.back_calculate_kriged_abundan
     ds_kriged_apportioned=ds_kriged_biomass_all_ages,
     ds_proportions=ds_proportions,
 )
+df_nasc_no_age1_kriged = kriging.krige(df_in=df_nasc_no_age1, variables="biomass")
+df_nasc_all_age_kriged = kriging.krige(df_in=df_nasc_all_ages, variables="biomass")
+
+
+# ===========================================
+# Apportion kriged biomass across sex, length bins, and age bins,
+# and from there derive kriged abundance and kriged number density.
+# Reference flow diagram: https://docs.google.com/presentation/d/1FOr2-iMQYj21VzVRDC-YUuqpOP0_urtI/edit?slide=id.p1#slide=id.p1  # noqa
+
+# Age 1 kriged biomass -------------
+# Apportion biomass
+ds_kriged_biomass_age1: xr.Dataset = apportion.apportion_kriged_biomass(
+    df_nasc=df_nasc_no_age1_kriged,
+    ds_proportions=ds_proportions,
+)
+
+# Fill missing length bins of aged fish using length distributions of unaged fish
+ds_kriged_biomass_age1: xr.Dataset = apportion.fill_missing_aged_from_unaged(
+    ds_kriged_apportioned=ds_kriged_biomass_age1,
+    ds_proportions=ds_proportions,
+)
+
+# Back-calculate abundance
+ds_kriged_biomass_age1: xr.Dataset = apportion.back_calculate_kriged_abundance(
+    ds_kriged_apportioned=ds_kriged_biomass_age1,
+    ds_proportions=ds_proportions,
+)
+
+
+# All age (age 2+) kriged biomass -------------
+# Apportion biomass
+ds_kriged_biomass_all_ages: xr.Dataset = apportion.apportion_kriged_biomass(
+    df_nasc=df_nasc_all_age_kriged,
+    ds_proportions=ds_proportions,
+)
+
+# Fill missing length bins of aged fish using length distributions of unaged fish
+ds_kriged_biomass_all_ages: xr.Dataset = apportion.fill_missing_aged_from_unaged(
+    ds_kriged_apportioned=ds_kriged_biomass_all_ages,
+    ds_proportions=ds_proportions,
+)
+
+# Reallocate age-1 fish to age-2+ fish
+ds_kriged_biomass_all_ages: xr.Dataset = apportion.reallocate_age1(
+    ds_kriged_apportioned=ds_kriged_biomass_all_ages,
+    ds_proportions=ds_proportions,
+)
+
+# Back-calculate abundance
+ds_kriged_biomass_all_ages: xr.Dataset = apportion.back_calculate_kriged_abundance(
+    ds_kriged_apportioned=ds_kriged_biomass_all_ages,
+    ds_proportions=ds_proportions,
+)
