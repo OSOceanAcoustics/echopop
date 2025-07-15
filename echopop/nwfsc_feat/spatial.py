@@ -1,12 +1,16 @@
 import warnings
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
+import geopandas as gpd
 import numpy as np
 import pandas as pd
 from lmfit import Minimizer, Parameters
 from scipy import interpolate
+from shapely.geometry import Point, Polygon
+from shapely.ops import unary_union
 
 from ..spatial.variogram import variogram
+from .projection import wgs84_to_utm
 
 # Set warnings filter
 warnings.simplefilter("always")
@@ -1117,12 +1121,7 @@ def ordinary_kriging_matrix(
 
     Parameters
     ----------
-    local_distance_matrix : np.ndarray
-        A 2D array comprising the local distance matrix around a particular point.
-    variogram_parameters : Dict[str, Any]
-        Dictionary describing the variogram model and parameters, such as:
-        - 'model' (str or list of str): variogram model names (e.g., 'bessel', 'exponential'),
-        - 'nugget' (float): nugget effect,
+q
         - 'sill' (float): sill parameter,
         - 'correlation_range' (float): range parameter,
         - 'hole_effect_range' (float): hole effect range,
@@ -1660,3 +1659,153 @@ def project_kriging_results(
 
     # Return the DataFrame and global CV estimate
     return mesh_results, global_cv
+
+
+def transect_coordinate_centroid(spatial_grouped: gpd.GeoSeries):
+    """
+    Calculate the centroid of a given spatial group.
+
+    This function computes the geometric centroid of a collection of spatial points,
+    which is useful for determining the center point of transect lines or other
+    spatial groupings.
+
+    Parameters
+    ----------
+    spatial_grouped: gpd.GeoSeries
+        A GeoSeries comprising coordinates (i.e. points). Each element should be
+        a Point geometry representing spatial locations.
+
+    Returns
+    -------
+    Point
+        A shapely Point object representing the centroid of all input coordinates.
+
+    Examples
+    --------
+    >>> import geopandas as gpd
+    >>> from shapely.geometry import Point
+    >>> points = gpd.GeoSeries([Point(0, 0), Point(1, 1), Point(2, 0)])
+    >>> centroid = transect_coordinate_centroid(points)
+    >>> print(f"Centroid: ({centroid.x:.1f}, {centroid.y:.1f})")
+    Centroid: (1.0, 0.3)
+
+    Notes
+    -----
+    The function uses the union_all() method to combine all geometries before
+    calculating the centroid, which ensures proper handling of the spatial
+    reference system.
+    """
+
+    # Compute the union of all coordinates within `spatial_grouped`
+    centroid_point = spatial_grouped.union_all().centroid
+
+    # Return output
+    return Point(centroid_point)
+
+
+def transect_extent(transect_df: pd.DataFrame, projection: str, num_nearest_transects: int):
+    """
+    Compute the spatial extent of survey transects using convex hull generation.
+
+    This function creates a polygon representing the spatial extent of survey transects
+    by generating convex hulls around each transect and its nearest neighbors, then
+    unioning all hulls to create the overall survey boundary.
+
+    Parameters
+    ----------
+    transect_df : pd.DataFrame
+        Dataframe containing survey transect data with columns:
+        - 'longitude': Longitude coordinates
+        - 'latitude': Latitude coordinates
+        - 'transect_num': Transect identifier numbers
+    projection : str
+        EPSG projection code string (e.g., 'epsg:4326' for WGS84)
+    num_nearest_transects : int
+        Number of nearest neighbor transects to include when generating
+        the convex hull around each transect
+
+    Returns
+    -------
+    shapely.geometry.base.BaseGeometry
+        A shapely geometry object representing the union of all transect convex hulls,
+        defining the overall spatial extent of the survey area.
+
+    Examples
+    --------
+    >>> import pandas as pd
+    >>> transect_data = pd.DataFrame({
+    ...     'longitude': [-125.0, -125.1, -125.2],
+    ...     'latitude': [48.0, 48.1, 48.2],
+    ...     'transect_num': [1, 2, 3]
+    ... })
+    >>> extent = transect_extent(transect_data, 'epsg:4326', 2)
+    >>> print(f"Extent type: {type(extent)}")
+    Extent type: <class 'shapely.geometry.polygon.Polygon'>
+
+    Notes
+    -----
+    The function performs the following steps:
+    1. Converts the DataFrame to a GeoDataFrame with point geometries
+    2. Transforms coordinates from WGS84 to UTM for accurate distance calculations
+    3. Calculates centroids for each transect
+    4. For each transect, finds the nearest neighbor transects
+    5. Generates convex hulls around each transect and its neighbors
+    6. Returns the union of all convex hulls
+
+    The resulting polygon can be used for spatial filtering, mesh cropping,
+    or defining survey boundaries for analysis.
+    """
+
+    # Convert to GeoDataFrame
+    transect_gdf = gpd.GeoDataFrame(
+        transect_df,
+        geometry=gpd.points_from_xy(transect_df["longitude"], transect_df["latitude"]),
+        crs=projection,
+    )
+
+    # Convert from WGS84 to UTM
+    wgs84_to_utm(transect_gdf)
+
+    # Calculate the centroid of each transect line
+    transect_centroid = transect_gdf.groupby("transect_num")["geometry"].apply(
+        transect_coordinate_centroid
+    )
+
+    # Generate grouped polygons around each transect line
+    # ---- Initialize polygon list
+    transect_polygons = []
+    # ---- Iterate through each transect
+    for transect in transect_centroid.index:
+        # ---- Extract coordinates of the transect
+        coord_centroid = transect_centroid[transect]
+        # ---- Extract all remaining centroids
+        other_centroids = transect_centroid[transect_centroid.index != transect].to_frame()
+        # ---- Handle case where there's only one transect (no other centroids)
+        if len(other_centroids) == 0:
+            # -------- Just use the current transect to create a polygon
+            unique_transects = np.array([transect])
+            transect_coords = transect_gdf[transect_gdf.transect_num.isin(unique_transects)]
+            polygon = Polygon(list(transect_coords.geometry))
+            transect_polygons.append(polygon.convex_hull)
+            continue
+        # ---- Calculate the distance between centroids
+        other_centroids["distance_centroid"] = other_centroids.geometry.apply(
+            lambda g: coord_centroid.distance(g)
+        )
+        # ---- Find the 'n' nearest transect centroids
+        nearest_centroids = other_centroids.distance_centroid.nsmallest(num_nearest_transects)
+        # ---- Filter the transect centroids
+        nearest_transects = other_centroids[
+            other_centroids.distance_centroid.isin(nearest_centroids)
+        ]
+        # ---- Parse the coordinates of the relevant transect numbers
+        unique_transects = np.append(nearest_transects.index, transect)
+        # ---- Get the full coordinates of the relevant transects
+        transect_coords = transect_gdf[transect_gdf.transect_num.isin(unique_transects)]
+        # ---- Generate the local polygon
+        polygon = Polygon(list(transect_coords.geometry))
+        # ---- Append the convex hull of the transect polygon to `transect_polygons`
+        transect_polygons.append(polygon.convex_hull)
+
+    # Merge the polygons via the union of each set
+    return unary_union(transect_polygons)
