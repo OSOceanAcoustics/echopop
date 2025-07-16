@@ -1,5 +1,8 @@
 import geopandas as gpd
 import numpy as np
+import pandas as pd
+
+from typing import Tuple
 
 
 def utm_string_generator(longitude: float, latitude: float):
@@ -118,3 +121,82 @@ def wgs84_to_utm(geodataframe: gpd.GeoDataFrame):
 
     # Apply the CRS change
     geodataframe.to_crs(f"epsg:{utm_code}", inplace=True)
+    
+def reproject_dataset(
+    data_df: pd.DataFrame, 
+    crs_out: str,
+    coordinate_names: Tuple[str, str] = ("longitude", "latitude"),    
+    projection: str = "epsg:4326",
+) -> pd.DataFrame:
+    """
+    Transform coordinates using a new projection via GeoPandas.
+
+    This function converts coordinates from one coordinate reference system (CRS) to another
+    using GeoPandas for accurate cartographic projections. It creates a temporary GeoDataFrame
+    to perform the transformation and returns the results as a regular DataFrame with new
+    'x' and 'y' columns containing the projected coordinates.
+
+    Parameters
+    ----------
+    data_df : pd.DataFrame
+        DataFrame containing coordinate data to be reprojected.
+    crs_out : str
+        Target Coordinate Reference System (CRS) string (e.g., 'epsg:32610' for UTM Zone 10N).
+    coordinate_names : Tuple[str, str], default=("longitude", "latitude")
+        Names of the coordinate columns in the input DataFrame. Expected format: (x_col, y_col).
+    projection : str, default='epsg:4326'
+        Input Coordinate Reference System (CRS) string representing the original projection
+        of the coordinate data (default is WGS84 geographic coordinates).
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame with the original data plus new 'x' and 'y' columns containing the
+        reprojected coordinates in the target CRS.
+
+    Examples
+    --------
+    >>> # Project from WGS84 to UTM Zone 10N
+    >>> df_projected = reproject_dataset(
+    ...     data_df=survey_data,
+    ...     crs_out='epsg:32610',
+    ...     coordinate_names=('longitude', 'latitude')
+    ... )
+    >>> print(df_projected[['x', 'y']].head())
+
+    >>> # Project from UTM back to WGS84
+    >>> df_geo = reproject_dataset(
+    ...     data_df=utm_data,
+    ...     crs_out='epsg:4326',
+    ...     coordinate_names=('x', 'y'),
+    ...     projection='epsg:32610'
+    ... )
+
+    Notes
+    -----
+    This function uses GeoPandas for accurate coordinate transformations, which is more
+    reliable than simple mathematical conversions for cartographic projections.
+    The geometry column created during processing is automatically dropped from the
+    output DataFrame.
+    """
+
+    # Get the coordinate names
+    x_coord, y_coord = coordinate_names
+    
+    # Convert DataFrame into GeoDataFrame
+    gdf = gpd.GeoDataFrame(
+        data_df,
+        geometry=gpd.points_from_xy(data_df[x_coord], data_df[y_coord]),
+        crs=projection
+    )
+
+    # Project to new CRS
+    gdf_proj = gdf.to_crs(crs_out)
+    
+    # Add projected x/y columns
+    df_out = gdf_proj.copy()
+    df_out["x"] = gdf_proj.geometry.x
+    df_out["y"] = gdf_proj.geometry.y
+
+    # Return the reprojected data
+    return df_out.drop(columns="geometry")

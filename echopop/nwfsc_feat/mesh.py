@@ -533,6 +533,7 @@ def hull_crop(
     num_nearest_transects: int = 3,
     mesh_buffer_distance: float = 2.5,
     projection: str = "epsg:4326",
+    coordinate_names: Tuple[str, str] = ("longitude", "latitude"),
 ):
     """
     Crop the kriging mesh using convex hull polygons generated from survey transects.
@@ -559,7 +560,9 @@ def hull_crop(
         mesh cells. This ensures adequate coverage around the survey boundary.
     projection : str, default='epsg:4326'
         EPSG projection code for the input coordinate system. Default is WGS84.
-
+    coordinate_names : Tuple[str, str], default=("longitude", "latitude")
+        Names of the coordinate columns when using DataFrames. Expected format: (x_col, y_col).
+        
     Returns
     -------
     pd.DataFrame
@@ -594,10 +597,13 @@ def hull_crop(
     region-based cropping may be too restrictive or complex.
     """
 
+    # Get coordinate names
+    x_coord, y_coord = coordinate_names
+
     # Convert mesh DataFrame into a GeoDataframe
     mesh_gdf = gpd.GeoDataFrame(
         mesh_df,
-        geometry=gpd.points_from_xy(mesh_df["longitude"], mesh_df["latitude"]),
+        geometry=gpd.points_from_xy(mesh_df[x_coord], mesh_df[y_coord]),
         crs=projection,
     )
 
