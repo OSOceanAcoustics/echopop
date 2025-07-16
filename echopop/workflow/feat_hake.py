@@ -9,7 +9,7 @@ import xarray as xr
 
 from lmfit import Parameters
 from echopop import inversion
-from echopop.kriging import Kriging
+from echopop.nwfsc_feat.geostatistics import Geostats
 from echopop.nwfsc_feat import (
     biology, 
     FEAT,
@@ -624,28 +624,50 @@ df_isobath = load_data.load_isobath_data(
 )
 
 # ==================================================================================================
-# Standardize coordinates
-# -----------------------
-df_nasc_all_ages, delta_longitude, delta_latitude = spatial.standardize_coordinates(
-    data_df = df_nasc_all_ages,
-    reference_df = df_isobath,
-    longitude_offset = -124.78338,
-    latitude_offset = 45.,   
+# Initialize geostatistics class
+# ------------------------------
+
+# Define the requisite kriging parameters
+kriging_parameters = {
+    "search_radius": 0.021,
+    "anisotropy": 0.001,
+    "k_min": 3,
+    "k_max": 10,
+}  
+
+# Define the requisite variogram parameters
+variogram_parameters = {
+    "model": ["bessel", "exponential"], 
+    "n_lags": 30, 
+    "lag_resolution": 0.002
+}
+
+# Initialize
+geo = Geostats(
+    data_df=df_nasc_all_ages,
+    mesh_df=df_mesh,
+    kriging_params=kriging_parameters,
+    variogram_params=variogram_parameters,    
+)
+
+# ==================================================================================================
+# Standardize coordinates [transect & mesh]
+# -----------------------------------------
+geo.project_coordinates(
+    reference_df=df_isobath,
+    x_offset=-124.78338,
+    y_offset=45.,
+    normalize=True,
 )
 
 # ==================================================================================================
 # Compute the empirical variogram
 # -------------------------------
-
-lags, gamma, lag_counts, lag_covariance = spatial.empirical_variogram(
-    transect_df=df_nasc_all_ages,
-    n_lags=30,
-    lag_resolution=dict_variogram_params["lag_resolution"],
+geo.calculate_empirical_variogram(
+    variable="biomass_density",
     azimuth_filter=True,
     azimuth_angle_threshold=180.,
-    variable="biomass_density",
-    coordinates=("x", "y"),
-    force_lag_zero=True    
+    force_lag_zero=True,
 )
 
 # ==================================================================================================
@@ -653,8 +675,8 @@ lags, gamma, lag_counts, lag_covariance = spatial.empirical_variogram(
 # ------------------------------------------------------
 
 # Set up `lmfit` parameters
-variogram_parameters = Parameters()
-variogram_parameters.add_many(
+variogram_parameters_lmfit = Parameters()
+variogram_parameters_lmfit.add_many(
     ("nugget", dict_variogram_params["nugget"], True, 0., None),
     ("sill", dict_variogram_params["sill"], True, 0., None),
     ("correlation_range", dict_variogram_params["correlation_range"], True, 0., None),
@@ -668,50 +690,34 @@ dict_optimization = {"max_nfev": 500, "ftol": 1e-06, "gtol": 0.0001, "xtol": 1e-
                      "jac": "3-point"}
 
 # Get the best-fit variogram parameters
-dict_best_fit_variogram_params, fit_initial, fit_optimized = spatial.fit_variogram(
-    lags=lags, lag_counts=lag_counts, gamma=gamma, variogram_parameters=variogram_parameters, 
-    model=["bessel", "exponential"], optimizer_kwargs=dict_optimization
+geo.fit_variogram_model(
+    variogram_parameters_lmfit, dict_optimization,
 )
+
 
 # ==================================================================================================
 # Mesh cropping using the FEAT methods
 # ------------------------------------
-df_mesh_cropped, _ = mesh.transect_ends_crop(
-    transect_df=df_nasc_all_ages,
-    mesh_df=df_mesh,
-    latitude_resolution=1.25/60,
-    transect_mesh_region_function=FEAT.transect_mesh_region_2019
+geo.crop_mesh(
+    crop_function=mesh.transect_ends_crop,
+    latitude_resolution=1.25/60.,
+    transect_mesh_region_function=FEAT.transect_mesh_region_2019,
 )
 
 # ==================================================================================================
 # [OPTIONAL] Mesh cropping using the hull convex
 # ----------------------------------------------
-df_mesh_convex_cropped = mesh.hull_crop(
-    transect_df=df_nasc_all_ages,
-    mesh_df=df_mesh,
+geo.crop_mesh(
+    crop_function=mesh.hull_crop,
     num_nearest_transects=3,
     mesh_buffer_distance=2.5,
-    projection="epsg:4326"    
-)
-
-
-# ==================================================================================================
-# Standardize mesh coordinates
-# ----------------------------
-df_mesh_cropped, _, _ = spatial.standardize_coordinates(
-    data_df = df_mesh_cropped,
-    reference_df = df_isobath,
-    longitude_offset = -124.78338,
-    latitude_offset = 45.,   
-    delta_longitude=delta_longitude,
-    delta_latitude=delta_latitude
 )
 
 # ==================================================================================================
 # Get the western extent of the transect bounds
 # ---------------------------------------------
 transect_western_extents = spatial.get_survey_western_extents(
-    transect_df=df_nasc_all_ages,
+    transect_df=geo.data_df,
     coordinate_names=("x", "y"),
     latitude_threshold=51.
 )
@@ -723,52 +729,14 @@ transect_western_extents = spatial.get_survey_western_extents(
 # Pre-define arguments within a partial function defining the western boundary search strategy
 boundary_search_strategy = partial(spatial.western_boundary_search_strategy, 
                                    western_extent=transect_western_extents,
-                                   kriging_mesh=df_mesh_cropped,
+                                   kriging_mesh=geo.mesh_df,
                                    coordinate_names=("x", "y"))
 
-# Define the requisite kriging parameters
-kriging_parameters = {
-    "search_radius": 0.021,
-    "anisotropy": 0.001,
-    "k_min": 3,
-    "k_max": 10,
-}  
-
 # Krige
-kriged_estimates = spatial.krige(
-    transect_df=df_nasc_all_ages,
-    kriging_mesh=df_mesh_cropped,
-    coordinate_names=("x", "y"),
-    variable="biomass_density",
-    kriging_parameters=kriging_parameters,
-    variogram_parameters={"model": ["bessel", "exponential"], **dict_best_fit_variogram_params},
-    adaptive_search_strategy=boundary_search_strategy,
-)    
-
-# ==================================================================================================
-# Project various estimators onto the kriging mesh grid
-# -----------------------------------------------------
-kriged_results, survey_cv = spatial.project_kriging_results(
-    kriged_estimates=kriged_estimates,
-    kriging_mesh=df_mesh_cropped,
-    transect_df=df_nasc_all_ages,
+geo.krige(
     default_mesh_cell_area=6.25,
-    variable="biomass_density"
+    adaptive_search_strategy=boundary_search_strategy,
 )
-
-# Create kriging mesh including cropping based on transects
-# Created mesh is stored in kriging.df_mesh
-kriging.create_mesh()
-
-# Perform coordinate transformation based on isobath if needed
-# This adds columns x/y to kriging.df_mesh
-kriging.latlon_to_xy()
-
-# Perform kriging
-# This adds kriging result columns to df_in
-df_nasc_no_age1_kriged = kriging.krige(df_in=df_nasc_no_age1, variables="biomass")
-df_nasc_all_age_kriged = kriging.krige(df_in=df_nasc_all_ages, variables="biomass")
-
 
 # ===========================================
 # Apportion kriged biomass across sex, length bins, and age bins,
