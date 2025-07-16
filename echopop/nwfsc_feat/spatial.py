@@ -83,11 +83,7 @@ def standardize_coordinates(
 
     # Standardize the x- and y-coordinates
     # ---- x
-    data_df["x"] = (
-        np.cos(np.pi / 180.0 * data_df[y_coord])
-        * (transformed_x - x_offset)
-        / delta_x
-    )
+    data_df["x"] = np.cos(np.pi / 180.0 * data_df[y_coord]) * (transformed_x - x_offset) / delta_x
     # ---- y
     data_df["y"] = (data_df[y_coord] - y_offset) / delta_y
 

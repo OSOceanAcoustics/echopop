@@ -562,7 +562,7 @@ def hull_crop(
         EPSG projection code for the input coordinate system. Default is WGS84.
     coordinate_names : Tuple[str, str], default=("longitude", "latitude")
         Names of the coordinate columns when using DataFrames. Expected format: (x_col, y_col).
-        
+
     Returns
     -------
     pd.DataFrame

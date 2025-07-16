@@ -1,9 +1,12 @@
-from typing import Any, Callable, Dict, Optional, Tuple
-import pandas as pd
 import inspect
+from typing import Any, Callable, Dict, Optional, Tuple
+
+import pandas as pd
 from lmfit import Parameters
+
 from . import spatial
 from .projection import reproject_dataset
+
 
 class Geostats:
     """
@@ -71,7 +74,7 @@ class Geostats:
     --------
     >>> import pandas as pd
     >>> from echopop.nwfsc_feat.geostatistics import Geostats
-    >>> 
+    >>>
     >>> # Create sample data
     >>> data_df = pd.DataFrame({
     ...     'longitude': [-125.0, -124.8, -124.6],
@@ -82,16 +85,16 @@ class Geostats:
     ...     'longitude': [-125.1, -124.9, -124.7],
     ...     'latitude': [47.9, 48.1, 48.3]
     ... })
-    >>> 
+    >>>
     >>> # Initialize Geostats object
     >>> geo = Geostats(data_df, mesh_df)
-    >>> 
+    >>>
     >>> # Project coordinates
     >>> geo.project_coordinates(normalize=True)
-    >>> 
+    >>>
     >>> # Calculate empirical variogram
     >>> geo.calculate_empirical_variogram(variable="biomass_density")
-    >>> 
+    >>>
     >>> # Fit variogram model
     >>> from lmfit import Parameters
     >>> params = Parameters()
@@ -99,7 +102,7 @@ class Geostats:
     >>> params.add('sill', value=1.0)
     >>> params.add('correlation_range', value=0.5)
     >>> geo.fit_variogram_model(params)
-    >>> 
+    >>>
     >>> # Perform kriging
     >>> results = geo.krige(default_mesh_cell_area=1.0)
     """
@@ -123,7 +126,7 @@ class Geostats:
         # Kriging parameters
         self.kriging_params = kriging_params.copy()
 
-        # Variogram parameters  
+        # Variogram parameters
         self.variogram_params = variogram_params.copy()
 
         # Projection
@@ -192,17 +195,14 @@ class Geostats:
         >>> print(geo.data_df[['x', 'y']].head())
         """
 
-        # Set coordinate names
-        coordinate_names = self.coordinates
-
-        # Affine normalization, if required 
+        # Affine normalization, if required
         if normalize:
             # ---- Standardize the input data coordinates
             self.data_df, delta_x_new, delta_y_new = spatial.standardize_coordinates(
                 data_df=self.data_df,
                 reference_df=reference_df,
                 x_offset=x_offset,
-                y_offset=y_offset,   
+                y_offset=y_offset,
                 delta_x=delta_x,
                 delta_y=delta_y,
                 coordinate_names=self.coordinates,
@@ -210,9 +210,9 @@ class Geostats:
             # ---- Apply the input data x- and y-coordinate intervals to the projection mesh
             self.mesh_df, _, _ = spatial.standardize_coordinates(
                 data_df=self.mesh_df,
-                reference_df=reference_df, 
+                reference_df=reference_df,
                 x_offset=x_offset,
-                y_offset=y_offset,  
+                y_offset=y_offset,
                 delta_x=delta_x_new,
                 delta_y=delta_y_new,
                 coordinate_names=self.coordinates,
@@ -226,24 +226,20 @@ class Geostats:
                 data_df=self.data_df,
                 projection=self.projection,
                 coordinate_names=self.coordinates,
-                crs_out=crs_out
+                crs_out=crs_out,
             )
             # ---- Mesh
             self.mesh_df = reproject_dataset(
                 data_df=self.mesh_df,
                 projection=self.projection,
                 coordinate_names=self.coordinates,
-                crs_out=crs_out
+                crs_out=crs_out,
             )
 
         # Adjust the projection names
         self.projection_coordinates = ("x", "y")
 
-    def crop_mesh(
-        self,
-        crop_function: Callable,
-        **kwargs
-    ) -> None:
+    def crop_mesh(self, crop_function: Callable, **kwargs) -> None:
         """
         Crop the mesh using a specified cropping function and update self.mesh_df
 
@@ -261,7 +257,8 @@ class Geostats:
 
         Notes
         -----
-        If the cropping function returns a tuple, the first element is assumed to be the cropped mesh.
+        If the cropping function returns a tuple, the first element is assumed to be the cropped
+        mesh.
 
         Examples
         --------
@@ -288,7 +285,7 @@ class Geostats:
         # Inject coordinate names, if needed
         if "coordinate_names" in args and "coordinate_names" not in kwargs:
             kwargs["coordinate_names"] = self.projection_coordinates
-        
+
         # Call the cropping function
         result = crop_function(self.data_df, self.mesh_df, **kwargs)
 
@@ -299,35 +296,35 @@ class Geostats:
         self,
         variable: str,
         azimuth_filter: bool = True,
-        azimuth_angle_threshold: float = 180.,   
-        force_lag_zero: bool = True,     
+        azimuth_angle_threshold: float = 180.0,
+        force_lag_zero: bool = True,
     ) -> None:
         """
         Compute the empirical variogram from transect data
-        
+
         Parameters
         ----------
         variable : str, default = 'biomass_density'
             The variable used for computing the empirical variogram (e.g. 'biomass_density'), which
             must exist as a column in self.data_df.
         azimuth_filter : bool
-            When True, a 2D array of azimuth angles are generated. This subsequent array represents 
-            the relative azimuth angles between spatial points, and can serve as a filter for cases 
-            where a high degree of directionality is assumed. This accompanies the argument 
+            When True, a 2D array of azimuth angles are generated. This subsequent array represents
+            the relative azimuth angles between spatial points, and can serve as a filter for cases
+            where a high degree of directionality is assumed. This accompanies the argument
             'azimuth_angle_threshold' that defines the threshold azimuth angle.
         azimuth_angle_threshold : float
             This threshold is used for filtering the azimuth angles.
 
         force_lag_zero : bool, default = True
-            When True, the nugget effect is assumed to be 0.0 for the empirical variogram. This 
-            adds lag 0 to the subsequent array outputs where semivariance (or 'gamma_h') is also 
+            When True, the nugget effect is assumed to be 0.0 for the empirical variogram. This
+            adds lag 0 to the subsequent array outputs where semivariance (or 'gamma_h') is also
             equal to 0.
 
         Returns
         -------
         None
-            Adds or updates the attributes self.lags, self.gamma, self.lag_counts, and 
-            self.lag_covariance. These represent the lag intervals, semivariance, lag counts, and 
+            Adds or updates the attributes self.lags, self.gamma, self.lag_counts, and
+            self.lag_covariance. These represent the lag intervals, semivariance, lag counts, and
             mean lag covariance between head and tail points, respectively.
         """
 
@@ -335,20 +332,20 @@ class Geostats:
         self.variable = variable
 
         # Subset stored variogram inputs
-        args = inspect.signature(spatial.empirical_variogram).parameters        
+        args = inspect.signature(spatial.empirical_variogram).parameters
 
         # Combine variogram parameter kwargs, if needed
         empirical_variogram_args = {
-            "azimuth_filter": azimuth_filter, 
+            "azimuth_filter": azimuth_filter,
             "azimuth_angle_threshold": azimuth_angle_threshold,
             "force_lag_zero": force_lag_zero,
-            **{k: v for k, v in self.variogram_params.items() if k in args}
+            **{k: v for k, v in self.variogram_params.items() if k in args},
         }
 
         # Compute the empirical variogram
         self.lags, self.gamma, self.lag_counts, self.lag_covariance = spatial.empirical_variogram(
-            transect_df=self.data_df, 
-            variable=variable, 
+            transect_df=self.data_df,
+            variable=variable,
             coordinates=self.projection_coordinates,
             **empirical_variogram_args
         )
@@ -372,7 +369,7 @@ class Geostats:
         Returns
         -------
         None
-            Updates self.best_fit_variogram_params, self.variogram_fit_initial, 
+            Updates self.best_fit_variogram_params, self.variogram_fit_initial,
             self.variogram_fit_optimized, and self.variogram_params attributes.
 
         Notes
@@ -384,9 +381,12 @@ class Geostats:
         # Fit the optimized theoretical variogram model
         self.best_fit_variogram_params, self.variogram_fit_initial, self.variogram_fit_optimized = (
             spatial.fit_variogram(
-                lags=self.lags, lag_counts=self.lag_counts, gamma=self.gamma, 
-                model=self.variogram_params["model"], variogram_parameters=parameter_values,
-                optimizer_kwargs=optimizer_kwargs,                
+                lags=self.lags,
+                lag_counts=self.lag_counts,
+                gamma=self.gamma,
+                model=self.variogram_params["model"],
+                variogram_parameters=parameter_values,
+                optimizer_kwargs=optimizer_kwargs,
             )
         )
 
@@ -411,25 +411,25 @@ class Geostats:
         Returns
         -------
         pd.DataFrame
-            A DataFrame containing the kriged results with the variable column renamed 
+            A DataFrame containing the kriged results with the variable column renamed
             to match self.variable.
 
         Notes
         -----
-        This method requires that both calculate_empirical_variogram() and 
-        fit_variogram_model() have been called first. The method performs ordinary 
+        This method requires that both calculate_empirical_variogram() and
+        fit_variogram_model() have been called first. The method performs ordinary
         kriging followed by projection of the results.
         """
 
         # Initial kriging [assumes ordinary kriging]
         kriged_estimates = spatial.krige(
-            transect_df=self.data_df, 
-            kriging_mesh=self.mesh_df, 
-            coordinate_names=self.projection_coordinates, 
+            transect_df=self.data_df,
+            kriging_mesh=self.mesh_df,
+            coordinate_names=self.projection_coordinates,
             variable=self.variable,
-            kriging_parameters=self.kriging_params, 
+            kriging_parameters=self.kriging_params,
             variogram_parameters=self.variogram_params,
-            adaptive_search_strategy=adaptive_search_strategy
+            adaptive_search_strategy=adaptive_search_strategy,
         )
 
         # Project the results

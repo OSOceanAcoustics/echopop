@@ -1,8 +1,8 @@
+from typing import Tuple
+
 import geopandas as gpd
 import numpy as np
 import pandas as pd
-
-from typing import Tuple
 
 
 def utm_string_generator(longitude: float, latitude: float):
@@ -121,11 +121,12 @@ def wgs84_to_utm(geodataframe: gpd.GeoDataFrame):
 
     # Apply the CRS change
     geodataframe.to_crs(f"epsg:{utm_code}", inplace=True)
-    
+
+
 def reproject_dataset(
-    data_df: pd.DataFrame, 
+    data_df: pd.DataFrame,
     crs_out: str,
-    coordinate_names: Tuple[str, str] = ("longitude", "latitude"),    
+    coordinate_names: Tuple[str, str] = ("longitude", "latitude"),
     projection: str = "epsg:4326",
 ) -> pd.DataFrame:
     """
@@ -182,17 +183,15 @@ def reproject_dataset(
 
     # Get the coordinate names
     x_coord, y_coord = coordinate_names
-    
+
     # Convert DataFrame into GeoDataFrame
     gdf = gpd.GeoDataFrame(
-        data_df,
-        geometry=gpd.points_from_xy(data_df[x_coord], data_df[y_coord]),
-        crs=projection
+        data_df, geometry=gpd.points_from_xy(data_df[x_coord], data_df[y_coord]), crs=projection
     )
 
     # Project to new CRS
     gdf_proj = gdf.to_crs(crs_out)
-    
+
     # Add projected x/y columns
     df_out = gdf_proj.copy()
     df_out["x"] = gdf_proj.geometry.x
