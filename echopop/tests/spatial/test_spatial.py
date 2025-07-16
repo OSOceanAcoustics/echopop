@@ -13,7 +13,7 @@ from echopop.nwfsc_feat.spatial import (
 def test_standardize_coordinates_basic(sample_coordinates_df):
     """Test basic coordinate standardization."""
     result_df, delta_lon, delta_lat = standardize_coordinates(
-        sample_coordinates_df, longitude_offset=0.0, latitude_offset=0.0
+        sample_coordinates_df, x_offset=0.0, y_offset=0.0
     )
 
     # Check that x and y columns are created
@@ -36,7 +36,7 @@ def test_standardize_coordinates_basic(sample_coordinates_df):
 def test_standardize_coordinates_with_offsets(sample_coordinates_df):
     """Test coordinate standardization with offsets."""
     result_df, delta_lon, delta_lat = standardize_coordinates(
-        sample_coordinates_df, longitude_offset=0.1, latitude_offset=0.1
+        sample_coordinates_df, x_offset=0.1, y_offset=0.1
     )
 
     # Check that offsets are applied
@@ -70,7 +70,7 @@ def test_standardize_coordinates_with_reference(sample_coordinates_df, sample_re
 def test_standardize_coordinates_with_deltas(sample_coordinates_df):
     """Test coordinate standardization with provided deltas."""
     result_df, delta_lon, delta_lat = standardize_coordinates(
-        sample_coordinates_df, delta_longitude=1.0, delta_latitude=1.0
+        sample_coordinates_df, delta_x=1.0, delta_y=1.0
     )
 
     # Check that provided deltas are returned

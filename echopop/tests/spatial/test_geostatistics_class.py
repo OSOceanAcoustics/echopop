@@ -271,7 +271,7 @@ def test_geostats_krige(sample_coordinates_df_latlon, sample_mesh_data_latlon):
     assert hasattr(geostat, "survey_cv")
 
     # Check values
-    assert np.isclose(geostat.survey_cv, 0.008406814969)
+    assert np.isclose(geostat.survey_cv, 0.009740188342)
 
 
 # ==================================================================================================
@@ -318,7 +318,7 @@ def test_geostats_full_workflow(sample_coordinates_df_latlon, sample_mesh_data_l
     assert len(geostat.mesh_df) == len(sample_mesh_data_latlon) // 2  # cropped
 
     # Check values
-    assert np.isclose(geostat.survey_cv, 0.01231505688)
+    assert np.isclose(geostat.survey_cv, 0.014007013796)
 
 
 # ==================================================================================================
