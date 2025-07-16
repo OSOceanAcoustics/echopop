@@ -286,6 +286,10 @@ class Geostats:
         if "coordinate_names" in args and "coordinate_names" not in kwargs:
             kwargs["coordinate_names"] = self.projection_coordinates
 
+        # Inject projection, if needed
+        if "projection" in args and "projection" not in kwargs:
+            kwargs["projection"] = self.projection
+
         # Call the cropping function
         result = crop_function(self.data_df, self.mesh_df, **kwargs)
 
@@ -392,6 +396,10 @@ class Geostats:
 
         # Update the variogram parameters
         self.variogram_params = {**self.variogram_params, **self.best_fit_variogram_params}
+
+        # Update the kriging parameters, if needed
+        if "search_radius" in self.kriging_params:
+            self.kriging_params["search_radius"] = self.variogram_params["correlation_range"] * 3
 
     def krige(
         self,
