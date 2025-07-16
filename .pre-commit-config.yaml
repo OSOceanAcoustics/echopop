@@ -6,7 +6,6 @@ exclude: |
     echopop/file_investigation.py|
     echopop/test_survey.py|
     echopop/scratch|
-    echopop/nwfsc_feat|
     echopop/workflow|
     echopop/inversion
   )

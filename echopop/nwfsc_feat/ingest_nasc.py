@@ -1,4 +1,3 @@
-import functools
 import re
 from pathlib import Path
 from typing import Any, Dict, Generator, List, Optional, Tuple, Union
@@ -11,7 +10,8 @@ from ..core.echoview import (
     ECHOVIEW_EXPORT_ROW_SORT,
     ECHOVIEW_TO_ECHOPOP,
 )
-from ..ingest import read_csv_file, read_xlsx_file
+
+# from ..ingest import read_csv_file, read_xlsx_file
 
 
 def map_transect_num(
