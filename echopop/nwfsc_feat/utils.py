@@ -720,3 +720,24 @@ def quantize_length_data(df, group_columns: List[str]):
 
     # Aggregate and return
     return df.groupby(group_columns + ["length"]).agg(length_count=(sum_var_column, var_operation))
+
+def is_pivot_table(df: pd.DataFrame):
+
+    # Check for a MultiIndex
+    is_multiindex = isinstance(df.columns, pd.MultiIndex) or isinstance(df.index, pd.MultiIndex)
+
+    # Check for number of levels
+    is_multilevel = df.columns.nlevels > 1 or df.index.nlevels > 1
+
+    # Check for index naming
+    is_named_index = None not in list(df.index.names)
+
+    # Check for index type
+    is_index_typed = not isinstance(df.index, pd.RangeIndex)
+
+    # Return boolean checksum
+    if (is_multiindex + is_multilevel + is_named_index + is_index_typed) > 0:
+        return True
+    else:
+        return False
+
