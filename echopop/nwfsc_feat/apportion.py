@@ -1,8 +1,11 @@
 import numpy as np
 import pandas as pd
-from typing import Any, Dict, List, Union
-from functools import reduce
+from typing import Any, Dict, List, Optional, Union
+import warnings
+
 from . import utils
+
+warnings.simplefilter("always")
 
 def mesh_biomass_to_nasc(
     mesh_data_df: pd.DataFrame,
@@ -174,65 +177,257 @@ def distribute_kriged_estimates(
     else:
         return apportioned_grouped_pvt["data"]
 
+def impute_kriged_table(
+    reference_table_df: pd.DataFrame,
+    initial_table_df: pd.DataFrame,
+    standardized_table_df: pd.DataFrame,
+    group_by: List[str],
+    impute_variable: List[str],
+    table_reference_indices: List[str],
+) -> pd.DataFrame:
+    """
+    Nearest-neighbor imputation of missing values in population apportionment tables
+    """
+
+    # Sum the reference proportions across the impute variable
+    reference_stk = (
+        reference_table_df.sum(axis=1).unstack(impute_variable).sum(axis=1).unstack(group_by)
+    )
+
+    # Unstack the grouping and imputate variable
+    reference_group_stk = reference_table_df.sum(axis=1).unstack(group_by + impute_variable)
+
+    # Get the mask for all 0.0's and non-zeros
+    ref_zero_mask = reference_stk == 0.
+    ref_nonzero_mask = reference_stk != 0.
+
+    # Gather the indices for each column
+    ref_zero_indices = {col: reference_stk.index[ref_zero_mask[col]].tolist()
+                        for col in reference_stk.columns}
+    ref_nonzero_indices = {col: reference_stk.index[ref_nonzero_mask[col]].tolist() 
+                        for col in reference_stk.columns}
+
+    # Create translation for row numbers
+    interval_to_numeric = {interval: i for i, interval in enumerate(reference_stk.index)}  
+
+    # Convert to row numbers
+    ref_zero_rows = {col: np.array([interval_to_numeric[ival] for ival in intervals])
+                    for col, intervals in ref_zero_indices.items()}
+    ref_nonzero_rows = {col: np.array([interval_to_numeric[ival] for ival in intervals])
+                    for col, intervals in ref_nonzero_indices.items()}
+    
+    # Check keys
+    if not all(col in reference_stk.columns for col in initial_table_df.columns):
+        # ---- Get difference
+        missing_columns = set(initial_table_df.columns).difference(reference_stk.columns)
+        # ---- Print warning
+        warnings.warn(
+            f"The following columns are missing from the reference table and will therefore be "
+            f"skipped during imputation: {', '.join(missing_columns)}. ",
+            stacklevel=2,
+        )        
+
+    # Apply the non-zero reference indices to each column
+    table_nonzeros_mask = {
+        col: initial_table_df[col].loc[ref_zero_indices[col]] != 0.
+        for col in reference_stk.columns
+    }
+
+    # Get the actual indices of the masked values
+    nonzero_reference_to_table_indices = {
+        col: np.array(ref_zero_indices[col])[table_nonzeros_mask[col]]
+        for col in table_nonzeros_mask
+    }
+
+    # Convert to numeric indices for compatibility with `iloc`
+    nonzero_reference_to_table_rows = {
+        col: np.array([interval_to_numeric[ival] for ival in intervals])
+        for col, intervals in nonzero_reference_to_table_indices.items()
+    }  
+    
+    # Create copy of table
+    standardized_table_copy = standardized_table_df.copy()
+    
+    # Define the column indices to ensure consistent ordering across the table
+    # ---- Original table indices
+    column_indices = table_reference_indices + group_by
+     # ---- Reverse table indices
+    column_indices_rev = list(reversed(column_indices))
+    
+    # Check if the columns are in the expected order   
+    if list(standardized_table_copy.columns.names) == column_indices:
+    # ---- Swap the indices
+        standardized_table_copy.columns = standardized_table_copy.columns.reorder_levels(column_indices_rev)   
+
+    # Get the nearest-neighbor rows and recompute the indices
+    imputed_rows = {
+        col: arr[
+            np.argmin(
+                np.abs(ref_zero_rows[col][table_nonzeros_mask[col]][:, np.newaxis] - ref_nonzero_rows[col]), 
+            axis=1)
+        ]
+        for col, arr in ref_nonzero_rows.items()
+    }
+
+    # Impute to replace these values
+    imputed_values = {
+        col: (
+            initial_table_df[col].loc[nonzero_reference_to_table_indices[col]].to_numpy() * 
+            reference_group_stk.iloc[imputed_rows[col]][col].T / 
+            reference_stk.iloc[imputed_rows[col]][col]
+        ).T
+        for col in reference_stk.columns
+    }
+
+    # Update the standardized values
+    for col in initial_table_df.columns:
+        if col in reference_stk.columns:
+            standardized_table_copy.iloc[
+                nonzero_reference_to_table_rows[col],
+                standardized_table_copy.columns.get_loc(col)
+            ] = (
+                imputed_values[col]
+            )
+            
+    # Return to the original column index order
+    standardized_table_copy = standardized_table_copy.reorder_levels(column_indices, axis=1)
+        
+    # Return the imputed standardized table
+    return standardized_table_copy
+
 def standardize_kriged_estimates(
     population_table: Dict[str, pd.DataFrame],
     reference_table: str,
     group_by: List[str],
-) -> Union[Dict[str, pd.DataFrame], pd.DataFrame]:
+    impute: bool = True,
+    impute_variable: Optional[List[str]] = None,
+) -> pd.DataFrame:
     """
     Pass
     """
 
     # Get the table indices
-    table_indices = {
-        k: list(df.index.names)
-        for k, df in population_table.items()
-    }    
+    table_indices = population_table.index.names    
     
     # Get the shared index names across the reference tables
-    reference_index_names = list(
-        set.intersection(*(set(v) 
-                        for k, v in table_indices.items() 
-                        if k in reference_table)) 
-    )
+    reference_index_names = list(reference_table.index.names)
 
     # Get the indices for each reference table required for summation that must be unstacked
-    reference_stack_indices = {
-        k: list(set(reference_index_names).difference(set(df.index.names)))
-        for k, df in population_table.items()
-        if k in reference_table
+    reference_stack_indices = list(set(reference_index_names).difference(table_indices))
+
+    # Reorient the columns accordingly 
+    population_table_reshape = population_table.sum(axis=1).unstack(group_by)
+
+    # Standardize the apportioned table values
+    standardized_table = (
+        population_table_reshape *
+        reference_table.sum(axis=1).unstack(reference_stack_indices + group_by) /
+        reference_table.unstack(reference_stack_indices).sum(axis=1).unstack(group_by)
+    ).fillna(0.)
+
+    # If imputation is requested, perform it
+    if not impute:
+        return standardized_table
+    else:
+        # ---- Impute
+        standardized_table_imputed = impute_kriged_table(
+            reference_table_df=reference_table,
+            initial_table_df=population_table_reshape,
+            standardized_table_df=standardized_table,
+            table_reference_indices=reference_stack_indices,
+            group_by=group_by,
+            impute_variable=impute_variable,
+        )
+        return standardized_table_imputed
+
+def combine_population_tables(
+    population_table: Dict[str, pd.DataFrame],
+    table_names: List[str],
+    table_index: List[str],
+    table_columns: List[str],
+) -> pd.DataFrame:
+    """
+    Combine and sum population estimates across defined tables to yield a single population table
+    """
+    
+    # Subset the table to only include the tables-of-interest
+    tables_to_combine = {
+        k: v.stack(v.columns.names, future_stack=True).to_frame("value") 
+        for k, v in population_table.items() if k in table_names
     }
     
-    # Consolidate the reference tables into a list
-    reference_list = [
-        population_table[k].unstack(reference_stack_indices[k]) for k in reference_table
-    ]
-
-    # Sum across all of the references
-    reference_df = reduce(lambda a, b: a.add(b, fill_value=0), reference_list)
-
-    # Get the indices for each target table
-    target_stack_indices = {
-        k: list(set(reference_index_names).difference(set(df.index.names)))
-        for k, df in population_table.items()
-        if k not in reference_table    
+    # Create a pivot table for each table with identical indices
+    compatible_tables = {
+        k: utils.create_pivot_table(v, index_cols=table_index, 
+                                    strat_cols=table_columns, 
+                                    value_col="value")
+        for k, v in tables_to_combine.items()
     }
+    
+    # Sum the compatible tables
+    return sum(compatible_tables.values())
 
-    # Standardize the proportions
-    proportions_standardized = {
-        k: (
-            df.sum(axis=1).unstack(group_by) *
-            reference_df.sum(axis=1).unstack(target_stack_indices[k] + group_by) /
-            reference_df.unstack(target_stack_indices[k]).sum(axis=1).unstack(group_by)
-        ).fillna(0.)
-        for k, df in population_table.items() if k not in reference_table
-    }
 
-    # Return the updated proportions
-    return proportions_standardized
+def redistribute_population_table(
+    population_table: pd.DataFrame,
+    exclusion_filter: Dict[str, Any],
+    group_by: List[str],    
+) -> pd.DataFrame:
+    """
+    Redistribute population estimates across groups after excluding a specific subset 
+    """
+    
+    # Find any columns that are not in the group_by list
+    # ---- Get column names
+    column_names = population_table.columns.names
+    # ---- Identify extra columns that are not in the group_by list
+    extra_columns = [col for col in column_names if col not in group_by]
+    # ---- Stack the population table
+    stacked_table = population_table.stack(extra_columns, future_stack=True)
+
+    # Apply inverse of exclusion filter to get the values being excluded
+    excluded_grouped_table = utils.apply_filters(stacked_table, 
+                                                include_filter=exclusion_filter)
+
+    # Replace the excluded values in the full table with 0.
+    filtered_grouped_table = utils.apply_filters(stacked_table, 
+                                                exclude_filter=exclusion_filter,
+                                                replace_value=0.)
+    
+    # Get the sums for each group across the excluded and filtered tables
+    # ---- Excluded
+    excluded_grouped_sum = excluded_grouped_table.sum()
+    # ---- Filtered/included
+    filtered_grouped_sum = filtered_grouped_table.sum()
+
+    # Get the redistributed values that will be added to the filtered table values
+    adjustment_table = filtered_grouped_table * excluded_grouped_sum / filtered_grouped_sum
+
+    # Add the adjustments to the filtered table
+    filtered_grouped_table += adjustment_table
+    
+    # Check 
+    if np.any(filtered_grouped_table.sum() - stacked_table.sum() > 1e-6):
+        # ---- If the sums do not match, raise a warning
+        check_sums = filtered_grouped_table.sum() - stacked_table.sum() > 1e-6
+        # ---- Raise a warning with the indices where the sums do not match
+        warnings.warn(
+            f"The sums of the table with the redistributed estimates do not match the original table "
+            f"filtered table do not match the original table for indices: "
+            f"{', '.join(check_sums[check_sums].index.tolist())}"
+        )
+        
+    # Restore the original column structure
+    redistributed_table = (
+        filtered_grouped_table.unstack(extra_columns)
+        .reorder_levels(column_names, axis=1)
+    )
+    
+    # Return the the redistributed table
+    return redistributed_table
 
     
-
+    
     
 
 # # Overlap with the current `partition_transect_age` function

@@ -27,7 +27,8 @@ from echopop.nwfsc_feat import (
 # ==================================================================================================
 # DEFINE DATA ROOT DIRECTORY
 # --------------------------
-DATA_ROOT = Path("C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_2019")
+# DATA_ROOT = Path("C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_2019")
+DATA_ROOT = Path("C:/Users/Brandyn Lucca/Documents/Data/echopop_2019")
 
 # ==================================================================================================
 # ==================================================================================================
@@ -809,10 +810,11 @@ dict_kriged_biomass_table = apportion.distribute_kriged_estimates(
 # !!!---------------------------------------------------------------------
 # !!! THIS NEEDS TO BE FULLY IMPLEMENTED WITH TESTS, ETC.
 
-dict_kriged_abundance_table["unaged"] = apportion.standardize_kriged_estimates(
-    population_table=dict_kriged_abundance_table, 
-    reference_table=["aged"],
-    group_by=["sex"]
+dict_kriged_abundance_table["standardized_unaged"] = apportion.standardize_kriged_estimates(
+    population_table=dict_kriged_abundance_table["unaged"],
+    reference_table=dict_kriged_abundance_table["aged"],
+    group_by=["sex"],
+    impute=False,    
 )
 
 # !!!###################################################################################################
@@ -820,111 +822,58 @@ dict_kriged_abundance_table["unaged"] = apportion.standardize_kriged_estimates(
 # !!!---------------------------------------------------------------------
 # !!! THIS NEEDS TO BE FULLY IMPLEMENTED WITH TESTS, ETC.
 
-dict_kriged_biomass_table["unaged"] = apportion.standardize_kriged_estimates(
-    population_table=dict_kriged_biomass_table, 
-    reference_table=["aged"],
-    group_by=["sex"]
+dict_kriged_biomass_table["standardized_unaged"] = apportion.standardize_kriged_estimates(
+    population_table=dict_kriged_biomass_table["unaged"],
+    reference_table=dict_kriged_biomass_table["aged"],
+    group_by=["sex"],
+    impute=True,
+    impute_variable=["age_bin"],
 )
 
-# ===========================================
-# Apportion kriged biomass across sex, length bins, and age bins,
-# and from there derive kriged abundance and kriged number density.
-# Reference flow diagram: https://docs.google.com/presentation/d/1FOr2-iMQYj21VzVRDC-YUuqpOP0_urtI/edit?slide=id.p1#slide=id.p1  # noqa
+# !!!###################################################################################################
+# !!!Consolidate the kriged abundance estimates into a single DataFrame table
+# !!!------------------------------------------------------------------------
+# !!! THIS NEEDS TO BE FULLY IMPLEMENTED WITH TESTS, ETC.
 
-# Age 1 kriged biomass -------------
-# Apportion biomass
-ds_kriged_biomass_age1: xr.Dataset = apportion.apportion_kriged_biomass(
-    df_nasc=df_nasc_no_age1_kriged,
-    ds_proportions=ds_proportions,
+df_kriged_abundance_table = apportion.combine_population_tables(
+    population_table=dict_kriged_abundance_table,
+    table_names=["aged", "standardized_unaged"],
+    table_index=["length_bin"],
+    table_columns=["age_bin", "sex"],
 )
 
-# Fill missing length bins of aged fish using length distributions of unaged fish
-ds_kriged_biomass_age1: xr.Dataset = apportion.fill_missing_aged_from_unaged(
-    ds_kriged_apportioned=ds_kriged_biomass_age1,
-    ds_proportions=ds_proportions,
+# !!!###################################################################################################
+# !!!Consolidate the kriged biomass estimates into a single DataFrame table
+# !!!-----------------------------------------------------------------------
+# !!! THIS NEEDS TO BE FULLY IMPLEMENTED WITH TESTS, ETC.
+
+df_kriged_biomass_table = apportion.combine_population_tables(
+    population_table=dict_kriged_biomass_table,
+    table_names=["aged", "standardized_unaged"],
+    table_index=["length_bin"],
+    table_columns=["age_bin", "sex"],
 )
 
-# Back-calculate abundance
-ds_kriged_biomass_age1: xr.Dataset = apportion.back_calculate_kriged_abundance(
-    ds_kriged_apportioned=ds_kriged_biomass_age1,
-    ds_proportions=ds_proportions,
+# !!!###################################################################################################
+# !!!Redistribute the kriged abundance estimates
+# !!!-------------------------------------------
+# !!! THIS NEEDS TO BE FULLY IMPLEMENTED WITH TESTS, ETC.
+
+# Re-allocate the age-1 abundance estimates 
+df_kriged_abundance_table_noage1 = apportion.redistribute_population_table(
+    population_table=df_kriged_abundance_table,
+    exclusion_filter={"age_bin": [1]},
+    group_by=["sex"],
 )
 
+# !!!###################################################################################################
+# !!!Redistribute the kriged biomass estimates
+# !!!-----------------------------------------
+# !!! THIS NEEDS TO BE FULLY IMPLEMENTED WITH TESTS, ETC.
 
-# All age (age 2+) kriged biomass -------------
-# Apportion biomass
-ds_kriged_biomass_all_ages: xr.Dataset = apportion.apportion_kriged_biomass(
-    df_nasc=df_nasc_all_age_kriged,
-    ds_proportions=ds_proportions,
-)
-
-# Fill missing length bins of aged fish using length distributions of unaged fish
-ds_kriged_biomass_all_ages: xr.Dataset = apportion.fill_missing_aged_from_unaged(
-    ds_kriged_apportioned=ds_kriged_biomass_all_ages,
-    ds_proportions=ds_proportions,
-)
-
-# Reallocate age-1 fish to age-2+ fish
-ds_kriged_biomass_all_ages: xr.Dataset = apportion.reallocate_age1(
-    ds_kriged_apportioned=ds_kriged_biomass_all_ages,
-    ds_proportions=ds_proportions,
-)
-
-# Back-calculate abundance
-ds_kriged_biomass_all_ages: xr.Dataset = apportion.back_calculate_kriged_abundance(
-    ds_kriged_apportioned=ds_kriged_biomass_all_ages,
-    ds_proportions=ds_proportions,
-)
-df_nasc_no_age1_kriged = kriging.krige(df_in=df_nasc_no_age1, variables="biomass")
-df_nasc_all_age_kriged = kriging.krige(df_in=df_nasc_all_ages, variables="biomass")
-
-
-# ===========================================
-# Apportion kriged biomass across sex, length bins, and age bins,
-# and from there derive kriged abundance and kriged number density.
-# Reference flow diagram: https://docs.google.com/presentation/d/1FOr2-iMQYj21VzVRDC-YUuqpOP0_urtI/edit?slide=id.p1#slide=id.p1  # noqa
-
-# Age 1 kriged biomass -------------
-# Apportion biomass
-ds_kriged_biomass_age1: xr.Dataset = apportion.apportion_kriged_biomass(
-    df_nasc=df_nasc_no_age1_kriged,
-    ds_proportions=ds_proportions,
-)
-
-# Fill missing length bins of aged fish using length distributions of unaged fish
-ds_kriged_biomass_age1: xr.Dataset = apportion.fill_missing_aged_from_unaged(
-    ds_kriged_apportioned=ds_kriged_biomass_age1,
-    ds_proportions=ds_proportions,
-)
-
-# Back-calculate abundance
-ds_kriged_biomass_age1: xr.Dataset = apportion.back_calculate_kriged_abundance(
-    ds_kriged_apportioned=ds_kriged_biomass_age1,
-    ds_proportions=ds_proportions,
-)
-
-
-# All age (age 2+) kriged biomass -------------
-# Apportion biomass
-ds_kriged_biomass_all_ages: xr.Dataset = apportion.apportion_kriged_biomass(
-    df_nasc=df_nasc_all_age_kriged,
-    ds_proportions=ds_proportions,
-)
-
-# Fill missing length bins of aged fish using length distributions of unaged fish
-ds_kriged_biomass_all_ages: xr.Dataset = apportion.fill_missing_aged_from_unaged(
-    ds_kriged_apportioned=ds_kriged_biomass_all_ages,
-    ds_proportions=ds_proportions,
-)
-
-# Reallocate age-1 fish to age-2+ fish
-ds_kriged_biomass_all_ages: xr.Dataset = apportion.reallocate_age1(
-    ds_kriged_apportioned=ds_kriged_biomass_all_ages,
-    ds_proportions=ds_proportions,
-)
-
-# Back-calculate abundance
-ds_kriged_biomass_all_ages: xr.Dataset = apportion.back_calculate_kriged_abundance(
-    ds_kriged_apportioned=ds_kriged_biomass_all_ages,
-    ds_proportions=ds_proportions,
+# Re-allocate the age-1 abundance estimates 
+df_kriged_biomass_table_noage1 = apportion.redistribute_population_table(
+    population_table=df_kriged_biomass_table,
+    exclusion_filter={"age_bin": [1]},
+    group_by=["sex"],
 )
