@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from echopop.nwfsc_feat import biology
+from echopop.nwfsc_feat import biology, load_data
 
 
 def test_fit_length_weight_regression_basic(length_weight_data):
@@ -577,3 +577,29 @@ def test_set_population_metrics_missing_stratum_column():
     )
 
     assert "abundance" in df.columns
+
+def test_remove_speciman_hauls(biological_data):
+    """
+    Test basic removal of specimen-specific hauls from catch data
+    """
+
+    # Pre-process
+    biodata = {
+        k: v.rename(columns={"haul": "haul_num"})
+        for k, v in biological_data.items()
+    }
+
+    # Swap out haul number 4 from length data
+    biodata["length"].loc[4, "haul_num"] = 3
+
+    # Create a copy for comparison
+    biodata_preremoval = biodata.copy()
+
+    # Apply removal
+    biology.remove_specimen_hauls(biodata)
+
+    # Compare
+    assert len(biodata["catch"]) == 3 and len(biodata["catch"]) < len(biodata_preremoval["catch"])
+    assert len(
+        set(biodata["catch"]["haul_num"].values).difference(biodata["length"]["haul_num"].values)
+    ) == 0
