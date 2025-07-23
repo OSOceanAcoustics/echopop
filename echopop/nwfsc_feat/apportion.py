@@ -120,11 +120,13 @@ def mesh_biomass_to_nasc(
     }
 
     # Get the column names of the biodata
-    biodata_columns = set(
-        col
-        for df in biodata_stk.values()
-        if isinstance(df, pd.DataFrame)
-        for col in df.columns.tolist()
+    biodata_columns = sorted(
+        set(
+            col
+            for df in biodata_stk.values()
+            if isinstance(df, pd.DataFrame)
+            for col in df.columns.tolist()
+        )
     )
     # ---- Fill in if empty
     if len(biodata_columns) == 0:
