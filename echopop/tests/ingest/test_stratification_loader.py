@@ -81,7 +81,7 @@ def test_load_geostrata_latitude_intervals(
 
     for df in result.values():
         assert "latitude_interval" in df.columns
-        assert isinstance(df["latitude_interval"].dtype,  pd.CategoricalDtype)
+        assert isinstance(df["latitude_interval"].dtype, pd.CategoricalDtype)
 
 
 # Join stratification tests
