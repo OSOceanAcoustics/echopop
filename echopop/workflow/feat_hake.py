@@ -1,11 +1,11 @@
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict
 from functools import partial
 
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
-import xarray as xr
+
 import copy
 from lmfit import Parameters
 from echopop import inversion
@@ -27,8 +27,8 @@ from echopop.nwfsc_feat import (
 # ==================================================================================================
 # DEFINE DATA ROOT DIRECTORY
 # --------------------------
-# DATA_ROOT = Path("C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_2019")
-DATA_ROOT = Path("C:/Users/Brandyn Lucca/Documents/Data/echopop_2019")
+DATA_ROOT = Path("C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_2019")
+# DATA_ROOT = Path("C:/Users/Brandyn Lucca/Documents/Data/echopop_2019")
 
 # ==================================================================================================
 # ==================================================================================================
@@ -210,26 +210,11 @@ dict_df_bio = load_data.load_biological_data(
     biodata_label_map=biodata_label_map
 )
 
-# !!! ==================================================================================================
-# !!! Filter the haul data to avoid duplicated weight sums
-# !!! ----------------------------------------------------
-# !!! THIS NEEDS TO BE FULLY IMPLEMENTED WITH TESTS, ETC.
-def remove_specimen_hauls(
-    biodata_dict: Dict[str, pd.DataFrame],
-) -> None:
-    """
-    Remove hauls from the catch data where all of the samples were individually processed
-    """
+# ==================================================================================================
+# Filter the haul data to avoid duplicated weight sums
+# ----------------------------------------------------
 
-    # Get unique haul numbers
-    haul_numbers = biodata_dict["length"]["haul_num"].unique()
-
-    # Find incompatible hauls
-    biodata_dict["catch"] = biodata_dict["catch"].loc[
-        biodata_dict["catch"]["haul_num"].isin(haul_numbers)
-    ]
-
-remove_specimen_hauls(dict_df_bio)
+biology.remove_specimen_hauls(dict_df_bio)
 
 # ==================================================================================================
 # Load in strata files
@@ -762,11 +747,10 @@ df_kriged_results = geo.krige(
     adaptive_search_strategy=boundary_search_strategy,
 )
 
-# !!!###################################################################################################
-# !!!Back-calculate sex-specific biomass and abundance, and total NASC from the kriged biomass 
-# !!!density estimates
-# !!!-----------------
-# !!! THIS NEEDS TO BE FULLY IMPLEMENTED WITH TESTS, ETC.
+# ##################################################################################################
+# Back-calculate sex-specific biomass and abundance, and total NASC from the kriged biomass 
+# density estimates
+# -----------------
 
 apportion.mesh_biomass_to_nasc(
     mesh_data_df=df_kriged_results,
@@ -777,10 +761,9 @@ apportion.mesh_biomass_to_nasc(
     stratum_sigma_bs_df=invert_hake.sigma_bs_strata,    
 )
 
-# !!!###################################################################################################
-# !!!Distribute kriged abundance estimates over length and age/length
-# !!!----------------------------------------------------------------
-# !!! THIS NEEDS TO BE FULLY IMPLEMENTED WITH TESTS, ETC.
+# ##################################################################################################
+# Distribute kriged abundance estimates over length and age/length
+# ----------------------------------------------------------------
 
 dict_kriged_abundance_table = apportion.distribute_kriged_estimates(
     mesh_data_df=df_kriged_results,
@@ -791,10 +774,9 @@ dict_kriged_abundance_table = apportion.distribute_kriged_estimates(
     mesh_proportions_link={"geostratum_ks": "stratum_ks"},
 )
 
-# !!!###################################################################################################
-# !!!Distribute kriged biomass estimates over length and age/length
-# !!!--------------------------------------------------------------
-# !!! THIS NEEDS TO BE FULLY IMPLEMENTED WITH TESTS, ETC.
+# ##################################################################################################
+# Distribute kriged biomass estimates over length and age/length
+# --------------------------------------------------------------
 
 dict_kriged_biomass_table = apportion.distribute_kriged_estimates(
     mesh_data_df=df_kriged_results,
@@ -805,10 +787,9 @@ dict_kriged_biomass_table = apportion.distribute_kriged_estimates(
     mesh_proportions_link={"geostratum_ks": "stratum_ks"},
 )
 
-# !!!###################################################################################################
-# !!!Standardize the unaged abundance estimates to be distributed over age
-# !!!---------------------------------------------------------------------
-# !!! THIS NEEDS TO BE FULLY IMPLEMENTED WITH TESTS, ETC.
+# ##################################################################################################
+# Standardize the unaged abundance estimates to be distributed over age
+# ---------------------------------------------------------------------
 
 dict_kriged_abundance_table["standardized_unaged"] = apportion.standardize_kriged_estimates(
     population_table=dict_kriged_abundance_table["unaged"],
@@ -817,10 +798,10 @@ dict_kriged_abundance_table["standardized_unaged"] = apportion.standardize_krige
     impute=False,    
 )
 
-# !!!###################################################################################################
-# !!!Standardize the unaged abundance estimates to be distributed over age
-# !!!---------------------------------------------------------------------
-# !!! THIS NEEDS TO BE FULLY IMPLEMENTED WITH TESTS, ETC.
+# ##################################################################################################
+# Standardize the unaged abundance estimates to be distributed over age
+# ---------------------------------------------------------------------
+# THIS NEEDS TO BE FULLY IMPLEMENTED WITH TESTS, ETC.
 
 dict_kriged_biomass_table["standardized_unaged"] = apportion.standardize_kriged_estimates(
     population_table=dict_kriged_biomass_table["unaged"],
@@ -830,10 +811,9 @@ dict_kriged_biomass_table["standardized_unaged"] = apportion.standardize_kriged_
     impute_variable=["age_bin"],
 )
 
-# !!!###################################################################################################
-# !!!Consolidate the kriged abundance estimates into a single DataFrame table
-# !!!------------------------------------------------------------------------
-# !!! THIS NEEDS TO BE FULLY IMPLEMENTED WITH TESTS, ETC.
+# ##################################################################################################
+# Consolidate the kriged abundance estimates into a single DataFrame table
+# ------------------------------------------------------------------------
 
 df_kriged_abundance_table = apportion.combine_population_tables(
     population_table=dict_kriged_abundance_table,
@@ -842,10 +822,9 @@ df_kriged_abundance_table = apportion.combine_population_tables(
     table_columns=["age_bin", "sex"],
 )
 
-# !!!###################################################################################################
-# !!!Consolidate the kriged biomass estimates into a single DataFrame table
-# !!!-----------------------------------------------------------------------
-# !!! THIS NEEDS TO BE FULLY IMPLEMENTED WITH TESTS, ETC.
+# ##################################################################################################
+# Consolidate the kriged biomass estimates into a single DataFrame table
+# -----------------------------------------------------------------------
 
 df_kriged_biomass_table = apportion.combine_population_tables(
     population_table=dict_kriged_biomass_table,
@@ -854,10 +833,10 @@ df_kriged_biomass_table = apportion.combine_population_tables(
     table_columns=["age_bin", "sex"],
 )
 
-# !!!###################################################################################################
-# !!!Redistribute the kriged abundance estimates
-# !!!-------------------------------------------
-# !!! THIS NEEDS TO BE FULLY IMPLEMENTED WITH TESTS, ETC.
+# ##################################################################################################
+# Redistribute the kriged abundance estimates
+# -------------------------------------------
+# THIS NEEDS TO BE FULLY IMPLEMENTED WITH TESTS, ETC.
 
 # Re-allocate the age-1 abundance estimates 
 df_kriged_abundance_table_noage1 = apportion.redistribute_population_table(
@@ -866,10 +845,9 @@ df_kriged_abundance_table_noage1 = apportion.redistribute_population_table(
     group_by=["sex"],
 )
 
-# !!!###################################################################################################
-# !!!Redistribute the kriged biomass estimates
-# !!!-----------------------------------------
-# !!! THIS NEEDS TO BE FULLY IMPLEMENTED WITH TESTS, ETC.
+# ##################################################################################################
+# Redistribute the kriged biomass estimates
+# -----------------------------------------
 
 # Re-allocate the age-1 abundance estimates 
 df_kriged_biomass_table_noage1 = apportion.redistribute_population_table(

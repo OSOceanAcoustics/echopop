@@ -303,21 +303,22 @@ def set_population_metrics(
     if reset_index_needed:
         df_nasc.reset_index(inplace=True)
 
+
 def remove_specimen_hauls(
     biodata_dict: Dict[str, pd.DataFrame],
 ) -> None:
     """
     Remove hauls from the catch data where all samples were individually processed.
 
-    This function filters the catch data to exclude hauls that don't have corresponding length 
-    frequency data, ensuring consistency between catch weights and length samples. This prevents 
+    This function filters the catch data to exclude hauls that don't have corresponding length
+    frequency data, ensuring consistency between catch weights and length samples. This prevents
     double-counting when specimen data represents the entire catch.
 
     Parameters
     ----------
     biodata_dict : Dict[str, pd.DataFrame]
         Dictionary containing biological data with keys typically including 'catch' and 'length'.
-        The 'length' DataFrame should contain a 'haul_num' column identifying which hauls have 
+        The 'length' DataFrame should contain a 'haul_num' column identifying which hauls have
         length frequency data. The 'catch' DataFrame will be filtered to match.
 
     Returns
