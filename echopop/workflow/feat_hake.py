@@ -1,44 +1,59 @@
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict
+from functools import partial
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
-import xarray as xr
 
-from echopop.inversion import InversionLengthTS
-from echopop.kriging import Kriging
-from echopop.nwfsc_feat import apportion, get_proportions, ingest_nasc, load_data
+import copy
+from lmfit import Parameters
+from echopop import inversion
+from echopop.nwfsc_feat.geostatistics import Geostats
+from echopop.nwfsc_feat import (
+    apportion,
+    biology, 
+    FEAT,
+    ingest_nasc, 
+    get_proportions, 
+    load_data, 
+    mesh,
+    spatial,
+    transect, 
+    utils
+)
 
 # ==================================================================================================
+# ==================================================================================================
+# DEFINE DATA ROOT DIRECTORY
+# --------------------------
+DATA_ROOT = Path("C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_2019")
+# DATA_ROOT = Path("C:/Users/Brandyn Lucca/Documents/Data/echopop_2019")
+
+# ==================================================================================================
+# ==================================================================================================
+# DATA INGESTION
 # ==================================================================================================
 # Organize NASC file
 # ------------------
-nasc_path: Path = Path("C:/Users/Brandyn/Documents/GitHub/Data/raw_nasc/")
-filename_transect_pattern: str = r"T(\d+)"
-default_transect_spacing: float = 10.0  # nmi
-default_transect_spacing_latitude: float = 60.0  # deg N
 
 # Merge exports
 df_intervals, df_exports = ingest_nasc.merge_echoview_nasc(
-    nasc_path,
-    filename_transect_pattern,
-    default_transect_spacing,
-    default_transect_spacing_latitude,
+    nasc_path = DATA_ROOT / "raw_nasc/",
+    filename_transect_pattern = r"T(\d+)",
+    default_transect_spacing = 10.0,
+    default_latitude_threshold = 60.0,
 )
 
 # ==================================================================================================
 # Read in transect-region-haul keys
 # ---------------------------------
-transect_region_filepath_all_ages: Path = Path(
-    "C:/Users/Brandyn/Documents/GitHub/Data/Stratification/"
-    "US_CAN_2019_transect_region_haul_age1+ auto_final.xlsx"
+transect_region_filepath_all_ages = (
+    DATA_ROOT / "Stratification/US_CAN_2019_transect_region_haul_age1+ auto_final.xlsx"
 )
-transect_region_sheetname_all_ages: str = "Sheet1"
-transect_region_filepath_no_age1: Path = Path(
-    "C:/Users/Brandyn/Documents/GitHub/Data/Stratification/"
-    "US_CAN_2019_transect_region_haul_age2+ auto_20191205.xlsx"
+transect_region_filepath_no_age1 = (
+    DATA_ROOT / "Stratification/US_CAN_2019_transect_region_haul_age2+ auto_20191205.xlsx"
 )
-transect_region_sheetname_no_age1: str = "Sheet1"
 transect_region_file_rename: dict = {
     "tranect": "transect_num",
     "region id": "region_id",
@@ -47,19 +62,20 @@ transect_region_file_rename: dict = {
 
 # Read in the transect-region-haul key files for each group
 transect_region_haul_key_all_ages: pd.DataFrame = ingest_nasc.read_transect_region_haul_key(
-    transect_region_filepath_all_ages,
-    transect_region_sheetname_all_ages,
-    transect_region_file_rename,
+    filename=transect_region_filepath_all_ages,
+    sheetname="Sheet1",
+    rename_dict=transect_region_file_rename,
 )
 
 transect_region_haul_key_no_age1: pd.DataFrame = ingest_nasc.read_transect_region_haul_key(
-    transect_region_filepath_no_age1, transect_region_sheetname_no_age1, transect_region_file_rename
+    filename=transect_region_filepath_no_age1,
+    sheetname="Sheet1", 
+    rename_dict=transect_region_file_rename,
 )
 
 # ==================================================================================================
 # Read in transect-region-haul keys
 # ---------------------------------
-CAN_haul_offset: float = 200
 region_name_expr_dict: Dict[str, dict] = {
     "REGION_CLASS": {
         "Age-1 Hake": "^(?:h1a(?![a-z]|m))",
@@ -81,22 +97,22 @@ region_name_expr_dict: Dict[str, dict] = {
 df_exports_with_regions: pd.DataFrame = ingest_nasc.process_region_names(
     df_exports,
     region_name_expr_dict,
-    CAN_haul_offset,
+    can_haul_offset = 200,
 )
 
 # ==================================================================================================
 # [OPTIONAL] Generate transect-region-haul key from compiled values
 # ---------------------------------
-region_list_no_age1: List[str] = ["Hake", "Hake Mix"]
-region_list_all_ages: List[str] = ["Age-1 Hake", "Age-1", "Hake", "Hake Mix"]
 
 # Generate transect-region-haul key from compiled values
 df_transect_region_haul_key_no_age1: pd.DataFrame = ingest_nasc.generate_transect_region_haul_key(
-    df_exports_with_regions, filter_list=region_list_no_age1
+    df=df_exports_with_regions, 
+    filter_list=["Hake", "Hake Mix"]
 )
 
 df_transect_region_haul_key_all_ages = ingest_nasc.generate_transect_region_haul_key(
-    df_exports_with_regions, filter_list=region_list_all_ages
+    df=df_exports_with_regions, 
+    filter_list=["Age-1 Hake", "Age-1", "Hake", "Hake Mix"]
 )
 
 # ==================================================================================================
@@ -105,7 +121,7 @@ df_transect_region_haul_key_all_ages = ingest_nasc.generate_transect_region_haul
 df_nasc_no_age1: pd.DataFrame = ingest_nasc.consolidate_echvoiew_nasc(
     df_merged=df_exports_with_regions,
     interval_df=df_intervals,
-    region_class_names=region_list_no_age1,
+    region_class_names=["Hake", "Hake Mix"],
     impute_region_ids=True,
     transect_region_haul_key_df=transect_region_haul_key_no_age1,
 )
@@ -113,7 +129,7 @@ df_nasc_no_age1: pd.DataFrame = ingest_nasc.consolidate_echvoiew_nasc(
 df_nasc_all_ages: pd.DataFrame = ingest_nasc.consolidate_echvoiew_nasc(
     df_merged=df_exports_with_regions,
     interval_df=df_intervals,
-    region_class_names=region_list_all_ages,
+    region_class_names=["Age-1 Hake", "Age-1", "Hake", "Hake Mix"],
     impute_region_ids=True,
     transect_region_haul_key_df=transect_region_haul_key_all_ages,
 )
@@ -121,10 +137,6 @@ df_nasc_all_ages: pd.DataFrame = ingest_nasc.consolidate_echvoiew_nasc(
 # ==================================================================================================
 # [OPTIONAL] Read in a pre-consolidated NASC data file
 # ----------------------------------------------------
-nasc_filename: Path = Path(
-    "C:/Users/Brandyn/Documents/GitHub/Data/Exports/US_CAN_NASC_2019_table_all_ages.xlsx"
-)
-nasc_sheet: str = "Sheet1"
 FEAT_TO_ECHOPOP_COLUMNS: Dict[str, str] = {
     "transect": "transect_num",
     "region id": "region_id",
@@ -139,32 +151,26 @@ FEAT_TO_ECHOPOP_COLUMNS: Dict[str, str] = {
 
 #
 df_nasc_all_ages: pd.DataFrame = ingest_nasc.read_nasc_file(
-    filename=nasc_filename, sheetname=nasc_sheet, column_name_map=FEAT_TO_ECHOPOP_COLUMNS
+    filename=DATA_ROOT / "Exports/US_CAN_NASC_2019_table_all_ages.xlsx",
+    sheetname="Sheet1",
+    column_name_map=FEAT_TO_ECHOPOP_COLUMNS,
 )
 
 # ==================================================================================================
 # [OPTIONAL] Filter the transect intervals to account for on- and off-effort
 # --------------------------------------------------------------------------
-transect_filter_filename: Path = Path("Path/to/file")
-# ---- Note: this is only applicable to survey years 2012 and earlier, but this sort of file could
-# ---- be generated for any year
-transect_filter_sheet: str = "Sheet1"
-subset_filter: str = "survey == 201003"
 
-# Outputs:
-# ---- DataFrame with filtered intervals representing on-effort
+# DataFrame with filtered intervals representing on-effort
 df_nasc_all_ages_cleaned: pd.DataFrame = ingest_nasc.filter_transect_intervals(
     nasc_df=df_nasc_all_ages,
-    transect_filter_df=transect_filter_filename,
-    subset_filter=subset_filter,
-    transect_filter_sheet=transect_filter_sheet,
+    transect_filter_df=Path("Path/to/file"),
+    subset_filter="survey == 201003",
+    transect_filter_sheet="Sheet1",
 )
 
 # ==================================================================================================
 # Load in the biolodical data
 # ---------------------------
-ROOT_PATH: Path = Path("C:/Users/Brandyn/Documents/GitHub/Data")
-biodata_filepath: Path = ROOT_PATH / "Biological/1995-2023_biodata_redo.xlsx"
 biodata_sheet_map: Dict[str, str] = {
     "catch": "biodata_catch", 
     "length": "biodata_length",
@@ -185,7 +191,7 @@ subset_dict: Dict[Any, Any] = {
 FEAT_TO_ECHOPOP_BIODATA_COLUMNS = {
     "frequency": "length_count",
     "haul": "haul_num",
-    "weight_in_haul": "haul_weight",
+    "weight_in_haul": "weight",
 }
 biodata_label_map: Dict[Any, Dict] = {
     "sex": {
@@ -196,16 +202,23 @@ biodata_label_map: Dict[Any, Dict] = {
 }
 
 # 
-dict_df_bio = load_data.load_biological_data(biodata_filepath, 
-                                             biodata_sheet_map, 
-                                             FEAT_TO_ECHOPOP_BIODATA_COLUMNS, 
-                                             subset_dict, 
-                                             biodata_label_map)
+dict_df_bio = load_data.load_biological_data(
+    biodata_filepath=DATA_ROOT / "Biological/1995-2023_biodata_redo.xlsx", 
+    biodata_sheet_map=biodata_sheet_map, 
+    column_name_map=FEAT_TO_ECHOPOP_BIODATA_COLUMNS, 
+    subset_dict=subset_dict, 
+    biodata_label_map=biodata_label_map
+)
+
+# ==================================================================================================
+# Filter the haul data to avoid duplicated weight sums
+# ----------------------------------------------------
+
+biology.remove_specimen_hauls(dict_df_bio)
 
 # ==================================================================================================
 # Load in strata files
 # --------------------
-strata_filepath = ROOT_PATH / "Stratification/US_CAN strata 2019_final.xlsx"
 strata_sheet_map = {
     "inpfc": "INPFC",
     "ks": "Base KS",
@@ -217,14 +230,15 @@ FEAT_TO_ECHOPOP_STRATA_COLUMNS = {
 }
 
 #
-df_dict_strata = load_data.load_strata(strata_filepath, 
-                                       strata_sheet_map, 
-                                       FEAT_TO_ECHOPOP_STRATA_COLUMNS)
+df_dict_strata = load_data.load_strata(
+    strata_filepath=DATA_ROOT / "Stratification/US_CAN strata 2019_final.xlsx", 
+    strata_sheet_map=strata_sheet_map, 
+    column_name_map=FEAT_TO_ECHOPOP_STRATA_COLUMNS
+)
 
 # ==================================================================================================
 # Load in geographical strata files
 # ---------------------------------
-geostrata_filepath = ROOT_PATH / "Stratification/Stratification_geographic_Lat_2019_final.xlsx"
 geostrata_sheet_map = {
     "inpfc": "INPFC",
     "ks": "stratification1",
@@ -235,9 +249,11 @@ FEAT_TO_ECHOPOP_GEOSTRATA_COLUMNS = {
 }
 
 # 
-df_dict_geostrata = load_data.load_geostrata(geostrata_filepath, 
-                                             geostrata_sheet_map, 
-                                             FEAT_TO_ECHOPOP_GEOSTRATA_COLUMNS)
+df_dict_geostrata = load_data.load_geostrata(
+    geostrata_filepath=DATA_ROOT / "Stratification/Stratification_geographic_Lat_2019_final.xlsx", 
+    geostrata_sheet_map=geostrata_sheet_map, 
+    column_name_map=FEAT_TO_ECHOPOP_GEOSTRATA_COLUMNS
+)
 
 # ==================================================================================================
 # Stratify data based on haul numbers
@@ -245,8 +261,8 @@ df_dict_geostrata = load_data.load_geostrata(geostrata_filepath,
 
 # Add INPFC
 # ---- NASC
-df_nasc_all_ages = load_data.join_strata_by_haul(df_nasc_all_ages, 
-                                                 df_dict_strata["inpfc"],
+df_nasc_all_ages = load_data.join_strata_by_haul(data=df_nasc_all_ages, 
+                                                 strata_df=df_dict_strata["inpfc"],
                                                  stratum_name="stratum_inpfc") 
 # ---- Biodata
 dict_df_bio = load_data.join_strata_by_haul(dict_df_bio,
@@ -258,6 +274,9 @@ dict_df_bio = load_data.join_strata_by_haul(dict_df_bio,
 df_nasc_all_ages = load_data.join_strata_by_haul(df_nasc_all_ages, 
                                                  df_dict_strata["ks"],
                                                  stratum_name="stratum_ks") 
+df_nasc_no_age1 = load_data.join_strata_by_haul(df_nasc_no_age1, 
+                                                df_dict_strata["ks"],
+                                                stratum_name="stratum_ks") 
 # ---- Biodata
 dict_df_bio = load_data.join_strata_by_haul(dict_df_bio,
                                             df_dict_strata["ks"],
@@ -266,8 +285,7 @@ dict_df_bio = load_data.join_strata_by_haul(dict_df_bio,
 # ==================================================================================================
 # Load kriging mesh file
 # ----------------------
-mesh_filepath = ROOT_PATH / "Kriging_files/Kriging_grid_files/krig_grid2_5nm_cut_centroids_2013.xlsx"
-mesh_sheet_name = "krigedgrid2_5nm_forChu"
+
 FEAT_TO_ECHOPOP_MESH_COLUMNS = {
     "centroid_latitude": "latitude",
     "centroid_longitude": "longitude",
@@ -275,7 +293,11 @@ FEAT_TO_ECHOPOP_MESH_COLUMNS = {
 }
 
 # 
-df_mesh = load_data.load_mesh_data(mesh_filepath, mesh_sheet_name, FEAT_TO_ECHOPOP_MESH_COLUMNS)
+df_mesh = load_data.load_mesh_data(
+    mesh_filepath=DATA_ROOT / "Kriging_files/Kriging_grid_files/krig_grid2_5nm_cut_centroids_2013.xlsx", 
+    sheet_name="krigedgrid2_5nm_forChu", 
+    column_name_map=FEAT_TO_ECHOPOP_MESH_COLUMNS
+)
 
 # ==================================================================================================
 # [OPTIONAL] Stratify data based on latitude intervals
@@ -303,8 +325,7 @@ df_mesh = load_data.join_geostrata_by_latitude(df_mesh,
 # ==================================================================================================
 # Load kriging and variogram parameters
 # -------------------------------------
-geostatistic_params_filepath = ROOT_PATH / "Kriging_files/default_vario_krig_settings_2019_US_CAN.xlsx"
-geostatistic_params_sheet_name = "Sheet1"
+
 FEAT_TO_ECHOPOP_GEOSTATS_PARAMS_COLUMNS = {
     "hole": "hole_effect_range",
     "lscl": "correlation_range",
@@ -314,209 +335,523 @@ FEAT_TO_ECHOPOP_GEOSTATS_PARAMS_COLUMNS = {
     "res": "lag_resolution",
     "srad": "search_radius",
 }
-column_name_map = FEAT_TO_ECHOPOP_GEOSTATS_PARAMS_COLUMNS
 
-# Outputs:
-# ---- Dictionaries comprising kriging and variogram model parameterization
-kriging_params_dict, variogram_params_dict = load_data.load_kriging_variogram_params(
-    geostatistic_params_filepath,
-    geostatistic_params_sheet_name,
-    FEAT_TO_ECHOPOP_GEOSTATS_PARAMS_COLUMNS
+# 
+dict_kriging_params, dict_variogram_params = load_data.load_kriging_variogram_params(
+    geostatistic_params_filepath=(
+        DATA_ROOT / "Kriging_files/default_vario_krig_settings_2019_US_CAN.xlsx"
+    ),
+    sheet_name="Sheet1",
+    column_name_map=FEAT_TO_ECHOPOP_GEOSTATS_PARAMS_COLUMNS
 )
 
-# ===========================================
-# Compute biological composition based on stratum
-length_bins: np.array  # length bin specification
-df_length_weight, df_regression = get_proportions.length_weight_regression(
-    dict_df_bio["specimen"], length_bins
-)
-# df_regression seems unused afterwards -- good as a record?
+# ==================================================================================================
+# ==================================================================================================
+# DATA PROCESSING
+# ==================================================================================================
+# Generate binned distributions [age, length]
+# -------------------------------------------
+age_bins: npt.NDArray[np.number] = np.linspace(start=1., stop=22., num=22)
+length_bins: npt.NDArray[np.number] = np.linspace(start=2., stop=80., num=40)
 
-# Get counts ----------------
-df_aged_counts = get_proportions.fish_count(  # previously "aged_number_distribution"
-    df_specimen=dict_df_bio["specimen"],
-    df_length=dict_df_bio["length"],
-    aged=True,
-    sexed=True,
-)
-df_unaged_counts = get_proportions.fish_count(  # previously "unaged_number_distribution"
-    df_specimen=dict_df_bio["specimen"],
-    df_length=dict_df_bio["length"],
-    aged=False,
-    sexed=True,
-)
-# Previously there was also "aged_number_distribution_filtered"
-# but it is simply df_aged_counts with unsexed fish removed,
-# I think it is better to have that explicitly in the code,
-# so removed OUTSIDE of the get_fish_count function
-
-
-# Get number proportions ----------------
-
-# in the output dataframes: *_overall = *_aged + *_unaged
-# only handle 1 species at a time
-dict_df_number_proportion: Dict[pd.DataFrame] = get_proportions.number_proportions(
-    df_aged_counts,
-    df_unaged_counts,
+# 
+# ---- Length
+utils.binify(
+    data=dict_df_bio, bins=length_bins, bin_column="length", 
 )
 
-
-# Get weight proportions ----------------
-dict_df_weight_distr: Dict[pd.DataFrame]
-
-# aged fish - weight distribution over sex/length/age
-dict_df_weight_distr["aged"] = get_proportions.weight_distributions_over_lenghth_age(
-    df_specimen=dict_df_bio["specimen"],
-    df_length=dict_df_bio["length"],
-    df_length_weight=df_length_weight,
-    aged=True,
+# Age
+utils.binify(
+    data=dict_df_bio, bins=age_bins, bin_column="age",
 )
 
-# unaged fish - weight distribution over sex/length
-dict_df_weight_distr["unaged"] = get_proportions.weight_distributions_over_lenghth_age(
-    df_specimen=dict_df_bio["specimen"],
-    df_length=dict_df_bio["length"],
-    df_length_weight=df_length_weight,
-    aged=False,
+# ==================================================================================================
+# Fit length-weight regression to the binned data
+# -----------------------------------------------
+
+# Dictionary for length-weight regression coefficients
+dict_length_weight_coefs = {}
+
+# For all fish
+dict_length_weight_coefs["all"] = dict_df_bio["specimen"].assign(sex="all").groupby(["sex"]).apply(
+    biology.fit_length_weight_regression,
+    include_groups=False
 )
 
-# Get averaged weight for all sex, male, female for all strata
+# Sex-specific
+dict_length_weight_coefs["sex"] = dict_df_bio["specimen"].groupby(["sex"]).apply(
+    biology.fit_length_weight_regression,
+    include_groups=False
+)
+
+# ==================================================================================================
+# Compute the mean weights per length bin
+# ---------------------------------------
+
+# Sex-specific (grouped coefficients)
+df_binned_weights_sex = biology.length_binned_weights(
+    data=dict_df_bio["specimen"],
+    length_bins=length_bins,
+    regression_coefficients=dict_length_weight_coefs["sex"],
+    impute_bins=True,
+    minimum_count_threshold=5
+)
+
+# All fish (single coefficient set)
+df_binned_weights_all = biology.length_binned_weights(
+    data=dict_df_bio["specimen"].assign(sex="all"),
+    length_bins=length_bins,
+    regression_coefficients=dict_length_weight_coefs["all"],
+    impute_bins=True,
+    minimum_count_threshold=5,
+)
+
+# Combine the pivot tables by adding the "all" column to the sex-specific table
+binned_weight_table = pd.concat([df_binned_weights_sex, df_binned_weights_all], axis=1)
+
+# ==================================================================================================
+# Compute the count distributions per age- and length-bins
+# --------------------------------------------------------
+
+# Dictionary for number counts
+dict_df_counts = {}
+
+# Aged
+dict_df_counts["aged"] = get_proportions.compute_binned_counts(
+    data=dict_df_bio["specimen"].dropna(subset=["age", "length", "weight"]), 
+    groupby_cols=["stratum_ks", "length_bin", "age_bin", "sex"], 
+    count_col="length",
+    agg_func="size"
+)
+
+# Unaged
+dict_df_counts["unaged"] = get_proportions.compute_binned_counts(
+    data=dict_df_bio["length"].copy().dropna(subset=["length"]), 
+    groupby_cols=["stratum_ks", "length_bin", "sex"], 
+    count_col="length_count",
+    agg_func="sum"
+)
+
+# ==================================================================================================
+# Compute the number proportions
+# ------------------------------
+dict_df_number_proportion: Dict[str, pd.DataFrame] = get_proportions.number_proportions(
+    data=dict_df_counts, 
+    group_columns=["stratum_ks"],
+    column_aliases=["aged", "unaged"],
+    exclude_filters=[{"sex": "unsexed"}, None] 
+)
+
+# ==================================================================================================
+# Distribute (bin) weight over age, length, and sex
+# -------------------------------------------------
+# Pre-allocate a dictionary
+dict_df_weight_distr: Dict[str, Any] = {}
+
+# Aged
+dict_df_weight_distr["aged"] = get_proportions.binned_weights(
+    length_dataset=dict_df_bio["specimen"],
+    include_filter = {"sex": ["female", "male"]},
+    interpolate=False,
+    contrast_vars="sex",
+    table_cols=["stratum_ks", "sex", "age_bin"]
+)
+
+# Unaged
+dict_df_weight_distr["unaged"] = get_proportions.binned_weights(
+    length_dataset=dict_df_bio["length"],
+    length_weight_dataset=binned_weight_table,
+    include_filter = {"sex": ["female", "male"]},
+    interpolate=True,
+    contrast_vars="sex",
+    table_cols=["stratum_ks", "sex"]
+)
+
+# ==================================================================================================
+# Calculate the average weights pre stratum when combining different datasets
+# ---------------------------------------------------------------------------
 df_averaged_weight = get_proportions.stratum_averaged_weight(
-    df_length_weight=df_length_weight,
-    dict_df_bio=dict_df_bio,  # use "specimen" and "length"
+    proportions_dict=dict_df_number_proportion, 
+    binned_weight_table=binned_weight_table,
+    stratum_col="stratum_ks",
 )
 
-# Get weight proportion for all sex, male, female for all strata
-dict_df_weight_proportion: Dict[pd.DataFrame] = get_proportions.weight_proportions(
-    df_catch=dict_df_bio["catch"],
-    dict_df_weight_proportion=dict_df_weight_distr,  # weight proportions
-    df_length_weight=df_length_weight,  # length-weight regression
+# ==================================================================================================
+# Compute the length-binned weight proportions for aged fish
+# ----------------------------------------------------------
+
+# Initialize Dictionary container
+dict_df_weight_proportion: Dict[str, Any] = {}
+
+# Aged
+dict_df_weight_proportion["aged"] = get_proportions.weight_proportions(
+    weight_data=dict_df_weight_distr, 
+    catch_data=dict_df_bio["catch"], 
+    group="aged",
+    stratum_col="stratum_ks"
 )
 
-# Assemble an xr.Dataset of number and weight proportions
-# I (WJ) think what you have in `distribute_length_age` is essentially this step
-# This is a temporary step to convert the dataframes to xarray
-# NOTE: This is a temporary step to convert the dataframes to xarray.
-#       This can be removed once the following functions are implemented
-#       to use xarray Dataset/DataArray as input/output directly:
-#       -- get_proportions.number_proportions()
-#       -- get_proportions.weight_distributions_over_lenghth_age()
-#       -- get_proportions.stratum_averaged_weight()
-#       -- get_proportions.weight_proportions()
-ds_proportions: xr.Dataset = get_proportions.assemble_proportions(
-    dict_df_number_proportion=dict_df_number_proportion,
-    dict_df_weight_proportion=dict_df_weight_proportion,
+# ==================================================================================================
+# Compute the standardized haul weights for unaged fish
+# -----------------------------------------------------
+
+standardized_sexed_unaged_weights_df = get_proportions.standardize_weights_by_stratum(
+    weights_df=dict_df_weight_distr["unaged"], 
+    reference_weights_df=dict_df_bio["catch"].groupby(["stratum_ks"])["weight"].sum(),
+    stratum_col="stratum_ks",
 )
 
+# ==================================================================================================
+# Compute the standardized weight proportionsfor unaged fish
+# ----------------------------------------------------------
 
-# ===========================================
-# NASC to number density and biomass
+dict_df_weight_proportion["unaged"] = get_proportions.standardize_weight_proportions(
+    weight_data=standardized_sexed_unaged_weights_df, 
+    reference_weight_proportions=dict_df_weight_proportion["aged"], 
+    catch_data=dict_df_bio["catch"], 
+    number_proportions=dict_df_number_proportion,
+    binned_weights=binned_weight_table["all"],
+    group="unaged",
+    group_columns = ["sex"],
+    stratum_col = "stratum_ks"
+)
+
+# ==================================================================================================
+# ==================================================================================================
+# NASC TO POPULATION ESTIMATE CONVERSION
+# ==================================================================================================
+# Initialize the Inversion class
+# ------------------------------
+model_parameters = {
+    "ts_length_regression": {
+        "slope": 20.,
+        "intercept": -68.
+    },
+    "stratify_by": "stratum_ks",
+    "strata": df_dict_strata["ks"].stratum_num.unique(),
+    "impute_missing_strata": True,
+}
 
 # Initiate object to perform inversion
-# inversion parameters are stored as object attributes
-invert_hake = InversionLengthTS(df_model_params=dict_df_bio["model_params"])
+invert_hake = inversion.InversionLengthTS(model_parameters)
 
-# Perform inversion using the supplied df_length
-# df_length will be used to compute the mean sigma_bs for each stratum,
-# which is then used in .invert() to compute number density on a stratum-by-stratum basis
-df_nasc_no_age1 = invert_hake.invert(df_nasc=df_nasc_no_age1, df_length=dict_df_bio["length"])
-df_nasc_all_ages = invert_hake.invert(df_nasc=df_nasc_all_ages, df_length=dict_df_bio["length"])
+# ==================================================================================================
+# [OPTIONAL] Compute the mean `sigma_bs` per haul
+# -----------------------------------------------
 
+# This step is used in EchoPro
+# Otherwise, the mean `sigma_bs` can be computed directly from the data (as shown below), although 
+# computing the mean average sigma_bs per haul better accounts for pseudoreplication 
+invert_hake.set_haul_sigma_bs(df_length=[dict_df_bio["length"], dict_df_bio["specimen"]])
+# ---- This DataFrame can be inspected at:
+invert_hake.sigma_bs_haul
 
-# Apportion abundance and biomass for transect intervals
-# TODO: these apportioned transect results are not used in kriging, is this correct?
-ds_nasc_no_age1_apportioned: xr.Dataset = apportion.apportion_transect_biomass_abundance(
-    df_nasc=df_nasc_no_age1,
-    ds_proportions=ds_proportions,
+# ==================================================================================================
+# Invert number density
+# ---------------------
+
+# If the above haul-averaged `sigma_bs` values were calculated, then the inversion can can 
+# completed without calling in additional biodata
+df_nasc_all_ages = invert_hake.invert(df_nasc=df_nasc_all_ages)
+df_nasc_no_age1 = invert_hake.invert(df_nasc=df_nasc_no_age1)
+# ---- The average `sigma_bs` for each stratum can be inspected at:
+invert_hake.sigma_bs_strata
+
+# ==================================================================================================
+# Set transect interval distances
+# -------------------------------
+
+# Calculate along-transect interval distances which is required for getting the area-per-interval 
+# and therefore going from number density to abundance
+transect.set_interval_distance(df_nasc=df_nasc_all_ages, interval_threshold=0.05)
+transect.set_interval_distance(df_nasc=df_nasc_no_age1, interval_threshold=0.05)
+
+# ==================================================================================================
+# Calculate transect interval areas
+# ---------------------------------
+df_nasc_all_ages["area_interval"] = (
+    df_nasc_all_ages["transect_spacing"] * df_nasc_all_ages["distance_interval"]
 )
-ds_nasc_all_age_apportioned: xr.Dataset = apportion.apportion_transect_biomass_abundance(
-    df_nasc=df_nasc_all_ages,
-    ds_proportions=ds_proportions,
-)
-
-
-# ===========================================
-# Perform kriging using class Kriging
-# put back FEAT-specific kriging files
-
-# Load kriging-related params
-kriging_const: dict  # from initalization_config.yaml:
-# A0, longitude_reference, longitude/latitude_offset
-kriging_path_dict: dict  # the "kriging" section of year_config.yml
-# combined with the "kriging" section of init_config.yml
-kriging_param_dict, variogram_param_dict = load_data.load_kriging_variogram_params(
-    root_path=root_path,
-    file_path_dict=kriging_path_dict,
-    kriging_const=kriging_const,
-)
-
-kriging = Kriging(
-    kriging_param_dict=kriging_param_dict,
-    variogram_param_dict=variogram_param_dict,
-    mesh_template="PATH_TO_MESH_TEMPLATE",
-    isobath_template="PATH_TO_ISOBATH_REFERENCE",
-)
-
-# Create kriging mesh including cropping based on transects
-# Created mesh is stored in kriging.df_mesh
-kriging.create_mesh()
-
-# Perform coordinate transformation based on isobath if needed
-# This adds columns x/y to kriging.df_mesh
-kriging.latlon_to_xy()
-
-# Perform kriging
-# This adds kriging result columns to df_in
-df_nasc_no_age1_kriged = kriging.krige(df_in=df_nasc_no_age1, variables="biomass")
-df_nasc_all_age_kriged = kriging.krige(df_in=df_nasc_all_ages, variables="biomass")
-
-
-# ===========================================
-# Apportion kriged biomass across sex, length bins, and age bins,
-# and from there derive kriged abundance and kriged number density.
-# Reference flow diagram: https://docs.google.com/presentation/d/1FOr2-iMQYj21VzVRDC-YUuqpOP0_urtI/edit?slide=id.p1#slide=id.p1  # noqa
-
-# Age 1 kriged biomass -------------
-# Apportion biomass
-ds_kriged_biomass_age1: xr.Dataset = apportion.apportion_kriged_biomass(
-    df_nasc=df_nasc_no_age1_kriged,
-    ds_proportions=ds_proportions,
+df_nasc_no_age1["area_interval"] = (
+    df_nasc_no_age1["transect_spacing"] * df_nasc_no_age1["distance_interval"]
 )
 
-# Fill missing length bins of aged fish using length distributions of unaged fish
-ds_kriged_biomass_age1: xr.Dataset = apportion.fill_missing_aged_from_unaged(
-    ds_kriged_apportioned=ds_kriged_biomass_age1,
-    ds_proportions=ds_proportions,
+# ==================================================================================================
+# Calculate remaining population metrics across all animals 
+# ---------------------------------------------------------
+biology.set_population_metrics(df_nasc=df_nasc_all_ages, 
+                               metrics=["abundance", "biomass", "biomass_density"],
+                               stratify_by="stratum_ks",
+                               df_average_weight=df_averaged_weight["all"])
+
+biology.set_population_metrics(df_nasc=df_nasc_no_age1, 
+                               metrics=["abundance", "biomass", "biomass_density"],
+                               stratify_by="stratum_ks",
+                               df_average_weight=df_averaged_weight["all"])
+
+# ==================================================================================================
+# Get proportions for each stratum specific to age-1
+# --------------------------------------------------
+
+# Age-1 NASC proportions
+age1_nasc_proportions = get_proportions.get_nasc_proportions_slice(
+    number_proportions=dict_df_number_proportion["aged"],
+    stratify_by=["stratum_ks"],
+    ts_length_regression_parameters={"slope": 20., 
+                                     "intercept": -68.},
+    include_filter = {"age_bin": [1]}
 )
 
-# Back-calculate abundance
-ds_kriged_biomass_age1: xr.Dataset = apportion.back_calculate_kriged_abundance(
-    ds_kriged_apportioned=ds_kriged_biomass_age1,
-    ds_proportions=ds_proportions,
+# Age-1 number proportions
+age1_number_proportions = get_proportions.get_number_proportions_slice(
+    number_proportions=dict_df_number_proportion["aged"],
+    stratify_by=["stratum_ks"],
+    include_filter = {"age_bin": [1]}
 )
 
-
-# All age (age 2+) kriged biomass -------------
-# Apportion biomass
-ds_kriged_biomass_all_ages: xr.Dataset = apportion.apportion_kriged_biomass(
-    df_nasc=df_nasc_all_age_kriged,
-    ds_proportions=ds_proportions,
+# Age-1 weight proportions
+age1_weight_proportions = get_proportions.get_weight_proportions_slice(
+    weight_proportions=dict_df_weight_proportion["aged"],
+    stratify_by=["stratum_ks"],
+    include_filter={"age_bin": [1]},
+    number_proportions=dict_df_number_proportion,
+    length_threshold_min=10.0,
+    weight_proportion_threshold=1e-10
 )
 
-# Fill missing length bins of aged fish using length distributions of unaged fish
-ds_kriged_biomass_all_ages: xr.Dataset = apportion.fill_missing_aged_from_unaged(
-    ds_kriged_apportioned=ds_kriged_biomass_all_ages,
-    ds_proportions=ds_proportions,
+# ==================================================================================================
+# ==================================================================================================
+# GEOSTATISTICS
+# ==================================================================================================
+# Load reference line (isobath)
+# -----------------------------
+
+df_isobath = load_data.load_isobath_data(
+    isobath_filepath=DATA_ROOT / "Kriging_files/Kriging_grid_files/transformation_isobath_coordinates.xlsx", 
+    sheet_name="Smoothing_EasyKrig", 
 )
 
-# Reallocate age-1 fish to age-2+ fish
-ds_kriged_biomass_all_ages: xr.Dataset = apportion.reallocate_age1(
-    ds_kriged_apportioned=ds_kriged_biomass_all_ages,
-    ds_proportions=ds_proportions,
+# ==================================================================================================
+# Initialize geostatistics class
+# ------------------------------
+
+# Define the requisite kriging parameters
+kriging_parameters = {
+    "search_radius": 0.021,
+    "anisotropy": 0.001,
+    "k_min": 3,
+    "k_max": 10,
+}  
+
+# Define the requisite variogram parameters
+variogram_parameters = {
+    "model": ["bessel", "exponential"], 
+    "n_lags": 30, 
+    "lag_resolution": 0.002
+}
+
+# Initialize
+geo = Geostats(
+    data_df=df_nasc_all_ages,
+    mesh_df=df_mesh,
+    kriging_params=kriging_parameters,
+    variogram_params=variogram_parameters,    
 )
 
-# Back-calculate abundance
-ds_kriged_biomass_all_ages: xr.Dataset = apportion.back_calculate_kriged_abundance(
-    ds_kriged_apportioned=ds_kriged_biomass_all_ages,
-    ds_proportions=ds_proportions,
+# ==================================================================================================
+# Standardize coordinates [transect & mesh]
+# -----------------------------------------
+geo.project_coordinates(
+    reference_df=df_isobath,
+    x_offset=-124.78338,
+    y_offset=45.,
+    normalize=True,
+)
+
+# ==================================================================================================
+# Compute the empirical variogram
+# -------------------------------
+geo.calculate_empirical_variogram(
+    variable="biomass_density",
+    azimuth_filter=True,
+    azimuth_angle_threshold=180.,
+    force_lag_zero=True,
+)
+
+# ==================================================================================================
+# Fit theoretical/modeled variogram to the transect data
+# ------------------------------------------------------
+
+# Set up `lmfit` parameters
+variogram_parameters_lmfit = Parameters()
+variogram_parameters_lmfit.add_many(
+    ("nugget", dict_variogram_params["nugget"], True, 0., None),
+    ("sill", dict_variogram_params["sill"], True, 0., None),
+    ("correlation_range", dict_variogram_params["correlation_range"], True, 0., None),
+    ("hole_effect_range", dict_variogram_params["hole_effect_range"], True, 0., None),
+    ("decay_power", dict_variogram_params["decay_power"], True, 0., None),
+)
+
+# Set up optimization parameters used for fitting the variogram
+dict_optimization = {"max_nfev": 500, "ftol": 1e-06, "gtol": 0.0001, "xtol": 1e-06, 
+                     "diff_step": 1e-08, "tr_solver": "exact", "x_scale": "jac", 
+                     "jac": "3-point"}
+
+# Get the best-fit variogram parameters
+geo.fit_variogram_model(
+    variogram_parameters_lmfit, dict_optimization,
+)
+
+# ==================================================================================================
+# Mesh cropping using the FEAT methods
+# ------------------------------------
+geo.crop_mesh(
+    crop_function=mesh.transect_ends_crop,
+    latitude_resolution=1.25/60.,
+    transect_mesh_region_function=FEAT.transect_mesh_region_2019,
+)
+
+# ==================================================================================================
+# [OPTIONAL] Mesh cropping using the hull convex
+# ----------------------------------------------
+GEO_CACHE = copy.deepcopy(geo)
+
+GEO_CACHE.crop_mesh(
+    crop_function=mesh.hull_crop,
+    num_nearest_transects=3,
+    mesh_buffer_distance=2.5,
+)
+
+# ==================================================================================================
+# Get the western extent of the transect bounds
+# ---------------------------------------------
+transect_western_extents = spatial.get_survey_western_extents(
+    transect_df=geo.data_df,
+    coordinate_names=("x", "y"),
+    latitude_threshold=51.
+)
+
+# ==================================================================================================
+# Krige the biomass density to get kriged biomass
+# -----------------------------------------------
+
+# Pre-define arguments within a partial function defining the western boundary search strategy
+boundary_search_strategy = partial(spatial.western_boundary_search_strategy, 
+                                   western_extent=transect_western_extents,
+                                   kriging_mesh=geo.mesh_df,
+                                   coordinate_names=("x", "y"))
+
+# Krige
+df_kriged_results = geo.krige(
+    default_mesh_cell_area=6.25,
+    adaptive_search_strategy=boundary_search_strategy,
+)
+
+# ##################################################################################################
+# Back-calculate sex-specific biomass and abundance, and total NASC from the kriged biomass 
+# density estimates
+# -----------------
+
+apportion.mesh_biomass_to_nasc(
+    mesh_data_df=df_kriged_results,
+    biodata=dict_df_weight_proportion,
+    group_by=["sex"],
+    mesh_biodata_link={"geostratum_ks": "stratum_ks"},
+    stratum_weights_df=df_averaged_weight["all"],
+    stratum_sigma_bs_df=invert_hake.sigma_bs_strata,    
+)
+
+# ##################################################################################################
+# Distribute kriged abundance estimates over length and age/length
+# ----------------------------------------------------------------
+
+dict_kriged_abundance_table = apportion.distribute_kriged_estimates(
+    mesh_data_df=df_kriged_results,
+    proportions=dict_df_number_proportion,
+    variable="abundance",
+    group_by=["sex", "age_bin", "length_bin"],
+    stratify_by=["stratum_ks"],
+    mesh_proportions_link={"geostratum_ks": "stratum_ks"},
+)
+
+# ##################################################################################################
+# Distribute kriged biomass estimates over length and age/length
+# --------------------------------------------------------------
+
+dict_kriged_biomass_table = apportion.distribute_kriged_estimates(
+    mesh_data_df=df_kriged_results,
+    proportions=dict_df_weight_proportion,
+    variable="biomass",
+    group_by=["sex", "age_bin", "length_bin"],
+    stratify_by=["stratum_ks"],
+    mesh_proportions_link={"geostratum_ks": "stratum_ks"},
+)
+
+# ##################################################################################################
+# Standardize the unaged abundance estimates to be distributed over age
+# ---------------------------------------------------------------------
+
+dict_kriged_abundance_table["standardized_unaged"] = apportion.standardize_kriged_estimates(
+    population_table=dict_kriged_abundance_table["unaged"],
+    reference_table=dict_kriged_abundance_table["aged"],
+    group_by=["sex"],
+    impute=False,    
+)
+
+# ##################################################################################################
+# Standardize the unaged abundance estimates to be distributed over age
+# ---------------------------------------------------------------------
+# THIS NEEDS TO BE FULLY IMPLEMENTED WITH TESTS, ETC.
+
+dict_kriged_biomass_table["standardized_unaged"] = apportion.standardize_kriged_estimates(
+    population_table=dict_kriged_biomass_table["unaged"],
+    reference_table=dict_kriged_biomass_table["aged"],
+    group_by=["sex"],
+    impute=True,
+    impute_variable=["age_bin"],
+)
+
+# ##################################################################################################
+# Consolidate the kriged abundance estimates into a single DataFrame table
+# ------------------------------------------------------------------------
+
+df_kriged_abundance_table = apportion.combine_population_tables(
+    population_table=dict_kriged_abundance_table,
+    table_names=["aged", "standardized_unaged"],
+    table_index=["length_bin"],
+    table_columns=["age_bin", "sex"],
+)
+
+# ##################################################################################################
+# Consolidate the kriged biomass estimates into a single DataFrame table
+# -----------------------------------------------------------------------
+
+df_kriged_biomass_table = apportion.combine_population_tables(
+    population_table=dict_kriged_biomass_table,
+    table_names=["aged", "standardized_unaged"],
+    table_index=["length_bin"],
+    table_columns=["age_bin", "sex"],
+)
+
+# ##################################################################################################
+# Redistribute the kriged abundance estimates
+# -------------------------------------------
+# THIS NEEDS TO BE FULLY IMPLEMENTED WITH TESTS, ETC.
+
+# Re-allocate the age-1 abundance estimates 
+df_kriged_abundance_table_noage1 = apportion.redistribute_population_table(
+    population_table=df_kriged_abundance_table,
+    exclusion_filter={"age_bin": [1]},
+    group_by=["sex"],
+)
+
+# ##################################################################################################
+# Redistribute the kriged biomass estimates
+# -----------------------------------------
+
+# Re-allocate the age-1 abundance estimates 
+df_kriged_biomass_table_noage1 = apportion.redistribute_population_table(
+    population_table=df_kriged_biomass_table,
+    exclusion_filter={"age_bin": [1]},
+    group_by=["sex"],
 )

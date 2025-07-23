@@ -1,124 +1,145 @@
-#################
-biodata_filepath = Path("C:/Users/Brandyn/Documents/GitHub/Data/Biological/1995-2023_biodata_redo.xlsx")
-biodata_sheet_map = {
-    "catch": "biodata_catch", 
-    "length": "biodata_length",
-    "specimen": "biodata_specimen",
-}
-species_code = 22500
-subset_dict = {
-    "ships": {
-        160: {
-            "survey": 201906
-        },
-        584: {
-            "survey": 2019097,
-            "haul_offset": 200
-        }
-    },
-    "species_code": [22500]
-}
+import abc
+import numpy as np
+import pandas as pd
+from typing import Callable, Union, Dict, List, Optional, Any
+from functools import reduce
+import pytest
 
-FEAT_TO_ECHOPOP_BIODATA_COLUMNS = {
-    "frequency": "length_count",
-    "haul": "haul_num",
-    "weight_in_haul": "haul_weight",
-}
+# Import the existing acoustics functions
+from ..acoustics import ts_length_regression, to_linear, to_dB, impute_missing_sigma_bs
+from echopop.nwfsc_feat import utils
+from typing import Optional, Tuple
 
-column_name_map = FEAT_TO_ECHOPOP_BIODATA_COLUMNS
-sheet_name = sheet_map["catch"]
-biodata_label_map = {
-    "sex": {
-        1: "male",
-        2: "female",
-        3: "unsexed"
-    }
-}
+import geopandas as gpd
+import numpy as np
+import pandas as pd
+from scipy import interpolate
 
-ROOT_PATH = Path("C:/Users/Brandyn/Documents/GitHub/Data")
+#######
 
-biodata_filepath = ROOT_PATH / "Biological/1995-2023_biodata_redo.xlsx"
+########
+from echopop.survey import Survey
+from echopop.biology import impute_kriged_values, reallocate_kriged_age1
 
-dict_df_bio = load_biological_data(biodata_filepath, biodata_sheet_map, FEAT_TO_ECHOPOP_BIODATA_COLUMNS, subset_dict, biodata_label_map)
+# survey = Survey(init_config_path = "C:/Users/Brandyn/Documents/GitHub/echopop/config_files/initialization_config_2019.yml",
+#                 survey_year_config_path = "C:/Users/Brandyn/Documents/GitHub/echopop/config_files/survey_year_2019_single_biodata_config.yml")
+survey = Survey(init_config_path = "C:/Users/Brandyn Lucca/Documents/GitHub/echopop/config_files/initialization_config_2019.yml",
+                survey_year_config_path = "C:/Users/Brandyn Lucca/Documents/GitHub/echopop/config_files/survey_year_2019_single_biodata_config.yml")
+survey.load_acoustic_data()
+survey.load_survey_data()
+survey.transect_analysis(exclude_age1=False)
+survey.kriging_analysis()
+self = survey
+analysis_dict, kriged_mesh, settings_dict = self.analysis, self.results["kriging"]["mesh_results_df"], self.analysis["settings"]["kriging"]
 
-ROOT_PATH = Path("C:/Users/Brandyn/Documents/GitHub/Data")
-FEAT_TO_ECHOPOP_STRATA_COLUMNS = {
-    "fraction_hake": "nasc_proportion",
-    "haul": "haul_num",
-    "stratum": "stratum_num",
-}
+table, settings_dict, variable = kriged_full_table, settings_dict, "biomass_apportioned"
 
-strata_filepath = ROOT_PATH / "Stratification/US_CAN strata 2019_final.xlsx"
-strata_sheet_map = {
-    "inpfc": "INPFC",
-    "ks": "Base KS",
-}
-column_name_map = FEAT_TO_ECHOPOP_STRATA_COLUMNS
+###
+apportion.combine_population_tables = combine_population_tables
+utils.apply_filters = apply_filters
+apportion.redistribute_population_table = redistribute_population_table
 
-dict_df_strata = load_strata(strata_filepath, strata_sheet_map, column_name_map)
+###
+from echopop.nwfsc_feat import utils
 
-FEAT_TO_ECHOPOP_GEOSTRATA_COLUMNS = {
-    "latitude (upper limit)": "northlimit_latitude",
-    "stratum": "stratum_num",
-}
-geostrata_filepath = ROOT_PATH / "Stratification/Stratification_geographic_Lat_2019_final.xlsx"
-geostrata_sheet_map = {
-    "inpfc": "INPFC",
-    "ks": "stratification1",
-}
-column_name_map = FEAT_TO_ECHOPOP_STRATA_COLUMNS
+population_table = df_kriged_biomass_table.copy()
+exclusion_filter = {"age_bin": 1}
+group_by = ["sex"]
+redistribute = True
+###
 
-dict_df_geostrata = load_geostrata(geostrata_filepath, geostrata_sheet_map, FEAT_TO_ECHOPOP_GEOSTRATA_COLUMNS)
+# Find any columns that are not in the group_by list
+# ---- Get column names
+column_names = population_table.columns.names
+# ---- Identify extra columns that are not in the group_by list
+extra_columns = [col for col in column_names if col not in group_by]
+# ---- Stack the population table
+stacked_table = population_table.stack(extra_columns, future_stack=True)
 
-data = dict_df_bio
-strata_df = dict_df_strata["ks"].copy()
+# Apply inverse of exclusion filter to get the values being excluded
+excluded_grouped_table = utils.apply_filters(stacked_table, 
+                                             include_filter=exclusion_filter)
 
-join_strata_by_haul(nasc_all_ages_df, dict_df_strata["inpfc"])
-join_strata_by_haul(nasc_all_ages_df, dict_df_strata["ks"])
-join_strata_by_haul(dict_df_bio, dict_df_strata["inpfc"])
-join_strata_by_haul(dict_df_bio, dict_df_strata["ks"])
+# Replace the excluded values in the full table with 0.
+filtered_grouped_table = utils.apply_filters(stacked_table, 
+                                             exclude_filter=exclusion_filter,
+                                             replace_value=0.)
+# filtered_grouped_table1 = filtered_grouped_table.copy()
 
-data = nasc_all_ages_df.copy()
-geostrata_df = dict_df_geostrata["ks"].copy()
-FEAT_TO_ECHOPOP_MESH_COLUMNS = {
-    "centroid_latitude": "latitude",
-    "centroid_longitude": "longitude",
-    "fraction_cell_in_polygon": "fraction",
-}
+# Get the sums for each group across the excluded and filtered tables
+# ---- Excluded
+excluded_grouped_sum = excluded_grouped_table.sum()
+# ---- Filtered/included
+filtered_grouped_sum = filtered_grouped_table.sum()
 
-column_name_map = FEAT_TO_ECHOPOP_MESH_COLUMNS
-mesh_filepath = ROOT_PATH / "Kriging_files/Kriging_grid_files/krig_grid2_5nm_cut_centroids_2013.xlsx"
-mesh_sheet_name = "krigedgrid2_5nm_forChu"
+# Get the redistributed values that will be added to the filtered table values
+adjustment_table = filtered_grouped_table * excluded_grouped_sum / filtered_grouped_sum
 
-mesh_df = load_mesh_data(mesh_filepath, mesh_sheet_name, FEAT_TO_ECHOPOP_MESH_COLUMNS)
+# Add the adjustments to the filtered table
+filtered_grouped_table += adjustment_table
 
-join_geostrata_by_latitude(mesh_df, dict_df_geostrata["inpfc"])
+# Check 
+if np.any(filtered_grouped_table.sum() - stacked_table.sum() > 1e-6):
+    # ---- If the sums do not match, raise a warning
+    check_sums = filtered_grouped_table.sum() - stacked_table.sum() > 1e-6
+    # ---- Raise a warning with the indices where the sums do not match
+    warnings.warn(
+        f"The sums of the table with the redistributed estimates do not match the original table "
+        f"filtered table do not match the original table for indices: "
+        f"{', '.join(check_sums[check_sums].index.tolist())}"
+    )
 
-geostatistic_params_filepath = ROOT_PATH / "Kriging_files/default_vario_krig_settings_2019_US_CAN.xlsx"
-geostatistic_params_sheet_name = "Sheet1"
-FEAT_TO_ECHOPOP_GEOSTATS_PARAMS_COLUMNS = {
-    "hole": "hole_effect_range",
-    "lscl": "correlation_range",
-    "nugt": "nugget",
-    "powr": "decay_power",
-    "ratio": "anisotropy",
-    "res": "lag_resolution",
-    "srad": "search_radius",
-}
-column_name_map = FEAT_TO_ECHOPOP_GEOSTATS_PARAMS_COLUMNS
-
-kriging_params_dict, variogram_params_dict = load_kriging_variogram_params(
-    geostatistic_params_filepath,
-    geostatistic_params_sheet_name,
-    FEAT_TO_ECHOPOP_GEOSTATS_PARAMS_COLUMNS
+# Restore the original column structure
+redistributed_table = (
+    filtered_grouped_table.unstack(extra_columns)
+    .reorder_levels(column_names, axis=1)
 )
 
-####################################################################################################
 
 
+df = stacked_table.copy()
+exclude_filter=exclusion_filter
+include=False
+replace_value=0.
+filter_dict = exclude_filter
 
+TEST = filtered_grouped_table - filtered_grouped_table1
+TEST["female"].loc[lambda x: x != 0.]
 
+stacked_table.sum() - filtered_grouped_table.sum()
 
+excluded_table
+df = stacked_table.copy()
+filter_dict = exclusion_filter
+include=False
+excluded_table
 
+df = population_table.copy()
+exclude_filter=exclusion_filter
+include_filter: Optional[Dict[str, Any]] = None
+# Apply the inverse of exclusion filter
 
+filter_dict = exclude_filter
+filter_dict = {"length_bin": [27., 28., 29.]}
 
+replace_value = 0.
+
+kriged_full_table.pivot_table(
+    index=["length_bin"],
+    columns=["age_bin", "sex"],
+    values="biomass_apportioned",
+)
+
+standardized_table_sub.loc[5, "male"]
+unaged_apportioned_biomass_values.loc[5]
+
+kriged_full_table.set_index(["sex", "length_bin"]).loc["male", 5]
+standardized_proportions[name].loc[:, "male"].loc[:, 1]
+standardized_table_sub.loc[:, "male"].loc[:, 1]
+unaged_apportioned_biomass_values.loc[:, 1]
+unaged_apportioned_table.loc[:, 1]
+unaged_apportioned_table.loc[6]
+(standardized_table[name] - standardized_table_sub).min(axis=1)
+standardized_table[name]
+standardized_table["unaged"].stack(standardized_table["unaged"].columns.names, future_stack=True)
+standardized_table_sub.loc[nonzero_reference_to_table_indices[name][col], col]

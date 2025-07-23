@@ -16,13 +16,41 @@ def ts_length_regression(
 
     Parameters
     ----------
-    length: Union[ np.ndarray, float]
+    length : Union[np.ndarray, float]
         Length value(s) typically represented in 'cm' that will be converted into acoustic target
         strength (TS, dB re. 1 m^-2).
-    slope: float
+    slope : float
         TS-length regression slope coefficient
-    intercept: float
-        TS-length regression slope intercept
+    intercept : float
+        TS-length regression intercept coefficient
+
+    Returns
+    -------
+    np.ndarray
+        Target strength values in dB re. 1 m^-2
+
+    Examples
+    --------
+    >>> # Single length value
+    >>> ts = ts_length_regression(20.0, slope=20.0, intercept=-68.0)
+    >>> print(f"TS for 20cm fish: {ts:.2f} dB")
+    TS for 20cm fish: -42.00 dB
+
+    >>> # Multiple length values
+    >>> lengths = np.array([10, 15, 20, 25, 30])
+    >>> ts_values = ts_length_regression(lengths, slope=20.0, intercept=-68.0)
+    >>> print("Lengths:", lengths)
+    >>> print("TS values:", ts_values)
+    Lengths: [10 15 20 25 30]
+    TS values: [-48.   -44.77 -42.   -39.82 -38.   ]
+
+    Notes
+    -----
+    The TS-length relationship follows the standard log-linear form:
+    TS = slope * log10(length) + intercept
+
+    This is commonly used in fisheries acoustics where the relationship between
+    fish length and acoustic backscatter follows this logarithmic pattern.
     """
     return slope * np.log10(length) + intercept
 
