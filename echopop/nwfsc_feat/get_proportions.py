@@ -489,7 +489,7 @@ def binned_weights(
 
 
 def calculate_adjusted_proportions(
-    group_keys: List[str], aggregate_table: pd.DataFrame, sex_proportions_table: pd.DataFrame
+    group_keys: List[str], aggregate_table: pd.DataFrame, group_proportions_table: pd.DataFrame, group_by=List[str],
 ) -> pd.DataFrame:
     """
     Calculate adjusted proportions across multiple groups.
@@ -500,13 +500,13 @@ def calculate_adjusted_proportions(
         List of group keys/names (e.g., ["aged", "unaged"])
     aggregate_table : pd.DataFrame
         Table with aggregate proportions by group
-    sex_proportions_table : pd.DataFrame
-        Table with sex-specific proportions by group
+    group_proportions_table : pd.DataFrame
+        Table with grouping-specific proportions by group
 
     Returns
     -------
     pd.DataFrame
-        DataFrame with adjusted proportions with multi-index (group, sex)
+        DataFrame with adjusted proportions with multi-index (group, group_by variable)
 
     Notes
     -----
@@ -529,22 +529,29 @@ def calculate_adjusted_proportions(
     # For all other groups, calculate relative to the first group
     for group in group_keys[1:]:
         adjusted_props[group] = aggregate_table.loc[group] / (
-            aggregate_table.loc[group] + sex_proportions_table.loc[first_group]
+            # aggregate_table.loc[group] + sex_proportions_table.loc[first_group]
+            aggregate_table.loc[group] + group_proportions_table.loc[first_group]
         )
 
     # Calculate first group proportion using all other adjusted proportions
     if len(group_keys) > 1:
-        adjusted_props[first_group] = sex_proportions_table.loc[first_group] / (
-            sex_proportions_table.loc[first_group]
+        # adjusted_props[first_group] = sex_proportions_table.loc[first_group] / (
+        #     sex_proportions_table.loc[first_group]
+        #     + pd.concat([adjusted_props[g] for g in group_keys[1:]], axis=0)
+        # )
+        adjusted_props[first_group] = group_proportions_table.loc[first_group] / (
+            group_proportions_table.loc[first_group]
             + pd.concat([adjusted_props[g] for g in group_keys[1:]], axis=0)
         )
     else:
         # If only one group, it gets 100% of the proportions
-        adjusted_props[first_group] = sex_proportions_table.loc[first_group]
+        # adjusted_props[first_group] = sex_proportions_table.loc[first_group]
+        adjusted_props[first_group] = group_proportions_table.loc[first_group]
 
     # Combine into a single DataFrame with proper multi-index
     adjusted_proportions = pd.concat(
-        [adjusted_props[group] for group in group_keys], keys=group_keys, names=["group", "sex"]
+        # [adjusted_props[group] for group in group_keys], keys=group_keys, names=["group", "sex"]
+        [adjusted_props[group] for group in group_keys], keys=group_keys, names=["group"] + group_by
     )
 
     return adjusted_proportions
@@ -566,26 +573,26 @@ def calculate_grouped_weights(
     binned_weight_table_pvt : pd.DataFrame
         Pivot table with weight values by sex and length bin
     length_proportions_pvt : pd.DataFrame
-        Proportions by group, sex, and length bin
+        Proportions by group, groupings, and length bin
     length_proportions_pvt_all : pd.DataFrame
         Aggregated proportions by group and length bin
     aggregate_table : pd.DataFrame
         Table with aggregate proportions by group
     adjusted_proportions : pd.DataFrame
-        Adjusted proportions for each group and sex
+        Adjusted proportions for each group and groupings
     group_keys : List[str]
         List of group keys/names (e.g., ["aged", "unaged"])
 
     Returns
     -------
     pd.DataFrame
-        DataFrame with average weights by sex category
+        DataFrame with average weights by a grouping category defined by groupings
 
     Notes
     -----
-    The function calculates weighted average weights for different sex categories:
+    The function calculates weighted average weights for different grouping categories:
     - For "all", it uses aggregate proportions across all groups
-    - For individual sexes, it uses sex-specific adjusted proportions
+    - For individual groupings, it uses sex-specific adjusted proportions
 
     Examples
     --------
@@ -598,13 +605,22 @@ def calculate_grouped_weights(
     ...     ["aged", "unaged"]
     ... )
     """
+
+    # Initialize the dictionary to contain the grouped weights
     weights_dict = {}
 
-    # Define the sex categories
-    sex_categories = ["all", "female", "male"]
+    # Gather the index names
+    non_length_level = [
+        lvl for lvl in binned_weight_table_pvt.index.names if lvl != "length_bin"
+    ][0]    
+    
+    # Define the grouping categories
+    grouping_categories = (
+        binned_weight_table_pvt.index.get_level_values(non_length_level).unique().to_list()
+    )
 
     # Weight for all sexes combined
-    if "all" in sex_categories and "all" in binned_weight_table_pvt.index:
+    if "all" in grouping_categories and "all" in binned_weight_table_pvt.index:
         weight_all = binned_weight_table_pvt.loc["all"]["weight_fitted"].dot(
             sum(
                 length_proportions_pvt_all.loc[group] * aggregate_table.loc[group]
@@ -613,24 +629,28 @@ def calculate_grouped_weights(
         )
         weights_dict["all"] = weight_all
 
-    # Weight for each sex individually
-    for sex in [s for s in sex_categories if s != "all"]:
-        if sex in binned_weight_table_pvt.index.get_level_values(0):
-            weight_base = binned_weight_table_pvt.loc[
-                "all" if "all" in binned_weight_table_pvt.index else sex
-            ]["weight_fitted"]
-            weight_sex = weight_base.dot(
-                sum(
-                    length_proportions_pvt.loc[(group, sex)]
-                    * adjusted_proportions.loc[(group, sex)]
-                    for group in group_keys
-                    if (group, sex) in length_proportions_pvt.index
+    # Weight for each group individually
+    if non_length_level in adjusted_proportions.index.names:
+        for grouping in [g for g in grouping_categories if g != "all"]:
+            if grouping in adjusted_proportions.index.get_level_values(non_length_level):
+                weight_base = binned_weight_table_pvt.loc[
+                    "all" if "all" in binned_weight_table_pvt.index else grouping
+                ]["weight_fitted"]
+                weight_grouping = weight_base.dot(
+                    sum(
+                        length_proportions_pvt.loc[(group, grouping)]
+                        * adjusted_proportions.loc[(group, grouping)]
+                        for group in group_keys
+                        if (group, grouping) in length_proportions_pvt.index
+                    )
                 )
-            )
-            weights_dict[sex] = weight_sex
+                weights_dict[grouping] = weight_grouping
 
     # Combine into final DataFrame
-    return pd.DataFrame(weights_dict)
+    weights_df = pd.DataFrame(weights_dict)
+    # ---- Apply name change
+    weights_df.columns.name = non_length_level
+    return weights_df
 
 
 def calculate_within_group_proportions(
@@ -687,7 +707,8 @@ def calculate_within_group_proportions(
 def stratum_averaged_weight(
     proportions_dict: Dict[str, pd.DataFrame],
     binned_weight_table: pd.DataFrame,
-    stratum_col: str = "stratum_num",
+    stratify_by: List[str] = ["stratum_num"],
+    group_by: List[str] = [],
 ) -> pd.DataFrame:
     """
     Calculate stratum-specific average weights across multiple datasets with different proportions.
@@ -719,16 +740,14 @@ def stratum_averaged_weight(
     Returns
     -------
     pd.DataFrame
-        DataFrame with average weights by stratum and sex.
-        Index: stratum_num
-        Columns: Sex categories ('all', 'female', 'male')
+        DataFrame with average weights defined for each stratum with optional groupings.
 
     Notes
     -----
     - This function assumes that the length bins in proportions_dict and binned_weight_table match
-    - The function requires an 'all' sex category in binned_weight_table for calculating combined
+    - The function requires an 'all' group category in binned_weight_table for calculating combined
       weights
-    - Missing strata or sex categories will be excluded from the final results
+    - Missing strata or group categories will be excluded from the final results
 
     Examples
     --------
@@ -770,23 +789,28 @@ def stratum_averaged_weight(
     # Create aggregate table with summed proportions per group (e.g. strata)
     aggregate_proportions = utils.create_grouped_table(
         proportions_dict,
-        group_cols=[stratum_col, "sex", "length_bin"],
+        # group_cols=[stratum_col, "sex", "length_bin"],
+        group_cols = stratify_by + group_by + ["length_bin"],
         index_cols=["group"],
-        strat_cols=[stratum_col],
+        # strat_cols=[stratum_col],
+        strat_cols=stratify_by,
         value_col="proportion_overall",
     )
 
     # Compute the within-grouped proportions
     # ---- Execute calculation
     length_proportions_df = calculate_within_group_proportions(
-        proportions_dict, group_cols=[stratum_col, "sex"]
+        # proportions_dict, group_cols=[stratum_col, "sex"]
+        proportions_dict, group_cols=stratify_by + group_by
     )
 
     # ---- Convert into a table for just the within-grouped proportions
     length_proportions_group = utils.create_pivot_table(
         length_proportions_df,
-        index_cols=["group", "sex", "length_bin"],
-        strat_cols=[stratum_col],
+        # index_cols=["group", "sex", "length_bin"],
+        # strat_cols=[stratum_col],
+        index_cols = ["group"] + group_by + ["length_bin"],
+        strat_cols = stratify_by,
         value_col="within_group_proportion",
     )
 
@@ -794,7 +818,8 @@ def stratum_averaged_weight(
     length_proportions_all = utils.create_pivot_table(
         length_proportions_df,
         index_cols=["group", "length_bin"],
-        strat_cols=[stratum_col],
+        # strat_cols=[stratum_col],
+        strat_cols=stratify_by,
         value_col="proportion",
     )
 
@@ -804,15 +829,17 @@ def stratum_averaged_weight(
     # Create table for the overall sexed group proportions
     group_proportions = utils.create_grouped_table(
         proportions_dict,
-        group_cols=[stratum_col, "sex"],
-        index_cols=["group", "sex"],
-        strat_cols=[stratum_col],
+        # group_cols=[stratum_col, "sex"],
+        group_cols=stratify_by + group_by,
+        index_cols=["group"] + group_by,
+        # strat_cols=[stratum_col],
+        strat_cols=stratify_by,
         value_col="proportion_overall",
     )
 
     # Compute the re-weighted proportions from the mixture of the different groups
     adjusted_proportions = calculate_adjusted_proportions(
-        group_keys, aggregate_proportions, group_proportions
+        group_keys, aggregate_proportions, group_proportions, group_by
     )
 
     # Calculate final weights
