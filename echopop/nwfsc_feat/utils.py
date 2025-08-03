@@ -46,7 +46,7 @@ def binned_distribution(bins: npt.NDArray[np.number]) -> pd.DataFrame:
     >>> result = binned_distribution(bins)
     >>> len(result) == len(bins)
     True
-    
+
     Notes
     -----
     The function calculates the bin width as the mean of half the differences between
