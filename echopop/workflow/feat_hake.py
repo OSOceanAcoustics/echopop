@@ -21,9 +21,9 @@ from echopop.nwfsc_feat import biology, ingest_nasc, get_proportions, load_data,
 # Merge exports
 df_intervals, df_exports = ingest_nasc.merge_echoview_nasc(
     nasc_path = Path("C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_2019/raw_nasc/"),
-    filename_transect_pattern = r"T(\d+)",
-    default_transect_spacing = 10.0,
-    default_latitude_threshold = 60.0,
+    filename_transect_pattern=r"T(\d+)",
+    default_transect_spacing=10.0,
+    default_latitude_threshold=60.0,
 )
 
 # ==================================================================================================
@@ -47,9 +47,9 @@ transect_region_file_rename: dict = {
 
 # Read in the transect-region-haul key files for each group
 transect_region_haul_key_all_ages: pd.DataFrame = ingest_nasc.read_transect_region_haul_key(
-    transect_region_filepath_all_ages,
-    transect_region_sheetname_all_ages,
-    transect_region_file_rename,
+    filename=transect_region_filepath_all_ages,
+    sheetname=transect_region_sheetname_all_ages,
+    rename_dict=transect_region_file_rename,
 )
 
 transect_region_haul_key_no_age1: pd.DataFrame = ingest_nasc.read_transect_region_haul_key(
@@ -78,9 +78,9 @@ region_name_expr_dict: Dict[str, dict] = {
 # Process the region name codes to define the region classes
 # e.g. H5C - Region 2 corresponds to "Hake, Haul #5, Canada"
 df_exports_with_regions: pd.DataFrame = ingest_nasc.process_region_names(
-    df_exports,
-    region_name_expr_dict,
-    can_haul_offset = 200,
+    df=df_exports,
+    region_name_expr_dict=region_name_expr_dict,
+    can_haul_offset=200,
 )
 
 # ==================================================================================================

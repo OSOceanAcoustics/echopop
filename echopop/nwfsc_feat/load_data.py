@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import Dict, Optional, Tuple, Union
+import warnings
 
 import numpy as np
 import pandas as pd
@@ -301,7 +302,7 @@ def load_geostrata(
     -------
     dict
         Dictionary containing geographic stratification DataFrames keyed by stratification type,
-        each with calculated latitude intervals
+        each with consolidated latitude intervals from INPFC and KS strata assignments
     """
 
     if not geostrata_filepath.exists():
@@ -433,7 +434,10 @@ def join_strata_by_haul(
         # Check if stratification columns already exist
         existing_cols = set(strata_cols).intersection(set(df.columns))
         if existing_cols:
-            # Drop existing stratification columns if overwrite is True
+            # Drop existing stratification columns
+            warnings.warn(
+                f"Dropping existing stratification columns {existing_cols} from the dataframe."
+            )
             df = df.drop(columns=list(existing_cols))
 
         # Merge

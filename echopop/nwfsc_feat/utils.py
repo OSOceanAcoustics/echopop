@@ -45,7 +45,9 @@ def binned_distribution(bins: npt.NDArray[np.number]) -> pd.DataFrame:
     >>> bins = np.linspace(0, 10, 11)
     >>> result = binned_distribution(bins)
     >>> len(result) == len(bins)
-    True    Notes
+    True
+    
+    Notes
     -----
     The function calculates the bin width as the mean of half the differences between
     consecutive bin values. This approach works well for both evenly and unevenly
