@@ -1,9 +1,9 @@
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
 
-from .utils import binned_distribution
+from .utils import apply_filters, binned_distribution, create_grouped_table
 
 
 def fit_length_weight_regression(data: pd.DataFrame) -> pd.Series:
@@ -181,6 +181,257 @@ def length_binned_weights(
             return result.to_frame("all")
         else:
             return result
+
+
+def set_abundance(
+    dataset: pd.DataFrame,
+    stratify_by: List[str] = [],
+    group_by: List[str] = [],
+    exclude_filter: Dict[str, str] = {},
+    number_proportions: Optional[Dict[str, pd.DataFrame]] = None,
+):
+    """
+    Convert number density estimates in abundances.
+
+    Parameters
+    ----------
+    dataset : pd.DataFrame
+        DataFrame containing transect data with number densities already computed. Must include:
+        - 'number_density': Number of animals per unit area (animals/nmi²)
+        - 'area_interval': Area of each sampling interval (nmi²)
+    stratify_by : List[str], default []
+        Column name to use for stratification when aligning with the number proportions dictionary,
+        if specified.
+    group_by : List[str], default []
+        Grouping columns to apply to number density and abundances (e.g. sex). This will produce
+        additional columns formatted as `number_density_{group}` and `abundance_{group}`.
+    exclude_filter : Dict[str, str], default {}
+        Dictionary specifying which population segments to exclude and redistribute. Keys are
+        column/index names, values are the categories to exclude.
+    number_proportions : Optional[Dict[str, pd.DataFrame]], default None
+        When provided, the number densities and abundances will be reapportioned according to the
+        defined number proportions. If `group_by` is not empty, then the resulting DataFrame will
+        include additional columns for each group as well as the overall number density and
+        abundance.
+
+    Returns
+    -------
+    None
+        Function modifies the transect DataFrame in-place.
+
+    Note
+    ----
+    When `number_proportions` is provided, the function first calculates base abundance as
+    area_interval * number_density, then applies proportions to create grouped abundance columns.
+    The original 'abundance' column represents the total.
+    """
+
+    # If no grouping, run the simple abundance calculation
+    dataset["abundance"] = dataset["area_interval"] * dataset["number_density"]
+
+    # Compute grouped values, if needed
+    if number_proportions is not None:
+        # ---- Set the index
+        dataset.set_index(stratify_by, inplace=True)
+        # ---- Create grouped table from number proportions
+        grouped_proportions = create_grouped_table(
+            number_proportions,
+            group_cols=stratify_by + group_by,
+            strat_cols=group_by,
+            index_cols=stratify_by,
+            value_col="proportion_overall",
+        )
+        # ---- Apply exclusion filter, if required
+        grouped_proportions_excl = apply_filters(grouped_proportions, exclude_filter=exclude_filter)
+        # ---- Refine if no grouping
+        if len(group_by) == 0:
+            grouped_proportions_excl = grouped_proportions_excl["proportion_overall"]
+            number_density_vals = dataset["number_density"].values
+            abundance_vals = dataset["abundance"].values
+        else:
+            number_density_vals = dataset["number_density"].values[:, None]
+            abundance_vals = dataset["abundance"].values[:, None]
+        # ---- Reindex the table
+        grouped_proportions_ridx = grouped_proportions_excl.reindex(dataset.index)
+        # ---- Compute number density
+        grouped_number_density = number_density_vals * grouped_proportions_ridx
+        # ---- Compute abundance
+        grouped_abundance = abundance_vals * grouped_proportions_ridx
+        # ---- Add the number densities to the dataset
+        dataset[grouped_number_density.columns.map(lambda c: f"number_density_{c}")] = (
+            grouped_number_density.values
+        )
+        # ---- Add abundances to the dataset
+        dataset[grouped_abundance.columns.map(lambda c: f"abundance_{c}")] = (
+            grouped_abundance.values
+        )
+        # ---- Reset the index
+        dataset.reset_index(inplace=True)
+
+
+def matrix_multiply_grouped_table(
+    dataset: pd.DataFrame,
+    table: pd.DataFrame,
+    variable: str,
+    output_variable: str,
+    group: Optional[str] = None,
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    """
+    Multiply multiple data columns by identically indexed grouped table columns from a separate
+    DataFrame.
+
+    Parameters
+    ----------
+    dataset : pd.DataFrame
+        DataFrame containing the data to be multiplied.
+    table : pd.DataFrame
+        DataFrame containing the grouped table with columns to multiply against.
+    variable : str
+        The name of the variable in `dataset` that will be multiplied by the grouped table.
+        This variable should have columns named as `{variable}_{suffix}` where `suffix` is a
+        group identifier.
+    output_variable : str
+        The name of the output variable/column that will be created in `dataset` to store the
+        results.
+    group : Optional[str], default None
+        The specific group to filter the grouped table by. If None, all groups will be used.
+    """
+
+    # Create pattern for column filtering
+    prefix_pattern = variable + "_"
+
+    # Get the overlapping columns
+    variable_columns = dataset.filter(like=prefix_pattern).columns
+
+    # Gather the suffixes corresponding to the target group
+    suffixes = variable_columns.str.replace(prefix_pattern, "", regex=False).to_list()
+
+    # Reindex table
+    table_ridx = table.reindex(dataset.index)
+
+    # Apply an inclusion filter
+    target_groups = apply_filters(table_ridx, include_filter={group: suffixes})
+
+    # Get columns that also exist for dataset
+    variable_overlap = [prefix_pattern + col for col in target_groups.columns]
+
+    # Reindex the target grouped table
+    target_groups_idx = target_groups.reindex(dataset.index)
+
+    # Run the multiplication
+    table_matrix = dataset.filter(variable_overlap).to_numpy() * target_groups_idx
+
+    # Set up column names
+    column_map = target_groups_idx.columns.map(lambda c: f"{output_variable}_{c}")
+
+    # Add the output variables
+    dataset[column_map] = table_matrix.values
+
+    # Calculate the remainder comprising the ungrouped values
+    remainder = dataset[variable] - dataset[variable_overlap].sum(axis=1)
+
+    # Calculate the output variable for the ungrouped/excluded values
+    remainder_matrix = remainder * table_ridx["all"]
+
+    # Compute the overall output variable
+    dataset[output_variable] = dataset[column_map].sum(axis=1) + remainder_matrix
+
+
+def set_biomass(
+    dataset: pd.DataFrame,
+    stratify_by: List[str] = [],
+    group_by: List[str] = [],
+    df_average_weight: Optional[Union[pd.DataFrame, float]] = None,
+):
+    """
+    Convert number density and abundance estimates to biomass density and total biomass,
+    respectively.
+
+    Parameters
+    ----------
+    dataset : pd.DataFrame
+        DataFrame containing transect data with number densities already computed. Must include:
+        - 'number_density': Number of animals per unit area (animals/nmi²)
+        - 'abundance': Total number of animals in each interval (animals)
+    stratify_by : List[str], default []
+        Column name to use for stratification when aligning with the number proportions dictionary,
+        if specified.
+    group_by : List[str], default []
+        Grouping columns to apply to number density and abundances (e.g. sex). This will produce
+        additional columns formatted as `number_density_{group}` and `abundance_{group}`.
+    df_average_weight : Optional[Dict[str, pd.DataFrame]], default None
+        DataFrame or Series containing the average weight data for defined strata. This DataFrame
+        must be:
+        - Indexed by the same column as `stratify_by` if specified
+        - If a DataFrame, the columns should correspond to the grouping defined in `group_by`. For
+        example, if `group_by=['sex']`, then the DataFrame should have a column for each. If there
+        are additional groups that are present in the DataFrame but will not be used, then a
+        global set of values named 'all' should be present.
+
+    Returns
+    -------
+    None
+        Function modifies the transect DataFrame in-place.
+
+    Examples
+    --------
+    >>> # Calculate biomass from abundance using weight table
+    >>> weight_table = pd.DataFrame({'female': [0.5, 0.6], 'male': [0.4, 0.5], 'all': [0.45, 0.55]})
+    >>> dataset = pd.DataFrame({'abundance_female': [100, 200], 'abundance_male': [150, 250], \
+        'abundance': [250, 450]})
+    >>> matrix_multiply_grouped_table(
+    ...     dataset=dataset,
+    ...     table=weight_table,
+    ...     variable='abundance',
+    ...     output_variable='biomass',
+    ...     group='sex'
+    ... )
+    >>> # Creates 'biomass_female', 'biomass_male' in-place
+    """
+
+    # Set the index for the dataset
+    dataset.set_index(stratify_by, inplace=True)
+
+    # Handle stratification and weight alignment
+    if isinstance(df_average_weight, (pd.DataFrame, pd.Series)):
+        # ---- Ensure weights are properly aligned with the associated dataset
+        if hasattr(df_average_weight, "columns") and not set(
+            df_average_weight.index.names
+        ).intersection(stratify_by):
+            df_average_weight.set_index(stratify_by, inplace=True)
+        elif isinstance(df_average_weight, pd.Series):
+            df_average_weight = df_average_weight.to_frame("all")
+    else:
+        # ---- Create associated Series from a single float
+        df_average_weight = pd.DataFrame({"all": df_average_weight}, index=dataset.index)
+
+    # If grouped
+    if len(group_by) > 0:
+        # ---- Compute the biomass densities across groups
+        matrix_multiply_grouped_table(
+            dataset,
+            table=df_average_weight,
+            group=group_by[0],
+            variable="number_density",
+            output_variable="biomass_density",
+        )
+        # ---- Compute the biomass densities across groups
+        matrix_multiply_grouped_table(
+            dataset,
+            table=df_average_weight,
+            group=group_by[0],
+            variable="abundance",
+            output_variable="biomass",
+        )
+    # Ungrouped
+    else:
+        # ---- Compute biomass densities
+        dataset["biomass_density"] = dataset["number_density"] * df_average_weight["all"]
+        # ---- Compute biomass
+        dataset["biomass"] = dataset["abundance"] * df_average_weight["all"]
+
+    # Reset the index
+    dataset.reset_index(inplace=True)
 
 
 def set_population_metrics(

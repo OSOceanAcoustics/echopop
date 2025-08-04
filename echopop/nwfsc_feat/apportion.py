@@ -9,6 +9,85 @@ from . import utils
 warnings.simplefilter("always")
 
 
+def partition_transect_data(
+    dataset: pd.DataFrame,
+    partition_dict: Dict[str, Union[pd.DataFrame, pd.Series]],
+) -> pd.DataFrame:
+    """
+    Partition NASC, abundance (and number density), and biomass (and biomass density) transect
+    values across indexed groups.
+
+    Parameters
+    ----------
+    dataset : pd.DataFrame
+        DataFrame containing transect data with number densities already computed. Must include:
+        - A column that matches the index of the `partition_dict` DataFrames/Series.
+    partition_dict : Dict[str, Union[pd.DataFrame, pd.Series]]
+        Dictionary containing partitioning data for NASC, abundance, and biomass. Valid key names
+        are limited to 'abundance', 'biomass', and 'nasc'. Each key maps to different variables:
+        - 'abundance': pd.Series or DataFrame with abundance proportions. This partitions the
+        number density and abundance estimates.
+        - 'biomass': pd.Series or DataFrame with biomass proportions. This partitions the biomass
+        density and biomass estimates.
+        - 'nasc': pd.Series or DataFrame with NASC proportions.
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame with the same structure as the input dataset, but with defined partitions applied
+        to NASC and the other abundance/biomass columns.
+
+    Notes
+    -----
+    The DataFrames/Series in `partition_dict` must have indices that correspond to values in the
+    `dataset`. Missing indices will result in NaN values for those rows. The function automatically
+    identifies and uses the appropriate index columns for merging.
+    """
+
+    # Create copy
+    dataset = dataset.copy()
+
+    # Get the index names
+    index_names = list(set().union(*[set(df.index.names) for df in partition_dict.values()]))
+
+    # Set the index of the input dataset
+    dataset.set_index(index_names, inplace=True)
+
+    # NASC, if present
+    if "nasc" in partition_dict:
+        dataset["nasc"] = dataset["nasc"] * (1 - partition_dict["nasc"].reindex(dataset.index))
+
+    # Abundance and number density, if present
+    if "abundance" in partition_dict:
+        # ---- Get the inverse proportions
+        abundance_proportions = 1 - partition_dict["abundance"].reindex(dataset.index)
+        # ---- Map the appropriate columns for abundance
+        abundance_names = dataset.filter(like="abundance").columns
+        # ---- Adjust abundances
+        dataset[abundance_names] = dataset[abundance_names].mul(abundance_proportions, axis=0)
+        # ---- Map the appropriate columns for number density
+        number_density_names = dataset.filter(like="number_density").columns
+        # ---- Adjust number densities
+        dataset[number_density_names] = dataset[number_density_names].mul(
+            abundance_proportions, axis=0
+        )
+
+    # Biomass and biomass density, if present
+    if "biomass" in partition_dict:
+        # ---- Get the inverse proportions
+        biomass_proportions = 1 - partition_dict["biomass"].reindex(dataset.index)
+        # ---- Map the appropriate columns for biomass and biomass density
+        biomass_names = dataset.filter(like="biomass").columns
+        # ---- Adjust biomass
+        dataset[biomass_names] = (biomass_proportions * dataset[biomass_names].T).T
+
+    # Reset the index
+    dataset.reset_index(inplace=True)
+
+    # Return the partitioned dataset
+    return dataset
+
+
 def mesh_biomass_to_nasc(
     mesh_data_df: pd.DataFrame,
     biodata: Union[pd.DataFrame, Dict[str, pd.DataFrame]],
