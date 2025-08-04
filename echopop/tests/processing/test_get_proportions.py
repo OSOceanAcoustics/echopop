@@ -746,7 +746,7 @@ def test_calculate_adjusted_proportions(proportion_dict):
     )
 
     result = get_proportions.calculate_adjusted_proportions(
-        group_keys, aggregate_table, sex_proportions_table
+        group_keys, aggregate_table, sex_proportions_table, ["sex"]
     )
 
     # Check that we get multi-index with group and sex
@@ -760,7 +760,12 @@ def test_calculate_adjusted_proportions(proportion_dict):
 
 def test_stratum_averaged_weight(proportion_test_dict, test_weight_table):
     """Test the stratum_averaged_weight function."""
-    result = get_proportions.stratum_averaged_weight(proportion_test_dict, test_weight_table)
+    result = get_proportions.stratum_averaged_weight(
+        proportions_dict=proportion_test_dict,
+        binned_weight_table=test_weight_table,
+        stratify_by=["stratum_num"],
+        group_by=["sex"],
+    )
 
     # Check that we get the right format
     assert isinstance(result, pd.DataFrame)
