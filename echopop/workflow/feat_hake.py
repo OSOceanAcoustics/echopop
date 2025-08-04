@@ -473,7 +473,8 @@ dict_df_weight_distr["unaged"] = get_proportions.binned_weights(
 df_averaged_weight = get_proportions.stratum_averaged_weight(
     proportions_dict=dict_df_number_proportion, 
     binned_weight_table=binned_weight_table,
-    stratum_col="stratum_ks",
+    stratify_by=["stratum_ks"],
+    group_by=["sex"]
 )
 
 # ==================================================================================================
@@ -577,17 +578,23 @@ df_nasc_no_age1["area_interval"] = (
 )
 
 # ==================================================================================================
-# Calculate remaining population metrics across all animals 
-# ---------------------------------------------------------
-biology.set_population_metrics(df_nasc=df_nasc_all_ages, 
-                               metrics=["abundance", "biomass", "biomass_density"],
-                               stratify_by="stratum_ks",
-                               df_average_weight=df_averaged_weight["all"])
+# Calculate (grouped) abundances
+# ------------------------------
 
-biology.set_population_metrics(df_nasc=df_nasc_no_age1, 
-                               metrics=["abundance", "biomass", "biomass_density"],
-                               stratify_by="stratum_ks",
-                               df_average_weight=df_averaged_weight["all"])
+set_abundance(dataset=df_nasc_no_age1, 
+              group_by=["sex"],
+              stratify_by=["stratum_ks"], 
+              exclude_filter={"sex": "unsexed"},
+              number_proportions=dict_df_number_proportion)
+
+# ==================================================================================================
+# Calculate (grouped) biomasses
+# -----------------------------
+
+set_biomass(dataset=df_nasc_no_age1,
+            group_by=["sex"],
+            stratify_by=["stratum_ks"],
+            df_average_weight=df_averaged_weight)
 
 # ==================================================================================================
 # Get proportions for each stratum specific to age-1
@@ -617,6 +624,18 @@ age1_weight_proportions = get_proportions.get_weight_proportions_slice(
     number_proportions=dict_df_number_proportion,
     length_threshold_min=10.0,
     weight_proportion_threshold=1e-10
+)
+
+# ==================================================================================================
+# Partition the transect data
+# ---------------------------
+df_partitioned_no_age1 = partition_transect_data(
+    dataset=df_nasc_no_age1,
+    partition_dict={
+        "nasc": age1_nasc_proportions, 
+        "abundance": age1_number_proportions,
+        "biomass": age1_weight_proportions
+    }
 )
 
 # ==================================================================================================
@@ -652,7 +671,7 @@ variogram_parameters = {
 
 # Initialize
 geo = Geostats(
-    data_df=df_nasc_all_ages,
+    data_df=df_partitioned_no_age1,
     mesh_df=df_mesh,
     kriging_params=kriging_parameters,
     variogram_params=variogram_parameters,    
