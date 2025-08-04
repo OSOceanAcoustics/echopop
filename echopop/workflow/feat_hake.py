@@ -27,8 +27,8 @@ from echopop.nwfsc_feat import (
 # ==================================================================================================
 # DEFINE DATA ROOT DIRECTORY
 # --------------------------
-DATA_ROOT = Path("C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_2019")
-# DATA_ROOT = Path("C:/Users/Brandyn Lucca/Documents/Data/echopop_2019")
+# DATA_ROOT = Path("C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_2019")
+DATA_ROOT = Path("C:/Users/Brandyn Lucca/Documents/Data/echopop_2019")
 
 # ==================================================================================================
 # ==================================================================================================
@@ -474,7 +474,7 @@ df_averaged_weight = get_proportions.stratum_averaged_weight(
     proportions_dict=dict_df_number_proportion, 
     binned_weight_table=binned_weight_table,
     stratify_by=["stratum_ks"],
-    group_by=["sex"]
+    group_by=["sex"],
 )
 
 # ==================================================================================================
@@ -578,23 +578,29 @@ df_nasc_no_age1["area_interval"] = (
 )
 
 # ==================================================================================================
-# Calculate (grouped) abundances
-# ------------------------------
+# Calculate (and apportion) number densities to abundance, and number densities/abundance for each 
+# sex 
+# --------------------------------------------------------------------------------------------------
 
-set_abundance(dataset=df_nasc_no_age1, 
-              group_by=["sex"],
-              stratify_by=["stratum_ks"], 
-              exclude_filter={"sex": "unsexed"},
-              number_proportions=dict_df_number_proportion)
+biology.set_abundance(
+    dataset=df_nasc_no_age1,
+    stratify_by=["stratum_ks"],
+    group_by=["sex"],
+    exclude_filter={"sex": "unsexed"},
+    number_proportions=dict_df_number_proportion
+)
 
 # ==================================================================================================
-# Calculate (grouped) biomasses
-# -----------------------------
+# Calculate (and apportion) biomass densities and biomass (from number density and abundance, 
+# respectively) for the overall transect dataset as well as for each sex
+# --------------------------------------------------------------------------------------------------
 
-set_biomass(dataset=df_nasc_no_age1,
-            group_by=["sex"],
-            stratify_by=["stratum_ks"],
-            df_average_weight=df_averaged_weight)
+biology.set_biomass(
+    dataset=df_nasc_no_age1,
+    stratify_by=["stratum_ks"],
+    group_by=["sex"],
+    df_average_weight=df_averaged_weight,
+)
 
 # ==================================================================================================
 # Get proportions for each stratum specific to age-1
@@ -627,15 +633,16 @@ age1_weight_proportions = get_proportions.get_weight_proportions_slice(
 )
 
 # ==================================================================================================
-# Partition the transect data
-# ---------------------------
-df_partitioned_no_age1 = partition_transect_data(
+# Apply the calculated proportions to the abundance, biomass, and NASC estimates
+# ------------------------------------------------------------------------------
+
+df_nasc_no_age1_prt = apportion.partition_transect_data(
     dataset=df_nasc_no_age1,
     partition_dict={
         "nasc": age1_nasc_proportions, 
         "abundance": age1_number_proportions,
         "biomass": age1_weight_proportions
-    }
+    },
 )
 
 # ==================================================================================================
@@ -671,7 +678,7 @@ variogram_parameters = {
 
 # Initialize
 geo = Geostats(
-    data_df=df_partitioned_no_age1,
+    data_df=df_nasc_no_age1_prt,
     mesh_df=df_mesh,
     kriging_params=kriging_parameters,
     variogram_params=variogram_parameters,    
