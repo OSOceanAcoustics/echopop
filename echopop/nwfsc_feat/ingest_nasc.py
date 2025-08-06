@@ -1284,19 +1284,15 @@ def filter_transect_intervals(
 
     # Check for overlap between the distance range and log range
     mask = (
-        (
-            (expanded_df["distance_e"] >= expanded_df["log_start"]) &
-            (expanded_df["distance_s"] <= expanded_df["log_end"])
-        ) |
-        (
-            expanded_df["log_start"].isna() | expanded_df["log_end"].isna()
-        )
-    )
+        (expanded_df["distance_e"] >= expanded_df["log_start"])
+        & (expanded_df["distance_s"] <= expanded_df["log_end"])
+    ) | (expanded_df["log_start"].isna() | expanded_df["log_end"].isna())
 
     # Apply mask and keep only original columns
     filtered_df = expanded_df[mask].filter(original_columns).reset_index(drop=True)
 
     return filtered_df
+
 
 def convert_afsc_nasc_to_feat(
     df: pd.DataFrame,
@@ -1326,15 +1322,13 @@ def convert_afsc_nasc_to_feat(
     pd.DataFrame
         Transformed DataFrame in FEAT format.
     """
-    
+
     # Apply inclusion filter if provided
-    df = utils.apply_filters(df, 
-                                include_filter=inclusion_filter,
-                                exclude_filter=exclusion_filter)
+    df = utils.apply_filters(df, include_filter=inclusion_filter, exclude_filter=exclusion_filter)
 
     # Create distance intervals
     df.rename(columns={"distance": "distance_s"}, inplace=True)
-    
+
     # End of interval
     df["distance_e"] = df["distance_s"] + default_interval_distance
 
