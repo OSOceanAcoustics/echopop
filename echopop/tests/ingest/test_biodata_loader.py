@@ -6,7 +6,6 @@ import pytest
 from echopop.nwfsc_feat.load_data import (
     apply_ship_survey_filters,
     load_biological_data,
-    preprocess_biological_data,
 )
 
 
@@ -71,31 +70,6 @@ def test_load_biological_data_file_not_found(bio_sheet_map):
 
     with pytest.raises(FileNotFoundError):
         load_biological_data(non_existent_file, bio_sheet_map)
-
-
-# Biological preprocessing tests
-def test_preprocess_biological_data(biological_data, label_map):
-    """Test biological data preprocessing."""
-    result = preprocess_biological_data(biological_data, label_map)
-
-    assert set(result["length"]["sex"].unique()).issubset({"male", "female", "unsexed"})
-    assert set(result["specimen"]["sex"].unique()).issubset({"male", "female"})
-    assert all(result["catch"] == biological_data["catch"])
-
-
-def test_preprocess_biological_data_no_label_map(biological_data):
-    """Test preprocessing without label map."""
-    result = preprocess_biological_data(biological_data, None)
-
-    for key in biological_data:
-        pd.testing.assert_frame_equal(result[key], biological_data[key])
-
-
-def test_preprocess_biological_data_empty_dict():
-    """Test preprocessing with empty dictionary."""
-    result = preprocess_biological_data({}, {"sex": {1: "male"}})
-
-    assert result == {}
 
 
 # Ship/survey filter tests
