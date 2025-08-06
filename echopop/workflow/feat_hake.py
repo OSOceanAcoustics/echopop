@@ -162,7 +162,7 @@ df_nasc_all_ages: pd.DataFrame = ingest_nasc.read_nasc_file(
 
 # EXAMPLE: 2001 Dataset
 df_nasc_all_ages_feat = ingest_nasc.convert_afsc_nasc_to_feat(
-    df=df_nasc_all_ages_cleaned,
+    df=df_nasc_all_ages,
     default_interval_distance = 0.5,
     default_transect_spacing = 10.0,
     inclusion_filter = {"transect_num", np.arange(1, 200)},
@@ -174,7 +174,7 @@ df_nasc_all_ages_feat = ingest_nasc.convert_afsc_nasc_to_feat(
 
 # DataFrame with filtered intervals representing on-effort
 df_nasc_all_ages_cleaned: pd.DataFrame = ingest_nasc.filter_transect_intervals(
-    nasc_df=df_nasc_all_ages,
+    nasc_df=df_nasc_all_ages_feat,
     transect_filter_df=Path("Path/to/file"),
     subset_filter="survey == 201003",
     transect_filter_sheet="Sheet1",
