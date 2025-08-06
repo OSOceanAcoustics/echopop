@@ -15,7 +15,6 @@ def load_biological_data(
 ) -> Dict[str, pd.DataFrame]:
     """
     Load biological data from a single Excel file with multiple sheets.
-    Load biological data from a single Excel file with multiple sheets.
 
     Parameters
     ----------
@@ -63,43 +62,14 @@ def load_biological_data(
 
     # Apply label mappings if provided
     if biodata_label_map:
-        biodata_dict = preprocess_biological_data(biodata_dict, biodata_label_map)
+        # ---- For each column mapping in the label map
+        for col, mapping in biodata_label_map.items():
+            # ---- Apply to each dataframe that has that column
+            for name, df in biodata_dict.items():
+                if isinstance(df, pd.DataFrame) and col in df.columns:
+                    df[col] = df[col].map(mapping).fillna(df[col])
 
     return biodata_dict
-
-
-def preprocess_biological_data(
-    bio_data: Dict[str, pd.DataFrame], biodata_label_map: Optional[Dict[str, Dict]] = None
-) -> Dict[str, pd.DataFrame]:
-    """
-    Apply label mappings to biological data.
-
-    Parameters
-    ----------
-    bio_data : dict
-        Dictionary of DataFrames containing biological data
-    biodata_label_map : dict, optional
-        Dictionary mapping column names to value replacement dictionaries
-        Example: {"sex": {1: "male", 2: "female", 3: "unsexed"}}
-
-    Returns
-    -------
-    dict
-        Dictionary of processed DataFrames
-    """
-    if not biodata_label_map:
-        return bio_data
-
-    result = {k: df.copy() for k, df in bio_data.items()}
-
-    # For each column mapping in the label map
-    for col, mapping in biodata_label_map.items():
-        # Apply to each dataframe that has that column
-        for name, df in result.items():
-            if isinstance(df, pd.DataFrame) and col in df.columns:
-                df[col] = df[col].map(mapping).fillna(df[col])
-
-    return result
 
 
 def apply_ship_survey_filters(
