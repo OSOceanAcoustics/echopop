@@ -10,6 +10,7 @@ from ..core.echoview import (
     ECHOVIEW_EXPORT_ROW_SORT,
     ECHOVIEW_TO_ECHOPOP,
 )
+from . import utils
 
 # from ..ingest import read_csv_file, read_xlsx_file
 
@@ -1296,3 +1297,48 @@ def filter_transect_intervals(
     filtered_df = expanded_df[mask].filter(original_columns).reset_index(drop=True)
 
     return filtered_df
+
+def convert_afsc_nasc_to_feat(
+    df: pd.DataFrame,
+    default_interval_distance: float = 0.5,
+    default_transect_spacing: float = 10.0,
+    inclusion_filter: Dict[str, Any] = {},
+    exclusion_filter: Dict[str, Any] = {},
+) -> pd.DataFrame:
+    """
+    Convert AFSC NASC data to FEAT format.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame containing AFSC NASC data.
+    default_interval_distance : float, optional
+        Default distance interval for transects, by default 0.5.
+    default_transect_spacing : float, optional
+        Default transect spacing, by default 10.0.
+    inclusion_filter : Dict[str, Any], optional
+        Filter to include specific rows based on column values, by default {}.
+    exclusion_filter : Dict[str, Any], optional
+        Filter to exclude specific rows based on column values, by default {}.
+
+    Returns
+    -------
+    pd.DataFrame
+        Transformed DataFrame in FEAT format.
+    """
+    
+    # Apply inclusion filter if provided
+    df = utils.apply_filters(df, 
+                                include_filter=inclusion_filter,
+                                exclude_filter=exclusion_filter)
+
+    # Create distance intervals
+    df.rename(columns={"distance": "distance_s"}, inplace=True)
+    
+    # End of interval
+    df["distance_e"] = df["distance_s"] + default_interval_distance
+
+    # Replace NaN values in transect_spacing with the default value
+    df["transect_spacing"] = df["transect_spacing"].fillna(default_transect_spacing)
+
+    return df
