@@ -1254,10 +1254,10 @@ def test_filter_transect_intervals_with_subset_filter():
     """Test filtering with subset filter."""
     nasc_df = pd.DataFrame(
         {
-            "transect_num": [1, 1, 2, 2],
-            "distance_s": [0, 1, 0, 1],
-            "distance_e": [1, 2, 1, 2],
-            "nasc": [10, 20, 30, 40],
+            "transect_num": [1, 1, 1, 2, 2, 3, 3, 3],
+            "distance_s": [0, 1, 2, 0, 1, 0, 1, 2],
+            "distance_e": [1, 2, 3, 1, 2, 1, 2, 3],
+            "nasc": [10, 20, 30, 40, 50, 60, 70, 80],
         }
     )
 
@@ -1273,9 +1273,9 @@ def test_filter_transect_intervals_with_subset_filter():
     # Apply filter with subset
     result = filter_transect_intervals(nasc_df, filter_df, "region_id == 'A'")
 
-    # Check results - should only include transect 1
-    assert len(result) == 2
-    assert all(result["transect_num"] == 1)
+    # Check results - should include 1 fewer row
+    assert len(result) == 7
+    assert all(result["transect_num"] == [1, 1, 2, 2, 3, 3, 3])
 
 
 def test_filter_transect_intervals_no_overlap():
