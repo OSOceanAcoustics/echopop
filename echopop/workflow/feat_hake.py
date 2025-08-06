@@ -157,18 +157,6 @@ df_nasc_all_ages: pd.DataFrame = ingest_nasc.read_nasc_file(
 )
 
 # ==================================================================================================
-# [OPTIONAL] Filter the transect intervals to account for on- and off-effort
-# --------------------------------------------------------------------------
-
-# DataFrame with filtered intervals representing on-effort
-df_nasc_all_ages_cleaned: pd.DataFrame = ingest_nasc.filter_transect_intervals(
-    nasc_df=df_nasc_all_ages,
-    transect_filter_df=Path("Path/to/file"),
-    subset_filter="survey == 201003",
-    transect_filter_sheet="Sheet1",
-)
-
-# ==================================================================================================
 # [OPTIONAL] Convert the NASC DataFrame format from AFSC to FEAT
 # --------------------------------------------------------------
 
@@ -178,6 +166,18 @@ df_nasc_all_ages_feat = ingest_nasc.convert_afsc_nasc_to_feat(
     default_interval_distance = 0.5,
     default_transect_spacing = 10.0,
     inclusion_filter = {"transect_num", np.arange(1, 200)},
+)
+
+# ==================================================================================================
+# [OPTIONAL] Filter the transect intervals to account for on- and off-effort
+# --------------------------------------------------------------------------
+
+# DataFrame with filtered intervals representing on-effort
+df_nasc_all_ages_cleaned: pd.DataFrame = ingest_nasc.filter_transect_intervals(
+    nasc_df=df_nasc_all_ages,
+    transect_filter_df=Path("Path/to/file"),
+    subset_filter="survey == 201003",
+    transect_filter_sheet="Sheet1",
 )
 
 # ==================================================================================================
