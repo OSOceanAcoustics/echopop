@@ -13,7 +13,7 @@ def compute_binned_counts(
     groupby_cols: List[str],
     count_col: str,
     agg_func: str = "size",
-    exclude_filters: Dict[str, Any] = {},
+    exclude_filters: Optional[Dict[str, Any]] = None,
 ) -> pd.DataFrame:
     """
     Compute binned counts with grouping and optional filtering.
@@ -28,7 +28,7 @@ def compute_binned_counts(
         Column to aggregate
     agg_func : str, default "size"
         Aggregation function to apply: "size", "sum", "count", etc.
-    exclude_filters : dict, default {}
+    exclude_filters : dict, optional
         Column-value pairs to exclude. Format: {column: value_to_exclude}
 
     Returns
@@ -39,7 +39,10 @@ def compute_binned_counts(
     df = data.copy()
 
     # Apply exclusion filters
-    df = utils.apply_filters(df, exclude_filter=exclude_filters)
+    if exclude_filters:
+        for col, exclude_val in exclude_filters.items():
+            if col in df.columns:
+                df = df.loc[df[col] != exclude_val]
 
     # Apply aggregation
     if agg_func == "size":
