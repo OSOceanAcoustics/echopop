@@ -169,6 +169,18 @@ df_nasc_all_ages_cleaned: pd.DataFrame = ingest_nasc.filter_transect_intervals(
 )
 
 # ==================================================================================================
+# [OPTIONAL] Convert the NASC DataFrame format from AFSC to FEAT
+# --------------------------------------------------------------
+
+# EXAMPLE: 2001 Dataset
+df_nasc_all_ages_feat = ingest_nasc.convert_afsc_nasc_to_feat(
+    df=df_nasc_all_ages_cleaned,
+    default_interval_distance = 0.5,
+    default_transect_spacing = 10.0,
+    inclusion_filter = {"transect_num", np.arange(1, 200)},
+)
+
+# ==================================================================================================
 # Load in the biolodical data
 # ---------------------------
 biodata_sheet_map: Dict[str, str] = {
