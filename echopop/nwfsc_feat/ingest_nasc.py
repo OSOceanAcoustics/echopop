@@ -1282,8 +1282,14 @@ def filter_transect_intervals(
     )
 
     # Check for overlap between the distance range and log range
-    mask = (expanded_df["distance_e"] >= expanded_df["log_start"]) & (
-        expanded_df["distance_s"] <= expanded_df["log_end"]
+    mask = (
+        (
+            (expanded_df["distance_e"] >= expanded_df["log_start"]) &
+            (expanded_df["distance_s"] <= expanded_df["log_end"])
+        ) |
+        (
+            expanded_df["log_start"].isna() | expanded_df["log_end"].isna()
+        )
     )
 
     # Apply mask and keep only original columns
