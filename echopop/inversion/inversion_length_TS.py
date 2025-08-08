@@ -69,7 +69,7 @@ class InversionLengthTS(InversionBase):
         # Set inversion method
         self.inversion_method = "length_TS_regression"
         
-        # Initialize internal values     
+        # Initialize attributes
         self.sigma_bs_haul = None
         self.sigma_bs_strata = None
         
@@ -293,7 +293,7 @@ class InversionLengthTS(InversionBase):
             else:
                 unique_strata = np.unique(df_nasc[self.model_params["stratify_by"]])
                 
-            # Get the mean linear scattering coefficnet for each stratum
+            # Get the mean linear scattering coefficient for each stratum
             sigma_bs_strata = self.get_stratified_sigma_bs(df_length) 
             
             # Impute, if defined
