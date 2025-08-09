@@ -559,15 +559,19 @@ df_nasc_no_age1["area_interval"] = (
 # ==================================================================================================
 # Calculate remaining population metrics across all animals 
 # ---------------------------------------------------------
-biology.set_population_metrics(df_nasc=df_nasc_all_ages, 
-                               metrics=["abundance", "biomass", "biomass_density"],
-                               stratify_by="stratum_ks",
-                               df_average_weight=df_averaged_weight["all"])
+biology.set_population_metrics(
+    df_nasc=df_nasc_all_ages, 
+    metrics=["abundance", "biomass", "biomass_density"],
+    stratify_by="stratum_ks",
+    df_average_weight=df_averaged_weight["all"]
+)
 
-biology.set_population_metrics(df_nasc=df_nasc_no_age1, 
-                               metrics=["abundance", "biomass", "biomass_density"],
-                               stratify_by="stratum_ks",
-                               df_average_weight=df_averaged_weight["all"])
+biology.set_population_metrics(
+    df_nasc=df_nasc_no_age1, 
+    metrics=["abundance", "biomass", "biomass_density"],
+    stratify_by="stratum_ks",
+    df_average_weight=df_averaged_weight["all"]
+)
 
 # ==================================================================================================
 # Get proportions for each stratum specific to age-1
