@@ -1,4 +1,6 @@
 import pandas as pd
+import pytest
+from pydantic import ValidationError
 
 from echopop import inversion
 
@@ -19,59 +21,33 @@ def test_inversion_length_ts_init_missing_params():
         # Missing ts_length_regression
     }
 
-    # Should not raise error during init, but during use
-    inverter = inversion.InversionLengthTS(bad_params)
-    assert inverter.inversion_method == "length_TS_regression"
-
-
-def test_set_haul_sigma_bs_single_df(model_parameters, specimen_df):
-    """Test set_haul_sigma_bs with single DataFrame."""
-    inverter = inversion.InversionLengthTS(model_parameters)
-
-    # Should not raise error
-    inverter.set_haul_sigma_bs(specimen_df)
-
-    assert inverter.sigma_bs_haul is not None
-    assert isinstance(inverter.sigma_bs_haul, pd.Series)
-
-
-def test_set_haul_sigma_bs_multiple_df(model_parameters, specimen_df, length_df):
-    """Test set_haul_sigma_bs with multiple DataFrames."""
-    inverter = inversion.InversionLengthTS(model_parameters)
-
-    inverter.set_haul_sigma_bs([specimen_df, length_df])
-
-    assert inverter.sigma_bs_haul is not None
-    assert isinstance(inverter.sigma_bs_haul, pd.Series)
+    # Expected to raise a Validation Error
+    with pytest.raises(ValidationError):
+        assert inversion.InversionLengthTS(bad_params)
 
 
 def test_get_stratified_sigma_bs_with_data(model_parameters, specimen_df):
     """Test get_stratified_sigma_bs with provided data."""
     inverter = inversion.InversionLengthTS(model_parameters)
 
-    result = inverter.get_stratified_sigma_bs(specimen_df)
+    inverter.get_stratified_sigma_bs(specimen_df)
 
-    assert isinstance(result, pd.DataFrame)
-    assert "sigma_bs" in result.columns
-    assert len(result) > 0
-
-
-def test_get_stratified_sigma_bs_cached(model_parameters, specimen_df):
-    """Test get_stratified_sigma_bs using cached haul data."""
-    inverter = inversion.InversionLengthTS(model_parameters)
-    inverter.set_haul_sigma_bs(specimen_df)
-
-    result = inverter.get_stratified_sigma_bs()
-
-    assert isinstance(result, pd.DataFrame)
-    assert "sigma_bs" in result.columns
+    # Check types and formatting
+    # ---- sigma_bs_haul
+    assert isinstance(inverter.sigma_bs_haul, pd.DataFrame)
+    assert "sigma_bs" in inverter.sigma_bs_haul.columns
+    assert len(inverter.sigma_bs_haul) > 0
+    # ---- sigma_bs_strata
+    assert isinstance(inverter.sigma_bs_strata, pd.DataFrame)
+    assert "sigma_bs" in inverter.sigma_bs_strata.columns
+    assert len(inverter.sigma_bs_strata) > 0
 
 
 def test_invert_basic(model_parameters, nasc_df, specimen_df):
     """Test basic inversion functionality."""
     inverter = inversion.InversionLengthTS(model_parameters)
 
-    result = inverter.invert(nasc_df, specimen_df)
+    result = inverter.invert(df_nasc=nasc_df, df_length=specimen_df)
 
     assert "number_density" in result.columns
     assert len(result) == len(nasc_df)
@@ -151,11 +127,8 @@ def test_full_workflow(model_parameters, specimen_df, length_df, nasc_df):
     """Test complete workflow from data to inversion."""
     inverter = inversion.InversionLengthTS(model_parameters)
 
-    # Step 1: Set haul sigma_bs
-    inverter.set_haul_sigma_bs([specimen_df, length_df])
-
-    # Step 2: Perform inversion
-    result = inverter.invert(nasc_df)
+    # Perform inversion
+    result = inverter.invert(nasc_df, [specimen_df, length_df])
 
     # Verify complete workflow
     assert "number_density" in result.columns
@@ -190,8 +163,9 @@ def test_workflow_different_strata_coverage():
     params = {
         "ts_length_regression": {"slope": 20.0, "intercept": -68.0},
         "stratify_by": "stratum_ks",
-        "strata": [1, 2, 3, 4, 5],
+        "expected_strata": [1, 2, 3, 4, 5],
         "impute_missing_strata": True,
+        "haul_replicates": True,
     }
 
     inverter = inversion.InversionLengthTS(params)
