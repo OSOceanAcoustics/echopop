@@ -1,5 +1,6 @@
 import pandas as pd
-
+import pytest
+from pydantic import ValidationError
 from echopop import inversion
 
 
@@ -19,9 +20,9 @@ def test_inversion_length_ts_init_missing_params():
         # Missing ts_length_regression
     }
 
-    # Should not raise error during init, but during use
-    inverter = inversion.InversionLengthTS(bad_params)
-    assert inverter.inversion_method == "length_TS_regression"
+    # Expected to raise a Validation Error
+    with pytest.raises(ValidationError):
+        assert inversion.InversionLengthTS(bad_params)
 
 def test_get_stratified_sigma_bs_with_data(model_parameters, specimen_df):
     """Test get_stratified_sigma_bs with provided data."""

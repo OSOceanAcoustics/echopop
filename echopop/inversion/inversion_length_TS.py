@@ -335,7 +335,7 @@ class ValidateLengthTS(
 
     ts_length_regression: utils.TSLRegressionParameters
     stratify_by: List[str]
-    expected_strata: Optional[Union[List[np.number], np.ndarray[float]]] = Field(default=None)
+    expected_strata: Optional[np.ndarray[np.number]] = Field(default=None)
     impute_missing_strata: bool = Field(default=True)
     haul_replicates: bool = Field(default=True)
 
@@ -343,4 +343,14 @@ class ValidateLengthTS(
     def validate_stratify_by(cls, v):
         if isinstance(v, str):
             v = [v]
+        return v
+
+    @field_validator("expected_strata", mode="before")
+    def validate_expected_strata(cls, v):
+        if v is None:
+            return v
+
+        if isinstance(v, list):
+            return np.array(v)
+
         return v
