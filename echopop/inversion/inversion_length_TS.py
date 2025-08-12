@@ -23,13 +23,17 @@ class InversionLengthTS(InversionBase):
         - 'stratify_by': str or List[str] - stratification columns (e.g., 'stratum_ks')
         
         Optional keys:
-        - 'strata': array-like - specific strata to process
+        - 'expected_strata': array-like - specific strata to process
         - 'impute_missing_strata': bool - whether to impute missing strata values
+        - 'haul_replicates': bool - whether to use haul numbers/ids as replicates instead of 
+        individuals
         
     Attributes
     ----------
-    sigma_bs_haul : pd.Series or None
-        Cached haul-level backscattering cross-sections after set_haul_sigma_bs()
+    sigma_bs_haul : pd.DataFrame or None
+        Haul-level backscattering cross-sections
+    sigma_bs_strata : pd.DataFrame or None
+        Stratum-level backscattering cross-sections
         
     Examples
     --------
@@ -237,7 +241,7 @@ class InversionLengthTS(InversionBase):
             # ---- Aggregate by stratum
             self.sigma_bs_strata = (
                 df_length_counts
-                .groupby(["stratum_ks"])[["length_count", "sigma_bs"]].apply(
+                .groupby(self.model_params["stratify_by"])[["length_count", "sigma_bs"]].apply(
                     lambda x: np.average(x.sigma_bs, weights=x.length_count)
                 )
             ).to_frame("sigma_bs")
@@ -253,8 +257,8 @@ class InversionLengthTS(InversionBase):
         if "stratify_by" in self.model_params:
             
             # Get the unique strata
-            if "strata" in self.model_params:
-                unique_strata = np.unique(self.model_params["strata"])
+            if "expected_strata" is not None:
+                unique_strata = np.unique(self.model_params["expected_strata"])
             else:
                 unique_strata = np.unique(df_nasc[self.model_params["stratify_by"]])
                 

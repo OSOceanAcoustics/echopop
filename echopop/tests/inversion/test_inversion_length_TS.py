@@ -159,7 +159,7 @@ def test_workflow_different_strata_coverage():
     params = {
         "ts_length_regression": {"slope": 20.0, "intercept": -68.0},
         "stratify_by": "stratum_ks",
-        "strata": [1, 2, 3, 4, 5],
+        "expected_strata": [1, 2, 3, 4, 5],
         "impute_missing_strata": True,
         "haul_replicates": True,
     }

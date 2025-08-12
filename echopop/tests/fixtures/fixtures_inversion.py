@@ -9,7 +9,7 @@ def model_parameters():
     return {
         "ts_length_regression": {"slope": 20.0, "intercept": -68.0},
         "stratify_by": "stratum_ks",
-        "strata": [1, 2, 3],  # Reduced to avoid edge case issues
+        "expected_strata": [1, 2, 3],  # Reduced to avoid edge case issues
         "impute_missing_strata": False,  # Disable to avoid imputation bugs
         "haul_replicates": True,
     }
@@ -21,7 +21,7 @@ def model_parameters_multiple_strata():
     return {
         "ts_length_regression": {"slope": 20.0, "intercept": -68.0},
         "stratify_by": ["stratum_ks", "haul_num"],
-        "strata": [1, 2, 3],
+        "expected_strata": [1, 2, 3],
         "impute_missing_strata": True,
         "haul_replicates": True,
     }
@@ -119,7 +119,7 @@ def model_parameters_no_impute():
     return {
         "ts_length_regression": {"slope": 20.0, "intercept": -68.0},
         "stratify_by": "stratum_ks",
-        "strata": [1, 2, 3],
+        "expected_strata": [1, 2, 3],
         "impute_missing_strata": False,
         "haul_replicates": True,
     }
