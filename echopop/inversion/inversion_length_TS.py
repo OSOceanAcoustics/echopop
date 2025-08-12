@@ -1,8 +1,9 @@
 import pandas as pd
 import numpy as np
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Union
 
 from .inversion_base import InversionBase
+from .operations import impute_missing_sigma_bs
 from ..nwfsc_feat import utils
 from .. import acoustics
 
@@ -266,8 +267,8 @@ class InversionLengthTS(InversionBase):
                 "impute_missing_strata" in self.model_params and 
                 self.model_params["impute_missing_strata"]
             ):
-                self.sigma_bs_strata = utils.impute_missing_sigma_bs(unique_strata, 
-                                                                     self.sigma_bs_strata)
+                self.sigma_bs_strata = impute_missing_sigma_bs(unique_strata,
+                                                               self.sigma_bs_strata)
             
             # Index `df_nasc` to align with `sigma_bs_strata` 
             df_nasc.set_index(self.model_params["stratify_by"], inplace=True)
