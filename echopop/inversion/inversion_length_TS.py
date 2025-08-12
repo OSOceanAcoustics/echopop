@@ -149,7 +149,7 @@ class InversionLengthTS(InversionBase):
         )
         
         # Return the output
-        return sigma_bs_haul
+        return sigma_bs_haul.to_frame("sigma_bs")
         
     def get_stratified_sigma_bs(
         self, 
@@ -212,7 +212,7 @@ class InversionLengthTS(InversionBase):
             # ---- Store the values
             self.sigma_bs_haul = self.set_haul_sigma_bs(df_length)
             # ---- Set the mean sigma_bs for each stratum
-            self.sigma_bs_strata = self.sigma_bs_haul.unstack(
+            self.sigma_bs_strata = self.sigma_bs_haul["sigma_bs"].unstack(
                 self.model_params["stratify_by"]
             ).mean(axis=0).to_frame("sigma_bs")
         # Use individuals as replicates
