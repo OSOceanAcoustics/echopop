@@ -509,24 +509,14 @@ MODEL_PARAMETERS = {
         "slope": 20.,
         "intercept": -68.
     },
-    "stratify_by": "stratum_ks",
-    "strata": df_dict_strata["ks"].stratum_num.unique(),
+    "stratify_by": ["stratum_ks"],
+    "expected_strata": df_dict_strata["ks"].stratum_num.unique(),
     "impute_missing_strata": True,
+    "haul_replicates": True,
 }
 
 # Initiate object to perform inversion
 invert_hake = inversion.InversionLengthTS(MODEL_PARAMETERS)
-
-# ==================================================================================================
-# [OPTIONAL] Compute the mean `sigma_bs` per haul
-# -----------------------------------------------
-
-# This step is used in EchoPro
-# Otherwise, the mean `sigma_bs` can be computed directly from the data (as shown below), although 
-# computing the mean average sigma_bs per haul better accounts for pseudoreplication 
-invert_hake.set_haul_sigma_bs(df_length=[dict_df_bio["length"], dict_df_bio["specimen"]])
-# ---- This DataFrame can be inspected at:
-invert_hake.sigma_bs_haul
 
 # ==================================================================================================
 # Invert number density
@@ -534,8 +524,10 @@ invert_hake.sigma_bs_haul
 
 # If the above haul-averaged `sigma_bs` values were calculated, then the inversion can can 
 # completed without calling in additional biodata
-df_nasc_all_ages = invert_hake.invert(df_nasc=df_nasc_all_ages)
-df_nasc_no_age1 = invert_hake.invert(df_nasc=df_nasc_no_age1)
+df_nasc_all_ages = invert_hake.invert(df_nasc=df_nasc_all_ages,
+                                      df_length=[dict_df_bio["length"], dict_df_bio["specimen"]])
+df_nasc_no_age1 = invert_hake.invert(df_nasc=df_nasc_no_age1,
+                                     df_length=[dict_df_bio["length"], dict_df_bio["specimen"]])
 # ---- The average `sigma_bs` for each stratum can be inspected at:
 cached_values = invert_hake.sigma_bs_strata
 
