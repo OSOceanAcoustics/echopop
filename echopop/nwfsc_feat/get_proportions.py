@@ -1515,6 +1515,8 @@ def get_weight_proportions_slice(
         proportions_weight[threshold_mask] = 0.0
 
     return proportions_weight
+
+
 # def assemble_proportions(
 #     dict_df_number_proportion: Dict[pd.DataFrame],
 #     dict_df_weight_proportion: Dict[pd.DataFrame],
