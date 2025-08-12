@@ -1,3 +1,4 @@
+import warnings
 from pathlib import Path
 from typing import Dict, Optional, Tuple, Union
 
@@ -62,43 +63,15 @@ def load_biological_data(
 
     # Apply label mappings if provided
     if biodata_label_map:
-        biodata_dict = preprocess_biological_data(biodata_dict, biodata_label_map)
+        # ---- For each column mapping in the label map
+        for col, mapping in biodata_label_map.items():
+            # ---- Apply to each dataframe that has that column
+            for name, df in biodata_dict.items():
+                if isinstance(df, pd.DataFrame) and col in df.columns:
+                    df[col] = df[col].map(mapping).fillna(df[col])
 
     return biodata_dict
 
-
-def preprocess_biological_data(
-    bio_data: Dict[str, pd.DataFrame], biodata_label_map: Optional[Dict[str, Dict]] = None
-) -> Dict[str, pd.DataFrame]:
-    """
-    Apply label mappings to biological data.
-
-    Parameters
-    ----------
-    bio_data : dict
-        Dictionary of DataFrames containing biological data
-    biodata_label_map : dict, optional
-        Dictionary mapping column names to value replacement dictionaries
-        Example: {"sex": {1: "male", 2: "female", 3: "unsexed"}}
-
-    Returns
-    -------
-    dict
-        Dictionary of processed DataFrames
-    """
-    if not biodata_label_map:
-        return bio_data
-
-    result = {k: df.copy() for k, df in bio_data.items()}
-
-    # For each column mapping in the label map
-    for col, mapping in biodata_label_map.items():
-        # Apply to each dataframe that has that column
-        for name, df in result.items():
-            if isinstance(df, pd.DataFrame) and col in df.columns:
-                df[col] = df[col].map(mapping).fillna(df[col])
-
-    return result
 
 
 def apply_ship_survey_filters(
@@ -301,7 +274,7 @@ def load_geostrata(
     -------
     dict
         Dictionary containing geographic stratification DataFrames keyed by stratification type,
-        each with calculated latitude intervals
+        each with consolidated latitude intervals from INPFC and KS strata assignments
     """
 
     if not geostrata_filepath.exists():
@@ -315,13 +288,13 @@ def load_geostrata(
 
     # Then process each dataframe with the extracted function
     processed_geostrata_dict = {
-        strata_type: preprocess_geostrata_data(df) for strata_type, df in raw_geostrata_dict.items()
+        strata_type: geostrata_bins(df) for strata_type, df in raw_geostrata_dict.items()
     }
 
     return processed_geostrata_dict
 
 
-def preprocess_geostrata_data(df: pd.DataFrame) -> pd.DataFrame:
+def geostrata_bins(df: pd.DataFrame) -> pd.DataFrame:
     """
     Process a geographic stratification DataFrame by adding latitude intervals
     and renaming columns as needed.
@@ -433,7 +406,10 @@ def join_strata_by_haul(
         # Check if stratification columns already exist
         existing_cols = set(strata_cols).intersection(set(df.columns))
         if existing_cols:
-            # Drop existing stratification columns if overwrite is True
+            # Drop existing stratification columns
+            warnings.warn(
+                f"Dropping existing stratification columns {existing_cols} from the dataframe."
+            )
             df = df.drop(columns=list(existing_cols))
 
         # Merge
