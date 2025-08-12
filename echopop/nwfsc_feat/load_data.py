@@ -73,7 +73,6 @@ def load_biological_data(
     return biodata_dict
 
 
-
 def apply_ship_survey_filters(
     df: pd.DataFrame,
     subset_dict: Optional[Dict] = None,
