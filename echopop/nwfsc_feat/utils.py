@@ -4,7 +4,7 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 from scipy import interpolate as interp
-
+from pydantic import BaseModel, Field, ValidationError
 
 def binned_distribution(bins: npt.NDArray[np.number]) -> pd.DataFrame:
     """
@@ -619,3 +619,46 @@ def quantize_length_data(df, group_columns: List[str]):
 
     # Aggregate and return
     return df.groupby(group_columns + ["length"]).agg(length_count=(sum_var_column, var_operation))
+
+####################################################################################################
+# Validators
+class InputModel(BaseModel):
+    """
+    Base Pydantic model for scrutinizing file inputs
+    """
+
+    # Validator method
+    @classmethod
+    def judge(cls, **kwargs):
+        """
+        Validator method
+        """
+        try:
+            return cls(**kwargs)
+        except ValidationError as e:
+            e.__traceback__ = None
+            raise e
+
+    # Factory method
+    @classmethod
+    def create(cls, **kwargs):
+        """
+        Factory creation method
+        """
+
+        return cls.judge(**kwargs).model_dump(exclude_none=True)
+
+class TSLRegressionParameters(InputModel, title="TS-length regression parameters"):
+    """
+    Target strength - length regression parameters
+
+    Parameters
+    ----------
+    slope : float
+        TS-length regression slope.
+    intercept : float
+        TS-length regression intercept.
+    """
+
+    slope: float = Field(allow_inf_nan=False)
+    intercept: float = Field(allow_inf_nan=False)
