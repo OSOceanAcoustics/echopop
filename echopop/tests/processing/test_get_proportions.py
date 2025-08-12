@@ -711,9 +711,7 @@ def test_aggregate_stratum_weights_missing_level(weights_df_missing_stratum):
 def test_scale_weights_by_stratum_basic(simple_weights_df, simple_stratum_weights):
     """Test basic functionality of standardizing weights by stratum."""
     # Call the function
-    result = get_proportions.scale_weights_by_stratum(
-        simple_weights_df, simple_stratum_weights
-    )
+    result = get_proportions.scale_weights_by_stratum(simple_weights_df, simple_stratum_weights)
 
     # Check result is a DataFrame
     assert isinstance(result, pd.DataFrame)
