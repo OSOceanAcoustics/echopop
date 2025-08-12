@@ -883,13 +883,13 @@ def aggregate_stratum_weights(input_data, stratum_col="stratum_num"):
     return final_df
 
 
-def standardize_weights_by_stratum(
+def scale_weights_by_stratum(
     weights_df: Union[pd.Series, pd.DataFrame],
     reference_weights_df: pd.DataFrame,
     stratum_col: str = "stratum_num",
 ):
     """
-    Standardize weights in a DataFrame using reference weights by stratum.
+    Scale weights in a DataFrame using reference weights by stratum.
 
     This function adjusts the weights in the input DataFrame to match the
     reference weight distribution by stratum while maintaining the relative
@@ -907,11 +907,11 @@ def standardize_weights_by_stratum(
     Returns
     -------
     pd.DataFrame
-        DataFrame with weights standardized to match reference weight distribution
+        DataFrame with weights scaled to match reference weight distribution
 
     Examples
     --------
-    >>> standardized_weights = standardize_weights_by_stratum(
+    >>> standardized_weights = scale_weights_by_stratum(
     ...     weights_df=dict_df_weight_distr["unaged"],
     ...     reference_weights_df=stratum_weights,
     ...     stratum_col="stratum_ks"
@@ -959,12 +959,12 @@ def standardize_weights_by_stratum(
     strata_totals = summed_weights.unstack(stratum_col).sum(axis=0)
 
     # Simple standardization: divide by strata totals and multiply by reference weights
-    standardized = (
+    scaled = (
         (summed_weights / strata_totals).unstack(stratum_col) * reference_copy["weight"]
     ).fillna(0.0)
 
     # Fill any NaN values with 0
-    return standardized
+    return scaled
 
 
 def weight_proportions(
@@ -1025,7 +1025,7 @@ def weight_proportions(
     return data_pvt / total_stratum_weights
 
 
-def standardize_weight_proportions(
+def scale_weight_proportions(
     weight_data: pd.DataFrame,
     reference_weight_proportions: pd.DataFrame,
     catch_data: pd.DataFrame,
@@ -1067,7 +1067,7 @@ def standardize_weight_proportions(
 
     Examples
     --------
-    >>> props = standardize_weight_proportions(
+    >>> props = scale_weight_proportions(
     ...     weight_data=standardized_unaged_sex_weights,
     ...     reference_data=weight_proportions,
     ...     catch_data=catch_data,

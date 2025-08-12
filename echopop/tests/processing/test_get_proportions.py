@@ -708,10 +708,10 @@ def test_aggregate_stratum_weights_missing_level(weights_df_missing_stratum):
     assert result.empty
 
 
-def test_standardize_weights_by_stratum_basic(simple_weights_df, simple_stratum_weights):
+def test_scale_weights_by_stratum_basic(simple_weights_df, simple_stratum_weights):
     """Test basic functionality of standardizing weights by stratum."""
     # Call the function
-    result = get_proportions.standardize_weights_by_stratum(
+    result = get_proportions.scale_weights_by_stratum(
         simple_weights_df, simple_stratum_weights
     )
 
@@ -734,14 +734,14 @@ def test_standardize_weights_by_stratum_basic(simple_weights_df, simple_stratum_
     assert result.loc["male", 2] == pytest.approx(male_stratum2_standardized)
 
 
-def test_standardize_weights_by_stratum_error_handling(weights_df_multilevel):
+def test_scale_weights_by_stratum_error_handling(weights_df_multilevel):
     """Test error handling with invalid reference data."""
     # Create reference without stratum_num
     invalid_reference = pd.DataFrame({"region": [1, 2], "weight": [100.0, 150.0]})
 
     # Should raise ValueError
     with pytest.raises(ValueError, match="must have the defined `stratum_col`.*column or index"):
-        get_proportions.standardize_weights_by_stratum(weights_df_multilevel, invalid_reference)
+        get_proportions.scale_weights_by_stratum(weights_df_multilevel, invalid_reference)
 
 
 def test_weight_proportions_basic(weight_distr_dict, catch_data_df):
@@ -793,7 +793,7 @@ def test_weight_proportions_missing_group(weight_distr_dict, catch_data_df):
         )
 
 
-def test_standardize_weight_proportions_basic(
+def test_scale_weight_proportions_basic(
     standardized_data_fixture,
     standardized_weight_reference,
     catch_data_df,
@@ -802,7 +802,7 @@ def test_standardize_weight_proportions_basic(
 ):
     """Test basic functionality of standardized weight proportions."""
     # Call the function directly - this just tests if it runs without errors
-    result = get_proportions.standardize_weight_proportions(
+    result = get_proportions.scale_weight_proportions(
         weight_data=standardized_data_fixture,
         reference_weight_proportions=standardized_weight_reference,
         catch_data=catch_data_df,

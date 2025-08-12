@@ -475,7 +475,7 @@ dict_df_weight_proportion["aged"] = get_proportions.weight_proportions(
 # Compute the standardized haul weights for unaged fish
 # -----------------------------------------------------
 
-standardized_sexed_unaged_weights_df = get_proportions.standardize_weights_by_stratum(
+standardized_sexed_unaged_weights_df = get_proportions.scale_weights_by_stratum(
     weights_df=dict_df_weight_distr["unaged"], 
     reference_weights_df=dict_df_bio["catch"].groupby(["stratum_ks"])["weight"].sum(),
     stratum_col="stratum_ks",
@@ -485,7 +485,7 @@ standardized_sexed_unaged_weights_df = get_proportions.standardize_weights_by_st
 # Compute the standardized weight proportionsfor unaged fish
 # ----------------------------------------------------------
 
-dict_df_weight_proportion["unaged"] = get_proportions.standardize_weight_proportions(
+dict_df_weight_proportion["unaged"] = get_proportions.scale_weight_proportions(
     weight_data=standardized_sexed_unaged_weights_df, 
     reference_weight_proportions=dict_df_weight_proportion["aged"], 
     catch_data=dict_df_bio["catch"], 
