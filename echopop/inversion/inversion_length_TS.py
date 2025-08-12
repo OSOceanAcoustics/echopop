@@ -260,7 +260,7 @@ class InversionLengthTS(InversionBase):
         if "stratify_by" in self.model_params:
             
             # Get the unique strata
-            if "expected_strata" is not None:
+            if self.model_params["expected_strata"] is not None:
                 unique_strata = np.unique(self.model_params["expected_strata"])
             else:
                 unique_strata = np.unique(df_nasc[self.model_params["stratify_by"]])
@@ -335,7 +335,7 @@ class ValidateLengthTS(
 
     ts_length_regression: utils.TSLRegressionParameters
     stratify_by: List[str]
-    expected_strata: Optional[np.ndarray[float]] = Field(default=None)
+    expected_strata: Optional[Union[List[np.number], np.ndarray[float]]] = Field(default=None)
     impute_missing_strata: bool = Field(default=True)
     haul_replicates: bool = Field(default=True)
 
