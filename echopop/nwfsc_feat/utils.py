@@ -3,8 +3,9 @@ from typing import Any, Dict, List, Optional, Union
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
-from scipy import interpolate as interp
 from pydantic import BaseModel, Field, ValidationError
+from scipy import interpolate as interp
+
 
 def binned_distribution(bins: npt.NDArray[np.number]) -> pd.DataFrame:
     """
@@ -540,6 +541,7 @@ def create_grouped_table(
     # Then convert to pivot table
     return create_pivot_table(grouped_df, index_cols, strat_cols, value_col)
 
+
 def quantize_length_data(df, group_columns: List[str]):
     """
     Process DataFrame to ensure it has 'length' and 'length_count' columns.
@@ -620,6 +622,7 @@ def quantize_length_data(df, group_columns: List[str]):
     # Aggregate and return
     return df.groupby(group_columns + ["length"]).agg(length_count=(sum_var_column, var_operation))
 
+
 ####################################################################################################
 # Validators
 class InputModel(BaseModel):
@@ -647,6 +650,7 @@ class InputModel(BaseModel):
         """
 
         return cls.judge(**kwargs).model_dump(exclude_none=True)
+
 
 class TSLRegressionParameters(InputModel, title="TS-length regression parameters"):
     """

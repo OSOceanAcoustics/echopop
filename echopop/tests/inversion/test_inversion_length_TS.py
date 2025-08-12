@@ -1,6 +1,7 @@
 import pandas as pd
 import pytest
 from pydantic import ValidationError
+
 from echopop import inversion
 
 
@@ -24,6 +25,7 @@ def test_inversion_length_ts_init_missing_params():
     with pytest.raises(ValidationError):
         assert inversion.InversionLengthTS(bad_params)
 
+
 def test_get_stratified_sigma_bs_with_data(model_parameters, specimen_df):
     """Test get_stratified_sigma_bs with provided data."""
     inverter = inversion.InversionLengthTS(model_parameters)
@@ -34,11 +36,12 @@ def test_get_stratified_sigma_bs_with_data(model_parameters, specimen_df):
     # ---- sigma_bs_haul
     assert isinstance(inverter.sigma_bs_haul, pd.DataFrame)
     assert "sigma_bs" in inverter.sigma_bs_haul.columns
-    assert len(inverter.sigma_bs_haul) > 0    
+    assert len(inverter.sigma_bs_haul) > 0
     # ---- sigma_bs_strata
     assert isinstance(inverter.sigma_bs_strata, pd.DataFrame)
     assert "sigma_bs" in inverter.sigma_bs_strata.columns
     assert len(inverter.sigma_bs_strata) > 0
+
 
 def test_invert_basic(model_parameters, nasc_df, specimen_df):
     """Test basic inversion functionality."""

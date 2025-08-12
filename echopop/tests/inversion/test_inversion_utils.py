@@ -1,9 +1,8 @@
 import numpy as np
 import pandas as pd
 
-from echopop import acoustics
+from echopop import acoustics, inversion
 from echopop.nwfsc_feat import utils
-from echopop import inversion
 
 # ==============================================================================
 # TESTS FOR ts_length_regression
