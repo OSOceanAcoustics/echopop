@@ -2,44 +2,44 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 import xarray as xr
 
 from echopop.inversion import InversionLengthTS
 from echopop.kriging import Kriging
-from echopop.nwfsc_feat import apportion, get_proportions, ingest_nasc, load_data
+from echopop.nwfsc_feat import biology, ingest_nasc, get_proportions, load_data, utils
+# from echopop.nwfsc_feat import apportion, get_proportions, ingest_nasc, load_data
 
 # ==================================================================================================
+# ==================================================================================================
+# DATA INGESTION
 # ==================================================================================================
 # Organize NASC file
 # ------------------
-nasc_path: Path = Path("C:/Users/Brandyn/Documents/GitHub/Data/raw_nasc/")
-filename_transect_pattern: str = r"T(\d+)"
-default_transect_spacing: float = 10.0  # nmi
-default_transect_spacing_latitude: float = 60.0  # deg N
 
 # Merge exports
 df_intervals, df_exports = ingest_nasc.merge_echoview_nasc(
-    nasc_path,
-    filename_transect_pattern,
-    default_transect_spacing,
-    default_transect_spacing_latitude,
+    nasc_path = Path("C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_2019/raw_nasc/"),
+    filename_transect_pattern=r"T(\d+)",
+    default_transect_spacing=10.0,
+    default_latitude_threshold=60.0,
 )
 
 # ==================================================================================================
 # Read in transect-region-haul keys
 # ---------------------------------
-transect_region_filepath_all_ages: Path = Path(
-    "C:/Users/Brandyn/Documents/GitHub/Data/Stratification/"
+TRANSECT_REGION_FILEPATH_ALL_AGES: Path = Path(
+    "C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_2019/Stratification/"
     "US_CAN_2019_transect_region_haul_age1+ auto_final.xlsx"
 )
-transect_region_sheetname_all_ages: str = "Sheet1"
-transect_region_filepath_no_age1: Path = Path(
-    "C:/Users/Brandyn/Documents/GitHub/Data/Stratification/"
+TRANSECT_REGION_SHEETNAME_ALL_AGES: str = "Sheet1"
+TRANSECT_REGION_FILEPATH_NO_AGE1: Path = Path(
+    "C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_2019/Stratification/"
     "US_CAN_2019_transect_region_haul_age2+ auto_20191205.xlsx"
 )
-transect_region_sheetname_no_age1: str = "Sheet1"
-transect_region_file_rename: dict = {
+TRANSECT_REGION_SHEETNAME_NO_AGE1: str = "Sheet1"
+TRANSECT_REGION_FILE_RENAME: dict = {
     "tranect": "transect_num",
     "region id": "region_id",
     "trawl #": "haul_num",
@@ -47,20 +47,19 @@ transect_region_file_rename: dict = {
 
 # Read in the transect-region-haul key files for each group
 transect_region_haul_key_all_ages: pd.DataFrame = ingest_nasc.read_transect_region_haul_key(
-    transect_region_filepath_all_ages,
-    transect_region_sheetname_all_ages,
-    transect_region_file_rename,
+    filename=TRANSECT_REGION_FILEPATH_ALL_AGES,
+    sheetname=TRANSECT_REGION_SHEETNAME_ALL_AGES,
+    rename_dict=TRANSECT_REGION_FILE_RENAME,
 )
 
 transect_region_haul_key_no_age1: pd.DataFrame = ingest_nasc.read_transect_region_haul_key(
-    transect_region_filepath_no_age1, transect_region_sheetname_no_age1, transect_region_file_rename
+    TRANSECT_REGION_FILEPATH_NO_AGE1, TRANSECT_REGION_SHEETNAME_NO_AGE1, TRANSECT_REGION_FILE_RENAME
 )
 
 # ==================================================================================================
 # Read in transect-region-haul keys
 # ---------------------------------
-CAN_haul_offset: float = 200
-region_name_expr_dict: Dict[str, dict] = {
+REGION_NAME_EXPR_DICT: Dict[str, dict] = {
     "REGION_CLASS": {
         "Age-1 Hake": "^(?:h1a(?![a-z]|m))",
         "Age-1 Hake Mix": "^(?:h1am(?![a-z]|1a))",
@@ -79,24 +78,24 @@ region_name_expr_dict: Dict[str, dict] = {
 # Process the region name codes to define the region classes
 # e.g. H5C - Region 2 corresponds to "Hake, Haul #5, Canada"
 df_exports_with_regions: pd.DataFrame = ingest_nasc.process_region_names(
-    df_exports,
-    region_name_expr_dict,
-    CAN_haul_offset,
+    df=df_exports,
+    region_name_expr_dict=REGION_NAME_EXPR_DICT,
+    can_haul_offset=200,
 )
 
 # ==================================================================================================
 # [OPTIONAL] Generate transect-region-haul key from compiled values
 # ---------------------------------
-region_list_no_age1: List[str] = ["Hake", "Hake Mix"]
-region_list_all_ages: List[str] = ["Age-1 Hake", "Age-1", "Hake", "Hake Mix"]
 
 # Generate transect-region-haul key from compiled values
 df_transect_region_haul_key_no_age1: pd.DataFrame = ingest_nasc.generate_transect_region_haul_key(
-    df_exports_with_regions, filter_list=region_list_no_age1
+    df=df_exports_with_regions, 
+    filter_list=["Hake", "Hake Mix"]
 )
 
 df_transect_region_haul_key_all_ages = ingest_nasc.generate_transect_region_haul_key(
-    df_exports_with_regions, filter_list=region_list_all_ages
+    df=df_exports_with_regions, 
+    filter_list=["Age-1 Hake", "Age-1", "Hake", "Hake Mix"]
 )
 
 # ==================================================================================================
@@ -105,7 +104,7 @@ df_transect_region_haul_key_all_ages = ingest_nasc.generate_transect_region_haul
 df_nasc_no_age1: pd.DataFrame = ingest_nasc.consolidate_echvoiew_nasc(
     df_merged=df_exports_with_regions,
     interval_df=df_intervals,
-    region_class_names=region_list_no_age1,
+    region_class_names=["Hake", "Hake Mix"],
     impute_region_ids=True,
     transect_region_haul_key_df=transect_region_haul_key_no_age1,
 )
@@ -113,7 +112,7 @@ df_nasc_no_age1: pd.DataFrame = ingest_nasc.consolidate_echvoiew_nasc(
 df_nasc_all_ages: pd.DataFrame = ingest_nasc.consolidate_echvoiew_nasc(
     df_merged=df_exports_with_regions,
     interval_df=df_intervals,
-    region_class_names=region_list_all_ages,
+    region_class_names=["Age-1 Hake", "Age-1", "Hake", "Hake Mix"],
     impute_region_ids=True,
     transect_region_haul_key_df=transect_region_haul_key_all_ages,
 )
@@ -121,10 +120,6 @@ df_nasc_all_ages: pd.DataFrame = ingest_nasc.consolidate_echvoiew_nasc(
 # ==================================================================================================
 # [OPTIONAL] Read in a pre-consolidated NASC data file
 # ----------------------------------------------------
-nasc_filename: Path = Path(
-    "C:/Users/Brandyn/Documents/GitHub/Data/Exports/US_CAN_NASC_2019_table_all_ages.xlsx"
-)
-nasc_sheet: str = "Sheet1"
 FEAT_TO_ECHOPOP_COLUMNS: Dict[str, str] = {
     "transect": "transect_num",
     "region id": "region_id",
@@ -139,38 +134,37 @@ FEAT_TO_ECHOPOP_COLUMNS: Dict[str, str] = {
 
 #
 df_nasc_all_ages: pd.DataFrame = ingest_nasc.read_nasc_file(
-    filename=nasc_filename, sheetname=nasc_sheet, column_name_map=FEAT_TO_ECHOPOP_COLUMNS
+    filename=Path(
+    "C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_2019//Exports/"
+    "US_CAN_NASC_2019_table_all_ages.xlsx"
+    ), 
+    sheetname="Sheet1", 
+    column_name_map=FEAT_TO_ECHOPOP_COLUMNS
 )
 
 # ==================================================================================================
 # [OPTIONAL] Filter the transect intervals to account for on- and off-effort
 # --------------------------------------------------------------------------
-transect_filter_filename: Path = Path("Path/to/file")
-# ---- Note: this is only applicable to survey years 2012 and earlier, but this sort of file could
-# ---- be generated for any year
-transect_filter_sheet: str = "Sheet1"
-subset_filter: str = "survey == 201003"
 
-# Outputs:
-# ---- DataFrame with filtered intervals representing on-effort
+# DataFrame with filtered intervals representing on-effort
 df_nasc_all_ages_cleaned: pd.DataFrame = ingest_nasc.filter_transect_intervals(
     nasc_df=df_nasc_all_ages,
-    transect_filter_df=transect_filter_filename,
-    subset_filter=subset_filter,
-    transect_filter_sheet=transect_filter_sheet,
+    transect_filter_df=Path("Path/to/file"),
+    subset_filter="survey == 201003",
+    transect_filter_sheet="Sheet1",
 )
 
 # ==================================================================================================
 # Load in the biolodical data
 # ---------------------------
-ROOT_PATH: Path = Path("C:/Users/Brandyn/Documents/GitHub/Data")
-biodata_filepath: Path = ROOT_PATH / "Biological/1995-2023_biodata_redo.xlsx"
-biodata_sheet_map: Dict[str, str] = {
+ROOT_PATH: Path = Path("C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_2019/")
+
+BIODATA_SHEET_MAP: Dict[str, str] = {
     "catch": "biodata_catch", 
     "length": "biodata_length",
     "specimen": "biodata_specimen",
 }
-subset_dict: Dict[Any, Any] = {
+SUBSET_DICT: Dict[Any, Any] = {
     "ships": {
         160: {
             "survey": 201906
@@ -185,9 +179,9 @@ subset_dict: Dict[Any, Any] = {
 FEAT_TO_ECHOPOP_BIODATA_COLUMNS = {
     "frequency": "length_count",
     "haul": "haul_num",
-    "weight_in_haul": "haul_weight",
+    "weight_in_haul": "weight",
 }
-biodata_label_map: Dict[Any, Dict] = {
+BIODATA_LABEL_MAP: Dict[Any, Dict] = {
     "sex": {
         1: "male",
         2: "female",
@@ -196,17 +190,18 @@ biodata_label_map: Dict[Any, Dict] = {
 }
 
 # 
-dict_df_bio = load_data.load_biological_data(biodata_filepath, 
-                                             biodata_sheet_map, 
-                                             FEAT_TO_ECHOPOP_BIODATA_COLUMNS, 
-                                             subset_dict, 
-                                             biodata_label_map)
+dict_df_bio = load_data.load_biological_data(
+    biodata_filepath=ROOT_PATH / "Biological/1995-2023_biodata_redo.xlsx", 
+    biodata_sheet_map=BIODATA_SHEET_MAP, 
+    column_name_map=FEAT_TO_ECHOPOP_BIODATA_COLUMNS, 
+    subset_dict=SUBSET_DICT, 
+    biodata_label_map=BIODATA_LABEL_MAP
+)
 
 # ==================================================================================================
 # Load in strata files
 # --------------------
-strata_filepath = ROOT_PATH / "Stratification/US_CAN strata 2019_final.xlsx"
-strata_sheet_map = {
+STRATA_SHEET_MAP = {
     "inpfc": "INPFC",
     "ks": "Base KS",
 }
@@ -217,15 +212,16 @@ FEAT_TO_ECHOPOP_STRATA_COLUMNS = {
 }
 
 #
-df_dict_strata = load_data.load_strata(strata_filepath, 
-                                       strata_sheet_map, 
-                                       FEAT_TO_ECHOPOP_STRATA_COLUMNS)
+df_dict_strata = load_data.load_strata(
+    strata_filepath=ROOT_PATH / "Stratification/US_CAN strata 2019_final.xlsx", 
+    strata_sheet_map=STRATA_SHEET_MAP, 
+    column_name_map=FEAT_TO_ECHOPOP_STRATA_COLUMNS
+)
 
 # ==================================================================================================
 # Load in geographical strata files
 # ---------------------------------
-geostrata_filepath = ROOT_PATH / "Stratification/Stratification_geographic_Lat_2019_final.xlsx"
-geostrata_sheet_map = {
+GEOSTRATA_SHEET_MAP = {
     "inpfc": "INPFC",
     "ks": "stratification1",
 }
@@ -235,9 +231,11 @@ FEAT_TO_ECHOPOP_GEOSTRATA_COLUMNS = {
 }
 
 # 
-df_dict_geostrata = load_data.load_geostrata(geostrata_filepath, 
-                                             geostrata_sheet_map, 
-                                             FEAT_TO_ECHOPOP_GEOSTRATA_COLUMNS)
+df_dict_geostrata = load_data.load_geostrata(
+    geostrata_filepath=ROOT_PATH / "Stratification/Stratification_geographic_Lat_2019_final.xlsx", 
+    geostrata_sheet_map=GEOSTRATA_SHEET_MAP, 
+    column_name_map=FEAT_TO_ECHOPOP_GEOSTRATA_COLUMNS
+)
 
 # ==================================================================================================
 # Stratify data based on haul numbers
@@ -266,8 +264,7 @@ dict_df_bio = load_data.join_strata_by_haul(dict_df_bio,
 # ==================================================================================================
 # Load kriging mesh file
 # ----------------------
-mesh_filepath = ROOT_PATH / "Kriging_files/Kriging_grid_files/krig_grid2_5nm_cut_centroids_2013.xlsx"
-mesh_sheet_name = "krigedgrid2_5nm_forChu"
+
 FEAT_TO_ECHOPOP_MESH_COLUMNS = {
     "centroid_latitude": "latitude",
     "centroid_longitude": "longitude",
@@ -275,7 +272,11 @@ FEAT_TO_ECHOPOP_MESH_COLUMNS = {
 }
 
 # 
-df_mesh = load_data.load_mesh_data(mesh_filepath, mesh_sheet_name, FEAT_TO_ECHOPOP_MESH_COLUMNS)
+df_mesh = load_data.load_mesh_data(
+    mesh_filepath=ROOT_PATH / "Kriging_files/Kriging_grid_files/krig_grid2_5nm_cut_centroids_2013.xlsx", 
+    sheet_name="krigedgrid2_5nm_forChu", 
+    column_name_map=FEAT_TO_ECHOPOP_MESH_COLUMNS
+)
 
 # ==================================================================================================
 # [OPTIONAL] Stratify data based on latitude intervals
@@ -303,8 +304,7 @@ df_mesh = load_data.join_geostrata_by_latitude(df_mesh,
 # ==================================================================================================
 # Load kriging and variogram parameters
 # -------------------------------------
-geostatistic_params_filepath = ROOT_PATH / "Kriging_files/default_vario_krig_settings_2019_US_CAN.xlsx"
-geostatistic_params_sheet_name = "Sheet1"
+
 FEAT_TO_ECHOPOP_GEOSTATS_PARAMS_COLUMNS = {
     "hole": "hole_effect_range",
     "lscl": "correlation_range",
@@ -314,103 +314,194 @@ FEAT_TO_ECHOPOP_GEOSTATS_PARAMS_COLUMNS = {
     "res": "lag_resolution",
     "srad": "search_radius",
 }
-column_name_map = FEAT_TO_ECHOPOP_GEOSTATS_PARAMS_COLUMNS
 
-# Outputs:
-# ---- Dictionaries comprising kriging and variogram model parameterization
-kriging_params_dict, variogram_params_dict = load_data.load_kriging_variogram_params(
-    geostatistic_params_filepath,
-    geostatistic_params_sheet_name,
-    FEAT_TO_ECHOPOP_GEOSTATS_PARAMS_COLUMNS
+# 
+dict_kriging_params, dict_variogram_params = load_data.load_kriging_variogram_params(
+    geostatistic_params_filepath=(
+        ROOT_PATH / "Kriging_files/default_vario_krig_settings_2019_US_CAN.xlsx"
+    ),
+    sheet_name="Sheet1",
+    column_name_map=FEAT_TO_ECHOPOP_GEOSTATS_PARAMS_COLUMNS
 )
 
-# ===========================================
-# Compute biological composition based on stratum
-length_bins: np.array  # length bin specification
-df_length_weight, df_regression = get_proportions.length_weight_regression(
-    dict_df_bio["specimen"], length_bins
-)
-# df_regression seems unused afterwards -- good as a record?
+# ==================================================================================================
+# ==================================================================================================
+# DATA PROCESSING
+# ==================================================================================================
+# Generate binned distributions [age, length]
+# -------------------------------------------
+AGE_BINS: npt.NDArray[np.number] = np.linspace(start=1., stop=22., num=22)
+LENGTH_BINS: npt.NDArray[np.number] = np.linspace(start=2., stop=80., num=40)
 
-# Get counts ----------------
-df_aged_counts = get_proportions.fish_count(  # previously "aged_number_distribution"
-    df_specimen=dict_df_bio["specimen"],
-    df_length=dict_df_bio["length"],
-    aged=True,
-    sexed=True,
-)
-df_unaged_counts = get_proportions.fish_count(  # previously "unaged_number_distribution"
-    df_specimen=dict_df_bio["specimen"],
-    df_length=dict_df_bio["length"],
-    aged=False,
-    sexed=True,
-)
-# Previously there was also "aged_number_distribution_filtered"
-# but it is simply df_aged_counts with unsexed fish removed,
-# I think it is better to have that explicitly in the code,
-# so removed OUTSIDE of the get_fish_count function
-
-
-# Get number proportions ----------------
-
-# in the output dataframes: *_overall = *_aged + *_unaged
-# only handle 1 species at a time
-dict_df_number_proportion: Dict[pd.DataFrame] = get_proportions.number_proportions(
-    df_aged_counts,
-    df_unaged_counts,
+# 
+# ---- Length
+utils.binify(
+    data=dict_df_bio, bins=LENGTH_BINS, bin_column="length", 
 )
 
-
-# Get weight proportions ----------------
-dict_df_weight_distr: Dict[pd.DataFrame]
-
-# aged fish - weight distribution over sex/length/age
-dict_df_weight_distr["aged"] = get_proportions.weight_distributions_over_lenghth_age(
-    df_specimen=dict_df_bio["specimen"],
-    df_length=dict_df_bio["length"],
-    df_length_weight=df_length_weight,
-    aged=True,
+# Age
+utils.binify(
+    data=dict_df_bio, bins=AGE_BINS, bin_column="age",
 )
 
-# unaged fish - weight distribution over sex/length
-dict_df_weight_distr["unaged"] = get_proportions.weight_distributions_over_lenghth_age(
-    df_specimen=dict_df_bio["specimen"],
-    df_length=dict_df_bio["length"],
-    df_length_weight=df_length_weight,
-    aged=False,
+# ==================================================================================================
+# Fit length-weight regression to the binned data
+# -----------------------------------------------
+
+# Dictionary for length-weight regression coefficients
+dict_length_weight_coefs = {}
+
+# For all fish
+dict_length_weight_coefs["all"] = dict_df_bio["specimen"].assign(sex="all").groupby(["sex"]).apply(
+    biology.fit_length_weight_regression,
+    include_groups=False
 )
 
-# Get averaged weight for all sex, male, female for all strata
+# Sex-specific
+dict_length_weight_coefs["sex"] = dict_df_bio["specimen"].groupby(["sex"]).apply(
+    biology.fit_length_weight_regression,
+    include_groups=False
+)
+
+# ==================================================================================================
+# Compute the mean weights per length bin
+# ---------------------------------------
+
+# Sex-specific (grouped coefficients)
+df_binned_weights_sex = biology.length_binned_weights(
+    data=dict_df_bio["specimen"],
+    length_bins=LENGTH_BINS,
+    regression_coefficients=dict_length_weight_coefs["sex"],
+    impute_bins=True,
+    minimum_count_threshold=5
+)
+
+# All fish (single coefficient set)
+df_binned_weights_all = biology.length_binned_weights(
+    data=dict_df_bio["specimen"].assign(sex="all"),
+    length_bins=LENGTH_BINS,
+    regression_coefficients=dict_length_weight_coefs["all"],
+    impute_bins=True,
+    minimum_count_threshold=5,
+)
+
+# Combine the pivot tables by adding the "all" column to the sex-specific table
+binned_weight_table = pd.concat([df_binned_weights_sex, df_binned_weights_all], axis=1)
+
+# ==================================================================================================
+# Compute the count distributions per age- and length-bins
+# --------------------------------------------------------
+
+# Dictionary for number counts
+dict_df_counts = {}
+
+# Aged
+dict_df_counts["aged"] = get_proportions.compute_binned_counts(
+    data=dict_df_bio["specimen"].dropna(subset=["age", "length", "weight"]), 
+    groupby_cols=["stratum_ks", "length_bin", "age_bin", "sex"], 
+    count_col="length",
+    agg_func="size"
+)
+
+# Unaged
+dict_df_counts["unaged"] = get_proportions.compute_binned_counts(
+    data=dict_df_bio["length"].copy().dropna(subset=["length"]), 
+    groupby_cols=["stratum_ks", "length_bin", "sex"], 
+    count_col="length_count",
+    agg_func="sum"
+)
+
+# ==================================================================================================
+# Compute the number proportions
+# ------------------------------
+dict_df_number_proportion: Dict[str, pd.DataFrame] = get_proportions.number_proportions(
+    data=dict_df_counts, 
+    group_columns=["stratum_ks"],
+    column_aliases=["aged", "unaged"],
+    exclude_filters=[{"sex": "unsexed"}, None] 
+)
+
+# ==================================================================================================
+# Distribute (bin) weight over age, length, and sex
+# -------------------------------------------------
+# Pre-allocate a dictionary
+dict_df_weight_distr: Dict[str, Any] = {}
+
+# Aged
+dict_df_weight_distr["aged"] = get_proportions.binned_weights(
+    length_dataset=dict_df_bio["specimen"],
+    include_filter = {"sex": ["female", "male"]},
+    interpolate=False,
+    contrast_vars="sex",
+    table_cols=["stratum_ks", "sex", "age_bin"]
+)
+
+# Unaged
+dict_df_weight_distr["unaged"] = get_proportions.binned_weights(
+    length_dataset=dict_df_bio["length"],
+    length_weight_dataset=binned_weight_table,
+    include_filter = {"sex": ["female", "male"]},
+    interpolate=True,
+    contrast_vars="sex",
+    table_cols=["stratum_ks", "sex"]
+)
+
+# ==================================================================================================
+# Calculate the average weights pre stratum when combining different datasets
+# ---------------------------------------------------------------------------
+
 df_averaged_weight = get_proportions.stratum_averaged_weight(
-    df_length_weight=df_length_weight,
-    dict_df_bio=dict_df_bio,  # use "specimen" and "length"
+    proportions_dict=dict_df_number_proportion, 
+    binned_weight_table=binned_weight_table,
+    stratum_col="stratum_ks",
 )
 
-# Get weight proportion for all sex, male, female for all strata
-dict_df_weight_proportion: Dict[pd.DataFrame] = get_proportions.weight_proportions(
-    df_catch=dict_df_bio["catch"],
-    dict_df_weight_proportion=dict_df_weight_distr,  # weight proportions
-    df_length_weight=df_length_weight,  # length-weight regression
+# ==================================================================================================
+# Compute the length-binned weight proportions for aged fish
+# ----------------------------------------------------------
+
+# Initialize Dictionary container
+dict_df_weight_proportion: Dict[str, Any] = {}
+
+# Aged
+dict_df_weight_proportion["aged"] = get_proportions.weight_proportions(
+    weight_data=dict_df_weight_distr, 
+    catch_data=dict_df_bio["catch"], 
+    group="aged",
+    stratum_col="stratum_ks"
 )
 
-# Assemble an xr.Dataset of number and weight proportions
-# I (WJ) think what you have in `distribute_length_age` is essentially this step
-# This is a temporary step to convert the dataframes to xarray
-# NOTE: This is a temporary step to convert the dataframes to xarray.
-#       This can be removed once the following functions are implemented
-#       to use xarray Dataset/DataArray as input/output directly:
-#       -- get_proportions.number_proportions()
-#       -- get_proportions.weight_distributions_over_lenghth_age()
-#       -- get_proportions.stratum_averaged_weight()
-#       -- get_proportions.weight_proportions()
-ds_proportions: xr.Dataset = get_proportions.assemble_proportions(
-    dict_df_number_proportion=dict_df_number_proportion,
-    dict_df_weight_proportion=dict_df_weight_proportion,
+# ==================================================================================================
+# Compute the standardized haul weights for unaged fish
+# -----------------------------------------------------
+
+standardized_sexed_unaged_weights_df = get_proportions.scale_weights_by_stratum(
+    weights_df=dict_df_weight_distr["unaged"], 
+    reference_weights_df=dict_df_bio["catch"].groupby(["stratum_ks"])["weight"].sum(),
+    stratum_col="stratum_ks",
 )
 
+# ==================================================================================================
+# Compute the standardized weight proportionsfor unaged fish
+# ----------------------------------------------------------
 
+dict_df_weight_proportion["unaged"] = get_proportions.scale_weight_proportions(
+    weight_data=standardized_sexed_unaged_weights_df, 
+    reference_weight_proportions=dict_df_weight_proportion["aged"], 
+    catch_data=dict_df_bio["catch"], 
+    number_proportions=dict_df_number_proportion,
+    binned_weights=binned_weight_table["all"],
+    group="unaged",
+    group_columns = ["sex"],
+    stratum_col = "stratum_ks"
+)
+
+# ==================================================================================================
+# ==================================================================================================
+# NASC TO POPULATION ESTIMATE CONVERSION
+# ==================================================================================================
 # ===========================================
-# NASC to number density and biomass
+
 
 # Initiate object to perform inversion
 # inversion parameters are stored as object attributes
