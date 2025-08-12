@@ -15,6 +15,7 @@ def load_biological_data(
 ) -> Dict[str, pd.DataFrame]:
     """
     Load biological data from a single Excel file with multiple sheets.
+    Load biological data from a single Excel file with multiple sheets.
 
     Parameters
     ----------

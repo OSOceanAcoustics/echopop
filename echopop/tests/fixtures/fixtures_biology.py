@@ -296,3 +296,33 @@ def specimen_data_multiple_groups(sample_length_distribution):
 def invalid_length_distribution():
     """Create invalid length distribution missing required columns."""
     return pd.DataFrame({"size": [10, 15, 20, 25], "range": ["small", "medium", "large", "xlarge"]})
+
+
+@pytest.fixture
+def nasc_data_simple():
+    """
+    Basic NASC data matching the real usage pattern.
+    """
+    return pd.DataFrame(
+        {
+            "number_density": [100.0, 200.0, 150.0, 75.0],
+            "area_interval": [2.5, 3.0, 2.8, 1.5],
+            "stratum_ks": [1, 2, 1, 2],
+        }
+    )
+
+
+@pytest.fixture
+def average_weight_series():
+    """
+    Average weight as a Series indexed by stratum_ks (real usage pattern).
+    """
+    return pd.Series([0.4, 0.6], index=[1, 2], name="avg_weight")
+
+
+@pytest.fixture
+def scalar_weight():
+    """
+    Scalar weight value.
+    """
+    return 0.5
