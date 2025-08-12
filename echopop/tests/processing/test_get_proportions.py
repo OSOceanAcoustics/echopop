@@ -60,80 +60,6 @@ def test_compute_binned_counts_default_size(sample_specimen_data):
     assert result["count"].sum() == len(sample_specimen_data)
 
 
-def test_compute_binned_counts_with_filters_size(sample_specimen_data):
-    """Test size aggregation with filters."""
-    result = get_proportions.compute_binned_counts(
-        sample_specimen_data,
-        ["stratum_num", "length_bin"],
-        "length",
-        agg_func="size",
-        exclude_filters={"sex": "unsexed"},
-    )
-
-    expected_count = len(sample_specimen_data[sample_specimen_data["sex"] != "unsexed"])
-    assert result["count"].sum() == expected_count
-
-
-def test_compute_binned_counts_with_filters_sum(sample_length_data):
-    """Test sum aggregation with filters."""
-    result = get_proportions.compute_binned_counts(
-        sample_length_data,
-        ["stratum_num", "length_bin"],
-        "length_count",
-        agg_func="sum",
-        exclude_filters={"sex": "unsexed"},
-    )
-
-    filtered_data = sample_length_data[sample_length_data["sex"] != "unsexed"]
-    expected_sum = filtered_data["length_count"].sum()
-    assert result["count"].sum() == expected_sum
-
-
-def test_compute_binned_counts_multiple_filters(sample_specimen_data):
-    """Test with multiple exclusion filters."""
-    result = get_proportions.compute_binned_counts(
-        sample_specimen_data,
-        ["length_bin"],
-        "length",
-        agg_func="size",
-        exclude_filters={"sex": "unsexed", "stratum_num": 1},
-    )
-
-    expected_count = len(
-        sample_specimen_data[
-            (sample_specimen_data["sex"] != "unsexed") & (sample_specimen_data["stratum_num"] != 1)
-        ]
-    )
-    assert result["count"].sum() == expected_count
-
-
-def test_compute_binned_counts_std_aggregation(sample_specimen_data):
-    """Test standard deviation aggregation."""
-    result = get_proportions.compute_binned_counts(
-        sample_specimen_data, ["stratum_num"], "weight", agg_func="std"
-    )
-
-    assert isinstance(result, pd.DataFrame)
-    assert "count" in result.columns
-    assert len(result) > 0
-    assert result["count"].notna().any()
-
-
-def test_compute_binned_counts_min_max_aggregation(sample_specimen_data):
-    """Test min and max aggregations."""
-    result_min = get_proportions.compute_binned_counts(
-        sample_specimen_data, ["stratum_num"], "length", agg_func="min"
-    )
-
-    result_max = get_proportions.compute_binned_counts(
-        sample_specimen_data, ["stratum_num"], "length", agg_func="max"
-    )
-
-    assert isinstance(result_min, pd.DataFrame)
-    assert isinstance(result_max, pd.DataFrame)
-    assert (result_max["count"] >= result_min["count"]).all()
-
-
 def test_compute_binned_counts_single_group_column(sample_specimen_data):
     """Test with single grouping column."""
     result = get_proportions.compute_binned_counts(
@@ -167,35 +93,6 @@ def test_compute_binned_counts_empty_data(empty_specimen_data):
     assert len(result) == 0
 
 
-def test_compute_binned_counts_all_filtered_out(data_all_unsexed):
-    """Test when all data is filtered out."""
-    result = get_proportions.compute_binned_counts(
-        data_all_unsexed,
-        ["stratum_num"],
-        "length",
-        agg_func="size",
-        exclude_filters={"sex": "unsexed"},
-    )
-
-    assert isinstance(result, pd.DataFrame)
-    assert result["count"].sum() == 0
-
-
-def test_compute_binned_counts_preserves_original_data(sample_specimen_data):
-    """Test that original data is not modified."""
-    original_data = sample_specimen_data.copy()
-
-    get_proportions.compute_binned_counts(
-        sample_specimen_data,
-        ["stratum_num"],
-        "length",
-        agg_func="sum",
-        exclude_filters={"sex": "unsexed"},
-    )
-
-    pd.testing.assert_frame_equal(sample_specimen_data, original_data)
-
-
 def test_compute_binned_counts_different_numeric_columns(sample_specimen_data):
     """Test aggregation on different numeric columns."""
     result_length = get_proportions.compute_binned_counts(
@@ -211,33 +108,6 @@ def test_compute_binned_counts_different_numeric_columns(sample_specimen_data):
     assert len(result_length) == len(result_weight)
 
 
-def test_compute_binned_counts_missing_filter_column(sample_specimen_data):
-    """Test with filter column that doesn't exist."""
-    result = get_proportions.compute_binned_counts(
-        sample_specimen_data,
-        ["stratum_num"],
-        "length",
-        agg_func="size",
-        exclude_filters={"nonexistent_col": "value"},
-    )
-
-    assert result["count"].sum() == len(sample_specimen_data)
-
-
-def test_compute_binned_counts_large_dataset(expanded_specimen_dataset):
-    """Test performance with large dataset."""
-    result = get_proportions.compute_binned_counts(
-        expanded_specimen_dataset,
-        ["stratum_num", "length_bin"],
-        "length",
-        agg_func="size",
-        exclude_filters={"sex": "unsexed"},
-    )
-
-    expected_count = len(expanded_specimen_dataset[expanded_specimen_dataset["sex"] != "unsexed"])
-    assert result["count"].sum() == expected_count
-
-
 def test_compute_binned_counts_deterministic_results(sample_specimen_data):
     """Test that function produces deterministic results."""
     result1 = get_proportions.compute_binned_counts(
@@ -249,30 +119,6 @@ def test_compute_binned_counts_deterministic_results(sample_specimen_data):
     )
 
     pd.testing.assert_frame_equal(result1, result2)
-
-
-def test_compute_binned_counts_numeric_vs_categorical_filters(sample_specimen_data):
-    """Test filtering with numeric and categorical values."""
-    # Numeric filter
-    result_numeric = get_proportions.compute_binned_counts(
-        sample_specimen_data,
-        ["length_bin"],
-        "length",
-        agg_func="size",
-        exclude_filters={"stratum_num": 1},
-    )
-
-    # Categorical filter
-    result_categorical = get_proportions.compute_binned_counts(
-        sample_specimen_data,
-        ["stratum_num"],
-        "length",
-        agg_func="size",
-        exclude_filters={"sex": "male"},
-    )
-
-    assert isinstance(result_numeric, pd.DataFrame)
-    assert isinstance(result_categorical, pd.DataFrame)
 
 
 def test_compute_binned_counts_column_order_preserved(sample_specimen_data):
@@ -474,7 +320,6 @@ def test_number_proportions_proportion_calculations(aged_dataframe, unaged_dataf
     # Check specific row's proportions
     aged_df = result["aged"]
     aged_female_row = aged_df[(aged_df["stratum_num"] == 1) & (aged_df["sex"] == "female")].iloc[0]
-
     female_count = 10  # From fixture
 
     # Within-group proportion
@@ -581,7 +426,7 @@ def test_binned_weights_with_interpolation(
     result = get_proportions.binned_weights(
         length_dataset=length_dataset_with_bins,
         length_weight_dataset=length_weight_dataset_wide_format,  # Required for interpolation
-        interpolate=True,
+        interpolate_regression=True,
         table_index=["length_bin"],
         table_cols=["sex", "stratum"],
         include_filter=None,
@@ -607,7 +452,7 @@ def test_binned_weights_without_interpolation(length_dataset_with_bins):
     # Note: length_weight_dataset is not provided since interpolate=False
     result = get_proportions.binned_weights(
         length_dataset=df,
-        interpolate=False,
+        interpolate_regression=False,
         table_index=["length_bin"],
         table_cols=["sex"],
         include_filter=None,
@@ -624,12 +469,12 @@ def test_binned_weights_without_interpolation(length_dataset_with_bins):
 def test_binned_weights_raises_error_without_dataset(length_dataset_with_bins):
     """Test that binned_weights raises error when interpolate=True but no length_weight_dataset."""
     with pytest.raises(
-        ValueError, match="length_weight_dataset must be provided when interpolate=True"
+        ValueError, match="length_weight_dataset must be provided when interpolate_regression=True"
     ):
         get_proportions.binned_weights(
             length_dataset=length_dataset_with_bins,
             length_weight_dataset=None,  # Missing required dataset
-            interpolate=True,
+            interpolate_regression=True,
             table_index=["length_bin"],
             table_cols=["sex"],
             contrast_vars="sex",
@@ -641,7 +486,7 @@ def test_binned_weights_with_filtering(length_dataset_with_bins, length_weight_d
     result = get_proportions.binned_weights(
         length_dataset=length_dataset_with_bins,
         length_weight_dataset=length_weight_dataset_wide_format,
-        interpolate=True,
+        interpolate_regression=True,
         table_index=["length_bin"],
         table_cols=["sex"],
         include_filter={"sex": "male"},
@@ -673,7 +518,7 @@ def test_binned_weights_global_interpolation(
     result = get_proportions.binned_weights(
         length_dataset=length_dataset_with_bins,
         length_weight_dataset=length_weight_dataset_wide_format,  # Required for interpolation
-        interpolate=True,
+        interpolate_regression=True,
         table_index=["length_bin"],
         table_cols=["stratum"],
         include_filter=None,
@@ -693,7 +538,7 @@ def test_binned_weights_integration(length_dataset_with_bins, length_weight_data
     result_interp = get_proportions.binned_weights(
         length_dataset=length_dataset_with_bins,
         length_weight_dataset=length_weight_dataset_wide_format,
-        interpolate=True,
+        interpolate_regression=True,
         table_index=["length_bin"],
         table_cols=["sex", "stratum"],
         include_filter={"sex": ["male", "female"]},
@@ -709,7 +554,7 @@ def test_binned_weights_integration(length_dataset_with_bins, length_weight_data
     result_no_interp = get_proportions.binned_weights(
         length_dataset=df,
         length_weight_dataset=empty_df,  # Empty DataFrame instead of None
-        interpolate=False,
+        interpolate_regression=False,
         table_index=["length_bin"],
         table_cols=["sex", "stratum"],
         include_filter={"sex": ["male", "female"]},

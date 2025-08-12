@@ -286,13 +286,13 @@ def load_geostrata(
 
     # Then process each dataframe with the extracted function
     processed_geostrata_dict = {
-        strata_type: preprocess_geostrata_data(df) for strata_type, df in raw_geostrata_dict.items()
+        strata_type: geostrata_bins(df) for strata_type, df in raw_geostrata_dict.items()
     }
 
     return processed_geostrata_dict
 
 
-def preprocess_geostrata_data(df: pd.DataFrame) -> pd.DataFrame:
+def geostrata_bins(df: pd.DataFrame) -> pd.DataFrame:
     """
     Process a geographic stratification DataFrame by adding latitude intervals
     and renaming columns as needed.
