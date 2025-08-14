@@ -1445,10 +1445,6 @@ def get_weight_proportions_slice(
     3. Apply threshold mask where both weight and number proportions are very small
     4. Set masked values to 0.0 to indicate unreliable estimates
 
-    The function handles dictionary inputs by computing element-wise products
-    across all datasets to identify cases where multiple sources agree on
-    very low proportions.
-
     Examples
     --------
     >>> # Simple weight proportions without thresholding
