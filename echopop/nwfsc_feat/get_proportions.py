@@ -1315,7 +1315,6 @@ def get_number_proportions_slice(
 
     Notes
     -----
-    - Automatically determines which columns to use as indices vs stratification
     - Handles missing columns gracefully by intersecting with available data
     - For single stratification variable, sums over all other dimensions
     - For multiple variables, preserves structure based on data complexity
