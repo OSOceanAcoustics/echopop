@@ -985,9 +985,8 @@ def generate_transect_region_haul_key(df: pd.DataFrame, filter_list: List[str]) 
 
 def process_region_names(
     df: pd.DataFrame,
-    pattern_dict: Dict,
+    region_name_expr_dict: Dict,
     can_haul_offset: Optional[int] = None,
-    filter_list: List[str] = None,
 ) -> pd.DataFrame:
     """
     Process region names in a DataFrame using regex patterns.
@@ -1000,7 +999,7 @@ def process_region_names(
     ----------
     df : pd.DataFrame
         DataFrame containing a 'region_name' column to process
-    pattern_dict : Dict
+    region_name_expr_dict : Dict
         Dictionary of pattern specifications for component extraction:
         - Keys are component names (e.g., 'REGION_CLASS', 'HAUL_NUM', 'COUNTRY')
         - Values are either:
@@ -1028,7 +1027,7 @@ def process_region_names(
     >>> process_region_names(df, pattern_dict, filter_list=["Hake", "Hake Mix"])
     """
     # Step 1: Extract components from region names
-    extracted_regions = extract_region_components(df, pattern_dict)
+    extracted_regions = extract_region_components(df, region_name_expr_dict)
 
     # Step 2: Process the extracted data
     processed_regions = process_extracted_data(extracted_regions, can_haul_offset)
