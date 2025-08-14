@@ -1189,7 +1189,7 @@ def get_nasc_proportions_slice(
     include_filter: Dict[str, Any] = {},
 ) -> pd.Series:
     """
-    Calculate NASC (acoustic backscatter) proportions for a specific slice of the population.
+    Calculate NASC proportions for a specific slice of the population
 
     This function computes weighted acoustic proportions by applying target strength-length
     regression to convert length-based number proportions into acoustic backscatter
@@ -1206,7 +1206,7 @@ def get_nasc_proportions_slice(
     stratify_by : List[str]
         Column names for stratification (e.g., ["stratum_ks"])
     include_filter : Dict[str, Any], default {}
-        Filter criteria to include specific groups, e.g.:
+        Filter criteria to include specific grouping, e.g.:
         {"age_bin": [1], "sex": ["female"]}
     ts_length_regression_parameters : Dict[str, float]
         Target strength-length regression parameters:
@@ -1286,7 +1286,7 @@ def get_number_proportions_slice(
     include_filter: Dict[str, Any] = {},
 ) -> Union[pd.Series, pd.DataFrame]:
     """
-    Extract number proportions for a specific population slice with flexible filtering.
+    Extract number proportions for a specific slice of the population
 
     This function creates pivot tables from number proportion data and applies
     inclusion/exclusion filters to extract proportions for specific population
@@ -1403,7 +1403,7 @@ def get_weight_proportions_slice(
     weight_proportion_threshold: float = 1e-10,
 ) -> pd.Series:
     """
-    Calculate weight proportions for a population slice with optional thresholding.
+    Calculate weight proportions for a specific slice of the population with optional thresholding
 
     This function computes weight proportions for a target population group, with
     optional thresholding based on number proportions. The thresholding helps

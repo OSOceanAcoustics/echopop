@@ -441,7 +441,7 @@ def set_population_metrics(
     df_average_weight: Optional[Union[pd.DataFrame, float]] = None,
 ) -> None:
     """
-    Convert acoustically derived number densities into population metrics (in-place)
+    Calculate population metrics based on acoustically derived number densities
 
     This function calculates abundance, biomass, and biomass density from acoustic
     number density estimates. The calculations are performed in-place, adding new
