@@ -341,7 +341,7 @@ def compute_biomass(
     dataset: pd.DataFrame,
     stratify_by: List[str] = [],
     group_by: List[str] = [],
-    df_average_weight: Optional[Union[pd.DataFrame, float]] = None,
+    df_average_weight: Optional[Union[pd.DataFrame, pd.Series, float]] = None,
 ):
     """
     Convert number density and abundance estimates to biomass density and total biomass,
