@@ -1194,7 +1194,7 @@ def get_nasc_proportions_slice(
     This function computes weighted acoustic proportions by applying target strength-length
     regression to convert length-based number proportions into acoustic backscatter
     proportions. The target strength weighting accounts for the fact that larger fish
-    contribute disproportionately more to acoustic backscatter.
+    contribute disproportionately mOptional[Union[Dict[str, pd.DataFrame], pd.DataFrame]]ore to acoustic backscatter.
 
     Parameters
     ----------
@@ -1397,7 +1397,7 @@ def get_weight_proportions_slice(
     weight_proportions: pd.DataFrame,
     stratify_by: List[str],
     include_filter: Dict[str, Any] = {},
-    number_proportions: Optional[Union[Dict[str, pd.DataFrame], pd.DataFrame]] = None,
+    number_proportions: Dict[str, pd.DataFrame] = {},
     length_threshold_min: float = 0.0,
     weight_proportion_threshold: float = 1e-10,
 ) -> pd.Series:
@@ -1416,14 +1416,14 @@ def get_weight_proportions_slice(
         Stratification columns (e.g., ["stratum_ks"])
     include_filter : Dict[str, Any], default {}
         Filter criteria for target group, e.g., {"age_bin": [1]}
-    number_proportions : Union[Dict[str, pd.DataFrame], pd.DataFrame], optional
-        Number proportions for thresholding calculation:
-        - Dict: multiple datasets (e.g., {"aged": df1, "unaged": df2})
-        - DataFrame: single dataset
-        - None: no thresholding applied
+    number_proportions : Dict[str, pd.DataFrame], default {}
+        Number proportions required for thresholding particular length values. This argument is 
+        expected to be a dictionary with a key paired with at least one DataFrame 
+        (e.g. {"grouped": df}). When no value is supplied, `number_proportions` defaults to an 
+        empty dictionary with no thresholding applied to the subsequent number proportions.
     length_threshold_min : float, default 0.0
-        Minimum length for threshold calculations (e.g., 10.0 cm)
-        Only used when number_proportions is provided
+        Minimum length for threshold calculations (e.g., 10.0 cm). This is only used when number 
+        proportions are provided.
     weight_proportion_threshold : float, default 1e-10
         Threshold value for proportion comparisons
 
@@ -1486,64 +1486,40 @@ def get_weight_proportions_slice(
     proportions_weight = target_group_weight_proportions / total_weight_proportions
 
     # Apply thresholding if number proportions provided
-    if number_proportions is not None and length_threshold_min is not None:
-
-        # Handle dictionary of number proportions
-        if isinstance(number_proportions, dict):
-            # Get all unique length values across datasets
-            all_length_vals = np.concatenate(
-                [
-                    df["length_bin"].apply(lambda x: x.mid).astype(float).unique()
-                    for df in number_proportions.values()
-                ]
-            )
-            length_vals = np.unique(all_length_vals)
-
-            # Create length exclusion filter
-            length_exclusion_filter = {
-                "length_bin": length_vals[length_vals < length_threshold_min]
-            }
-
-            # Get filtered number proportions for each dataset
-            filtered_number_proportions_dict = {
-                key: get_number_proportions_slice(
-                    df,
-                    stratify_by=stratify_by + ["length_bin"],
-                    exclude_filter=length_exclusion_filter,
-                    include_filter=include_filter,
-                )
-                for key, df in number_proportions.items()
-            }
-
-            # Calculate element-wise product across all datasets
-            filtered_number_proportions = functools.reduce(
-                lambda df1, df2: df1.mul(df2, fill_value=0),
-                filtered_number_proportions_dict.values(),
-            ).sum()
-
-        else:
-            # Single DataFrame case
-            length_vals = (
-                number_proportions["length_bin"].apply(lambda x: x.mid).astype(float).unique()
-            )
-
-            length_exclusion_filter = {
-                "length_bin": length_vals[length_vals < length_threshold_min]
-            }
-
-            filtered_number_proportions = get_number_proportions_slice(
-                number_proportions,
+    if len(number_proportions) > 0:
+        # ---- Get all unique length values across datasets
+        all_length_vals = np.concatenate(
+            [
+                df["length_bin"].apply(lambda x: x.mid).astype(float).unique()
+                for df in number_proportions.values()
+            ]
+        )
+        length_vals = np.unique(all_length_vals)
+        # ---- Create length exclusion filter
+        length_exclusion_filter = {
+            "length_bin": length_vals[length_vals < length_threshold_min]
+        }
+        # ---- Get filtered number proportions for each dataset
+        filtered_number_proportions_dict = {
+            key: get_number_proportions_slice(
+                df,
                 stratify_by=stratify_by + ["length_bin"],
                 exclude_filter=length_exclusion_filter,
                 include_filter=include_filter,
-            ).sum()
-
-        # Apply threshold mask
+            )
+            for key, df in number_proportions.items()
+        }
+        # ---- Calculate element-wise product across all datasets
+        filtered_number_proportions = functools.reduce(
+            lambda df1, df2: df1.mul(df2, fill_value=0),
+            filtered_number_proportions_dict.values(),
+        ).sum()
+        # ---- Apply threshold mask
         threshold_mask = (target_group_weight_proportions <= weight_proportion_threshold) & (
             filtered_number_proportions <= weight_proportion_threshold
         )
-
-        # Set masked values to 0
+        # ---- Set masked values to 0
         proportions_weight[threshold_mask] = 0.0
 
+    # Return the sliced weight proportions
     return proportions_weight
