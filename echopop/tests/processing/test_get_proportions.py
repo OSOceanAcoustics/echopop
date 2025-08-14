@@ -591,7 +591,7 @@ def test_calculate_adjusted_proportions(proportion_dict):
     )
 
     result = get_proportions.calculate_adjusted_proportions(
-        group_keys, aggregate_table, sex_proportions_table
+        group_keys, aggregate_table, sex_proportions_table, ["sex"]
     )
 
     # Check that we get multi-index with group and sex
