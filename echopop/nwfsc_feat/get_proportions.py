@@ -1195,7 +1195,7 @@ def get_nasc_proportions_slice(
     This function computes weighted acoustic proportions by applying target strength-length
     regression to convert length-based number proportions into acoustic backscatter
     proportions. The target strength weighting accounts for the fact that larger fish
-    contribute disproportionately mOptional[Union[Dict[str, pd.DataFrame], pd.DataFrame]]ore to acoustic backscatter.
+    contribute disproportionately to acoustic backscatter.
 
     Parameters
     ----------
@@ -1423,12 +1423,12 @@ def get_weight_proportions_slice(
     exclude_filter : Dict[str, Any], default {}
         Groups to exclude, e.g., {"length_bin": [small_lengths]}
     number_proportions : Dict[str, pd.DataFrame], default {}
-        Number proportions required for thresholding particular length values. This argument is 
-        expected to be a dictionary with a key paired with at least one DataFrame 
-        (e.g. {"grouped": df}). When no value is supplied, `number_proportions` defaults to an 
+        Number proportions required for thresholding particular length values. This argument is
+        expected to be a dictionary with a key paired with at least one DataFrame
+        (e.g. {"grouped": df}). When no value is supplied, `number_proportions` defaults to an
         empty dictionary with no thresholding applied to the subsequent number proportions.
     length_threshold_min : float, default 0.0
-        Minimum length for threshold calculations (e.g., 10.0 cm). This is only used when number 
+        Minimum length for threshold calculations (e.g., 10.0 cm). This is only used when number
         proportions are provided.
     weight_proportion_threshold : float, default 1e-10
         Threshold value for proportion comparisons
@@ -1480,9 +1480,9 @@ def get_weight_proportions_slice(
         )
 
     # Calculate basic weight proportions for target group
-    target_weight_table = utils.apply_filters(weight_proportions, 
-                                              include_filter=include_filter,
-                                              exclude_filter=exclude_filter)
+    target_weight_table = utils.apply_filters(
+        weight_proportions, include_filter=include_filter, exclude_filter=exclude_filter
+    )
 
     # Aggregate target group proportions
     target_group_weight_proportions = (
@@ -1506,7 +1506,7 @@ def get_weight_proportions_slice(
         # ---- Create length exclusion filter
         length_exclusion_filter = {
             "length_bin": length_vals[length_vals < length_threshold_min],
-            **exclude_filter
+            **exclude_filter,
         }
         # ---- Get filtered number proportions for each dataset
         filtered_number_proportions_dict = {

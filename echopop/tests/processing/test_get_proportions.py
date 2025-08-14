@@ -1080,6 +1080,7 @@ def test_get_weight_proportions_slice_no_thresholding():
     assert all(result >= 0), "Weight proportions should be non-negative"
     assert all(result <= 1), "Weight proportions should be <= 1"
 
+
 def test_get_weight_proportions_slice_with_dict_thresholding():
     """Test weight proportions with dictionary-based thresholding."""
     # Create test data and apply proper binning using utils.binify

@@ -433,6 +433,7 @@ def set_biomass(
     # Reset the index
     dataset.reset_index(inplace=True)
 
+
 def remove_specimen_hauls(
     biodata_dict: Dict[str, pd.DataFrame],
 ) -> None:

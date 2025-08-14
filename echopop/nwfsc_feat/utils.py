@@ -677,6 +677,7 @@ def is_pivot_table(df: pd.DataFrame):
     else:
         return False
 
+
 def compute_interval_distance(
     df_nasc: pd.DataFrame,
     interval_threshold: float = 0.05,
@@ -742,6 +743,8 @@ def compute_interval_distance(
     df_nasc.loc[deviation_mask, "distance_interval"] = (
         df_nasc.loc[deviation_mask, "distance_e"] - df_nasc.loc[deviation_mask, "distance_s"]
     )
+
+
 ####################################################################################################
 # Validators
 class InputModel(BaseModel):
