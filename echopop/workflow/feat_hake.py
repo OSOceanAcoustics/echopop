@@ -19,7 +19,6 @@ from echopop.nwfsc_feat import (
     load_data, 
     mesh,
     spatial,
-    transect, 
     utils
 )
 
@@ -27,8 +26,8 @@ from echopop.nwfsc_feat import (
 # ==================================================================================================
 # DEFINE DATA ROOT DIRECTORY
 # --------------------------
-# DATA_ROOT = Path("C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_2019")
-DATA_ROOT = Path("C:/Users/Brandyn Lucca/Documents/Data/echopop_2019")
+DATA_ROOT = Path("C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_2019")
+# DATA_ROOT = Path("C:/Users/Brandyn Lucca/Documents/Data/echopop_2019")
 
 # ==================================================================================================
 # ==================================================================================================
@@ -433,7 +432,7 @@ dict_df_number_proportion: Dict[str, pd.DataFrame] = get_proportions.number_prop
     data=dict_df_counts, 
     group_columns=["stratum_ks"],
     column_aliases=["aged", "unaged"],
-    exclude_filters=[{"sex": "unsexed"}, None] 
+    exclude_filters={"aged": {"sex": "unsexed"}}
 )
 
 # ==================================================================================================
@@ -446,7 +445,7 @@ dict_df_weight_distr: Dict[str, Any] = {}
 dict_df_weight_distr["aged"] = get_proportions.binned_weights(
     length_dataset=dict_df_bio["specimen"],
     include_filter = {"sex": ["female", "male"]},
-    interpolate=False,
+    interpolate_regression=False,
     contrast_vars="sex",
     table_cols=["stratum_ks", "sex", "age_bin"]
 )
@@ -456,7 +455,7 @@ dict_df_weight_distr["unaged"] = get_proportions.binned_weights(
     length_dataset=dict_df_bio["length"],
     length_weight_dataset=binned_weight_table,
     include_filter = {"sex": ["female", "male"]},
-    interpolate=True,
+    interpolate_regression=True,
     contrast_vars="sex",
     table_cols=["stratum_ks", "sex"]
 )
