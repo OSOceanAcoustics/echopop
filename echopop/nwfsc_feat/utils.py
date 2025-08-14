@@ -676,6 +676,8 @@ def is_pivot_table(df: pd.DataFrame):
         return True
     else:
         return False
+
+
 ####################################################################################################
 # Validators
 class InputModel(BaseModel):
