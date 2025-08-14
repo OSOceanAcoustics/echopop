@@ -1287,7 +1287,7 @@ def get_number_proportions_slice(
     stratify_by: List[str],
     exclude_filter: Dict[str, Any] = {},
     include_filter: Dict[str, Any] = {},
-) -> Union[pd.Series, pd.DataFrame]:
+) -> pd.Series:
     """
     Extract number proportions for a specific slice of the population
 
@@ -1312,10 +1312,9 @@ def get_number_proportions_slice(
 
     Returns
     -------
-    Union[pd.Series, pd.DataFrame]
-        - pd.Series: if single stratification dimension, returns proportions by strata
-        - pd.DataFrame: if multiple dimensions, returns pivot table with preserved structure
-
+    pd.Series
+        Proportions by strata.
+        
     Notes
     -----
     - Handles missing columns gracefully by intersecting with available data
