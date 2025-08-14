@@ -1187,6 +1187,7 @@ def get_nasc_proportions_slice(
     ts_length_regression_parameters: Dict[str, float],
     stratify_by: List[str],
     include_filter: Dict[str, Any] = {},
+    exclude_filter: Dict[str, Any] = {},
 ) -> pd.Series:
     """
     Calculate NASC proportions for a specific slice of the population
@@ -1208,6 +1209,8 @@ def get_nasc_proportions_slice(
     include_filter : Dict[str, Any], default {}
         Filter criteria to include specific grouping, e.g.:
         {"age_bin": [1], "sex": ["female"]}
+    exclude_filter : Dict[str, Any], default {}
+        Groups to exclude, e.g., {"length_bin": [small_lengths]}
     ts_length_regression_parameters : Dict[str, float]
         Target strength-length regression parameters:
         - slope: regression slope
@@ -1266,7 +1269,7 @@ def get_nasc_proportions_slice(
 
     # Apply filter to extract target group
     target_group_table = utils.apply_filters(
-        filtered_population_table, include_filter=include_filter
+        filtered_population_table, include_filter=include_filter, exclude_filter=exclude_filter
     )
 
     # Aggregate target group over length and strata dimensions
@@ -1397,6 +1400,7 @@ def get_weight_proportions_slice(
     weight_proportions: pd.DataFrame,
     stratify_by: List[str],
     include_filter: Dict[str, Any] = {},
+    exclude_filter: Dict[str, Any] = {},
     number_proportions: Dict[str, pd.DataFrame] = {},
     length_threshold_min: float = 0.0,
     weight_proportion_threshold: float = 1e-10,
@@ -1416,6 +1420,8 @@ def get_weight_proportions_slice(
         Stratification columns (e.g., ["stratum_ks"])
     include_filter : Dict[str, Any], default {}
         Filter criteria for target group, e.g., {"age_bin": [1]}
+    exclude_filter : Dict[str, Any], default {}
+        Groups to exclude, e.g., {"length_bin": [small_lengths]}
     number_proportions : Dict[str, pd.DataFrame], default {}
         Number proportions required for thresholding particular length values. This argument is 
         expected to be a dictionary with a key paired with at least one DataFrame 
@@ -1474,7 +1480,9 @@ def get_weight_proportions_slice(
         )
 
     # Calculate basic weight proportions for target group
-    target_weight_table = utils.apply_filters(weight_proportions, include_filter=include_filter)
+    target_weight_table = utils.apply_filters(weight_proportions, 
+                                              include_filter=include_filter,
+                                              exclude_filter=exclude_filter)
 
     # Aggregate target group proportions
     target_group_weight_proportions = (
@@ -1497,7 +1505,8 @@ def get_weight_proportions_slice(
         length_vals = np.unique(all_length_vals)
         # ---- Create length exclusion filter
         length_exclusion_filter = {
-            "length_bin": length_vals[length_vals < length_threshold_min]
+            "length_bin": length_vals[length_vals < length_threshold_min],
+            **exclude_filter
         }
         # ---- Get filtered number proportions for each dataset
         filtered_number_proportions_dict = {
