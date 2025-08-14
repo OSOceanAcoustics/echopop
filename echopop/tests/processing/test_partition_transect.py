@@ -113,8 +113,9 @@ def test_compute_abundance_basic(biology_test_dataset):
     assert np.allclose(test_data["abundance"], expected_abundance)
 
 
-def test_compute_abundance_with_proportions(biology_test_dataset, 
-                                            number_proportions_partition_dict):
+def test_compute_abundance_with_proportions(
+    biology_test_dataset, number_proportions_partition_dict
+):
     """Test abundance calculation with number proportions."""
     test_data = biology_test_dataset.copy()
 

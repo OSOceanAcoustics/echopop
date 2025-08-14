@@ -1314,7 +1314,7 @@ def get_number_proportions_slice(
     -------
     pd.Series
         Proportions by strata.
-        
+
     Notes
     -----
     - Handles missing columns gracefully by intersecting with available data
