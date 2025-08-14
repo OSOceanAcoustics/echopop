@@ -477,6 +477,16 @@ redistributed_table = (
 )
 
 
+proportions_dict = dict_df_weight_proportion
+group_columns = ["sex"]
+group_by = "stratum_ks"
+df_nasc = df_nasc_no_age1.copy().set_index([stratify_by])
+df_average_weight = df_averaged_weight["all"].copy()
+####
+# FILTER BY LEVEL
+###
+# proportions_dict["aged"].xs("male", level="sex")
+# proportions_dict["aged"].loc[:, :, 1]
 
 df = stacked_table.copy()
 exclude_filter=exclusion_filter
