@@ -168,7 +168,12 @@ def binify(
         raise TypeError(f"data must be DataFrame or dict of DataFrames, got {type(data)}")
 
 
-def _filter_rows(df: pd.DataFrame, filter_dict: Dict[str, Any], include: bool) -> pd.DataFrame:
+def _filter_rows(
+    df: Union[pd.Series, pd.DataFrame],
+    filter_dict: Dict[str, Any],
+    include: bool,
+    replace_value: Union[str, None] = None,
+) -> pd.DataFrame:
     """Helper function to filter DataFrame rows."""
 
     # Get index DataFrame
@@ -205,17 +210,35 @@ def _filter_rows(df: pd.DataFrame, filter_dict: Dict[str, Any], include: bool) -
     )
 
     # Apply inclusion/exclusion logic
-    if not include:
+    if not include and replace_value is None:
         mask = ~mask
+    elif replace_value is not None:
+        # ---- Replace values
+        if isinstance(df, pd.Series):
+            df_reset.loc[mask, 0] = replace_value
+        else:
+            df_reset.loc[mask, df.columns] = replace_value
+        # ---- Set mask to include all values
+        mask[:] = True
 
     # Check for matching names
     index_cols = df.index.names
     # ---- Apply mask
     if all(name is None for name in index_cols):
-        return df_reset[mask].filter(list(df.columns))
+        return df_reset[mask].filter(df.columns)
+    else:
+        if isinstance(df, pd.Series):
+            return df_reset[mask].set_index(index_cols).iloc[:, 0]
+        else:
+            return df_reset[mask].set_index(index_cols).filter(df.columns)
 
 
-def _filter_columns(df: pd.DataFrame, filter_dict: Dict[str, Any], include: bool) -> pd.DataFrame:
+def _filter_columns(
+    df: pd.DataFrame,
+    filter_dict: Dict[str, Any],
+    include: bool,
+    replace_value: Union[str, None] = None,
+) -> pd.DataFrame:
     """Helper function to filter DataFrame columns."""
 
     # Get column DataFrame
@@ -232,6 +255,12 @@ def _filter_columns(df: pd.DataFrame, filter_dict: Dict[str, Any], include: bool
         [col_index_df[col].isin(np.atleast_1d(vals)) for col, vals in valid_filters.items()]
     )
 
+    # Replace values if specified
+    if replace_value is not None:
+        df.loc[:, col_mask] = replace_value
+        # ---- Return the modified DataFrame
+        return df
+
     # Apply inclusion/exclusion logic
     if not include:
         col_mask = ~col_mask
@@ -241,9 +270,10 @@ def _filter_columns(df: pd.DataFrame, filter_dict: Dict[str, Any], include: bool
 
 
 def apply_filters(
-    df: pd.DataFrame,
+    df: Union[pd.Series, pd.DataFrame],
     include_filter: Optional[Dict[str, Any]] = None,
     exclude_filter: Optional[Dict[str, Any]] = None,
+    replace_value: Optional[np.number] = None,
 ) -> pd.DataFrame:
     """
     Apply inclusion and exclusion filters to a DataFrame.
@@ -262,6 +292,8 @@ def apply_filters(
     exclude_filter : Dict[str, Any], optional
         Dictionary of column/index:value(s) pairs. Rows/columns will be excluded if they match.
         If value is a list, rows/columns matching any value in the list will be excluded.
+    replace_value : np.number, optional
+        If provided, replaces values in excluded columns with this value instead of dropping them.
 
     Returns
     -------
@@ -295,13 +327,15 @@ def apply_filters(
 
     # Inclusion filter
     if include_filter:
-        result = _filter_columns(result, include_filter, True)
-        result = _filter_rows(result, include_filter, True)
+        if not isinstance(result, pd.Series):
+            result = _filter_columns(result, include_filter, True, replace_value)
+        result = _filter_rows(result, include_filter, True, replace_value)
 
     # Exclusion filter
     if exclude_filter:
-        result = _filter_columns(result, exclude_filter, False)
-        result = _filter_rows(result, exclude_filter, False)
+        if not isinstance(result, pd.Series):
+            result = _filter_columns(result, exclude_filter, False, replace_value)
+        result = _filter_rows(result, exclude_filter, False, replace_value)
 
     # Return masked DataFrame
     return result
@@ -621,6 +655,94 @@ def quantize_length_data(df, group_columns: List[str]):
 
     # Aggregate and return
     return df.groupby(group_columns + ["length"]).agg(length_count=(sum_var_column, var_operation))
+
+
+def is_pivot_table(df: pd.DataFrame):
+
+    # Check for a MultiIndex
+    is_multiindex = isinstance(df.columns, pd.MultiIndex) or isinstance(df.index, pd.MultiIndex)
+
+    # Check for number of levels
+    is_multilevel = df.columns.nlevels > 1 or df.index.nlevels > 1
+
+    # Check for index naming
+    is_named_index = None not in list(df.index.names)
+
+    # Check for index type
+    is_index_typed = not isinstance(df.index, pd.RangeIndex)
+
+    # Return boolean checksum
+    if (is_multiindex + is_multilevel + is_named_index + is_index_typed) > 0:
+        return True
+    else:
+        return False
+
+
+def compute_interval_distance(
+    df_nasc: pd.DataFrame,
+    interval_threshold: float = 0.05,
+) -> None:
+    """
+    Calculate along-transect interval distances and add to DataFrame
+
+    Parameters
+    ----------
+    df_nasc : pd.DataFrame
+        DataFrame containing NASC data with distance and spacing information.
+        Must contain columns: 'distance_s', 'distance_e', 'transect_spacing'
+    interval_threshold : float, default 0.05
+        Along-transect interval threshold for detecting erroneous values.
+        Values that deviate from the median interval by more than this threshold
+        will be corrected using distance_e - distance_s calculation.
+
+    Returns
+    -------
+    pd.DataFrame
+        Modified DataFrame with added 'distance_interval' column containing
+        along-transect interval distances.
+
+    Examples
+    --------
+    >>> df = pd.DataFrame({
+    ...     'distance_s': [0, 1, 2, 3],
+    ...     'distance_e': [1, 2, 3, 4],
+    ...     'transect_spacing': [0.1, 0.1, 0.1, 0.1]
+    ... })
+    >>> set_interval_distance(df)
+    >>> 'distance_interval' in df.columns
+    True
+
+    Notes
+    -----
+    This function calculates the along-track transect interval length.
+    It identifies and corrects potentially erroneous values at transect endpoints
+    by comparing intervals to the median and replacing outliers with direct
+    distance calculations (distance_e - distance_s).
+
+    The interval calculation uses diff(periods=-1) to compute forward differences,
+    making each interval represent the distance to the next measurement point.
+    """
+    # Calculate the along-transect interval distance
+    # ---- Use forward difference to get distance to next point
+    df_nasc["distance_interval"] = df_nasc["distance_s"].diff(periods=-1).abs()
+
+    # Handle the final interval (no next point available)
+    # ---- Use distance_e - distance_s for the last measurement
+    df_nasc.loc[df_nasc.index[-1], "distance_interval"] = (
+        df_nasc["distance_e"].iloc[-1] - df_nasc["distance_s"].iloc[-1]
+    )
+
+    # Identify and correct erroneous interval lengths
+    # ---- Calculate median interval for comparison
+    median_interval = np.median(df_nasc["distance_interval"])
+
+    # Find intervals that deviate significantly from median
+    deviation_mask = np.abs(df_nasc["distance_interval"] - median_interval) > interval_threshold
+
+    # Replace erroneous intervals with direct distance calculation
+    df_nasc.loc[deviation_mask, "distance_interval"] = (
+        df_nasc.loc[deviation_mask, "distance_e"] - df_nasc.loc[deviation_mask, "distance_s"]
+    )
 
 
 ####################################################################################################

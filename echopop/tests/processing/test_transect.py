@@ -1,12 +1,12 @@
 import pandas as pd
 import pytest
 
-from echopop.nwfsc_feat import transect
+from echopop.nwfsc_feat import utils
 
 
 def test_get_transect_basic_functionality(basic_nasc_data):
-    """Test basic functionality of transect.set_interval_distance"""
-    transect.set_interval_distance(basic_nasc_data)
+    """Test basic functionality of utils.compute_interval_distance"""
+    utils.compute_interval_distance(basic_nasc_data)
 
     # Check that distance_interval column was added
     assert "distance_interval" in basic_nasc_data.columns
@@ -26,8 +26,8 @@ def test_get_transect_basic_functionality(basic_nasc_data):
 
 
 def test_get_transect_single_row(transect_single_row):
-    """Test transect.set_interval_distance with single row DataFrame"""
-    transect.set_interval_distance(transect_single_row)
+    """Test utils.compute_interval_distance with single row DataFrame"""
+    utils.compute_interval_distance(transect_single_row)
 
     # Check that distance_interval column was added
     assert "distance_interval" in transect_single_row.columns
@@ -40,7 +40,7 @@ def test_get_transect_single_row(transect_single_row):
 def test_get_transect_preserves_original(basic_nasc_data):
     """Test that original DataFrame is not modified"""
     original_columns = basic_nasc_data.columns.tolist()
-    transect.set_interval_distance(basic_nasc_data)
+    utils.compute_interval_distance(basic_nasc_data)
 
     # Original DataFrame should not have distance_interval column
     assert set(basic_nasc_data.columns) - set(original_columns) == {"distance_interval"}
@@ -50,8 +50,8 @@ def test_get_transect_preserves_original(basic_nasc_data):
 
 
 def test_get_transect_irregular_spacing(irregular_spacing_data):
-    """Test transect.set_interval_distance with irregular spacing"""
-    transect.set_interval_distance(irregular_spacing_data)
+    """Test utils.compute_interval_distance with irregular spacing"""
+    utils.compute_interval_distance(irregular_spacing_data)
 
     # Check that distance_interval column was added
     assert "distance_interval" in irregular_spacing_data.columns
@@ -69,16 +69,16 @@ def test_get_transect_irregular_spacing(irregular_spacing_data):
 
 
 def test_get_transect_empty_dataframe():
-    """Test transect.set_interval_distance with empty DataFrame"""
+    """Test utils.compute_interval_distance with empty DataFrame"""
     empty_df = pd.DataFrame(columns=["distance_s", "distance_e", "transect_spacing"])
 
     with pytest.raises(IndexError):
-        transect.set_interval_distance(empty_df)
+        utils.compute_interval_distance(empty_df)
 
 
 def test_get_transect_missing_columns():
-    """Test transect.set_interval_distance with missing required columns"""
+    """Test utils.compute_interval_distance with missing required columns"""
     incomplete_df = pd.DataFrame({"distance_s": [1, 2, 3]})
 
     with pytest.raises(KeyError):
-        transect.set_interval_distance(incomplete_df)
+        utils.compute_interval_distance(incomplete_df)
