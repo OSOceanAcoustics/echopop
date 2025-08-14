@@ -565,7 +565,7 @@ df_nasc_no_age1["area_interval"] = (
 # sex 
 # --------------------------------------------------------------------------------------------------
 
-biology.set_abundance(
+biology.compute_abundance(
     dataset=df_nasc_no_age1,
     stratify_by=["stratum_ks"],
     group_by=["sex"],
@@ -578,7 +578,7 @@ biology.set_abundance(
 # respectively) for the overall transect dataset as well as for each sex
 # --------------------------------------------------------------------------------------------------
 
-biology.set_biomass(
+biology.compute_biomass(
     dataset=df_nasc_no_age1,
     stratify_by=["stratum_ks"],
     group_by=["sex"],

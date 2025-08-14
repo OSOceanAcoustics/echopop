@@ -183,7 +183,7 @@ def length_binned_weights(
             return result
 
 
-def set_abundance(
+def compute_abundance(
     dataset: pd.DataFrame,
     stratify_by: List[str] = [],
     group_by: List[str] = [],
@@ -337,7 +337,7 @@ def matrix_multiply_grouped_table(
     dataset[output_variable] = dataset[column_map].sum(axis=1) + remainder_matrix
 
 
-def set_biomass(
+def compute_biomass(
     dataset: pd.DataFrame,
     stratify_by: List[str] = [],
     group_by: List[str] = [],
@@ -379,12 +379,11 @@ def set_biomass(
     >>> weight_table = pd.DataFrame({'female': [0.5, 0.6], 'male': [0.4, 0.5], 'all': [0.45, 0.55]})
     >>> dataset = pd.DataFrame({'abundance_female': [100, 200], 'abundance_male': [150, 250], \
         'abundance': [250, 450]})
-    >>> matrix_multiply_grouped_table(
+    >>> compute_biomass(
     ...     dataset=dataset,
-    ...     table=weight_table,
-    ...     variable='abundance',
-    ...     output_variable='biomass',
-    ...     group='sex'
+    ...     stratify_by=['stratum'],
+    ...     group_by=['sex'],
+    ...     df_average_weight=df_stratum_weights,
     ... )
     >>> # Creates 'biomass_female', 'biomass_male' in-place
     """

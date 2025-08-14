@@ -102,22 +102,23 @@ def test_partition_transect_data_all_variables(
     assert len(result) == len(sample_transect_dataset)
 
 
-def test_set_abundance_basic(biology_test_dataset):
+def test_compute_abundance_basic(biology_test_dataset):
     """Test basic abundance calculation."""
     test_data = biology_test_dataset.copy()
 
-    biology.set_abundance(test_data)
+    biology.compute_abundance(test_data)
 
     # Verify abundance = area_interval * number_density
     expected_abundance = test_data["area_interval"] * test_data["number_density"]
     assert np.allclose(test_data["abundance"], expected_abundance)
 
 
-def test_set_abundance_with_proportions(biology_test_dataset, number_proportions_partition_dict):
+def test_compute_abundance_with_proportions(biology_test_dataset, 
+                                            number_proportions_partition_dict):
     """Test abundance calculation with number proportions."""
     test_data = biology_test_dataset.copy()
 
-    biology.set_abundance(
+    biology.compute_abundance(
         test_data,
         stratify_by=["stratum_ks"],
         group_by=["sex"],
@@ -130,11 +131,11 @@ def test_set_abundance_with_proportions(biology_test_dataset, number_proportions
     assert "abundance" in test_data.columns
 
 
-def test_set_biomass_with_weights(biology_test_dataset, average_weight_df):
+def test_compute_biomass_with_weights(biology_test_dataset, average_weight_df):
     """Test biomass calculation with average weights."""
     test_data = biology_test_dataset.copy()
 
-    biology.set_biomass(
+    biology.compute_biomass(
         dataset=test_data,
         stratify_by=["stratum_ks"],
         group_by=["sex"],
