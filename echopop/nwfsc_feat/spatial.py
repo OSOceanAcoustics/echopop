@@ -90,50 +90,6 @@ def transform_coordinates(
     # Return the output tuple
     return (data, delta_x, delta_y)
 
-def get_survey_western_extents(
-    transect_df: pd.DataFrame,
-    coordinate_names: Tuple[str, str],
-    latitude_threshold: float,
-) -> pd.DataFrame:
-    """
-    Get the western extents of each survey transect that can be used to constrain the adaptive
-    nearest neighbors search algorithm incorporated into the kriging interpolation algorithm
-
-    Parameters
-    ----------
-    transect_df : pd.DataFrame
-        A dataframe containing georeferenced coordinates associated with a particular variable (e.g.
-        biomass). This DataFrame must have at least two valid columns comprising the overall 2D
-        coordinates (e.g. 'x' and 'y'). Furthermore, this function requires that `transect_df`
-        also contain a column called 'latitude'.
-    coordinates_names : Tuple[str, str], default = ('x', 'y')
-        A tuple containing the 'transect_df' column names defining the coordinates. The order of
-        this input matters where they should be defined as the (horizontal axis, vertical axis).
-    latitude_threshold : float
-        A threshold that is applied to the georeferenced coordinates that further constrains any
-        extrapolation that occurs during the kriging analysis.
-
-    Returns
-    -------
-    pd.DataFrame
-        A DataFrame comprising three columns: 'transect_num', and the column names supplied by
-        the argument `coordinate_names`.
-    """
-
-    # Apply the latitude filter
-    transect_thresholded = transect_df.loc[transect_df["latitude"] < latitude_threshold]
-
-    # Parse the western-most coordinate indices of each transect
-    western_extent_idx = transect_thresholded.groupby(["transect_num"])[
-        coordinate_names[0]
-    ].idxmin()
-
-    # Subset the DataFrame
-    transect_western_extent = transect_thresholded.loc[western_extent_idx].reset_index(drop=True)
-
-    # Return the reduced DataFrame
-    return transect_western_extent.filter(["transect_num", *coordinate_names])
-
 def transect_coordinate_centroid(spatial_grouped: gpd.GeoSeries):
     """
     Calculate the centroid of a given spatial group.
