@@ -16,7 +16,7 @@ from .projection import wgs84_to_utm
 warnings.simplefilter("always")
 
 
-def standardize_coordinates(
+def transform_coordinates(
     data: pd.DataFrame,
     x_offset: float = 0.0,
     y_offset: float = 0.0,
@@ -26,7 +26,7 @@ def standardize_coordinates(
     delta_y: Optional[float] = None,
 ) -> Tuple[pd.DataFrame, Union[float, None], Union[float, None]]:
     """
-    Standardize the longitude and latitude coordinates of a dataset.
+    Transform the x- and y-coordinates of a georeferenced dataset.
 
     Parameters
     ----------
@@ -37,7 +37,7 @@ def standardize_coordinates(
     y_offset : float, default=0.
         Offset to apply to the y-coordinates that corresponds to `coordinate_names[0]`
     coordinate_names : Tuple[str, str], default=("longitude", "latitude")
-        Names of the coordinate columns when using DataFrames. Expected format: (x_col, y_col).
+        Names of the coordinate columns when using DataFrames. Expected format: (x_col, y_col). 
     reference : pd.DataFrame, optional
         Reference DataFrame with x and y coordinates for interpolation that is
         used as an additional offset to the x-axis.
@@ -51,12 +51,12 @@ def standardize_coordinates(
     Returns
     -------
     pd.DataFrame
-        DataFrame with the new standardized coordinates 'x' and 'y'.
+        DataFrame with the new transformed coordinates 'x' and 'y'.
     float or None
-        Distance of the pre-standardized x-axis coordinates that can be used to transform other 
+        Distance of the pre-transformed x-axis coordinates that can be used to transform other 
         georeferenced datasets (assuming shared projections).
     float or None
-        Distance of the pre-standardized y-axis coordinates that can be used to transform other 
+        Distance of the pre-transformed y-axis coordinates that can be used to transform other 
         georeferenced datasets (assuming shared projections).
     """
 
@@ -83,7 +83,7 @@ def standardize_coordinates(
     if delta_y is None:
         delta_y = data[y_coord].max() - data[y_coord].min()
 
-    # Standardize the x- and y-coordinates
+    # Transform the x- and y-coordinates
     # ---- x
     data["x"] = np.cos(np.pi / 180.0 * data[y_coord]) * (transformed_x - x_offset) / delta_x
     # ---- y

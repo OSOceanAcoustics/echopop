@@ -197,8 +197,8 @@ class Geostats:
 
         # Affine normalization, if required
         if normalize:
-            # ---- Standardize the input data coordinates
-            self.data_df, delta_x_new, delta_y_new = spatial.standardize_coordinates(
+            # ---- Transform the input data coordinates
+            self.data_df, delta_x_new, delta_y_new = spatial.transform_coordinates(
                 data_df=self.data_df,
                 reference_df=reference_df,
                 x_offset=x_offset,
@@ -208,7 +208,7 @@ class Geostats:
                 coordinate_names=self.coordinates,
             )
             # ---- Apply the input data x- and y-coordinate intervals to the projection mesh
-            self.mesh_df, _, _ = spatial.standardize_coordinates(
+            self.mesh_df, _, _ = spatial.transform_coordinates(
                 data_df=self.mesh_df,
                 reference_df=reference_df,
                 x_offset=x_offset,
