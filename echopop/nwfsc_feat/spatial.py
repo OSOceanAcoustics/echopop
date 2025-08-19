@@ -17,11 +17,11 @@ warnings.simplefilter("always")
 
 
 def standardize_coordinates(
-    data_df: pd.DataFrame,
+    data: pd.DataFrame,
     x_offset: float = 0.0,
     y_offset: float = 0.0,
     coordinate_names: Tuple[str, str] = ("longitude", "latitude"),
-    reference_df: Optional[pd.DataFrame] = None,
+    reference: Optional[pd.DataFrame] = None,
     delta_x: Optional[float] = None,
     delta_y: Optional[float] = None,
 ) -> Tuple[pd.DataFrame, Union[float, None], Union[float, None]]:
@@ -30,7 +30,7 @@ def standardize_coordinates(
 
     Parameters
     ----------
-    data_df : pd.DataFrame
+    data : pd.DataFrame
         DataFrame with coordinates
     x_offset : float, default=0.
         Offset to apply to the x-coordinates that corresponds to `coordinate_names[0]`
@@ -38,40 +38,42 @@ def standardize_coordinates(
         Offset to apply to the y-coordinates that corresponds to `coordinate_names[0]`
     coordinate_names : Tuple[str, str], default=("longitude", "latitude")
         Names of the coordinate columns when using DataFrames. Expected format: (x_col, y_col).
-    reference_df : pd.DataFrame, optional
+    reference : pd.DataFrame, optional
         Reference DataFrame with x and y coordinates for interpolation that is
         used as an additional offset to the x-axis.
     delta_x : float, optional
-        Total x-axis distance used for standardizing coordinates
+        Total x-axis distance used for standardizing coordinates. Will use the full range of the 
+        original x-axis if not provided.
     delta_y : float, optional
-        Total y-axis distance used for standardizing coordinates
+        Total y-axis distance used for standardizing coordinates. Will use the full range of the 
+        original y-axis if not provided.
 
     Returns
     -------
     pd.DataFrame
         DataFrame with the new standardized coordinates 'x' and 'y'.
     float or None
-        Total longitudinal distance (degrees) used for standardizing coordinates that can be used
-        for the transformation of other georeferenced datasets.
+        Distance of the pre-standardized x-axis coordinates that can be used to transform other 
+        georeferenced datasets (assuming shared projections).
     float or None
-        Total latitudinal distance (degrees) used for standardizing coordinates that can be used
-        for the transformation of other georeferenced datasets.
+        Distance of the pre-standardized y-axis coordinates that can be used to transform other 
+        georeferenced datasets (assuming shared projections).
     """
 
     # Get the coordinate names
     x_coord, y_coord = coordinate_names
 
     # Create interpolation function from reference grid coordinates (to interpolate longitude)
-    if reference_df is not None:
+    if reference is not None:
         reference_interp = interpolate.interp1d(
-            reference_df[y_coord], reference_df[x_coord], kind="linear", bounds_error=False
+            reference[y_coord], reference[x_coord], kind="linear", bounds_error=False
         )
-        reference_offset = reference_interp(data_df[y_coord])
+        reference_offset = reference_interp(data[y_coord])
     else:
         reference_offset = 0.0
 
     # Transform longitude
-    transformed_x = data_df[x_coord] - reference_offset + x_offset
+    transformed_x = data[x_coord] - reference_offset + x_offset
 
     # Calculate the geospatial distances along the x- and y-axes [if missing]
     # ---- Longitude
@@ -79,16 +81,16 @@ def standardize_coordinates(
         delta_x = transformed_x.max() - transformed_x.min()
     # ---- Latitude
     if delta_y is None:
-        delta_y = data_df[y_coord].max() - data_df[y_coord].min()
+        delta_y = data[y_coord].max() - data[y_coord].min()
 
     # Standardize the x- and y-coordinates
     # ---- x
-    data_df["x"] = np.cos(np.pi / 180.0 * data_df[y_coord]) * (transformed_x - x_offset) / delta_x
+    data["x"] = np.cos(np.pi / 180.0 * data[y_coord]) * (transformed_x - x_offset) / delta_x
     # ---- y
-    data_df["y"] = (data_df[y_coord] - y_offset) / delta_y
+    data["y"] = (data[y_coord] - y_offset) / delta_y
 
     # Return the output tuple
-    return (data_df, delta_x, delta_y)
+    return (data, delta_x, delta_y)
 
 
 def lag_distance_matrix(
