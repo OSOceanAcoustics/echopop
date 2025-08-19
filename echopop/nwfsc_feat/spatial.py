@@ -415,7 +415,7 @@ def semivariance(
 
 
 def empirical_variogram(
-    transect_df: pd.DataFrame,
+    data: pd.DataFrame,
     n_lags: int,
     lag_resolution: float,
     azimuth_filter: bool,
@@ -429,7 +429,7 @@ def empirical_variogram(
 
     Parameters
     ----------
-    transect_df : pd.DataFrame
+    data : pd.DataFrame
         A dataframe containing georeferenced coordinates associated with a particular variable (e.g.
         biomass). This DataFrame must have at least two valid columns comprising the overall 2D
         coordinates (e.g. 'x' and 'y').
@@ -468,7 +468,7 @@ def empirical_variogram(
 
     # Calculate the distance (and azimuth) matrix
     distance_matrix, azimuth_matrix = lag_distance_matrix(
-        coordinates_1=transect_df,
+        coordinates_1=data,
         coordinate_names=coordinates,
         self=True,
         azimuth_matrix=azimuth_filter,
@@ -478,7 +478,7 @@ def empirical_variogram(
     lag_matrix = np.round(distance_matrix / lag_resolution).astype(int) + 1
 
     # Extract estimates column
-    estimates = transect_df[variable].to_numpy()
+    estimates = data[variable].to_numpy()
 
     # Create a triangle mask with the diaganol offset to the left by 1
     # ---- Initial mask
