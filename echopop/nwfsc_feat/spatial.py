@@ -421,7 +421,7 @@ def empirical_variogram(
     azimuth_filter: bool,
     azimuth_angle_threshold: float,
     variable: str = "biomass_density",
-    coordinates: Tuple[str, str] = ("x", "y"),
+    coordinate_names: Tuple[str, str] = ("x", "y"),
     force_lag_zero: bool = True,
 ) -> Tuple[np.ndarray[float], np.ndarray[float], np.ndarray[int], float]:
     """
@@ -447,7 +447,7 @@ def empirical_variogram(
     variable : str, default = 'biomass_density'
         The variable used for computing the empirical variogram (e.g. 'biomass_density'), which
         must exist as a column in 'transect_df'.
-    coordinates : Tuple[str, str], default = ('x', 'y')
+    coordinate_names : Tuple[str, str], default = ('x', 'y')
         A tuple containing the 'transect_df' column names defining the coordinates. The order of
         this input matters where they should be defined as the (horizontal axis, vertical axis).
     force_lag_zero : bool, default = True
@@ -469,7 +469,7 @@ def empirical_variogram(
     # Calculate the distance (and azimuth) matrix
     distance_matrix, azimuth_matrix = lag_distance_matrix(
         coordinates_1=data,
-        coordinate_names=coordinates,
+        coordinate_names=coordinate_names,
         self=True,
         azimuth_matrix=azimuth_filter,
     )
