@@ -8,6 +8,12 @@ import pandas as pd
 from . import utils
 
 
+<<<<<<< HEAD
+=======
+# !!! ===========================================================================
+# TODO: Exclude `exclude_filters`
+# TODO: Remove the tests that apply for this argument
+>>>>>>> 338d6dc (Revamped statistical functions (i.e. confidence interval methods))
 def compute_binned_counts(
     data: pd.DataFrame,
     groupby_cols: List[str],
@@ -53,6 +59,11 @@ def compute_binned_counts(
         )
 
 
+<<<<<<< HEAD
+=======
+# !!! =======================================================================================
+# TODO: Make `exclude_filters` as a nested dictionary for each column alias
+>>>>>>> 338d6dc (Revamped statistical functions (i.e. confidence interval methods))
 def number_proportions(
     data: Union[Dict[str, pd.DataFrame], pd.DataFrame],
     group_columns: List[str] = ["stratum_num"],
@@ -299,6 +310,12 @@ def apply_weight_interpolation(
     return result_df
 
 
+<<<<<<< HEAD
+=======
+# !!! ====================================================================================
+# TODO: `interpolate` -> use_interpolated_regression or something thereabouts
+# TODO: docstring for `interpolate` (w/ new name) needs another sentence or two re: implementation
+>>>>>>> 338d6dc (Revamped statistical functions (i.e. confidence interval methods))
 def binned_weights(
     length_dataset: pd.DataFrame,
     interpolate_regression: bool = True,
@@ -909,7 +926,13 @@ def aggregate_stratum_weights(input_data, stratum_col="stratum_num"):
     return final_df
 
 
+<<<<<<< HEAD
 def scale_weights_by_stratum(
+=======
+# !!! =============================================================================
+# TODO: change from `standardize` to `scale`
+def standardize_weights_by_stratum(
+>>>>>>> 338d6dc (Revamped statistical functions (i.e. confidence interval methods))
     weights_df: Union[pd.Series, pd.DataFrame],
     reference_weights_df: pd.DataFrame,
     stratum_col: str = "stratum_num",
@@ -1051,7 +1074,13 @@ def weight_proportions(
     return data_pvt / total_stratum_weights
 
 
+<<<<<<< HEAD
 def scale_weight_proportions(
+=======
+# !!! =============================================================================
+# TODO: change from `standardize` to `scale`
+def standardize_weight_proportions(
+>>>>>>> 338d6dc (Revamped statistical functions (i.e. confidence interval methods))
     weight_data: pd.DataFrame,
     reference_weight_proportions: pd.DataFrame,
     catch_data: pd.DataFrame,
