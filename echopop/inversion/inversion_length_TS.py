@@ -1,8 +1,10 @@
 import pandas as pd
 import numpy as np
 from typing import Any, Dict, List, Optional, Union
+from pydantic import field_validator, Field
 
 from .inversion_base import InversionBase
+from .operations import impute_missing_sigma_bs
 from ..nwfsc_feat import utils
 from .. import acoustics
 
@@ -22,13 +24,17 @@ class InversionLengthTS(InversionBase):
         - 'stratify_by': str or List[str] - stratification columns (e.g., 'stratum_ks')
         
         Optional keys:
-        - 'strata': array-like - specific strata to process
+        - 'expected_strata': array-like - specific strata to process
         - 'impute_missing_strata': bool - whether to impute missing strata values
+        - 'haul_replicates': bool - whether to use haul numbers/ids as replicates instead of 
+        individuals
         
     Attributes
     ----------
-    sigma_bs_haul : pd.Series or None
-        Cached haul-level backscattering cross-sections after set_haul_sigma_bs()
+    sigma_bs_haul : pd.DataFrame or None
+        Haul-level backscattering cross-sections
+    sigma_bs_strata : pd.DataFrame or None
+        Stratum-level backscattering cross-sections
         
     Examples
     --------
@@ -64,29 +70,30 @@ class InversionLengthTS(InversionBase):
     """
     
     def __init__(self, model_parameters: Dict[str, Any]):
-        super().__init__(model_parameters)
+        # Validate and parse the model parameters
+        validated_params = ValidateLengthTS.create(**model_parameters)
+        super().__init__(validated_params)
         
         # Set inversion method
         self.inversion_method = "length_TS_regression"
         
-        # Initialize internal values     
+        # Initialize attributes
         self.sigma_bs_haul = None
         self.sigma_bs_strata = None
         
-    def set_haul_sigma_bs(self, 
-                          df_length: Optional[Union[pd.DataFrame, 
-                                                    List[pd.DataFrame], 
-                                                    Dict[str, pd.DataFrame]]] = None):
+    def set_haul_sigma_bs(
+        self, 
+        df_length: Union[pd.DataFrame, List[pd.DataFrame]]
+    ) -> pd.DataFrame:
         """
-        Compute and cache the mean linear scattering coefficient (sigma_bs) for each haul.
+        Compute the mean linear scattering coefficient (sigma_bs) for each haul.
         
         This method processes length data from biological samples to calculate haul-specific
-        backscattering cross-sections using the TS-length regression relationship. The results
-        are cached internally for later use in stratified sigma_bs calculations.
+        backscattering cross-sections using the TS-length regression relationship. 
         
         Parameters
         ----------
-        df_length : pd.DataFrame, list of pd.DataFrame, or dict of pd.DataFrame
+        df_length : pd.DataFrame or list of pd.DataFrame
             Length data containing fish measurements. Can be:
             - Single DataFrame with length measurements per haul
             - List of DataFrames to be concatenated
@@ -105,10 +112,6 @@ class InversionLengthTS(InversionBase):
         2. Applies TS-length regression to convert lengths to target strength
         3. Converts TS to linear backscattering cross-section (sigma_bs)
         4. Calculates length-weighted average sigma_bs per haul
-        5. Caches results in self.sigma_bs_haul for later use
-        
-        The cached results can be accessed later via get_stratified_sigma_bs()
-        without providing df_length parameter.
         
         Examples
         --------
@@ -117,10 +120,6 @@ class InversionLengthTS(InversionBase):
         >>> 
         >>> # Multiple DataFrames
         >>> inverter.set_haul_sigma_bs([specimen_df, length_df])
-        >>> 
-        >>> # Dictionary of DataFrames
-        >>> data_dict = {"bio": specimen_df, "length": length_df}
-        >>> inverter.set_haul_sigma_bs(data_dict)
         """
         
         # Prepare the calculation depending on if `df` is a single DataFrame or Dictionary
@@ -153,35 +152,39 @@ class InversionLengthTS(InversionBase):
         sigma_bs_haul = (
             haul_counts
             .groupby(self.model_params["stratify_by"] + ["haul_num"])[["sigma_bs", "length_count"]]
-            .apply(lambda x: np.average(x.sigma_bs, weights=x.length_count))        )
+            .apply(lambda x: np.average(x.sigma_bs, weights=x.length_count))        
+        )
         
-        # Store
-        self.sigma_bs_haul = sigma_bs_haul
+        # Return the output
+        return sigma_bs_haul.to_frame("sigma_bs")
         
     def get_stratified_sigma_bs(
         self, 
-        df_length: Optional[Union[pd.DataFrame, 
-                                  List[pd.DataFrame], 
-                                  Dict[str, pd.DataFrame]]] = None
-    ) -> pd.DataFrame:
+        df_length: Union[pd.DataFrame, List[pd.DataFrame]],
+        haul_replicates: bool = True,
+    ) -> None:
         """
         Calculate stratified mean backscattering cross-sections (sigma_bs) by stratum.
         
-        This method computes stratum-level sigma_bs values either from cached haul data
-        (if set_haul_sigma_bs was called previously) or by processing new length data.
-        The resulting values are used in acoustic inversion to convert NASC to number density.
+        This method computes stratum-level sigma_bs values from either all individuals directly, or 
+        by hauls to account for pseudoreplication. The latter would treat each haul as an 
+        individual replicate (i.e. the unit of replication is the haul)[1]_. The resulting values 
+        are used in acoustic inversion to convert NASC to number density (animals nmi^-2).
         
         Parameters
         ----------
-        df_length : pd.DataFrame, list of pd.DataFrame, dict of pd.DataFrame, or None
-            Length data for computing sigma_bs. If None, uses cached haul-level data
-            from previous set_haul_sigma_bs() call. If provided, processes the data
-            to compute fresh sigma_bs values.
+        df_length : pd.DataFrame or list of pd.DataFrame
+            Length data for computing sigma_bs.
             
             Required columns (when provided):
             - All columns specified in model_params["stratify_by"]
             - "length": Fish length measurements
             - "length_count" (optional): Pre-aggregated counts per length
+            - "haul_num": When `haul_replicates=True`, otherwise it is optional.
+
+        haul_replicates : bool
+            When True, individual hauls are used as replicates instead of individual lengths. This 
+            involves averaging sigma_bs for each haul.
             
         Returns
         -------
@@ -192,17 +195,8 @@ class InversionLengthTS(InversionBase):
             
         Notes
         -----
-        This method has two modes of operation:
-        
-        1. **Cached mode** (df_length=None):
-           - Uses haul-level sigma_bs from set_haul_sigma_bs()
-           - Averages across hauls within each stratum
-           - Faster for repeated calculations
-           
-        2. **Direct calculation mode** (df_length provided):
-           - Processes length data directly
-           - Quantizes by stratification variables only (no haul grouping)
-           - Computes length-weighted average sigma_bs per stratum
+        Using hauls as the unit of replication is recommended to avoid pseudoreplication when
+        individuals within hauls are not independent[1]_.
            
         The sigma_bs calculation follows:
         1. Convert length to TS using regression: TS = slope * log10(length) + intercept
@@ -211,75 +205,53 @@ class InversionLengthTS(InversionBase):
         
         Examples
         --------
-        >>> # Using cached haul data
-        >>> inverter.set_haul_sigma_bs(specimen_df)
-        >>> sigma_bs = inverter.get_stratified_sigma_bs()
-        >>> print(sigma_bs)
-                   sigma_bs
-        stratum_ks         
-        1           0.00012
-        2           0.00015
-        3           0.00011
-        
         >>> # Direct calculation from new data
         >>> sigma_bs = inverter.get_stratified_sigma_bs(specimen_df)
         
-        Raises
-        ------
-        AttributeError
-            If df_length is None but no cached haul data exists (set_haul_sigma_bs 
-            was not called previously).
+        References
+        ----------
+        .. [1] Hurlbert, S.H. (1984). Pseudoreplication and the Design of Ecological Field 
+        Experiments. *Ecological Monographs*, 54(2), 187-211. https://doi.org/10.2307/1942661
         """
-        
-        # Grab mean hauls if `df_length` is not specified
-        if df_length is None and self.sigma_bs_haul is not None:
-            sigma_bs_strata = self.sigma_bs_haul.unstack(
+
+        # Use hauls as replicates
+        if haul_replicates:
+            # ---- Store the values
+            self.sigma_bs_haul = self.set_haul_sigma_bs(df_length)
+            # ---- Set the mean sigma_bs for each stratum
+            self.sigma_bs_strata = self.sigma_bs_haul["sigma_bs"].unstack(
                 self.model_params["stratify_by"]
-            ).mean(axis=0)
-        # ---- Otherwise, apply the appropriate groupby operation
+            ).mean(axis=0).to_frame("sigma_bs")
+        # Use individuals as replicates
         else:
-            # ---- Prepare the calculation depending on if `df` is a single DataFrame or Dictionary
+            # ---- Prepare the calculation depending on if `df` is a single DataFrame
             if isinstance(df_length, pd.DataFrame):
-                df_length = [df_length]
-            elif isinstance(df_length, dict):
-                df_length = [d for d in df_length.values()]
-                
-            # Quantize the length counts across all datasets per length value
+                df_length = [df_length]                
+            # ---- Quantize the length counts across all datasets per length value
             df_length_counts = (
                 pd.concat([utils.quantize_length_data(d, self.model_params["stratify_by"]) 
                         for d in df_length], axis=1)
                 .fillna(0.).sum(axis=1).reset_index(name="length_count")
-            )
-            
-            # Compute the average TS
+            )            
+            # ---- Compute the average TS
             df_length_counts["TS"] = acoustics.ts_length_regression(
                 df_length_counts["length"], 
                 self.model_params["ts_length_regression"]["slope"],
                 self.model_params["ts_length_regression"]["intercept"]
-            )
-            
-            # Linearize
+            )            
+            # ---- Linearize
             df_length_counts["sigma_bs"] = 10. ** (df_length_counts["TS"] / 10.)
-            
-            # Aggregate by stratum
-            sigma_bs_strata = (
+            # ---- Aggregate by stratum
+            self.sigma_bs_strata = (
                 df_length_counts
-                .groupby(["stratum_ks"])[["length_count", "sigma_bs"]].apply(
+                .groupby(self.model_params["stratify_by"])[["length_count", "sigma_bs"]].apply(
                     lambda x: np.average(x.sigma_bs, weights=x.length_count)
                 )
-            )
-
-        # Store
-        self.sigma_bs_strata = sigma_bs_strata.to_frame("sigma_bs")
-            
-        # Return the average sigma_bs per stratum
-        return sigma_bs_strata.to_frame("sigma_bs")
+            ).to_frame("sigma_bs")
         
     def invert(self, 
                df_nasc: pd.DataFrame, 
-               df_length: Optional[Union[pd.DataFrame, 
-                                  List[pd.DataFrame], 
-                                  Dict[str, pd.DataFrame]]] = None):
+               df_length: Union[pd.DataFrame, List[pd.DataFrame]]):
         
         # Create copy
         df_nasc = df_nasc.copy()
@@ -288,20 +260,22 @@ class InversionLengthTS(InversionBase):
         if "stratify_by" in self.model_params:
             
             # Get the unique strata
-            if "strata" in self.model_params:
-                unique_strata = np.unique(self.model_params["strata"])
+            if self.model_params["expected_strata"] is not None:
+                unique_strata = np.unique(self.model_params["expected_strata"])
             else:
                 unique_strata = np.unique(df_nasc[self.model_params["stratify_by"]])
                 
-            # Get the mean linear scattering coefficnet for each stratum
-            sigma_bs_strata = self.get_stratified_sigma_bs(df_length) 
+            # Get the mean linear scattering coefficient for each stratum
+            self.get_stratified_sigma_bs(df_length,
+                                         self.model_params["haul_replicates"]) 
             
             # Impute, if defined
             if (
                 "impute_missing_strata" in self.model_params and 
                 self.model_params["impute_missing_strata"]
             ):
-                sigma_bs_strata = utils.impute_missing_sigma_bs(unique_strata, sigma_bs_strata)
+                self.sigma_bs_strata = impute_missing_sigma_bs(unique_strata,
+                                                               self.sigma_bs_strata)
             
             # Index `df_nasc` to align with `sigma_bs_strata` 
             df_nasc.set_index(self.model_params["stratify_by"], inplace=True)
@@ -309,8 +283,74 @@ class InversionLengthTS(InversionBase):
             # Compute number density
             df_nasc["number_density"] = (
                 df_nasc["nasc_proportion"].fillna(0.) * df_nasc["nasc"] / 
-                (4 * np.pi * sigma_bs_strata["sigma_bs"].reindex_like(df_nasc))
+                (4 * np.pi * self.sigma_bs_strata["sigma_bs"].reindex_like(df_nasc))
             ).astype(float).fillna(0.)
             
             # Return the NASC DataFrame with the inverted number densities
             return df_nasc.reset_index()
+
+####################################################################################################
+# Validation
+# ----------
+
+class ValidateLengthTS(
+    utils.InputModel, 
+    arbitrary_types_allowed=True, 
+    title="TS-length inversion model parameters"
+):
+    """
+    Validation model for TS-length inversion parameters used by InversionLengthTS.
+
+    This Pydantic model validates and documents the configuration parameters required by the 
+    InversionLengthTS class for acoustic inversion using length-TS regression.
+
+    Parameters
+    ----------
+    ts_length_regression : utils.TSLRegressionParameters
+        Regression parameters for converting fish length to target strength (TS).
+    stratify_by : List[str]
+        List of column names used for data stratification (e.g., 'stratum_ks').
+    expected_strata : np.ndarray, optional
+        Array of expected strata identifiers to process.
+    impute_missing_strata : bool, default=True
+        Whether to impute missing strata values during inversion.
+    haul_replicates : bool, default=True
+        Whether to use hauls as the statistical unit of replication (recommended to avoid
+        pseudoreplication[1]_).
+
+    Notes
+    -----
+    This model is intended for use with the InversionLengthTS class, which performs
+    acoustic inversion by relating fish length to acoustic backscatter using empirical
+    TS-length relationships.
+
+    Using hauls as the unit of replication is recommended to avoid pseudoreplication when
+    individuals within hauls are not independent[1]_.
+
+    References
+    ----------
+    .. [1] Hurlbert, S.H. (1984). Pseudoreplication and the Design of Ecological Field Experiments.
+       *Ecological Monographs*, 54(2), 187-211. https://doi.org/10.2307/1942661
+    """
+
+    ts_length_regression: utils.TSLRegressionParameters
+    stratify_by: List[str]
+    expected_strata: Optional[np.ndarray[np.number]] = Field(default=None)
+    impute_missing_strata: bool = Field(default=True)
+    haul_replicates: bool = Field(default=True)
+
+    @field_validator("stratify_by", mode="before")
+    def validate_stratify_by(cls, v):
+        if isinstance(v, str):
+            v = [v]
+        return v
+
+    @field_validator("expected_strata", mode="before")
+    def validate_expected_strata(cls, v):
+        if v is None:
+            return v
+
+        if isinstance(v, list):
+            return np.array(v)
+
+        return v
