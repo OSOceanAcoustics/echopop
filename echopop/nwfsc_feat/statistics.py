@@ -557,8 +557,8 @@ def confidence_interval(
         pop_mean = population_values.mean()
     else:
         raise TypeError(
-            f"Input for population data for population-level values must either be a "
-            f"`pandas.Series` or an indexed `pandas.DataFrame`."
+            "Input for population data for population-level values must either be a "
+            "`pandas.Series` or an indexed `pandas.DataFrame`."
         )
 
     # Compute confidence intervals
