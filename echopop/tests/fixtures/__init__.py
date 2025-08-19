@@ -12,7 +12,9 @@ from echopop.tests.fixtures.fixtures_inversion import *  # noqa: F401, F403
 from echopop.tests.fixtures.fixtures_kriging import *  # noqa: F401, F403
 from echopop.tests.fixtures.fixtures_partition_transect import *  # noqa: F401, F403
 from echopop.tests.fixtures.fixtures_spatial import *  # noqa: F401, F403
+from echopop.tests.fixtures.fixtures_statistics import *  # noqa: F401, F403
 from echopop.tests.fixtures.fixtures_stratification_loader import *  # noqa: F401, F403
+from echopop.tests.fixtures.fixtures_stratified import *  # noqa: F401, F403
 from echopop.tests.fixtures.fixtures_transect import *  # noqa: F401, F403
 from echopop.tests.fixtures.fixtures_utils import *  # noqa: F401, F403
 from echopop.tests.fixtures.fixtures_variogram import *  # noqa: F401, F403
