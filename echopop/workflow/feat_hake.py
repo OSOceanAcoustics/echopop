@@ -325,7 +325,7 @@ FEAT_TO_ECHOPOP_GEOSTATS_PARAMS_COLUMNS = {
     "lscl": "correlation_range",
     "nugt": "nugget",
     "powr": "decay_power",
-    "ratio": "anisotropy",
+    "ratio": "aspect_ratio",
     "res": "lag_resolution",
     "srad": "search_radius",
 }
@@ -624,7 +624,7 @@ df_isobath = load_data.load_isobath_data(
 # Define the requisite kriging parameters
 kriging_parameters = {
     "search_radius": 0.021,
-    "anisotropy": 0.001,
+    "aspect_ratio": 0.001,
     "k_min": 3,
     "k_max": 10,
 }  

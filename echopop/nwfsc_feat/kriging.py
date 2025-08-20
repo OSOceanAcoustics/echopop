@@ -356,7 +356,7 @@ def ordinary_kriging_matrix(
 
 
 def kriging_lambda(
-    anisotropy: float,
+    aspect_ratio: float,
     lagged_semivariogram: np.ndarray,
     kriging_covariance_matrix: np.ndarray,
 ):
@@ -366,10 +366,20 @@ def kriging_lambda(
 
     Parameters
     ----------
-    anisotropy : float
-        Directional threshold for retaining singular values in the decomposition, given as a
-        fraction of the largest singular value. Singular values below this threshold are discarded
-        to regularize the solution.
+    aspect_ratio : float
+        Ratio of the correlation range along the minor axis to major axis in the principal 
+        direction of anisotropy. This defines the strength of the directional correlation in the 
+        variable being kriged. Values close to 1 indicate nearly isotropic correlation, while 
+        smaller values indicate stronger elongation along the major axis. 
+
+        .. math::
+
+            \text{aspect_ratio} = \frac{r_\text{minor}}{r_\text{major}}
+            
+        This serves as the directional threshold for retaining singular values in the 
+        decomposition, given as a fraction of the largest singular value. Singular values below 
+        this threshold are discarded to regularize the solution.
+        
     lagged_semivariogram: np.array[float]
         Right-hand side vector of the kriging system comprising the local lagged semivariogram.
         This corresponds to the semivariogram estimates between prediction location and observed
@@ -408,7 +418,7 @@ def kriging_lambda(
 
     .. math::
 
-        \\frac{\\sigma_i}{\\sigma_1} > \\text{anisotropy}
+        \\frac{\\sigma_i}{\\sigma_1} > \\text{aspect_ratio}
 
     are retained.
 
@@ -431,7 +441,7 @@ def kriging_lambda(
     # ---- The ratio between all singular values and their respective
     # ---- maximum is used to apply a mask that informs which values
     # ---- are used to tabulate the kriging weights (aka lambda)
-    Sigma_mask = np.abs(Sigma / Sigma[0]) > anisotropy
+    Sigma_mask = np.abs(Sigma / Sigma[0]) > aspect_ratio
 
     # Inverse masked semivariogram (K)
     K_inv = np.matmul(
@@ -515,7 +525,8 @@ def kriging_point_estimator(
         - 'k_min' (int): minimum number of neighbors,
         - 'k_max' (int): maximum number of neighbors,
         - 'search_radius' (float): radius to consider neighbors,
-        - 'anisotropy' (float): truncation threshold for singular values in SVD solver.
+        - 'aspect_ratio' (float): ratio of the correlation range along the minor axis to major axis 
+        in the principal direction of anisotropy,
     variogram_parameters : Dict[str, Any]
         Dictionary describing the variogram model and parameters, such as:
         - 'model' (str or list of str): variogram model names (e.g., 'bessel', 'exponential'),
@@ -575,7 +586,7 @@ def kriging_point_estimator(
 
     # Calculate the kriging weights (lambda)
     kriging_weights = kriging_lambda(
-        kriging_parameters["anisotropy"], M2_vario, kriging_covariance_matrix
+        kriging_parameters["aspect_ratio"], M2_vario, kriging_covariance_matrix
     )
 
     # Calculate the point estimate
