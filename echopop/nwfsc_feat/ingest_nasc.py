@@ -311,7 +311,7 @@ def sort_echoview_export_df(export_df: pd.DataFrame, inplace: bool = False) -> p
     df = export_df if inplace else export_df.copy()
 
     # Check columns against the appropriate sorting columns
-    sort_cols = list(set(ECHOVIEW_EXPORT_ROW_SORT).intersection(df.columns))
+    sort_cols = [col for col in ECHOVIEW_EXPORT_ROW_SORT if col in df.columns]
 
     # Sort the columns
     df.sort_values(sort_cols, inplace=True)
