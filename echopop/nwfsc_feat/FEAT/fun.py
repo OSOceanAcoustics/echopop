@@ -1,7 +1,9 @@
 from typing import Callable, Tuple
-import pandas as pd
+
 import numpy as np
+import pandas as pd
 from scipy import interpolate
+
 
 def get_survey_western_extents(
     transects: pd.DataFrame,
@@ -46,6 +48,7 @@ def get_survey_western_extents(
 
     # Return the reduced DataFrame
     return transect_western_extent.filter(["transect_num", *coordinate_names])
+
 
 def western_boundary_search_strategy(
     kriging_mesh: pd.DataFrame,
@@ -205,6 +208,7 @@ def western_boundary_search_strategy(
 
     # Return Tuple
     return wr_indices, oos_indices, oos_weights
+
 
 # Helper functions for setting E-W/N-S assignments
 def region_13_conditions(x, boundary_column: str, position: str):

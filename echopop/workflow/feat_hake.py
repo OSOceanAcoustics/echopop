@@ -663,7 +663,7 @@ vgm.calculate_empirical_variogram(
 # ------------------------------------------------------
 
 # Set up `lmfit` parameters
-# lmfit.Paramters tuples: (NAME VALUE VARY MIN  MAX  EXPR  BRUTE_STEP)
+# lmfit.Parameters tuples: (NAME VALUE VARY MIN  MAX  EXPR  BRUTE_STEP)
 variogram_parameters_lmfit = Parameters()
 variogram_parameters_lmfit.add_many(
     ("nugget", dict_variogram_params["nugget"], True, 0.),

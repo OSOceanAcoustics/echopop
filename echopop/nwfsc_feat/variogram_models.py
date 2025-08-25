@@ -12,6 +12,7 @@ warnings.simplefilter("always")
 
 # Single family models
 
+
 # ---- Cubic
 def cubic(distance_lags, sill, nugget, correlation_range):
     """
@@ -40,7 +41,7 @@ def cubic(distance_lags, sill, nugget, correlation_range):
     .. math::
         γ(h) = \\begin{cases}
         C_0 + C_1 \\left(7\\left(\\frac{h}{a}\\right)^2 \\right. \\\\
-        \\qquad\\qquad \\left. - \\frac{35}{4}\\left(\\frac{h}{a}\\right)^3 
+        \\qquad\\qquad \\left. - \\frac{35}{4}\\left(\\frac{h}{a}\\right)^3
         + \\frac{7}{2}\\left(\\frac{h}{a}\\right)^5 \\right. \\\\
         \\qquad\\qquad \\left. - \\frac{3}{4}\\left(\\frac{h}{a}\\right)^7\\right) & h ≤ a \\\\
         C_0 + C_1 & h > a
@@ -52,8 +53,8 @@ def cubic(distance_lags, sill, nugget, correlation_range):
     - C₁ is the partial sill (sill - nugget)
     - a is the effective range
 
-    The cubic model provides very smooth transitions with continuous first and second derivatives 
-    at the origin and at the range. It's suitable for highly regular spatial processes requiring 
+    The cubic model provides very smooth transitions with continuous first and second derivatives
+    at the origin and at the range. It's suitable for highly regular spatial processes requiring
     smooth interpolation.
 
     References
@@ -61,19 +62,20 @@ def cubic(distance_lags, sill, nugget, correlation_range):
     .. [1] Journel, A.G. & Huijbregts, C.J. (1978). Mining Geostatistics. Academic Press.
     .. [2] Chilès, J.P. & Delfiner, P. (2012). Geostatistics: Modeling Spatial Uncertainty. Wiley.
     """
-    
+
     # Calculate normalized distances
     h_norm = distance_lags / correlation_range
-    
+
     # Calculate cubic correlation for h <= a
     correlation = np.where(
         h_norm <= 1,
-        1 - (7 * h_norm**2 - 35/4 * h_norm**3 + 7/2 * h_norm**5 - 3/4 * h_norm**7),
-        0
+        1 - (7 * h_norm**2 - 35 / 4 * h_norm**3 + 7 / 2 * h_norm**5 - 3 / 4 * h_norm**7),
+        0,
     )
-    
+
     # Calculate variogram
     return nugget + (sill - nugget) * (1 - correlation)
+
 
 # ---- Exponential
 def exponential(distance_lags: np.ndarray, sill: float, nugget: float, correlation_range: float):
@@ -105,11 +107,11 @@ def exponential(distance_lags: np.ndarray, sill: float, nugget: float, correlati
 
     where:
     - γ(h) is the variogram at lag distance h
-    - C₀ is the nugget effect  
+    - C₀ is the nugget effect
     - C₁ is the partial sill (sill - nugget)
     - a is the correlation range parameter
 
-    The exponential model exhibits monotonic decay and reaches 95% of the sill at distance 3a. It 
+    The exponential model exhibits monotonic decay and reaches 95% of the sill at distance 3a. It
     represents processes with continuous but non-differentiable spatial correlation.
 
     References
@@ -159,17 +161,17 @@ def gaussian(distance_lags: np.ndarray, sill: float, nugget: float, correlation_
     where:
     - γ(h) is the variogram at lag distance h
     - C₀ is the nugget effect
-    - C₁ is the partial sill (sill - nugget)  
+    - C₁ is the partial sill (sill - nugget)
     - a is the correlation range parameter
 
-    The Gaussian model exhibits very smooth spatial transitions with infinitely differentiable 
-    correlation functions. It approaches the sill more gradually than exponential models and is 
+    The Gaussian model exhibits very smooth spatial transitions with infinitely differentiable
+    correlation functions. It approaches the sill more gradually than exponential models and is
     suitable for highly regular spatial processes.
 
     References
     ----------
     .. [1] Cressie, N. (1993). Statistics for Spatial Data. Wiley.
-    .. [2] Rasmussen, C.E. & Williams, C.K.I. (2006). Gaussian Processes for Machine Learning. MIT 
+    .. [2] Rasmussen, C.E. & Williams, C.K.I. (2006). Gaussian Processes for Machine Learning. MIT
            Press.
     """
 
@@ -218,8 +220,8 @@ def jbessel(distance_lags: np.ndarray, sill: float, nugget: float, hole_effect_r
     - J₁ is the first-order Bessel function of the first kind
     - a is the hole-effect range parameter
 
-    This model exhibits damped oscillatory behavior, creating "hole effects" where the variogram 
-    exceeds the sill before returning. It's suitable for processes with regular spatial patterns or 
+    This model exhibits damped oscillatory behavior, creating "hole effects" where the variogram
+    exceeds the sill before returning. It's suitable for processes with regular spatial patterns or
     cyclical structures.
 
     References
@@ -264,7 +266,7 @@ def kbessel(distance_lags: np.ndarray, sill: float, nugget: float, hole_effect_r
     The K-Bessel variogram model is defined as:
 
     .. math::
-        γ(h) = C_0 + C_1 \\left(1 - \\frac{2^{1-ν}}{Γ(ν)} 
+        γ(h) = C_0 + C_1 \\left(1 - \\frac{2^{1-ν}}{Γ(ν)}
                \\left(\\frac{h}{a}\\right)^ν K_ν\\left(\\frac{h}{a}\\right)\\right)
 
     where:
@@ -338,8 +340,8 @@ def linear(distance_lags: np.ndarray, sill: float, nugget: float):
     - C₀ is the nugget effect
     - C₁ is the slope parameter (equivalent to sill in this context)
 
-    The linear model represents unbounded spatial processes where variance increases indefinitely 
-    with distance. It violates the assumption of a finite sill and should be used cautiously, 
+    The linear model represents unbounded spatial processes where variance increases indefinitely
+    with distance. It violates the assumption of a finite sill and should be used cautiously,
     typically for trend analysis or detrended residuals.
 
     References
@@ -353,6 +355,7 @@ def linear(distance_lags: np.ndarray, sill: float, nugget: float):
 
     # Compute the linear semivariogram
     return partial_sill * distance_lags + nugget
+
 
 # ---- Matern
 def matern(distance_lags, sill, nugget, correlation_range, smoothness_parameter):
@@ -382,7 +385,7 @@ def matern(distance_lags, sill, nugget, correlation_range, smoothness_parameter)
     The Matérn variogram model is defined as:
 
     .. math::
-        γ(h) = C_0 + C_1 \\left(1 - \\frac{2^{1-ν}}{Γ(ν)} 
+        γ(h) = C_0 + C_1 \\left(1 - \\frac{2^{1-ν}}{Γ(ν)}
                \\left(\\frac{h}{a}\\right)^ν K_ν\\left(\\frac{h}{a}\\right)\\right)
 
     where:
@@ -403,25 +406,29 @@ def matern(distance_lags, sill, nugget, correlation_range, smoothness_parameter)
     References
     ----------
     .. [1] Matérn, B. (1986). Spatial Variation. Springer-Verlag.
-    .. [2] Rasmussen, C.E. & Williams, C.K.I. (2006). Gaussian Processes for Machine Learning. MIT 
+    .. [2] Rasmussen, C.E. & Williams, C.K.I. (2006). Gaussian Processes for Machine Learning. MIT
            Press.
     """
     # Calculate the argument for the Bessel function
     h_scaled = distance_lags / correlation_range
-    
+
     # Handle zero distances
     h_scaled = np.where(h_scaled == 0, 1e-10, h_scaled)
-    
+
     # Calculate Matérn correlation
     bessel_arg = np.sqrt(2 * smoothness_parameter) * h_scaled
-    correlation = (2**(1 - smoothness_parameter) / special.gamma(smoothness_parameter)) * \
-                  (bessel_arg**smoothness_parameter) * special.kv(smoothness_parameter, bessel_arg)
-    
+    correlation = (
+        (2 ** (1 - smoothness_parameter) / special.gamma(smoothness_parameter))
+        * (bessel_arg**smoothness_parameter)
+        * special.kv(smoothness_parameter, bessel_arg)
+    )
+
     # Handle numerical issues at origin
     correlation = np.where(distance_lags == 0, 1.0, correlation)
-    
+
     # Calculate variogram
     return nugget + (sill - nugget) * (1 - correlation)
+
 
 # ---- Nugget
 def nugget(distance_lags: np.ndarray, sill: float, nugget: float):
@@ -476,6 +483,7 @@ def nugget(distance_lags: np.ndarray, sill: float, nugget: float):
     # Sum together except at lag == 0.0
     return np.where(distance_lags == 0.0, 0.0, sill + nugget)
 
+
 # --- Pentaspherical
 def pentaspherical(distance_lags: np.ndarray, sill: float, nugget: float, correlation_range: float):
     """
@@ -514,8 +522,8 @@ def pentaspherical(distance_lags: np.ndarray, sill: float, nugget: float, correl
     - C₁ is the partial sill (sill - nugget)
     - a is the effective range
 
-    The pentaspherical model exhibits smoother behavior than the spherical model with continuous 
-    derivatives up to second order. It provides a good balance between flexibility and 
+    The pentaspherical model exhibits smoother behavior than the spherical model with continuous
+    derivatives up to second order. It provides a good balance between flexibility and
     computational efficiency for bounded spatial processes.
 
     References
@@ -526,16 +534,15 @@ def pentaspherical(distance_lags: np.ndarray, sill: float, nugget: float, correl
 
     # Calculate normalized distances
     h_norm = distance_lags / correlation_range
-    
+
     # Calculate pentaspherical correlation for h <= a
     correlation = np.where(
-        h_norm <= 1,
-        1 - (15*h_norm/8 - 5*h_norm**3/4 + 3*h_norm**5/8),
-        0
+        h_norm <= 1, 1 - (15 * h_norm / 8 - 5 * h_norm**3 / 4 + 3 * h_norm**5 / 8), 0
     )
-    
+
     # Calculate variogram
     return nugget + (sill - nugget) * (1 - correlation)
+
 
 # ---- Power law
 def power(distance_lags: np.ndarray, sill: float, nugget: float, power_exponent: float):
@@ -576,25 +583,31 @@ def power(distance_lags: np.ndarray, sill: float, nugget: float, power_exponent:
     - β → 0: Approaches nugget effect only
     - β → 2: Approaches parabolic behavior (Brownian motion)
 
-    This model represents unbounded, self-similar (fractal) spatial processes 
-    without a finite sill. It's commonly used for modeling phenomena with 
+    This model represents unbounded, self-similar (fractal) spatial processes
+    without a finite sill. It's commonly used for modeling phenomena with
     scale-invariant properties.
 
     References
     ----------
     .. [1] Cressie, N. (1993). Statistics for Spatial Data. Wiley.
-    .. [2] Goovaerts, P. (1997). Geostatistics for Natural Resources Evaluation. Oxford University 
+    .. [2] Goovaerts, P. (1997). Geostatistics for Natural Resources Evaluation. Oxford University
            Press.
     """
     # Handle zero distances
     h_nonzero = np.where(distance_lags == 0, 0, distance_lags**power_exponent)
-    
+
     # Calculate variogram (sill parameter acts as scaling coefficient)
     return nugget + sill * h_nonzero
 
+
 # ---- (Rational) quadratic
-def quadratic(distance_lags: np.ndarray, sill: float, nugget: float, correlation_range: float, 
-              shape_parameter: float):
+def quadratic(
+    distance_lags: np.ndarray,
+    sill: float,
+    nugget: float,
+    correlation_range: float,
+    shape_parameter: float,
+):
     """
     Rational quadratic variogram model with polynomial decay behavior.
 
@@ -630,21 +643,21 @@ def quadratic(distance_lags: np.ndarray, sill: float, nugget: float, correlation
     - a is the correlation range parameter
     - α is the shape parameter
 
-    The rational quadratic model exhibits polynomial decay and can be viewed as a scale mixture of 
+    The rational quadratic model exhibits polynomial decay and can be viewed as a scale mixture of
     Gaussian processes. It provides intermediate behavior between exponential and Gaussian models.
 
     References
     ----------
-    .. [1] Rasmussen, C.E. & Williams, C.K.I. (2006). Gaussian Processes for Machine Learning. MIT 
+    .. [1] Rasmussen, C.E. & Williams, C.K.I. (2006). Gaussian Processes for Machine Learning. MIT
     Press.
     .. [2] Chilès, J.P. & Delfiner, P. (2012). Geostatistics: Modeling Spatial Uncertainty. Wiley.
     """
     # Calculate scaled distances
     h_scaled = distance_lags / correlation_range
-    
+
     # Calculate correlation
-    correlation = (1 + h_scaled**2 / (2 * shape_parameter))**(-shape_parameter)
-    
+    correlation = (1 + h_scaled**2 / (2 * shape_parameter)) ** (-shape_parameter)
+
     # Calculate variogram
     return nugget + (sill - nugget) * (1 - correlation)
 
@@ -751,7 +764,7 @@ def spherical(distance_lags: np.ndarray, sill: float, nugget: float, correlation
     - C₁ is the partial sill (sill - nugget)
     - a is the effective range (correlation = 0 beyond this distance)
 
-    The spherical model has a finite range and linear near-origin behavior, 
+    The spherical model has a finite range and linear near-origin behavior,
     making it suitable for processes with clear spatial boundaries.
 
     References
@@ -811,7 +824,7 @@ def bessel_gaussian(
     The Bessel-Gaussian composite model is defined as:
 
     .. math::
-        γ(h) = C_0 + C_1 \\left(1 - \\exp\\left(-\\frac{h^2}{a_1^2}\\right) 
+        γ(h) = C_0 + C_1 \\left(1 - \\exp\\left(-\\frac{h^2}{a_1^2}\\right)
                \\cdot \\frac{J_1(h/a_2)}{h/(2a_2)}\\right)
 
     where:
@@ -822,7 +835,7 @@ def bessel_gaussian(
     - a₂ is the hole-effect range (Bessel component)
     - J₁ is the first-order Bessel function
 
-    This model combines smooth Gaussian decay with oscillatory behavior, creating damped periodic 
+    This model combines smooth Gaussian decay with oscillatory behavior, creating damped periodic
     patterns suitable for highly regular processes with cyclical spatial structures.
 
     References
@@ -881,7 +894,7 @@ def bessel_exponential(
     The Bessel-exponential composite model combines periodic and exponential decay:
 
     .. math::
-        γ(h) = C_0 + C_1 \\left(1 - \\exp\\left(-\\left(\\frac{h}{a_1}\\right)^α\\right) 
+        γ(h) = C_0 + C_1 \\left(1 - \\exp\\left(-\\left(\\frac{h}{a_1}\\right)^α\\right)
                \\cdot \\frac{J_1(h/a_2)}{h/(2a_2)}\\right)
 
     where:
@@ -893,7 +906,7 @@ def bessel_exponential(
     - α is the decay power
     - J₁ is the first-order Bessel function
 
-    This model captures both oscillatory patterns and long-range decay, suitable for processes with 
+    This model captures both oscillatory patterns and long-range decay, suitable for processes with
     periodic structures that diminish with distance.
 
     **Decay power interpretations:**
@@ -957,7 +970,7 @@ def cosine_exponential(
     The cosine-exponential composite model is defined as:
 
     .. math::
-        γ(h) = C_0 + C_1 \\left(1 - \\exp\\left(-\\left(\\frac{h}{a_1}\\right)^α\\right) 
+        γ(h) = C_0 + C_1 \\left(1 - \\exp\\left(-\\left(\\frac{h}{a_1}\\right)^α\\right)
                \\cdot \\cos\\left(\\frac{\\pi h}{a_2}\\right)\\right)
 
     where:
@@ -968,8 +981,8 @@ def cosine_exponential(
     - a₂ is the hole-effect range (cosine wavelength)
     - α is the decay power
 
-    This model creates sinusoidal modulation of exponential decay, producing regular oscillatory 
-    patterns. The cosine component creates predictable periodicity, making it suitable for 
+    This model creates sinusoidal modulation of exponential decay, producing regular oscillatory
+    patterns. The cosine component creates predictable periodicity, making it suitable for
     processes with known cyclical behavior.
 
     **Decay power interpretations:**
@@ -1031,7 +1044,7 @@ def cosine_gaussian(
     The cosine-Gaussian composite model is defined as:
 
     .. math::
-        γ(h) = C_0 + C_1 \\left(1 - \\exp\\left(-\\frac{h^2}{a_1^2}\\right) 
+        γ(h) = C_0 + C_1 \\left(1 - \\exp\\left(-\\frac{h^2}{a_1^2}\\right)
                \\cdot \\cos\\left(\\frac{\\pi h}{a_2}\\right)\\right)
 
     where:
@@ -1046,8 +1059,8 @@ def cosine_gaussian(
     - **Cosine periodicity**: Regular oscillatory patterns
     - **Smooth transitions**: Gradual approach to the sill
 
-    The Gaussian component provides very smooth spatial correlation while the 
-    cosine component introduces predictable periodic behavior. This combination 
+    The Gaussian component provides very smooth spatial correlation while the
+    cosine component introduces predictable periodic behavior. This combination
     is ideal for highly regular spatial processes with known cyclical patterns.
 
     References
@@ -1106,7 +1119,7 @@ def exponential_linear(
     The exponential-linear composite model is defined as:
 
     .. math::
-        γ(h) = C_0 + C_1 \\left(1 - \\exp\\left(-\\left(\\frac{h}{a_1}\\right)^α\\right)\\right) 
+        γ(h) = C_0 + C_1 \\left(1 - \\exp\\left(-\\left(\\frac{h}{a_1}\\right)^α\\right)\\right)
                + C_2 \\cdot \\frac{h}{a_2}
 
     where:
@@ -1176,7 +1189,7 @@ def gaussian_linear(
     The Gaussian-linear composite model is defined as:
 
     .. math::
-        γ(h) = C_0 + C_1 \\left(1 - \\exp\\left(-\\frac{h^2}{a_1^2}\\right)\\right) 
+        γ(h) = C_0 + C_1 \\left(1 - \\exp\\left(-\\frac{h^2}{a_1^2}\\right)\\right)
                + C_2 \\cdot \\frac{h}{a_2}
 
     where:
@@ -1187,7 +1200,7 @@ def gaussian_linear(
     - a₂ is the hole-effect range (linear component)
     - C₂ is determined by model implementation
 
-    This model combines smooth Gaussian decay with linear trend components for highly regular 
+    This model combines smooth Gaussian decay with linear trend components for highly regular
     spatial processes with regional drift.
 
     References
@@ -1212,6 +1225,7 @@ def gaussian_linear(
 # Variogram function API
 VARIOGRAM_MODELS = {
     "single": {
+        "cubic": cubic,
         "exponential": exponential,
         "gaussian": gaussian,
         "jbessel": jbessel,
@@ -1408,6 +1422,7 @@ def variogram(
     # Pipe the parameters into the appropriate variogram function
     return variogram_function["model_function"](distance_lags, **required_args)
 
+
 def get_variogram_arguments(model_name: Union[str, List[str]]):
     """
     Get the variogram function arguments and model function for a given model.
@@ -1458,6 +1473,7 @@ def get_variogram_arguments(model_name: Union[str, List[str]]):
     # ---- Create ordered dictionary of required arguments
     return function_signature.parameters, {"model_function": model_function}
 
+
 def fit_variogram(
     lags: np.ndarray[float],
     lag_counts: np.ndarray[int],
@@ -1469,8 +1485,8 @@ def fit_variogram(
     """
     Fit theoretical variogram models to empirical semivariogram data using weighted least squares.
 
-    This function performs non-linear optimization to find the best-fitting parameters for 
-    theoretical variogram models. The optimization uses weighted least squares where weights 
+    This function performs non-linear optimization to find the best-fitting parameters for
+    theoretical variogram models. The optimization uses weighted least squares where weights
     are proportional to the lag counts, giving more influence to lags with more data pairs.
 
     Parameters
@@ -1482,22 +1498,22 @@ def fit_variogram(
     gamma : np.ndarray
         Empirical semivariogram values (standardized semivariance) at each lag.
     model : str or List[str]
-        Theoretical variogram model specification. Single string for basic models 
-        ('exponential', 'gaussian', 'spherical', 'jbessel', 'linear'). List of two strings 
-        for composite models (['bessel', 'exponential'], ['bessel', 'gaussian'], 
+        Theoretical variogram model specification. Single string for basic models
+        ('exponential', 'gaussian', 'spherical', 'jbessel', 'linear'). List of two strings
+        for composite models (['bessel', 'exponential'], ['bessel', 'gaussian'],
         ['cosine', 'exponential']).
     model_parameters : lmfit.Parameters
         Parameter object containing initial values, bounds, and constraints for optimization.
         Required parameters depend on the selected model.
     optimizer_kwargs : dict, default={}
-        Additional keyword arguments passed to `lmfit.minimize()`. Common options include 
+        Additional keyword arguments passed to `lmfit.minimize()`. Common options include
         'max_nfev' for maximum function evaluations and solver-specific parameters.
 
     Returns
     -------
     Tuple[dict, dict, float]
         - Optimized parameter values as dictionary
-        - Initial parameter values as dictionary  
+        - Initial parameter values as dictionary
         - Mean absolute deviation of optimized fit
 
     Notes
@@ -1514,7 +1530,7 @@ def fit_variogram(
     *Single Models:*
     - 'cubic': Smooth cubic polynomial with finite range
     - 'exponential': C₀ + C₁(1 - exp(-h/a))
-    - 'gaussian': C₀ + C₁(1 - exp(-h²/a²))  
+    - 'gaussian': C₀ + C₁(1 - exp(-h²/a²))
     - 'jbessel': C₀ + C₁(1 - J₁(h/a)/(h/2a)) - exhibits hole effects
     - 'kbessel': K-Bessel function model
     - 'linear': C₀ + C₁·h - unbounded growth
@@ -1530,13 +1546,13 @@ def fit_variogram(
     - ['bessel', 'gaussian']: Periodic patterns with Gaussian smoothness
     - ['cosine', 'exponential']: Sinusoidal modulation with exponential decay
 
-    The function uses Trust Region Reflective algorithm (default in lmfit) which handles parameter 
+    The function uses Trust Region Reflective algorithm (default in lmfit) which handles parameter
     bounds robustly and is suitable for the non-linear nature of variogram models.
 
     References
     ----------
     .. [1] Cressie, N. (1993). Statistics for Spatial Data. Wiley.
-    .. [2] Newville, M., et al. (2014). LMFIT: Non-Linear Least-Square Minimization and 
+    .. [2] Newville, M., et al. (2014). LMFIT: Non-Linear Least-Square Minimization and
            Curve-Fitting for Python. Zenodo.
     """
     # Normalize the lag counts to get the lag weights
