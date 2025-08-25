@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from echopop.nwfsc_feat.spatial import empirical_variogram, quantize_lags, semivariance
+from echopop.nwfsc_feat.variogram import empirical_variogram, quantize_lags, semivariance
 
 
 # ==================================================================================================
@@ -240,7 +240,7 @@ def test_empirical_variogram_different_coordinates(sample_transect_df):
         lag_resolution=lag_resolution,
         azimuth_filter=False,
         azimuth_angle_threshold=180.0,
-        coordinates=("easting", "northing"),
+        coordinate_names=("easting", "northing"),  # Fixed parameter name
     )
 
     # Check that outputs are arrays of correct length

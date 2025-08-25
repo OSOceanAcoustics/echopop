@@ -62,3 +62,33 @@ def sample_azimuth_matrix():
             [315.0, 270.0, 225.0, 0.0],
         ]
     )
+
+
+@pytest.fixture
+def sample_mesh_with_area():
+    """Create a sample mesh DataFrame with required area column."""
+    return pd.DataFrame(
+        {
+            "longitude": np.linspace(-124.6, -123.0, 10),
+            "latitude": np.linspace(46.0, 46.8, 10),
+            "x": np.linspace(-0.5, 1.0, 10),
+            "y": np.linspace(-0.2, 1.2, 10),
+            "area": np.ones(10) * 1.5,  # Required area column
+            "mesh_id": range(10),
+        }
+    )
+
+
+@pytest.fixture
+def sample_mesh_with_fraction():
+    """Create a sample mesh DataFrame with fraction column instead of area."""
+    return pd.DataFrame(
+        {
+            "longitude": np.linspace(-124.6, -123.0, 8),
+            "latitude": np.linspace(46.0, 46.8, 8),
+            "x": np.linspace(-0.5, 1.0, 8),
+            "y": np.linspace(-0.2, 1.2, 8),
+            "fraction": np.ones(8) * 0.25,  # Fraction column for validation
+            "mesh_id": range(8),
+        }
+    )
