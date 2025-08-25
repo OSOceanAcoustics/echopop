@@ -134,7 +134,8 @@ def transect_coordinate_centroid(spatial_grouped: gpd.GeoSeries):
     return Point(centroid_point)
 
 
-def transect_extent(transect_df: pd.DataFrame, projection: str, num_nearest_transects: int):
+def transect_extent(transects: pd.DataFrame, projection: str, 
+                    num_nearest_transects: int, **kwargs):
     """
     Compute the spatial extent of survey transects using convex hull generation.
 
@@ -144,7 +145,7 @@ def transect_extent(transect_df: pd.DataFrame, projection: str, num_nearest_tran
 
     Parameters
     ----------
-    transect_df : pd.DataFrame
+    transects : pd.DataFrame
         Dataframe containing survey transect data with columns:
         - 'longitude': Longitude coordinates
         - 'latitude': Latitude coordinates
@@ -187,10 +188,13 @@ def transect_extent(transect_df: pd.DataFrame, projection: str, num_nearest_tran
     or defining survey boundaries for analysis.
     """
 
+    # Copy
+    transect_df = transects.copy()
+
     # Convert to GeoDataFrame
     transect_gdf = gpd.GeoDataFrame(
-        transect_df,
-        geometry=gpd.points_from_xy(transect_df["longitude"], transect_df["latitude"]),
+        transects,
+        geometry=gpd.points_from_xy(transects["longitude"], transect_df["latitude"]),
         crs=projection,
     )
 
@@ -242,13 +246,13 @@ def transect_extent(transect_df: pd.DataFrame, projection: str, num_nearest_tran
     return unary_union(transect_polygons)
 
 def hull_crop(
-    transect_df: pd.DataFrame,
-    mesh_df: pd.DataFrame,
+    transects: pd.DataFrame,
+    mesh: pd.DataFrame,
     num_nearest_transects: int = 3,
     mesh_buffer_distance: float = 2.5,
     projection: str = "epsg:4326",
     coordinate_names: Tuple[str, str] = ("longitude", "latitude"),
-):
+) -> pd.DataFrame:
     """
     Crop the kriging mesh using convex hull polygons generated from survey transects.
 
@@ -259,10 +263,10 @@ def hull_crop(
 
     Parameters
     ----------
-    transect_df : pd.DataFrame
+    transects : pd.DataFrame
         Georeferenced survey transect data used for defining the spatial extent for the kriging
         mesh grid. Must contain columns: 'longitude', 'latitude', 'transect_num'.
-    mesh_df : pd.DataFrame
+    mesh : pd.DataFrame
         Complete kriging mesh DataFrame that is subsequently cropped. Must contain columns:
         'longitude', 'latitude'.
     num_nearest_transects : int, default=3
@@ -286,11 +290,11 @@ def hull_crop(
     Examples
     --------
     >>> cropped_mesh = hull_crop(
-    ...     transect_df, mesh_df,
+    ...     transects, mesh,
     ...     num_nearest_transects=5,
     ...     mesh_buffer_distance=3.0
     ... )
-    >>> print(f"Original mesh size: {len(mesh_df)}")
+    >>> print(f"Original mesh size: {len(mesh)}")
     >>> print(f"Cropped mesh size: {len(cropped_mesh)}")
 
     Notes
