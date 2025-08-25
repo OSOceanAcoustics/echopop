@@ -1,7 +1,6 @@
-import numpy as np
 import pandas as pd
 import pytest
-from pydantic import ValidationError
+from pydantic import field_validator, ValidationError
 import pandera as pa
 
 from echopop.validators.base import BaseDictionary, BaseDataFrame, EchopopValidationError
@@ -160,7 +159,7 @@ def test_base_integration_custom_model():
         positive_number: float
         optional_string: str = None
         
-        @pytest.fixture  # This would be a field_validator in real code
+        @field_validator("positive_number")
         def validate_positive(cls, v):
             if v <= 0:
                 raise ValueError("Must be positive")
