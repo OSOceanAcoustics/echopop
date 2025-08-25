@@ -1148,6 +1148,7 @@ def scale_weight_proportions(
 
     return weight_proportions_overall
 
+
 def get_nasc_proportions_slice(
     number_proportions: pd.DataFrame,
     ts_length_regression_parameters: Dict[str, float],

@@ -1,14 +1,17 @@
 import warnings
 from typing import Any, Dict, List, Optional, Tuple, Union
+
 import numpy as np
 import pandas as pd
 from lmfit import Parameters
-from .variogram_models import fit_variogram
-from .. import validators as val
 from pydantic import ValidationError
+
+from .. import validators as val
+from .variogram_models import fit_variogram
 
 # Set warnings filter
 warnings.simplefilter("always")
+
 
 def lag_distance_matrix(
     coordinates_1: Union[pd.DataFrame, np.ndarray],
@@ -32,7 +35,7 @@ def lag_distance_matrix(
     coordinates_2 : pd.DataFrame or np.ndarray, optional
         Second set of coordinates (x, y) as a DataFrame or numpy array. If None, uses coordinates_1.
     self : bool, default=False
-        If True, calculates distances within the same set of coordinates (ignored when 
+        If True, calculates distances within the same set of coordinates (ignored when
         coordinates_2 is None).
     azimuth_matrix : bool, default=False
         If True, returns both distance and azimuth angles; if False, returns only distances.
@@ -55,10 +58,10 @@ def lag_distance_matrix(
     .. math::
         θ_{ij} = \\arctan\\left(\\frac{y_j - y_i}{x_j - x_i}\\right) \\cdot \\frac{180}{π} + 180°
 
-    The azimuth matrix has NaN values on the diagonal to avoid undefined angles for identical 
+    The azimuth matrix has NaN values on the diagonal to avoid undefined angles for identical
     coordinate pairs. Azimuth angles range from 0° to 360°.
 
-    This function is optimized for variogram computation where distance matrices are fundamental 
+    This function is optimized for variogram computation where distance matrices are fundamental
     for lag-based spatial correlation analysis.
 
     References
@@ -133,8 +136,8 @@ def filter_lag_matrix(
     """
     Apply spatial filtering to distance matrices using boolean masks and azimuth constraints.
 
-    This function extracts elements from 2D spatial matrices (typically distance or lag matrices) 
-    based on boolean masks and optional directional filtering. It's primarily used in variogram 
+    This function extracts elements from 2D spatial matrices (typically distance or lag matrices)
+    based on boolean masks and optional directional filtering. It's primarily used in variogram
     computation to ensure each spatial pair is counted once and to implement directional analysis.
 
     Parameters
@@ -142,12 +145,12 @@ def filter_lag_matrix(
     data_matrix : np.ndarray
         The 2D matrix to be filtered (e.g., lag distances, estimates).
     mask_matrix : np.ndarray[bool]
-        Boolean mask indicating which matrix elements to retain. Typically a triangular mask 
+        Boolean mask indicating which matrix elements to retain. Typically a triangular mask
         to avoid double-counting symmetric pairs.
     azimuth_matrix : np.ndarray[float], optional
         Matrix of azimuth angles between coordinate pairs. Used for directional filtering.
     azimuth_angle_threshold : float, optional
-        Maximum angular deviation (degrees) from the reference direction. Only pairs within 
+        Maximum angular deviation (degrees) from the reference direction. Only pairs within
         ±threshold are retained for directional variogram analysis.
 
     Returns
@@ -163,7 +166,7 @@ def filter_lag_matrix(
     Uses boolean masks (typically triangular) to extract unique spatial pairs:
 
     .. math::
-        \\text{mask}_{ij} = \\begin{cases} 
+        \\text{mask}_{ij} = \\begin{cases}
         \\text{True} & \\text{if } i > j \\\\
         \\text{False} & \\text{otherwise}
         \\end{cases}
@@ -230,8 +233,8 @@ def quantize_lags(
     """
     Aggregate spatial data into lag bins for empirical variogram computation.
 
-    Performs the quantization step of variogram analysis by grouping spatial data pairs into 
-    discrete lag distance bins and computing the statistical moments needed for semivariance 
+    Performs the quantization step of variogram analysis by grouping spatial data pairs into
+    discrete lag distance bins and computing the statistical moments needed for semivariance
     estimation.
 
     Parameters
@@ -253,7 +256,7 @@ def quantize_lags(
     -------
     Tuple[np.ndarray[int], np.ndarray[float], np.ndarray[float], np.ndarray[float]]
         - lag_counts: Number of spatial pairs in each lag bin
-        - lag_estimates: Sum of estimates for pairs in each lag bin  
+        - lag_estimates: Sum of estimates for pairs in each lag bin
         - lag_estimates_squared: Sum of squared estimates for pairs in each lag bin
         - lag_deviations: Sum of squared differences between paired estimates
 
@@ -268,10 +271,10 @@ def quantize_lags(
     **Lag Statistics:**
     .. math::
         S_1(h_k) = \\sum_{h_{ij} \\in \\text{bin}_k} Z(x_i)
-        
+
     .. math::
         S_2(h_k) = \\sum_{h_{ij} \\in \\text{bin}_k} Z(x_i)^2
-        
+
     .. math::
         D(h_k) = \\sum_{h_{ij} \\in \\text{bin}_k} [Z(x_i) - Z(x_j)]^2
 
@@ -280,14 +283,14 @@ def quantize_lags(
     .. math::
         γ(h_k) = \\frac{D(h_k)}{2N(h_k) \\cdot σ_{head}(h_k) \\cdot σ_{tail}(h_k)}
 
-    The function uses `numpy.bincount` for efficient aggregation, making it suitable for large 
+    The function uses `numpy.bincount` for efficient aggregation, making it suitable for large
     spatial datasets common in acoustic surveys.
 
     References
     ----------
-    .. [1] Rivoirard, J., et al. (2000). Geostatistics for Estimating Fish Abundance. Blackwell 
+    .. [1] Rivoirard, J., et al. (2000). Geostatistics for Estimating Fish Abundance. Blackwell
            Science.
-    .. [2] Petitgas, P. (1993). Geostatistics for fish stock assessments. Reviews in Fish Biology 
+    .. [2] Petitgas, P. (1993). Geostatistics for fish stock assessments. Reviews in Fish Biology
            and Fisheries, 3(4), 307-334.
     """
 
@@ -363,8 +366,8 @@ def semivariance(
     """
     Compute standardized semivariance for empirical variogram estimation.
 
-    Calculates the final step in empirical variogram computation using the standardized 
-    approach suitable for heteroscedastic spatial data. This method normalizes semivariance 
+    Calculates the final step in empirical variogram computation using the standardized
+    approach suitable for heteroscedastic spatial data. This method normalizes semivariance
     by local variance estimates to improve robustness for irregular sampling patterns.
 
     Parameters
@@ -416,14 +419,14 @@ def semivariance(
     - Improves model fitting for irregular sampling patterns
     - Maintains interpretability of classical variogram theory
 
-    The method is particularly well-suited for fisheries acoustic data where biomass estimates can 
+    The method is particularly well-suited for fisheries acoustic data where biomass estimates can
     vary dramatically in magnitude and spatial distribution.
 
     References
     ----------
-    .. [1] Rivoirard, J., et al. (2000). Geostatistics for Estimating Fish Abundance. Blackwell 
+    .. [1] Rivoirard, J., et al. (2000). Geostatistics for Estimating Fish Abundance. Blackwell
            Science.
-    .. [2] Petitgas, P. (1993). Use of a disjunctive kriging to model areas of high pelagic fish 
+    .. [2] Petitgas, P. (1993). Use of a disjunctive kriging to model areas of high pelagic fish
            density in acoustic fisheries surveys. Aquatic Living Resources, 6(3), 201-209.
     """
 
@@ -477,15 +480,15 @@ def empirical_variogram(
     """
     Compute empirical variogram from spatial survey data using standardized semivariance.
 
-    This function implements the complete empirical variogram computation workflow, from distance 
-    matrix calculation through standardized semivariance estimation. The method is optimized for 
-    fisheries acoustic survey data with irregular sampling patterns and heterogeneous variance 
+    This function implements the complete empirical variogram computation workflow, from distance
+    matrix calculation through standardized semivariance estimation. The method is optimized for
+    fisheries acoustic survey data with irregular sampling patterns and heterogeneous variance
     structures.
 
     Parameters
     ----------
     data : pd.DataFrame
-        DataFrame containing georeferenced coordinates and target variable. Must include 
+        DataFrame containing georeferenced coordinates and target variable. Must include
         columns specified in `coordinate_names` and `variable`.
     n_lags : int
         Number of lag bins for variogram computation. Typical values: 10-30.
@@ -494,7 +497,7 @@ def empirical_variogram(
     azimuth_filter : bool
         If True, computes azimuth angles for directional analysis capabilities.
     azimuth_angle_threshold : float
-        Maximum angular deviation (degrees) for directional filtering. Use 180° for 
+        Maximum angular deviation (degrees) for directional filtering. Use 180° for
         omnidirectional analysis.
     variable : str, default='biomass_density'
         Column name of the variable for variogram computation.
@@ -507,7 +510,7 @@ def empirical_variogram(
     -------
     Tuple[np.ndarray[float], np.ndarray[float], np.ndarray[int], float]
         - lags: Array of lag distances
-        - gamma: Standardized semivariance values  
+        - gamma: Standardized semivariance values
         - lag_counts: Number of pairs contributing to each lag
         - lag_covariance: Mean covariance between head and tail points
 
@@ -529,7 +532,7 @@ def empirical_variogram(
                  {σ_{head}(h_k) \\cdot σ_{tail}(h_k)}
 
     **Triangular Masking:**
-    Uses lower triangular matrix extraction to ensure each spatial pair is counted 
+    Uses lower triangular matrix extraction to ensure each spatial pair is counted
     exactly once, avoiding redundant calculations in symmetric distance matrices.
 
     **Quality Indicators:**
@@ -539,15 +542,15 @@ def empirical_variogram(
 
     The standardized approach is particularly effective for:
     - Acoustic survey data with patchy biomass distributions
-    - Irregular sampling grids typical in marine surveys  
+    - Irregular sampling grids typical in marine surveys
     - Data with strong heteroscedasticity
 
     References
     ----------
-    .. [1] Rivoirard, J., et al. (2000). Geostatistics for Estimating Fish Abundance. Blackwell 
+    .. [1] Rivoirard, J., et al. (2000). Geostatistics for Estimating Fish Abundance. Blackwell
            Science.
     .. [2] Cressie, N. (1993). Statistics for Spatial Data. Wiley.
-    .. [3] Petitgas, P. (1993). Geostatistics for fish stock assessments. Reviews in Fish Biology 
+    .. [3] Petitgas, P. (1993). Geostatistics for fish stock assessments. Reviews in Fish Biology
            and Fisheries, 3(4), 307-334.
     """
     # Initialize lag array
@@ -608,42 +611,43 @@ def empirical_variogram(
     else:
         return lags, gamma_h, lag_counts, lag_covariance
 
+
 class Variogram:
-    """"
-    Class for calculating and fitting variograms to quantify the spatial variance in population 
+    """ "
+    Class for calculating and fitting variograms to quantify the spatial variance in population
     variables and other metrics.
-    
-    A variogram (or semivariogram) is a fundamental tool in geostatistics that describes 
-    the spatial correlation structure of a variable as a function of distance. The empirical 
+
+    A variogram (or semivariogram) is a fundamental tool in geostatistics that describes
+    the spatial correlation structure of a variable as a function of distance. The empirical
     semivariogram γ(h) is defined as:
 
     .. math::
         γ(h) = \\frac{1}{2N(h)} \\sum_{i=1}^{N(h)} [Z(x_i) - Z(x_i + h)]^2
 
-    where Z(x_i) is the value at location x_i, h is the lag distance, and N(h) is the 
+    where Z(x_i) is the value at location x_i, h is the lag distance, and N(h) is the
     number of pairs separated by distance h.
 
-    The class implements a standardized semivariogram approach where the semivariance 
+    The class implements a standardized semivariogram approach where the semivariance
     is normalized by the product of head and tail standard deviations:
 
     .. math::
         γ_{std}(h) = \\frac{γ(h)}{σ_{head}(h) \\cdot σ_{tail}(h)}
 
-    This standardization helps account for local variance heterogeneity and provides 
+    This standardization helps account for local variance heterogeneity and provides
     more robust variogram estimates for irregularly distributed data [1]_.
 
     Parameters
     ----------
     lag_resolution : float
-        The distance interval represented by each lag. Must be positive and determines 
+        The distance interval represented by each lag. Must be positive and determines
         the spatial resolution of the variogram analysis.
     n_lags : int
         The number of lags used for computing the semivariogram. Must be positive.
         Typical values range from 10-30 depending on data density and spatial extent.
     coordinate_names : Tuple[str, str], default=('x', 'y')
-        Column names for the spatial coordinates in input DataFrames. 
+        Column names for the spatial coordinates in input DataFrames.
         Format: (horizontal_axis, vertical_axis).
-    
+
     Attributes
     ----------
     gamma : np.ndarray or None
@@ -665,7 +669,7 @@ class Variogram:
 
     Methods
     -------
-    calculate_empirical_variogram(data, variable, azimuth_filter=True, 
+    calculate_empirical_variogram(data, variable, azimuth_filter=True,
     azimuth_angle_threshold=180.0, force_lag_zero=True)
         Compute the empirical variogram from transect data.
     fit_variogram_model(model, model_parameters, optimizer_kwargs={})
@@ -678,55 +682,55 @@ class Variogram:
     >>> import pandas as pd
     >>> import numpy as np
     >>> from echopop.nwfsc_feat.variogram import Variogram
-    >>> 
+    >>>
     >>> # Create sample spatial data
     >>> data = pd.DataFrame({
     ...     'x': np.random.uniform(0, 100, 50),
     ...     'y': np.random.uniform(0, 100, 50),
     ...     'biomass_density': np.random.exponential(2, 50)
     ... })
-    >>> 
+    >>>
     >>> # Initialize variogram
     >>> vario = Variogram(lag_resolution=5.0, n_lags=15)
-    >>> 
+    >>>
     >>> # Compute empirical variogram
     >>> vario.calculate_empirical_variogram(data, 'biomass_density')
-    >>> 
+    >>>
     >>> # Fit theoretical model
     >>> from lmfit import Parameters
     >>> params = Parameters()
     >>> params.add('sill', value=2.0, min=0.1)
     >>> params.add('nugget', value=0.1, min=0.0)
     >>> params.add('correlation_range', value=20.0, min=1.0)
-    >>> 
+    >>>
     >>> best_fit = vario.fit_variogram_model('exponential', params)
-    
+
     Notes
     -----
     The class implements several key applications for fisheries acoustic survey data:
 
-    1. **Standardized Semivariogram**: Uses local variance normalization to handle 
+    1. **Standardized Semivariogram**: Uses local variance normalization to handle
        heteroscedastic data common in biological surveys.
-    
-    2. **Azimuth Filtering**: Supports directional variogram analysis for anisotropic 
+
+    2. **Azimuth Filtering**: Supports directional variogram analysis for anisotropic
        spatial patterns often observed in marine ecosystems.
-    
-    3. **Robust Lag Estimation**: Uses weighted binning approaches that account for 
+
+    3. **Robust Lag Estimation**: Uses weighted binning approaches that account for
        irregular sampling patterns typical in acoustic transect surveys.
 
-    The theoretical variogram models available include single-family models 
-    (exponential, Gaussian, spherical, Bessel functions) and composite models 
-    that can capture complex spatial structures with both short-range correlation 
+    The theoretical variogram models available include single-family models
+    (exponential, Gaussian, spherical, Bessel functions) and composite models
+    that can capture complex spatial structures with both short-range correlation
     and periodic patterns [2]_, [3]_.
 
     References
     ----------
     .. [1] Cressie, N.A.C. (1993). *Statistics for Spatial Data*. John Wiley & Sons.
-    .. [2] Chilès, J.P., and Delfiner, P. (2012). *Geostatistics: Modeling Spatial 
+    .. [2] Chilès, J.P., and Delfiner, P. (2012). *Geostatistics: Modeling Spatial
        Uncertainty*. 2nd ed. John Wiley & Sons.
-    .. [3] Rivoirard, J., Simmonds, J., Foote, K.G., Fernandes, P., and Bez, N. (2000). 
+    .. [3] Rivoirard, J., Simmonds, J., Foote, K.G., Fernandes, P., and Bez, N. (2000).
        *Geostatistics for Estimating Fish Abundance*. Blackwell Science.
-    
+
     """
 
     def __new__(
@@ -740,9 +744,7 @@ class Variogram:
             # ---- Check
             valid_args = val.ValidateVariogramClass.create(
                 **dict(
-                    lag_resolution=lag_resolution,
-                    n_lags=n_lags,
-                    coordinate_names=coordinate_names
+                    lag_resolution=lag_resolution, n_lags=n_lags, coordinate_names=coordinate_names
                 )
             )
         # Break creation
@@ -758,21 +760,18 @@ class Variogram:
         # Generate
         return self
 
-    def __init__(self,
-                lag_resolution: float,
-                n_lags: int,
-                coordinate_names: Tuple[str, str]):
+    def __init__(self, lag_resolution: float, n_lags: int, coordinate_names: Tuple[str, str]):
 
         # Initialize variables
         self.gamma = None
-        self.lags = None        
+        self.lags = None
         self.lag_counts = None
         self.lag_covariance = None
         self.variogram_params_optimized = None
         self.variogram_params_inital = None
         self.variogram_fit_initial = None
         self.variogram_fit_optimized = None
-        
+
     def calculate_empirical_variogram(
         self,
         data: pd.DataFrame,
@@ -784,49 +783,49 @@ class Variogram:
         """
         Compute the empirical variogram from transect data.
 
-        Calculates the standardized semivariogram using the method described in 
-        Rivoirard et al. (2000) [1]_, which is particularly suitable for fisheries 
+        Calculates the standardized semivariogram using the method described in
+        Rivoirard et al. (2000) [1]_, which is particularly suitable for fisheries
         acoustic data with irregular sampling patterns and heterogeneous variance.
 
         The empirical semivariogram is computed as:
 
         .. math::
-            γ(h) = \\frac{1}{2N(h)} \\sum_{i=1}^{N(h)} 
+            γ(h) = \\frac{1}{2N(h)} \\sum_{i=1}^{N(h)}
             \\frac{[Z(x_i) - Z(x_i + h)]^2}{σ_{head}(h) \\cdot σ_{tail}(h)}
 
-        where the standardization by head and tail standard deviations accounts for 
+        where the standardization by head and tail standard deviations accounts for
         local variance heterogeneity.
 
         Parameters
         ----------
         data : pd.DataFrame
-            DataFrame containing georeferenced coordinates and the target variable. Must include 
+            DataFrame containing georeferenced coordinates and the target variable. Must include
             columns specified in `coordinate_names` and `variable`.
         variable : str
             Column name of the variable for variogram computation (e.g., 'biomass_density').
         azimuth_filter : bool, default=True
-            If True, computes azimuth angles between point pairs to enable directional filtering. 
+            If True, computes azimuth angles between point pairs to enable directional filtering.
             Useful for detecting spatial anisotropy.
         azimuth_angle_threshold : float, default=180.0
-            Maximum azimuth angle deviation (in degrees) for including point pairs. Values less 
+            Maximum azimuth angle deviation (in degrees) for including point pairs. Values less
             than 180° enable directional variogram analysis.
         force_lag_zero : bool, default=True
-            If True, forces the nugget effect to zero by prepending lag 0 with γ(0) = 0. This 
+            If True, forces the nugget effect to zero by prepending lag 0 with γ(0) = 0. This
             assumes no measurement error or micro-scale variation.
 
         Notes
         -----
-        The method uses a triangular mask to ensure each point pair is counted only once, avoiding 
-        redundant calculations in the distance matrix. For acoustic survey data, typical 
-        `azimuth_angle_threshold` values of 45-90° can help identify along-track vs. across-track 
+        The method uses a triangular mask to ensure each point pair is counted only once, avoiding
+        redundant calculations in the distance matrix. For acoustic survey data, typical
+        `azimuth_angle_threshold` values of 45-90° can help identify along-track vs. across-track
         spatial patterns.
 
-        The lag counts provide important information about the reliability of each lag estimate - 
+        The lag counts provide important information about the reliability of each lag estimate -
         lags with very few pairs should be interpreted cautiously.
 
         References
         ----------
-        .. [1] Rivoirard, J., Simmonds, J., Foote, K.G., Fernandes, P., and Bez, N. (2000). 
+        .. [1] Rivoirard, J., Simmonds, J., Foote, K.G., Fernandes, P., and Bez, N. (2000).
            *Geostatistics for Estimating Fish Abundance*. Blackwell Science.
         """
 
@@ -840,13 +839,13 @@ class Variogram:
                     coordinate_names=self.coordinate_names,
                     data=data,
                     force_lag_zero=force_lag_zero,
-                    variable=variable
+                    variable=variable,
                 )
             )
         # Break creation
         except (ValidationError, Exception) as e:
             raise val.EchopopValidationError(str(e)) from None
-        
+
         # Compute the empirical variogram
         self.lags, self.gamma, self.lag_counts, self.lag_covariance = empirical_variogram(
             n_lags=self.n_lags,
@@ -861,7 +860,7 @@ class Variogram:
         optimizer_kwargs: Dict[str, Any] = {},
     ) -> Dict[str, Any]:
         """
-        Fit a theoretical variogram model to the empirical variogram using weighted least squares 
+        Fit a theoretical variogram model to the empirical variogram using weighted least squares
         optimization.
 
         Fits parametric models of the form:
@@ -869,7 +868,7 @@ class Variogram:
         .. math::
             γ(h) = C_0 + C_1 \\cdot f(h; θ)
 
-        where C₀ is the nugget, C₁ is the partial sill, f(h; θ) is the correlation function, and θ 
+        where C₀ is the nugget, C₁ is the partial sill, f(h; θ) is the correlation function, and θ
         represents model-specific parameters (range, shape, etc.).
 
         The optimization minimizes the weighted residual sum of squares:
@@ -882,14 +881,14 @@ class Variogram:
         Parameters
         ----------
         model : str or List[str]
-            Theoretical variogram model name(s). Single string for basic models (e.g., 
-            'exponential', 'gaussian', 'spherical'). List of two strings for composite models 
+            Theoretical variogram model name(s). Single string for basic models (e.g.,
+            'exponential', 'gaussian', 'spherical'). List of two strings for composite models
             (e.g., ['bessel', 'exponential']).
         model_parameters : lmfit.Parameters
-            Initial parameter values and constraints for optimization. Required parameters depend 
+            Initial parameter values and constraints for optimization. Required parameters depend
             on the chosen model. See `variogram_models` module for model-specific requirements.
         optimizer_kwargs : dict, default={}
-            Additional arguments passed to `lmfit.minimize()`. Common options include 'max_nfev' 
+            Additional arguments passed to `lmfit.minimize()`. Common options include 'max_nfev'
             (maximum function evaluations) and solver-specific parameters.
 
         Returns
@@ -903,7 +902,7 @@ class Variogram:
 
         *Single Models:*
         - 'exponential': Exponential decay, suitable for continuous processes
-        - 'gaussian': Gaussian (squared exponential), very smooth processes  
+        - 'gaussian': Gaussian (squared exponential), very smooth processes
         - 'spherical': Spherical model with finite range
         - 'jbessel': J-Bessel function, exhibits hole-effect patterns
         - 'linear': Linear growth (unbounded)
@@ -915,17 +914,17 @@ class Variogram:
 
         **Parameter Guidelines:**
         - `nugget`: Usually 0-20% of total variance
-        - `sill`: Total variance of the process  
+        - `sill`: Total variance of the process
         - `correlation_range`: Distance where correlation becomes negligible
         - `hole_effect_range`: Controls periodicity in Bessel/cosine models
 
-        The method uses Trust Region Reflective algorithm for bounded optimization, which handles 
+        The method uses Trust Region Reflective algorithm for bounded optimization, which handles
         parameter constraints robustly [1]_.
 
         References
         ----------
-        .. [1] Branch, M.A., Coleman, T.F., and Li, Y. (1999). A subspace, interior, and conjugate 
-           gradient method for large-scale bound-constrained minimization problems. *SIAM Journal 
+        .. [1] Branch, M.A., Coleman, T.F., and Li, Y. (1999). A subspace, interior, and conjugate
+           gradient method for large-scale bound-constrained minimization problems. *SIAM Journal
            on Scientific Computing*, 21(1), 1-23.
         """
 
@@ -936,7 +935,7 @@ class Variogram:
                 **dict(
                     model=model,
                     model_parameters=model_parameters,
-                    optimizer_kwargs=optimizer_kwargs
+                    optimizer_kwargs=optimizer_kwargs,
                 )
             )
         # Break creation
@@ -945,23 +944,21 @@ class Variogram:
 
         # Reconvert Parameters
         valid_args["model_parameters"] = model_parameters
-        
+
         # Get the initial parameters and store
         self.variogram_params_inital = Parameters.valuesdict(valid_args["model_parameters"])
-        
+
         # Fit the optimized theoretical variogram model
         (
-            self.variogram_params_optimized, 
-            self.variogram_params_inital, 
-            self.variogram_fit_optimized
-        ) = (
-            fit_variogram(
-                lags=self.lags,
-                lag_counts=self.lag_counts,
-                gamma=self.gamma,
-                **valid_args,
-            )
+            self.variogram_params_optimized,
+            self.variogram_params_inital,
+            self.variogram_fit_optimized,
+        ) = fit_variogram(
+            lags=self.lags,
+            lag_counts=self.lag_counts,
+            gamma=self.gamma,
+            **valid_args,
         )
-        
+
         # Return the best-fit variogram model parameters
         return self.variogram_params_optimized

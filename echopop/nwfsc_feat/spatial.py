@@ -8,9 +8,9 @@ from scipy import interpolate
 from shapely.geometry import Point, Polygon
 from shapely.ops import unary_union
 
-from .projection import wgs84_to_utm
 from ..validators.base import EchopopValidationError
 from ..validators.spatial import ValidateHullCropArgs
+from .projection import wgs84_to_utm
 
 # Set warnings filter
 warnings.simplefilter("always")
@@ -37,15 +37,15 @@ def transform_coordinates(
     y_offset : float, default=0.
         Offset to apply to the y-coordinates that corresponds to `coordinate_names[0]`
     coordinate_names : Tuple[str, str], default=("longitude", "latitude")
-        Names of the coordinate columns when using DataFrames. Expected format: (x_col, y_col). 
+        Names of the coordinate columns when using DataFrames. Expected format: (x_col, y_col).
     reference : pd.DataFrame, optional
         Reference DataFrame with x and y coordinates for interpolation that is
         used as an additional offset to the x-axis.
     delta_x : float, optional
-        Total x-axis distance used for standardizing coordinates. Will use the full range of the 
+        Total x-axis distance used for standardizing coordinates. Will use the full range of the
         original x-axis if not provided.
     delta_y : float, optional
-        Total y-axis distance used for standardizing coordinates. Will use the full range of the 
+        Total y-axis distance used for standardizing coordinates. Will use the full range of the
         original y-axis if not provided.
 
     Returns
@@ -53,10 +53,10 @@ def transform_coordinates(
     pd.DataFrame
         DataFrame with the new transformed coordinates 'x' and 'y'.
     float or None
-        Distance of the pre-transformed x-axis coordinates that can be used to transform other 
+        Distance of the pre-transformed x-axis coordinates that can be used to transform other
         georeferenced datasets (assuming shared projections).
     float or None
-        Distance of the pre-transformed y-axis coordinates that can be used to transform other 
+        Distance of the pre-transformed y-axis coordinates that can be used to transform other
         georeferenced datasets (assuming shared projections).
     """
 
@@ -91,6 +91,7 @@ def transform_coordinates(
 
     # Return the output tuple
     return (data, delta_x, delta_y)
+
 
 def transect_coordinate_centroid(spatial_grouped: gpd.GeoSeries):
     """
@@ -134,8 +135,7 @@ def transect_coordinate_centroid(spatial_grouped: gpd.GeoSeries):
     return Point(centroid_point)
 
 
-def transect_extent(transects: pd.DataFrame, projection: str, 
-                    num_nearest_transects: int, **kwargs):
+def transect_extent(transects: pd.DataFrame, projection: str, num_nearest_transects: int, **kwargs):
     """
     Compute the spatial extent of survey transects using convex hull generation.
 
@@ -245,6 +245,7 @@ def transect_extent(transects: pd.DataFrame, projection: str,
     # Merge the polygons via the union of each set
     return unary_union(transect_polygons)
 
+
 def hull_crop(
     transects: pd.DataFrame,
     mesh: pd.DataFrame,
@@ -319,14 +320,14 @@ def hull_crop(
     try:
         valid_params = ValidateHullCropArgs.create(
             **dict(
-                transects=transects, 
-                mesh=mesh, 
-                num_nearest_transects=num_nearest_transects, 
-                mesh_buffer_distance=mesh_buffer_distance, 
-                projection=projection, 
-                coordinate_names=coordinate_names
-                )
+                transects=transects,
+                mesh=mesh,
+                num_nearest_transects=num_nearest_transects,
+                mesh_buffer_distance=mesh_buffer_distance,
+                projection=projection,
+                coordinate_names=coordinate_names,
             )
+        )
     except Exception as e:
         raise EchopopValidationError(str(e)) from None
 

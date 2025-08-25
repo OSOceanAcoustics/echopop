@@ -166,6 +166,7 @@ def binify(
     else:
         raise TypeError(f"data must be DataFrame or dict of DataFrames, got {type(data)}")
 
+
 def _filter_rows(
     df: Union[pd.Series, pd.DataFrame],
     filter_dict: Dict[str, Any],
@@ -229,7 +230,8 @@ def _filter_rows(
             return df_reset[mask].set_index(index_cols).iloc[:, 0]
         else:
             return df_reset[mask].set_index(index_cols).filter(df.columns)
-        
+
+
 def _filter_columns(
     df: pd.DataFrame,
     filter_dict: Dict[str, Any],
@@ -265,6 +267,7 @@ def _filter_columns(
     # Apply column filter
     return df.loc[:, col_mask]
 
+
 def apply_filters(
     df: Union[pd.Series, pd.DataFrame],
     include_filter: Optional[Dict[str, Any]] = None,
@@ -274,8 +277,8 @@ def apply_filters(
     """
     Apply inclusion and exclusion filters to a DataFrame.
 
-    Filters rows and columns based on index/column values, supporting both inclusion and exclusion 
-    criteria with single values or lists of values. Handles interval-based filtering for categorical 
+    Filters rows and columns based on index/column values, supporting both inclusion and exclusion
+    criteria with single values or lists of values. Handles interval-based filtering for categorical
     interval indices.
 
     Parameters
@@ -283,10 +286,10 @@ def apply_filters(
     df : pd.DataFrame
         Input DataFrame to filter
     include_filter : Dict[str, Any], optional
-        Dictionary of column/index:value(s) pairs. Rows/columns will be kept if they match. If 
+        Dictionary of column/index:value(s) pairs. Rows/columns will be kept if they match. If
         value is a list, rows/columns matching any value in the list will be kept.
     exclude_filter : Dict[str, Any], optional
-        Dictionary of column/index:value(s) pairs. Rows/columns will be excluded if they match. If 
+        Dictionary of column/index:value(s) pairs. Rows/columns will be excluded if they match. If
         value is a list, rows/columns matching any value in the list will be excluded.
     replace_value : np.number, optional
         If provided, replaces values in excluded columns with this value instead of dropping them.
@@ -336,6 +339,7 @@ def apply_filters(
     # Return masked DataFrame
     return result
 
+
 def is_df_wide(df):
     """Check if DataFrame is in wide format using pandas structural information."""
     # Wide format indicators:
@@ -359,7 +363,7 @@ def group_interpolator_creator(
     """
     Create interpolator functions grouped by one or more contrast variables.
 
-    Generates scipy interpolation functions for length-weight relationships, either as a single 
+    Generates scipy interpolation functions for length-weight relationships, either as a single
     global interpolator or grouped by specified contrast variables (e.g., sex, age class).
 
     Parameters
@@ -377,13 +381,13 @@ def group_interpolator_creator(
     Returns
     -------
     Dict
-        Dictionary of interpolator functions. When contrast_vars is provided, keys are contrast 
-        variable values. When contrast_vars is None or empty, contains a single entry with key 
+        Dictionary of interpolator functions. When contrast_vars is provided, keys are contrast
+        variable values. When contrast_vars is None or empty, contains a single entry with key
         '_global_'.
 
     Notes
     -----
-    The interpolation is linear and extrapolates using the endpoints when values outside the range 
+    The interpolation is linear and extrapolates using the endpoints when values outside the range
     are requested. Requires at least 2 points per group for valid interpolation.
     """
     # Check if we have contrast variables to group by
@@ -572,7 +576,7 @@ def quantize_length_data(df, group_columns: List[str]):
     """
     Process DataFrame to ensure it has 'length' and 'length_count' columns.
 
-    Aggregates fish length data by grouping variables and length, either counting occurrences (if 
+    Aggregates fish length data by grouping variables and length, either counting occurrences (if
     no length_count exists) or summing existing counts.
 
     Parameters
@@ -623,10 +627,10 @@ def quantize_length_data(df, group_columns: List[str]):
 
     Notes
     -----
-    This function automatically detects whether to count fish (size operation) or sum existing 
+    This function automatically detects whether to count fish (size operation) or sum existing
     counts based on the presence of a 'length_count' column.
 
-    The resulting DataFrame will have a MultiIndex with group_columns + ['length'] and a single 
+    The resulting DataFrame will have a MultiIndex with group_columns + ['length'] and a single
     'length_count' column containing the aggregated counts.
     """
 

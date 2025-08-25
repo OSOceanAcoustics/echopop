@@ -1,6 +1,7 @@
 import pandas as pd
-from pydantic import BaseModel, ValidationError
 import pandera as pa
+from pydantic import BaseModel, ValidationError
+
 
 class BaseDictionary(BaseModel):
     """
@@ -15,7 +16,7 @@ class BaseDictionary(BaseModel):
         """
         try:
             return cls(**kwargs)
-        except ValidationError as e:            
+        except ValidationError as e:
             raise e
 
     # Factory method
@@ -26,10 +27,11 @@ class BaseDictionary(BaseModel):
         """
         return cls.judge(**kwargs).model_dump(exclude_none=True)
 
+
 class BaseDataFrame(pa.DataFrameModel):
     class Config:
-        strict=False
-        coerce=True
+        strict = False
+        coerce = True
 
     @classmethod
     def pre_validate(cls, df):
@@ -45,9 +47,10 @@ class BaseDataFrame(pa.DataFrameModel):
         # Pass to normal validation
         return super().validate(df_checked)
 
+
 class EchopopValidationError(Exception):
     """Error specific to Echopop validators"""
+
     def __init__(self, exception: Exception = None):
         self.exception = exception
         super().__init__(str(exception) if exception else "")
-

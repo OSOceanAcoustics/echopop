@@ -1,23 +1,26 @@
+import re
 from typing import Optional, Tuple
+
 import pandas as pd
 import pandera as pa
-from pydantic import field_validator, Field, model_validator
+from pydantic import Field, field_validator, model_validator
+
 from .base import BaseDataFrame, BaseDictionary
-import re
+
 
 class MeshDF(BaseDataFrame):
-    longitude: Optional[float] = pa.Field(ge=-180., le=180., nullable=False)
-    latitude: Optional[float] = pa.Field(ge=-90., le=90., nullable=False)
+    longitude: Optional[float] = pa.Field(ge=-180.0, le=180.0, nullable=False)
+    latitude: Optional[float] = pa.Field(ge=-90.0, le=90.0, nullable=False)
     x: Optional[float] = pa.Field(nullable=False)
     y: Optional[float] = pa.Field(nullable=False)
     area: Optional[float] = pa.Field(nullable=False)
     fraction: Optional[float] = pa.Field(nullable=False)
-    
+
     @classmethod
     def pre_validate(cls, df: pd.DataFrame) -> pd.DataFrame:
         # Check for joint longitude-latitude
         lon_lat = {"longitude", "latitude"} <= set(df.columns)
-        
+
         # Check for joint x-y
         x_y = {"x", "y"} <= set(df.columns)
 
@@ -37,9 +40,10 @@ class MeshDF(BaseDataFrame):
 
         return df
 
+
 class TransectsDF(BaseDataFrame):
-    longitude: Optional[float] = pa.Field(ge=-180., le=180., nullable=False)
-    latitude: Optional[float] = pa.Field(ge=-90., le=90., nullable=False)
+    longitude: Optional[float] = pa.Field(ge=-180.0, le=180.0, nullable=False)
+    latitude: Optional[float] = pa.Field(ge=-90.0, le=90.0, nullable=False)
     x: Optional[float] = pa.Field(nullable=False)
     y: Optional[float] = pa.Field(nullable=False)
 
@@ -47,7 +51,7 @@ class TransectsDF(BaseDataFrame):
     def pre_validate(cls, df: pd.DataFrame) -> pd.DataFrame:
         # Check for joint longitude-latitude
         lon_lat = {"longitude", "latitude"} <= set(df.columns)
-        
+
         # Check for joint x-y
         x_y = {"x", "y"} <= set(df.columns)
 
@@ -57,29 +61,32 @@ class TransectsDF(BaseDataFrame):
                 "Transect DataFrame requires either paired ('longitude', 'latitude') or ('x', 'y') "
                 "coordinate columns."
             )
-            
+
         return df
 
-class ValidateHullCropArgs(BaseDictionary,
-               arbitrary_types_allowed=True,
-               title="hull convex method for kriging mesh cropping"):
+
+class ValidateHullCropArgs(
+    BaseDictionary,
+    arbitrary_types_allowed=True,
+    title="hull convex method for kriging mesh cropping",
+):
     transects: pd.DataFrame
     mesh: pd.DataFrame
     num_nearest_transects: int = Field(gt=0)
-    mesh_buffer_distance: float = Field(ge=0.)
+    mesh_buffer_distance: float = Field(ge=0.0)
     projection: str
     coordinate_names: Tuple[str, str]
-    
+
     @field_validator("mesh", mode="after")
     def validate_mesh(cls, v):
         # Validate with pandera
         return MeshDF.validate(v)
-    
+
     @field_validator("transects", mode="after")
     def validate_transects(cls, v):
         # Validate with pandera
         return TransectsDF.validate(v)
-    
+
     @field_validator("projection", mode="before")
     def validate_init(cls, v):
         # ---- Convert to a string if read in as an integer
@@ -102,20 +109,21 @@ class ValidateHullCropArgs(BaseDictionary,
             )
         # ---- Return the pre-validated entry
         return v
-    
+
     @model_validator(mode="after")
     def validate_coordinate_overlap(cls, values):
         # Get the mesh and transects DataFrames
-        mesh = getattr(values, "mesh"); transects = getattr(values, "transects")
-        
+        mesh = getattr(values, "mesh")
+        transects = getattr(values, "transects")
+
         # Check for joint longitude-latitude
         if all([{"longitude", "latitude"} <= set(df.columns) for df in [mesh, transects]]):
             return values
-        
+
         # Check for joint x-y
         if all([{"x", "y"} <= set(df.columns) for df in [mesh, transects]]):
             return values
-        
+
         # Raise error if no shared complete pairs exist
         raise ValueError(
             "Coordinates for `transects` and `mesh` DataFrames must share the same coordinate "

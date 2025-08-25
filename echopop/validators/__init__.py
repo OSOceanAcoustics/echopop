@@ -3,9 +3,9 @@ from .inversion import ValidateLengthTS
 from .kriging import ValidateKrigingClass
 from .spatial import ValidateHullCropArgs
 from .variogram import (
-    ValidateEmpiricalVariogramArgs, 
-    ValidateFitVariogramArgs, 
-    ValidateVariogramClass
+    ValidateEmpiricalVariogramArgs,
+    ValidateFitVariogramArgs,
+    ValidateVariogramClass,
 )
 
 __all__ = [

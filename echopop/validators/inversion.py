@@ -1,8 +1,10 @@
-from pydantic import field_validator, Field
 from typing import List, Optional
+
 import numpy as np
+from pydantic import Field, field_validator
 
 from .base import BaseDictionary
+
 
 class TSLRegressionParameters(BaseDictionary, title="TS-length regression parameters"):
     """
@@ -19,15 +21,14 @@ class TSLRegressionParameters(BaseDictionary, title="TS-length regression parame
     slope: float = Field(allow_inf_nan=False)
     intercept: float = Field(allow_inf_nan=False)
 
+
 class ValidateLengthTS(
-    BaseDictionary, 
-    arbitrary_types_allowed=True, 
-    title="TS-length inversion model parameters"
+    BaseDictionary, arbitrary_types_allowed=True, title="TS-length inversion model parameters"
 ):
     """
     Validation model for TS-length inversion parameters used by InversionLengthTS.
 
-    This Pydantic model validates and documents the configuration parameters required by the 
+    This Pydantic model validates and documents the configuration parameters required by the
     InversionLengthTS class for acoustic inversion using length-TS regression.
 
     Parameters
