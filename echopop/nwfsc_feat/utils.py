@@ -167,8 +167,12 @@ def binify(
     else:
         raise TypeError(f"data must be DataFrame or dict of DataFrames, got {type(data)}")
 
-
-def _filter_rows(df: pd.DataFrame, filter_dict: Dict[str, Any], include: bool) -> pd.DataFrame:
+def _filter_rows(
+    df: Union[pd.Series, pd.DataFrame],
+    filter_dict: Dict[str, Any],
+    include: bool,
+    replace_value: Union[str, None] = None,
+) -> pd.DataFrame:
     """Helper function to filter DataFrame rows."""
 
     # Get index DataFrame
@@ -205,17 +209,34 @@ def _filter_rows(df: pd.DataFrame, filter_dict: Dict[str, Any], include: bool) -
     )
 
     # Apply inclusion/exclusion logic
-    if not include:
+    if not include and replace_value is None:
         mask = ~mask
+    elif replace_value is not None:
+        # ---- Replace values
+        if isinstance(df, pd.Series):
+            df_reset.loc[mask, 0] = replace_value
+        else:
+            df_reset.loc[mask, df.columns] = replace_value
+        # ---- Set mask to include all values
+        mask[:] = True
 
     # Check for matching names
     index_cols = df.index.names
     # ---- Apply mask
     if all(name is None for name in index_cols):
-        return df_reset[mask].filter(list(df.columns))
-
-
-def _filter_columns(df: pd.DataFrame, filter_dict: Dict[str, Any], include: bool) -> pd.DataFrame:
+        return df_reset[mask].filter(df.columns)
+    else:
+        if isinstance(df, pd.Series):
+            return df_reset[mask].set_index(index_cols).iloc[:, 0]
+        else:
+            return df_reset[mask].set_index(index_cols).filter(df.columns)
+        
+def _filter_columns(
+    df: pd.DataFrame,
+    filter_dict: Dict[str, Any],
+    include: bool,
+    replace_value: Union[str, None] = None,
+) -> pd.DataFrame:
     """Helper function to filter DataFrame columns."""
 
     # Get column DataFrame
@@ -232,6 +253,12 @@ def _filter_columns(df: pd.DataFrame, filter_dict: Dict[str, Any], include: bool
         [col_index_df[col].isin(np.atleast_1d(vals)) for col, vals in valid_filters.items()]
     )
 
+    # Replace values if specified
+    if replace_value is not None:
+        df.loc[:, col_mask] = replace_value
+        # ---- Return the modified DataFrame
+        return df
+
     # Apply inclusion/exclusion logic
     if not include:
         col_mask = ~col_mask
@@ -239,29 +266,31 @@ def _filter_columns(df: pd.DataFrame, filter_dict: Dict[str, Any], include: bool
     # Apply column filter
     return df.loc[:, col_mask]
 
-
 def apply_filters(
-    df: pd.DataFrame,
+    df: Union[pd.Series, pd.DataFrame],
     include_filter: Optional[Dict[str, Any]] = None,
     exclude_filter: Optional[Dict[str, Any]] = None,
+    replace_value: Optional[np.number] = None,
 ) -> pd.DataFrame:
     """
     Apply inclusion and exclusion filters to a DataFrame.
 
-    Filters rows and columns based on index/column values, supporting both inclusion and
-    exclusion criteria with single values or lists of values. Handles interval-based
-    filtering for categorical interval indices.
+    Filters rows and columns based on index/column values, supporting both inclusion and exclusion 
+    criteria with single values or lists of values. Handles interval-based filtering for categorical 
+    interval indices.
 
     Parameters
     ----------
     df : pd.DataFrame
         Input DataFrame to filter
     include_filter : Dict[str, Any], optional
-        Dictionary of column/index:value(s) pairs. Rows/columns will be kept if they match.
-        If value is a list, rows/columns matching any value in the list will be kept.
+        Dictionary of column/index:value(s) pairs. Rows/columns will be kept if they match. If 
+        value is a list, rows/columns matching any value in the list will be kept.
     exclude_filter : Dict[str, Any], optional
-        Dictionary of column/index:value(s) pairs. Rows/columns will be excluded if they match.
-        If value is a list, rows/columns matching any value in the list will be excluded.
+        Dictionary of column/index:value(s) pairs. Rows/columns will be excluded if they match. If 
+        value is a list, rows/columns matching any value in the list will be excluded.
+    replace_value : np.number, optional
+        If provided, replaces values in excluded columns with this value instead of dropping them.
 
     Returns
     -------
@@ -295,13 +324,15 @@ def apply_filters(
 
     # Inclusion filter
     if include_filter:
-        result = _filter_columns(result, include_filter, True)
-        result = _filter_rows(result, include_filter, True)
+        if not isinstance(result, pd.Series):
+            result = _filter_columns(result, include_filter, True, replace_value)
+        result = _filter_rows(result, include_filter, True, replace_value)
 
     # Exclusion filter
     if exclude_filter:
-        result = _filter_columns(result, exclude_filter, False)
-        result = _filter_rows(result, exclude_filter, False)
+        if not isinstance(result, pd.Series):
+            result = _filter_columns(result, exclude_filter, False, replace_value)
+        result = _filter_rows(result, exclude_filter, False, replace_value)
 
     # Return masked DataFrame
     return result
