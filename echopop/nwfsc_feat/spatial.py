@@ -9,6 +9,8 @@ from shapely.geometry import Point, Polygon
 from shapely.ops import unary_union
 
 from .projection import wgs84_to_utm
+from ..validators.base import EchopopValidationError
+from ..validators.spatial import ValidateHullCropArgs
 
 # Set warnings filter
 warnings.simplefilter("always")
@@ -309,25 +311,40 @@ def hull_crop(
     region-based cropping may be too restrictive or complex.
     """
 
+    # Validate parameters
+    try:
+        valid_params = ValidateHullCropArgs.create(
+            **dict(
+                transects=transects, 
+                mesh=mesh, 
+                num_nearest_transects=num_nearest_transects, 
+                mesh_buffer_distance=mesh_buffer_distance, 
+                projection=projection, 
+                coordinate_names=coordinate_names
+                )
+            )
+    except Exception as e:
+        raise EchopopValidationError(str(e)) from None
+
     # Get coordinate names
-    x_coord, y_coord = coordinate_names
+    x_coord, y_coord = valid_params["coordinate_names"]
 
     # Convert mesh DataFrame into a GeoDataframe
     mesh_gdf = gpd.GeoDataFrame(
-        mesh_df,
-        geometry=gpd.points_from_xy(mesh_df[x_coord], mesh_df[y_coord]),
-        crs=projection,
+        valid_params["mesh"],
+        geometry=gpd.points_from_xy(valid_params["mesh"][x_coord], valid_params["mesh"][y_coord]),
+        crs=valid_params["projection"],
     )
 
     # Convert the mesh projection to UTM (m)
     wgs84_to_utm(mesh_gdf)
 
     # Determine the survey extent by generating the border polygon
-    survey_polygon = transect_extent(transect_df, projection, num_nearest_transects)
+    survey_polygon = transect_extent(**valid_params)
 
     # Find the mesh coordinates that fall within the buffered polygon
     # ---- Convert `grid_buffer` (nmi) to m and add buffer to polygon
-    survey_polygon_buffered = survey_polygon.buffer(mesh_buffer_distance * 1852)
+    survey_polygon_buffered = survey_polygon.buffer(valid_params["mesh_buffer_distance"] * 1852)
     # ---- Inclusion/union filter mask
     within_polygon_mask = mesh_gdf.geometry.within(survey_polygon_buffered)
     # ---- Apply mask to the mesh grid

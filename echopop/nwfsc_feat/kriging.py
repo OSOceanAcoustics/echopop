@@ -6,6 +6,9 @@ import pandas as pd
 
 from ..spatial.variogram import variogram
 from .variogram import lag_distance_matrix
+from . import spatial
+from .. import validators as val
+from pydantic import ValidationError
 
 # Set warnings filter
 warnings.simplefilter("always")
