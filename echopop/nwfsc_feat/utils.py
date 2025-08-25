@@ -3,7 +3,6 @@ from typing import Any, Dict, List, Optional, Union
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
-from pydantic import BaseModel, Field, ValidationError
 from scipy import interpolate as interp
 
 
@@ -337,7 +336,6 @@ def apply_filters(
     # Return masked DataFrame
     return result
 
-
 def is_df_wide(df):
     """Check if DataFrame is in wide format using pandas structural information."""
     # Wide format indicators:
@@ -361,9 +359,8 @@ def group_interpolator_creator(
     """
     Create interpolator functions grouped by one or more contrast variables.
 
-    Generates scipy interpolation functions for length-weight relationships,
-    either as a single global interpolator or grouped by specified contrast
-    variables (e.g., sex, age class).
+    Generates scipy interpolation functions for length-weight relationships, either as a single 
+    global interpolator or grouped by specified contrast variables (e.g., sex, age class).
 
     Parameters
     ----------
@@ -380,16 +377,14 @@ def group_interpolator_creator(
     Returns
     -------
     Dict
-        Dictionary of interpolator functions.
-        When contrast_vars is provided, keys are contrast variable values.
-        When contrast_vars is None or empty, contains a single entry with key '_global_'.
+        Dictionary of interpolator functions. When contrast_vars is provided, keys are contrast 
+        variable values. When contrast_vars is None or empty, contains a single entry with key 
+        '_global_'.
 
     Notes
     -----
-    The interpolation is linear and extrapolates using the endpoints
-    when values outside the range are requested.
-
-    Requires at least 2 points per group for valid interpolation.
+    The interpolation is linear and extrapolates using the endpoints when values outside the range 
+    are requested. Requires at least 2 points per group for valid interpolation.
     """
     # Check if we have contrast variables to group by
     if contrast_vars is None or (isinstance(contrast_vars, list) and len(contrast_vars) == 0):
@@ -577,8 +572,8 @@ def quantize_length_data(df, group_columns: List[str]):
     """
     Process DataFrame to ensure it has 'length' and 'length_count' columns.
 
-    Aggregates fish length data by grouping variables and length, either counting
-    occurrences (if no length_count exists) or summing existing counts.
+    Aggregates fish length data by grouping variables and length, either counting occurrences (if 
+    no length_count exists) or summing existing counts.
 
     Parameters
     ----------
@@ -628,11 +623,11 @@ def quantize_length_data(df, group_columns: List[str]):
 
     Notes
     -----
-    This function automatically detects whether to count fish (size operation) or
-    sum existing counts based on the presence of a 'length_count' column.
+    This function automatically detects whether to count fish (size operation) or sum existing 
+    counts based on the presence of a 'length_count' column.
 
-    The resulting DataFrame will have a MultiIndex with group_columns + ['length']
-    and a single 'length_count' column containing the aggregated counts.
+    The resulting DataFrame will have a MultiIndex with group_columns + ['length'] and a single 
+    'length_count' column containing the aggregated counts.
     """
 
     # Create copy
@@ -652,48 +647,3 @@ def quantize_length_data(df, group_columns: List[str]):
 
     # Aggregate and return
     return df.groupby(group_columns + ["length"]).agg(length_count=(sum_var_column, var_operation))
-
-
-####################################################################################################
-# Validators
-class InputModel(BaseModel):
-    """
-    Base Pydantic model for scrutinizing file inputs
-    """
-
-    # Validator method
-    @classmethod
-    def judge(cls, **kwargs):
-        """
-        Validator method
-        """
-        try:
-            return cls(**kwargs)
-        except ValidationError as e:
-            e.__traceback__ = None
-            raise e
-
-    # Factory method
-    @classmethod
-    def create(cls, **kwargs):
-        """
-        Factory creation method
-        """
-
-        return cls.judge(**kwargs).model_dump(exclude_none=True)
-
-
-class TSLRegressionParameters(InputModel, title="TS-length regression parameters"):
-    """
-    Target strength - length regression parameters
-
-    Parameters
-    ----------
-    slope : float
-        TS-length regression slope.
-    intercept : float
-        TS-length regression intercept.
-    """
-
-    slope: float = Field(allow_inf_nan=False)
-    intercept: float = Field(allow_inf_nan=False)
