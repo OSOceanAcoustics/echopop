@@ -4,7 +4,7 @@ import numpy as np
 from scipy import interpolate
 
 def get_survey_western_extents(
-    transect_df: pd.DataFrame,
+    transects: pd.DataFrame,
     coordinate_names: Tuple[str, str],
     latitude_threshold: float,
 ) -> pd.DataFrame:
@@ -14,13 +14,13 @@ def get_survey_western_extents(
 
     Parameters
     ----------
-    transect_df : pd.DataFrame
+    transects : pd.DataFrame
         A dataframe containing georeferenced coordinates associated with a particular variable (e.g.
         biomass). This DataFrame must have at least two valid columns comprising the overall 2D
-        coordinates (e.g. 'x' and 'y'). Furthermore, this function requires that `transect_df`
+        coordinates (e.g. 'x' and 'y'). Furthermore, this function requires that `transects`
         also contain a column called 'latitude'.
     coordinates_names : Tuple[str, str], default = ('x', 'y')
-        A tuple containing the 'transect_df' column names defining the coordinates. The order of
+        A tuple containing the 'transects' column names defining the coordinates. The order of
         this input matters where they should be defined as the (horizontal axis, vertical axis).
     latitude_threshold : float
         A threshold that is applied to the georeferenced coordinates that further constrains any
@@ -34,7 +34,7 @@ def get_survey_western_extents(
     """
 
     # Apply the latitude filter
-    transect_thresholded = transect_df.loc[transect_df["latitude"] < latitude_threshold]
+    transect_thresholded = transects.loc[transects["latitude"] < latitude_threshold]
 
     # Parse the western-most coordinate indices of each transect
     western_extent_idx = transect_thresholded.groupby(["transect_num"])[
@@ -342,8 +342,8 @@ def region_2_conditions(x, boundary_column: str, position: str):
 
 
 def transect_ends_crop(
-    transect_df: pd.DataFrame,
-    mesh_df: pd.DataFrame,
+    transects: pd.DataFrame,
+    mesh: pd.DataFrame,
     latitude_resolution: float,
     transect_mesh_region_function: Callable,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
@@ -357,10 +357,10 @@ def transect_ends_crop(
 
     Parameters
     ----------
-    transect_df : pd.DataFrame
+    transects : pd.DataFrame
         Georeferenced survey transect data used for defining the spatial extent for the kriging
         mesh grid. Must contain columns: 'transect_num', 'longitude', 'latitude'.
-    mesh_df : pd.DataFrame
+    mesh : pd.DataFrame
         Complete kriging mesh DataFrame that is subsequently cropped. Must contain columns:
         'longitude', 'latitude'.
     latitude_resolution : float
@@ -387,9 +387,9 @@ def transect_ends_crop(
     --------
     >>> from echopop.nwfsc_feat.FEAT import transect_mesh_region_2019
     >>> cropped_mesh, annotated_transects = transect_ends_crop(
-    ...     transect_df, mesh_df, 0.05, transect_mesh_region_2019
+    ...     transects, mesh, 0.05, transect_mesh_region_2019
     ... )
-    >>> print(f"Original mesh size: {len(mesh_df)}")
+    >>> print(f"Original mesh size: {len(mesh)}")
     >>> print(f"Cropped mesh size: {len(cropped_mesh)}")
     """
 
@@ -419,7 +419,7 @@ def transect_ends_crop(
         ]
     )
     # ---- Merge
-    transect_df = transect_df.merge(mesh_region_df, on="transect_num", how="inner")
+    transect_df = transects.merge(mesh_region_df, on="transect_num", how="inner")
     # ---- Set indices
     transect_df.set_index(["mesh_region"], inplace=True)
     mesh_region_df.set_index(["mesh_region"], inplace=True)
@@ -496,15 +496,15 @@ def transect_ends_crop(
         # -------- Find the mesh indices that are within the survey extent
         idx = np.where(
             (
-                mesh_df["longitude"]
+                mesh["longitude"]
                 >= region_1_interp.loc[i, "longitude_west"] - delta_longitude_region_1[i]
             )
             & (
-                mesh_df["longitude"]
+                mesh["longitude"]
                 <= region_1_interp.loc[i, "longitude_east"] + delta_longitude_region_1[i]
             )
-            & (mesh_df["latitude"] >= region_1_latitude[i] - latitude_resolution)
-            & (mesh_df["latitude"] < region_1_latitude[i] + latitude_resolution)
+            & (mesh["latitude"] >= region_1_latitude[i] - latitude_resolution)
+            & (mesh["latitude"] < region_1_latitude[i] + latitude_resolution)
         )
         # -------- Append the indices
         region_1_index.append(idx[0])
@@ -579,36 +579,36 @@ def transect_ends_crop(
             if np.isnan(region_2_interp.loc[i, "latitude_south"]):
                 # -------- Find the mesh indices that are within the survey extent
                 idx = np.where(
-                    (mesh_df["longitude"] >= region_2_longitude[i] - delta_longitude_region_2)
-                    & (mesh_df["longitude"] <= region_2_longitude[i] + delta_longitude_region_2)
-                    & (mesh_df["latitude"] >= latitude_slope_i - latitude_resolution)
+                    (mesh["longitude"] >= region_2_longitude[i] - delta_longitude_region_2)
+                    & (mesh["longitude"] <= region_2_longitude[i] + delta_longitude_region_2)
+                    & (mesh["latitude"] >= latitude_slope_i - latitude_resolution)
                     & (
-                        mesh_df["latitude"]
+                        mesh["latitude"]
                         < region_2_interp.loc[i, "latitude_north"] + latitude_resolution
                     )
                 )
             elif np.isnan(region_2_interp.loc[i, "latitude_north"]):
                 # -------- Find the mesh indices that are within the survey extent
                 idx = np.where(
-                    (mesh_df["longitude"] >= region_2_longitude[i] - delta_longitude_region_2)
-                    & (mesh_df["longitude"] <= region_2_longitude[i] + delta_longitude_region_2)
+                    (mesh["longitude"] >= region_2_longitude[i] - delta_longitude_region_2)
+                    & (mesh["longitude"] <= region_2_longitude[i] + delta_longitude_region_2)
                     & (
-                        mesh_df["latitude"]
+                        mesh["latitude"]
                         >= region_2_interp.loc[i, "latitude_south"] - latitude_resolution
                     )
-                    & (mesh_df["latitude"] < latitude_slope_i + latitude_resolution)
+                    & (mesh["latitude"] < latitude_slope_i + latitude_resolution)
                 )
             else:
                 # -------- Find the mesh indices that are within the survey extent
                 idx = np.where(
-                    (mesh_df["longitude"] >= region_2_longitude[i] - delta_longitude_region_2)
-                    & (mesh_df["longitude"] <= region_2_longitude[i] + delta_longitude_region_2)
+                    (mesh["longitude"] >= region_2_longitude[i] - delta_longitude_region_2)
+                    & (mesh["longitude"] <= region_2_longitude[i] + delta_longitude_region_2)
                     & (
-                        mesh_df["latitude"]
+                        mesh["latitude"]
                         >= region_2_interp.loc[i, "latitude_south"] - latitude_resolution
                     )
                     & (
-                        mesh_df["latitude"]
+                        mesh["latitude"]
                         < region_2_interp.loc[i, "latitude_north"] + latitude_resolution
                     )
                 )
@@ -677,38 +677,38 @@ def transect_ends_crop(
             if np.isnan(region_3_interp.loc[i, "longitude_west"]):
                 # -------- Find the mesh indices that are within the survey extent
                 idx = np.where(
-                    (mesh_df["longitude"] >= longitude_slope_i - delta_longitude_region_3[i])
+                    (mesh["longitude"] >= longitude_slope_i - delta_longitude_region_3[i])
                     & (
-                        mesh_df["longitude"]
+                        mesh["longitude"]
                         <= region_3_interp.loc[i, "longitude_east"] + delta_longitude_region_3[i]
                     )
-                    & (mesh_df["latitude"] >= region_3_latitude[i] - latitude_resolution)
-                    & (mesh_df["latitude"] < region_3_latitude[i] + latitude_resolution)
+                    & (mesh["latitude"] >= region_3_latitude[i] - latitude_resolution)
+                    & (mesh["latitude"] < region_3_latitude[i] + latitude_resolution)
                 )
             elif np.isnan(region_3_interp.loc[i, "longitude_east"]):
                 # -------- Find the mesh indices that are within the survey extent
                 idx = np.where(
                     (
-                        mesh_df["longitude"]
+                        mesh["longitude"]
                         >= region_3_interp.loc[i, "longitude_west"] - delta_longitude_region_3[i]
                     )
-                    & (mesh_df["longitude"] <= longitude_slope_i + delta_longitude_region_3[i])
-                    & (mesh_df["latitude"] >= region_3_latitude[i] - latitude_resolution)
-                    & (mesh_df["latitude"] < region_3_latitude[i] + latitude_resolution)
+                    & (mesh["longitude"] <= longitude_slope_i + delta_longitude_region_3[i])
+                    & (mesh["latitude"] >= region_3_latitude[i] - latitude_resolution)
+                    & (mesh["latitude"] < region_3_latitude[i] + latitude_resolution)
                 )
             else:
                 # -------- Find the mesh indices that are within the survey extent
                 idx = np.where(
                     (
-                        mesh_df["longitude"]
+                        mesh["longitude"]
                         >= region_3_interp.loc[i, "longitude_west"] - delta_longitude_region_3[i]
                     )
                     & (
-                        mesh_df["longitude"]
+                        mesh["longitude"]
                         <= region_3_interp.loc[i, "longitude_east"] + delta_longitude_region_3[i]
                     )
-                    & (mesh_df["latitude"] >= region_3_latitude[i] - latitude_resolution)
-                    & (mesh_df["latitude"] < region_3_latitude[i] + latitude_resolution)
+                    & (mesh["latitude"] >= region_3_latitude[i] - latitude_resolution)
+                    & (mesh["latitude"] < region_3_latitude[i] + latitude_resolution)
                 )
             # -------- Append the indices
             region_3_index.append(idx[0])
@@ -721,4 +721,4 @@ def transect_ends_crop(
     )
 
     # Return the DataFrames
-    return mesh_df.loc[mesh_indices], transect_df.reset_index()
+    return mesh.loc[mesh_indices], transect_df.reset_index()
