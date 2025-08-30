@@ -1,5 +1,315 @@
 import numpy as np
 import time
+import awkward as awk
+
+def pcdwba_fbs(
+    taper_order: float,
+    length_sd_norm: float,
+    length_mean: float,
+    length_radius_ratio: float,
+    radius_of_curvature_ratio: float,
+    theta_radians: Union[np.ndarray[float], float],
+    k_f: Union[np.ndarray[float], float],
+    ka_f: Union[np.ndarray[float], float],
+    g: float,
+    h: float,
+    n_integration: int,
+    n_wavelength: int,
+):
+
+    kL_max = np.nanmax(k_f * length_mean, axis=1) * (1 + 3.1 * length_sd_norm)
+    n_int = awk.values_astype(
+        np.where(
+            kL_max < n_integration, 
+            n_integration, 
+            np.ceil(kL_max * n_wavelength / (2 * np.pi))
+        ),
+        int
+    )
+
+    # tt = time.time()
+    taper, gamma_tilt, beta_tilt, r_pos, dr_pos = uniformly_bent_cylinder(
+        n_int, radius_of_curvature_ratio, taper_order
+    )
+
+    # et=time.time()
+    # print(f"{(et-tt):5g}")
+
+    # Get the array sizes for later broadcasting
+    # ---- Number of frequencies/wavenumbers
+    n_k = np.array(awk.num(ka_f, axis=-1))
+    # ---- Number of orientation values
+    n_theta = len(theta_radians)
+
+    # Compute the reflection coefficient, `C_b`
+    C_b = reflection_coefficient(g, h)
+
+    # Pre-allocate output (this will be indexed by center frequency)
+    f_bs = []
+
+        # Iterate across frequencies
+    for i in range(len(n_k)):
+        # ---- Reindex 'ka'
+        ka_i = np.array(ka_f[i, : n_k[i]])
+        # ---- Adjust `ka` to account for body shape tapering
+        ka_tapered = ka_i.reshape(-1, 1) * np.array(taper[i, : n_int[i]]) / h
+        # ka_tapered = ka.reshape(-1, 1) * taper / h
+        # ---- Adjust along-axis tilt angles and slopes to be relative to the incident planar wave
+        # -------- Along-axis curvature slopes
+        delta_gamma_cos = np.cos(np.array(gamma_tilt[i, : n_int[i]]).reshape(-1, 1) - theta_radians)
+        # -------- Along-axis tilt angles between segments
+        delta_theta_cos = np.abs(np.cos(np.array(beta_tilt[i, : n_int[i]]).reshape(-1, 1) - theta_radians))
+        # ---- Generate the exponentiated matrix
+        M1 = length_radius_ratio * ka_i.reshape(-1, 1) * (np.array(r_pos[i, : n_int[i]]) / h)
+        # ---- Generate the matrix that accounts for the material properties and position vector
+        # ---- variability
+        M2 = h**2 * C_b * np.array(dr_pos[i, : n_int[i]]) / 4
+        # ---- Normalize the `ka` vector
+        ka_norm = np.linspace(-2 * ka_i[-1], 2 * ka_i[-1], 2 * n_int[i])
+        # ---- Pre-compute the cylindrical Bessel function of the first kind of order 1
+        J1 = j1(ka_norm)
+        # ---- Broadcast `ka_tapered` for multiplication with `delta_gamma_cos`
+        ARG = (
+            2 * ka_tapered[:, :, np.newaxis] * delta_theta_cos[np.newaxis, :, :]
+            + np.finfo(float).eps
+        )
+        # -------- Flatten for subsequent interpolation
+        ARG_flat = ARG.ravel(order="F").reshape((n_k[i] * n_int[i], n_theta), order="F")
+        # ---- Interpolate the values
+        J1_interp = np.array([np.interp(ARG_flat[:, m], ka_norm, J1) for m in range(n_theta)])
+        # -------- Reshape and normalize
+        J1_norm = (J1_interp.T / ARG_flat).reshape((n_k[i], n_int[i], n_theta), order="F")
+        # ---- Exponentiate the terms to compute the phase
+        phase = np.exp(1j * M1[:, :, np.newaxis] * delta_gamma_cos[np.newaxis, :, :])
+        # ---- Combine the adjusted `ka`, interpolated Bessel function output, and phase
+        M3 = ka_tapered[:, :, np.newaxis] ** 2 * J1_norm * phase
+        # ---- Compute the complex form function (matrix multiplication via Einstein summation)
+        f_bs.append([np.einsum("ijk, j->ik", M3, M2) + np.finfo(float).eps])
+
+    return f_bs
+
+def pcdwba_new(
+    center_frequencies: np.ndarray[float],
+    length_mean: float,
+    length_sd_norm: float,
+    length_radius_ratio: float,
+    taper_order: float,
+    radius_of_curvature_ratio: float,
+    theta_mean: float,  
+    theta_sd: float,
+    orientation_distribution: Dict[str, Any],
+    g: float,
+    h: float,
+    sound_speed_sw: float,
+    frequency_interval: float,
+    n_integration: int,
+    n_wavelength: int, 
+    number_density: float,
+    length_distribution: Dict[str, Any],
+    **kwargs
+):
+
+    # times = pd.DataFrame({
+    #     "milestone": ["t1", "t2", "t3", "t4", "t5", "t6"],
+    #     "time": np.nan
+    # })
+
+
+    # st = time.time()
+
+    # Pre-allocate arrays based on input size
+    n_theta = orientation_distribution["bins"]
+    n_length = length_distribution["bins"]
+
+    # to1 = time.time()
+    # times.loc[0, "time"] = to1 - st
+    # print(f"T1: Parameter handling: {(to1-st):.5g}")
+
+    # Generate frequency intervals centered on the central frequencies
+    frequencies = ops.generate_frequency_interval(
+        center_frequencies,
+        length_sd_norm,
+        frequency_interval
+    )
+    
+    # to2 = time.time()
+    # times.loc[1, "time"] = to2 - st
+    # print(f"T2: Frequency generation: {(to2-to1):.5g}")
+    
+    # Compute the acoustic wavenumbers weighted by target size
+    # ---- Center frequencies
+    k_c = ops.wavenumber(center_frequencies, sound_speed_sw)
+    # ---- Compute ka (center frequencies)
+    ka_c = k_c * length_mean / length_radius_ratio
+    # ---- Frequency intervals
+    # -------- Just wavenumber (`k`)
+    k_f = ops.wavenumber(frequencies, sound_speed_sw)
+    # -------- Now `ka`
+    ka_f = k_f * length_mean / length_radius_ratio
+
+    # to3 = time.time()
+    # times.loc[2, "time"] = to3 - st
+    # print(f"T3: Wavenumbers: {(to3-to2):.5g}")
+    
+    # Compute over a vector of angles (centered on 90 degrees)
+    theta_values = np.linspace(
+        theta_mean - 3.1 * theta_sd,
+        theta_mean + 3.1 * theta_sd,
+        n_theta,
+    )
+    # ---- Convert to radians
+    theta_radians = theta_values * np.pi / 180.0
+
+    # Compute over vector lengths
+    length_values = np.linspace(
+        length_mean - 3 * (length_sd_norm * length_mean),
+        length_mean + 3 * (length_sd_norm * length_mean),
+        n_length,
+    )
+
+    # to4 = time.time()
+    # times.loc[3, "time"] = to4 - st
+    # print(f"T4: Distributions: {(to4-to3):.5g}")
+
+    f_bs = pcdwba_fbs(
+        taper_order,
+        length_sd_norm,
+        length_mean,
+        length_radius_ratio,
+        radius_of_curvature_ratio,
+        theta_radians,
+        k_f,
+        ka_f,
+        g,
+        h,
+        n_integration,
+        n_wavelength,
+    )
+    
+    # to5 = time.time()
+    # times.loc[4, "time"] = to5 - st
+    # print(f"T5: Linear scattering coefficient: {(to5-to4):.5g}")
+
+    # Orientation averaging
+    f_bs_orientation = ops.orientation_average(
+        theta_values, f_bs, theta_mean, theta_sd, orientation_distribution["family"]
+    )
+
+    # Length-averaged sigma_bs (normalized to length)
+    sigma_bs_length = np.array(
+        ops.length_average(
+            length_values, ka_f, ka_c, f_bs_orientation, length_mean, length_mean * length_sd_norm,
+            length_distribution["family"]
+        )
+    )
+
+    # Convert to sigma_bs (linear backscattering cross-section)
+    sigma_bs = sigma_bs_length * (length_mean) ** 2
+
+    # Switch to logarithmic domain to compute S_V (volumetric backscattering strength)
+    Sv_prediction = 10 * np.log10(number_density * sigma_bs)
+
+    # to6 = time.time()
+    # times.loc[5, "time"] = to6 - st
+    # print(f"T6: Sv: {(to6-to5):.5g}")
+    
+    return Sv_prediction#, times
+
+taper_order=10.
+length_mean=0.03
+length_sd_norm=0.15
+length_radius_ratio=18.2
+radius_of_curvature_ratio=3.
+theta_mean=10.
+theta_sd=20.
+orientation_distribution=dict(bins=60, family="gaussian")
+length_distribution=dict(bins=100, family="gaussian")
+frequency_interval = 2e3
+sound_speed_sw=1500
+n_wavelength=10
+n_integration=50
+number_density=500.
+g=1.015
+h=1.02
+center_frequencies = np.array([18e3, 38e3, 70e3, 120e3, 200e3])
+
+params = {
+    k: v for k, v in locals().items()
+    if k in [
+        "center_frequencies", "length_mean", "length_sd_norm",
+        "length_radius_ratio", "taper_order", "radius_of_curvature_ratio",
+        "theta_mean", "theta_sd", "orientation_distribution",
+        "g", "h", "sound_speed_sw", "frequency_interval",
+        "n_integration", "n_wavelength", "number_density", "length_distribution"
+    ]
+}
+
+from echopop.inversion.scattering_models import pcdwba, uniformly_bent_cylinder
+from echopop.inversion import operations as ops
+import awkward as ak
+import copy
+
+DICT = copy.deepcopy(self.model_params)
+if not DICT.is_scaled:
+    DICT.scale()
+PARAMS = DICT.to_lmfit()
+change = DICT.parameter_bounds
+PARAM_BOUNDS = {
+    k: {
+        "low": v["min"],
+        "high": v["max"],
+    }
+    for k, v in DICT.parameter_bounds.items()
+}
+
+from echopop.inversion.operations import wavenumber, reflection_coefficient
+
+
+SETTINGS = {
+    **self.model_settings,
+    **self.simulation_settings,
+    **{"parameter_bounds": PARAM_BOUNDS,
+       "orientation_bin_count": 60,
+       "length_bin_count": 100,
+       "center_frequencies": center_frequencies,
+       "ts_model": "pcdwba",
+       "sound_speed_sw": 1500.}
+}
+
+scattering_parameters = PARAMS
+config = {
+    **self.simulation_settings,
+    **self.model_settings, 
+    **{"parameter_bounds": PARAM_BOUNDS,
+       "orientation_bin_count": 60,
+       "length_bin_count": 100,
+       "center_frequencies": center_frequencies,
+       "ts_model": "pcdwba",
+       "sound_speed_sw": 1500.}
+}
+
+DICT.unscale()
+sv1, time1 = simulate_Sv_old(PARAMS, SETTINGS)
+sv2, time2 = pcdwba(**DICT.values, **SETTINGS)
+sv3, time3 = pcdwba_new(**DICT.values, **SETTINGS)
+time1.set_index(["milestone"], inplace=True)
+time2.set_index(["milestone"], inplace=True)
+time3.set_index(["milestone"], inplace=True)
+
+time1 - time2
+time1 - time3
+time1 - time3
+
+time1.sum()
+time2.sum()
+time3.sum()
+
+
+
+
+
+
+
 def ragged_rowwise_apply(arr, fn):
     """Apply function to each row of ragged array efficiently"""
     return awk.Array([fn(row) for row in awk.to_list(arr)])
