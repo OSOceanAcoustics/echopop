@@ -259,7 +259,7 @@ class ValidateBuildModelArgs(
         model_settings = self.model_settings.model_dump()
         # ---- Check against reference
         if model_settings["type"] not in SCATTERING_MODEL_PARAMETERS:
-            raise LookupError(f"Scattering model '{model_settings["type"]}' could not be found.")
+            raise LookupError(f"Scattering model '{model_settings['type']}' could not be found.")
 
         # Get the model-specific validator
         model_validators = SCATTERING_MODEL_PARAMETERS[model_settings["type"]]
