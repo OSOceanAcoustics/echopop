@@ -488,7 +488,7 @@ def optim(
         frequency_msg = (
             f"\nWARNING: The number of frequencies with non-thresholded Sv [{len(valid_idx)}] "
             f"was fewer than the minimum frequency count "
-            f"[{simulation_settings["minimum_frequency_count"]}]. Values were not optimized."
+            f"[{simulation_settings['minimum_frequency_count']}]. Values were not optimized."
         )
 
         # Center frequencies, if any
