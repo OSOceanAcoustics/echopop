@@ -33,7 +33,7 @@ import hashlib
 from echopop.typing import InvParameters
 from echopop.typing.inversion import ModelInputParameters
 from echopop.validators import ValidateInversionMatrix
-from echopop.inversion.inversion_matrix_krill import prepare_minimizer, optim, monte_carlo_initialize
+from echopop.inversion.inversion_matrix import prepare_minimizer, optim, monte_carlo_initialize
 import warnings
 import time
 # ==================================================================================================
@@ -70,7 +70,7 @@ utils.apply_filters(sv_data, include_filter={"transect_num": np.linspace(1, 30, 
 def prepare_minimizer_safe(*args, **kwargs):
     import numpy as np
     from echopop.typing import MCInvParameters
-    from echopop.inversion.inversion_matrix_krill import prepare_minimizer
+    from echopop.inversion.inversion_matrix import prepare_minimizer
     try:
         return prepare_minimizer(*args, **kwargs)
     except Exception as e:
@@ -139,7 +139,7 @@ class InversionMatrix(InversionBase):
 
     def _set_minimizers(self):
         
-        # Definine a new column for the `lmfit.Minimizer` class
+        # Define a new column for the `lmfit.Minimizer` class
         self.measurements["minimizer"] = np.array(np.nan).astype(object)
 
         # Create list of `Minimizer` objects depending on number of defined realizations
