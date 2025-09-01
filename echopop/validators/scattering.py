@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from typing import Literal
 
 import numpy as np
@@ -6,6 +7,7 @@ from pydantic import Field
 
 from ..core.validators import BaseDictionary
 from ..inversion.scattering_models import pcdwba
+
 
 class ValidatePCDWBAParams(
     BaseDictionary,
@@ -57,6 +59,7 @@ class ValidatePCDWBASettings(
     orientation_distribution: DistributionParameters = Field(default_factory=DistributionParameters)
     taper_order: float = Field(default=10.0, gt=0.0, allow_inf_nan=False)
     type: str
+
 
 SCATTERING_MODEL_PARAMETERS = {
     "pcdwba": {

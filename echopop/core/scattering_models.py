@@ -1,7 +1,7 @@
 from __future__ import annotations
-from ..validators.scattering import ValidatePCDWBAParams, ValidatePCDWBASettings
-from ..inversion.scattering_models import pcdwba
 
+from ..inversion.scattering_models import pcdwba
+from ..validators.scattering import ValidatePCDWBAParams, ValidatePCDWBASettings
 
 SCATTERING_MODEL_PARAMETERS = {
     "pcdwba": {

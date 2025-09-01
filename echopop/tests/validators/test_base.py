@@ -3,8 +3,8 @@ import pandera.pandas as pa
 import pytest
 from pydantic import ValidationError, field_validator
 
-from echopop.core.validators import BaseDataFrame, BaseDictionary
 from echopop.core.exceptions import EchopopValidationError
+from echopop.core.validators import BaseDataFrame, BaseDictionary
 
 
 # ==================================================================================================
