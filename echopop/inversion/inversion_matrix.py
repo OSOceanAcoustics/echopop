@@ -7,14 +7,14 @@ import pandas as pd
 from lmfit import Minimizer
 from pydantic import ValidationError
 
-from echopop.core.exceptions import EchopopValidationError
-from echopop.inversion.inversion_base import InversionBase
-from echopop.typing import InvParameters, MCInvParameters
-from echopop.validators.inversion import (
-    SCATTERING_MODEL_PARAMETERS,
+from ..core.exceptions import EchopopValidationError
+from ..inversion.inversion_base import InversionBase
+from ..typing import InvParameters, MCInvParameters
+from ..validators.inversion import (
     ValidateBuildModelArgs,
     ValidateInversionMatrix,
 )
+from ..validators.scattering import SCATTERING_MODEL_PARAMETERS
 
 
 def echopop_optim_cb(params, iter, resid, *args, **kwargs):

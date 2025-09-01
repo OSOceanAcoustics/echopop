@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import Any, Callable, Dict, List, Optional
 
 import numpy as np
@@ -5,10 +6,8 @@ import pandas as pd
 from pydantic import ConfigDict, Field, field_validator, model_validator
 
 from ..core.validators import BaseDataFrame, BaseDictionary
-from ..inversion.api import SCATTERING_MODEL_PARAMETERS
 from ..typing import InvParameters
 from ..typing.inversion import ModelInputParameters
-
 
 class TSLRegressionParameters(BaseDictionary, title="TS-length regression parameters"):
     """
@@ -139,36 +138,6 @@ class EnvironmentParameters(
 ):
     """
     Environmental and medium parameters for acoustic scattering models.
-
-    This class validates and stores physical properties of the medium
-    (typically seawater) that affect acoustic propagation and scattering.
-    These parameters are essential for accurate scattering calculations.
-
-    Attributes
-    ----------
-    sound_speed_sw : float, default=1500.0
-        Sound speed in seawater in m/s. Must be positive.
-        Typical range: 1450-1550 m/s depending on temperature,
-        salinity, and pressure.
-    density_sw : float, default=1025.0
-        Seawater density in kg/m³. Must be positive.
-        Typical range: 1020-1030 kg/m³ depending on temperature
-        and salinity.
-
-    Notes
-    -----
-    These parameters directly affect acoustic impedance and scattering
-    cross-sections through the wavenumber and reflection coefficients.
-
-    Sound speed variation with depth should be considered in deep-water
-    applications, though single representative values are often adequate
-    for survey-scale analyses.
-
-    Examples
-    --------
-    >>> env = EnvironmentParameters(sound_speed_sw=1485.0, density_sw=1026.5)
-    >>> env.sound_speed_sw
-    1485.0
     """
 
     sound_speed_sw: float = Field(default=1500.0, gt=0.0, allow_inf_nan=False)
@@ -182,54 +151,6 @@ class SimulationParameters(
 ):
     """
     Configuration parameters for inversion simulation and optimization.
-
-    This class manages settings that control the behavior of the inversion
-    process, including Monte Carlo sampling, parameter scaling, and
-    optimization callbacks.
-
-    Attributes
-    ----------
-    iter_cb : Optional[Callable], default=None
-        Callback function called during optimization iterations.
-        Function signature: iter_cb(params, iter, resid, *args, **kwargs)
-    monte_carlo : Optional[bool], default=None
-        Whether to use Monte Carlo initialization for optimization.
-        Enables warm-start strategy with multiple parameter realizations.
-    mc_realizations : Optional[int], default=None
-        Number of Monte Carlo realizations to generate.
-        Automatically set to 100 if monte_carlo=True and not specified.
-    mc_seed : Optional[int], default=None
-        Random seed for reproducible Monte Carlo sampling.
-        If None, uses system entropy for random initialization.
-    scale_parameters : bool, default=True
-        Whether to scale parameters to [0,1] range before optimization.
-        Recommended for improved numerical conditioning.
-    minimum_frequency_count : int, default=2
-        Minimum number of frequencies required for inversion.
-        Prevents under-determined optimization problems.
-
-    Methods
-    -------
-    validate_monte_carlo_realizations()
-        Model validator ensuring consistent Monte Carlo configuration
-
-    Notes
-    -----
-    Monte Carlo initialization can significantly improve optimization
-    convergence by providing multiple starting points. The best-performing
-    realization is selected as the initialization for the main optimization.
-
-    Parameter scaling transforms all parameters to the unit interval [0,1],
-    which improves optimization performance when parameters have very
-    different scales (e.g., length in mm vs density in kg/m³).
-
-    Examples
-    --------
-    >>> sim_params = SimulationParameters(
-    ...     monte_carlo=True,
-    ...     mc_realizations=50,
-    ...     scale_parameters=True
-    ... )
     """
 
     iter_cb: Optional[Callable] = Field(default=None)
@@ -261,43 +182,6 @@ class ValidateInversionMatrix(
 ):
     """
     Validation model for InversionMatrix class configuration.
-
-    This validator ensures that data and simulation settings are properly
-    formatted and compatible for acoustic scattering inversion analysis.
-    It enforces data structure requirements and validates simulation parameters.
-
-    Attributes
-    ----------
-    data : pd.DataFrame
-        MultiIndex DataFrame containing acoustic measurements with required
-        columns: 'sv_mean', 'nasc', 'thickness_mean' at the top level,
-        and 'frequency' as a nested index level.
-    simulation_settings : SimulationParameters
-        Configuration parameters for the inversion simulation including
-        Monte Carlo settings, parameter scaling, and optimization callbacks.
-
-    Methods
-    -------
-    validate_data(v)
-        Field validator ensuring data conforms to ScatterDF schema
-
-    Notes
-    -----
-    This validator is typically used internally by InversionMatrix during
-    initialization to ensure all inputs are properly formatted and contain
-    the required information for successful inversion.
-
-    The data validation ensures the presence of essential acoustic quantities:
-    - sv_mean: Volume backscattering strength (dB re 1 m^-1)
-    - nasc: Nautical Area Scattering Coefficient (m²/nmi²)
-    - thickness_mean: Mean layer thickness (m)
-
-    Examples
-    --------
-    >>> validator = ValidateInversionMatrix(
-    ...     data=acoustic_dataframe,
-    ...     simulation_settings=SimulationParameters(monte_carlo=True)
-    ... )
     """
 
     data: pd.DataFrame
@@ -316,39 +200,6 @@ class ModelSettingsParameters(
 ):
     """
     Configuration parameters for acoustic scattering models.
-
-    This class stores model-specific settings including the scattering model
-    type and environmental parameters. It uses flexible configuration to
-    accommodate different scattering model requirements.
-
-    Attributes
-    ----------
-    type : str
-        Scattering model type identifier (e.g., 'pcdwba', 'spheres').
-        Must match an available model in SCATTERING_MODEL_PARAMETERS.
-    environment : EnvironmentParameters
-        Environmental parameters including sound speed and seawater density.
-        Defaults to standard oceanographic values if not specified.
-
-    Notes
-    -----
-    This class uses Pydantic's extra="allow" configuration to permit
-    model-specific parameters beyond the core type and environment settings.
-    This flexibility allows each scattering model to specify its own
-    additional configuration parameters.
-
-    The model type determines which validation schema is applied during
-    parameter checking and which forward model is used for scattering
-    calculations.
-
-    Examples
-    --------
-    >>> model_settings = ModelSettingsParameters(
-    ...     type="pcdwba",
-    ...     environment=EnvironmentParameters(sound_speed_sw=1485.0),
-    ...     taper_order=10.0,  # PCDWBA-specific parameter
-    ...     frequency_interval=2000.0
-    ... )
     """
 
     type: str
@@ -363,48 +214,6 @@ class ValidateBuildModelArgs(
 ):
     """
     Validation model for scattering model build arguments.
-
-    This validator ensures that model parameters and settings are compatible
-    with the specified scattering model type. It performs cross-validation
-    between parameter specifications and model requirements.
-
-    Attributes
-    ----------
-    model_parameters : InvParameters
-        Container with biological and physical parameters for the scattering model.
-        Parameters must be compatible with the specified model type.
-    model_settings : ModelSettingsParameters
-        Model configuration including type identifier and environmental parameters.
-        The model type determines validation requirements for parameters.
-
-    Methods
-    -------
-    _check_variable(params, variable, validator)
-        Static method to validate parameter bounds against model schema
-    validate_model_parameterization()
-        Model validator ensuring parameter compatibility with model type
-
-    Notes
-    -----
-    This validator performs sophisticated cross-validation between the
-    specified scattering model type and the provided parameters. It ensures
-    that all required parameters are present and that parameter bounds
-    are within physically reasonable ranges for the model.
-
-    The validation process:
-    1. Checks that the model type exists in SCATTERING_MODEL_PARAMETERS
-    2. Validates parameter bounds against model-specific schemas
-    3. Ensures all required parameters are specified with appropriate ranges
-
-    This prevents runtime errors during model execution by catching
-    configuration problems at initialization time.
-
-    Examples
-    --------
-    >>> validator = ValidateBuildModelArgs(
-    ...     model_parameters=InvParameters(param_dict),
-    ...     model_settings=ModelSettingsParameters(type="pcdwba")
-    ... )
     """
 
     model_parameters: InvParameters
