@@ -46,11 +46,3 @@ class BaseDataFrame(pa.DataFrameModel):
         df_checked = cls.pre_validate(df)
         # Pass to normal validation
         return super().validate(df_checked)
-
-
-class EchopopValidationError(Exception):
-    """Error specific to Echopop validators"""
-
-    def __init__(self, exception: Exception = None):
-        self.exception = exception
-        super().__init__(str(exception) if exception else "")
