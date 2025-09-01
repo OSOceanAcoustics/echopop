@@ -5,7 +5,9 @@ numpy
 openpyxl
 pandas
 scipy
-# Spatial stack
+numba
+# Spatial data processing stack
+cartopy
 geopandas
 geopy
 pyproj
