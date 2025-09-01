@@ -300,7 +300,7 @@ def read_echoview_export(filename: Path, validator: Optional[Any] = None) -> pd.
         df.rename(columns={lat_columns[0]: "latitude"}, inplace=True)
     # ---- If > 1 is present and includes 'lon_m'
     elif len(lat_columns) > 1 and "lat_m" in lat_columns:
-        df.rename(columns={"lat_m": "latitude"}, inplace=True)    
+        df.rename(columns={"lat_m": "latitude"}, inplace=True)
 
     # Rename columns used by Echopop
     df.rename(columns=ECHOVIEW_TO_ECHOPOP, inplace=True)
