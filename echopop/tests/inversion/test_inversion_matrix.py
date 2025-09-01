@@ -6,8 +6,6 @@ of novel functions in the echopop inversion module, based on examples from
 profile_inversion.py.
 """
 
-from pathlib import Path
-
 import numpy as np
 import pandas as pd
 import pytest
@@ -169,7 +167,7 @@ def test_objective_large_arrays():
 def test_perturb_parameters_respects_bounds(inv_parameters):
     """Test parameter perturbation respects bounds."""
     lmfit_params = inv_parameters.to_lmfit()
-    original_values = {name: param.value for name, param in lmfit_params.items()}
+    # original_values = {name: param.value for name, param in lmfit_params.items()}
 
     perturbed = perturb_parameters(lmfit_params, scale=0.1)
 
