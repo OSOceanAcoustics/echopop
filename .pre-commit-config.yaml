@@ -5,9 +5,8 @@ exclude: |
     project_docs|
     echopop/file_investigation.py|
     echopop/test_survey.py|
-    echopop/scratch|
-    echopop/workflow|
-    echopop/inversion
+    echopop/scratch/|
+    echopop/workflow/
   )
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -41,4 +40,5 @@ repos:
     rev: v2.4.1
     hooks:
       - id: codespell
+        exclude: '(scratch)/.*'
         args: ["--skip=*.ipynb", "--ignore-words=.codespell-ignore-words.txt", "-w", "docs/source", "echopype", "echopop"]
