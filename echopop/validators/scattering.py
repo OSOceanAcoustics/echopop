@@ -1,10 +1,19 @@
+from __future__ import annotations
 from typing import Literal
 
 import numpy as np
 from pydantic import Field
 
 from ..core.validators import BaseDictionary
+from ..inversion.scattering_models import pcdwba
 
+SCATTERING_MODEL_PARAMETERS = {
+    "pcdwba": {
+        "function": pcdwba,
+        "parameters": ValidatePCDWBAParams,
+        "settings": ValidatePCDWBASettings,
+    }
+}
 
 class ValidatePCDWBAParams(
     BaseDictionary,
