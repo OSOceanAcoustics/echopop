@@ -1,7 +1,6 @@
 from functools import lru_cache
 from typing import Literal, Tuple, Union
 
-import awkward as awk
 import numpy as np
 import pandas as pd
 
@@ -385,7 +384,7 @@ def _make_freq_key(
 
 
 @lru_cache(maxsize=128)
-def _generate_frequency_interval_cached_key(key: Tuple) -> awk.Array:
+def _generate_frequency_interval_cached_key(key: Tuple) -> np.ndarray:
     # key is (cf_tuple, length_sd_norm_rounded, frequency_interval_rounded)
     cf_tuple, length_sd_norm_rounded, frequency_interval_rounded = key
     # rebuild numpy array from tuple
@@ -410,7 +409,7 @@ def _generate_frequency_interval_cached_key(key: Tuple) -> awk.Array:
 
 def generate_frequency_interval(
     frequency: np.ndarray, length_sd_norm: float, frequency_interval: float, ndigits: int = 12
-) -> awk.Array:
+) -> np.ndarray:
     """
     Wrapper that builds a stable hashable key and uses an lru_cache-backed worker.
     No module-level globals are created; cache is managed by functools.lru_cache.
