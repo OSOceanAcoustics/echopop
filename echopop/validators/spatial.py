@@ -5,7 +5,7 @@ import pandas as pd
 import pandera.pandas as pa
 from pydantic import Field, field_validator, model_validator
 
-from .base import BaseDataFrame, BaseDictionary
+from ..core.validators import BaseDataFrame, BaseDictionary
 
 
 class MeshDF(BaseDataFrame):
