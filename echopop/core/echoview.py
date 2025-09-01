@@ -47,7 +47,7 @@ ECHOVIEW_EXPORT_ROW_SORT = [
     "frequency",
     "transect_num",
     "interval",
-    "layer",    
+    "layer",
 ]
 
 
