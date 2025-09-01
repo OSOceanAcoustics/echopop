@@ -2,7 +2,7 @@ import pandas as pd
 import pytest
 
 from echopop import inversion
-from echopop.validators import EchopopValidationError
+from echopop.core.exceptions import EchopopValidationError
 
 
 def test_inversion_length_ts_init(model_parameters):

@@ -5,6 +5,7 @@ import pandas as pd
 from pydantic import ValidationError
 
 from .. import acoustics, validators as val
+from ..core.exceptions import EchopopValidationError
 from ..nwfsc_feat import utils
 from .inversion_base import InversionBase
 from .operations import impute_missing_sigma_bs
@@ -81,7 +82,7 @@ class InversionLengthTS(InversionBase):
             valid_args = val.ValidateLengthTS.create(**model_parameters)
         # Break creation
         except ValidationError as e:
-            raise val.EchopopValidationError(str(e)) from None
+            raise EchopopValidationError(str(e)) from None
 
         # Create instance
         self = super().__new__(cls)
