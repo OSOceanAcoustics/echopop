@@ -1,13 +1,16 @@
 from __future__ import annotations
+
 from typing import Any, Callable, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
 from pydantic import ConfigDict, Field, field_validator, model_validator
 
+from ..core.scattering_models import SCATTERING_MODEL_PARAMETERS
 from ..core.validators import BaseDataFrame, BaseDictionary
 from ..typing import InvParameters
 from ..typing.inversion import ModelInputParameters
+
 
 class TSLRegressionParameters(BaseDictionary, title="TS-length regression parameters"):
     """
