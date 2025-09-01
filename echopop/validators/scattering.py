@@ -7,14 +7,6 @@ from pydantic import Field
 from ..core.validators import BaseDictionary
 from ..inversion.scattering_models import pcdwba
 
-SCATTERING_MODEL_PARAMETERS = {
-    "pcdwba": {
-        "function": pcdwba,
-        "parameters": ValidatePCDWBAParams,
-        "settings": ValidatePCDWBASettings,
-    }
-}
-
 class ValidatePCDWBAParams(
     BaseDictionary,
     arbitrary_types_allowed=True,
@@ -65,3 +57,11 @@ class ValidatePCDWBASettings(
     orientation_distribution: DistributionParameters = Field(default_factory=DistributionParameters)
     taper_order: float = Field(default=10.0, gt=0.0, allow_inf_nan=False)
     type: str
+
+SCATTERING_MODEL_PARAMETERS = {
+    "pcdwba": {
+        "function": pcdwba,
+        "parameters": ValidatePCDWBAParams,
+        "settings": ValidatePCDWBASettings,
+    }
+}
