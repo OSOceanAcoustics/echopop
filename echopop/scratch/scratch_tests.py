@@ -201,7 +201,7 @@ class InversionMatrix(InversionBase):
         parameter_set: Dict[int, Any],      
     ):
         
-        # Definine a new column for the `lmfit.Minimizer` class
+        # Define a new column for the `lmfit.Minimizer` class
         self.measurements["minimizer"] = np.array(np.nan).astype(object)
         
         # Create list of `lmfit.Minimizer` objects for all realizations
