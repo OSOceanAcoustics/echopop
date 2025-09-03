@@ -19,7 +19,7 @@ holoviews
 ipympl
 ipywidgets
 jupyter_bokeh>=3.0.5
-jupyter_contrib_nbextensions
+# jupyter_contrib_nbextensions
 matplotlib
 panel
 traitlets
