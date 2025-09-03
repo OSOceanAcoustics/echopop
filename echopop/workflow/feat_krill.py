@@ -23,7 +23,7 @@ center_frequencies = {18e3: {"min": -90., "max": -50.},
                       70e3: {"min": -90., "max": -50.},
                       120e3: {"min": -90., "max": -50.},
                       200e3: {"min": -90., "max": -50.}}
-method="transects"
+method="transect"
 
 sv_data, nasc_coordinates = ingest_sv.ingest_echoview_sv(sv_path=sv_path, 
                                                          center_frequencies=center_frequencies, 
@@ -36,7 +36,7 @@ sv_data, nasc_coordinates = ingest_sv.ingest_echoview_sv(sv_path=sv_path,
 # DATA SUBSET
 # ==================================================================================================
 
-sv_data_sub = utils.apply_filters(sv_data, include_filter={"transect_num":[1, 2, 3, 4, 5, 6, 7]})
+sv_data_sub = utils.apply_filters(sv_data, include_filter={"transect_num":[1, 2, 3]})
 
 # ==================================================================================================
 # ==================================================================================================
