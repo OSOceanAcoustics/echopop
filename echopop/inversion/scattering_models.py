@@ -448,7 +448,7 @@ def pcdwba(
         length_mean + 3 * (length_sd_norm * length_mean),
         n_length,
     )
-
+    
     f_bs = pcdwba_fbs(
         taper_order,
         length_sd_norm,
@@ -466,7 +466,7 @@ def pcdwba(
 
     # Orientation averaging
     f_bs_orientation = ops.orientation_average(
-        theta_values, f_bs, theta_mean, theta_sd, orientation_distribution["family"]
+        theta_values, f_bs, theta_mean, theta_sd, "uniform"# orientation_distribution["family"]
     )
 
     # Length-averaged sigma_bs (normalized to length)

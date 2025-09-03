@@ -48,7 +48,7 @@ def echopop_optim_cb(params, iter, resid, *args, **kwargs):
         param_str = " | ".join(
             f"{name}: {par.value:.4g}" for name, par in params.items() if par.vary
         )
-        print(f"Iter: {iter} | Q abs[pred. - meas.]: {res_str} dB | {param_str}")
+        print(f"Iter: {iter} | Q abs [pred. - meas.]: {res_str} dB | {param_str}")
 
 
 def monte_carlo_initialize(
@@ -1017,12 +1017,6 @@ def estimate_population(
 
     where W is body weight, ρ_sw is seawater density, g is the relative
     density factor, r is mean radius, and L is mean length.
-
-    References
-    ----------
-    .. [1] Stanton, T.K. et al. (1993). Acoustic scattering characteristics
-           of several zooplankton groups. ICES Journal of Marine Science,
-           50(3), 289-299.
     """
 
     # Unpackage the parameters using optimized extraction
@@ -1059,7 +1053,7 @@ def estimate_population(
         ).to_numpy()
     else:
         reference_nasc["number_density"] = invert_intervals_number_density(
-            acoustic_data, reference_nasc, parameters
+            acoustic_data, parameters
         )
 
     # Compute areal biomass density
@@ -1075,7 +1069,10 @@ def estimate_population(
 
     # Concatenate the parameters
     return pd.concat(
-        [reference_nasc, parameters.reset_index().set_index(idx).reindex(reference_nasc.index)],
+        [reference_nasc, 
+         parameters.reset_index().drop(
+             "number_density", axis=1
+         ).set_index(idx).reindex(reference_nasc.index)],
         axis=1,
     )
 
