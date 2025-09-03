@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import pytest
-
+from echopop.typing import InvParameters, MCInvParameters
 
 @pytest.fixture
 def model_parameters():
@@ -169,3 +169,160 @@ def empty_df():
 def single_row_df():
     """Single row DataFrame for edge case testing."""
     return pd.DataFrame({"stratum_ks": [1], "haul_num": [101], "sex": ["M"], "length": [20.5]})
+
+@pytest.fixture
+def sample_InversionMatrix_parameters():
+    """Sample model parameters for testing."""
+    return {
+        "number_density": {"value": 500.0, "min": 10.0, "max": 10000.0, "vary": True},
+        "theta_mean": {"value": 10.0, "min": 0.0, "max": 90.0, "vary": False},
+        "theta_sd": {"value": 20.0, "min": 10.0, "max": 20.0, "vary": False},
+        "length_mean": {"value": 0.030, "min": 0.008, "max": 0.040, "vary": True},
+        "g": {"value": 1.015, "min": 1.015, "max": 1.060, "vary": False},
+        "h": {"value": 1.020, "min": 1.015, "max": 1.060, "vary": False},
+        "length_radius_ratio": {"value": 18.2, "min": 14.0, "max": 20.0, "vary": False},
+        "length_sd_norm": {"value": 0.2, "min": 0.1, "max": 0.2, "vary": False},
+        "radius_of_curvature_ratio": {"value": 3.0, "min": 0.5, "max":100.0, "vary": False},
+    }
+
+@pytest.fixture
+def model_InversionMatrix_settings():
+    """Model configuration settings."""
+    from echopop.inversion.scattering_models import pcdwba
+
+    return {
+        "type": "pcdwba",
+        "model_function": pcdwba,
+        "taper_order": 10.0,
+        "frequency_interval": 2000.0,
+        "orientation_distribution": {"family": "gaussian", "bins": 60},
+        "length_distribution": {"family": "gaussian", "bins": 100},
+        "environment": {"sound_speed_sw": 1490.0, "density_sw": 1026.5},
+        "n_integration": 50,
+        "n_wavelength": 10
+    }
+
+@pytest.fixture
+def sample_frequencies():
+    """Sample acoustic frequencies."""
+    return np.array([18e3, 38e3, 70e3, 120e3, 200e3])
+
+@pytest.fixture
+def inv_parameters(sample_InversionMatrix_parameters):
+    """InvParameters instance."""
+    return InvParameters(sample_InversionMatrix_parameters)
+
+@pytest.fixture
+def inv_transect_info(inv_parameters):
+    """NASC coordinates"""
+
+    # Parameterize
+    mc_params = MCInvParameters(inv_parameters, mc_realizations=5, rng=np.random.default_rng(123))
+
+    # Create proper MultiIndex structure for inverted data
+    inverted_transect_data = pd.DataFrame(
+        {
+            ("transect_num", ""): [1, 2, 3, 4, 5],
+            ("thickness_mean", 38e3): [15.5, 55.5, 22.5, 33.5, 44.5],
+            ("thickness_mean", 120e3): [22.5, 38.5, 36.5, 18.5, 21.5],
+            ("nasc", 38e3): [10.0, 20.0, 30.0, 40.0, 50.0],
+            ("nasc", 120e3): [10.0, 20.0, 30.0, 40.0, 50.0],
+        }
+    ).set_index("transect_num")
+    # ---- Add parameters
+    inverted_transect_data["parameters"] = [
+        mc_params[idx] for idx in np.linspace(0, 4, 5)
+    ]
+    # ---- Set column index names
+    inverted_transect_data.columns.names = [None, "frequency"]
+
+    # Generate dataframe
+    transect_nasc_df = pd.DataFrame(
+        {
+            "transect_num": np.tile([1, 2, 3, 4, 5], 2),
+            "longitude": np.tile(np.linspace(-1.0, 1.0, 5), 2),
+            "latitude": np.tile(np.linspace(-1.0, 1.0, 5), 2),
+            "frequency": np.repeat([38e3, 120e3], 5),
+            "nasc": np.tile([10.0, 20.0, 30.0, 40.0, 50.0], 2)
+        }
+    ).set_index(["transect_num", "longitude", "latitude", "frequency"]).unstack("frequency")["nasc"]
+
+    return {"inverted": inverted_transect_data, "coords": transect_nasc_df}
+            
+@pytest.fixture
+def inv_interval_info(inv_parameters):
+    """NASC coordinates"""
+
+    # Generate dataframe 
+    interval_nasc_df = pd.DataFrame({
+        "frequency": np.repeat([38e3, 120e3], 20),
+        "interval": np.tile(np.linspace(1, 10, 10), 4),
+        "longitude": np.repeat([-1.0, 1.0, -1.0, 1.0], 10),
+        "latitude": np.repeat([-1.0, 1.0, -1.0, 1.0], 10),
+        "nasc": np.tile(np.linspace(10.0, 100.0, 10), 4),
+    }).set_index(["interval", "longitude", "latitude", "frequency"]).unstack("frequency")["nasc"]
+
+    # Parameterize
+    mc_params = MCInvParameters(inv_parameters, 
+                                mc_realizations=20, 
+                                rng=np.random.default_rng(345))
+
+    # Create proper MultiIndex structure for inverted data
+    inverted_interval_data = pd.DataFrame(
+        {
+            ("nasc", 38e3): interval_nasc_df[38e3],
+            ("nasc", 120e3): interval_nasc_df[120e3],
+            ("thickness_mean", 38e3): np.linspace(20.0, 80.0, 20),
+            ("thickness_mean", 120e3): np.linspace(40.0, 100.0, 20)
+        },
+        index=interval_nasc_df.index
+    )
+    # ---- Add parameters
+    inverted_interval_data["parameters"] = [
+        mc_params[idx] for idx in np.linspace(0, 19, 20)
+    ]
+    # ---- Set column index names
+    inverted_interval_data.columns.names = [None, "frequency"]
+
+    return {"inverted": inverted_interval_data, "coords": interval_nasc_df}
+
+@pytest.fixture
+def inv_cells_info(inv_parameters):
+    """NASC coordinates"""
+
+    # Generate dataframe 
+    cells_nasc_df = pd.DataFrame({
+        "frequency": np.repeat([38e3, 120e3], 10),
+        "interval": np.tile(np.repeat(np.linspace(1, 5, 5), 2), 2),
+        "layer": np.tile([1.0, 2.0], 10),
+        "longitude": np.tile([-1.0, 1.0], 10),
+        "latitude": np.tile([-1.0, 1.0], 10),
+        "nasc": np.tile(np.linspace(10.0, 100.0, 10), 2)
+    }).set_index(
+        ["interval", "layer", "longitude", "latitude", "frequency"]
+    ).unstack("frequency")["nasc"]
+    
+    # Parameterize
+    mc_params = MCInvParameters(inv_parameters, 
+                                mc_realizations=10, 
+                                rng=np.random.default_rng(345))
+
+    # Create proper MultiIndex structure for inverted data
+    inverted_cells_data = pd.DataFrame(
+        {
+            ("nasc", 38e3): cells_nasc_df[38e3],
+            ("nasc", 120e3): cells_nasc_df[120e3],
+            ("thickness_mean", 38e3): np.linspace(20.0, 80.0, 10),
+            ("thickness_mean", 120e3): np.linspace(40.0, 100.0, 10)
+        },
+        index=cells_nasc_df.index
+    )
+    # ---- Add parameters
+    inverted_cells_data["parameters"] = [
+        mc_params[idx] for idx in np.linspace(0, 9, 10)
+    ]
+    # ---- Set column index names
+    inverted_cells_data.columns.names = [None, "frequency"]
+
+    return {"inverted":inverted_cells_data, "coords": cells_nasc_df}
+
