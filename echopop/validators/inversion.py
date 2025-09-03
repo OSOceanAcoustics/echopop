@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from pydantic import ConfigDict, Field, field_validator, model_validator
 
-from ..core.scattering_models import SCATTERING_MODEL_PARAMETERS
+from .scattering_models import SCATTERING_MODEL_PARAMETERS
 from ..core.validators import BaseDataFrame, BaseDictionary
 from ..typing import InvParameters
 from ..typing.inversion import ModelInputParameters

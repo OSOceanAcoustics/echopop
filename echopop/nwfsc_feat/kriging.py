@@ -10,6 +10,7 @@ from pydantic import ValidationError
 from .. import validators as val
 from . import spatial, variogram_models as vgm
 from .variogram import lag_distance_matrix
+from ..core.exceptions import EchopopValidationError
 
 # Set warnings filter
 warnings.simplefilter("always")
@@ -1069,7 +1070,7 @@ class Kriging:
             )
         # Break creation
         except (ValidationError, Exception) as e:
-            raise val.EchopopValidationError(str(e)) from None
+            raise EchopopValidationError(str(e)) from None
 
         # Create instance
         self = super().__new__(cls)

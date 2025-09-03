@@ -1,8 +1,9 @@
 from pathlib import Path
 from typing import Any, Dict, Literal, Optional
+from pathlib import Path
 
-import numpy as np
 import pandas as pd
+import numpy as np
 
 from . import ingest_nasc
 
