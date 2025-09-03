@@ -8,9 +8,9 @@ import pandas as pd
 from pydantic import ValidationError
 
 from .. import validators as val
+from ..core.exceptions import EchopopValidationError
 from . import spatial, variogram_models as vgm
 from .variogram import lag_distance_matrix
-from ..core.exceptions import EchopopValidationError
 
 # Set warnings filter
 warnings.simplefilter("always")

@@ -1069,10 +1069,13 @@ def estimate_population(
 
     # Concatenate the parameters
     return pd.concat(
-        [reference_nasc, 
-         parameters.reset_index().drop(
-             "number_density", axis=1
-         ).set_index(idx).reindex(reference_nasc.index)],
+        [
+            reference_nasc,
+            parameters.reset_index()
+            .drop("number_density", axis=1)
+            .set_index(idx)
+            .reindex(reference_nasc.index),
+        ],
         axis=1,
     )
 

@@ -7,6 +7,7 @@ from pydantic import Field
 
 from ..core.validators import BaseDictionary
 
+
 class ValidatePCDWBAParams(
     BaseDictionary,
     arbitrary_types_allowed=True,
