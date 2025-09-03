@@ -281,7 +281,7 @@ def orientation_average(
     # ---- Uniform
     elif distribution == "uniform":
         # ---- Compute the PDF
-        PDF = np.ones(len(form_function)) / len(form_function)
+        PDF = np.ones(len(angle)) / len(angle)
     else:
         raise ValueError("Invalid distribution type. Choose 'gaussian' or 'uniform'.")
 
@@ -335,13 +335,16 @@ def length_average(
     # ---- Uniform
     elif distribution == "uniform":
         # ---- Compute the PDF
-        PDF = np.ones(len(form_function)) / len(form_function)
+        PDF = np.ones(len(length_values)) / len(length_values)
     else:
         raise ValueError("Invalid distribution type. Choose 'gaussian' or 'uniform'.")
 
     # Length-weighted averaged sigma_bs
     # ---- Get valid values
-    n_vals = np.apply_along_axis(valid_array_row_length, 1, arr=ka_f)
+    if ka_f.ndim == 1:
+        n_vals = valid_array_row_length(ka_f)
+    else:
+        n_vals = np.apply_along_axis(valid_array_row_length, 1, arr=ka_f)
     # ---- Compute the length-weighted ka
     ka_weighted = length_norm * ka_c.reshape(-1, 1)
     # ---- Trim values so they fall within the valid/defined bandwidth
