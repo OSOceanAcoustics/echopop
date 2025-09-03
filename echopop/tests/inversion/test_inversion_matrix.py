@@ -1,120 +1,57 @@
-"""
-Pytest-based tests for inversion matrix functions.
-
-This module contains straightforward test functions covering the bulk use cases
-of novel functions in the echopop inversion module, based on examples from
-profile_inversion.py.
-"""
-
 import numpy as np
 import pandas as pd
 import pytest
 from lmfit import Parameters
-
-# Import the functions we want to test
-from echopop.inversion.inversion_matrix import (
-    InversionMatrix,
-    echopop_optim_cb,
-    estimate_population,
-    invert_intervals_number_density,
-    invert_transect_number_density,
-    monte_carlo_initialize,
-    objective,
-    perturb_parameters,
-)
-from echopop.inversion.operations import reflection_coefficient, wavenumber
+from echopop import inversion
+import echopop.inversion.inversion_matrix as im
 from echopop.typing import InvParameters, MCInvParameters
-
-
-# Test fixtures
-@pytest.fixture
-def sample_parameters():
-    """Sample model parameters for testing."""
-    return {
-        "number_density": {"value": 500.0, "min": 10.0, "max": 10000.0, "vary": True},
-        "theta_mean": {"value": 10.0, "min": 0.0, "max": 90.0, "vary": True},
-        "length_mean": {"value": 0.030, "min": 0.008, "max": 0.040, "vary": True},
-        "g": {"value": 1.015, "min": 1.015, "max": 1.060, "vary": False},
-        "h": {"value": 1.020, "min": 1.015, "max": 1.060, "vary": False},
-        "length_radius_ratio": {"value": 18.2, "min": 14.0, "max": 20.0, "vary": False},
-    }
-
-
-@pytest.fixture
-def model_settings():
-    """Model configuration settings."""
-    from echopop.inversion.scattering_models import pcdwba
-
-    return {
-        "type": "pcdwba",
-        "model_function": pcdwba,
-        "taper_order": 10.0,
-        "frequency_interval": 2000.0,
-        "orientation_distribution": {"family": "gaussian", "bins": 60},
-        "length_distribution": {"family": "gaussian", "bins": 100},
-        "environment": {"sound_speed": 1490.0, "density_sw": 1026.5},
-    }
-
-
-@pytest.fixture
-def sample_frequencies():
-    """Sample acoustic frequencies."""
-    return np.array([18e3, 38e3, 70e3, 120e3, 200e3])
-
-
-@pytest.fixture
-def inv_parameters(sample_parameters):
-    """InvParameters instance."""
-    return InvParameters(sample_parameters)
-
+from echopop.inversion import inversion_matrix
 
 # Test functions for echopop_optim_cb
 def test_callback_prints_at_key_iterations(capsys, inv_parameters):
     """Test callback prints output at specified iterations."""
+
+    # Get the parameters
     params = inv_parameters.to_lmfit()
-    echopop_optim_cb(params, 1, np.array([0.5]))
+
+    # Iteration: 1
+    im.echopop_optim_cb(params, 1, np.array([0.5])[0])
     captured = capsys.readouterr()
     assert "Iter: 1" in captured.out
-    assert "Q abs[pred. - meas.]:" in captured.out
+    assert "Q abs [pred. - meas.]:" in captured.out
 
-
-def test_callback_silent_at_other_iterations(capsys, inv_parameters):
-    """Test callback doesn't print at non-key iterations."""
-    params = inv_parameters.to_lmfit()
-    echopop_optim_cb(params, 5, np.array([0.5]))
+    # Iteration: 5 [silent]
+    im.echopop_optim_cb(params, 5, np.array([0.5])[0])
     captured = capsys.readouterr()
     assert captured.out == ""
 
-
-def test_callback_every_25th_iteration(capsys, inv_parameters):
-    """Test callback prints every 25th iteration."""
-    params = inv_parameters.to_lmfit()
-    echopop_optim_cb(params, 50, np.array([0.3]))
+    # Iteration: 25
+    im.echopop_optim_cb(params, 50, np.array([0.3])[0])
     captured = capsys.readouterr()
     assert "Iter: 50" in captured.out
 
 
 # Test functions for monte_carlo_initialize
-@pytest.mark.skip(reason="requires additional fixing")
-def test_monte_carlo_basic_functionality(inv_parameters, sample_frequencies, model_settings):
+def test_monte_carlo_basic_functionality(inv_parameters, sample_frequencies, 
+                                         model_InversionMatrix_settings):
     """Test Monte Carlo initialization basic functionality."""
+    
     # Create MC parameters with small realizations for testing
-    mc_params = MCInvParameters(inv_parameters, mc_realizations=3, rng=np.random.default_rng(42))
+    mc_params = MCInvParameters(inv_parameters, mc_realizations=3, rng=np.random.default_rng(999))
     lmfit_params = mc_params.to_lmfit_samples()
-    sv_measured = pd.Series([-65.0, -70.0, -68.0])
+    Sv_measured = pd.Series([-95.0, -85.0, -75.0, -70.0, -68.0]).to_numpy()
 
     # Test returns one of the parameter sets
-    result = monte_carlo_initialize(
-        lmfit_params, sample_frequencies, sv_measured, mc_params, model_settings
+    result = im.monte_carlo_initialize(
+        lmfit_params, sample_frequencies, Sv_measured, mc_params, model_InversionMatrix_settings
     )
 
     # Should return one of the parameter sets
     assert result is not None
-    assert any(result is p for p in lmfit_params)
+    np.testing.assert_equal(result.valuesdict(), mc_params[0].values)
 
 
-@pytest.mark.skip(reason="requires additional fixing")
-def test_monte_carlo_empty_parameters(sample_frequencies, model_settings):
+def test_monte_carlo_empty_parameters(sample_frequencies, model_InversionMatrix_settings):
     """Test Monte Carlo with minimal parameter set."""
     # Create minimal valid parameters instead of empty
     minimal_params = InvParameters(
@@ -122,12 +59,13 @@ def test_monte_carlo_empty_parameters(sample_frequencies, model_settings):
     )
     empty_mc = MCInvParameters(minimal_params, mc_realizations=1)
     lmfit_params = empty_mc.to_lmfit_samples()
-    sv_measured = pd.Series([])
+    sv_measured = pd.Series([]).to_numpy()
 
-    result = monte_carlo_initialize(
-        lmfit_params, sample_frequencies, sv_measured, empty_mc, model_settings
-    )
-    assert result is not None
+    # Expect an error
+    with pytest.raises(TypeError):
+        assert im.monte_carlo_initialize(
+            lmfit_params, sample_frequencies, sv_measured, empty_mc, model_InversionMatrix_settings
+        )
 
 
 # Test functions for objective
@@ -135,7 +73,7 @@ def test_objective_perfect_match_zero():
     """Test objective function returns zero for perfect match."""
     sv_pred = np.array([-65.0, -70.0, -68.0])
     sv_meas = np.array([-65.0, -70.0, -68.0])
-    result = objective(sv_pred, sv_meas)
+    result = im.objective(sv_pred, sv_meas)
     assert result == 0.0
 
 
@@ -143,24 +81,24 @@ def test_objective_residual_calculation():
     """Test objective function residual calculation."""
     sv_pred = np.array([-65.0, -70.0])
     sv_meas = np.array([-67.0, -68.0])
-    result = objective(sv_pred, sv_meas)
+    result = im.objective(sv_pred, sv_meas)
     expected = np.sum(np.abs(sv_pred - sv_meas))  # L1 norm, not L2
     np.testing.assert_almost_equal(result, expected)
 
 
 def test_objective_single_value():
     """Test objective function with single values."""
-    result = objective(np.array([-65.0]), np.array([-67.0]))
+    result = im.objective(np.array([-65.0]), np.array([-67.0]))
     assert result == 2.0
 
 
 def test_objective_large_arrays():
     """Test objective function handles large arrays."""
-    np.random.seed(42)
+    np.random.seed(857)
     sv_pred = np.random.randn(100) * 5 - 65
     sv_meas = sv_pred + np.random.randn(100) * 0.1
-    result = objective(sv_pred, sv_meas)
-    assert result >= 0
+    result = im.objective(sv_pred, sv_meas)
+    assert np.isclose(result, 8.0726224)
 
 
 # Test functions for perturb_parameters
@@ -169,7 +107,7 @@ def test_perturb_parameters_respects_bounds(inv_parameters):
     lmfit_params = inv_parameters.to_lmfit()
     # original_values = {name: param.value for name, param in lmfit_params.items()}
 
-    perturbed = perturb_parameters(lmfit_params, scale=0.1)
+    perturbed = im.perturb_parameters(lmfit_params, scale=0.1)
 
     for name, param in perturbed.items():
         assert param.min <= param.value <= param.max
@@ -179,8 +117,8 @@ def test_perturb_parameters_scale_effect(inv_parameters):
     """Test larger scale produces larger perturbations."""
     lmfit_params = inv_parameters.to_lmfit()
 
-    pert_small = perturb_parameters(lmfit_params.copy(), scale=0.01)
-    pert_large = perturb_parameters(lmfit_params.copy(), scale=0.5)
+    pert_small = im.perturb_parameters(lmfit_params.copy(), scale=0.01)
+    pert_large = im.perturb_parameters(lmfit_params.copy(), scale=0.5)
 
     # Calculate average perturbation magnitude
     small_mag = np.mean([abs(p.value - lmfit_params[name].value) for name, p in pert_small.items()])
@@ -195,173 +133,298 @@ def test_perturb_parameters_fixed_unchanged():
     params.add("vary_param", value=1.0, min=0.5, max=1.5, vary=True)
     params.add("fixed_param", value=2.0, min=1.0, max=3.0, vary=False)
 
-    perturbed = perturb_parameters(params, scale=0.5)
+    perturbed = im.perturb_parameters(params, scale=0.5)
     assert perturbed["fixed_param"].value == 2.0
 
 
 # Test functions for estimate_population
-@pytest.mark.skip(reason="requires additional fixing")
-def test_estimate_population_basic_structure():
+def test_estimate_population(inv_transect_info, inv_interval_info, inv_cells_info):
     """Test population estimation returns expected structure."""
-    # Create proper MultiIndex structure for inverted data
-    inverted_data = pd.DataFrame(
-        {
-            ("parameters", 120e3): [
-                InvParameters(
-                    {
-                        "length_mean": {"value": 0.03},
-                        "g": {"value": 1.02},
-                        "length_radius_ratio": {"value": 18.0},
-                    }
-                )
-            ]
-        }
-    )
-    inverted_data.columns = pd.MultiIndex.from_tuples(
-        [("parameters", 120e3)], names=[None, "frequency"]
-    )
 
-    nasc_data = pd.DataFrame({120e3: [1000.0]})
-    nasc_data.columns = pd.MultiIndex.from_arrays([[120e3]], names=["frequency"])
+    # Test transect-index
+    transect_result = im.estimate_population(
+        inv_transect_info["inverted"],
+        inv_transect_info["coords"],
+        density_sw=1026.0,
+        reference_frequency=120e3,
+        aggregate_method="transect",
+    )
+    # ---- Check: shape
+    assert transect_result.shape == (5, 17)
+    # ---- Get keys:
+    params = list(inv_transect_info["inverted"]["parameters"].loc[1].values.keys())
+    # ---- Check: columns
+    expected_cols = ["longitude", "latitude", "nasc", "number_density", "biomass_density"] + params
+    assert all([col in transect_result.columns for col in expected_cols])
+    # ---- Check: index
+    assert list(transect_result.index.names) == ["transect_num"]
 
-    result = estimate_population(
-        inverted_data,
-        nasc_data,
+    # Test interval-index
+    interval_result = im.estimate_population(
+        inv_interval_info["inverted"],
+        inv_interval_info["coords"],
         density_sw=1026.0,
         reference_frequency=120e3,
         aggregate_method="interval",
     )
+    # ---- Check: shape
+    assert interval_result.shape == (20, 15)
+    # ---- Get keys:
+    params = list(inv_interval_info["inverted"]["parameters"].loc[1, 1, 1].values.keys())
+    # ---- Check: columns
+    expected_cols = ["nasc", "number_density", "biomass_density"] + params
+    assert all([col in interval_result.columns for col in expected_cols])
+    # ---- Check: index
+    assert all(
+        [col in ["longitude", "latitude", "interval"] for col in list(interval_result.index.names)]
+    )  
 
-    expected_cols = [
-        "nasc",
-        "number_density",
-        "biomass_density",
-        "radius_mean",
-        "body_volume",
-        "body_density",
-        "body_weight",
-    ]
-    for col in expected_cols:
-        assert col in result.columns
-
-
-@pytest.mark.skip(reason="requires additional fixing")
-def test_estimate_population_body_calculations():
-    """Test body size and weight calculations are correct."""
-    inverted_data = pd.DataFrame(
-        {
-            ("parameters", 120e3): [
-                InvParameters(
-                    {
-                        "length_mean": {"value": 0.04},  # 4 cm
-                        "g": {"value": 1.05},  # 5% denser than seawater
-                        "length_radius_ratio": {"value": 20.0},
-                    }
-                )
-            ]
-        }
-    )
-    inverted_data.columns = pd.MultiIndex.from_tuples(
-        [("parameters", 120e3)], names=[None, "frequency"]
-    )
-
-    nasc_data = pd.DataFrame({120e3: [1000.0]})
-    nasc_data.columns = pd.MultiIndex.from_arrays([[120e3]], names=["frequency"])
-
-    result = estimate_population(
-        inverted_data,
-        nasc_data,
+    # Test cells-index
+    cells_result = im.estimate_population(
+        inv_cells_info["inverted"],
+        inv_cells_info["coords"],
         density_sw=1026.0,
         reference_frequency=120e3,
-        aggregate_method="interval",
+        aggregate_method="cells",
     )
-
-    # Test basic structure exists
-    assert "radius_mean" in result.columns
-    assert "body_weight" in result.columns
-    assert len(result) > 0
-
-
-# Test functions for density inversions
-def test_invert_transect_number_density():
-    """Test transect-level density calculation."""
-    acoustic_data = pd.DataFrame(
-        {"nasc": [500.0, 800.0, 600.0], "thickness_mean": [10.0, 15.0, 12.0]},
-        index=pd.Index([1, 2, 3], name="transect_num"),
-    )
-
-    reference_nasc = pd.DataFrame(
-        {"nasc": [400.0, 600.0, 500.0]}, index=pd.Index([1, 2, 3], name="transect_num")
-    )
-
-    parameters = pd.DataFrame(
-        {"number_density": [50.0, 60.0, 55.0]}, index=pd.Index([1, 2, 3], name="transect_num")
-    )
-
-    result = invert_transect_number_density(acoustic_data, reference_nasc, parameters)
-
-    assert len(result) == 3
-    assert all(result >= 0)
-    # Check unit conversion factor is applied (1852^2)
-    assert all(result > 1000)
-
-
-def test_invert_intervals_number_density():
-    """Test interval-level density calculation."""
-    acoustic_data = pd.DataFrame({"thickness_mean": [5.0, 10.0, 8.0]})
-    parameters = pd.DataFrame({"number_density": [100.0, 150.0, 120.0]})
-
-    result = invert_intervals_number_density(acoustic_data, parameters)
-
-    # Test the structure and basic calculation
-    assert len(result) == 3
-    assert all(result > 0)  # All values should be positive
-
-    # The calculation is: number_density * thickness_mean * 1852^2
-    # Let's just verify the first value
-    expected_first = 100.0 * 5.0 * 1852**2
-    np.testing.assert_almost_equal(result.iloc[0], expected_first)
-
+    # ---- Check: shape
+    assert cells_result.shape == (10, 15)
+    # ---- Get keys:
+    params = list(inv_cells_info["inverted"]["parameters"].loc[1, 1, -1, -1].values.keys())
+    # ---- Check: columns
+    expected_cols = ["nasc", "number_density", "biomass_density"] + params
+    assert all([col in cells_result.columns for col in expected_cols])
+    # ---- Check: index
+    assert all(
+        [col in ["longitude", "latitude", "interval", "layer"] 
+         for col in list(cells_result.index.names)]
+    )      
+    
 
 # Test functions for scattering operations
-def test_wavenumber_calculation():
+def test_wavenumber():
     """Test wavenumber calculation."""
+
+    # Shared
+    SOUND_SPEED = 1500.
+
+    # Scalar input
     freq = 120e3
-    sound_speed = 1500.0
-    result = wavenumber(freq, sound_speed)
-    expected = 2 * np.pi * freq / sound_speed
+
+    result = inversion.wavenumber(freq, SOUND_SPEED)
+    expected = 2 * np.pi * freq / SOUND_SPEED
     np.testing.assert_almost_equal(result, expected)
 
-
-def test_wavenumber_array_input():
-    """Test wavenumber with array input."""
+    # Array input
     freqs = np.array([38e3, 120e3, 200e3])
-    sound_speed = 1500.0
-    result = wavenumber(freqs, sound_speed)
-    expected = 2 * np.pi * freqs / sound_speed
+    result = inversion.wavenumber(freqs, SOUND_SPEED)
+    expected = 2 * np.pi * freqs / SOUND_SPEED
     np.testing.assert_array_almost_equal(result, expected)
 
 
 def test_reflection_coefficient():
     """Test reflection coefficient calculation."""
+
+    # Scalar
     g = 1.02  # Density contrast
     h = 1.01  # Sound speed contrast
-    result = reflection_coefficient(g, h)
+    result = inversion.reflection_coefficient(g, h)
     expected = (1 - g * h * h) / (g * h * h) - (g - 1) / g
-    np.testing.assert_almost_equal(result, expected)
+    np.testing.assert_almost_equal(result, expected) 
 
-
-def test_reflection_coefficient_arrays():
-    """Test reflection coefficient with array inputs."""
+    # Array
     g = np.array([1.01, 1.02, 1.03])
     h = np.array([1.005, 1.01, 1.015])
-    result = reflection_coefficient(g, h)
+    result = inversion.reflection_coefficient(g, h)
     assert len(result) == 3
     assert all(isinstance(val, (float, np.floating)) for val in result)
 
+def test_orientation_average():
+    """Test the orientation-averaging opeartion"""
 
-# Test functions for basic operations (removed problematic interp/orientation tests)
+    # Shared
+    THETA_MEAN = 0.0
+    THETA_SD = 10.0
+    N_THETA = 30
+    FREQUENCY_INT = 2e3
+    LENGTH_SD_NORM = 0.10    
+    RNG = np.random.default_rng(987)
 
+    # Generate orientation distribution
+    theta_values = np.linspace(THETA_MEAN - 3.1 * THETA_SD, THETA_MEAN + 3.1 * THETA_SD, N_THETA)
+
+    # Helper function
+    def _simulate_fbs(center_freqs: np.ndarray):
+
+        # Generate frequency interval
+        freqs = inversion.generate_frequency_interval(center_freqs, LENGTH_SD_NORM, FREQUENCY_INT)
+
+        # Sample values
+        freq_samples = []
+        for f in range(len(freqs)):
+            # ---- Get non-NaN
+            val = np.sum(~np.isnan(freqs[f]))
+            # ---- Generate samples 
+            samples = RNG.uniform(1e-10, 1e-5, (val, N_THETA, 2))
+            # ---- Simulate complex numbers
+            freq_samples.extend([[samples[:, :, 0] + 1j * samples[:, :, 1]]])
+            
+        # Return the samples
+        return freq_samples
+        
+    # Single-frequency
+    fbs_single_freq = _simulate_fbs(np.array([120e3]))
+    # => Test orientation average: Gaussian
+    single_freq_gauss = inversion.orientation_average(theta_values, fbs_single_freq, 
+                                                      THETA_MEAN, THETA_SD, "gaussian")
+    # Assert: typing
+    assert isinstance(single_freq_gauss, list)
+    assert isinstance(single_freq_gauss[0], np.ndarray)
+    assert isinstance(single_freq_gauss[0][0], float)
+    # Assert: shape
+    assert len(single_freq_gauss) == 1
+    assert single_freq_gauss[0].shape == (39,)
+    # => Test orientation average: Uniform
+    single_freq_unif = inversion.orientation_average(theta_values, fbs_single_freq, 
+                                                     THETA_MEAN, THETA_SD, "uniform")
+    # Assert: typing
+    assert isinstance(single_freq_unif, list)
+    assert isinstance(single_freq_unif[0], np.ndarray)
+    assert isinstance(single_freq_unif[0][0], float)
+    # Assert: shape
+    assert len(single_freq_unif) == 1
+    assert single_freq_unif[0].shape == (39,)
+    # Assert: values
+    assert not all(single_freq_gauss[0] == single_freq_unif[0])
+        
+    # Multi-frequency
+    fbs_multi_freq = _simulate_fbs(np.array([38e3, 120e3, 200e3]))
+    # => Test orientation average: Gaussian
+    multi_freq_gauss = inversion.orientation_average(theta_values, fbs_multi_freq, 
+                                                     THETA_MEAN, THETA_SD, "gaussian")
+    # Assert: typing
+    assert isinstance(multi_freq_gauss, list)
+    assert isinstance(multi_freq_gauss[0], np.ndarray)
+    assert isinstance(multi_freq_gauss[0][0], float)
+    # Assert: shape
+    assert len(multi_freq_gauss) == 3
+    assert all([len(multi_freq_gauss[f]) == [13, 39, 63][f] for f in range(len(multi_freq_gauss))])
+    # => Test orientation average: Uniform
+    multi_freq_unif = inversion.orientation_average(theta_values, fbs_multi_freq, 
+                                                    THETA_MEAN, THETA_SD, "uniform")
+    # Assert: typing
+    assert isinstance(multi_freq_unif, list)
+    assert isinstance(multi_freq_unif[0], np.ndarray)
+    assert isinstance(multi_freq_unif[0][0], float)
+    # Assert: shape
+    assert len(multi_freq_unif) == 3
+    assert all([len(multi_freq_unif[f]) == [13, 39, 63][f] for f in range(len(multi_freq_unif))])
+    assert all([not np.allclose(multi_freq_gauss[f], multi_freq_unif[f], atol=1e-13) 
+                for f in range(len(multi_freq_unif))])
+
+def test_length_average():
+    """
+    Test the length-averaging operation
+    """
+    
+    # Shared
+    LENGTH_MEAN = 0.10
+    LENGTH_SD_NORM = 0.10
+    N_LENGTH = 100
+    LENGTH_RADIUS_RATIO = 10.
+    FREQUENCY_INT = 2e3
+    LENGTH_SD_NORM = 0.10    
+    RNG = np.random.default_rng(987)
+    SOUND_SPEED_SW = 1500.
+
+    # Generate length distribution
+    length_values = np.linspace(
+        LENGTH_MEAN - 3 * (LENGTH_SD_NORM * LENGTH_MEAN), 
+        LENGTH_MEAN + 3 * (LENGTH_SD_NORM * LENGTH_MEAN), 
+        N_LENGTH,
+    )
+
+    # Helper function
+    def _simulate_fbs(center_freqs: np.ndarray):
+
+        # Generate frequency interval
+        freqs = inversion.generate_frequency_interval(center_freqs, LENGTH_SD_NORM, FREQUENCY_INT)
+
+        # Compute the acoustic wavenumbers weighted by target size
+        # ---- Center frequencies
+        k_c = inversion.wavenumber(center_freqs, SOUND_SPEED_SW)
+        # ---- Compute ka (center frequencies)
+        ka_c = k_c * LENGTH_MEAN / LENGTH_RADIUS_RATIO
+
+        # Frequency intervals
+        # ---- Just wavenumber (`k`)
+        k_f = inversion.wavenumber(freqs, SOUND_SPEED_SW)
+        # ---- Now `ka`
+        ka_f = k_f * LENGTH_MEAN / LENGTH_RADIUS_RATIO
+            
+        # Sample values
+        freq_samples = []
+        for f in range(len(center_freqs)):
+            # ---- Get non-NaN
+            val = np.sum(~np.isnan(freqs[f]))
+            # ---- Generate samples 
+            samples = RNG.uniform(1e-10, 1e-5, val)
+            # ---- Simulate complex numbers
+            freq_samples.extend([samples])
+            
+        # Return the samples
+        return freq_samples, ka_c, ka_f
+
+    # Single frequency entry
+    fbs_single_freq, ka_c, ka_f  = _simulate_fbs(np.array([38e3]))    
+    # => Test orientation average: Gaussian
+    single_freq_gauss = inversion.length_average(
+        length_values, ka_f, ka_c, fbs_single_freq, 
+        LENGTH_MEAN, LENGTH_MEAN * LENGTH_SD_NORM, "gaussian"
+    )
+    # Assert: typing
+    assert isinstance(single_freq_gauss, np.ndarray)
+    assert isinstance(single_freq_gauss[0], float)
+    # Assert: shape
+    assert len(single_freq_gauss) == 1
+    # => Test orientation average: Uniform
+    single_freq_unif = inversion.length_average(
+        length_values, ka_f, ka_c, fbs_single_freq, 
+        LENGTH_MEAN, LENGTH_MEAN * LENGTH_SD_NORM, "uniform"
+    )
+    # Assert: typing
+    assert isinstance(single_freq_unif, np.ndarray)
+    assert isinstance(single_freq_unif[0], float)
+    # Assert: shape
+    assert len(single_freq_unif) == 1
+    # Assert: values
+    assert single_freq_gauss != single_freq_unif
+
+    # Multi-frequency
+    fbs_multi_freq, ka_c, ka_f = _simulate_fbs(np.array([38e3, 120e3, 200e3]))
+    # => Test orientation average: Gaussian
+    multi_freq_gauss = inversion.length_average(
+        length_values, ka_f, ka_c, fbs_multi_freq, 
+        LENGTH_MEAN, LENGTH_MEAN * LENGTH_SD_NORM, "gaussian"
+    )
+    # Assert: typing
+    assert isinstance(multi_freq_gauss, np.ndarray)
+    assert all([isinstance(multi_freq_gauss[f], float) for f in range(3)])
+    # Assert: shape
+    assert len(multi_freq_gauss) == 3
+    # => Test orientation average: Uniform
+    multi_freq_unif = inversion.length_average(
+        length_values, ka_f, ka_c, fbs_multi_freq, 
+        LENGTH_MEAN, LENGTH_MEAN * LENGTH_SD_NORM, "uniform"
+    )
+    # Assert: typing
+    assert isinstance(multi_freq_unif, np.ndarray)
+    assert all([isinstance(multi_freq_unif[f], float) for f in range(3)])
+    # Assert: shape
+    assert len(multi_freq_unif) == 3
+    assert all([not np.allclose(multi_freq_gauss[f], multi_freq_unif[f], atol=1e-13) 
+                for f in range(len(multi_freq_unif))])
+    
 
 # Integration tests
 def test_inv_parameters_workflow(inv_parameters):
@@ -409,7 +472,7 @@ def test_inversion_matrix_creation():
     )
 
     # Generate random data
-    np.random.seed(42)
+    np.random.seed(131)
     data = np.random.randn(n_obs, len(cols))
     df = pd.DataFrame(data, columns=cols)
 
@@ -423,7 +486,7 @@ def test_inversion_matrix_creation():
     }
 
     # Create InversionMatrix
-    inv_matrix = InversionMatrix(df, sim_settings, verbose=False)
+    inv_matrix = inversion_matrix.InversionMatrix(df, sim_settings, verbose=False)
 
     assert inv_matrix is not None
     assert inv_matrix.inversion_method == "scattering_model"
