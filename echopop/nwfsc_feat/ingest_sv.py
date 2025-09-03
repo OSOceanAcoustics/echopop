@@ -653,7 +653,8 @@ def ingest_echoview_sv(
 
     # Update the units for `center_frequencies` to match expected values from Echoview
     # ---- Hz -> kHz
-    center_frequencies = {freq * 1e-3: value for freq, value in center_frequencies.items()}
+    if center_frequencies is not None:
+        center_frequencies = {freq * 1e-3: value for freq, value in center_frequencies.items()}
 
     # Get the target inversion files
     sv_filepaths = {"cells": [p for p in sv_path.rglob("*.csv") if p.is_file()]}
