@@ -2,10 +2,12 @@ import numpy as np
 import pandas as pd
 import pytest
 from lmfit import Parameters
-from echopop import inversion
+
 import echopop.inversion.inversion_matrix as im
-from echopop.typing import InvParameters, MCInvParameters
+from echopop import inversion
 from echopop.inversion import inversion_matrix
+from echopop.typing import InvParameters, MCInvParameters
+
 
 # Test functions for echopop_optim_cb
 def test_callback_prints_at_key_iterations(capsys, inv_parameters):
@@ -32,10 +34,11 @@ def test_callback_prints_at_key_iterations(capsys, inv_parameters):
 
 
 # Test functions for monte_carlo_initialize
-def test_monte_carlo_basic_functionality(inv_parameters, sample_frequencies, 
-                                         model_InversionMatrix_settings):
+def test_monte_carlo_basic_functionality(
+    inv_parameters, sample_frequencies, model_InversionMatrix_settings
+):
     """Test Monte Carlo initialization basic functionality."""
-    
+
     # Create MC parameters with small realizations for testing
     mc_params = MCInvParameters(inv_parameters, mc_realizations=3, rng=np.random.default_rng(999))
     lmfit_params = mc_params.to_lmfit_samples()
@@ -177,7 +180,7 @@ def test_estimate_population(inv_transect_info, inv_interval_info, inv_cells_inf
     # ---- Check: index
     assert all(
         [col in ["longitude", "latitude", "interval"] for col in list(interval_result.index.names)]
-    )  
+    )
 
     # Test cells-index
     cells_result = im.estimate_population(
@@ -196,17 +199,19 @@ def test_estimate_population(inv_transect_info, inv_interval_info, inv_cells_inf
     assert all([col in cells_result.columns for col in expected_cols])
     # ---- Check: index
     assert all(
-        [col in ["longitude", "latitude", "interval", "layer"] 
-         for col in list(cells_result.index.names)]
-    )      
-    
+        [
+            col in ["longitude", "latitude", "interval", "layer"]
+            for col in list(cells_result.index.names)
+        ]
+    )
+
 
 # Test functions for scattering operations
 def test_wavenumber():
     """Test wavenumber calculation."""
 
     # Shared
-    SOUND_SPEED = 1500.
+    SOUND_SPEED = 1500.0
 
     # Scalar input
     freq = 120e3
@@ -230,7 +235,7 @@ def test_reflection_coefficient():
     h = 1.01  # Sound speed contrast
     result = inversion.reflection_coefficient(g, h)
     expected = (1 - g * h * h) / (g * h * h) - (g - 1) / g
-    np.testing.assert_almost_equal(result, expected) 
+    np.testing.assert_almost_equal(result, expected)
 
     # Array
     g = np.array([1.01, 1.02, 1.03])
@@ -239,15 +244,16 @@ def test_reflection_coefficient():
     assert len(result) == 3
     assert all(isinstance(val, (float, np.floating)) for val in result)
 
+
 def test_orientation_average():
-    """Test the orientation-averaging opeartion"""
+    """Test the orientation-averaging operation"""
 
     # Shared
     THETA_MEAN = 0.0
     THETA_SD = 10.0
     N_THETA = 30
     FREQUENCY_INT = 2e3
-    LENGTH_SD_NORM = 0.10    
+    LENGTH_SD_NORM = 0.10
     RNG = np.random.default_rng(987)
 
     # Generate orientation distribution
@@ -264,19 +270,20 @@ def test_orientation_average():
         for f in range(len(freqs)):
             # ---- Get non-NaN
             val = np.sum(~np.isnan(freqs[f]))
-            # ---- Generate samples 
+            # ---- Generate samples
             samples = RNG.uniform(1e-10, 1e-5, (val, N_THETA, 2))
             # ---- Simulate complex numbers
             freq_samples.extend([[samples[:, :, 0] + 1j * samples[:, :, 1]]])
-            
+
         # Return the samples
         return freq_samples
-        
+
     # Single-frequency
     fbs_single_freq = _simulate_fbs(np.array([120e3]))
     # => Test orientation average: Gaussian
-    single_freq_gauss = inversion.orientation_average(theta_values, fbs_single_freq, 
-                                                      THETA_MEAN, THETA_SD, "gaussian")
+    single_freq_gauss = inversion.orientation_average(
+        theta_values, fbs_single_freq, THETA_MEAN, THETA_SD, "gaussian"
+    )
     # Assert: typing
     assert isinstance(single_freq_gauss, list)
     assert isinstance(single_freq_gauss[0], np.ndarray)
@@ -285,8 +292,9 @@ def test_orientation_average():
     assert len(single_freq_gauss) == 1
     assert single_freq_gauss[0].shape == (39,)
     # => Test orientation average: Uniform
-    single_freq_unif = inversion.orientation_average(theta_values, fbs_single_freq, 
-                                                     THETA_MEAN, THETA_SD, "uniform")
+    single_freq_unif = inversion.orientation_average(
+        theta_values, fbs_single_freq, THETA_MEAN, THETA_SD, "uniform"
+    )
     # Assert: typing
     assert isinstance(single_freq_unif, list)
     assert isinstance(single_freq_unif[0], np.ndarray)
@@ -296,12 +304,13 @@ def test_orientation_average():
     assert single_freq_unif[0].shape == (39,)
     # Assert: values
     assert not all(single_freq_gauss[0] == single_freq_unif[0])
-        
+
     # Multi-frequency
     fbs_multi_freq = _simulate_fbs(np.array([38e3, 120e3, 200e3]))
     # => Test orientation average: Gaussian
-    multi_freq_gauss = inversion.orientation_average(theta_values, fbs_multi_freq, 
-                                                     THETA_MEAN, THETA_SD, "gaussian")
+    multi_freq_gauss = inversion.orientation_average(
+        theta_values, fbs_multi_freq, THETA_MEAN, THETA_SD, "gaussian"
+    )
     # Assert: typing
     assert isinstance(multi_freq_gauss, list)
     assert isinstance(multi_freq_gauss[0], np.ndarray)
@@ -310,8 +319,9 @@ def test_orientation_average():
     assert len(multi_freq_gauss) == 3
     assert all([len(multi_freq_gauss[f]) == [13, 39, 63][f] for f in range(len(multi_freq_gauss))])
     # => Test orientation average: Uniform
-    multi_freq_unif = inversion.orientation_average(theta_values, fbs_multi_freq, 
-                                                    THETA_MEAN, THETA_SD, "uniform")
+    multi_freq_unif = inversion.orientation_average(
+        theta_values, fbs_multi_freq, THETA_MEAN, THETA_SD, "uniform"
+    )
     # Assert: typing
     assert isinstance(multi_freq_unif, list)
     assert isinstance(multi_freq_unif[0], np.ndarray)
@@ -319,28 +329,33 @@ def test_orientation_average():
     # Assert: shape
     assert len(multi_freq_unif) == 3
     assert all([len(multi_freq_unif[f]) == [13, 39, 63][f] for f in range(len(multi_freq_unif))])
-    assert all([not np.allclose(multi_freq_gauss[f], multi_freq_unif[f], atol=1e-13) 
-                for f in range(len(multi_freq_unif))])
+    assert all(
+        [
+            not np.allclose(multi_freq_gauss[f], multi_freq_unif[f], atol=1e-13)
+            for f in range(len(multi_freq_unif))
+        ]
+    )
+
 
 def test_length_average():
     """
     Test the length-averaging operation
     """
-    
+
     # Shared
     LENGTH_MEAN = 0.10
     LENGTH_SD_NORM = 0.10
     N_LENGTH = 100
-    LENGTH_RADIUS_RATIO = 10.
+    LENGTH_RADIUS_RATIO = 10.0
     FREQUENCY_INT = 2e3
-    LENGTH_SD_NORM = 0.10    
+    LENGTH_SD_NORM = 0.10
     RNG = np.random.default_rng(987)
-    SOUND_SPEED_SW = 1500.
+    SOUND_SPEED_SW = 1500.0
 
     # Generate length distribution
     length_values = np.linspace(
-        LENGTH_MEAN - 3 * (LENGTH_SD_NORM * LENGTH_MEAN), 
-        LENGTH_MEAN + 3 * (LENGTH_SD_NORM * LENGTH_MEAN), 
+        LENGTH_MEAN - 3 * (LENGTH_SD_NORM * LENGTH_MEAN),
+        LENGTH_MEAN + 3 * (LENGTH_SD_NORM * LENGTH_MEAN),
         N_LENGTH,
     )
 
@@ -361,26 +376,31 @@ def test_length_average():
         k_f = inversion.wavenumber(freqs, SOUND_SPEED_SW)
         # ---- Now `ka`
         ka_f = k_f * LENGTH_MEAN / LENGTH_RADIUS_RATIO
-            
+
         # Sample values
         freq_samples = []
         for f in range(len(center_freqs)):
             # ---- Get non-NaN
             val = np.sum(~np.isnan(freqs[f]))
-            # ---- Generate samples 
+            # ---- Generate samples
             samples = RNG.uniform(1e-10, 1e-5, val)
             # ---- Simulate complex numbers
             freq_samples.extend([samples])
-            
+
         # Return the samples
         return freq_samples, ka_c, ka_f
 
     # Single frequency entry
-    fbs_single_freq, ka_c, ka_f  = _simulate_fbs(np.array([38e3]))    
+    fbs_single_freq, ka_c, ka_f = _simulate_fbs(np.array([38e3]))
     # => Test orientation average: Gaussian
     single_freq_gauss = inversion.length_average(
-        length_values, ka_f, ka_c, fbs_single_freq, 
-        LENGTH_MEAN, LENGTH_MEAN * LENGTH_SD_NORM, "gaussian"
+        length_values,
+        ka_f,
+        ka_c,
+        fbs_single_freq,
+        LENGTH_MEAN,
+        LENGTH_MEAN * LENGTH_SD_NORM,
+        "gaussian",
     )
     # Assert: typing
     assert isinstance(single_freq_gauss, np.ndarray)
@@ -389,8 +409,13 @@ def test_length_average():
     assert len(single_freq_gauss) == 1
     # => Test orientation average: Uniform
     single_freq_unif = inversion.length_average(
-        length_values, ka_f, ka_c, fbs_single_freq, 
-        LENGTH_MEAN, LENGTH_MEAN * LENGTH_SD_NORM, "uniform"
+        length_values,
+        ka_f,
+        ka_c,
+        fbs_single_freq,
+        LENGTH_MEAN,
+        LENGTH_MEAN * LENGTH_SD_NORM,
+        "uniform",
     )
     # Assert: typing
     assert isinstance(single_freq_unif, np.ndarray)
@@ -404,8 +429,13 @@ def test_length_average():
     fbs_multi_freq, ka_c, ka_f = _simulate_fbs(np.array([38e3, 120e3, 200e3]))
     # => Test orientation average: Gaussian
     multi_freq_gauss = inversion.length_average(
-        length_values, ka_f, ka_c, fbs_multi_freq, 
-        LENGTH_MEAN, LENGTH_MEAN * LENGTH_SD_NORM, "gaussian"
+        length_values,
+        ka_f,
+        ka_c,
+        fbs_multi_freq,
+        LENGTH_MEAN,
+        LENGTH_MEAN * LENGTH_SD_NORM,
+        "gaussian",
     )
     # Assert: typing
     assert isinstance(multi_freq_gauss, np.ndarray)
@@ -414,17 +444,26 @@ def test_length_average():
     assert len(multi_freq_gauss) == 3
     # => Test orientation average: Uniform
     multi_freq_unif = inversion.length_average(
-        length_values, ka_f, ka_c, fbs_multi_freq, 
-        LENGTH_MEAN, LENGTH_MEAN * LENGTH_SD_NORM, "uniform"
+        length_values,
+        ka_f,
+        ka_c,
+        fbs_multi_freq,
+        LENGTH_MEAN,
+        LENGTH_MEAN * LENGTH_SD_NORM,
+        "uniform",
     )
     # Assert: typing
     assert isinstance(multi_freq_unif, np.ndarray)
     assert all([isinstance(multi_freq_unif[f], float) for f in range(3)])
     # Assert: shape
     assert len(multi_freq_unif) == 3
-    assert all([not np.allclose(multi_freq_gauss[f], multi_freq_unif[f], atol=1e-13) 
-                for f in range(len(multi_freq_unif))])
-    
+    assert all(
+        [
+            not np.allclose(multi_freq_gauss[f], multi_freq_unif[f], atol=1e-13)
+            for f in range(len(multi_freq_unif))
+        ]
+    )
+
 
 # Integration tests
 def test_inv_parameters_workflow(inv_parameters):

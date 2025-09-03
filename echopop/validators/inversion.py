@@ -6,10 +6,10 @@ import numpy as np
 import pandas as pd
 from pydantic import ConfigDict, Field, field_validator, model_validator
 
-from .scattering_models import SCATTERING_MODEL_PARAMETERS
 from ..core.validators import BaseDataFrame, BaseDictionary
 from ..typing import InvParameters
 from ..typing.inversion import ModelInputParameters
+from .scattering_models import SCATTERING_MODEL_PARAMETERS
 
 
 class TSLRegressionParameters(BaseDictionary, title="TS-length regression parameters"):
