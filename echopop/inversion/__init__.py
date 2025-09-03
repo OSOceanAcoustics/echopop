@@ -1,11 +1,21 @@
 from .inversion_base import InversionBase
 from .inversion_length_TS import InversionLengthTS
-from .inversion_matrix import InversionMatrix
-from .operations import impute_missing_sigma_bs
+from .operations import (
+    generate_frequency_interval,
+    impute_missing_sigma_bs,     
+    length_average, 
+    orientation_average, 
+    reflection_coefficient,
+    wavenumber
+)
 
 __all__ = [
     "InversionBase",
     "InversionLengthTS",
-    "InversionMatrix",
+    "generate_frequency_interval",
     "impute_missing_sigma_bs",
+    "length_average",
+    "orientation_average",
+    "reflection_coefficient",
+    "wavenumber",
 ]

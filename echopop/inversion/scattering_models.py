@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from numba import njit
 from scipy.special import j1
-
+from ..validators.scattering import ValidatePCDWBAParams, ValidatePCDWBASettings
 from . import operations as ops
 
 

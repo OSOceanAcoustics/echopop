@@ -14,7 +14,7 @@ from ..validators.inversion import (
     ValidateBuildModelArgs,
     ValidateInversionMatrix,
 )
-from ..validators.scattering import SCATTERING_MODEL_PARAMETERS
+from ..validators.scattering_models import SCATTERING_MODEL_PARAMETERS
 
 
 def echopop_optim_cb(params, iter, resid, *args, **kwargs):
