@@ -7,6 +7,7 @@ from lmfit import Parameters
 from pydantic import ValidationError
 
 from .. import validators as val
+from ..core.exceptions import EchopopValidationError
 from .variogram_models import fit_variogram
 
 # Set warnings filter
@@ -750,7 +751,7 @@ class Variogram:
             )
         # Break creation
         except (ValidationError, Exception) as e:
-            raise val.EchopopValidationError(str(e)) from None
+            raise EchopopValidationError(str(e)) from None
 
         # Create instance
         self = super().__new__(cls)
@@ -845,7 +846,7 @@ class Variogram:
             )
         # Break creation
         except (ValidationError, Exception) as e:
-            raise val.EchopopValidationError(str(e)) from None
+            raise EchopopValidationError(str(e)) from None
 
         # Compute the empirical variogram
         self.lags, self.gamma, self.lag_counts, self.lag_covariance = empirical_variogram(
@@ -941,7 +942,7 @@ class Variogram:
             )
         # Break creation
         except (ValidationError, Exception) as e:
-            raise val.EchopopValidationError(str(e)) from None
+            raise EchopopValidationError(str(e)) from None
 
         # Reconvert Parameters
         valid_args["model_parameters"] = model_parameters

@@ -1,145 +1,136 @@
-import abc
-import numpy as np
-import pandas as pd
-from typing import Callable, Union, Dict, List, Optional, Any
-from functools import reduce
-import pytest
+VARIOGRAM_MODEL_PARAMETER_MAP = {
+    "Bessel-Exponential": ["bessel", "exponential"],
+    "Bessel-Gaussian": ["bessel", "gaussian"],
+    "Cosine-Exponential": ["cosine", "exponential"],
+    "Cosine-Gaussian": ["cosine", "gaussian"],
+    "Cubic": "cubic",
+    "Exponential": "exponential",
+    "Exponential-Linear": ["exponential", "linear"],
+    "Gaussian": "gaussian",
+    "Gaussian-Linear": ["gaussian", "linear"],
+    "J-Bessel": "jbessel",
+    "K-Bessel": "kbessel",
+    "Linear": "linear",
+    "Matérn": "matern",
+    "Nugget": "nugget",
+    "Pentaspherical": "pentaspherical",
+    "Power law": "power",
+    "Rational quadratic": "quadratic",
+    "Cardinal sine": "sinc",
+    "Spherical": "spherical",
+}
 
-# Import the existing acoustics functions
-from ..acoustics import ts_length_regression, to_linear, to_dB, impute_missing_sigma_bs
-from echopop.nwfsc_feat import utils
-from typing import Optional, Tuple
+DEFAULT_VARIOGRAM_PARAMETERS = {
+    "correlation_range": {
+        "name": r"Correlation range ($a$)" ,
+        "min": 1e-10, "value": 1.0, "max": 99999, "vary": False, "step": 1.0
+    },
+    "decay_power": {
+        "name": r"Decay power ($\omega$)",
+        "min": 1e-10, "value": 1.0, "max": 2.0, "vary": False, "step": 0.1
+    },
+    "enhance_semivariance": {
+        "name": "Enhance semivariance", 
+        "value": True
+    },
+    "hole_effect_range": {
+        "name": r"Hole effect range ($a_h$)",
+        "min": 0.0, "value": 0.0, "max": 99999, "vary": False, "step": 1.0
+    },
+    "sill": {
+        "name": r"Sill ($C$)",
+        "min": 1e-10, "value": 1.0, "max": 99999, "vary": False, "step": 1.0
+    },
+    "nugget": {
+        "name": r"Nugget ($C_0$)",
+        "min": 0.0, "value": 0.0, "max": 99999, "vary": False, "step": 1.0
+    },
+    "smoothness_parameter": {
+        "name": r"Matérn shape parameter ($\nu$)",
+        "min": 0.0, "value": 0.5, "max": 10.0, "vary": False, "step": 0.1
+    },
+    "shape_parameter": {
+        "name": r"Scale ($\beta$)",
+        "min": 1e-10, "value": 1.0, "max": 100.0, "vary": False, "step": 1.0
+    },
+    "power_exponent": {
+        "name": r"Power ($\omega$)",
+        "min": 1e-10, "value": 1.0, "max": 2.0 - 1e-10, "vary": False, "step": 0.1
+    }
+}
 
-import geopandas as gpd
-import numpy as np
-import pandas as pd
-from scipy import interpolate
+VARIABLE_MAP = {
+    "Number density (animals nmi^-2)": "number_density", 
+    "Biomass density (kg nmi^-2)": "biomass_density", 
+    "NASC (m^2 nmi^-2)": "nasc",
+}
 
-#######
 
-########
-from echopop.survey import Survey
-from echopop.biology import impute_kriged_values, reallocate_kriged_age1
+class CompleteVariogramGUI(param.Parameterized):
+    """Complete interactive GUI for variogram analysis with base parameter controls"""
+    
+    def __init__(self, data=None, **params):
+        super().__init__(**params)
+        self.data = data
+        self.vgm = None  # Will be created based on GUI parameters
+        self.empirical_results = {}
+        self.model_results = {}
+        self.optimization_results = {}
 
-# survey = Survey(init_config_path = "C:/Users/Brandyn/Documents/GitHub/echopop/config_files/initialization_config_2019.yml",
-#                 survey_year_config_path = "C:/Users/Brandyn/Documents/GitHub/echopop/config_files/survey_year_2019_single_biodata_config.yml")
-survey = Survey(init_config_path = "C:/Users/Brandyn Lucca/Documents/GitHub/echopop/config_files/initialization_config_2019.yml",
-                survey_year_config_path = "C:/Users/Brandyn Lucca/Documents/GitHub/echopop/config_files/survey_year_2019_single_biodata_config.yml")
-survey.load_acoustic_data()
-survey.load_survey_data()
-survey.transect_analysis(exclude_age1=False)
-survey.kriging_analysis()
-self = survey
-analysis_dict, kriged_mesh, settings_dict = self.analysis, self.results["kriging"]["mesh_results_df"], self.analysis["settings"]["kriging"]
+import holoviews as hv
+hv.extension('bokeh')
+from bokeh.models import HoverTool
+from IPython.display import display_html
+self = CompleteVariogramGUI(data)
 
-table, settings_dict, variable = kriged_full_table, settings_dict, "biomass_apportioned"
+self.vgm = vgm
 
-###
-apportion.combine_population_tables = combine_population_tables
-utils.apply_filters = apply_filters
-apportion.redistribute_population_table = redistribute_population_table
 
-###
-from echopop.nwfsc_feat import utils
+####
+lags, gamma, lag_counts = (self.vgm.lags, self.vgm.gamma, self.vgm.lag_counts)
 
-population_table = df_kriged_biomass_table.copy()
-exclusion_filter = {"age_bin": 1}
-group_by = ["sex"]
-redistribute = True
-###
+data = pd.DataFrame({
+    "distance": lags, 
+    "semivariance": gamma, 
+    "lag_count": lag_counts, 
+    "lag_number": range(1, len(lags) + 1)
+}) 
 
-# Find any columns that are not in the group_by list
-# ---- Get column names
-column_names = population_table.columns.names
-# ---- Identify extra columns that are not in the group_by list
-extra_columns = [col for col in column_names if col not in group_by]
-# ---- Stack the population table
-stacked_table = population_table.stack(extra_columns, future_stack=True)
+# Scale point sizes based on lag counts
+if len(lag_counts) > 1 and lag_counts.max() > lag_counts.min():
+    size_scale = lambda x: ((x - x.min()) / (x.max() - x.min()) + 1) * 15
+    data['point_size'] = size_scale(lag_counts)
+else:
+    data['point_size'] = 15
 
-# Apply inverse of exclusion filter to get the values being excluded
-excluded_grouped_table = utils.apply_filters(stacked_table, 
-                                             include_filter=exclusion_filter)
-
-# Replace the excluded values in the full table with 0.
-filtered_grouped_table = utils.apply_filters(stacked_table, 
-                                             exclude_filter=exclusion_filter,
-                                             replace_value=0.)
-# filtered_grouped_table1 = filtered_grouped_table.copy()
-
-# Get the sums for each group across the excluded and filtered tables
-# ---- Excluded
-excluded_grouped_sum = excluded_grouped_table.sum()
-# ---- Filtered/included
-filtered_grouped_sum = filtered_grouped_table.sum()
-
-# Get the redistributed values that will be added to the filtered table values
-adjustment_table = filtered_grouped_table * excluded_grouped_sum / filtered_grouped_sum
-
-# Add the adjustments to the filtered table
-filtered_grouped_table += adjustment_table
-
-# Check 
-if np.any(filtered_grouped_table.sum() - stacked_table.sum() > 1e-6):
-    # ---- If the sums do not match, raise a warning
-    check_sums = filtered_grouped_table.sum() - stacked_table.sum() > 1e-6
-    # ---- Raise a warning with the indices where the sums do not match
-    warnings.warn(
-        f"The sums of the table with the redistributed estimates do not match the original table "
-        f"filtered table do not match the original table for indices: "
-        f"{', '.join(check_sums[check_sums].index.tolist())}"
-    )
-
-# Restore the original column structure
-redistributed_table = (
-    filtered_grouped_table.unstack(extra_columns)
-    .reorder_levels(column_names, axis=1)
+scatter = hv.Scatter(
+    data, 
+    kdims=['distance'], 
+    vdims=['semivariance', 'lag_count', 'lag_number', 'point_size']
+).opts(
+    size='point_size',
+    color='blue',
+    line_color='black',
+    line_width=1,
+    width=700,
+    height=400,
+    xlabel='Lag distance [h]',
+    ylabel='Semivariance [γ]',
+    title='Empirical Variogram',
+    show_grid=True,
+    # Explicitly specify tools to prevent duplication and include reset
+    tools=['hover', 'pan', 'wheel_zoom', 'box_zoom', 'reset'],
+    active_tools=['pan']
 )
 
-
-
-df = stacked_table.copy()
-exclude_filter=exclusion_filter
-include=False
-replace_value=0.
-filter_dict = exclude_filter
-
-TEST = filtered_grouped_table - filtered_grouped_table1
-TEST["female"].loc[lambda x: x != 0.]
-
-stacked_table.sum() - filtered_grouped_table.sum()
-
-excluded_table
-df = stacked_table.copy()
-filter_dict = exclusion_filter
-include=False
-excluded_table
-
-df = population_table.copy()
-exclude_filter=exclusion_filter
-include_filter: Optional[Dict[str, Any]] = None
-# Apply the inverse of exclusion filter
-
-filter_dict = exclude_filter
-filter_dict = {"length_bin": [27., 28., 29.]}
-
-replace_value = 0.
-
-kriged_full_table.pivot_table(
-    index=["length_bin"],
-    columns=["age_bin", "sex"],
-    values="biomass_apportioned",
+# Custom hover tool configuration
+hover = HoverTool(
+    tooltips=[
+        ('Lag #', '@lag_number'),
+        ('Distance', '@distance{0.000}'),
+        ('Semivariance', '@semivariance{0.000}'),
+        ('Count', '@lag_count')
+    ]
 )
 
-standardized_table_sub.loc[5, "male"]
-unaged_apportioned_biomass_values.loc[5]
-
-kriged_full_table.set_index(["sex", "length_bin"]).loc["male", 5]
-standardized_proportions[name].loc[:, "male"].loc[:, 1]
-standardized_table_sub.loc[:, "male"].loc[:, 1]
-unaged_apportioned_biomass_values.loc[:, 1]
-unaged_apportioned_table.loc[:, 1]
-unaged_apportioned_table.loc[6]
-(standardized_table[name] - standardized_table_sub).min(axis=1)
-standardized_table[name]
-standardized_table["unaged"].stack(standardized_table["unaged"].columns.names, future_stack=True)
-standardized_table_sub.loc[nonzero_reference_to_table_indices[name][col], col]
+hv.output(scatter)
