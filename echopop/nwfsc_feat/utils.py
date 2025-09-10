@@ -3,7 +3,6 @@ from typing import Any, Dict, List, Optional, Union
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
-from pydantic import BaseModel, Field, ValidationError
 from scipy import interpolate as interp
 
 
@@ -168,7 +167,12 @@ def binify(
         raise TypeError(f"data must be DataFrame or dict of DataFrames, got {type(data)}")
 
 
-def _filter_rows(df: pd.DataFrame, filter_dict: Dict[str, Any], include: bool) -> pd.DataFrame:
+def _filter_rows(
+    df: Union[pd.Series, pd.DataFrame],
+    filter_dict: Dict[str, Any],
+    include: bool,
+    replace_value: Union[str, None] = None,
+) -> pd.DataFrame:
     """Helper function to filter DataFrame rows."""
 
     # Get index DataFrame
@@ -205,17 +209,35 @@ def _filter_rows(df: pd.DataFrame, filter_dict: Dict[str, Any], include: bool) -
     )
 
     # Apply inclusion/exclusion logic
-    if not include:
+    if not include and replace_value is None:
         mask = ~mask
+    elif replace_value is not None:
+        # ---- Replace values
+        if isinstance(df, pd.Series):
+            df_reset.loc[mask, 0] = replace_value
+        else:
+            df_reset.loc[mask, df.columns] = replace_value
+        # ---- Set mask to include all values
+        mask[:] = True
 
     # Check for matching names
     index_cols = df.index.names
     # ---- Apply mask
     if all(name is None for name in index_cols):
-        return df_reset[mask].filter(list(df.columns))
+        return df_reset[mask].filter(df.columns)
+    else:
+        if isinstance(df, pd.Series):
+            return df_reset[mask].set_index(index_cols).iloc[:, 0]
+        else:
+            return df_reset[mask].set_index(index_cols).filter(df.columns)
 
 
-def _filter_columns(df: pd.DataFrame, filter_dict: Dict[str, Any], include: bool) -> pd.DataFrame:
+def _filter_columns(
+    df: pd.DataFrame,
+    filter_dict: Dict[str, Any],
+    include: bool,
+    replace_value: Union[str, None] = None,
+) -> pd.DataFrame:
     """Helper function to filter DataFrame columns."""
 
     # Get column DataFrame
@@ -232,6 +254,12 @@ def _filter_columns(df: pd.DataFrame, filter_dict: Dict[str, Any], include: bool
         [col_index_df[col].isin(np.atleast_1d(vals)) for col, vals in valid_filters.items()]
     )
 
+    # Replace values if specified
+    if replace_value is not None:
+        df.loc[:, col_mask] = replace_value
+        # ---- Return the modified DataFrame
+        return df
+
     # Apply inclusion/exclusion logic
     if not include:
         col_mask = ~col_mask
@@ -241,27 +269,30 @@ def _filter_columns(df: pd.DataFrame, filter_dict: Dict[str, Any], include: bool
 
 
 def apply_filters(
-    df: pd.DataFrame,
+    df: Union[pd.Series, pd.DataFrame],
     include_filter: Optional[Dict[str, Any]] = None,
     exclude_filter: Optional[Dict[str, Any]] = None,
+    replace_value: Optional[np.number] = None,
 ) -> pd.DataFrame:
     """
     Apply inclusion and exclusion filters to a DataFrame.
 
-    Filters rows and columns based on index/column values, supporting both inclusion and
-    exclusion criteria with single values or lists of values. Handles interval-based
-    filtering for categorical interval indices.
+    Filters rows and columns based on index/column values, supporting both inclusion and exclusion
+    criteria with single values or lists of values. Handles interval-based filtering for categorical
+    interval indices.
 
     Parameters
     ----------
     df : pd.DataFrame
         Input DataFrame to filter
     include_filter : Dict[str, Any], optional
-        Dictionary of column/index:value(s) pairs. Rows/columns will be kept if they match.
-        If value is a list, rows/columns matching any value in the list will be kept.
+        Dictionary of column/index:value(s) pairs. Rows/columns will be kept if they match. If
+        value is a list, rows/columns matching any value in the list will be kept.
     exclude_filter : Dict[str, Any], optional
-        Dictionary of column/index:value(s) pairs. Rows/columns will be excluded if they match.
-        If value is a list, rows/columns matching any value in the list will be excluded.
+        Dictionary of column/index:value(s) pairs. Rows/columns will be excluded if they match. If
+        value is a list, rows/columns matching any value in the list will be excluded.
+    replace_value : np.number, optional
+        If provided, replaces values in excluded columns with this value instead of dropping them.
 
     Returns
     -------
@@ -295,13 +326,15 @@ def apply_filters(
 
     # Inclusion filter
     if include_filter:
-        result = _filter_columns(result, include_filter, True)
-        result = _filter_rows(result, include_filter, True)
+        if not isinstance(result, pd.Series):
+            result = _filter_columns(result, include_filter, True, replace_value)
+        result = _filter_rows(result, include_filter, True, replace_value)
 
     # Exclusion filter
     if exclude_filter:
-        result = _filter_columns(result, exclude_filter, False)
-        result = _filter_rows(result, exclude_filter, False)
+        if not isinstance(result, pd.Series):
+            result = _filter_columns(result, exclude_filter, False, replace_value)
+        result = _filter_rows(result, exclude_filter, False, replace_value)
 
     # Return masked DataFrame
     return result
@@ -330,9 +363,8 @@ def group_interpolator_creator(
     """
     Create interpolator functions grouped by one or more contrast variables.
 
-    Generates scipy interpolation functions for length-weight relationships,
-    either as a single global interpolator or grouped by specified contrast
-    variables (e.g., sex, age class).
+    Generates scipy interpolation functions for length-weight relationships, either as a single
+    global interpolator or grouped by specified contrast variables (e.g., sex, age class).
 
     Parameters
     ----------
@@ -349,16 +381,14 @@ def group_interpolator_creator(
     Returns
     -------
     Dict
-        Dictionary of interpolator functions.
-        When contrast_vars is provided, keys are contrast variable values.
-        When contrast_vars is None or empty, contains a single entry with key '_global_'.
+        Dictionary of interpolator functions. When contrast_vars is provided, keys are contrast
+        variable values. When contrast_vars is None or empty, contains a single entry with key
+        '_global_'.
 
     Notes
     -----
-    The interpolation is linear and extrapolates using the endpoints
-    when values outside the range are requested.
-
-    Requires at least 2 points per group for valid interpolation.
+    The interpolation is linear and extrapolates using the endpoints when values outside the range
+    are requested. Requires at least 2 points per group for valid interpolation.
     """
     # Check if we have contrast variables to group by
     if contrast_vars is None or (isinstance(contrast_vars, list) and len(contrast_vars) == 0):
@@ -546,8 +576,8 @@ def quantize_length_data(df, group_columns: List[str]):
     """
     Process DataFrame to ensure it has 'length' and 'length_count' columns.
 
-    Aggregates fish length data by grouping variables and length, either counting
-    occurrences (if no length_count exists) or summing existing counts.
+    Aggregates fish length data by grouping variables and length, either counting occurrences (if
+    no length_count exists) or summing existing counts.
 
     Parameters
     ----------
@@ -597,11 +627,11 @@ def quantize_length_data(df, group_columns: List[str]):
 
     Notes
     -----
-    This function automatically detects whether to count fish (size operation) or
-    sum existing counts based on the presence of a 'length_count' column.
+    This function automatically detects whether to count fish (size operation) or sum existing
+    counts based on the presence of a 'length_count' column.
 
-    The resulting DataFrame will have a MultiIndex with group_columns + ['length']
-    and a single 'length_count' column containing the aggregated counts.
+    The resulting DataFrame will have a MultiIndex with group_columns + ['length'] and a single
+    'length_count' column containing the aggregated counts.
     """
 
     # Create copy
@@ -621,48 +651,3 @@ def quantize_length_data(df, group_columns: List[str]):
 
     # Aggregate and return
     return df.groupby(group_columns + ["length"]).agg(length_count=(sum_var_column, var_operation))
-
-
-####################################################################################################
-# Validators
-class InputModel(BaseModel):
-    """
-    Base Pydantic model for scrutinizing file inputs
-    """
-
-    # Validator method
-    @classmethod
-    def judge(cls, **kwargs):
-        """
-        Validator method
-        """
-        try:
-            return cls(**kwargs)
-        except ValidationError as e:
-            e.__traceback__ = None
-            raise e
-
-    # Factory method
-    @classmethod
-    def create(cls, **kwargs):
-        """
-        Factory creation method
-        """
-
-        return cls.judge(**kwargs).model_dump(exclude_none=True)
-
-
-class TSLRegressionParameters(InputModel, title="TS-length regression parameters"):
-    """
-    Target strength - length regression parameters
-
-    Parameters
-    ----------
-    slope : float
-        TS-length regression slope.
-    intercept : float
-        TS-length regression intercept.
-    """
-
-    slope: float = Field(allow_inf_nan=False)
-    intercept: float = Field(allow_inf_nan=False)
