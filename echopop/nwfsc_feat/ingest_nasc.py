@@ -11,8 +11,6 @@ from ..core.echoview import (
     ECHOVIEW_TO_ECHOPOP,
 )
 
-# from ..ingest import read_csv_file, read_xlsx_file
-
 
 def map_transect_num(
     ev_export_paths: Dict[str, Generator], transect_pattern: str = r"T(\d+)"
@@ -283,6 +281,28 @@ def read_echoview_export(filename: Path, validator: Optional[Any] = None) -> pd.
     # Set column names to lowercase
     df.columns = df.columns.str.lower()
 
+    # Disambiguate possible overlapping longitude column names
+    # ---- Intersecting names
+    lon_columns = set(["lon_s", "lon_m", "lon_e"]).intersection(df.columns)
+    # ---- If only 1 is present
+    if len(lon_columns) == 1:
+        col = next(iter(lon_columns))
+        df.rename(columns={col: "longitude"}, inplace=True)
+    # ---- If > 1 is present and includes 'lon_m'
+    elif len(lon_columns) > 1 and "lon_m" in lon_columns:
+        df.rename(columns={"lon_m": "longitude"}, inplace=True)
+
+    # Disambiguate possible overlapping longitude column names
+    # ---- Intersecting names
+    lat_columns = set(["lat_s", "lat_m", "lat_e"]).intersection(df.columns)
+    # ---- If only 1 is present
+    if len(lat_columns) == 1:
+        col = next(iter(lat_columns))
+        df.rename(columns={col: "latitude"}, inplace=True)
+    # ---- If > 1 is present and includes 'lon_m'
+    elif len(lat_columns) > 1 and "lat_m" in lat_columns:
+        df.rename(columns={"lat_m": "latitude"}, inplace=True)
+
     # Rename columns used by Echopop
     df.rename(columns=ECHOVIEW_TO_ECHOPOP, inplace=True)
 
@@ -312,7 +332,7 @@ def sort_echoview_export_df(export_df: pd.DataFrame, inplace: bool = False) -> p
     df = export_df if inplace else export_df.copy()
 
     # Check columns against the appropriate sorting columns
-    sort_cols = list(set(ECHOVIEW_EXPORT_ROW_SORT).intersection(df.columns))
+    sort_cols = [col for col in ECHOVIEW_EXPORT_ROW_SORT if col in df.columns]
 
     # Sort the columns
     df.sort_values(sort_cols, inplace=True)
@@ -985,9 +1005,8 @@ def generate_transect_region_haul_key(df: pd.DataFrame, filter_list: List[str]) 
 
 def process_region_names(
     df: pd.DataFrame,
-    pattern_dict: Dict,
+    region_name_expr_dict: Dict,
     can_haul_offset: Optional[int] = None,
-    filter_list: List[str] = None,
 ) -> pd.DataFrame:
     """
     Process region names in a DataFrame using regex patterns.
@@ -1000,7 +1019,7 @@ def process_region_names(
     ----------
     df : pd.DataFrame
         DataFrame containing a 'region_name' column to process
-    pattern_dict : Dict
+    region_name_expr_dict : Dict
         Dictionary of pattern specifications for component extraction:
         - Keys are component names (e.g., 'REGION_CLASS', 'HAUL_NUM', 'COUNTRY')
         - Values are either:
@@ -1017,7 +1036,7 @@ def process_region_names(
 
     Example
     -------
-    >>> pattern_dict = {
+    >>> region_name_expr_dict = {
     ...     "REGION_CLASS": {
     ...         "Hake": "^(?:h(?![a-z]|1a)|hake(?![_]))",
     ...         "Hake Mix": "^(?:hm(?![a-z]|1a)|hake_mix(?![_]))"
@@ -1025,10 +1044,10 @@ def process_region_names(
     ...     "HAUL_NUM": {"[0-9]+"},
     ...     "COUNTRY": {"CAN": "^[cC]", "US": "^[uU]"}
     ... }
-    >>> process_region_names(df, pattern_dict, filter_list=["Hake", "Hake Mix"])
+    >>> process_region_names(df, region_name_expr_dict, filter_list=["Hake", "Hake Mix"])
     """
     # Step 1: Extract components from region names
-    extracted_regions = extract_region_components(df, pattern_dict)
+    extracted_regions = extract_region_components(df, region_name_expr_dict)
 
     # Step 2: Process the extracted data
     processed_regions = process_extracted_data(extracted_regions, can_haul_offset)
