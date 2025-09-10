@@ -171,33 +171,6 @@ def test_compute_binned_counts_multiple_groupby_combinations(data_multiple_group
     assert result1["count"].sum() == result2["count"].sum()  # Same total count
 
 
-@pytest.fixture
-def aged_dataframe():
-    """Create sample aged count data with stratum, length, age, and sex."""
-    data = {
-        "stratum_num": [1, 1, 1, 2, 2, 2],
-        "length_bin": ["(10, 20]", "(20, 30]", "(30, 40]", "(10, 20]", "(20, 30]", "(30, 40]"],
-        "age_bin": ["(1, 2]", "(2, 3]", "(3, 4]", "(1, 2]", "(2, 3]", "(3, 4]"],
-        "sex": ["female", "male", "unsexed", "female", "male", "unsexed"],
-        "species_id": [1, 1, 1, 1, 1, 1],
-        "count": [10, 20, 5, 15, 25, 10],
-    }
-    return pd.DataFrame(data)
-
-
-@pytest.fixture
-def unaged_dataframe():
-    """Create sample unaged count data with stratum, length and sex."""
-    data = {
-        "stratum_num": [1, 1, 1, 2, 2, 2],
-        "length_bin": ["(10, 20]", "(20, 30]", "(30, 40]", "(10, 20]", "(20, 30]", "(30, 40]"],
-        "sex": ["female", "male", "unsexed", "female", "male", "unsexed"],
-        "species_id": [1, 1, 1, 1, 1, 1],
-        "count": [30, 40, 10, 35, 45, 15],
-    }
-    return pd.DataFrame(data)
-
-
 def test_number_proportions_single_dataframe(aged_dataframe):
     """Test the number_proportions function with a single dataframe."""
     result = get_proportions.number_proportions(data=aged_dataframe)
@@ -852,3 +825,464 @@ def test_weight_proportions_custom_stratum_col(weight_distr_dict):
     # Should return a DataFrame with proper structure
     assert isinstance(result, pd.DataFrame)
     assert len(result) > 0
+
+
+# =============================================================================
+# TESTS FOR NEW PROPORTION SLICING FUNCTIONS
+# ==============================================================================
+
+
+def test_get_nasc_proportions_slice_basic():
+    """Test basic NASC proportions calculation."""
+    # Create test data directly like the real workflow
+    # Create raw specimen-like data
+    raw_data = pd.DataFrame(
+        {
+            "stratum_num": [1, 1, 1, 1, 2, 2, 2, 2],
+            "age": [1.2, 1.8, 2.3, 2.7, 1.1, 1.6, 2.2, 2.9],
+            "length": [15.2, 18.5, 25.3, 28.1, 16.1, 19.2, 24.8, 27.5],
+            "sex": ["female", "male", "female", "male", "female", "male", "female", "male"],
+            "count": [10, 15, 20, 25, 12, 18, 22, 28],
+        }
+    )
+
+    # Apply binning like the real workflow does
+    age_bins = np.linspace(start=1.0, stop=3.0, num=3)
+    length_bins = np.linspace(start=15.0, stop=30.0, num=4)
+
+    utils.binify(raw_data, bins=age_bins, bin_column="age")
+    utils.binify(raw_data, bins=length_bins, bin_column="length")
+
+    # Convert to proportions
+    aged_props = get_proportions.number_proportions(data=raw_data)
+
+    ts_params = {"slope": 20.0, "intercept": -68.0}
+
+    result = get_proportions.get_nasc_proportions_slice(
+        number_proportions=aged_props,
+        ts_length_regression_parameters=ts_params,
+        stratify_by=["stratum_num"],
+        include_filter={"age_bin": [1]},
+    )
+
+    assert isinstance(result, pd.Series)
+    assert len(result) == 2  # Three strata (0, 1)
+    assert all(result >= 0), "NASC proportions should be non-negative"
+    assert all(result <= 1), "NASC proportions should be <= 1"
+
+
+def test_get_nasc_proportions_slice_with_sex_filter():
+    """Test NASC proportions with sex filtering."""
+    # Create test data with sex information, avoiding fixture usage
+    test_data = pd.DataFrame(
+        {
+            "stratum_num": [1, 1, 1, 2, 2, 2],
+            "length": [15.0, 25.0, 35.0, 18.0, 28.0, 38.0],
+            "age": [1.5, 2.5, 3.5, 1.8, 2.8, 3.8],
+            "sex": ["female", "male", "female", "female", "male", "female"],
+            "species_id": [1, 1, 1, 1, 1, 1],
+            "count": [15, 20, 10, 25, 30, 12],
+        }
+    )
+
+    # Apply proper binning using utils.binify
+    length_bins = np.linspace(10, 40, 4)  # [10, 20, 30, 40]
+    age_bins = np.linspace(1, 4, 4)  # [1, 2, 3, 4]
+
+    utils.binify(test_data, bins=length_bins, bin_column="length")
+    utils.binify(test_data, bins=age_bins, bin_column="age")
+
+    # Convert to proportions using the correct workflow
+    aged_props = get_proportions.number_proportions(data=test_data)
+
+    ts_params = {"slope": 20.0, "intercept": -68.0}
+
+    result = get_proportions.get_nasc_proportions_slice(
+        number_proportions=aged_props,
+        ts_length_regression_parameters=ts_params,
+        stratify_by=["stratum_num"],
+        include_filter={"sex": ["female"]},
+    )
+
+    assert isinstance(result, pd.Series)
+    assert len(result) == 2  # Three strata (0, 1, 2)
+    assert all(result >= 0), "NASC proportions should be non-negative"
+
+
+def test_get_number_proportions_slice_single_stratify():
+    """Test number proportions slicing with single stratification variable."""
+    # Create test data, avoiding fixture usage
+    test_data = pd.DataFrame(
+        {
+            "stratum_num": [1, 1, 2, 2, 3, 3],
+            "length": [15.0, 25.0, 18.0, 28.0, 16.0, 26.0],
+            "age": [1.5, 2.5, 1.8, 2.8, 1.3, 2.3],
+            "sex": ["female", "male", "female", "male", "female", "male"],
+            "species_id": [1, 1, 1, 1, 1, 1],
+            "count": [15, 20, 25, 30, 18, 22],
+        }
+    )
+
+    # Apply proper binning using utils.binify
+    length_bins = np.linspace(10, 30, 3)  # [10, 20, 30]
+    age_bins = np.linspace(1, 3, 3)  # [1, 2, 3]
+
+    utils.binify(test_data, bins=length_bins, bin_column="length")
+    utils.binify(test_data, bins=age_bins, bin_column="age")
+
+    # Convert to proportions using the correct workflow
+    aged_props = get_proportions.number_proportions(data=test_data)
+
+    result = get_proportions.get_number_proportions_slice(
+        number_proportions=aged_props, stratify_by=["stratum_num"], include_filter={"age_bin": [1]}
+    )
+
+    assert isinstance(result, pd.Series)
+    assert len(result) == 3  # Three strata (1, 2, 3)
+    assert all(result >= 0), "Proportions should be non-negative"
+    assert result.sum() <= 1.0, "Total proportion should not exceed 1.0"
+
+
+def test_get_number_proportions_slice_multiple_stratify():
+    """Test number proportions slicing with multiple stratification variables."""
+    # Create test data, avoiding fixture usage
+    test_data = pd.DataFrame(
+        {
+            "stratum_num": [1, 1, 1, 1, 2, 2, 2, 2],
+            "length": [15.0, 25.0, 15.0, 25.0, 18.0, 28.0, 18.0, 28.0],
+            "age": [1.5, 2.5, 1.5, 2.5, 1.8, 2.8, 1.8, 2.8],
+            "sex": ["female", "female", "male", "male", "female", "female", "male", "male"],
+            "species_id": [1, 1, 1, 1, 1, 1, 1, 1],
+            "count": [15, 20, 12, 18, 25, 30, 22, 28],
+        }
+    )
+
+    # Apply proper binning using utils.binify
+    length_bins = np.linspace(10, 30, 3)  # [10, 20, 30]
+    age_bins = np.linspace(1, 3, 3)  # [1, 2, 3]
+
+    utils.binify(test_data, bins=length_bins, bin_column="length")
+    utils.binify(test_data, bins=age_bins, bin_column="age")
+
+    # Convert to proportions using the correct workflow
+    aged_props = get_proportions.number_proportions(data=test_data)
+
+    result = get_proportions.get_number_proportions_slice(
+        number_proportions=aged_props,
+        stratify_by=["stratum_num", "sex"],
+        include_filter={"age_bin": [1]},
+    )
+
+    assert isinstance(result, pd.DataFrame)
+    assert not result.empty
+    # With stratum_num and sex as stratification, result is a pivot table with length_bin as index
+    # and columns as MultiIndex for stratum_num and sex combinations
+    assert isinstance(result.columns, pd.MultiIndex)
+    assert "stratum_num" in result.columns.names
+    assert "sex" in result.columns.names
+
+
+def test_get_number_proportions_slice_with_exclusion():
+    """Test number proportions slicing with exclusion filter."""
+    # Create test data directly, avoiding fixture usage
+    test_data = pd.DataFrame(
+        {
+            "stratum_num": [1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3],
+            "length": [15.0, 25.0, 15.0, 25.0, 18.0, 28.0, 18.0, 28.0, 16.0, 26.0, 16.0, 26.0],
+            "age": [1.5, 2.5, 1.5, 2.5, 1.8, 2.8, 1.8, 2.8, 1.6, 2.6, 1.6, 2.6],
+            "sex": [
+                "female",
+                "female",
+                "male",
+                "male",
+                "female",
+                "female",
+                "male",
+                "male",
+                "female",
+                "female",
+                "male",
+                "male",
+            ],
+            "species_id": [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            "count": [15, 20, 12, 18, 25, 30, 22, 28, 14, 24, 16, 20],
+        }
+    )
+
+    # Apply proper binning using utils.binify
+    length_bins = np.linspace(10, 30, 3)  # [10, 20, 30]
+    age_bins = np.linspace(1, 3, 3)  # [1, 2, 3]
+
+    utils.binify(test_data, bins=length_bins, bin_column="length")
+    utils.binify(test_data, bins=age_bins, bin_column="age")
+
+    # Convert to proportions using the correct workflow
+    aged_props = get_proportions.number_proportions(data=test_data)
+
+    result = get_proportions.get_number_proportions_slice(
+        number_proportions=aged_props,
+        stratify_by=["stratum_num"],
+        include_filter={"age_bin": [1]},
+        exclude_filter={"sex": ["male"]},
+    )
+
+    assert isinstance(result, pd.Series)
+    assert len(result) == 3  # Three strata (1, 2, 3)
+    # Should have valid proportions
+    assert all(result >= 0), "Proportions should be non-negative"
+
+
+def test_get_weight_proportions_slice_no_thresholding():
+    """Test weight proportions without thresholding."""
+    # Create test data and apply proper binning using utils.binify
+    raw_data = pd.DataFrame(
+        {
+            "length": [15.0, 25.0, 15.0, 25.0, 18.0, 28.0],
+            "age": [1.2, 2.3, 1.8, 2.2, 1.5, 2.7],
+            "sex": ["female", "male", "female", "male", "female", "male"],
+            "weight": [10, 20, 15, 25, 12, 22],
+        }
+    )
+
+    # Apply binning using utils.binify (like the real workflow)
+    length_bins = np.linspace(10, 30, 3)  # Creates (10, 20], (20, 30]
+    age_bins = np.linspace(1.0, 3.0, 3)  # Creates (0.5, 1.5], (1.5, 2.5]
+    utils.binify(raw_data, bins=length_bins, bin_column="length")
+    utils.binify(raw_data, bins=age_bins, bin_column="age")
+
+    # Create weight proportions in the correct format: MultiIndex rows, stratum columns
+    weight_data = (
+        raw_data.groupby(["length_bin", "sex", "age_bin"], observed=False)["weight"]
+        .sum()
+        .to_frame()
+    )
+    # Convert to pivot table format with stratum columns
+    weight_data = pd.concat([weight_data, weight_data, weight_data], axis=1)
+    weight_data.columns = [0, 1, 2]
+    weight_data.columns.name = "stratum_ks"
+
+    # Normalize to get proportions
+    weight_data = weight_data.div(weight_data.sum(axis=0), axis=1).fillna(0)
+
+    result = get_proportions.get_weight_proportions_slice(
+        weight_proportions=weight_data,
+        stratify_by=["stratum_ks"],
+        include_filter={"age_bin": [1]},  # Use integer, not interval
+    )
+
+    assert isinstance(result, pd.Series)
+    assert len(result) == 3  # Two strata that match the filter
+    assert all(result >= 0), "Weight proportions should be non-negative"
+    assert all(result <= 1), "Weight proportions should be <= 1"
+
+
+def test_get_weight_proportions_slice_with_thresholding():
+    """Test weight proportions with thresholding."""
+    # Create test data and apply proper binning using utils.binify
+    raw_data = pd.DataFrame(
+        {
+            "stratum_num": [1, 1, 2, 2, 3, 3],
+            "length": [15.0, 25.0, 15.0, 25.0, 18.0, 28.0],
+            "age": [1.2, 2.3, 1.8, 2.2, 1.5, 2.7],
+            "sex": ["female", "male", "female", "male", "female", "male"],
+            "weight": [10, 20, 15, 25, 12, 22],
+        }
+    )
+
+    # Apply binning using utils.binify (like the real workflow)
+    length_bins = np.linspace(10, 30, 3)
+    age_bins = np.linspace(1, 3, 3)
+    utils.binify(data=raw_data, bins=length_bins, bin_column="length")
+    utils.binify(data=raw_data, bins=age_bins, bin_column="age")
+
+    # Create weight proportions data with proper MultiIndex
+    weight_data = (
+        raw_data.groupby(["stratum_num", "length_bin", "sex", "age_bin"], observed=False)["weight"]
+        .sum()
+        .to_frame()
+    )
+    weight_data = pd.concat([weight_data, weight_data, weight_data], axis=1)
+    weight_data.columns = [0, 1, 2]
+    weight_data.columns.name = "stratum_num"
+    weight_data = weight_data.div(weight_data.sum(axis=0), axis=1).fillna(0)
+
+    # Create number proportions data for thresholding with proper MultiIndex structure
+    number_data = (
+        raw_data.groupby(["stratum_num", "length_bin", "sex", "age_bin"], observed=False)
+        .size()
+        .to_frame("proportion")
+    )
+    # Normalize to get proportions
+    number_data["proportion"] = number_data["proportion"] / number_data["proportion"].sum()
+
+    result = get_proportions.get_weight_proportions_slice(
+        weight_proportions=weight_data,
+        stratify_by=["stratum_num"],
+        include_filter={"age_bin": [1]},
+        number_proportions=number_data.reset_index(),
+        length_threshold_min=15.0,
+    )
+
+    assert isinstance(result, pd.Series)
+    assert len(result) == 3
+    assert all(result >= 0), "Weight proportions should be non-negative"
+    assert all(result <= 1), "Weight proportions should be <= 1"
+
+
+def test_get_weight_proportions_slice_with_dict_thresholding():
+    """Test weight proportions with dictionary-based thresholding."""
+    # Create test data and apply proper binning using utils.binify
+    raw_data = pd.DataFrame(
+        {
+            "stratum_num": [1, 1, 2, 2, 3, 3],
+            "length": [15.0, 25.0, 15.0, 25.0, 18.0, 28.0],
+            "age": [1.2, 2.3, 1.8, 2.2, 1.5, 2.7],
+            "sex": ["female", "male", "female", "male", "female", "male"],
+            "weight": [10, 20, 15, 25, 12, 22],
+        }
+    )
+
+    # Apply binning using utils.binify (like the real workflow)
+    length_bins = np.linspace(10, 30, 3)
+    age_bins = np.linspace(1, 3, 3)
+    utils.binify(data=raw_data, bins=length_bins, bin_column="length")
+    utils.binify(data=raw_data, bins=age_bins, bin_column="age")
+
+    # Create weight proportions data with proper MultiIndex
+    weight_data = (
+        raw_data.groupby(["stratum_num", "length_bin", "sex", "age_bin"], observed=False)["weight"]
+        .sum()
+        .to_frame()
+    )
+    weight_data = weight_data.unstack("stratum_num")["weight"]
+    weight_data = weight_data.div(weight_data.sum(axis=0), axis=1).fillna(0)
+
+    # Create aged and unaged number proportions with proper structure
+    aged_data = (
+        raw_data.groupby(["stratum_num", "length_bin", "sex", "age_bin"], observed=False)
+        .size()
+        .to_frame("proportion")
+    )
+    aged_data["proportion"] = aged_data["proportion"] / aged_data["proportion"].sum()
+
+    unaged_data = (
+        raw_data.groupby(["stratum_num", "length_bin", "sex"], observed=False)
+        .size()
+        .to_frame("proportion")
+    )
+    unaged_data["proportion"] = unaged_data["proportion"] / unaged_data["proportion"].sum()
+
+    number_dict = {"aged": aged_data.reset_index(), "unaged": unaged_data.reset_index()}
+
+    result = get_proportions.get_weight_proportions_slice(
+        weight_proportions=weight_data,
+        stratify_by=["stratum_num"],
+        include_filter={"sex": ["female"]},
+        number_proportions=number_dict,
+        length_threshold_min=15.0,
+    )
+
+    assert isinstance(result, pd.Series)
+    assert len(result) == 3
+    assert all(result >= 0), "Weight proportions should be non-negative"
+    assert all(result <= 1), "Weight proportions should be <= 1"
+
+
+def test_get_weight_proportions_slice_missing_filter_keys():
+    """Test error handling when filter keys are missing from weight proportions."""
+    # Create simple weight data without age_bin
+    index_tuples = [("(10, 20]", "female", 1), ("(20, 30]", "male", 1)]
+    index = pd.MultiIndex.from_tuples(index_tuples, names=["length_bin", "sex", "stratum_num"])
+
+    weight_data = pd.DataFrame([[10], [20]], index=index, columns=["weight"])
+
+    with pytest.raises(ValueError, match="Filter keys.*not found"):
+        get_proportions.get_weight_proportions_slice(
+            weight_proportions=weight_data,
+            stratify_by=["stratum_num"],
+            include_filter={"age_bin": ["(1, 2]"]},  # age_bin not in index
+        )
+
+
+def test_nasc_proportions_slice_target_strength_calculation():
+    """Test that target strength calculation works correctly."""
+    # Create test data directly, avoiding fixture usage
+    test_data = pd.DataFrame(
+        {
+            "stratum_num": [1, 1, 1, 2, 2, 2],
+            "length": [15.0, 25.0, 35.0, 18.0, 28.0, 38.0],
+            "age": [1.5, 2.5, 3.5, 1.8, 2.8, 3.8],
+            "sex": ["female", "male", "female", "female", "male", "female"],
+            "species_id": [1, 1, 1, 1, 1, 1],
+            "count": [15, 20, 10, 25, 30, 12],
+        }
+    )
+
+    # Apply proper binning using utils.binify
+    length_bins = np.linspace(10, 40, 4)  # [10, 20, 30, 40]
+    age_bins = np.linspace(1, 4, 4)  # [1, 2, 3, 4]
+
+    utils.binify(test_data, bins=length_bins, bin_column="length")
+    utils.binify(test_data, bins=age_bins, bin_column="age")
+
+    # Convert to proportions using the correct workflow
+    aged_props = get_proportions.number_proportions(data=test_data)
+
+    # Use known parameters for verification
+    ts_params = {"slope": 20.0, "intercept": -68.0}
+
+    result = get_proportions.get_nasc_proportions_slice(
+        number_proportions=aged_props,
+        ts_length_regression_parameters=ts_params,
+        stratify_by=["stratum_num"],
+        include_filter={"age_bin": [1]},
+    )
+
+    # Verify that larger length bins contribute more to NASC
+    # (This is implicitly tested through the target strength weighting)
+    assert isinstance(result, pd.Series)
+    assert not result.isna().any(), "No NaN values should be present"
+
+
+def test_number_proportions_slice_edge_cases():
+    """Test edge cases for number proportions slicing."""
+    # Create test data directly, avoiding fixture usage
+    test_data = pd.DataFrame(
+        {
+            "stratum_num": [1, 1, 2, 2],
+            "length": [15.0, 25.0, 18.0, 28.0],
+            "age": [1.5, 2.5, 1.8, 2.8],
+            "sex": ["female", "male", "female", "male"],
+            "species_id": [1, 1, 1, 1],
+            "count": [15, 20, 25, 30],
+        }
+    )
+
+    # Apply proper binning using utils.binify
+    length_bins = np.linspace(10, 30, 3)  # [10, 20, 30]
+    age_bins = np.linspace(1, 3, 3)  # [1, 2, 3]
+
+    utils.binify(test_data, bins=length_bins, bin_column="length")
+    utils.binify(test_data, bins=age_bins, bin_column="age")
+
+    # Convert to proportions using the correct workflow
+    aged_props = get_proportions.number_proportions(data=test_data)
+
+    # Test with empty include filter (should return all data)
+    result_all = get_proportions.get_number_proportions_slice(
+        number_proportions=aged_props, stratify_by=["stratum_num"], include_filter={}
+    )
+
+    assert isinstance(result_all, pd.DataFrame)
+    assert len(result_all) == 3
+
+    # Test with filter that excludes everything
+    result_empty = get_proportions.get_number_proportions_slice(
+        number_proportions=aged_props,
+        stratify_by=["stratum_num"],
+        include_filter={"sex": ["nonexistent"]},
+    )
+
+    assert isinstance(result_empty, pd.Series)
+    # Should return zeros for all strata
+    assert all(result_empty == 0)

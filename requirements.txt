@@ -1,4 +1,5 @@
 # Data processing and wrangling stack
+awkward
 lmfit
 numpy
 openpyxl
