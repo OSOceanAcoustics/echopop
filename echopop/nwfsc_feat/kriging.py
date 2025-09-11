@@ -1052,6 +1052,9 @@ class Kriging:
         variogram_params: Dict[str, Any],
         coordinate_names: Tuple[str, str] = ("x", "y"),
     ):
+        """
+        Create class object. If input validation fails, then the object will not be created.
+        """
 
         # Validate
         try:
