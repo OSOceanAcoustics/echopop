@@ -3,9 +3,7 @@ from pathlib import Path
 from typing import Dict, Optional, Tuple, Union
 
 import numpy as np
-import numpy as np
 import pandas as pd
-
 
 
 def load_biological_data(
@@ -73,7 +71,6 @@ def load_biological_data(
                     df[col] = df[col].map(mapping).fillna(df[col])
 
     return biodata_dict
-
 
 
 def apply_ship_survey_filters(
