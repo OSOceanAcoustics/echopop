@@ -1,7 +1,7 @@
 import abc
 import numpy as np
 import pandas as pd
-from typing import Callable, Union, Dict, List, Optional, Any
+from typing import Callable, Union, Dict, List, Literal, Optional, Any
 from functools import reduce
 
 # Import the existing acoustics functions
@@ -32,38 +32,229 @@ survey.transect_analysis()
 survey.stratified_analysis()
 survey.kriging_analysis()
 
-self = survey
-stratum = "ks"
-exclude_age1 = True
-species_id = 22500
-input_dict, analysis_dict, configuration_dict, settings_dict = self.input, self.analysis["transect"], self.config, self.analysis["settings"]
-analysis_dict, results_dict, spatial_dict, settings_dict = (
-    self.analysis,
-            self.results,
-            self.input["spatial"],
-            self.analysis["settings"]["stratified"]
+import inspect
+import warnings
+from typing import Any, Callable, Dict, Optional, Tuple, Union
+
+import geopandas as gpd
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import pyproj
+import verde as vd
+from cartopy.mpl.geoaxes import GeoAxes
+from matplotlib.axes import Axes
+from matplotlib.colors import LogNorm, Normalize, SymLogNorm
+from matplotlib.ticker import FixedLocator
+import cartopy.feature as cfeature
+from cartopy import crs as ccrs
+import shapely
+import cartopy.feature as cfeature
+from geopy.distance import distance
+import pandas as pd
+import numpy as np
+import geopandas as gpd
+import shapely
+import shapely.geometry as sg
+import shapely.geometry as sg
+from bokeh.themes.theme import Theme
+import geoviews.tile_sources as gvts
+import inspect
+from echopop.nwfsc_feat import utils
+from matplotlib.ticker import FixedLocator
+import matplotlib as mpl
+from pathlib import Path
+plt.close('all')
+mpl.use("tkagg")
+
+save_directory = DATA_ROOT / "reports_test"
+filename = "EchoPro_kriged_output_0.xlsx"
+save_directory
+kriged_data = df_kriged_results.copy()
+sigma_bs_data = invert_hake.sigma_bs_strata.copy()
+kriged_stratum = "geostratum_ks"
+sigma_bs_stratum = "stratum_ks"
+bio_data = dict_df_bio["specimen"].dropna(subset=["age", "length", "weight"]).copy()
+filename = "aged_len_haul_counts_table.xlsx"
+sheetnames = {"male": "Sheet1", "female": "Sheet2", "all": "Sheet3"}
+
+"title": "Aged Length-Haul Counts ({SEX})",
+"filename": "aged_len_haul_counts_table.xlsx",
+
+Path(save_directory)
+self.verbose = True
+self = FEATReports(save_directory)
+class FEATReports:
+
+    def __init__(self, save_directory: Union[str, Path], verbose: bool = True):
+
+        # Ensure Path-typing
+        save_directory = Path(save_directory)
+
+        # Validate existence -- create path if missing
+        try:
+            if not save_directory.exists():
+                save_directory.mkdir(parents=True, exist_ok=True)
+            # ---- Store attribute
+            self.save_directory = save_directory
+        except Exception as e:
+            raise FileNotFoundError(
+                f"The save directory '{save_directory.as_posix()}' could not be accessed or "
+                f"created due to the following error(s):\n{e}"
+            )
+
+    def aged_length_haul_counts_report(
+        bio_data: pd.DataFrame,
+        filename: str,
+        sheetnames: Dict[str, str],
+    ) -> None:
+
+        # Create copy
+        bio_data = bio_data.copy()
+
+        # Filter out unsexed -- i.e. keep only sexed fish
+        bio_data_cleaned = bio_data.loc[bio_data["sex"].isin(["male", "female"])]
+
+        # Create a pivot table
+        bio_pvt = bio_data_cleaned.pivot_table(
+            columns=["sex", "length_bin"],
+            index=["haul_num"],
+            values="length",
+            aggfunc="count",
+            observed=False
+        )
+
+        # Add a category for "all"
+        bio_pvt_all = bio_pvt["male"] + bio_pvt["female"]
+        # ---- Convert into a MultiIndex
+        bio_pvt_all.columns = pd.MultiIndex.from_product([["all"], bio_pvt_all.columns])
+        # ---- Concatenate
+        bio_pvt_full = pd.concat([bio_pvt, bio_pvt_all], axis=1)        
+
+    def kriged_mesh_results_report(
+        self, 
+        filename: str,
+        sheetname: str,
+        kriged_data: pd.DataFrame,
+        kriged_stratum: str,
+        kriged_variable: str,
+        sigma_bs_data: pd.DataFrame,
+        sigma_bs_stratum: str,
+    ) -> None:
+
+        # Create DataFrame copies
+        kriged_data = kriged_data.copy()
+        sigma_bs_data = sigma_bs_data.copy()
+
+        # Update the filepath
+        filepath = self.save_directory / filename
+
+        # Check for kriged variable
+        if kriged_variable not in kriged_data.columns:
+            raise KeyError(
+                f"Column '{kriged_variable}' not found in the kriged mesh DataFrame."
+            )
+        
+        # Validate kriged mesh stratum name
+        if (
+            kriged_stratum not in kriged_data.columns and 
+            kriged_stratum not in kriged_data.index.names
+        ):
+            raise KeyError(
+                f"Column '{kriged_stratum}' not found in the kriged mesh DataFrame."
+            )
+        else:
+            # ---- Reset index
+            kriged_data.reset_index(inplace=True)
+            # ---- Rename to generic
+            kriged_data.rename(columns={kriged_stratum: "stratum"}, inplace=True)
+            # ---- Set new index
+            kriged_data.set_index("stratum", inplace=True)
+
+        # Validate sigma_bs stratum name
+        if (
+            sigma_bs_stratum not in sigma_bs_data.columns and 
+            sigma_bs_stratum not in sigma_bs_data.index.names
+        ):
+            raise KeyError(
+                f"Column '{sigma_bs_stratum}' not found in the sigma_bs DataFrame."
+            )
+        else:
+            # ---- Reset index
+            sigma_bs_data.reset_index(inplace=True)
+            # ---- Rename to generic
+            sigma_bs_data.rename(columns={sigma_bs_stratum: "stratum"}, inplace=True)
+            # ---- Set new index
+            sigma_bs_data.set_index("stratum", inplace=True)
+            # ---- Reindex to align with kriged mesh DataFrame
+            sigma_bs_data = sigma_bs_data.reindex(kriged_data.index)
+
+        # Add column to kriged data
+        kriged_data["sig_b"] = 4. * np.pi * sigma_bs_data["sigma_bs"]
+        # ---- Reset its index
+        kriged_data.reset_index(inplace=True)
+
+        # Add `kriged_sd` to the kriged data
+        kriged_data["krig_SD"] = kriged_data[kriged_variable] * kriged_data["cell_cv"]
+
+        # Subset the columns that are required for the report
+        output_df = kriged_data.filter([
+            "longitude", "latitude", "stratum", "nasc", "abundance_male", "abundance_female", 
+            "abundance", "biomass_male", "biomass_female", "biomass", "sig_b", "cell_cv", 
+            "krig_SD"
+        ])
+
+        # Rename the columns to match required output
+        output_df.rename(
+            columns={
+                "latitude": "Lat",
+                "longitude": "Lon",
+                "nasc": "NASC",
+                "abundance_male": "ntk_male",
+                "abundance_female": "ntk_female",
+                "abundance": "ntk_total",
+                "biomass_male": "wgt_male",
+                "biomass_female": "wgt_female",
+                "biomass": "wgt_total",
+                "cell_cv": "krig_CV",
+            },
+            inplace=True
+        )
+
+        # Save the *.xlsx sheet
+        output_df.to_excel(filepath, sheet_name=sheetname, index=None)
+
+        # Verbosity
+        if self.verbose:
+            print(
+                f"Kriged mesh report saved to '{filepath.as_posix()}'."
+            )
+
+bio_pvt_full.T.loc["male", :]
+# Subset the data into the specific sex
+# haul_sex = dataframe.loc[sex, :]
+haul_sex = bio_pvt_full.loc[:, "male"]
+haul_sex.columns = pd.Series(haul_sex.columns).apply(lambda x: x.mid).values.to_numpy() 
+
+
+
+# Stack the table
+haul_stk = haul_sex.stack(future_stack=True).reset_index(name="count")
+
+# Convert the length bins into number lengths
+haul_stk.loc[:, "length"] = haul_stk["length_bin"].apply(lambda x: x.mid).astype(float)
+
+# Repivot the table with margin subtotals
+haul_agg = haul_stk.pivot_table(
+    index=["length"],
+    columns=["haul_num"],
+    values="count",
+    margins=True,
+    margins_name="Subtotal",
+    aggfunc="sum",
 )
-transect_data, transect_summary, strata_summary, settings_dict = (
-    transect_data, transect_summary, strata_summary, settings_dict
-)
-population_dict = survey_dict
-bootstrap_samples, population_statistic, ci_percentile, boot_ci_method, boot_ci_method_alt, adjust_bias, estimator_name = (
-        bootstrap_dict["density"]["stratum"],
-        population_dict["density"]["stratum"],
-        settings_dict["bootstrap_ci"],
-        settings_dict["bootstrap_ci_method"],
-        settings_dict["bootstrap_ci_method_alt"],
-        settings_dict["bootstrap_adjust_bias"],
-        f"STRATUM {var_name.upper()} DENSITY",
-)
 
-rhom_all = (strata_transect_areas.to_numpy() * mean_arr_np).sum(axis=1) / strata_transect_areas.to_numpy().sum()
-
-
-
-
-
-            / strata_transect_areas.sum()).mean()
+(save_directory / "AHHH" / "teehee.xlsx").resolve()
 
 ##########################
 mesh_data = df_kriged_results.copy()
