@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from echopop import acoustics
+from echopop import acoustics, inversion
 from echopop.nwfsc_feat import utils
 
 # ==============================================================================
@@ -62,7 +62,7 @@ def test_impute_missing_sigma_bs_basic(all_strata, incomplete_sigma_bs_df):
     """Test basic imputation functionality."""
     # Only test interpolation between existing values to avoid None indexing
     limited_strata = [2, 3, 4]  # 2 and 4 exist, 3 needs interpolation
-    result = utils.impute_missing_sigma_bs(limited_strata, incomplete_sigma_bs_df)
+    result = inversion.impute_missing_sigma_bs(limited_strata, incomplete_sigma_bs_df)
 
     # Should have all requested strata
     assert len(result) == len(limited_strata)
@@ -80,7 +80,7 @@ def test_impute_missing_sigma_bs_no_missing(all_strata, sigma_bs_df):
     """Test when no strata are missing."""
     # Use only strata that are present
     present_strata = [1, 3, 5]
-    result = utils.impute_missing_sigma_bs(present_strata, sigma_bs_df)
+    result = inversion.impute_missing_sigma_bs(present_strata, sigma_bs_df)
 
     # Should return the input DataFrame (the function returns sigma_bs_df.to_frame("sigma_bs")
     # which fails)
@@ -98,7 +98,7 @@ def test_impute_missing_sigma_bs_interpolation():
     )
 
     strata = [1, 2, 3]
-    result = utils.impute_missing_sigma_bs(strata, sigma_bs_df)
+    result = inversion.impute_missing_sigma_bs(strata, sigma_bs_df)
 
     # Stratum 2 should be interpolated as mean of 1 and 3
     expected_interp = (0.001 + 0.003) / 2
@@ -113,7 +113,7 @@ def test_impute_missing_sigma_bs_edge_cases():
 
     # Only test interpolation in the middle to avoid None indexing issues
     strata = [1, 3, 5]  # 1 and 5 exist, 3 needs interpolation
-    result = utils.impute_missing_sigma_bs(strata, sigma_bs_df)
+    result = inversion.impute_missing_sigma_bs(strata, sigma_bs_df)
 
     # Should handle interpolation between existing values
     assert len(result) == 3
