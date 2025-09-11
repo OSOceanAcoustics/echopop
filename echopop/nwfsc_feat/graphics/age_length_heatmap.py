@@ -225,7 +225,6 @@ def plot_age_length_heatmap(
     if not hasattr(data.index, "mid") or not hasattr(data.columns, "mid"):
         raise TypeError("Data index and columns must be pandas.IntervalIndex.")
 
-
     # Index check
     if "length_bin" not in data.index.names:
         raise IndexError(
@@ -248,9 +247,12 @@ def plot_age_length_heatmap(
     )
 
     # Stack and isolate just the age-length table
-    age_length_df = (
-        data_subset.stack(future_stack=True).unstack("length_bin").sum().unstack("age_bin")
-    )
+    if len(data_subset.columns.names) > 1:
+        age_length_df = data_subset.stack(future_stack=True).unstack(
+            "length_bin"
+        ).sum().unstack("age_bin")
+    else:
+        age_length_df = data_subset
 
     # Get the `vmax`
     if "norm" in imshow_kwargs and "vmax" not in imshow_kwargs:

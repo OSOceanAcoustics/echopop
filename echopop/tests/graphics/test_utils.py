@@ -24,7 +24,7 @@ def test_apply_aspect_ratio():
     assert h == 3
 
 def test_apply_aspect_ratio_zero_division():
-    with pytest.raises(ZeroDivisionError):
+    with pytest.raises(ValueError):
         gutils.apply_aspect_ratio(6, 0, 0, 0, 5)
 
 def test_dataframe_to_geodataframe_success():

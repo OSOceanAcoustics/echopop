@@ -26,9 +26,11 @@ def plotting_transect_data():
 @pytest.fixture
 def plotting_heatmap_data():
     np.random.seed(999)
-    idx = pd.IntervalIndex.from_breaks([0, 1, 2, 3])
-    cols = pd.IntervalIndex.from_breaks([10, 20, 30, 40])
+    cols = pd.IntervalIndex.from_breaks([0, 1, 2, 3])
+    idx = pd.IntervalIndex.from_breaks([10, 20, 30, 40])
     df = pd.DataFrame(np.random.rand(3, 3), index=idx, columns=cols)
+    df.index.name = "length_bin"
+    df.columns.name = "age_bin"
     return df
 
     
