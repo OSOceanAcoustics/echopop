@@ -1,9 +1,11 @@
 # Data processing and wrangling stack
+awkward
 lmfit
 numpy
 openpyxl
 pandas
 scipy
+xarray
 # Spatial data processing stack
 cartopy
 geopandas
