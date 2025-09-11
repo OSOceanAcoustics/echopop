@@ -571,3 +571,132 @@ def simple_weights_df():
 def simple_stratum_weights():
     """Create simple stratum weights DataFrame for testing."""
     return pd.DataFrame({"stratum_num": [1, 2], "weight": [100.0, 150.0]})
+
+
+@pytest.fixture
+def number_proportions_data():
+    """Create realistic test data for number proportions."""
+    np.random.seed(42)  # For reproducible tests
+
+    # Create length bins
+    length_bins = pd.interval_range(start=10, end=80, freq=5, closed="left")
+
+    # Create test data structure
+    data = []
+    for stratum in [1, 2, 3]:
+        for sex in ["female", "male"]:
+            for age in [1, 2, 3, 4]:
+                for length_bin in length_bins[:10]:  # Use subset for testing
+                    proportion = np.random.exponential(0.1)  # Realistic skewed distribution
+                    data.append(
+                        {
+                            "stratum_ks": stratum,
+                            "sex": sex,
+                            "age_bin": age,
+                            "length_bin": length_bin,
+                            "proportion": proportion,
+                        }
+                    )
+
+    df = pd.DataFrame(data)
+
+    # Normalize proportions within each stratum
+    df["proportion"] = df.groupby("stratum_ks")["proportion"].transform(lambda x: x / x.sum())
+
+    return df
+
+
+@pytest.fixture
+def weight_proportions_data():
+    """Create realistic test data for weight proportions."""
+    np.random.seed(43)
+
+    # Create length bins
+    length_bins = pd.interval_range(start=10, end=80, freq=5, closed="left")
+    strata = [1, 2, 3]
+
+    # Create hierarchical index
+    index_tuples = []
+    values = []
+
+    for length_bin in length_bins[:10]:
+        for sex in ["female", "male"]:
+            for age in [1, 2, 3, 4]:
+                index_tuples.append((length_bin, sex, age))
+                # Weight proportions are typically higher for larger fish
+                base_weight = length_bin.mid**2.5  # Allometric scaling
+                values.append([base_weight * np.random.exponential(0.1) for _ in strata])
+
+    # Create MultiIndex
+    index = pd.MultiIndex.from_tuples(index_tuples, names=["length_bin", "sex", "age_bin"])
+
+    # Create DataFrame
+    df = pd.DataFrame(values, index=index, columns=[f"stratum_{i}" for i in strata])
+
+    # Normalize columns
+    df = df.div(df.sum(axis=0), axis=1)
+
+    return df
+
+
+@pytest.fixture
+def ts_parameters():
+    """Create test target strength parameters."""
+    return {"slope": 20.0, "intercept": -68.0}
+
+
+@pytest.fixture
+def stratify_by():
+    """Standard stratification columns."""
+    return ["stratum_ks"]
+
+
+@pytest.fixture
+def age1_filter():
+    """Standard age-1 inclusion filter."""
+    return {"age_bin": [1]}
+
+
+@pytest.fixture
+def female_filter():
+    """Female-only inclusion filter."""
+    return {"sex": ["female"]}
+
+
+@pytest.fixture
+def length_threshold():
+    """Standard length threshold for testing."""
+    return 15.0
+
+
+@pytest.fixture
+def weight_threshold():
+    """Standard weight proportion threshold."""
+    return 1e-10
+
+
+@pytest.fixture
+def number_proportions_dict(number_proportions_data):
+    """Dictionary of number proportions (aged/unaged format)."""
+    return {
+        "aged": number_proportions_data,
+        "unaged": number_proportions_data.drop(columns=["age_bin"]),
+    }
+
+
+@pytest.fixture
+def combined_filters():
+    """Complex filter combining age and sex."""
+    return {"age_bin": [1], "sex": ["female"]}
+
+
+@pytest.fixture
+def small_length_bins():
+    """Small length bins for exclusion testing."""
+    return pd.interval_range(start=10, end=20, freq=5, closed="left")
+
+
+@pytest.fixture
+def length_exclusion_filter(small_length_bins):
+    """Length exclusion filter for thresholding tests."""
+    return {"length_bin": small_length_bins.tolist()}

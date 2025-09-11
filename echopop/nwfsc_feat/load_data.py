@@ -415,7 +415,8 @@ def join_strata_by_haul(
         df_merged = df.merge(strata_df, on=["haul_num"], how="left")
 
         # Rename the stratum column name, if needed
-        df_merged.rename(columns={"stratum_num": stratum_name}, inplace=True)
+        if stratum_name not in df_merged.columns:
+            df_merged.rename(columns={"stratum_num": stratum_name}, inplace=True)
 
         # Replace missing strata with `default_stratum`
         df_merged[stratum_name] = df_merged[stratum_name].fillna(default_stratum)
@@ -548,3 +549,47 @@ def load_kriging_variogram_params(
     )
 
     return kriging_params, variogram_params
+
+
+def load_isobath_data(
+    isobath_filepath: Union[str, Path], sheet_name: str, column_name_map: Dict[str, str] = {}
+) -> pd.DataFrame:
+    """
+    Load isobath data from an Excel file.
+
+    Parameters
+    ----------
+    isobath_filepath : str or Path
+        Path to the Excel file containing mesh data
+    sheet_name : str
+        Name of the sheet containing the mesh data
+    column_name_map : dict, optional
+        Dictionary mapping original column names to new column names
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame containing the isobath data with longitude and latitude
+
+    Examples
+    --------
+    >>> isobath_df = load_isobath_data("isobath_file.xlsx", "Sheet1")
+    >>> isobath_df = load_isobath_data("isobath_file.xlsx", column_name_map={"latitude_200m":
+    "latitude"})
+    """
+    mesh_filepath = Path(isobath_filepath)
+
+    if not mesh_filepath.exists():
+        raise FileNotFoundError(f"Mesh data file not found: {isobath_filepath}")
+
+    # Read Excel file into memory
+    df = pd.read_excel(isobath_filepath, sheet_name=sheet_name, index_col=None, header=0)
+
+    # Force the column names to be lower case
+    df.columns = df.columns.str.lower()
+
+    # Rename columns if mapping is provided
+    if column_name_map:
+        df.rename(columns=column_name_map, inplace=True)
+
+    return df

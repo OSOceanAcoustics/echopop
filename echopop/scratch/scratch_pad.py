@@ -1,6 +1,23 @@
 import abc
 import numpy as np
 import pandas as pd
+<<<<<<< HEAD
+from typing import Callable, Union, Dict, List, Optional, Any
+from functools import reduce
+import pytest
+
+# Import the existing acoustics functions
+from ..acoustics import ts_length_regression, to_linear, to_dB, impute_missing_sigma_bs
+from echopop.nwfsc_feat import utils
+from typing import Optional, Tuple
+
+import geopandas as gpd
+import numpy as np
+import pandas as pd
+from scipy import interpolate
+
+#######
+=======
 from typing import Union, Dict, List, Optional, Any
 
 # Import the existing acoustics functions
@@ -69,4 +86,6 @@ df_average_weight = df_averaged_weight["all"].copy()
 df_nasc["abundance"] = np.round(df_nasc["area_interval"] * df_nasc["number_density"])
 df_nasc["biomass"] = df_nasc["abundance"] * df_averaged_weight["all"].reindex_like(df_nasc)
 df_nasc["biomass_density"] = df_nasc["number_density"] * df_averaged_weight["all"].reindex_like(df_nasc)
+>>>>>>> 9e3aa319c85648183e960ffa9780553080f89640
 
+########
