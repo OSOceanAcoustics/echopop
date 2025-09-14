@@ -674,51 +674,6 @@ def is_pivot_table(df: pd.DataFrame):
         return False
 
 
-####################################################################################################
-# Validators
-class InputModel(BaseModel):
-    """
-    Base Pydantic model for scrutinizing file inputs
-    """
-
-    # Validator method
-    @classmethod
-    def judge(cls, **kwargs):
-        """
-        Validator method
-        """
-        try:
-            return cls(**kwargs)
-        except ValidationError as e:
-            e.__traceback__ = None
-            raise e
-
-    # Factory method
-    @classmethod
-    def create(cls, **kwargs):
-        """
-        Factory creation method
-        """
-
-        return cls.judge(**kwargs).model_dump(exclude_none=True)
-
-
-class TSLRegressionParameters(InputModel, title="TS-length regression parameters"):
-    """
-    Target strength - length regression parameters
-
-    Parameters
-    ----------
-    slope : float
-        TS-length regression slope.
-    intercept : float
-        TS-length regression intercept.
-    """
-
-    slope: float = Field(allow_inf_nan=False)
-    intercept: float = Field(allow_inf_nan=False)
-
-
 def roundn(n):
     """
     Rounding function to avoid bankers rounding
