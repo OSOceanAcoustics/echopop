@@ -358,7 +358,9 @@ def test_weight_table():
         "all": [0.45, 1.1],
     }
     index = pd.Index(["(10, 20]", "(20, 30]"], name="length_bin")
-    return pd.DataFrame(data, index=index)
+    data_df = pd.DataFrame(data, index=index)
+    data_df.columns.rename("sex", inplace=True)
+    return data_df
 
 
 @pytest.fixture
