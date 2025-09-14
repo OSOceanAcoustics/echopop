@@ -1,10 +1,10 @@
 import pandas as pd
 from shapely.geometry import Point
 
-from echopop.nwfsc_feat.FEAT import transect_mesh_region_2019
-from echopop.nwfsc_feat.mesh import hull_crop, transect_ends_crop
+from echopop.nwfsc_feat.FEAT import transect_ends_crop
+from echopop.nwfsc_feat.FEAT.parameters import transect_mesh_region_2019
 from echopop.nwfsc_feat.projection import utm_string_generator, wgs84_to_utm
-from echopop.nwfsc_feat.spatial import transect_coordinate_centroid, transect_extent
+from echopop.nwfsc_feat.spatial import hull_crop, transect_coordinate_centroid, transect_extent
 
 
 # ==================================================================================================

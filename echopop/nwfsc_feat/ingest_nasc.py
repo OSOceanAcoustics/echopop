@@ -1016,7 +1016,7 @@ def process_region_names(
 
     Example
     -------
-    >>> pattern_dict = {
+    >>> region_name_expr_dict = {
     ...     "REGION_CLASS": {
     ...         "Hake": "^(?:h(?![a-z]|1a)|hake(?![_]))",
     ...         "Hake Mix": "^(?:hm(?![a-z]|1a)|hake_mix(?![_]))"
@@ -1024,7 +1024,7 @@ def process_region_names(
     ...     "HAUL_NUM": {"[0-9]+"},
     ...     "COUNTRY": {"CAN": "^[cC]", "US": "^[uU]"}
     ... }
-    >>> process_region_names(df, pattern_dict, filter_list=["Hake", "Hake Mix"])
+    >>> process_region_names(df, region_name_expr_dict, filter_list=["Hake", "Hake Mix"])
     """
     # Step 1: Extract components from region names
     extracted_regions = extract_region_components(df, region_name_expr_dict)

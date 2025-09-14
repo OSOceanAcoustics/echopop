@@ -15,7 +15,7 @@ def compute_binned_counts(
     agg_func: str = "size",
 ) -> pd.DataFrame:
     """
-    Compute binned counts with grouping and optional filtering.
+    Compute binned counts with grouping.
 
     Parameters
     ----------
@@ -56,7 +56,6 @@ def compute_binned_counts(
 def number_proportions(
     data: Union[Dict[str, pd.DataFrame], pd.DataFrame],
     group_columns: List[str] = ["stratum_num"],
-    column_aliases: Optional[List[str]] = None,
     exclude_filters: Dict[str, Any] = {},
 ) -> Union[pd.DataFrame, Dict[str, pd.DataFrame]]:
     """
@@ -73,11 +72,6 @@ def number_proportions(
         When providing a dictionary, keys will be used as column aliases if column_aliases is None.
     group_columns : List[str], default ["stratum_num"]
         Columns to group by for calculating totals.
-    column_aliases : List[str], optional
-        Custom names for the dataframes, used in column naming and dictionary keys.
-        If not provided:
-        - For dictionary input: uses dictionary keys
-        - For single DataFrame input: uses "data"
     exclude_filters : Dict[str, Any], default {}}
         Filters to exclude rows from dataframes. This should match the same keys. When supplied an
         empty DataFrame, then no filters are applied. When a filter is expected to be applied to
@@ -114,8 +108,7 @@ def number_proportions(
         exclude_filters = {"data": exclude_filters}
 
     # Get the column aliases if not supplied
-    if column_aliases is None:
-        column_aliases = list(data.keys())
+    column_aliases = list(data.keys())
 
     # Fill out filter dictionary
     data_keys = set(list(data.keys()) + list(exclude_filters.keys()))
