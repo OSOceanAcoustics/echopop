@@ -645,6 +645,31 @@ df_nasc_no_age1_prt = apportion.remove_group_from_estimates(
     },
 )
 
+dict_transect_abundance_table = apportion.distribute_transect_estimates(
+    dataset=df_nasc_no_age1,
+    proportions=dict_df_number_proportion,
+    variable="abundance",
+    group_by=["sex", "age_bin", "length_bin"],
+    stratify_by=["stratum_ks"],
+)
+
+dict_transect_biomass_table = apportion.distribute_transect_estimates(
+    dataset=df_nasc_no_age1,
+    proportions=dict_df_number_proportion,
+    variable="biomass",
+    group_by=["sex", "age_bin", "length_bin"],
+    stratify_by=["stratum_ks"],
+)
+
+df_transect_aged_biomass = apportion.distribute_transect_estimates(
+    dataset=df_nasc_no_age1,
+    proportions=dict_df_number_proportion["aged"],
+    variable="biomass",
+    group_by=["sex", "age_bin", "length_bin"],
+    stratify_by=["stratum_ks"],
+)
+
+
 # ==================================================================================================
 # ==================================================================================================
 # GEOSTATISTICS
