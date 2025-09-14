@@ -6,6 +6,7 @@ from echopop.tests.fixtures.fixtures_biology import *  # noqa: F401, F403
 from echopop.tests.fixtures.fixtures_cropping import *  # noqa: F401, F403
 from echopop.tests.fixtures.fixtures_data_loader import *  # noqa: F401, F403
 from echopop.tests.fixtures.fixtures_echoview_ingestion import *  # noqa: F401, F403
+from echopop.tests.fixtures.fixtures_FEAT import *  # noqa: F401, F403
 from echopop.tests.fixtures.fixtures_geostatistics_loader import *  # noqa: F401, F403
 from echopop.tests.fixtures.fixtures_geostats_class import *  # noqa: F401, F403
 from echopop.tests.fixtures.fixtures_get_proportions import *  # noqa: F401, F403
