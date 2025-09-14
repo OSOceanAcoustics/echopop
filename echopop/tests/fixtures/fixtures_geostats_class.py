@@ -6,7 +6,7 @@ import pytest
 @pytest.fixture
 def sample_mesh_data_with_lonlat():
     """Create sample mesh data with longitude/latitude columns for geostatistics tests."""
-    np.random.seed(42)
+    np.random.seed(999)
 
     # Create a simple grid of mesh points
     lon_range = np.linspace(-125.0, -123.0, 10)
@@ -39,7 +39,7 @@ def sample_coordinates_df_with_biomass():
 @pytest.fixture
 def sample_mesh_data_latlon():
     """Create sample mesh data with x/y columns for testing custom coordinate names."""
-    np.random.seed(42)
+    np.random.seed(999)
 
     # Create sample transect data
     n_points = 1000
@@ -60,7 +60,7 @@ def sample_mesh_data_latlon():
 @pytest.fixture
 def sample_mesh_data_xy():
     """Create sample mesh data with x/y columns for testing custom coordinate names."""
-    np.random.seed(42)
+    np.random.seed(999)
 
     # Create a simple grid of mesh points
     x_range = np.linspace(-125.0, -123.0, 10)
@@ -77,7 +77,7 @@ def sample_mesh_data_xy():
 @pytest.fixture
 def sample_coordinates_df_latlon():
     """Create sample coordinate data with x/y columns for testing custom coordinate names."""
-    np.random.seed(42)
+    np.random.seed(999)
 
     # Create sample transect data
     n_points = 500
@@ -101,7 +101,7 @@ def sample_coordinates_df_latlon():
 @pytest.fixture
 def sample_coordinates_df_xy():
     """Create sample coordinate data with x/y columns for testing custom coordinate names."""
-    np.random.seed(42)
+    np.random.seed(999)
 
     # Create sample transect data
     n_points = 50
