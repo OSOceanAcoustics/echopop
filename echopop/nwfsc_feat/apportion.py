@@ -262,7 +262,7 @@ def mesh_biomass_to_nasc(
     stratum_weights_df_idx = stratum_weights_df.reindex(mesh_data_df.index)
 
     # Calculate abundance
-    mesh_data_df[["abundance"] + [f"abundance_{name}" for name in biodata_columns]] = mesh_data_df[
+    mesh_data_df[[f"abundance_{name}" for name in biodata_columns] + ["abundance"]] = mesh_data_df[
         biomass_columns
     ].div(stratum_weights_df_idx, axis=0)
 
