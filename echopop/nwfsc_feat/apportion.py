@@ -108,7 +108,7 @@ def mesh_biomass_to_nasc(
     mesh_data_df.rename(columns=mesh_biodata_link, inplace=True)
 
     # Map the link columns
-    mesh_index = [v for v in mesh_biodata_link.values() if v in mesh_data_df.columns]
+    mesh_index = list(mesh_biodata_link.values())
 
     # Index
     mesh_data_df.set_index(mesh_index, inplace=True)
