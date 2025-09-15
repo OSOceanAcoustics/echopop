@@ -847,7 +847,6 @@ df_kriged_biomass_table = apportion.combine_population_tables(
 # ##################################################################################################
 # Redistribute the kriged abundance estimates
 # -------------------------------------------
-# THIS NEEDS TO BE FULLY IMPLEMENTED WITH TESTS, ETC.
 
 # Re-allocate the age-1 abundance estimates 
 df_kriged_abundance_table_noage1 = apportion.redistribute_population_table(
