@@ -428,7 +428,6 @@ dict_df_counts["unaged"] = get_proportions.compute_binned_counts(
 dict_df_number_proportion: Dict[str, pd.DataFrame] = get_proportions.number_proportions(
     data=dict_df_counts, 
     group_columns=["stratum_ks"],
-    column_aliases=["aged", "unaged"],
     exclude_filters={"aged": {"sex": "unsexed"}},
 )
 
