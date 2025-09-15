@@ -99,10 +99,12 @@ def mesh_biomass_to_nasc(
             f"The following link columns were missing from the mesh DataFrame: "
             f"{', '.join(col for col in missing_mesh_columns)}."
         )
-
-    # Compute biomass if not already in DataFrame
+    # ---- Biomass column
     if "biomass" not in mesh_data_df.columns:
-        mesh_data_df["biomass"] = mesh_data_df["biomass_density"] * mesh_data_df["area"]
+        raise KeyError(
+            "The input kriging mesh DataFrame does not have a column 'biomass'. Please compute the "
+            "kriged biomass."
+        )
 
     # Set the link column names
     mesh_data_df.rename(columns=mesh_biodata_link, inplace=True)

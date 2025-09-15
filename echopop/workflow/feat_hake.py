@@ -763,6 +763,10 @@ df_kriged_results = krg.krige(
 # density estimates
 # -----------------
 
+# Compute biomass
+df_kriged_results["biomass"] = df_kriged_results["biomass_density"] * df_kriged_results["area"]
+
+# Convert biomass to abundance to NASC
 apportion.mesh_biomass_to_nasc(
     mesh_data_df=df_kriged_results,
     biodata=dict_df_weight_proportion,
