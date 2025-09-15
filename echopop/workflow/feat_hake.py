@@ -5,7 +5,6 @@ import numpy.typing as npt
 import pandas as pd
 from lmfit import Parameters
 from echopop import inversion
-from echopop.nwfsc_feat.geostatistics import Geostats
 from echopop.nwfsc_feat import (
     apportion,
     biology, 
@@ -14,7 +13,6 @@ from echopop.nwfsc_feat import (
     get_proportions, 
     kriging,
     load_data, 
-    # mesh,
     spatial,
     transect, 
     utils,
@@ -430,7 +428,6 @@ dict_df_counts["unaged"] = get_proportions.compute_binned_counts(
 dict_df_number_proportion: Dict[str, pd.DataFrame] = get_proportions.number_proportions(
     data=dict_df_counts, 
     group_columns=["stratum_ks"],
-    column_aliases=["aged", "unaged"],
     exclude_filters={"aged": {"sex": "unsexed"}},
 )
 
@@ -851,7 +848,6 @@ df_kriged_biomass_table = apportion.combine_population_tables(
 # ##################################################################################################
 # Redistribute the kriged abundance estimates
 # -------------------------------------------
-# THIS NEEDS TO BE FULLY IMPLEMENTED WITH TESTS, ETC.
 
 # Re-allocate the age-1 abundance estimates 
 df_kriged_abundance_table_noage1 = apportion.redistribute_population_table(
