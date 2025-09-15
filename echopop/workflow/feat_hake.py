@@ -5,7 +5,6 @@ import numpy.typing as npt
 import pandas as pd
 from lmfit import Parameters
 from echopop import inversion
-from echopop.nwfsc_feat.geostatistics import Geostats
 from echopop.nwfsc_feat import (
     apportion,
     biology, 
@@ -14,7 +13,6 @@ from echopop.nwfsc_feat import (
     get_proportions, 
     kriging,
     load_data, 
-    # mesh,
     spatial,
     transect, 
     utils,
