@@ -214,7 +214,7 @@ def apportion_biomass_table(apportion_mesh_with_nasc, apportion_weight_proportio
     mesh_data_df["biomass"] = mesh_data_df["biomass_density"] * mesh_data_df["area"]
 
     biomass_tables = apportion.distribute_kriged_estimates(
-        mesh_data_df= mesh_data_df,
+        mesh_data_df=mesh_data_df,
         proportions=apportion_weight_proportions,
         variable="biomass",
         group_by=["contrast", "index_bin", "extra_bin"],
