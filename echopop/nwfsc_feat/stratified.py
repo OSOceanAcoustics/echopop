@@ -445,7 +445,7 @@ class JollyHampton:
         }
 
         # Combine all metrics into single DataFrame
-        resampled_df = pd.concat(
+        resamples = pd.concat(
             [
                 pd.DataFrame(data).unstack().to_frame(name=name)
                 for name, data in metrics_data.items()
@@ -457,10 +457,10 @@ class JollyHampton:
         stratification_group = self.strata_summary.index.names[0]
 
         # Rename the indices to include 'replicate'
-        resampled_df.index.set_names([stratification_group, "replicate"], inplace=True)
+        resamples.index.set_names([stratification_group, "replicate"], inplace=True)
 
         # Pivot to get strata as columns
-        resampled_df_pvt = resampled_df.reset_index().pivot_table(
+        resamples_pvt = resamples.reset_index().pivot_table(
             columns=stratification_group, index="replicate"
         )
 
@@ -470,9 +470,9 @@ class JollyHampton:
             i: stratum for i, stratum in enumerate(self.strata_summary.index.unique())
         }
         # ---- Apply the names
-        resampled_df_pvt = resampled_df_pvt.rename(columns=stratum_mapping, level=1)
+        resamples_pvt = resamples_pvt.rename(columns=stratum_mapping, level=1)
 
-        return resampled_df_pvt
+        return resamples_pvt
 
     def _compute_transect_statistics(
         self,
@@ -710,8 +710,8 @@ class JollyHampton:
 
         Notes
         -----
-        For strata with only one transect to sample, the degrees of freedom
-        is set to 1 to avoid division by zero in variance calculations.
+        For strata with only one transect to sample, the degrees of freedom is set to 1 to avoid 
+        division by zero in variance calculations.
         """
 
         # Adjustment for single-transect strata
@@ -799,9 +799,9 @@ class JollyHampton:
 
         Notes
         -----
-        This method populates the resampled_df attribute with bootstrap replicates organized by 
-        stratum and replicate. The bootstrap sampling is done without replacement within each 
-        stratum.
+        This method populates the 'bootstrap_replicates' attribute with bootstrap replicates
+        organized by stratum and replicate. The bootstrap sampling is done without replacement 
+        within each stratum.
 
         The method performs the following steps:
         1. Summarize transect-level data
@@ -869,7 +869,7 @@ class JollyHampton:
         ]
 
         # Format and store bootstrap replicates
-        self.resampled_df = self._format_bootstrap_replicates(
+        self.bootstrap_replicates = self._format_bootstrap_replicates(
             mean_arr_np, total_arr_np, variance_arr_np, length_arr_np, area_arr_np
         )
 
@@ -928,14 +928,14 @@ class JollyHampton:
         >>> print(summary_stats)
         """
         # Validate that bootstrap has been run
-        if self.resampled_df is None:
+        if self.bootstrap_replicates is None:
             raise RuntimeError(
-                "Must run `stratified_bootstrap()` before calling summarize(). "
-                "The resampled_df attribute is None."
+                "Must run `stratified_bootstrap()` before calling summarize(). The "
+                "'bootstrap_replicates' attribute is None."
             )
 
         # Get bootstrap replicates
-        bdf = self.resampled_df.copy()
+        bdf = self.bootstrap_replicates.copy()
 
         # Compute area-weighted survey statistics
         area_weights = self.strata_summary["area"]
@@ -953,7 +953,7 @@ class JollyHampton:
         bootstrap_cv = weighted_stdev / weighted_mean
 
         # Add survey-wide statistics to bootstrap DataFrame
-        self.resampled_df = bdf.assign(
+        self.bootstrap_replicates = bdf.assign(
             area_weighted_variance=weighted_variance,
             **{f"area_weighted_{self.variable}": weighted_mean},
             cv=bootstrap_cv,
@@ -964,7 +964,7 @@ class JollyHampton:
 
         # Compute confidence intervals for stratum-level estimates
         strata_ci_estimates = statistics.confidence_interval(
-            bootstrap_samples=self.resampled_df[ci_variables],
+            bootstrap_samples=self.bootstrap_replicates[ci_variables],
             population_values=self.survey_summary["strata"],
             ci_method=ci_method,
             ci_percentile=ci_percentile,
@@ -973,12 +973,14 @@ class JollyHampton:
         # Prepare survey-wide bootstrap estimates
         survey_bootstrap = pd.DataFrame(
             {
-                self.variable: self.resampled_df[self.variable].sum(axis=1),
+                self.variable: self.bootstrap_replicates[self.variable].sum(axis=1),
                 f"{self.variable}_density": (
-                    (self.resampled_df[f"{self.variable}_density"] * area_weights).sum(axis=1)
+                    (
+                        self.bootstrap_replicates[f"{self.variable}_density"] * area_weights
+                    ).sum(axis=1)
                     / area_weights.sum()
                 ),
-                "cv": self.resampled_df["cv"],
+                "cv": self.bootstrap_replicates["cv"],
             }
         )
 

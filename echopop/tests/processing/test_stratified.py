@@ -18,7 +18,7 @@ def test_basic_JollyHampton_initialization():
 
     assert jh.model_params == model_params
     assert jh.variable is None
-    assert jh.resampled_df is None
+    assert jh.bootstrap_replicates is None
     assert hasattr(jh, "rng")
 
 
@@ -59,12 +59,12 @@ def test_JollyHampton_partition_data_into_transects(jolly_hampton, sample_ci_gri
     assert transect_nums == expected_nums
 
 
-def test_JollyHampton_initialize_virtual_df(jolly_hampton, sample_ci_grid_data):
+def test_JollyHampton_format_virtual_transects(jolly_hampton, sample_ci_grid_data):
     """Test virtual DataFrame initialization."""
     # First partition the data
     data_with_transects, _ = jolly_hampton._partition_data_into_transects(sample_ci_grid_data)
 
-    virtual_df = jolly_hampton._initialize_virtual_df(data_with_transects, "biomass")
+    virtual_df = jolly_hampton._format_virtual_transects(data_with_transects, "biomass")
 
     # Check required columns are present
     required_cols = ["longitude", "latitude", "area_interval", "biomass"]
@@ -75,7 +75,7 @@ def test_JollyHampton_initialize_virtual_df(jolly_hampton, sample_ci_grid_data):
     assert virtual_df.index.name == "transect_num"
 
 
-def test_JollyHampton_initialize_virtual_df_missing_columns(jolly_hampton):
+def test_JollyHampton_format_virtual_transects_missing_columns(jolly_hampton):
     """Test error handling for missing columns."""
     incomplete_data = pd.DataFrame(
         {
@@ -86,11 +86,11 @@ def test_JollyHampton_initialize_virtual_df_missing_columns(jolly_hampton):
     )
 
     with pytest.raises(KeyError, match="Missing required columns"):
-        jolly_hampton._initialize_virtual_df(incomplete_data, "biomass")
+        jolly_hampton._format_virtual_transects(incomplete_data, "biomass")
 
 
 # Virtual transect creation tests
-def test_JollyHampton_create_virtual_df():
+def test_JollyHampton_generate_virtual_transects():
     """Test virtual transect DataFrame creation."""
     model_params = {
         "transects_per_latitude": 5,
@@ -112,7 +112,7 @@ def test_JollyHampton_create_virtual_df():
 
     lat_key = pd.DataFrame({"latitude": [45.1, 45.2], "transect_num": [1, 2]})
 
-    result = jh._create_virtual_df(virtual_data, lat_key, "biomass")
+    result = jh._generate_virtual_transects(virtual_data, lat_key, "biomass")
 
     # Check required columns are present
     assert "latitude" in result.columns
@@ -157,7 +157,7 @@ def test_JollyHampton_dof_calculation(prepared_jolly_hampton):
 
 
 # Summarization tests
-def test_JollyHampton_summarize_transects(sample_survey_ci_data):
+def test_JollyHampton_compute_transect_statistics(sample_survey_ci_data):
     """Test transect summarization."""
     model_params = {
         "transects_per_latitude": 5,
@@ -168,7 +168,7 @@ def test_JollyHampton_summarize_transects(sample_survey_ci_data):
     jh = stratified.JollyHampton(model_params)
     jh.variable = "biomass"
 
-    jh._summarize_transects(sample_survey_ci_data, ["geostratum_inpfc"])
+    jh._compute_transect_statistics(sample_survey_ci_data, ["geostratum_inpfc"])
 
     # Check that transect_summary was created
     assert jh.transect_summary is not None
@@ -183,7 +183,7 @@ def test_JollyHampton_summarize_transects(sample_survey_ci_data):
     assert (jh.transect_summary[numeric_cols] >= 0).all().all()
 
 
-def test_JollyHampton_summarize_strata(sample_survey_ci_data):
+def test_JollyHampton_compute_strata_statistics(sample_survey_ci_data):
     """Test strata summarization."""
     model_params = {
         "transects_per_latitude": 5,
@@ -195,10 +195,10 @@ def test_JollyHampton_summarize_strata(sample_survey_ci_data):
     jh.variable = "biomass"
 
     # First summarize transects
-    jh._summarize_transects(sample_survey_ci_data, ["geostratum_inpfc"])
+    jh._compute_transect_statistics(sample_survey_ci_data, ["geostratum_inpfc"])
 
     # Then summarize strata
-    jh._summarize_strata(["geostratum_inpfc"])
+    jh._compute_strata_statistics(["geostratum_inpfc"])
 
     # Check that strata_summary was created
     assert jh.strata_summary is not None
@@ -339,8 +339,8 @@ def test_JollyHampton_single_transect_stratum():
     jh.variable = "biomass"
 
     # This should handle single-transect strata gracefully
-    jh._summarize_transects(test_data, ["geostratum_inpfc"])
-    jh._summarize_strata(["geostratum_inpfc"])
+    jh._compute_transect_statistics(test_data, ["geostratum_inpfc"])
+    jh._compute_strata_statistics(["geostratum_inpfc"])
 
     # Check that single-transect strata get at least 1 sample
     assert (jh.strata_summary["num_transects_to_sample"] >= 1).all()
@@ -390,8 +390,8 @@ def test_JollyHampton_empty_strata_handling():
     )
 
     jh.variable = "biomass"
-    jh._summarize_transects(minimal_data, ["geostratum_inpfc"])
-    jh._summarize_strata(["geostratum_inpfc"])
+    jh._compute_transect_statistics(minimal_data, ["geostratum_inpfc"])
+    jh._compute_strata_statistics(["geostratum_inpfc"])
 
     # Should handle gracefully
     assert len(jh.strata_summary) == 1
