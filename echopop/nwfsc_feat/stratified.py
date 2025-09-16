@@ -134,7 +134,7 @@ class JollyHampton:
 
         # Partition the dataset based on latitude - round to nearest transect latitude
         data_copy.loc[:, "latitude"] = (
-            utils.roundn(data_copy.loc[:, "latitude"] * mp["transects_per_latitude"] + 0.5)
+            utils.round_half_up(data_copy.loc[:, "latitude"] * mp["transects_per_latitude"] + 0.5)
             / mp["transects_per_latitude"]
         )
 
@@ -588,7 +588,7 @@ class JollyHampton:
         strata_summary = grouped_df[self.variable].count().to_frame("transect_counts")
 
         # Calculate number of transects to sample per stratum
-        strata_summary["num_transects_to_sample"] = utils.roundn(
+        strata_summary["num_transects_to_sample"] = utils.round_half_up(
             strata_summary["transect_counts"] * mp["strata_transect_proportion"]
         ).astype(int)
 
