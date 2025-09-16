@@ -224,7 +224,7 @@ def apportion_biomass_table_with_standardized(apportion_biomass_table):
     table_copy = apportion_biomass_table.copy()
 
     # Add standardized table
-    table_copy["standardized_subgroup2"] = apportion.standardize_kriged_estimates(
+    table_copy["standardized_subgroup2"] = apportion.distribute_unaged_from_aged(
         population_table=apportion_biomass_table["subgroup2"],
         reference_table=apportion_biomass_table["subgroup1"],
         group_by=["contrast"],

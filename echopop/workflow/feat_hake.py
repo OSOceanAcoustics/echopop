@@ -815,7 +815,7 @@ dict_kriged_abundance_table["standardized_unaged"] = apportion.distribute_unaged
 # ---------------------------------------------------------------------
 # THIS NEEDS TO BE FULLY IMPLEMENTED WITH TESTS, ETC.
 
-dict_kriged_biomass_table["standardized_unaged"] = apportion.standardize_kriged_estimates(
+dict_kriged_biomass_table["standardized_unaged"] = apportion.distribute_unaged_from_aged(
     population_table=dict_kriged_biomass_table["unaged"],
     reference_table=dict_kriged_biomass_table["aged"],
     group_by=["sex"],
@@ -827,7 +827,7 @@ dict_kriged_biomass_table["standardized_unaged"] = apportion.standardize_kriged_
 # Consolidate the kriged abundance estimates into a single DataFrame table
 # ------------------------------------------------------------------------
 
-df_kriged_abundance_table = apportion.combine_population_tables(
+df_kriged_abundance_table = apportion.sum_population_tables(
     population_table=dict_kriged_abundance_table,
     table_names=["aged", "standardized_unaged"],
     table_index=["length_bin"],
@@ -838,7 +838,7 @@ df_kriged_abundance_table = apportion.combine_population_tables(
 # Consolidate the kriged biomass estimates into a single DataFrame table
 # -----------------------------------------------------------------------
 
-df_kriged_biomass_table = apportion.combine_population_tables(
+df_kriged_biomass_table = apportion.sum_population_tables(
     population_table=dict_kriged_biomass_table,
     table_names=["aged", "standardized_unaged"],
     table_index=["length_bin"],
