@@ -3,7 +3,6 @@ from typing import Any, Dict, List, Optional, Union
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
-from pydantic import BaseModel, Field, ValidationError
 from scipy import interpolate as interp
 
 
@@ -278,20 +277,20 @@ def apply_filters(
     """
     Apply inclusion and exclusion filters to a DataFrame.
 
-    Filters rows and columns based on index/column values, supporting both inclusion and
-    exclusion criteria with single values or lists of values. Handles interval-based
-    filtering for categorical interval indices.
+    Filters rows and columns based on index/column values, supporting both inclusion and exclusion
+    criteria with single values or lists of values. Handles interval-based filtering for categorical
+    interval indices.
 
     Parameters
     ----------
     df : pd.DataFrame
         Input DataFrame to filter
     include_filter : Dict[str, Any], optional
-        Dictionary of column/index:value(s) pairs. Rows/columns will be kept if they match.
-        If value is a list, rows/columns matching any value in the list will be kept.
+        Dictionary of column/index:value(s) pairs. Rows/columns will be kept if they match. If
+        value is a list, rows/columns matching any value in the list will be kept.
     exclude_filter : Dict[str, Any], optional
-        Dictionary of column/index:value(s) pairs. Rows/columns will be excluded if they match.
-        If value is a list, rows/columns matching any value in the list will be excluded.
+        Dictionary of column/index:value(s) pairs. Rows/columns will be excluded if they match. If
+        value is a list, rows/columns matching any value in the list will be excluded.
     replace_value : np.number, optional
         If provided, replaces values in excluded columns with this value instead of dropping them.
 
@@ -364,9 +363,8 @@ def group_interpolator_creator(
     """
     Create interpolator functions grouped by one or more contrast variables.
 
-    Generates scipy interpolation functions for length-weight relationships,
-    either as a single global interpolator or grouped by specified contrast
-    variables (e.g., sex, age class).
+    Generates scipy interpolation functions for length-weight relationships, either as a single
+    global interpolator or grouped by specified contrast variables (e.g., sex, age class).
 
     Parameters
     ----------
@@ -383,16 +381,14 @@ def group_interpolator_creator(
     Returns
     -------
     Dict
-        Dictionary of interpolator functions.
-        When contrast_vars is provided, keys are contrast variable values.
-        When contrast_vars is None or empty, contains a single entry with key '_global_'.
+        Dictionary of interpolator functions. When contrast_vars is provided, keys are contrast
+        variable values. When contrast_vars is None or empty, contains a single entry with key
+        '_global_'.
 
     Notes
     -----
-    The interpolation is linear and extrapolates using the endpoints
-    when values outside the range are requested.
-
-    Requires at least 2 points per group for valid interpolation.
+    The interpolation is linear and extrapolates using the endpoints when values outside the range
+    are requested. Requires at least 2 points per group for valid interpolation.
     """
     # Check if we have contrast variables to group by
     if contrast_vars is None or (isinstance(contrast_vars, list) and len(contrast_vars) == 0):
@@ -580,8 +576,8 @@ def quantize_length_data(df, group_columns: List[str]):
     """
     Process DataFrame to ensure it has 'length' and 'length_count' columns.
 
-    Aggregates fish length data by grouping variables and length, either counting
-    occurrences (if no length_count exists) or summing existing counts.
+    Aggregates fish length data by grouping variables and length, either counting occurrences (if
+    no length_count exists) or summing existing counts.
 
     Parameters
     ----------
@@ -631,11 +627,11 @@ def quantize_length_data(df, group_columns: List[str]):
 
     Notes
     -----
-    This function automatically detects whether to count fish (size operation) or
-    sum existing counts based on the presence of a 'length_count' column.
+    This function automatically detects whether to count fish (size operation) or sum existing
+    counts based on the presence of a 'length_count' column.
 
-    The resulting DataFrame will have a MultiIndex with group_columns + ['length']
-    and a single 'length_count' column containing the aggregated counts.
+    The resulting DataFrame will have a MultiIndex with group_columns + ['length'] and a single
+    'length_count' column containing the aggregated counts.
     """
 
     # Create copy
@@ -676,115 +672,3 @@ def is_pivot_table(df: pd.DataFrame):
         return True
     else:
         return False
-
-
-def compute_interval_distance(
-    df_nasc: pd.DataFrame,
-    interval_threshold: float = 0.05,
-) -> None:
-    """
-    Calculate along-transect interval distances and add to DataFrame
-
-    Parameters
-    ----------
-    df_nasc : pd.DataFrame
-        DataFrame containing NASC data with distance and spacing information.
-        Must contain columns: 'distance_s', 'distance_e', 'transect_spacing'
-    interval_threshold : float, default 0.05
-        Along-transect interval threshold for detecting erroneous values.
-        Values that deviate from the median interval by more than this threshold
-        will be corrected using distance_e - distance_s calculation.
-
-    Returns
-    -------
-    pd.DataFrame
-        Modified DataFrame with added 'distance_interval' column containing
-        along-transect interval distances.
-
-    Examples
-    --------
-    >>> df = pd.DataFrame({
-    ...     'distance_s': [0, 1, 2, 3],
-    ...     'distance_e': [1, 2, 3, 4],
-    ...     'transect_spacing': [0.1, 0.1, 0.1, 0.1]
-    ... })
-    >>> set_interval_distance(df)
-    >>> 'distance_interval' in df.columns
-    True
-
-    Notes
-    -----
-    This function calculates the along-track transect interval length.
-    It identifies and corrects potentially erroneous values at transect endpoints
-    by comparing intervals to the median and replacing outliers with direct
-    distance calculations (distance_e - distance_s).
-
-    The interval calculation uses diff(periods=-1) to compute forward differences,
-    making each interval represent the distance to the next measurement point.
-    """
-    # Calculate the along-transect interval distance
-    # ---- Use forward difference to get distance to next point
-    df_nasc["distance_interval"] = df_nasc["distance_s"].diff(periods=-1).abs()
-
-    # Handle the final interval (no next point available)
-    # ---- Use distance_e - distance_s for the last measurement
-    df_nasc.loc[df_nasc.index[-1], "distance_interval"] = (
-        df_nasc["distance_e"].iloc[-1] - df_nasc["distance_s"].iloc[-1]
-    )
-
-    # Identify and correct erroneous interval lengths
-    # ---- Calculate median interval for comparison
-    median_interval = np.median(df_nasc["distance_interval"])
-
-    # Find intervals that deviate significantly from median
-    deviation_mask = np.abs(df_nasc["distance_interval"] - median_interval) > interval_threshold
-
-    # Replace erroneous intervals with direct distance calculation
-    df_nasc.loc[deviation_mask, "distance_interval"] = (
-        df_nasc.loc[deviation_mask, "distance_e"] - df_nasc.loc[deviation_mask, "distance_s"]
-    )
-
-
-####################################################################################################
-# Validators
-class InputModel(BaseModel):
-    """
-    Base Pydantic model for scrutinizing file inputs
-    """
-
-    # Validator method
-    @classmethod
-    def judge(cls, **kwargs):
-        """
-        Validator method
-        """
-        try:
-            return cls(**kwargs)
-        except ValidationError as e:
-            e.__traceback__ = None
-            raise e
-
-    # Factory method
-    @classmethod
-    def create(cls, **kwargs):
-        """
-        Factory creation method
-        """
-
-        return cls.judge(**kwargs).model_dump(exclude_none=True)
-
-
-class TSLRegressionParameters(InputModel, title="TS-length regression parameters"):
-    """
-    Target strength - length regression parameters
-
-    Parameters
-    ----------
-    slope : float
-        TS-length regression slope.
-    intercept : float
-        TS-length regression intercept.
-    """
-
-    slope: float = Field(allow_inf_nan=False)
-    intercept: float = Field(allow_inf_nan=False)

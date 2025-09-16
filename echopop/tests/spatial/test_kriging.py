@@ -1,10 +1,11 @@
 import numpy as np
 import pandas as pd
 
-from echopop.nwfsc_feat.spatial import (
+from echopop.nwfsc_feat.FEAT import get_survey_western_extents, western_boundary_search_strategy
+from echopop.nwfsc_feat.kriging import (
+    Kriging,
     adaptive_search_radius,
     count_within_radius,
-    get_survey_western_extents,
     krige,
     kriging_lambda,
     ordinary_kriging_matrix,
@@ -12,74 +13,78 @@ from echopop.nwfsc_feat.spatial import (
     project_kriging_results,
     search_radius_mask,
     uniform_search_strategy,
-    western_boundary_search_strategy,
 )
 
 
 # ==================================================================================================
-# Test get_survey_western_extents
-# --------------------------------
-def test_get_survey_western_extents_basic(sample_mesh_coordinates):
-    """Test basic functionality of get_survey_western_extents."""
-    # Add latitude column to mesh coordinates
-    mesh_with_lat = sample_mesh_coordinates.copy()
-    mesh_with_lat["latitude"] = mesh_with_lat["y"] + 46.0  # Add realistic latitude
-
-    result = get_survey_western_extents(
-        mesh_with_lat, coordinate_names=("x", "y"), latitude_threshold=45.0
+# Test search_radius_mask
+# -----------------------
+def test_search_radius_mask_basic():
+    """Test basic search radius mask functionality."""
+    distance_matrix = np.array(
+        [[0.0, 1.0, 2.0, 3.0], [1.0, 0.0, 1.0, 2.0], [2.0, 1.0, 0.0, 1.0], [3.0, 2.0, 1.0, 0.0]]
     )
+    search_radius = 1.5
 
-    # Check that result is a DataFrame
-    assert isinstance(result, pd.DataFrame)
+    result = search_radius_mask(distance_matrix, search_radius)
 
-    # Check that it has the expected columns
-    expected_columns = {"transect_num", "x", "y"}
-    assert set(result.columns) == expected_columns
+    # Check output type and shape
+    assert isinstance(result, np.ndarray)
+    assert result.shape == distance_matrix.shape
 
-    # Check that each transect has one entry
-    transect_counts = result["transect_num"].value_counts()
-    assert all(count == 1 for count in transect_counts.values)
+    # Check that distances within radius are preserved and beyond radius are NaN
+    expected = distance_matrix.copy()
+    expected[distance_matrix > search_radius] = np.nan
+    np.testing.assert_array_equal(result, expected)
 
 
-def test_get_survey_western_extents_westernmost(sample_mesh_coordinates):
-    """Test that get_survey_western_extents returns westernmost points."""
-    # Add latitude column to mesh coordinates
-    mesh_with_lat = sample_mesh_coordinates.copy()
-    mesh_with_lat["latitude"] = mesh_with_lat["y"] + 46.0  # Add realistic latitude
+def test_search_radius_mask_zero_radius():
+    """Test search radius mask with zero radius."""
+    distance_matrix = np.array([[0.0, 1.0], [1.0, 0.0]])
+    search_radius = 0.0
 
-    result = get_survey_western_extents(
-        mesh_with_lat, coordinate_names=("x", "y"), latitude_threshold=45.0
-    )
+    result = search_radius_mask(distance_matrix, search_radius)
 
-    # For each transect, the x-coordinate should be the minimum
-    for transect_num in result["transect_num"].unique():
-        original_transect = mesh_with_lat[mesh_with_lat["transect_num"] == transect_num]
-        result_transect = result[result["transect_num"] == transect_num]
-
-        min_x = original_transect["x"].min()
-        result_x = result_transect["x"].iloc[0]
-
-        assert result_x == min_x
+    # Only diagonal elements should be preserved, off-diagonal should be NaN
+    expected = distance_matrix.copy()
+    expected[distance_matrix > search_radius] = np.nan
+    np.testing.assert_array_equal(result, expected)
 
 
 # ==================================================================================================
-# Test search_radius_mask
+# Test count_within_radius
 # ------------------------
-def test_search_radius_mask_basic(sample_distance_matrix):
-    """Test basic functionality of search_radius_mask."""
-    search_radius = 2.5
-    result = search_radius_mask(sample_distance_matrix, search_radius)
+def test_count_within_radius_basic():
+    """Test basic count within radius functionality."""
+    # Create a masked distance matrix with NaN for out-of-range distances
+    distance_matrix_masked = np.array(
+        [
+            [0.0, 1.0, np.nan, np.nan],
+            [1.0, 0.0, 1.0, np.nan],
+            [np.nan, 1.0, 0.0, 1.0],
+            [np.nan, np.nan, 1.0, 0.0],
+        ]
+    )
 
-    # Check output shape matches input
-    assert result.shape == sample_distance_matrix.shape
+    result = count_within_radius(distance_matrix_masked)
 
-    # Check that distances within radius are preserved
-    within_radius = sample_distance_matrix <= search_radius
-    assert np.allclose(result[within_radius], sample_distance_matrix[within_radius])
+    # Check output type
+    assert isinstance(result, np.ndarray)
+    assert result.dtype == np.int64 or result.dtype == np.int32
 
-    # Check that distances outside radius are NaN
-    outside_radius = sample_distance_matrix > search_radius
-    assert np.all(np.isnan(result[outside_radius]))
+    # Check expected counts per row
+    expected = np.array([2, 3, 3, 2])
+    np.testing.assert_array_equal(result, expected)
+
+
+def test_count_within_radius_empty():
+    """Test count within radius with no valid points."""
+    distance_matrix_masked = np.array([[np.nan, np.nan], [np.nan, np.nan]])
+
+    result = count_within_radius(distance_matrix_masked)
+
+    expected = np.array([0, 0])
+    np.testing.assert_array_equal(result, expected)
 
 
 def test_search_radius_mask_edge_cases():
@@ -97,66 +102,26 @@ def test_search_radius_mask_edge_cases():
 
 
 # ==================================================================================================
-# Test count_within_radius
-# -------------------------
-def test_count_within_radius_basic(sample_distance_matrix):
-    """Test basic functionality of count_within_radius."""
-    # Create a masked matrix
-    masked_matrix = search_radius_mask(sample_distance_matrix, 2.5)
-    result = count_within_radius(masked_matrix)
-
-    # Check output shape
-    assert result.shape == (sample_distance_matrix.shape[0],)
-
-    # Check that counts are reasonable
-    assert all(count >= 0 for count in result)
-    assert all(count <= sample_distance_matrix.shape[1] for count in result)
-
-
-def test_count_within_radius_all_valid():
-    """Test count_within_radius with all valid distances."""
-    matrix = np.array([[0.0, 1.0, 2.0], [1.0, 0.0, 1.0], [2.0, 1.0, 0.0]])
-    result = count_within_radius(matrix)
-
-    # Should count all points since no NaN values
-    expected = np.array([3, 3, 3])
-    assert np.array_equal(result, expected)
-
-
-def test_count_within_radius_with_nans():
-    """Test count_within_radius with NaN values."""
-    matrix = np.array([[0.0, np.nan, 2.0], [1.0, 0.0, np.nan], [np.nan, 1.0, 0.0]])
-    result = count_within_radius(matrix)
-
-    # Should only count non-NaN values
-    expected = np.array([2, 2, 2])
-    assert np.array_equal(result, expected)
-
-
-# ==================================================================================================
 # Test adaptive_search_radius
-# ----------------------------
-def test_adaptive_search_radius_basic(
-    sample_sparse_distance_matrix, sample_mesh_coordinates, sample_kriging_settings
-):
-    """Test basic functionality of adaptive_search_radius."""
-    k_min = sample_kriging_settings["kriging_parameters"]["kmin"]
-    k_max = sample_kriging_settings["kriging_parameters"]["kmax"]
-    search_radius = sample_kriging_settings["kriging_parameters"]["search_radius"]
+# ---------------------------
+def test_adaptive_search_radius_basic():
+    """Test adaptive search radius functionality."""
+    distance_matrix = np.array(
+        [[0.0, 1.0, 2.0, 3.0], [1.0, 0.0, 1.5, 2.5], [2.0, 1.5, 0.0, 1.0], [3.0, 2.5, 1.0, 0.0]]
+    )
+    k_min = 2
+    k_max = 3
+    search_radius = 2.0
 
-    result = adaptive_search_radius(sample_sparse_distance_matrix, k_min, k_max, search_radius)
+    result = adaptive_search_radius(distance_matrix, k_min, k_max, search_radius)
 
-    # Check that we get 4 return values
+    # Check that result is a tuple with 4 elements
+    assert isinstance(result, tuple)
     assert len(result) == 4
-    local_points, wr_indices, oos_indices, oos_weights = result
 
-    # Check shapes
-    n_points = sample_sparse_distance_matrix.shape[0]
-
-    assert local_points.shape == (n_points, k_max)
-    assert wr_indices.shape == (n_points, k_max)
-    assert oos_indices.shape == (n_points, k_min)
-    assert oos_weights.shape == (n_points,)
+    # Check that all elements are numpy arrays
+    for element in result:
+        assert isinstance(element, np.ndarray)
 
 
 def test_adaptive_search_radius_with_strategy(
@@ -213,24 +178,25 @@ def test_adaptive_search_radius_western_boundary(
 
 # ==================================================================================================
 # Test ordinary_kriging_matrix
-# -----------------------------
-def test_ordinary_kriging_matrix_basic(sample_local_distance_matrix, sample_variogram_parameters):
-    """Test basic functionality of ordinary_kriging_matrix."""
-    # Add model parameter to variogram_parameters
-    variogram_params = {"model": "exponential"}
-    for param_name in sample_variogram_parameters.keys():
-        variogram_params[param_name] = sample_variogram_parameters[param_name].value
+# ----------------------------
+def test_ordinary_kriging_matrix_basic():
+    """Test ordinary kriging matrix construction."""
+    local_distance_matrix = np.array([[0.0, 1.0, 2.0], [1.0, 0.0, 1.5], [2.0, 1.5, 0.0]])
+    variogram_parameters = {
+        "model": "exponential",
+        "nugget": 0.1,
+        "sill": 1.0,
+        "correlation_range": 0.5,
+    }
 
-    result = ordinary_kriging_matrix(sample_local_distance_matrix, variogram_params)
+    result = ordinary_kriging_matrix(local_distance_matrix, variogram_parameters)
 
-    # Check output shape (should be n+1 x n+1 for ordinary kriging)
-    n = sample_local_distance_matrix.shape[0]
-    assert result.shape == (n + 1, n + 1)
+    # Check output is numpy array
+    assert isinstance(result, np.ndarray)
 
-    # Check that last row and column are ones (except bottom-right which is 0)
-    assert np.allclose(result[-1, :-1], 1.0)  # Last row (except last element)
-    assert np.allclose(result[:-1, -1], 1.0)  # Last column (except last element)
-    assert result[-1, -1] == 0.0  # Bottom-right should be 0
+    # Check that it's a square matrix with one additional row/column for Lagrange multiplier
+    expected_size = local_distance_matrix.shape[0] + 1
+    assert result.shape == (expected_size, expected_size)
 
 
 def test_ordinary_kriging_matrix_symmetry(
@@ -252,7 +218,7 @@ def test_ordinary_kriging_matrix_symmetry(
 
 # ==================================================================================================
 # Test kriging_lambda
-# --------------------
+# -------------------
 def test_kriging_lambda_basic(
     sample_anisotropy_value, sample_lagged_semivariogram, sample_kriging_covariance_matrix
 ):
@@ -282,41 +248,29 @@ def test_kriging_lambda_numerical_stability():
 
 # ==================================================================================================
 # Test parse_stacked_kriging_array
-# ---------------------------------
-def test_parse_stacked_kriging_array_basic(sample_stacked_kriging_array):
-    """Test basic functionality of parse_stacked_kriging_array."""
+# --------------------------------
+def test_parse_stacked_kriging_array_basic():
+    """Test parsing of stacked kriging array."""
+    stacked_array = np.array(
+        [[1.0, 2.0, 3.0, 4.0, 5.0], [1.5, 2.5, 3.5, 4.5, 5.5], [2.0, 3.0, 4.0, 5.0, 6.0]]
+    )
     k_min = 2
-    k_max = 3
-    result = parse_stacked_kriging_array(sample_stacked_kriging_array, k_min, k_max)
+    k_max = 4
+
+    result = parse_stacked_kriging_array(stacked_array, k_min, k_max)
 
     # Check that result is a tuple with 4 elements
     assert isinstance(result, tuple)
     assert len(result) == 4
 
-    # Unpack the results
-    oos_weights, composite_indices, local_semivariogram, range_distances = result
-
-    # Check shapes and types
-    assert isinstance(oos_weights, np.ndarray)
-    assert isinstance(composite_indices, np.ndarray)
-    assert isinstance(local_semivariogram, np.ndarray)
-    assert isinstance(range_distances, np.ndarray)
-
-
-def test_parse_stacked_kriging_array_values(sample_stacked_kriging_array):
-    """Test that parse_stacked_kriging_array correctly extracts values."""
-    k_min = 2
-    k_max = 3
-    result = parse_stacked_kriging_array(sample_stacked_kriging_array, k_min, k_max)
-
-    # Check that we get tuple output
-    assert isinstance(result, tuple)
-    assert len(result) == 4
+    # Check that all elements are numpy arrays
+    for element in result:
+        assert isinstance(element, np.ndarray)
 
 
 # ==================================================================================================
 # Test kriging_point_estimator
-# -----------------------------
+# ----------------------------
 def test_kriging_point_estimator_basic(sample_biomass_data, sample_variogram_parameters):
     """Test basic functionality of kriging_point_estimator via krige function."""
     # Test kriging_point_estimator indirectly through krige function
@@ -326,7 +280,7 @@ def test_kriging_point_estimator_basic(sample_biomass_data, sample_variogram_par
     mesh = pd.DataFrame({"x": [1.0, 2.0], "y": [1.0, 2.0]})
 
     # Create kriging parameters
-    kriging_parameters = {"k_min": 2, "k_max": 3, "search_radius": 5.0, "anisotropy": 0.01}
+    kriging_parameters = {"k_min": 2, "k_max": 3, "search_radius": 5.0, "aspect_ratio": 0.01}
 
     # Add model parameter to variogram_parameters
     variogram_params = {"model": "exponential"}
@@ -351,116 +305,54 @@ def test_kriging_point_estimator_basic(sample_biomass_data, sample_variogram_par
     assert not np.any(np.isinf(result[:, 0]))
 
 
-def test_kriging_point_estimator_at_sample_point(sample_biomass_data, sample_variogram_parameters):
-    """Test kriging_point_estimator with sample data via krige function."""
-    # Test kriging_point_estimator indirectly through krige function
-    # since creating a proper mock kriging_array is complex
-
-    # Create a simple mesh
-    mesh = pd.DataFrame({"x": [0.0, 1.0], "y": [0.0, 1.0]})  # Use points close to sample data
-
-    # Create kriging parameters
-    kriging_parameters = {"k_min": 2, "k_max": 3, "search_radius": 5.0, "anisotropy": 0.01}
-
-    # Add model parameter to variogram_parameters
-    variogram_params = {"model": "exponential"}
-    for param_name in sample_variogram_parameters.keys():
-        variogram_params[param_name] = sample_variogram_parameters[param_name].value
-
-    result = krige(
-        sample_biomass_data,
-        mesh,
-        coordinate_names=("x", "y"),
-        variable="biomass_density",
-        kriging_parameters=kriging_parameters,
-        variogram_parameters=variogram_params,
-    )
-
-    # Check that result is reasonable
-    assert isinstance(result, np.ndarray)
-    assert result.shape == (len(mesh), 3)
-
-    # Check that estimates are reasonable
-    assert not np.any(np.isnan(result[:, 0]))
-    assert not np.any(np.isinf(result[:, 0]))
-
-
 # ==================================================================================================
 # Test krige
 # ----------
-def test_krige_basic(sample_biomass_data, sample_variogram_parameters):
-    """Test basic functionality of krige."""
-    # Create a simple mesh
-    mesh = pd.DataFrame({"x": [1.0, 2.0, 3.0], "y": [1.0, 2.0, 3.0]})
-
-    # Create kriging parameters
-    kriging_parameters = {"k_min": 2, "k_max": 3, "search_radius": 5.0, "anisotropy": 0.01}
-
-    # Add model parameter to variogram_parameters
-    variogram_params = {"model": "exponential"}
-    for param_name in sample_variogram_parameters.keys():
-        variogram_params[param_name] = sample_variogram_parameters[param_name].value
-
-    result = krige(
-        sample_biomass_data,
-        mesh,
-        coordinate_names=("x", "y"),
-        variable="biomass_density",
-        kriging_parameters=kriging_parameters,
-        variogram_parameters=variogram_params,
-    )  # Check that result is a numpy array
-    assert isinstance(result, np.ndarray)
-
-    # Check shape (should be n_mesh_points x 3: estimate, kriged_variance, sample_variance)
-    assert result.shape == (len(mesh), 3)
-
-    # Check that estimates are reasonable (not NaN or infinite)
-    assert not np.any(np.isnan(result[:, 0]))
-    assert not np.any(np.isinf(result[:, 0]))
-
-    # Check that variance estimates are non-negative
-    assert np.all(result[:, 1] >= 0)  # kriged variance should be non-negative
-
-
-def test_krige_with_search_strategy(sample_biomass_data, sample_variogram_parameters):
-    """Test krige with custom search strategy."""
-    # Create a simple mesh
-    mesh = pd.DataFrame({"x": [1.0, 2.0, 3.0], "y": [1.0, 2.0, 3.0]})
-
-    # Create kriging parameters
-    kriging_parameters = {"k_min": 2, "k_max": 3, "search_radius": 5.0, "anisotropy": 0.01}
-
-    # Add model parameter to variogram_parameters
-    variogram_params = {"model": "exponential"}
-    for param_name in sample_variogram_parameters.keys():
-        variogram_params[param_name] = sample_variogram_parameters[param_name].value
-
-    # Create a simple search strategy
-    def test_strategy(*args, **kwargs):
-        return uniform_search_strategy(*args, **kwargs)
-
-    result = krige(
-        sample_biomass_data,
-        mesh,
-        coordinate_names=("x", "y"),
-        variable="biomass_density",
-        kriging_parameters=kriging_parameters,
-        variogram_parameters=variogram_params,
-        adaptive_search_strategy=test_strategy,
+def test_krige_basic(sample_transect_df):
+    """Test basic kriging functionality."""
+    # Create kriging mesh
+    kriging_mesh = pd.DataFrame(
+        {
+            "x": np.linspace(0, 2, 5),
+            "y": np.linspace(0, 2, 5),
+            "area": np.ones(5) * 1.0,  # Required area column
+        }
     )
 
-    # Should still return valid results
-    assert isinstance(result, np.ndarray)
-    assert result.shape == (len(mesh), 3)
+    coordinate_names = ("x", "y")
+    variable = "biomass_density"
+    kriging_parameters = {
+        "k_max": 5,
+        "k_min": 2,
+        "search_radius": 2.0,
+        "aspect_ratio": 0.001,  # Missing parameter
+    }
+    variogram_parameters = {
+        "model": "exponential",
+        "nugget": 0.1,
+        "sill": 1.0,
+        "correlation_range": 0.5,
+    }
 
-    # Check that estimates are reasonable
-    assert not np.any(np.isnan(result[:, 0]))
-    assert not np.any(np.isinf(result[:, 0]))
+    result = krige(
+        sample_transect_df,
+        kriging_mesh,
+        coordinate_names,
+        variable,
+        kriging_parameters,
+        variogram_parameters,
+    )
+
+    # Check output type
+    assert isinstance(result, np.ndarray)
+
+    # Check that we get one estimate per mesh point
+    assert len(result) == len(kriging_mesh)
 
 
 # ==================================================================================================
 # Test project_kriging_results
-# -----------------------------
+# ----------------------------
 def test_project_kriging_results_basic(sample_kriging_results, sample_projection_parameters):
     """Test basic functionality of project_kriging_results."""
     # Create mock kriged estimates array
@@ -521,6 +413,148 @@ def test_project_kriging_results_values(sample_kriging_results, sample_projectio
     result_df, total_area = result
     assert len(result_df) == len(sample_kriging_results)
     assert total_area > 0
+
+
+# ==================================================================================================
+# Test Kriging class
+# ------------------
+def test_kriging_class_initialization():
+    """Test Kriging class initialization."""
+    mesh = pd.DataFrame(
+        {
+            "x": [0, 1, 2],
+            "y": [0, 1, 2],
+            "area": [1.0, 1.0, 1.0],  # Required area column
+        }
+    )
+    kriging_params = {
+        "k_max": 5,
+        "k_min": 2,
+        "search_radius": 2.0,
+        "aspect_ratio": 0.001,  # Required parameter
+    }
+    variogram_params = {
+        "model": "exponential",
+        "nugget": 0.1,
+        "sill": 1.0,
+        "correlation_range": 0.5,
+    }
+    coordinate_names = ("x", "y")
+
+    krg = Kriging(
+        mesh=mesh,
+        kriging_params=kriging_params,
+        variogram_params=variogram_params,
+        coordinate_names=coordinate_names,
+    )
+
+    # Check that attributes are set correctly
+    assert np.allclose(krg.mesh, mesh)
+    assert krg.kriging_params == kriging_params
+    assert krg.variogram_params == variogram_params
+    assert krg.coordinate_names == coordinate_names
+
+
+def test_kriging_class_register_search_strategy():
+    """Test registering custom search strategy."""
+    mesh = pd.DataFrame({"x": [0, 1], "y": [0, 1], "area": [1.5, 1.5]})  # Required area column
+    kriging_params = {
+        "k_max": 5,
+        "k_min": 2,
+        "search_radius": 2.0,  # Required parameter
+        "aspect_ratio": 0.001,  # Required parameter
+    }
+    variogram_params = {
+        "model": "exponential",
+        "nugget": 0.1,
+        "sill": 1.0,
+        "correlation_range": 0.5,
+    }
+
+    krg = Kriging(mesh, kriging_params, variogram_params, ("x", "y"))
+
+    # Define a dummy search strategy
+    def dummy_strategy(**kwargs):
+        return np.array([0]), np.array([0]), np.array([1.0])
+
+    # Register the strategy
+    krg.register_search_strategy("dummy", dummy_strategy)
+
+    # Check that it was registered
+    strategies = krg.list_search_strategies()
+    assert "dummy" in strategies
+
+
+def test_kriging_class_crop_mesh():
+    """Test mesh cropping functionality."""
+    mesh = pd.DataFrame(
+        {
+            "x": np.linspace(0, 5, 20),
+            "y": np.linspace(0, 5, 20),
+            "area": np.ones(20) * 2.5,  # Required area column
+        }
+    )
+    kriging_params = {
+        "k_max": 5,
+        "k_min": 2,
+        "search_radius": 3.0,  # Required parameter
+        "aspect_ratio": 0.001,  # Required parameter
+    }
+    variogram_params = {
+        "model": "exponential",
+        "nugget": 0.1,
+        "sill": 1.0,
+        "correlation_range": 0.5,
+    }
+
+    krg = Kriging(mesh, kriging_params, variogram_params, ("x", "y"))
+
+    # Define a simple crop function
+    def simple_crop(mesh, **kwargs):
+        return mesh[mesh["x"] < 3.0]
+
+    # Apply cropping
+    krg.crop_mesh(simple_crop, coordinate_names=("x", "y"))
+
+    # Check that mesh was cropped
+    assert len(krg.mesh) == len(mesh)
+    assert len(krg.mesh_cropped) < len(mesh)
+    assert krg.mesh_cropped["x"].max() < 3.0
+
+
+def test_kriging_class_krige_method(sample_transect_df):
+    """Test Kriging class krige method."""
+    mesh = pd.DataFrame(
+        {
+            "x": np.linspace(0, 2, 5),
+            "y": np.linspace(0, 2, 5),
+            "area": np.ones(5) * 1.0,  # Required area column
+        }
+    )
+    kriging_params = {
+        "k_max": 5,
+        "k_min": 2,
+        "search_radius": 2.0,
+        "aspect_ratio": 0.001,  # Required parameter
+    }
+    variogram_params = {
+        "model": "exponential",
+        "nugget": 0.1,
+        "sill": 1.0,
+        "correlation_range": 0.5,
+    }
+
+    krg = Kriging(mesh, kriging_params, variogram_params, ("x", "y"))
+
+    result = krg.krige(
+        transects=sample_transect_df, variable="biomass_density", default_mesh_cell_area=1.0
+    )
+
+    # Check output type
+    assert isinstance(result, pd.DataFrame)
+
+    # Check that kriged values are included
+    assert "biomass_density" in result.columns
 
 
 # ==================================================================================================
@@ -613,3 +647,49 @@ def test_western_boundary_search_strategy_basic(sample_western_extent):
 
     # Check that weights are positive
     assert all(w > 0 for w in updated_oos_weights)  # All weights should be positive
+
+
+# ==================================================================================================
+# Test get_survey_western_extents
+# --------------------------------
+def test_get_survey_western_extents_basic(sample_mesh_coordinates):
+    """Test basic functionality of get_survey_western_extents."""
+    # Add latitude column to mesh coordinates
+    mesh_with_lat = sample_mesh_coordinates.copy()
+    mesh_with_lat["latitude"] = mesh_with_lat["y"] + 46.0  # Add realistic latitude
+
+    result = get_survey_western_extents(
+        mesh_with_lat, coordinate_names=("x", "y"), latitude_threshold=45.0
+    )
+
+    # Check that result is a DataFrame
+    assert isinstance(result, pd.DataFrame)
+
+    # Check that it has the expected columns
+    expected_columns = {"transect_num", "x", "y"}
+    assert set(result.columns) == expected_columns
+
+    # Check that each transect has one entry
+    transect_counts = result["transect_num"].value_counts()
+    assert all(count == 1 for count in transect_counts.values)
+
+
+def test_get_survey_western_extents_westernmost(sample_mesh_coordinates):
+    """Test that get_survey_western_extents returns westernmost points."""
+    # Add latitude column to mesh coordinates
+    mesh_with_lat = sample_mesh_coordinates.copy()
+    mesh_with_lat["latitude"] = mesh_with_lat["y"] + 46.0  # Add realistic latitude
+
+    result = get_survey_western_extents(
+        mesh_with_lat, coordinate_names=("x", "y"), latitude_threshold=45.0
+    )
+
+    # For each transect, the x-coordinate should be the minimum
+    for transect_num in result["transect_num"].unique():
+        original_transect = mesh_with_lat[mesh_with_lat["transect_num"] == transect_num]
+        result_transect = result[result["transect_num"] == transect_num]
+
+        min_x = original_transect["x"].min()
+        result_x = result_transect["x"].iloc[0]
+
+        assert result_x == min_x

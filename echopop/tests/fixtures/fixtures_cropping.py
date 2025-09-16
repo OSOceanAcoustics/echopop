@@ -195,6 +195,7 @@ def sample_mesh_data_cropping():
             "transect_num": np.random.choice(
                 [1, 2, 3, 121, 122, 129, 130], len(lon_grid.flatten())
             ),
+            "area": 10.0,
         }
     )
 
