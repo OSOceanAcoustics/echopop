@@ -11,7 +11,7 @@ warnings.simplefilter("always")
 
 def remove_group_from_estimates(
     transect_data: pd.DataFrame,
-    partition_dict: Dict[str, Union[pd.DataFrame, pd.Series]],
+    group_proportions: Dict[str, Union[pd.DataFrame, pd.Series]],
 ) -> pd.DataFrame:
     """
     Partition NASC, abundance (and number density), and biomass (and biomass density) transect
@@ -21,8 +21,8 @@ def remove_group_from_estimates(
     ----------
     transect_data : pd.DataFrame
         DataFrame containing transect data with number densities already computed. Must include:
-        - A column that matches the index of the `partition_dict` DataFrames/Series.
-    partition_dict : Dict[str, Union[pd.DataFrame, pd.Series]]
+        - A column that matches the index of the `group_proportions` DataFrames/Series.
+    group_proportions : Dict[str, Union[pd.DataFrame, pd.Series]]
         Dictionary containing partitioning data for NASC, abundance, and biomass. Valid key names
         are limited to 'abundance', 'biomass', and 'nasc'. Each key maps to different variables:
         - 'abundance': pd.Series or DataFrame with abundance proportions. This partitions the
@@ -39,49 +39,70 @@ def remove_group_from_estimates(
 
     Notes
     -----
-    The DataFrames/Series in `partition_dict` must have indices that correspond to values in the
-    `transect data`. Missing indices will result in NaN values for those rows. The function 
+    The DataFrames/Series in `group_proportions` must have indices that correspond to values in the
+    `transect data`. Missing indices will result in NaN values for those rows. The function
     automatically identifies and uses the appropriate index columns for merging.
     """
 
     # Create copy
     transect_data = transect_data.copy()
 
+    # Empty dictionary not allowed
+    if len(group_proportions) == 0:
+        raise ValueError("Dictionary input for 'group_proportions' cannot be empty.")
+
     # Get the index names
-    index_names = list(set().union(*[set(df.index.names) for df in partition_dict.values()]))
+    index_names = list(set().union(*[set(df.index.names) for df in group_proportions.values()]))
 
     # Set the index of the input dataset
     transect_data.set_index(index_names, inplace=True)
 
     # NASC, if present
-    if "nasc" in partition_dict:
-        transect_data["nasc"] = (
-            transect_data["nasc"] * (1 - partition_dict["nasc"].reindex(transect_data.index))
+    if "nasc" in group_proportions:
+        transect_data["nasc"] = transect_data["nasc"] * (
+            1 - group_proportions["nasc"].reindex(transect_data.index)
         )
+    # ---- Drop column to avoid partial evaluation
+    else:
+        transect_data.drop(columns=["nasc"], inplace=True)
 
     # Abundance and number density, if present
-    if "abundance" in partition_dict:
+    if "abundance" in group_proportions:
         # ---- Get the inverse proportions
-        abundance_proportions = 1 - partition_dict["abundance"].reindex(transect_data.index)
+        abundance_proportions = 1 - group_proportions["abundance"].reindex(transect_data.index)
         # ---- Map the appropriate columns for abundance
         abundance_names = transect_data.filter(like="abundance").columns
         # ---- Adjust abundances
-        transect_data[abundance_names] = transect_data[abundance_names].mul(abundance_proportions, axis=0)
+        transect_data[abundance_names] = transect_data[abundance_names].mul(
+            abundance_proportions, axis=0
+        )
         # ---- Map the appropriate columns for number density
         number_density_names = transect_data.filter(like="number_density").columns
         # ---- Adjust number densities
         transect_data[number_density_names] = transect_data[number_density_names].mul(
             abundance_proportions, axis=0
         )
+    # ---- Drop columns to avoid partial evaluation
+    else:
+        # ---- Gather columns to drop
+        abundance_columns = transect_data.filter(regex="(abundance|number_density)").columns
+        # ---- Drop
+        transect_data.drop(columns=abundance_columns, inplace=True)
 
     # Biomass and biomass density, if present
-    if "biomass" in partition_dict:
+    if "biomass" in group_proportions:
         # ---- Get the inverse proportions
-        biomass_proportions = 1 - partition_dict["biomass"].reindex(transect_data.index)
+        biomass_proportions = 1 - group_proportions["biomass"].reindex(transect_data.index)
         # ---- Map the appropriate columns for biomass and biomass density
         biomass_names = transect_data.filter(like="biomass").columns
         # ---- Adjust biomass
         transect_data[biomass_names] = (biomass_proportions * transect_data[biomass_names].T).T
+    # ---- Drop columns to avoid partial evaluation
+    else:
+        # ---- Gather columns to drop
+        biomass_columns = transect_data.filter(regex="(biomass|biomass_density)").columns
+        # ---- Drop
+        transect_data.drop(columns=biomass_columns, inplace=True)
 
     # Reset the index
     transect_data.reset_index(inplace=True)

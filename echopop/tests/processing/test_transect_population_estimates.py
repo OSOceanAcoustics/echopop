@@ -1,14 +1,20 @@
 import numpy as np
 import pandas as pd
+import pytest
 
 from echopop.nwfsc_feat import apportion, biology
 
 
-def test_partition_transect_data_nasc_only(sample_transect_dataset, age1_nasc_proportions):
+def test_remove_group_from_estimates_nasc_only(sample_transect_dataset, age1_nasc_proportions):
     """Test partitioning with only NASC proportions."""
+
+    # NASC-only
     result = apportion.remove_group_from_estimates(
-        transect_data=sample_transect_dataset, partition_dict={"nasc": age1_nasc_proportions}
+        transect_data=sample_transect_dataset, group_proportions={"nasc": age1_nasc_proportions}
     )
+
+    # Check shape/columns
+    assert set(result.columns) == set(["stratum_ks", "transect_num", "nasc", "area_interval"])
 
     # Check that NASC was partitioned correctly for stratum 1 (proportion 0.1)
     stratum_1_rows = result[result["stratum_ks"] == 1]
@@ -26,12 +32,21 @@ def test_partition_transect_data_nasc_only(sample_transect_dataset, age1_nasc_pr
     assert np.allclose(stratum_3_rows["nasc"].values, expected_nasc_values)
 
 
-def test_partition_transect_data_abundance_only(
+def test_remove_group_from_estimates_abundance_only(
     sample_transect_dataset, age1_abundance_proportions
 ):
     """Test partitioning with only abundance proportions."""
+
+    # Abundance-only
     result = apportion.remove_group_from_estimates(
-        transect_data=sample_transect_dataset, partition_dict={"abundance": age1_abundance_proportions}
+        transect_data=sample_transect_dataset, 
+        group_proportions={"abundance": age1_abundance_proportions}
+    )
+
+    # Check shape/columns
+    assert set(result.columns) == set(
+        ["stratum_ks", "transect_num", "number_density", "abundance", "abundance_male", 
+         "abundance_female", "area_interval"]
     )
 
     # Check abundance
@@ -47,11 +62,21 @@ def test_partition_transect_data_abundance_only(
     )
 
 
-def test_partition_transect_data_biomass_only(sample_transect_dataset, age1_biomass_proportions):
+def test_remove_group_from_estimates_biomass_only(sample_transect_dataset, age1_biomass_proportions):
     """Test partitioning with only biomass proportions."""
+
+    # Biomass-only
     result = apportion.remove_group_from_estimates(
-        transect_data=sample_transect_dataset, partition_dict={"biomass": age1_biomass_proportions}
+        transect_data=sample_transect_dataset, 
+        group_proportions={"biomass": age1_biomass_proportions}
     )
+
+    # Check shape/columns
+    assert set(result.columns) == set(
+        ["stratum_ks", "transect_num", "biomass_density", "biomass", "biomass_male", 
+         "biomass_female", "area_interval"]
+    )
+
 
     # Check biomass
     assert np.allclose(
@@ -66,16 +91,18 @@ def test_partition_transect_data_biomass_only(sample_transect_dataset, age1_biom
     )
 
 
-def test_partition_transect_data_all_variables(
+def test_remove_group_from_estimates_all_variables(
     sample_transect_dataset,
     age1_nasc_proportions,
     age1_abundance_proportions,
     age1_biomass_proportions,
 ):
     """Test partitioning with all three variable types."""
+
+    # All variables
     result = apportion.remove_group_from_estimates(
         transect_data=sample_transect_dataset,
-        partition_dict={
+        group_proportions={
             "nasc": age1_nasc_proportions,
             "abundance": age1_abundance_proportions,
             "biomass": age1_biomass_proportions,
@@ -100,6 +127,19 @@ def test_partition_transect_data_all_variables(
         ]
     )
     assert len(result) == len(sample_transect_dataset)
+
+
+def test_remove_group_from_estimates_empty_proportions(
+    sample_transect_dataset,
+):
+    """Test partitioning with all three variable types."""
+
+    # Input dictionary CANNOT be empty
+    with pytest.raises(ValueError):
+        assert apportion.remove_group_from_estimates(
+            transect_data=sample_transect_dataset,
+            group_proportions={},
+        )
 
 
 def test_compute_abundance_basic(biology_test_dataset):
