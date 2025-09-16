@@ -7,7 +7,7 @@ from echopop.nwfsc_feat import apportion, biology
 def test_partition_transect_data_nasc_only(sample_transect_dataset, age1_nasc_proportions):
     """Test partitioning with only NASC proportions."""
     result = apportion.partition_transect_data(
-        dataset=sample_transect_dataset, partition_dict={"nasc": age1_nasc_proportions}
+        transect_data=sample_transect_dataset, partition_dict={"nasc": age1_nasc_proportions}
     )
 
     # Check that NASC was partitioned correctly for stratum 1 (proportion 0.1)
@@ -31,7 +31,7 @@ def test_partition_transect_data_abundance_only(
 ):
     """Test partitioning with only abundance proportions."""
     result = apportion.partition_transect_data(
-        dataset=sample_transect_dataset, partition_dict={"abundance": age1_abundance_proportions}
+        transect_data=sample_transect_dataset, partition_dict={"abundance": age1_abundance_proportions}
     )
 
     # Check abundance
@@ -50,7 +50,7 @@ def test_partition_transect_data_abundance_only(
 def test_partition_transect_data_biomass_only(sample_transect_dataset, age1_biomass_proportions):
     """Test partitioning with only biomass proportions."""
     result = apportion.partition_transect_data(
-        dataset=sample_transect_dataset, partition_dict={"biomass": age1_biomass_proportions}
+        transect_data=sample_transect_dataset, partition_dict={"biomass": age1_biomass_proportions}
     )
 
     # Check biomass
@@ -74,7 +74,7 @@ def test_partition_transect_data_all_variables(
 ):
     """Test partitioning with all three variable types."""
     result = apportion.partition_transect_data(
-        dataset=sample_transect_dataset,
+        transect_data=sample_transect_dataset,
         partition_dict={
             "nasc": age1_nasc_proportions,
             "abundance": age1_abundance_proportions,
