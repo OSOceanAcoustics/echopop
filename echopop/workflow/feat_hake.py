@@ -857,7 +857,6 @@ dict_kriged_abundance_table["standardized_unaged"] = apportion.distribute_unaged
 # ##################################################################################################
 # Standardize the unaged abundance estimates to be distributed over age
 # ---------------------------------------------------------------------
-# THIS NEEDS TO BE FULLY IMPLEMENTED WITH TESTS, ETC.
 
 dict_kriged_biomass_table["standardized_unaged"] = apportion.distribute_unaged_from_aged(
     population_table=dict_kriged_biomass_table["unaged"],
