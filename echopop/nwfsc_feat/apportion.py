@@ -9,9 +9,9 @@ from . import utils
 warnings.simplefilter("always")
 
 
-def partition_transect_data(
-    dataset: pd.DataFrame,
-    partition_dict: Dict[str, Union[pd.DataFrame, pd.Series]],
+def remove_group_from_estimates(
+    transect_data: pd.DataFrame,
+    group_proportions: Dict[str, Union[pd.DataFrame, pd.Series]],
 ) -> pd.DataFrame:
     """
     Partition NASC, abundance (and number density), and biomass (and biomass density) transect
@@ -19,10 +19,10 @@ def partition_transect_data(
 
     Parameters
     ----------
-    dataset : pd.DataFrame
+    transect_data : pd.DataFrame
         DataFrame containing transect data with number densities already computed. Must include:
-        - A column that matches the index of the `partition_dict` DataFrames/Series.
-    partition_dict : Dict[str, Union[pd.DataFrame, pd.Series]]
+        - A column that matches the index of the `group_proportions` DataFrames/Series.
+    group_proportions : Dict[str, Union[pd.DataFrame, pd.Series]]
         Dictionary containing partitioning data for NASC, abundance, and biomass. Valid key names
         are limited to 'abundance', 'biomass', and 'nasc'. Each key maps to different variables:
         - 'abundance': pd.Series or DataFrame with abundance proportions. This partitions the
@@ -39,53 +39,76 @@ def partition_transect_data(
 
     Notes
     -----
-    The DataFrames/Series in `partition_dict` must have indices that correspond to values in the
-    `dataset`. Missing indices will result in NaN values for those rows. The function automatically
-    identifies and uses the appropriate index columns for merging.
+    The DataFrames/Series in `group_proportions` must have indices that correspond to values in the
+    `transect data`. Missing indices will result in NaN values for those rows. The function
+    automatically identifies and uses the appropriate index columns for merging.
     """
 
     # Create copy
-    dataset = dataset.copy()
+    transect_data = transect_data.copy()
+
+    # Empty dictionary not allowed
+    if len(group_proportions) == 0:
+        raise ValueError("Dictionary input for 'group_proportions' cannot be empty.")
 
     # Get the index names
-    index_names = list(set().union(*[set(df.index.names) for df in partition_dict.values()]))
+    index_names = list(set().union(*[set(df.index.names) for df in group_proportions.values()]))
 
     # Set the index of the input dataset
-    dataset.set_index(index_names, inplace=True)
+    transect_data.set_index(index_names, inplace=True)
 
     # NASC, if present
-    if "nasc" in partition_dict:
-        dataset["nasc"] = dataset["nasc"] * (1 - partition_dict["nasc"].reindex(dataset.index))
+    if "nasc" in group_proportions:
+        transect_data["nasc"] = transect_data["nasc"] * (
+            1 - group_proportions["nasc"].reindex(transect_data.index)
+        )
+    # ---- Drop column to avoid partial evaluation
+    else:
+        transect_data.drop(columns=["nasc"], inplace=True)
 
     # Abundance and number density, if present
-    if "abundance" in partition_dict:
+    if "abundance" in group_proportions:
         # ---- Get the inverse proportions
-        abundance_proportions = 1 - partition_dict["abundance"].reindex(dataset.index)
+        abundance_proportions = 1 - group_proportions["abundance"].reindex(transect_data.index)
         # ---- Map the appropriate columns for abundance
-        abundance_names = dataset.filter(like="abundance").columns
+        abundance_names = transect_data.filter(like="abundance").columns
         # ---- Adjust abundances
-        dataset[abundance_names] = dataset[abundance_names].mul(abundance_proportions, axis=0)
-        # ---- Map the appropriate columns for number density
-        number_density_names = dataset.filter(like="number_density").columns
-        # ---- Adjust number densities
-        dataset[number_density_names] = dataset[number_density_names].mul(
+        transect_data[abundance_names] = transect_data[abundance_names].mul(
             abundance_proportions, axis=0
         )
+        # ---- Map the appropriate columns for number density
+        number_density_names = transect_data.filter(like="number_density").columns
+        # ---- Adjust number densities
+        transect_data[number_density_names] = transect_data[number_density_names].mul(
+            abundance_proportions, axis=0
+        )
+    # ---- Drop columns to avoid partial evaluation
+    else:
+        # ---- Gather columns to drop
+        abundance_columns = transect_data.filter(regex="(abundance|number_density)").columns
+        # ---- Drop
+        transect_data.drop(columns=abundance_columns, inplace=True)
 
     # Biomass and biomass density, if present
-    if "biomass" in partition_dict:
+    if "biomass" in group_proportions:
         # ---- Get the inverse proportions
-        biomass_proportions = 1 - partition_dict["biomass"].reindex(dataset.index)
+        biomass_proportions = 1 - group_proportions["biomass"].reindex(transect_data.index)
         # ---- Map the appropriate columns for biomass and biomass density
-        biomass_names = dataset.filter(like="biomass").columns
+        biomass_names = transect_data.filter(like="biomass").columns
         # ---- Adjust biomass
-        dataset[biomass_names] = (biomass_proportions * dataset[biomass_names].T).T
+        transect_data[biomass_names] = (biomass_proportions * transect_data[biomass_names].T).T
+    # ---- Drop columns to avoid partial evaluation
+    else:
+        # ---- Gather columns to drop
+        biomass_columns = transect_data.filter(regex="(biomass|biomass_density)").columns
+        # ---- Drop
+        transect_data.drop(columns=biomass_columns, inplace=True)
 
     # Reset the index
-    dataset.reset_index(inplace=True)
+    transect_data.reset_index(inplace=True)
 
     # Return the partitioned dataset
-    return dataset
+    return transect_data
 
 
 def mesh_biomass_to_nasc(
@@ -178,16 +201,18 @@ def mesh_biomass_to_nasc(
             f"The following link columns were missing from the mesh DataFrame: "
             f"{', '.join(col for col in missing_mesh_columns)}."
         )
-
-    # Compute biomass if not already in DataFrame
+    # ---- Biomass column
     if "biomass" not in mesh_data_df.columns:
-        mesh_data_df["biomass"] = mesh_data_df["biomass_density"] * mesh_data_df["area"]
+        raise KeyError(
+            "The input kriging mesh DataFrame does not have a column 'biomass'. Please compute the "
+            "kriged biomass."
+        )
 
     # Set the link column names
     mesh_data_df.rename(columns=mesh_biodata_link, inplace=True)
 
     # Map the link columns
-    mesh_index = [v for v in mesh_biodata_link.values() if v in mesh_data_df.columns]
+    mesh_index = list(mesh_biodata_link.values())
 
     # Index
     mesh_data_df.set_index(mesh_index, inplace=True)
@@ -525,7 +550,7 @@ def impute_kriged_table(
     return standardized_table_copy
 
 
-def standardize_kriged_estimates(
+def distribute_unaged_from_aged(
     population_table: pd.DataFrame,
     reference_table: pd.DataFrame,
     group_by: List[str],
@@ -611,7 +636,7 @@ def standardize_kriged_estimates(
         return standardized_table_imputed
 
 
-def combine_population_tables(
+def sum_population_tables(
     population_table: Dict[str, pd.DataFrame],
     table_names: List[str],
     table_index: List[str],
@@ -671,7 +696,7 @@ def combine_population_tables(
     return sum(compatible_tables.values())
 
 
-def redistribute_population_table(
+def reallocate_excluded_estimates(
     population_table: pd.DataFrame,
     exclusion_filter: Dict[str, Any],
     group_by: List[str],

@@ -18,6 +18,9 @@ def test_mesh_biomass_to_nasc(
     # Create copy of apportion mesh DataFrame
     mesh_data_df = apportion_mesh.copy()
 
+    # Add biomass
+    mesh_data_df["biomass"] = mesh_data_df["biomass_density"] * mesh_data_df["area"]
+
     # This should not raise an error (operation done in-place)
     apportion.mesh_biomass_to_nasc(
         mesh_data_df=mesh_data_df,
@@ -77,9 +80,15 @@ def test_distribute_kriged_estimates(
     Test distribution of kriged estimates
     """
 
+    # Create copy of apportion mesh DataFrame
+    mesh_data_df = apportion_mesh_with_nasc.copy()
+
+    # Add biomass
+    mesh_data_df["biomass"] = mesh_data_df["biomass_density"] * mesh_data_df["area"]
+
     # Test-distribute biomass
     biomass_tables = apportion.distribute_kriged_estimates(
-        mesh_data_df=apportion_mesh_with_nasc,
+        mesh_data_df=mesh_data_df,
         proportions=apportion_weight_proportions,
         variable="biomass",
         group_by=["contrast", "index_bin", "extra_bin"],
@@ -100,7 +109,7 @@ def test_distribute_kriged_estimates(
 
     # Test the same for abundances using a different format for DataFrame
     abundance_tables = apportion.distribute_kriged_estimates(
-        mesh_data_df=apportion_mesh_with_nasc,
+        mesh_data_df=mesh_data_df,
         proportions=apportion_number_proportions,
         variable="abundance",
         group_by=["contrast", "index_bin", "extra_bin"],
@@ -120,13 +129,13 @@ def test_distribute_kriged_estimates(
     assert all(abundance_tables["subgroup2"].sum() == np.array([2.00e6, 2.00e6, 1.05e7]))
 
 
-def test_standardize_kriged_estimates(apportion_biomass_table):
+def test_distribute_unaged_from_aged(apportion_biomass_table):
     """
     Test group-standardization of kriged estimates
     """
 
     # Standardize 'subgroup2' based on 'subgroup1' -- No imputation
-    std_tbl_no_imp = apportion.standardize_kriged_estimates(
+    std_tbl_no_imp = apportion.distribute_unaged_from_aged(
         population_table=apportion_biomass_table["subgroup2"],
         reference_table=apportion_biomass_table["subgroup1"],
         group_by=["contrast"],
@@ -162,7 +171,7 @@ def test_standardize_kriged_estimates(apportion_biomass_table):
     apportion_biomass_table_imp = apportion_biomass_table.copy()
     apportion_biomass_table_imp["subgroup1"].loc[[("A", 5, 1), ("B", 15, 2)]] = 0.0
     # ---- Run standardization
-    std_tbl_imp = apportion.standardize_kriged_estimates(
+    std_tbl_imp = apportion.distribute_unaged_from_aged(
         population_table=apportion_biomass_table_imp["subgroup2"],
         reference_table=apportion_biomass_table_imp["subgroup1"],
         group_by=["contrast"],
@@ -197,7 +206,7 @@ def test_standardize_kriged_estimates(apportion_biomass_table):
     assert all(std_tbl_imp.sum() == expected_imp)
 
 
-def test_combine_population_tables(apportion_biomass_table_with_standardized):
+def test_sum_population_tables(apportion_biomass_table_with_standardized):
     """
     Test functionality for combining the various apportionment tables
     """
@@ -207,7 +216,7 @@ def test_combine_population_tables(apportion_biomass_table_with_standardized):
     TABLE_COLUMNS = ["extra_bin", "contrast"]
 
     # Combine tables
-    df_biomass_table = apportion.combine_population_tables(
+    df_biomass_table = apportion.sum_population_tables(
         population_table=apportion_biomass_table_with_standardized,
         table_names=["subgroup1", "standardized_subgroup2"],
         table_index=TABLE_INDEX,
@@ -235,7 +244,7 @@ def test_combine_population_tables(apportion_biomass_table_with_standardized):
     assert np.allclose(df_biomass_table - DF_SUM, 0.0)
 
 
-def test_redistribute_population_table(apportion_combined_biomass_table):
+def test_reallocate_excluded_estimates(apportion_combined_biomass_table):
     """
     Test functionality for redistributing apportioned values within a table
     """
@@ -244,7 +253,7 @@ def test_redistribute_population_table(apportion_combined_biomass_table):
     TEST_DF = apportion_combined_biomass_table.copy()
 
     # Empty exclusion filter
-    df_no_filter = apportion.redistribute_population_table(
+    df_no_filter = apportion.reallocate_excluded_estimates(
         population_table=TEST_DF,
         exclusion_filter={},
         group_by=["contrast"],
@@ -256,7 +265,7 @@ def test_redistribute_population_table(apportion_combined_biomass_table):
     assert sorted(df_no_filter.columns) == sorted(TEST_DF.columns)
 
     # No grouping -- distribute across all contrasts not excluded
-    df_no_grouping = apportion.redistribute_population_table(
+    df_no_grouping = apportion.reallocate_excluded_estimates(
         population_table=TEST_DF,
         exclusion_filter={"contrast": "A"},
         group_by=[],
@@ -275,7 +284,7 @@ def test_redistribute_population_table(apportion_combined_biomass_table):
     assert all(df_no_grouping[[(1, "A"), (2, "A")]] == 0.0)
 
     # Grouping -- defined by column in exclusion filter
-    df_grouping_column = apportion.redistribute_population_table(
+    df_grouping_column = apportion.reallocate_excluded_estimates(
         population_table=TEST_DF,
         exclusion_filter={"contrast": "A"},
         group_by=["contrast"],
@@ -294,7 +303,7 @@ def test_redistribute_population_table(apportion_combined_biomass_table):
     assert all(df_grouping_column[[(1, "A"), (2, "A")]] == 0.0)
 
     # Grouping -- defined by extra bin
-    df_grouping_col2 = apportion.redistribute_population_table(
+    df_grouping_col2 = apportion.reallocate_excluded_estimates(
         population_table=TEST_DF,
         exclusion_filter={"extra_bin": 1},
         group_by=["contrast"],
@@ -313,7 +322,7 @@ def test_redistribute_population_table(apportion_combined_biomass_table):
     assert all(df_grouping_col2[1] == 0.0)
 
     # Grouping -- defined by index
-    df_grouping_index = apportion.redistribute_population_table(
+    df_grouping_index = apportion.reallocate_excluded_estimates(
         population_table=TEST_DF,
         exclusion_filter={"index_bin": 5},
         group_by=["contrast"],
@@ -334,7 +343,7 @@ def test_redistribute_population_table(apportion_combined_biomass_table):
     # Full filtering -- raises warning
 
     with pytest.warns(UserWarning) as record:
-        apportion.redistribute_population_table(
+        apportion.reallocate_excluded_estimates(
             population_table=TEST_DF,
             exclusion_filter={"contrasts": ["A", "B"]},
             group_by=["contrast"],

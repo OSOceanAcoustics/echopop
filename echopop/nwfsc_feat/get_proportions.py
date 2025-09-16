@@ -13,10 +13,9 @@ def compute_binned_counts(
     groupby_cols: List[str],
     count_col: str,
     agg_func: str = "size",
-    exclude_filters: Dict[str, Any] = None,
 ) -> pd.DataFrame:
     """
-    Compute binned counts with grouping and optional exclusion filters.
+    Compute binned counts with grouping.
 
     Parameters
     ----------
@@ -28,7 +27,6 @@ def compute_binned_counts(
         Column to aggregate
     agg_func : str, default "size"
         Aggregation function to apply: "size", "sum", "count", etc.
-    exclude_filters : dict, optional
         Column-value pairs to exclude. Format: {column: value_to_exclude}
 
     Returns
@@ -37,12 +35,6 @@ def compute_binned_counts(
         Grouped counts
     """
     df = data.copy()
-
-    # Apply exclusion filters
-    if exclude_filters:
-        for col, exclude_val in exclude_filters.items():
-            if col in df.columns:
-                df = df.loc[df[col] != exclude_val]
 
     # Apply aggregation
     if agg_func == "size":
@@ -64,8 +56,7 @@ def compute_binned_counts(
 def number_proportions(
     data: Union[Dict[str, pd.DataFrame], pd.DataFrame],
     group_columns: List[str] = ["stratum_num"],
-    column_aliases: Optional[List[str]] = None,
-    exclude_filters: Optional[Union[Dict[str, Any], List[Optional[Dict[str, Any]]]]] = None,
+    exclude_filters: Dict[str, Any] = {},
 ) -> Union[pd.DataFrame, Dict[str, pd.DataFrame]]:
     """
     Calculate number proportions from one or more count DataFrames.
@@ -81,16 +72,10 @@ def number_proportions(
         When providing a dictionary, keys will be used as column aliases if column_aliases is None.
     group_columns : List[str], default ["stratum_num"]
         Columns to group by for calculating totals.
-    column_aliases : List[str], optional
-        Custom names for the dataframes, used in column naming and dictionary keys.
-        If not provided:
-        - For dictionary input: uses dictionary keys
-        - For single DataFrame input: uses "data"
-    exclude_filters : Optional[Union[Dict[str, Any], List[Optional[Dict[str, Any]]]]], default None
-        Filters to exclude rows from dataframes:
-        - If Dict: Apply the same filter to all dataframes (current behavior)
-        - If List: Apply each filter to its corresponding dataframe
-          Use None for any dataframe that shouldn't be filtered
+    exclude_filters : Dict[str, Any], default {}}
+        Filters to exclude rows from dataframes. This should match the same keys. When supplied an
+        empty DataFrame, then no filters are applied. When a filter is expected to be applied to
+        only one DataFrame, then all other key-specific dictionaries should be empty.
 
     Returns
     -------
@@ -117,29 +102,30 @@ def number_proportions(
     >>> result = number_proportions(data_dict)
     """
 
-    # Handle different input patterns
-    if isinstance(data, dict):
-        # Dictionary input - convert to list and extract keys for aliases
-        df_list = list(data.values())
-        if column_aliases is None:
-            column_aliases = list(data.keys())
-    else:
-        # Single DataFrame input
-        df_list = [data]
-        if column_aliases is None:
-            column_aliases = ["data"]
+    # Handle DataFrame input
+    if isinstance(data, pd.DataFrame):
+        data = {"data": data}
+        exclude_filters = {"data": exclude_filters}
+
+    # Get the column aliases if not supplied
+    column_aliases = list(data.keys())
+
+    # Fill out filter dictionary
+    data_keys = set(list(data.keys()) + list(exclude_filters.keys()))
+    # ---- Complete the dictionary
+    exclude_filters = {
+        k: exclude_filters[k] if k in data and k in exclude_filters else {} for k in data_keys
+    }
+    # ---- Apply the filters to the entire dictionary
+    data_dict = {
+        k: utils.apply_filters(data[k], exclude_filter=exclude_filters[k]) for k in data_keys
+    }
+
+    # Transform to a list of dataframes
+    df_list = list(data_dict[k] for k in column_aliases)
 
     # Apply filters if provided
-    if exclude_filters is not None:
-        # Case 1: Dictionary - apply to all dataframes
-        if isinstance(exclude_filters, dict):
-            df_list = [utils.apply_filters(df, exclude_filter=exclude_filters) for df in df_list]
-        # Case 2: List - apply each filter to corresponding dataframe
-        elif isinstance(exclude_filters, list):
-            df_list = [
-                utils.apply_filters(df, exclude_filter=filt) if filt is not None else df
-                for df, filt in zip(df_list, exclude_filters)
-            ]
+    df_list = [utils.apply_filters(df, exclude_filter=exclude_filters) for df in df_list]
 
     if not df_list:
         raise ValueError("At least one DataFrame must be provided")
@@ -159,13 +145,6 @@ def number_proportions(
         ),
         columns=group_columns,
     )  # Create dynamic column names based on number of DataFrames
-    # Set default column_aliases if not already set
-    if column_aliases is None:
-        if isinstance(data, dict):
-            column_aliases = list(data.keys())
-        else:
-            column_aliases = "data"
-        column_aliases = [f"df_{i}" for i in range(len(df_list))]
 
     # Ensure we have enough aliases for all DataFrames
     if len(column_aliases) >= len(df_list):
@@ -322,7 +301,7 @@ def apply_weight_interpolation(
 
 def binned_weights(
     length_dataset: pd.DataFrame,
-    interpolate: bool = True,
+    interpolate_regression: bool = True,
     table_index: List[str] = ["length_bin"],
     table_cols: List[str] = [],
     length_weight_dataset: Optional[pd.DataFrame] = None,
@@ -333,7 +312,7 @@ def binned_weights(
     Process length-weight data with optional interpolation to create a weight table.
 
     Creates a pivot table of weights by length bins and optionally other stratification
-    variables. Can use either direct weights (when interpolate=False) or interpolated
+    variables. Can use either direct weights (when `interpolate_regression=False`) or interpolated
     weights based on length-weight relationships.
 
     Parameters
@@ -341,23 +320,25 @@ def binned_weights(
     length_dataset : pd.DataFrame
         Dataset with length measurements, must contain 'length_bin' and 'length_count'
         columns when using interpolation, or direct 'weight' values when not interpolating
-    interpolate : bool, default True
+    interpolate_regression : bool, default True
         Whether to use interpolation for weights. If True, interpolates weights based on
-        length-weight relationships. If False, uses existing weight values in length_dataset.
+        length-weight relationships. Values from weights fitted to binned length values for a
+        different dataset are used to for interpolating the lengths in `length_dataset`. If False,
+        uses existing weight values in length_dataset.
     table_index : List[str], default ["length_bin"]
         Columns to use as index in the pivot table
     table_cols : List[str], default []
-        Variable(s) to stratify the final pivot table by.
-        These will be included as columns in the pivot table.
+        Variable(s) to stratify the final pivot table by. These will be included as columns in the
+        pivot table.
     length_weight_dataset : pd.DataFrame, optional
-        Dataset with length-weight relationships. Required when interpolate=True.
-        Must contain 'length_bin' and 'weight_fitted' columns for interpolation.
-        Not used when interpolate=False.
+        Dataset with length-weight relationships. Required when interpolate=True. Must contain
+        'length_bin' and 'weight_fitted' columns for interpolation. Not used when
+        interpolate_regression=False.
     include_filter : Dict[str, Any], optional
         Filter to apply to both datasets (e.g., to include only certain sexes)
     contrast_vars : str, List[str], or None
-        Variable(s) to use for contrast in interpolation.
-        If None or empty list, a global interpolator is used.
+        Variable(s) to use for contrast in interpolation. If None or empty list, a global
+        interpolator is used.
 
     Returns
     -------
@@ -367,14 +348,14 @@ def binned_weights(
     Raises
     ------
     ValueError
-        If interpolate=True but length_weight_dataset is None
+        If interpolate_regression=True but length_weight_dataset is None
 
     Notes
     -----
     The function expects 'length_bin' objects to have a 'mid' property that
     returns the midpoint of each length interval.
 
-    When interpolate=False, rows with missing weights will be dropped.
+    When interpolate_regression=False, rows with missing weights will be dropped.
 
     Examples
     --------
@@ -382,7 +363,7 @@ def binned_weights(
     >>> weights_by_sex = binned_weights(
     ...     length_dataset=length_freq_df,
     ...     length_weight_dataset=length_weight_model,
-    ...     interpolate=True,
+    ...     interpolate_regression=True,
     ...     table_cols=["stratum_num", "sex"],
     ...     contrast_vars="sex"
     ... )
@@ -397,8 +378,8 @@ def binned_weights(
     """
 
     # Validation check
-    if interpolate and length_weight_dataset is None:
-        raise ValueError("length_weight_dataset must be provided when interpolate=True")
+    if interpolate_regression and length_weight_dataset is None:
+        raise ValueError("length_weight_dataset must be provided when interpolate_regression=True")
 
     # Apply filters if provided
     if include_filter:
@@ -407,7 +388,7 @@ def binned_weights(
     # Working copy of the dataset
     result_dataset = length_dataset.copy()
 
-    if interpolate:
+    if interpolate_regression:
         # Apply filters if provided
         if include_filter:
             # ---- This is applied here since `length_weight_dataset` is optional
@@ -928,13 +909,13 @@ def aggregate_stratum_weights(input_data, stratum_col="stratum_num"):
     return final_df
 
 
-def standardize_weights_by_stratum(
+def scale_weights_by_stratum(
     weights_df: Union[pd.Series, pd.DataFrame],
     reference_weights_df: pd.DataFrame,
     stratum_col: str = "stratum_num",
 ):
     """
-    Standardize weights in a DataFrame using reference weights by stratum.
+    Scale weights in a DataFrame using reference weights by stratum.
 
     This function adjusts the weights in the input DataFrame to match the
     reference weight distribution by stratum while maintaining the relative
@@ -952,11 +933,11 @@ def standardize_weights_by_stratum(
     Returns
     -------
     pd.DataFrame
-        DataFrame with weights standardized to match reference weight distribution
+        DataFrame with weights scaled to match reference weight distribution
 
     Examples
     --------
-    >>> standardized_weights = standardize_weights_by_stratum(
+    >>> standardized_weights = scale_weights_by_stratum(
     ...     weights_df=dict_df_weight_distr["unaged"],
     ...     reference_weights_df=stratum_weights,
     ...     stratum_col="stratum_ks"
@@ -1004,12 +985,12 @@ def standardize_weights_by_stratum(
     strata_totals = summed_weights.unstack(stratum_col).sum(axis=0)
 
     # Simple standardization: divide by strata totals and multiply by reference weights
-    standardized = (
+    scaled = (
         (summed_weights / strata_totals).unstack(stratum_col) * reference_copy["weight"]
     ).fillna(0.0)
 
     # Fill any NaN values with 0
-    return standardized
+    return scaled
 
 
 def weight_proportions(
@@ -1070,7 +1051,7 @@ def weight_proportions(
     return data_pvt / total_stratum_weights
 
 
-def standardize_weight_proportions(
+def scale_weight_proportions(
     weight_data: pd.DataFrame,
     reference_weight_proportions: pd.DataFrame,
     catch_data: pd.DataFrame,
@@ -1112,7 +1093,7 @@ def standardize_weight_proportions(
 
     Examples
     --------
-    >>> props = standardize_weight_proportions(
+    >>> props = scale_weight_proportions(
     ...     weight_data=standardized_unaged_sex_weights,
     ...     reference_data=weight_proportions,
     ...     catch_data=catch_data,
@@ -1199,14 +1180,15 @@ def get_nasc_proportions_slice(
     ts_length_regression_parameters: Dict[str, float],
     stratify_by: List[str],
     include_filter: Dict[str, Any] = {},
+    exclude_filter: Dict[str, Any] = {},
 ) -> pd.Series:
     """
-    Calculate NASC (acoustic backscatter) proportions for a specific slice of the population.
+    Calculate NASC proportions for a specific slice of the population
 
     This function computes weighted acoustic proportions by applying target strength-length
     regression to convert length-based number proportions into acoustic backscatter
     proportions. The target strength weighting accounts for the fact that larger fish
-    contribute disproportionately more to acoustic backscatter.
+    contribute disproportionately to acoustic backscatter.
 
     Parameters
     ----------
@@ -1218,8 +1200,10 @@ def get_nasc_proportions_slice(
     stratify_by : List[str]
         Column names for stratification (e.g., ["stratum_ks"])
     include_filter : Dict[str, Any], default {}
-        Filter criteria to include specific groups, e.g.:
+        Filter criteria to include specific grouping, e.g.:
         {"age_bin": [1], "sex": ["female"]}
+    exclude_filter : Dict[str, Any], default {}
+        Groups to exclude, e.g., {"length_bin": [small_lengths]}
     ts_length_regression_parameters : Dict[str, float]
         Target strength-length regression parameters:
         - slope: regression slope
@@ -1278,7 +1262,7 @@ def get_nasc_proportions_slice(
 
     # Apply filter to extract target group
     target_group_table = utils.apply_filters(
-        filtered_population_table, include_filter=include_filter
+        filtered_population_table, include_filter=include_filter, exclude_filter=exclude_filter
     )
 
     # Aggregate target group over length and strata dimensions
@@ -1296,9 +1280,9 @@ def get_number_proportions_slice(
     stratify_by: List[str],
     exclude_filter: Dict[str, Any] = {},
     include_filter: Dict[str, Any] = {},
-) -> Union[pd.Series, pd.DataFrame]:
+) -> pd.Series:
     """
-    Extract number proportions for a specific population slice with flexible filtering.
+    Extract number proportions for a specific slice of the population
 
     This function creates pivot tables from number proportion data and applies
     inclusion/exclusion filters to extract proportions for specific population
@@ -1321,13 +1305,11 @@ def get_number_proportions_slice(
 
     Returns
     -------
-    Union[pd.Series, pd.DataFrame]
-        - pd.Series: if single stratification dimension, returns proportions by strata
-        - pd.DataFrame: if multiple dimensions, returns pivot table with preserved structure
+    pd.Series
+        Proportions by strata.
 
     Notes
     -----
-    - Automatically determines which columns to use as indices vs stratification
     - Handles missing columns gracefully by intersecting with available data
     - For single stratification variable, sums over all other dimensions
     - For multiple variables, preserves structure based on data complexity
@@ -1410,12 +1392,13 @@ def get_weight_proportions_slice(
     weight_proportions: pd.DataFrame,
     stratify_by: List[str],
     include_filter: Dict[str, Any] = {},
-    number_proportions: Optional[Union[Dict[str, pd.DataFrame], pd.DataFrame]] = None,
+    exclude_filter: Dict[str, Any] = {},
+    number_proportions: Dict[str, pd.DataFrame] = {},
     length_threshold_min: float = 0.0,
     weight_proportion_threshold: float = 1e-10,
 ) -> pd.Series:
     """
-    Calculate weight proportions for a population slice with optional thresholding.
+    Calculate weight proportions for a specific slice of the population with optional thresholding
 
     This function computes weight proportions for a target population group, with
     optional thresholding based on number proportions. The thresholding helps
@@ -1429,14 +1412,16 @@ def get_weight_proportions_slice(
         Stratification columns (e.g., ["stratum_ks"])
     include_filter : Dict[str, Any], default {}
         Filter criteria for target group, e.g., {"age_bin": [1]}
-    number_proportions : Union[Dict[str, pd.DataFrame], pd.DataFrame], optional
-        Number proportions for thresholding calculation:
-        - Dict: multiple datasets (e.g., {"aged": df1, "unaged": df2})
-        - DataFrame: single dataset
-        - None: no thresholding applied
+    exclude_filter : Dict[str, Any], default {}
+        Groups to exclude, e.g., {"length_bin": [small_lengths]}
+    number_proportions : Dict[str, pd.DataFrame], default {}
+        Number proportions required for thresholding particular length values. This argument is
+        expected to be a dictionary with a key paired with at least one DataFrame
+        (e.g. {"grouped": df}). When no value is supplied, `number_proportions` defaults to an
+        empty dictionary with no thresholding applied to the subsequent number proportions.
     length_threshold_min : float, default 0.0
-        Minimum length for threshold calculations (e.g., 10.0 cm)
-        Only used when number_proportions is provided
+        Minimum length for threshold calculations (e.g., 10.0 cm). This is only used when number
+        proportions are provided.
     weight_proportion_threshold : float, default 1e-10
         Threshold value for proportion comparisons
 
@@ -1452,10 +1437,6 @@ def get_weight_proportions_slice(
     2. If number_proportions provided, calculate corresponding number thresholds
     3. Apply threshold mask where both weight and number proportions are very small
     4. Set masked values to 0.0 to indicate unreliable estimates
-
-    The function handles dictionary inputs by computing element-wise products
-    across all datasets to identify cases where multiple sources agree on
-    very low proportions.
 
     Examples
     --------
@@ -1487,7 +1468,9 @@ def get_weight_proportions_slice(
         )
 
     # Calculate basic weight proportions for target group
-    target_weight_table = utils.apply_filters(weight_proportions, include_filter=include_filter)
+    target_weight_table = utils.apply_filters(
+        weight_proportions, include_filter=include_filter, exclude_filter=exclude_filter
+    )
 
     # Aggregate target group proportions
     target_group_weight_proportions = (
@@ -1499,64 +1482,41 @@ def get_weight_proportions_slice(
     proportions_weight = target_group_weight_proportions / total_weight_proportions
 
     # Apply thresholding if number proportions provided
-    if number_proportions is not None and length_threshold_min is not None:
-
-        # Handle dictionary of number proportions
-        if isinstance(number_proportions, dict):
-            # Get all unique length values across datasets
-            all_length_vals = np.concatenate(
-                [
-                    df["length_bin"].apply(lambda x: x.mid).astype(float).unique()
-                    for df in number_proportions.values()
-                ]
-            )
-            length_vals = np.unique(all_length_vals)
-
-            # Create length exclusion filter
-            length_exclusion_filter = {
-                "length_bin": length_vals[length_vals < length_threshold_min]
-            }
-
-            # Get filtered number proportions for each dataset
-            filtered_number_proportions_dict = {
-                key: get_number_proportions_slice(
-                    df,
-                    stratify_by=stratify_by + ["length_bin"],
-                    exclude_filter=length_exclusion_filter,
-                    include_filter=include_filter,
-                )
-                for key, df in number_proportions.items()
-            }
-
-            # Calculate element-wise product across all datasets
-            filtered_number_proportions = functools.reduce(
-                lambda df1, df2: df1.mul(df2, fill_value=0),
-                filtered_number_proportions_dict.values(),
-            ).sum()
-
-        else:
-            # Single DataFrame case
-            length_vals = (
-                number_proportions["length_bin"].apply(lambda x: x.mid).astype(float).unique()
-            )
-
-            length_exclusion_filter = {
-                "length_bin": length_vals[length_vals < length_threshold_min]
-            }
-
-            filtered_number_proportions = get_number_proportions_slice(
-                number_proportions,
+    if len(number_proportions) > 0:
+        # ---- Get all unique length values across datasets
+        all_length_vals = np.concatenate(
+            [
+                df["length_bin"].apply(lambda x: x.mid).astype(float).unique()
+                for df in number_proportions.values()
+            ]
+        )
+        length_vals = np.unique(all_length_vals)
+        # ---- Create length exclusion filter
+        length_exclusion_filter = {
+            "length_bin": length_vals[length_vals < length_threshold_min],
+            **exclude_filter,
+        }
+        # ---- Get filtered number proportions for each dataset
+        filtered_number_proportions_dict = {
+            key: get_number_proportions_slice(
+                df,
                 stratify_by=stratify_by + ["length_bin"],
                 exclude_filter=length_exclusion_filter,
                 include_filter=include_filter,
-            ).sum()
-
-        # Apply threshold mask
+            )
+            for key, df in number_proportions.items()
+        }
+        # ---- Calculate element-wise product across all datasets
+        filtered_number_proportions = functools.reduce(
+            lambda df1, df2: df1.mul(df2, fill_value=0),
+            filtered_number_proportions_dict.values(),
+        ).sum()
+        # ---- Apply threshold mask
         threshold_mask = (target_group_weight_proportions <= weight_proportion_threshold) & (
             filtered_number_proportions <= weight_proportion_threshold
         )
-
-        # Set masked values to 0
+        # ---- Set masked values to 0
         proportions_weight[threshold_mask] = 0.0
 
+    # Return the sliced weight proportions
     return proportions_weight
