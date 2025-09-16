@@ -594,7 +594,7 @@ def sum_population_tables(
     return sum(compatible_tables.values())
 
 
-def redistribute_population_table(
+def reallocate_excluded_estimates(
     population_table: pd.DataFrame,
     exclusion_filter: Dict[str, Any],
     group_by: List[str],

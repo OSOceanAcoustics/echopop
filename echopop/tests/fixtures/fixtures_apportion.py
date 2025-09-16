@@ -186,6 +186,9 @@ def apportion_mesh_with_nasc(
     # Create copy of apportion mesh DataFrame
     mesh_data_df = apportion_mesh.copy()
 
+    # Compute biomass
+    mesh_data_df["biomass"] = mesh_data_df["biomass_density"] * mesh_data_df["area"]
+
     # Convert biomass into the various derived population estimates
     apportion.mesh_biomass_to_nasc(
         mesh_data_df=mesh_data_df,
@@ -204,8 +207,14 @@ def apportion_mesh_with_nasc(
 def apportion_biomass_table(apportion_mesh_with_nasc, apportion_weight_proportions):
     """Pre-calculated apportioned biomass tables for apportionment tests"""
 
+    # Create copy of apportion mesh DataFrame
+    mesh_data_df = apportion_mesh_with_nasc.copy()
+
+    # Add biomass
+    mesh_data_df["biomass"] = mesh_data_df["biomass_density"] * mesh_data_df["area"]
+
     biomass_tables = apportion.distribute_kriged_estimates(
-        mesh_data_df=apportion_mesh_with_nasc,
+        mesh_data_df= mesh_data_df,
         proportions=apportion_weight_proportions,
         variable="biomass",
         group_by=["contrast", "index_bin", "extra_bin"],

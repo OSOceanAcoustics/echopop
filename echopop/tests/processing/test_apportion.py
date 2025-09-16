@@ -80,9 +80,15 @@ def test_distribute_kriged_estimates(
     Test distribution of kriged estimates
     """
 
+    # Create copy of apportion mesh DataFrame
+    mesh_data_df = apportion_mesh_with_nasc.copy()
+
+    # Add biomass
+    mesh_data_df["biomass"] = mesh_data_df["biomass_density"] * mesh_data_df["area"]
+
     # Test-distribute biomass
     biomass_tables = apportion.distribute_kriged_estimates(
-        mesh_data_df=apportion_mesh_with_nasc,
+        mesh_data_df=mesh_data_df,
         proportions=apportion_weight_proportions,
         variable="biomass",
         group_by=["contrast", "index_bin", "extra_bin"],
@@ -103,7 +109,7 @@ def test_distribute_kriged_estimates(
 
     # Test the same for abundances using a different format for DataFrame
     abundance_tables = apportion.distribute_kriged_estimates(
-        mesh_data_df=apportion_mesh_with_nasc,
+        mesh_data_df=mesh_data_df,
         proportions=apportion_number_proportions,
         variable="abundance",
         group_by=["contrast", "index_bin", "extra_bin"],
