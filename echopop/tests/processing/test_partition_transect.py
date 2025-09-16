@@ -6,7 +6,7 @@ from echopop.nwfsc_feat import apportion, biology
 
 def test_partition_transect_data_nasc_only(sample_transect_dataset, age1_nasc_proportions):
     """Test partitioning with only NASC proportions."""
-    result = apportion.partition_transect_data(
+    result = apportion.remove_group_from_estimates(
         transect_data=sample_transect_dataset, partition_dict={"nasc": age1_nasc_proportions}
     )
 
@@ -30,7 +30,7 @@ def test_partition_transect_data_abundance_only(
     sample_transect_dataset, age1_abundance_proportions
 ):
     """Test partitioning with only abundance proportions."""
-    result = apportion.partition_transect_data(
+    result = apportion.remove_group_from_estimates(
         transect_data=sample_transect_dataset, partition_dict={"abundance": age1_abundance_proportions}
     )
 
@@ -49,7 +49,7 @@ def test_partition_transect_data_abundance_only(
 
 def test_partition_transect_data_biomass_only(sample_transect_dataset, age1_biomass_proportions):
     """Test partitioning with only biomass proportions."""
-    result = apportion.partition_transect_data(
+    result = apportion.remove_group_from_estimates(
         transect_data=sample_transect_dataset, partition_dict={"biomass": age1_biomass_proportions}
     )
 
@@ -73,7 +73,7 @@ def test_partition_transect_data_all_variables(
     age1_biomass_proportions,
 ):
     """Test partitioning with all three variable types."""
-    result = apportion.partition_transect_data(
+    result = apportion.remove_group_from_estimates(
         transect_data=sample_transect_dataset,
         partition_dict={
             "nasc": age1_nasc_proportions,

@@ -616,7 +616,7 @@ age1_weight_proportions = get_proportions.get_weight_proportions_slice(
 # Apply the calculated proportions to the abundance, biomass, and NASC estimates
 # ------------------------------------------------------------------------------
 
-df_nasc_no_age1_prt = apportion.partition_transect_data(
+df_nasc_no_age1_prt = apportion.remove_group_from_estimates(
     dataset=df_nasc_no_age1,
     partition_dict={
         "nasc": age1_nasc_proportions, 

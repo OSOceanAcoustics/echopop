@@ -9,7 +9,7 @@ from . import utils
 warnings.simplefilter("always")
 
 
-def partition_transect_data(
+def remove_group_from_estimates(
     transect_data: pd.DataFrame,
     partition_dict: Dict[str, Union[pd.DataFrame, pd.Series]],
 ) -> pd.DataFrame:
