@@ -474,7 +474,7 @@ class JollyHampton:
 
         return resampled_df_pvt
 
-    def _summarize_transects(
+    def _compute_transect_statistics(
         self,
         data_df: pd.DataFrame,
         stratify_by: List[str],
@@ -556,7 +556,7 @@ class JollyHampton:
         # Store results
         self.transect_summary = survey_values
 
-    def _summarize_strata(
+    def _compute_strata_statistics(
         self,
         stratify_by: List[str],
     ) -> None:
@@ -617,7 +617,7 @@ class JollyHampton:
         # Store results
         self.strata_summary = strata_summary
 
-    def _summarize_survey(self) -> None:
+    def _compute_survey_statistics(self) -> None:
         """
         Compute survey-wide summary statistics.
 
@@ -815,13 +815,13 @@ class JollyHampton:
         self.variable = variable
 
         # Summarize transect data within strata
-        self._summarize_transects(data_df, stratify_by)
+        self._compute_transect_statistics(data_df, stratify_by)
 
         # Summarize at stratum level
-        self._summarize_strata(stratify_by)
+        self._compute_strata_statistics(stratify_by)
 
         # Summarize at the survey level
-        self._summarize_survey()
+        self._compute_survey_statistics()
 
         # Calculate degrees of freedom for variance calculations
         sample_dof = self._dof()
