@@ -850,7 +850,7 @@ df_kriged_biomass_table = apportion.sum_population_tables(
 # -------------------------------------------
 
 # Re-allocate the age-1 abundance estimates 
-df_kriged_abundance_table_noage1 = apportion.redistribute_population_table(
+df_kriged_abundance_table_noage1 = apportion.reallocate_excluded_estimates(
     population_table=df_kriged_abundance_table,
     exclusion_filter={"age_bin": [1]},
     group_by=["sex"],
@@ -861,7 +861,7 @@ df_kriged_abundance_table_noage1 = apportion.redistribute_population_table(
 # -----------------------------------------
 
 # Re-allocate the age-1 abundance estimates 
-df_kriged_biomass_table_noage1 = apportion.redistribute_population_table(
+df_kriged_biomass_table_noage1 = apportion.reallocate_excluded_estimates(
     population_table=df_kriged_biomass_table,
     exclusion_filter={"age_bin": [1]},
     group_by=["sex"],

@@ -238,7 +238,7 @@ def test_sum_population_tables(apportion_biomass_table_with_standardized):
     assert np.allclose(df_biomass_table - DF_SUM, 0.0)
 
 
-def test_redistribute_population_table(apportion_combined_biomass_table):
+def test_reallocate_excluded_estimates(apportion_combined_biomass_table):
     """
     Test functionality for redistributing apportioned values within a table
     """
@@ -247,7 +247,7 @@ def test_redistribute_population_table(apportion_combined_biomass_table):
     TEST_DF = apportion_combined_biomass_table.copy()
 
     # Empty exclusion filter
-    df_no_filter = apportion.redistribute_population_table(
+    df_no_filter = apportion.reallocate_excluded_estimates(
         population_table=TEST_DF,
         exclusion_filter={},
         group_by=["contrast"],
@@ -259,7 +259,7 @@ def test_redistribute_population_table(apportion_combined_biomass_table):
     assert sorted(df_no_filter.columns) == sorted(TEST_DF.columns)
 
     # No grouping -- distribute across all contrasts not excluded
-    df_no_grouping = apportion.redistribute_population_table(
+    df_no_grouping = apportion.reallocate_excluded_estimates(
         population_table=TEST_DF,
         exclusion_filter={"contrast": "A"},
         group_by=[],
@@ -278,7 +278,7 @@ def test_redistribute_population_table(apportion_combined_biomass_table):
     assert all(df_no_grouping[[(1, "A"), (2, "A")]] == 0.0)
 
     # Grouping -- defined by column in exclusion filter
-    df_grouping_column = apportion.redistribute_population_table(
+    df_grouping_column = apportion.reallocate_excluded_estimates(
         population_table=TEST_DF,
         exclusion_filter={"contrast": "A"},
         group_by=["contrast"],
@@ -297,7 +297,7 @@ def test_redistribute_population_table(apportion_combined_biomass_table):
     assert all(df_grouping_column[[(1, "A"), (2, "A")]] == 0.0)
 
     # Grouping -- defined by extra bin
-    df_grouping_col2 = apportion.redistribute_population_table(
+    df_grouping_col2 = apportion.reallocate_excluded_estimates(
         population_table=TEST_DF,
         exclusion_filter={"extra_bin": 1},
         group_by=["contrast"],
@@ -316,7 +316,7 @@ def test_redistribute_population_table(apportion_combined_biomass_table):
     assert all(df_grouping_col2[1] == 0.0)
 
     # Grouping -- defined by index
-    df_grouping_index = apportion.redistribute_population_table(
+    df_grouping_index = apportion.reallocate_excluded_estimates(
         population_table=TEST_DF,
         exclusion_filter={"index_bin": 5},
         group_by=["contrast"],
@@ -337,7 +337,7 @@ def test_redistribute_population_table(apportion_combined_biomass_table):
     # Full filtering -- raises warning
 
     with pytest.warns(UserWarning) as record:
-        apportion.redistribute_population_table(
+        apportion.reallocate_excluded_estimates(
             population_table=TEST_DF,
             exclusion_filter={"contrasts": ["A", "B"]},
             group_by=["contrast"],
