@@ -448,7 +448,7 @@ def impute_kriged_table(
     return standardized_table_copy
 
 
-def standardize_kriged_estimates(
+def distribute_unaged_from_aged(
     population_table: pd.DataFrame,
     reference_table: pd.DataFrame,
     group_by: List[str],

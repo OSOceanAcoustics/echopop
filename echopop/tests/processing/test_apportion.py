@@ -120,13 +120,13 @@ def test_distribute_kriged_estimates(
     assert all(abundance_tables["subgroup2"].sum() == np.array([2.00e6, 2.00e6, 1.05e7]))
 
 
-def test_standardize_kriged_estimates(apportion_biomass_table):
+def test_distribute_unaged_from_aged(apportion_biomass_table):
     """
     Test group-standardization of kriged estimates
     """
 
     # Standardize 'subgroup2' based on 'subgroup1' -- No imputation
-    std_tbl_no_imp = apportion.standardize_kriged_estimates(
+    std_tbl_no_imp = apportion.distribute_unaged_from_aged(
         population_table=apportion_biomass_table["subgroup2"],
         reference_table=apportion_biomass_table["subgroup1"],
         group_by=["contrast"],
@@ -162,7 +162,7 @@ def test_standardize_kriged_estimates(apportion_biomass_table):
     apportion_biomass_table_imp = apportion_biomass_table.copy()
     apportion_biomass_table_imp["subgroup1"].loc[[("A", 5, 1), ("B", 15, 2)]] = 0.0
     # ---- Run standardization
-    std_tbl_imp = apportion.standardize_kriged_estimates(
+    std_tbl_imp = apportion.distribute_unaged_from_aged(
         population_table=apportion_biomass_table_imp["subgroup2"],
         reference_table=apportion_biomass_table_imp["subgroup1"],
         group_by=["contrast"],
