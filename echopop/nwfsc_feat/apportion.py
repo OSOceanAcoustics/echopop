@@ -261,6 +261,7 @@ def mesh_biomass_to_nasc(
     # Rename
     mesh_data_df.rename(columns=inverted_link, inplace=True)
 
+
 def impute_kriged_table(
     reference_table_df: pd.DataFrame,
     initial_table_df: pd.DataFrame,
