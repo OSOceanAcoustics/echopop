@@ -672,8 +672,6 @@ def is_pivot_table(df: pd.DataFrame):
         return True
     else:
         return False
-<<<<<<< HEAD
-=======
 
 
 def roundn(n):
@@ -681,4 +679,3 @@ def roundn(n):
     Rounding function to avoid bankers rounding
     """
     return n.apply(lambda x: np.floor(x + 0.5) if x >= 0 else np.ceil(x - 0.5))
->>>>>>> dd57ce2 (Create `roundn` utility rounding function as alternative to default bankers rounding by `numpy`)
