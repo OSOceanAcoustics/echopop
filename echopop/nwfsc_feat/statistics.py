@@ -1,8 +1,9 @@
 from typing import List, Literal, Union
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 import scipy.stats as st
+
 
 def bc(
     samples: np.ndarray[float],
@@ -14,7 +15,7 @@ def bc(
     """
     Compute bias-corrected (BC) bootstrap confidence interval.
 
-    The BC method adjusts for bias in the bootstrap distribution by using the 
+    The BC method adjusts for bias in the bootstrap distribution by using the
     empirical cumulative distribution function (ECDF) to estimate the bias-correction
     factor z0.
 
@@ -43,7 +44,7 @@ def bc(
 
     References
     ----------
-    Efron, B. (1981). Nonparametric standard errors and confidence intervals. 
+    Efron, B. (1981). Nonparametric standard errors and confidence intervals.
     *Canadian Journal of Statistics*, *9*(2), 139-158.
     """
 
@@ -73,20 +74,21 @@ def bc(
     # Return the confidence interval
     return np.quantile(samples, percentiles_cdf)
 
+
 def bca(
     samples: np.ndarray[float],
     interval: np.ndarray[float],
     population_statistic: float,
-    estimator_name: str,    
+    estimator_name: str,
     **kwargs,
 ):
     """
     Compute bias-corrected and accelerated (BCa) bootstrap confidence interval.
 
-    The BCa method extends the BC method by also correcting for skewness in the bootstrap 
-    distribution using an acceleration parameter estimated via finite-sample jackknife 
+    The BCa method extends the BC method by also correcting for skewness in the bootstrap
+    distribution using an acceleration parameter estimated via finite-sample jackknife
     resampling^[2].
-    
+
     Parameters
     ----------
     samples : np.ndarray
@@ -112,19 +114,19 @@ def bca(
 
     Notes
     -----
-    The acceleration parameter (a-hat) is computed using leave-one-out jackknife resampling to 
-    estimate the influence function. For each jackknife replicate, the influence values are 
-    calculated as I_i = (n-1)(θ̂ - θ̂_(i)), where θ̂_(i) is the statistic computed from the sample 
+    The acceleration parameter (a-hat) is computed using leave-one-out jackknife resampling to
+    estimate the influence function. For each jackknife replicate, the influence values are
+    calculated as I_i = (n-1)(θ̂ - θ̂_(i)), where θ̂_(i) is the statistic computed from the sample
     with the i-th observation removed^[2]. The acceleration constant is then estimated as:
     a = Σ(I_i)³ / (6 x (Σ(I_i)²)^1.5)
 
     References
     ----------
-    .. [1] Efron, B., and Tibshirani, R.J. (1993). *An introduction to the Bootstrap*. 
+    .. [1] Efron, B., and Tibshirani, R.J. (1993). *An introduction to the Bootstrap*.
        Springer US. https://doi.org/10.1007/978-1-4899-4541-9
 
-    .. [2] Frangos, C.C., and Schucany, W.R. (1990). Jackknife estimation of the bootstrap 
-        acceleration constant. *Computational Statistics & Data Analysis*, *9*(3), 271-281. 
+    .. [2] Frangos, C.C., and Schucany, W.R. (1990). Jackknife estimation of the bootstrap
+        acceleration constant. *Computational Statistics & Data Analysis*, *9*(3), 271-281.
         https://doi.org/10.1016/0167-9473(90)90109-U
     """
 
@@ -152,16 +154,14 @@ def bca(
     def calc_theta(values):
         return values.var(ddof=1) / values.mean() ** 2 - 1 / values.mean()
 
-    # Calculate the global theta 
+    # Calculate the global theta
     theta_global = calc_theta(samples)
 
     # Calculate theta for each jackknife replicate (ie LOO resampling)
-    theta_jackknife = np.array([
-        calc_theta(np.delete(samples, i)) for i in range(len(samples))
-    ])
+    theta_jackknife = np.array([calc_theta(np.delete(samples, i)) for i in range(len(samples))])
 
     # Compute the influences
-    influence = (len(samples)-1) * (theta_global - theta_jackknife)    
+    influence = (len(samples) - 1) * (theta_global - theta_jackknife)
 
     # Calculate the acceleration term (a_hat)
     a_hat = (influence**3).sum() / (6.0 * (influence**2).sum() ** 1.5)
@@ -173,6 +173,7 @@ def bca(
 
     # Return the bias-corrected and accelerated confidence interval
     return np.quantile(samples, percentiles_cdf)
+
 
 def empirical(
     samples: np.ndarray[float],
@@ -204,7 +205,7 @@ def empirical(
 
     References
     ----------
-    Efron, B. (1981). Nonparametric standard errors and confidence intervals. *Canadian Journal 
+    Efron, B. (1981). Nonparametric standard errors and confidence intervals. *Canadian Journal
     of Statistics*, *9*(2), 139-158. https://doi.org/10.2307/3314608
     """
 
@@ -213,8 +214,9 @@ def empirical(
         return np.full(len(interval), np.nan)
 
     # Adjust shape of 'population_statistic' if needed
-    if len(population_statistic) == 1 and isinstance(population_statistic, (pd.Series, 
-                                                                            pd.DataFrame)):
+    if len(population_statistic) == 1 and isinstance(
+        population_statistic, (pd.Series, pd.DataFrame)
+    ):
         population_statistic = population_statistic.to_numpy()
 
     # Compute the delta deviation term
@@ -225,6 +227,7 @@ def empirical(
 
     # Add the deviations
     return samples.mean() + quantiles
+
 
 def normal(
     samples: np.ndarray[float],
@@ -258,7 +261,7 @@ def normal(
 
     References
     ----------
-    DiCiccio, T.J., and Efron, B. (1996). Bootstrap confidence intervals. *Statistical Science*, 
+    DiCiccio, T.J., and Efron, B. (1996). Bootstrap confidence intervals. *Statistical Science*,
     *11*(3). https://doi.org/10.1214/ss/1032280214
     """
 
@@ -268,6 +271,7 @@ def normal(
 
     # Return the Normal confidence interval
     return samples.mean() + st.norm.ppf(interval) * samples.std(ddof=1)
+
 
 def percentile(
     samples: np.ndarray[float],
@@ -301,16 +305,17 @@ def percentile(
 
     References
     ----------
-    Efron, B. (1981). Nonparametric standard errors and confidence intervals. *Canadian Journal of 
+    Efron, B. (1981). Nonparametric standard errors and confidence intervals. *Canadian Journal of
     Statistics*, *9*(2), 139-158. https://doi.org/10.2307/3314608
     """
-    
+
     # Check for NaN or infinite values in samples
     if not np.all(np.isfinite(samples)):
         return np.full(len(interval), np.nan)
-    
+
     # Return the exact percentiles of the bootstrapped distribution
     return np.quantile(samples, interval)
+
 
 def student_jackknife(
     samples: np.ndarray[float],
@@ -346,14 +351,14 @@ def student_jackknife(
 
     References
     ----------
-    DiCiccio, T.J., and Efron, B. (1996). Bootstrap confidence intervals. 
+    DiCiccio, T.J., and Efron, B. (1996). Bootstrap confidence intervals.
     *Statistical Science*, *11*(3), 189-228.
     """
-    
+
     # Check for NaN or infinite values in samples
     if not np.all(np.isfinite(samples)):
         return np.full(len(interval), np.nan)
-    
+
     # Get the sample size
     n = samples.size
 
@@ -365,13 +370,13 @@ def student_jackknife(
     sample_sum = samples.sum()
 
     # Take the squared-sum of the values
-    sample_sq_sum = (samples ** 2).sum()
+    sample_sq_sum = (samples**2).sum()
 
     # Leave-one-out (LOO) means
     pseudo_means = (sample_sum - samples) / (n - 1)
-    
+
     # LOO variance
-    pseudo_vars = ((sample_sq_sum - samples ** 2) - (n - 1) * pseudo_means ** 2) / (n - 2)
+    pseudo_vars = ((sample_sq_sum - samples**2) - (n - 1) * pseudo_means**2) / (n - 2)
 
     # Handle edge case where variance is negative or zero
     pseudo_vars = np.maximum(pseudo_vars, 1e-12)
@@ -388,10 +393,11 @@ def student_jackknife(
     # Apply to the original mean to get the studentized confidence interval
     return samples.mean() + t_interval * samples.std(ddof=1)
 
+
 def student_standard(
     samples: np.ndarray[float],
-    interval: np.ndarray[float],   
-    **kwargs, 
+    interval: np.ndarray[float],
+    **kwargs,
 ):
     """
     Compute studentized confidence interval assuming a t-distribution.
@@ -421,18 +427,16 @@ def student_standard(
 
     References
     ----------
-    DiCiccio, T.J., and Efron, B. (1996). Bootstrap confidence intervals. *Statistical Science*, 
+    DiCiccio, T.J., and Efron, B. (1996). Bootstrap confidence intervals. *Statistical Science*,
     *11*(3). https://doi.org/10.1214/ss/1032280214
     """
 
     # Check for NaN or infinite values in samples
     if not np.all(np.isfinite(samples)):
         return np.full(len(interval), np.nan)
-    
-    return (
-        samples.mean() + 
-        st.t.ppf(interval, len(samples) - 1) * samples.std(ddof=1)
-    )
+
+    return samples.mean() + st.t.ppf(interval, len(samples) - 1) * samples.std(ddof=1)
+
 
 # Bootstrap confidence interval methods reference dictionary
 BOOTSTRAP_CI_METHODS = {
@@ -445,11 +449,18 @@ BOOTSTRAP_CI_METHODS = {
     "t-jackknife": student_jackknife,
 }
 
+
 def confidence_interval(
     bootstrap_samples: Union[pd.Series, pd.DataFrame],
     population_values: Union[pd.Series, pd.DataFrame],
     ci_method: Literal[
-        "bc", "bca", "empirical", "normal", "percentile", "t", "t-jackknife",
+        "bc",
+        "bca",
+        "empirical",
+        "normal",
+        "percentile",
+        "t",
+        "t-jackknife",
     ],
     ci_percentile: float = 0.95,
 ):
@@ -471,7 +482,7 @@ def confidence_interval(
     ci_method : {"bc", "bca", "empirical", "normal", "percentile", "t", "t-jackknife"}
         Method for computing the bootstrap confidence interval:
         - "bc": Bias-corrected method[1]_
-        - "bca": Bias-corrected and accelerated method[2]_  
+        - "bca": Bias-corrected and accelerated method[2]_
         - "empirical": Empirical method using bootstrap deviations[1]_
         - "normal": Normal approximation[3]_
         - "percentile": Simple percentile method[1]_
@@ -517,7 +528,7 @@ def confidence_interval(
     ...     'density': [48]
     ... })
     >>> ci_results = confidence_interval(
-    ...     bootstrap_data, population_data, 
+    ...     bootstrap_data, population_data,
     ...     ci_method='percentile', ci_percentile=0.95
     ... )
 
@@ -528,7 +539,7 @@ def confidence_interval(
     .. [2] Efron, B., and Tibshirani, R.J. (1993). *An introduction to the Bootstrap*.
        Springer US. https://doi.org/10.1007/978-1-4899-4541-9
     .. [3] Efron, B., and Tibshirani, R.J. (1986). Bootstrap methods for standard errors,
-       confidence intervals, and other measures of statistical accuracy. *Statistical 
+       confidence intervals, and other measures of statistical accuracy. *Statistical
        Science*, *1*(1), 54-75.
     .. [4] DiCiccio, T.J., and Efron, B. (1996). Bootstrap confidence intervals.
        *Statistical Science*, *11*(3), 189-228.
@@ -536,9 +547,7 @@ def confidence_interval(
 
     # Validate inputs
     if not isinstance(population_values, (pd.DataFrame, pd.Series)):
-        raise TypeError(
-            "Input for population_values must be a pandas.Series or pandas.DataFrame."
-        )
+        raise TypeError("Input for population_values must be a pandas.Series or pandas.DataFrame.")
 
     if ci_method not in BOOTSTRAP_CI_METHODS:
         raise ValueError(
@@ -562,38 +571,44 @@ def confidence_interval(
         )
 
     # Compute confidence intervals
-    ci_est = bootstrap_samples.apply(lambda col: BOOTSTRAP_CI_METHODS[ci_method](
-        samples=col, 
-        interval=interval,
-        population_statistic=population_values[col.name],
-        estimator_name=col.name
-    ), axis=0) 
+    ci_est = bootstrap_samples.apply(
+        lambda col: BOOTSTRAP_CI_METHODS[ci_method](
+            samples=col,
+            interval=interval,
+            population_statistic=population_values[col.name],
+            estimator_name=col.name,
+        ),
+        axis=0,
+    )
     # ---- Rename the index
     ci_est.index = ["low", "high"]
-    
+
     # Pivot the means and bias estimates
     ci_stats = pd.DataFrame({"mean": bs_mean}).T
     # ---- Add bias
-    ci_stats = pd.concat([ci_stats, 
-                          pd.DataFrame({"bias": bs_mean.to_numpy() - pop_mean.to_numpy()},
-                                       index=ci_stats.columns).T]
+    ci_stats = pd.concat(
+        [
+            ci_stats,
+            pd.DataFrame(
+                {"bias": bs_mean.to_numpy() - pop_mean.to_numpy()}, index=ci_stats.columns
+            ).T,
+        ]
     )
-    
+
     # Add mean value to the ci estimates and reorder
     ci_output = pd.concat([ci_est, ci_stats], axis=0).reindex(index=["low", "mean", "high", "bias"])
     # ---- Rename the index
     ci_output.index.set_names(["metric"], inplace=True)
-    
+
     # Handle output formatting based on population_values structure
     if hasattr(population_values, "columns") and hasattr(population_values.columns, "names"):
         col_idx_name = [
-            name for name in population_values.columns.names 
-            if name not in [None, "variable"]
+            name for name in population_values.columns.names if name not in [None, "variable"]
         ]
-        
+
         # Stack and unstack to create appropriate MultiIndex structure
         if len(col_idx_name) > 0:
             return ci_output.stack(col_idx_name, future_stack=True).unstack(["metric"])
-    
+
     # For simple case, transpose to get metrics as columns
     return ci_output.unstack().to_frame().T
