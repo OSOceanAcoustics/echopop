@@ -675,7 +675,7 @@ def is_pivot_table(df: pd.DataFrame):
 
 
 def round_half_up(n: Union[pd.Series, pd.DataFrame]):
-    """
+    r"""
     Round values to the nearest integer using the "round half up" rule.
 
     This function rounds each value in the input Series or array to the nearest integer,
