@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 
-def set_interval_distance(
+def compute_interval_distance(
     df_nasc: pd.DataFrame,
     interval_threshold: float = 0.05,
 ) -> None:

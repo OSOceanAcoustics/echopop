@@ -232,6 +232,44 @@ class InversionLengthTS(InversionBase):
         .. [1] Hurlbert, S.H. (1984). Pseudoreplication and the Design of Ecological Field 
         Experiments. *Ecological Monographs*, 54(2), 187-211. https://doi.org/10.2307/1942661
         """
+        
+        # Grab mean hauls if `df_length` is not specified
+        if df_length is None and self.sigma_bs_haul is not None:
+            sigma_bs_strata = self.sigma_bs_haul.unstack(
+                self.model_params["stratify_by"]
+            ).mean(axis=0)
+        # ---- Otherwise, apply the appropriate groupby operation
+        else:
+            # ---- Prepare the calculation depending on if `df` is a single DataFrame or Dictionary
+            if isinstance(df_length, pd.DataFrame):
+                df_length = [df_length]
+            elif isinstance(df_length, dict):
+                df_length = [d for d in df_length.values()]
+                
+            # Quantize the length counts across all datasets per length value
+            df_length_counts = (
+                pd.concat([utils.quantize_length_data(d, self.model_params["stratify_by"]) 
+                        for d in df_length], axis=1)
+                .fillna(0.).sum(axis=1).reset_index(name="length_count")
+            )
+            
+            # Compute the average TS
+            df_length_counts["TS"] = acoustics.ts_length_regression(
+                df_length_counts["length"], 
+                self.model_params["ts_length_regression"]["slope"],
+                self.model_params["ts_length_regression"]["intercept"]
+            )
+            
+            # Linearize
+            df_length_counts["sigma_bs"] = 10. ** (df_length_counts["TS"] / 10.)
+            
+            # Aggregate by stratum
+            sigma_bs_strata = (
+                df_length_counts
+                .groupby(["stratum_ks"])[["length_count", "sigma_bs"]].apply(
+                    lambda x: np.average(x.sigma_bs, weights=x.length_count)
+                )
+            )
 
         # Use hauls as replicates
         if haul_replicates:

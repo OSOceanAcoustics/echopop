@@ -470,7 +470,10 @@ def binned_weights(
 
 
 def calculate_adjusted_proportions(
-    group_keys: List[str], aggregate_table: pd.DataFrame, sex_proportions_table: pd.DataFrame
+    group_keys: List[str],
+    aggregate_table: pd.DataFrame,
+    group_proportions_table: pd.DataFrame,
+    group_by=List[str],
 ) -> pd.DataFrame:
     """
     Calculate adjusted proportions across multiple groups.
@@ -481,13 +484,13 @@ def calculate_adjusted_proportions(
         List of group keys/names (e.g., ["aged", "unaged"])
     aggregate_table : pd.DataFrame
         Table with aggregate proportions by group
-    sex_proportions_table : pd.DataFrame
-        Table with sex-specific proportions by group
+    group_proportions_table : pd.DataFrame
+        Table with grouping-specific proportions by group
 
     Returns
     -------
     pd.DataFrame
-        DataFrame with adjusted proportions with multi-index (group, sex)
+        DataFrame with adjusted proportions with multi-index (group, group_by variable)
 
     Notes
     -----
@@ -510,22 +513,32 @@ def calculate_adjusted_proportions(
     # For all other groups, calculate relative to the first group
     for group in group_keys[1:]:
         adjusted_props[group] = aggregate_table.loc[group] / (
-            aggregate_table.loc[group] + sex_proportions_table.loc[first_group]
+            # aggregate_table.loc[group] + sex_proportions_table.loc[first_group]
+            aggregate_table.loc[group]
+            + group_proportions_table.loc[first_group]
         )
 
     # Calculate first group proportion using all other adjusted proportions
     if len(group_keys) > 1:
-        adjusted_props[first_group] = sex_proportions_table.loc[first_group] / (
-            sex_proportions_table.loc[first_group]
+        # adjusted_props[first_group] = sex_proportions_table.loc[first_group] / (
+        #     sex_proportions_table.loc[first_group]
+        #     + pd.concat([adjusted_props[g] for g in group_keys[1:]], axis=0)
+        # )
+        adjusted_props[first_group] = group_proportions_table.loc[first_group] / (
+            group_proportions_table.loc[first_group]
             + pd.concat([adjusted_props[g] for g in group_keys[1:]], axis=0)
         )
     else:
         # If only one group, it gets 100% of the proportions
-        adjusted_props[first_group] = sex_proportions_table.loc[first_group]
+        # adjusted_props[first_group] = sex_proportions_table.loc[first_group]
+        adjusted_props[first_group] = group_proportions_table.loc[first_group]
 
     # Combine into a single DataFrame with proper multi-index
     adjusted_proportions = pd.concat(
-        [adjusted_props[group] for group in group_keys], keys=group_keys, names=["group", "sex"]
+        # [adjusted_props[group] for group in group_keys], keys=group_keys, names=["group", "sex"]
+        [adjusted_props[group] for group in group_keys],
+        keys=group_keys,
+        names=["group"] + group_by,
     )
 
     return adjusted_proportions
@@ -547,26 +560,26 @@ def calculate_grouped_weights(
     binned_weight_table_pvt : pd.DataFrame
         Pivot table with weight values by sex and length bin
     length_proportions_pvt : pd.DataFrame
-        Proportions by group, sex, and length bin
+        Proportions by group, groupings, and length bin
     length_proportions_pvt_all : pd.DataFrame
         Aggregated proportions by group and length bin
     aggregate_table : pd.DataFrame
         Table with aggregate proportions by group
     adjusted_proportions : pd.DataFrame
-        Adjusted proportions for each group and sex
+        Adjusted proportions for each group and groupings
     group_keys : List[str]
         List of group keys/names (e.g., ["aged", "unaged"])
 
     Returns
     -------
     pd.DataFrame
-        DataFrame with average weights by sex category
+        DataFrame with average weights by a grouping category defined by groupings
 
     Notes
     -----
-    The function calculates weighted average weights for different sex categories:
+    The function calculates weighted average weights for different grouping categories:
     - For "all", it uses aggregate proportions across all groups
-    - For individual sexes, it uses sex-specific adjusted proportions
+    - For individual groupings, it uses sex-specific adjusted proportions
 
     Examples
     --------
@@ -579,13 +592,22 @@ def calculate_grouped_weights(
     ...     ["aged", "unaged"]
     ... )
     """
+
+    # Initialize the dictionary to contain the grouped weights
     weights_dict = {}
 
-    # Define the sex categories
-    sex_categories = ["all", "female", "male"]
+    # Gather the index names
+    non_length_level = [lvl for lvl in binned_weight_table_pvt.index.names if lvl != "length_bin"][
+        0
+    ]
+
+    # Define the grouping categories
+    grouping_categories = (
+        binned_weight_table_pvt.index.get_level_values(non_length_level).unique().to_list()
+    )
 
     # Weight for all sexes combined
-    if "all" in sex_categories and "all" in binned_weight_table_pvt.index:
+    if "all" in grouping_categories and "all" in binned_weight_table_pvt.index:
         weight_all = binned_weight_table_pvt.loc["all"]["weight_fitted"].dot(
             sum(
                 length_proportions_pvt_all.loc[group] * aggregate_table.loc[group]
@@ -594,24 +616,28 @@ def calculate_grouped_weights(
         )
         weights_dict["all"] = weight_all
 
-    # Weight for each sex individually
-    for sex in [s for s in sex_categories if s != "all"]:
-        if sex in binned_weight_table_pvt.index.get_level_values(0):
-            weight_base = binned_weight_table_pvt.loc[
-                "all" if "all" in binned_weight_table_pvt.index else sex
-            ]["weight_fitted"]
-            weight_sex = weight_base.dot(
-                sum(
-                    length_proportions_pvt.loc[(group, sex)]
-                    * adjusted_proportions.loc[(group, sex)]
-                    for group in group_keys
-                    if (group, sex) in length_proportions_pvt.index
+    # Weight for each group individually
+    if non_length_level in adjusted_proportions.index.names:
+        for grouping in [g for g in grouping_categories if g != "all"]:
+            if grouping in adjusted_proportions.index.get_level_values(non_length_level):
+                weight_base = binned_weight_table_pvt.loc[
+                    "all" if "all" in binned_weight_table_pvt.index else grouping
+                ]["weight_fitted"]
+                weight_grouping = weight_base.dot(
+                    sum(
+                        length_proportions_pvt.loc[(group, grouping)]
+                        * adjusted_proportions.loc[(group, grouping)]
+                        for group in group_keys
+                        if (group, grouping) in length_proportions_pvt.index
+                    )
                 )
-            )
-            weights_dict[sex] = weight_sex
+                weights_dict[grouping] = weight_grouping
 
     # Combine into final DataFrame
-    return pd.DataFrame(weights_dict)
+    weights_df = pd.DataFrame(weights_dict)
+    # ---- Apply name change
+    weights_df.columns.name = non_length_level
+    return weights_df
 
 
 def calculate_within_group_proportions(
@@ -668,16 +694,16 @@ def calculate_within_group_proportions(
 def stratum_averaged_weight(
     proportions_dict: Dict[str, pd.DataFrame],
     binned_weight_table: pd.DataFrame,
-    stratum_col: str = "stratum_num",
+    stratify_by: List[str] = ["stratum_num"],
+    group_by: List[str] = [],
 ) -> pd.DataFrame:
     """
     Calculate stratum-specific average weights across multiple datasets with different proportions.
 
     This function combines length-at-age distributions from different groups (e.g., aged and unaged
-    fish)
-    to produce weighted average weights by sex and stratum. It accounts for different proportions
-    of individuals in each group and correctly weights the contribution of each group to the final
-    average.
+    fish) to produce weighted average weights by sex and stratum. It accounts for different
+    proportions of individuals in each group and correctly weights the contribution of each group
+    to the final average.
 
     Parameters
     ----------
@@ -700,16 +726,14 @@ def stratum_averaged_weight(
     Returns
     -------
     pd.DataFrame
-        DataFrame with average weights by stratum and sex.
-        Index: stratum_num
-        Columns: Sex categories ('all', 'female', 'male')
+        DataFrame with average weights defined for each stratum with optional groupings.
 
     Notes
     -----
     - This function assumes that the length bins in proportions_dict and binned_weight_table match
-    - The function requires an 'all' sex category in binned_weight_table for calculating combined
+    - The function requires an 'all' group category in binned_weight_table for calculating combined
       weights
-    - Missing strata or sex categories will be excluded from the final results
+    - Missing strata or group categories will be excluded from the final results
 
     Examples
     --------
@@ -751,23 +775,29 @@ def stratum_averaged_weight(
     # Create aggregate table with summed proportions per group (e.g. strata)
     aggregate_proportions = utils.create_grouped_table(
         proportions_dict,
-        group_cols=[stratum_col, "sex", "length_bin"],
+        # group_cols=[stratum_col, "sex", "length_bin"],
+        group_cols=stratify_by + group_by + ["length_bin"],
         index_cols=["group"],
-        strat_cols=[stratum_col],
+        # strat_cols=[stratum_col],
+        strat_cols=stratify_by,
         value_col="proportion_overall",
     )
 
     # Compute the within-grouped proportions
     # ---- Execute calculation
     length_proportions_df = calculate_within_group_proportions(
-        proportions_dict, group_cols=[stratum_col, "sex"]
+        # proportions_dict, group_cols=[stratum_col, "sex"]
+        proportions_dict,
+        group_cols=stratify_by + group_by,
     )
 
     # ---- Convert into a table for just the within-grouped proportions
     length_proportions_group = utils.create_pivot_table(
         length_proportions_df,
-        index_cols=["group", "sex", "length_bin"],
-        strat_cols=[stratum_col],
+        # index_cols=["group", "sex", "length_bin"],
+        # strat_cols=[stratum_col],
+        index_cols=["group"] + group_by + ["length_bin"],
+        strat_cols=stratify_by,
         value_col="within_group_proportion",
     )
 
@@ -775,7 +805,8 @@ def stratum_averaged_weight(
     length_proportions_all = utils.create_pivot_table(
         length_proportions_df,
         index_cols=["group", "length_bin"],
-        strat_cols=[stratum_col],
+        # strat_cols=[stratum_col],
+        strat_cols=stratify_by,
         value_col="proportion",
     )
 
@@ -785,15 +816,17 @@ def stratum_averaged_weight(
     # Create table for the overall sexed group proportions
     group_proportions = utils.create_grouped_table(
         proportions_dict,
-        group_cols=[stratum_col, "sex"],
-        index_cols=["group", "sex"],
-        strat_cols=[stratum_col],
+        # group_cols=[stratum_col, "sex"],
+        group_cols=stratify_by + group_by,
+        index_cols=["group"] + group_by,
+        # strat_cols=[stratum_col],
+        strat_cols=stratify_by,
         value_col="proportion_overall",
     )
 
     # Compute the re-weighted proportions from the mixture of the different groups
     adjusted_proportions = calculate_adjusted_proportions(
-        group_keys, aggregate_proportions, group_proportions
+        group_keys, aggregate_proportions, group_proportions, group_by
     )
 
     # Calculate final weights
@@ -1147,14 +1180,15 @@ def get_nasc_proportions_slice(
     ts_length_regression_parameters: Dict[str, float],
     stratify_by: List[str],
     include_filter: Dict[str, Any] = {},
+    exclude_filter: Dict[str, Any] = {},
 ) -> pd.Series:
     """
-    Calculate NASC (acoustic backscatter) proportions for a specific slice of the population.
+    Calculate NASC proportions for a specific slice of the population
 
     This function computes weighted acoustic proportions by applying target strength-length
     regression to convert length-based number proportions into acoustic backscatter
     proportions. The target strength weighting accounts for the fact that larger fish
-    contribute disproportionately more to acoustic backscatter.
+    contribute disproportionately to acoustic backscatter.
 
     Parameters
     ----------
@@ -1166,8 +1200,10 @@ def get_nasc_proportions_slice(
     stratify_by : List[str]
         Column names for stratification (e.g., ["stratum_ks"])
     include_filter : Dict[str, Any], default {}
-        Filter criteria to include specific groups, e.g.:
+        Filter criteria to include specific grouping, e.g.:
         {"age_bin": [1], "sex": ["female"]}
+    exclude_filter : Dict[str, Any], default {}
+        Groups to exclude, e.g., {"length_bin": [small_lengths]}
     ts_length_regression_parameters : Dict[str, float]
         Target strength-length regression parameters:
         - slope: regression slope
@@ -1226,7 +1262,7 @@ def get_nasc_proportions_slice(
 
     # Apply filter to extract target group
     target_group_table = utils.apply_filters(
-        filtered_population_table, include_filter=include_filter
+        filtered_population_table, include_filter=include_filter, exclude_filter=exclude_filter
     )
 
     # Aggregate target group over length and strata dimensions
@@ -1244,9 +1280,9 @@ def get_number_proportions_slice(
     stratify_by: List[str],
     exclude_filter: Dict[str, Any] = {},
     include_filter: Dict[str, Any] = {},
-) -> Union[pd.Series, pd.DataFrame]:
+) -> pd.Series:
     """
-    Extract number proportions for a specific population slice with flexible filtering.
+    Extract number proportions for a specific slice of the population
 
     This function creates pivot tables from number proportion data and applies
     inclusion/exclusion filters to extract proportions for specific population
@@ -1269,13 +1305,11 @@ def get_number_proportions_slice(
 
     Returns
     -------
-    Union[pd.Series, pd.DataFrame]
-        - pd.Series: if single stratification dimension, returns proportions by strata
-        - pd.DataFrame: if multiple dimensions, returns pivot table with preserved structure
+    pd.Series
+        Proportions by strata.
 
     Notes
     -----
-    - Automatically determines which columns to use as indices vs stratification
     - Handles missing columns gracefully by intersecting with available data
     - For single stratification variable, sums over all other dimensions
     - For multiple variables, preserves structure based on data complexity
@@ -1358,12 +1392,13 @@ def get_weight_proportions_slice(
     weight_proportions: pd.DataFrame,
     stratify_by: List[str],
     include_filter: Dict[str, Any] = {},
-    number_proportions: Optional[Union[Dict[str, pd.DataFrame], pd.DataFrame]] = None,
+    exclude_filter: Dict[str, Any] = {},
+    number_proportions: Dict[str, pd.DataFrame] = {},
     length_threshold_min: float = 0.0,
     weight_proportion_threshold: float = 1e-10,
 ) -> pd.Series:
     """
-    Calculate weight proportions for a population slice with optional thresholding.
+    Calculate weight proportions for a specific slice of the population with optional thresholding
 
     This function computes weight proportions for a target population group, with
     optional thresholding based on number proportions. The thresholding helps
@@ -1377,14 +1412,16 @@ def get_weight_proportions_slice(
         Stratification columns (e.g., ["stratum_ks"])
     include_filter : Dict[str, Any], default {}
         Filter criteria for target group, e.g., {"age_bin": [1]}
-    number_proportions : Union[Dict[str, pd.DataFrame], pd.DataFrame], optional
-        Number proportions for thresholding calculation:
-        - Dict: multiple datasets (e.g., {"aged": df1, "unaged": df2})
-        - DataFrame: single dataset
-        - None: no thresholding applied
+    exclude_filter : Dict[str, Any], default {}
+        Groups to exclude, e.g., {"length_bin": [small_lengths]}
+    number_proportions : Dict[str, pd.DataFrame], default {}
+        Number proportions required for thresholding particular length values. This argument is
+        expected to be a dictionary with a key paired with at least one DataFrame
+        (e.g. {"grouped": df}). When no value is supplied, `number_proportions` defaults to an
+        empty dictionary with no thresholding applied to the subsequent number proportions.
     length_threshold_min : float, default 0.0
-        Minimum length for threshold calculations (e.g., 10.0 cm)
-        Only used when number_proportions is provided
+        Minimum length for threshold calculations (e.g., 10.0 cm). This is only used when number
+        proportions are provided.
     weight_proportion_threshold : float, default 1e-10
         Threshold value for proportion comparisons
 
@@ -1400,10 +1437,6 @@ def get_weight_proportions_slice(
     2. If number_proportions provided, calculate corresponding number thresholds
     3. Apply threshold mask where both weight and number proportions are very small
     4. Set masked values to 0.0 to indicate unreliable estimates
-
-    The function handles dictionary inputs by computing element-wise products
-    across all datasets to identify cases where multiple sources agree on
-    very low proportions.
 
     Examples
     --------
@@ -1435,7 +1468,9 @@ def get_weight_proportions_slice(
         )
 
     # Calculate basic weight proportions for target group
-    target_weight_table = utils.apply_filters(weight_proportions, include_filter=include_filter)
+    target_weight_table = utils.apply_filters(
+        weight_proportions, include_filter=include_filter, exclude_filter=exclude_filter
+    )
 
     # Aggregate target group proportions
     target_group_weight_proportions = (
@@ -1447,64 +1482,41 @@ def get_weight_proportions_slice(
     proportions_weight = target_group_weight_proportions / total_weight_proportions
 
     # Apply thresholding if number proportions provided
-    if number_proportions is not None and length_threshold_min is not None:
-
-        # Handle dictionary of number proportions
-        if isinstance(number_proportions, dict):
-            # Get all unique length values across datasets
-            all_length_vals = np.concatenate(
-                [
-                    df["length_bin"].apply(lambda x: x.mid).astype(float).unique()
-                    for df in number_proportions.values()
-                ]
-            )
-            length_vals = np.unique(all_length_vals)
-
-            # Create length exclusion filter
-            length_exclusion_filter = {
-                "length_bin": length_vals[length_vals < length_threshold_min]
-            }
-
-            # Get filtered number proportions for each dataset
-            filtered_number_proportions_dict = {
-                key: get_number_proportions_slice(
-                    df,
-                    stratify_by=stratify_by + ["length_bin"],
-                    exclude_filter=length_exclusion_filter,
-                    include_filter=include_filter,
-                )
-                for key, df in number_proportions.items()
-            }
-
-            # Calculate element-wise product across all datasets
-            filtered_number_proportions = functools.reduce(
-                lambda df1, df2: df1.mul(df2, fill_value=0),
-                filtered_number_proportions_dict.values(),
-            ).sum()
-
-        else:
-            # Single DataFrame case
-            length_vals = (
-                number_proportions["length_bin"].apply(lambda x: x.mid).astype(float).unique()
-            )
-
-            length_exclusion_filter = {
-                "length_bin": length_vals[length_vals < length_threshold_min]
-            }
-
-            filtered_number_proportions = get_number_proportions_slice(
-                number_proportions,
+    if len(number_proportions) > 0:
+        # ---- Get all unique length values across datasets
+        all_length_vals = np.concatenate(
+            [
+                df["length_bin"].apply(lambda x: x.mid).astype(float).unique()
+                for df in number_proportions.values()
+            ]
+        )
+        length_vals = np.unique(all_length_vals)
+        # ---- Create length exclusion filter
+        length_exclusion_filter = {
+            "length_bin": length_vals[length_vals < length_threshold_min],
+            **exclude_filter,
+        }
+        # ---- Get filtered number proportions for each dataset
+        filtered_number_proportions_dict = {
+            key: get_number_proportions_slice(
+                df,
                 stratify_by=stratify_by + ["length_bin"],
                 exclude_filter=length_exclusion_filter,
                 include_filter=include_filter,
-            ).sum()
-
-        # Apply threshold mask
+            )
+            for key, df in number_proportions.items()
+        }
+        # ---- Calculate element-wise product across all datasets
+        filtered_number_proportions = functools.reduce(
+            lambda df1, df2: df1.mul(df2, fill_value=0),
+            filtered_number_proportions_dict.values(),
+        ).sum()
+        # ---- Apply threshold mask
         threshold_mask = (target_group_weight_proportions <= weight_proportion_threshold) & (
             filtered_number_proportions <= weight_proportion_threshold
         )
-
-        # Set masked values to 0
+        # ---- Set masked values to 0
         proportions_weight[threshold_mask] = 0.0
 
+    # Return the sliced weight proportions
     return proportions_weight

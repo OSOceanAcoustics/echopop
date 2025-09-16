@@ -23,6 +23,7 @@ from echopop.nwfsc_feat import (
 # DEFINE DATA ROOT DIRECTORY
 # --------------------------
 DATA_ROOT = Path("C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_2019")
+# DATA_ROOT = Path("C:/Users/Brandyn Lucca/Documents/Data/echopop_2019")
 
 # ==================================================================================================
 # ==================================================================================================
@@ -42,21 +43,19 @@ df_intervals, df_exports = ingest_nasc.merge_echoview_nasc(
 # ==================================================================================================
 # Read in transect-region-haul keys
 # ---------------------------------
-TRANSECT_REGION_FILEPATH_ALL_AGES: Path = Path(
-    "C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_2019/Stratification/"
-    "US_CAN_2019_transect_region_haul_age1+ auto_final.xlsx"
+TRANSECT_REGION_FILEPATH_ALL_AGES = (
+    DATA_ROOT / "Stratification/US_CAN_2019_transect_region_haul_age1+ auto_final.xlsx"
 )
-TRANSECT_REGION_SHEETNAME_ALL_AGES: str = "Sheet1"
-TRANSECT_REGION_FILEPATH_NO_AGE1: Path = Path(
-    "C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_2019/Stratification/"
-    "US_CAN_2019_transect_region_haul_age2+ auto_20191205.xlsx"
+TRANSECT_REGION_FILEPATH_NO_AGE1 = (
+    DATA_ROOT / "Stratification/US_CAN_2019_transect_region_haul_age2+ auto_20191205.xlsx"
 )
-TRANSECT_REGION_SHEETNAME_NO_AGE1: str = "Sheet1"
 TRANSECT_REGION_FILE_RENAME: dict = {
     "tranect": "transect_num",
     "region id": "region_id",
     "trawl #": "haul_num",
 }
+TRANSECT_REGION_SHEETNAME_ALL_AGES: str = "Sheet1"
+TRANSECT_REGION_SHEETNAME_NO_AGE1: str = "Sheet1"
 
 # Read in the transect-region-haul key files for each group
 transect_region_haul_key_all_ages: pd.DataFrame = ingest_nasc.read_transect_region_haul_key(
@@ -462,7 +461,8 @@ dict_df_weight_distr["unaged"] = get_proportions.binned_weights(
 df_averaged_weight = get_proportions.stratum_averaged_weight(
     proportions_dict=dict_df_number_proportion, 
     binned_weight_table=binned_weight_table,
-    stratum_col="stratum_ks",
+    stratify_by=["stratum_ks"],
+    group_by=["sex"],
 )
 
 # ==================================================================================================
@@ -544,8 +544,8 @@ invert_hake.sigma_bs_strata
 
 # Calculate along-transect interval distances which is required for getting the area-per-interval 
 # and therefore going from number density to abundance
-transect.set_interval_distance(df_nasc=df_nasc_all_ages, interval_threshold=0.05)
-transect.set_interval_distance(df_nasc=df_nasc_no_age1, interval_threshold=0.05)
+transect.compute_interval_distance(df_nasc=df_nasc_all_ages, interval_threshold=0.05)
+transect.compute_interval_distance(df_nasc=df_nasc_no_age1, interval_threshold=0.05)
 
 # ==================================================================================================
 # Calculate transect interval areas
@@ -558,17 +558,29 @@ df_nasc_no_age1["area_interval"] = (
 )
 
 # ==================================================================================================
-# Calculate remaining population metrics across all animals 
-# ---------------------------------------------------------
-biology.set_population_metrics(df_nasc=df_nasc_all_ages, 
-                               metrics=["abundance", "biomass", "biomass_density"],
-                               stratify_by="stratum_ks",
-                               df_average_weight=df_averaged_weight["all"])
+# Calculate (and apportion) number densities to abundance, and number densities/abundance for each 
+# sex 
+# --------------------------------------------------------------------------------------------------
 
-biology.set_population_metrics(df_nasc=df_nasc_no_age1, 
-                               metrics=["abundance", "biomass", "biomass_density"],
-                               stratify_by="stratum_ks",
-                               df_average_weight=df_averaged_weight["all"])
+biology.compute_abundance(
+    dataset=df_nasc_no_age1,
+    stratify_by=["stratum_ks"],
+    group_by=["sex"],
+    exclude_filter={"sex": "unsexed"},
+    number_proportions=dict_df_number_proportion
+)
+
+# ==================================================================================================
+# Calculate (and apportion) biomass densities and biomass (from number density and abundance, 
+# respectively) for the overall transect dataset as well as for each sex
+# --------------------------------------------------------------------------------------------------
+
+biology.compute_biomass(
+    dataset=df_nasc_no_age1,
+    stratify_by=["stratum_ks"],
+    group_by=["sex"],
+    df_average_weight=df_averaged_weight,
+)
 
 # ==================================================================================================
 # Get proportions for each stratum specific to age-1
@@ -598,6 +610,19 @@ age1_weight_proportions = get_proportions.get_weight_proportions_slice(
     number_proportions=dict_df_number_proportion,
     length_threshold_min=10.0,
     weight_proportion_threshold=1e-10
+)
+
+# ==================================================================================================
+# Apply the calculated proportions to the abundance, biomass, and NASC estimates
+# ------------------------------------------------------------------------------
+
+df_nasc_no_age1_prt = apportion.remove_group_from_estimates(
+    dataset=df_nasc_no_age1,
+    group_proportions={
+        "nasc": age1_nasc_proportions, 
+        "abundance": age1_number_proportions,
+        "biomass": age1_weight_proportions
+    },
 )
 
 # ==================================================================================================
