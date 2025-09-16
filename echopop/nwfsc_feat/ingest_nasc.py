@@ -12,6 +12,7 @@ from ..core.echoview import (
 )
 from . import utils
 
+
 def map_transect_num(
     ev_export_paths: Dict[str, Generator], transect_pattern: str = r"T(\d+)"
 ) -> pd.DataFrame:
