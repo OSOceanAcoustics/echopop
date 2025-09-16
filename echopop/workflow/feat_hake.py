@@ -5,16 +5,14 @@ import numpy.typing as npt
 import pandas as pd
 from lmfit import Parameters
 from echopop import inversion
-from echopop.nwfsc_feat.geostatistics import Geostats
 from echopop.nwfsc_feat import (
-    # apportion,
+    apportion,
     biology, 
     FEAT,
     ingest_nasc, 
     get_proportions, 
     kriging,
     load_data, 
-    # mesh,
     spatial,
     transect, 
     utils,
@@ -430,7 +428,6 @@ dict_df_counts["unaged"] = get_proportions.compute_binned_counts(
 dict_df_number_proportion: Dict[str, pd.DataFrame] = get_proportions.number_proportions(
     data=dict_df_counts, 
     group_columns=["stratum_ks"],
-    column_aliases=["aged", "unaged"],
     exclude_filters={"aged": {"sex": "unsexed"}},
 )
 
@@ -757,4 +754,115 @@ df_kriged_results = krg.krige(
     default_mesh_cell_area=6.25,
     adaptive_search_strategy="FEAT_strategy",
     custom_search_kwargs=FEAT_STRATEGY_KWARGS,
+)
+# ##################################################################################################
+# Back-calculate sex-specific biomass and abundance, and total NASC from the kriged biomass 
+# density estimates
+# -----------------
+
+# Compute biomass
+df_kriged_results["biomass"] = df_kriged_results["biomass_density"] * df_kriged_results["area"]
+
+# Convert biomass to abundance to NASC
+apportion.mesh_biomass_to_nasc(
+    mesh_data_df=df_kriged_results,
+    biodata=dict_df_weight_proportion,
+    group_by=["sex"],
+    mesh_biodata_link={"geostratum_ks": "stratum_ks"},
+    stratum_weights_df=df_averaged_weight["all"],
+    stratum_sigma_bs_df=invert_hake.sigma_bs_strata,    
+)
+
+# ##################################################################################################
+# Distribute kriged abundance estimates over length and age/length
+# ----------------------------------------------------------------
+
+dict_kriged_abundance_table = apportion.distribute_kriged_estimates(
+    mesh_data_df=df_kriged_results,
+    proportions=dict_df_number_proportion,
+    variable="abundance",
+    group_by=["sex", "age_bin", "length_bin"],
+    stratify_by=["stratum_ks"],
+    mesh_proportions_link={"geostratum_ks": "stratum_ks"},
+)
+
+# ##################################################################################################
+# Distribute kriged biomass estimates over length and age/length
+# --------------------------------------------------------------
+
+dict_kriged_biomass_table = apportion.distribute_kriged_estimates(
+    mesh_data_df=df_kriged_results,
+    proportions=dict_df_weight_proportion,
+    variable="biomass",
+    group_by=["sex", "age_bin", "length_bin"],
+    stratify_by=["stratum_ks"],
+    mesh_proportions_link={"geostratum_ks": "stratum_ks"},
+)
+
+# ##################################################################################################
+# Standardize the unaged abundance estimates to be distributed over age
+# ---------------------------------------------------------------------
+
+dict_kriged_abundance_table["standardized_unaged"] = apportion.distribute_unaged_from_aged(
+    population_table=dict_kriged_abundance_table["unaged"],
+    reference_table=dict_kriged_abundance_table["aged"],
+    group_by=["sex"],
+    impute=False,    
+)
+
+# ##################################################################################################
+# Standardize the unaged abundance estimates to be distributed over age
+# ---------------------------------------------------------------------
+# THIS NEEDS TO BE FULLY IMPLEMENTED WITH TESTS, ETC.
+
+dict_kriged_biomass_table["standardized_unaged"] = apportion.distribute_unaged_from_aged(
+    population_table=dict_kriged_biomass_table["unaged"],
+    reference_table=dict_kriged_biomass_table["aged"],
+    group_by=["sex"],
+    impute=True,
+    impute_variable=["age_bin"],
+)
+
+# ##################################################################################################
+# Consolidate the kriged abundance estimates into a single DataFrame table
+# ------------------------------------------------------------------------
+
+df_kriged_abundance_table = apportion.sum_population_tables(
+    population_table=dict_kriged_abundance_table,
+    table_names=["aged", "standardized_unaged"],
+    table_index=["length_bin"],
+    table_columns=["age_bin", "sex"],
+)
+
+# ##################################################################################################
+# Consolidate the kriged biomass estimates into a single DataFrame table
+# -----------------------------------------------------------------------
+
+df_kriged_biomass_table = apportion.sum_population_tables(
+    population_table=dict_kriged_biomass_table,
+    table_names=["aged", "standardized_unaged"],
+    table_index=["length_bin"],
+    table_columns=["age_bin", "sex"],
+)
+
+# ##################################################################################################
+# Redistribute the kriged abundance estimates
+# -------------------------------------------
+
+# Re-allocate the age-1 abundance estimates 
+df_kriged_abundance_table_noage1 = apportion.reallocate_excluded_estimates(
+    population_table=df_kriged_abundance_table,
+    exclusion_filter={"age_bin": [1]},
+    group_by=["sex"],
+)
+
+# ##################################################################################################
+# Redistribute the kriged biomass estimates
+# -----------------------------------------
+
+# Re-allocate the age-1 abundance estimates 
+df_kriged_biomass_table_noage1 = apportion.reallocate_excluded_estimates(
+    population_table=df_kriged_biomass_table,
+    exclusion_filter={"age_bin": [1]},
+    group_by=["sex"],
 )

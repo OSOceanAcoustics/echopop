@@ -1,4 +1,4 @@
-from typing import List, Optional, Union
+from typing import Dict, List, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -302,3 +302,48 @@ def set_population_metrics(
     # Reset the index if it was modified
     if reset_index_needed:
         df_nasc.reset_index(inplace=True)
+
+
+def remove_specimen_hauls(
+    biodata_dict: Dict[str, pd.DataFrame],
+) -> None:
+    """
+    Remove hauls from the catch data where all samples were individually processed.
+
+    This function filters the catch data to exclude hauls that don't have corresponding length
+    frequency data, ensuring consistency between catch weights and length samples. This prevents
+    double-counting when specimen data represents the entire catch.
+
+    Parameters
+    ----------
+    biodata_dict : Dict[str, pd.DataFrame]
+        Dictionary containing biological data with keys typically including 'catch' and 'length'.
+        The 'length' DataFrame should contain a 'haul_num' column identifying which hauls have
+        length frequency data. The 'catch' DataFrame will be filtered to match.
+
+    Returns
+    -------
+    None
+        Function modifies biodata_dict in place by filtering the 'catch' DataFrame.
+
+    Notes
+    -----
+    This function addresses a common issue in fisheries data where:
+    - Some hauls have bulk catch weights but no individual fish measurements
+    - Other hauls have detailed individual fish data that represents the entire catch
+    - Including both would lead to double-counting of biomass
+
+    By filtering catch data to only include hauls with length frequency data,
+    the function ensures that biomass estimates are based on consistent sampling methods.
+
+    The function is typically called after loading biological data but before
+    computing length-weight relationships or abundance estimates.
+    """
+
+    # Get unique haul numbers
+    haul_numbers = biodata_dict["length"]["haul_num"].unique()
+
+    # Find incompatible hauls
+    biodata_dict["catch"] = biodata_dict["catch"].loc[
+        biodata_dict["catch"]["haul_num"].isin(haul_numbers)
+    ]
