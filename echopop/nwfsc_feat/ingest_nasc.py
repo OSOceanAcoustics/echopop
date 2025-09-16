@@ -1298,7 +1298,7 @@ def convert_afsc_nasc_to_feat(
     exclusion_filter: Dict[str, Any] = {},
 ) -> pd.DataFrame:
     """
-    Convert AFSC NASC data to FEAT format.
+    Convert AFSC-MACE to NWFSC-FEAT transect NASC format.
 
     Parameters
     ----------
@@ -1316,7 +1316,7 @@ def convert_afsc_nasc_to_feat(
     Returns
     -------
     pd.DataFrame
-        Transformed DataFrame in FEAT format.
+        Transformed DataFrame corresponding to the expected NWFSC-FEAT format.
     """
 
     # Apply inclusion filter if provided
