@@ -39,14 +39,21 @@ def test_remove_group_from_estimates_abundance_only(
 
     # Abundance-only
     result = apportion.remove_group_from_estimates(
-        transect_data=sample_transect_dataset, 
-        group_proportions={"abundance": age1_abundance_proportions}
+        transect_data=sample_transect_dataset,
+        group_proportions={"abundance": age1_abundance_proportions},
     )
 
     # Check shape/columns
     assert set(result.columns) == set(
-        ["stratum_ks", "transect_num", "number_density", "abundance", "abundance_male", 
-         "abundance_female", "area_interval"]
+        [
+            "stratum_ks",
+            "transect_num",
+            "number_density",
+            "abundance",
+            "abundance_male",
+            "abundance_female",
+            "area_interval",
+        ]
     )
 
     # Check abundance
@@ -62,21 +69,29 @@ def test_remove_group_from_estimates_abundance_only(
     )
 
 
-def test_remove_group_from_estimates_biomass_only(sample_transect_dataset, age1_biomass_proportions):
+def test_remove_group_from_estimates_biomass_only(
+    sample_transect_dataset, age1_biomass_proportions
+):
     """Test partitioning with only biomass proportions."""
 
     # Biomass-only
     result = apportion.remove_group_from_estimates(
-        transect_data=sample_transect_dataset, 
-        group_proportions={"biomass": age1_biomass_proportions}
+        transect_data=sample_transect_dataset,
+        group_proportions={"biomass": age1_biomass_proportions},
     )
 
     # Check shape/columns
     assert set(result.columns) == set(
-        ["stratum_ks", "transect_num", "biomass_density", "biomass", "biomass_male", 
-         "biomass_female", "area_interval"]
+        [
+            "stratum_ks",
+            "transect_num",
+            "biomass_density",
+            "biomass",
+            "biomass_male",
+            "biomass_female",
+            "area_interval",
+        ]
     )
-
 
     # Check biomass
     assert np.allclose(
