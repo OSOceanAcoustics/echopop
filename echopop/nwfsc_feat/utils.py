@@ -680,13 +680,13 @@ def round_half_up(n: Union[pd.Series, pd.DataFrame]):
 
     This function rounds each value in the input Series or array to the nearest integer,
     with halfway cases (i.e., values exactly halfway between two integers) rounded away from zero.
-    For positive numbers, values ending in .5 are rounded up. For negative numbers, values ending 
+    For positive numbers, values ending in .5 are rounded up. For negative numbers, values ending
     in .5 are rounded down (toward zero).
 
     Mathematically, for each element :math:`x` in the input:
 
     .. math::
-        \text{round\_half\_up}(x) = 
+        \text{round\_half\_up}(x) =
         \begin{cases}
             \lfloor x + 0.5 \rfloor & \text{if } x \geq 0 \\
             \lceil x - 0.5 \rceil & \text{if } x < 0

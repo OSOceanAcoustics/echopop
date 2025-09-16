@@ -12,8 +12,8 @@ class JollyHampton:
     """
     Jolly-Hampton stratified survey analysis with bootstrap resampling.
 
-    This class implements stratified sampling analysis using the Jolly-Hampton method with 
-    bootstrap resampling for uncertainty estimation. It handles virtual transect creation, 
+    This class implements stratified sampling analysis using the Jolly-Hampton method with
+    bootstrap resampling for uncertainty estimation. It handles virtual transect creation,
     stratified bootstrap sampling, and confidence interval estimation.
 
     Parameters
@@ -45,13 +45,13 @@ class JollyHampton:
 
     Notes
     -----
-    The Jolly and Hampton alogorithm is commonly used in fisheries acoustic surveys for estimating 
+    The Jolly and Hampton algorithm is commonly used in fisheries acoustic surveys for estimating
     fish biomass and abundance with stratified sampling designs.
 
     References
     ----------
-    Jolly, G.M., and Hampton, I. (1990). A stratified random transect design for acoustic surveys 
-    of fish stocks. *Canadian Journal of Fisheries and Aquatic Sciences*, *47*(7), 1282-1291. 
+    Jolly, G.M., and Hampton, I. (1990). A stratified random transect design for acoustic surveys
+    of fish stocks. *Canadian Journal of Fisheries and Aquatic Sciences*, *47*(7), 1282-1291.
     https://doi.org/10.1139/f90-147
 
     Examples
@@ -106,7 +106,7 @@ class JollyHampton:
         Partition gridded dataset into virtual transects based on latitude.
 
         Creates virtual transects by discretizing latitude coordinates and assigning sequential
-        transect numbers. This is commonly used in acoustic surveys where data is collected on a 
+        transect numbers. This is commonly used in acoustic surveys where data is collected on a
         regular grid.
 
         Parameters
@@ -203,7 +203,7 @@ class JollyHampton:
         """
         Compute transect distances and areas for virtual transects.
 
-        Calculates mean latitude, transect distance (using geopy), transect area, and sums the 
+        Calculates mean latitude, transect distance (using geopy), transect area, and sums the
         response variable for each virtual transect.
 
         Parameters
@@ -223,7 +223,7 @@ class JollyHampton:
 
         Notes
         -----
-        Transect distances are calculated using great circle distance (nautical miles). Transect 
+        Transect distances are calculated using great circle distance (nautical miles). Transect
         areas account for edge effects where end transects get half the area of interior transects.
         """
 
@@ -268,7 +268,7 @@ class JollyHampton:
         """
         Create virtual transects from gridded data and assign to strata.
 
-        This method converts gridded data into virtual transects by partitioning based on latitude, 
+        This method converts gridded data into virtual transects by partitioning based on latitude,
         computing transect metrics, and assigning transects to geographical strata.
 
         Parameters
@@ -286,12 +286,12 @@ class JollyHampton:
         Returns
         -------
         pd.DataFrame
-            DataFrame containing virtual transects with computed distances, areas, response 
+            DataFrame containing virtual transects with computed distances, areas, response
             variable sums, and stratum assignments.
 
         Notes
         -----
-        The virtual transects represent aggregated data along latitude bands, which is a common 
+        The virtual transects represent aggregated data along latitude bands, which is a common
         approach in systematic acoustic surveys.
         """
         # Assign transect numbers and get the latitude-transect key
@@ -395,7 +395,7 @@ class JollyHampton:
         """
         Format bootstrap results into a structured DataFrame.
 
-        Organizes the various bootstrap estimators into a pivoted DataFrame with proper indexing 
+        Organizes the various bootstrap estimators into a pivoted DataFrame with proper indexing
         and column names for downstream analysis.
 
         Parameters
@@ -414,12 +414,12 @@ class JollyHampton:
         Returns
         -------
         pd.DataFrame
-            Formatted DataFrame with bootstrap replicates organized by stratum and replicate 
+            Formatted DataFrame with bootstrap replicates organized by stratum and replicate
             number, containing all computed metrics.
 
         Notes
         -----
-        The DataFrame is pivoted so that strata become columns and replicates become rows, 
+        The DataFrame is pivoted so that strata become columns and replicates become rows,
         facilitating downstream statistical analysis.
         """
 
@@ -482,7 +482,7 @@ class JollyHampton:
         """
         Summarize transect-level data within strata.
 
-        Computes summary statistics for each transect including distance, area, response variable 
+        Computes summary statistics for each transect including distance, area, response variable
         totals, and density metrics. Results are stored in the 'transect_summary' attribute.
 
         Parameters
@@ -499,7 +499,7 @@ class JollyHampton:
 
         Notes
         -----
-        This method handles multiple approaches for calculating transect distances and areas, 
+        This method handles multiple approaches for calculating transect distances and areas,
         falling back to coordinate-based calculations if pre-computed values are not available.
         """
         # Create a grouped DataFrame from the DataFrame input
@@ -563,7 +563,7 @@ class JollyHampton:
         """
         Summarize data at the stratum level.
 
-        Computes stratum-level statistics including transect counts, sampling fractions, totals, 
+        Computes stratum-level statistics including transect counts, sampling fractions, totals,
         and density metrics. Results are stored in the strata_summary attribute.
 
         Parameters
@@ -573,8 +573,8 @@ class JollyHampton:
 
         Notes
         -----
-        The number of transects to sample per stratum is determined by the 
-        'strata_transect_proportion' parameter, which is applied to the total transect count in 
+        The number of transects to sample per stratum is determined by the
+        'strata_transect_proportion' parameter, which is applied to the total transect count in
         each stratum.
         """
 
@@ -621,14 +621,14 @@ class JollyHampton:
         """
         Compute survey-wide summary statistics.
 
-        Calculates overall survey statistics including weighted means, variances, and coefficient 
-        of variation. Results are stored in the survey_summary attribute as a dictionary with 
+        Calculates overall survey statistics including weighted means, variances, and coefficient
+        of variation. Results are stored in the survey_summary attribute as a dictionary with
         'strata' and 'survey' keys.
 
         Notes
         -----
-        Survey-wide statistics use area-weighted calculations to properly account for stratum size 
-        differences. The coefficient of variation is calculated using the ratio of weighted 
+        Survey-wide statistics use area-weighted calculations to properly account for stratum size
+        differences. The coefficient of variation is calculated using the ratio of weighted
         standard deviation to weighted mean.
         """
         # Get local references for cleaner code
@@ -700,7 +700,7 @@ class JollyHampton:
         """
         Calculate degrees of freedom for variance estimation.
 
-        Computes effective degrees of freedom (d.o.f) for each stratum, accounting for the case 
+        Computes effective degrees of freedom (d.o.f) for each stratum, accounting for the case
         where only one transect is sampled (which would give zero d.o.f).
 
         Returns
@@ -710,7 +710,7 @@ class JollyHampton:
 
         Notes
         -----
-        For strata with only one transect to sample, the degrees of freedom is set to 1 to avoid 
+        For strata with only one transect to sample, the degrees of freedom is set to 1 to avoid
         division by zero in variance calculations.
         """
 
@@ -733,7 +733,7 @@ class JollyHampton:
         """
         Compute distance-weighted variance using bootstrap samples.
 
-        Calculates variance estimates for each bootstrap replicate using distance-weighted 
+        Calculates variance estimates for each bootstrap replicate using distance-weighted
         deviations from the mean.
 
         Parameters
@@ -756,7 +756,7 @@ class JollyHampton:
 
         Notes
         -----
-        This method implements the distance-weighted variance calculation used in acoustic survey 
+        This method implements the distance-weighted variance calculation used in acoustic survey
         analysis, where variance is weighted by the square of the distance weights.
         """
 
@@ -784,7 +784,7 @@ class JollyHampton:
         """
         Perform stratified bootstrap resampling analysis.
 
-        Executes the complete bootstrap analysis pipeline including transect summarization, stratum 
+        Executes the complete bootstrap analysis pipeline including transect summarization, stratum
         summarization, bootstrap sample generation, and computation of bootstrap statistics.
 
         Parameters
@@ -800,7 +800,7 @@ class JollyHampton:
         Notes
         -----
         This method populates the 'bootstrap_replicates' attribute with bootstrap replicates
-        organized by stratum and replicate. The bootstrap sampling is done without replacement 
+        organized by stratum and replicate. The bootstrap sampling is done without replacement
         within each stratum.
 
         The method performs the following steps:
@@ -881,8 +881,8 @@ class JollyHampton:
         ] = "t-jackknife",
     ) -> pd.DataFrame:
         """
-        Generate summary statistics and confidence intervals from bootstrap results. This computes 
-        confidence intervals for both stratum-level and survey-wide estimates using the 
+        Generate summary statistics and confidence intervals from bootstrap results. This computes
+        confidence intervals for both stratum-level and survey-wide estimates using the
         specified bootstrap method.
 
         Parameters
@@ -903,10 +903,10 @@ class JollyHampton:
         Returns
         -------
         pd.DataFrame
-            DataFrame containing confidence intervals and summary statistics for both stratum-level 
-            and survey-wide estimates (including the coefficient of variation). Includes columns 
-            for confidence bounds, means, and bias estimates. These quantities are calculated using 
-            the area-weighted stratified approach. 
+            DataFrame containing confidence intervals and summary statistics for both stratum-level
+            and survey-wide estimates (including the coefficient of variation). Includes columns
+            for confidence bounds, means, and bias estimates. These quantities are calculated using
+            the area-weighted stratified approach.
 
         Raises
         ------
@@ -915,8 +915,8 @@ class JollyHampton:
 
         Notes
         -----
-        The method computes area-weighted survey statistics and includes coefficient of variation 
-        estimates. The t-jackknife method is recommended as it provides better coverage properties 
+        The method computes area-weighted survey statistics and includes coefficient of variation
+        estimates. The t-jackknife method is recommended as it provides better coverage properties
         for small sample sizes common in survey data.
 
         Examples
@@ -975,9 +975,9 @@ class JollyHampton:
             {
                 self.variable: self.bootstrap_replicates[self.variable].sum(axis=1),
                 f"{self.variable}_density": (
-                    (
-                        self.bootstrap_replicates[f"{self.variable}_density"] * area_weights
-                    ).sum(axis=1)
+                    (self.bootstrap_replicates[f"{self.variable}_density"] * area_weights).sum(
+                        axis=1
+                    )
                     / area_weights.sum()
                 ),
                 "cv": self.bootstrap_replicates["cv"],
