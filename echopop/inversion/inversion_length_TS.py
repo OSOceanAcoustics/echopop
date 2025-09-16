@@ -235,7 +235,7 @@ class InversionLengthTS(InversionBase):
         
         # Grab mean hauls if `df_length` is not specified
         if df_length is None and self.sigma_bs_haul is not None:
-            sigma_bs_strata = self.sigma_bs_haul.unstack(
+            self.sigma_bs_strata = self.sigma_bs_haul.unstack(
                 self.model_params["stratify_by"]
             ).mean(axis=0)
         # ---- Otherwise, apply the appropriate groupby operation
@@ -264,7 +264,7 @@ class InversionLengthTS(InversionBase):
             df_length_counts["sigma_bs"] = 10. ** (df_length_counts["TS"] / 10.)
             
             # Aggregate by stratum
-            sigma_bs_strata = (
+            self.sigma_bs_strata = (
                 df_length_counts
                 .groupby(["stratum_ks"])[["length_count", "sigma_bs"]].apply(
                     lambda x: np.average(x.sigma_bs, weights=x.length_count)
