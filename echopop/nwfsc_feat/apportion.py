@@ -263,6 +263,7 @@ def mesh_biomass_to_nasc(
     # Rename
     mesh_data_df.rename(columns=inverted_link, inplace=True)
 
+
 def distribute_kriged_estimates(
     mesh_data_df: pd.DataFrame,
     proportions: Union[Dict[str, Any], pd.DataFrame],
