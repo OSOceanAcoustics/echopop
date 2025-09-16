@@ -261,6 +261,104 @@ def mesh_biomass_to_nasc(
     # Rename
     mesh_data_df.rename(columns=inverted_link, inplace=True)
 
+def distribute_kriged_estimates(
+    mesh_data_df: pd.DataFrame,
+    proportions: Union[Dict[str, Any], pd.DataFrame],
+    variable: str,
+    group_by: List[str],
+    stratify_by: List[str],
+    mesh_proportions_link=Dict[str, str],
+) -> Dict[str, pd.DataFrame]:
+    """
+    Distribute kriged estimates (e.g. abundance, biomass) across biological groups and other metrics
+    such as age and length bins.
+
+    This function takes kriged estimates from a mesh and distributes them across different
+    biological categories (e.g., sex, age, length) using proportion data. The distribution
+    is performed by multiplying the kriged estimates with the corresponding proportions.
+
+    Parameters
+    ----------
+    mesh_data_df : pd.DataFrame
+        DataFrame containing kriged estimates with spatial mesh information.
+        Must contain the variable column specified in the 'variable' parameter.
+    proportions : Dict[str, Any] or pd.DataFrame
+        Proportion data for distributing the kriged estimates. Can be a single DataFrame
+        or dictionary of DataFrames (e.g., {"aged": df_aged, "unaged": df_unaged}).
+    variable : str
+        Name of the column in mesh_data_df containing the values to distribute
+        (e.g., "biomass", "abundance").
+    group_by : List[str]
+        List of column names that define the biological groups for distribution
+        (e.g., ["sex", "age_bin", "length_bin"]).
+    stratify_by : List[str]
+        List of column names used for stratification (e.g., ["stratum_ks"]).
+    mesh_proportions_link : Dict[str, str]
+        Dictionary mapping column names from mesh_data_df to proportions column names
+        for joining. Example: {"geostratum_ks": "stratum_ks"}
+
+    Returns
+    -------
+    Dict[str, pd.DataFrame]
+        Distributed estimates. Returns a dictionary. Each DataFrame contains the original
+        biological group structure with values distributed according to proportions.
+
+    Notes
+    -----
+    The function performs the following steps:
+    1. Converts single DataFrame to dictionary format if needed
+    2. Aggregates mesh data by stratification variables
+    3. Creates pivot tables from proportions data
+    4. Multiplies aggregated mesh values by proportions
+    5. Returns results in the same format as input proportions
+
+    The distribution preserves the biological group structure while scaling values
+    according to the proportion data provided.
+    """
+
+    # Convert to compatible format
+    if isinstance(proportions, pd.DataFrame):
+        proportions = {"distributed_mesh": proportions}
+
+    # Verify that `variable` exists
+    if variable not in mesh_data_df.columns:
+        raise ValueError(f"Variable '{variable}' not found in `mesh_data_df`.")
+
+    # Sum variables over indices
+    mesh_data_pvt = mesh_data_df.rename(columns=mesh_proportions_link).pivot_table(
+        index=stratify_by, values=variable, aggfunc="sum", observed=False
+    )
+
+    # Parse the additional columns that are required for grouping
+    proportions_group_columns = {
+        k: [c for c in (list(v.index.names) + list(v.columns)) if c in group_by]
+        for k, v in proportions.items()
+    }
+
+    # Convert to DataFrame(s) to pivot table(s)
+    proportions_grouped_pvt = {
+        k: (
+            df
+            if utils.is_pivot_table(df)
+            else utils.create_pivot_table(
+                df,
+                index_cols=proportions_group_columns[k],
+                strat_cols=stratify_by,
+                value_col="proportion_overall",
+            )
+        )
+        for k, df in proportions.items()
+    }
+
+    # Distribute the variable over each table
+    apportioned_grouped_pvt = {
+        k: df.mul(mesh_data_pvt[variable]).fillna(0.0) for k, df in proportions_grouped_pvt.items()
+    }
+
+    # Return output in the same format as the proportions input
+    return apportioned_grouped_pvt
+
+
 def impute_kriged_table(
     reference_table_df: pd.DataFrame,
     initial_table_df: pd.DataFrame,
