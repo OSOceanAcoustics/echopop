@@ -534,7 +534,7 @@ def distribute_unaged_from_aged(
         return standardized_table_imputed
 
 
-def combine_population_tables(
+def sum_population_tables(
     population_table: Dict[str, pd.DataFrame],
     table_names: List[str],
     table_index: List[str],

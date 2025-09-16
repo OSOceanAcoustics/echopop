@@ -240,7 +240,7 @@ def apportion_combined_biomass_table(apportion_biomass_table_with_standardized):
     """Pre-calculate combined apportioned biomass table for apportionment tests"""
 
     # Combine tables
-    return apportion.combine_population_tables(
+    return apportion.sum_population_tables(
         population_table=apportion_biomass_table_with_standardized,
         table_names=["subgroup1", "standardized_subgroup2"],
         table_index=["index_bin"],

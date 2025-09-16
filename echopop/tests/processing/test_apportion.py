@@ -200,7 +200,7 @@ def test_distribute_unaged_from_aged(apportion_biomass_table):
     assert all(std_tbl_imp.sum() == expected_imp)
 
 
-def test_combine_population_tables(apportion_biomass_table_with_standardized):
+def test_sum_population_tables(apportion_biomass_table_with_standardized):
     """
     Test functionality for combining the various apportionment tables
     """
@@ -210,7 +210,7 @@ def test_combine_population_tables(apportion_biomass_table_with_standardized):
     TABLE_COLUMNS = ["extra_bin", "contrast"]
 
     # Combine tables
-    df_biomass_table = apportion.combine_population_tables(
+    df_biomass_table = apportion.sum_population_tables(
         population_table=apportion_biomass_table_with_standardized,
         table_names=["subgroup1", "standardized_subgroup2"],
         table_index=TABLE_INDEX,
