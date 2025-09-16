@@ -544,8 +544,8 @@ invert_hake.sigma_bs_strata
 
 # Calculate along-transect interval distances which is required for getting the area-per-interval 
 # and therefore going from number density to abundance
-utils.compute_interval_distance(df_nasc=df_nasc_all_ages, interval_threshold=0.05)
-utils.compute_interval_distance(df_nasc=df_nasc_no_age1, interval_threshold=0.05)
+transect.compute_interval_distance(df_nasc=df_nasc_all_ages, interval_threshold=0.05)
+transect.compute_interval_distance(df_nasc=df_nasc_no_age1, interval_threshold=0.05)
 
 # ==================================================================================================
 # Calculate transect interval areas
