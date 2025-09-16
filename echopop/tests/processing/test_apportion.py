@@ -18,6 +18,9 @@ def test_mesh_biomass_to_nasc(
     # Create copy of apportion mesh DataFrame
     mesh_data_df = apportion_mesh.copy()
 
+    # Add biomass
+    mesh_data_df["biomass"] = mesh_data_df["biomass_density"] * mesh_data_df["area"]
+
     # This should not raise an error (operation done in-place)
     apportion.mesh_biomass_to_nasc(
         mesh_data_df=mesh_data_df,
