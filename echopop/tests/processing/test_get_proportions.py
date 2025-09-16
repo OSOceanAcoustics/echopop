@@ -1120,11 +1120,14 @@ def test_get_weight_proportions_slice_with_thresholding():
     # Normalize to get proportions
     number_data["proportion"] = number_data["proportion"] / number_data["proportion"].sum()
 
+    # Spoof dictionary
+    number_dict = {"spoopy": number_data.reset_index()}
+
     result = get_proportions.get_weight_proportions_slice(
         weight_proportions=weight_data,
         stratify_by=["stratum_num"],
         include_filter={"age_bin": [1]},
-        number_proportions=number_data.reset_index(),
+        number_proportions=number_dict,
         length_threshold_min=15.0,
     )
 
