@@ -40,7 +40,7 @@ def partition_transect_data(
     Notes
     -----
     The DataFrames/Series in `partition_dict` must have indices that correspond to values in the
-    `transect data`. Missing indices will result in NaN values for those rows. The function 
+    `transect data`. Missing indices will result in NaN values for those rows. The function
     automatically identifies and uses the appropriate index columns for merging.
     """
 
@@ -55,8 +55,8 @@ def partition_transect_data(
 
     # NASC, if present
     if "nasc" in partition_dict:
-        transect_data["nasc"] = (
-            transect_data["nasc"] * (1 - partition_dict["nasc"].reindex(transect_data.index))
+        transect_data["nasc"] = transect_data["nasc"] * (
+            1 - partition_dict["nasc"].reindex(transect_data.index)
         )
 
     # Abundance and number density, if present
@@ -66,7 +66,9 @@ def partition_transect_data(
         # ---- Map the appropriate columns for abundance
         abundance_names = transect_data.filter(like="abundance").columns
         # ---- Adjust abundances
-        transect_data[abundance_names] = transect_data[abundance_names].mul(abundance_proportions, axis=0)
+        transect_data[abundance_names] = transect_data[abundance_names].mul(
+            abundance_proportions, axis=0
+        )
         # ---- Map the appropriate columns for number density
         number_density_names = transect_data.filter(like="number_density").columns
         # ---- Adjust number densities

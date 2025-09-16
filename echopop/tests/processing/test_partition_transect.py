@@ -31,7 +31,8 @@ def test_partition_transect_data_abundance_only(
 ):
     """Test partitioning with only abundance proportions."""
     result = apportion.partition_transect_data(
-        transect_data=sample_transect_dataset, partition_dict={"abundance": age1_abundance_proportions}
+        transect_data=sample_transect_dataset,
+        partition_dict={"abundance": age1_abundance_proportions},
     )
 
     # Check abundance
