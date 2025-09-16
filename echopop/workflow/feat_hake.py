@@ -618,7 +618,7 @@ age1_weight_proportions = get_proportions.get_weight_proportions_slice(
 
 df_nasc_no_age1_prt = apportion.remove_group_from_estimates(
     dataset=df_nasc_no_age1,
-    partition_dict={
+    group_proportions={
         "nasc": age1_nasc_proportions, 
         "abundance": age1_number_proportions,
         "biomass": age1_weight_proportions
