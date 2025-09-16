@@ -293,13 +293,7 @@ def load_geostrata(
     return processed_geostrata_dict
 
 
-<<<<<<< HEAD
 def geostrata_bins(df: pd.DataFrame) -> pd.DataFrame:
-=======
-# !!! ==============================================================================================
-# TODO: more descriptive/helpful function name
-def preprocess_geostrata_data(df: pd.DataFrame) -> pd.DataFrame:
->>>>>>> 338d6dc (Revamped statistical functions (i.e. confidence interval methods))
     """
     Process a geographic stratification DataFrame by adding latitude intervals
     and renaming columns as needed.
