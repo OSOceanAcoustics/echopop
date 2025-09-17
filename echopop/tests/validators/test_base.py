@@ -1,5 +1,5 @@
 import pandas as pd
-import pandera as pa
+import pandera.pandas as pa
 import pytest
 from pydantic import ValidationError, field_validator
 
