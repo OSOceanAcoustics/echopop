@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Any, Dict
 import numpy as np
+import os
 import numpy.typing as npt
 import pandas as pd
 from lmfit import Parameters
@@ -23,8 +24,8 @@ from echopop.nwfsc_feat import (
 # ==================================================================================================
 # DEFINE DATA ROOT DIRECTORY
 # --------------------------
-DATA_ROOT = Path("C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_2019")
-# DATA_ROOT = Path("C:/Users/Brandyn Lucca/Documents/Data/echopop_2019")
+# DATA_ROOT = Path("C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_2019")
+DATA_ROOT = Path("C:/Users/Brandyn Lucca/Documents/Data/echopop_2019")
 
 # ==================================================================================================
 # ==================================================================================================
@@ -636,7 +637,7 @@ age1_weight_proportions = get_proportions.get_weight_proportions_slice(
 # ------------------------------------------------------------------------------
 
 df_nasc_no_age1_prt = apportion.remove_group_from_estimates(
-    dataset=df_nasc_no_age1,
+    transect_data=df_nasc_no_age1,
     group_proportions={
         "nasc": age1_nasc_proportions, 
         "abundance": age1_number_proportions,
@@ -693,7 +694,7 @@ vgm = variogram.Variogram(
 # Calculate the empirical variogram
 # ---------------------------------
 vgm.calculate_empirical_variogram(
-    data=df_nasc_no_age1,
+    data=df_nasc_no_age1_prt,
     variable="biomass_density",
     azimuth_filter=True,
     azimuth_angle_threshold=180.,
@@ -758,7 +759,7 @@ krg = kriging.Kriging(
 
 krg.crop_mesh(
     crop_function=FEAT.fun.transect_ends_crop,
-    transects=df_nasc_no_age1,
+    transects=df_nasc_no_age1_prt,
     latitude_resolution=1.25/60.,
     transect_mesh_region_function=FEAT.parameters.transect_mesh_region_2019,
 )
@@ -767,7 +768,7 @@ krg.crop_mesh(
 # [FEAT] Get the western extent of the transect bounds
 # ----------------------------------------------------
 transect_western_extents = FEAT.get_survey_western_extents(
-    transects=df_nasc_no_age1,
+    transects=df_nasc_no_age1_prt,
     coordinate_names=("x", "y"),
     latitude_threshold=51.
 )
@@ -792,7 +793,7 @@ FEAT_STRATEGY_KWARGS = {
 
 # Krige
 df_kriged_results = krg.krige(
-    transects=df_nasc_no_age1,
+    transects=df_nasc_no_age1_prt,
     variable="biomass_density",
     extrapolate=False,
     default_mesh_cell_area=6.25,
@@ -927,7 +928,7 @@ jh = stratified.JollyHampton(JOLLYHAMPTON_PARAMETERS)
 # -------------------------------------------------------------------------------
 
 # Run bootstrapping procedure
-jh.stratified_bootstrap(data_df=df_nasc_no_age1, 
+jh.stratified_bootstrap(data_df=df_nasc_no_age1_prt, 
                         stratify_by=["geostratum_inpfc"], 
                         variable="biomass")
 
@@ -967,3 +968,35 @@ print(
     kriged_results.xs("mean", axis=1, level="metric") - 
     transect_results.xs("mean", axis=1, level="metric")
 )
+
+####################################################################################################
+# Pickle outputs relevant for plotting and other demos
+# ----------------------------------------------------
+
+# Estabalish workflow directory
+WORKFLOW_DIR = Path(os.getcwd()) / "echopop/workflow"
+# ---- Validate existence
+WORKFLOW_DIR.exists()
+
+# Demo folder
+DEMO_DIR = WORKFLOW_DIR / "demo"
+# ---- Validate existence
+DEMO_DIR.exists()
+
+# Assign sub-folder for files
+FILES_DIR = DEMO_DIR / "files"
+
+# Pickle 
+try:
+    # NASC - transect data
+    df_nasc_no_age1_prt.to_pickle(FILES_DIR / "df_nasc_no_age1_prt.pkl")
+    # Mesh - kriged data 
+    df_kriged_results.to_pickle(FILES_DIR / "df_kriged_results.pkl")
+    # Abundance table - kriged data
+    df_kriged_abundance_table.to_pickle(FILES_DIR / "df_kriged_abundance_table.pkl")
+    # Biomass table - kriged data
+    df_kriged_biomass_table.to_pickle(FILES_DIR / "df_kriged_biomass_table.pkl")
+    # Verbose validation upon success
+    print(f"Saved demo DataFrames to: {FILES_DIR.as_posix()}.")
+except Exception as e: 
+    raise e from None
