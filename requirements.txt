@@ -5,24 +5,26 @@ numpy
 openpyxl
 pandas
 scipy
-# Spatial data processing stack
-cartopy
+# Spatial stack
 geopandas
 geopy
 pyproj
 shapely
 verde
-# Visualization stack
+# Validation stack
+pandera>=0.25
+pydantic>=2.0.0
+traitlets
+# Jupyter stack
+ipympl
+jupyter_bokeh>=3.0.5
+# Static visualization stack
+cartopy
+matplotlib
+# Interactive visualization stack
 bokeh
 geoviews
 holoviews
-ipympl
 ipywidgets
-jupyter_bokeh>=3.0.5
-jupyter_contrib_nbextensions
-matplotlib
-panel
-traitlets
-# Validation stack
-pandera>=0.25
-pydantic
+
+
