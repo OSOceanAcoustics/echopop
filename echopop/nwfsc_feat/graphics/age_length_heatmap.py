@@ -1,12 +1,13 @@
 from typing import Any, Dict, List, Optional, Tuple
 
-import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 from matplotlib.ticker import FixedLocator
 
 from .. import utils
 from . import utils as gutils
+
 
 def add_heatmap_grid(
     ax: plt.Axes,
@@ -30,7 +31,7 @@ def add_heatmap_grid(
         Width of each length bin.
     length_labels : numpy.ndarray
         Array of length bin centers.
-        
+
     Returns
     -------
     None
@@ -78,8 +79,7 @@ def add_heatmap_grid(
 
 
 def format_heatmap_mapping(
-    ax: plt.Axes,
-    data: pd.DataFrame
+    ax: plt.Axes, data: pd.DataFrame
 ) -> Tuple[List[float], float, float, pd.Series, pd.Series]:
     """
     Format axis ticks, labels, and extent for an age-length heatmap.
@@ -162,6 +162,7 @@ def format_heatmap_mapping(
     # Return the tuple
     return extent, delta_age, delta_length, age_labels, length_labels
 
+
 def plot_age_length_heatmap(
     data: pd.DataFrame,
     include_filter: Dict[str, Any] = {},
@@ -236,21 +237,23 @@ def plot_age_length_heatmap(
     # Column check
     if "age_bin" not in data.columns.names:
         raise KeyError(
-            f"The input DataFrame is expected to be have the column 'age_bin'. The DataFrame has the "
-            f"current column(s): {', '.join(data.columns.names)}."
+            f"The input DataFrame is expected to be have the column 'age_bin'. The DataFrame has "
+            f"the current column(s): {', '.join(data.columns.names)}."
         ) from None
 
     # Filter the dataset
     data_subset = utils.apply_filters(
-        data, include_filter=include_filter, exclude_filter=exclude_filter, 
-        replace_value=replace_value
+        data,
+        include_filter=include_filter,
+        exclude_filter=exclude_filter,
+        replace_value=replace_value,
     )
 
     # Stack and isolate just the age-length table
     if len(data_subset.columns.names) > 1:
-        age_length_df = data_subset.stack(future_stack=True).unstack(
-            "length_bin"
-        ).sum().unstack("age_bin")
+        age_length_df = (
+            data_subset.stack(future_stack=True).unstack("length_bin").sum().unstack("age_bin")
+        )
     else:
         age_length_df = data_subset
 
@@ -275,26 +278,33 @@ def plot_age_length_heatmap(
 
     # Get `cmap`
     cmap = colorbar_kwargs.pop("cmap", "viridis")
-    
+
     # Initialize figure
     fig, ax = gutils.call_with_pruned(plt.subplots, {**plot_kwargs, **axis_kwargs})
     # ---- Set axes
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
-    
+
     # Map the heatmap grid
     extent, delta_age, delta_length, age_labels, length_labels = format_heatmap_mapping(
         ax, age_length_df
     )
 
     # Produce the plot
-    PLOT = ax.imshow(X=age_length_df, aspect="auto", extent=extent, cmap=cmap, vmin=vmin, vmax=vmax, 
-                     **imshow_kwargs)
+    PLOT = ax.imshow(
+        X=age_length_df,
+        aspect="auto",
+        extent=extent,
+        cmap=cmap,
+        vmin=vmin,
+        vmax=vmax,
+        **imshow_kwargs,
+    )
 
     # Define the colorbar
     # ---- Check for a mappable object
     mappable = colorbar_kwargs.pop("mappable", PLOT)
-    # ---- Generate the colorbar    
+    # ---- Generate the colorbar
     plt.colorbar(mappable=mappable, ax=ax, label=colorbar_label, cmap=cmap, **colorbar_kwargs)
 
     # Add the grid
@@ -306,5 +316,3 @@ def plot_age_length_heatmap(
     # Print plot with tight margins/padding
     plt.tight_layout()
     plt.show()
-
-

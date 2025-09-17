@@ -1,11 +1,13 @@
 from typing import Any, Callable, Dict, Optional, Tuple, Union
-import shapely.geometry as sg
+
 import geopandas as gpd
-import pandas as pd
-import matplotlib.pyplot as plt 
+import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
+import shapely.geometry as sg
 
 from . import utils as gutils
+
 
 def get_transect_lines(
     data: gpd.GeoDataFrame,
@@ -31,7 +33,7 @@ def get_transect_lines(
     Notes
     -----
     Each transect is constructed by sorting points within each 'transect_num' group and connecting
-    them into a :class:`shapely.geometry.LineString` (`LineString docs 
+    them into a :class:`shapely.geometry.LineString` (`LineString docs
     <https://shapely.readthedocs.io/en/stable/manual.html#linestring>`_).
     """
 
@@ -46,18 +48,18 @@ def get_transect_lines(
         raise ValueError("Input data is empty.")
 
     # Sort the lines
-    data_sorted = data.groupby("transect_num").apply(
-        lambda g: g.sort_values(
-            "geometry",
-            key=lambda s: s.apply(lambda p: (p.x, p.y))
-        ),
-        include_groups=False
-    ).reset_index()
+    data_sorted = (
+        data.groupby("transect_num")
+        .apply(
+            lambda g: g.sort_values("geometry", key=lambda s: s.apply(lambda p: (p.x, p.y))),
+            include_groups=False,
+        )
+        .reset_index()
+    )
 
     # Convert to lines
     lines = data_sorted.groupby("transect_num")["geometry"].apply(
-        lambda pts: sg.LineString(pts.tolist()),
-        include_groups=False
+        lambda pts: sg.LineString(pts.tolist()), include_groups=False
     )
 
     # Convert back to a full GeoDataFrame
@@ -65,6 +67,7 @@ def get_transect_lines(
 
     # Return
     return lines_gdf
+
 
 def plot_transect_map(
     data: Union[pd.DataFrame, gpd.GeoDataFrame],
@@ -76,7 +79,7 @@ def plot_transect_map(
     coast_kwargs: Optional[Dict[str, Any]] = None,
     axis_kwargs: Optional[Dict[str, Any]] = None,
     plot_kwargs: Optional[Dict[str, Any]] = None,
-    colorbar_kwargs: Optional[Dict[str, Any]] = None,    
+    colorbar_kwargs: Optional[Dict[str, Any]] = None,
 ) -> None:
     """
     Plot survey transects and variable values on a map.
@@ -99,7 +102,7 @@ def plot_transect_map(
         For example, you can control marker size, color, alpha, etc.
         Example: `scatter_kwargs={'s': 20, 'c': 'red', 'alpha': 0.7}`
     transect_kwargs : dict, optional
-        Additional keyword arguments passed to :meth:`geopandas.GeoDataFrame.plot` for transect 
+        Additional keyword arguments passed to :meth:`geopandas.GeoDataFrame.plot` for transect
         lines. For example, you can control line color, width, style, etc.
         Example: `transect_kwargs={'color': 'black', 'linewidth': 1.5}`
     coast_kwargs : dict, optional
@@ -139,7 +142,7 @@ def plot_transect_map(
     plotting functions. If a keyword is present in both a specific kwargs dict and `plot_kwargs`,
     the value in `plot_kwargs` takes precedence.
     """
-    
+
     # Create copies
     scatter_kwargs = {} if scatter_kwargs is None else scatter_kwargs.copy()
     transect_kwargs = {} if transect_kwargs is None else transect_kwargs.copy()
@@ -157,21 +160,19 @@ def plot_transect_map(
         raise ValueError("Input data is empty.")
     if not all(name in data.columns for name in coordinate_names):
         raise KeyError(f"Coordinate columns {coordinate_names} not found in data.")
-    
+
     # Convert to GeoDataFrame, if necessary
     if isinstance(data, pd.DataFrame):
         data = gutils.dataframe_to_geodataframe(data, projection, coordinate_names)
 
     # Unpack coordinate names
     x, y = coordinate_names
-    
+
     # Get the coastline
-    _, coast_clipped, _ = gutils.get_coastline(
-        gdf=data, projection=projection, **coast_kwargs
-    )
+    _, coast_clipped, _ = gutils.get_coastline(gdf=data, projection=projection, **coast_kwargs)
 
     # Subset the dataset to only include non-zero values
-    data_nonzero = data.loc[data[variable] > 0.]
+    data_nonzero = data.loc[data[variable] > 0.0]
 
     # Get the `vmax`
     vmax = scatter_kwargs.pop("vmax", 10 ** np.round(np.log10(data_nonzero.loc[:, variable].max())))
@@ -182,7 +183,7 @@ def plot_transect_map(
     # Get the overall data boundaries
     # ---- Compute the total survey extent
     x0, y0, x1, y1 = [
-        axis_kwargs.pop(pt, data.total_bounds[idx]) 
+        axis_kwargs.pop(pt, data.total_bounds[idx])
         for pt, idx in zip(["x0", "y0", "x1", "y1"], [0, 1, 2, 3])
     ]
 
@@ -200,7 +201,7 @@ def plot_transect_map(
     scaling = scatter_kwargs.pop("s", gutils.scale_sizes)
     if isinstance(scaling, Callable):
         s = scaling(data_nonzero.loc[:, variable], vmin, vmax, 0.1, 100)
-    
+
     # Get figure size
     figsize = plot_kwargs.pop("figsize", gutils.apply_aspect_ratio(5.5, x0, x1, y0, y1))
 
@@ -208,7 +209,7 @@ def plot_transect_map(
     lines_gdf = get_transect_lines(data)
 
     # Initialize figure
-    fig = gutils.call_with_pruned(plt.figure, {"figsize": figsize, **plot_kwargs})
+    gutils.call_with_pruned(plt.figure, {"figsize": figsize, **plot_kwargs})
 
     # Initialize axes
     ax = gutils.call_with_pruned(plt.axes, {"extent": [x0, x1, y0, y1], **axis_kwargs})
@@ -217,25 +218,25 @@ def plot_transect_map(
     ax.set_ylabel(ylabel)
 
     # Add the coastline
-    coast_clipped.plot(
-        ax=ax, **{**{"edgecolor":"black", "facecolor":"#C3C7C3"}, **coast_kwargs}
-    )
+    coast_clipped.plot(ax=ax, **{**{"edgecolor": "black", "facecolor": "#C3C7C3"}, **coast_kwargs})
 
     # Plot the transect lines
-    lines_gdf.plot(
-        ax=ax, zorder=2, **{**{"color":"#696B69", "linewidth":0.5}, **transect_kwargs}
-    )
+    lines_gdf.plot(ax=ax, zorder=2, **{**{"color": "#696B69", "linewidth": 0.5}, **transect_kwargs})
 
     # Plot the scatter points
     SCATTER_PLOT = ax.scatter(
-        zorder=2, x=data_nonzero.geometry.x, y=data_nonzero.geometry.y, c=data_nonzero[variable], 
-        s=s, **scatter_kwargs
+        zorder=2,
+        x=data_nonzero.geometry.x,
+        y=data_nonzero.geometry.y,
+        c=data_nonzero[variable],
+        s=s,
+        **scatter_kwargs,
     )
 
     # Define the colorbar
     # ---- Check for a mappable object
     mappable = colorbar_kwargs.pop("mappable", SCATTER_PLOT)
-    # ---- Generate the colorbar    
+    # ---- Generate the colorbar
     plt.colorbar(mappable=mappable, ax=ax, label=colorbar_label, cmap=cmap, **colorbar_kwargs)
 
     # Remove margin padding

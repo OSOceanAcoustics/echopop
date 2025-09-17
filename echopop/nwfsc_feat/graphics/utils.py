@@ -1,11 +1,13 @@
-from typing import Any, Dict, Optional, Tuple
 import inspect
-import shapely.geometry as sg
-import geopandas as gpd
-import pandas as pd
-import numpy as np
+from typing import Any, Dict, Optional, Tuple
+
 import cartopy.feature as cfeature
+import geopandas as gpd
+import numpy as np
+import pandas as pd
+import shapely.geometry as sg
 from cartopy.mpl.geoaxes import GeoAxes
+
 
 def call_with_pruned(func, kwargs, /, **overrides):
     """
@@ -36,7 +38,7 @@ def call_with_pruned(func, kwargs, /, **overrides):
     This utility is useful when you have a dictionary of parameters but only want to pass those
     that are valid for a given function. Any keys in `overrides` will override those in `kwargs`.
     """
-    
+
     # Get call signature
     sig = inspect.signature(func)
 
@@ -46,8 +48,10 @@ def call_with_pruned(func, kwargs, /, **overrides):
     # Return the pruned keyword arguments
     return func(**{**pruned, **overrides})
 
-def get_coastline(gdf, resolution="10m", projection="epsg:4326", 
-                  coast_kwargs: Optional[Dict[str, Any]] = None):
+
+def get_coastline(
+    gdf, resolution="10m", projection="epsg:4326", coast_kwargs: Optional[Dict[str, Any]] = None
+):
     """
     Get and clip coastline data from cartopy to the bounds of a GeoDataFrame.
 
@@ -62,7 +66,7 @@ def get_coastline(gdf, resolution="10m", projection="epsg:4326",
     coast_kwargs : dict, optional
         Additional keyword arguments passed to :class:`cartopy.feature.NaturalEarthFeature`
         ([docs](https://scitools.org.uk/cartopy/docs/latest/reference/generated/
-        cartopy.feature.NaturalEarthFeature.html)) for coastline appearance (e.g., `edgecolor`, 
+        cartopy.feature.NaturalEarthFeature.html)) for coastline appearance (e.g., `edgecolor`,
         `facecolor`, `linewidth`). These control how the coastline is rendered when added to a plot.
 
     Returns
@@ -89,7 +93,7 @@ def get_coastline(gdf, resolution="10m", projection="epsg:4326",
         raise TypeError("The input dataset for `gdf` must be a `GeoDataFrame`.")
     if gdf.empty:
         raise ValueError("Input GeoDataFrame is empty.")
-    
+
     # Get original boundaries
     xmin0, ymin0, xmax0, ymax0 = gdf.total_bounds
 
@@ -101,19 +105,28 @@ def get_coastline(gdf, resolution="10m", projection="epsg:4326",
 
     # Get coastline from cartopy
     coast_feature = call_with_pruned(
-        cfeature.NaturalEarthFeature, 
-        {**{"category": "physical", "name": "land", "scale": resolution, 
-            "edgecolor": "black", "facecolor": "none"}, **coast_kwargs}
+        cfeature.NaturalEarthFeature,
+        {
+            **{
+                "category": "physical",
+                "name": "land",
+                "scale": resolution,
+                "edgecolor": "black",
+                "facecolor": "none",
+            },
+            **coast_kwargs,
+        },
     )
     coast_geometries = list(coast_feature.geometries())
     full_coast = gpd.GeoDataFrame(geometry=coast_geometries, crs=projection)
-    
+
     # Clip the coastline
     clipped_coast_original = gpd.clip(
         full_coast, sg.box(xmin0 - 1, ymin0 - 1, xmax0 + 1, ymax0 + 1)
     )
-    
+
     return full_coast, clipped_coast_original, boundary_box_unbuffered_gdf
+
 
 def format_geoaxes(
     axes: GeoAxes,
@@ -168,15 +181,18 @@ def format_geoaxes(
 
     # Set the axis limits
     axes.set_extent([x0, x1, y0, y1])
-    
+
     # Remove margin padding
     axes.margins(0, 0)
 
-def scale_sizes(values: pd.Series, 
-                min_value: float, 
-                max_value: float, 
-                min_size: float = 25, 
-                max_size: float = 250):
+
+def scale_sizes(
+    values: pd.Series,
+    min_value: float,
+    max_value: float,
+    min_size: float = 25,
+    max_size: float = 250,
+):
     """
     Scale values to a range of point sizes for plotting.
 
@@ -222,11 +238,10 @@ def scale_sizes(values: pd.Series,
 
     return ((sizes - min_value) / (max_value - min_value)) * (max_size - min_size) + min_size
 
-def apply_aspect_ratio(figure_width: float, 
-                       x0: float, 
-                       x1: float, 
-                       y0: float, 
-                       y1: float) -> Tuple[float, float]:
+
+def apply_aspect_ratio(
+    figure_width: float, x0: float, x1: float, y0: float, y1: float
+) -> Tuple[float, float]:
     """
     Compute figure size to maintain aspect ratio.
 
@@ -251,18 +266,16 @@ def apply_aspect_ratio(figure_width: float,
     # Validate inputs
     if x1 == x0:
         raise ValueError("Variables `x1` and `x0` must not be equal for aspect ratio calculation.")
-    
+
     # Compute the aspect ratio of the plotting data
     phi = abs((y1 - y0) / (x1 - x0))
 
     # Adjust the figure width and height
     return (figure_width, figure_width * phi)
 
+
 def dataframe_to_geodataframe(
-    data: pd.DataFrame,
-    projection: str,
-    coordinate_names: Tuple[str, str],
-    **kwargs
+    data: pd.DataFrame, projection: str, coordinate_names: Tuple[str, str], **kwargs
 ) -> gpd.GeoDataFrame:
     """
     Convert a DataFrame to a GeoDataFrame using coordinate columns.
@@ -290,16 +303,13 @@ def dataframe_to_geodataframe(
 
     if not all(name in data.columns for name in coordinate_names):
         raise KeyError(f"Coordinate columns {coordinate_names} not found in data.")
-    
+
     # Unpack coordinate names
     x, y = coordinate_names
 
     # Convert to GeoDataFrame
     data_gdf = gpd.GeoDataFrame(
-        data=data,
-        geometry=gpd.points_from_xy(x=data[x], y=data[y]),
-        crs=projection,
-        **kwargs
+        data=data, geometry=gpd.points_from_xy(x=data[x], y=data[y]), crs=projection, **kwargs
     )
 
     return data_gdf

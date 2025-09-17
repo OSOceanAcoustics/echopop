@@ -1,27 +1,34 @@
-import pytest
-import pandas as pd
 import numpy as np
+import pandas as pd
+import pytest
+
 
 @pytest.fixture
 def plotting_mesh_data():
     np.random.seed(999)
 
-    return pd.DataFrame({
-        "longitude": np.linspace(-125, -124, 10),
-        "latitude": np.linspace(45, 46, 10),
-        "biomass": np.random.rand(10)        
-    })
+    return pd.DataFrame(
+        {
+            "longitude": np.linspace(-125, -124, 10),
+            "latitude": np.linspace(45, 46, 10),
+            "biomass": np.random.rand(10),
+        }
+    )
+
 
 @pytest.fixture
 def plotting_transect_data():
     np.random.seed(999)
-    df = pd.DataFrame({
-        "longitude": np.linspace(-125, -124, 10),
-        "latitude": np.linspace(45, 46, 10),
-        "transect_num": [1]*5 + [2]*5,
-        "biomass": np.random.rand(10)
-    })
+    df = pd.DataFrame(
+        {
+            "longitude": np.linspace(-125, -124, 10),
+            "latitude": np.linspace(45, 46, 10),
+            "transect_num": [1] * 5 + [2] * 5,
+            "biomass": np.random.rand(10),
+        }
+    )
     return df
+
 
 @pytest.fixture
 def plotting_heatmap_data():
@@ -32,5 +39,3 @@ def plotting_heatmap_data():
     df.index.name = "length_bin"
     df.columns.name = "age_bin"
     return df
-
-    

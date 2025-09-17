@@ -1,13 +1,15 @@
 from typing import Any, Dict, Literal, Optional, Tuple, Union
-import pyproj
+
 import geopandas as gpd
-import pandas as pd
-import matplotlib.pyplot as plt 
+import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
+import pyproj
 import verde as vd
 import xarray as xr
 
 from . import utils as gutils
+
 
 def interpolation_mesh(
     x: pd.Series,
@@ -44,10 +46,10 @@ def interpolation_mesh(
 
     Notes
     -----
-    This function uses :mod:`verde` (`verde documentation 
-    <https://www.fatiando.org/verde/latest/>`_)to perform spatial interpolation and returns an 
-    :class:`xarray.DataArray` (`xarray.DataArray docs 
-    <https://docs.xarray.dev/en/stable/generated/xarray.DataArray.html>`_).    
+    This function uses :mod:`verde` (`verde documentation
+    <https://www.fatiando.org/verde/latest/>`_)to perform spatial interpolation and returns an
+    :class:`xarray.DataArray` (`xarray.DataArray docs
+    <https://docs.xarray.dev/en/stable/generated/xarray.DataArray.html>`_).
     """
 
     # Assume no user-specified kwargs when not supplied
@@ -76,7 +78,7 @@ def interpolation_mesh(
     coords = projection(coords_init[0], coords_init[1])
 
     # Get resolution/spacing
-    spacing = pseudocolormesh_kwargs.pop("spacing", 2.5 / 60.)  
+    spacing = pseudocolormesh_kwargs.pop("spacing", 2.5 / 60.0)
 
     # Define processing chain
     # ---- Chain
@@ -130,37 +132,37 @@ def plot_kriged_mesh(
     Parameters
     ----------
     data : pandas.DataFrame or geopandas.GeoDataFrame
-        Input data with coordinates and the variable to plot.        
+        Input data with coordinates and the variable to plot.
     variable : str
-        Name of the column to plot.        
+        Name of the column to plot.
     projection : str, default='EPSG:4326'
-        CRS for the plot. This should be either a projected or geodetic coordinate system definition 
-        compatible with with :class:`geopandas.GeoDataFrame`. See the `GeoPandas GeoDataFrame 
-        documentation 
-        <https://geopandas.org/en/stable/docs/reference/api/geopandas.GeoDataFrame.html>`_ for more 
-        details.         
+        CRS for the plot. This should be either a projected or geodetic coordinate system definition
+        compatible with with :class:`geopandas.GeoDataFrame`. See the `GeoPandas GeoDataFrame
+        documentation
+        <https://geopandas.org/en/stable/docs/reference/api/geopandas.GeoDataFrame.html>`_ for more
+        details.
     coordinate_names : tuple[str], default=('longitude', 'latitude')
-        Names of the coordinate columns. This is a tuple with an expected order of 'x' and then 'y'.        
+        Names of the coordinate columns. This is a tuple with an expected order of 'x' and then 'y'.
     plot_type : {'hexbin', 'pcolormesh', 'scatter'}, default='hexbin'
         Type of plot to produce. Options are:
 
         - 'hexbin': Creates a hexagonal binned plot using :func:`matplotlib.pyplot.hexbin`
-          ([docs](https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.hexbin.html)), which 
-          visualizes a summary statistic defined by the user (via the `reduce_C_function` argument, 
-          which defaults to :func:`numpy.mean`) over a two-dimensional grid of hexagons. The 
-          plotted hexagonal bins can be configured using keyword arguments supplied to the 
+          ([docs](https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.hexbin.html)), which
+          visualizes a summary statistic defined by the user (via the `reduce_C_function` argument,
+          which defaults to :func:`numpy.mean`) over a two-dimensional grid of hexagons. The
+          plotted hexagonal bins can be configured using keyword arguments supplied to the
           `hexbin_kwargs` argument.
-        - 'pcolormesh': Interpolates the variable onto a regular grid using 
-          :func:`interpolation_mesh`, which internally uses the :mod:`verde` library (`verde 
+        - 'pcolormesh': Interpolates the variable onto a regular grid using
+          :func:`interpolation_mesh`, which internally uses the :mod:`verde` library (`verde
           documentation <https://www.fatiando.org/verde/latest/>`_) for spatial interpolation that
-          returns an :class:`xarray.DataArray`. The resulting grid is then displayed as a 
-          pseudocolor mesh using :meth:`xarray.DataArrray.plot.pcolormesh`. The plotted 
-          pseudoclor mesh can be configured using keyword arguments supplied to the 
+          returns an :class:`xarray.DataArray`. The resulting grid is then displayed as a
+          pseudocolor mesh using :meth:`xarray.DataArrray.plot.pcolormesh`. The plotted
+          pseudoclor mesh can be configured using keyword arguments supplied to the
           `pseudocolormesh_kwargs` argument.
-        - 'scatter': Plots each data point individually using :meth:`matplotlib.axes.Axes.scatter` 
-          (`matplotlib.axes.Axes.scatter docs 
-          <https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.scatter.html>`_) coloring 
-          points based on the variable value. The plotted points can be configured using keyword 
+        - 'scatter': Plots each data point individually using :meth:`matplotlib.axes.Axes.scatter`
+          (`matplotlib.axes.Axes.scatter docs
+          <https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.scatter.html>`_) coloring
+          points based on the variable value. The plotted points can be configured using keyword
           arguments supplied to the `scatter_kwargs` argument.
 
     scatter_kwargs : dict, optional
@@ -212,7 +214,7 @@ def plot_kriged_mesh(
     a specific kwargs dict (e.g., `scatter_kwargs`) and `plot_kwargs`, the value in `plot_kwargs`
     takes precedence.
     """
-    
+
     # Create copies
     scatter_kwargs = {} if scatter_kwargs is None else scatter_kwargs.copy()
     hexbin_kwargs = {} if hexbin_kwargs is None else hexbin_kwargs.copy()
@@ -241,17 +243,15 @@ def plot_kriged_mesh(
             f"(default), 'scatter', and 'pcolormesh'"
         ) from None
     if variable not in data.columns:
-        raise KeyError(
-            f"Input column '{variable}' missing from the input dataset."
-        ) from None
-        
+        raise KeyError(f"Input column '{variable}' missing from the input dataset.") from None
+
     # Convert to GeoDataFrame, if necessary
     if isinstance(data, pd.DataFrame):
         data = gutils.dataframe_to_geodataframe(data, projection, coordinate_names)
 
     # Unpack coordinate names
     x, y = coordinate_names
-    
+
     # Get the coastline
     _, coast_clipped, _ = gutils.get_coastline(
         gdf=data, projection=projection, coast_kwargs=coast_kwargs
@@ -266,7 +266,7 @@ def plot_kriged_mesh(
     # Get the overall data boundaries
     # ---- Compute the total survey extent
     x0, y0, x1, y1 = [
-        axis_kwargs.pop(pt, (data.total_bounds * np.array([1.005, 0.995, 0.995, 1.005]))[idx]) 
+        axis_kwargs.pop(pt, (data.total_bounds * np.array([1.005, 0.995, 0.995, 1.005]))[idx])
         for pt, idx in zip(["x0", "y0", "x1", "y1"], [0, 1, 2, 3])
     ]
 
@@ -284,7 +284,7 @@ def plot_kriged_mesh(
     figsize = plot_kwargs.pop("figsize", gutils.apply_aspect_ratio(5.5, x0, x1, y0, y1))
 
     # Initialize figure
-    fig = gutils.call_with_pruned(plt.figure, {"figsize": figsize, **plot_kwargs})
+    gutils.call_with_pruned(plt.figure, {"figsize": figsize, **plot_kwargs})
 
     # Initialize axes
     ax = gutils.call_with_pruned(plt.axes, {"extent": [x0, x1, y0, y1], **axis_kwargs})
@@ -296,9 +296,7 @@ def plot_kriged_mesh(
     ax.set_ylim(y0, y1)
 
     # Add the coastline
-    coast_clipped.plot(
-        ax=ax, **{**{"edgecolor":"black", "facecolor":"#C3C7C3"}, **coast_kwargs}
-    )
+    coast_clipped.plot(ax=ax, **{**{"edgecolor": "black", "facecolor": "#C3C7C3"}, **coast_kwargs})
 
     # Add plotting layer
     if plot_type == "hexbin":
@@ -309,8 +307,8 @@ def plot_kriged_mesh(
         gridsize = hexbin_kwargs.pop("gridsize", (xu.size, yu.size))
         # ---- Produce plot
         PLOT = plt.hexbin(
-            x=data.geometry.x, 
-            y=data.geometry.y, 
+            x=data.geometry.x,
+            y=data.geometry.y,
             C=data[variable],
             cmap=cmap,
             gridsize=gridsize,
@@ -321,8 +319,12 @@ def plot_kriged_mesh(
     elif plot_type == "scatter":
         # ---- Produce plot
         PLOT = ax.scatter(
-            x=data.geometry.x, y=data.geometry.y, c=data[variable], vmin=vmin, vmax=vmax,
-            **scatter_kwargs
+            x=data.geometry.x,
+            y=data.geometry.y,
+            c=data[variable],
+            vmin=vmin,
+            vmax=vmax,
+            **scatter_kwargs,
         )
     elif plot_type == "pcolormesh":
         # ---- Prepare interpolation mesh
@@ -333,11 +335,11 @@ def plot_kriged_mesh(
         PLOT = grid_z.plot.pcolormesh(
             add_colorbar=False, cmap=cmap, vmin=vmin, vmax=vmax, **pseudocolormesh_kwargs
         )
-        
+
     # Define the colorbar
     # ---- Check for a mappable object
     mappable = colorbar_kwargs.pop("mappable", PLOT)
-    # ---- Generate the colorbar    
+    # ---- Generate the colorbar
     plt.colorbar(mappable=mappable, ax=ax, label=colorbar_label, cmap=cmap, **colorbar_kwargs)
 
     # Remove margin padding
