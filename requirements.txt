@@ -26,5 +26,3 @@ bokeh
 geoviews
 holoviews
 ipywidgets
-
-
