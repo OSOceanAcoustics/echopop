@@ -7,7 +7,7 @@ from lmfit import Parameters
 from pydantic import ValidationError
 
 from .. import validators as val
-from ..core.exceptions import EchopopValidationError
+from ..validators import EchopopValidationError
 from .variogram_models import fit_variogram
 
 # Set warnings filter
