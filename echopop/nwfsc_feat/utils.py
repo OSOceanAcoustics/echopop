@@ -672,3 +672,53 @@ def is_pivot_table(df: pd.DataFrame):
         return True
     else:
         return False
+
+
+def round_half_up(n: Union[pd.Series, pd.DataFrame]):
+    r"""
+    Round values to the nearest integer using the "round half up" rule.
+
+    This function rounds each value in the input Series or array to the nearest integer,
+    with halfway cases (i.e., values exactly halfway between two integers) rounded away from zero.
+    For positive numbers, values ending in .5 are rounded up. For negative numbers, values ending
+    in .5 are rounded down (toward zero).
+
+    Mathematically, for each element :math:`x` in the input:
+
+    .. math::
+        \text{round\_half\_up}(x) =
+        \begin{cases}
+            \lfloor x + 0.5 \rfloor & \text{if } x \geq 0 \\
+            \lceil x - 0.5 \rceil & \text{if } x < 0
+        \end{cases}
+
+    Parameters
+    ----------
+    n : pandas.Series or pandas.DataFrame column
+        Series or column of numeric values to round.
+
+    Returns
+    -------
+    pandas.Series
+        Series of rounded integer values.
+
+    Examples
+    --------
+    >>> import pandas as pd
+    >>> import numpy as np
+    >>> s = pd.Series([1.5, 2.3, -1.5, -2.7, 0.5, -0.5])
+    >>> round_half_up(s)
+    0    2.0
+    1    2.0
+    2   -1.0
+    3   -3.0
+    4    1.0
+    5    0.0
+    dtype: float64
+
+    Notes
+    -----
+    This rounding method is different from NumPy's default `np.round`, which uses "round half to e
+    ven" (banker's rounding).
+    """
+    return n.apply(lambda x: np.floor(x + 0.5) if x >= 0 else np.ceil(x - 0.5))
