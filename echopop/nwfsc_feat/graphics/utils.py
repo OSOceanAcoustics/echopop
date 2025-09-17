@@ -1,4 +1,5 @@
 import inspect
+import warnings
 from typing import Any, Dict, Optional, Tuple
 
 import cartopy.feature as cfeature
@@ -44,6 +45,16 @@ def call_with_pruned(func, kwargs, /, **overrides):
 
     # Prune
     pruned = {k: kwargs.pop(k) for k in list(kwargs) if k in sig.parameters}
+
+    # Warn about pruned keys
+    pruned_keys = set(kwargs) - set(pruned)
+    if pruned_keys:
+        warnings.warn(
+            f"The following keys were not accepted by '{func.__name__}' and were pruned: "
+            f"{sorted(pruned_keys)}",
+            UserWarning,
+            stacklevel=2,
+        )
 
     # Return the pruned keyword arguments
     return func(**{**pruned, **overrides})
