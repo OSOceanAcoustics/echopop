@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Any, Callable, Dict, Optional, Tuple, Union
 
 import geopandas as gpd
@@ -80,6 +81,8 @@ def plot_transect_map(
     axis_kwargs: Optional[Dict[str, Any]] = None,
     plot_kwargs: Optional[Dict[str, Any]] = None,
     colorbar_kwargs: Optional[Dict[str, Any]] = None,
+    savepath: Optional[Path] = None,
+    savefig_kwargs: Optional[Dict[str, Any]] = None,
 ) -> None:
     """
     Plot survey transects and variable values on a map.
@@ -123,6 +126,11 @@ def plot_transect_map(
         ([docs](https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.colorbar.html))
         for customizing the colorbar. These control label, orientation, ticks, etc.
         Example: `colorbar_kwargs={'label': 'Biomass (kg)', 'orientation': 'vertical'}`
+    save_path : Path, optional
+        Filepath for saving the figure.
+    savefig_kwargs : dict, optional
+        Keyword arguments used by `matplotlib.pyplot.savefig` for saving the figure to the
+        associated save filepath.
 
     Returns
     -------
@@ -150,6 +158,7 @@ def plot_transect_map(
     axis_kwargs = {} if axis_kwargs is None else axis_kwargs.copy()
     plot_kwargs = {} if plot_kwargs is None else plot_kwargs.copy()
     colorbar_kwargs = {} if colorbar_kwargs is None else colorbar_kwargs.copy()
+    savefig_kwargs = {} if savefig_kwargs is None else savefig_kwargs.copy()
 
     # Input validation and type-checking
     if not isinstance(data, (pd.DataFrame, gpd.GeoDataFrame)):
@@ -169,7 +178,9 @@ def plot_transect_map(
     x, y = coordinate_names
 
     # Get the coastline
-    _, coast_clipped, _ = gutils.get_coastline(gdf=data, projection=projection, **coast_kwargs)
+    _, coast_clipped, _ = gutils.get_coastline(
+        gdf=data, projection=projection, coast_kwargs=coast_kwargs
+    )
 
     # Subset the dataset to only include non-zero values
     data_nonzero = data.loc[data[variable] > 0.0]
@@ -244,4 +255,17 @@ def plot_transect_map(
 
     # Print plot with tight margins/padding
     plt.tight_layout()
+
+    # Save?
+    if savepath is not None:
+        # ---- Filetyping
+        if isinstance(savepath, Path):
+            plt.savefig(savepath, **savefig_kwargs)
+        else:
+            raise TypeError(
+                f"The filepath for 'savepath' must be type `pathlib.Path`, not "
+                f"'{type(savepath).__name__}'."
+            )
+
+    # Show
     plt.show()

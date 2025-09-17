@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Any, Dict, Literal, Optional, Tuple, Union
 
 import geopandas as gpd
@@ -125,6 +126,8 @@ def plot_kriged_mesh(
     axis_kwargs: Optional[Dict[str, Any]] = None,
     plot_kwargs: Optional[Dict[str, Any]] = None,
     colorbar_kwargs: Optional[Dict[str, Any]] = None,
+    savepath: Optional[Path] = None,
+    savefig_kwargs: Optional[Dict[str, Any]] = None,
 ) -> None:
     """
     Plot a kriged mesh or survey data using various plot types.
@@ -175,7 +178,7 @@ def plot_kriged_mesh(
         Example: `hexbin_kwargs={'gridsize': 50, 'cmap': 'viridis'}`
     pseudocolormesh_kwargs : dict, optional
         Additional keyword arguments passed to the mesh interpolation and to
-        `matplotlib.pyplot.pcolormesh` if `plot_type='pcolormesh'`. For example, you can
+        `xarray.DataArray.plot.pcolormesh` if `plot_type='pcolormesh'`. For example, you can
         specify mesh spacing, colormap, shading, etc.
         Example: `pseudocolormesh_kwargs={'spacing': 0.01, 'cmap': 'plasma'}`
     coast_kwargs : dict, optional
@@ -195,6 +198,11 @@ def plot_kriged_mesh(
         Additional keyword arguments passed to `matplotlib.pyplot.colorbar` for customizing
         the colorbar. These control label, orientation, ticks, etc.
         Example: `colorbar_kwargs={'label': 'Biomass (kg)', 'orientation': 'vertical'}`
+    save_path : Path, optional
+        Filepath for saving the figure.
+    savefig_kwargs : dict, optional
+        Keyword arguments used by `matplotlib.pyplot.savefig` for saving the figure to the
+        associated save filepath.
 
     Returns
     -------
@@ -223,6 +231,7 @@ def plot_kriged_mesh(
     axis_kwargs = {} if axis_kwargs is None else axis_kwargs.copy()
     plot_kwargs = {} if plot_kwargs is None else plot_kwargs.copy()
     colorbar_kwargs = {} if colorbar_kwargs is None else colorbar_kwargs.copy()
+    savefig_kwargs = {} if savefig_kwargs is None else savefig_kwargs.copy()
 
     # Input validation and type-checking
     if not isinstance(data, (pd.DataFrame, gpd.GeoDataFrame)):
@@ -287,7 +296,7 @@ def plot_kriged_mesh(
     gutils.call_with_pruned(plt.figure, {"figsize": figsize, **plot_kwargs})
 
     # Initialize axes
-    ax = gutils.call_with_pruned(plt.axes, {"extent": [x0, x1, y0, y1], **axis_kwargs})
+    ax = gutils.call_with_pruned(plt.axes, axis_kwargs)
     # ---- Set axes
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
@@ -347,4 +356,17 @@ def plot_kriged_mesh(
 
     # Print plot with tight margins/padding
     plt.tight_layout()
+
+    # Save?
+    if savepath is not None:
+        # ---- Filetyping
+        if isinstance(savepath, Path):
+            plt.savefig(savepath, **savefig_kwargs)
+        else:
+            raise TypeError(
+                f"The filepath for 'savepath' must be type `pathlib.Path`, not "
+                f"'{type(savepath).__name__}'."
+            )
+
+    # Show
     plt.show()

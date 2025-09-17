@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import matplotlib.pyplot as plt
@@ -114,8 +115,8 @@ def format_heatmap_mapping(
         raise TypeError("Axes object `ax` must be a matplotlib.axes.Axes instance.")
     if not isinstance(data, pd.DataFrame):
         raise TypeError("Data must be a pandas.DataFrame.")
-    if not hasattr(data.index, "mid") or not hasattr(data.columns, "mid"):
-        raise TypeError("Data index and columns must be pandas.IntervalIndex.")
+    # if not hasattr(data.index, "mid") or not hasattr(data.columns, "mid"):
+    #     raise TypeError("Data index and columns must be pandas.IntervalIndex.")
 
     # Extract the values for the indices and columns
     # ---- Length
@@ -172,6 +173,8 @@ def plot_age_length_heatmap(
     plot_kwargs: Optional[Dict[str, Any]] = None,
     colorbar_kwargs: Optional[Dict[str, Any]] = None,
     imshow_kwargs: Optional[Dict[str, Any]] = None,
+    savepath: Optional[Path] = None,
+    savefig_kwargs: Optional[Dict[str, Any]] = None,
 ) -> None:
     """
     Plot an age-length heatmap from a DataFrame.
@@ -197,6 +200,11 @@ def plot_age_length_heatmap(
     imshow_kwargs : dict, optional
         Additional keyword arguments for :meth:`matplotlib.axes.Axes.imshow`
         ([docs](https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.imshow.html)).
+    save_path : Path, optional
+        Filepath for saving the figure.
+    savefig_kwargs : dict, optional
+        Keyword arguments used by `matplotlib.pyplot.savefig` for saving the figure to the
+        associated save filepath.
 
     Returns
     -------
@@ -217,14 +225,15 @@ def plot_age_length_heatmap(
     plot_kwargs = {} if plot_kwargs is None else plot_kwargs.copy()
     colorbar_kwargs = {} if colorbar_kwargs is None else colorbar_kwargs.copy()
     imshow_kwargs = {} if imshow_kwargs is None else imshow_kwargs.copy()
+    savefig_kwargs = {} if savefig_kwargs is None else savefig_kwargs.copy()
 
     # Input validation and type-checking
     if not isinstance(data, pd.DataFrame):
         raise TypeError("Data must be a pandas.DataFrame.")
     if data.empty:
         raise ValueError("Input data is empty.")
-    if not hasattr(data.index, "mid") or not hasattr(data.columns, "mid"):
-        raise TypeError("Data index and columns must be pandas.IntervalIndex.")
+    # if not hasattr(data.index, "mid") or not hasattr(data.columns, "mid"):
+    #     raise TypeError("Data index and columns must be pandas.IntervalIndex.")
 
     # Index check
     if "length_bin" not in data.index.names:
@@ -277,7 +286,7 @@ def plot_age_length_heatmap(
     colorbar_label = colorbar_kwargs.pop("label", "value")
 
     # Get `cmap`
-    cmap = colorbar_kwargs.pop("cmap", "viridis")
+    cmap = imshow_kwargs.pop("cmap", "viridis")
 
     # Initialize figure
     fig, ax = gutils.call_with_pruned(plt.subplots, {**plot_kwargs, **axis_kwargs})
@@ -305,7 +314,10 @@ def plot_age_length_heatmap(
     # ---- Check for a mappable object
     mappable = colorbar_kwargs.pop("mappable", PLOT)
     # ---- Generate the colorbar
-    plt.colorbar(mappable=mappable, ax=ax, label=colorbar_label, cmap=cmap, **colorbar_kwargs)
+    # -------- Match 'cmap' if missing
+    if "cmap" not in colorbar_kwargs:
+        colorbar_kwargs["cmap"] = cmap
+    plt.colorbar(mappable=mappable, ax=ax, label=colorbar_label, **colorbar_kwargs)
 
     # Add the grid
     add_heatmap_grid(ax, age_labels, delta_age, delta_length, length_labels)
@@ -315,4 +327,17 @@ def plot_age_length_heatmap(
 
     # Print plot with tight margins/padding
     plt.tight_layout()
+
+    # Save?
+    if savepath is not None:
+        # ---- Filetyping
+        if isinstance(savepath, Path):
+            plt.savefig(savepath, **savefig_kwargs)
+        else:
+            raise TypeError(
+                f"The filepath for 'savepath' must be type `pathlib.Path`, not "
+                f"'{type(savepath).__name__}'."
+            )
+
+    # Show
     plt.show()
