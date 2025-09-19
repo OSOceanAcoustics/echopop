@@ -24,8 +24,8 @@ from echopop.nwfsc_feat import (
 # ==================================================================================================
 # DEFINE DATA ROOT DIRECTORY
 # --------------------------
-# DATA_ROOT = Path("C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_2019")
-DATA_ROOT = Path("C:/Users/Brandyn Lucca/Documents/Data/echopop_2019")
+DATA_ROOT = Path("C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_2019")
+# DATA_ROOT = Path("C:/Users/Brandyn Lucca/Documents/Data/echopop_2019")
 
 # ==================================================================================================
 # ==================================================================================================
@@ -660,7 +660,7 @@ df_isobath = load_data.load_isobath_data(
 # ==================================================================================================
 # Transform the geospatial coordinates for the transect data
 # ----------------------------------------------------------
-df_nasc_no_age1, delta_longitude, delta_latitude = spatial.transform_coordinates(
+df_nasc_no_age1_prt, delta_longitude, delta_latitude = spatial.transform_coordinates(
     data = df_nasc_no_age1,
     reference = df_isobath,
     x_offset = -124.78338,
@@ -932,6 +932,9 @@ jh.stratified_bootstrap(data_df=df_nasc_no_age1_prt,
                         stratify_by=["geostratum_inpfc"], 
                         variable="biomass")
 
+# Store replicates
+transect_replicates = jh.bootstrap_replicates
+
 # Compute summary statistics for each stratum and overall survey
 transect_results = jh.summarize(ci_percentile=0.95, ci_method="t-jackknife")
 print(transect_results)
@@ -955,6 +958,9 @@ kriged_transects = jh.create_virtual_transects(
 jh.stratified_bootstrap(data_df=kriged_transects, 
                         stratify_by=["geostratum_inpfc"], 
                         variable="biomass")
+
+# Store replicates
+kriged_replicates = jh.bootstrap_replicates
 
 # Compute summary statistics for each stratum and overall survey
 kriged_results = jh.summarize(ci_percentile=0.95, ci_method="t-jackknife")
@@ -996,6 +1002,14 @@ try:
     df_kriged_abundance_table.to_pickle(FILES_DIR / "df_kriged_abundance_table.pkl")
     # Biomass table - kriged data
     df_kriged_biomass_table.to_pickle(FILES_DIR / "df_kriged_biomass_table.pkl")
+    # Stratified results - transect data
+    transect_results.to_pickle(FILES_DIR / "stratified_transect_results.pkl")
+    # Stratified results - kriged data
+    kriged_results.to_pickle(FILES_DIR / "stratified_kriged_results.pkl")
+    # Stratified replicates - transect data
+    transect_replicates.to_pickle(FILES_DIR / "stratified_transect_replicates.pkl")
+    # Stratified replicates - kriged data
+    kriged_replicates.to_pickle(FILES_DIR / "stratified_kriged_replicates.pkl")
     # Verbose validation upon success
     print(f"Saved demo DataFrames to: {FILES_DIR.as_posix()}.")
 except Exception as e: 
