@@ -1,14 +1,18 @@
 from typing import Any, Dict, Optional, Union
-import holoviews as hv
-import geoviews as gv
-from bokeh.themes import Theme
-from bokeh.models import HoverTool
-import pandas as pd
+
 import geopandas as gpd
-import hvplot.pandas
+import geoviews as gv
+import holoviews as hv
+import hvplot.pandas  # noqa: F401; import is required even though it is not directly called
+import pandas as pd
+import shapely as sg
+from bokeh.models import HoverTool
+from bokeh.themes import Theme
+
 from .transect_map import get_transect_lines
 from .utils import dataframe_to_geodataframe
-import shapely as sg
+
+
 class Diagnostics:
     """
     Diagnostics plotting utilities for survey and mesh data.
@@ -18,11 +22,12 @@ class Diagnostics:
     json_theme : dict, optional
         A Bokeh theme dictionary to apply to plots.
     """
+
     # Class-level flag to track renderer initialization
     _is_bokeh_initialized = False
 
     # Class-level flag to track renderer initialization
-    _is_theme_initialized = False    
+    _is_theme_initialized = False
 
     # Internal default JSON theme
     _json_theme = {
@@ -50,10 +55,10 @@ class Diagnostics:
                 "title_text_font_style": "bold",
                 "title_text_font_size": "16px",
                 "title_text_color": "black",
-            }
+            },
         },
     }
-    
+
     def __init__(self, json_theme: Optional[Dict[str, Any]] = None):
         """
         Initialize Diagnostics with optional Bokeh theme.
@@ -63,7 +68,7 @@ class Diagnostics:
         json_theme : dict, optional
             A Bokeh theme dictionary to apply to plots.
         """
-        # Store the theme 
+        # Store the theme
         if json_theme is not None:
             self._json_theme = json_theme
 
@@ -81,10 +86,7 @@ class Diagnostics:
             # ---- Mark the class flag
             Diagnostics._initialized = True
 
-    def _format_transect_labels(
-        self,
-        transect_data: gpd.GeoDataFrame
-    ) -> gv.Labels:
+    def _format_transect_labels(self, transect_data: gpd.GeoDataFrame) -> gv.Labels:
         """
         Format and add transect numbers to the centroid of each transect line.
 
@@ -97,7 +99,7 @@ class Diagnostics:
         -------
         geoviews.Labels
             Labels object with transect numbers at line centroids.
-        """    
+        """
 
         # Convert the point data for each line to LINESTRING objects
         transect_lines = get_transect_lines(transect_data)
@@ -111,8 +113,8 @@ class Diagnostics:
         centroids = transect_lines.copy()
 
         # Get the centroids
-        centroids["centroid"] = (
-            centroids.to_crs("+proj=cea").geometry.centroid.to_crs(centroids.crs)
+        centroids["centroid"] = centroids.to_crs("+proj=cea").geometry.centroid.to_crs(
+            centroids.crs
         )
 
         # Extract the coordinates
@@ -125,9 +127,9 @@ class Diagnostics:
         centroids["labels"] = centroids["transect_num"].astype(str)
 
         # Return the geoviews.Labels object
-        return gv.Labels(
-            centroids, ["x", "y"], "labels"
-        ).opts(text_font_size="8pt", text_color="black")
+        return gv.Labels(centroids, ["x", "y"], "labels").opts(
+            text_font_size="8pt", text_color="black"
+        )
 
     def plot_transect_mesh_regions(
         self,
@@ -162,7 +164,7 @@ class Diagnostics:
         # ---- Mesh data    if isinstance(transect_data, pd.DataFrame):
         if isinstance(mesh_data, pd.DataFrame):
             mesh_data = dataframe_to_geodataframe(mesh_data, projection, ("longitude", "latitude"))
-            
+
         # Convert the transect data into LINESTRINGs
         transect_lines = get_transect_lines(transect_data)
 
@@ -178,40 +180,33 @@ class Diagnostics:
 
         # Compute the centroids of each transect and generate text labels
         transect_labels_layer = self._format_transect_labels(transect_data)
-        
+
         # Plot the transect lines layer
         transect_lines_layer = transect_lines.hvplot.paths(
-            geo=True, 
-            by="mesh_region",
-            line_width=5
-        ).opts(
-            show_legend=True,
-            hooks=[set_legend_title]
-        )
+            geo=True, by="mesh_region", line_width=5
+        ).opts(show_legend=True, hooks=[set_legend_title])
 
         # Plot the mesh point layer
-        mesh_points_layer = mesh_data.hvplot.points(
-            geo=True, 
-            label="Mesh points"
-        ).opts(
-            size=2, 
-            color="#A39D9D"
+        mesh_points_layer = mesh_data.hvplot.pandas.points(geo=True, label="Mesh points").opts(
+            size=2, color="#A39D9D"
         )
 
         # Combine the layers
         layers = (
-            gv.tile_sources.CartoLight * mesh_points_layer * transect_lines_layer * 
-            transect_labels_layer
+            gv.tile_sources.CartoLight
+            * mesh_points_layer
+            * transect_lines_layer
+            * transect_labels_layer
         )
 
         # Return the layers with defined options
         return layers.opts(
-            width=700, 
+            width=700,
             height=700,
-            xlabel="Longitude (\u00B0E)",
-            ylabel="Latitude (\u00B0N)",
+            xlabel="Longitude (\u00b0E)",
+            ylabel="Latitude (\u00b0N)",
             title="Transect-mesh region mapping",
-            active_tools=["pan", "wheel_zoom"]
+            active_tools=["pan", "wheel_zoom"],
         )
 
     def plot_mesh_cropping(
@@ -219,7 +214,7 @@ class Diagnostics:
         mesh_data: Union[pd.DataFrame, gpd.GeoDataFrame],
         cropped_mesh_data: Union[pd.DataFrame, gpd.GeoDataFrame],
         isobath_data: Union[pd.DataFrame, gpd.GeoDataFrame],
-        projection: str = "epsg:4326"
+        projection: str = "epsg:4326",
     ) -> hv.Overlay:
         """
         Plot the results of the crop meshing.
@@ -243,9 +238,7 @@ class Diagnostics:
         # Type-checking
         # ---- Mesh data
         if isinstance(mesh_data, pd.DataFrame):
-            mesh_data = dataframe_to_geodataframe(
-                mesh_data, projection, ("longitude", "latitude")
-            )
+            mesh_data = dataframe_to_geodataframe(mesh_data, projection, ("longitude", "latitude"))
         # ---- Cropped mesh data
         if isinstance(cropped_mesh_data, pd.DataFrame):
             cropped_mesh_data = dataframe_to_geodataframe(
@@ -259,48 +252,40 @@ class Diagnostics:
 
         # Convert isobath data into a LINESTRING
         isobath_line = sg.LineString(isobath_data["geometry"].tolist())
-            
+
         # Plot the mesh point layer
-        mesh_points_layer = mesh_data.hvplot.points(
-            geo=True, 
-            label="Mesh points"
-        ).opts(
-            size=2, 
-            color="#A39D9D"
+        mesh_points_layer = mesh_data.hvplot.points(geo=True, label="Mesh points").opts(
+            size=2, color="#A39D9D"
         )
 
         # Plot the cropped mesh point layer
         cropped_mesh_points_layer = cropped_mesh_data.hvplot.points(
-            geo=True,
-            label="Cropped mesh points"
-        ).opts(
-            size=4,
-            color="black"
-        )
+            geo=True, label="Cropped mesh points"
+        ).opts(size=4, color="black")
 
         # Isobath layer
-        isobath_line_layer = gpd.GeoDataFrame({"geometry": isobath_line}, index=[0]).hvplot.paths(
-            geo=True,
-            label="200m isobath"
-        ).opts(
-            line_width=2,
-            color="red"
+        isobath_line_layer = (
+            gpd.GeoDataFrame({"geometry": isobath_line}, index=[0])
+            .hvplot.paths(geo=True, label="200m isobath")
+            .opts(line_width=2, color="red")
         )
 
         # Combine the layers
         layers = (
-            gv.tile_sources.CartoLight * mesh_points_layer * cropped_mesh_points_layer * 
-            isobath_line_layer 
+            gv.tile_sources.CartoLight
+            * mesh_points_layer
+            * cropped_mesh_points_layer
+            * isobath_line_layer
         )
 
         # Return the layers with defined options
         return layers.opts(
-            width=700, 
+            width=700,
             height=700,
-            xlabel="Longitude (\u00B0E)",
-            ylabel="Latitude (\u00B0N)",
+            xlabel="Longitude (\u00b0E)",
+            ylabel="Latitude (\u00b0N)",
             title="Mesh cropping",
-            active_tools=["pan", "wheel_zoom"]
+            active_tools=["pan", "wheel_zoom"],
         )
 
     def plot_nasc_map(
@@ -331,26 +316,20 @@ class Diagnostics:
             )
 
         # Scale NASC values [minmax normalization]
-        transect_data["nasc_scaled"] = (
-            (transect_data["nasc"] - transect_data["nasc"].min()) / 
-            (transect_data["nasc"].max() - transect_data["nasc"].min())
+        transect_data["nasc_scaled"] = (transect_data["nasc"] - transect_data["nasc"].min()) / (
+            transect_data["nasc"].max() - transect_data["nasc"].min()
         )
 
         # Size the points accordingly
         transect_data["nasc_size"] = transect_data["nasc_scaled"] * 25 + 2
-        
+
         # Convert the point data for each line to LINESTRING objects
         transect_lines = get_transect_lines(transect_data)
 
         # Transect lines layer
         transect_lines_layer = transect_lines.hvplot.paths(
-            geo=True, 
-            line_width=2,
-            label="Transect lines"
-        ).opts(
-            color="black",
-            legend_position="top_left"
-        )
+            geo=True, line_width=2, label="Transect lines"
+        ).opts(color="black", legend_position="top_left")
 
         # Create TOOLTIP
         TOOLTIPS = """
@@ -362,12 +341,13 @@ class Diagnostics:
             </div>
             """
         # ---- Create hovertool
-        hover_tool = HoverTool(tooltips=TOOLTIPS, mode="mouse", point_policy="snap_to_data", line_policy="nearest")     
+        hover_tool = HoverTool(
+            tooltips=TOOLTIPS, mode="mouse", point_policy="snap_to_data", line_policy="nearest"
+        )
 
         # NASC points -- zeros
         zero_nasc_points_layer = gv.Points(
-            transect_data[transect_data["nasc"] == 0.0],
-            vdims=["nasc_scaled"]
+            transect_data[transect_data["nasc"] == 0.0], vdims=["nasc_scaled"]
         ).opts(
             colorbar=True,
             colorbar_position="right",
@@ -381,7 +361,7 @@ class Diagnostics:
             },
             line_color="black",
             line_width=0.25,
-            size=0.5,    
+            size=0.5,
         )
 
         # NASC points -- nonzeros
@@ -402,24 +382,26 @@ class Diagnostics:
             line_color="black",
             line_width=0.25,
             size="nasc_size",
-            tools=[hover_tool]    
-        )       
+            tools=[hover_tool],
+        )
 
         # Combine the layers
         layers = (
-            gv.tile_sources.CartoLight * transect_lines_layer * zero_nasc_points_layer * 
-            nasc_points_layer
-        )     
+            gv.tile_sources.CartoLight
+            * transect_lines_layer
+            * zero_nasc_points_layer
+            * nasc_points_layer
+        )
 
         # Return the layers with defined options
         return layers.opts(
-            width=700, 
+            width=700,
             height=700,
-            xlabel="Longitude (\u00B0E)",
-            ylabel="Latitude (\u00B0N)",
+            xlabel="Longitude (\u00b0E)",
+            ylabel="Latitude (\u00b0N)",
             title="'Extreme' NASC mapping",
-            active_tools=["pan", "wheel_zoom"]
-        )         
+            active_tools=["pan", "wheel_zoom"],
+        )
 
     def plot_stratified_results(
         self,
@@ -431,13 +413,14 @@ class Diagnostics:
         Parameters
         ----------
         stratum_results : dict of str to pandas.DataFrame
-            Dictionary mapping aggregation type to DataFrame with index as stratum and columns for 'biomass' and 'cv'.
+            Dictionary mapping aggregation type to DataFrame with index as stratum and columns for
+            'biomass' and 'cv'.
 
         Returns
         -------
         holoviews.Overlay
             Overlay of error bars, points, and CV hover layer.
-        """        
+        """
         # Ensure unique_strata is sorted for consistent plotting
         unique_strata = sorted(
             {str(item) for v in stratum_results.values() for item in v.index.tolist()}
@@ -446,14 +429,14 @@ class Diagnostics:
         # Create x-axis mapping for tick spacing
         stratum_to_x = {str(s): i for i, s in enumerate(unique_strata)}
         # ---- Define x-axis tick spacing
-        xticks=[(v, k.capitalize() if k == "survey" else k) for k, v in stratum_to_x.items()]
+        xticks = [(v, k.capitalize() if k == "survey" else k) for k, v in stratum_to_x.items()]
 
         # Define the horizontal offsets
         n_types = len(stratum_results)
         x_offset = 1 / (n_types + 1)  # or 1/n_types for two types
         # ---- Map the offsets to each key
         agg_offsets = {
-            agg_type: (i - (n_types-1)/2) * x_offset
+            agg_type: (i - (n_types - 1) / 2) * x_offset
             for i, agg_type in enumerate(stratum_results.keys())
         }
 
@@ -462,31 +445,35 @@ class Diagnostics:
         all_data = []
         # ---- Populate list
         for agg_type, df in stratum_results.items():
-            temp_data = pd.DataFrame({
-                "stratum": df.index,
-                "mean": df["biomass"]["mean"] * 1e-9,
-                "lower": (df["biomass"]["mean"] - df["biomass"]["low"]) * 1e-9,
-                "upper": (df["biomass"]["high"] - df["biomass"]["mean"]) * 1e-9,
-                "rbias": df["biomass"]["bias"] / df["biomass"]["mean"] * 1e2,
-                "agg_type": agg_type,
-            })
-            # ---- Format CV 
-            cv_data = pd.DataFrame({
-                "stratum": "cv",
-                "mean": df["cv"]["mean"],
-                "lower": df["cv"]["low"],
-                "upper": df["cv"]["high"],
-                "rbias": df["cv"]["bias"] / df["cv"]["mean"] * 1e2,
-                "agg_type": agg_type,
-            }).dropna()
+            temp_data = pd.DataFrame(
+                {
+                    "stratum": df.index,
+                    "mean": df["biomass"]["mean"] * 1e-9,
+                    "lower": (df["biomass"]["mean"] - df["biomass"]["low"]) * 1e-9,
+                    "upper": (df["biomass"]["high"] - df["biomass"]["mean"]) * 1e-9,
+                    "rbias": df["biomass"]["bias"] / df["biomass"]["mean"] * 1e2,
+                    "agg_type": agg_type,
+                }
+            )
+            # ---- Format CV
+            cv_data = pd.DataFrame(
+                {
+                    "stratum": "cv",
+                    "mean": df["cv"]["mean"],
+                    "lower": df["cv"]["low"],
+                    "upper": df["cv"]["high"],
+                    "rbias": df["cv"]["bias"] / df["cv"]["mean"] * 1e2,
+                    "agg_type": agg_type,
+                }
+            ).dropna()
             # ---- Add CV
             temp_data = pd.concat([temp_data, cv_data], axis=0)
             # ---- Make 'stratum' into strings
             temp_data["stratum"] = temp_data["stratum"].astype(str)
             # ---- Assign x-axis mapping
-            temp_data["x_plot"] = (
-                temp_data["stratum"].map(stratum_to_x) + temp_data["agg_type"].map(agg_offsets)
-            )
+            temp_data["x_plot"] = temp_data["stratum"].map(stratum_to_x) + temp_data[
+                "agg_type"
+            ].map(agg_offsets)
             # ---- Add to list
             all_data.append(temp_data)
 
@@ -494,24 +481,28 @@ class Diagnostics:
         plot_data = pd.concat(all_data, ignore_index=True)
 
         # Format error bar layer
-        errorbars_layer = plot_data[plot_data["stratum"] != "cv"].hvplot.errorbars(
-            x="x_plot",
-            y="mean",
-            yerr1="lower",
-            yerr2="upper",
-            by="agg_type",
-            label="Confidence intervals",
-            color="black",
-            line_width=2
-        ).opts(
-            show_legend=True,
+        errorbars_layer = (
+            plot_data[plot_data["stratum"] != "cv"]
+            .hvplot.errorbars(
+                x="x_plot",
+                y="mean",
+                yerr1="lower",
+                yerr2="upper",
+                by="agg_type",
+                label="Confidence intervals",
+                color="black",
+                line_width=2,
+            )
+            .opts(
+                show_legend=True,
+            )
         )
 
         # Format and define the stratum-specific layers
         stratum_points_layer = hv.Points(
             plot_data[~plot_data["stratum"].isin(["survey", "cv"])],
             kdims=["x_plot", "mean"],
-            vdims=["rbias", "agg_type"]
+            vdims=["rbias", "agg_type"],
         ).opts(
             color="agg_type",
             cmap="Category10",
@@ -519,7 +510,7 @@ class Diagnostics:
             line_color="black",
             line_width=0.25,
             tools=["hover"],
-            hover_tooltips=[("Relative bias", "@rbias{0.00}%")]
+            hover_tooltips=[("Relative bias", "@rbias{0.00}%")],
         )
 
         # Format and define the survey-specific layer
@@ -527,9 +518,7 @@ class Diagnostics:
         survey_data = plot_data[plot_data["stratum"] == "survey"]
         # ---- Define layer
         survey_points_layer = hv.Points(
-            survey_data,
-            kdims=["x_plot", "mean"],
-            vdims=["agg_type"]
+            survey_data, kdims=["x_plot", "mean"], vdims=["agg_type"]
         ).opts(
             color="agg_type",
             cmap="Category10",
@@ -547,16 +536,14 @@ class Diagnostics:
         hover_tool = HoverTool(
             tooltips="""
             <div>
-            <span style="font-style: italic;">CV</span> [mean ± <i>CI</i>]: 
+            <span style="font-style: italic;">CV</span> [mean ± <i>CI</i>]:
             @mean{0.000} [@lower{0.000}, @upper{0.000}]
             </div>
             """
         )
-        # ---- Define layer 
+        # ---- Define layer
         cv_points_layer = hv.Points(
-            cv_data,
-            kdims=["x", "y"],
-            vdims=["agg_type", "lower", "mean", "upper"]
+            cv_data, kdims=["x", "y"], vdims=["agg_type", "lower", "mean", "upper"]
         ).opts(
             color="agg_type",
             cmap="Category10",
@@ -564,20 +551,20 @@ class Diagnostics:
             line_color="black",
             line_width=0.25,
             tools=[hover_tool],
-            alpha=0.0
+            alpha=0.0,
         )
 
         # Combine layers
         layers = errorbars_layer * stratum_points_layer * survey_points_layer * cv_points_layer
 
         # Return the layers with defined options
-        return layers.opts(    
-            width=700, 
+        return layers.opts(
+            width=700,
             height=700,
             xticks=xticks,
             xlabel="Stratum",
             ylabel="Biomass (kmt) [mean ± CI]",
             title="Stratified biomass estimates and variability",
             active_tools=["pan", "wheel_zoom"],
-            legend_position="top_left"
-            )
+            legend_position="top_left",
+        )
