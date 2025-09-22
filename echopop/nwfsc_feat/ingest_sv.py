@@ -77,43 +77,6 @@ def read_echoview_sv(
     # Return the cleaned DataFrame
     return sv_df
 
-
-def echoview_sv_to_df(filtered_df: pd.DataFrame, impute_coordinates: bool = True):
-    """
-    Process multiple Echoview Sv files into a list of DataFrames.
-
-    This function applies the read_echoview_sv function to multiple files
-    specified in a DataFrame, returning a list of processed DataFrames
-    ready for concatenation.
-
-    Parameters
-    ----------
-    filtered_df : pd.DataFrame
-        DataFrame containing file information with columns:
-        - 'file_path': Path objects to Sv export files
-        - 'transect_num': Transect numbers for each file
-    impute_coordinates : bool, default=True
-        Whether to impute missing coordinates in each file
-
-    Returns
-    -------
-    list[pd.DataFrame]
-        List of DataFrames containing processed Sv data from each file.
-        Empty files return None and should be filtered out before
-        concatenation
-
-    Notes
-    -----
-    This function is designed to work with the output of file mapping
-    functions that create DataFrames with file paths and associated
-    transect numbers.
-    """
-    return [
-        read_echoview_sv(row["file_path"], impute_coordinates, row["transect_num"])
-        for _, row in filtered_df.iterrows()
-    ]
-
-
 def apply_Sv_thresholds(data: pd.DataFrame, thresholds: Dict[str, Any]):
     """
     Apply frequency-specific Sv thresholds to acoustic data.
@@ -673,10 +636,10 @@ def ingest_echoview_sv(
 
     # Concatenate the files
     sv = pd.concat(
-        echoview_sv_to_df(
-            transect_num_df,
-            impute_coordinates,
-        )
+        [
+            read_echoview_sv(row["file_path"], impute_coordinates, row["transect_num"])
+            for _, row in transect_num_df.iterrows()
+        ]
     )
 
     # Sort

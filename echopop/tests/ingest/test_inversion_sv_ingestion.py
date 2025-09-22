@@ -53,58 +53,6 @@ def test_read_echoview_sv_with_coordinate_imputation(sv_csv_with_coordinates):
     assert "latitude" in result.columns
     assert "longitude" in result.columns
 
-
-def test_echoview_sv_to_df():
-    """Test processing multiple SV files."""
-    # Create sample DataFrame with file paths and transect numbers
-    file_df = pd.DataFrame(
-        {"file_path": [Path("fake1.csv"), Path("fake2.csv")], "transect_num": [1, 2]}
-    )
-
-    # This will fail with real files that don't exist, but tests the structure
-    try:
-        result = ingest_sv.echoview_sv_to_df(file_df)
-        assert isinstance(result, list)
-        assert len(result) == 2
-    except FileNotFoundError:
-        # Expected to fail with fake files - that's okay for structure test
-        pass
-
-
-def test_echoview_sv_to_df_with_real_files(tmp_path):
-    """Test echoview_sv_to_df with actual CSV files."""
-    # Create test CSV files
-    file1 = tmp_path / "test1.csv"
-    file2 = tmp_path / "test2.csv"
-
-    csv_content1 = """Process_ID,Interval,Layer,Sv_mean,NASC,Thickness_mean,Frequency
-7217,6,2,-83.0,1.9,6.0,18
-7217,6,3,-75.0,2.5,10.0,18"""
-
-    csv_content2 = """Process_ID,Interval,Layer,Sv_mean,NASC,Thickness_mean,Frequency
-7218,7,2,-82.0,1.8,6.0,18
-7218,7,3,-78.0,2.2,10.0,18"""
-
-    file1.write_text(csv_content1)
-    file2.write_text(csv_content2)
-
-    file_df = pd.DataFrame({"file_path": [file1, file2], "transect_num": [1, 2]})
-
-    result = ingest_sv.echoview_sv_to_df(file_df)
-
-    assert isinstance(result, list)
-    assert len(result) == 2
-    assert all(isinstance(df, pd.DataFrame) for df in result if df is not None)
-
-    # Check that transect numbers were assigned correctly
-    if result[0] is not None:
-        assert "transect_num" in result[0].columns
-        assert all(result[0]["transect_num"] == 1)
-    if result[1] is not None:
-        assert "transect_num" in result[1].columns
-        assert all(result[1]["transect_num"] == 2)
-
-
 def test_apply_Sv_thresholds():
     """Test application of frequency-specific Sv thresholds."""
     data = pd.DataFrame(
