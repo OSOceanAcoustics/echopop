@@ -124,7 +124,12 @@ class Diagnostics:
         centroids["y"] = centroids["centroid"].y
 
         # Format the labels
-        centroids["labels"] = centroids["transect_num"].astype(str)
+        # ---- Format as integers
+        if (centroids["transect_num"] % 1 == 0).all():
+            centroids["labels"] = centroids["transect_num"].astype(int).astype(str)
+        # ---- Format as floats
+        else:
+            centroids["labels"] = centroids["transect_num"].astype(float).astype(str)
 
         # Return the geoviews.Labels object
         return gv.Labels(centroids, ["x", "y"], "labels").opts(
