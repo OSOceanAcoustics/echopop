@@ -1,4 +1,4 @@
-from ..inversion.scattering_models import pcdwba
+from ..inversion.pcdwba import pcdwba
 from ..validators.scattering import ValidatePCDWBAParams, ValidatePCDWBASettings
 
 SCATTERING_MODEL_PARAMETERS = {

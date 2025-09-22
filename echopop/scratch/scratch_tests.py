@@ -434,8 +434,8 @@ import cProfile
 import pstats
 import io
 import importlib
-import echopop.inversion.scattering_models
-importlib.reload(echopop.inversion.scattering_models)
+import echopop.inversion.pcdwba
+importlib.reload(echopop.inversion.pcdwba)
 # from echopop.inversion.scattering_models import pcdwba, pcdwba_fbs
 
 def profile_pcdwba(*args, **kwargs):

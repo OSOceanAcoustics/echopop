@@ -3,7 +3,7 @@ import pandas as pd
 import pytest
 
 from echopop.typing import InvParameters, MCInvParameters
-
+from echopop.inversion.pcdwba import pcdwba
 
 @pytest.fixture
 def model_parameters():
@@ -192,7 +192,6 @@ def sample_InversionMatrix_parameters():
 @pytest.fixture
 def model_InversionMatrix_settings():
     """Model configuration settings."""
-    from echopop.inversion.scattering_models import pcdwba
 
     return {
         "type": "pcdwba",
