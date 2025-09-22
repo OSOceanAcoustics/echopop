@@ -17,7 +17,7 @@ from ..validators.inversion import (
 from ..validators.scattering_models import SCATTERING_MODEL_PARAMETERS
 
 
-def echopop_optim_cb(params, iter, resid, *args, **kwargs):
+def mininizer_print_cb(params, iter, resid, *args, **kwargs):
     """
     Callback function for optimization iterations in echopop.
 
@@ -181,7 +181,7 @@ def prepare_minimizer(
         if "iter_cb" in simulation_settings and simulation_settings["iter_cb"]:
             iter_cb_arg = simulation_settings["iter_cb"]
         else:
-            iter_cb_arg = echopop_optim_cb
+            iter_cb_arg = mininizer_print_cb
     else:
         iter_cb_arg = None
     # Generate `Minimizer` function class required for bounded optimization

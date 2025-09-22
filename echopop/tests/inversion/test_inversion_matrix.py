@@ -9,7 +9,7 @@ from echopop.inversion import inversion_matrix
 from echopop.typing import InvParameters, MCInvParameters
 
 
-# Test functions for echopop_optim_cb
+# Test functions for mininizer_print_cb
 def test_callback_prints_at_key_iterations(capsys, inv_parameters):
     """Test callback prints output at specified iterations."""
 
@@ -17,18 +17,18 @@ def test_callback_prints_at_key_iterations(capsys, inv_parameters):
     params = inv_parameters.to_lmfit()
 
     # Iteration: 1
-    im.echopop_optim_cb(params, 1, np.array([0.5])[0])
+    im.mininizer_print_cb(params, 1, np.array([0.5])[0])
     captured = capsys.readouterr()
     assert "Iter: 1" in captured.out
     assert "Q abs [pred. - meas.]:" in captured.out
 
     # Iteration: 5 [silent]
-    im.echopop_optim_cb(params, 5, np.array([0.5])[0])
+    im.mininizer_print_cb(params, 5, np.array([0.5])[0])
     captured = capsys.readouterr()
     assert captured.out == ""
 
     # Iteration: 25
-    im.echopop_optim_cb(params, 50, np.array([0.3])[0])
+    im.mininizer_print_cb(params, 50, np.array([0.3])[0])
     captured = capsys.readouterr()
     assert "Iter: 50" in captured.out
 
