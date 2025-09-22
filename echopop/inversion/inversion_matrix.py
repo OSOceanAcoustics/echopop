@@ -697,7 +697,7 @@ class InversionMatrix(InversionBase):
         self.model_settings = {}
 
         # Store random number generator, if required
-        # ---- Store MC seed 
+        # ---- Store MC seed
         self._mc_seed = simulation_settings.get("mc_seed", None)
         # ---- Configure random number generator for Monte Carlo sampling
         if simulation_settings.get("monte_carlo", False):
