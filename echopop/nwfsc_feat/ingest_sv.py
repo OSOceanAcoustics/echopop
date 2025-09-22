@@ -278,7 +278,7 @@ def aggregate_intervals(
     3. Converts back to dB: Sv_interval = 10 × log₁₀(Σ(sv_weighted))
     4. Sums NASC and thickness values directly
 
-    This approach properly accounts for varying layer thicknesses when integrating volume 
+    This approach properly accounts for varying layer thicknesses when integrating volume
     backscatter measurements.
     """
 
