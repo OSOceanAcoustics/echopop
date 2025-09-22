@@ -17,13 +17,7 @@ from ..validators.inversion import (
 from ..validators.scattering_models import SCATTERING_MODEL_PARAMETERS
 
 
-def mininizer_print_cb(
-    params: Parameters, 
-    iter: int, 
-    resid: np.ndarray, 
-    *args, 
-    **kwargs
-):
+def mininizer_print_cb(params: Parameters, iter: int, resid: np.ndarray, *args, **kwargs):
     """
     Callback function for optimization iterations in echopop.
 
@@ -287,6 +281,7 @@ def fit_Sv(
 
     # Return the summed absolute deviation (Q) object function
     return np.sum(np.abs(deviation) * wd, axis=-1)
+
 
 def perturb_parameters(params: Parameters, scale=0.05):
     r"""
