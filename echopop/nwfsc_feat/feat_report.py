@@ -1461,7 +1461,7 @@ class FEATReports:
             The function expects DataFrames with interval-like index levels `length_bin` and
             column levels `age_bin` and `sex` (or compatible structure).
         exclude_filter : dict
-            Filter dictionary passed to apportion.redistribute_population_table to zero/exclude
+            Filter dictionary passed to :func:`apportion.reallocate_population_table` to zero/exclude
             strata.
 
         Returns
@@ -1502,7 +1502,7 @@ class FEATReports:
         aged_table = datatables["aged"].copy().sum(axis=1).unstack(["age_bin", "sex"])
 
         # Redistribute the aged table, if required
-        aged_table = apportion.redistribute_population_table(aged_table, exclude_filter, ["sex"])
+        aged_table = apportion.reallocate_excluded_estimates(aged_table, exclude_filter, ["sex"])
 
         # Reorient the aged table
         # ---- Convert the indices to numerics
@@ -1579,7 +1579,7 @@ class FEATReports:
         datatables : dict
             Dictionary with 'aged' and optional 'unaged' pandas DataFrames as described elsewhere.
         exclude_filter : dict
-            Filter dict forwarded to apportion.redistribute_population_table.
+            Filter dict forwarded to :func:`apportion.reallocate_population_table`.
 
         Returns
         -------
@@ -1616,7 +1616,7 @@ class FEATReports:
         aged_table = datatables["aged"].copy().sum(axis=1).unstack(["age_bin", "sex"])
 
         # Redistribute the aged table, if required
-        aged_table = apportion.redistribute_population_table(aged_table, exclude_filter, ["sex"])
+        aged_table = apportion.reallocate_excluded_estimates(aged_table, exclude_filter, ["sex"])
 
         # Reorient the aged table
         # ---- Convert the indices to numerics
