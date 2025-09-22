@@ -529,9 +529,9 @@ class InversionMatrix(InversionBase):
     """
     Matrix-based acoustic scattering parameter inversion for marine organisms.
 
-    This class performs acoustic inversion to estimate biological parameters (size, density, 
-    abundance) from multi-frequency volume backscattering strength measurements. It uses 
-    physics-based scattering models and nonlinear optimization with optional Monte Carlo 
+    This class performs acoustic inversion to estimate biological parameters (size, density,
+    abundance) from multi-frequency volume backscattering strength measurements. It uses
+    physics-based scattering models and nonlinear optimization with optional Monte Carlo
     initialization for robust parameter estimation.
 
     Parameters
@@ -660,8 +660,8 @@ class InversionMatrix(InversionBase):
         """
         Initialize the InversionMatrix with acoustic data and simulation settings.
 
-        This constructor sets up the inversion framework by storing the input data and simulation 
-        configuration, initializing caches, and preparing the random number generator for Monte 
+        This constructor sets up the inversion framework by storing the input data and simulation
+        configuration, initializing caches, and preparing the random number generator for Monte
         Carlo sampling.
 
         Parameters
@@ -682,10 +682,10 @@ class InversionMatrix(InversionBase):
 
         Notes
         -----
-        The constructor performs minimal initialization, deferring heavy computation until 
+        The constructor performs minimal initialization, deferring heavy computation until
         `build_scattering_model()` is called.
 
-        The random number generator is configured based on 'simulation_settings'. To ensure 
+        The random number generator is configured based on 'simulation_settings'. To ensure
         reproducible Monte Carlo sampling, set 'mc_seed' in 'simulation_settings'.
         """
 

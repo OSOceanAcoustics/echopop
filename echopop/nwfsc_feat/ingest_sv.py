@@ -286,8 +286,8 @@ def aggregate_intervals(
     """
     Aggregate acoustic integration over depth/range for each interval.
 
-    This function integrates acoustic measurements over depth/range intervals along each transect  
-    by combining multiple cells within each interval while preserving frequency separation and 
+    This function integrates acoustic measurements over depth/range intervals along each transect
+    by combining multiple cells within each interval while preserving frequency separation and
     spatial location information.
 
     Parameters
@@ -358,8 +358,8 @@ def aggregate_transects(
     """
     Aggregate acoustic measurements across intervals for each survey transect.
 
-    This function integrates acoustic data across intervals for each transect, producing 
-    transect-level summaries with NASC-weighted coordinates and integrated volume backscatter 
+    This function integrates acoustic data across intervals for each transect, producing
+    transect-level summaries with NASC-weighted coordinates and integrated volume backscatter
     estimates. This is the highest level of spatial aggregation.
 
     Parameters
