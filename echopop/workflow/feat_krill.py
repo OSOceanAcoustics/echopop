@@ -114,27 +114,27 @@ def run_krill_inversion_workflow():
 # INITIALIZE
 # ==================================================================================================
 
-    INVERSION = InversionMatrix(sv_data_sub, SIMULATION_SETTINGS)
+    inversion_krill = InversionMatrix(sv_data_sub, SIMULATION_SETTINGS)
 
 # ==================================================================================================
 # ==================================================================================================
 # BUILD AND FORMAT SCATTERING MODEL OPTIMIZERS
 # ==================================================================================================
 
-    INVERSION.build_scattering_model(scattering_parameters, MODEL_SETTINGS)
+    inversion_krill.build_scattering_model(scattering_parameters, MODEL_SETTINGS)
 
 # ==================================================================================================
 # ==================================================================================================
 # BUILD AND FORMAT SCATTERING MODEL OPTIMIZERS
 # ==================================================================================================
-    inversion_results = INVERSION.invert(optimization_kwargs=OPTIMIZATION_KWARGS)
+    df_inversion_results = inversion_krill.invert(optimization_kwargs=OPTIMIZATION_KWARGS)
 
 # ==================================================================================================
 # ==================================================================================================
 # CONVERT TO POPULATION ESTIMATES
 # ==================================================================================================
 
-    return estimate_population(inversion_results, 
+    return estimate_population(df_inversion_results, 
                                nasc_coordinates, 
                                aggregate_method="transect",
                                density_sw=ENVIRONMENT["density_sw"],
