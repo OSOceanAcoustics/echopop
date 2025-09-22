@@ -1,6 +1,8 @@
-from echopop.nwfsc_feat import feat_report as feat
-import pandas as pd
 import numpy as np
+import pandas as pd
+
+from echopop.nwfsc_feat import feat_report as feat
+
 
 def test_FEATReports(tmp_path):
     """
@@ -17,16 +19,14 @@ def test_FEATReports(tmp_path):
     # Define sheetnames
     SHEETNAME = "Test"
     SHEETNAMES = {"male": "Male", "female": "Female", "all": "All"}
-    
+
     # Run age-length haul counts report
     specimen_df = pd.DataFrame(
         {
-            "length": np.random.random(12), 
+            "length": np.random.random(12),
             "sex": np.tile(["male", "female", "all"], 4),
             "haul_num": np.repeat([1, 2, 3, 4], 3),
-            "length_bin": np.tile(pd.IntervalIndex.from_tuples(
-                [(2, 4), (4, 6), (6, 8)]
-            ), 4)
+            "length_bin": np.tile(pd.IntervalIndex.from_tuples([(2, 4), (4, 6), (6, 8)]), 4),
         }
     )
     specimen_df["length_bin"] = pd.CategoricalIndex(specimen_df["length_bin"])
@@ -37,13 +37,11 @@ def test_FEATReports(tmp_path):
     # Run total age-length haul counts report
     length_df = pd.DataFrame(
         {
-            "length": np.random.random(12), 
+            "length": np.random.random(12),
             "length_count": np.random.randint(1, 20, size=12),
             "sex": np.tile(["male", "female", "all"], 4),
             "haul_num": np.repeat([1, 2, 3, 4], 3),
-            "length_bin": np.tile(pd.IntervalIndex.from_tuples(
-                [(2, 4), (4, 6), (6, 8)]
-            ), 4)
+            "length_bin": np.tile(pd.IntervalIndex.from_tuples([(2, 4), (4, 6), (6, 8)]), 4),
         }
     )
     length_df["length_bin"] = pd.CategoricalIndex(length_df["length_bin"])
@@ -84,165 +82,188 @@ def test_FEATReports(tmp_path):
             "nasc_proportion": np.random.random(3),
         }
     )
-    sigma_bs_stratum_df = pd.DataFrame({
-        "sigma_bs": np.random.random(3),
-    }, index=pd.Index([10, 11, 12], name="stratum_arbitrary"))
-    weight_stratum_df = pd.DataFrame({
-        "all": np.random.random(3),
-        "female": np.random.random(3),
-        "male": np.random.random(3),
-    }, index=pd.Index([10, 11, 12], name="stratum_arbitrary"))
+    sigma_bs_stratum_df = pd.DataFrame(
+        {
+            "sigma_bs": np.random.random(3),
+        },
+        index=pd.Index([10, 11, 12], name="stratum_arbitrary"),
+    )
+    weight_stratum_df = pd.DataFrame(
+        {
+            "all": np.random.random(3),
+            "female": np.random.random(3),
+            "male": np.random.random(3),
+        },
+        index=pd.Index([10, 11, 12], name="stratum_arbitrary"),
+    )
     weight_stratum_df.columns.name = "sex"
-    
+
     reports.transect_population_results_report(
-        filename="transect_results.xlsx", sheetname=SHEETNAME, 
-        transect_data=transect_df, weight_strata_data=weight_stratum_df, 
-        sigma_bs_stratum=sigma_bs_stratum_df, stratum_name="stratum_arbitrary",
-        
+        filename="transect_results.xlsx",
+        sheetname=SHEETNAME,
+        transect_data=transect_df,
+        weight_strata_data=weight_stratum_df,
+        sigma_bs_stratum=sigma_bs_stratum_df,
+        stratum_name="stratum_arbitrary",
     )
     assert (tmp_path / "transect_results.xlsx").exists()
-    
+
     # Aged kriged biomass report
-    kriged_df = pd.DataFrame({
-        "longitude": np.random.random(3),
-        "latitude": np.random.random(3),
-        "biomass": np.random.random(3),
-        "biomass_male": np.random.random(3),
-        "biomass_female": np.random.random(3),
-        "geostratum_arbitrary": [10, 11, 12]
-    })
+    kriged_df = pd.DataFrame(
+        {
+            "longitude": np.random.random(3),
+            "latitude": np.random.random(3),
+            "biomass": np.random.random(3),
+            "biomass_male": np.random.random(3),
+            "biomass_female": np.random.random(3),
+            "geostratum_arbitrary": [10, 11, 12],
+        }
+    )
 
     weight_df = pd.DataFrame(
         [np.random.random(18)] * 3,
-        columns=pd.MultiIndex.from_product([
-            pd.Index(["female", "male"], name="sex"),
-            pd.Index(
-                pd.Categorical(pd.IntervalIndex.from_tuples([(0, 1), (1, 2), (2, 3)])),
-                name="age_bin"
-            ),
-            pd.Index([10, 11, 12], name="stratum_arbitrary")
-        ]),
+        columns=pd.MultiIndex.from_product(
+            [
+                pd.Index(["female", "male"], name="sex"),
+                pd.Index(
+                    pd.Categorical(pd.IntervalIndex.from_tuples([(0, 1), (1, 2), (2, 3)])),
+                    name="age_bin",
+                ),
+                pd.Index([10, 11, 12], name="stratum_arbitrary"),
+            ]
+        ),
         index=pd.Index(
             pd.Categorical(pd.IntervalIndex.from_tuples([(2, 4), (4, 6), (6, 8)])),
-            name="length_bin"
-        )
+            name="length_bin",
+        ),
     )
-    
+
     # ---- No exclude filter
-    reports.kriged_aged_biomass_mesh_report(        
-        filename="aged_kriged_biomass_nofilter.xlsx", sheetnames=SHEETNAMES, 
-        kriged_data=kriged_df, 
-        weight_data=weight_df, 
-        kriged_stratum_link={"geostratum_arbitrary": "stratum_arbitrary"}, 
-        exclude_filter={}
+    reports.kriged_aged_biomass_mesh_report(
+        filename="aged_kriged_biomass_nofilter.xlsx",
+        sheetnames=SHEETNAMES,
+        kriged_data=kriged_df,
+        weight_data=weight_df,
+        kriged_stratum_link={"geostratum_arbitrary": "stratum_arbitrary"},
+        exclude_filter={},
     )
     assert (tmp_path / "aged_kriged_biomass_nofilter.xlsx").exists()
     # ---- With exclude filter
     reports.kriged_aged_biomass_mesh_report(
-        filename="aged_kriged_biomass_yesfilter.xlsx", sheetnames=SHEETNAMES,  
-        kriged_data=kriged_df, 
-        weight_data=weight_df, 
-        kriged_stratum_link={"geostratum_arbitrary": "stratum_arbitrary"}, 
-        exclude_filter={"age_bin": 0.5}
+        filename="aged_kriged_biomass_yesfilter.xlsx",
+        sheetnames=SHEETNAMES,
+        kriged_data=kriged_df,
+        weight_data=weight_df,
+        kriged_stratum_link={"geostratum_arbitrary": "stratum_arbitrary"},
+        exclude_filter={"age_bin": 0.5},
     )
-    assert (tmp_path / "aged_kriged_biomass_yesfilter.xlsx").exists()   
+    assert (tmp_path / "aged_kriged_biomass_yesfilter.xlsx").exists()
 
     # Run kriged length-age abundance table report
     aged_df = pd.DataFrame(
         [np.random.random(3)] * 18,
-        index=pd.MultiIndex.from_product([            
-            pd.Index(
-                pd.Categorical(pd.IntervalIndex.from_tuples([(2, 4), (4, 6), (6, 8)])),
-                name="length_bin"
-            ),
-            pd.Index(
-                pd.Categorical(pd.IntervalIndex.from_tuples([(0, 1), (1, 2), (2, 3)])),
-                name="age_bin"
-            ),
-            pd.Index(["male", "female"], name="sex")
-        ]),
-        columns=pd.Index([10, 11, 12], name="stratum_arbitrary")
+        index=pd.MultiIndex.from_product(
+            [
+                pd.Index(
+                    pd.Categorical(pd.IntervalIndex.from_tuples([(2, 4), (4, 6), (6, 8)])),
+                    name="length_bin",
+                ),
+                pd.Index(
+                    pd.Categorical(pd.IntervalIndex.from_tuples([(0, 1), (1, 2), (2, 3)])),
+                    name="age_bin",
+                ),
+                pd.Index(["male", "female"], name="sex"),
+            ]
+        ),
+        columns=pd.Index([10, 11, 12], name="stratum_arbitrary"),
     )
     unaged_df = pd.DataFrame(
         [np.random.random(3)] * 6,
-        index=pd.MultiIndex.from_product([            
-            pd.Index(
-                pd.Categorical(pd.IntervalIndex.from_tuples([(2, 4), (4, 6), (6, 8)])),
-                name="length_bin"
-            ),
-            pd.Index(["male", "female"], name="sex")
-        ]),
-        columns=pd.Index([10, 11, 12], name="stratum_arbitrary")
+        index=pd.MultiIndex.from_product(
+            [
+                pd.Index(
+                    pd.Categorical(pd.IntervalIndex.from_tuples([(2, 4), (4, 6), (6, 8)])),
+                    name="length_bin",
+                ),
+                pd.Index(["male", "female"], name="sex"),
+            ]
+        ),
+        columns=pd.Index([10, 11, 12], name="stratum_arbitrary"),
     )
 
     # ---- No exclude filter
-    reports.kriged_length_age_abundance_report(        
-        filename="kriged_length_age_abundance_nofilter.xlsx", 
-        sheetnames=SHEETNAMES, datatables={"aged": aged_df, "unaged": unaged_df}, 
-        exclude_filter={}
+    reports.kriged_length_age_abundance_report(
+        filename="kriged_length_age_abundance_nofilter.xlsx",
+        sheetnames=SHEETNAMES,
+        datatables={"aged": aged_df, "unaged": unaged_df},
+        exclude_filter={},
     )
     assert (tmp_path / "kriged_length_age_abundance_nofilter.xlsx").exists()
     # ---- With exclude filter
-    reports.kriged_length_age_abundance_report(        
-        filename="kriged_length_age_abundance_yesfilter.xlsx", 
-        sheetnames=SHEETNAMES, datatables={"aged": aged_df, "unaged": unaged_df},
-        exclude_filter={"age_bin": 0.5}
+    reports.kriged_length_age_abundance_report(
+        filename="kriged_length_age_abundance_yesfilter.xlsx",
+        sheetnames=SHEETNAMES,
+        datatables={"aged": aged_df, "unaged": unaged_df},
+        exclude_filter={"age_bin": 0.5},
     )
-    assert (tmp_path / "kriged_length_age_abundance_yesfilter.xlsx").exists()   
+    assert (tmp_path / "kriged_length_age_abundance_yesfilter.xlsx").exists()
 
     # Run kriged length-aged biomass table report
     # ---- No exclude filter
-    reports.kriged_length_age_biomass_report(        
-        filename="kriged_length_age_biomass_nofilter.xlsx", 
-        sheetnames=SHEETNAMES, datatables={"aged": aged_df, "unaged": unaged_df}, exclude_filter={}
+    reports.kriged_length_age_biomass_report(
+        filename="kriged_length_age_biomass_nofilter.xlsx",
+        sheetnames=SHEETNAMES,
+        datatables={"aged": aged_df, "unaged": unaged_df},
+        exclude_filter={},
     )
     assert (tmp_path / "kriged_length_age_biomass_nofilter.xlsx").exists()
     # ---- With exclude filter
     reports.kriged_length_age_biomass_report(
-        filename="kriged_length_age_biomass_yesfilter.xlsx", 
-        sheetnames=SHEETNAMES, datatables={"aged": aged_df, "unaged": unaged_df},
-        exclude_filter={"age_bin": 0.5}
+        filename="kriged_length_age_biomass_yesfilter.xlsx",
+        sheetnames=SHEETNAMES,
+        datatables={"aged": aged_df, "unaged": unaged_df},
+        exclude_filter={"age_bin": 0.5},
     )
-    assert (tmp_path / "kriged_length_age_biomass_yesfilter.xlsx").exists()   
+    assert (tmp_path / "kriged_length_age_biomass_yesfilter.xlsx").exists()
 
     # Run kriging input report
     reports.kriging_input_report(
-        "kriging_input.xlsx", SHEETNAME, transect_df, 
+        "kriging_input.xlsx",
+        SHEETNAME,
+        transect_df,
     )
-    assert (tmp_path / "kriging_input.xlsx").exists() 
+    assert (tmp_path / "kriging_input.xlsx").exists()
 
     # Run transect aged biomass report
     # ---- No exclude filter
     reports.transect_aged_biomass_report(
-        filename="aged_transect_biomass_nofilter.xlsx", 
-        sheetnames=SHEETNAMES, 
-        transect_data=transect_df, 
-        weight_data=weight_df, 
-        exclude_filter={}
+        filename="aged_transect_biomass_nofilter.xlsx",
+        sheetnames=SHEETNAMES,
+        transect_data=transect_df,
+        weight_data=weight_df,
+        exclude_filter={},
     )
     assert (tmp_path / "aged_transect_biomass_nofilter.xlsx").exists()
     # ---- With exclude filter
     reports.transect_aged_biomass_report(
-        filename="aged_transect_biomass_yesfilter.xlsx", 
-        sheetnames=SHEETNAMES, 
-        transect_data=transect_df, 
-        weight_data=weight_df, 
-        exclude_filter={"age_bin": 0.5}
+        filename="aged_transect_biomass_yesfilter.xlsx",
+        sheetnames=SHEETNAMES,
+        transect_data=transect_df,
+        weight_data=weight_df,
+        exclude_filter={"age_bin": 0.5},
     )
     assert (tmp_path / "aged_transect_biomass_yesfilter.xlsx").exists()
 
     # Run transect length-age abundance table report
-    reports.transect_length_age_abundance_report(       
-        filename="transect_length_age_abundance.xlsx", 
+    reports.transect_length_age_abundance_report(
+        filename="transect_length_age_abundance.xlsx",
         sheetnames=SHEETNAMES,
         datatables={"aged": aged_df, "unaged": unaged_df},
     )
     assert (tmp_path / "transect_length_age_abundance.xlsx").exists()
-    
+
     # Run biomass length-age abundance table report
     reports.transect_length_age_biomass_report(
-        filename="transect_length_age_biomass.xlsx", 
-        sheetnames=SHEETNAMES,
-        datatable= aged_df
+        filename="transect_length_age_biomass.xlsx", sheetnames=SHEETNAMES, datatable=aged_df
     )
     assert (tmp_path / "transect_length_age_biomass.xlsx").exists()
