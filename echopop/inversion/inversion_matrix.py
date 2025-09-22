@@ -202,10 +202,10 @@ def prepare_minimizer(
 
 
 def fit_Sv(
-    parameters: Dict[int, Parameters], 
-    Sv_measured: np.ndarray[float], 
-    center_frequencies: np.ndarray[float], 
-    parameters_meta: InvParameters, 
+    parameters: Dict[int, Parameters],
+    Sv_measured: np.ndarray[float],
+    center_frequencies: np.ndarray[float],
+    parameters_meta: InvParameters,
     model_settings: Dict[str, Any],
 ):
     r"""
@@ -281,6 +281,7 @@ def fit_Sv(
 
     # Return the summed absolute deviation (Q) object function
     return np.sum(np.abs(deviation) * wd, axis=-1)
+
 
 def perturb_parameters(params, scale=0.05):
     r"""

@@ -201,19 +201,19 @@ def organize_cells(data: pd.DataFrame):
     """
     Organize acoustic data at the cell level by frequency.
 
-    This function creates a pivot table with acoustic cells as rows and frequencies as columns, 
+    This function creates a pivot table with acoustic cells as rows and frequencies as columns,
     preserving the finest spatial resolution while organizing data for multi-frequency analysis.
 
     Parameters
     ----------
     data : pd.DataFrame
-        DataFrame containing acoustic data with spatial indexing columns and frequency-dependent 
+        DataFrame containing acoustic data with spatial indexing columns and frequency-dependent
         measurements
 
     Returns
     -------
     pd.DataFrame
-        Pivot table with MultiIndex columns organized by measurement type and frequency. Missing 
+        Pivot table with MultiIndex columns organized by measurement type and frequency. Missing
         values filled with appropriate defaults:
         - nasc: 0.0 (no scattering)
         - sv_mean: -999.0 (missing data indicator)
@@ -221,11 +221,11 @@ def organize_cells(data: pd.DataFrame):
 
     Notes
     -----
-    The resulting DataFrame has a hierarchical column structure with measurement types as the first 
-    level and frequencies as the second level. This format is suitable for frequency-dependent 
+    The resulting DataFrame has a hierarchical column structure with measurement types as the first
+    level and frequencies as the second level. This format is suitable for frequency-dependent
     analysis and multi-frequency target classification algorithms.
 
-    Index columns include available spatial identifiers: 'transect_num', 'longitude', 'latitude', 
+    Index columns include available spatial identifiers: 'transect_num', 'longitude', 'latitude',
     'interval', and 'layer'.
     """
 
@@ -255,13 +255,13 @@ def aggregate_intervals(
     Parameters
     ----------
     data : pd.DataFrame
-        DataFrame containing acoustic data with 'interval' column for grouping and 
+        DataFrame containing acoustic data with 'interval' column for grouping and
         frequency-dependent measurements
 
     Returns
     -------
     pd.DataFrame
-        Aggregated DataFrame with intervals as primary spatial unit, organized by frequency with 
+        Aggregated DataFrame with intervals as primary spatial unit, organized by frequency with
         integrated Sv and summed NASC values
 
     Raises
@@ -278,7 +278,7 @@ def aggregate_intervals(
     3. Converts back to dB: Sv_interval = 10 × log₁₀(Σ(sv_weighted))
     4. Sums NASC and thickness values directly
 
-    This approach properly accounts for varying layer thicknesses when \integrating volume 
+    This approach properly accounts for varying layer thicknesses when \integrating volume
     backscatter measurements.
     """
 
@@ -327,7 +327,7 @@ def aggregate_transects(
     Parameters
     ----------
     data : pd.DataFrame
-        DataFrame containing acoustic data with 'transect_num' column and spatial/acoustic 
+        DataFrame containing acoustic data with 'transect_num' column and spatial/acoustic
         measurements
 
     Returns
@@ -354,7 +354,7 @@ def aggregate_transects(
     4. **Line Sv integration**: Sv_L = 10 × log₁₀(Σ(sv_linear × w_area))
     5. **Coordinate weighting**: coord_weighted = coord × w_nasc
 
-    This approach accounts for variable sampling density and properly weights spatial coordinates 
+    This approach accounts for variable sampling density and properly weights spatial coordinates
     by acoustic backscatter intensity.
     """
 
