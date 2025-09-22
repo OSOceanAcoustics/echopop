@@ -196,38 +196,36 @@ def sv_to_nasc(sv_linear, thickness_mean):
     return nasc
 
 
-def aggregate_cells(data):
+def organize_cells(data: pd.DataFrame):
     """
-    Aggregate acoustic data at the cell level by frequency.
+    Organize acoustic data at the cell level by frequency.
 
-    This function creates a pivot table with acoustic cells as rows and
-    frequencies as columns, preserving the finest spatial resolution
-    while organizing data for multi-frequency analysis.
+    This function creates a pivot table with acoustic cells as rows and frequencies as columns, 
+    preserving the finest spatial resolution while organizing data for multi-frequency analysis.
 
     Parameters
     ----------
     data : pd.DataFrame
-        DataFrame containing acoustic data with spatial indexing columns
-        and frequency-dependent measurements
+        DataFrame containing acoustic data with spatial indexing columns and frequency-dependent 
+        measurements
 
     Returns
     -------
     pd.DataFrame
-        Pivot table with MultiIndex columns organized by measurement type
-        and frequency. Missing values filled with appropriate defaults:
+        Pivot table with MultiIndex columns organized by measurement type and frequency. Missing 
+        values filled with appropriate defaults:
         - nasc: 0.0 (no scattering)
         - sv_mean: -999.0 (missing data indicator)
         - thickness_mean: 0.0 (no layer thickness)
 
     Notes
     -----
-    The resulting DataFrame has a hierarchical column structure with
-    measurement types as the first level and frequencies as the second
-    level. This format is suitable for frequency-dependent analysis
-    and multi-frequency target classification algorithms.
+    The resulting DataFrame has a hierarchical column structure with measurement types as the first 
+    level and frequencies as the second level. This format is suitable for frequency-dependent 
+    analysis and multi-frequency target classification algorithms.
 
-    Index columns include available spatial identifiers: transect_num,
-    longitude, latitude, interval, and layer.
+    Index columns include available spatial identifiers: 'transect_num', 'longitude', 'latitude', 
+    'interval', and 'layer'.
     """
 
     # Find the overlapping columns
@@ -256,14 +254,14 @@ def aggregate_intervals(
     Parameters
     ----------
     data : pd.DataFrame
-        DataFrame containing acoustic data with 'interval' column for
-        grouping and frequency-dependent measurements
+        DataFrame containing acoustic data with 'interval' column for grouping and 
+        frequency-dependent measurements
 
     Returns
     -------
     pd.DataFrame
-        Aggregated DataFrame with intervals as primary spatial unit,
-        organized by frequency with integrated Sv and summed NASC values
+        Aggregated DataFrame with intervals as primary spatial unit, organized by frequency with 
+        integrated Sv and summed NASC values
 
     Raises
     ------
@@ -279,8 +277,8 @@ def aggregate_intervals(
     3. Converts back to dB: Sv_interval = 10 × log₁₀(Σ(sv_weighted))
     4. Sums NASC and thickness values directly
 
-    This approach properly accounts for varying layer thicknesses when
-    integrating volume backscatter measurements.
+    This approach properly accounts for varying layer thicknesses when \integrating volume 
+    backscatter measurements.
     """
 
     # Create copy
@@ -328,8 +326,8 @@ def aggregate_transects(
     Parameters
     ----------
     data : pd.DataFrame
-        DataFrame containing acoustic data with 'transect_num' column
-        and spatial/acoustic measurements
+        DataFrame containing acoustic data with 'transect_num' column and spatial/acoustic 
+        measurements
 
     Returns
     -------
@@ -355,8 +353,8 @@ def aggregate_transects(
     4. **Line Sv integration**: Sv_L = 10 × log₁₀(Σ(sv_linear × w_area))
     5. **Coordinate weighting**: coord_weighted = coord × w_nasc
 
-    This approach accounts for variable sampling density and properly
-    weights spatial coordinates by acoustic backscatter intensity.
+    This approach accounts for variable sampling density and properly weights spatial coordinates 
+    by acoustic backscatter intensity.
     """
 
     # Check for 'transect_num'
@@ -506,7 +504,7 @@ def integrate_measurements(
 
     # Aggregation methods
     if method == "cells":
-        sv_indexed = aggregate_cells(sv_reduced)
+        sv_indexed = organize_cells(sv_reduced)
     elif method == "interval":
         sv_indexed = aggregate_intervals(sv_reduced)
     elif method == "transect":

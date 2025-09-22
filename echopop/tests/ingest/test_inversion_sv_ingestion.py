@@ -97,7 +97,7 @@ def test_sv_to_nasc():
     np.testing.assert_array_almost_equal(result, expected)
 
 
-def test_aggregate_cells():
+def test_organize_cells():
     """Test cell-level aggregation."""
     data = pd.DataFrame(
         {
@@ -113,7 +113,7 @@ def test_aggregate_cells():
         }
     )
 
-    result = ingest_sv.aggregate_cells(data)
+    result = ingest_sv.organize_cells(data)
 
     assert isinstance(result, pd.DataFrame)
     assert result.columns.nlevels == 2  # MultiIndex columns
