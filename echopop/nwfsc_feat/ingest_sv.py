@@ -335,7 +335,7 @@ def aggregate_intervals(
             "ingested acoustic DataFrame."
         )
 
-    # Weight the linear Sv values by thickness
+    # Weight the 'sv' by thickness
     data["sv_t"] = data["sv_mean_linear"] * data["thickness_mean"]
 
     # Aggregate the values over each interval
@@ -531,7 +531,7 @@ def integrate_measurements(
     # Drop empty cells
     sv_reduced = sv_thresholded.loc[sv_thresholded["sv_mean"] > -999.0]
 
-    # Transform frequency
+    # Convert frequency units
     sv_reduced.loc[:, "frequency"] = sv_reduced.loc[:, "frequency"] * 1e3
 
     # If NASC is not a column
@@ -655,14 +655,14 @@ def ingest_echoview_sv(
     if center_frequencies is not None:
         center_frequencies = {freq * 1e-3: value for freq, value in center_frequencies.items()}
 
-    # Get the target inversion files
+    # Get the target Sv files
     sv_filepaths = {"cells": [p for p in sv_path.rglob("*.csv") if p.is_file()]}
 
     # Get the trasnect numbers
     if transect_pattern:
         transect_num_df = ingest_nasc.map_transect_num(sv_filepaths, transect_pattern)
     else:
-        # ---- valueize DataFrame
+        # ---- Fill in default values in the DataFrame
         transect_num_df = pd.DataFrame(
             {
                 "file_type": ["cells"] * len(sv_filepaths["cells"]),
@@ -682,7 +682,7 @@ def ingest_echoview_sv(
     # Sort
     ingest_nasc.sort_echoview_export_df(sv, inplace=True)
 
-    # Keep target transmit frequencies
+    # Set min/max threshold for each frequency
     if center_frequencies:
         sv_subset = sv[sv["frequency"].isin(center_frequencies)]
     else:
