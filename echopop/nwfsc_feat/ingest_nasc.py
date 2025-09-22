@@ -10,7 +10,6 @@ from ..core.echoview import (
     ECHOVIEW_EXPORT_ROW_SORT,
     ECHOVIEW_TO_ECHOPOP,
 )
-
 from . import utils
 
 
