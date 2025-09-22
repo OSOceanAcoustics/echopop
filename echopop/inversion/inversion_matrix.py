@@ -202,28 +202,12 @@ def prepare_minimizer(
 
 
 def fit_Sv(
-    parameters, Sv_measured, center_frequencies, parameters_meta: InvParameters, model_settings
+    parameters: Dict[int, Parameters], 
+    Sv_measured: np.ndarray[float], 
+    center_frequencies: np.ndarray[float], 
+    parameters_meta: InvParameters, 
+    model_settings: Dict[str, Any],
 ):
-
-    # Extract the `lmfit.Parameters` values
-    parameter_set = parameters.valuesdict()
-
-    # Rescale to the original scale if parameters were normalized
-    if parameters_meta.is_scaled:
-        parameter_set = parameters_meta.unscale_dict(parameter_set)
-
-    # Compute Sv
-    Sv_prediction = model_settings["model_function"](
-        center_frequencies=center_frequencies,
-        **parameter_set,
-        **model_settings["environment"],
-        **model_settings,
-    )
-
-    return objective(Sv_prediction, Sv_measured)
-
-
-def objective(Sv_prediction: np.ndarray[float], Sv_measured: np.ndarray[float]):
     r"""
     Compute the objective function for acoustic scattering model optimization.
 
@@ -274,15 +258,29 @@ def objective(Sv_prediction: np.ndarray[float], Sv_measured: np.ndarray[float]):
            Journal of the Acoustical Society of America, 139: 2885-2895. doi: 10.1121/1.4948759
     """
 
+    # Extract the `lmfit.Parameters` values
+    parameter_set = parameters.valuesdict()
+
+    # Rescale to the original scale if parameters were normalized
+    if parameters_meta.is_scaled:
+        parameter_set = parameters_meta.unscale_dict(parameter_set)
+
+    # Compute Sv
+    Sv_prediction = model_settings["model_function"](
+        center_frequencies=center_frequencies,
+        **parameter_set,
+        **model_settings["environment"],
+        **model_settings,
+    )
+
     # Calculate the deviation
     deviation = Sv_prediction - Sv_measured
 
     # Pre-allocate weight array
     wd = np.ones_like(Sv_measured)
 
-    # Return the summed absolute deviation (Q)
+    # Return the summed absolute deviation (Q) object function
     return np.sum(np.abs(deviation) * wd, axis=-1)
-
 
 def perturb_parameters(params, scale=0.05):
     r"""

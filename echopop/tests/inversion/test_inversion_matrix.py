@@ -71,39 +71,6 @@ def test_monte_carlo_empty_parameters(sample_frequencies, model_InversionMatrix_
         )
 
 
-# Test functions for objective
-def test_objective_perfect_match_zero():
-    """Test objective function returns zero for perfect match."""
-    sv_pred = np.array([-65.0, -70.0, -68.0])
-    sv_meas = np.array([-65.0, -70.0, -68.0])
-    result = im.objective(sv_pred, sv_meas)
-    assert result == 0.0
-
-
-def test_objective_residual_calculation():
-    """Test objective function residual calculation."""
-    sv_pred = np.array([-65.0, -70.0])
-    sv_meas = np.array([-67.0, -68.0])
-    result = im.objective(sv_pred, sv_meas)
-    expected = np.sum(np.abs(sv_pred - sv_meas))  # L1 norm, not L2
-    np.testing.assert_almost_equal(result, expected)
-
-
-def test_objective_single_value():
-    """Test objective function with single values."""
-    result = im.objective(np.array([-65.0]), np.array([-67.0]))
-    assert result == 2.0
-
-
-def test_objective_large_arrays():
-    """Test objective function handles large arrays."""
-    np.random.seed(857)
-    sv_pred = np.random.randn(100) * 5 - 65
-    sv_meas = sv_pred + np.random.randn(100) * 0.1
-    result = im.objective(sv_pred, sv_meas)
-    assert np.isclose(result, 8.0726224)
-
-
 # Test functions for perturb_parameters
 def test_perturb_parameters_respects_bounds(inv_parameters):
     """Test parameter perturbation respects bounds."""
