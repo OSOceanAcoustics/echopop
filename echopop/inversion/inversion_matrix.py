@@ -159,7 +159,7 @@ def prepare_minimizer(
     """
     # Generate parameter sets
     parameter_sets = MCInvParameters(
-        scattering_params, simulation_settings["mc_realizations"], simulation_settings["rng"]
+        scattering_params, simulation_settings["mc_realizations"], simulation_settings["_rng"]
     )
 
     # Generate `lmfit.Parameters` objects for each realization
@@ -570,8 +570,6 @@ class InversionMatrix(InversionBase):
         Scattering model configuration including type and numerical settings
     parameter_bounds : dict
         Original parameter bounds for unscaling operations
-    rng : np.random.Generator
-        Random number generator for reproducible Monte Carlo sampling
 
     Methods
     -------
@@ -702,36 +700,15 @@ class InversionMatrix(InversionBase):
         self.model = None
         self.model_params = {}
         self.model_settings = {}
-        self.rng = None
 
         # Store random number generator, if required
-        self._set_rng(**self.simulation_settings)
-
-    def _set_rng(self, monte_carlo: bool, mc_seed: Optional[int] = None, **kwargs):
-        """
-        Configure random number generator for Monte Carlo sampling.
-
-        Sets up a numpy random generator with optional seed for reproducible
-        Monte Carlo parameter initialization. Only creates RNG when Monte
-        Carlo sampling is enabled.
-
-        Parameters
-        ----------
-        monte_carlo : bool
-            Whether Monte Carlo sampling is enabled
-        mc_seed : Optional[int], default=None
-            Random seed for reproducible sampling. If None, uses system entropy.
-        **kwargs : dict
-            Additional simulation settings (ignored)
-
-        Notes
-        -----
-        The RNG is stored in simulation_settings["rng"] for use by Monte Carlo
-        initialization functions. This ensures consistent random sampling
-        across all parameter realizations.
-        """
-        if monte_carlo:
-            self.simulation_settings["rng"] = np.random.default_rng(mc_seed)
+        # ---- Store MC seed 
+        self._mc_seed = simulation_settings.get("mc_seed", None)
+        # ---- Configure random number generator for Monte Carlo sampling
+        if simulation_settings.get("monte_carlo", False):
+            self.simulation_settings["_rng"] = np.random.default_rng(self._mc_seed)
+        else:
+            self.simulation_settings["_rng"] = None
 
     def _set_minimizers(self):
         """
