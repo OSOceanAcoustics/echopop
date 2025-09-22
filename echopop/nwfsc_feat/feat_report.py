@@ -1461,8 +1461,8 @@ class FEATReports:
             The function expects DataFrames with interval-like index levels `length_bin` and
             column levels `age_bin` and `sex` (or compatible structure).
         exclude_filter : dict
-            Filter dictionary passed to :func:`apportion.reallocate_population_table` to zero/exclude
-            strata.
+            Filter dictionary passed to :func:`apportion.reallocate_population_table` to 
+            zero/exclude strata.
 
         Returns
         -------
