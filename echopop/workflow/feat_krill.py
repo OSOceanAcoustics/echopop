@@ -77,7 +77,6 @@ SIMULATION_SETTINGS = {
     "mc_realizations": 2,
     "scale_parameters": True, 
     "minimum_frequency_count": 2,
-    "reference_frequency": 120e3,
 }
 
 OPTIMIZATION_KWARGS = {

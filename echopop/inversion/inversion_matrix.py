@@ -548,7 +548,6 @@ class InversionMatrix(InversionBase):
         - 'mc_realizations': int, number of MC samples
         - 'scale_parameters': bool, whether to scale parameters to [0,1]
         - 'environment': dict with 'sound_speed_sw' and 'density_sw'
-        - 'reference_frequency': float, frequency for population estimates
         - 'minimum_frequency_count': int, minimum frequencies required
     verbose : bool, default=True
         Whether to print progress and diagnostic information
