@@ -77,6 +77,7 @@ def read_echoview_sv(
     # Return the cleaned DataFrame
     return sv_df
 
+
 def apply_Sv_thresholds(data: pd.DataFrame, thresholds: Dict[str, Any]):
     """
     Apply frequency-specific Sv thresholds to acoustic data.
