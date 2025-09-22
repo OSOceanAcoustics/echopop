@@ -1,6 +1,6 @@
 import time
 import warnings
-from typing import Any, Dict, Literal, Optional
+from typing import Any, Dict, Literal
 
 import numpy as np
 import pandas as pd
