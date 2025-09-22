@@ -53,6 +53,7 @@ def test_read_echoview_sv_with_coordinate_imputation(sv_csv_with_coordinates):
     assert "latitude" in result.columns
     assert "longitude" in result.columns
 
+
 def test_apply_Sv_thresholds():
     """Test application of frequency-specific Sv thresholds."""
     data = pd.DataFrame(
