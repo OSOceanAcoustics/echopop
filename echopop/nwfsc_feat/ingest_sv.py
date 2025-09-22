@@ -284,11 +284,11 @@ def aggregate_intervals(
     data: pd.DataFrame,
 ) -> pd.DataFrame:
     """
-    Aggregate acoustic integration over depth/range intervals.
+    Aggregate acoustic integration over depth/range for each interval.
 
-    This function integrates acoustic measurements over specified intervals
-    along each transect, combining multiple cells within each interval
-    while preserving frequency separation and spatial location information.
+    This function integrates acoustic measurements over depth/range intervals along each transect  
+    by combining multiple cells within each interval while preserving frequency separation and 
+    spatial location information.
 
     Parameters
     ----------
@@ -356,12 +356,11 @@ def aggregate_transects(
     data: pd.DataFrame,
 ):
     """
-    Aggregate acoustic measurements across entire survey transects.
+    Aggregate acoustic measurements across intervals for each survey transect.
 
-    This function integrates acoustic data along complete transect lines,
-    producing transect-level summaries with NASC-weighted coordinates
-    and properly integrated volume backscatter values. This is the
-    highest level of spatial aggregation.
+    This function integrates acoustic data across intervals for each transect, producing 
+    transect-level summaries with NASC-weighted coordinates and integrated volume backscatter 
+    estimates. This is the highest level of spatial aggregation.
 
     Parameters
     ----------
@@ -512,7 +511,7 @@ def integrate_measurements(
     1. **Thresholding**: Remove noise and artifacts using Sv thresholds
     2. **Unit conversion**: Convert Sv from dB to linear units for integration
     3. **NASC calculation**: Compute Nautical Area Scattering Coefficient if missing
-    4. **Frequency standardization**: Convert frequency units to Hz
+    4. **Frequency unit conversion**: Convert frequency units to Hz
     5. **Spatial aggregation**: Apply specified integration method
     6. **Coordinate processing**: Extract spatial reference data when available
 

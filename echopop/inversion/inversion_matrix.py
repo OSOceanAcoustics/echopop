@@ -529,11 +529,10 @@ class InversionMatrix(InversionBase):
     """
     Matrix-based acoustic scattering parameter inversion for marine organisms.
 
-    This class performs acoustic inversion to estimate biological parameters
-    (size, density, abundance) from multi-frequency volume backscattering
-    strength measurements. It uses advanced scattering models and nonlinear
-    optimization with optional Monte Carlo initialization for robust parameter
-    estimation.
+    This class performs acoustic inversion to estimate biological parameters (size, density, 
+    abundance) from multi-frequency volume backscattering strength measurements. It uses 
+    physics-based scattering models and nonlinear optimization with optional Monte Carlo 
+    initialization for robust parameter estimation.
 
     Parameters
     ----------
@@ -662,9 +661,9 @@ class InversionMatrix(InversionBase):
         """
         Initialize the InversionMatrix with acoustic data and simulation settings.
 
-        This constructor sets up the inversion framework by storing the input
-        data and simulation configuration, initializing caches, and preparing
-        the random number generator for Monte Carlo sampling.
+        This constructor sets up the inversion framework by storing the input data and simulation 
+        configuration, initializing caches, and preparing the random number generator for Monte 
+        Carlo sampling.
 
         Parameters
         ----------
@@ -684,12 +683,11 @@ class InversionMatrix(InversionBase):
 
         Notes
         -----
-        The constructor performs minimal initialization, deferring heavy
-        computation until build_scattering_model() is called. This allows
-        for efficient object creation and parameter validation.
+        The constructor performs minimal initialization, deferring heavy computation until 
+        `build_scattering_model()` is called.
 
-        The random number generator is configured based on simulation_settings
-        to ensure reproducible Monte Carlo sampling when mc_seed is provided.
+        The random number generator is configured based on 'simulation_settings'. To ensure 
+        reproducible Monte Carlo sampling, set 'mc_seed' in 'simulation_settings'.
         """
 
         # Set inversion method
@@ -747,9 +745,6 @@ class InversionMatrix(InversionBase):
         1. Creates parameter realizations for Monte Carlo initialization
         2. Evaluates initial fits to select best starting points
         3. Configures lmfit.Minimizer objects with proper bounds and callbacks
-
-        The method includes extensive commented code for potential parallel
-        processing, which could be enabled for large datasets.
 
         Progress messages are printed if verbose=True and Monte Carlo is enabled,
         as this step can take significant time for large datasets.
