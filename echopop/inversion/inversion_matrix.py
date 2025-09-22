@@ -4,7 +4,7 @@ from typing import Any, Dict, Literal, Optional
 
 import numpy as np
 import pandas as pd
-from lmfit import Minimizer
+from lmfit import Minimizer, Parameters
 from pydantic import ValidationError
 
 from ..core.exceptions import EchopopValidationError
