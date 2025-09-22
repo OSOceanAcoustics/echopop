@@ -1042,11 +1042,11 @@ def estimate_population(
 
     # Calculate the areal number density
     if aggregate_method == "transect":
-        reference_nasc.loc[:, "number_density"] = invert_transect_number_density(
+        reference_nasc.loc[:, "number_density"] = calculate_transect_number_density(
             acoustic_data, reference_nasc, parameters
         ).to_numpy()
     else:
-        reference_nasc["number_density"] = invert_intervals_number_density(
+        reference_nasc["number_density"] = calculate_intervals_number_density(
             acoustic_data, parameters
         )
 
@@ -1074,7 +1074,7 @@ def estimate_population(
     )
 
 
-def invert_transect_number_density(
+def calculate_transect_number_density(
     acoustic_data: pd.DataFrame,
     reference_nasc: pd.DataFrame,
     parameters: pd.DataFrame,
@@ -1151,7 +1151,7 @@ def invert_transect_number_density(
     return areal_number_density
 
 
-def invert_intervals_number_density(
+def calculate_intervals_number_density(
     acoustic_data: pd.DataFrame,
     parameters: pd.DataFrame,
 ):
