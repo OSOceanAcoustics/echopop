@@ -2,8 +2,9 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from echopop.typing import InvParameters, MCInvParameters
 from echopop.inversion.pcdwba import pcdwba
+from echopop.typing import InvParameters, MCInvParameters
+
 
 @pytest.fixture
 def model_parameters():
