@@ -73,7 +73,7 @@ def test_mesh_biomass_to_nasc(
     assert np.allclose(np.round(mesh_data_df["nasc"], 4), [125663.7061, 25132.7412, 3769.9112])
 
 
-def test_distribute_kriged_estimates(
+def test_distribute_population_estimates_kriged(
     apportion_mesh_with_nasc, apportion_weight_proportions, apportion_number_proportions
 ):
     """
@@ -87,13 +87,13 @@ def test_distribute_kriged_estimates(
     mesh_data_df["biomass"] = mesh_data_df["biomass_density"] * mesh_data_df["area"]
 
     # Test-distribute biomass
-    biomass_tables = apportion.distribute_kriged_estimates(
-        mesh_data_df=mesh_data_df,
+    biomass_tables = apportion.distribute_population_estimates(
+        data=mesh_data_df,
         proportions=apportion_weight_proportions,
         variable="biomass",
         group_by=["contrast", "index_bin", "extra_bin"],
         stratify_by=["bio_stratum"],
-        mesh_proportions_link={"mesh_stratum": "bio_stratum"},
+        data_proportions_link={"mesh_stratum": "bio_stratum"},
     )
 
     # Check shapes
@@ -108,13 +108,13 @@ def test_distribute_kriged_estimates(
     assert all(biomass_tables["subgroup2"].sum() == np.array([5.0e6, 8.0e6, 4.5e7]))
 
     # Test the same for abundances using a different format for DataFrame
-    abundance_tables = apportion.distribute_kriged_estimates(
-        mesh_data_df=mesh_data_df,
+    abundance_tables = apportion.distribute_population_estimates(
+        data=mesh_data_df,
         proportions=apportion_number_proportions,
         variable="abundance",
         group_by=["contrast", "index_bin", "extra_bin"],
         stratify_by=["bio_stratum"],
-        mesh_proportions_link={"mesh_stratum": "bio_stratum"},
+        data_proportions_link={"mesh_stratum": "bio_stratum"},
     )
 
     # Check shapes
