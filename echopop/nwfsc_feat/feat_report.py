@@ -1437,7 +1437,7 @@ class FEATReports:
         filename: str,
         sheetnames: Dict[str, str],
         datatables: Dict[str, pd.DataFrame],
-        exclude_filter: Dict[str, Any],
+        exclude_filter: Dict[str, Any] = {},
     ) -> None:
         """
         Create kriged age-length abundance reports and write a 3-sheet workbook.
@@ -1891,7 +1891,7 @@ class FEATReports:
         filename: str,
         sheetnames: Dict[str, str],
         transect_data: pd.DataFrame,
-        weight_data: Dict[str, pd.DataFrame],
+        weight_data: pd.DataFrame,
         exclude_filter: Dict[str, Any] = {},
     ) -> None:
         """
