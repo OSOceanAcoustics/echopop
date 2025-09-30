@@ -480,7 +480,7 @@ def join_geostrata_by_latitude(
             result["latitude"],
             latitude_bins,
             right=False,
-            labels=list(geostrata_df["stratum_num"].unique()) + [1],
+            labels=list(geostrata_df["stratum_num"]) + [1],
             ordered=False,
         )
 
