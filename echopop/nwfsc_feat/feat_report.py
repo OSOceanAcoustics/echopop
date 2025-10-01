@@ -526,8 +526,17 @@ def pivot_aged_weight_proportions(
     if not isinstance(age_weight_data, pd.DataFrame):
         raise TypeError("'age_weight_data' must be a `pandas.DataFrame`.")
 
+    # Get all column level names
+    col_levels = list(age_weight_data.columns.names)
+
+    # Move 'sex' to the front if it's not already
+    if col_levels[0] != "sex":
+        col_levels.remove("sex")
+        col_levels = ["sex"] + col_levels
+        age_weight_data.columns = age_weight_data.columns.reorder_levels(col_levels)
+
     # Add 'all' category
-    age_weights_all = age_weight_data["male"] + age_weight_data["female"]
+    age_weights_all = age_weight_data["male"] + age_weight_data["female"] 
     # ---- Convert into a MultiIndex
     age_weights_all.columns = pd.MultiIndex.from_product([["all"], age_weights_all.columns])
 
@@ -1562,7 +1571,7 @@ class FEATReports:
         filename: str,
         sheetnames: Dict[str, str],
         datatables: Dict[str, pd.DataFrame],
-        exclude_filter: Dict[str, Any],
+        exclude_filter: Dict[str, Any] = {},
     ) -> None:
         """
         Create kriged age-length biomass reports (values converted to metric megatonnes).
@@ -1872,8 +1881,9 @@ class FEATReports:
         len_pvt_full = pd.concat([len_pvt, length_pvt_all], axis=1)
 
         # Combine the datasets
-        full_pvt = len_pvt_full.add(spe_pvt_full, fill_value=0).astype(int)
-
+        full_pvt = len_pvt_full.add(spe_pvt_full, fill_value=0)
+        full_pvt = full_pvt.replace([np.inf, -np.inf], 0).fillna(0).astype(int)
+        
         # Create dictionary containing the sex-specific tables
         haul_pvt_tables = {
             sex: pivot_haul_tables(full_pvt, sex) for sex in ["male", "female", "all"]
@@ -1955,7 +1965,7 @@ class FEATReports:
         stratum_name = list(set(weight_data.columns.names).difference(["age_bin", "sex"]))
 
         # Sum across lengths
-        age_weight_sums = weight_data.sum(axis=0).unstack(["age_bin"]).T
+        age_weight_sums = weight_data.sum(axis=0).unstack(["age_bin"]).T        
 
         # Apply exclusion filter, if supplied
         age_weight_sums_filtered = utils.apply_filters(
