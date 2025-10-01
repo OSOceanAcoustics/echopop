@@ -252,7 +252,7 @@ def compute_abundance(
             number_density_vals = dataset["number_density"].values[:, None]
             abundance_vals = dataset["abundance"].values[:, None]
         # ---- Reindex the table
-        grouped_proportions_ridx = grouped_proportions_excl.reindex(dataset.index)
+        grouped_proportions_ridx = grouped_proportions_excl.reindex(dataset.index).fillna(0.0)
         # ---- Compute number density
         grouped_number_density = number_density_vals * grouped_proportions_ridx
         # ---- Compute abundance
@@ -307,7 +307,7 @@ def matrix_multiply_grouped_table(
     suffixes = variable_columns.str.replace(prefix_pattern, "", regex=False).to_list()
 
     # Reindex table
-    table_ridx = table.reindex(dataset.index)
+    table_ridx = table.reindex(dataset.index).fillna(0.0)
 
     # Apply an inclusion filter
     target_groups = apply_filters(table_ridx, include_filter={group: suffixes})

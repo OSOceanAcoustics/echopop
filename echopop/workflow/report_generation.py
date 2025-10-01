@@ -179,7 +179,7 @@ reporter.kriged_length_age_biomass_report(
 # --------------------
 
 reporter.kriging_input_report(
-    filename="kriging_input_report.xklsx",
+    filename="kriging_input_report.xlsx",
     sheetname="Sheet1",
     transect_data=df_nasc_noage1_prt,
 )
