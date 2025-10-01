@@ -453,9 +453,14 @@ def semivariance(
     # ---- Compute the partial sill that is applied as a weighted calculation
     partial_sill = sigma_tail * sigma_head
     # ---- Semivariance [gamma(h)] and cross-sill estimate
-    # gamma_h = 0.5 * lag_deviations / (lag_counts * partial_sill)
     with np.errstate(divide="ignore"):
-        gamma_h = 0.5 * lag_deviations / (lag_counts * partial_sill)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", RuntimeWarning)
+            gamma_h = 0.5 * lag_deviations / (lag_counts * partial_sill)
+    # ---- Create mask     
+    valid_mask = (lag_counts > 0) & (partial_sill > 0) & np.isfinite(gamma_h)
+    # ---- Apply mask to produce only valid `gamma_h` estimates WITHOUT interpolation
+    gamma_h = np.where(valid_mask, gamma_h, 0.0)
     # Calculate the mean lag distance covariance
     # ---- Find non-zero head and tail variances
     non_zero_variance = np.where((sigma_head > 0.0) & (sigma_tail > 0.0))[0]
