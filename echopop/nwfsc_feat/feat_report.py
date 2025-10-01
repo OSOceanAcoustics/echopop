@@ -536,7 +536,7 @@ def pivot_aged_weight_proportions(
         age_weight_data.columns = age_weight_data.columns.reorder_levels(col_levels)
 
     # Add 'all' category
-    age_weights_all = age_weight_data["male"] + age_weight_data["female"] 
+    age_weights_all = age_weight_data["male"] + age_weight_data["female"]
     # ---- Convert into a MultiIndex
     age_weights_all.columns = pd.MultiIndex.from_product([["all"], age_weights_all.columns])
 
@@ -1883,7 +1883,7 @@ class FEATReports:
         # Combine the datasets
         full_pvt = len_pvt_full.add(spe_pvt_full, fill_value=0)
         full_pvt = full_pvt.replace([np.inf, -np.inf], 0).fillna(0).astype(int)
-        
+
         # Create dictionary containing the sex-specific tables
         haul_pvt_tables = {
             sex: pivot_haul_tables(full_pvt, sex) for sex in ["male", "female", "all"]
@@ -1965,7 +1965,7 @@ class FEATReports:
         stratum_name = list(set(weight_data.columns.names).difference(["age_bin", "sex"]))
 
         # Sum across lengths
-        age_weight_sums = weight_data.sum(axis=0).unstack(["age_bin"]).T        
+        age_weight_sums = weight_data.sum(axis=0).unstack(["age_bin"]).T
 
         # Apply exclusion filter, if supplied
         age_weight_sums_filtered = utils.apply_filters(

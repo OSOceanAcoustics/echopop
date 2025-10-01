@@ -457,7 +457,7 @@ def semivariance(
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", RuntimeWarning)
             gamma_h = 0.5 * lag_deviations / (lag_counts * partial_sill)
-    # ---- Create mask     
+    # ---- Create mask
     valid_mask = (lag_counts > 0) & (partial_sill > 0) & np.isfinite(gamma_h)
     # ---- Apply mask to produce only valid `gamma_h` estimates WITHOUT interpolation
     gamma_h = np.where(valid_mask, gamma_h, 0.0)
