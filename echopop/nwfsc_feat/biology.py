@@ -325,13 +325,13 @@ def matrix_multiply_grouped_table(
     column_map = target_groups_idx.columns.map(lambda c: f"{output_variable}_{c}")
 
     # Add the output variables
-    dataset[column_map] = table_matrix.values
+    dataset[column_map] = table_matrix.fillna(0.0).values
 
     # Calculate the remainder comprising the ungrouped values
-    remainder = dataset[variable] - dataset[variable_overlap].sum(axis=1)
+    remainder = dataset[variable] - dataset[variable_overlap].fillna(0.0).sum(axis=1)
 
     # Calculate the output variable for the ungrouped/excluded values
-    remainder_matrix = remainder * table_ridx["all"]
+    remainder_matrix = remainder * table_ridx["all"].fillna(0.0)
 
     # Compute the overall output variable
     dataset[output_variable] = dataset[column_map].sum(axis=1) + remainder_matrix
