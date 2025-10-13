@@ -138,7 +138,7 @@ def apply_Sv_thresholds(data: pd.DataFrame, thresholds: Dict[str, Any]):
         )
 
     # Apply the thresholds
-    data.loc[mask, "sv_mean"] = -999.0
+    data.loc[mask, "sv_mean"] = np.nan
 
     return data
 

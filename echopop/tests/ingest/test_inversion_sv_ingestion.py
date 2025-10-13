@@ -65,8 +65,8 @@ def test_apply_Sv_thresholds():
     result = ingest_sv.apply_Sv_thresholds(data, thresholds)
 
     # Values outside thresholds should be -999
-    assert result["sv_mean"].iloc[1] == -999.0  # -45.0 > -50.0 max
-    assert result["sv_mean"].iloc[3] == -999.0  # -40.0 > -45.0 max
+    assert np.isnan(result["sv_mean"].iloc[1])  # -45.0 > -50.0 max
+    assert np.isnan(result["sv_mean"].iloc[3])  # -40.0 > -45.0 max
     assert result["sv_mean"].iloc[0] == -85.0  # Within bounds
     assert result["sv_mean"].iloc[2] == -80.0  # Within bounds
 
