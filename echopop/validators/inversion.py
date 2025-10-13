@@ -265,9 +265,9 @@ class ValidateBuildModelArgs(
         model_validators = SCATTERING_MODEL_PARAMETERS[model_settings["type"]]
 
         # Validate `model_parameters`
-        # ---- Dump the model
-        model_parameters = self.model_parameters.parameters
-        # ---- Check minima
+        # ---- Dump the model [NOTE: this runs a check on the UNSCALED parameters]
+        model_parameters = self.model_parameters._unscaled_parameters
+        # ---- Check minimum values
         min_params = self._check_variable(model_parameters, "min", model_validators["parameters"])
         # ---- Set up values
         value_params = self._check_variable(
@@ -278,7 +278,7 @@ class ValidateBuildModelArgs(
         # ---- Get the `vary` definitions
         vary_params = {k: {"vary": v["vary"]} for k, v in model_parameters.items()}
         # ---- Rebuild the model parameters
-        self.model_parameters = InvParameters(
+        validated_parameters = InvParameters(
             ModelInputParameters.create(
                 **{
                     k: {
@@ -293,6 +293,11 @@ class ValidateBuildModelArgs(
                 }
             )
         )
+        # ---- Restore scaling, if required
+        if self.model_parameters.is_scaled:
+            validated_parameters.scale()
+        # ---- Update the parameter set
+        self.model_parameters = validated_parameters
 
         # Validate `model_settings`
         self.model_settings = ModelSettingsParameters.model_validate(

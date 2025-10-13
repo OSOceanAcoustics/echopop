@@ -1,6 +1,5 @@
-from .inversion import InvParameters, MCInvParameters
+from .inversion import InvParameters
 
 __all__ = [
     "InvParameters",
-    "MCInvParameters",
 ]

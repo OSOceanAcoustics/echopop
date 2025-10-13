@@ -25,8 +25,6 @@ class InvParameters:
         - 'min': Lower bound (optional, default=-inf)
         - 'max': Upper bound (optional, default=+inf)
         - 'vary': Whether parameter should be optimized (optional, default=False)
-    scaled : bool, default=False
-        Whether parameters are currently scaled to [0,1] range
 
     Attributes
     ----------
@@ -51,8 +49,10 @@ class InvParameters:
         Unscale parameters to original range and return new unscaled instance
     to_lmfit()
         Convert to lmfit.Parameters object for optimization
-    unscale_dict(scaled_dict)
+    inverse_transform(scaled_dict)
         Convert scaled parameter dictionary back to original scale
+    update_bounds(bounds)
+        Update the boundaries (min/max) for stored parameters
     from_series(series)
         Class method to create instance from pandas Series
 
@@ -80,7 +80,6 @@ class InvParameters:
     def __init__(
         self,
         parameters: Dict[str, Any],
-        scaled: bool = False,
     ):
         if not isinstance(parameters, dict):
             raise TypeError("Parameters must be a dictionary.")
@@ -91,15 +90,22 @@ class InvParameters:
         # Validate parameters
         validated_parameters = ModelInputParameters.create(**parameters)
 
-        self.parameters = validated_parameters
+        # Initialize attributes
+        self._unscaled_parameters = validated_parameters
         self.parameter_bounds = self._get_parameter_limits(validated_parameters)
-        self.scaled = scaled
+        self._scaled = False
 
-    def __str__(self):
-        return "InvParameters-object"
+        # Store the scaled parameters
+        self._scale_parameters()
+
+        # Default parameters to unscaled, natural values
+        self.parameters = validated_parameters
 
     def __repr__(self):
-        status = "Scaled" if self.scaled else "Unscaled"
+        return f"InvParameters(scaled={self._scaled}, parameters={list(self.parameters.keys())})"
+
+    def __str__(self):
+        status = "Scaled" if self._scaled else "Unscaled"
         return (
             f"Status: {status}\n"
             f"Parameters\n----------\n[{', '.join(self.parameters)}]\n\n"
@@ -162,7 +168,25 @@ class InvParameters:
         This property helps track the current state of parameters during
         optimization workflows where scaling/unscaling may occur multiple times.
         """
-        return self.scaled
+        return self._scaled
+
+    @property
+    def realizations(self):
+        """
+        Access the dictionary of parameter realizations.
+
+        Returns
+        -------
+        dict
+            Dictionary mapping realization indices (int) to Monte Carlo parameter sets.
+
+        Examples
+        --------
+        >>> params.simulate_parameter_sets(mc_realizations=5) # params is an InvParameters object
+        >>> realizations = params.realizations
+        >>> first_real = realizations[0]  # First realization
+        """
+        return self._realizations
 
     @staticmethod
     def _get_parameter_limits(parameters):
@@ -193,9 +217,9 @@ class InvParameters:
 
         return parameter_limits
 
-    def scale(self):
+    def _scale_parameters(self):
         """
-        Scale all parameters to [0,1] range using min-max normalization.
+        Internal method for scaling parameters to [0,1] range using min-max normalization.
 
         This method transforms parameter values to a normalized range which
         improves optimization performance by ensuring all parameters have
@@ -214,9 +238,6 @@ class InvParameters:
         The scaling status flag is updated to True after this operation.
         """
 
-        # Update scaling status
-        self.scaled = True
-
         # Update parameters
         scaled_params = {
             key: (
@@ -233,19 +254,46 @@ class InvParameters:
                 if isinstance(kwargs, dict)
                 else kwargs
             )
-            for key, kwargs in self.parameters.items()
+            for key, kwargs in self._unscaled_parameters.items()
         }
 
         # Update the parameters
-        self.parameters = scaled_params
+        self._scaled_parameters = scaled_params
+
+    def scale(self):
+        """
+        Scale model parameters to [0, 1] range using min-max normalization.
+
+        This method transforms all model parameter values to a normalized range which helps
+        improve optimization performance by ensuring all parameters have similar scales and reduce
+        numerical conditioning problems.
+
+        Notes
+        -----
+        The scaling transformation is:
+
+        .. math::
+            x_{scaled} = \\frac{x - x_{min}}{x_{max} - x_{min}}
+
+        After scaling, parameter bounds become [0,1] for all parameters.
+        The original bounds are preserved in `parameter_bounds` for unscaling.
+
+        The scaling status flag is updated to True after this operation.
+        """
+
+        # Update the `is_scaled` property
+        self._scaled = True
+
+        # Set active parameters
+        self.parameters = self._scaled_parameters
 
     def unscale(self):
         """
-        Convert scaled [0,1] parameters back to their original units and ranges.
+        Convert scaled [0, 1] parameters back to their original units and ranges.
 
-        This method reverses the scaling transformation, restoring parameters
-        to their original physical units and bounds. It uses the preserved
-        bounds from `parameter_bounds` to perform the inverse transformation.
+        This method reverses the min-max normalization, restoring parameters to their original
+        physical units and boundaries. It uses the preserved bounds from `parameter_bounds` to
+        perform the inverse transformation.
 
         Notes
         -----
@@ -256,33 +304,13 @@ class InvParameters:
 
         After unscaling, parameters return to their original bounds and units.
         The scaling status flag is updated to False after this operation.
-
-        Raises
-        ------
-        ValueError
-            If called on parameters that are not currently scaled
         """
 
-        # Update scaling status
-        self.scaled = False
+        # Update the `is_scaled` property
+        self._scaled = False
 
-        # Undo the min-max normalization
-        unscaled_params = {
-            key: {
-                **kwargs,
-                "value": (
-                    kwargs["value"]
-                    * (self.parameter_bounds[key]["max"] - self.parameter_bounds[key]["min"])
-                    + self.parameter_bounds[key]["min"]
-                ),
-                "min": self.parameter_bounds[key]["min"],
-                "max": self.parameter_bounds[key]["max"],
-            }
-            for key, kwargs in self.parameters.items()
-        }
-
-        # Update the parameters
-        self.parameters = unscaled_params
+        # Set active parameters
+        self.parameters = self._unscaled_parameters
 
     def to_lmfit(self):
         """
@@ -321,7 +349,57 @@ class InvParameters:
             )
         return params
 
-    def unscale_dict(self, scaled_dict: dict) -> dict:
+    def realizations_to_lmfit(self) -> Dict[str, dict]:
+        """
+        Convert all parameter realizations to lmfit.Parameters format.
+
+        This method transforms the Monte Carlo parameter ensemble into formats suitable for
+        optimization routines, with options for both parallel and serialized parameter handling.
+
+        Returns
+        -------
+        dict
+            If serialize=False: Dictionary mapping realization indices to
+            lmfit.Parameters objects
+            If serialize=True: Single Parameters object with parameters named
+            as {param_name}_{realization_index}
+
+        Examples
+        --------
+        >>> mc_params = InvParameters(base_params)
+        >>> mc_params.simulate_parameter_sets(mc_realizations=3)
+        >>> # Separate parameters for parallel evaluation
+        >>> param_dict = mc_params.realizations_to_lmfit()
+
+        Notes
+        -----
+        The serialized format is useful when evaluating multiple realizations
+        simultaneously in vectorized forward models or when using optimization
+        algorithms that can handle large parameter spaces efficiently.
+        """
+
+        # Convert the dictionary of realizations into lmfit.Parameters
+        return {
+            i: (
+                lambda param_dict: (
+                    (params := Parameters())
+                    or [
+                        params.add(
+                            name,
+                            value=kwargs["value"],
+                            min=kwargs.get("min", 0.0),
+                            max=kwargs.get("max", np.inf),
+                            vary=kwargs.get("vary", True),
+                        )
+                        for name, kwargs in param_dict.items()
+                    ]
+                )
+                and params
+            )(param_dict)
+            for i, param_dict in self._realizations.items()
+        }
+
+    def inverse_transform(self, scaled_dict: dict) -> dict:
         """
         Convert a dictionary of scaled [0,1] parameter values to original units.
 
@@ -343,7 +421,7 @@ class InvParameters:
         --------
         >>> params = InvParameters({'length_mean': {'min': 10, 'max': 40}})
         >>> scaled_vals = {'length_mean': 0.5}  # Mid-range scaled value
-        >>> unscaled = params.unscale_dict(scaled_vals)
+        >>> unscaled = params.inverse_transform(scaled_vals)
         >>> unscaled['length_mean']  # Should be 25.0 (midpoint of 10-40)
         25.0
 
@@ -357,6 +435,49 @@ class InvParameters:
             + self.parameter_bounds[k]["min"]
             for k in scaled_dict
         }
+
+    @staticmethod
+    def _set_parameter_bounds(
+        parameters: Dict[str, dict], bounds: Dict[str, dict]
+    ) -> Dict[str, dict]:
+        """
+        Internal method for setting the parameter boundaries of a parameter set.
+        """
+        return {
+            k: {
+                **v,
+                "min": bounds.get(k, {}).get("min", v.get("min", -np.inf)),
+                "max": bounds.get(k, {}).get("max", v.get("max", np.inf)),
+            }
+            for k, v in parameters.items()
+        }
+
+    def update_bounds(self, bounds: Dict[str, dict]) -> None:
+        """
+        Add or update interval boundaries for each designated parameter.
+
+        Parameters
+        ----------
+        bounds : Dict[str, dict]
+            Dictionary mapping parameters to {'min': value, 'max': value}.
+
+        Example
+        -------
+        >>> bounds = {'length_mean': {'min': 0.5, 'max': 2.0}, 'g': {'min': 0.9, 'max': 1.1}}
+        >>> params.update_bounds(bounds)
+        """
+
+        # Map the new min/max values to the appropriate values
+        updated_parameters = self._set_parameter_bounds(self._unscaled_parameters, bounds)
+
+        # Run the validation
+        validated_parameters = ModelInputParameters.create(**updated_parameters)
+
+        # Update the parameter set attributes
+        self._unscaled_parameters = validated_parameters
+        self.parameters = validated_parameters
+        self._scale_parameters()
+        self.parameter_bounds = self._get_parameter_limits(validated_parameters)
 
     @classmethod
     def from_series(cls, series: pd.Series):
@@ -404,225 +525,49 @@ class InvParameters:
             )
         return cls({k: {"value": v} for k, v in series.to_dict().items()})
 
-
-class MCInvParameters(InvParameters):
-    """
-    Monte Carlo sampled parameter sets for uncertainty quantification.
-
-    This class extends InvParameters to generate multiple realizations of
-    parameter values through Monte Carlo sampling. It's used for uncertainty
-    propagation in acoustic inversion by providing ensembles of parameter
-    sets that can be evaluated in parallel.
-
-    Parameters
-    ----------
-    invparameters : InvParameters
-        Base parameter set containing bounds and vary flags for sampling
-    mc_realizations : int, optional
-        Number of Monte Carlo realizations to generate. If None or 0,
-        only the base parameter set is stored.
-    rng : np.random.Generator, optional
-        Random number generator for reproducible sampling. If None,
-        uses default numpy random generator.
-
-    Attributes
-    ----------
-    samples : dict
-        Dictionary mapping realization indices to InvParameters instances,
-        each containing a different random parameter realization
-    parameter_bounds : dict
-        Original parameter bounds inherited from base InvParameters
-
-    Methods
-    -------
-    realizations
-        Property to access the samples dictionary
-    to_lmfit_samples(serialize=False)
-        Convert all realizations to lmfit.Parameters objects
-
-    Examples
-    --------
-    >>> base_params = InvParameters({
-    ...     'length_mean': {'value': 25.0, 'min': 20.0, 'max': 30.0, 'vary': True}
-    ... })
-    >>> mc_params = MCInvParameters(base_params, mc_realizations=100)
-    >>> len(mc_params.samples)
-    100
-    >>> lmfit_ensemble = mc_params.to_lmfit_samples()
-
-    Notes
-    -----
-    Parameter values are sampled uniformly within their specified bounds
-    for parameters where vary=True. Fixed parameters (vary=False) retain
-    their original values across all realizations.
-
-    The sampling strategy supports warm-start optimization where the
-    best-performing realization can be selected as an initialization point.
-    """
-
-    def __init__(
+    def simulate_parameter_sets(
         self,
-        invparameters: InvParameters,
         mc_realizations: Optional[int] = None,
         rng: Optional[np.random.Generator] = None,
-    ):
+    ) -> None:
+        """
+        Generate Monte Carlo sampled parameter sets used for initializing the optimization methods
+        that inform the acoustic inversion and for uncertainty quantification.
 
-        super().__init__(invparameters.parameters, scaled=invparameters.scaled)
+        This class extends `InvParameters` to generate a list of realizations through Monte Carlo
+        sampling. It is used for both uncertainty propagation and initializing the optimization
+        algorithm in acoustic inversion by providing ensembles of parameter sets.
+        """
+
+        # Extract the initial parameter set
+        params = self.parameters
+
+        # Create random number generator if one is not defined
         if rng is None:
             rng = np.random.default_rng()
 
-        params = invparameters.parameters
-        self.parameter_bounds = invparameters.parameter_bounds
-
+        # Generate parameter sets
+        # ---- If not designated
         if not mc_realizations:
-            self.samples = {0: params}
+            self._realizations = {0: self.parameters}
+        # ---- Generate sets
         else:
-            self.samples = {
-                i: InvParameters(
-                    {
-                        key: {
-                            "value": (
-                                rng.uniform(params[key]["min"], params[key]["max"])
-                                if params[key].get("vary", True)
-                                else params[key]["value"]
-                            ),
-                            "min": params[key]["min"],
-                            "max": params[key]["max"],
-                            "vary": params[key].get("vary", True),
-                        }
-                        for key in params
-                    },
-                    scaled=invparameters.scaled,
-                )
+            self._realizations = {
+                i: {
+                    key: {
+                        "value": (
+                            rng.uniform(params[key]["min"], params[key]["max"])
+                            if params[key].get("vary", True)
+                            else params[key]["value"]
+                        ),
+                        "min": params[key]["min"],
+                        "max": params[key]["max"],
+                        "vary": params[key].get("vary", True),
+                    }
+                    for key in params
+                }
                 for i in range(mc_realizations)
             }
-        # Update parameter_bounds for each sample
-        for sample in self.samples.values():
-            sample.parameter_bounds = self.parameter_bounds
-
-    @property
-    def realizations(self):
-        """
-        Access the dictionary of parameter realizations.
-
-        Returns
-        -------
-        dict
-            Dictionary mapping realization indices (int) to InvParameters
-            instances, each containing a different parameter realization.
-
-        Examples
-        --------
-        >>> mc_params = MCInvParameters(base_params, mc_realizations=5)
-        >>> realizations = mc_params.realizations
-        >>> first_real = realizations[0]  # First realization
-        """
-        return self.samples
-
-    def to_lmfit_samples(self, serialize: bool = False):
-        """
-        Convert all parameter realizations to lmfit.Parameters format.
-
-        This method transforms the Monte Carlo parameter ensemble into
-        formats suitable for optimization routines, with options for
-        both parallel and serialized parameter handling.
-
-        Parameters
-        ----------
-        serialize : bool, default False
-            If False, returns dict of separate Parameters objects (one per realization).
-            If True, returns single Parameters object with all realizations as
-            separate parameters (useful for concurrent optimization).
-
-        Returns
-        -------
-        dict or lmfit.Parameters
-            If serialize=False: Dictionary mapping realization indices to
-            lmfit.Parameters objects
-            If serialize=True: Single Parameters object with parameters named
-            as {param_name}_{realization_index}
-
-        Examples
-        --------
-        >>> mc_params = MCInvParameters(base_params, mc_realizations=3)
-        >>> # Separate parameters for parallel evaluation
-        >>> param_dict = mc_params.to_lmfit_samples(serialize=False)
-        >>> # Single combined parameters for batch optimization
-        >>> param_batch = mc_params.to_lmfit_samples(serialize=True)
-
-        Notes
-        -----
-        The serialized format is useful when evaluating multiple realizations
-        simultaneously in vectorized forward models or when using optimization
-        algorithms that can handle large parameter spaces efficiently.
-        """
-        # Create concurrent, serialized set of parameters
-        if serialize:
-            # ---- Initialize
-            params = Parameters()
-            # ---- Iterate through each realization
-            for i, sample in self.samples.items():
-                # ---- Parse the parameters
-                for pname, pinfo in sample.parameters.items():
-                    # ---- Add them to the Parameters object
-                    params.add(
-                        f"{pname}_{i + 1}",
-                        value=pinfo["value"],
-                        min=pinfo["min"],
-                        max=pinfo["max"],
-                        vary=pinfo.get("vary", True),
-                    )
-            return params
-        else:
-            return {i: sample.to_lmfit() for i, sample in self.samples.items()}
-
-    def __getitem__(self, idx):
-        """
-        Access a specific parameter realization by index.
-
-        Parameters
-        ----------
-        idx : int
-            Index of the realization to retrieve
-
-        Returns
-        -------
-        InvParameters
-            Parameter realization at the specified index
-
-        Raises
-        ------
-        KeyError
-            If the index is not in the samples dictionary
-        """
-        return self.samples[idx]
-
-    def __repr__(self):
-        """
-        Concise string representation showing number of samples.
-
-        Returns
-        -------
-        str
-            Brief description of the MCInvParameters instance
-        """
-        if len(self.samples) == 1:
-            return "MCInvParameters(1 sample)"
-        else:
-            return f"MCInvParameters({len(self.samples)} samples)"
-
-    def __str__(self):
-        """
-        Detailed string representation showing all sample values.
-
-        Returns
-        -------
-        str
-            Multi-line string showing parameter values for each realization
-        """
-        return f"MCInvParameters with {len(self.samples)} samples:\n" + "\n".join(
-            [f"Sample {i}: {sample.values}" for i, sample in self.samples.items()]
-        )
 
 
 class SingleParameter(
