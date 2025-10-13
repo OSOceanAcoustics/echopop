@@ -602,6 +602,7 @@ class ModelInputParameters(
 
     @model_validator(mode="before")
     @classmethod
+    @classmethod
     def prevalidator_trans(cls, data):
         if isinstance(data, InvParameters):
             return data.parameters
