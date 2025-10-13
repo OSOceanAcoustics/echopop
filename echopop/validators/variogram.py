@@ -94,6 +94,7 @@ class ValidateEmpiricalVariogramArgs(
         return spatial.TransectsDF.validate(v)
 
     @model_validator(mode="after")
+    @classmethod
     def validate_df_columns(cls, values):
         # Get the mesh and transects DataFrames
         coords = values.coordinate_names

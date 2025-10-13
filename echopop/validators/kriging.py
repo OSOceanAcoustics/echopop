@@ -18,6 +18,7 @@ class KrigingParameters(
     search_radius: float = Field(gt=0.0, allow_inf_nan=False)
 
     @model_validator(mode="after")
+    @classmethod
     def validate_k_interval(cls, values):
         # Get `k_min` and `k_max`
         k_min = getattr(values, "k_min", 5)
