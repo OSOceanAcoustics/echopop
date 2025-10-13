@@ -74,29 +74,35 @@ ENVIRONMENT = {
 SIMULATION_SETTINGS = {
     "environment": ENVIRONMENT,
     "monte_carlo": True,
-    "mc_realizations": 2,
-    "scale_parameters": True, 
+    "mc_realizations": 20,
     "minimum_frequency_count": 2,
 }
 
 OPTIMIZATION_KWARGS = {
-    "max_nfev": 1000,
-    "method": "least_squares",
-    "loss": "huber",
-    "xtol": 1e-8,
-    "ftol": 1e-8,
-    "gtol": 1e-8,
-    "diff_step": 1e-7,
-    "verbose": 2,
+    "max_nfev": 2000,
+    "method": "lbfgsb",
+    # "method": "least_squares",
+    # "loss": "cauchy",
+    # "xtol": 1e-8,
+    "tol": 1e-8,
+    "options": {
+        "maxiter": 2000,
+        "disp": True,
+        "eps": 1e-6
+    },
+    # "ftol": 1e-6,
+    # "gtol": 1e-6,
+    # "diff_step": 1e-6,
+    # "verbose": 1,
     "restart_strategy": {
-        "max_attempts": 3,
+        "max_attempts": 5,
         "Q_threshold": 3.,
-        "scale": 0.10
+        "scale": 0.2
     },
     "burnin": {
         "method": "nelder",
-        "max_nfev": 100,
-        "tol": 1e-3,
+        "max_nfev": 1000,
+        "tol": 1e-4,
     }
 }
 
