@@ -6,7 +6,104 @@ from lmfit import Parameters
 import echopop.inversion.inversion_matrix as im
 from echopop import inversion
 from echopop.inversion import inversion_matrix
-from echopop.typing import InvParameters, MCInvParameters
+from echopop.typing import InvParameters
+
+
+# Test base InvParameters
+def test_InvParameters(sample_InversionMatrix_parameters):
+    """Test InvParameters structure and methods"""
+
+    # Helper function
+    def minmaxer(parameter_vals):
+        return {
+            key: (
+                {
+                    **kwargs,
+                    "value": (
+                        (kwargs["value"] - kwargs["min"]) / (kwargs["max"] - kwargs["min"])
+                        if kwargs["max"] != kwargs["min"]
+                        else 0.0
+                    ),
+                    "min": 0.0,
+                    "max": 1.0,
+                }
+                if isinstance(kwargs, dict)
+                else kwargs
+            )
+            for key, kwargs in parameter_vals.items()
+        }
+
+    # Initialize
+    params = InvParameters(sample_InversionMatrix_parameters)
+
+    # Test typing
+    assert isinstance(params, InvParameters)
+
+    # Test initial attributes
+    assert set(
+        ["_unscaled_parameters", "_scaled_parameters", "parameters", "parameter_bounds", "_scaled"]
+    ) <= set(params.__dir__())
+    # ---- Check that initialized values are correct
+    assert params._scale is False
+    assert params.parameters == params._unscaled_parameters
+    parameter_limits = {
+        key: {"min": value["min"], "max": value["max"]}
+        for key, value in sample_InversionMatrix_parameters.items()
+    }
+    assert params.parameter_bounds == parameter_limits
+
+    # Check properties
+    assert params.is_scaled is False
+    assert params.bounds == parameter_limits
+    parameter_values = {
+        key: param["value"] for key, param in sample_InversionMatrix_parameters.items()
+    }
+    assert params.values == parameter_values
+
+    # Check methods
+    assert set(
+        ["scale", "unscale", "inverse_transform", "from_series", "update_bounds", "to_lmfit"]
+    ) <= set(params.__dir__())
+
+    # Test scale toggling
+    # ---- Scale
+    params.scale()
+    assert params.is_scaled is True
+    assert params.parameters == minmaxer(sample_InversionMatrix_parameters)
+    scaled_parameter_values = {
+        k: v["value"] for k, v in minmaxer(sample_InversionMatrix_parameters).items()
+    }
+    assert params.values == scaled_parameter_values
+    # ---- Unscale
+    params.unscale()
+    assert params.is_scaled is False
+    assert params.parameters == sample_InversionMatrix_parameters
+    assert params.values == {k: v["value"] for k, v in sample_InversionMatrix_parameters.items()}
+
+    # Test external unscaling
+    assert params.inverse_transform(scaled_parameter_values) == params.values
+
+    # Test type conversion from Series to Dictionary
+    s = pd.Series({"length_mean": 1, "g": 1})
+    Inv_s = InvParameters.from_series(s)
+    assert isinstance(Inv_s, InvParameters)
+    assert Inv_s.values == {"length_mean": 1, "g": 1}
+    assert Inv_s.bounds == {
+        "length_mean": {"min": -np.inf, "max": np.inf},
+        "g": {"min": -np.inf, "max": np.inf},
+    }
+
+    # Test bound updating
+    bounds = {"length_mean": {"min": 0.5, "max": 1.5}}
+    Inv_s.update_bounds(bounds)
+    assert Inv_s.values == {"length_mean": 1, "g": 1}
+    assert Inv_s.bounds == {
+        "length_mean": {"min": 0.5, "max": 1.5},
+        "g": {"min": -np.inf, "max": np.inf},
+    }
+
+    # Test `lmfit.Parameters` generation
+    assert isinstance(params.to_lmfit(), Parameters)
 
 
 # Test functions for mininizer_print_cb
@@ -17,18 +114,42 @@ def test_callback_prints_at_key_iterations(capsys, inv_parameters):
     params = inv_parameters.to_lmfit()
 
     # Iteration: 1
-    im.mininizer_print_cb(params, 1, np.array([0.5])[0])
+    im.mininizer_print_cb(
+        params,
+        1,
+        np.array([0.5])[0],
+        Sv_measured=None,
+        center_frequencies=None,
+        inv_params=inv_parameters,
+        model_settings=None,
+    )
     captured = capsys.readouterr()
     assert "Iter: 1" in captured.out
     assert "Q abs [pred. - meas.]:" in captured.out
 
     # Iteration: 5 [silent]
-    im.mininizer_print_cb(params, 5, np.array([0.5])[0])
+    im.mininizer_print_cb(
+        params,
+        5,
+        np.array([0.5])[0],
+        Sv_measured=None,
+        center_frequencies=None,
+        inv_params=inv_parameters,
+        model_settings=None,
+    )
     captured = capsys.readouterr()
     assert captured.out == ""
 
     # Iteration: 25
-    im.mininizer_print_cb(params, 50, np.array([0.3])[0])
+    im.mininizer_print_cb(
+        params,
+        50,
+        np.array([0.3])[0],
+        Sv_measured=None,
+        center_frequencies=None,
+        inv_params=inv_parameters,
+        model_settings=None,
+    )
     captured = capsys.readouterr()
     assert "Iter: 50" in captured.out
 
@@ -40,18 +161,24 @@ def test_monte_carlo_basic_functionality(
     """Test Monte Carlo initialization basic functionality."""
 
     # Create MC parameters with small realizations for testing
-    mc_params = MCInvParameters(inv_parameters, mc_realizations=3, rng=np.random.default_rng(999))
-    lmfit_params = mc_params.to_lmfit_samples()
+    inv_parameters.simulate_parameter_sets(mc_realizations=3, rng=np.random.default_rng(999))
+    lmfit_params = inv_parameters.realizations_to_lmfit()
     Sv_measured = pd.Series([-95.0, -85.0, -75.0, -70.0, -68.0]).to_numpy()
 
     # Test returns one of the parameter sets
     result = im.monte_carlo_initialize(
-        lmfit_params, sample_frequencies, Sv_measured, mc_params, model_InversionMatrix_settings
+        lmfit_params,
+        sample_frequencies,
+        Sv_measured,
+        inv_parameters,
+        model_InversionMatrix_settings,
     )
 
     # Should return one of the parameter sets
     assert result is not None
-    np.testing.assert_equal(result.valuesdict(), mc_params[0].values)
+    np.testing.assert_equal(
+        result.valuesdict(), {k: v["value"] for k, v in inv_parameters.realizations[0].items()}
+    )
 
 
 def test_monte_carlo_empty_parameters(sample_frequencies, model_InversionMatrix_settings):
@@ -60,14 +187,18 @@ def test_monte_carlo_empty_parameters(sample_frequencies, model_InversionMatrix_
     minimal_params = InvParameters(
         {"number_density": {"value": 100.0, "min": 1.0, "max": 1000.0, "vary": True}}
     )
-    empty_mc = MCInvParameters(minimal_params, mc_realizations=1)
-    lmfit_params = empty_mc.to_lmfit_samples()
+    minimal_params.simulate_parameter_sets(mc_realizations=1)
+    lmfit_params = minimal_params.realizations_to_lmfit()
     sv_measured = pd.Series([]).to_numpy()
 
     # Expect an error
     with pytest.raises(TypeError):
         assert im.monte_carlo_initialize(
-            lmfit_params, sample_frequencies, sv_measured, empty_mc, model_InversionMatrix_settings
+            lmfit_params,
+            sample_frequencies,
+            sv_measured,
+            minimal_params,
+            model_InversionMatrix_settings,
         )
 
 
@@ -456,14 +587,15 @@ def test_inv_parameters_workflow(inv_parameters):
 
 def test_mc_parameters_generation(inv_parameters):
     """Test Monte Carlo parameter generation."""
-    mc_params = MCInvParameters(inv_parameters, mc_realizations=5, rng=np.random.default_rng(42))
 
-    assert len(mc_params.samples) == 5
+    # Test shape
+    inv_parameters.simulate_parameter_sets(mc_realizations=5, rng=np.random.default_rng(999))
+    assert len(inv_parameters.realizations) == 5
 
     # All samples should have same parameter names
-    param_names = set(mc_params.samples[0].parameters.keys())
+    param_names = set(inv_parameters.realizations[0].keys())
     for i in range(1, 5):
-        assert set(mc_params.samples[i].parameters.keys()) == param_names
+        assert set(inv_parameters.realizations[i].keys()) == param_names
 
 
 def test_inversion_matrix_creation():

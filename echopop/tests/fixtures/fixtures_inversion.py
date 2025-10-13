@@ -3,7 +3,7 @@ import pandas as pd
 import pytest
 
 from echopop.inversion.pcdwba import pcdwba
-from echopop.typing import InvParameters, MCInvParameters
+from echopop.typing import InvParameters
 
 
 @pytest.fixture
@@ -146,7 +146,7 @@ def expected_ts_values():
 @pytest.fixture
 def large_specimen_df():
     """Larger specimen DataFrame for performance testing."""
-    np.random.seed(42)
+    np.random.seed(999)
     n_fish = 1000
 
     return pd.DataFrame(
@@ -224,7 +224,7 @@ def inv_transect_info(inv_parameters):
     """NASC coordinates"""
 
     # Parameterize
-    mc_params = MCInvParameters(inv_parameters, mc_realizations=5, rng=np.random.default_rng(123))
+    inv_parameters.simulate_parameter_sets(mc_realizations=5, rng=np.random.default_rng(123))
 
     # Create proper MultiIndex structure for inverted data
     inverted_transect_data = pd.DataFrame(
@@ -237,7 +237,9 @@ def inv_transect_info(inv_parameters):
         }
     ).set_index("transect_num")
     # ---- Add parameters
-    inverted_transect_data["parameters"] = [mc_params[idx] for idx in np.linspace(0, 4, 5)]
+    inverted_transect_data["parameters"] = [
+        InvParameters(inv_parameters.realizations[idx]) for idx in np.linspace(0, 4, 5)
+    ]
     # ---- Set column index names
     inverted_transect_data.columns.names = [None, "frequency"]
 
@@ -279,7 +281,7 @@ def inv_interval_info(inv_parameters):
     )
 
     # Parameterize
-    mc_params = MCInvParameters(inv_parameters, mc_realizations=20, rng=np.random.default_rng(345))
+    inv_parameters.simulate_parameter_sets(mc_realizations=20, rng=np.random.default_rng(345))
 
     # Create proper MultiIndex structure for inverted data
     inverted_interval_data = pd.DataFrame(
@@ -292,7 +294,9 @@ def inv_interval_info(inv_parameters):
         index=interval_nasc_df.index,
     )
     # ---- Add parameters
-    inverted_interval_data["parameters"] = [mc_params[idx] for idx in np.linspace(0, 19, 20)]
+    inverted_interval_data["parameters"] = [
+        InvParameters(inv_parameters.realizations[idx]) for idx in np.linspace(0, 19, 20)
+    ]
     # ---- Set column index names
     inverted_interval_data.columns.names = [None, "frequency"]
 
@@ -320,7 +324,7 @@ def inv_cells_info(inv_parameters):
     )
 
     # Parameterize
-    mc_params = MCInvParameters(inv_parameters, mc_realizations=10, rng=np.random.default_rng(345))
+    inv_parameters.simulate_parameter_sets(mc_realizations=10, rng=np.random.default_rng(345))
 
     # Create proper MultiIndex structure for inverted data
     inverted_cells_data = pd.DataFrame(
@@ -333,7 +337,9 @@ def inv_cells_info(inv_parameters):
         index=cells_nasc_df.index,
     )
     # ---- Add parameters
-    inverted_cells_data["parameters"] = [mc_params[idx] for idx in np.linspace(0, 9, 10)]
+    inverted_cells_data["parameters"] = [
+        InvParameters(inv_parameters.realizations[idx]) for idx in np.linspace(0, 9, 10)
+    ]
     # ---- Set column index names
     inverted_cells_data.columns.names = [None, "frequency"]
 
