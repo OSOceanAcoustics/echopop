@@ -4,19 +4,31 @@ channels:
 dependencies:
   - python>=3.9
   - pip
-  # Jupyter stack
-  - ipympl
-  - ipywidgets
-  - jupyter_contrib_nbextensions
-  # 9/27/23. See https://github.com/microsoft/azuredatastudio/issues/24436#issuecomment-1723328100
-  - traitlets
   # Computational stack
-  - cartopy
+  - awkward
+  - lmfit
+  - numpy
+  - openpyxl
+  - pandas
+  - scipy
+  # Spatial stack
   - geopandas
   - geopy
-  - lmfit
-  - pydantic>=1.10.0
-  - pandas
+  - pyproj
   - shapely
-  - scipy
   - verde
+  # Validation stack
+  - pandera>=0.25
+  - pydantic>=2.0.0
+  - traitlets
+  # Jupyter stack
+  - ipympl
+  - jupyter_bokeh>=3.0.5
+  # Static visualization stack
+  - cartopy
+  - matplotlib
+  # Interactive visualization stack
+  - bokeh
+  - geoviews
+  - holoviews
+  - ipywidgets

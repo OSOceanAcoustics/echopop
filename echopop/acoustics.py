@@ -1,3 +1,4 @@
+from itertools import product
 from typing import Union
 
 import numpy as np
@@ -15,13 +16,41 @@ def ts_length_regression(
 
     Parameters
     ----------
-    length: Union[ np.ndarray, float]
+    length : Union[np.ndarray, float]
         Length value(s) typically represented in 'cm' that will be converted into acoustic target
         strength (TS, dB re. 1 m^-2).
-    slope: float
+    slope : float
         TS-length regression slope coefficient
-    intercept: float
-        TS-length regression slope intercept
+    intercept : float
+        TS-length regression intercept coefficient
+
+    Returns
+    -------
+    np.ndarray
+        Target strength values in dB re. 1 m^-2
+
+    Examples
+    --------
+    >>> # Single length value
+    >>> ts = ts_length_regression(20.0, slope=20.0, intercept=-68.0)
+    >>> print(f"TS for 20cm fish: {ts:.2f} dB")
+    TS for 20cm fish: -42.00 dB
+
+    >>> # Multiple length values
+    >>> lengths = np.array([10, 15, 20, 25, 30])
+    >>> ts_values = ts_length_regression(lengths, slope=20.0, intercept=-68.0)
+    >>> print("Lengths:", lengths)
+    >>> print("TS values:", ts_values)
+    Lengths: [10 15 20 25 30]
+    TS values: [-48.   -44.77 -42.   -39.82 -38.   ]
+
+    Notes
+    -----
+    The TS-length relationship follows the standard log-linear form:
+    TS = slope * log10(length) + intercept
+
+    This is commonly used in fisheries acoustics where the relationship between
+    fish length and acoustic backscatter follows this logarithmic pattern.
     """
     return slope * np.log10(length) + intercept
 
@@ -275,26 +304,12 @@ def nasc_to_biomass(
     age_group_cols = settings_dict["transect"]["age_group_columns"]
 
     # Extract the correct strata dataframe
-    # ---- Define `strata_df`
-    strata_df = input_dict["spatial"]["strata_df"].copy()
-    # ---- Determine with the default ('ks') needs to be swapped out for 'inpfc'
-    if settings_dict["transect"]["stratum"] == "inpfc":
-        # ---- Get the INPFC strata
-        inpfc_df = input_dict["spatial"]["inpfc_strata_df"].copy().set_index(["haul_bin"])
-        # ---- Offset starts
-        inpfc_df["haul_start"] = inpfc_df["haul_start"] - int(1)
-        # ---- Get the `haul_bins`
-        haul_bins = np.unique(inpfc_df.loc[:, "haul_start":"haul_end"].stack().values)
-        # NOT CORRECT BINS !
-
-        # ---- Cut `strata_df` to haul_bins
-        strata_df["haul_bin"] = pd.cut(strata_df["haul_num"], haul_bins)
-        # ---- Set index
-        strata_df.set_index(["haul_bin"], inplace=True)
-        # ---- Merge
-        strata_df["stratum_inpfc"] = inpfc_df["stratum_inpfc"]
-        # ---- Reset index
-        strata_df = strata_df.reset_index().drop(columns=["haul_bin", "stratum_num"])
+    # ---- Define `strata_df` if KS
+    if settings_dict["transect"]["stratum"] == "ks":
+        strata_df = input_dict["spatial"]["strata_df"].copy()
+    # Define `inpfc_strata_df` if INPFC
+    elif settings_dict["transect"]["stratum"] == "inpfc":
+        strata_df = input_dict["spatial"]["inpfc_strata_df"].copy()
 
     # Get group-specific column names and create conversion key
     name_conversion_key = {age_group_cols["haul_id"]: "haul_num", age_group_cols["nasc_id"]: "nasc"}
@@ -330,7 +345,6 @@ def nasc_to_biomass(
         adult_proportions["weight_proportion"] = 1 - age1_proportions["weight_proportion"]
         # ------------ Weight
         adult_proportions["nasc_proportion"] = 1 - age1_proportions["nasc_proportion"]
-
     else:
         # ---- Assign filled adult proportions dataframe
         adult_proportions = pd.DataFrame(
@@ -355,14 +369,32 @@ def nasc_to_biomass(
     nasc_interval_df.dropna(subset=["transect_num"], inplace=True)
 
     # Calculate the along-transect number density (animals per nmi^2)
+    # ---- Get unique strata from transect data and sigma_bs_strata
+    unique_strata = np.unique(
+        nasc_interval_df[stratum_col].unique().tolist()
+        + sigma_bs_strata[stratum_col].unique().tolist()
+    )
+    # ---- Create index template
+    idx_template = pd.DataFrame(
+        list(product(unique_strata, sigma_bs_strata["species_id"].unique())),
+        columns=[f"{stratum_col}", "species_id"],
+    ).set_index([stratum_col, "species_id"])
+    # ---- Back-fill any missing strata in `sigma_bs_strata`
+    sigma_bs_strata_bfill = sigma_bs_strata.set_index([stratum_col, "species_id"]).reindex(
+        idx_template.index
+    )
+    # ---- Replace `sigma_bs_mean` NaN
+    sigma_bs_strata_bfill.fillna(
+        {"sigma_bs_mean": 10 ** (-999 / 10), "TS_mean": -999}, inplace=True
+    )
     # ---- Merge NASC measurements with mean sigma_bs for each stratum
-    nasc_biology = nasc_interval_df.merge(sigma_bs_strata, on=[stratum_col])
+    nasc_biology = nasc_interval_df.merge(sigma_bs_strata_bfill.reset_index(), on=[stratum_col])
     # ---- Calculate the number densities
     nasc_biology["number_density"] = (
         nasc_biology["fraction_hake"]
         * nasc_biology["nasc"]
         / (4.0 * np.pi * nasc_biology["sigma_bs_mean"])
-    )
+    ).fillna(0.0)
     # ---- Round to the nearest whole number (we don't want fractions of a fish)
     nasc_biology["number_density"] = nasc_biology["number_density"]
 
@@ -374,12 +406,41 @@ def nasc_to_biomass(
     sex_stratum_proportions = analysis_dict["biology"]["proportions"]["number"][
         "sex_proportions_df"
     ].copy()
-    # ---- Filter out sexes besides 'male' and 'female'
-    sex_stratum_proportions = sex_stratum_proportions[
-        sex_stratum_proportions.sex.isin(["male", "female"])
+    # ---- Find any missing strata
+    missing_stratum_nums = idx_template.reset_index().loc[
+        ~idx_template.reset_index()[stratum_col].isin(sex_stratum_proportions[stratum_col])
     ]
+    # ---- Expand `idx_template` to now include sex
+    idx_template_sex = (
+        pd.DataFrame(
+            [
+                (row[stratum_col], row["species_id"], sex)
+                for _, row in missing_stratum_nums.iterrows()
+                for sex in sex_stratum_proportions["sex"].unique()
+            ],
+            columns=[stratum_col, "species_id", "sex"],
+        )
+        .loc[lambda x: x.sex.isin(["male", "female"])]
+        .set_index([stratum_col, "species_id", "sex"])
+    )
+    # ---- Filter out sexes besides 'male' and 'female' and back-fill missing strata
+    sex_stratum_proportions_bfill = pd.concat(
+        [
+            (
+                sex_stratum_proportions[sex_stratum_proportions.sex.isin(["male", "female"])]
+                .set_index([stratum_col, "species_id", "sex"])
+                .reindex(idx_template_sex.index)
+                .fillna(0.0)
+                .reset_index()
+            ),
+            sex_stratum_proportions[sex_stratum_proportions.sex.isin(["male", "female"])],
+        ],
+        ignore_index=True,
+    )
     # ---- Merge with the NASC measurements
-    nasc_biology_sex = nasc_biology.merge(sex_stratum_proportions, on=[stratum_col, "species_id"])
+    nasc_biology_sex = nasc_biology.merge(
+        sex_stratum_proportions_bfill, on=[stratum_col, "species_id"]
+    )
     # ---- Apportion number density by sex (animals/nmi^2)
     nasc_biology_sex["number_density_sex"] = np.round(
         nasc_biology_sex["number_density"] * nasc_biology_sex["proportion_number_overall"]
@@ -388,8 +449,34 @@ def nasc_to_biomass(
     nasc_biology_sex["abundance_sex"] = (
         nasc_biology_sex["abundance"] * nasc_biology_sex["proportion_number_overall"]
     )
+    # ---- Find any missing strata in `length_weight_strata`
+    missing_length_stratum_nums = idx_template.reset_index().loc[
+        ~idx_template.reset_index()[stratum_col].isin(length_weight_strata[stratum_col])
+    ]
+    # ---- Expand `idx_template` to now for the `length_strata`
+    idx_template_lw_sex = pd.DataFrame(
+        [
+            (row[stratum_col], sex)
+            for _, row in missing_length_stratum_nums.iterrows()
+            for sex in length_weight_strata["sex"].unique()
+        ],
+        columns=[stratum_col, "sex"],
+    ).set_index([stratum_col, "sex"])
+    # ---- Back-fill missing strata
+    length_weight_strata_bfill = pd.concat(
+        [
+            (
+                length_weight_strata.set_index([stratum_col, "sex"])
+                .reindex(idx_template_lw_sex.index)
+                .fillna(0.0)
+                .reset_index()
+            ),
+            length_weight_strata,
+        ],
+        ignore_index=True,
+    )
     # ---- Merge with sex-specific average weights per stratum
-    nasc_biology_sex = nasc_biology_sex.merge(length_weight_strata, on=[stratum_col, "sex"])
+    nasc_biology_sex = nasc_biology_sex.merge(length_weight_strata_bfill, on=[stratum_col, "sex"])
     # ---- Calculate biomass density (kg/nmi^2)
     nasc_biology_sex["biomass_density_sex"] = (
         nasc_biology_sex["number_density_sex"] * nasc_biology_sex["average_weight"]
@@ -421,7 +508,7 @@ def nasc_to_biomass(
     nasc_biology_grp.reset_index(inplace=True)
     # ---- Merge with the average weights per strata for all fish
     nasc_biology_grp = nasc_biology_grp.merge(
-        length_weight_strata[length_weight_strata.sex == "all"].drop("sex", axis=1),
+        length_weight_strata_bfill[length_weight_strata_bfill.sex == "all"].drop("sex", axis=1),
         on=[stratum_col],
     )
     # ---- Calculate unsexed number density

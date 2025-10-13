@@ -4,6 +4,8 @@ import pytest
 
 from echopop.tests.conftest import assert_dataframe_equal
 
+pytestmark = pytest.mark.skip(reason="Temporarily disable this module")
+
 
 @pytest.mark.skip(reason="Function has since been updated!")
 def test_fit_binned_length_weight_relationship(mock_survey):

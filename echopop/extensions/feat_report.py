@@ -1,10 +1,11 @@
+import os
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
 import pandas.io.formats.excel as pdif
-from openpyxl import Workbook, load_workbook
+from openpyxl import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
 
 from ..biology import filter_species
@@ -22,11 +23,13 @@ def initialize_workbook(filepath: Path) -> Workbook:
 
     # Check if workbook already exists
     if filepath.exists():
-        wb = load_workbook(filepath)
+        # ---- Delete
+        # wb = load_workbook(filepath)
+        os.remove(filepath)
     # ---- If not, generate it and remove the default "Sheet" that is created
-    else:
-        wb = Workbook()
-        wb.remove(wb["Sheet"])
+    # else:
+    wb = Workbook()
+    wb.remove(wb["Sheet"])
 
     # Return
     return wb
@@ -109,36 +112,41 @@ def append_table_aggregates(
     """
 
     # Get the aged sums
-    if "Unaged" in dataframe.columns:
+    # ----
+    if "Un-aged" in dataframe.columns:
+        # ---- Aged sum
         sum_age = dataframe.loc["Subtotal"].values[:-2]
         # ---- Unaged sum
-        sum_unaged = dataframe.loc["Subtotal", "Unaged"]
+        sum_unaged = dataframe.loc["Subtotal", "Un-aged"]
     else:
+        # ---- Aged sum
         sum_age = dataframe.loc["Subtotal"].values[:-1]
         # ---- Unaged sum
         sum_unaged = 0.0
 
     # Total number across all fish
-    total_aged = sum_age.sum() + sum_unaged
+    total_aged = sum_age.sum()
 
     # Calculate the age-1 proportion
     # ---- Proportion
-    age1_proportion = dataframe.loc["Subtotal", 1] / sum_age.sum()
+    age1_proportion = dataframe.loc["Subtotal", 1] / total_aged
     # ---- Compute age-2+ values
-    age2_aged = total_aged * (1 - age1_proportion)
+    age2_aged = (total_aged + sum_unaged) * (1 - age1_proportion)
 
     # Add next row
     # ---- Age 1+
-    age_1_row = ["Total (age1+)", total_aged]
+    age_1_row = ["Total (age1+)", total_aged + sum_unaged]
     # ---- Add the "Over Age" value
-    age_1_row = age_1_row + ["", "Over Age:", sum_age.sum(), ""]
+    age_1_row = age_1_row + ["", "Over Age:", sum_age.sum() + sum_unaged, ""]
     # ---- Add sexed
     if sex == "all":
-        age_1_row = age_1_row + [
-            "Male+Female:",
+        # ---- Calculate total
+        sexed_total = (
             tables_dict["female"].iloc[:-1, :-1].sum().sum()
-            + tables_dict["male"].iloc[:-1, :-1].sum().sum(),
-        ]
+            + tables_dict["male"].iloc[:-1, :-1].sum().sum()
+        )
+        # ---- Append
+        age_1_row = age_1_row + ["Male+Female:", sexed_total]
     # ---- Append
     worksheet.append(age_1_row)
 
@@ -146,17 +154,8 @@ def append_table_aggregates(
     # ---- Age-2+
     age_all_row = ["Total (age2+)", age2_aged]
     # ---- Add sexed
-
     if sex == "all":
-        age_all_row = (
-            age_all_row
-            + [""] * 4
-            + [
-                "Male+Female:",
-                tables_dict["female"].iloc[:-1, 1:-1].sum().sum()
-                + tables_dict["male"].iloc[:-1, 1:-1].sum().sum(),
-            ]
-        )
+        age_all_row = age_all_row + [""] * 4 + ["Male+Female:", sexed_total * (1 - age1_proportion)]
     # ---- Append
     worksheet.append(age_all_row)
 
@@ -586,6 +585,9 @@ class FEATReports:
 
             - *"kriged_mesh_results"* \n
             Dataframe comprising georeferenced kriged mesh results with biomass estimates
+
+            - *"total_length_haul_counts"* \n
+            Table comprising distributions of counts from un-aged fish for each haul
 
             - *"transect_aged_biomass"* \n
             Dataframe comprising georeferenced along-transect biomass estimates with biomass
@@ -1342,9 +1344,9 @@ class FEATReports:
                 "bottom_depth",
                 "layer_height",
                 "layer_mean_depth",
-                "vessel_log_start",
+                "distance_s",
                 "region_id",
-                "vessel_log_end",
+                "distance_e",
             ],
         ] = input_data.loc[
             :,
@@ -1353,8 +1355,8 @@ class FEATReports:
                 "layer_height",
                 "layer_mean_depth",
                 "region_id",
-                "vessel_log_start",
-                "vessel_log_end",
+                "distance_s",
+                "distance_e",
             ],
         ]
         # ---- Reset index
@@ -1371,7 +1373,7 @@ class FEATReports:
         output_data.reset_index(inplace=True)
 
         # Compute the distance
-        output_data["interval"] = output_data["vessel_log_end"] - output_data["vessel_log_start"]
+        output_data["interval"] = output_data["distance_e"] - output_data["distance_s"]
 
         # Rename and filter
         # ---- Filter/reorder columns
@@ -1379,8 +1381,8 @@ class FEATReports:
             [
                 "transect_num",
                 "region_id",
-                "vessel_log_start",
-                "vessel_log_end",
+                "distance_s",
+                "distance_e",
                 "latitude",
                 "longitude",
                 stratum_column,
@@ -1421,8 +1423,8 @@ class FEATReports:
             columns={
                 "transect_num": "Transect",
                 "region_id": "Region ID",
-                "vessel_log_start": "VL_start",
-                "vessel_log_end": "VL_end",
+                "distance_s": "VL_start",
+                "distance_e": "VL_end",
                 "latitude": "Lat",
                 "longitude": "Lon",
                 f"{stratum_column}": "stratum",

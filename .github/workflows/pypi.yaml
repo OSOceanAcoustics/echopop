@@ -14,17 +14,17 @@ on:
 jobs:
   build-artifact:
     name: Build echopop package
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: github.repository == 'OSOceanAcoustics/echopop'
     steps:
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         # fetch all history so that setuptools-scm works
         fetch-depth: 0
 
     - name: Set up Python
-      uses: actions/setup-python@v5.1.0
+      uses: actions/setup-python@v6
       with:
         python-version: 3.9
 
@@ -54,13 +54,13 @@ jobs:
   test-built-dist:
     name: Test echopop package
     needs: build-artifact
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
-    - uses: actions/setup-python@v5.1.0
+    - uses: actions/setup-python@v6
       name: Install Python
       with:
         python-version: 3.9
-    - uses: actions/download-artifact@v4
+    - uses: actions/download-artifact@v5
       with:
         name: releases
         path: dist
@@ -69,7 +69,7 @@ jobs:
         ls -ltrh
         ls -ltrh dist
     - name: Publish to Test PyPI
-      uses: pypa/gh-action-pypi-publish@v1.12.2
+      uses: pypa/gh-action-pypi-publish@v1.13.0
       with:
         password: ${{ secrets.TEST_PYPI_API_TOKEN }}
         repository-url: https://test.pypi.org/legacy/
@@ -102,11 +102,11 @@ jobs:
     - name: Test Git Tag Pass
       run: |
         echo "Git Tag Pass"
-    - uses: actions/download-artifact@v4
+    - uses: actions/download-artifact@v5
       with:
         name: releases
         path: dist
     - name: Publish to PyPI
-      uses: pypa/gh-action-pypi-publish@v1.12.2
+      uses: pypa/gh-action-pypi-publish@v1.13.0
       with:
         password: ${{ secrets.PYPI_API_TOKEN }}

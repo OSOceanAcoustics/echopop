@@ -111,7 +111,7 @@ A color-coded schematic that provides a visual overview of how data are loaded a
   - `specimen` ➡️ `Survey.input["biology"]["specimen_df"]`
 - `Configuration` ➡️ `Survey.input["biology"]`
   - `bio_hake_len_bin`/`bio_hake_age_bin` ➡️ `Survey.input["biology"]["distributions]`
-- `Kriging` ➡️ `Survey.input["statistics"]`
+- `Kriging` ➡️ `Survey.input["statistics"]` 
   - `mesh` ➡️ `Survey.input["statistics"]["kriging"]["mesh_df"]`
   - `isobath_200m` ➡️ `Survey.input["statistics"]["kriging"]["isobath_200m_df"]`
   - `vario_krig_para` ➡️ `Survey.input["statistics"]["kriging"]["vario_krig_para"]`
@@ -119,8 +119,9 @@ A color-coded schematic that provides a visual overview of how data are loaded a
   - `{GROUP}` (all) ➡️ `Survey.input["acoustics"]["nasc_df"]`
 - `Stratification` ➡️ `Survey.input["spatial"]`
   - `strata` ➡️: `Survey.input["spatial"]["strata_df"]`
+  - `strata` ➡️: `Survey.input["spatial"]["inpfc_strata_df"]`
   - `geo_strata` ➡️ `Survey.input["spatial"]["geo_strata_df"]`
-  - `geo_strata` ➡️ `Survey.input["spatial"]["inpfc_strata_df"]`
+  - `geo_strata` ➡️ `Survey.input["spatial"]["inpfc_geo_strata_df"]`
 
 Echoview exports can be **<span style="color:#6666FF">alternatively processed and loaded</span>** into `Echopop` by incorporating the `nasc_exports` parameters within `initialization_config.yml`. These files can also processed outside of the same `Echopop` workflow whereby the processed exports can then be saved and used to parameterize the `NASC` dataset definiations within the `survey_year_{YEAR}_config.yml` configuration file.
 

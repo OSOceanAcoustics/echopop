@@ -1,0 +1,165 @@
+{
+  "2023": {
+    "transect_pattern": "T(\\d+)",
+    "bootstrap_ci_method": "percentile",
+    "exclude_age1": [
+      true,
+      false
+    ],
+    "extrapolate": [
+      false,
+      true
+    ],
+    "default_acoustics": true,
+    "read_transect_region_file": false,
+    "strata_types": [
+      "inpfc",
+      "ks"
+    ],
+    "write_transect_region_file": false,
+    "transect_replicates": 10
+  },
+  "2021": {
+    "transect_pattern": "T(\\d+)",
+    "bootstrap_ci_method": "percentile",
+    "exclude_age1": [
+      true,
+      false
+    ],
+    "extrapolate": [
+      false,
+      true
+    ],
+    "default_acoustics": true,
+    "read_transect_region_file": false,
+    "strata_types": [
+      "inpfc",
+      "ks"
+    ],
+    "write_transect_region_file": false,
+    "transect_replicates": 10
+  },
+  "2019": {
+    "transect_pattern": "T(\\d+)",
+    "bootstrap_ci_method": "percentile",
+    "exclude_age1": [
+      true,
+      false
+    ],
+    "extrapolate": [
+      false,
+      true
+    ],
+    "default_acoustics": true,
+    "read_transect_region_file": false,
+    "strata_types": [
+      "inpfc",
+      "ks"
+    ],
+    "write_transect_region_file": false,
+    "transect_replicates": 10
+  },
+  "2017": {
+    "transect_pattern": "T(\\d+)",
+    "bootstrap_ci_method": "percentile",
+    "exclude_age1": [
+      true,
+      false
+    ],
+    "extrapolate": [
+      false,
+      true
+    ],
+    "default_acoustics": true,
+    "read_transect_region_file": false,
+    "strata_types": [
+      "inpfc",
+      "ks"
+    ],
+    "write_transect_region_file": false,
+    "transect_replicates": 10
+  },
+  "2015": {
+    "transect_pattern": "T(\\d+)",
+    "bootstrap_ci_method": "percentile",
+    "exclude_age1": [
+      true,
+      false
+    ],
+    "extrapolate": [
+      false,
+      true
+    ],
+    "default_acoustics": true,
+    "read_transect_region_file": false,
+    "strata_types": [
+      "inpfc",
+      "ks"
+    ],
+    "write_transect_region_file": false,
+    "transect_replicates": 10
+  },
+  "2013": {
+    "transect_pattern": "T(\\d+)",
+    "bootstrap_ci_method": "percentile",
+    "exclude_age1": [
+      true,
+      false
+    ],
+    "extrapolate": [
+      false,
+      true
+    ],
+    "default_acoustics": true,
+    "read_transect_region_file": true,
+    "strata_types": [
+      "inpfc",
+      "ks"
+    ],
+    "write_transect_region_file": true,
+    "transect_replicates": 10
+  },
+  "2012": {
+    "transect_pattern": "T(\\d+)",
+    "bootstrap_ci_method": "percentile",
+    "exclude_age1": [
+      true,
+      false
+    ],
+    "extrapolate": [
+      false,
+      true
+    ],
+    "default_acoustics": true,
+    "read_transect_region_file": true,
+    "strata_types": [
+      "inpfc",
+      "ks"
+    ],
+    "write_transect_region_file": true,
+    "transect_replicates": 10
+  },
+  "2011": {
+    "transect_pattern": "T(\\d+(?:\\.\\d+)?)(?=-)",
+    "bootstrap_ci_method": "percentile",
+    "exclude_age1": [
+      true,
+      false
+    ],
+    "extrapolate": [
+      false,
+      true
+    ],
+    "default_acoustics": true,
+    "read_transect_region_file": true,
+    "strata_types": [
+      "inpfc",
+      "ks"
+    ],
+    "write_transect_region_file": false,
+    "transect_replicates": 10,
+    "transect_filter": {
+      "subset_filter": "survey == 201103"
+    }
+  }
+}

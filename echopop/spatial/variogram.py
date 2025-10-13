@@ -602,7 +602,7 @@ def variogram(
         +----------------------------+-----------------+--------------------------+
         |  :fun:`spherical`          | 'spherical'     | - `sill`                 |
         |                            |                 | - `nugget`               |
-        |                            |                 | - `correlation_range     |
+        |                            |                 | - `correlation_range`    |
         +----------------------------+-----------------+--------------------------+
         |  :fun:`bessel_exponential` | ['bessel',      | - `sill`                 |
         |                            |  'exponential'] | - `nugget`               |
@@ -646,12 +646,12 @@ def variogram(
     """
 
     # Determine model source
-    if variogram_parameters is not None:
-        # ---- Get the variogram arguments and function from `variogram_parameters`
-        model_source = variogram_parameters["model"]
-    elif model is not None:
+    if model is not None:
         # ---- Get the variogram arguments and function from `model`
         model_source = model
+    elif variogram_parameters is not None:
+        # ---- Get the variogram arguments and function from `variogram_parameters`
+        model_source = variogram_parameters["model"]
     else:
         raise ValueError("Argument `model` is missing.")
 
@@ -668,7 +668,7 @@ def variogram(
         # ---- Get input arguments
         input_args = kwargs
         # ---- Use `kwargs` as source
-        arg_diff = set(list(variogram_args)) - set(input_args)
+        arg_diff = set(list(variogram_args)) - set(input_args) - set(["distance_lags"])
 
     # Raise error if any are missing
     if len(arg_diff) > 0:
@@ -1161,7 +1161,20 @@ def initialize_optimization_config(optimization_parameters: Dict[str, Any]):
 
 def get_variogram_arguments(model_name: Union[str, List[str]]):
     """
-    Get the variogram function arguments
+    Get the variogram function arguments and model function for a given model.
+
+    Parameters
+    ----------
+    model_name : Union[str, List[str]]
+        A string or list of model names. A single name represents a single family model.
+        Two inputs represent the desired composite model (e.g. the composite J-Bessel and
+        exponential model).
+
+    Returns
+    -------
+    Tuple[inspect.Signature.parameters, Dict[str, Any]]
+        A tuple containing the function signature parameters and a dictionary with the
+        model function.
     """
 
     # Convert to lowercase to match reference model dictionary

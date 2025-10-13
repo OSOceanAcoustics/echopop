@@ -18,6 +18,7 @@ CAN_haul_offset: 200         # The value to be added to the Canadian's haul numb
 ###################
 # Where the reports are saved
 report_path: C:/Users/Brandyn/Documents/GitHub/EchoPro_data/Data/reports
+# report_path: C:/Users/Brandyn Lucca/Documents/Data/echopop_2019/reports
 
 ##############################################################################
 # Directory path that contains all input data needed
@@ -54,7 +55,7 @@ stratification:
   strata:
     # The two stratification types are found in two sheets: "Base KS" and "INPFC"
     filename: Stratification/US_CAN strata 2019_final.xlsx
-    sheetname: Base KS
+    sheetname: [INPFC, Base KS]
   geo_strata:
     # The two stratification types are found in two sheets: "stratification1" and "INPFC"
     filename: Stratification/Stratification_geographic_Lat_2019_final.xlsx
