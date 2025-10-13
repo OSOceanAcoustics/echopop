@@ -491,7 +491,7 @@ def integrate_measurements(
     sv_thresholded["sv_mean_linear"] = 10.0 ** (sv_thresholded["sv_mean"] / 10.0)
 
     # Drop empty cells
-    sv_reduced = sv_thresholded.loc[sv_thresholded["sv_mean"] > -999.0]
+    sv_reduced = sv_thresholded.loc[~np.isnan(sv_thresholded["sv_mean"])]
 
     # Convert frequency units
     sv_reduced.loc[:, "frequency"] = sv_reduced.loc[:, "frequency"] * 1e3
