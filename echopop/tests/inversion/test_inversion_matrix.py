@@ -44,7 +44,7 @@ def test_InvParameters(sample_InversionMatrix_parameters):
         ["_unscaled_parameters", "_scaled_parameters", "parameters", "parameter_bounds", "_scaled"]
     ) <= set(params.__dir__())
     # ---- Check that initialized values are correct
-    assert params._scale is False
+    assert params._scaled is False
     assert params.parameters == params._unscaled_parameters
     parameter_limits = {
         key: {"min": value["min"], "max": value["max"]}
