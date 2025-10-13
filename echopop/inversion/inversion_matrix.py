@@ -9,7 +9,7 @@ from pydantic import ValidationError
 
 from ..core.exceptions import EchopopValidationError
 from ..inversion.inversion_base import InversionBase
-from ..typing import InvParameters, MCInvParameters
+from ..typing import InvParameters
 from ..validators.inversion import (
     ValidateBuildModelArgs,
     ValidateInversionMatrix,
@@ -17,7 +17,17 @@ from ..validators.inversion import (
 from ..validators.scattering_models import SCATTERING_MODEL_PARAMETERS
 
 
-def mininizer_print_cb(params: Parameters, iter: int, resid: np.ndarray, *args, **kwargs):
+def mininizer_print_cb(
+    params: Parameters,
+    iter: int,
+    resid: np.ndarray,
+    Sv_measured: np.ndarray[float],
+    center_frequencies: np.ndarray[float],
+    inv_params: InvParameters,
+    model_settings: Dict[str, Any],
+    *args,
+    **kwargs,
+):
     """
     Callback function for optimization iterations in echopop.
 
@@ -33,6 +43,14 @@ def mininizer_print_cb(params: Parameters, iter: int, resid: np.ndarray, *args, 
         Current iteration number
     resid : numpy.ndarray
         Residual array from current iteration
+    Sv_measured : np.ndarray[float]
+        Unused array.
+    center_frequencies : np.ndarray[float]
+        Unused array.
+    inv_params : InvParameters
+        The InvParameters object containing requisite metadata
+    model_settings : Dict[str, Any]
+        Unused dictionary.
     *args : tuple
         Additional positional arguments (unused)
     **kwargs : dict
@@ -43,11 +61,21 @@ def mininizer_print_cb(params: Parameters, iter: int, resid: np.ndarray, *args, 
     Progress is printed at iterations 1, 10, and every 25th iteration thereafter.
     The callback displays residual magnitude in dB and key parameter values.
     """
+
+    # If correct iteration number...
     if iter in (1, 10) or iter % 25 == 0:
+        # ---- Extract parameters
+        params_dict = params.valuesdict()
+        # ---- Apply unscaling if needed
+        if inv_params.is_scaled:
+            params_dict = inv_params.inverse_transform(params_dict)
+        # ---- Format residual string
         res_str = f"{float(resid):.4g}"
+        # ---- Format parameters string
         param_str = " | ".join(
-            f"{name}: {par.value:.4g}" for name, par in params.items() if par.vary
+            f"{name}: {params_dict[name]:.4g}" for name in params_dict if params[name].vary
         )
+        # ---- Print
         print(f"Iter: {iter} | Q abs [pred. - meas.]: {res_str} dB | {param_str}")
 
 
@@ -55,7 +83,7 @@ def monte_carlo_initialize(
     parameters_lmfit: Dict[int, Parameters],
     center_frequencies: np.ndarray[float],
     Sv_measured: np.ndarray[float],
-    parameters_meta: MCInvParameters,
+    parameters_meta: InvParameters,
     model_settings: Dict[str, Any],
     **kwargs,
 ):
@@ -74,7 +102,7 @@ def monte_carlo_initialize(
         Array of acoustic frequencies in Hz
     Sv_measured : numpy.ndarray or pandas.Series
         Measured volume backscattering strength values in dB re 1 m^-1
-    parameters_meta : MCInvParameters
+    parameters_meta : InvParameters
         Metadata container for Monte Carlo parameter realizations
     model_settings : dict
         Model configuration settings including model type and function
@@ -151,16 +179,17 @@ def prepare_minimizer(
     The objective function minimizes the sum of squared differences between
     predicted and measured Sv values across all valid frequencies.
     """
-    # Generate parameter sets
-    parameter_sets = MCInvParameters(
-        scattering_params, simulation_settings["mc_realizations"], simulation_settings["_rng"]
+
+    # Generate the parameter sets
+    scattering_params.simulate_parameter_sets(
+        simulation_settings["mc_realizations"], simulation_settings["_rng"]
     )
 
     # Generate `lmfit.Parameters` objects for each realization
-    parameters_lmfit = parameter_sets.to_lmfit_samples()
+    parameters_lmfit = scattering_params.realizations_to_lmfit()
 
     # Find which values thresholded out
-    valid_idx = np.argwhere(Sv_measured > -999.0).flatten()
+    valid_idx = np.argwhere((Sv_measured > -999.0) & (~np.isnan(Sv_measured))).flatten()
 
     # Get the valid center frequencies
     center_frequencies = np.array(Sv_measured.index.values, dtype=float)[valid_idx]
@@ -171,7 +200,7 @@ def prepare_minimizer(
     # Initialize with Monte Carlo sampling
     if simulation_settings["monte_carlo"]:
         parameters_lmfit = monte_carlo_initialize(
-            parameters_lmfit, center_frequencies, Sv_measured, parameter_sets, model_settings
+            parameters_lmfit, center_frequencies, Sv_measured, scattering_params, model_settings
         )
     else:
         parameters_lmfit = parameters_lmfit[0]
@@ -192,7 +221,7 @@ def prepare_minimizer(
             fcn_args=(
                 Sv_measured,
                 center_frequencies,
-                parameter_sets,
+                scattering_params,
                 model_settings,
             ),
             iter_cb=iter_cb_arg,
@@ -263,7 +292,7 @@ def fit_Sv(
 
     # Rescale to the original scale if parameters were normalized
     if parameters_meta.is_scaled:
-        parameter_set = parameters_meta.unscale_dict(parameter_set)
+        parameter_set = parameters_meta.inverse_transform(parameter_set)
 
     # Compute Sv
     Sv_prediction = model_settings["model_function"](
@@ -387,7 +416,9 @@ def optim(
     start_time = time.time()
 
     # Find which values are below the defined threshold
-    valid_idx = np.argwhere(Sv_measured["sv_mean"] > -999.0).flatten()
+    valid_idx = np.argwhere(
+        (Sv_measured["sv_mean"] > -999.0) & (~np.isnan(pd.to_numeric(Sv_measured["sv_mean"])))
+    ).flatten()
 
     # Get the frequencies
     center_frequencies = np.array(Sv_measured["sv_mean"].index.values[valid_idx], dtype=float)
@@ -475,7 +506,7 @@ def optim(
 
             # Unscale, if scaled
             if scattering_parameters.is_scaled:
-                best_fit_set_dict = scattering_parameters.unscale_dict(best_fit_set_dict)
+                best_fit_set_dict = scattering_parameters.inverse_transform(best_fit_set_dict)
 
             # Set
             best_fit_set = pd.Series(best_fit_set_dict)
@@ -664,9 +695,8 @@ class InversionMatrix(InversionBase):
         Parameters
         ----------
         data : pd.DataFrame
-            MultiIndex DataFrame containing acoustic measurements with required
-            columns 'sv_mean', 'nasc', and 'thickness_mean' at top level,
-            and 'frequency' as nested index level.
+            MultiIndex DataFrame containing acoustic measurements with required columns 'sv_mean',
+            'nasc', and 'thickness_mean' at top level, and 'frequency' as nested index level.
         simulation_settings : Dict[str, Any]
             Dictionary containing simulation configuration including:
             - environment: Environmental parameters (sound speed, density)
@@ -732,7 +762,6 @@ class InversionMatrix(InversionBase):
         self.measurements["minimizer"] = np.array(np.nan).astype(object)
 
         # Create list of `Minimizer` objects depending on number of defined realizations
-
         _model_params = self.model_params
         _model_settings = self.model_settings
         _simulation_settings = self.simulation_settings
@@ -841,10 +870,6 @@ class InversionMatrix(InversionBase):
             self.model_settings["type"]
         )["function"]
 
-        # Scale the parameters, if defined
-        if self.simulation_settings["scale_parameters"] and not self.model_params.is_scaled:
-            self.model_params.scale()
-
         # Add the `lmfit.Minimizer` objects to the dataset
         self._set_minimizers()
 
@@ -911,7 +936,7 @@ class InversionMatrix(InversionBase):
         >>> optimal_params = results.iloc[0]["parameters"]
         """
 
-        #
+        # Run optimization
         inversion_results = self.measurements[["sv_mean", "minimizer", "label"]].apply(
             optim,
             axis=1,
