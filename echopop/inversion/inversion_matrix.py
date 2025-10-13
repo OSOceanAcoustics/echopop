@@ -819,6 +819,10 @@ class InversionMatrix(InversionBase):
         """
 
         # Validate
+        # ---- NOTE: This validator checks for the expected argument typing, and then that the
+        # ---- parameters in `model_parameters` are valid for the specified model in
+        # ---- `model_settings`. This contrasts the internal validation done for `InvParameters`
+        # ---- which simply checks for a parameter dictionary compatible with `lmfit.Parameters`.
         try:
             # ---- Check
             valid_args = ValidateBuildModelArgs.create(
