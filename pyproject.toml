@@ -50,6 +50,7 @@ write_to_template = 'version = "{version}"  # noqa'
 line-length = 100
 
 [tool.codespell]
+skip = "*.ipynb"
 ignore-words-list = "notin,burnin"
 
 [tool.isort]

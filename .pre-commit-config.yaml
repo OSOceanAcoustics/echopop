@@ -41,4 +41,4 @@ repos:
     hooks:
       - id: codespell
         exclude: '(scratch)/.*'
-        args: ["--skip=*.ipynb", "--ignore-words=.codespell-ignore-words.txt", "-w", "docs/source", "echopype", "echopop"]
+        args: ["--skip=*.ipynb", "--toml=pyproject.toml", "-w", "docs/source", "echopype", "echopop"]
