@@ -297,7 +297,7 @@ def pcdwba(
     n_wavelength: int,
     number_density: float,
     length_distribution: Dict[str, Any],
-    **kwargs
+    **kwargs,
 ):
     """
     Phase-Corrected Distorted Wave Born Approximation (PCDWBA) for acoustic scattering.
