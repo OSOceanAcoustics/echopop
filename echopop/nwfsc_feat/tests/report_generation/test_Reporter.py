@@ -1,16 +1,16 @@
 import numpy as np
 import pandas as pd
 
-from echopop.nwfsc_feat import feat_report as feat
+from echopop.nwfsc_feat import Reporter
 
 
-def test_FEATReports(tmp_path):
+def test_Reporter(tmp_path):
     """
-    Test FEATReports class initialization
+    Test Reporter class initialization
     """
 
     # Initialize
-    reports = feat.FEATReports(tmp_path, verbose=False)
+    reports = Reporter(tmp_path, verbose=False)
 
     # Run tests
     assert reports.save_directory == tmp_path

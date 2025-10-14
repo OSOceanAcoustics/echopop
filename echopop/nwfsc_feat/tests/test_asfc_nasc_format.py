@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from echopop.nwfsc_feat import ingest_nasc
+from echopop.nwfsc_feat import functions as ingest_nasc
 
 
 # ==================================================================================================

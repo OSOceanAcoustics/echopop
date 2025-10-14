@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from echopop.nwfsc_feat import feat_report as feat
+from echopop.nwfsc_feat import reporter as feat
 
 
 def test_initialize_workbook(tmp_excel):
