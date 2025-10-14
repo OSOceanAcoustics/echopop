@@ -106,7 +106,7 @@ class InvParameters:
 
     def __str__(self):
         # Format the parameters string
-        parameters_str = ', '.join([f"{k}: {v}" for k, v in self.parameters.items()])
+        parameters_str = ", ".join([f"{k}: {v}" for k, v in self.parameters.items()])
 
         # Return the string output
         return f"InvParameters(scaled={self._scaled}, parameters=[{parameters_str}])"
