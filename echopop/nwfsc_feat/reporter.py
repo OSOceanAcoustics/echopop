@@ -959,13 +959,13 @@ def write_haul_report(
 
 
 ####################################################################################################
-# FEATReports class
+# Reporter class
 # --------------------------------------------------------------------------------------------------
 
 
-class FEATReports:
+class Reporter:
     """
-    FEATReports - utility class for writing a suite of Excel reports used in the FEAT pipeline.
+    Reporter - utility class for writing a suite of Excel reports used in the FEAT pipeline.
 
     This class centralizes common report generation routines (age-length tables, kriging inputs,
     haul counts, transect reports, etc.) and provides consistent validation and file handling.
@@ -981,7 +981,7 @@ class FEATReports:
     --------
     Basic usage
     >>> from pathlib import Path
-    >>> reports = FEATReports(Path("reports_out"), verbose=True)
+    >>> reports = Reporter(Path("reports_out"), verbose=True)
     >>> # Write a kriging input sheet
     >>> reports.kriging_input_report(transect_df, "krig_input.xlsx", "KrigeInput")
 
@@ -1012,7 +1012,7 @@ class FEATReports:
 
     def __init__(self, save_directory: Union[str, Path], verbose: bool = True):
         """
-        Initialize a FEATReports instance.
+        Initialize a Reporter instance.
 
         Parameters
         ----------
@@ -1033,7 +1033,7 @@ class FEATReports:
         Examples
         --------
         >>> from pathlib import Path
-        >>> reports = FEATReports(Path("reports_out"), verbose=True)
+        >>> reports = Reporter(Path("reports_out"), verbose=True)
         >>> # directory is created if missing and reports.verbose is True
         """
 
@@ -1102,7 +1102,7 @@ class FEATReports:
         Examples
         --------
         >>> from pathlib import Path
-        >>> reports = FEATReports(Path("out"))
+        >>> reports = Reporter(Path("out"))
         >>> sheetnames = {"male":"Male", "female":"Female", "all":"All"}
         >>> reports.aged_length_haul_counts_report(bio_df, "haul_counts.xlsx", sheetnames)
         """
@@ -1221,7 +1221,7 @@ class FEATReports:
 
         Examples
         --------
-        >>> reports = FEATReports("out")
+        >>> reports = Reporter("out")
         >>> sheetnames = {"all":"All", "female":"Fem", "male":"Male"}
         >>> reports.kriged_aged_biomass_mesh_report("krig_biomass.xlsx", kriged_df, weight_df,
         {'old':'stratum'}, sheetnames)
@@ -1328,7 +1328,7 @@ class FEATReports:
 
         Examples
         --------
-        >>> reports = FEATReports("out")
+        >>> reports = Reporter("out")
         >>> reports.kriged_mesh_results_report("krig_mesh.xlsx", "Mesh", krig_df, "stratum",
         "biomass", sigma_df, "stratum")
         """
@@ -1480,7 +1480,7 @@ class FEATReports:
 
         Examples
         --------
-        >>> reports = FEATReports("out")
+        >>> reports = Reporter("out")
         >>> sheetnames = {"male":"Male","female":"Female","all":"All"}
         >>> reports.kriged_length_age_abundance_report({'aged':aged_df, 'unaged':unaged_df},
         {'stratum':['S1']}, "krig_abund.xlsx", sheetnames)
@@ -1597,7 +1597,7 @@ class FEATReports:
 
         Examples
         --------
-        >>> reports = FEATReports("out")
+        >>> reports = Reporter("out")
         >>> reports.kriged_length_age_biomass_report({'aged':aged_df, 'unaged':unaged_df}, {},
         "krig_biomass.xlsx", sheetnames)
         """
@@ -1708,7 +1708,7 @@ class FEATReports:
 
         Examples
         --------
-        >>> reports = FEATReports("out")
+        >>> reports = Reporter("out")
         >>> reports.kriging_input_report(transect_df, "krig_input.xlsx", "Input")
         """
 
@@ -1791,7 +1791,7 @@ class FEATReports:
 
         Examples
         --------
-        >>> reports = FEATReports("out")
+        >>> reports = Reporter("out")
         >>> sheetnames = {"male":"Male","female":"Female","all":"All"}
         >>> reports.total_length_haul_counts_report({'specimen':spec_df, 'length':len_df},
         "total_counts.xlsx", sheetnames)
@@ -1934,7 +1934,7 @@ class FEATReports:
 
         Examples
         --------
-        >>> reports = FEATReports("out")
+        >>> reports = Reporter("out")
         >>> reports.transect_aged_biomass_report(transect_df, weight_df, "transect_biomass.xlsx",
         sheetnames)
         """
@@ -2030,7 +2030,7 @@ class FEATReports:
 
         Examples
         --------
-        >>> reports = FEATReports("out")
+        >>> reports = Reporter("out")
         >>> reports.transect_length_age_abundance_report({'aged':aged_df,'unaged':unaged_df},
         "transect_abund.xlsx", sheetnames)
         """
@@ -2139,7 +2139,7 @@ class FEATReports:
 
         Examples
         --------
-        >>> reports = FEATReports("out")
+        >>> reports = Reporter("out")
         >>> reports.transect_length_age_biomass_report(datatable, "transect_biomass.xlsx",
         sheetnames)
         """
@@ -2257,7 +2257,7 @@ class FEATReports:
 
         Examples
         --------
-        >>> reports = FEATReports("out")
+        >>> reports = Reporter("out")
         >>> reports.transect_population_results_report(transect_df, weight_df, sigma_df, "stratum",
         "transect_pop.xlsx", "PopResults")
         """

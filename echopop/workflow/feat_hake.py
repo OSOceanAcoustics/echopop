@@ -6,7 +6,8 @@ import pickle
 import numpy.typing as npt
 import pandas as pd
 from lmfit import Parameters
-from echopop import inversion
+from echopop import inversion, utils
+from echopop.geostatistics import cropping, kriging, variogram
 from echopop.ingest import (
     nasc,
     join_strata_by_haul,
@@ -19,11 +20,7 @@ from echopop.ingest import (
     load_strata
 ) 
 from echopop.nwfsc_feat import (
-    FEAT,
-    kriging,
-    spatial,
-    utils,
-    variogram
+    FEAT
 )
 from echopop.survey import apportionment, biology, proportions, stratified, transect
 # ==================================================================================================
@@ -702,7 +699,7 @@ df_isobath = load_isobath_data(
 # ==================================================================================================
 # Transform the geospatial coordinates for the transect data
 # ----------------------------------------------------------
-df_nasc_no_age1_prt, delta_longitude, delta_latitude = spatial.transform_coordinates(
+df_nasc_no_age1_prt, delta_longitude, delta_latitude = cropping.transform_coordinates(
     data = df_nasc_no_age1,
     reference = df_isobath,
     x_offset = -124.78338,
@@ -712,7 +709,7 @@ df_nasc_no_age1_prt, delta_longitude, delta_latitude = spatial.transform_coordin
 # ==================================================================================================
 # Transform the geospatial coordinates for the mesh data
 # ------------------------------------------------------
-df_mesh, _, _ = spatial.transform_coordinates(
+df_mesh, _, _ = cropping.transform_coordinates(
     data = df_mesh,
     reference = df_isobath,
     x_offset = -124.78338,

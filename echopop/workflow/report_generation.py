@@ -2,7 +2,7 @@ import pandas as pd
 from pathlib import Path
 import os
 import pickle
-from echopop.nwfsc_feat.feat_report import FEATReports
+from echopop.nwfsc_feat.reporter import Reporter
 
 # ==================================================================================================
 # ==================================================================================================
@@ -84,7 +84,7 @@ except Exception as e:
 # -----------------
 
 # Initialize report generator
-reporter = FEATReports(SAVE_DIRECTORY)
+reporter = Reporter(SAVE_DIRECTORY)
 
 ####################################################################################################
 # Aged-length haul counts report
