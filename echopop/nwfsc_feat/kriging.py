@@ -8,6 +8,7 @@ import pandas as pd
 from pydantic import ValidationError
 
 from .. import validators as val
+from ..core.exceptions import EchopopValidationError
 from . import spatial, variogram_models as vgm
 from .variogram import lag_distance_matrix
 
@@ -1069,7 +1070,7 @@ class Kriging:
             )
         # Break creation
         except (ValidationError, Exception) as e:
-            raise val.EchopopValidationError(str(e)) from None
+            raise EchopopValidationError(str(e)) from None
 
         # Create instance
         self = super().__new__(cls)

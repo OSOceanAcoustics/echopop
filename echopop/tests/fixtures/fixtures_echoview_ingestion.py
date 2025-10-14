@@ -678,3 +678,117 @@ def sample_haul_key():
             "haul_num": [10, 11, 12, 13],
         }
     )
+
+
+@pytest.fixture
+def sample_sv_csv_file():
+    """Create a temporary SV CSV file for testing."""
+    df = pd.DataFrame(
+        {
+            "Process_ID": [7217, 7217, 7217, 7217],
+            "Interval": [6, 6, 7, 7],
+            "Layer": [2, 3, 2, 3],
+            "Sv_mean": [-83.381331, -75.2, -82.1, -999],
+            "NASC": [1.979553, 2.5, 1.8, 0],
+            "Thickness_mean": [6.0088, 10.0048, 6.0088, 10.0048],
+            "Depth_mean": [16.994, 25.0008, 16.994, 25.0008],
+            "Lat_M": [34.64083725, 34.64083725, 34.64064364, 34.64064364],
+            "Lon_M": [-120.6977052, -120.6977052, -120.7081345, -120.7081345],
+            "Frequency": [18, 18, 18, 18],
+            "VL_start": [2.504577, 2.504577, 3.004596, 3.004596],
+            "VL_end": [3.001603, 3.001603, 3.503897, 3.503897],
+        }
+    )
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as f:
+        df.to_csv(f.name, index=False)
+        filename = f.name
+    yield Path(filename)
+    os.unlink(filename)
+
+
+@pytest.fixture
+def empty_sv_csv_file():
+    """Create an empty SV CSV file for testing."""
+    df = pd.DataFrame(
+        columns=["Process_ID", "Interval", "Layer", "Sv_mean", "NASC", "Thickness_mean"]
+    )
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as f:
+        df.to_csv(f.name, index=False)
+        filename = f.name
+    yield Path(filename)
+    os.unlink(filename)
+
+
+@pytest.fixture
+def sv_csv_with_coordinates():
+    """Create SV CSV file with latitude/longitude columns for coordinate testing."""
+    df = pd.DataFrame(
+        {
+            "Process_ID": [7217, 7217],
+            "Interval": [6, 6],
+            "Layer": [2, 3],
+            "Sv_mean": [-83.381331, -75.2],
+            "NASC": [1.979553, 2.5],
+            "Thickness_mean": [6.0088, 10.0048],
+            "latitude": [34.64083725, 34.64083725],
+            "longitude": [-120.6977052, -120.6977052],
+            "Frequency": [18, 18],
+        }
+    )
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as f:
+        df.to_csv(f.name, index=False)
+        filename = f.name
+    yield Path(filename)
+    os.unlink(filename)
+
+
+@pytest.fixture
+def sv_directory_with_files(tmp_path):
+    """Create a directory with multiple SV CSV files for testing."""
+    sv_dir = tmp_path / "sv_data"
+    sv_dir.mkdir()
+
+    # Create first CSV file
+    df1 = pd.DataFrame(
+        {
+            "Process_ID": [7217, 7217],
+            "Interval": [6, 6],
+            "Layer": [2, 3],
+            "Sv_mean": [-83.381331, -75.2],
+            "NASC": [1.979553, 2.5],
+            "Thickness_mean": [6.0088, 10.0048],
+            "Lat_M": [34.641, 34.641],
+            "Lon_M": [-120.698, -120.698],
+            "Frequency": [18, 18],
+            "VL_start": [100.0, 100.0],
+            "VL_end": [200.0, 200.0],
+        }
+    )
+
+    # Create second CSV file
+    df2 = pd.DataFrame(
+        {
+            "Process_ID": [7218, 7218],
+            "Interval": [7, 7],
+            "Layer": [2, 3],
+            "Sv_mean": [-82.1, -78.5],
+            "NASC": [1.8, 2.2],
+            "Thickness_mean": [6.0088, 10.0048],
+            "Lat_M": [34.642, 34.642],
+            "Lon_M": [-120.699, -120.699],
+            "Frequency": [18, 18],
+            "VL_start": [200.0, 200.0],
+            "VL_end": [300.0, 300.0],
+        }
+    )
+
+    file1 = sv_dir / "x01.csv"
+    file2 = sv_dir / "x02.csv"
+
+    df1.to_csv(file1, index=False)
+    df2.to_csv(file2, index=False)
+
+    return sv_dir

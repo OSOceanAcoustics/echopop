@@ -5,11 +5,12 @@ import pandas as pd
 from pydantic import Field, field_validator, model_validator
 from pydantic_core import PydanticCustomError
 
-from . import base, spatial
+from ..core.validators import BaseDictionary
+from . import spatial
 
 
 class KrigingParameters(
-    base.BaseDictionary, arbitrary_types_allowed=True, title="kriging model parameters"
+    BaseDictionary, arbitrary_types_allowed=True, title="kriging model parameters"
 ):
     aspect_ratio: float = Field(default=1e-3, gt=0.0, le=1.0, allow_inf_nan=False)
     k_min: int = Field(default=5, ge=2)
@@ -17,6 +18,7 @@ class KrigingParameters(
     search_radius: float = Field(gt=0.0, allow_inf_nan=False)
 
     @model_validator(mode="after")
+    @classmethod
     def validate_k_interval(cls, values):
         # Get `k_min` and `k_max`
         k_min = getattr(values, "k_min", 5)
@@ -33,7 +35,7 @@ class KrigingParameters(
 
 
 class VariogramKrigeModelParameters(
-    base.BaseDictionary,
+    BaseDictionary,
     arbitrary_types_allowed=True,
     title="theoretical variogram model parameters",
 ):
@@ -66,7 +68,7 @@ class VariogramKrigeModelParameters(
 
 
 class ValidateKrigingClass(
-    base.BaseDictionary, arbitrary_types_allowed=True, title="kriging analysis parameters"
+    BaseDictionary, arbitrary_types_allowed=True, title="kriging analysis parameters"
 ):
     mesh: pd.DataFrame
     kriging_params: KrigingParameters
@@ -80,7 +82,7 @@ class ValidateKrigingClass(
 
 
 class ValidateMeshCropArgs(
-    base.BaseDictionary, arbitrary_types_allowed=True, title="mesh cropping parameters for kriging"
+    BaseDictionary, arbitrary_types_allowed=True, title="mesh cropping parameters for kriging"
 ):
     crop_function: Callable
     coordinate_names: Tuple[str, str]

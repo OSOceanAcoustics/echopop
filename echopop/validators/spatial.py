@@ -5,7 +5,7 @@ import pandas as pd
 import pandera.pandas as pa
 from pydantic import Field, field_validator, model_validator
 
-from .base import BaseDataFrame, BaseDictionary
+from ..core.validators import BaseDataFrame, BaseDictionary
 
 
 class MeshDF(BaseDataFrame):
@@ -111,6 +111,7 @@ class ValidateHullCropArgs(
         return v
 
     @model_validator(mode="after")
+    @classmethod
     def validate_coordinate_overlap(cls, values):
         # Get the mesh and transects DataFrames
         mesh = getattr(values, "mesh")

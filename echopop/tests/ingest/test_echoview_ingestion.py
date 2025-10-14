@@ -7,7 +7,7 @@ import pandas as pd
 import pytest
 
 import echopop.tests.helpers.helpers_echoview_ingestion as helpers_echoview_ingestion
-from echopop.core.echoview import ECHOVIEW_DATABASE_EXPORT_FILESET, ECHOVIEW_TO_ECHOPOP
+from echopop.core.echoview import ECHOVIEW_DATABASE_EXPORT_FILESET
 from echopop.nwfsc_feat.ingest_nasc import (
     clean_echoview_cells_df,
     compute_region_layer_depths,
@@ -675,9 +675,20 @@ def test_read_echoview_export_with_real_file(echoview_temp_csv):
     assert len(result) == 3
 
     # Check columns were renamed according to ECHOVIEW_TO_ECHOPOP
-    for orig_col, new_col in ECHOVIEW_TO_ECHOPOP.items():
-        assert new_col in result.columns
-        assert orig_col not in result.columns
+    assert all(
+        result.columns
+        == [
+            "ping_date",
+            "max_depth",
+            "latitude",
+            "longitude",
+            "nasc",
+            "ping_time",
+            "distance_e",
+            "distance_s",
+            "other_column",
+        ]
+    )
 
     # Check non-mapped column remains
     assert "other_column" in result.columns
@@ -774,8 +785,21 @@ def test_read_echoview_nasc(echoview_temp_csv):
     assert all(result["transect_num"] == transect_num)
 
     # Check columns were renamed
-    for orig_col, new_col in ECHOVIEW_TO_ECHOPOP.items():
-        assert new_col in result.columns
+    assert all(
+        result.columns
+        == [
+            "ping_date",
+            "max_depth",
+            "latitude",
+            "longitude",
+            "nasc",
+            "ping_time",
+            "distance_e",
+            "distance_s",
+            "other_column",
+            "transect_num",
+        ]
+    )
 
     # Check coords are present
     assert "latitude" in result.columns

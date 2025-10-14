@@ -4,12 +4,13 @@ import pandas as pd
 from lmfit import Parameters
 from pydantic import ConfigDict, Field, field_validator, model_validator
 
+from ..core.validators import BaseDictionary
 from ..nwfsc_feat.variogram_models import get_variogram_arguments
-from . import base, spatial
+from . import spatial
 
 
 class VariogramModelParameters(
-    base.BaseDictionary,
+    BaseDictionary,
     arbitrary_types_allowed=True,
     title="theoretical variogram model parameters",
 ):
@@ -70,7 +71,7 @@ class VariogramModelParameters(
 
 
 class ValidateVariogramClass(
-    base.BaseDictionary, arbitrary_types_allowed=True, title="variogram analysis parameters"
+    BaseDictionary, arbitrary_types_allowed=True, title="variogram analysis parameters"
 ):
     coordinate_names: Tuple[str, str]
     lag_resolution: float = Field(gt=0.0, allow_inf_nan=False)
@@ -78,7 +79,7 @@ class ValidateVariogramClass(
 
 
 class ValidateEmpiricalVariogramArgs(
-    base.BaseDictionary, arbitrary_types_allowed=True, title="empirical variogram parameters"
+    BaseDictionary, arbitrary_types_allowed=True, title="empirical variogram parameters"
 ):
     azimuth_angle_threshold: float = Field(ge=0.0, le=180.0, allow_inf_nan=None)
     azimuth_filter: bool
@@ -93,6 +94,7 @@ class ValidateEmpiricalVariogramArgs(
         return spatial.TransectsDF.validate(v)
 
     @model_validator(mode="after")
+    @classmethod
     def validate_df_columns(cls, values):
         # Get the mesh and transects DataFrames
         coords = values.coordinate_names
@@ -128,7 +130,7 @@ class ValidateEmpiricalVariogramArgs(
 
 
 class ValidateFitVariogramArgs(
-    base.BaseDictionary,
+    BaseDictionary,
     arbitrary_types_allowed=True,
     title="theoretical variogram fitting parameters",
 ):

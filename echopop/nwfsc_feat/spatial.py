@@ -8,7 +8,7 @@ from scipy import interpolate
 from shapely.geometry import Point, Polygon
 from shapely.ops import unary_union
 
-from ..validators.base import EchopopValidationError
+from ..core.exceptions import EchopopValidationError
 from ..validators.spatial import ValidateHullCropArgs
 from .projection import wgs84_to_utm
 

@@ -173,6 +173,7 @@ class HaulTransectMap(InputModel, arbitrary_types_allowed=True, title="haul-tran
     file_settings: Dict[str, FileSettings]
 
     @model_validator(mode="before")
+    @classmethod
     def validate_country_files(cls, values):
         # ---- Get the country code list
         country_codes = values.get("country_code", [])
@@ -262,6 +263,7 @@ class TransectRegionMap(
     save_file_sheetname: Optional[str] = Field(default=None)
 
     @model_validator(mode="before")
+    @classmethod
     def validate_pattern_parts(cls, values):
         # ---- Get the country code list
         pattern_codes = values.get("pattern", "")
@@ -1079,6 +1081,7 @@ class KrigingParameterInputs(
             return realposfloat(v)
 
     @model_validator(mode="before")
+    @classmethod
     def validate_k_window(cls, values):
         # ---- Get `kmin`
         kmin = values.get("kmin", 3)
@@ -1094,6 +1097,7 @@ class KrigingParameterInputs(
         return values
 
     @model_validator(mode="before")
+    @classmethod
     def validate_spatial_correlation_params(cls, values):
         # ---- Get `correlation_range`
         correlation_range = values.get("correlation_range", None)
