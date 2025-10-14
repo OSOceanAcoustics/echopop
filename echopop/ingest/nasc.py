@@ -5,12 +5,12 @@ from typing import Any, Dict, Generator, List, Optional, Tuple, Union
 import numpy as np
 import pandas as pd
 
+from .. import utils
 from ..core.echoview import (
     ECHOVIEW_DATABASE_EXPORT_FILESET,
     ECHOVIEW_EXPORT_ROW_SORT,
     ECHOVIEW_TO_ECHOPOP,
 )
-from .. import utils
 
 
 def map_transect_num(

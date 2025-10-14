@@ -248,10 +248,7 @@ class InversionLengthTS(InversionBase):
             # Quantize the length counts across all datasets per length value
             df_length_counts = (
                 pd.concat(
-                    [
-                        quantize_length_data(d, self.model_params["stratify_by"])
-                        for d in df_length
-                    ],
+                    [quantize_length_data(d, self.model_params["stratify_by"]) for d in df_length],
                     axis=1,
                 )
                 .fillna(0.0)
@@ -293,10 +290,7 @@ class InversionLengthTS(InversionBase):
             # ---- Quantize the length counts across all datasets per length value
             df_length_counts = (
                 pd.concat(
-                    [
-                        quantize_length_data(d, self.model_params["stratify_by"])
-                        for d in df_length
-                    ],
+                    [quantize_length_data(d, self.model_params["stratify_by"]) for d in df_length],
                     axis=1,
                 )
                 .fillna(0.0)

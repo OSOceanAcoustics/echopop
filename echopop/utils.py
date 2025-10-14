@@ -574,7 +574,7 @@ def create_grouped_table(
 
 def is_pivot_table(df: pd.DataFrame):
     """
-    Utility function for determine whether a `pandas.DataFrame` comprises a MultiIndex along either 
+    Utility function for determine whether a `pandas.DataFrame` comprises a MultiIndex along either
     axis.
 
     Parameters

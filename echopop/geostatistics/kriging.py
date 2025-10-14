@@ -7,11 +7,9 @@ import numpy as np
 import pandas as pd
 from pydantic import ValidationError
 
-from . import cropping
-
 from .. import validators as val
 from ..core.exceptions import EchopopValidationError
-from . import variogram_models as vgm
+from . import cropping, variogram_models as vgm
 from .variogram import lag_distance_matrix
 
 # Set warnings filter

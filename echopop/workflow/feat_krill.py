@@ -2,7 +2,7 @@ from pathlib import Path
 from echopop.ingest import sv
 from echopop.inversion.inversion_matrix import InversionMatrix, estimate_population
 from echopop.inversion import InvParameters
-from echopop.nwfsc_feat import utils
+from echopop import utils
 
 # ==================================================================================================
 # ==================================================================================================

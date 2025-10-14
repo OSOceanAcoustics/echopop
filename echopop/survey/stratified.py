@@ -5,8 +5,8 @@ import geopy.distance
 import numpy as np
 import pandas as pd
 
-from ..ingest import join_geostrata_by_latitude
 from .. import utils
+from ..ingest import join_geostrata_by_latitude
 from . import statistics
 
 

@@ -11,7 +11,7 @@ from IPython.display import clear_output, display
 from lmfit import Parameters
 
 from echopop.geostatistics.variogram import Variogram
-from echopop.geostatistics.variogram_models import get_variogram_arguments, compute_variogram
+from echopop.geostatistics.variogram_models import compute_variogram, get_variogram_arguments
 
 # ==================================================================================================
 # Constants, mappings, and helper functions API

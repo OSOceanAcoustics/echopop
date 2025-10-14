@@ -8,8 +8,8 @@ import pandas.io.formats.excel as pdif
 from openpyxl import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
 
-from ..survey import apportionment
 from .. import utils
+from ..survey import apportionment
 
 ####################################################################################################
 # FILE WRITING UTILITY

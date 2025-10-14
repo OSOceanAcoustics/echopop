@@ -182,6 +182,7 @@ def length_binned_weights(
         else:
             return result
 
+
 def quantize_length_data(df, group_columns: List[str]):
     """
     Process DataFrame to ensure it has 'length' and 'length_count' columns.
@@ -261,6 +262,7 @@ def quantize_length_data(df, group_columns: List[str]):
 
     # Aggregate and return
     return df.groupby(group_columns + ["length"]).agg(length_count=(sum_var_column, var_operation))
+
 
 def compute_abundance(
     dataset: pd.DataFrame,

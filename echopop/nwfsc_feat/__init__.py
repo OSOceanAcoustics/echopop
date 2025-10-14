@@ -8,9 +8,9 @@ These are not intended for general use outside of FEAT applications.
 
 from . import parameters
 from .functions import (
-    get_survey_western_extents, 
-    transect_ends_crop, 
-    western_boundary_search_strategy
+    get_survey_western_extents,
+    transect_ends_crop,
+    western_boundary_search_strategy,
 )
 from .reporter import Reporter
 
