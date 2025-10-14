@@ -4,6 +4,7 @@ import pytest
 from echopop.geostatistics.variogram_models import (
     bessel_exponential,
     bessel_gaussian,
+    compute_variogram,
     cosine_exponential,
     cosine_gaussian,
     cubic,
@@ -22,7 +23,6 @@ from echopop.geostatistics.variogram_models import (
     quadratic,
     sinc,
     spherical,
-    compute_variogram,
 )
 
 

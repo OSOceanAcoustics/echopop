@@ -1,7 +1,8 @@
 import os
 from pathlib import Path
-import pandas as pd
+
 import matplotlib.pyplot as plt
+import pandas as pd
 
 from echopop.nwfsc_feat import graphics as egra
 
@@ -32,15 +33,15 @@ FIGURES_DIR = DEMO_DIR / "figures"
 try:
     # NASC - transect data
     df_nasc_noage1_prt = pd.read_pickle(FILES_DIR / "df_nasc_no_age1_prt.pkl")
-    # Mesh - kriged data 
+    # Mesh - kriged data
     df_kriged_results = pd.read_pickle(FILES_DIR / "df_kriged_results.pkl")
     # Abundance table - kriged data
     df_kriged_abundance_table = pd.read_pickle(FILES_DIR / "df_kriged_abundance_table.pkl")
     # Biomass table - kriged data
     df_kriged_biomass_table = pd.read_pickle(FILES_DIR / "df_kriged_biomass_table.pkl")
     # Verbose validation upon success
-    print(f"Pickled demo DataFrames successfully 'unpickled'.")
-except Exception as e: 
+    print("Pickled demo DataFrames successfully 'unpickled'.")
+except Exception as e:
     raise e from None
 
 # ==================================================================================================
@@ -51,16 +52,16 @@ except Exception as e:
 """
 -----------------
 plot_kriged_mesh(
-    ..., 
-    plot_type='hexbin', 
-    hexbin_kwargs, 
-    coast_kwargs, 
-    colorbar_kwargs, 
-    axis_kwargs, 
-    plot_kwargs, 
+    ...,
+    plot_type='hexbin',
+    hexbin_kwargs,
+    coast_kwargs,
+    colorbar_kwargs,
+    axis_kwargs,
+    plot_kwargs,
     savefig_kwargs
     )
-    
+
 - hexbin_kwargs: dict
     Passed to matplotlib.pyplot.hexbin (if plot_type="hexbin").
     Common options:
@@ -100,7 +101,7 @@ plot_kriged_mesh(
             Fraction by which to shrink the colorbar.
         - aspect: float, default=20
             Aspect ratio of the colorbar.
-            
+
 - axis_kwargs: dict
     Passed to matplotlib Axes set methods.
     Common options:
@@ -114,7 +115,7 @@ plot_kriged_mesh(
             X-axis limits.
         - ylim: tuple, default=None
             Y-axis limits.
-            
+
 - plot_kwargs: dict
     Passed to matplotlib.pyplot.figure or plt.subplots.
     Common options:
@@ -133,7 +134,7 @@ plot_kriged_mesh(
 egra.plot_kriged_mesh(
     data=df_kriged_results,
     variable="biomass_density",
-    savepath=FIGURES_DIR / "kriged_mesh_hexbin_base.png"
+    savepath=FIGURES_DIR / "kriged_mesh_hexbin_base.png",
 )
 
 # 'Extended' usage
@@ -146,7 +147,7 @@ egra.plot_kriged_mesh(
     colorbar_kwargs={"cmap": "plasma", "label": "Biomass density ($\\mathregular{kg~nmi^{-2}}$)"},
     axis_kwargs={"xlabel": "Longitude (\u00b0E)", "ylabel": "Latitude (\u00b0N)"},
     plot_kwargs={"figsize": (8, 6)},
-    savefig_kwargs={"dpi": 300}
+    savefig_kwargs={"dpi": 300},
 )
 
 # ---------------------
@@ -155,11 +156,11 @@ egra.plot_kriged_mesh(
 """
 -----------------
 plot_kriged_mesh(
-    ..., 
-    plot_type='scatter', 
+    ...,
+    plot_type='scatter',
     scatter_kwargs
     )
-    
+
 - scatter_kwargs: dict
     Passed to matplotlib.pyplot.scatter for point plotting.
     Common options:
@@ -186,7 +187,7 @@ egra.plot_kriged_mesh(
     colorbar_kwargs={"cmap": "plasma", "label": "Biomass density ($\\mathregular{kg~nmi^{-2}}$)"},
     axis_kwargs={"xlabel": "Longitude (\u00b0E)", "ylabel": "Latitude (\u00b0N)"},
     plot_kwargs={"figsize": (8, 6)},
-    savefig_kwargs={"dpi": 300}
+    savefig_kwargs={"dpi": 300},
 )
 
 # -----------------------------
@@ -195,11 +196,11 @@ egra.plot_kriged_mesh(
 """
 -----------------
 plot_kriged_mesh(
-    ..., 
-    plot_type='pcolormesh', 
+    ...,
+    plot_type='pcolormesh',
     pseudocolormesh_kwargs
     )
-    
+
 - pcolormesh_kwargs: dict
     Passed to xarray.DataArray.plot.pcolormesh for point plotting.
     Common options:
@@ -233,13 +234,20 @@ egra.plot_kriged_mesh(
     variable="biomass_density",
     plot_type="pcolormesh",
     savepath=FIGURES_DIR / "kriged_mesh_pcolormesh.png",
-    pseudocolormesh_kwargs={"shading": "auto", "alpha": 0.5, "add_labels": False, 
-                            "rasterized": True, "levels": 10, "robust": True, "extend": "both"},
+    pseudocolormesh_kwargs={
+        "shading": "auto",
+        "alpha": 0.5,
+        "add_labels": False,
+        "rasterized": True,
+        "levels": 10,
+        "robust": True,
+        "extend": "both",
+    },
     coast_kwargs={"edgecolor": "black", "linewidth": 0.5},
     colorbar_kwargs={"cmap": "plasma", "label": "Biomass density ($\\mathregular{kg~nmi^{-2}}$)"},
     axis_kwargs={"xlabel": "Longitude (\u00b0E)", "ylabel": "Latitude (\u00b0N)"},
     plot_kwargs={"figsize": (8, 6)},
-    savefig_kwargs={"dpi": 300}
+    savefig_kwargs={"dpi": 300},
 )
 
 # ==================================================================================================
@@ -254,7 +262,7 @@ plot_transect_map(
 
 transect_kwargs: dict
     Passed to geopandas.GeoDataFrame.plot when plotting the transect lines.
-    Common options include: 
+    Common options include:
         - color : str
             Line color.
         - linewidth : float
@@ -280,7 +288,7 @@ egra.plot_transect_map(
     colorbar_kwargs={"cmap": "inferno", "label": "Biomass (kg)"},
     axis_kwargs={"xlabel": "Longitude (\u00b0E)", "ylabel": "Latitude (\u00b0N)"},
     plot_kwargs={"figsize": (8, 6)},
-    savefig_kwargs={"dpi": 300}
+    savefig_kwargs={"dpi": 300},
 )
 
 # ==================================================================================================
@@ -294,7 +302,7 @@ plot_age_length_heatmap(
 
 imshow_kwargs: dict
     Passed to matplotlib.axes.Axes.imshow when plotting the heatmap.
-    Common options include: 
+    Common options include:
         - vmin, vmax : float, optional
             Lower and upper bounds for color scaling. If not set, determined from data.
 
@@ -308,12 +316,12 @@ egra.plot_age_length_heatmap(
 )
 
 # 'Extended' usage
-# ---- Futz around with the color mapping, e.g applying a log-transform 
+# ---- Futz around with the color mapping, e.g applying a log-transform
 # ---- This can be added to `colorbar_kwargs`
-from matplotlib.colors import SymLogNorm
+from matplotlib.colors import SymLogNorm  # noqa: E402
 
 # ~ Define scale
-norm = SymLogNorm(linthresh=1., vmin=0., vmax=df_kriged_biomass_table.max().max())
+norm = SymLogNorm(linthresh=1.0, vmin=0.0, vmax=df_kriged_biomass_table.max().max())
 
 # ~ Create colormap
 scaled_colormap = plt.cm.ScalarMappable(cmap="inferno", norm=norm)
@@ -323,9 +331,11 @@ egra.plot_age_length_heatmap(
     savepath=FIGURES_DIR / "kriged_biomass_age_length_heatmap_plus.png",
     colorbar_kwargs={"mappable": scaled_colormap, "label": "Biomass (kg)"},
     imshow_kwargs={"cmap": "inferno", "norm": norm},
-    axis_kwargs={"xlabel": r"$\mathregular{\ell}$ (cm)", 
-                 "ylabel": r"$\mathregular{\alpha}$ (years)"},
-    savefig_kwargs={"dpi": 300}
+    axis_kwargs={
+        "xlabel": r"$\mathregular{\ell}$ (cm)",
+        "ylabel": r"$\mathregular{\alpha}$ (years)",
+    },
+    savefig_kwargs={"dpi": 300},
 )
 
 # ------------------------------
@@ -345,15 +355,15 @@ plot_age_length_heatmap(
 
 - exclude_filter: dict
     Used to **exclude rows** where the column matches the given value(s).
-    Example: {"age_bin": [2, 3]} will REMOVE data for age bins 2 and 3. 
-    
+    Example: {"age_bin": [2, 3]} will REMOVE data for age bins 2 and 3.
+
 - replace_value: float, default=None
-    While `replace_value=None`, values filtered out via `exclude_filter` will be completely excised 
-    from the dataset. However, when `replace_value` is set to a float, all values that would 
+    While `replace_value=None`, values filtered out via `exclude_filter` will be completely excised
+    from the dataset. However, when `replace_value` is set to a float, all values that would
     otherwise be filtered out are instead set to the designated replacement value.
-    Example: `{"age_bin": [1]}` with `'replace_value'=0.0` would replace all values in 
+    Example: `{"age_bin": [1]}` with `'replace_value'=0.0` would replace all values in
     `age_bin==1.0` to `0.0` instead of removing them entirely.
-    
+
     **Pattern:** These filters are a recurrent pattern in Echopop. They allow you to flexibly
     subset your data for plotting, making it easy to focus on specific ages, lengths, or other
     groupings. You can use lists, single values, or callables for advanced filtering.
@@ -367,9 +377,11 @@ egra.plot_age_length_heatmap(
     replace_value=0.0,
     colorbar_kwargs={"mappable": scaled_colormap, "label": "Age-2+ biomass (kg)"},
     imshow_kwargs={"cmap": "inferno", "norm": norm},
-    axis_kwargs={"xlabel": r"$\mathregular{\ell}$ (cm)", 
-                 "ylabel": r"$\mathregular{\alpha}$ (years)"},
-    savefig_kwargs={"dpi": 300}
+    axis_kwargs={
+        "xlabel": r"$\mathregular{\ell}$ (cm)",
+        "ylabel": r"$\mathregular{\alpha}$ (years)",
+    },
+    savefig_kwargs={"dpi": 300},
 )
 
 # Make sex-specific
@@ -382,9 +394,11 @@ egra.plot_age_length_heatmap(
     replace_value=0.0,
     colorbar_kwargs={"mappable": scaled_colormap, "label": "Age-2+ male-specific biomass (kg)"},
     imshow_kwargs={"cmap": "inferno", "norm": norm},
-    axis_kwargs={"xlabel": r"$\mathregular{\ell}$ (cm)", 
-                 "ylabel": r"$\mathregular{\alpha}$ (years)"},
-    savefig_kwargs={"dpi": 300}
+    axis_kwargs={
+        "xlabel": r"$\mathregular{\ell}$ (cm)",
+        "ylabel": r"$\mathregular{\alpha}$ (years)",
+    },
+    savefig_kwargs={"dpi": 300},
 )
 # ---- Female
 egra.plot_age_length_heatmap(
@@ -395,8 +409,9 @@ egra.plot_age_length_heatmap(
     replace_value=0.0,
     colorbar_kwargs={"mappable": scaled_colormap, "label": "Age-2+ female-specific biomass (kg)"},
     imshow_kwargs={"cmap": "inferno", "norm": norm},
-    axis_kwargs={"xlabel": r"$\mathregular{\ell}$ (cm)", 
-                 "ylabel": r"$\mathregular{\alpha}$ (years)"},
-    savefig_kwargs={"dpi": 300}
+    axis_kwargs={
+        "xlabel": r"$\mathregular{\ell}$ (cm)",
+        "ylabel": r"$\mathregular{\alpha}$ (years)",
+    },
+    savefig_kwargs={"dpi": 300},
 )
-

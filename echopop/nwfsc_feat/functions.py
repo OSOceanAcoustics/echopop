@@ -5,6 +5,7 @@ from typing import Any, Callable, Dict, Optional, Tuple, Union
 import numpy as np
 import pandas as pd
 from scipy import interpolate
+
 from .. import utils
 
 
@@ -729,6 +730,7 @@ def transect_ends_crop(
 
     # Return the DataFrames
     return mesh.loc[mesh_indices], transect_df.reset_index()
+
 
 def filter_transect_intervals(
     nasc_df: pd.DataFrame,

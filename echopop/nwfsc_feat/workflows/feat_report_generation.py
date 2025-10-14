@@ -1,7 +1,9 @@
-import pandas as pd
-from pathlib import Path
 import os
 import pickle
+from pathlib import Path
+
+import pandas as pd
+
 from echopop.nwfsc_feat.reporter import Reporter
 
 # ==================================================================================================
@@ -41,7 +43,7 @@ FIGURES_DIR = DEMO_DIR / "figures"
 try:
     # NASC - transect data
     df_nasc_noage1_prt = pd.read_pickle(FILES_DIR / "df_nasc_no_age1_prt.pkl")
-    # Mesh - kriged data 
+    # Mesh - kriged data
     df_kriged_results = pd.read_pickle(FILES_DIR / "df_kriged_results.pkl")
     # Abundance table - kriged data
     df_kriged_abundance_table = pd.read_pickle(FILES_DIR / "df_kriged_abundance_table.pkl")
@@ -50,9 +52,9 @@ try:
     # Abundance table - transect data
     with open(FILES_DIR / "dict_transect_abundance_table.pkl", "rb") as f:
         dict_transect_abundance_table = pickle.load(f)
-    # Biomass table - transect data 
+    # Biomass table - transect data
     with open(FILES_DIR / "dict_transect_biomass_table.pkl", "rb") as f:
-        dict_transect_biomass_table = pickle.load(f) 
+        dict_transect_biomass_table = pickle.load(f)
     # Biomass table - transect aged-only data
     df_transect_aged_biomass_table = pd.read_pickle(
         FILES_DIR / "df_transect_aged_biomass_table.pkl"
@@ -63,9 +65,9 @@ try:
     # Biomass tables - kriged data
     with open(FILES_DIR / "dict_kriged_biomass_table.pkl", "rb") as f:
         dict_kriged_biomass_table = pickle.load(f)
-    # Biohaul data 
+    # Biohaul data
     with open(FILES_DIR / "biohaul_data.pkl", "rb") as f:
-        biohaul_data = pickle.load(f)    
+        biohaul_data = pickle.load(f)
     # Binned weights
     with open(FILES_DIR / "dict_df_weight_distr.pkl", "rb") as f:
         dict_df_weight_distr = pickle.load(f)
@@ -74,8 +76,8 @@ try:
     # Stratified weights
     df_averaged_weight = pd.read_pickle(FILES_DIR / "df_averaged_weight.pkl")
     # Verbose validation upon success
-    print(f"Pickled demo DataFrames and Dictionaries successfully 'unpickled'.")
-except Exception as e: 
+    print("Pickled demo DataFrames and Dictionaries successfully 'unpickled'.")
+except Exception as e:
     raise e from None
 
 # ==================================================================================================
@@ -93,7 +95,7 @@ reporter = Reporter(SAVE_DIRECTORY)
 reporter.aged_length_haul_counts_report(
     filename="aged_length_haul_counts.xlsx",
     sheetnames={"male": "Sheet1", "female": "Sheet2", "all": "Sheet3"},
-    bio_data=biohaul_data["specimen"].dropna(subset=["age", "length", "weight"])
+    bio_data=biohaul_data["specimen"].dropna(subset=["age", "length", "weight"]),
 )
 
 ####################################################################################################
@@ -103,7 +105,7 @@ reporter.aged_length_haul_counts_report(
 reporter.total_length_haul_counts_report(
     filename="total_length_haul_counts.xlsx",
     sheetnames={"male": "Sheet1", "female": "Sheet2", "all": "Sheet3"},
-    bio_data=biohaul_data
+    bio_data=biohaul_data,
 )
 
 ####################################################################################################
@@ -123,7 +125,7 @@ reporter.kriged_aged_biomass_mesh_report(
 reporter.kriged_aged_biomass_mesh_report(
     filename="kriged_aged_biomass_mesh_nonzero.xlsx",
     sheetnames={"all": "Sheet1", "male": "Sheet2", "female": "Sheet3"},
-    kriged_data=df_kriged_results[df_kriged_results["biomass"] > 0.],
+    kriged_data=df_kriged_results[df_kriged_results["biomass"] > 0.0],
     weight_data=dict_df_weight_distr["aged"],
     kriged_stratum_link={"geostratum_ks": "stratum_ks"},
 )
@@ -147,7 +149,7 @@ reporter.kriged_mesh_results_report(
 reporter.kriged_mesh_results_report(
     filename="kriged_biomass_mesh_nonzero.xlsx",
     sheetname="Sheet1",
-    kriged_data=df_kriged_results[df_kriged_results["biomass"] > 0.],
+    kriged_data=df_kriged_results[df_kriged_results["biomass"] > 0.0],
     kriged_stratum="geostratum_ks",
     kriged_variable="biomass",
     sigma_bs_data=sigma_bs_strata,
@@ -220,7 +222,7 @@ reporter.transect_aged_biomass_report(
 reporter.transect_aged_biomass_report(
     filename="transect_aged_biomass_report_nonzero.xlsx",
     sheetnames={"all": "Sheet1", "male": "Sheet2", "female": "Sheet3"},
-    transect_data=df_nasc_noage1_prt[df_nasc_noage1_prt["biomass"] > 0.],
+    transect_data=df_nasc_noage1_prt[df_nasc_noage1_prt["biomass"] > 0.0],
     weight_data=dict_df_weight_distr["aged"],
 )
 
@@ -242,7 +244,7 @@ reporter.transect_population_results_report(
 reporter.transect_population_results_report(
     filename="transect_population_results_nonzero.xlsx",
     sheetname="Sheet1",
-    transect_data=df_nasc_noage1_prt[df_nasc_noage1_prt["nasc"] > 0.],
+    transect_data=df_nasc_noage1_prt[df_nasc_noage1_prt["nasc"] > 0.0],
     weight_strata_data=df_averaged_weight,
     sigma_bs_stratum=sigma_bs_strata,
     stratum_name="stratum_ks",

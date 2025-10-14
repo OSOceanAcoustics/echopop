@@ -1,6 +1,8 @@
 import pandas as pd
-from echopop.nwfsc_feat.functions import filter_transect_intervals
 import pytest
+
+from echopop.nwfsc_feat.functions import filter_transect_intervals
+
 
 def test_filter_transect_intervals_basic():
     """Test basic filtering functionality."""

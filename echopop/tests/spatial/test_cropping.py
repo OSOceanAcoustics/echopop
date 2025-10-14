@@ -2,12 +2,13 @@ import pandas as pd
 from shapely.geometry import Point
 
 from echopop.geostatistics import (
-    hull_crop, 
-    transect_coordinate_centroid, 
-    transect_extent, 
-    utm_string_generator, 
-    wgs84_to_utm
+    hull_crop,
+    transect_coordinate_centroid,
+    transect_extent,
+    utm_string_generator,
+    wgs84_to_utm,
 )
+
 
 # ==================================================================================================
 # Test utm_string_generator

@@ -5,6 +5,7 @@ import pytest
 
 from echopop.ingest.biological import apply_ship_survey_filters, load_biological_data
 
+
 def test_load_biological_data_basic(bio_excel_file, bio_sheet_map):
     """Test basic loading of biological data without optional parameters."""
     # Pass an empty dict instead of None for column_name_map

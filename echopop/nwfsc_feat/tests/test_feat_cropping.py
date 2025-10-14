@@ -1,12 +1,13 @@
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 from echopop.nwfsc_feat import (
-    get_survey_western_extents, 
-    western_boundary_search_strategy, 
-    transect_ends_crop
+    get_survey_western_extents,
+    transect_ends_crop,
+    western_boundary_search_strategy,
 )
 from echopop.nwfsc_feat.parameters import transect_mesh_region_2019
+
 
 # ==================================================================================================
 # Test western_boundary_search_strategy
@@ -170,6 +171,7 @@ def test_transect_mesh_region_2019_invalid_region():
     # Should default to region 3 behavior
     assert start == 129
     assert end == 145
+
 
 # ==================================================================================================
 # Test transect_ends_crop

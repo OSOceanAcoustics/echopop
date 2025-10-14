@@ -5,7 +5,8 @@ from lmfit import Parameters
 
 import echopop.inversion.inversion_matrix as im
 from echopop import inversion
-from echopop.inversion import InvParameters, InversionMatrix
+from echopop.inversion import InversionMatrix, InvParameters
+
 
 # Test base InvParameters
 def test_InvParameters(sample_InversionMatrix_parameters):

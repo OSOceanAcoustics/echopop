@@ -28,6 +28,7 @@ from echopop.ingest.nasc import (
     validate_transect_exports,
 )
 
+
 def test_map_transect_num_normal_case(mock_export_paths):
     """Test map_transect_num with normal inputs."""
     # Call function

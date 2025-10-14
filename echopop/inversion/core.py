@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 from lmfit import Parameters
 from pydantic import ValidationError
+
 from ..core.exceptions import EchopopValidationError
 
 
@@ -203,7 +204,7 @@ class InvParameters:
         """
         Internal validator
         """
-        
+
         # Delay import to avoid circular import issues
         from ..validators.inversion import ModelInputParameters
 
@@ -223,8 +224,8 @@ class InvParameters:
             raise EchopopValidationError(str(e)) from None
 
         # Return parameter
-        return validated_parameters        
-        
+        return validated_parameters
+
     @property
     def values(self):
         """

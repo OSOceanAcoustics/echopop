@@ -3,8 +3,8 @@ import pandas as pd
 import pytest
 from scipy import interpolate as interp
 
-from echopop.survey import proportions as get_proportions
 from echopop import utils
+from echopop.survey import proportions as get_proportions
 
 
 def test_compute_binned_counts_size_aggregation(sample_specimen_data):
