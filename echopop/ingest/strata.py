@@ -5,6 +5,7 @@ from typing import Dict, Union
 import numpy as np
 import pandas as pd
 
+
 def load_single_stratum_sheet(
     strata_filepath: Path,
     sheet_name: str,
@@ -154,9 +155,6 @@ def geostrata_bins(df: pd.DataFrame) -> pd.DataFrame:
         result_df["latitude_interval"] = pd.cut(result_df["northlimit_latitude"], latitude_bins)
 
     return result_df
-
-
-
 
 
 def join_strata_by_haul(

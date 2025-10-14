@@ -3,6 +3,7 @@ from typing import Dict, Union
 
 import pandas as pd
 
+
 def load_mesh_data(
     mesh_filepath: Union[str, Path], sheet_name: str, column_name_map: Dict[str, str] = {}
 ) -> pd.DataFrame:
@@ -45,6 +46,7 @@ def load_mesh_data(
         df.rename(columns=column_name_map, inplace=True)
 
     return df
+
 
 def load_isobath_data(
     isobath_filepath: Union[str, Path], sheet_name: str, column_name_map: Dict[str, str] = {}

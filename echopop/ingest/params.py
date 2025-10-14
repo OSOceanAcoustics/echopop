@@ -3,6 +3,7 @@ from typing import Dict, Tuple, Union
 
 import pandas as pd
 
+
 def load_kriging_variogram_params(
     geostatistic_params_filepath: Union[str, Path],
     sheet_name: str,

@@ -45,6 +45,7 @@ def load_single_biological_sheet(
 
     return df_filtered
 
+
 def load_biological_data(
     biodata_filepath: Path,
     biodata_sheet_map: Dict[str, str],
@@ -109,6 +110,7 @@ def load_biological_data(
                     df[col] = df[col].map(mapping).fillna(df[col])
 
     return biodata_dict
+
 
 def apply_ship_survey_filters(
     df: pd.DataFrame,
