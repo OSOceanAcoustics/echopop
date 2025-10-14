@@ -1,4 +1,4 @@
-from .inversion_base import InversionBase
+from .core import InversionBase, InvParameters
 from .inversion_length_TS import InversionLengthTS
 from .operations import (
     generate_frequency_interval,
@@ -10,6 +10,7 @@ from .operations import (
 )
 
 __all__ = [
+    "InvParameters",
     "InversionBase",
     "InversionLengthTS",
     "generate_frequency_interval",

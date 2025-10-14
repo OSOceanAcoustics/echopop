@@ -8,8 +8,8 @@ from lmfit import Minimizer, Parameters
 from pydantic import ValidationError
 
 from ..core.exceptions import EchopopValidationError
-from ..inversion.inversion_base import InversionBase
-from ..typing import InvParameters
+from .core import InversionBase
+from .parameters import InvParameters
 from ..validators.inversion import (
     ValidateBuildModelArgs,
     ValidateInversionMatrix,

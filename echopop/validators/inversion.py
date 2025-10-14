@@ -1,15 +1,16 @@
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
-from pydantic import ConfigDict, Field, field_validator, model_validator
+from pydantic import ConfigDict, Field, field_validator, model_validator, RootModel, ValidationError
 
 from ..core.validators import BaseDataFrame, BaseDictionary
-from ..typing import InvParameters
-from ..typing.inversion import ModelInputParameters
 from .scattering_models import SCATTERING_MODEL_PARAMETERS
+
+if TYPE_CHECKING:
+    from ..inversion import InvParameters
 
 
 class TSLRegressionParameters(BaseDictionary, title="TS-length regression parameters"):
@@ -219,7 +220,7 @@ class ValidateBuildModelArgs(
     Validation model for scattering model build arguments.
     """
 
-    model_parameters: InvParameters
+    model_parameters: "InvParameters"
     model_settings: ModelSettingsParameters
     model_config = ConfigDict(protected_namespaces=())
 
@@ -305,3 +306,64 @@ class ValidateBuildModelArgs(
         )
 
         return self
+
+class SingleParameter(
+    BaseDictionary,
+    arbitrary_types_allowed=True,
+    title="values for lmfit.Parameters class required for optimization",
+):
+    min: Optional[float] = Field(default=-np.inf, allow_inf_nan=True)
+    value: float = Field(allow_inf_nan=False)
+    max: Optional[float] = Field(default=np.inf, allow_inf_nan=True)
+    vary: bool = Field(default=False)
+
+    @model_validator(mode="after")
+    def check_bounds(self):
+        if self.min > self.max:
+            raise ValueError(f"min ({self.min}) cannot be greater than max ({self.max}).")
+        if not (self.min <= self.value <= self.max):
+            raise ValueError(
+                f"value ({self.value}) must be between min ({self.min}) and max ({self.max})."
+            )
+        return self
+
+
+class ModelInputParameters(
+    RootModel[Dict[str, "SingleParameter"]],
+):
+
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        title="scattering model parameters",
+    )
+
+    @model_validator(mode="before")
+    @classmethod
+    def prevalidator_trans(cls, data):
+        # Use TYPE_CHECKING import
+        if TYPE_CHECKING:
+            from ..inversion import InvParameters       
+
+        # Check type using string comparison to avoid import
+        if type(data).__name__ == 'InvParameters':
+            return data.parameters
+        return data 
+    
+    # Validator method
+    @classmethod
+    def judge(cls, **kwargs):
+        """
+        Validator method
+        """
+        try:
+            return cls(**kwargs)
+        except ValidationError as e:
+            raise e
+
+    # Factory method
+    @classmethod
+    def create(cls, **kwargs):
+        """
+        Factory creation method
+        """
+        return cls.judge(**kwargs).model_dump(exclude_none=True)
