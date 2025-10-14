@@ -5,7 +5,9 @@ import geopy.distance
 import numpy as np
 import pandas as pd
 
-from . import load_data, statistics, utils
+from ..ingest import join_geostrata_by_latitude
+from ..nwfsc_feat import utils
+from . import statistics
 
 
 class JollyHampton:
@@ -308,7 +310,7 @@ class JollyHampton:
             raise ValueError("Currently only single stratification variable is supported")
 
         # Stratify the virtual transects
-        virtual_df = load_data.join_geostrata_by_latitude(
+        virtual_df = join_geostrata_by_latitude(
             data=virtual_df, geostrata_df=geostrata_df, stratum_name=stratify_by[0]
         )
 

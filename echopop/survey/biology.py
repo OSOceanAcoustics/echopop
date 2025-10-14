@@ -3,7 +3,7 @@ from typing import Dict, List, Optional, Tuple, Union
 import numpy as np
 import pandas as pd
 
-from .utils import apply_filters, binned_distribution, create_grouped_table
+from ..nwfsc_feat.utils import apply_filters, binned_distribution, create_grouped_table
 
 
 def fit_length_weight_regression(data: pd.DataFrame) -> pd.Series:

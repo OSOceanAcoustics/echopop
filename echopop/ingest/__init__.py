@@ -7,12 +7,12 @@ from .strata import join_geostrata_by_latitude, join_strata_by_haul, load_geostr
 __all__ = [
     "load_biological_data",
     "load_isobath_data",
-    "load_mesh_data",    
+    "load_mesh_data",
     "load_kriging_variogram_params",
     "join_geostrata_by_latitude",
     "join_strata_by_haul",
     "load_strata",
-    "load_geostrata",    
+    "load_geostrata",
     # Submodules
     "biological",
     "mesh",

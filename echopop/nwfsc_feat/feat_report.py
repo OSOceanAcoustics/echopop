@@ -8,7 +8,8 @@ import pandas.io.formats.excel as pdif
 from openpyxl import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
 
-from . import apportion, utils
+from ..survey import apportionment
+from . import utils
 
 ####################################################################################################
 # FILE WRITING UTILITY
@@ -1502,7 +1503,9 @@ class FEATReports:
         aged_table = datatables["aged"].copy().sum(axis=1).unstack(["age_bin", "sex"])
 
         # Redistribute the aged table, if required
-        aged_table = apportion.reallocate_excluded_estimates(aged_table, exclude_filter, ["sex"])
+        aged_table = apportionment.reallocate_excluded_estimates(
+            aged_table, exclude_filter, ["sex"]
+        )
 
         # Reorient the aged table
         # ---- Convert the indices to numerics
@@ -1616,7 +1619,9 @@ class FEATReports:
         aged_table = datatables["aged"].copy().sum(axis=1).unstack(["age_bin", "sex"])
 
         # Redistribute the aged table, if required
-        aged_table = apportion.reallocate_excluded_estimates(aged_table, exclude_filter, ["sex"])
+        aged_table = apportionment.reallocate_excluded_estimates(
+            aged_table, exclude_filter, ["sex"]
+        )
 
         # Reorient the aged table
         # ---- Convert the indices to numerics
