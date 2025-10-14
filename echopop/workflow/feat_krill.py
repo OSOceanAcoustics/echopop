@@ -1,7 +1,7 @@
 from pathlib import Path
-from echopop.nwfsc_feat import ingest_sv
+from echopop.ingest import sv
 from echopop.inversion.inversion_matrix import InversionMatrix, estimate_population
-from echopop.typing import InvParameters
+from echopop.inversion import InvParameters
 from echopop.nwfsc_feat import utils
 
 # ==================================================================================================
@@ -25,7 +25,7 @@ center_frequencies = {18e3: {"min": -90., "max": -50.},
                       200e3: {"min": -90., "max": -50.}}
 method="transect"
 
-sv_data, nasc_coordinates = ingest_sv.ingest_echoview_sv(sv_path=sv_path, 
+sv_data, nasc_coordinates = sv.ingest_echoview_sv(sv_path=sv_path, 
                                                          center_frequencies=center_frequencies, 
                                                          transect_pattern=transect_pattern, 
                                                          aggregate_method=method,

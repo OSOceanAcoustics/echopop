@@ -7,14 +7,13 @@ import numpy.typing as npt
 import pandas as pd
 from lmfit import Parameters
 from echopop import inversion
+from echopop.ingest import load_data, nasc
 from echopop.nwfsc_feat import (
     apportion,
     biology, 
     FEAT,
-    ingest_nasc, 
     get_proportions, 
     kriging,
-    load_data, 
     spatial,
     stratified,
     transect, 
@@ -36,7 +35,7 @@ DATA_ROOT = Path("C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_2019")
 # ------------------
 
 # Merge exports
-df_intervals, df_exports = ingest_nasc.merge_echoview_nasc(
+df_intervals, df_exports = nasc.merge_echoview_nasc(
     nasc_path = DATA_ROOT / "raw_nasc/",
     filename_transect_pattern = r"T(\d+)",
     default_transect_spacing = 10.0,
@@ -61,13 +60,13 @@ TRANSECT_REGION_SHEETNAME_ALL_AGES: str = "Sheet1"
 TRANSECT_REGION_SHEETNAME_NO_AGE1: str = "Sheet1"
 
 # Read in the transect-region-haul key files for each group
-transect_region_haul_key_all_ages: pd.DataFrame = ingest_nasc.read_transect_region_haul_key(
+transect_region_haul_key_all_ages: pd.DataFrame = nasc.read_transect_region_haul_key(
     filename=TRANSECT_REGION_FILEPATH_ALL_AGES,
     sheetname=TRANSECT_REGION_SHEETNAME_ALL_AGES,
     rename_dict=TRANSECT_REGION_FILE_RENAME,
 )
 
-transect_region_haul_key_no_age1: pd.DataFrame = ingest_nasc.read_transect_region_haul_key(
+transect_region_haul_key_no_age1: pd.DataFrame = nasc.read_transect_region_haul_key(
     TRANSECT_REGION_FILEPATH_NO_AGE1, TRANSECT_REGION_SHEETNAME_NO_AGE1, TRANSECT_REGION_FILE_RENAME
 )
 
@@ -92,7 +91,7 @@ REGION_NAME_EXPR_DICT: Dict[str, dict] = {
 
 # Process the region name codes to define the region classes
 # e.g. H5C - Region 2 corresponds to "Hake, Haul #5, Canada"
-df_exports_with_regions: pd.DataFrame = ingest_nasc.process_region_names(
+df_exports_with_regions: pd.DataFrame = nasc.process_region_names(
     df=df_exports,
     region_name_expr_dict=REGION_NAME_EXPR_DICT,
     can_haul_offset=200,
@@ -103,12 +102,12 @@ df_exports_with_regions: pd.DataFrame = ingest_nasc.process_region_names(
 # ---------------------------------
 
 # Generate transect-region-haul key from compiled values
-df_transect_region_haul_key_no_age1: pd.DataFrame = ingest_nasc.generate_transect_region_haul_key(
+df_transect_region_haul_key_no_age1: pd.DataFrame = nasc.generate_transect_region_haul_key(
     df=df_exports_with_regions, 
     filter_list=["Hake", "Hake Mix"]
 )
 
-df_transect_region_haul_key_all_ages = ingest_nasc.generate_transect_region_haul_key(
+df_transect_region_haul_key_all_ages = nasc.generate_transect_region_haul_key(
     df=df_exports_with_regions, 
     filter_list=["Age-1 Hake", "Age-1", "Hake", "Hake Mix"]
 )
@@ -116,7 +115,7 @@ df_transect_region_haul_key_all_ages = ingest_nasc.generate_transect_region_haul
 # ==================================================================================================
 # Consolidate the Echvoiew NASC export files
 # ------------------------------------------
-df_nasc_no_age1: pd.DataFrame = ingest_nasc.consolidate_echvoiew_nasc(
+df_nasc_no_age1: pd.DataFrame = nasc.consolidate_echvoiew_nasc(
     df_merged=df_exports_with_regions,
     interval_df=df_intervals,
     region_class_names=["Hake", "Hake Mix"],
@@ -124,7 +123,7 @@ df_nasc_no_age1: pd.DataFrame = ingest_nasc.consolidate_echvoiew_nasc(
     transect_region_haul_key_df=transect_region_haul_key_no_age1,
 )
 
-df_nasc_all_ages: pd.DataFrame = ingest_nasc.consolidate_echvoiew_nasc(
+df_nasc_all_ages: pd.DataFrame = nasc.consolidate_echvoiew_nasc(
     df_merged=df_exports_with_regions,
     interval_df=df_intervals,
     region_class_names=["Age-1 Hake", "Age-1", "Hake", "Hake Mix"],
@@ -148,7 +147,7 @@ FEAT_TO_ECHOPOP_COLUMNS: Dict[str, str] = {
 }
 
 #
-df_nasc_all_ages: pd.DataFrame = ingest_nasc.read_nasc_file(
+df_nasc_all_ages: pd.DataFrame = nasc.read_nasc_file(
     filename=DATA_ROOT / "Exports/US_CAN_NASC_2019_table_all_ages.xlsx",
     sheetname="Sheet1",
     column_name_map=FEAT_TO_ECHOPOP_COLUMNS,
@@ -159,7 +158,7 @@ df_nasc_all_ages: pd.DataFrame = ingest_nasc.read_nasc_file(
 # --------------------------------------------------------------
 
 # EXAMPLE: 2001 Dataset
-df_nasc_all_ages_feat = ingest_nasc.convert_afsc_nasc_to_feat(
+df_nasc_all_ages_feat = nasc.convert_afsc_nasc_to_feat(
     df=df_nasc_all_ages,
     default_interval_distance = 0.5,
     default_transect_spacing = 10.0,
@@ -171,7 +170,7 @@ df_nasc_all_ages_feat = ingest_nasc.convert_afsc_nasc_to_feat(
 # --------------------------------------------------------------------------
 
 # DataFrame with filtered intervals representing on-effort
-df_nasc_all_ages_cleaned: pd.DataFrame = ingest_nasc.filter_transect_intervals(
+df_nasc_all_ages_cleaned: pd.DataFrame = nasc.filter_transect_intervals(
     nasc_df=df_nasc_all_ages_feat,
     transect_filter_df=Path("Path/to/file"),
     subset_filter="survey == 201003",

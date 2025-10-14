@@ -10,7 +10,7 @@ from ..core.echoview import (
     ECHOVIEW_EXPORT_ROW_SORT,
     ECHOVIEW_TO_ECHOPOP,
 )
-from . import utils
+from ..nwfsc_feat import utils
 
 
 def map_transect_num(

@@ -4,7 +4,7 @@ from typing import Any, Dict, Literal, Optional
 import numpy as np
 import pandas as pd
 
-from . import ingest_nasc
+from . import nasc
 
 
 def read_echoview_sv(
@@ -53,7 +53,7 @@ def read_echoview_sv(
     """
 
     # Read in the defined CSV file
-    sv_df = ingest_nasc.read_echoview_export(filename, validator)
+    sv_df = nasc.read_echoview_export(filename, validator)
 
     # Don't read in if the file contents are empty
     if sv_df.empty or sv_df.dropna(axis=1, how="all").empty:
@@ -69,10 +69,10 @@ def read_echoview_sv(
     # Fix latitude and longitude
     # ---- Latitude
     if "latitude" in sv_df.columns and impute_coordinates:
-        ingest_nasc.impute_bad_coordinates(sv_df, "latitude")
+        nasc.impute_bad_coordinates(sv_df, "latitude")
     # ---- Longitude
     if "longitude" in sv_df.columns and impute_coordinates:
-        ingest_nasc.impute_bad_coordinates(sv_df, "longitude")
+        nasc.impute_bad_coordinates(sv_df, "longitude")
 
     # Return the cleaned DataFrame
     return sv_df
@@ -622,7 +622,7 @@ def ingest_echoview_sv(
 
     # Get the trasnect numbers
     if transect_pattern:
-        transect_num_df = ingest_nasc.map_transect_num(sv_filepaths, transect_pattern)
+        transect_num_df = nasc.map_transect_num(sv_filepaths, transect_pattern)
     else:
         # ---- Fill in default values in the DataFrame
         transect_num_df = pd.DataFrame(
@@ -642,7 +642,7 @@ def ingest_echoview_sv(
     )
 
     # Sort
-    ingest_nasc.sort_echoview_export_df(sv, inplace=True)
+    nasc.sort_echoview_export_df(sv, inplace=True)
 
     # Set min/max threshold for each frequency
     if center_frequencies:
