@@ -19,6 +19,7 @@ from .biology import (
     compute_biomass,
     fit_length_weight_regression,
     length_binned_weights,
+    quantize_length_data,
 )
 from .proportions import (
     binned_weights,
@@ -50,6 +51,7 @@ __all__ = [
     "compute_biomass",
     "fit_length_weight_regression",
     "length_binned_weights",
+    "quantize_length_data",
     # Proportion functions
     "binned_weights",
     "compute_binned_counts",

@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 
 from ..ingest import join_geostrata_by_latitude
-from ..nwfsc_feat import utils
+from .. import utils
 from . import statistics
 
 

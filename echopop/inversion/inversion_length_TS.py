@@ -6,7 +6,7 @@ from pydantic import ValidationError
 
 from .. import validators as val
 from ..core.exceptions import EchopopValidationError
-from ..nwfsc_feat import utils
+from ..survey import quantize_length_data
 from .core import InversionBase
 from .operations import impute_missing_sigma_bs
 
@@ -149,7 +149,7 @@ class InversionLengthTS(InversionBase):
         # Quantize the lengths
         haul_counts = pd.concat(
             [
-                utils.quantize_length_data(d, self.model_params["stratify_by"] + ["haul_num"])
+                quantize_length_data(d, self.model_params["stratify_by"] + ["haul_num"])
                 for d in df_length
             ],
             axis=1,
@@ -249,7 +249,7 @@ class InversionLengthTS(InversionBase):
             df_length_counts = (
                 pd.concat(
                     [
-                        utils.quantize_length_data(d, self.model_params["stratify_by"])
+                        quantize_length_data(d, self.model_params["stratify_by"])
                         for d in df_length
                     ],
                     axis=1,
@@ -294,7 +294,7 @@ class InversionLengthTS(InversionBase):
             df_length_counts = (
                 pd.concat(
                     [
-                        utils.quantize_length_data(d, self.model_params["stratify_by"])
+                        quantize_length_data(d, self.model_params["stratify_by"])
                         for d in df_length
                     ],
                     axis=1,
