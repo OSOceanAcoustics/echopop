@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
-from pydantic import ConfigDict, Field, field_validator, model_validator, RootModel, ValidationError
+from pydantic import ConfigDict, Field, RootModel, ValidationError, field_validator, model_validator
 
 from ..core.validators import BaseDataFrame, BaseDictionary
 from .scattering_models import SCATTERING_MODEL_PARAMETERS
@@ -307,6 +307,7 @@ class ValidateBuildModelArgs(
 
         return self
 
+
 class SingleParameter(
     BaseDictionary,
     arbitrary_types_allowed=True,
@@ -342,13 +343,13 @@ class ModelInputParameters(
     def prevalidator_trans(cls, data):
         # Use TYPE_CHECKING import
         if TYPE_CHECKING:
-            from ..inversion import InvParameters       
+            from ..inversion import InvParameters  # noqa: F401
 
         # Check type using string comparison to avoid import
-        if type(data).__name__ == 'InvParameters':
+        if type(data).__name__ == "InvParameters":
             return data.parameters
-        return data 
-    
+        return data
+
     # Validator method
     @classmethod
     def judge(cls, **kwargs):

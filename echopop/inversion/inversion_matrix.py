@@ -8,13 +8,12 @@ from lmfit import Minimizer, Parameters
 from pydantic import ValidationError
 
 from ..core.exceptions import EchopopValidationError
-from .core import InversionBase
-from .parameters import InvParameters
 from ..validators.inversion import (
     ValidateBuildModelArgs,
     ValidateInversionMatrix,
 )
 from ..validators.scattering_models import SCATTERING_MODEL_PARAMETERS
+from .core import InversionBase, InvParameters
 
 
 def mininizer_print_cb(

@@ -1,10 +1,12 @@
 import abc
 from typing import Any, Dict, Optional
+
 import numpy as np
 import pandas as pd
 from lmfit import Parameters
 
 from ..validators.inversion import ModelInputParameters
+
 
 class InversionBase(abc.ABC):
     """
@@ -96,6 +98,7 @@ class InversionBase(abc.ABC):
         for their method (length-based, age-based, etc.).
         """
         pass
+
 
 class InvParameters:
     """

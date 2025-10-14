@@ -359,6 +359,7 @@ class InversionLengthTS(InversionBase):
             # Return the NASC DataFrame with the inverted number densities
             return df_nasc.reset_index()
 
+
 def ts_length_regression(
     length: Union[np.ndarray, float], slope: float, intercept: float
 ) -> np.ndarray:
