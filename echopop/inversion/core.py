@@ -4,6 +4,8 @@ from typing import Any, Dict, Optional
 import numpy as np
 import pandas as pd
 from lmfit import Parameters
+from pydantic import ValidationError
+from ..core.exceptions import EchopopValidationError
 
 
 class InversionBase(abc.ABC):
@@ -171,23 +173,15 @@ class InvParameters:
         self,
         parameters: Dict[str, Any],
     ):
-        # Delay import to avoid circular import issues
-        from ..validators.inversion import ModelInputParameters
 
-        # Validation step
-        if not isinstance(parameters, dict):
-            raise TypeError("Parameters must be a dictionary.")
-        for k, v in parameters.items():
-            if not isinstance(k, (int, float, str)):
-                raise TypeError(f"Parameter key '{k}' must be a numeric or string.")
-
-        # Validate parameters
-        validated_parameters = ModelInputParameters.create(**parameters)
+        # Run initial validation
+        validated_parameters = self._validate(parameters)
 
         # Initialize attributes
         self._unscaled_parameters = validated_parameters
         self.parameter_bounds = self._get_parameter_limits(validated_parameters)
         self._scaled = False
+        self._realizations = {}
 
         # Store the scaled parameters
         self._scale_parameters()
@@ -205,6 +199,32 @@ class InvParameters:
         # Return the string output
         return f"InvParameters(scaled={self._scaled}, parameters=[{parameters_str}])"
 
+    def _validate(self, parameters):
+        """
+        Internal validator
+        """
+        
+        # Delay import to avoid circular import issues
+        from ..validators.inversion import ModelInputParameters
+
+        # Validation step
+        if not isinstance(parameters, dict):
+            raise TypeError("Parameters must be a dictionary.")
+        for k, v in parameters.items():
+            if not isinstance(k, (int, float, str)):
+                raise TypeError(f"Parameter key '{k}' must be a numeric or string.")
+
+        # Validate parameters
+        try:
+            # ---- Check
+            validated_parameters = ModelInputParameters.create(**parameters)
+        # Break creation
+        except (ValidationError, Exception) as e:
+            raise EchopopValidationError(str(e)) from None
+
+        # Return parameter
+        return validated_parameters        
+        
     @property
     def values(self):
         """
@@ -564,7 +584,7 @@ class InvParameters:
         updated_parameters = self._set_parameter_bounds(self._unscaled_parameters, bounds)
 
         # Run the validation
-        validated_parameters = ModelInputParameters.create(**updated_parameters)
+        validated_parameters = self._validate(updated_parameters)
 
         # Update the parameter set attributes
         self._unscaled_parameters = validated_parameters
