@@ -19,9 +19,7 @@ from echopop.ingest import (
     load_mesh_data,
     load_strata
 ) 
-from echopop.nwfsc_feat import (
-    FEAT
-)
+import echopop.nwfsc_feat as feat
 from echopop.survey import apportionment, biology, proportions, stratified, transect
 # ==================================================================================================
 # ==================================================================================================
@@ -677,7 +675,7 @@ dict_transect_biomass_table = apportionment.distribute_population_estimates(
 # ---------------------------------------------------------------------------
 
 df_transect_aged_biomass_table = apportionment.distribute_population_estimates(
-    dataa=df_nasc_no_age1_prt,
+    data=df_nasc_no_age1_prt,
     proportions=dict_df_weight_proportion["aged"],
     variable="biomass",
     group_by=["sex", "age_bin", "length_bin"],
@@ -797,16 +795,16 @@ krg = kriging.Kriging(
 # -----------------------------------
 
 krg.crop_mesh(
-    crop_function=FEAT.fun.transect_ends_crop,
+    crop_function=feat.transect_ends_crop,
     transects=df_nasc_no_age1_prt,
     latitude_resolution=1.25/60.,
-    transect_mesh_region_function=FEAT.parameters.transect_mesh_region_2019,
+    transect_mesh_region_function=feat.parameters.transect_mesh_region_2019,
 )
 
 # ==================================================================================================
 # [FEAT] Get the western extent of the transect bounds
 # ----------------------------------------------------
-transect_western_extents = FEAT.get_survey_western_extents(
+transect_western_extents = feat.get_survey_western_extents(
     transects=df_nasc_no_age1_prt,
     coordinate_names=("x", "y"),
     latitude_threshold=51.
@@ -815,7 +813,7 @@ transect_western_extents = FEAT.get_survey_western_extents(
 # ==================================================================================================
 # [FEAT] Register the custom search strategy
 # ------------------------------------------
-krg.register_search_strategy("FEAT_strategy", FEAT.western_boundary_search_strategy)
+krg.register_search_strategy("FEAT_strategy", feat.western_boundary_search_strategy)
 # ---- Verify that method was registered
 krg.list_search_strategies()
 
