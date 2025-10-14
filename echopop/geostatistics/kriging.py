@@ -343,7 +343,7 @@ def ordinary_kriging_matrix(
     """
 
     # Calculate the covariance/kriging matrix (without the constant term)
-    kriging_matrix_initial = vgm.variogram(
+    kriging_matrix_initial = vgm.compute_variogram(
         distance_lags=local_distance_matrix, variogram_parameters=variogram_parameters
     )
 

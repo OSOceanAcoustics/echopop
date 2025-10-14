@@ -11,7 +11,7 @@ from IPython.display import clear_output, display
 from lmfit import Parameters
 
 from echopop.geostatistics.variogram import Variogram
-from echopop.geostatistics.variogram_models import get_variogram_arguments, variogram
+from echopop.geostatistics.variogram_models import get_variogram_arguments, compute_variogram
 
 # ==================================================================================================
 # Constants, mappings, and helper functions API
@@ -1229,7 +1229,7 @@ class VariogramGUI:
             # ---- Collect parameter widget inputs
             param_values = {p: w.value for p, w in self.parameter_widgets.items()}
             # ---- Compute the theoretical variogram
-            gamma_model = variogram(
+            gamma_model = compute_variogram(
                 model=self.variogram_model,
                 distance_lags=self.vgm.lags,
                 variogram_parameters=param_values,
@@ -1483,7 +1483,7 @@ class VariogramGUI:
             )
 
             # Compute the updated fit
-            gamma_optimized = variogram(
+            gamma_optimized = compute_variogram(
                 model=self.variogram_model,
                 distance_lags=self.vgm.lags,
                 variogram_parameters=optimization_result,

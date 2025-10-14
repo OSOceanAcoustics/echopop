@@ -1251,7 +1251,7 @@ VARIOGRAM_MODELS = {
 
 
 # Variogram wrapper function
-def variogram(
+def compute_variogram(
     distance_lags: np.ndarray,
     variogram_parameters: Optional[Dict[str, float]] = None,
     model: Optional[Union[str, List[str]]] = None,
@@ -1576,7 +1576,7 @@ def fit_variogram(
     # Create helper cost-function that is weighted using the kriging weights (`w`), lag
     # distances (`x`), and empirical semivariance (`y`)
     def cost_function(parameters, x, y, w, model):
-        yr = variogram(x, {**parameters, **{"model": model}})
+        yr = compute_variogram(x, {**parameters, **{"model": model}})
         return (yr - y) * w
 
     # Compute the initial fit based on the pre-optimized parameter values
