@@ -10,8 +10,8 @@ from bokeh.models import HoverTool
 from IPython.display import clear_output, display
 from lmfit import Parameters
 
-from echopop.nwfsc_feat.variogram import Variogram
-from echopop.nwfsc_feat.variogram_models import get_variogram_arguments, variogram
+from echopop.geostatistics.variogram import Variogram
+from echopop.geostatistics.variogram_models import get_variogram_arguments, variogram
 
 # ==================================================================================================
 # Constants, mappings, and helper functions API

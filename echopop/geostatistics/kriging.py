@@ -7,9 +7,11 @@ import numpy as np
 import pandas as pd
 from pydantic import ValidationError
 
+from . import cropping
+
 from .. import validators as val
 from ..core.exceptions import EchopopValidationError
-from . import spatial, variogram_models as vgm
+from . import variogram_models as vgm
 from .variogram import lag_distance_matrix
 
 # Set warnings filter
@@ -1130,7 +1132,7 @@ class Kriging:
 
     def crop_mesh(
         self,
-        crop_function: Callable = spatial.hull_crop,
+        crop_function: Callable = cropping.hull_crop,
         coordinate_names: Tuple[str, str] = ("longitude", "latitude"),
         **kwargs,
     ) -> None:

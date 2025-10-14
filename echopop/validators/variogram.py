@@ -5,7 +5,7 @@ from lmfit import Parameters
 from pydantic import ConfigDict, Field, field_validator, model_validator
 
 from ..core.validators import BaseDictionary
-from ..nwfsc_feat.variogram_models import get_variogram_arguments
+from ..geostatistics.variogram_models import get_variogram_arguments
 from . import spatial
 
 
