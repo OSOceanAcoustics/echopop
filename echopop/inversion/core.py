@@ -5,8 +5,6 @@ import numpy as np
 import pandas as pd
 from lmfit import Parameters
 
-from ..validators.inversion import ModelInputParameters
-
 
 class InversionBase(abc.ABC):
     """
@@ -173,6 +171,10 @@ class InvParameters:
         self,
         parameters: Dict[str, Any],
     ):
+        # Delay import to avoid circular import issues
+        from ..validators.inversion import ModelInputParameters
+
+        # Validation step
         if not isinstance(parameters, dict):
             raise TypeError("Parameters must be a dictionary.")
         for k, v in parameters.items():

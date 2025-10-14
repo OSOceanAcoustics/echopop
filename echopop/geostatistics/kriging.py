@@ -728,7 +728,9 @@ def krige(
     )
 
     # Calculate the lagged semivariogram (M20)
-    local_variogram = np.apply_along_axis(vgm.variogram, 1, range_grid, variogram_parameters)
+    local_variogram = np.apply_along_axis(
+        vgm.compute_variogram, 1, range_grid, variogram_parameters
+    )
 
     # Append 1.0 for the ordinary kriging assumptions (M2)
     local_variogram_M2 = np.sort(

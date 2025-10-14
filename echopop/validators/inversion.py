@@ -254,7 +254,9 @@ class ValidateBuildModelArgs(
 
     @model_validator(mode="after")
     def validate_model_parameterization(self):
-
+        # Delay import 
+        from ..inversion import InvParameters
+        
         # Check for model-type
         # ---- Dump the model
         model_settings = self.model_settings.model_dump()
