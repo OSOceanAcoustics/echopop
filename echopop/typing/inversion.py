@@ -105,12 +105,11 @@ class InvParameters:
         return f"InvParameters(scaled={self._scaled}, parameters={list(self.parameters.keys())})"
 
     def __str__(self):
-        status = "Scaled" if self._scaled else "Unscaled"
-        return (
-            f"Status: {status}\n"
-            f"Parameters\n----------\n[{', '.join(self.parameters)}]\n\n"
-            f"Parameterizations\n-----------------\n{self.parameters}"
-        )
+        # Format the parameters string
+        parameters_str = ', '.join([f"{k}: {v}" for k, v in self.parameters.items()])
+
+        # Return the string output
+        return f"InvParameters(scaled={self._scaled}, parameters=[{parameters_str}])"
 
     @property
     def values(self):
