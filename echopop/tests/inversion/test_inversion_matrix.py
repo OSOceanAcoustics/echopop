@@ -5,9 +5,7 @@ from lmfit import Parameters
 
 import echopop.inversion.inversion_matrix as im
 from echopop import inversion
-from echopop.inversion import inversion_matrix
-from echopop.typing import InvParameters
-
+from echopop.inversion import InvParameters, InversionMatrix
 
 # Test base InvParameters
 def test_InvParameters(sample_InversionMatrix_parameters):
@@ -624,7 +622,7 @@ def test_inversion_matrix_creation():
     }
 
     # Create InversionMatrix
-    inv_matrix = inversion_matrix.InversionMatrix(df, sim_settings, verbose=False)
+    inv_matrix = InversionMatrix(df, sim_settings, verbose=False)
 
     assert inv_matrix is not None
     assert inv_matrix.inversion_method == "scattering_model"

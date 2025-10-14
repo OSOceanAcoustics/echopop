@@ -3,7 +3,7 @@ import pandas as pd
 import pytest
 
 from echopop.inversion.pcdwba import pcdwba
-from echopop.typing import InvParameters
+from echopop.inversion import InvParameters
 
 
 @pytest.fixture

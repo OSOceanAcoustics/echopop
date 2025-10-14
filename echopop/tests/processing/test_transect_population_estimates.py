@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from echopop.nwfsc_feat import apportion, biology
+from echopop.survey import apportionment as apportion, biology
 
 
 def test_remove_group_from_estimates_nasc_only(sample_transect_dataset, age1_nasc_proportions):

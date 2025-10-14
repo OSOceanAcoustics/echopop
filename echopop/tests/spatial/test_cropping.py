@@ -1,76 +1,13 @@
 import pandas as pd
 from shapely.geometry import Point
 
-from echopop.nwfsc_feat.FEAT import transect_ends_crop
-from echopop.nwfsc_feat.FEAT.parameters import transect_mesh_region_2019
-from echopop.nwfsc_feat.projection import utm_string_generator, wgs84_to_utm
-from echopop.nwfsc_feat.spatial import hull_crop, transect_coordinate_centroid, transect_extent
-
-
-# ==================================================================================================
-# Test transect_mesh_region_2019
-# -------------------------------
-def test_transect_mesh_region_2019_region_1():
-    """Test transect_mesh_region_2019 for region 1."""
-    start, end, lower, upper = transect_mesh_region_2019(1)
-
-    # Check start and end values
-    assert start == 1
-    assert end == 119
-
-    # Check boundary lists have correct length
-    assert len(lower) == 119
-    assert len(upper) == 119
-
-    # Check boundary values follow expected pattern
-    assert lower[0] == 1.1  # First transect lower bound
-    assert upper[0] == 1.4  # First transect upper bound
-    assert lower[-1] == 119.1  # Last transect lower bound
-    assert upper[-1] == 119.4  # Last transect upper bound
-
-
-def test_transect_mesh_region_2019_region_2():
-    """Test transect_mesh_region_2019 for region 2."""
-    start, end, lower, upper = transect_mesh_region_2019(2)
-
-    # Check start and end values
-    assert start == 121
-    assert end == 127
-
-    # Check boundary lists have correct length
-    assert len(lower) == 7
-    assert len(upper) == 7
-
-    # Check boundary values follow expected pattern
-    assert lower[0] == 121.6  # First transect lower bound
-    assert upper[0] == 121.9  # First transect upper bound
-
-
-def test_transect_mesh_region_2019_region_3():
-    """Test transect_mesh_region_2019 for region 3."""
-    start, end, lower, upper = transect_mesh_region_2019(3)
-
-    # Check start and end values
-    assert start == 129
-    assert end == 145
-
-    # Check boundary lists have correct length
-    assert len(lower) == 17
-    assert len(upper) == 17
-
-    # Check boundary values follow expected pattern
-    assert lower[0] == 129.1  # First transect lower bound
-    assert upper[0] == 129.4  # First transect upper bound
-
-
-def test_transect_mesh_region_2019_invalid_region():
-    """Test transect_mesh_region_2019 with invalid region."""
-    start, end, lower, upper = transect_mesh_region_2019(99)
-
-    # Should default to region 3 behavior
-    assert start == 129
-    assert end == 145
-
+from echopop.geostatistics import (
+    hull_crop, 
+    transect_coordinate_centroid, 
+    transect_extent, 
+    utm_string_generator, 
+    wgs84_to_utm
+)
 
 # ==================================================================================================
 # Test utm_string_generator
@@ -272,64 +209,3 @@ def test_hull_crop_buffer_distance(sample_transect_data_cropping, sample_mesh_da
 
     # Larger buffer should include more mesh points
     assert len(cropped_mesh2) >= len(cropped_mesh1)
-
-
-# ==================================================================================================
-# Test transect_ends_crop
-# ------------------------
-def test_transect_ends_crop_basic(sample_transect_data_cropping, sample_mesh_data_cropping):
-    """Test basic transect_ends_crop functionality."""
-    cropped_mesh, annotated_transects = transect_ends_crop(
-        sample_transect_data_cropping, sample_mesh_data_cropping, 0.05, transect_mesh_region_2019
-    )
-
-    # Check that both outputs are DataFrames
-    assert isinstance(cropped_mesh, pd.DataFrame)
-    assert isinstance(annotated_transects, pd.DataFrame)
-
-    # Check that mesh has been cropped
-    assert len(cropped_mesh) <= len(sample_mesh_data_cropping)
-
-    # Check that transect data has been annotated
-    assert "mesh_region" in annotated_transects.columns
-    assert "transect_lower_bound" in annotated_transects.columns
-    assert "transect_upper_bound" in annotated_transects.columns
-
-
-def test_transect_ends_crop_latitude_resolution(
-    sample_transect_data_cropping, sample_mesh_data_cropping
-):
-    """Test transect_ends_crop with different latitude resolutions."""
-    cropped_mesh1, _ = transect_ends_crop(
-        sample_transect_data_cropping, sample_mesh_data_cropping, 0.01, transect_mesh_region_2019
-    )
-    cropped_mesh2, _ = transect_ends_crop(
-        sample_transect_data_cropping, sample_mesh_data_cropping, 0.1, transect_mesh_region_2019
-    )
-
-    # Both should return valid DataFrames
-    assert isinstance(cropped_mesh1, pd.DataFrame)
-    assert isinstance(cropped_mesh2, pd.DataFrame)
-
-    # Check that results have different sizes (different resolution affects cropping)
-    assert len(cropped_mesh1) != len(cropped_mesh2)
-
-
-def test_transect_ends_crop_region_annotation(
-    sample_transect_data_cropping, sample_mesh_data_cropping
-):
-    """Test that transect_ends_crop correctly annotates regions."""
-    _, annotated_transects = transect_ends_crop(
-        sample_transect_data_cropping, sample_mesh_data_cropping, 0.05, transect_mesh_region_2019
-    )
-
-    # Check that regions are properly assigned
-    assert "mesh_region" in annotated_transects.columns
-    unique_regions = annotated_transects["mesh_region"].unique()
-    assert all(region in [1, 2, 3] for region in unique_regions)
-
-    # Check that boundary values are assigned
-    assert "transect_lower_bound" in annotated_transects.columns
-    assert "transect_upper_bound" in annotated_transects.columns
-    assert not annotated_transects["transect_lower_bound"].isna().all()
-    assert not annotated_transects["transect_upper_bound"].isna().all()
