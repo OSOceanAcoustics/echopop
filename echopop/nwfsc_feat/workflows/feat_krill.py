@@ -2,8 +2,7 @@ from pathlib import Path
 
 from echopop import utils
 from echopop.ingest import sv
-from echopop.inversion import InvParameters
-from echopop.inversion.inversion_matrix import InversionMatrix, estimate_population
+from echopop.inversion import InversionMatrix, InvParameters, estimate_population
 
 # ==================================================================================================
 # ==================================================================================================
@@ -16,24 +15,24 @@ DATA_ROOT = Path("C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_inversi
 # DATA INGESTION
 # ==================================================================================================
 
-sv_path = DATA_ROOT / "raw_files/2023/"
-transect_pattern = r"x(\d+)"
-impute_coordinates = True
-center_frequencies = {
+SV_PATH = DATA_ROOT / "raw_files/2023/"
+TRANSECT_PATTERN = r"x(\d+)"
+IMPUTE_BAD_COORDINATES = True
+CENTER_FREQUENCIES = {
     18e3: {"min": -90.0, "max": -50.0},
     38e3: {"min": -90.0, "max": -50.0},
     70e3: {"min": -90.0, "max": -50.0},
     120e3: {"min": -90.0, "max": -50.0},
     200e3: {"min": -90.0, "max": -50.0},
 }
-method = "transect"
+PROCESSING_METHOD = "transect"
 
 sv_data, nasc_coordinates = sv.ingest_echoview_sv(
-    sv_path=sv_path,
-    center_frequencies=center_frequencies,
-    transect_pattern=transect_pattern,
-    aggregate_method=method,
-    impute_coordinates=True,
+    sv_path=SV_PATH,
+    center_frequencies=CENTER_FREQUENCIES,
+    transect_pattern=TRANSECT_PATTERN,
+    aggregate_method=PROCESSING_METHOD,
+    impute_coordinates=IMPUTE_BAD_COORDINATES,
 )
 
 # ==================================================================================================
@@ -85,20 +84,20 @@ SIMULATION_SETTINGS = {
 
 OPTIMIZATION_KWARGS = {
     "max_nfev": 2000,
-    "method": "lbfgsb",
-    # "method": "least_squares",
-    # "loss": "cauchy",
-    # "xtol": 1e-8,
-    "tol": 1e-8,
-    "options": {"maxiter": 2000, "disp": True, "eps": 1e-6},
-    # "ftol": 1e-6,
-    # "gtol": 1e-6,
-    # "diff_step": 1e-6,
-    # "verbose": 1,
-    "restart_strategy": {"max_attempts": 5, "Q_threshold": 3.0, "scale": 0.2},
+    # "method": "lbfgsb",
+    "method": "least_squares",
+    "loss": "cauchy",
+    "xtol": 1e-8,
+    # "tol": 1e-8,
+    # "options": {"maxiter": 100, "disp": False, "eps": 1e-6},
+    "ftol": 1e-6,
+    "gtol": 1e-6,
+    "diff_step": 1e-6,
+    "verbose": 1,
+    "restart_strategy": {"max_attempts": 2, "Q_threshold": 3.0, "scale": 0.2},
     "burnin": {
         "method": "nelder",
-        "max_nfev": 1000,
+        "max_nfev": 200,
         "tol": 1e-4,
     },
 }
@@ -111,6 +110,8 @@ def run_krill_inversion_workflow():
     # ==================================================================================================
 
     scattering_parameters = InvParameters(MODEL_PARAMETERS)
+    # ---- SCALE THE PARAMETERS FOR IMPROVED NUMERICAL STABILITY
+    scattering_parameters.scale()
 
     # ==================================================================================================
     # ==================================================================================================

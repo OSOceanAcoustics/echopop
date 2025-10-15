@@ -9,12 +9,14 @@ from .operations import (
     reflection_coefficient,
     wavenumber,
 )
+from .population import estimate_population
 
 __all__ = [
     "InvParameters",
     "InversionBase",
     "InversionLengthTS",
     "InversionMatrix",
+    "estimate_population",
     "generate_frequency_interval",
     "impute_missing_sigma_bs",
     "length_average",

@@ -8,9 +8,7 @@ from pydantic import ConfigDict, Field, RootModel, ValidationError, field_valida
 
 from ..core.validators import BaseDataFrame, BaseDictionary
 from .scattering_models import SCATTERING_MODEL_PARAMETERS
-
-if TYPE_CHECKING:
-    from ..inversion import InvParameters
+from ..inversion import InvParameters
 
 
 class TSLRegressionParameters(BaseDictionary, title="TS-length regression parameters"):
@@ -254,8 +252,6 @@ class ValidateBuildModelArgs(
 
     @model_validator(mode="after")
     def validate_model_parameterization(self):
-        # Delay import
-        from ..inversion import InvParameters
 
         # Check for model-type
         # ---- Dump the model

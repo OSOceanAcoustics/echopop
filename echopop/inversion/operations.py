@@ -419,3 +419,28 @@ def generate_frequency_interval(
     """
     key = _make_freq_key(frequency, length_sd_norm, frequency_interval, ndigits)
     return _generate_frequency_interval_cached_key(key)
+
+
+# OPTIMIZATION: More efficient parameter extraction
+def _extract_parameters_optimized(inverted_data: pd.DataFrame) -> pd.DataFrame:
+    """
+    Extract parameters more efficiently than using .apply().
+
+    This optimized version avoids the overhead of pandas .apply()
+    by using direct iteration and batch DataFrame construction.
+
+    Parameters
+    ----------
+    inverted_data : pd.DataFrame
+        DataFrame with 'parameters' column containing InvParameters objects
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame with parameter values as columns
+    """
+    # Extract all parameter dictionaries at once
+    param_dicts = [obj.values for obj in inverted_data["parameters"]]
+
+    # Construct DataFrame in one operation
+    return pd.DataFrame(param_dicts, index=inverted_data.index)
