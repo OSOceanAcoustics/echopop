@@ -750,7 +750,7 @@ class VariogramGUI:
                     text=(
                         f"**Status**: Optimization parameters (*n*={len(self.parameter_widgets)}) "
                         f"for the variogram model "
-                        f"({self.theoretical_widgets["model_selection"].value}) successfully "
+                        f"({self.theoretical_widgets['model_selection'].value}) successfully "
                         "loaded."
                     ),
                 )
@@ -805,7 +805,7 @@ class VariogramGUI:
         input_box = ipw.HBox([lag_resolution_box, HSPACER, n_lags_box])
 
         # Coordinates text pane
-        coord_info = md_to_HTML(f"**Coordinate names:** {self.initialization_args["coordinates"]}")
+        coord_info = md_to_HTML(f"**Coordinate names:** {self.initialization_args['coordinates']}")
 
         # Update the widgets container
         self.initialization_widgets.update(
@@ -1030,7 +1030,7 @@ class VariogramGUI:
                 type="success",
                 text=(
                     f"**Status:** Empirical variogram computation complete. "
-                    f"[{self.empirical_widgets["variable"].value}, *n*={len(lags)} lags]"
+                    f"[{self.empirical_widgets['variable'].value}, *n*={len(lags)} lags]"
                 ),
             )
 
@@ -1254,7 +1254,7 @@ class VariogramGUI:
                 type="success",
                 text=(
                     f"**Status:** Theoretical variogram successfully computed "
-                    f"({self.theoretical_widgets["model_selection"].value})."
+                    f"({self.theoretical_widgets['model_selection'].value})."
                 ),
             )
 
