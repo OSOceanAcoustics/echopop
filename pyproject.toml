@@ -69,7 +69,7 @@ where = ["."]
 include = ["echopop*"]
 
 [tool.setuptools_scm]
-fallback_version = "unknown"
+fallback_version = "0.0.0"
 local_scheme = "node-and-date"
 write_to = "echopop/_version.py"
 write_to_template = 'version = "{version}"  # noqa'
