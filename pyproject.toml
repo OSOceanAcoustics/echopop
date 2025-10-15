@@ -29,6 +29,37 @@ classifiers = [
     "Topic :: Scientific/Engineering"
 ]
 requires-python = ">=3.9"
+dependencies = [
+    # Data processing and wrangling stack
+    "awkward",
+    "lmfit",
+    "numpy",
+    "openpyxl",
+    "pandas",
+    "scipy",
+    "numba",
+    # Spatial data processing stack
+    "cartopy",
+    "geopandas",
+    "geopy",
+    "pyproj",
+    "shapely",
+    "verde",
+    # Validation stack
+    "pandera>=0.25",
+    "pydantic>=2.0.0",
+    "traitlets",
+    # Jupyter stack
+    "ipympl",
+    "jupyter_bokeh>=3.0.5",
+    # Static visualization stack
+    "matplotlib",
+    # Interactive visualization stack
+    "bokeh",
+    "geoviews",
+    "holoviews",
+    "ipywidgets"
+]
 
 [project.urls]
 Homepage = "https://github.com/OSOceanAcoustics/echopop"
@@ -36,9 +67,6 @@ Homepage = "https://github.com/OSOceanAcoustics/echopop"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["echopop*"]
-
-[tool.setuptools.dynamic]
-dependencies = {file = ["requirements.txt"]}
 
 [tool.setuptools_scm]
 fallback_version = "unknown"
