@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from echopop.nwfsc_feat import statistics as stats
+from echopop.survey import statistics as stats
 
 
 def test_percentile_method(sample_ci_data):

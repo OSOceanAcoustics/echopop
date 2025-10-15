@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from echopop.nwfsc_feat import transect
+from echopop.survey import transect
 
 
 def test_get_transect_basic_functionality(basic_nasc_data):

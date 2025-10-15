@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from echopop.nwfsc_feat.spatial import transform_coordinates
+from echopop.geostatistics import transform_coordinates
 
 
 # ==================================================================================================

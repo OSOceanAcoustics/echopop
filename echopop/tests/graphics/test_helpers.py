@@ -5,9 +5,9 @@ import pandas as pd
 import pyproj
 import xarray as xr
 
-from echopop.nwfsc_feat.graphics.age_length_heatmap import add_heatmap_grid, format_heatmap_mapping
-from echopop.nwfsc_feat.graphics.kriged_mesh import interpolation_mesh
-from echopop.nwfsc_feat.graphics.transect_map import get_transect_lines
+from echopop.graphics.age_length_heatmap import add_heatmap_grid, format_heatmap_mapping
+from echopop.graphics.kriged_mesh import interpolation_mesh
+from echopop.graphics.transect_map import get_transect_lines
 
 
 def test_interpolation_mesh_valid():

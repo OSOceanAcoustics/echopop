@@ -1,7 +1,7 @@
 import matplotlib
 import pytest
 
-from echopop.nwfsc_feat import graphics as egra
+from echopop import graphics as egra
 
 # Change to non-interactive GUI
 matplotlib.use("Agg")

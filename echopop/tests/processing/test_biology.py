@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from echopop.nwfsc_feat import biology
+from echopop.survey import biology
 
 
 def test_fit_length_weight_regression_basic(length_weight_data):

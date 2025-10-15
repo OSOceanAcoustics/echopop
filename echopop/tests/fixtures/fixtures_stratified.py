@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from echopop.nwfsc_feat import stratified
+from echopop.survey import stratified
 
 
 # Test data fixtures

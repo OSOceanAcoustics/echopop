@@ -1,9 +1,10 @@
 import numpy as np
 import pytest
 
-from echopop.nwfsc_feat.variogram_models import (
+from echopop.geostatistics.variogram_models import (
     bessel_exponential,
     bessel_gaussian,
+    compute_variogram,
     cosine_exponential,
     cosine_gaussian,
     cubic,
@@ -22,7 +23,6 @@ from echopop.nwfsc_feat.variogram_models import (
     quadratic,
     sinc,
     spherical,
-    variogram,
 )
 
 
@@ -501,7 +501,7 @@ def test_gaussian_linear(sample_distance_lags, sample_model_parameters):
 # ----------------------------
 def test_variogram_single_model(sample_distance_lags, sample_variogram_arguments):
     """Test variogram function with single model."""
-    result = variogram(sample_distance_lags, **sample_variogram_arguments)
+    result = compute_variogram(sample_distance_lags, **sample_variogram_arguments)
 
     # Check output shape and type
     assert isinstance(result, np.ndarray)
@@ -517,7 +517,7 @@ def test_variogram_single_model(sample_distance_lags, sample_variogram_arguments
 
 def test_variogram_composite_model(sample_distance_lags, sample_composite_arguments):
     """Test variogram function with composite model."""
-    result = variogram(sample_distance_lags, **sample_composite_arguments)
+    result = compute_variogram(sample_distance_lags, **sample_composite_arguments)
 
     # Check output shape and type
     assert isinstance(result, np.ndarray)
@@ -556,7 +556,7 @@ def test_variogram_all_single_models(
             # Other models use the minimal parameters
             args = {**sample_minimal_parameters, "model": [model_name]}
 
-        result = variogram(sample_distance_lags, **args)
+        result = compute_variogram(sample_distance_lags, **args)
 
         # Check output shape and type
         assert isinstance(result, np.ndarray)
@@ -573,7 +573,7 @@ def test_variogram_all_composite_models(
     """Test variogram function with all composite models."""
     for model_tuple in sample_composite_model_names:
         args = {**sample_extended_parameters, "model": list(model_tuple)}
-        result = variogram(sample_distance_lags, **args)
+        result = compute_variogram(sample_distance_lags, **args)
 
         # Check output shape and type
         assert isinstance(result, np.ndarray)
@@ -590,7 +590,7 @@ def test_variogram_invalid_model():
     args = {"nugget": 0.0, "sill": 1.0, "correlation_range": 0.5, "model": ["invalid_model"]}
 
     with pytest.raises(LookupError):
-        variogram(distance_lags, **args)
+        compute_variogram(distance_lags, **args)
 
 
 # ==================================================================================================

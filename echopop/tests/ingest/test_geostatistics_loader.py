@@ -1,6 +1,6 @@
 import pandas as pd
 
-from echopop.nwfsc_feat.load_data import (
+from echopop.ingest import (
     load_kriging_variogram_params,
     load_mesh_data,
 )

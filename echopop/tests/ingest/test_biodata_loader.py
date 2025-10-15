@@ -3,10 +3,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from echopop.nwfsc_feat.load_data import (
-    apply_ship_survey_filters,
-    load_biological_data,
-)
+from echopop.ingest.biological import apply_ship_survey_filters, load_biological_data
 
 
 def test_load_biological_data_basic(bio_excel_file, bio_sheet_map):
