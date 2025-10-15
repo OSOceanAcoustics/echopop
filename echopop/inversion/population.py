@@ -1,7 +1,10 @@
-import pandas as pd
-import numpy as np
 from typing import Literal
+
+import numpy as np
+import pandas as pd
+
 from .operations import _extract_parameters_optimized
+
 
 def estimate_population(
     inverted_data: pd.DataFrame,

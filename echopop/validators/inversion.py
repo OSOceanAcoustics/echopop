@@ -7,8 +7,8 @@ import pandas as pd
 from pydantic import ConfigDict, Field, RootModel, ValidationError, field_validator, model_validator
 
 from ..core.validators import BaseDataFrame, BaseDictionary
-from .scattering_models import SCATTERING_MODEL_PARAMETERS
 from ..inversion import InvParameters
+from .scattering_models import SCATTERING_MODEL_PARAMETERS
 
 
 class TSLRegressionParameters(BaseDictionary, title="TS-length regression parameters"):
