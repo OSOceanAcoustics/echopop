@@ -27,6 +27,7 @@ parts:
     - file: theory/apportion_abundance
     - file: theory/kriging_eq
     - file: theory/semivariogram_eq
+    - file: theory/variogram_theory
     # - file: theory/other
   - file: implementation
     title: Software implementation
