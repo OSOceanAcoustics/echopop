@@ -61,7 +61,7 @@ def remove_group_from_estimates(
     if "nasc" in group_proportions:
         transect_data["nasc"] = transect_data["nasc"] * (
             1 - group_proportions["nasc"].reindex(transect_data.index)
-        )
+        ).fillna(0.0)
     # ---- Drop column to avoid partial evaluation
     else:
         transect_data.drop(columns=["nasc"], inplace=True)
@@ -73,14 +73,14 @@ def remove_group_from_estimates(
         # ---- Map the appropriate columns for abundance
         abundance_names = transect_data.filter(like="abundance").columns
         # ---- Adjust abundances
-        transect_data[abundance_names] = transect_data[abundance_names].mul(
-            abundance_proportions, axis=0
+        transect_data[abundance_names] = (
+            transect_data[abundance_names].mul(abundance_proportions, axis=0).fillna(0.0)
         )
         # ---- Map the appropriate columns for number density
         number_density_names = transect_data.filter(like="number_density").columns
         # ---- Adjust number densities
-        transect_data[number_density_names] = transect_data[number_density_names].mul(
-            abundance_proportions, axis=0
+        transect_data[number_density_names] = (
+            transect_data[number_density_names].mul(abundance_proportions, axis=0).fillna(0.0)
         )
     # ---- Drop columns to avoid partial evaluation
     else:
@@ -96,7 +96,9 @@ def remove_group_from_estimates(
         # ---- Map the appropriate columns for biomass and biomass density
         biomass_names = transect_data.filter(like="biomass").columns
         # ---- Adjust biomass
-        transect_data[biomass_names] = (biomass_proportions * transect_data[biomass_names].T).T
+        transect_data[biomass_names] = (
+            (biomass_proportions * transect_data[biomass_names].T).T
+        ).fillna(0.0)
     # ---- Drop columns to avoid partial evaluation
     else:
         # ---- Gather columns to drop

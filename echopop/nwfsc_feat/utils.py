@@ -171,7 +171,7 @@ def _filter_rows(
     df: Union[pd.Series, pd.DataFrame],
     filter_dict: Dict[str, Any],
     include: bool,
-    replace_value: Union[str, None] = None,
+    replace_value: Union[np.number, str, None] = None,
 ) -> pd.DataFrame:
     """Helper function to filter DataFrame rows."""
 
