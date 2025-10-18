@@ -28,6 +28,7 @@ parts:
     - file: theory/kriging_eq
     - file: theory/semivariogram_eq
     - file: theory/variogram_theory
+    - file: theory/kriging_theory
     # - file: theory/other
   - file: implementation
     title: Software implementation
