@@ -1,5 +1,4 @@
 (kriging-theory)=
-
 # Interpolating spatial fields
 
 ## Ordinary kriging
@@ -7,7 +6,7 @@
 **Ordinary kriging** is a **Best-Linear-Unbiased Predictor (BLUP)** for spatial interpolation that combines observed values with a model of spatial dependence to produce point estimates and associated uncertainties. The method requires two essential stationarity assumptions.[^cressie] 
 
 1. **First-Order Stationarity**: the mean of the field is unknown but constant over the local prediction neighborhood. 
-2. [**Intrinsic Stationarity**](variogram_theory.md#the-intrinsic-model): the spatial dependence is only a function of lag vector $\mathbf{h}$, not location $\mathbf{x}$.
+2. [**Intrinsic Stationarity**](semivariogram_theory.md#the-intrinsic-model): the spatial dependence is only a function of lag vector $\mathbf{h}$, not location $\mathbf{x}$.
 
 This form of kriging is preferred for locally stationary fields or when no reliable trend model is apparent. Since ordinary kriging assumes a locally constant but unknown mean, it is mathematically constructed to filter out this mean. When the regional mean trends slowly, or where any measured trend is very gradual or unreliable, then the small search neighborhood becomes small enough such that the local mean appears effectively constant. Other kriging variants exist (for example, methods that model an explicit spatial trend or include external covariates), and they differ primarily in how the mean is represented and estimated. Mentioning these alternatives is useful for methodological context, but the equations below are restricted to ordinary kriging only.[^cressie][^chiles]
 
@@ -15,7 +14,7 @@ This form of kriging is preferred for locally stationary fields or when no relia
 
 ## General assumptions and principles
 
-The underlying random process [$Z(\mathbf{x})$](./variogram_theory.md#eq-randomz) can be characterized by both deterministic and stochastic components:
+The underlying random process [$Z(\mathbf{x})$](./semivariogram_theory.md#eq-randomz) can be characterized by both deterministic and stochastic components:
 
 $$
 Z(\mathbf{x}) = m(\mathbf{x}) + \varepsilon(\mathbf{x}),

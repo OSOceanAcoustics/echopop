@@ -21,25 +21,21 @@ parts:
     sections:
     - file: theory/acoustics
     - file: theory/bio_estimates
-    - file: theory/stratification
-    # - file: theory/kriging    
-    - file: theory/apportion_biomass
-    - file: theory/apportion_abundance
-    - file: theory/kriging_eq
-    - file: theory/semivariogram_eq
-    - file: theory/variogram_theory
-    - file: theory/kriging_theory
-    # - file: theory/other
+      title: Population estimation
+      sections:
+        - file: theory/stratification
+        - file: theory/apportion_biomass
+        - file: theory/apportion_abundance  
+    - file: theory/semivariogram_theory
+      title: Geostatistics
+      sections:    
+      - file: theory/kriging_theory
+      - file: theory/semivariogram_eq
   - file: implementation
     title: Software implementation
     sections:
     - file: implementation/echopro_vs_echopop
     - file: implementation/preprocessing_data
-  # - file: algo
-  #   title: Algorithmic implementation
-  #   sections:
-  #   - file: algo1
-  #   - file: algo2
   - file: glossary
 - caption: Help & references
   chapters:

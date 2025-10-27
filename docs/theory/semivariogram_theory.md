@@ -1,4 +1,4 @@
-(variogram-theory)=
+(semivariogram-theory)=
 # Characterizing spatial correlation
 
 ## Stationarity and the semivariogram
