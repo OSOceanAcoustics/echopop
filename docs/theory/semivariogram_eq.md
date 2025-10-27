@@ -15,6 +15,15 @@
 | Smoothnes | $\nu$  | Differentiability in Matérn<br>model. | $\nu > 0$            |
 | Power | $p$ | Exponent for the power law model. | $0 < p < 2$ |
 
+## Special Functions and Symbols
+
+| Symbol / Function         | Definition                                                           |
+|--------------------------|-----------------------------------------------------------------------|
+| $\text{J}_0(x)$ | Cylindrical Bessel function of the first kind of order 0: <br> $\text{J}_0(x) = \frac{1}{\pi} \int_0^\pi \cos(x \sin \theta) d\theta$, <br> where $x$ is the argument and $\theta$ is the integration variable. |
+| $\text{K}_\nu(x)$ | Modified cylindrical Bessel function of the second kind of order $\nu$: <br> $\text{K}_\nu(x) = \int_0^\infty e^{-x \cosh t} \cosh(\nu t) dt$, <br> where $x$ is the argument, $t$ is the integration variable, and $\cosh$ is the hyperbolic cosine. |
+| $\Gamma(\nu)$            | Gamma function: $\Gamma(\nu) = \int_0^\infty t^{\nu-1} e^{-t} dt$                           |
+| $\Omega$                 | Angular distance between two points on a sphere used in the Legendre semivariogram model [Legendre semivariogram model](eq:legendre).                        |
+
 ---
 
 ## Models
@@ -74,32 +83,33 @@ The Gaussian model is characterized by a very smooth rise from the origin, with 
 ### J-Bessel
 
 $$
-\gamma(h) = C_0 + C_1 \left( 1 - J_0(bh)\right)
+\gamma(h) = C_0 + C_1 \left( 1 - \text{J}_0(bh)\right)
 \label{eq:jbessel}
 $$
 
-The J-Bessel model introduces damped oscillations into the semivariogram, which can represent periodic or cyclic spatial patterns. This is useful for modeling phenomena with repeating structures or "hole effects."[^chiles]  
+The J-Bessel model introduces damped oscillations into the semivariogram, which can represent periodic or cyclic spatial patterns. This is useful for modeling phenomena with repeating structures or "hole effects."[^chiles]<br>
 *Parameter limits*: $b > 0$  
 
 ### K-Bessel
 
 $$
-\gamma(h) = C_0 + C_1 \left( 1 - K_\nu\left(\frac{h}{a}\right) \right)
+\gamma(h) = C_0 + C_1 \left( 1 - \text{K}_\nu\left(\frac{h}{a}\right) \right)
 \label{eq:kbessel}
 $$
 
-The K-Bessel model uses the modified Bessel function of the second kind, $K_\nu$, to describe spatial correlation decay. Unlike the Matérn model, it does not include normalization or scaling factors and is used for specialized geostatistical applications where the decay is governed by the Bessel function itself.[^chiles]
+The K-Bessel model uses the modified Bessel function of the second kind, $\text{K}_\nu$, to describe spatial correlation decay. Unlike the Matérn model, it does not include normalization or scaling factors and is used for specialized geostatistical applications where the decay is governed by the Bessel function itself.[^chiles]
 
 ---
 
 ### Legendre
+<a id="eq:legendre"></a>
 
  $$ 
  2 - \frac{1 - L^2}{1 - 2L \cos(\Omega) + L^2} 
  \label{eq:legendre}
  $$
 
-The Legendre polynomial semivariogram model is used when you need to model spatial correlation on the surface of a sphere, such as the Earth. This is especially important for global or large-scale geostatistical analyses where the curvature of the Earth cannot be ignored and the usual Euclidean distance-based models are inadequate.[^chiles]
+The Legendre polynomial semivariogram model is used when you need to model spatial correlation on the surface of a sphere, such as the Earth. This is especially important for global or large-scale geostatistical analyses where the curvature of the Earth cannot be ignored and the usual Euclidean distance-based models are inadequate.[^chiles]<br>
 *Parameter limits*: $L \in (0, 1)$  
 
 Here, the parameter $\Omega$ is the angular distance between two points on a sphere (in radians) of radius $\approx$ 6378 km (Earth's radius) where:
@@ -150,7 +160,7 @@ The logarithmic semivariogram model increases slowly with distance and does not 
 ### Matérn
 
 $$
-\gamma(h) = C_0 + C_1 \left( 1 - \frac{2^{1-\nu}}{\Gamma(\nu)} \left( \frac{h}{a} \right)^\nu K_\nu\left( \frac{h}{a} \right) \right)
+\gamma(h) = C_0 + C_1 \left( 1 - \frac{2^{1-\nu}}{\Gamma(\nu)} \left( \frac{h}{a} \right)^\nu \text{K}_\nu\left( \frac{h}{a} \right) \right)
 \label{eq:matern}
 $$
 
@@ -161,7 +171,7 @@ The Matérn model provides a flexible approach to modeling spatial correlation. 
 ### Matérn (Stein's Parameterization)
 
 $$ 
-\gamma(h) = 1 - \frac{2^{1-\nu}}{\Gamma(\nu)} \left( 2\sqrt{\nu} \frac{h}{a} \right)^{\nu} K_{\nu}\left( 2\sqrt{\nu} \frac{h}{a} \right) 
+\gamma(h) = 1 - \frac{2^{1-\nu}}{\Gamma(\nu)} \left( 2\sqrt{\nu} \frac{h}{a} \right)^{\nu} \text{K}_{\nu}\left( 2\sqrt{\nu} \frac{h}{a} \right) 
 \label{eq:stein}
 $$
 
@@ -203,7 +213,7 @@ The pentaspherical model is smoother than the spherical model, with continuous d
 
 $$
 \gamma(h) = 1 - \cos\left( \frac{2\pi h}{a} \right) 
-\label{eq:wave}
+\label{eq:periodic}
 $$
 
 The periodic model produces a semivariogram with regular oscillations, suitable for phenomena with repeating spatial patterns, such as seasonal or cyclic environmental processes.[^chiles]
@@ -218,7 +228,6 @@ $$
 $$
 
 The power law model is used for fractal or scale-invariant processes, where the semivariogram increases as a power of the lag distance. This model does not have a finite sill and is appropriate for phenomena that do not exhibit a clear range.[^goovaerts]  
-*Parameter limits*: $0 < p < 2$  
 
 ---
 
@@ -276,24 +285,12 @@ $$
 \label{eq:stable}
 $$
 
-The stable exponential class model generalizes the exponential and Gaussian models by introducing the decay power parameter $\alpha$. When $\alpha=1$, it is the exponential model; when $\alpha=2$, it is the Gaussian model. The model is useful for spatial processes with intermediate smoothness or when empirical data do not fit standard models well.[^cressie]
+The stable exponential class model generalizes the exponential and Gaussian models by introducing the decay power parameter $\alpha$. When $\alpha=1$, it is the exponential model; when $\alpha=2$, it is the Gaussian model. The model is useful for spatial processes with intermediate smoothness or when empirical data do not fit standard models well.[^cressie]<br>
 *Parameter limits:* $\alpha \leq 2$
 
 ---
 
 ### Tetraspherical
-
-$$
-\gamma(h) =
-\begin{cases}
-C_0 + C_1 \left[
-\arcsin\left(\frac{h}{a}\right)
-+ \frac{h}{a} \sqrt{1 - \left(\frac{h}{a}\right)^2}
-+ \frac{2}{3} \frac{h}{a} \left(1 - \left(\frac{h}{a}\right)^2\right)^{3/2}
-\right], & 0 \leq h \leq a \\
-C_0 + C_1, & h > a
-\end{cases}
-$$
 
 $$
 \gamma(h) =
@@ -333,7 +330,7 @@ The wave model generates oscillatory behavior with amplitude modulated by the pa
 ### Whittle's Elementary Correlation
 
 $$
-\gamma(h) = C \left\{ 1 - \frac{h}{a} K_1\left(\frac{h}{a}\right) \right\}
+\gamma(h) = C \left\{ 1 - \frac{h}{a} \text{K}_1\left(\frac{h}{a}\right) \right\}
 \label{eq:whittle}
 $$
 
@@ -346,7 +343,7 @@ Whittle's elementary correlation model is based on the modified Bessel function 
 ### Bessel-Exponential
 
 $$
-\gamma(h) = C_0 + C_1 \left[1- J_0(b h)e^{-h/L}\right]
+\gamma(h) = C_0 + C_1 \left[1- \text{J}_0(b h)e^{-h/L}\right]
 \label{eq:besselexponential}
 $$
 
@@ -364,7 +361,7 @@ This variant of the composite exponential-cosine model can either enhance ($1 + 
 ### Gaussian-Bessel
 
 $$
-\gamma(h) = C_0 + C_1 \left[1- J_0(b h)e^{-(h/L)^2}\right]
+\gamma(h) = C_0 + C_1 \left[1- \text{J}_0(b h)e^{-(h/L)^2}\right]
 \label{eq:gaussianbessel}
 $$
 
@@ -392,7 +389,7 @@ The composite Gaussian-linear model merges smooth Gaussian decay with a linear t
 ### Generalized Bessel-Exponential
 
 $$
-\gamma(h) = C_0 + C_1 \left[1 - J_0(bh)e^{-(h/L)^\alpha}\right]
+\gamma(h) = C_0 + C_1 \left[1 - \text{J}_0(bh)e^{-(h/L)^\alpha}\right]
 \label{eq:genbesselexponential}
 $$
 
