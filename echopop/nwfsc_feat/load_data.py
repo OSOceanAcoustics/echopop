@@ -4,6 +4,7 @@ from typing import Dict, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
+import psycopg
 
 
 def load_biological_data(
@@ -71,6 +72,96 @@ def load_biological_data(
                     df[col] = df[col].map(mapping).fillna(df[col])
 
     return biodata_dict
+
+
+def load_db_biological_data(
+    db_host: str,
+    db_port: str,
+    db_name: str,
+    db_schema: str,
+    db_user: str,
+    db_password: str,
+    biodata_sheet_map: Dict[str, str],
+    column_name_map: Dict[str, str] = None,
+    subset_dict: Optional[Dict] = None,
+    biodata_label_map: Optional[Dict[str, Dict]] = None,
+) -> Dict[str, pd.DataFrame]:
+    """
+    Load biological data from a postgres database.
+
+    Parameters
+    ----------
+    biodata_sheet_map : dict
+        Dictionary mapping dataset names to sheet names
+        (e.g., {"specimen": "biodata_specimen", "length": "biodata_length", "catch":
+        "biodata_catch"})
+    column_name_map : dict, optional
+        Dictionary mapping original column names to new column names
+        (e.g., {"frequency": "length_count", "haul": "haul_num"})
+    subset_dict : dict, optional
+        Subset dictionary containing ships and species_code for filtering
+        Format: {"ships": {ship_id: {"survey": survey_id, "haul_offset": offset}}, "species_code":
+        [codes]}
+    biodata_label_map : dict, optional
+        Dictionary mapping column names to value replacement dictionaries
+        (e.g., {"sex": {1: "male", 2: "female", 3: "unsexed"}})
+
+    Returns
+    -------
+    dict
+        Dictionary containing processed biological DataFrames keyed by dataset name
+
+    Examples
+    --------
+    >>> sheet_map = {"catch": "biodata_catch", "length": "biodata_length"}
+    >>> subset = {"ships": {160: {"survey": 201906}}, "species_code": [22500]}
+    >>> col_map = {"frequency": "length_count", "haul": "haul_num"}
+    >>> label_map = {"sex": {1: "male", 2: "female", 3: "unsexed"}}
+    """
+
+    try:
+        conn = psycopg.connect(
+            host=db_host,
+            dbname=db_name,
+            user=db_user,
+            password=db_password,
+            port=db_port,
+        )
+
+        cur = conn.cursor()
+
+        views = ["catch", "length", "specimen"]
+        trawl_report = "trawl_report_"
+        biodata_dict = {}
+        for view in views:
+            query = f"SELECT * FROM {db_schema}.{trawl_report}{view};"
+            df_initial = pd.read_sql_query(query, conn)
+
+            # Force the column names to be lower case
+            df_initial.columns = df_initial.columns.str.lower()
+
+            # Rename the columns
+            if column_name_map:
+                df_initial.rename(columns=column_name_map, inplace=True)
+
+        # Apply label mappings if provided
+        if biodata_label_map:
+            # ---- For each column mapping in the label map
+            for col, mapping in biodata_label_map.items():
+                # ---- Apply to each dataframe that has that column
+                for name, df in biodata_dict.items():
+                    if isinstance(df, pd.DataFrame) and col in df.columns:
+                        df[col] = df[col].map(mapping).fillna(df[col])
+
+    except psycopg.Error as e:
+        print(f"Database error: {e}")
+
+    finally:
+        if "cur" in locals() and cur:
+            cur.close()
+        if "conn" in locals() and conn:
+            conn.close()
+        return biodata_dict
 
 
 def apply_ship_survey_filters(
