@@ -73,6 +73,7 @@ def load_biological_data(
 
     return biodata_dict
 
+
 def load_db_biological_data(
     db_host: str,
     db_port: str,
@@ -129,8 +130,8 @@ def load_db_biological_data(
 
         cur = conn.cursor()
 
-        views = ['catch', 'length', 'specimen']
-        trawl_report = 'trawl_report_'
+        views = ["catch", "length", "specimen"]
+        trawl_report = "trawl_report_"
         biodata_dict = {}
         for view in views:
             query = f"SELECT * FROM {db_schema}.{trawl_report}{view};"
@@ -143,7 +144,7 @@ def load_db_biological_data(
             if column_name_map:
                 df_initial.rename(columns=column_name_map, inplace=True)
 
-        #Apply label mappings if provided
+        # Apply label mappings if provided
         if biodata_label_map:
             # ---- For each column mapping in the label map
             for col, mapping in biodata_label_map.items():
@@ -156,11 +157,12 @@ def load_db_biological_data(
         print(f"Database error: {e}")
 
     finally:
-        if 'cur' in locals() and cur:
+        if "cur" in locals() and cur:
             cur.close()
-        if 'conn' in locals() and conn:
+        if "conn" in locals() and conn:
             conn.close()
         return biodata_dict
+
 
 def apply_ship_survey_filters(
     df: pd.DataFrame,
