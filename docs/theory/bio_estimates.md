@@ -3,7 +3,7 @@
 
 ## Biomass estimates
 
-We can obtain an estimate of biomass density ($\rho_\text{B}$, kg nmi<sup>-2</sup>) by multiplying the [areal number density](./acoustics.md#eq-nac_def) ($\rho_\text{A}$, animals nmi<sup>-2</sup>) of animals by the average weight ($\left< w \right>$, units: kg)
+We can obtain an estimate of biomass density ($\rho_\text{B}$, kg nmi<sup>-2</sup>) by multiplying the [areal number density](./acoustics.md#eq-nasc-def) ($\rho_\text{A}$, animals nmi<sup>-2</sup>) of animals by the average weight ($\left< w \right>$, units: kg)
 
 $$
 \rho_\text{B} = \rho_\text{A} \left< w \right>,
@@ -65,6 +65,8 @@ The weight vector, $\textbf{w}$, similarly represents the summed $w$ for each $\
 \end{align*}
 
 The $w_\ell$ values are estimated by either summing the weights of fish belonging to each $\ell$, or fitting a log-linear regression to specimen length and weight measurements derived from trawl samples:
+
+<a id="eq:ts_l_regression"></a>
 
 $$
 \log_{10}(\hat{w}) =

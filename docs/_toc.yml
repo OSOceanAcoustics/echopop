@@ -11,7 +11,9 @@ parts:
   - file: example_notebooks
     title: Example workflows and analyses
     sections:
-    - file: example_notebooks/example_echopop_workflow
+    - file: example_notebooks/nasc_ingestion
+    - file: example_notebooks/biodata_ingestion
+    - file: example_notebooks/stratify_data
     - file: example_notebooks/plotting
   - file: theory
     title: Underlying theory

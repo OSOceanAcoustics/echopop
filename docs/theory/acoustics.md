@@ -154,7 +154,9 @@ s_\text{A}(x) = 4 \pi (1852)^2 s_\text{a}(x).
 $$
 
 Once converted, $\rho_\text{a}$ from $\eqref{eq:areal_density_m}$ can be defined as:
+
 <a id="eq-nasc-def"></a>
+
 $$
 \rho_\text{A} =
 \frac{s_\text{A}}{4 \pi \left< \sigma_\text{bs} \right>} =
