@@ -8,14 +8,11 @@ parts:
   chapters:
   - file: install
   - file: input_files
-  - file: core_data_structure
   - file: example_notebooks
     title: Example workflows and analyses
     sections:
     - file: example_notebooks/example_echopop_workflow
-    - file: example_notebooks/report_generation
     - file: example_notebooks/plotting
-    - file: example_notebooks/diagnostic_plotting
   - file: theory
     title: Underlying theory
     sections:
@@ -32,10 +29,16 @@ parts:
       - file: theory/apportion_biomass
       - file: theory/apportion_abundance  
   - file: implementation
-    title: Software implementation
+    title: General software implementation
     sections:
-    - file: implementation/echopro_vs_echopop
-    - file: implementation/preprocessing_data
+    - file: implementation/kriging.md
+    - file: implementation/variogram.md
+  - file: FEAT_implementation
+    title: FEAT-specific software implementation
+    sections:
+    - file: FEAT_implementation/echopro_vs_echopop
+    - file: FEAT_implementation/FEAT_notebooks/diagnostic_plotting
+    - file: FEAT_implementation/FEAT_notebooks/report_generation
   - file: glossary
 - caption: Help & references
   chapters:
