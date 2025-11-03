@@ -1562,7 +1562,7 @@ class FEATReports:
         filename: str,
         sheetnames: Dict[str, str],
         datatables: Dict[str, pd.DataFrame],
-        exclude_filter: Dict[str, Any],
+        exclude_filter: Dict[str, Any] = {},
     ) -> None:
         """
         Create kriged age-length biomass reports (values converted to metric megatonnes).
