@@ -119,71 +119,55 @@ In fisheries acoustics, backscatter is often integrated over the entire water co
 
 $$
 s_\text{a} = 
-\int_{z_1}^{z_2} s_\text{v} dz,
+\int\limits_{z_1}^{z_2} s_\text{v} dz =
+s_\text{v} H,
 \tag{11}
+\label{eq:sa_integrate}
 $$
 
-where $z$ is a finite depth bounded by depths $z_1$ and $z_2$, otherwise known as the integration height $H$. Consequently, $\eqref{eq:sv_pv_relationship}$ can be modified for $s_\text{a}$:
+$$ s_\text{a} \approx \bar{s}_\text{v} H $$
 
- and backscattering cross section ($\sigma_{b}$, units: m<sup>2</sup>) are related by
-
-$$
-\sigma_{bs} = \frac{\sigma_b}{ 4 \pi},
-\tag{3}
-$$
-
-where $\sigma_{\text{bs},j}$ is the differential backscattering cross-section of animal $j$. The quantity $\sigma_{\text{bs},j}$ often 
-
-The target strength ($TS$, units: dB re 1 m<sup>2</sup>) is defined as
+where $z$ is a finite depth bounded by depths $z_1$ and $z_2$, otherwise known as the integration height $H$. In practice, this vertical integration occurs over horizontal interval $x$, which is commonly referred to as an **elementary distance sampling unit (EDSU)**. This effectively breaks up continuous acoustic backscatter measurements into discrete samples (e.g. 1 nmi EDSU) that allows for easier processing and post-survey analyses (e.g. biomass estimation). This changes $\eqref{eq:sa_integrate}$ to:
 
 $$
-TS = 10 \log_{10} \sigma_{bs}
+s_\text{a}(x) =
+\int\limits_{x_1}^{x_2} 
+\int\limits_{z_1}^{z_2}
+s_\text{v}(x, z)~ dz~ dx =
+s_\text{v} H(x),
+\tag{12}
 $$
 
-For a group of $N$ animals, the mean differential backscattering cross-section is
+where $x_1$ and $x_2$ are the along-transect distances at the start and end of the EDSU. With $s_\text{v}(x)$ integrated over the whole water column, $\eqref{eq:sv_pv_relationship}$ can be modified to compute the areal number density ($\rho_\text{a}(x)$, animals m<sup>2</sup>):
 
 $$
-\left< \sigma_{bs} \right> = \frac{\sum_{j=1}^N \sigma_{bs,j} }{ N },
+\rho_\text{a}(x) = \frac{s_\text{a}(x)}{\left< \sigma_\text{bs} \right>}.
+\tag{13}
+\label{eq:areal_density_m}
 $$
 
-where $\sigma_{bs,j}$ is the differential backscattering cross-section of animal $j$, which often varies as a function of its length $L_j$:
+It is more common to express $\rho_\text{a}$ relative to nmi<sup>2</sup> than m<sup>2</sup> or km<sup>2</sup>. This first requires converting $s_\text{a}$ into the natucal area scattering coefficient ($s_\text{A}$, or commonly abbreviated as $\textit{NASC}$)[^foote_knudsen_1994]:
 
 $$
-\sigma_{bs,j} = \sigma_{bs,j}(L_j)
+s_\text{A}(x) = 4 \pi (1852)^2 s_\text{a}(x).
+\tag{14}
 $$
 
-
-
-
-## TS-length relationship
-
-One common avenute to estimate TS of a scatterer is based on empirical relationshpi between TS and length, which can be expressed by
-
+Once converted, $\rho_\text{a}$ from $\eqref{eq:areal_density_m}$ can be defined as:
+<a id="eq-nasc-def"></a>
 $$
-TS = mL + b,
+\rho_\text{A} =
+\frac{s_\text{A}}{4 \pi \left< \sigma_\text{bs} \right>} =
+\frac{s_\text{A}}{\sigma_\text{sp}},
+\tag{15}
 $$
 
-where $L$ is the total length, $m$ is the slope, and $b$ is the <i>y</i>-intercept.
-
-For Pacific hake, the empitical TS-length relationship used in Echopop is
-
-$$
-TS = 20 L - 68
-$$
-
-where $L$ is the fish fork length in cm.
-
-Therefore, for Pacific hake
-
-$$
-\sigma_{bs} = 10^{TS/10} = 10^{-6.8} L^2
-$$
-
-## References
+where $\rho_\text{A}(x)$ is in units of animals nmi<sup>-2</sup>.
 
 [^maclennan_et_al]: MacLennan, D.N., Fernandes, P.G., and Dalen, J. (2002). A consistent approach to definitions and symbols in fisheries acoustics. ICES Journal of Marine Science, 59: 365-369.
 [^fisheries_acoustics]: Simmonds, E.J., and MacLennan, D.N. (2005), *Fisheries Acoustics. Theory and Practice.* Blackwell, Oxford. 437 pp.
-[^traynor]: Traynor, J.J. (1996). Target-strength measurements of walleye pollock (*Theragra chalcogramma*) and Pacific whiting ($Merluccius productus$). ICES Journal of Marine Science, 53: 253-258.
+[^traynor]: Traynor, J.J. (1996). Target-strength measurements of walleye pollock (*Theragra chalcogramma*) and Pacific whiting (*Merluccius productus*). ICES Journal of Marine Science, 53: 253-258.
 [^nakken_olsen]: Nakken, O., and Olsen, K. (1977). Target strength measurements of fish. Rapports et Procès-Verbaux des Réunions, 170: 52-69.
 [^foote_1986]: Foote, K.G., Aglen, A., and Nakken, O. (1986). Measurement of fish target strength with a split-beam echo sounder. The Journal of the Acoustical Soceity of America, 80: 612-621.
-[^foote_1987]: Foote, K.G. (1987). Fish target strengthes for use in echo integrator surveys. The Journal of the Acoustical Society of America, 82: 981-987.
+[^foote_1987]: Foote, K.G. (1987). Fish target strengthes for use in echo integrator surveys. Journal of the Acoustical Society of America, 82: 981-987.
+[^foote_knudsen_1994]: Foote, K.G., and Knudsen, H.P. (1994). Physical measurement with modern echo integrators. Journal of the Acoustical Society of Japan.

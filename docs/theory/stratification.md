@@ -4,95 +4,79 @@
 
 (stratification-intro)=
 ## Stratification
-In practice, the acoustic quantities and biological estimates discussed in previous sections can vary depending on geospatial variation of the biological aggregations themselves. For example, the size and age of fish can vary depending on the survey location, as well as the sex of the fish. Therefore, the acoustic measurements and biological samples are typically stratified to account for these variations, and the biomass density is a function of the stratum (which depends on the geospatial locations) and sex, i.e.
+In practice, the acoustic quantities and biological estimates discussed in previous sections can vary depending on geospatial variation of the biological aggregations themselves. For example, the size and age of fish can vary depending on the survey location, as well as the sex of the fish. Therefore, the acoustic measurements and biological samples are typically stratified to account for these variations, and the biomass density is a function of the stratum (which depends on the geospatial locations) and sex:.
 
 $$
-\rho_{B; s} = \rho^i_{B; s}(x,y) = \rho_A(x,y) (\mathbf{L}^i_s)^\top \mathbf{w}^i_s,
+\rho_{B; s} = \rho^i_{B; s}(x,y) = \rho_A(x,y) (\tilde{\mathbf{L}}^i_s)^\top \mathbf{w}^i_s,
+\tag{1}
 $$
 
-where $i$ is the stratum, $\rho_A(x,y)$ is the nautical areal number density at location $(x, y)$, and $\mathbf{L}^i_s$ and $\mathbf{w}^i_s$ are the vectors characterizing the number frequency of fish length and the corresponding weight in stratum $i$, for fish of sex $s$:
+where $i$ is the stratum, $\rho_A(x,y)$ is the nautical areal number density at location $(x, y)$, and $\tilde{\mathbf{L}}^i_s$ and $\mathbf{w}^i_s$ are the vectors characterizing the normalized number frequency of fish length and the corresponding summed weight in stratum $i$, for fish of sex $s$:
 
-$$
-\mathbf{L}^i_s = \begin{bmatrix}
-L^i_{s,1} \\
-L^i_{s,2} \\
-L^i_{s,3} \\
-\vdots
-\end{bmatrix},
-$$
-
-and
-
-$$
-\mathbf{w}^i_s = \begin{bmatrix}
-w^i_{s,1} \\
-w^i_{s,2} \\
-w^i_{s,3} \\
-\vdots
-\end{bmatrix}.
-$$
-
-
-Note that the number frequency of fish here is normalized across all length bins and sex, i.e., 
-
-$$
-\sum_{s,\ell} L^i_{s,\ell} = 1
-$$
-
+\begin{align*}
+    \tilde{\mathbf{L}}^i_s =
+    \left[
+        \begin{split}
+            \tilde{L}&^i_{s,1} \\ \tilde{L}&^i_{s,2} \\ \tilde{L}&^i_{s,3} \\ &\vdots
+        \end{split}
+    \right],
+    \label{eq:length_vector_stratum}
+    \tag{2a}
+    \\[2ex]
+    \mathbf{w}^i_s =
+        \left[
+        \begin{split}
+            w&^i_{s,1} \\ w&^i_{s,2} \\ w&^i_{s,3} \\ &\vdots
+        \end{split}
+    \right],
+    \label{eq:weight_vector_stratum}
+    \tag{2b}
+    \\[2ex]
+    \begin{split}
+        \sum_{s,\ell} \tilde{L}^i_{s,\ell} = 1.
+    \end{split}
+    \tag{2c}
+\end{align*}
 
 ### Including age data
 In the case when fish age is measured and binned, the biomass density is a function of the stratum (which depends on the geospatial locations), sex, and age:
 
 $$
-\rho_{B; s,\alpha} = \rho^i_{B; s,\alpha}(x,y) = \rho_A(x,y) (\mathbf{L}^i_{s,\alpha})^\top \mathbf{w}^i_{s,\alpha},
+\rho_{B; s,\alpha} = \rho^i_{B; s,\alpha}(x,y) = \rho_A(x,y) (\tilde{\mathbf{L}}^i_{s,\alpha})^\top \mathbf{w}^i_{s,\alpha},
 $$
 
-where $\alpha$ is the age bin,
+where $\alpha$ is the age bin. The vectors $\tilde{\mathbf{L}}^i_{s,\alpha}$ and $\mathbf{w}^i_{s,\alpha}$ can be expressed similarly as $\eqref{eq:length_vector_stratum}$ and $\eqref{eq:weight_vector_stratum}$:
 
-$$
-\mathbf{L}^i_{s,\alpha} = \begin{bmatrix}
-L^i_{s,\alpha,1} \\
-L^i_{s,\alpha,2} \\
-L^i_{s,\alpha,3} \\
-\vdots
-\end{bmatrix},
-$$
+\begin{align*}
+    \tilde{\mathbf{L}}^i_{s, \alpha} =
+    \left[
+        \begin{split}
+            \tilde{L}&^i_{s,\alpha,1} \\ \tilde{L}&^i_{s,\alpha,2} \\ \tilde{L}&^i_{s,\alpha,3} \\ &\vdots
+        \end{split}
+    \right],
+    \tag{3a}
+    \\[2ex]
+    \mathbf{w}^i_{s, \alpha} =
+        \left[
+        \begin{split}
+            w&^i_{s,\alpha,1} \\ w&^i_{s,\alpha,2} \\ w&^i_{s,\alpha,3} \\ &\vdots
+        \end{split}
+    \right],
+    \tag{3b}
+    \\[2ex]
+    \begin{split}
+        \sum_{s,\ell,\alpha} L^i_{s,\ell,\alpha} = 1.
+    \end{split}
+    \tag{3c}
+\end{align*}
 
-and 
-
-$$
-\mathbf{w}^i_{s,\alpha} = \begin{bmatrix}
-w^i_{s,\alpha,1} \\
-w^i_{s,\alpha,2} \\
-w^i_{s,\alpha,3} \\
-\vdots
-\end{bmatrix}.
-$$
-
-All of $L^i_{s,\alpha,\ell}$ and $w^i_{s,\alpha,\ell}$ vary depending on the stratum $i$, the fish sex $s$, and the age bin $\alpha$.
-
-
-Note that the number frequency of fish length here is normalized across all age bins, length bins, and sex within a stratum, i.e.
-
-$$
-\sum_{s,\ell,\alpha} L^i_{s,\alpha,\ell} = 1
-$$
-
-
-
-
-
+All of $\tilde{L}^i_{s,\alpha,\ell}$ and $w^i_{s,\alpha,\ell}$ vary depending on the stratum $i$, the fish sex $s$, and the age bin $\alpha$.
 
 ## Stratification schemes used in the hake survey
 For Pacific hake, two types of stratifications are used:
 
 - **INPFC**: Stratification set by the International North Pacific Fisheries Commission (INFPC) that is based solely on latitude. The US-Canada bienniel hake survey region encompasses 6 strata.
 - **KS**: Stratification determined based on the Kolomogorov-Smirnov test for differences of the fish length distributions across survey hauls.
-
-
-
-
-
 
 ## Jolly-Hampton stratified sampling 
 Jolly and Hampton {cite:p}`jolly_hampton_1990` proposed a method to provide a coefficient of variation ($\textit{CV}$) for the entire survey by weighting biomass estimates across all strata to derive estimates of the mean and variance of the biomass density. 

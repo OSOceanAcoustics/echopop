@@ -24,13 +24,13 @@ parts:
       title: Population estimation
       sections:
         - file: theory/stratification
-        - file: theory/apportion_biomass
-        - file: theory/apportion_abundance  
     - file: theory/semivariogram_theory
       title: Geostatistics
       sections:    
       - file: theory/kriging_theory
       - file: theory/semivariogram_eq
+      - file: theory/apportion_biomass
+      - file: theory/apportion_abundance  
   - file: implementation
     title: Software implementation
     sections:
