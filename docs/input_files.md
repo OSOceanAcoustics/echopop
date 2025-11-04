@@ -1,14 +1,10 @@
 (input-files)=
 # Input files
 
-Input files used in an Echopop run, grouped by data type. The tables below describe the data columns required by Echopop; other columns will be ignored. All input files are in Excel format. File paths, names, and Excel tab names are specified in the survey year configuration file (e.g., `survey_year_2019_config.yml`).
+Input files used in an Echopop run, grouped by data type. The tables below describe the data columns required by Echopop; other columns will be ignored. All input files are in Excel format. 
 
 Biological data are always separated into US vs Canada files. All other data files combine US and Canadian data.
 
-:::{admonition} Dataset structures
-:class: note
-*See page for [configuration dataset file organization](implementation/preprocessing_data) for more details.*
-:::
 
 ```{contents}
 :local:
