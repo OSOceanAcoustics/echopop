@@ -1,4 +1,4 @@
-docutils<0.18
+docutils>=0.18,<0.22
 jupyter-book==1.0.4
 numpydoc
 setuptools
