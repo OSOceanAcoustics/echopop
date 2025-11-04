@@ -62,4 +62,5 @@ sphinx:
       inherited-members: true
     autosummary_generate: true  # Automatically generate stub files for all documented members
     bibtex_reference_style: label
+    html_extra_path: ["_static"]
     numpydoc_class_members_toctree: False
