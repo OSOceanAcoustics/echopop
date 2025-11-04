@@ -16,3 +16,9 @@ Use the `help()` function or hover tooltips in certain IDEs (e.g. `VSCode`) to i
 The workflows have been broken up into the following sections:
 
 - [](nasc-ingestion)
+- [](biodata-ingestion)
+- [](stratify-data)
+- [](number-proportions)
+- [](weight-proportions)
+- [](basic-inversion)
+- [](basic-plotting)

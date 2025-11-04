@@ -14,6 +14,9 @@ parts:
     - file: example_notebooks/nasc_ingestion
     - file: example_notebooks/biodata_ingestion
     - file: example_notebooks/stratify_data
+    - file: example_notebooks/number_proportions
+    - file: example_notebooks/weight_proportions
+    - file: example_notebooks/basic_inversion
     - file: example_notebooks/plotting
   - file: theory
     title: Underlying theory
