@@ -278,14 +278,14 @@ $$
 
 The spline semivariogram model is used for smooth interpolation and is related to thin-plate splines in spatial statistics. It increases with distance and is especially useful for modeling spatial processes where a smooth, flexible fit is desired. This model is commonly applied in geostatistical interpolation and spatial smoothing.[^wahba]
 
-### Stable Exponential
+### Stable/Exclass
 
 $$
 \gamma(h) = 1 - \exp\left( -\left( \frac{h}{a} \right)^{\alpha} \right)
 \label{eq:stable}
 $$
 
-The stable exponential class model generalizes the exponential and Gaussian models by introducing the decay power parameter $\alpha$. When $\alpha=1$, it is the exponential model; when $\alpha=2$, it is the Gaussian model. The model is useful for spatial processes with intermediate smoothness or when empirical data do not fit standard models well.[^cressie]<br>
+The stable/exclass (exponential class) model generalizes the exponential and Gaussian models by introducing the decay power parameter $\alpha$. When $\alpha=1$, it is the exponential model; when $\alpha=2$, it is the Gaussian model. The model is useful for spatial processes with intermediate smoothness or when empirical data do not fit standard models well.[^cressie]<br>
 *Parameter limits:* $\alpha \leq 2$
 
 ---
