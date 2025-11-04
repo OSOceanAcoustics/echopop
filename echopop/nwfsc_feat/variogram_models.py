@@ -1310,8 +1310,8 @@ def bessel_gaussian(
     The Bessel-Gaussian composite model is defined as:
 
     .. math::
-        γ(h) = C_0 + C_1 \\left(1 - \\exp\\left(-\\frac{h^2}{a_1^2}\\right)
-               \\cdot \\frac{J_1(h/a_2)}{h/(2a_2)}\\right)
+        γ(h) = C_0 + C_1 \\left(1 - \\exp\\left(-\\frac{h^2}{a_1^2}\\right) 
+        \\cdot \\frac{J_1(h/a_2)}{h/(2a_2)}\\right)
 
     where:
     - γ(h) is the variogram at lag distance h
