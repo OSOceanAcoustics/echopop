@@ -18,7 +18,7 @@ from echopop.tests.fixtures import *  # noqa: F401, F403
 # Set up path to the `test_data` folder
 HERE = Path(__file__).parent.absolute()
 TEST_DATA_ROOT = HERE.parent / "test_data"
-TEST_SQL_FILE = TEST_DATA_ROOT / "input_files\\Biological\\test_bio_data.sql"
+TEST_SQL_FILE = TEST_DATA_ROOT / "input_files" / "Biological" / "test_bio_data.sql"
 
 
 # FIXTURES
