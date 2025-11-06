@@ -7,6 +7,7 @@ pandas
 scipy
 numba
 psycopg
+testing.postgresql
 # Spatial data processing stack
 cartopy
 geopandas

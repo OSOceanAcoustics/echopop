@@ -73,14 +73,8 @@ def load_biological_data(
 
     return biodata_dict
 
-
 def load_db_biological_data(
-    db_host: str,
-    db_port: str,
-    db_name: str,
-    db_schema: str,
-    db_user: str,
-    db_password: str,
+    db_credentials: Dict[str, str],
     biodata_sheet_map: Dict[str, str],
     column_name_map: Dict[str, str] = None,
     subset_dict: Optional[Dict] = None,
@@ -91,6 +85,10 @@ def load_db_biological_data(
 
     Parameters
     ----------
+    db_credentials : dict
+        Dictionary containing database credentials
+        (e.g., {"host": "localhost", "port": "5432", "dbname": "fisheries", "schema": "biodata"
+        "user": "<USERNAME>", "password": "<PASSWORD>"})
     biodata_sheet_map : dict
         Dictionary mapping dataset names to sheet names
         (e.g., {"specimen": "biodata_specimen", "length": "biodata_length", "catch":
@@ -121,20 +119,21 @@ def load_db_biological_data(
 
     try:
         conn = psycopg.connect(
-            host=db_host,
-            dbname=db_name,
-            user=db_user,
-            password=db_password,
-            port=db_port,
+            host=db_credentials["host"],
+            dbname=db_credentials["dbname"],
+            user=db_credentials["user"],
+            password=db_credentials["password"],
+            port=db_credentials["port"],
         )
+        conn.autocommit = False
 
-        cur = conn.cursor()
-
-        views = ["catch", "length", "specimen"]
-        trawl_report = "trawl_report_"
+        views = ['catch', 'length', 'specimen']
+        trawl_report = 'trawl_report_'
+        schema = db_credentials['schema'] if 'schema' in db_credentials else 'public'
         biodata_dict = {}
+
         for view in views:
-            query = f"SELECT * FROM {db_schema}.{trawl_report}{view};"
+            query = f"SELECT * FROM {schema}.{trawl_report}{view};"
             df_initial = pd.read_sql_query(query, conn)
 
             # Force the column names to be lower case
@@ -144,7 +143,9 @@ def load_db_biological_data(
             if column_name_map:
                 df_initial.rename(columns=column_name_map, inplace=True)
 
-        # Apply label mappings if provided
+            biodata_dict[view] = apply_ship_survey_filters(df_initial, subset_dict)
+
+        #Apply label mappings if provided
         if biodata_label_map:
             # ---- For each column mapping in the label map
             for col, mapping in biodata_label_map.items():
@@ -157,12 +158,10 @@ def load_db_biological_data(
         print(f"Database error: {e}")
 
     finally:
-        if "cur" in locals() and cur:
-            cur.close()
-        if "conn" in locals() and conn:
+        if 'conn' in locals() and conn:
+            conn.rollback()
             conn.close()
         return biodata_dict
-
 
 def apply_ship_survey_filters(
     df: pd.DataFrame,
