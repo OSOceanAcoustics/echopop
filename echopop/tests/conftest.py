@@ -9,6 +9,7 @@ import pandas as pd
 import psycopg
 import pytest
 import testing.postgresql
+import os
 from _pytest.assertion.util import assertrepr_compare
 
 # Set up path to the `test_data` folder
