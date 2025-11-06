@@ -73,6 +73,7 @@ def load_biological_data(
 
     return biodata_dict
 
+
 def load_db_biological_data(
     db_credentials: Dict[str, str],
     biodata_sheet_map: Dict[str, str],
@@ -127,9 +128,9 @@ def load_db_biological_data(
         )
         conn.autocommit = False
 
-        views = ['catch', 'length', 'specimen']
-        trawl_report = 'trawl_report_'
-        schema = db_credentials['schema'] if 'schema' in db_credentials else 'public'
+        views = ["catch", "length", "specimen"]
+        trawl_report = "trawl_report_"
+        schema = db_credentials["schema"] if "schema" in db_credentials else "public"
         biodata_dict = {}
 
         for view in views:
@@ -145,7 +146,7 @@ def load_db_biological_data(
 
             biodata_dict[view] = apply_ship_survey_filters(df_initial, subset_dict)
 
-        #Apply label mappings if provided
+        # Apply label mappings if provided
         if biodata_label_map:
             # ---- For each column mapping in the label map
             for col, mapping in biodata_label_map.items():
@@ -158,10 +159,11 @@ def load_db_biological_data(
         print(f"Database error: {e}")
 
     finally:
-        if 'conn' in locals() and conn:
+        if "conn" in locals() and conn:
             conn.rollback()
             conn.close()
         return biodata_dict
+
 
 def apply_ship_survey_filters(
     df: pd.DataFrame,

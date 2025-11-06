@@ -1,14 +1,14 @@
 import json
+import signal
 from pathlib import Path
 from typing import Optional, Union
+from urllib.parse import urlparse
 
 import numpy as np
 import pandas as pd
+import psycopg
 import pytest
 import testing.postgresql
-import psycopg
-import signal
-from urllib.parse import urlparse
 from _pytest.assertion.util import assertrepr_compare
 
 # Set up path to the `test_data` folder
@@ -19,6 +19,7 @@ from echopop.tests.fixtures import *  # noqa: F401, F403
 HERE = Path(__file__).parent.absolute()
 TEST_DATA_ROOT = HERE.parent / "test_data"
 TEST_SQL_FILE = TEST_DATA_ROOT / "input_files\\Biological\\test_bio_data.sql"
+
 
 # FIXTURES
 # ---- Test root/config/input file paths
@@ -452,16 +453,18 @@ def load_json_data(filename: str, default_value=None, test_name: Optional[str] =
     except (FileNotFoundError, json.JSONDecodeError):
         return default_value
 
+
 def _create_creds_dict(db_url):
     """Helper function to parse the DB URL into a dict."""
     url = urlparse(db_url)
     return {
-        'dbname': url.path.lstrip('/'),
-        'user': url.username,
-        'password': url.password,
-        'host': url.hostname,
-        'port': url.port
+        "dbname": url.path.lstrip("/"),
+        "user": url.username,
+        "password": url.password,
+        "host": url.hostname,
+        "port": url.port,
     }
+
 
 @pytest.fixture(scope="session")
 def database_credentials():
@@ -475,7 +478,7 @@ def database_credentials():
 
     # Make sure signal is compatible with OS
     original_sigint = signal.SIGINT
-    if os.name == 'nt': # Windows OS
+    if os.name == "nt":  # Windows OS
         signal.SIGINT = signal.SIGTERM
 
     try:
@@ -485,7 +488,7 @@ def database_credentials():
                 conn = psycopg.connect(postgresql.url())
                 conn.autocommit = True
                 with conn.cursor() as cur:
-                    with open(TEST_SQL_FILE, 'r') as f:
+                    with open(TEST_SQL_FILE, "r") as f:
                         cur.execute(f.read())
                 conn.close()
             except Exception as e:
@@ -493,8 +496,8 @@ def database_credentials():
 
             creds_dict = _create_creds_dict(postgresql.url())
 
-            yield creds_dict # Wait for tests to run
+            yield creds_dict  # Wait for tests to run
 
     finally:
-        if os.name == 'nt':
+        if os.name == "nt":
             signal.SIGINT = original_sigint
