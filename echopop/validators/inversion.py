@@ -1,17 +1,14 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
 from pydantic import ConfigDict, Field, RootModel, ValidationError, field_validator, model_validator
 
 from ..core.validators import BaseDataFrame, BaseDictionary
-from ..inversion import InvParameters
-from .scattering_models import SCATTERING_MODEL_PARAMETERS
 
-
-class TSLRegressionParameters(BaseDictionary, title="TS-length regression parameters"):
+class TSLRegressionParameters(BaseDictionary):
     """
     Target strength - length regression parameters
 
@@ -25,11 +22,10 @@ class TSLRegressionParameters(BaseDictionary, title="TS-length regression parame
 
     slope: float = Field(allow_inf_nan=False)
     intercept: float = Field(allow_inf_nan=False)
+    model_config = ConfigDict(title="TS-length regression parameters")
 
 
-class ValidateLengthTS(
-    BaseDictionary, arbitrary_types_allowed=True, title="TS-length inversion model parameters"
-):
+class ValidateLengthTS(BaseDictionary):
     """
     Validation model for TS-length inversion parameters used by InversionLengthTS.
 
@@ -70,6 +66,7 @@ class ValidateLengthTS(
     expected_strata: Optional[np.ndarray[np.number]] = Field(default=None)
     impute_missing_strata: bool = Field(default=True)
     haul_replicates: bool = Field(default=True)
+    model_config = ConfigDict(title="TS-length inversion model parameters")
 
     @field_validator("stratify_by", mode="before")
     def validate_stratify_by(cls, v):
@@ -90,16 +87,19 @@ class ValidateLengthTS(
 
 class ScatterDF(BaseDataFrame):
     """
-    Validate hierarchical columns in a MultiIndex DataFrame.
+    Validates MultiIndex DataFrame structure with required top-level columns and nested frequency
+    index.
 
-    Ensures the top-level column names include 'sv_mean', 'nasc', and 'thickness_mean',
-    and that the second-level column names ('frequency') are numeric. All values
-    under each frequency must be floats.
+    Ensures the top-level column names include 'sv_mean', 'nasc', and 'thickness_mean', and that
+    the second-level column names ('frequency') are numeric. All values under each frequency must
+    be floats.
     """
 
-    class Config:
+    class Config(BaseDataFrame.Config):
+        title = "acoustic backscatter export DataFrame"
         multiindex_strict = True
         multiindex_coerce = True
+        unique_column_names = False
 
     @classmethod
     def pre_validate(cls, df: pd.DataFrame) -> pd.DataFrame:
@@ -133,24 +133,17 @@ class ScatterDF(BaseDataFrame):
         return df
 
 
-class EnvironmentParameters(
-    BaseDictionary,
-    arbitrary_types_allowed=True,
-    title="scattering model environment/medium parameters",
-):
+class EnvironmentParameters(BaseDictionary):
     """
     Environmental and medium parameters for acoustic scattering models.
     """
 
     sound_speed_sw: float = Field(default=1500.0, gt=0.0, allow_inf_nan=False)
     density_sw: float = Field(default=1025.0, gt=0.0, allow_inf_nan=False)
+    model_config = ConfigDict(title="scattering model environment/medium parameters")
 
 
-class SimulationParameters(
-    BaseDictionary,
-    arbitrary_types_allowed=True,
-    title="inversion simulation parameters",
-):
+class SimulationParameters(BaseDictionary):
     """
     Configuration parameters for inversion simulation and optimization.
     """
@@ -161,6 +154,7 @@ class SimulationParameters(
     mc_seed: Optional[int] = Field(default=None)
     scale_parameters: bool = Field(default=True)
     minimum_frequency_count: int = Field(default=2)
+    model_config = ConfigDict(title="inversion simulation parameters")
 
     @model_validator(mode="after")
     def validate_monte_carlo_realizations(self):
@@ -177,17 +171,14 @@ class SimulationParameters(
         return self
 
 
-class ValidateInversionMatrix(
-    BaseDictionary,
-    arbitrary_types_allowed=True,
-    title="scattering model inversion analysis",
-):
+class ValidateInversionMatrix(BaseDictionary):
     """
     Validation model for InversionMatrix class configuration.
     """
 
     data: pd.DataFrame
     simulation_settings: SimulationParameters = Field(default_factory=SimulationParameters)
+    model_config = ConfigDict(title="scattering model inversion analysis")
 
     @field_validator("data", mode="after")
     def validate_data(cls, v):
@@ -195,32 +186,26 @@ class ValidateInversionMatrix(
         return ScatterDF.validate(v)
 
 
-class ModelSettingsParameters(
-    BaseDictionary,
-    arbitrary_types_allowed=True,
-    title="general model settings",
-):
+class ModelSettingsParameters(BaseDictionary):
     """
     Configuration parameters for acoustic scattering models.
     """
 
     type: str
     environment: EnvironmentParameters = Field(default_factory=EnvironmentParameters)
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(title="generate inversion model setting", extra="allow")
 
 
-class ValidateBuildModelArgs(
-    BaseDictionary,
-    arbitrary_types_allowed=True,
-    title="scattering model preparation and assembly",
-):
+class ValidateBuildModelArgs(BaseDictionary):
     """
     Validation model for scattering model build arguments.
     """
 
     model_parameters: "InvParameters"
     model_settings: ModelSettingsParameters
-    model_config = ConfigDict(protected_namespaces=())
+    model_config = ConfigDict(
+        title="scattering model preparation and assembly", protected_namespaces=()
+    )
 
     @staticmethod
     def _check_variable(params: Dict[str, Any], variable: str, validator: Any):
@@ -252,7 +237,9 @@ class ValidateBuildModelArgs(
 
     @model_validator(mode="after")
     def validate_model_parameterization(self):
-
+        from ..inversion import InvParameters
+        from .scattering_models import SCATTERING_MODEL_PARAMETERS
+        
         # Check for model-type
         # ---- Dump the model
         model_settings = self.model_settings.model_dump()
@@ -306,15 +293,12 @@ class ValidateBuildModelArgs(
         return self
 
 
-class SingleParameter(
-    BaseDictionary,
-    arbitrary_types_allowed=True,
-    title="values for lmfit.Parameters class required for optimization",
-):
+class SingleParameter(BaseDictionary):
     min: Optional[float] = Field(default=-np.inf, allow_inf_nan=True)
     value: float = Field(allow_inf_nan=False)
     max: Optional[float] = Field(default=np.inf, allow_inf_nan=True)
     vary: bool = Field(default=False)
+    model_config = ConfigDict(title="values for lmfit.Parameters class required for optimization")
 
     @model_validator(mode="after")
     def check_bounds(self):
@@ -327,9 +311,7 @@ class SingleParameter(
         return self
 
 
-class ModelInputParameters(
-    RootModel[Dict[str, "SingleParameter"]],
-):
+class ModelInputParameters(RootModel[Dict[str, "SingleParameter"]]):
 
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
@@ -340,11 +322,12 @@ class ModelInputParameters(
     @classmethod
     def prevalidator_trans(cls, data):
         # Use TYPE_CHECKING import
-        if TYPE_CHECKING:
-            from ..inversion import InvParameters  # noqa: F401
+        # if TYPE_CHECKING:
+        #     from ..inversion import InvParameters  # noqa: F401
 
         # Check type using string comparison to avoid import
         if type(data).__name__ == "InvParameters":
+            from ..inversion import InvParameters  # noqa: F401
             return data.parameters
         return data
 

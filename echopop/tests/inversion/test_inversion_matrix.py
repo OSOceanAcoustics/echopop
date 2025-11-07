@@ -618,7 +618,6 @@ def test_inversion_matrix_creation():
         "monte_carlo": True,
         "mc_realizations": 3,
         "scale_parameters": True,
-        "environment": {"sound_speed_sw": 1500.0, "density_sw": 1026.0},
         "minimum_frequency_count": 2,
     }
 
