@@ -2,7 +2,6 @@ import numpy as np
 import pandas as pd
 
 from echopop import inversion
-from echopop.survey import biology
 
 # ==============================================================================
 # TESTS FOR ts_length_regression
@@ -120,80 +119,3 @@ def test_impute_missing_sigma_bs_edge_cases():
     assert result.loc[1, "sigma_bs"] == 0.001
     assert result.loc[5, "sigma_bs"] == 0.003
     assert not result["sigma_bs"].isna().any()
-
-
-# ==============================================================================
-# TESTS FOR utils.quantize_length_data
-# ==============================================================================
-
-
-def test_quantize_length_data_no_count(specimen_df_no_count, group_columns):
-    """Test quantization when no length_count column exists."""
-    result = biology.quantize_length_data(specimen_df_no_count, group_columns)
-
-    assert "length_count" in result.columns
-    assert isinstance(result.index, pd.MultiIndex)
-
-    # Check that it correctly counts occurrences
-    # Length 20.5 appears twice in stratum 1, haul 101, sex M
-    mask = (
-        (result.index.get_level_values("stratum_ks") == 1)
-        & (result.index.get_level_values("haul_num") == 101)
-        & (result.index.get_level_values("sex") == "M")
-        & (result.index.get_level_values("length") == 20.5)
-    )
-
-    assert result[mask]["length_count"].iloc[0] == 2
-
-
-def test_quantize_length_data_with_count(length_df, group_columns):
-    """Test quantization when length_count column already exists."""
-    result = biology.quantize_length_data(length_df, group_columns)
-
-    assert "length_count" in result.columns
-    assert isinstance(result.index, pd.MultiIndex)
-
-    # Should sum existing counts, not count rows
-    total_original = length_df["length_count"].sum()
-    total_result = result["length_count"].sum()
-    assert total_original == total_result
-
-
-def test_quantize_length_data_empty():
-    """Test quantization with empty DataFrame."""
-    empty_df = pd.DataFrame(
-        {"stratum_ks": [], "haul_num": [], "sex": [], "length": [], "length_count": []}
-    )
-    group_columns = ["stratum_ks", "haul_num", "sex"]
-    result = biology.quantize_length_data(empty_df, group_columns)
-
-    assert len(result) == 0
-    assert "length_count" in result.columns
-
-
-def test_quantize_length_data_single_row(single_row_df, group_columns):
-    """Test quantization with single row."""
-    result = biology.quantize_length_data(single_row_df, group_columns)
-
-    assert len(result) == 1
-    assert result["length_count"].iloc[0] == 1
-
-
-def test_quantize_length_data_different_groups():
-    """Test quantization with different grouping columns."""
-    df = pd.DataFrame(
-        {"stratum": [1, 1, 2, 2], "sex": ["M", "M", "F", "F"], "length": [20.0, 20.0, 22.0, 24.0]}
-    )
-
-    result = biology.quantize_length_data(df, ["stratum", "sex"])
-
-    # Should have 3 unique combinations
-    assert len(result) == 3
-
-    # Stratum 1, sex M, length 20.0 should have count 2
-    mask = (
-        (result.index.get_level_values("stratum") == 1)
-        & (result.index.get_level_values("sex") == "M")
-        & (result.index.get_level_values("length") == 20.0)
-    )
-    assert result[mask]["length_count"].iloc[0] == 2

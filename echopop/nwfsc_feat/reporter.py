@@ -9,7 +9,7 @@ from openpyxl import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
 
 from .. import utils
-from ..survey import apportionment
+from . import apportionment
 
 ####################################################################################################
 # FILE WRITING UTILITY

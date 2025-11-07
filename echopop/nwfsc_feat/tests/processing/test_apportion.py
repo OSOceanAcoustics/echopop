@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from echopop.survey import apportionment as apportion
+from echopop.nwfsc_feat import apportionment as apportion
 
 
 def test_mesh_biomass_to_nasc(

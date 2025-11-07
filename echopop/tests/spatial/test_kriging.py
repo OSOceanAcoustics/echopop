@@ -125,9 +125,7 @@ def test_adaptive_search_radius_basic():
 
 def test_adaptive_search_radius_with_strategy(
     sample_sparse_distance_matrix,
-    sample_mesh_coordinates,
     sample_kriging_settings,
-    sample_western_extent,
 ):
     """Test adaptive_search_radius with custom search strategy."""
     k_min = sample_kriging_settings["kriging_parameters"]["kmin"]
@@ -149,9 +147,7 @@ def test_adaptive_search_radius_with_strategy(
 
 def test_adaptive_search_radius_western_boundary(
     sample_sparse_distance_matrix,
-    sample_mesh_coordinates,
     sample_kriging_settings,
-    sample_western_extent,
 ):
     """Test adaptive_search_radius with western boundary strategy."""
     k_min = sample_kriging_settings["kriging_parameters"]["kmin"]

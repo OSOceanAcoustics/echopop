@@ -22,7 +22,9 @@ from echopop.ingest import (
     load_strata,
     nasc,
 )
-from echopop.survey import apportionment, biology, proportions, stratified, transect
+from echopop.nwfsc_feat import apportionment, biology
+from echopop.survey import proportions, stratified, transect
+from echopop.survey import fit_length_weight_regression
 
 # ==================================================================================================
 # ==================================================================================================
@@ -375,14 +377,14 @@ dict_length_weight_coefs["all"] = (
     dict_df_bio["specimen"]
     .assign(sex="all")
     .groupby(["sex"])
-    .apply(biology.fit_length_weight_regression, include_groups=False)
+    .apply(fit_length_weight_regression, include_groups=False)
 )
 
 # Sex-specific
 dict_length_weight_coefs["sex"] = (
     dict_df_bio["specimen"]
     .groupby(["sex"])
-    .apply(biology.fit_length_weight_regression, include_groups=False)
+    .apply(fit_length_weight_regression, include_groups=False)
 )
 
 # ==================================================================================================

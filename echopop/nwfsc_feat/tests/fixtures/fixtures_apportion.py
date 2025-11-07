@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from echopop.survey import apportionment as apportion
+from echopop.nwfsc_feat import apportionment as apportion
 
 
 @pytest.fixture
