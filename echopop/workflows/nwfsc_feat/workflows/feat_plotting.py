@@ -49,86 +49,86 @@ except Exception as e:
 # -----------------------------------
 # Base kriged mesh [hexbins]
 # --------------------------
-"""
------------------
-plot_kriged_mesh(
-    ...,
-    plot_type='hexbin',
-    hexbin_kwargs,
-    coast_kwargs,
-    colorbar_kwargs,
-    axis_kwargs,
-    plot_kwargs,
-    savefig_kwargs
-    )
+# """
+# -----------------
+# plot_kriged_mesh(
+#     ...,
+#     plot_type='hexbin',
+#     hexbin_kwargs,
+#     coast_kwargs,
+#     colorbar_kwargs,
+#     axis_kwargs,
+#     plot_kwargs,
+#     savefig_kwargs
+#     )
 
-- hexbin_kwargs: dict
-    Passed to matplotlib.pyplot.hexbin (if plot_type="hexbin").
-    Common options:
-        - gridsize: int or (int, int), default=100
-            Number of hexagons in the x-direction, or (nx, ny).
-        - mincnt: int, default=None
-            Minimum number of points in a hexagon for it to be colored.
-        - linewidths: float, default=None
-            Line width of hexagon edges.
-        - edgecolors: color, default=None
-            Color of hexagon edges.
-        - reduce_C_function: callable, default=np.mean
-            Function to aggregate values in each hexagon.
+# - hexbin_kwargs: dict
+#     Passed to matplotlib.pyplot.hexbin (if plot_type="hexbin").
+#     Common options:
+#         - gridsize: int or (int, int), default=100
+#             Number of hexagons in the x-direction, or (nx, ny).
+#         - mincnt: int, default=None
+#             Minimum number of points in a hexagon for it to be colored.
+#         - linewidths: float, default=None
+#             Line width of hexagon edges.
+#         - edgecolors: color, default=None
+#             Color of hexagon edges.
+#         - reduce_C_function: callable, default=np.mean
+#             Function to aggregate values in each hexagon.
 
-- coast_kwargs: dict
-    Passed to GeoAxes.add_geometries or GeoDataFrame.plot for coastlines.
-    Common options:
-        - edgecolor: color, default='black'
-            Color of coastline edges.
-        - facecolor: color, default='none'
-            Fill color for land.
-        - linewidth: float, default=1.0
-            Width of coastline lines.
-        - alpha: float, default=1.0
-            Transparency.
+# - coast_kwargs: dict
+#     Passed to GeoAxes.add_geometries or GeoDataFrame.plot for coastlines.
+#     Common options:
+#         - edgecolor: color, default='black'
+#             Color of coastline edges.
+#         - facecolor: color, default='none'
+#             Fill color for land.
+#         - linewidth: float, default=1.0
+#             Width of coastline lines.
+#         - alpha: float, default=1.0
+#             Transparency.
 
-- colorbar_kwargs: dict
-    Passed to matplotlib.pyplot.colorbar.
-    Common options:
-        - cmap: str or Colormap, default=None
-            Colormap.
-        - label: str, default=None
-            Label for the colorbar.
-        - orientation: {'vertical', 'horizontal'}, default='vertical'
-            Orientation of the colorbar.
-        - shrink: float, default=1.0
-            Fraction by which to shrink the colorbar.
-        - aspect: float, default=20
-            Aspect ratio of the colorbar.
+# - colorbar_kwargs: dict
+#     Passed to matplotlib.pyplot.colorbar.
+#     Common options:
+#         - cmap: str or Colormap, default=None
+#             Colormap.
+#         - label: str, default=None
+#             Label for the colorbar.
+#         - orientation: {'vertical', 'horizontal'}, default='vertical'
+#             Orientation of the colorbar.
+#         - shrink: float, default=1.0
+#             Fraction by which to shrink the colorbar.
+#         - aspect: float, default=20
+#             Aspect ratio of the colorbar.
 
-- axis_kwargs: dict
-    Passed to matplotlib Axes set methods.
-    Common options:
-        - xlabel: str, default=None
-            X-axis label.
-        - ylabel: str, default=None
-            Y-axis label.
-        - title: str, default=None
-            Plot title.
-        - xlim: tuple, default=None
-            X-axis limits.
-        - ylim: tuple, default=None
-            Y-axis limits.
+# - axis_kwargs: dict
+#     Passed to matplotlib Axes set methods.
+#     Common options:
+#         - xlabel: str, default=None
+#             X-axis label.
+#         - ylabel: str, default=None
+#             Y-axis label.
+#         - title: str, default=None
+#             Plot title.
+#         - xlim: tuple, default=None
+#             X-axis limits.
+#         - ylim: tuple, default=None
+#             Y-axis limits.
 
-- plot_kwargs: dict
-    Passed to matplotlib.pyplot.figure or plt.subplots.
-    Common options:
-        - figsize: tuple, default=(8, 6)
-            Figure size in inches.
+# - plot_kwargs: dict
+#     Passed to matplotlib.pyplot.figure or plt.subplots.
+#     Common options:
+#         - figsize: tuple, default=(8, 6)
+#             Figure size in inches.
 
-- savefig_kwargs: dict
-    Pass to `matplotlib.pyplot.savefig` if argument 'savepath' is supplied
-    Common options:
-        - dpi: float
-            Figure resolution in dots per inch.
------------------
-"""
+# - savefig_kwargs: dict
+#     Pass to `matplotlib.pyplot.savefig` if argument 'savepath' is supplied
+#     Common options:
+#         - dpi: float
+#             Figure resolution in dots per inch.
+# -----------------
+# """
 
 # Base usage
 egra.plot_kriged_mesh(
@@ -193,41 +193,41 @@ egra.plot_kriged_mesh(
 # -----------------------------
 # Kriged mesh [pseudocolormesh]
 # -----------------------------
-"""
------------------
-plot_kriged_mesh(
-    ...,
-    plot_type='pcolormesh',
-    pseudocolormesh_kwargs
-    )
+# """
+# -----------------
+# plot_kriged_mesh(
+#     ...,
+#     plot_type='pcolormesh',
+#     pseudocolormesh_kwargs
+#     )
 
-- pcolormesh_kwargs: dict
-    Passed to xarray.DataArray.plot.pcolormesh for point plotting.
-    Common options:
-        - spacing : float, optional
-            The grid spacing (in coordinate units) for the interpolation mesh. This is used
-        - shading : {'flat', 'nearest', 'gouraud', 'auto'}, optional
-            Shading algorithm for the mesh. Default is 'auto'.
-        - alpha : float, optional
-            Transparency of the mesh (0.0 transparent through 1.0 opaque).
-        - add_labels : bool, optional
-            Whether to add axis labels automatically. Default is True.
-        - rasterized : bool, optional
-            Rasterize the mesh for vector output (e.g., PDF/SVG). Default is False.
-        - antialiased : bool, optional
-            Whether to use antialiasing. Default is True.
-        - robust : bool, optional
-            If True, use the 2nd and 98th percentiles for color limits instead of the min/max.
-        - extend : {'neither', 'both', 'min', 'max'}, optional
-            Direction(s) to extend the colorbar beyond its normal range.
-        - levels : int or array-like, optional
-            Number or positions of discrete color levels (for contour-like plots).
-        - vmin, vmax : float, optional
-            Lower and upper bounds for color scaling. If not set, determined from data.
+# - pcolormesh_kwargs: dict
+#     Passed to xarray.DataArray.plot.pcolormesh for point plotting.
+#     Common options:
+#         - spacing : float, optional
+#             The grid spacing (in coordinate units) for the interpolation mesh. This is used
+#         - shading : {'flat', 'nearest', 'gouraud', 'auto'}, optional
+#             Shading algorithm for the mesh. Default is 'auto'.
+#         - alpha : float, optional
+#             Transparency of the mesh (0.0 transparent through 1.0 opaque).
+#         - add_labels : bool, optional
+#             Whether to add axis labels automatically. Default is True.
+#         - rasterized : bool, optional
+#             Rasterize the mesh for vector output (e.g., PDF/SVG). Default is False.
+#         - antialiased : bool, optional
+#             Whether to use antialiasing. Default is True.
+#         - robust : bool, optional
+#             If True, use the 2nd and 98th percentiles for color limits instead of the min/max.
+#         - extend : {'neither', 'both', 'min', 'max'}, optional
+#             Direction(s) to extend the colorbar beyond its normal range.
+#         - levels : int or array-like, optional
+#             Number or positions of discrete color levels (for contour-like plots).
+#         - vmin, vmax : float, optional
+#             Lower and upper bounds for color scaling. If not set, determined from data.
 
-Note: the other keyword argument dictionaries otherwise remain applicable.
------------------
-"""
+# Note: the other keyword argument dictionaries otherwise remain applicable.
+# -----------------
+# """
 
 egra.plot_kriged_mesh(
     data=df_kriged_results,
@@ -254,22 +254,22 @@ egra.plot_kriged_mesh(
 # Plot and store the transect map
 # -------------------------------
 
-"""
-plot_transect_map(
-    ...,
-    transect_kwargs
-)
+# """
+# plot_transect_map(
+#     ...,
+#     transect_kwargs
+# )
 
-transect_kwargs: dict
-    Passed to geopandas.GeoDataFrame.plot when plotting the transect lines.
-    Common options include:
-        - color : str
-            Line color.
-        - linewidth : float
-            Line width.
+# transect_kwargs: dict
+#     Passed to geopandas.GeoDataFrame.plot when plotting the transect lines.
+#     Common options include:
+#         - color : str
+#             Line color.
+#         - linewidth : float
+#             Line width.
 
-Note: the other keyword argument dictionaries otherwise remain applicable.
-"""
+# Note: the other keyword argument dictionaries otherwise remain applicable.
+# """
 
 # Base
 egra.plot_transect_map(
@@ -294,20 +294,20 @@ egra.plot_transect_map(
 # ==================================================================================================
 # Plot and store the age-length table heatmaps
 # --------------------------------------------
-"""
-plot_age_length_heatmap(
-    ...,
-    imshow_kwargs
-)
+# """
+# plot_age_length_heatmap(
+#     ...,
+#     imshow_kwargs
+# )
 
-imshow_kwargs: dict
-    Passed to matplotlib.axes.Axes.imshow when plotting the heatmap.
-    Common options include:
-        - vmin, vmax : float, optional
-            Lower and upper bounds for color scaling. If not set, determined from data.
+# imshow_kwargs: dict
+#     Passed to matplotlib.axes.Axes.imshow when plotting the heatmap.
+#     Common options include:
+#         - vmin, vmax : float, optional
+#             Lower and upper bounds for color scaling. If not set, determined from data.
 
-Note: the other keyword argument dictionaries otherwise remain applicable.
-"""
+# Note: the other keyword argument dictionaries otherwise remain applicable.
+# """
 
 # Base
 egra.plot_age_length_heatmap(
@@ -341,33 +341,34 @@ egra.plot_age_length_heatmap(
 # ------------------------------
 # Using the `*_filter` arguments
 # ------------------------------
-"""
-plot_age_length_heatmap(
-    ...,
-    include_filter,
-    exclude_filter,
-    replace_value=None
-)
+# """
+# plot_age_length_heatmap(
+#     ...,
+#     include_filter,
+#     exclude_filter,
+#     replace_value=None
+# )
 
-- include_filter: dict
-    Used to **include only rows** where the column matches the given value(s).
-    Example: {"age_bin": [2, 3]} will only plot data for age bins 2 and 3.
+# - include_filter: dict
+#     Used to **include only rows** where the column matches the given value(s).
+#     Example: {"age_bin": [2, 3]} will only plot data for age bins 2 and 3.
 
-- exclude_filter: dict
-    Used to **exclude rows** where the column matches the given value(s).
-    Example: {"age_bin": [2, 3]} will REMOVE data for age bins 2 and 3.
+# - exclude_filter: dict
+#     Used to **exclude rows** where the column matches the given value(s).
+#     Example: {"age_bin": [2, 3]} will REMOVE data for age bins 2 and 3.
 
-- replace_value: float, default=None
-    While `replace_value=None`, values filtered out via `exclude_filter` will be completely excised
-    from the dataset. However, when `replace_value` is set to a float, all values that would
-    otherwise be filtered out are instead set to the designated replacement value.
-    Example: `{"age_bin": [1]}` with `'replace_value'=0.0` would replace all values in
-    `age_bin==1.0` to `0.0` instead of removing them entirely.
+# - replace_value: float, default=None
+#     While `replace_value=None`, values filtered out via `exclude_filter` will be completely
+#     excised
+#     from the dataset. However, when `replace_value` is set to a float, all values that would
+#     otherwise be filtered out are instead set to the designated replacement value.
+#     Example: `{"age_bin": [1]}` with `'replace_value'=0.0` would replace all values in
+#     `age_bin==1.0` to `0.0` instead of removing them entirely.
 
-    **Pattern:** These filters are a recurrent pattern in Echopop. They allow you to flexibly
-    subset your data for plotting, making it easy to focus on specific ages, lengths, or other
-    groupings. You can use lists, single values, or callables for advanced filtering.
-"""
+#     **Pattern:** These filters are a recurrent pattern in Echopop. They allow you to flexibly
+#     subset your data for plotting, making it easy to focus on specific ages, lengths, or other
+#     groupings. You can use lists, single values, or callables for advanced filtering.
+# """
 
 # Drop age-1
 egra.plot_age_length_heatmap(
