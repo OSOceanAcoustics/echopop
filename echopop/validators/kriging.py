@@ -1,9 +1,7 @@
 from typing import Any, Callable, Dict, List, Tuple, Union
 
-import numpy as np
 import pandas as pd
 from pydantic import ConfigDict, Field, field_validator, model_validator
-from pydantic_core import PydanticCustomError
 
 from ..core.validators import BaseDictionary
 from . import spatial
@@ -37,6 +35,7 @@ class KrigingParameters(BaseDictionary):
 class VariogramKrigeModelParameters(VariogramModelParameters):
     model: Union[str, List[str]] = Field(union_mode="left_to_right")
     model_config = ConfigDict(title="theoretical variogram model parameters")
+
 
 class ValidateKrigingClass(BaseDictionary):
     mesh: pd.DataFrame

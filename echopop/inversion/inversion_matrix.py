@@ -655,6 +655,7 @@ class InversionMatrix(InversionBase):
         # Validate
         try:
             from ..validators.inversion import ValidateInversionMatrix
+
             # ---- Check
             valid_args = ValidateInversionMatrix.create(
                 **dict(data=data, simulation_settings=simulation_settings)
@@ -849,6 +850,7 @@ class InversionMatrix(InversionBase):
         # ---- which simply checks for a parameter dictionary compatible with `lmfit.Parameters`.
         try:
             from ..validators import ValidateBuildModelArgs
+
             # ---- Check
             valid_args = ValidateBuildModelArgs.create(
                 **dict(model_parameters=model_parameters, model_settings=model_settings)

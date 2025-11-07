@@ -1,8 +1,9 @@
+from typing import Optional
+
 import pandas as pd
 import pandera.pandas as pa
 import pytest
 from pydantic import ValidationError, field_validator
-from typing import Optional
 
 from echopop.core.validators import BaseDataFrame, BaseDictionary
 

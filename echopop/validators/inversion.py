@@ -1,12 +1,16 @@
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
 from pydantic import ConfigDict, Field, RootModel, ValidationError, field_validator, model_validator
 
 from ..core.validators import BaseDataFrame, BaseDictionary
+
+if TYPE_CHECKING:
+    from ..inversion import InvParameters
+
 
 class TSLRegressionParameters(BaseDictionary):
     """
@@ -239,7 +243,7 @@ class ValidateBuildModelArgs(BaseDictionary):
     def validate_model_parameterization(self):
         from ..inversion import InvParameters
         from .scattering_models import SCATTERING_MODEL_PARAMETERS
-        
+
         # Check for model-type
         # ---- Dump the model
         model_settings = self.model_settings.model_dump()
@@ -328,6 +332,7 @@ class ModelInputParameters(RootModel[Dict[str, "SingleParameter"]]):
         # Check type using string comparison to avoid import
         if type(data).__name__ == "InvParameters":
             from ..inversion import InvParameters  # noqa: F401
+
             return data.parameters
         return data
 

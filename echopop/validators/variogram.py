@@ -27,7 +27,7 @@ class VariogramModelParameters(BaseDictionary):
     def validate_decay_power(cls, v):
         if v is None:
             return v
-        
+
         if not 0 < v <= 2:
             raise ValueError(
                 f"decay_power must be in interval (0, 2]. Got {v}. Values > 2 create "
@@ -39,7 +39,7 @@ class VariogramModelParameters(BaseDictionary):
     def validate_power_exponent(cls, v):
         if v is None:
             return v
-        
+
         if not 0.0 < v < 2.0:
             raise ValueError(
                 f"power_exponent must be in interval (0, 2). Got {v}. Must be strictly less than 2 "
@@ -51,7 +51,7 @@ class VariogramModelParameters(BaseDictionary):
     def validate_smoothness_parameter(cls, v):
         if v is None:
             return v
-        
+
         if not 0.0 < v <= 10.0:
             raise ValueError(
                 f"smoothness_parameter must be in interval (0, 10]. Got {v}. Common values: 0.5 "

@@ -433,7 +433,7 @@ def test_kriging_class_initialization():
         "aspect_ratio": 0.001,  # Required parameter
     }
     variogram_params = {
-        "model": "exponential",        
+        "model": "exponential",
         "nugget": 0.1,
         "sill": 1.0,
         "correlation_range": 0.5,
