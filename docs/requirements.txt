@@ -1,5 +1,5 @@
-docutils<0.18
-jupyter-book
+docutils>=0.18,<0.22
+jupyter-book==1.0.4
 numpydoc
 setuptools
 sphinx-automodapi
