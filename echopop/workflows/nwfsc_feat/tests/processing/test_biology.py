@@ -46,7 +46,7 @@ def test_length_binned_weights_grouped_coefficients(
 
     assert isinstance(result, pd.DataFrame)
     # Should return wide format with sex as columns when grouping
-    expected_columns = ["female", "male"]  # sex values as columns
+    expected_columns = ["female", "male", "unsexed"]  # sex values as columns
     assert list(result.columns) == expected_columns
     assert result.index.name == "length_bin"
     assert len(result) > 0
