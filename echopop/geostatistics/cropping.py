@@ -8,7 +8,6 @@ from scipy import interpolate
 from shapely.geometry import Point, Polygon
 from shapely.ops import unary_union
 
-from ..core.exceptions import EchopopValidationError
 from ..validators.spatial import ValidateHullCropArgs
 from .projection import wgs84_to_utm
 
@@ -329,7 +328,7 @@ def hull_crop(
             )
         )
     except Exception as e:
-        raise EchopopValidationError(str(e)) from None
+        raise e from None
 
     # Get coordinate names
     x_coord, y_coord = valid_params["coordinate_names"]

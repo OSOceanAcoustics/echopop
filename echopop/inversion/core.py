@@ -6,8 +6,6 @@ import pandas as pd
 from lmfit import Parameters
 from pydantic import ValidationError
 
-from ..core.exceptions import EchopopValidationError
-
 
 class InversionBase(abc.ABC):
     """
@@ -221,7 +219,7 @@ class InvParameters:
             validated_parameters = ModelInputParameters.create(**parameters)
         # Break creation
         except (ValidationError, Exception) as e:
-            raise EchopopValidationError(str(e)) from None
+            raise e from None
 
         # Return parameter
         return validated_parameters

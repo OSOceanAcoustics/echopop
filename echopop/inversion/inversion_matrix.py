@@ -7,7 +7,6 @@ import pandas as pd
 from lmfit import Minimizer, Parameters
 from pydantic import ValidationError
 
-from ..core.exceptions import EchopopValidationError
 from ..validators.inversion import (
     ValidateBuildModelArgs,
     ValidateInversionMatrix,
@@ -647,7 +646,7 @@ class InversionMatrix(InversionBase):
 
     Raises
     ------
-    EchopopValidationError
+    ValidationError
         If data or simulation_settings fail validation requirements
     """
 
@@ -665,7 +664,7 @@ class InversionMatrix(InversionBase):
             )
         # Break creation
         except ValidationError as e:
-            raise EchopopValidationError(str(e)) from None
+            raise e from None
 
         # Create instance
         self = super().__new__(cls)
@@ -820,7 +819,7 @@ class InversionMatrix(InversionBase):
 
         Raises
         ------
-        EchopopValidationError
+        ValidationError
             If parameters or settings fail validation against model schema
 
         Notes
@@ -858,7 +857,7 @@ class InversionMatrix(InversionBase):
             )
         # Break creation
         except (ValidationError, Exception) as e:
-            raise EchopopValidationError(str(e)) from None
+            raise e from None
 
         # Update attributes
         self.model_params = valid_args["model_parameters"]
