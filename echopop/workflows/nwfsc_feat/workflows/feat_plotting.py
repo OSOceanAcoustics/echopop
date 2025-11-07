@@ -153,29 +153,29 @@ egra.plot_kriged_mesh(
 # ---------------------
 # Kriged mesh [scatter]
 # ---------------------
-"""
------------------
-plot_kriged_mesh(
-    ...,
-    plot_type='scatter',
-    scatter_kwargs
-    )
+# """
+# -----------------
+# plot_kriged_mesh(
+#     ...,
+#     plot_type='scatter',
+#     scatter_kwargs
+#     )
 
-- scatter_kwargs: dict
-    Passed to matplotlib.pyplot.scatter for point plotting.
-    Common options:
-        - s: float or array, default=20
-            Marker size.
-        - c: color or array, default=None
-            Marker color.
-        - alpha: float, default=1.0
-            Transparency.
-        - marker: str, default='o'
-            Marker style.
+# - scatter_kwargs: dict
+#     Passed to matplotlib.pyplot.scatter for point plotting.
+#     Common options:
+#         - s: float or array, default=20
+#             Marker size.
+#         - c: color or array, default=None
+#             Marker color.
+#         - alpha: float, default=1.0
+#             Transparency.
+#         - marker: str, default='o'
+#             Marker style.
 
-Note: the other keyword argument dictionaries otherwise remain applicable.
------------------
-"""
+# Note: the other keyword argument dictionaries otherwise remain applicable.
+# -----------------
+# """
 
 egra.plot_kriged_mesh(
     data=df_kriged_results,
