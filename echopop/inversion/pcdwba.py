@@ -5,7 +5,7 @@ import pandas as pd
 from numba import njit
 from scipy.special import j1
 
-from . import operations as ops
+from . import utils as ops
 
 
 @njit(cache=True, fastmath=True)

@@ -6,8 +6,8 @@ from pydantic import ValidationError
 
 from .. import validators as val
 from ..survey import quantize_length_data
-from .core import InversionBase
-from .operations import impute_missing_sigma_bs
+from .inversion_base import InversionBase
+from .utils import impute_missing_sigma_bs
 
 
 class InversionLengthTS(InversionBase):

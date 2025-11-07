@@ -1,7 +1,7 @@
-from .core import InversionBase, InvParameters
+from .inversion_base import InversionBase, InvParameters
 from .inversion_length_TS import InversionLengthTS, ts_length_regression
 from .inversion_matrix import InversionMatrix
-from .operations import (
+from .utils import (
     generate_frequency_interval,
     impute_missing_sigma_bs,
     length_average,
@@ -9,7 +9,7 @@ from .operations import (
     reflection_coefficient,
     wavenumber,
 )
-from .population import estimate_population
+from .post_inversion import estimate_population
 
 __all__ = [
     "InvParameters",
