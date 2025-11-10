@@ -6,7 +6,7 @@ exclude: |
     echopop/file_investigation.py|
     echopop/test_survey.py|
     echopop/scratch/|
-    echopop/nwfsc_feat/workflows
+    echopop/workflows/nwfsc_feat/workflows
   )
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
