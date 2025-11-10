@@ -1305,14 +1305,14 @@ def filter_transect_intervals(
         # ---- Iterate through gaps
         if num_intervals > 1:
             # ---- Multiple intervals case
-            for j in range(num_intervals):
-                if j == 0:
+            for interval in range(num_intervals):
+                if interval == 0:
                     # ---- Case 1: Remove data before first interval
                     condition_indices = np.where(
                         nasc_distance_ends[nasc_data_indices]
                         < filter_log_starts[filter_interval_indices[0]]
                     )[0]
-                elif j == num_intervals - 1:
+                elif interval == num_intervals - 1:
                     # ---- Case 2: Remove data after last interval OR between last two intervals
                     condition_indices = np.where(
                         (
@@ -1322,11 +1322,11 @@ def filter_transect_intervals(
                         | (
                             (
                                 nasc_distance_starts[nasc_data_indices]
-                                > filter_log_ends[filter_interval_indices[j - 1]]
+                                > filter_log_ends[filter_interval_indices[interval - 1]]
                             )
                             & (
                                 nasc_distance_ends[nasc_data_indices]
-                                < filter_log_starts[filter_interval_indices[j]]
+                                < filter_log_starts[filter_interval_indices[interval]]
                             )
                         )
                     )[0]
@@ -1335,11 +1335,11 @@ def filter_transect_intervals(
                     condition_indices = np.where(
                         (
                             nasc_distance_starts[nasc_data_indices]
-                            > filter_log_ends[filter_interval_indices[j - 1]]
+                            > filter_log_ends[filter_interval_indices[interval - 1]]
                         )
                         & (
                             nasc_distance_ends[nasc_data_indices]
-                            < filter_log_starts[filter_interval_indices[j]]
+                            < filter_log_starts[filter_interval_indices[interval]]
                         )
                     )[0]
                 # ---- Add matching NASC indices to removal list
