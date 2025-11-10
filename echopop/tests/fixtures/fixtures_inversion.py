@@ -2,8 +2,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from echopop.inversion import InvParameters
 from echopop.inversion.pcdwba import pcdwba
-from echopop.typing import InvParameters
 
 
 @pytest.fixture

@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-import pandera.pandas as pa
 import pytest
 from pydantic import ValidationError
 
@@ -67,7 +66,7 @@ def test_mesh_df_invalid_longitude():
         }
     )
 
-    with pytest.raises(pa.errors.SchemaError):
+    with pytest.raises(ValueError):
         MeshDF.validate(df)
 
 
@@ -82,7 +81,7 @@ def test_mesh_df_invalid_latitude():
         }
     )
 
-    with pytest.raises(pa.errors.SchemaError):
+    with pytest.raises(ValueError):
         MeshDF.validate(df)
 
 
@@ -178,7 +177,7 @@ def test_transects_df_invalid_longitude():
         }
     )
 
-    with pytest.raises(pa.errors.SchemaError):
+    with pytest.raises(ValueError):
         TransectsDF.validate(df)
 
 
@@ -193,7 +192,7 @@ def test_transects_df_invalid_latitude():
         }
     )
 
-    with pytest.raises(pa.errors.SchemaError):
+    with pytest.raises(ValueError):
         TransectsDF.validate(df)
 
 

@@ -4,11 +4,10 @@ import numpy as np
 import pandas as pd
 from pydantic import ValidationError
 
-from .. import acoustics, validators as val
-from ..core.exceptions import EchopopValidationError
-from ..nwfsc_feat import utils
+from .. import validators as val
+from ..survey import quantize_length_data
 from .inversion_base import InversionBase
-from .operations import impute_missing_sigma_bs
+from .utils import impute_missing_sigma_bs
 
 
 class InversionLengthTS(InversionBase):
@@ -82,7 +81,7 @@ class InversionLengthTS(InversionBase):
             valid_args = val.ValidateLengthTS.create(**model_parameters)
         # Break creation
         except ValidationError as e:
-            raise EchopopValidationError(str(e)) from None
+            raise e from None
 
         # Create instance
         self = super().__new__(cls)
@@ -149,7 +148,7 @@ class InversionLengthTS(InversionBase):
         # Quantize the lengths
         haul_counts = pd.concat(
             [
-                utils.quantize_length_data(d, self.model_params["stratify_by"] + ["haul_num"])
+                quantize_length_data(d, self.model_params["stratify_by"] + ["haul_num"])
                 for d in df_length
             ],
             axis=1,
@@ -159,7 +158,7 @@ class InversionLengthTS(InversionBase):
         haul_counts = haul_counts.fillna(0.0).sum(axis=1).reset_index(name="length_count")
 
         # Compute the average TS
-        haul_counts["TS"] = acoustics.ts_length_regression(
+        haul_counts["TS"] = ts_length_regression(
             haul_counts["length"],
             self.model_params["ts_length_regression"]["slope"],
             self.model_params["ts_length_regression"]["intercept"],
@@ -248,10 +247,7 @@ class InversionLengthTS(InversionBase):
             # Quantize the length counts across all datasets per length value
             df_length_counts = (
                 pd.concat(
-                    [
-                        utils.quantize_length_data(d, self.model_params["stratify_by"])
-                        for d in df_length
-                    ],
+                    [quantize_length_data(d, self.model_params["stratify_by"]) for d in df_length],
                     axis=1,
                 )
                 .fillna(0.0)
@@ -260,7 +256,7 @@ class InversionLengthTS(InversionBase):
             )
 
             # Compute the average TS
-            df_length_counts["TS"] = acoustics.ts_length_regression(
+            df_length_counts["TS"] = ts_length_regression(
                 df_length_counts["length"],
                 self.model_params["ts_length_regression"]["slope"],
                 self.model_params["ts_length_regression"]["intercept"],
@@ -293,10 +289,7 @@ class InversionLengthTS(InversionBase):
             # ---- Quantize the length counts across all datasets per length value
             df_length_counts = (
                 pd.concat(
-                    [
-                        utils.quantize_length_data(d, self.model_params["stratify_by"])
-                        for d in df_length
-                    ],
+                    [quantize_length_data(d, self.model_params["stratify_by"]) for d in df_length],
                     axis=1,
                 )
                 .fillna(0.0)
@@ -304,7 +297,7 @@ class InversionLengthTS(InversionBase):
                 .reset_index(name="length_count")
             )
             # ---- Compute the average TS
-            df_length_counts["TS"] = acoustics.ts_length_regression(
+            df_length_counts["TS"] = ts_length_regression(
                 df_length_counts["length"],
                 self.model_params["ts_length_regression"]["slope"],
                 self.model_params["ts_length_regression"]["intercept"],
@@ -358,3 +351,50 @@ class InversionLengthTS(InversionBase):
 
             # Return the NASC DataFrame with the inverted number densities
             return df_nasc.reset_index()
+
+
+def ts_length_regression(
+    length: Union[np.ndarray, float], slope: float, intercept: float
+) -> np.ndarray:
+    """
+    Converts length values into acoustic target strength (TS, dB re. 1 m^-2)
+
+    Parameters
+    ----------
+    length : Union[np.ndarray, float]
+        Length value(s) typically represented in 'cm' that will be converted into acoustic target
+        strength (TS, dB re. 1 m^-2).
+    slope : float
+        TS-length regression slope coefficient
+    intercept : float
+        TS-length regression intercept coefficient
+
+    Returns
+    -------
+    np.ndarray
+        Target strength values in dB re. 1 m^-2
+
+    Examples
+    --------
+    >>> # Single length value
+    >>> ts = ts_length_regression(20.0, slope=20.0, intercept=-68.0)
+    >>> print(f"TS for 20cm fish: {ts:.2f} dB")
+    TS for 20cm fish: -42.00 dB
+
+    >>> # Multiple length values
+    >>> lengths = np.array([10, 15, 20, 25, 30])
+    >>> ts_values = ts_length_regression(lengths, slope=20.0, intercept=-68.0)
+    >>> print("Lengths:", lengths)
+    >>> print("TS values:", ts_values)
+    Lengths: [10 15 20 25 30]
+    TS values: [-48.   -44.77 -42.   -39.82 -38.   ]
+
+    Notes
+    -----
+    The TS-length relationship follows the standard log-linear form:
+    TS = slope * log10(length) + intercept
+
+    This is commonly used in fisheries acoustics where the relationship between
+    fish length and acoustic backscatter follows this logarithmic pattern.
+    """
+    return slope * np.log10(length) + intercept

@@ -3,7 +3,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from echopop.nwfsc_feat.load_data import (
+from echopop.ingest import (
     join_geostrata_by_latitude,
     join_strata_by_haul,
     load_geostrata,

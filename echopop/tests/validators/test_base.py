@@ -1,9 +1,10 @@
+from typing import Optional
+
 import pandas as pd
 import pandera.pandas as pa
 import pytest
 from pydantic import ValidationError, field_validator
 
-from echopop.core.exceptions import EchopopValidationError
 from echopop.core.validators import BaseDataFrame, BaseDictionary
 
 
@@ -50,7 +51,7 @@ def test_base_dictionary_create_exclude_none():
 
     class TestDict(BaseDictionary):
         value: int
-        optional_value: int = None
+        optional_value: Optional[int] = None
 
     result = TestDict.create(value=42)
     expected = {"value": 42}
@@ -113,37 +114,8 @@ def test_base_dataframe_validate_failure():
 
     df = pd.DataFrame({"value": [-1, 2, 3], "name": ["a", "b", "c"]})  # Invalid: negative value
 
-    with pytest.raises(pa.errors.SchemaError):
+    with pytest.raises(ValueError):
         TestDF.validate(df)
-
-
-# ==================================================================================================
-# Test EchopopValidationError
-# ---------------------------
-def test_echopop_validation_error_with_exception():
-    """Test EchopopValidationError with an exception."""
-
-    original_error = ValueError("Original error message")
-    error = EchopopValidationError(original_error)
-
-    assert error.exception == original_error
-    assert str(error) == "Original error message"
-
-
-def test_echopop_validation_error_without_exception():
-    """Test EchopopValidationError without an exception."""
-
-    error = EchopopValidationError()
-
-    assert error.exception is None
-    assert str(error) == ""
-
-
-def test_echopop_validation_error_inheritance():
-    """Test that EchopopValidationError inherits from Exception."""
-
-    error = EchopopValidationError()
-    assert isinstance(error, Exception)
 
 
 # ==================================================================================================
@@ -154,7 +126,7 @@ def test_base_integration_custom_model():
 
     class CustomModel(BaseDictionary):
         positive_number: float
-        optional_string: str = None
+        optional_string: Optional[str] = None
 
         @field_validator("positive_number")
         def validate_positive(cls, v):

@@ -1,8 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from echopop import acoustics, inversion
-from echopop.nwfsc_feat import utils
+from echopop import inversion
 
 # ==============================================================================
 # TESTS FOR ts_length_regression
@@ -15,7 +14,7 @@ def test_ts_length_regression_single_value():
     slope = 20.0
     intercept = -68.0
 
-    result = acoustics.ts_length_regression(length, slope, intercept)
+    result = inversion.ts_length_regression(length, slope, intercept)
     expected = 20.0 * np.log10(20.0) + (-68.0)  # ≈ -42.0
 
     assert np.isclose(result, expected)
@@ -27,7 +26,7 @@ def test_ts_length_regression_array(sample_lengths, expected_ts_values):
     slope = 20.0
     intercept = -68.0
 
-    result = acoustics.ts_length_regression(sample_lengths, slope, intercept)
+    result = inversion.ts_length_regression(sample_lengths, slope, intercept)
 
     assert isinstance(result, np.ndarray)
     assert len(result) == len(sample_lengths)
@@ -40,7 +39,7 @@ def test_ts_length_regression_different_params():
     slope = 15.0  # Different slope
     intercept = -70.0  # Different intercept
 
-    result = acoustics.ts_length_regression(length, slope, intercept)
+    result = inversion.ts_length_regression(length, slope, intercept)
     expected = 15.0 * np.log10(25.0) + (-70.0)
 
     assert np.isclose(result, expected)
@@ -49,7 +48,7 @@ def test_ts_length_regression_different_params():
 def test_ts_length_regression_zero_length():
     """Test that zero length creates -inf result."""
     # Zero length creates -inf in log10, but doesn't raise an exception
-    result = acoustics.ts_length_regression(0.0, 20.0, -68.0)
+    result = inversion.ts_length_regression(0.0, 20.0, -68.0)
     assert np.isinf(result) and result < 0
 
 
@@ -120,80 +119,3 @@ def test_impute_missing_sigma_bs_edge_cases():
     assert result.loc[1, "sigma_bs"] == 0.001
     assert result.loc[5, "sigma_bs"] == 0.003
     assert not result["sigma_bs"].isna().any()
-
-
-# ==============================================================================
-# TESTS FOR utils.quantize_length_data
-# ==============================================================================
-
-
-def test_quantize_length_data_no_count(specimen_df_no_count, group_columns):
-    """Test quantization when no length_count column exists."""
-    result = utils.quantize_length_data(specimen_df_no_count, group_columns)
-
-    assert "length_count" in result.columns
-    assert isinstance(result.index, pd.MultiIndex)
-
-    # Check that it correctly counts occurrences
-    # Length 20.5 appears twice in stratum 1, haul 101, sex M
-    mask = (
-        (result.index.get_level_values("stratum_ks") == 1)
-        & (result.index.get_level_values("haul_num") == 101)
-        & (result.index.get_level_values("sex") == "M")
-        & (result.index.get_level_values("length") == 20.5)
-    )
-
-    assert result[mask]["length_count"].iloc[0] == 2
-
-
-def test_quantize_length_data_with_count(length_df, group_columns):
-    """Test quantization when length_count column already exists."""
-    result = utils.quantize_length_data(length_df, group_columns)
-
-    assert "length_count" in result.columns
-    assert isinstance(result.index, pd.MultiIndex)
-
-    # Should sum existing counts, not count rows
-    total_original = length_df["length_count"].sum()
-    total_result = result["length_count"].sum()
-    assert total_original == total_result
-
-
-def test_quantize_length_data_empty():
-    """Test quantization with empty DataFrame."""
-    empty_df = pd.DataFrame(
-        {"stratum_ks": [], "haul_num": [], "sex": [], "length": [], "length_count": []}
-    )
-    group_columns = ["stratum_ks", "haul_num", "sex"]
-    result = utils.quantize_length_data(empty_df, group_columns)
-
-    assert len(result) == 0
-    assert "length_count" in result.columns
-
-
-def test_quantize_length_data_single_row(single_row_df, group_columns):
-    """Test quantization with single row."""
-    result = utils.quantize_length_data(single_row_df, group_columns)
-
-    assert len(result) == 1
-    assert result["length_count"].iloc[0] == 1
-
-
-def test_quantize_length_data_different_groups():
-    """Test quantization with different grouping columns."""
-    df = pd.DataFrame(
-        {"stratum": [1, 1, 2, 2], "sex": ["M", "M", "F", "F"], "length": [20.0, 20.0, 22.0, 24.0]}
-    )
-
-    result = utils.quantize_length_data(df, ["stratum", "sex"])
-
-    # Should have 3 unique combinations
-    assert len(result) == 3
-
-    # Stratum 1, sex M, length 20.0 should have count 2
-    mask = (
-        (result.index.get_level_values("stratum") == 1)
-        & (result.index.get_level_values("sex") == "M")
-        & (result.index.get_level_values("length") == 20.0)
-    )
-    assert result[mask]["length_count"].iloc[0] == 2
