@@ -3,9 +3,9 @@ from typing import Optional, Tuple
 
 import pandas as pd
 import pandera.pandas as pa
-from pydantic import Field, field_validator, model_validator
+from pydantic import ConfigDict, Field, field_validator, model_validator
 
-from .base import BaseDataFrame, BaseDictionary
+from ..core.validators import BaseDataFrame, BaseDictionary
 
 
 class MeshDF(BaseDataFrame):
@@ -15,6 +15,9 @@ class MeshDF(BaseDataFrame):
     y: Optional[float] = pa.Field(nullable=False)
     area: Optional[float] = pa.Field(nullable=False)
     fraction: Optional[float] = pa.Field(nullable=False)
+
+    class Config(BaseDataFrame.Config):
+        title = "kriging mesh DataFrame"
 
     @classmethod
     def pre_validate(cls, df: pd.DataFrame) -> pd.DataFrame:
@@ -47,6 +50,9 @@ class TransectsDF(BaseDataFrame):
     x: Optional[float] = pa.Field(nullable=False)
     y: Optional[float] = pa.Field(nullable=False)
 
+    class Config(BaseDataFrame.Config):
+        title = "along-transect survey results DataFrame"
+
     @classmethod
     def pre_validate(cls, df: pd.DataFrame) -> pd.DataFrame:
         # Check for joint longitude-latitude
@@ -65,17 +71,14 @@ class TransectsDF(BaseDataFrame):
         return df
 
 
-class ValidateHullCropArgs(
-    BaseDictionary,
-    arbitrary_types_allowed=True,
-    title="hull convex method for kriging mesh cropping",
-):
+class ValidateHullCropArgs(BaseDictionary):
     transects: pd.DataFrame
     mesh: pd.DataFrame
     num_nearest_transects: int = Field(gt=0)
     mesh_buffer_distance: float = Field(ge=0.0)
     projection: str
     coordinate_names: Tuple[str, str]
+    model_config = ConfigDict(title="hull convex method for kriging mesh cropping")
 
     @field_validator("mesh", mode="after")
     def validate_mesh(cls, v):

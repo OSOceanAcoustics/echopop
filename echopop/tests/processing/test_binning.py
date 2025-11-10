@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-import echopop.nwfsc_feat.utils as echoutils
+import echopop.utils as echoutils
 
 
 def test_create_centered_bins_dataframe_output(simple_bins):

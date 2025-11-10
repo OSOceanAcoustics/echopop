@@ -1,5 +1,8 @@
-from .base import EchopopValidationError
-from .inversion import ValidateLengthTS
+from .inversion import (
+    ValidateBuildModelArgs,
+    ValidateInversionMatrix,
+    ValidateLengthTS,
+)
 from .kriging import ValidateKrigingClass
 from .spatial import ValidateHullCropArgs
 from .variogram import (
@@ -9,10 +12,11 @@ from .variogram import (
 )
 
 __all__ = [
-    "EchopopValidationError",
+    "ValidateBuildModelArgs",
     "ValidateHullCropArgs",
     "ValidateEmpiricalVariogramArgs",
     "ValidateFitVariogramArgs",
+    "ValidateInversionMatrix",
     "ValidateKrigingClass",
     "ValidateLengthTS",
     "ValidateVariogramClass",

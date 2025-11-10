@@ -4,15 +4,12 @@ import pandas as pd
 from lmfit import Parameters
 from pydantic import ConfigDict, Field, field_validator, model_validator
 
-from ..nwfsc_feat.variogram_models import get_variogram_arguments
-from . import base, spatial
+from ..core.validators import BaseDictionary
+from ..geostatistics.variogram_models import get_variogram_arguments
+from . import spatial
 
 
-class VariogramModelParameters(
-    base.BaseDictionary,
-    arbitrary_types_allowed=True,
-    title="theoretical variogram model parameters",
-):
+class VariogramModelParameters(BaseDictionary):
     correlation_range: Optional[float] = Field(default=None, gt=0.0, allow_inf_nan=False)
     decay_power: Optional[float] = Field(default=None, gt=0.0, le=2.0, allow_inf_nan=False)
     enhance_semivariance: Optional[bool] = Field(default=None)
@@ -24,9 +21,13 @@ class VariogramModelParameters(
     )
     shape_parameter: Optional[float] = Field(default=None, gt=0.0, le=100.0, allow_inf_nan=False)
     power_exponent: Optional[float] = Field(default=None, gt=0.0, lt=2.0, allow_inf_nan=False)
+    model_config = ConfigDict(title="theoretical variogram model parameters")
 
     @field_validator("decay_power", mode="before")
     def validate_decay_power(cls, v):
+        if v is None:
+            return v
+
         if not 0 < v <= 2:
             raise ValueError(
                 f"decay_power must be in interval (0, 2]. Got {v}. Values > 2 create "
@@ -36,6 +37,9 @@ class VariogramModelParameters(
 
     @field_validator("power_exponent", mode="before")
     def validate_power_exponent(cls, v):
+        if v is None:
+            return v
+
         if not 0.0 < v < 2.0:
             raise ValueError(
                 f"power_exponent must be in interval (0, 2). Got {v}. Must be strictly less than 2 "
@@ -45,6 +49,9 @@ class VariogramModelParameters(
 
     @field_validator("smoothness_parameter", mode="before")
     def validate_smoothness_parameter(cls, v):
+        if v is None:
+            return v
+
         if not 0.0 < v <= 10.0:
             raise ValueError(
                 f"smoothness_parameter must be in interval (0, 10]. Got {v}. Common values: 0.5 "
@@ -54,6 +61,9 @@ class VariogramModelParameters(
 
     @field_validator("shape_parameter", mode="before")
     def validate_shape_parameter(cls, v):
+        if v is None:
+            return v
+
         if not 0.0 < v <= 100.0:
             raise ValueError(f"shape_parameter must be in interval (0, 100]. Got {v}.")
         return v
@@ -69,23 +79,21 @@ class VariogramModelParameters(
         return self
 
 
-class ValidateVariogramClass(
-    base.BaseDictionary, arbitrary_types_allowed=True, title="variogram analysis parameters"
-):
+class ValidateVariogramClass(BaseDictionary):
     coordinate_names: Tuple[str, str]
     lag_resolution: float = Field(gt=0.0, allow_inf_nan=False)
     n_lags: int = Field(gt=0)
+    model_config = ConfigDict(title="variogram analysis parameters")
 
 
-class ValidateEmpiricalVariogramArgs(
-    base.BaseDictionary, arbitrary_types_allowed=True, title="empirical variogram parameters"
-):
+class ValidateEmpiricalVariogramArgs(BaseDictionary):
     azimuth_angle_threshold: float = Field(ge=0.0, le=180.0, allow_inf_nan=None)
     azimuth_filter: bool
     coordinate_names: Tuple[str, str]
     data: pd.DataFrame
     force_lag_zero: bool
     variable: str
+    model_config = ConfigDict(title="empirical variogram parameters")
 
     @field_validator("data", mode="after")
     def validate_transects(cls, v):
@@ -128,16 +136,13 @@ class ValidateEmpiricalVariogramArgs(
         return values
 
 
-class ValidateFitVariogramArgs(
-    base.BaseDictionary,
-    arbitrary_types_allowed=True,
-    title="theoretical variogram fitting parameters",
-):
-    model_config = ConfigDict(protected_namespaces=())
-
+class ValidateFitVariogramArgs(BaseDictionary):
     model: Union[str, List[str]] = Field(union_mode="left_to_right")
     model_parameters: Parameters
     optimizer_kwargs: Dict[str, Any]
+    model_config = ConfigDict(
+        title="theoretical variogram fitting parameters", protected_namespaces=()
+    )
 
     @field_validator("model", mode="before")
     def validate_model(cls, v):
