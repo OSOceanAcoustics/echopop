@@ -1,7 +1,7 @@
 import numpy as np
 from lmfit import Parameters
 
-from echopop.nwfsc_feat.variogram_models import fit_variogram
+from echopop.geostatistics import fit_variogram
 
 
 # ==================================================================================================

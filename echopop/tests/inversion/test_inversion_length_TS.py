@@ -1,8 +1,8 @@
 import pandas as pd
 import pytest
+from pydantic import ValidationError
 
 from echopop import inversion
-from echopop.validators import EchopopValidationError
 
 
 def test_inversion_length_ts_init(model_parameters):
@@ -22,7 +22,7 @@ def test_inversion_length_ts_init_missing_params():
     }
 
     # Expected to raise a Validation Error
-    with pytest.raises(EchopopValidationError):
+    with pytest.raises(ValidationError):
         assert inversion.InversionLengthTS(bad_params)
 
 

@@ -5,9 +5,8 @@ exclude: |
     project_docs|
     echopop/file_investigation.py|
     echopop/test_survey.py|
-    echopop/scratch|
-    echopop/workflow|
-    echopop/inversion
+    echopop/scratch/|
+    echopop/workflows/nwfsc_feat/workflows
   )
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -22,12 +21,12 @@ repos:
         args: ["--autofix", "--indent=2", "--no-sort-keys"]
 
   - repo: https://github.com/PyCQA/isort
-    rev: 6.0.1
+    rev: 7.0.0
     hooks:
       - id: isort
         args: ["--profile", "black", "--filter-files"]
 
-  - repo: https://github.com/psf/black
+  - repo: https://github.com/psf/black-pre-commit-mirror
     rev: 25.9.0
     hooks:
       - id: black
@@ -41,4 +40,5 @@ repos:
     rev: v2.4.1
     hooks:
       - id: codespell
-        args: ["--skip=*.ipynb", "--ignore-words=.codespell-ignore-words.txt", "-w", "docs/source", "echopype", "echopop"]
+        exclude: '(scratch)/.*'
+        args: ["--skip=*.ipynb", "--toml=pyproject.toml", "-w", "docs/source", "echopype", "echopop"]
