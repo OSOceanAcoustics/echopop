@@ -101,12 +101,11 @@ class ValidateEmpiricalVariogramArgs(BaseDictionary):
         return spatial.TransectsDF.validate(v)
 
     @model_validator(mode="after")
-    @classmethod
-    def validate_df_columns(cls, values):
+    def validate_df_columns(self):
         # Get the mesh and transects DataFrames
-        coords = values.coordinate_names
-        data = values.data
-        variable = values.variable
+        coords = self.coordinate_names
+        data = self.data
+        variable = self.variable
 
         # Initialize error message
         error_msg = "The input DataFrame is missing the defined column(s) for "
@@ -133,7 +132,7 @@ class ValidateEmpiricalVariogramArgs(BaseDictionary):
         if coord_flag or variable_flag:
             raise KeyError(error_msg + ".")
 
-        return values
+        return self
 
 
 class ValidateFitVariogramArgs(BaseDictionary):
