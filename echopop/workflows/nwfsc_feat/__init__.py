@@ -6,6 +6,7 @@ Northwest Fisheries Science Center (NWFSC) Fisheries Ecosystem Assessment Team (
 These are not intended for general use outside of FEAT applications.
 """
 
+from .workflows.year_specific import cli_utils
 from . import parameters
 from .apportionment import (
     distribute_population_estimates,
