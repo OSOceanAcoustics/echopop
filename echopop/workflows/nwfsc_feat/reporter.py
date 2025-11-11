@@ -1162,8 +1162,11 @@ class Reporter:
         bio_pvt_all.columns = pd.MultiIndex.from_product([["all"], bio_pvt_all.columns])
 
         # Concatenate the sex-specific and overall data tables
-        bio_pvt_full = pd.concat([bio_pvt, bio_pvt_all], axis=1)
-
+        bio_pvt_full = pd.concat([bio_pvt, bio_pvt_all], axis=1).fillna(0.0)
+        # ---- Regain typing and sorting, if needed
+        bio_pvt_full.sort_index(inplace=True)
+        bio_pvt_full = bio_pvt_full.astype(int)
+        
         # Create dictionary containing the sex-specific tables
         haul_pvt_tables = {
             sex: pivot_haul_tables(bio_pvt_full, sex) for sex in ["male", "female", "all"]
