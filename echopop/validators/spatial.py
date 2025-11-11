@@ -114,7 +114,6 @@ class ValidateHullCropArgs(BaseDictionary):
         return v
 
     @model_validator(mode="after")
-    @classmethod
     def validate_coordinate_overlap(self):
         # Get the mesh and transects DataFrames
         mesh = self.mesh
