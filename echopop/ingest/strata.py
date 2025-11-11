@@ -195,10 +195,7 @@ def join_strata_by_haul(
         # Check if stratification columns already exist
         existing_cols = set(strata_cols).intersection(set(df.columns))
         if existing_cols:
-            # Drop existing stratification columns
-            warnings.warn(
-                f"Dropping existing stratification columns {existing_cols} from the dataframe."
-            )
+            # Drop existing shared columns
             df = df.drop(columns=list(existing_cols))
 
         # Merge
