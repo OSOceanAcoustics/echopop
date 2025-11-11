@@ -92,14 +92,11 @@ def test_kriging_parameters_k_interval_validation():
 def test_variogram_krige_model_parameters_valid():
     """Test VariogramKrigeModelParameters with valid parameters."""
 
-    lags = np.array([0.0, 0.1, 0.2, 0.3, 0.4, 0.5])
-
     params = VariogramKrigeModelParameters(
-        model="exponential", lags=lags, sill=1.0, nugget=0.1, correlation_range=0.5
+        model="exponential", sill=1.0, nugget=0.1, correlation_range=0.5
     )
 
     assert params.model == "exponential"
-    np.testing.assert_array_equal(params.lags, lags)
     assert params.sill == 1.0
     assert params.nugget == 0.1
     assert params.correlation_range == 0.5
@@ -123,35 +120,6 @@ def test_variogram_krige_model_parameters_composite_model():
     assert params.correlation_range == 0.5
     assert params.hole_effect_range == 0.3
     assert params.decay_power == 1.5
-
-
-def test_variogram_krige_model_parameters_lags_validation():
-    """Test lags field validation."""
-
-    # Valid: numpy array
-    lags_array = np.array([0.0, 0.1, 0.2])
-    params = VariogramKrigeModelParameters(model="exponential", lags=lags_array)
-    np.testing.assert_array_equal(params.lags, lags_array)
-
-    # Valid: list converted to array
-    lags_list = [0.0, 0.1, 0.2]
-    params = VariogramKrigeModelParameters(model="exponential", lags=lags_list)
-    np.testing.assert_array_equal(params.lags, np.array(lags_list))
-
-    # Valid: coercible to float
-    lags_int = np.array([0, 1, 2])
-    params = VariogramKrigeModelParameters(model="exponential", lags=lags_int)
-    assert params.lags.dtype == float
-
-
-def test_variogram_krige_model_parameters_invalid_lags():
-    """Test VariogramKrigeModelParameters with invalid lags."""
-
-    # Invalid: cannot be coerced to float
-    lags_invalid = np.array(["a", "b", "c"])
-
-    with pytest.raises(ValidationError):
-        VariogramKrigeModelParameters(model="exponential", lags=lags_invalid)
 
 
 def test_variogram_krige_model_parameters_invalid_values():
@@ -281,10 +249,8 @@ def test_kriging_validators_integration():
     kriging_params = KrigingParameters(aspect_ratio=0.001, k_min=3, k_max=8, search_radius=5.0)
 
     # Create variogram parameters
-    lags = np.linspace(0.0, 1.0, 30)
     variogram_params = VariogramKrigeModelParameters(
         model=["bessel", "exponential"],
-        lags=lags,
         sill=0.91,
         nugget=0.0,
         correlation_range=0.007,

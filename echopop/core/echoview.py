@@ -24,8 +24,10 @@ ECHOVIEW_TO_ECHOPOP = {
     "date_s": "ping_date",
     "exclude_below_line_depth_mean": "max_depth",
     "exclude_below_depth_mean": "max_depth",
-    "lat_s": "latitude",
-    "lon_s": "longitude",
+    "lat_s": "latitude_s",
+    "lat_m": "latitude",
+    "lon_s": "longitude_s",
+    "lon_m": "longitude",
     "prc_nasc": "nasc",
     "time_s": "ping_time",
     "vl_end": "distance_e",
@@ -39,13 +41,15 @@ ECHOVIEW_TO_ECHOPOP = {
 # Key Mappings
 # ------------
 # - 'interval' : Interval number
+# - 'frequency' : Frequency (kHz)
 # - 'layer' : Layer number
 # - 'transect_num' : Transect number
-ECHOVIEW_EXPORT_ROW_SORT = {
+ECHOVIEW_EXPORT_ROW_SORT = [
+    "frequency",
+    "transect_num",
     "interval",
     "layer",
-    "transect_num",
-}
+]
 
 
 # Valid Echoview export filetypes
