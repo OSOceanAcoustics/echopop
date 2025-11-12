@@ -1,7 +1,7 @@
 (input-files)=
 # Input files
 
-Input files used in an Echopop run, grouped by data type. The tables below describe the data columns required by Echopop; other columns will be ignored. All input files are in Excel format. 
+In this section we describe input files used by Echopop, grouped by data type. The tables below describe the required data columns. All other columns are ignored by Echopop. All input files are in Excel format. 
 
 Biological data are always separated into US vs Canada files. All other data files combine US and Canadian data.
 
