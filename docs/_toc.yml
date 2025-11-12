@@ -6,18 +6,7 @@ root: index
 parts:
 - caption: Documentation
   chapters:
-  - file: install
-  - file: input_files
-  - file: example_notebooks
-    title: Example workflows and analyses
-    sections:
-    - file: example_notebooks/nasc_ingestion
-    - file: example_notebooks/biodata_ingestion
-    - file: example_notebooks/stratify_data
-    - file: example_notebooks/number_proportions
-    - file: example_notebooks/weight_proportions
-    - file: example_notebooks/basic_inversion
-    - file: example_notebooks/plotting
+  - file: install  
   - file: theory
     title: Underlying theory
     sections:
@@ -38,9 +27,20 @@ parts:
     sections:
     - file: implementation/kriging.md
     - file: implementation/variogram.md
+  - file: example_notebooks
+    title: Example workflows and analyses
+    sections:
+    - file: example_notebooks/nasc_ingestion
+    - file: example_notebooks/biodata_ingestion
+    - file: example_notebooks/stratify_data
+    - file: example_notebooks/number_proportions
+    - file: example_notebooks/weight_proportions
+    - file: example_notebooks/basic_inversion
+    - file: example_notebooks/plotting
   - file: FEAT_implementation
     title: FEAT-specific software implementation
     sections:
+    - file: FEAT_implementation/input_files
     - file: FEAT_implementation/echopro_vs_echopop
     - file: FEAT_implementation/FEAT_notebooks/diagnostic_plotting
     - file: FEAT_implementation/FEAT_notebooks/report_generation
