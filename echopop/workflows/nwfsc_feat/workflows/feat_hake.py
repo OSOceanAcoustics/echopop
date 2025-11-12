@@ -159,7 +159,7 @@ df_nasc_all_ages = nasc.read_nasc_file(
 # ==================================================================================================
 # Load in the biolodical data
 # ---------------------------
-BIODATA_SHEET_MAP = {
+BIODATA_SHEETS = {
     "catch": "biodata_catch",
     "length": "biodata_length",
     "specimen": "biodata_specimen",
@@ -173,21 +173,21 @@ FEAT_TO_ECHOPOP_BIODATA_COLUMNS = {
     "haul": "haul_num",
     "weight_in_haul": "weight",
 }
-BIODATA_LABEL_MAP = {"sex": {1: "male", 2: "female", 3: "unsexed"}}
+BIODATA_SEX = {"sex": {1: "male", 2: "female", 3: "unsexed"}}
 
 #
 dict_df_bio = load_biological_data(
     biodata_filepath=DATA_ROOT / "Biological/1995-2023_biodata_redo.xlsx",
-    biodata_sheet_map=BIODATA_SHEET_MAP,
+    BIODATA_SHEETS=BIODATA_SHEETS,
     column_name_map=FEAT_TO_ECHOPOP_BIODATA_COLUMNS,
     subset_dict=SUBSET_DICT,
-    biodata_label_map=BIODATA_LABEL_MAP,
+    biodata_label_map=BIODATA_SEX,
 )
 
 # ==================================================================================================
 # Load in strata files
 # --------------------
-STRATA_SHEET_MAP = {
+STRATA_SHEETS = {
     "inpfc": "INPFC",
     "ks": "Base KS",
 }
@@ -200,14 +200,14 @@ FEAT_TO_ECHOPOP_STRATA_COLUMNS = {
 #
 df_dict_strata = load_strata(
     strata_filepath=DATA_ROOT / "Stratification/US_CAN strata 2019_final.xlsx",
-    strata_sheet_map=STRATA_SHEET_MAP,
+    strata_sheet_map=STRATA_SHEETS,
     column_name_map=FEAT_TO_ECHOPOP_STRATA_COLUMNS,
 )
 
 # ==================================================================================================
 # Load in geographical strata files
 # ---------------------------------
-GEOSTRATA_SHEET_MAP = {
+GEOSTRATA_SHEETS = {
     "inpfc": "INPFC",
     "ks": "stratification1",
 }
@@ -219,7 +219,7 @@ FEAT_TO_ECHOPOP_GEOSTRATA_COLUMNS = {
 #
 df_dict_geostrata = load_geostrata(
     geostrata_filepath=DATA_ROOT / "Stratification/Stratification_geographic_Lat_2019_final.xlsx",
-    geostrata_sheet_map=GEOSTRATA_SHEET_MAP,
+    geostrata_sheet_map=GEOSTRATA_SHEETS,
     column_name_map=FEAT_TO_ECHOPOP_GEOSTRATA_COLUMNS,
 )
 
