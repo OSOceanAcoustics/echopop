@@ -69,11 +69,11 @@ where = ["."]
 include = ["echopop*"]
 
 [tool.setuptools_scm]
+version_scheme = "post-release"
+local_scheme = "no-local-version"
 fallback_version = "0.0.0"
 write_to = "echopop/_version.py"
 write_to_template = 'version = "{version}"  # noqa'
-# Only include this for dev builds, not releases:
-# local_scheme = "node-and-date"
 
 [tool.black]
 line-length = 100
