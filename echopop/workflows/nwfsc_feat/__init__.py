@@ -22,9 +22,11 @@ from .functions import (
     western_boundary_search_strategy,
 )
 from .reporter import Reporter
+from .workflows.year_specific import cli_utils
 
 __all__ = [
     # Generic functions
+    "cli_utils",
     "get_survey_western_extents",
     "transect_ends_crop",
     "western_boundary_search_strategy",

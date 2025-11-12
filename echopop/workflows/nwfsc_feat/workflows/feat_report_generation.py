@@ -10,7 +10,7 @@ from echopop.workflows.nwfsc_feat.reporter import Reporter
 # ==================================================================================================
 # DEFINE DATA ROOT DIRECTORY
 # --------------------------
-DATA_ROOT = Path("C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_2019")
+DATA_ROOT = Path("C:/Data/EchopopData/echopop_2019")
 # --------------------------
 # SAVE DIRECTORY FOR REPORTS
 # --------------------------
@@ -181,7 +181,7 @@ reporter.kriged_length_age_biomass_report(
 # --------------------
 
 reporter.kriging_input_report(
-    filename="kriging_input_report.xklsx",
+    filename="kriging_input_report.xlsx",
     sheetname="Sheet1",
     transect_data=df_nasc_noage1_prt,
 )

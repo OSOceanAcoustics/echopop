@@ -16,11 +16,10 @@ class KrigingParameters(BaseDictionary):
     model_config = ConfigDict(title="kriging model parameters")
 
     @model_validator(mode="after")
-    @classmethod
-    def validate_k_interval(cls, values):
+    def validate_k_interval(self):
         # Get `k_min` and `k_max`
-        k_min = getattr(values, "k_min", 5)
-        k_max = getattr(values, "k_max", 20)
+        k_min = self.k_min
+        k_max = self.k_max
 
         # Ensure that the interval is sensible
         if k_min > k_max:
@@ -29,7 +28,7 @@ class KrigingParameters(BaseDictionary):
                 f"Define 'k_max' ({k_max}) must be greater than or equal to 'k_min' ({k_min})."
             )
 
-        return values
+        return self
 
 
 class VariogramKrigeModelParameters(VariogramModelParameters):

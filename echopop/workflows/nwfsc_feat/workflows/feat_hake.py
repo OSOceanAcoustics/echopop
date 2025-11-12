@@ -29,7 +29,7 @@ from echopop.workflows.nwfsc_feat import apportionment, biology
 # ==================================================================================================
 # DEFINE DATA ROOT DIRECTORY
 # --------------------------
-DATA_ROOT = Path("C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_2019")
+DATA_ROOT = Path("C:/Data/EchopopData/echopop_2019")
 # DATA_ROOT = Path("C:/Users/Brandyn Lucca/Documents/Data/echopop_2019")
 
 # ==================================================================================================
@@ -65,7 +65,7 @@ TRANSECT_REGION_SHEETNAME_ALL_AGES: str = "Sheet1"
 TRANSECT_REGION_SHEETNAME_NO_AGE1: str = "Sheet1"
 
 # Read in the transect-region-haul key files for each group
-transect_region_haul_key_all_ages: pd.DataFrame = nasc.read_transect_region_haul_key(
+transect_region_haul_key_all_ages = nasc.read_transect_region_haul_key(
     filename=TRANSECT_REGION_FILEPATH_ALL_AGES,
     sheetname=TRANSECT_REGION_SHEETNAME_ALL_AGES,
     rename_dict=TRANSECT_REGION_FILE_RENAME,
@@ -96,7 +96,7 @@ REGION_NAME_EXPR_DICT: Dict[str, dict] = {
 
 # Process the region name codes to define the region classes
 # e.g. H5C - Region 2 corresponds to "Hake, Haul #5, Canada"
-df_exports_with_regions: pd.DataFrame = nasc.process_region_names(
+df_exports_with_regions = nasc.process_region_names(
     df=df_exports,
     region_name_expr_dict=REGION_NAME_EXPR_DICT,
     can_haul_offset=200,
@@ -107,7 +107,7 @@ df_exports_with_regions: pd.DataFrame = nasc.process_region_names(
 # ---------------------------------
 
 # Generate transect-region-haul key from compiled values
-df_transect_region_haul_key_no_age1: pd.DataFrame = nasc.generate_transect_region_haul_key(
+df_transect_region_haul_key_no_age1 = nasc.generate_transect_region_haul_key(
     df=df_exports_with_regions, filter_list=["Hake", "Hake Mix"]
 )
 
@@ -118,7 +118,7 @@ df_transect_region_haul_key_all_ages = nasc.generate_transect_region_haul_key(
 # ==================================================================================================
 # Consolidate the Echvoiew NASC export files
 # ------------------------------------------
-df_nasc_no_age1: pd.DataFrame = nasc.consolidate_echvoiew_nasc(
+df_nasc_no_age1 = nasc.consolidate_echvoiew_nasc(
     df_merged=df_exports_with_regions,
     interval_df=df_intervals,
     region_class_names=["Hake", "Hake Mix"],
@@ -126,7 +126,7 @@ df_nasc_no_age1: pd.DataFrame = nasc.consolidate_echvoiew_nasc(
     transect_region_haul_key_df=transect_region_haul_key_no_age1,
 )
 
-df_nasc_all_ages: pd.DataFrame = nasc.consolidate_echvoiew_nasc(
+df_nasc_all_ages = nasc.consolidate_echvoiew_nasc(
     df_merged=df_exports_with_regions,
     interval_df=df_intervals,
     region_class_names=["Age-1 Hake", "Age-1", "Hake", "Hake Mix"],
@@ -137,7 +137,7 @@ df_nasc_all_ages: pd.DataFrame = nasc.consolidate_echvoiew_nasc(
 # ==================================================================================================
 # [OPTIONAL] Read in a pre-consolidated NASC data file
 # ----------------------------------------------------
-FEAT_TO_ECHOPOP_COLUMNS: Dict[str, str] = {
+FEAT_TO_ECHOPOP_COLUMNS = {
     "transect": "transect_num",
     "region id": "region_id",
     "vessel_log_start": "distance_s",
@@ -150,45 +150,21 @@ FEAT_TO_ECHOPOP_COLUMNS: Dict[str, str] = {
 }
 
 #
-df_nasc_all_ages: pd.DataFrame = nasc.read_nasc_file(
+df_nasc_all_ages = nasc.read_nasc_file(
     filename=DATA_ROOT / "Exports/US_CAN_NASC_2019_table_all_ages.xlsx",
     sheetname="Sheet1",
     column_name_map=FEAT_TO_ECHOPOP_COLUMNS,
 )
 
 # ==================================================================================================
-# [OPTIONAL] Convert the NASC DataFrame format from AFSC to FEAT
-# --------------------------------------------------------------
-
-# EXAMPLE: 2001 Dataset
-df_nasc_all_ages_feat = nasc.convert_afsc_nasc_to_feat(
-    df=df_nasc_all_ages,
-    default_interval_distance=0.5,
-    default_transect_spacing=10.0,
-    inclusion_filter={"transect_num", np.arange(1, 200)},
-)
-
-# ==================================================================================================
-# [OPTIONAL] Filter the transect intervals to account for on- and off-effort
-# --------------------------------------------------------------------------
-
-# DataFrame with filtered intervals representing on-effort
-df_nasc_all_ages_cleaned: pd.DataFrame = nasc.filter_transect_intervals(
-    nasc_df=df_nasc_all_ages_feat,
-    transect_filter_df=Path("Path/to/file"),
-    subset_filter="survey == 201003",
-    transect_filter_sheet="Sheet1",
-)
-
-# ==================================================================================================
 # Load in the biolodical data
 # ---------------------------
-BIODATA_SHEET_MAP: Dict[str, str] = {
+BIODATA_SHEETS = {
     "catch": "biodata_catch",
     "length": "biodata_length",
     "specimen": "biodata_specimen",
 }
-SUBSET_DICT: Dict[Any, Any] = {
+SUBSET_DICT = {
     "ships": {160: {"survey": 201906}, 584: {"survey": 2019097, "haul_offset": 200}},
     "species_code": [22500],
 }
@@ -197,21 +173,21 @@ FEAT_TO_ECHOPOP_BIODATA_COLUMNS = {
     "haul": "haul_num",
     "weight_in_haul": "weight",
 }
-BIODATA_LABEL_MAP: Dict[Any, Dict] = {"sex": {1: "male", 2: "female", 3: "unsexed"}}
+BIODATA_SEX = {"sex": {1: "male", 2: "female", 3: "unsexed"}}
 
 #
 dict_df_bio = load_biological_data(
     biodata_filepath=DATA_ROOT / "Biological/1995-2023_biodata_redo.xlsx",
-    biodata_sheet_map=BIODATA_SHEET_MAP,
+    BIODATA_SHEETS=BIODATA_SHEETS,
     column_name_map=FEAT_TO_ECHOPOP_BIODATA_COLUMNS,
     subset_dict=SUBSET_DICT,
-    biodata_label_map=BIODATA_LABEL_MAP,
+    biodata_label_map=BIODATA_SEX,
 )
 
 # ==================================================================================================
 # Load in strata files
 # --------------------
-STRATA_SHEET_MAP = {
+STRATA_SHEETS = {
     "inpfc": "INPFC",
     "ks": "Base KS",
 }
@@ -224,14 +200,14 @@ FEAT_TO_ECHOPOP_STRATA_COLUMNS = {
 #
 df_dict_strata = load_strata(
     strata_filepath=DATA_ROOT / "Stratification/US_CAN strata 2019_final.xlsx",
-    strata_sheet_map=STRATA_SHEET_MAP,
+    strata_sheet_map=STRATA_SHEETS,
     column_name_map=FEAT_TO_ECHOPOP_STRATA_COLUMNS,
 )
 
 # ==================================================================================================
 # Load in geographical strata files
 # ---------------------------------
-GEOSTRATA_SHEET_MAP = {
+GEOSTRATA_SHEETS = {
     "inpfc": "INPFC",
     "ks": "stratification1",
 }
@@ -243,7 +219,7 @@ FEAT_TO_ECHOPOP_GEOSTRATA_COLUMNS = {
 #
 df_dict_geostrata = load_geostrata(
     geostrata_filepath=DATA_ROOT / "Stratification/Stratification_geographic_Lat_2019_final.xlsx",
-    geostrata_sheet_map=GEOSTRATA_SHEET_MAP,
+    geostrata_sheet_map=GEOSTRATA_SHEETS,
     column_name_map=FEAT_TO_ECHOPOP_GEOSTRATA_COLUMNS,
 )
 
@@ -346,8 +322,8 @@ dict_kriging_params, dict_variogram_params = load_kriging_variogram_params(
 # ==================================================================================================
 # Generate binned distributions [age, length]
 # -------------------------------------------
-AGE_BINS: npt.NDArray[np.number] = np.linspace(start=1.0, stop=22.0, num=22)
-LENGTH_BINS: npt.NDArray[np.number] = np.linspace(start=2.0, stop=80.0, num=40)
+AGE_BINS = np.linspace(start=1.0, stop=22.0, num=22)
+LENGTH_BINS = np.linspace(start=2.0, stop=80.0, num=40)
 
 #
 # ---- Length
@@ -437,7 +413,7 @@ dict_df_counts["unaged"] = proportions.compute_binned_counts(
 # ==================================================================================================
 # Compute the number proportions
 # ------------------------------
-dict_df_number_proportion: Dict[str, pd.DataFrame] = proportions.number_proportions(
+dict_df_number_proportion = proportions.number_proportions(
     data=dict_df_counts,
     group_columns=["stratum_ks"],
     exclude_filters={"aged": {"sex": "unsexed"}},
@@ -447,7 +423,7 @@ dict_df_number_proportion: Dict[str, pd.DataFrame] = proportions.number_proporti
 # Distribute (bin) weight over age, length, and sex
 # -------------------------------------------------
 # Pre-allocate a dictionary
-dict_df_weight_distr: Dict[str, Any] = {}
+dict_df_weight_distr = {}
 
 # Aged
 dict_df_weight_distr["aged"] = proportions.binned_weights(
@@ -483,7 +459,7 @@ df_averaged_weight = proportions.stratum_averaged_weight(
 # ----------------------------------------------------------
 
 # Initialize Dictionary container
-dict_df_weight_proportion: Dict[str, Any] = {}
+dict_df_weight_proportion = {}
 
 # Aged
 dict_df_weight_proportion["aged"] = proportions.weight_proportions(

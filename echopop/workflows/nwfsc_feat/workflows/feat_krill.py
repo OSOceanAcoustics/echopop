@@ -8,7 +8,7 @@ from echopop.inversion import InversionMatrix, InvParameters, estimate_populatio
 # ==================================================================================================
 # DEFINE DATA ROOT DIRECTORY
 # --------------------------
-DATA_ROOT = Path("C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_inversion/")
+DATA_ROOT = Path("C:/Data/EchopopData/echopop_inversion/")
 
 # ==================================================================================================
 # ==================================================================================================

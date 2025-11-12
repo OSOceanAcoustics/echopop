@@ -114,19 +114,18 @@ class ValidateHullCropArgs(BaseDictionary):
         return v
 
     @model_validator(mode="after")
-    @classmethod
-    def validate_coordinate_overlap(cls, values):
+    def validate_coordinate_overlap(self):
         # Get the mesh and transects DataFrames
-        mesh = getattr(values, "mesh")
-        transects = getattr(values, "transects")
+        mesh = self.mesh
+        transects = self.transects
 
         # Check for joint longitude-latitude
         if all([{"longitude", "latitude"} <= set(df.columns) for df in [mesh, transects]]):
-            return values
+            return self
 
         # Check for joint x-y
         if all([{"x", "y"} <= set(df.columns) for df in [mesh, transects]]):
-            return values
+            return self
 
         # Raise error if no shared complete pairs exist
         raise ValueError(
