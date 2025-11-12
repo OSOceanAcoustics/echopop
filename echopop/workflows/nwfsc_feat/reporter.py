@@ -1166,7 +1166,7 @@ class Reporter:
         # ---- Regain typing and sorting, if needed
         bio_pvt_full.sort_index(inplace=True)
         bio_pvt_full = bio_pvt_full.astype(int)
-        
+
         # Create dictionary containing the sex-specific tables
         haul_pvt_tables = {
             sex: pivot_haul_tables(bio_pvt_full, sex) for sex in ["male", "female", "all"]
