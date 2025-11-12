@@ -347,6 +347,54 @@ In summary, the ordinary kriging workflow consists of: (1) modeling the spatial 
 - Neighborhood definition: Limiting the set of samples used for a given prediction trades off locality against numerical stability and computational cost; this is a modeling choice rather than a theoretical requirement.  
 - Extrapolation: Predictions made outside the effective range of spatial dependence should be treated with caution; reported kriging variances may understate true uncertainty when extrapolation is extensive.[^rivoirard]
 
+This will {hoverxref}`show a tooltip <hoverxref:hoverxref>` in the linked words to ``hoverxref``.
+
+abbr:`link text (tooltip text)`
+
+Hover over this :abbr:`HTML (HyperText Markup Language)` for a definition.
+
+(my-target)=
+# My Headline
+
+Here is a paragraph, we link to this headline {hoverxref}`like this <my-target>`.
+To render a tooltip where its contents has a ``mathjax`` you need to enable :confval:`hoverxref_mathjax`.
+
+Show a {hoverxref}`tooltip with Mathjax <my-target>` formulas.
+This will :hoverxref:`show a tooltip <hoverxref:hoverxref>` in the linked words to ``hoverxref``
+
+(my-target-label)=
+# My Target Section
+
+You can read more in {ref}`My Target Section <my-target-label>`.
+
+We can reference Einstein's famous equation (Equation {eq}`einstein`) which is located on a different page.
+
+Or, using custom link text:
+
+As shown in {eq}`this equation <einstein>`, mass-energy equivalence is defined.
+
+
+<!-- (my-target-label2)=
+$$
+    \rho_\text{A} =
+        \frac{s_\text{A}}{4 \pi \left< \sigma_\text{bs} \right>} =
+            \frac{s_\text{A}}{\sigma_\text{sp}},
+    \tag{15}
+$$ -->
+
+See {ref}`text <eq-1.1>` for Einstein's equation.
+
+You can read more in {ref}`My Target Section <my-target-label3>`.
+
+Neat! {ref}` Referemce <eq-16>`
+
+<a href="./acoustics.html#acoustics-basics" data-tippy-content="
+$$
+    \sigma_\text{bs} = 
+        \frac{r^2 I_\text{bs}(r) 10^{\alpha r/10}}{I_\text{inc}}
+$$
+">Link text</a>
+
 ## References
 
 [^cressie]: Cressie, N. (1993). *Statistics for Spatial Data*. Wiley.  

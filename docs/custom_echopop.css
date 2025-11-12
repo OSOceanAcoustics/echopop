@@ -17,3 +17,18 @@
     max-height: 300px;
     overflow-y: auto;
 }
+
+/* hide automatic table-number prefixes (covers common theme variants) */
+.caption-number,
+.caption-prefix,
+p.caption > .caption-number,
+p.caption > .caption-prefix,
+p.caption > span:first-child,
+p.caption > strong:first-child {
+  display: none !important;
+}
+
+/* if the number is wrapped in a <span> with no class */
+p.caption > span:first-child:not(.caption-text) {
+  display: none !important;
+}

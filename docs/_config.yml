@@ -12,11 +12,10 @@ execute:
 
 parse:
   myst_enable_extensions:
-  - amsmath
-  - colon_fence
-  - dollarmath
-  - linkify
-  # nb_number_source_lines: true
+    - amsmath
+    - colon_fence
+    - dollarmath
+    - linkify
 
 # Define the name of the latex output file for PDF builds
 # latex:
@@ -53,7 +52,10 @@ sphinx:
     'sphinx.ext.mathjax',
     'sphinx.ext.ifconfig',
     'sphinx.ext.githubpages',
-    'sphinx.ext.napoleon'
+    'sphinx.ext.napoleon',
+    'sphinx.ext.intersphinx',
+    # 'hoverxref.extension'
+    'sphinx_tippy'
   ]
   config:
     autodoc_default_options:
@@ -64,3 +66,4 @@ sphinx:
     bibtex_reference_style: label
     html_extra_path: ["_static"]
     numpydoc_class_members_toctree: False
+    tippy_enable_mathjax: True
