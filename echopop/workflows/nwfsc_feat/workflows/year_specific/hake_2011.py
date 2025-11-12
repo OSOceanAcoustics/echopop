@@ -2,7 +2,7 @@
 # 2011
 # ----
 from pathlib import Path
-from echopop.workflow.year_specific import cli_utils
+from echopop.workflows.nwfsc_feat import cli_utils
 ####################################################################################################
 # PARAMETER ENTRY
 # ---------------
@@ -21,7 +21,7 @@ except Exception:
     VERBOSE = True
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # DATA ROOT DIRECTORY
-DATA_ROOT = Path("C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_2011")
+DATA_ROOT = Path("C:/Data/EchopopData/echopop_2011")
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # REPORTS SAVE DIRECTORY
 REPORTS_DIR = DATA_ROOT / "reports"
@@ -51,7 +51,7 @@ SURVEY_FILTER = "survey == 201103"
 BIODATA_FILE = DATA_ROOT / "Biological/1995-2023_biodata_redo.xlsx"
 # BIODATA SHEETS
 # ---- Assign the sheetnames to 'catch', 'length', 'specimen'
-BIODATA_SHEETS_MAP = {
+BIODATA_SHEETS = {
     "catch": "biodata_catch",
     "length": "biodata_length",
     "specimen": "biodata_specimen",
@@ -62,7 +62,7 @@ BIODATA_SHEETS_MAP = {
 # ---- define the "ships" based on their IDs with the associated survey IDs. If an offset should be 
 # ---- added to the haul numbers, that must also be defined here. The target species should also be 
 # ---- defined here. 
-BIODATA_MAPPING = {
+BIODATA_SHIP_SPECIES = {
     "ships": {
         19: {
             "survey": 201201
@@ -82,7 +82,7 @@ HAUL_STRATA_FILE = (
 )
 # HAUL STRATIFICATION SHEET MAP
 # ---- Valid keys are limited to "ks" and "inpfc"
-HAUL_STRATA_SHEETS_MAP = {
+HAUL_STRATA_SHEETS = {
     "inpfc": "stratification #0 (INPFC)",
     "ks": "stratification by haul #1",
 }
@@ -93,7 +93,7 @@ GEOSTRATA_FILE = (
 )
 # GEOGRAPHIC STRATIFICATION SHEET MAP
 # ---- Valid keys are limited to "ks" and "inpfc"
-GEOSTRATA_SHEETS_MAP = {
+GEOSTRATA_SHEETS = {
     "inpfc": "stratification #0 (INPFC)",
     "ks": "stratification #1",
 }
@@ -128,21 +128,11 @@ import logging
 import numpy as np
 import pandas as pd
 from lmfit import Parameters
-from echopop import inversion
-from echopop.nwfsc_feat import (
-    apportion,
-    biology, 
-    FEAT,
-    ingest_nasc, 
-    get_proportions, 
-    kriging,
-    load_data, 
-    spatial,
-    stratified,
-    transect, 
-    utils,
-    variogram
-)
+from echopop.workflows.nwfsc_feat import functions as feat, parameters as feat_parameters, Reporter
+import echopop.ingest as ingestion
+from echopop import geostatistics, inversion, utils
+from echopop.survey import biology, proportions, stratified, transect
+from echopop.workflows.nwfsc_feat import apportionment as feat_apportion, biology as feat_biology
 ####################################################################################################
 # FORMAT LOGGER
 for handler in logging.root.handlers[:]:
@@ -172,7 +162,7 @@ if NASC_PREPROCESSED:
     }
 
     # Read file
-    df_nasc = ingest_nasc.read_nasc_file(
+    df_nasc = ingestion.nasc.read_nasc_file(
         filename=NASC_EXPORTS_FILES,
         sheetname=NASC_EXPORTS_SHEET,
         column_name_map=FEAT_TO_ECHOPOP_COLUMNS
@@ -190,7 +180,7 @@ else:
         "     Default latitude threshold: 60.0 deg."
     )    
 
-    df_intervals, df_exports = ingest_nasc.merge_echoview_nasc(
+    df_intervals, df_exports = ingestion.nasc.merge_echoview_nasc(
         nasc_path = NASC_EXPORTS_FILES,
         filename_transect_pattern = "T(\\d+(?:\\.\\d+)?)(?=-)",
         default_transect_spacing = 10.0,
@@ -210,7 +200,7 @@ else:
     }
 
     # LOAD
-    df_transect_region_haul_key = ingest_nasc.read_transect_region_haul_key(
+    df_transect_region_haul_key = ingestion.nasc.read_transect_region_haul_key(
         filename=TRANSECT_REGION_HAUL_FILE,
         sheetname=None,
         rename_dict=TRANSECT_REGION_FILE_RENAME
@@ -222,7 +212,7 @@ else:
         "     Searching for the export regions: 'Age-1 Hake', 'Age-1 Hake Mix', 'Hake', 'Hake Mix'\n"
         "     Imputing overlapping region IDs within each interval: True"
     )
-    df_nasc = ingest_nasc.consolidate_echvoiew_nasc(
+    df_nasc = ingestion.nasc.consolidate_echvoiew_nasc(
         df_merged=df_exports,
         interval_df=df_intervals,
         region_class_names=["Age-1 Hake", "Age-1 Hake Mix", "Hake", "Hake Mix"],
@@ -235,7 +225,7 @@ else:
         f"---- Filtering out off-effort transect intervals based on: {TRANSECT_BOUNDARY_FILE}\n"
         f"     Survey filter: '{SURVEY_FILTER}'"
     )
-    df_nasc = ingest_nasc.filter_transect_intervals(
+    df_nasc = feat.filter_transect_intervals(
         nasc_df=df_nasc, 
         transect_filter_df=TRANSECT_BOUNDARY_FILE,
         transect_filter_sheet=TRANSECT_BOUNDARY_SHEET,
@@ -259,7 +249,7 @@ FEAT_TO_ECHOPOP_BIODATA_COLUMNS = {
 }
 
 # BIODATA LABEL MAPPING
-BIODATA_LABEL_MAP = {
+BIODATA_SEX = {
     "sex": {
         1: "male",
         2: "female",
@@ -268,15 +258,15 @@ BIODATA_LABEL_MAP = {
 }
 
 # READ IN DATA
-dict_df_bio = load_data.load_biological_data(
+dict_df_bio = ingestion.load_biological_data(
     biodata_filepath=BIODATA_FILE, 
-    biodata_sheet_map=BIODATA_SHEETS_MAP, 
+    BIODATA_SHEETS=BIODATA_SHEETS, 
     column_name_map=FEAT_TO_ECHOPOP_BIODATA_COLUMNS, 
-    subset_dict=BIODATA_MAPPING, 
-    biodata_label_map=BIODATA_LABEL_MAP
+    subset_dict=BIODATA_SHIP_SPECIES, 
+   biodata_label_map=BIODATA_SEX
 )
 # ---- Remove specimen hauls
-biology.remove_specimen_hauls(dict_df_bio)
+feat_biology.remove_specimen_hauls(dict_df_bio)
 logging.info(
     "Biodata ingestion complete\n"
     "'dict_df_bio' created."
@@ -298,9 +288,9 @@ FEAT_TO_ECHOPOP_STRATA_COLUMNS = {
 logging.info(
     f"Load in haul-based stratification: '{HAUL_STRATA_FILE.as_posix()}'."
 )
-df_dict_strata = load_data.load_strata(
+df_dict_strata = ingestion.load_strata(
     strata_filepath=HAUL_STRATA_FILE, 
-    strata_sheet_map=HAUL_STRATA_SHEETS_MAP, 
+    strata_sheet_map=HAUL_STRATA_SHEETS, 
     column_name_map=FEAT_TO_ECHOPOP_STRATA_COLUMNS
 )
 logging.info(
@@ -319,9 +309,9 @@ FEAT_TO_ECHOPOP_GEOSTRATA_COLUMNS = {
 logging.info(
     f"Load in geographic-based stratification: '{GEOSTRATA_FILE.as_posix()}'."
 )
-df_dict_geostrata = load_data.load_geostrata(
+df_dict_geostrata = ingestion.load_geostrata(
     geostrata_filepath=GEOSTRATA_FILE, 
-    geostrata_sheet_map=GEOSTRATA_SHEETS_MAP, 
+    geostrata_sheet_map=GEOSTRATA_SHEETS, 
     column_name_map=FEAT_TO_ECHOPOP_GEOSTRATA_COLUMNS
 )
 logging.info(
@@ -342,7 +332,7 @@ FEAT_TO_ECHOPOP_MESH_COLUMNS = {
 }
 
 # LOAD MESH
-df_mesh = load_data.load_mesh_data(
+df_mesh = ingestion.load_mesh_data(
     mesh_filepath=KRIGING_MESH_FILE, 
     sheet_name=KRIGING_MESH_SHEET, 
     column_name_map=FEAT_TO_ECHOPOP_MESH_COLUMNS
@@ -356,7 +346,7 @@ logging.info(
 logging.info(
     f"Loading isobath file: '{ISOBATH_FILE}'."
 )
-df_isobath = load_data.load_isobath_data(
+df_isobath = ingestion.load_isobath_data(
     isobath_filepath=ISOBATH_FILE,
     sheet_name=ISOBATH_SHEET
 )
@@ -382,7 +372,7 @@ FEAT_TO_ECHOPOP_GEOSTATS_PARAMS_COLUMNS = {
 }
 
 # LOAD IN PARAMETERS
-dict_kriging_params, dict_variogram_params = load_data.load_kriging_variogram_params(
+dict_kriging_params, dict_variogram_params = ingestion.load_kriging_variogram_params(
     geostatistic_params_filepath=KRIGING_VARIOGRAM_PARAMETERS_FILE,
     sheet_name=KRIGING_VARIGORAM_PARAMETERS_SHEET,
     column_name_map=FEAT_TO_ECHOPOP_GEOSTATS_PARAMS_COLUMNS
@@ -407,22 +397,22 @@ logging.info(
     "         KS: 'stratum_ks'"
 )
 # ---- BIODATA [INPFC]
-dict_df_bio = load_data.join_strata_by_haul(data=dict_df_bio,
+dict_df_bio = ingestion.join_strata_by_haul(data=dict_df_bio,
                                             strata_df=df_dict_strata["inpfc"],
                                             default_stratum=0,
                                             stratum_name="stratum_inpfc")
 # ---- BIODATA [KS]
-dict_df_bio = load_data.join_strata_by_haul(data=dict_df_bio,
+dict_df_bio = ingestion.join_strata_by_haul(data=dict_df_bio,
                                             strata_df=df_dict_strata["ks"],
                                             default_stratum=0,
                                             stratum_name="stratum_ks")
 # ---- NASC [INPFC]
-df_nasc = load_data.join_strata_by_haul(data=df_nasc,
+df_nasc = ingestion.join_strata_by_haul(data=df_nasc,
                                         strata_df=df_dict_strata["inpfc"],
                                         default_stratum=0,
                                         stratum_name="stratum_inpfc")
 # ---- NASC [KS]
-df_nasc = load_data.join_strata_by_haul(data=df_nasc,
+df_nasc = ingestion.join_strata_by_haul(data=df_nasc,
                                         strata_df=df_dict_strata["ks"],
                                         default_stratum=0,
                                         stratum_name="stratum_ks")
@@ -435,19 +425,19 @@ logging.info(
     "         KS: 'geostratum_ks'"
 )
 # ---- NASC [INPFC]
-df_nasc = load_data.join_geostrata_by_latitude(data=df_nasc,
+df_nasc = ingestion.join_geostrata_by_latitude(data=df_nasc,
                                                geostrata_df=df_dict_geostrata["inpfc"],
                                                stratum_name="geostratum_inpfc")
 # ---- NASC [KS]
-df_nasc = load_data.join_geostrata_by_latitude(data=df_nasc,
+df_nasc = ingestion.join_geostrata_by_latitude(data=df_nasc,
                                                geostrata_df=df_dict_geostrata["ks"],
                                                stratum_name="geostratum_ks")
 # ---- MESH [INPFC]
-df_mesh = load_data.join_geostrata_by_latitude(data=df_mesh, 
+df_mesh = ingestion.join_geostrata_by_latitude(data=df_mesh, 
                                                geostrata_df=df_dict_geostrata["inpfc"], 
                                                stratum_name="geostratum_inpfc")
 # ---- MESH [KS]
-df_mesh = load_data.join_geostrata_by_latitude(data=df_mesh, 
+df_mesh = ingestion.join_geostrata_by_latitude(data=df_mesh, 
                                                geostrata_df=df_dict_geostrata["ks"], 
                                                stratum_name="geostratum_ks")
 logging.info("Strata application complete!")
@@ -502,7 +492,7 @@ logging.info(
     )
 
 # SEX-SPECIFIC
-df_binned_weights_sex = biology.length_binned_weights(
+df_binned_weights_sex = feat_biology.length_binned_weights(
     data=dict_df_bio["specimen"],
     length_bins=LENGTH_BINS,
     regression_coefficients=dict_length_weight_coefs["sex"],
@@ -511,7 +501,7 @@ df_binned_weights_sex = biology.length_binned_weights(
 )
 
 # ALL FISH
-df_binned_weights_all = biology.length_binned_weights(
+df_binned_weights_all = feat_biology.length_binned_weights(
     data=dict_df_bio["specimen"].assign(sex="all"),
     length_bins=LENGTH_BINS,
     regression_coefficients=dict_length_weight_coefs["all"],
@@ -537,7 +527,7 @@ logging.info(
 dict_df_counts = {}
 
 # AGED
-dict_df_counts["aged"] = get_proportions.compute_binned_counts(
+dict_df_counts["aged"] = proportions.compute_binned_counts(
     data=dict_df_bio["specimen"].dropna(subset=["age", "length", "weight"]), 
     groupby_cols=["stratum_ks", "length_bin", "age_bin", "sex"], 
     count_col="length",
@@ -545,7 +535,7 @@ dict_df_counts["aged"] = get_proportions.compute_binned_counts(
 )
 
 # UNAGED
-dict_df_counts["unaged"] = get_proportions.compute_binned_counts(
+dict_df_counts["unaged"] = proportions.compute_binned_counts(
     data=dict_df_bio["length"].copy().dropna(subset=["length"]), 
     groupby_cols=["stratum_ks", "length_bin", "sex"], 
     count_col="length_count",
@@ -562,7 +552,7 @@ logging.info(
     "     Stratifying by: 'stratum_ks'\n"
     "     Excluding: 'sex'='unsexed' from 'dict_df_counts['aged']'"
     )
-dict_df_number_proportions = get_proportions.number_proportions(
+dict_df_number_proportions = proportions.number_proportions(
     data=dict_df_counts, 
     group_columns=["stratum_ks"],
     exclude_filters={"aged": {"sex": "unsexed"}},
@@ -584,7 +574,7 @@ logging.info(
 dict_df_weight_distr = {}
 
 # AGED
-dict_df_weight_distr["aged"] = get_proportions.binned_weights(
+dict_df_weight_distr["aged"] = proportions.binned_weights(
     length_dataset=dict_df_bio["specimen"],
     include_filter = {"sex": ["female", "male"]},
     interpolate_regression=False,
@@ -597,7 +587,7 @@ logging.info(
     "Unaged binned weights require additional processing steps.\n"
     "     Interpolating binned length-weight regression estimates: True"
     )
-dict_df_weight_distr["unaged"] = get_proportions.binned_weights(
+dict_df_weight_distr["unaged"] = proportions.binned_weights(
     length_dataset=dict_df_bio["length"],
     length_weight_dataset=binned_weight_table,
     include_filter = {"sex": ["female", "male"]},
@@ -622,7 +612,7 @@ dict_df_weight_proportions = {}
 
 # AGED WEIGHT PROPORTIONS
 logging.info("Computing aged weight proportions...")
-dict_df_weight_proportions["aged"] = get_proportions.weight_proportions(
+dict_df_weight_proportions["aged"] = proportions.weight_proportions(
     weight_data=dict_df_weight_distr, 
     catch_data=dict_df_bio["catch"], 
     group="aged",
@@ -631,7 +621,7 @@ dict_df_weight_proportions["aged"] = get_proportions.weight_proportions(
 
 # UNAGED SCALING
 logging.info("Scaling unaged binned weights...")
-standardized_sexed_unaged_weights_df = get_proportions.scale_weights_by_stratum(
+standardized_sexed_unaged_weights_df = proportions.scale_weights_by_stratum(
     weights_df=dict_df_weight_distr["unaged"], 
     reference_weights_df=dict_df_bio["catch"].groupby(["stratum_ks"])["weight"].sum(),
     stratum_col="stratum_ks",
@@ -642,7 +632,7 @@ logging.info(
     "Computing unaged weight proportions\n"
     "     Scaling weight proportions in reference to the aged estimates"
     )
-dict_df_weight_proportions["unaged"] = get_proportions.scale_weight_proportions(
+dict_df_weight_proportions["unaged"] = proportions.scale_weight_proportions(
     weight_data=standardized_sexed_unaged_weights_df, 
     reference_weight_proportions=dict_df_weight_proportions["aged"], 
     catch_data=dict_df_bio["catch"], 
@@ -717,7 +707,7 @@ logging.info(
     "     Grouping by: 'sex'\n"
     "     Excluding: 'sex'='unsexed' from 'dict_df_number_proportions'"    
 )
-biology.compute_abundance(
+feat_biology.compute_abundance(
     dataset=df_nasc,
     stratify_by=["stratum_ks"],
     group_by=["sex"],
@@ -726,7 +716,7 @@ biology.compute_abundance(
 )
 
 # COMPUTE STRATUM-AVERAGED WEIGHTS
-df_averaged_weight = get_proportions.stratum_averaged_weight(
+df_averaged_weight = proportions.stratum_averaged_weight(
     proportions_dict=dict_df_number_proportions, 
     binned_weight_table=binned_weight_table,
     stratify_by=["stratum_ks"],
@@ -739,7 +729,7 @@ logging.info(
     "     Stratifying by: 'stratum_ks'\n"
     "     Grouping by: 'sex'\n"  
 )
-biology.compute_biomass(
+feat_biology.compute_biomass(
     dataset=df_nasc,
     stratify_by=["stratum_ks"],
     group_by=["sex"],
@@ -765,7 +755,7 @@ logging.info(
 
 # ABUNDANCE
 logging.info("Distributing abundances...")
-dict_transect_abundance_table = apportion.distribute_population_estimates(
+dict_transect_abundance_table = feat_apportion.distribute_population_estimates(
     data=df_nasc,
     proportions=dict_df_number_proportions,
     variable="abundance",
@@ -775,7 +765,7 @@ dict_transect_abundance_table = apportion.distribute_population_estimates(
 logging.info("Abundance distributions complete\n'dict_transect_abundance_table' created.")
 # BIOMASS [ALL]
 logging.info("Distributing biomass...")
-dict_transect_biomass_table = apportion.distribute_population_estimates(
+dict_transect_biomass_table = feat_apportion.distribute_population_estimates(
     data=df_nasc,
     proportions=dict_df_weight_proportions,
     variable="biomass",
@@ -785,7 +775,7 @@ dict_transect_biomass_table = apportion.distribute_population_estimates(
 logging.info("Biomass distribution complete\n'dict_transect_biomass_table' created.")
 # BIOMASS [AGED-ONLY]
 logging.info("Distributing biomass...\n     Aged-only weight proportions: True")
-df_transect_aged_biomass_table = apportion.distribute_population_estimates(
+df_transect_aged_biomass_table = feat_apportion.distribute_population_estimates(
     data=df_nasc,
     proportions=dict_df_weight_proportions["aged"],
     variable="biomass",
@@ -808,7 +798,7 @@ logging.info(
 )
 
 # NASC
-df_nasc, delta_longitude, delta_latitude = spatial.transform_coordinates(
+df_nasc, delta_longitude, delta_latitude = geostatistics.transform_coordinates(
     data = df_nasc,
     reference = df_isobath,
     x_offset = -124.78338,
@@ -816,7 +806,7 @@ df_nasc, delta_longitude, delta_latitude = spatial.transform_coordinates(
 )
 
 # MESH
-df_mesh, _, _ = spatial.transform_coordinates(
+df_mesh, _, _ = geostatistics.transform_coordinates(
     data = df_mesh,
     reference = df_isobath,
     x_offset = -124.78338,
@@ -839,7 +829,7 @@ logging.info(
 )
 
 # INITIALIZE VARIOGRAM-CLASS OBJECT
-vgm = variogram.Variogram(
+vgm = geostatistics.Variogram(
     lag_resolution=0.002,
     n_lags=30,
     coordinate_names=("x", "y"),
@@ -929,7 +919,7 @@ VARIOGRAM_PARAMETERS = {
 }
 
 # INITIALIZE CLASS OBJECT
-krg = kriging.Kriging(
+krg = geostatistics.Kriging(
     mesh=df_mesh,
     kriging_params=KRIGING_PARAMETERS,
     variogram_params=VARIOGRAM_PARAMETERS,
@@ -968,7 +958,7 @@ df_kriged_results["biomass"] = df_kriged_results["biomass_density"] * df_kriged_
 logging.info("New column in 'df_kriged_results': 'biomass'")
 
 # BIOMASS TO NASC
-apportion.mesh_biomass_to_nasc(
+feat_apportion.mesh_biomass_to_nasc(
     mesh_data_df=df_kriged_results,
     biodata=dict_df_weight_proportions,
     group_by=["sex"],
@@ -993,7 +983,7 @@ logging.info(
 
 # ABUNDANCE [ALL]
 logging.info("Distributing abundances...")
-dict_kriged_abundance_table = apportion.distribute_population_estimates(
+dict_kriged_abundance_table = feat_apportion.distribute_population_estimates(
     data=df_kriged_results,
     proportions=dict_df_number_proportions,
     variable="abundance",
@@ -1009,7 +999,7 @@ logging.info(
     "     Reference: Aged abundances\n"
     "     Imputing missing bins: False"
 )
-dict_kriged_abundance_table["standardized_unaged"] = apportion.distribute_unaged_from_aged(
+dict_kriged_abundance_table["standardized_unaged"] = feat_apportion.distribute_unaged_from_aged(
     population_table=dict_kriged_abundance_table["unaged"],
     reference_table=dict_kriged_abundance_table["aged"],
     group_by=["sex"],
@@ -1018,7 +1008,7 @@ dict_kriged_abundance_table["standardized_unaged"] = apportion.distribute_unaged
 
 # BIOMASS [ALL]
 logging.info("Distributing biomass...")
-dict_kriged_biomass_table = apportion.distribute_population_estimates(
+dict_kriged_biomass_table = feat_apportion.distribute_population_estimates(
     data=df_kriged_results,
     proportions=dict_df_weight_proportions,
     variable="biomass",
@@ -1034,7 +1024,7 @@ logging.info(
     "     Reference: Aged biomass\n"
     "     Imputing missing bins: True"
 )
-dict_kriged_biomass_table["standardized_unaged"] = apportion.distribute_unaged_from_aged(
+dict_kriged_biomass_table["standardized_unaged"] = feat_apportion.distribute_unaged_from_aged(
     population_table=dict_kriged_biomass_table["unaged"],
     reference_table=dict_kriged_biomass_table["aged"],
     group_by=["sex"],
@@ -1045,7 +1035,7 @@ dict_kriged_biomass_table["standardized_unaged"] = apportion.distribute_unaged_f
 # CONSOLIDATE
 # ---- ABUNDANCE
 logging.info("Consolidating abundance tables...")
-df_kriged_abundance_table = apportion.sum_population_tables(
+df_kriged_abundance_table = feat_apportion.sum_population_tables(
     population_table=dict_kriged_abundance_table,
     table_names=["aged", "standardized_unaged"],
     table_index=["length_bin"],
@@ -1054,7 +1044,7 @@ df_kriged_abundance_table = apportion.sum_population_tables(
 logging.info("Abundance table complete\n'df_kriged_abundance_table' created.")
 # ---- Biomass
 logging.info("Consolidating biomass tables...")
-df_kriged_biomass_table = apportion.sum_population_tables(
+df_kriged_biomass_table = feat_apportion.sum_population_tables(
     population_table=dict_kriged_biomass_table,
     table_names=["aged", "standardized_unaged"],
     table_index=["length_bin"],
@@ -1134,7 +1124,7 @@ logging.info("Stratified kriged analysis results complete\n'df_jh_kriged_results
 logging.info(
     f"Writing reports to: '{REPORTS_DIR.as_posix()}'."
 )
-reporter = feat_report.FEATReports(REPORTS_DIR, verbose=VERBOSE)
+reporter = Reporter(REPORTS_DIR, verbose=VERBOSE)
 
 # AGED-LENGTH HAUL
 reporter.aged_length_haul_counts_report(
