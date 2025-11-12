@@ -5,8 +5,7 @@ from lmfit import Parameters
 
 import echopop.inversion.inversion_matrix as im
 from echopop import inversion
-from echopop.inversion import inversion_matrix
-from echopop.typing import InvParameters
+from echopop.inversion import InversionMatrix, InvParameters, estimate_population
 
 
 # Test base InvParameters
@@ -243,7 +242,7 @@ def test_estimate_population(inv_transect_info, inv_interval_info, inv_cells_inf
     """Test population estimation returns expected structure."""
 
     # Test transect-index
-    transect_result = im.estimate_population(
+    transect_result = estimate_population(
         inv_transect_info["inverted"],
         inv_transect_info["coords"],
         density_sw=1026.0,
@@ -261,7 +260,7 @@ def test_estimate_population(inv_transect_info, inv_interval_info, inv_cells_inf
     assert list(transect_result.index.names) == ["transect_num"]
 
     # Test interval-index
-    interval_result = im.estimate_population(
+    interval_result = estimate_population(
         inv_interval_info["inverted"],
         inv_interval_info["coords"],
         density_sw=1026.0,
@@ -281,7 +280,7 @@ def test_estimate_population(inv_transect_info, inv_interval_info, inv_cells_inf
     )
 
     # Test cells-index
-    cells_result = im.estimate_population(
+    cells_result = estimate_population(
         inv_cells_info["inverted"],
         inv_cells_info["coords"],
         density_sw=1026.0,
@@ -619,12 +618,11 @@ def test_inversion_matrix_creation():
         "monte_carlo": True,
         "mc_realizations": 3,
         "scale_parameters": True,
-        "environment": {"sound_speed_sw": 1500.0, "density_sw": 1026.0},
         "minimum_frequency_count": 2,
     }
 
     # Create InversionMatrix
-    inv_matrix = inversion_matrix.InversionMatrix(df, sim_settings, verbose=False)
+    inv_matrix = InversionMatrix(df, sim_settings, verbose=False)
 
     assert inv_matrix is not None
     assert inv_matrix.inversion_method == "scattering_model"

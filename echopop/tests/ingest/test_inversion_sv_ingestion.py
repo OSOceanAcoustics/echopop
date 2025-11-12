@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from echopop.nwfsc_feat import ingest_sv
+from echopop.ingest import sv as ingest_sv
 
 
 def test_read_echoview_sv_basic(sample_sv_csv_file):

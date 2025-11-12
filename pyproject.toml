@@ -1,20 +1,86 @@
 [build-system]
 requires = [
     "setuptools >= 48",
-    "setuptools_scm[toml] >= 4, <6",
+    "setuptools_scm[toml]>=6.2",
     "setuptools_scm_git_archive",
     "wheel >= 0.29.0",
 ]
 build-backend = 'setuptools.build_meta'
 
+[project]
+name = "echopop"
+dynamic = ["version"]
+description = "A tool to generate biological estimates from acoustic data collected from echosounders"
+readme = "README.md"
+license = {text = "Apache License, Version 2.0"}
+authors = [
+    {name = "Brandyn Lucca", email = "brandyn.lucca@gmail.com"}
+]
+maintainers = [
+    {name = "Wu-Jung Lee", email = "leewujung@gmail.com"}
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.9",
+    "Topic :: Scientific/Engineering"
+]
+requires-python = ">=3.9"
+dependencies = [
+    # Data processing and wrangling stack
+    "awkward",
+    "lmfit",
+    "numpy",
+    "openpyxl",
+    "pandas",
+    "scipy",
+    "numba",
+    # Spatial data processing stack
+    "cartopy",
+    "geopandas",
+    "geopy",
+    "pyproj",
+    "shapely",
+    "verde",
+    # Validation stack
+    "pandera>=0.25",
+    "pydantic>=2.0.0",
+    "traitlets",
+    # Jupyter stack
+    "ipympl",
+    "jupyter_bokeh>=3.0.5",
+    # Static visualization stack
+    "matplotlib",
+    # Interactive visualization stack
+    "bokeh",
+    "geoviews",
+    "holoviews",
+    "ipywidgets"
+]
+
+[project.urls]
+Homepage = "https://github.com/OSOceanAcoustics/echopop"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["echopop*"]
+
 [tool.setuptools_scm]
-fallback_version = "unknown"
-local_scheme = "node-and-date"
-write_to = "_echopop_version.py"
+version_scheme = "post-release"
+local_scheme = "no-local-version"
+fallback_version = "0.0.0"
+write_to = "echopop/_version.py"
 write_to_template = 'version = "{version}"  # noqa'
 
 [tool.black]
 line-length = 100
+
+[tool.codespell]
+skip = "*.ipynb"
+ignore-words-list = "notin,burnin"
 
 [tool.isort]
 known_first_party = "echopop"

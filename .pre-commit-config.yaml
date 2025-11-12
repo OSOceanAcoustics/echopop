@@ -6,7 +6,7 @@ exclude: |
     echopop/file_investigation.py|
     echopop/test_survey.py|
     echopop/scratch/|
-    echopop/workflow/
+    echopop/workflows/nwfsc_feat/workflows
   )
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -27,7 +27,7 @@ repos:
         args: ["--profile", "black", "--filter-files"]
 
   - repo: https://github.com/psf/black-pre-commit-mirror
-    rev: 25.9.0
+    rev: 25.11.0
     hooks:
       - id: black
 
@@ -41,4 +41,4 @@ repos:
     hooks:
       - id: codespell
         exclude: '(scratch)/.*'
-        args: ["--skip=*.ipynb", "--ignore-words=.codespell-ignore-words.txt", "-w", "docs/source", "echopype", "echopop"]
+        args: ["--skip=*.ipynb", "--toml=pyproject.toml", "-w", "docs/source", "echopype", "echopop"]

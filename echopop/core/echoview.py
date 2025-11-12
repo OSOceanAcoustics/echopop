@@ -23,6 +23,7 @@ This module contains constants and mappings for processing Echoview export data.
 ECHOVIEW_TO_ECHOPOP = {
     "date_s": "ping_date",
     "exclude_below_line_depth_mean": "max_depth",
+    "exclude_below_depth_mean": "max_depth",
     "lat_s": "latitude_s",
     "lat_m": "latitude",
     "lon_s": "longitude_s",

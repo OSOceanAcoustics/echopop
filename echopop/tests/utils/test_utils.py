@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from echopop.nwfsc_feat import utils
+from echopop import utils
 
 
 def test_apply_filters_include():

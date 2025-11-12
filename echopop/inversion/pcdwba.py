@@ -5,7 +5,7 @@ import pandas as pd
 from numba import njit
 from scipy.special import j1
 
-from . import operations as ops
+from . import utils as ops
 
 
 @njit(cache=True, fastmath=True)
@@ -297,7 +297,7 @@ def pcdwba(
     n_wavelength: int,
     number_density: float,
     length_distribution: Dict[str, Any],
-    **kwargs
+    **kwargs,
 ):
     """
     Phase-Corrected Distorted Wave Born Approximation (PCDWBA) for acoustic scattering.
