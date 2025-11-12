@@ -10,7 +10,7 @@ from echopop.workflows.nwfsc_feat.reporter import Reporter
 # ==================================================================================================
 # DEFINE DATA ROOT DIRECTORY
 # --------------------------
-DATA_ROOT = Path("C:/Users/Brandyn/Documents/GitHub/EchoPro_data/echopop_2019")
+DATA_ROOT = Path("C:/Data/EchopopData/echopop_2019")
 # --------------------------
 # SAVE DIRECTORY FOR REPORTS
 # --------------------------

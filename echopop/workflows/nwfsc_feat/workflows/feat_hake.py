@@ -157,30 +157,6 @@ df_nasc_all_ages = nasc.read_nasc_file(
 )
 
 # ==================================================================================================
-# [OPTIONAL] Convert the NASC DataFrame format from AFSC to FEAT
-# --------------------------------------------------------------
-
-# EXAMPLE: 2001 Dataset
-df_nasc_all_ages_feat = nasc.convert_afsc_nasc_to_feat(
-    df=df_nasc_all_ages,
-    default_interval_distance=0.5,
-    default_transect_spacing=10.0,
-    inclusion_filter={"transect_num", np.arange(1, 200)},
-)
-
-# ==================================================================================================
-# [OPTIONAL] Filter the transect intervals to account for on- and off-effort
-# --------------------------------------------------------------------------
-
-# DataFrame with filtered intervals representing on-effort
-df_nasc_all_ages_cleaned: pd.DataFrame = nasc.filter_transect_intervals(
-    nasc_df=df_nasc_all_ages_feat,
-    transect_filter_df=Path("Path/to/file"),
-    subset_filter="survey == 201003",
-    transect_filter_sheet="Sheet1",
-)
-
-# ==================================================================================================
 # Load in the biolodical data
 # ---------------------------
 BIODATA_SHEET_MAP = {
