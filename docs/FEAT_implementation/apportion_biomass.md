@@ -14,10 +14,6 @@ The challenges associated with apportioning the kriged biomass is to properly co
 
 Therefore, to apportion the total biomass into different sexes, length bins, and age bins, weight of the aged fish samples can be used directly (see [](apportion-aged)), but weight of the unaged fish samples needs to be further partitioned according to information obtained from the aged fish samples (see [](apportion-unaged)).
 
-
-
-
-
 ## Symbols and notation
 
 ### Transect-related parameters

@@ -22,10 +22,6 @@ parse:
 #   latex_documents:
 #     targetname: book.tex
 
-# Add a bibtex file so that we can create citations
-bibtex_bibfiles:
-  - references.bib
-
 # Information about where the book exists on the web
 repository:
   url: https://github.com/OSOceanAcoustics/echopop  # Online location of your book
@@ -53,8 +49,6 @@ sphinx:
     'sphinx.ext.ifconfig',
     'sphinx.ext.githubpages',
     'sphinx.ext.napoleon',
-    'sphinx.ext.intersphinx',
-    # 'hoverxref.extension'
     'sphinx_tippy'
   ]
   config:
@@ -63,7 +57,10 @@ sphinx:
       undoc-members: true
       inherited-members: true
     autosummary_generate: true  # Automatically generate stub files for all documented members
-    bibtex_reference_style: label
+    bibtex_reference_style: author_year
     html_extra_path: ["_static"]
-    numpydoc_class_members_toctree: False
-    tippy_enable_mathjax: True
+    numpydoc_class_members_toctree: false
+    tippy_enable_mathjax: true
+    numfig: false
+    myst_footnote_transition: False
+    bibtex_bibfiles: ["references.bib"]

@@ -4,3 +4,4 @@ numpydoc
 setuptools
 sphinx-automodapi
 sphinxcontrib-bibtex
+sphinx-tippy

@@ -4,7 +4,7 @@
 ## Backscattering cross-section and target strength
 
 ### General definitions
-For a given scatterer, the backscattering cross section ($\sigma_\text{bs}$, m<sup>2</sup>) is defined by[^maclennan_et_al]:
+For a given scatterer, the backscattering cross section ($\sigma_\text{bs}$, m<sup>2</sup>) is defined by {cite:p}[`maclennan_2002`]:
 
 $$
     \sigma_\text{bs} = 
@@ -55,13 +55,14 @@ $$
 Consequently, one common approach to estimating fish $\textit{TS}$ uses the empirical relationship between $\textit{TS}$ and $L$:
 
 <a id="intext_eq_16"></a>
+
 (intext_eq_16_md)=
 $$
     \textit{TS} = m\log_{10}L+b,
     \tag{1.6}
 $$
 
-where $L$ is the total length, $m$ is the slope, and $b$ is the $y$-intercept. Values of $m$ and $b$ are typically species-specific; however, these relationships are often "standardized" by fixing $m = 20$ since many early experiments yielded $m$-values close to 20[^fisheries_acoustics]. This modifies {ref}`Eq. (1.6) <eq-16>` to:
+where $L$ is the total length, $m$ is the slope, and $b$ is the $y$-intercept. Values of $m$ and $b$ are typically species-specific; however, these relationships are often "standardized" by fixing $m = 20$ since many early experiments yielded $m$-values close to 20 {cite:p}`simmonds_maclennan_2005`. This modifies {ref}`Eq. (1.6) <eq-16>` to:
 
 $$
     \textit{TS} = 20\log_{10}L+b_{20},
@@ -70,20 +71,18 @@ $$
 
 where $b_{20}$ is the $y$-intercept associated with the fixed slope. Species-specific values for $b_{20}$ varies and are frequency-specific ({ref}`Table 1 <tbl-1>`).
 
-## Species TS–L relationships
-
 (tbl-1)=
 ```{table} Example species-specific $\textit{TS}$-$L$ relationships.
 | Species | Frequency (kHz) | $m$ | $b$ | $b_{20}$ | Ref. | Note |
 |---------|-----------------|-----|---- |----------|------|------|
-| *Clupea harengus* | 38 | 8.9 | -55.2 | -69.5 | [^foote_1986] | Daytime |
-| *C. harengus* | 38 | 21.2 | -74.2 | -72.5 | [^foote_1986] | Nighttime |
-| *Gadus morhua* | 38 | | | -58.8 | [^nakken_olsen] | |
-| Gadoids | 38 | 18.0 | -66.2 | -68.0 | [^foote_1987] | 
-| *Merluccius productus* | 38 | | | -68.0 | [^traynor] | |
-| *Pollachius virens* | 38 | | | -65.8 | [^foote_1987] | |
-| *Sprattus sprattus* | 38 | 17.2 | -60.8 | | [^nakken_olsen] | |
-| *S. sprattus* | 120 | 21.4 | -55.0 | | [^nakken_olsen] | |
+| *Clupea harengus* | 38 | 8.9 | -55.2 | -69.5 | {cite:t}`foote_1986` | Daytime |
+| *C. harengus* | 38 | 21.2 | -74.2 | -72.5 | {cite:t}`foote_1986` | Nighttime |
+| *Gadus morhua* | 38 | | | -58.8 |{cite:t}`nakken_1977` | |
+| Gadoids | 38 | 18.0 | -66.2 | -68.0 | {cite:t}`foote_1987` | 
+| *Merluccius productus* | 38 | | | -68.0 | {cite:t}`traynor_1996` | |
+| *Pollachius virens* | 38 | | | -65.8 | {cite:t}`foote_1987` | |
+| *Sprattus sprattus* | 38 | 17.2 | -60.8 | | {cite:t}`nakken_1977` | |
+| *S. sprattus* | 120 | 21.4 | -55.0 | | {cite:t}`nakken_1977` | |
 ```
 
 ## Converting backscatter into population estimates
@@ -108,7 +107,7 @@ $$
     \tag{1.9}
 $$
 
-When $s_\text{v}$ is averaged over a finite volume of water, $S_\text{v}$ is often described as being the mean volume backscattering strength ($\textit{MVBS}$)[^maclennan_et_al]. 
+When $s_\text{v}$ is averaged over a finite volume of water, $S_\text{v}$ is often described as being the mean volume backscattering strength ($\textit{MVBS}$) {cite:p}`maclennan_2002`. 
 
 Alternatively, $s_\text{v}$ can also be expressed as a function of $\left< \sigma_\text{bs} \right>$ and the volumetric animal density ($\rho_\text{v}$, animals m<sup>-3</sup>):
 
@@ -150,7 +149,7 @@ $$
     \tag{1.13}
 $$
 
-It is more common to express $\rho_\text{a}$ relative to nmi<sup>2</sup> than m<sup>2</sup> or km<sup>2</sup>. This first requires converting $s_\text{a}$ into the natucal area scattering coefficient ($s_\text{A}$, or commonly abbreviated as $\textit{NASC}$)[^foote_knudsen_1994]:
+It is more common to express $\rho_\text{a}$ relative to nmi<sup>2</sup> than m<sup>2</sup> or km<sup>2</sup>. This first requires converting $s_\text{a}$ into the natucal area scattering coefficient ($s_\text{A}$, or commonly abbreviated as $\textit{NASC}$) {cite:p}`foote_1994`:
 
 $$
     s_\text{A}(x) = 4 \pi (1852)^2 s_\text{a}(x).
@@ -159,23 +158,13 @@ $$
 
 Once converted, $\rho_\text{a}$ from {ref}`Eq. (1.13) <eq-113>` can be defined as:
 
-<a id="eq-nasc-def"></a>
-
+<a id="intext_eq_115"></a>
+(intext_eq_115_md)=
 $$
     \rho_\text{A} =
         \frac{s_\text{A}}{4 \pi \left< \sigma_\text{bs} \right>} =
-            
+            \frac{s_\text{A}}{\sigma_\text{sp}}
     \tag{1.15}
 $$
 
 where $\rho_\text{A}(x)$ is in units of animals nmi<sup>-2</sup>.
-
----
-
-[^maclennan_et_al]: MacLennan, D.N., Fernandes, P.G., and Dalen, J. (2002). A consistent approach to definitions and symbols in fisheries acoustics. ICES Journal of Marine Science, 59: 365-369.
-[^fisheries_acoustics]: Simmonds, E.J., and MacLennan, D.N. (2005), *Fisheries Acoustics. Theory and Practice.* Blackwell, Oxford. 437 pp.
-[^traynor]: Traynor, J.J. (1996). Target-strength measurements of walleye pollock (*Theragra chalcogramma*) and Pacific whiting (*Merluccius productus*). ICES Journal of Marine Science, 53: 253-258.
-[^nakken_olsen]: Nakken, O., and Olsen, K. (1977). Target strength measurements of fish. Rapports et Procès-Verbaux des Réunions, 170: 52-69.
-[^foote_1986]: Foote, K.G., Aglen, A., and Nakken, O. (1986). Measurement of fish target strength with a split-beam echo sounder. The Journal of the Acoustical Soceity of America, 80: 612-621.
-[^foote_1987]: Foote, K.G. (1987). Fish target strengthes for use in echo integrator surveys. Journal of the Acoustical Society of America, 82: 981-987.
-[^foote_knudsen_1994]: Foote, K.G., and Knudsen, H.P. (1994). Physical measurement with modern echo integrators. Journal of the Acoustical Society of Japan.

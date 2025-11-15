@@ -22,7 +22,7 @@
 | $\text{J}_0(x)$ | Cylindrical Bessel function of the first kind of order 0: <br> $\text{J}_0(x) = \frac{1}{\pi} \int_0^\pi \cos(x \sin \theta) d\theta$, <br> where $x$ is the argument and $\theta$ is the integration variable. |
 | $\text{K}_\nu(x)$ | Modified cylindrical Bessel function of the second kind of order $\nu$: <br> $\text{K}_\nu(x) = \int_0^\infty e^{-x \cosh t} \cosh(\nu t) dt$, <br> where $x$ is the argument, $t$ is the integration variable, and $\cosh$ is the hyperbolic cosine. |
 | $\Gamma(\nu)$            | Gamma function: $\Gamma(\nu) = \int_0^\infty t^{\nu-1} e^{-t} dt$                           |
-| $\Omega$                 | Angular distance between two points on a sphere used in the Legendre semivariogram model [Legendre semivariogram model](eq:legendre).                        |
+| $\Omega$                 | Angular distance between two points on a sphere used in the Legendre semivariogram model [Legendre semivariogram model](eq-legendre).                        |
 
 ---
 
@@ -39,7 +39,7 @@ C_1, & h > a
 \label{eq:circular}
 $$
 
-The circular model describes a spatial process with a finite range, where the semivariogram rises sharply and then flattens at the sill. The parameters $C_1$ and $a$ represent the sill and range, respectively. This model is conditionally negative definite in one and two dimensions, but not in three. It is useful for phenomena where spatial correlation drops off tightly as the range is approached.[^chiles]
+The circular model describes a spatial process with a finite range, where the semivariogram rises sharply and then flattens at the sill. The parameters $C_1$ and $a$ represent the sill and range, respectively. This model is conditionally negative definite in one and two dimensions, but not in three. It is useful for phenomena where spatial correlation drops off tightly as the range is approached. {cite:p}`chiles_geostatistics_2012`
 
 ---
 
@@ -54,7 +54,7 @@ C_0 + C_1, & h > a
 \end{cases}
 $$
 
-The cubic model produces a very smooth transition from the origin to the sill, with continuous derivatives up to higher orders. This model is suitable for spatial processes that are expected to be highly regular and smooth, such as certain environmental or physical phenomena.[^journel]
+The cubic model produces a very smooth transition from the origin to the sill, with continuous derivatives up to higher orders. This model is suitable for spatial processes that are expected to be highly regular and smooth, such as certain environmental or physical phenomena. {cite:p}`chiles_geostatistics_2012, montero_2015`
 
 ---
 
@@ -65,7 +65,7 @@ $$
 \label{eq:exponential}
 $$
 
-The exponential model describes a process where spatial correlation decays rapidly with distance, but never truly reaches the sill. It is commonly used for phenomena where the correlation drops off quickly and the underlying process is continuous but not differentiable at the origin.[^cressie]
+The exponential model describes a process where spatial correlation decays rapidly with distance, but never truly reaches the sill. It is commonly used for phenomena where the correlation drops off quickly and the underlying process is continuous but not differentiable at the origin. {cite:p}`chiles_geostatistics_2012`
 
 ---
 
@@ -76,7 +76,7 @@ $$
 \label{eq:gaussian}
 $$
 
-The Gaussian model is characterized by a very smooth rise from the origin, with the semivariogram approaching the sill gradually. This model is appropriate for processes that are highly regular and differentiable, such as temperature or pressure fields.[^cressie]
+The Gaussian model is characterized by a very smooth rise from the origin, with the semivariogram approaching the sill gradually. This model is appropriate for processes that are highly regular and differentiable, such as temperature or pressure fields. {cite:p}`chiles_geostatistics_2012`
 
 ---
 
@@ -87,7 +87,7 @@ $$
 \label{eq:jbessel}
 $$
 
-The J-Bessel model introduces damped oscillations into the semivariogram, which can represent periodic or cyclic spatial patterns. This is useful for modeling phenomena with repeating structures or "hole effects."[^chiles]<br>
+The J-Bessel model introduces damped oscillations into the semivariogram, which can represent periodic or cyclic spatial patterns. This is useful for modeling phenomena with repeating structures or "hole effects." {cite:p}`chiles_geostatistics_2012`<br>
 *Parameter limits*: $b > 0$  
 
 ### K-Bessel
@@ -97,19 +97,19 @@ $$
 \label{eq:kbessel}
 $$
 
-The K-Bessel model uses the modified Bessel function of the second kind, $\text{K}_\nu$, to describe spatial correlation decay. Unlike the Matérn model, it does not include normalization or scaling factors and is used for specialized geostatistical applications where the decay is governed by the Bessel function itself.[^chiles]
+The K-Bessel model uses the modified Bessel function of the second kind, $\text{K}_\nu$, to describe spatial correlation decay. Unlike the Matérn model, it does not include normalization or scaling factors and is used for specialized geostatistical applications where the decay is governed by the Bessel function itself. {cite:p}`chiles_geostatistics_2012`
 
 ---
 
+(eq-legendre)=
 ### Legendre
-<a id="eq:legendre"></a>
 
- $$ 
- 2 - \frac{1 - L^2}{1 - 2L \cos(\Omega) + L^2} 
- \label{eq:legendre}
- $$
+$$ 
+2 - \frac{1 - L^2}{1 - 2L \cos(\Omega) + L^2} 
+\label{eq:legendre}
+$$
 
-The Legendre polynomial semivariogram model is used when you need to model spatial correlation on the surface of a sphere, such as the Earth. This is especially important for global or large-scale geostatistical analyses where the curvature of the Earth cannot be ignored and the usual Euclidean distance-based models are inadequate.[^chiles]<br>
+The Legendre polynomial semivariogram model is used when you need to model spatial correlation on the surface of a sphere, such as the Earth. This is especially important for global or large-scale geostatistical analyses where the curvature of the Earth cannot be ignored and the usual Euclidean distance-based models are inadequate.<br>
 *Parameter limits*: $L \in (0, 1)$  
 
 Here, the parameter $\Omega$ is the angular distance between two points on a sphere (in radians) of radius $\approx$ 6378 km (Earth's radius) where:
@@ -127,7 +127,7 @@ $$
 \label{eq:linear}
 $$
 
-The linear model describes a process where the semivariogram increases indefinitely with distance, indicating a lack of spatial stationarity. This model is typically used to represent a spatial trend or drift.[^cressie]
+The linear model describes a process where the semivariogram increases indefinitely with distance, indicating a lack of spatial stationarity. This model is typically used to represent a spatial trend or drift. {cite:p}`cressie_statistics`
 
 ---
 
@@ -142,7 +142,7 @@ C_0 + C_1, & h > a
 \label{eq:linearplateau}
 $$
 
-The linear plateau model describes a spatial process where the semivariogram increases linearly with distance up to the range $a$, after which it flattens at the sill $C_0 + C_1$. This model is appropriate for phenomena where spatial correlation decreases steadily with distance until a threshold, beyond which further separation does not increase the variance. It is commonly used in soil science, hydrology, and environmental studies where a finite range and a linear rise in semivariance are observed.[^cressie]
+The linear plateau model describes a spatial process where the semivariogram increases linearly with distance up to the range $a$, after which it flattens at the sill $C_0 + C_1$. This model is appropriate for phenomena where spatial correlation decreases steadily with distance until a threshold, beyond which further separation does not increase the variance. It is commonly used in soil science, hydrology, and environmental studies where a finite range and a linear rise in semivariance are observed. {cite:p}`webster_2007`
 
 ---
 
@@ -153,7 +153,7 @@ $$
 \label{eq:log}
 $$
 
-The logarithmic semivariogram model increases slowly with distance and does not have a finite sill. It is sometimes used for spatial processes where the variance grows without bound but at a diminishing rate, such as certain economic or environmental phenomena. This model is not commonly used in geostatistics but can be useful for exploratory analysis or for fitting empirical variograms with long-range dependence.[^cressie]
+The logarithmic semivariogram model increases slowly with distance and does not have a finite sill. It is sometimes used for spatial processes where the variance grows without bound but at a diminishing rate, such as certain economic or environmental phenomena. This model is not commonly used in geostatistics but can be useful for exploratory analysis or for fitting empirical variograms with long-range dependence. {cite:p}`chiles_geostatistics_2012`
 
 ---
 
@@ -164,7 +164,7 @@ $$
 \label{eq:matern}
 $$
 
-The Matérn model provides a flexible approach to modeling spatial correlation. By adjusting the smoothness parameter, users can fit a wide variety of spatial behaviors, from rough to very smooth fields.[^matern]
+The Matérn model provides a flexible approach to modeling spatial correlation. By adjusting the smoothness parameter, users can fit a wide variety of spatial behaviors, from rough to very smooth fields. {cite:p}`matern_spatial_1986`
 
 ---
 
@@ -175,7 +175,7 @@ $$
 \label{eq:stein}
 $$
 
-This is the Matérn model using Michael Stein's parameterization, which is widely used in spatial statistics. The smoothness parameter $\nu$ controls the differentiability of the process, and $a$ is the range parameter. This model generalizes the exponential and Gaussian models and is highly flexible for fitting spatial correlation.[^stein]
+This is the Matérn model using Michael Stein's parameterization, which is widely used in spatial statistics. The smoothness parameter $\nu$ controls the differentiability of the process, and $a$ is the range parameter. This model generalizes the exponential and Gaussian models and is highly flexible for fitting spatial correlation. {cite:p}`stein_1999`
 
 ---
 
@@ -190,7 +190,7 @@ C_0 & h > 0
 \end{cases}
 $$
 
-The nugget model represents pure measurement error or micro-scale variation that cannot be resolved by the sampling design. It is used to account for abrupt jumps at the origin, often due to instrument noise or unmeasured small-scale processes.[^journel]
+The nugget model represents pure measurement error or micro-scale variation that cannot be resolved by the sampling design. It is used to account for abrupt jumps at the origin, often due to instrument noise or unmeasured small-scale processes. {cite:p}`cressie_statistics`
 
 ---
 
@@ -205,7 +205,7 @@ C_0 + C_1, & h > a
 \label{eq:pentaspherical}
 $$
 
-The pentaspherical model is smoother than the spherical model, with continuous derivatives up to the second order. It is useful for modeling spatial processes that exhibit a moderate degree of smoothness and a clear range beyond which correlation vanishes.[^journel]
+The pentaspherical model is smoother than the spherical model, with continuous derivatives up to the second order. It is useful for modeling spatial processes that exhibit a moderate degree of smoothness and a clear range beyond which correlation vanishes. {cite:p}`chiles_geostatistics_2012, webster_2007`
 
 ---
 
@@ -216,7 +216,7 @@ $$
 \label{eq:periodic}
 $$
 
-The periodic model produces a semivariogram with regular oscillations, suitable for phenomena with repeating spatial patterns, such as seasonal or cyclic environmental processes.[^chiles]
+The periodic model produces a semivariogram with regular oscillations, suitable for phenomena with repeating spatial patterns, such as seasonal or cyclic environmental processes. {cite:p}`chiles_geostatistics_2012`
 
 ---
 
@@ -227,7 +227,7 @@ $$
 \label{eq:power}
 $$
 
-The power law model is used for fractal or scale-invariant processes, where the semivariogram increases as a power of the lag distance. This model does not have a finite sill and is appropriate for phenomena that do not exhibit a clear range.[^goovaerts]  
+The power law model is used for fractal or scale-invariant processes, where the semivariogram increases as a power of the lag distance. This model does not have a finite sill and is appropriate for phenomena that do not exhibit a clear range. {cite:p}`goovaerts_1997`  
 
 ---
 
@@ -238,7 +238,7 @@ $$
 \label{eq:quadratic}
 $$
 
-The rational quadratic model provides polynomial decay and can interpolate between exponential and Gaussian behaviors. It is useful when the spatial process exhibits intermediate smoothness or when the empirical semivariogram does not fit standard models well.[^rasmussen]
+The rational quadratic model provides polynomial decay and can interpolate between exponential and Gaussian behaviors. It is useful when the spatial process exhibits intermediate smoothness or when the empirical semivariogram does not fit standard models well. {cite:p}`goovaerts_1997`
 
 ---
 
@@ -249,7 +249,7 @@ $$
 \label{eq:sinc}
 $$
 
-The sinc model generates regular oscillatory patterns, which are suitable for modeling spatial phenomena with periodic or wave-like structures. It is less commonly used but can be valuable for specialized applications.[^chiles]
+The sinc model generates regular oscillatory patterns, which are suitable for modeling spatial phenomena with periodic or wave-like structures. It is less commonly used but can be valuable for specialized applications. {cite:p}`chiles_geostatistics_2012`
 
 ---
 
@@ -265,7 +265,7 @@ C_0 + C_1, & h > a
 \label{eq:spherical}
 $$
 
-Used for spatial processes with a finite correlation range and one of the most commonly used models for semivariogram analyses. Rises linearly near the origin and flattens at the sill.[^cressie]  
+Used for spatial processes with a finite correlation range and one of the most commonly used models for semivariogram analyses. Rises linearly near the origin and flattens at the sill. {cite:p}`chiles_geostatistics_2012`
 
 ---
 
@@ -276,7 +276,7 @@ $$
 \label{spline}
 $$
 
-The spline semivariogram model is used for smooth interpolation and is related to thin-plate splines in spatial statistics. It increases with distance and is especially useful for modeling spatial processes where a smooth, flexible fit is desired. This model is commonly applied in geostatistical interpolation and spatial smoothing.[^wahba]
+The spline semivariogram model is used for smooth interpolation and is related to thin-plate splines in spatial statistics. It increases with distance and is especially useful for modeling spatial processes where a smooth, flexible fit is desired. This model is commonly applied in geostatistical interpolation and spatial smoothing. {cite:p}`wahba_1990`
 
 ### Stable/Exclass
 
@@ -285,7 +285,7 @@ $$
 \label{eq:stable}
 $$
 
-The stable/exclass (exponential class) model generalizes the exponential and Gaussian models by introducing the decay power parameter $\alpha$. When $\alpha=1$, it is the exponential model; when $\alpha=2$, it is the Gaussian model. The model is useful for spatial processes with intermediate smoothness or when empirical data do not fit standard models well.[^cressie]<br>
+The stable/exclass (exponential class) model generalizes the exponential and Gaussian models by introducing the decay power parameter $\alpha$. When $\alpha=1$, it is the exponential model; when $\alpha=2$, it is the Gaussian model. The model is useful for spatial processes with intermediate smoothness or when empirical data do not fit standard models well. {cite:p}`montero_2015`<br>
 *Parameter limits:* $\alpha \leq 2$
 
 ---
@@ -312,7 +312,7 @@ C_0 + C_1, & h > a
 \label{eq:tetraspherical}
 $$
 
-The tetraspherical model is a bounded semivariogram model that provides a smooth transition from the origin to the sill, with continuous derivatives. It is suitable for spatial processes where the correlation decreases smoothly and vanishes beyond a certain range. The model is commonly used in soil science and geostatistics for fitting empirical semivariograms with moderate smoothness.[^journel]
+The tetraspherical model is a bounded semivariogram model that provides a smooth transition from the origin to the sill, with continuous derivatives. It is suitable for spatial processes where the correlation decreases smoothly and vanishes beyond a certain range. The model is commonly used in soil science and geostatistics for fitting empirical semivariograms with moderate smoothness. {cite:p}`chiles_geostatistics_2012`
 
 ---
 
@@ -323,7 +323,7 @@ $$
 \label{eq:wave}
 $$
 
-The wave model generates oscillatory behavior with amplitude modulated by the parameter $a$. It is used for spatial processes with wave-like or periodic structures, such as oceanographic or atmospheric data.[^chiles]
+The wave model generates oscillatory behavior with amplitude modulated by the parameter $a$. It is used for spatial processes with wave-like or periodic structures, such as oceanographic or atmospheric data. {cite:p}`ma_2001`
 
 ---
 
@@ -334,7 +334,7 @@ $$
 \label{eq:whittle}
 $$
 
-Whittle's elementary correlation model is based on the modified Bessel function of the second kind and provides a flexible approach for modeling spatial correlation. It is particularly useful for processes where the correlation decays smoothly but not as rapidly as in the exponential model. The model is often used in spatial statistics and time series analysis to represent correlations that exhibit intermediate smoothness between exponential and Gaussian behaviors.[^whittle]
+Whittle's elementary correlation model is based on the modified Bessel function of the second kind and provides a flexible approach for modeling spatial correlation. It is particularly useful for processes where the correlation decays smoothly but not as rapidly as in the exponential model. The model is often used in spatial statistics and time series analysis to represent correlations that exhibit intermediate smoothness between exponential and Gaussian behaviors. {cite:p}`whittle_1954`
 
 ---
 
@@ -347,7 +347,7 @@ $$
 \label{eq:besselexponential}
 $$
 
-This model introduces periodic patterns with exponential decay, making it suitable for phenomena that display both cyclic behavior and a gradual loss of spatial correlation.[^chiles]
+This model introduces periodic patterns with exponential decay, making it suitable for phenomena that display both cyclic behavior and a gradual loss of spatial correlation.
 
 ### Exponential-Cosine
 
@@ -356,7 +356,7 @@ $$
 \label{eq:besselcosine}
 $$
 
-This variant of the composite exponential-cosine model can either enhance ($1 + \cos(b h)$) or decay ($1 - \cos(b h)$) for oscillatory processes, providing additional flexibility for fitting empirical data with strong periodicity.[^chiles]
+This variant of the composite exponential-cosine model can either enhance ($1 + \cos(b h)$) or decay ($1 - \cos(b h)$) for oscillatory processes, providing additional flexibility for fitting empirical data with strong periodicity.
 
 ### Gaussian-Bessel
 
@@ -365,7 +365,7 @@ $$
 \label{eq:gaussianbessel}
 $$
 
-This model combines periodic Bessel behavior with smooth Gaussian decay, allowing for the representation of regular, cyclic spatial processes with gradual loss of correlation.[^chiles]
+This model combines periodic Bessel behavior with smooth Gaussian decay, allowing for the representation of regular, cyclic spatial processes with gradual loss of correlation.
 
 ### Gaussian-Cosine
 
@@ -375,7 +375,7 @@ $$
 $$
 
 
-This model combines smooth Gaussian decay with regular oscillatory patterns, making it suitable for highly regular spatial processes with cyclical components. [^chiles]
+This model combines smooth Gaussian decay with regular oscillatory patterns, making it suitable for highly regular spatial processes with cyclical components.
 
 ### Gaussian-Linear
 
@@ -384,7 +384,7 @@ $$
 \label{eq:gaussianlinear}
 $$
 
-The composite Gaussian-linear model merges smooth Gaussian decay with a linear trend, making it suitable for regular spatial processes that also display a regional drift or gradient.[^chiles]
+The composite Gaussian-linear model merges smooth Gaussian decay with a linear trend, making it suitable for regular spatial processes that also display a regional drift or gradient.
 
 ### Generalized Bessel-Exponential
 
@@ -393,20 +393,4 @@ $$
 \label{eq:genbesselexponential}
 $$
 
-This model generalizes the Bessel-exponential composite by allowing the decay power $\alpha$ to be adjusted, providing additional flexibility for fitting empirical data with complex periodic and decaying behavior.[^chiles]
-
-
----
-
-## Footnotes
-
-[^matheron]: Matheron, G. (1963). Principles of geostatistics. Economic Geology, 58(8), 1246-1266.
-[^journel]: Journel, A.G. & Huijbregts, C.J. (1978). Mining Geostatistics. Academic Press.
-[^chiles]: Chilès, J.P. & Delfiner, P. (2012). Geostatistics: Modeling Spatial Uncertainty. Wiley.
-[^cressie]: Cressie, N. (1993). *Statistics for Spatial Data*. Wiley.
-[^rasmussen]: Rasmussen, C.E. & Williams, C.K.I. (2006). Gaussian Processes for Machine Learning. MIT Press.
-[^stein]: Stein, M.L. (1999). Interpolation of Spatial Data. Springer.
-[^goovaerts]: Goovaerts, P. (1997). Geostatistics for Natural Resources Evaluation. Oxford University Press.
-[^matern]: Matérn, B. (1986). Spatial Variation. Springer-Verlag.
-[^whittle]: Whittle, P. (1954). On stationary processes in the plane. Biometrika, 41(3/4), 434–449.
-[^wahba]: Wahba, G. (1990). Spline Models for Observational Data. SIAM.
+This model generalizes the Bessel-exponential composite by allowing the decay power $\alpha$ to be adjusted, providing additional flexibility for fitting empirical data with complex periodic and decaying behavior.
