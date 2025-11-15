@@ -12,20 +12,15 @@ execute:
 
 parse:
   myst_enable_extensions:
-  - amsmath
-  - colon_fence
-  - dollarmath
-  - linkify
-  # nb_number_source_lines: true
+    - amsmath
+    - colon_fence
+    - dollarmath
+    - linkify
 
 # Define the name of the latex output file for PDF builds
 # latex:
 #   latex_documents:
 #     targetname: book.tex
-
-# Add a bibtex file so that we can create citations
-bibtex_bibfiles:
-  - references.bib
 
 # Information about where the book exists on the web
 repository:
@@ -53,7 +48,8 @@ sphinx:
     'sphinx.ext.mathjax',
     'sphinx.ext.ifconfig',
     'sphinx.ext.githubpages',
-    'sphinx.ext.napoleon'
+    'sphinx.ext.napoleon',
+    'sphinx_tippy'
   ]
   config:
     autodoc_default_options:
@@ -61,5 +57,10 @@ sphinx:
       undoc-members: true
       inherited-members: true
     autosummary_generate: true  # Automatically generate stub files for all documented members
-    bibtex_reference_style: label
-    numpydoc_class_members_toctree: False
+    bibtex_reference_style: author_year
+    html_extra_path: ["_static"]
+    numpydoc_class_members_toctree: false
+    tippy_enable_mathjax: true
+    numfig: false
+    myst_footnote_transition: False
+    bibtex_bibfiles: ["references.bib"]

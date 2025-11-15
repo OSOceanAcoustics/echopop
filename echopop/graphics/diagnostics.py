@@ -192,7 +192,7 @@ class Diagnostics:
         ).opts(show_legend=True, hooks=[set_legend_title])
 
         # Plot the mesh point layer
-        mesh_points_layer = mesh_data.hvplot.pandas.points(geo=True, label="Mesh points").opts(
+        mesh_points_layer = mesh_data.hvplot.points(geo=True, label="Mesh points").opts(
             size=2, color="#A39D9D"
         )
 
