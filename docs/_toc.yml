@@ -45,6 +45,7 @@ parts:
     - file: FEAT_implementation/FEAT_notebooks/year_specific_workflows
     - file: FEAT_implementation/FEAT_notebooks/diagnostic_plotting
     - file: FEAT_implementation/FEAT_notebooks/report_generation
+    - file: FEAT_implementation/FEAT_notebooks/offeffort_transect_filtering
   - file: glossary
 - caption: Help & references
   chapters:

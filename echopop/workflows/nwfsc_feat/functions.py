@@ -795,7 +795,7 @@ def filter_transect_intervals(
         transect_filter_df.rename(columns={"transect": "transect_num"}, inplace=True)
 
     # Validation check
-    if not set(transect_filter_df.columns) <= set(["transect_num", "log_start", "log_end"]):
+    if not set(transect_filter_df.columns) >= set(["transect_num", "log_start", "log_end"]):
         # ---- Find mismatch
         missing = list(
             set(["transect_num", "log_start", "log_end"]) - set(transect_filter_df.columns)
