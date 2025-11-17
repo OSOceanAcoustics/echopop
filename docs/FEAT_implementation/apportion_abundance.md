@@ -59,7 +59,7 @@ In Chu's Echopro implementation, both $\hat{N}_{s}^{k}$ and $\hat{N}^{k}$ are ca
 
 ## Apportioning back-calculated abundance
 
-Below, the back-calculated $\hat{N}^k$ {ref}`Eq. (3) <eq-abundance-total> is apportioned similarly to the [<b>weight proportions</b>](apportion_biomass.md#unaged-biomass-apportioned-with-sex-length-and-age) across sex, length, and age. 
+Below, the back-calculated $\hat{N}^k$ {ref}`Eq. (3) <eq-abundance-total>` is apportioned similarly to the <b>{ref}`weight proportions <unaged-biomass-apportionment>`</b>.
 
 
 ### Number of fish samples

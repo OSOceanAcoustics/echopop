@@ -235,7 +235,7 @@ $$
 B^\textrm{unaged}_\ell = \sum_k B^{k, \textrm{unaged}}_\ell
 $$
 
-
+(unaged-biomass-apportionment)=
 ### Unaged biomass apportioned with sex, length, and age
 
 To further partition the biomass of different length bins into different age bins, the weight proportion of fish samples of age $\alpha$ with respect to all aged fish samples of length $\ell$ is used. The calculation is carried out for male and female fish separately before the estimates are combined.

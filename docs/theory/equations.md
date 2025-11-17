@@ -98,7 +98,7 @@ See {ref}`Equation 2.5 <intext_eq_25_md>` for more details.
 
 :::
 
-(eq-26b)=
+(eq-26)=
 :::{admonition} Weight-length log-linear relationship
 $$
     \log_{10}(\hat{w}) =
