@@ -42,6 +42,7 @@ parts:
     - file: FEAT_implementation/echopro_vs_echopop
     - file: FEAT_implementation/apportion_biomass
     - file: FEAT_implementation/apportion_abundance  
+    - file: FEAT_implementation/FEAT_notebooks/year_specific_workflows
     - file: FEAT_implementation/FEAT_notebooks/diagnostic_plotting
     - file: FEAT_implementation/FEAT_notebooks/report_generation
   - file: glossary
