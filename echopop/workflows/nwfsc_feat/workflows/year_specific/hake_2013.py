@@ -242,7 +242,7 @@ BIODATA_SEX = {
 # READ IN DATA
 dict_df_bio = ingestion.load_biological_data(
     biodata_filepath=BIODATA_FILE, 
-    BIODATA_SHEETS=BIODATA_SHEETS, 
+    biodata_sheet_map=BIODATA_SHEETS, 
     column_name_map=FEAT_TO_ECHOPOP_BIODATA_COLUMNS, 
     subset_dict=BIODATA_SHIP_SPECIES, 
    biodata_label_map=BIODATA_SEX
