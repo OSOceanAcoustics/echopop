@@ -794,6 +794,20 @@ def filter_transect_intervals(
     ):
         transect_filter_df.rename(columns={"transect": "transect_num"}, inplace=True)
 
+    # Validation check
+    if not set(transect_filter_df.columns) <= set(["transect_num", "log_start", "log_end"]):
+        # ---- Find mismatch
+        missing = list(
+            set(["transect_num", "log_start", "log_end"]) - set(transect_filter_df.columns)
+        )
+        # ---- Format
+        missing_str = [f"'{v}'" for v in missing]
+        # ---- Print
+        raise KeyError(
+            f"The following columns could not be formatted from 'transect_filter_df': "
+            f"{', '.join(missing_str)}."
+        )
+
     # Apply a filter, if needed
     if subset_filter is not None:
         # Extract tokens from string
