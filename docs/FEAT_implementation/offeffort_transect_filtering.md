@@ -9,19 +9,19 @@
 
 The simplest case comprises single intervals at the start and end of the transects that are outside the extent of the <span style="color:#3182bd"><b>on-effort intervals</b></span>.
 
-![Transect filtering](../../_static/offeffort_transect_filtering_edges1.png)
+![Transect filtering](../_static/offeffort_transect_filtering_edges1.png)
 
 ### Transect ends (multiple intervals)
 
 The second case is similar to the first where instead of just one interval at the start and/or end of the transects, there are multiple.
 
-![Transect filtering](../../_static/offeffort_transect_filtering_edges2.png)
+![Transect filtering](../_static/offeffort_transect_filtering_edges2.png)
 
 ### Along-transect
 
 The third and final cases consists of <span style="color:#e6550d"><b>off-effort intervals</b></span> that occur at one or more points along a transect. 
 
-![Transect filtering](../../_static/offeffort_transect_filtering_interior.png)
+![Transect filtering](../_static/offeffort_transect_filtering_interior.png)
 
 ## Implementation within Echopop
 
