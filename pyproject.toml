@@ -37,7 +37,7 @@ dependencies = [
     "openpyxl",
     "pandas",
     "scipy",
-    "numba",
+    "numba>=0.63.0b1",
     # Spatial data processing stack
     "cartopy",
     "geopandas",
