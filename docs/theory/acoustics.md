@@ -4,7 +4,7 @@
 ## Backscattering cross-section and target strength
 
 ### General definitions
-For a given scatterer, the backscattering cross section ($\sigma_\text{bs}$, m<sup>2</sup>) is defined by {cite:p}[`maclennan_2002`]:
+For a given scatterer, the backscattering cross section ($\sigma_\text{bs}$, m<sup>2</sup>) is defined by {cite:p}`maclennan_2002`:
 
 $$
     \sigma_\text{bs} = 
