@@ -88,9 +88,11 @@ def validate_transect_exports(transect_files_df: pd.DataFrame) -> pd.DataFrame:
 
 
 def read_nasc_file(
-    filename: Union[str, Path], 
-    sheetname: str, impute_coordinates: bool = True, 
-    column_name_map: Optional[Dict[str, str]] = None, validator: Optional[Any] = None
+    filename: Union[str, Path],
+    sheetname: str,
+    impute_coordinates: bool = True,
+    column_name_map: Optional[Dict[str, str]] = None,
+    validator: Optional[Any] = None,
 ):
     """
     Read NASC data from a consolidated XLSX file
@@ -565,7 +567,7 @@ def merge_echoview_nasc(
     -------
     Tuple[|pd.DataFrame|, |pd.DataFrame|]
         A tuple containing two pandas.DataFrames:
-        
+
         - ``df_intervals``: The processed intervals DataFrame with added transect spacing
         - ``merged_exports_df``: The merged DataFrame from intervals, cells, and layers
     """
@@ -635,7 +637,7 @@ def read_transect_region_haul_key(
     """
     Load the key that maps hauls to export regions to transect numbers.
 
-    This function reads a CSV or Excel file containing the mapping between transect numbers, 
+    This function reads a CSV or Excel file containing the mapping between transect numbers,
     region IDs, and haul numbers. It can handle both file formats and allows column renaming.
 
     Parameters
@@ -645,18 +647,18 @@ def read_transect_region_haul_key(
     sheetname : str
         Name of the sheet to read (only used for Excel files).
     rename_dict : Optional[Dict[str, str]], default None
-        Dictionary for renaming columns, where keys are original column names and values are new 
+        Dictionary for renaming columns, where keys are original column names and values are new
         column names.
 
     Returns
     -------
     |pd.DataFrame|
-        DataFrame containing only the columns ``"transect_num"``, ``"region_id"``, and 
+        DataFrame containing only the columns ``"transect_num"``, ``"region_id"``, and
         ``"haul_num"``.
 
     Notes
     -----
-    The input file must contain columns that can be mapped to ``"transect_num"``, ``"region_id"``, and 
+    The input file must contain columns that can be mapped to ``"transect_num"``, ``"region_id"``, and
     ``"haul_num"``, either directly or via the rename_dict.
     """
 
@@ -962,7 +964,7 @@ def generate_transect_region_haul_key(df: pd.DataFrame, filter_list: List[str]) 
     """
     Filter DataFrame by region class patterns and create a mapping.
 
-    Filters the DataFrame to include only rows with region classes in the provided filter list and 
+    Filters the DataFrame to include only rows with region classes in the provided filter list and
     creates a mapping of unique regions.
 
     Parameters
@@ -979,8 +981,8 @@ def generate_transect_region_haul_key(df: pd.DataFrame, filter_list: List[str]) 
 
     Notes
     -----
-    The returned |pd.DataFrame| is grouped by ``'transect_num'``, ``'haul_num'``, and 
-    ``'region_id'``, with first instances of ``'region_class'`` and ``'region_name'``, sorted by 
+    The returned |pd.DataFrame| is grouped by ``'transect_num'``, ``'haul_num'``, and
+    ``'region_id'``, with first instances of ``'region_class'`` and ``'region_name'``, sorted by
     ``'haul_num'``.
     """
 
@@ -1015,7 +1017,7 @@ def process_region_names(
     """
     Process region names in a DataFrame using regex patterns.
 
-    Coordinates the extraction and processing of region name components from a |pd.DataFrame| 
+    Coordinates the extraction and processing of region name components from a |pd.DataFrame|
     according to specified patterns, with optional filtering and mapping.
 
     Parameters
@@ -1024,10 +1026,10 @@ def process_region_names(
         |pd.DataFrame| containing a ``'region_name'`` column to process
     region_name_expr_dict : Dict
         Dictionary of pattern specifications for component extraction:
-        
+
         - Keys are component names (e.g., ``'REGION_CLASS'``, ``'HAUL_NUM'``, ``'COUNTRY'``)
         - Values are either:
-        
+
           * Dict mapping labels to regex pattern strings
           * Set of regex pattern strings
 
@@ -1037,7 +1039,7 @@ def process_region_names(
     Returns
     -------
     |pd.DataFrame|
-        If ``filter_list`` is provided: a mapping of unique regions filtered by region class. 
+        If ``filter_list`` is provided: a mapping of unique regions filtered by region class.
         Otherwise,  the original |pd.DataFrame| with extracted components added.
 
     Example
@@ -1084,16 +1086,16 @@ def consolidate_echvoiew_nasc(
     ----------
     df_merged : |pd.DataFrame|
         DataFrame containing merged Echoview data with columns:
-        
+
         - ``'region_class'`` : Region classification names
         - ``'region_id'`` : Region identifier
         - ``'nasc'`` : Nautical area scattering coefficient
         - ``'transect_num'`` : Transect number
         - ``'interval'`` : Interval identifier
-        
-    interval_df : |pd.DataFrame|    
+
+    interval_df : |pd.DataFrame|
         DataFrame containing interval information with columns:
-        
+
         - ``'interval'`` : Interval identifier
         - ``'transect_num'`` : Transect number
         - ``'distance_s'`` : Starting distance
@@ -1113,7 +1115,7 @@ def consolidate_echvoiew_nasc(
     -------
     |pd.DataFrame|
         Consolidated DataFrame containing:
-        
+
         - ``'transect_num'`` : Transect number
         - ``'region_id'`` : Region identifier (``999`` for ``NaN``)
         - ``'distance_s'`` : Starting distance
@@ -1129,7 +1131,7 @@ def consolidate_echvoiew_nasc(
 
     Notes
     -----
-    All numeric columns (``'nasc'``, ``'layer_mean_depth'``, ``'layer_height'``, 
+    All numeric columns (``'nasc'``, ``'layer_mean_depth'``, ``'layer_height'``,
     ``'bottom_depth'``) are filled with ``0.0`` for ``NaN`` values.
     """
 

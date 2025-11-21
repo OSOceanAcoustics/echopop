@@ -12,29 +12,29 @@ from .utils import impute_missing_sigma_bs
 
 class InversionLengthTS(InversionBase):
     """
-    Class to perform acoustic inversion using log-linear relationship between body length and 
+    Class to perform acoustic inversion using log-linear relationship between body length and
     target strength (TS, dB re. 1 :math:`\\text{m}^{-2}`).
 
-    This class implements acoustic inversion by relating fish length to acoustic backscatter 
-    through empirical TS-length relationships. It calculates stratified mean backscattering 
-    cross-sections and converts :math:`S_\\text{A}` (vertically integrated backscatter) to 
+    This class implements acoustic inversion by relating fish length to acoustic backscatter
+    through empirical TS-length relationships. It calculates stratified mean backscattering
+    cross-sections and converts :math:`S_\\text{A}` (vertically integrated backscatter) to
     estimates of number density.
 
     Parameters
     ----------
     model_parameters : Dict[str, Any]
         Dictionary containing model configuration. Required keys:
-        
-        - ``'ts_length_regression'``: Dictionary with ``'slope'`` and ``'intercept'`` for the 
+
+        - ``'ts_length_regression'``: Dictionary with ``'slope'`` and ``'intercept'`` for the
           TS-length regression equation.
         - ``'stratify_by'``: str or List[str] - stratification columns (e.g., ``'stratum_number'``)
 
         Optional keys:
-        
+
         - ``'expected_strata'``: An array of specific strata to expect in the data
         - ``'impute_missing_strata'``: A boolean argument that elects whether or not to impute
           missing strata values
-        - ``'haul_replicates':`` A boolean argument that elects whether or not to use haul 
+        - ``'haul_replicates':`` A boolean argument that elects whether or not to use haul
           numbers/ids as replicates instead of individuals to account for pseudoreplication.
 
     Attributes
@@ -68,18 +68,18 @@ class InversionLengthTS(InversionBase):
     Notes
     -----
     The inversion process follows these steps:
-    
+
     1. Quantize length data and compute TS using the regression equation
     2. Convert TS to linear backscattering cross-section (:math:`\\sigma_\\text{bs}`)
     3. Calculate stratified mean sigma_bs values
     4. Impute missing strata if specified
-    5. Convert vertically integrated backscatter to number density where: 
-    
+    5. Convert vertically integrated backscatter to number density where:
+
     .. math::
         \\rho_\\text{v} = \\frac{S_\\text{A}}{4\\pi \\times \\sigma_\\text{bs}}
-        
-    where :math:`\\rho_\\text{v}` is number density (animals :math:`\\text{nmi}^{-2}`) and 
-    :math:`S_\\text{A}` is the vertically integrated backscatter over an area (:math:`\\text{m}^2\, 
+
+    where :math:`\\rho_\\text{v}` is number density (animals :math:`\\text{nmi}^{-2}`) and
+    :math:`S_\\text{A}` is the vertically integrated backscatter over an area (:math:`\\text{m}^2\,
     \\text{nmi}^{-2}`) that is commonly called the nautical area scattering coefficient (NASC).
     """
 
@@ -389,13 +389,13 @@ def ts_length_regression(
     Examples
     --------
     Single length
-    
+
     >>> ts = ts_length_regression(20.0, slope=20.0, intercept=-68.0)
     >>> print(f"TS for 20cm fish: {ts:.2f} dB")
     TS for 20cm fish: -42.00 dB
 
     Multiple lengths
-    
+
     >>> # Multiple length values
     >>> lengths = np.array([10, 15, 20, 25, 30])
     >>> ts_values = ts_length_regression(lengths, slope=20.0, intercept=-68.0)
@@ -407,11 +407,11 @@ def ts_length_regression(
     Notes
     -----
     The TS-length relationship follows the standard log-linear form:
-    
+
     .. math::
         \\text{TS} = \\beta_1 \\times \\log_{10}(L) + \\beta_0
-        
-    where :math:`L` is the length, :math:`\\beta_1` is the slope, and :math:`\\beta_0` is the 
+
+    where :math:`L` is the length, :math:`\\beta_1` is the slope, and :math:`\\beta_0` is the
     :math:`y`-intercept. This is commonly used in fisheries acoustics where the relationship between
     fish length and acoustic backscatter follows this logarithmic pattern.
     """

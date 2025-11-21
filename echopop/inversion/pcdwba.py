@@ -302,8 +302,8 @@ def pcdwba(
     """
     Phase-Corrected Distorted Wave Born Approximation (PCDWBA) for acoustic scattering.
 
-    This function implements the PCDWBA model for computing acoustic backscattering from elongated 
-    marine organisms modeled as uniformly bent fluid cylinders with tapered ends. The model 
+    This function implements the PCDWBA model for computing acoustic backscattering from elongated
+    marine organisms modeled as uniformly bent fluid cylinders with tapered ends. The model
     accounts for organism size and orientation distributions through numerical integration.
 
     Parameters
@@ -328,10 +328,10 @@ def pcdwba(
         Standard deviation of orientation distribution in degrees.
     orientation_distribution : Dict[str, Any]
         Configuration for orientation averaging:
-        
+
         - ``'family' (str):`` ``'gaussian'`` or ``'uniform'``
         - ``'bins' (int):`` the number of bins in each distribution
-        
+
     g : float
         Cylinder density (kg :math:`\\text{m}^{-3}`) contrast relative to seawater.
     h : float
@@ -348,30 +348,30 @@ def pcdwba(
         Volumetric number density in (scatterers :math:`\\text{m}^{-3}`).
     length_distribution : Dict[str, Any]
         Configuration for length averaging:
-        
+
         - ``'family' (str):`` ``'gaussian'`` or ``'uniform'``
         - ``'bins' (int):`` the number of bins in each distribution
-        
+
     **kwargs : dict
         Additional arguments passed to subfunctions
 
     Returns
     -------
     |np.ndarray[float]|
-        Predicted volume backscattering strength (:math:`S_\\text{v}`) in dB re 1 
-        :math:`\\text{m}^{-1}` for each input frequency. Array has same length as 
+        Predicted volume backscattering strength (:math:`S_\\text{v}`) in dB re 1
+        :math:`\\text{m}^{-1}` for each input frequency. Array has same length as
         ``center_frequencies``.
 
     Notes
     -----
-    The PCDWBA model treats scatterers as fluid-like, weak, uniformly bent cylinders with tapered 
-    end. This accounts for simplified body curvature geometry and material properties that 
-    satisfy the weak scattering assumption (:math:`g,\, h \\approx 1`). The model also includes 
-    phase copmensation for these curved geometries. 
-    
-    The form function corresponds to the linear scattering coefficient (:math:`f_\\text{bs}`, m) 
+    The PCDWBA model treats scatterers as fluid-like, weak, uniformly bent cylinders with tapered
+    end. This accounts for simplified body curvature geometry and material properties that
+    satisfy the weak scattering assumption (:math:`g,\, h \\approx 1`). The model also includes
+    phase copmensation for these curved geometries.
+
+    The form function corresponds to the linear scattering coefficient (:math:`f_\\text{bs}`, m)
     which is defined as:
-    
+
     .. math::
         f_{\\text{bs}}(k_f, \\theta_m) =
             \\frac{h^2 C_b dr_0}{4}
@@ -389,73 +389,73 @@ def pcdwba(
             \\right]
 
     where :math:`k_f` is the acoustic wavenumber of the surrounding medium (e.g. seawater) at
-    frequency :math:`f` (Hz), and :math:`\\theta` is the :math:`m^\\text{th}` orientation angle 
+    frequency :math:`f` (Hz), and :math:`\\theta` is the :math:`m^\\text{th}` orientation angle
     (radians) of the cylinder subject to a plane wave where broadside incidence is at
     :math:`\\theta_m = \\frac{\\pi}{2}`. The term :math:`\\text{J}_1` is the cylindrical Bessel
     function of the first kind of order 1.
-    
+
     Numerically, the integral is discretized into :math:`n_f^\\text{int}` steps; however, the
     user-defined argument (``n_integration``) sets the minimum number of integration points. This
     enables an adaptive discretization rule that adjusts :math:`n_f^\\text{int}` for each defined
     frequency. This operates in conjunction with :math:`n_{\lambda}`, which dictates the number of
     integration points per wavelength. Furthermore, a bandwidth surrounding the defined center
     frequencies is based on the variability in body length (:math:`\sigma_L`) bounded by
-    :math:`\\left[1 - 3.1 * \\sigma_L, 1 + 3.1 * \sigma_L \\right]`. These new bandwidths are used 
-    to compute the effective length:    
-    
+    :math:`\\left[1 - 3.1 * \\sigma_L, 1 + 3.1 * \sigma_L \\right]`. These new bandwidths are used
+    to compute the effective length:
+
     .. math::
-        k_f L_\\text{max} = \\max_i \\Big(k_f L \\Big) \\left( 1 + 3.1 * \\sigma_L \\right)  
-        
+        k_f L_\\text{max} = \\max_i \\Big(k_f L \\Big) \\left( 1 + 3.1 * \\sigma_L \\right)
+
     When :math:`k_f L_\\text{max} < n_f^\\text{int}`, then the value for
-    ``n_integration`` is used. When :math:`k_f L_\\text{max} \leq n_f^\\text{int}`, then:   
-      
+    ``n_integration`` is used. When :math:`k_f L_\\text{max} \leq n_f^\\text{int}`, then:
+
     .. math::
         n_f^\\text{int} =
-        \\left\\lceil \\frac{k_f L_\\text{max} n_{\\lambda}}{2\\pi} \\right\\rceil    
-        
+        \\left\\lceil \\frac{k_f L_\\text{max} n_{\\lambda}}{2\\pi} \\right\\rceil
+
     The :math:`j^\\text{th}` element of the position matrix (:math:`\\vec{r_0}`) is expressed by the
-    radius (:math:`a_j`), taper coefficient (:math:`\\mathscr{T}_j`), and the along-axis tilt angle 
+    radius (:math:`a_j`), taper coefficient (:math:`\\mathscr{T}_j`), and the along-axis tilt angle
     of the curved cylinder (:math:`\\beta_{jm}`) relative to tilt angle :math:`m`. Variability in the
     position matrix cartesian coordinates is expressed as :math:`dr_0`. The cylinder is also
     characterized by its respective material properties:
-    
+
     .. math::
         C_b =\\gamma_\\kappa - \\gamma_\\rho = \\frac{1 - g h^2}{g h^2} - \\frac{g - 1}{g}
-        
+
     where :math:`g` and :math:`h` are cylinders' density and sound speed relative to the
     surrounding medium. This includes the cylinder-specific wavenumber (:math:`k_f`) that accounts
-    for :math:`h`.      
-    
+    for :math:`h`.
+
     Lastly, the phase, :math:`\\exp(i\\varphi_{fjm})`, is:
 
     .. math::
         \\varphi_{fjm} =
-            \\left( \\frac{L_j}{a_j} \\right) 
-            k_f a_j 
+            \\left( \\frac{L_j}{a_j} \\right)
+            k_f a_j
             \\left( \\frac{\\vec{r_0}_j}{h} \\right)
             \\cos(\\gamma_j - \\theta_m)
 
     where :math:\\gamma_j is the slope between integration points relative to the overall tilt angle
     :math:`m`.
-    
+
     The PCDWBA model is valid under the following conditions:
-    
-    - :math:`L \\ll \\lambda(f)` as :math:`\\theta` approaches end-on incidence, where 
+
+    - :math:`L \\ll \\lambda(f)` as :math:`\\theta` approaches end-on incidence, where
       :math:`\\lambda(f)` is the acoustic wavelength at frequency :math:`f`.
     - :math:`|g-1|, |h-1| \\ll 1` to satisfy for the weak scattering assumption
     - Sufficient integration points for curved/tapered geometries
 
-    While not a crucial assumption, the PCDWBA is particularly well-suited for elongated scatterers 
-    like euphausiids in the geometric scattering regime for :math:`1 \lesssim ka \lesssim 10`, where 
+    While not a crucial assumption, the PCDWBA is particularly well-suited for elongated scatterers
+    like euphausiids in the geometric scattering regime for :math:`1 \lesssim ka \lesssim 10`, where
     :math:`k` is the acoustic wavenumber and :math:`a` is the radius at the cylinder's midpoint.
-    
-    The volumetric scattering coefficient, :math:`S_\\text{v}`, is calculated using the forward 
+
+    The volumetric scattering coefficient, :math:`S_\\text{v}`, is calculated using the forward
     problem:
-    
+
     .. math ::
         S_\\text{v} = 10 \\log_{10} \\left( \\rho_\\text{v} \\sigma_\\text{bs} \\right)
-        
-    where :math:`\\rho_\\text{v}` is the scatterer number density (scatterers 
+
+    where :math:`\\rho_\\text{v}` is the scatterer number density (scatterers
     :math:`\\text{m}^{-3}`).
 
     Examples
@@ -574,35 +574,35 @@ def uniformly_bent_cylinder(
     """
     Generate geometric parameters for uniformly bent cylinder with tapered ends.
 
-    This function computes the spatial discretization and geometric properties of organisms modeled 
-    as uniformly bent cylinders with tapering. It calculates position vectors, orientation angles, 
+    This function computes the spatial discretization and geometric properties of organisms modeled
+    as uniformly bent cylinders with tapering. It calculates position vectors, orientation angles,
     and tapering.
 
     Parameters
     ----------
     n_segments : Union[int, |np.ndarray[int]|]
-        Number of integration segments along the longitudinal axis ofthe scatterer. 
+        Number of integration segments along the longitudinal axis of the scatterer.
     radius_of_curvature_ratio : float
-        Body curvature (:math:`\\rho_c`) expressed as the ratio between the radius of an osculating 
-        circle and scatterer length. Larger values indicate straighter bodies. For instance, 
-        :math:`\\rho_c > 10` approximates a straight cylinder, while smaller values indicate more 
+        Body curvature (:math:`\\rho_c`) expressed as the ratio between the radius of an osculating
+        circle and scatterer length. Larger values indicate straighter bodies. For instance,
+        :math:`\\rho_c > 10` approximates a straight cylinder, while smaller values indicate more
         pronounced curvature.
     taper_order : float
         Parameter controlling end tapering sharpness.
-        
+
     Returns
     -------
     Tuple[|np.narr[float]|, |np.narr[float]|, |np.narr[float]|, |np.narr[float]|, |np.narr[float]|
-        
+
         taper : |np.ndarray[float]|
-            Tapering factor along body axis with values bounded in [0,1] where 1 represents the 
+            Tapering factor along body axis with values bounded in [0,1] where 1 represents the
             full radius at the body center while 0 corresponds to pointed ends.
             radius at body center, 0 = pointed ends.
         gamma_tilt : |np.ndarray[float]|
-            Local tilt angles (radians) of curved body segments relative to he body coordinate 
+            Local tilt angles (radians) of curved body segments relative to he body coordinate
             system. Used for phase calculations.
         beta_tilt : |np.ndarray[float]|
-            Local orientation angles (radians) of segments relative to incident acoustic wave 
+            Local orientation angles (radians) of segments relative to incident acoustic wave
             direction. Critical for scattering.
         r_pos : |np.ndarray[float]|
             Position vector along curved body axis in normalized coordinates using the Euclidean
@@ -618,25 +618,25 @@ def uniformly_bent_cylinder(
     2. **Symmetric tapering**: Gradual radius reduction toward both ends
     3. **Smooth geometry**: Continuous derivatives for stable numerics
 
-    Let :math:`z` be the normalized longitudinal coordinates along the scatterer's body axis, 
+    Let :math:`z` be the normalized longitudinal coordinates along the scatterer's body axis,
     ranging from -1 (anterior) to 1 (posterior). The curvature is defined by the parameter
-    :math:`\\gamma = 0.5 / \\rho_c`, where :math:`\\rho_c` is the radius_of_curvature_ratio. The 
+    :math:`\\gamma = 0.5 / \\rho_c`, where :math:`\\rho_c` is the radius_of_curvature_ratio. The
     curvilinear coordinates that make up the position vector are given by:
-    
+
     .. math::
         x(z) = 1 - \\sqrt{1 - (\\sin(\\gamma z))^2}, \\quad z'(z) = \\sin(\\gamma z)
-    
+
     Simultaneously, the tapering function is defined as:
-    
+
     .. math::
         \\mathscr{T}(z) = \\sqrt{1 - z^{\\mathscr{t}}}
-        
-    where :math:`\\mathscr{T}` is the along-axis taper and :math:`\\mathscr{t}` is the taper order. 
-    The local angles between segments (``gamma_tilt``) and relative to the incident wave 
-    (``beta_tilt``) can have a large impact on scattering calculations. These angles determine the 
-    effective scattering cross-section and phase relationships in models such as the 
+
+    where :math:`\\mathscr{T}` is the along-axis taper and :math:`\\mathscr{t}` is the taper order.
+    The local angles between segments (``gamma_tilt``) and relative to the incident wave
+    (``beta_tilt``) can have a large impact on scattering calculations. These angles determine the
+    effective scattering cross-section and phase relationships in models such as the
     phase-compensated distorted wave Born approximation (PCDWBA).
-    
+
     Examples
     --------
     >>> # Single moderately curved organism with 50 segments

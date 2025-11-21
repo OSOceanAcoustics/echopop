@@ -142,7 +142,7 @@ def plot_kriged_mesh(
         CRS for the plot. This should be either a projected or geodetic coordinate system definition
         compatible with with :class:`geopandas.GeoDataFrame`.
     coordinate_names : tuple[str], default=('longitude', 'latitude')
-        Names of the coordinate columns. This is a tuple with an expected order of ``'x'`` and then 
+        Names of the coordinate columns. This is a tuple with an expected order of ``'x'`` and then
         ``'y'``.
     plot_type : {'hexbin', 'pcolormesh', 'scatter'}, default='hexbin'
         Type of plot to produce. Options are:
@@ -152,13 +152,13 @@ def plot_kriged_mesh(
           which defaults to :func:`numpy.mean`) over a two-dimensional grid of hexagons. The
           plotted hexagonal bins can be configured using keyword arguments supplied to the
           ``hexbin_kwargs`` argument.
-          
-        - 'pcolormesh': Interpolates the variable onto a regular grid using :class:`verde.Chain` 
-          for spatial interpolation that returns an :class:`xarray.DataArray`. The resulting grid 
-          is then displayed as a pseudocolor mesh using :meth:`xarray.DataArray.plot.pcolormesh`. 
-          The plotted pseudocolor mesh can be configured using keyword arguments supplied to the 
+
+        - 'pcolormesh': Interpolates the variable onto a regular grid using :class:`verde.Chain`
+          for spatial interpolation that returns an :class:`xarray.DataArray`. The resulting grid
+          is then displayed as a pseudocolor mesh using :meth:`xarray.DataArray.plot.pcolormesh`.
+          The plotted pseudocolor mesh can be configured using keyword arguments supplied to the
           ``pseudocolormesh_kwargs`` argument.
-          
+
         - 'scatter': Plots each data point individually using :meth:`matplotlib.axes.Axes.scatter`
           points based on the variable value. The plotted points can be configured using keyword
           arguments supplied to the ``scatter_kwargs`` argument.
@@ -177,8 +177,8 @@ def plot_kriged_mesh(
         specify mesh spacing, colormap, shading, etc.
         Example: ``pseudocolormesh_kwargs={'spacing': 0.01, 'cmap': 'plasma'}``
     coast_kwargs : dict, optional
-        Additional keyword arguments passed to the coastline plotting function such as 
-        :meth:`cartopy.mpl.geoaxes.GeoAxes.add_feature()`. These control the appearance of the 
+        Additional keyword arguments passed to the coastline plotting function such as
+        :meth:`cartopy.mpl.geoaxes.GeoAxes.add_feature()`. These control the appearance of the
         coastline overlay. Example: ``coast_kwargs={'edgecolor': 'black', 'linewidth': 0.5}``
     axis_kwargs : dict, optional
         Additional keyword arguments passed to axis formatting functions (e.g., setting
@@ -191,7 +191,7 @@ def plot_kriged_mesh(
         Example: ``plot_kwargs={'alpha': 0.8}``
     colorbar_kwargs : dict, optional
         Additional keyword arguments passed to :func:`matplotlib.pyplot.colorbar` for customizing
-        the colorbar. These control label, orientation, ticks, etc. Example: 
+        the colorbar. These control label, orientation, ticks, etc. Example:
         ``colorbar_kwargs={'label': 'Biomass (kg)', 'orientation': 'vertical'}``
     save_path : Path, optional
         Filepath for saving the figure.
@@ -214,7 +214,7 @@ def plot_kriged_mesh(
     -----
     All keyword argument dictionaries are optional. If provided, they are passed directly to the
     underlying matplotlib or Cartopy plotting functions. If the same keyword is present in both
-    a specific kwargs dict (e.g., ``scatter_kwargs``) and ``plot_kwargs``, the value in 
+    a specific kwargs dict (e.g., ``scatter_kwargs``) and ``plot_kwargs``, the value in
     ``plot_kwargs`` takes precedence.
     """
 
