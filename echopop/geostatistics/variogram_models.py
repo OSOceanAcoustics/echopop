@@ -1738,136 +1738,139 @@ VARIOGRAM_MODELS = {
 
 # Variogram wrapper function
 def compute_variogram(
-    distance_lags: np.ndarray,
+    distance_lags: np.ndarray[float],
     variogram_parameters: Optional[Dict[str, float]] = None,
     model: Optional[Union[str, List[str]]] = None,
     **kwargs,
 ):
     """
-    Compute the theoretical semivariogram
+    Compute the theoretical semivariogram.
 
     Parameters
     ----------
-    distance_lags: np.ndarray
-        An array of lag distances
-    variogram_parameters: Optional[Dict[str, float]]
+    distance_lags : |np.ndarray[float]|
+        An array of lag distances.
+    variogram_parameters : Optional[Dict[str, float]]
         An optional dictionary that can contain values for variogram model parameters (see the
-        below table associated with the argument `model`). Alternatively, these parameters can be
-        entered directly and are contained within `kwargs`. Possible parameters include:
-            - `sill` (Sill): The asymptotic value as lags approach infinity.
-            - `nugget` (Nugget): The semivariogram y-intercept that corresponds to variability
-            at lag distances shorter than the lag resolution.
-            - `correlation_range` (Correlation length scale/range): The ascending rate for the
-            semivariogram.
-            - `hole_effect_range` (Hole effect range): The (normalized) length scale/range that
-            'holes' are observed, which represent 'null' (or very small) points compared to their
-            neighboring lags.
-            - `decay_power` (Decay term exponent): An exponential term that is used in certain
-            generalized exponential (or related) semivariogram models that modulates the ascending
-            rate for a semivariogram.
-            - `enhance_semivariance` (Semivariance enhancement): A boolean term that determines
-            whether the correlation decay in certain cosine-related variogram models are enhanced
-            (or not) are further lag distances.
-    model: Optional[Union[ str , list ]]
+        below table associated with the argument ``model``). Alternatively, these parameters can be
+        entered directly and are contained within ``kwargs``. Possible parameters include:
+
+        - ``sill`` (Sill): The asymptotic value as lags approach infinity.
+        - ``nugget`` (Nugget): The semivariogram y-intercept that corresponds to variability
+          at lag distances shorter than the lag resolution.
+        - ``correlation_range`` (Correlation length scale/range): The ascending rate for the
+          semivariogram.
+        - ``hole_effect_range`` (Hole effect range): The (normalized) length scale/range that
+          'holes' are observed, which represent 'null' (or very small) points compared to their
+          neighboring lags.
+        - ``decay_power`` (Decay term exponent): An exponential term that is used in certain
+          generalized exponential (or related) semivariogram models that modulates the ascending
+          rate for a semivariogram.
+        - ``enhance_semivariance`` (Semivariance enhancement): A boolean term that determines
+          whether the correlation decay in certain cosine-related variogram models are enhanced
+          (or not) at further lag distances.
+
+    model : Optional[Union[str, list]]
         A string or list of model names. A single name represents a single family model. Two inputs
         represent the desired composite model (e.g. the composite J-Bessel and exponential model).
         Available variogram models and their respective arguments include (alongside
-        `distance_lags`):
+        ``distance_lags``):
+        
 
-        +----------------------------+-----------------+--------------------------+
-        | :fun:`variogram`           | Input           | Parameters               |
-        | model                      |                 |                          |
-        +============================+=================+==========================+
-        |  :fun:`cubic`              | 'cubic'         | - `sill`                 |
-        |                            |                 | - `nugget`               |
-        |                            |                 | - `correlation_range`    |
-        +----------------------------+-----------------+--------------------------+
-        |  :fun:`exponential`        | 'exponential    | - `sill`                 |
-        |                            |                 | - `nugget`               |
-        |                            |                 | - `correlation_range`    |
-        +----------------------------+-----------------+--------------------------+
-        |  :fun:`gaussian`           | 'gaussian'      | - `sill`                 |
-        |                            |                 | - `nugget`               |
-        |                            |                 | - `correlation_range`    |
-        +----------------------------+-----------------+--------------------------+
-        |  :fun:`jbessel`            | 'jbessel'       | - `sill`                 |
-        |                            |                 | - `nugget`               |
-        |                            |                 | - `hole_effect_range`    |
-        +----------------------------+-----------------+--------------------------+
-        |  :fun:`kbessel`            | 'kbessel'       | - `sill`                 |
-        |                            |                 | - `nugget`               |
-        |                            |                 | - `hole_effect_range`    |
-        +----------------------------+-----------------+--------------------------+
-        |  :fun:`linear`             | 'linear'        | - `nugget`               |
-        |                            |                 | - `sill`                 |
-        +----------------------------+-----------------+--------------------------+
-        |  :fun:`matern`             | 'matern'        | - `sill`                 |
-        |                            |                 | - `nugget`               |
-        |                            |                 | - `correlation_range`    |
-        |                            |                 | - `smoothness_parameter` |
-        +----------------------------+-----------------+--------------------------+
-        |  :fun:`nugget`             | 'nugget'        | - `nugget`               |
-        |                            |                 | - `sill`                 |
-        +----------------------------+-----------------+--------------------------+
-        |  :fun:`pentaspherical`     | 'pentaspherical'| - `sill`                 |
-        |                            |                 | - `nugget`               |
-        |                            |                 | - `correlation_range`    |
-        +----------------------------+-----------------+--------------------------+
-        |  :fun:`power`              | 'power'         | - `nugget`               |
-        |                            |                 | - `sill`                 |
-        |                            |                 | - `power_exponent`       |
-        +----------------------------+-----------------+--------------------------+
-        |  :fun:`quadratic`          | 'quadratic'     | - `sill`                 |
-        |                            |                 | - `nugget`               |
-        |                            |                 | - `correlation_range`    |
-        |                            |                 | - `shape_parameter`      |
-        +----------------------------+-----------------+--------------------------+
-        |  :fun:`sinc`               | 'sinc'          | - `sill`                 |
-        |                            |                 | - `nugget`               |
-        |                            |                 | - `hole_effect_range`    |
-        +----------------------------+-----------------+--------------------------+
-        |  :fun:`spherical`          | 'spherical'     | - `sill`                 |
-        |                            |                 | - `nugget`               |
-        |                            |                 | - `correlation_range`    |
-        +----------------------------+-----------------+--------------------------+
-        |  :fun:`bessel_exponential` | ['bessel',      | - `sill`                 |
-        |                            |  'exponential'] | - `nugget`               |
-        |                            |                 | - `correlation_range`    |
-        |                            |                 | - `decay_power`          |
-        |                            |                 | - `hole_effect_range`    |
-        +----------------------------+-----------------+--------------------------+
-        |  :fun:`bessel_gaussian`    | ['bessel',      | - `sill`                 |
-        |                            |  'gaussian']    | - `nugget`               |
-        |                            |                 | - `correlation_range`    |
-        |                            |                 | - `decay_power`          |
-        |                            |                 | - `hole_effect_range`    |
-        +----------------------------+-----------------+--------------------------+
-        |  :fun:`cosine_exponential` | ['cosine',      | - `sill`                 |
-        |                            |  'exponential'] | - `nugget`               |
-        |                            |                 | - `correlation_range`    |
-        |                            |                 | - `hole_effect_range`    |
-        |                            |                 | - `enhance_semivariance` |
-        +----------------------------+-----------------+--------------------------+
-        |  :fun:`cosine_gaussian`    | ['cosine',      | - `sill`                 |
-        |                            |  'gaussian']    | - `nugget`               |
-        |                            |                 | - `correlation_range`    |
-        |                            |                 | - `hole_effect_range`    |
-        +----------------------------+-----------------+--------------------------+
-        |  :fun:`exponential_linear` | ['exponential', | - `sill`                 |
-        |                            |  'linear']      | - `nugget`               |
-        |                            |                 | - `correlation_range`    |
-        |                            |                 | - `hole_effect_range`    |
-        |                            |                 | - `decay_power`          |
-        +----------------------------+-----------------+--------------------------+
-        |  :fun:`gaussian_linear`    | ['gaussian',    | - `sill`                 |
-        |                            |  'linear']      | - `nugget`               |
-        |                            |                 | - `correlation_range`    |
-        |                            |                 | - `hole_effect_range`    |
-        +----------------------------+-----------------+--------------------------+
-
+        +----------------------------+-------------------------------+---------------------------+
+        | :func:`variogram`          | Input                         | Parameters                |
+        | model                      |                               |                           |
+        +============================+===============================+===========================+
+        | :py:func:`cubic`           | ``'cubic'``                   | - ``sill``                |
+        |                            |                               | - ``nugget``              |
+        |                            |                               | - ``correlation_range``   |
+        +----------------------------+-------------------------------+---------------------------+
+        | :func:`exponential`        | ``'exponential'``             | - ``sill``                |
+        |                            |                               | - ``nugget``              |
+        |                            |                               | - ``correlation_range``   |
+        +----------------------------+-------------------------------+---------------------------+
+        | :func:`gaussian`           | ``'gaussian'``                | - ``sill``                |
+        |                            |                               | - ``nugget``              |
+        |                            |                               | - ``correlation_range``   |
+        +----------------------------+-------------------------------+---------------------------+
+        | :func:`jbessel`            | ``'jbessel'``                 | - ``sill``                |
+        |                            |                               | - ``nugget``              |
+        |                            |                               | - ``hole_effect_range``   |
+        +----------------------------+-------------------------------+---------------------------+
+        | :func:`kbessel`            | ``'kbessel'``                 | - ``sill``                |
+        |                            |                               | - ``nugget``              |
+        |                            |                               | - ``hole_effect_range``   |
+        +----------------------------+-------------------------------+---------------------------+
+        | :func:`linear`             | ``'linear'``                  | - ``nugget``              |
+        |                            |                               | - ``sill``                |
+        +----------------------------+-------------------------------+---------------------------+
+        | :func:`matern`             | ``'matern'``                  | - ``sill``                |
+        |                            |                               | - ``nugget``              |
+        |                            |                               | - ``correlation_range``   |
+        |                            |                               | - ``smoothness_parameter``|
+        +----------------------------+-------------------------------+---------------------------+
+        | :func:`nugget`             | ``'nugget'``                  | - ``nugget``              |
+        |                            |                               | - ``sill``                |
+        +----------------------------+-------------------------------+---------------------------+
+        | :func:`pentaspherical`     | ``'pentaspherical'``          | - ``sill``                |
+        |                            |                               | - ``nugget``              |
+        |                            |                               | - ``correlation_range``   |
+        +----------------------------+-------------------------------+---------------------------+
+        | :func:`power`              | ``'power'``                   | - ``nugget``              |
+        |                            |                               | - ``sill``                |
+        |                            |                               | - ``power_exponent``      |
+        +----------------------------+-------------------------------+---------------------------+
+        | :func:`quadratic`          | ``'quadratic'``               | - ``sill``                |
+        |                            |                               | - ``nugget``              |
+        |                            |                               | - ``correlation_range``   |
+        |                            |                               | - ``shape_parameter``     |
+        +----------------------------+-------------------------------+---------------------------+
+        | :func:`sinc`               | ``'sinc'``                    | - ``sill``                |
+        |                            |                               | - ``nugget``              |
+        |                            |                               | - ``hole_effect_range``   |
+        +----------------------------+-------------------------------+---------------------------+
+        | :func:`spherical`          | ``'spherical'``               | - ``sill``                |
+        |                            |                               | - ``nugget``              |
+        |                            |                               | - ``correlation_range``   |
+        +----------------------------+-------------------------------+---------------------------+
+        | :func:`bessel_exponential` | ``['bessel', 'exponential']`` | - ``sill``                |
+        |                            |                               | - ``nugget``              |
+        |                            |                               | - ``correlation_range``   |
+        |                            |                               | - ``decay_power``         |
+        |                            |                               | - ``hole_effect_range``   |
+        +----------------------------+-------------------------------+---------------------------+
+        | :func:`bessel_gaussian`    | ``['bessel', 'gaussian']``    | - ``sill``                |
+        |                            |                               | - ``nugget``              |
+        |                            |                               | - ``correlation_range``   |
+        |                            |                               | - ``decay_power``         |
+        |                            |                               | - ``hole_effect_range``   |
+        +----------------------------+-------------------------------+---------------------------+
+        | :func:`cosine_exponential` | ``['cosine', 'exponential']`` | - ``sill``                |
+        |                            |                               | - ``nugget``              |
+        |                            |                               | - ``correlation_range``   |
+        |                            |                               | - ``hole_effect_range``   |
+        |                            |                               | - ``enhance_semivariance``|
+        +----------------------------+-------------------------------+---------------------------+
+        | :func:`cosine_gaussian`    | ``['cosine', 'gaussian']``    | - ``sill``                |
+        |                            |                               | - ``nugget``              |
+        |                            |                               | - ``correlation_range``   |
+        |                            |                               | - ``hole_effect_range``   |
+        +----------------------------+-------------------------------+---------------------------+
+        | :func:`exponential_linear` | ``['exponential', 'linear']`` | - ``sill``                |
+        |                            |                               | - ``nugget``              |
+        |                            |                               | - ``correlation_range``   |
+        |                            |                               | - ``hole_effect_range``   |
+        |                            |                               | - ``decay_power``         |
+        +----------------------------+-------------------------------+---------------------------+
+        | :func:`gaussian_linear`    | ``['gaussian', 'linear']``    | - ``sill``                |
+        |                            |                               | - ``nugget``              |
+        |                            |                               | - ``correlation_range``   |
+        |                            |                               | - ``hole_effect_range``   |
+        +----------------------------+-------------------------------+---------------------------+
+        
     Returns
-    ----------
-    variogram: np.ndarray
+    -------
+    variogram : np.ndarray
         An array containing the (normalized) semivariance for each lag bin.
     """
 
@@ -1977,23 +1980,23 @@ def fit_variogram(
 
     Parameters
     ----------
-    lags : np.ndarray
+    lags : |np.ndarray[float]|
         Array of lag distances from empirical variogram computation.
-    lag_counts : np.ndarray
+    lag_counts : |np.ndarray[int]|
         Number of data point pairs contributing to each lag estimate. Used as optimization weights.
-    gamma : np.ndarray
+    gamma : |np.ndarray[float]|
         Empirical semivariogram values (standardized semivariance) at each lag.
     model : str or List[str]
         Theoretical variogram model specification. Single string for basic models
-        ('exponential', 'gaussian', 'spherical', 'jbessel', 'linear'). List of two strings
-        for composite models (['bessel', 'exponential'], ['bessel', 'gaussian'],
-        ['cosine', 'exponential']).
-    model_parameters : lmfit.Parameters
+        (e.g., ``'exponential'``, ``'gaussian'``, ``'spherical'``, ``'jbessel'``, ``'linear'``). 
+        List of two strings for composite models (e.g., ``['bessel', 'exponential']``, 
+        ``['bessel', 'gaussian']``, ``['cosine', 'exponential']``).
+    model_parameters : lmfit..parameters.Parameters
         Parameter object containing initial values, bounds, and constraints for optimization.
         Required parameters depend on the selected model.
     optimizer_kwargs : dict, default={}
-        Additional keyword arguments passed to `lmfit.minimize()`. Common options include
-        'max_nfev' for maximum function evaluations and solver-specific parameters.
+        Additional keyword arguments passed to :func:`lmfit.minimizer.minimize()`. Common options 
+        include ``'max_nfev'`` for maximum function evaluations and solver-specific parameters.
 
     Returns
     -------
@@ -2004,36 +2007,21 @@ def fit_variogram(
 
     Notes
     -----
-    The optimization minimizes the weighted objective function:
+    The optimization minimizes the weighted residual sum of squares:
 
     .. math::
-        \\min_{θ} \\sum_{i=1}^{n} w_i [γ_{emp}(h_i) - γ_{model}(h_i; θ)]^2
+        \\min_{\\theta} \\sum_{b=1}^{n} \\hat{w}_b \\left[ \\gamma_\\text{empirical}(h_b) - 
+        \\gamma_\\text{model}(h_b; \\theta) \\right]^2
 
-    where w_i = lag_counts[i] are the weights and θ represents the model parameters.
+    where :math:`n` is the number of lag bins and :math:`b` indexes those lag bins 
+    (:math:`b=1, \\dots, n`). The weights :math:`\\hat{w}_b` are associated with each lag bins 
+    and are normalized where:
+    
+    .. math::
+        \\hat{w}_b = \\frac{N(h_b)}{\\sum\\limits_{b=1}^{n} N(h_b)}
 
-    **Available Models:**
-
-    *Single Models:*
-    - 'cubic': Smooth cubic polynomial with finite range
-    - 'exponential': C₀ + C₁(1 - exp(-h/a))
-    - 'gaussian': C₀ + C₁(1 - exp(-h²/a²))
-    - 'jbessel': C₀ + C₁(1 - J₁(h/a)/(h/2a)) - exhibits hole effects
-    - 'kbessel': K-Bessel function model
-    - 'linear': C₀ + C₁·h - unbounded growth
-    - 'nugget': Pure nugget effect (no spatial correlation)
-    - 'pentaspherical': Quintic polynomial with smooth transitions
-    - 'power': Power law model for fractal processes
-    - 'quadratic': Rational quadratic with polynomial decay
-    - 'sinc': Sinc function with oscillatory behavior
-    - 'spherical': Piecewise function with finite range
-
-    *Composite Models:*
-    - ['bessel', 'exponential']: Periodic patterns with exponential decay
-    - ['bessel', 'gaussian']: Periodic patterns with Gaussian smoothness
-    - ['cosine', 'exponential']: Sinusoidal modulation with exponential decay
-
-    The function uses Trust Region Reflective algorithm (default in lmfit) which handles parameter
-    bounds robustly and is suitable for the non-linear nature of variogram models.
+    The function uses Trust Region Reflective algorithm (default in `lmfit.minimizer.minimize()`) 
+    which handles parameter bounds robustly and is suitable for the non-linear nature of variogram models.
 
     References
     ----------

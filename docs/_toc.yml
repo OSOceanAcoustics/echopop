@@ -49,5 +49,18 @@ parts:
   - file: glossary
 - caption: Help & references
   chapters:
-  - file: api
-  - file: zbibliography
+    - file: api/index
+      sections:
+        - file: api/api_ingest
+        - file: api/api_survey
+        - file: api/api_geostatistics
+        - file: api/inversion/index
+          title: Scattering models and inversion
+          sections:
+          - file: api/inversion/api_basic_ops
+          - file: api/inversion/api_scatteringmod
+          - file: api/inversion/api_invtslength
+          - file: api/inversion/api_invmatrix
+        - file: api/api_utils
+        - file: api/api_graphics
+    - file: zbibliography

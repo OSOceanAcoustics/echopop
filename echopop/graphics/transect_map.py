@@ -95,41 +95,39 @@ def plot_transect_map(
         Name of the column to plot.
     projection : str, default='EPSG:4326'
         CRS for the plot. This should be either a projected or geodetic coordinate system definition
-        compatible with :class:`geopandas.GeoDataFrame`
-        (see https://geopandas.org/en/stable/docs/reference/api/geopandas.GeoDataFrame.html).
+        compatible with :class:`geopandas.GeoDataFrame`.
     coordinate_names : tuple[str], default=('longitude', 'latitude')
-        Names of the coordinate columns. This is a tuple with an expected order of 'x' and then 'y'.
+        Names of the coordinate columns. This is a tuple with an expected order of ``'x'`` and then 
+        ``'y'``.
     scatter_kwargs : dict, optional
-        Additional keyword arguments passed directly to :meth:`matplotlib.axes.Axes.scatter`
-        ([docs](https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.scatter.html)).
-        For example, you can control marker size, color, alpha, etc.
-        Example: `scatter_kwargs={'s': 20, 'c': 'red', 'alpha': 0.7}`
+        Additional keyword arguments passed directly to :meth:`matplotlib.axes.Axes.scatter`.
+        For example, you can control marker size, color, alpha, etc., such as: 
+        ``scatter_kwargs={'s': 20, 'c': 'red', 'alpha': 0.7}``
     transect_kwargs : dict, optional
         Additional keyword arguments passed to :meth:`geopandas.GeoDataFrame.plot` for transect
-        lines. For example, you can control line color, width, style, etc.
-        Example: `transect_kwargs={'color': 'black', 'linewidth': 1.5}`
+        lines. For example, you can control line color, width, style, etc. such as:
+        ``transect_kwargs={'color': 'black', 'linewidth': 1.5}``
     coast_kwargs : dict, optional
-        Additional keyword arguments passed to the coastline plotting function (e.g., Cartopy's
-        `ax.add_feature`). These control the appearance of the coastline overlay.
-        Example: `coast_kwargs={'edgecolor': 'black', 'linewidth': 0.5}`
+        Additional keyword arguments passed to the coastline plotting function such as 
+        :meth:`cartopy.mpl.geoaxes.GeoAxes.add_feature()`. These control the appearance of the 
+        coastline overlay. Example: ``coast_kwargs={'edgecolor': 'black', 'linewidth': 0.5}``
     axis_kwargs : dict, optional
         Additional keyword arguments passed to axis formatting functions (e.g., setting
         axis limits, labels, or grid). These are merged with any defaults and passed to
         the axis/axes object.
-        Example: `axis_kwargs={'xlabel': 'Longitude', 'ylabel': 'Latitude', 'xlim': (-130, -120)}`
+        Example: ``axis_kwargs={'xlabel': 'Longitude', 'ylabel': 'Latitude', 'xlim': (-130, -120)}``
     plot_kwargs : dict, optional
-        Additional keyword arguments passed to the main plotting function. These can
-        override values in `scatter_kwargs` or `transect_kwargs`.
-        Example: `plot_kwargs={'alpha': 0.8}`
+        Additional keyword arguments passed to the main plotting function, depending on
+        ``plot_type``. These are merged with the specific kwargs above and can override them.
+        Example: ``plot_kwargs={'alpha': 0.8}``
     colorbar_kwargs : dict, optional
-        Additional keyword arguments passed to :func:`matplotlib.pyplot.colorbar`
-        ([docs](https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.colorbar.html))
-        for customizing the colorbar. These control label, orientation, ticks, etc.
-        Example: `colorbar_kwargs={'label': 'Biomass (kg)', 'orientation': 'vertical'}`
+        Additional keyword arguments passed to :func:`matplotlib.pyplot.colorbar` for customizing
+        the colorbar. These control label, orientation, ticks, etc. Example: 
+        ``colorbar_kwargs={'label': 'Biomass (kg)', 'orientation': 'vertical'}``
     save_path : Path, optional
         Filepath for saving the figure.
     savefig_kwargs : dict, optional
-        Keyword arguments used by `matplotlib.pyplot.savefig` for saving the figure to the
+        Keyword arguments used by :func:`matplotlib.pyplot.savefig` for saving the figure to the
         associated save filepath.
 
     Returns
@@ -147,8 +145,8 @@ def plot_transect_map(
     Notes
     -----
     All keyword argument dictionaries are optional and are passed directly to the underlying
-    plotting functions. If a keyword is present in both a specific kwargs dict and `plot_kwargs`,
-    the value in `plot_kwargs` takes precedence.
+    plotting functions. If a keyword is present in both a specific kwargs dict and ``plot_kwargs``,
+    the value in ``plot_kwargs`` takes precedence.
     """
 
     # Create copies

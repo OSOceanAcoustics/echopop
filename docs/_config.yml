@@ -49,18 +49,29 @@ sphinx:
     'sphinx.ext.ifconfig',
     'sphinx.ext.githubpages',
     'sphinx.ext.napoleon',
-    'sphinx_tippy'
+    'sphinx_tippy',
   ]
   config:
-    autodoc_default_options:
-      members: true
-      undoc-members: true
-      inherited-members: true
+    # autodoc_default_options:
+    #   members: true
+    #   undoc-members: true
+    #   inherited-members: true
     autosummary_generate: true  # Automatically generate stub files for all documented members
     bibtex_reference_style: author_year
     html_extra_path: ["_static"]
     numpydoc_class_members_toctree: false
     tippy_enable_mathjax: true
     numfig: false
-    myst_footnote_transition: False
+    napoleon_use_rtype: false
+    myst_footnote_transition: false    
     bibtex_bibfiles: ["references.bib"]
+    intersphinx_mapping:
+      cartopy: ["https://cartopy.readthedocs.io/stable/", null]
+      geopandas: ["https://geopandas.org/en/stable/", null]     
+      lmfit: ["https://lmfit.github.io/lmfit-py/", null]
+      matplotlib: ["https://matplotlib.org/stable/", null]
+      numpy: ["https://numpy.org/doc/stable/", null]
+      pandas: ["https://pandas.pydata.org/pandas-docs/stable/", null] 
+      shapely: ["https://shapely.readthedocs.io/en/stable/", null]
+      verde: ["https://www.fatiando.org/verde/latest/", null]
+      xarray: ["https://docs.xarray.dev/en/stable/", null]

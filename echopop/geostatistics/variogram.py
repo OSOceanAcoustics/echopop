@@ -625,22 +625,28 @@ class Variogram:
 
     A variogram (or semivariogram) is a fundamental tool in geostatistics that describes
     the spatial correlation structure of a variable as a function of distance. The empirical
-    semivariogram γ(h) is defined as:
+    semivariogram :math:`\\hat{\\gamma}(h)` is defined as:
 
     .. math::
-        γ(h) = \\frac{1}{2N(h)} \\sum_{i=1}^{N(h)} [Z(x_i) - Z(x_i + h)]^2
+        \\hat{\\gamma}(h) = \\frac{1}{2N(h)} \\sum\\limits_{i<j:\\; h_{ij}\\approx h}
+            \\bigl(z(\\mathbf{x}_j)-z(\\mathbf{x}_i)\\bigr)^2
 
-    where Z(x_i) is the value at location x_i, h is the lag distance, and N(h) is the
-    number of pairs separated by distance h.
+    here :math:`z(\\mathbf{x}_i)` and :math:`z(\\mathbf{x}_j)` denote the observed (realized) values 
+    of the variable at sample locations :math:`\\mathbf{x}_i` and :math:`\\mathbf{x}_j`, 
+    respectively, and :math:`N(h)` is the number of pairs separated by distance h.
 
     The class implements a standardized semivariogram approach where the semivariance
     is normalized by the product of head and tail standard deviations:
 
     .. math::
-        γ_{std}(h) = \\frac{γ(h)}{σ_{head}(h) \\cdot σ_{tail}(h)}
+        \\hat{\\gamma}_{\\text{std}}(h) = \\frac{1}{2N(h)} \\sum_{i<j:\\; h_{ij}\\approx h} 
+        \\frac{[z(\\mathbf{x}_j) - z(\\mathbf{x}_i)]^2}{\\sigma(\\mathbf{x}_j) \\cdot 
+        \\sigma(\\mathbf{x}_i)}
 
-    This standardization helps account for local variance heterogeneity and provides
-    more robust variogram estimates for irregularly distributed data [1]_.
+    where :math:`\\sigma(\\mathbf{x}_i)` and :math:`\\sigma(\\mathbf{x}_j)` are local standard 
+    deviations at :math:`\\mathbf{x}_i` and :math:`\\mathbf{x}_j`. This standardization helps 
+    account for local variance heterogeneity and provides more robust variogram estimates for 
+    irregularly distributed data [1]_.
 
     Parameters
     ----------
@@ -652,15 +658,15 @@ class Variogram:
         Typical values range from 10-30 depending on data density and spatial extent.
     coordinate_names : Tuple[str, str], default=('x', 'y')
         Column names for the spatial coordinates in input DataFrames.
-        Format: (horizontal_axis, vertical_axis).
+        Format: ``(horizontal_axis, vertical_axis)``.
 
     Attributes
     ----------
-    gamma : np.ndarray or None
+    gamma : |np.ndarray[float]| or None
         The computed semivariance values for each lag distance.
-    lags : np.ndarray or None
+    lags : |np.ndarray[float]| or None
         The lag distances used in the variogram analysis.
-    lag_counts : np.ndarray or None
+    lag_counts : |np.ndarray[int]| or None
         The number of data pairs contributing to each lag estimate.
     lag_covariance : float or None
         The mean lag covariance between head and tail points.
@@ -715,27 +721,26 @@ class Variogram:
     -----
     The class implements several key applications for fisheries acoustic survey data:
 
-    1. **Standardized Semivariogram**: Uses local variance normalization to handle
-       heteroscedastic data common in biological surveys.
+    1. **Standardized Semivariogram**: Uses local variance normalization to handle heteroscedastic 
+       data common in biological surveys.
 
-    2. **Azimuth Filtering**: Supports directional variogram analysis for anisotropic
-       spatial patterns often observed in marine ecosystems.
+    2. **Azimuth Filtering**: Supports directional variogram analysis for anisotropic spatial 
+       patterns often observed in marine ecosystems.
 
-    3. **Robust Lag Estimation**: Uses weighted binning approaches that account for
-       irregular sampling patterns typical in acoustic transect surveys.
+    3. **Robust Lag Estimation**: Uses weighted binning approaches that account for irregular 
+       sampling patterns typical in acoustic transect surveys.
 
-    The theoretical variogram models available include single-family models
-    (exponential, Gaussian, spherical, Bessel functions) and composite models
-    that can capture complex spatial structures with both short-range correlation
-    and periodic patterns [2]_, [3]_.
+    The theoretical variogram models available include single-family models exponential, Gaussian, 
+    spherical, Bessel functions) and composite models that can capture complex spatial structures 
+    with both short-range correlation and periodic patterns [2]_, [3]_.
 
     References
     ----------
     .. [1] Cressie, N.A.C. (1993). *Statistics for Spatial Data*. John Wiley & Sons.
-    .. [2] Chilès, J.P., and Delfiner, P. (2012). *Geostatistics: Modeling Spatial
-       Uncertainty*. 2nd ed. John Wiley & Sons.
-    .. [3] Rivoirard, J., Simmonds, J., Foote, K.G., Fernandes, P., and Bez, N. (2000).
-       *Geostatistics for Estimating Fish Abundance*. Blackwell Science.
+    .. [2] Chilès, J.P., and Delfiner, P. (2012). *Geostatistics: Modeling Spatial Uncertainty*. 
+           2nd ed. John Wiley & Sons.
+    .. [3] Rivoirard, J., Simmonds, J., Foote, K.G., Fernandes, P., and Bez, N. (2000). 
+           *Geostatistics for Estimating Fish Abundance*. Blackwell Science.
 
     """
 
@@ -789,26 +794,17 @@ class Variogram:
         """
         Compute the empirical variogram from transect data.
 
-        Calculates the standardized semivariogram using the method described in
-        Rivoirard et al. (2000) [1]_, which is particularly suitable for fisheries
-        acoustic data with irregular sampling patterns and heterogeneous variance.
-
-        The empirical semivariogram is computed as:
-
-        .. math::
-            γ(h) = \\frac{1}{2N(h)} \\sum_{i=1}^{N(h)}
-            \\frac{[Z(x_i) - Z(x_i + h)]^2}{σ_{head}(h) \\cdot σ_{tail}(h)}
-
-        where the standardization by head and tail standard deviations accounts for
-        local variance heterogeneity.
+        Calculates the standardized semivariogram using the method described in Rivoirard et al. 
+        (2000) [1]_, which is particularly suitable for fisheries acoustic data with irregular 
+        sampling patterns and heterogeneous variance.
 
         Parameters
         ----------
-        data : pd.DataFrame
+        data : |pd.DataFrame|
             DataFrame containing georeferenced coordinates and the target variable. Must include
-            columns specified in `coordinate_names` and `variable`.
+            columns specified in ``coordinate_names`` and ``variable``.
         variable : str
-            Column name of the variable for variogram computation (e.g., 'biomass_density').
+            Column name of the variable for variogram computation (e.g., ``'biomass_density'``).
         azimuth_filter : bool, default=True
             If True, computes azimuth angles between point pairs to enable directional filtering.
             Useful for detecting spatial anisotropy.
@@ -816,14 +812,14 @@ class Variogram:
             Maximum azimuth angle deviation (in degrees) for including point pairs. Values less
             than 180° enable directional variogram analysis.
         force_lag_zero : bool, default=True
-            If True, forces the nugget effect to zero by prepending lag 0 with γ(0) = 0. This
-            assumes no measurement error or micro-scale variation.
+            If True, forces the nugget effect to zero by prepending lag 0 with 
+            :math:`\\gamma(0) = 0`. This assumes no measurement error or micro-scale variation.
 
         Notes
         -----
         The method uses a triangular mask to ensure each point pair is counted only once, avoiding
         redundant calculations in the distance matrix. For acoustic survey data, typical
-        `azimuth_angle_threshold` values of 45-90° can help identify along-track vs. across-track
+        ``azimuth_angle_threshold`` values of 45-90° can help identify along-track vs. across-track
         spatial patterns.
 
         The lag counts provide important information about the reliability of each lag estimate -
@@ -872,30 +868,41 @@ class Variogram:
         Fits parametric models of the form:
 
         .. math::
-            γ(h) = C_0 + C_1 \\cdot f(h; θ)
+            \\gamma(h) = C_0 + C_1 \\cdot \\mathscr{f}(h; \\theta)
 
-        where C₀ is the nugget, C₁ is the partial sill, f(h; θ) is the correlation function, and θ
-        represents model-specific parameters (range, shape, etc.).
+        where :math:`C_0` is the nugget (the value at zero lag), :math:`C_1` is the partial sill 
+        (:math:`C - C_0`), and :math:`\\mathscr{f}(h; \\theta)` is a correlation function that 
+        depends on lag :math:`h` and model-specific parameters :math:`\\theta` 
+        (e.g., range, sill, power)
 
         The optimization minimizes the weighted residual sum of squares:
 
         .. math::
-            \\min_{θ} \\sum_{i=1}^{n} w_i [γ_{emp}(h_i) - γ_{model}(h_i; θ)]^2
+            \\min_{\\theta} \\sum_{b=1}^{n} \\hat{w}_b \\left[ \\gamma_\\text{empirical}(h_b) - 
+            \\gamma_\\text{model}(h_b; \\theta) \\right]^2
 
-        where w_i are weights proportional to the number of pairs at each lag.
+        where :math:`n` is the number of lag bins and :math:`b` indexes those lag bins 
+        (:math:`b=1, \\dots, n`). The weights :math:`\\hat{w}_b` are associated with each lag bins 
+        and are normalized where:
+        
+        .. math::
+            \\hat{w}_b = \\frac{N(h_b)}{\\sum\\limits_{b=1}^{n} N(h_b)}
 
         Parameters
         ----------
         model : str or List[str]
             Theoretical variogram model name(s). Single string for basic models (e.g.,
-            'exponential', 'gaussian', 'spherical'). List of two strings for composite models
-            (e.g., ['bessel', 'exponential']).
+            ``'exponential'``, ``'gaussian'``, ``'spherical'``). List of two strings for composite
+            models (e.g., ``['bessel', 'exponential']``).
         model_parameters : lmfit.Parameters
             Initial parameter values and constraints for optimization. Required parameters depend
-            on the chosen model. See `variogram_models` module for model-specific requirements.
+            on the chosen model, but the formatting should follow 
+            :class:`lmfit.parameter.Parameters` specifications. See 
+            :func:`echopop.geostatistics.compute_variogram` for details on available models and 
+            their respective parameter requirements.
         optimizer_kwargs : dict, default={}
-            Additional arguments passed to `lmfit.minimize()`. Common options include 'max_nfev'
-            (maximum function evaluations) and solver-specific parameters.
+            Additional arguments passed to :func:`lmfit.minimizer.minimize`. Common options 
+            include ``'max_nfev'`` (maximum function evaluations) and solver-specific parameters.
 
         Returns
         -------
@@ -904,26 +911,6 @@ class Variogram:
 
         Notes
         -----
-        **Available Models:**
-
-        *Single Models:*
-        - 'exponential': Exponential decay, suitable for continuous processes
-        - 'gaussian': Gaussian (squared exponential), very smooth processes
-        - 'spherical': Spherical model with finite range
-        - 'jbessel': J-Bessel function, exhibits hole-effect patterns
-        - 'linear': Linear growth (unbounded)
-
-        *Composite Models:*
-        - ['bessel', 'exponential']: Combines periodic and exponential decay
-        - ['bessel', 'gaussian']: Combines periodic and Gaussian smoothness
-        - ['cosine', 'exponential']: Cosine modulation with exponential decay
-
-        **Parameter Guidelines:**
-        - `nugget`: Usually 0-20% of total variance
-        - `sill`: Total variance of the process
-        - `correlation_range`: Distance where correlation becomes negligible
-        - `hole_effect_range`: Controls periodicity in Bessel/cosine models
-
         The method uses Trust Region Reflective algorithm for bounded optimization, which handles
         parameter constraints robustly [1]_.
 

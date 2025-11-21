@@ -15,7 +15,7 @@ def load_single_stratum_sheet(
 
     Parameters
     ----------
-    strata_filepath : Path
+    strata_filepath : pathlib.Path
         Path to the Excel file containing stratification data
     sheet_name : str
         Name of the sheet to load
@@ -24,7 +24,7 @@ def load_single_stratum_sheet(
 
     Returns
     -------
-    pandas.DataFrame
+    |pd.DataFrame|
         Processed stratification DataFrame
     """
     # Read Excel file into memory
@@ -54,15 +54,15 @@ def load_strata(
         Path to the Excel file containing stratification data
     strata_sheet_map : dict
         Dictionary mapping stratification types to sheet names
-        (e.g., {"inpfc": "INPFC", "ks": "stratification1"})
+        (e.g., ``{"inpfc": "INPFC", "ks": "stratification1"}``)
     column_name_map : dict, optional
         Dictionary mapping original column names to new column names
-        (e.g., {"fraction_hake": "nasc_proportion", "haul": "haul_num"})
+        (e.g., ``{"fraction_hake": "nasc_proportion", "haul": "haul_num"}``)
 
     Returns
     -------
     dict
-        Dictionary containing stratification DataFrames keyed by stratification type
+        Dictionary containing stratification pandas.DataFrames keyed by stratification type
 
     Examples
     --------
@@ -93,20 +93,20 @@ def load_geostrata(
 
     Parameters
     ----------
-    geostrata_filepath : str or Path
+    geostrata_filepath : str or pathlib.Path
         Path to the Excel file containing geographic stratification data
     geostrata_sheet_map : dict
         Dictionary mapping stratification types to sheet names
-        (e.g., {"inpfc": "INPFC", "ks": "stratification1"})
+        (e.g., ``{"inpfc": "INPFC", "ks": "stratification1"}``)
     column_name_map : dict, optional
         Dictionary mapping original column names to new column names
-        (e.g., {"Latitude (upper limit)": "northlimit_latitude", "stratum": "stratum_num"})
+        (e.g., ``{"Latitude (upper limit)": "northlimit_latitude", "stratum": "stratum_num"}``)
 
     Returns
     -------
     dict
-        Dictionary containing geographic stratification DataFrames keyed by stratification type,
-        each with consolidated latitude intervals from INPFC and KS strata assignments
+        Dictionary containing geographic stratification pandas.DataFrames keyed by stratification 
+        type, each with consolidated latitude intervals from INPFC and KS strata assignments
     """
 
     if not geostrata_filepath.exists():
@@ -167,9 +167,9 @@ def join_strata_by_haul(
 
     Parameters
     ----------
-    data : pd.DataFrame or Dict[str, pd.DataFrame]
+    data : |pd.DataFrame| or Dict[str, |pd.DataFrame|]
         DataFrame or dictionary of DataFrames to join with strata
-    strata_df : pd.DataFrame
+    strata_df : |pd.DataFrame|
         Specific stratification DataFrame with stratum-haul key information
     default_stratum : float
         Default stratum value when there are no matching/corresponding values
@@ -178,7 +178,8 @@ def join_strata_by_haul(
 
     Returns
     -------
-    Same type as input data with stratification added
+    |pd.DataFrame| or Dict[str, |pd.DataFrame|]
+        Same type as input data with stratification added
     """
 
     # Get stratification columns (excluding join column)
@@ -228,16 +229,17 @@ def join_geostrata_by_latitude(
 
     Parameters
     ----------
-    data : pd.DataFrame or Dict[str, pd.DataFrame]
+    data : |pd.DataFrame| or Dict[str, |pd.DataFrame|]
         DataFrame or dictionary of DataFrames with latitude information
-    geostrata_df : pd.DataFrame
+    geostrata_df : |pd.DataFrame|
         Geographic stratification DataFrame with latitude boundaries and stratum info
     stratum_name : str, default="stratum_num"
         Name of the column containing stratum information
 
     Returns
     -------
-    Same type as input data with geostratification added
+    |pd.DataFrame| or Dict[str, |pd.DataFrame|]
+        Same type as input data with stratification added
     """
     # Sort the geostrata DataFrame by latitude
     geostrata_df = geostrata_df.copy().sort_values("northlimit_latitude")

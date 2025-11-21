@@ -49,4 +49,4 @@ Echopop is licensed under the open source [Apache 2.0 license](https://opensourc
 
 ---------------
 
-Copyright (c) 2022-2024, Echopop Developers.
+Copyright (c) 2022-2025, Echopop Developers.

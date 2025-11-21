@@ -53,7 +53,7 @@ class JollyHampton:
     References
     ----------
     Jolly, G.M., and Hampton, I. (1990). A stratified random transect design for acoustic surveys
-    of fish stocks. *Canadian Journal of Fisheries and Aquatic Sciences*, *47*(7), 1282-1291.
+    of fish stocks. _Canadian Journal of Fisheries and Aquatic Sciences_, _47_(7), 1282-1291.
     https://doi.org/10.1139/f90-147
 
     Examples

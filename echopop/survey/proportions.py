@@ -710,18 +710,18 @@ def stratum_averaged_weight(
     proportions_dict : Dict[str, pd.DataFrame]
         Dictionary of DataFrames with proportion data, keyed by group name (e.g., 'aged', 'unaged').
         Each DataFrame must contain the following columns:
-          - 'stratum_num': Stratum identifier
-          - 'sex': Sex category (e.g., 'female', 'male')
-          - 'length_bin': Length bin category
-          - 'proportion': Proportion within each group/stratum
-          - 'proportion_overall': Overall proportion across all strata
+        - 'stratum_num': Stratum identifier
+        - 'sex': Sex category (e.g., 'female', 'male')
+        - 'length_bin': Length bin category
+        - 'proportion': Proportion within each group/stratum
+        - 'proportion_overall': Overall proportion across all strata
 
     binned_weight_table : pd.DataFrame
         DataFrame with fitted weight values by sex and length bin.
         Must contain the following columns:
-          - 'sex': Sex category (e.g., 'female', 'male', 'all')
-          - 'length_bin': Length bin category matching those in proportions_dict
-          - 'weight_fitted': Weight values for each combination
+        - 'sex': Sex category (e.g., 'female', 'male', 'all')
+        - 'length_bin': Length bin category matching those in proportions_dict
+        - 'weight_fitted': Weight values for each combination
 
     Returns
     -------

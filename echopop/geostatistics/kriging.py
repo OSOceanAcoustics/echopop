@@ -34,11 +34,11 @@ def uniform_search_strategy(
 
     Parameters
     ----------
-    sparse_radii : np.ndarray[int]
-        Indices where there are fewer than `k_min` nearest neighbors.
-    valid_distances : np.ndarray[int]
+    sparse_radii : |np.ndarray[int]|
+        Indices where there are fewer than ``k_min`` nearest neighbors.
+    valid_distances : |np.ndarray[int]|
         The number of masked distance matrix values where extrapolation is required.
-    local_points : np.ndarray[float]
+    local_points : |np.ndarray[float]|
         An array with the sorted distances (from nearest to furthest) relative to each point.
     k_min : int
         The minimum number of nearest neighbors required for including values for kriging within
@@ -47,20 +47,20 @@ def uniform_search_strategy(
         The maximum number of nearest neighbors required for including values for kriging detected
         within the search radius.
     search_radius : float
-        The adaptive search radius that identifies the *k*-nearest neighbors around each
+        The adaptive search radius that identifies the :math:`k`-nearest neighbors around each
         georeferenced value that are subsequently kriged.
-    wr_indices : np.ndarray[int]
-        Indices of within-radius (WR) (i.e. < `k_max`) points.
-    oos_indices : np.ndarray[np.number]
-        Template array based on the size of the data input and `k_min` that will contain indices
-        where extrapolation is required where there are fewer than `k_min` nearest neighbors.
-    oos_weights : np.ndarray[float]
+    wr_indices : |np.ndarray[int]|
+        Indices of within-radius (WR) (i.e. < ``k_max``) points.
+    oos_indices : |np.ndarray[np.number]|
+        Template array based on the size of the data input and ``k_min`` that will contain indices
+        where extrapolation is required where there are fewer than ``k_min`` nearest neighbors.
+    oos_weights : |np.ndarray[float]|
         Weights applied to extraplolated values.
 
     Returns
     -------
-    Tuple[np.ndarray[np.number], np.ndarray[np.number], np.ndarray[np.number]]
-        A tuple with updated values for `wr_indices`, `oos_indices`, and `oos_weights` via a
+    Tuple[|np.ndarray[np.number]|, |np.ndarray[np.number]|, |np.ndarray[np.number]|]
+        A tuple with updated values for ``wr_indices``, ``oos_indices``, and ``oos_weights`` via a
         search strategy that applies unconstrained and uniform extrapolation to out-of-sample (OOS)
         points.
     """
@@ -104,20 +104,22 @@ def uniform_search_strategy(
     return wr_indices, oos_indices, oos_weights
 
 
-def search_radius_mask(distance_matrix: np.ndarray, search_radius: float) -> np.ndarray[float]:
+def search_radius_mask(
+    distance_matrix: np.ndarray[float], search_radius: float
+    ) -> np.ndarray[float]:
     """
     Generate a mask for the search radius to identify points within the search distance.
 
     Parameters
     ----------
-    distance_matrix : np.ndarray
+    distance_matrix : |np.ndarray[float]|
         Distance matrix between points.
     search_radius : float
         Maximum search distance for identifying neighbors.
 
     Returns
     -------
-    np.ndarray
+    |np.ndarray[float]|
         Masked distance matrix where distances beyond search_radius are set to NaN.
     """
     # Create a copy to avoid modifying the original
@@ -127,18 +129,18 @@ def search_radius_mask(distance_matrix: np.ndarray, search_radius: float) -> np.
     return masked_matrix
 
 
-def count_within_radius(distance_matrix_masked: np.ndarray) -> np.ndarray[int]:
+def count_within_radius(distance_matrix_masked: np.ndarray[float]) -> np.ndarray[int]:
     """
     Count the number of valid (non-NaN) distances for each point in the masked distance matrix.
 
     Parameters
     ----------
-    distance_matrix_masked : np.ndarray
+    distance_matrix_masked : |np.ndarray[float]|
         Masked distance matrix where invalid distances are NaN.
 
     Returns
     -------
-    np.ndarray
+    |np.ndarray[int]|
         Array containing the count of valid neighbors for each point.
     """
     # Count non-NaN values along each row
@@ -159,7 +161,7 @@ def adaptive_search_radius(
 
     Parameters
     ----------
-    distance_matrix : np.ndarray[float]
+    distance_matrix : |np.ndarray[float]|
         An array/matrix that includes the distances of each mesh points from every
         georeferenced along-transect interval.
     k_min : int
@@ -176,46 +178,46 @@ def adaptive_search_radius(
         points are extrapolated using equal weights. User-defined search strategies can be defined
         by parsing any of the internally computed variables:
 
-        - **sparse_radii : np.ndarray[int]** \n
-        Indices where there are fewer than `k_min` nearest neighbors.
+        - ``sparse_radii (|np.ndarray[int]|)`` \n
+        Indices where there are fewer than ``k_min`` nearest neighbors.
 
-        - **valid_distances : np.ndarray[int]** \n
+        - ``valid_distances (|np.ndarray[int]|)`` \n
         The number of masked distance matrix values where extrapolation is required.
 
-        - **local_points : np.ndarray[float]**\n
+        - ``local_points (|np.ndarray[float]|)``\n
         An array with the sorted distances (from nearest to furthest) relative to each point.
 
-        - **distance_matrix_masked : np.ndarray[float]** \n
+        - ``distance_matrix_masked (|np.ndarray[float]|)`` \n
         An array with the search-radius-masked nearest neighbor distances.
 
-        - **nearby_indices : np.ndarray[int]** \n
+        - ``nearby_indices (|np.ndarray[int]|)`` \n
         Indices of points that require extrapolation.
 
-        - **k_min : int** \n
+        - ``k_min (int)`` \n
         The minimum number of nearest neighbors required for including values for kriging within
         the search radius.
 
-        - **k_max : int** \n
+        - ``k_max (int)`` \n
         The maximum number of nearest neighbors required for including values for kriging detected
         within the search radius.
 
-        - **search_radius : float** \n
+        - ``search_radius (float)`` \n
         The adaptive search radius that identifies the *k*-nearest neighbors around each
         georeferenced value that are subsequently kriged.
 
-        - **wr_indices : np.ndarray[int]** \n
-        Indices of within-radius (WR) (i.e. < `k_max`) points.
+        - ``wr_indices (|np.ndarray[int]|)`` \n
+        Indices of within-radius (WR) (i.e. < ``k_max``) points.
 
-        - **oos_indices : np.ndarray[np.number]** \n
-        Template array based on the size of the data input and `k_min` that will contain indices
-        where extrapolation is required where there are fewer than `k_min` nearest neighbors.
-
-        - **oos_weights : np.ndarray[float]**
+        - ``oos_indices (|np.ndarray[np.number]|)`` \n
+        Template array based on the size of the data input and ``k_min`` that will contain indices
+        where extrapolation is required where there are fewer than ``k_min`` nearest neighbors.
+        
+        - ``oos_weights (|np.ndarray[float]|)``
         Weights applied to extraplolated values.
 
     Returns
     -------
-    Tuple[np.ndarray, np.ndarray[np.number], np.ndarray[np.number], np.ndarray[float]]
+    Tuple[|np.ndarray[float]|, |np.ndarray[int]|, |np.ndarray[int]|, |np.ndarray[float]|]
         A tuple with arrays representing the k-nearest distances, within-radius (WR) indices,
         out-of-sample (OOS) indices that indicate which points will be extrapolated, and the
         OOS weights applied to values that are extrapolated.
@@ -283,7 +285,7 @@ def ordinary_kriging_matrix(
 
     Parameters
     ----------
-    local_distance_matrix : np.ndarray[float]
+    local_distance_matrix : |np.ndarray[float]|
         A 2D array with the numeric distances between points.
     variogram_parameters : Dict[str, Any]
         Dictionary describing the variogram model and parameters, such as:
@@ -296,7 +298,7 @@ def ordinary_kriging_matrix(
 
     Returns
     -------
-    np.ndarray[float]
+    |np.ndarray[float]|
         A 2D array representing the (n+1, n+1) kriging covariance matrix including the unbiasedness
         constraint.
 
@@ -407,7 +409,7 @@ def kriging_lambda(
 
     Returns
     -------
-    np.ndarray[float]
+    |np.ndarray[float]|
         A 1D array of length :math:`n + 1`, where the first :math:`n` values are the kriging
         weights :math:`\\lambda_i`, and the final element is the Lagrange multiplier :math:`\\mu`
         enforcing the unbiasedness constraint.
@@ -460,14 +462,14 @@ def kriging_lambda(
 
 
 def parse_stacked_kriging_array(
-    stacked_array: np.ndarray[float], k_min: int, k_max: int, **kwargs
+    stacked_array: np.ndarray[np.number], k_min: int, k_max: int, **kwargs
 ) -> Tuple[np.ndarray[float], np.ndarray[int], np.ndarray[float], np.ndarray[float]]:
     """
     Helper function for parsing the horizontally stacked array when interpolating points via kriging
 
     Parameters
     ----------
-    stacked_array : np.ndarray[np.number]
+    stacked_array : |np.ndarray[np.number]|
         A 1D array that is encoded with various parameters including the out-of-sample weights,
         extrapolation and interpolation indices, local lagged semivariogram, and range distance
         estimates.
@@ -480,7 +482,7 @@ def parse_stacked_kriging_array(
 
     Returns
     -------
-    Tuple[np.ndarray[float], np.ndarray[int], np.ndarray[float], np.ndarray[float]]
+    Tuple[|np.ndarray[float]|, |np.ndarray[int]|, |np.ndarray[float]|, |np.ndarray[float]|]
         A tuple comprising the out-of-sample weights, composite indices for values that will be
         either interpolated or extrapolated, the local lagged semivariogram, and the range distance
         values.
@@ -517,14 +519,14 @@ def kriging_point_estimator(
 
     Parameters
     ----------
-    kriging_array: np.ndarray
+    kriging_array: |np.ndarray[np.number]|
         Horizontally stacked 1D array containing kriging indices and local semivariogram values.
         Expected to include:
         - Outside weight scalar,
         - Within- and out-of-sample indices,
         - Lagged semivariogram values (M2),
         - Local range estimates.
-    data_array: np.ndarray
+    data_array: |np.ndarray[float]|
         A 2D array of shape (n, 3), where columns represent [x-coordinates, y-coordinate,
         variable].
     kriging_parameters: dict
@@ -545,7 +547,7 @@ def kriging_point_estimator(
 
     Returns
     -------
-    np.ndarray[float]
+    |np.ndarray[float]|
         A 1D array of length 3 containing:
         - point estimate (float): the kriging predicted value at the target location,
         - kriged variance (float): variance estimate associated with the kriging prediction,
@@ -616,94 +618,98 @@ def kriging_point_estimator(
     return np.array([point_estimate, kriged_variance, sample_variance])
 
 
-def krige(
+def ordinary_kriging(
     transects: pd.DataFrame,
     kriging_mesh: pd.DataFrame,
     coordinate_names: Tuple[str, str],
     variable: str,
     kriging_parameters: Dict[str, Any],
     variogram_parameters: Dict[str, Any],
-    adaptive_search_strategy: Callable = uniform_search_strategy,
+    adaptive_search_strategy: Callable = uniform_search_strategy
 ) -> np.ndarray[float]:
     """
-    Use kriging to interoplate data
+    Use ordinary kriging to interpolate georeferenced data onto a grid
 
     Parameters
     ----------
-    transects : pd.DataFrame
+    transects : pandas.DataFrame
         Dataframe including georeferenced data
-    kriging_mesh : pd.DataFrame
+    kriging_mesh : pandas.DataFrame
         Grid data that has been transformed
     coordinate_names : Tuple[str, str]
-        Names of the coordinate columns when using DataFrames. Expected format: (x_col, y_col).
+        Names of the coordinate columns when using DataFrames. Expected format: ``(x_col, y_col)``.
     variable : str
         The variable used for computing the empirical variogram (e.g. 'biomass_density'), which
         must exist as a column in 'transects'.
     kriging_parameters: dict
         Dictionary of kriging parameters, must contain keys:
-        - 'k_min' (int): minimum number of neighbors,
-        - 'k_max' (int): maximum number of neighbors,
-        - 'search_radius' (float): radius to consider neighbors,
-        - 'anisotropy' (float): truncation threshold for singular values in SVD solver.
+        
+        - ``k_min (int)``: minimum number of neighbors,
+        - ``k_max (int)``: maximum number of neighbors,
+        - ``search_radius (float)``: radius to consider neighbors,
+        - ``anisotropy (float)``: truncation threshold for singular values in SVD solver.
+        
     variogram_parameters : Dict[str, Any]
         Dictionary describing the variogram model and parameters, such as:
-        - 'model' (str or list of str): variogram model names (e.g., 'bessel', 'exponential'),
-        - 'nugget' (float): nugget effect,
-        - 'sill' (float): sill parameter,
+        
+        - ``model`` (str or list of str): variogram model names (e.g., 'bessel', 'exponential'),
+        - ``nugget`` (float): nugget effect,
+        - ``sill`` (float): sill parameter,
         - 'correlation_range' (float): range parameter,
         - 'hole_effect_range' (float): hole effect range,
         - 'decay_power' (float): power parameter for power variogram.
     adaptive_search_strategy : Callable, \
-        default=:func:`echopop.nwfsc_feat.spatial.uniform_search_strategy`
+        default = :func:`echopop.geostatistics.uniform_search_strategy`
         A `Callable` function that defaults to using a uniform search strategy where out-of-sample
         points are extrapolated using equal weights. User-defined search strategies can be defined
         by parsing any of the internally computed variables:
-
-        - **sparse_radii : np.ndarray[int]** \n
-        Indices where there are fewer than `k_min` nearest neighbors.
-
-        - **valid_distances : np.ndarray[int]** \n
-        The number of masked distance matrix values where extrapolation is required.
-
-        - **local_points : np.ndarray[float]**\n
-        An array with the sorted distances (from nearest to furthest) relative to each point.
-
-        - **distance_matrix_masked : np.ndarray[float]** \n
-        An array with the search-radius-masked nearest neighbor distances.
-
-        - **nearby_indices : np.ndarray[int]** \n
-        Indices of points that require extrapolation.
-
-        - **k_min : int** \n
-        The minimum number of nearest neighbors required for including values for kriging within
-        the search radius.
-
-        - **k_max : int** \n
+        
+        - ``sparse_radii (|np.ndarray[int]|)`` \n
+          Indices where there are fewer than ``k_min`` nearest neighbors.
+        
+        - ``valid_distances (|np.ndarray[int]|)`` \n
+          The number of masked distance matrix values where extrapolation is required.
+        
+        - ``local_points (|np.ndarray[float]|)``\n
+          An array with the sorted distances (from nearest to furthest) relative to each point.
+        
+        - ``distance_matrix_masked (|np.ndarray[float]|)`` \n
+          An array with the search-radius-masked nearest neighbor distances.
+        
+        - ``nearby_indices (|np.ndarray[int]|)`` \n
+          Indices of points that require extrapolation.
+        
+        - ``k_min (int)`` \n
+          The minimum number of nearest neighbors required for including values for kriging within
+          the search radius.
+        
+        - ``k_max (int)`` \n
         The maximum number of nearest neighbors required for including values for kriging detected
         within the search radius.
-
-        - **search_radius : float** \n
-        Maximum distance (in coordinate units) from the target location to consider neighbors for
-        adaptive kriging. Only points within this radius are eligible for inclusion in the
-        *k*-nearest neighbor search. The adaptive search radius that identifies the *k*-nearest
-        neighbors around each georeferenced value that are subsequently kriged.
-
-        - **wr_indices : np.ndarray[int]** \n
-        Indices of within-radius (WR) (i.e. < `k_max`) points.
-
-        - **oos_indices : np.ndarray[np.number]** \n
-        Template array based on the size of the data input and `k_min` that will contain indices
-        where extrapolation is required where there are fewer than `k_min` nearest neighbors.
-
-        - **oos_weights : np.ndarray[float]**
-        Weights applied to extraplolated values.
+        
+        - ``search_radius (float)`` \n
+          Maximum distance (in coordinate units) from the target location to consider neighbors for
+          adaptive kriging. Only points within this radius are eligible for inclusion in the
+          *k*-nearest neighbor search. The adaptive search radius that identifies the *k*-nearest
+          neighbors around each georeferenced value that are subsequently kriged.
+        
+        - ``wr_indices (|np.ndarray[int]|)`` \n
+          Indices of within-radius (WR) (i.e. < ``k_max``) points.
+        
+        - ``oos_indices (|np.ndarray[np.number]|)`` \n
+          Template array based on the size of the data input and ``k_min`` that will contain indices
+          where extrapolation is required where there are fewer than ``k_min`` nearest neighbors.
+        
+        - ``oos_weights (|np.ndarray[float]|)``
+          Weights applied to extraplolated values.
 
     Returns
     -------
-    A 1D array of the same length as `transect_df` containing:
-        - point estimate (float): the kriging predicted value at the target location,
-        - kriged variance (float): variance estimate associated with the kriging prediction,
-        - sample variance (float): coefficient of variation based variance estimate,
+    A 1D array of the same length as ``transect_df`` containing:
+    
+        - point estimate (``float``): the kriging predicted value at the target location,
+        - kriged variance (``float``): variance estimate associated with the kriging prediction,
+        - sample variance (``float``): coefficient of variation based variance estimate,
           set to NaN if the point estimate is effectively zero to avoid division by zero.
 
     Notes
@@ -760,7 +766,7 @@ def krige(
 
 
 def project_kriging_results(
-    kriged_estimates: np.ndarray,
+    kriged_estimates: np.ndarray[float],
     kriging_mesh: pd.DataFrame,
     transects: pd.DataFrame,
     variable: str,
@@ -771,27 +777,27 @@ def project_kriging_results(
 
     Parameters
     ----------
-    kriged_estimates : np.ndarray, shape (n, 3)
+    kriged_estimates : |np.ndarray[float]|, shape (n, 3)
         Kriged values with columns: [estimate, kriging variance, sample variance]
-    kriging_mesh : pd.DataFrame
+    kriging_mesh : |pd.DataFrame|
         Grid data that has been transformed
-    transects : pd.DataFrame
+    transects : |pd.DataFrame|
         Dataframe including georeferenced data
     coordinate_names : Tuple[str, str]
-        Names of the coordinate columns when using DataFrames. Expected format: (x_col, y_col).
+        Names of the coordinate columns when using DataFrames. Expected format: ``(x_col, y_col)``.
     variable : str
         The variable used for computing the empirical variogram (e.g. 'biomass_density'), which
-        must exist as a column in 'transects'.
+        must exist as a column in ``'transects'``.
     default_mesh_cell_area: Optional[float], default=None
         Default cell area for kriging mesh nodes when no area is provided within the kriging
-        mesh DataFrame.
+        mesh |pd.DataFrame|.
 
     Returns
     -------
-    Tuple[pd.DataFrame, float]
-        A tuple containing the output mesh DataFrame with columns including the kriged estimates
-        and variance, sample variance, and cell coefficient of variation (CV). The other value is
-        the overall CV computed for the entire kriging mesh.
+    Tuple[|pd.DataFrame|, float]
+        A tuple containing the output mesh |pd.DataFrame| with columns including the kriged 
+        estimates and variance, sample variance, and cell coefficient of variation (CV). The other 
+        value is the overall CV computed for the entire kriging mesh.
     """
 
     # Create copy
@@ -864,42 +870,64 @@ class Kriging:
     For ordinary kriging, the prediction at location x₀ is given by:
 
     .. math::
-        \\hat{Z}(x_0) = \\sum_{i=1}^n \\lambda_i Z(x_i)
+        \\mathbf{z}^*(\\mathbf{u}) = \\sum_{b=1}^n \\lambda_b(\\mathbf{u}) z(\\mathbf{u}_b)
 
-    subject to the unbiasedness constraint:
-
-    .. math::
-        \\sum_{i=1}^n \\lambda_i = 1
-
-        The kriging weights λᵢ are obtained by solving the kriging system:
+    where :math:`n` is the number of observed locations, :math:`z(\\mathbf{u}_b)` are the known values of a 
+    spatially varying variable at locations :math:`\\mathbf{u}_b`, and :math:`\\lambda_b(\\mathbf{u})` are the 
+    kriging weights assigned to all known locations :math:`\\mathbf{u}`. This kriging approach is subject 
+    to the unbiasedness constraint where:
 
     .. math::
-        \\begin{bmatrix}
-        K & \\mathbf{1} \\\\
-        \\mathbf{1}^\\top & 0
-        \\end{bmatrix}
-        \\begin{bmatrix}
-        \\boldsymbol{\\lambda} \\\\
-        \\mu
-        \\end{bmatrix}
-        =
-        \\begin{bmatrix}
-        \\mathbf{k} \\\\
-        1
-        \\end{bmatrix}
+        \\sum\\limits_{b=1}^n \\lambda_b = 1
 
-    where K is the n×n covariance matrix between known points, k is the vector of covariances
-    between known points and the prediction location, and μ is the Lagrange multiplier [1]_, [2]_.
+    The kriging weights :math:`\\lambda_b` are obtained by solving the kriging system:
+    
+    .. math::
+        \\mathbf{\Gamma} \\hat{\\mathbf{\\lambda}} = \\hat{\\mathbf{\\gamma}}_\\mathbf{u}
+        
+    where:
+    
+    .. math::
+
+        \\underbrace{
+            \\begin{bmatrix}
+                \\gamma_{1,1} & \\cdots & \\gamma_{1,n} & 1 \\\\
+                \\vdots & \\ddots & \\vdots & \\vdots \\\\
+                \\gamma_{n,1} & \\cdots & \\gamma_{n,n} & 1 \\\\
+                1 & \\cdots & 1 & 0
+            \\end{bmatrix}
+        }_{\\mathbf{\\Gamma}}
+        \\underbrace{
+            \\begin{bmatrix}
+                \\lambda_1 \\\\
+                \\vdots \\\\
+                \\lambda_n \\\\
+                \\mu
+            \\end{bmatrix}
+        }_{\\hat{\\mathbf{\\lambda}}} =
+        \\underbrace{
+            \\begin{bmatrix}
+                \\gamma(\\mathbf{u}_1 - \\mathbf{u}) \\\\
+                \\vdots \\\\
+                \\gamma(\\mathbf{u}_n - \\mathbf{u}) \\\\
+                1
+            \\end{bmatrix}
+        }_{\\mathbf{\\hat{\\gamma}}_\\mathbf{u}}\\\\
+            
+    Here, :math:`\\gamma_{i,j}` is the semivariance between locations :math:`i` and :math:`j`, 
+    :math:`\\gamma_{i,\\mathbf{u}} = \\gamma(\\mathbf{u}_i - \\mathbf{u})` is the semivariance 
+    between data point :math:`i` and target location :math:`\\mathbf{u}`, and 
+    :math:`\\mu` is the Lagrange multiplier enforcing the unbiasedness constraint [1]_, [2]_.
 
     Parameters
     ----------
-    mesh : pd.DataFrame
-        DataFrame containing the mesh grid used for interpolating the values from `data`. This
-        DataFrame must contain coordinate columns as specified in `coordinate_names`.
+    mesh : |pd.DataFrame|
+        DataFrame containing the mesh grid used for interpolating the values from ``data``. This
+        DataFrame must contain coordinate columns as specified in ``coordinate_names``.
 
         Optional columns include:
-        - 'area' (float): Cell areas in square nautical miles for projection calculations
-        - 'fraction' (float): Fraction of cell area if using default cell areas
+        - ``area`` (float): Cell areas in square nautical miles for projection calculations
+        - ``fraction`` (float): Fraction of cell area if using default cell areas
 
     coordinate_names : Tuple[str, str], default=("x", "y")
         Names of the coordinate columns that are shared between input data and mesh. Format:
@@ -908,26 +936,26 @@ class Kriging:
     kriging_params : Dict[str, Any]
         Dictionary containing kriging parameters required for interpolation:
 
-        - 'aspect_ratio' (float): Ratio of minor to major axis correlation ranges for anisotropy
+        - ``aspect_ratio (float)``: Ratio of minor to major axis correlation ranges for anisotropy
           handling. Values near 1 indicate isotropy, smaller values indicate directional elongation.
-        - 'k_min' (int): Minimum number of nearest neighbors for kriging (typically 3-8).
-        - 'k_max' (int): Maximum number of nearest neighbors for kriging (typically 8-20).
-        - 'search_radius' (float): Maximum distance for neighbor search in coordinate units.
-
+        - ``k_min (int)``: Minimum number of nearest neighbors for kriging (typically 3-8).
+        - ``k_max (int)``: Maximum number of nearest neighbors for kriging (typically 8-20).
+        - ``search_radius (float)``: Maximum distance for neighbor search in coordinate units.
+        
     variogram_params : Dict[str, Any]
         Dictionary containing variogram model parameters:
 
-        - 'model' (str or List[str]): Variogram model name(s) (e.g., 'exponential', 'gaussian',
-          'spherical', or composite models like ['bessel', 'exponential']).
-        - 'nugget' (float): Nugget effect representing micro-scale variability.
-        - 'sill' (float): Total variance (nugget + partial sill).
-        - 'correlation_range' (float): Correlation length scale.
-        - Additional parameters depending on model choice (e.g., 'hole_effect_range',
-          'decay_power').
+        - ``model`` (``str`` or ``List[str]``): Variogram model (e.g., ``'exponential'``, 
+          ``'gaussian'``, ``'spherical'``, or composite models like ``['bessel', 'exponential']``).
+        - ``nugget`` (``float``): Nugget effect representing micro-scale variability.
+        - ``sill`` (``float``): Total variance (nugget + partial sill).
+        - ``correlation_range`` (``float``): Correlation length scale.
+        - Additional parameters depending on model choice (e.g., ``hole_effect_range``,
+          ``decay_power``).
 
     Attributes
     ----------
-    mesh : pd.DataFrame
+    mesh : |pd.DataFrame|
         Original mesh grid for interpolation.
     coordinate_names : Tuple[str, str]
         Coordinate column names.
@@ -935,21 +963,20 @@ class Kriging:
         Kriging parameters dictionary.
     variogram_params : Dict[str, Any]
         Variogram model parameters dictionary.
-    mesh_cropped : pd.DataFrame or None
+    mesh_cropped : |pd.DataFrame| or None
         Cropped mesh grid to prevent extrapolation beyond survey boundaries.
     survey_cv : float or None
         Overall survey coefficient of variation after kriging.
 
     Methods
     -------
-    crop_mesh(crop_function=hull_crop, coordinate_names=("longitude", "latitude"), **kwargs)
+    crop_mesh
         Crop the mesh grid to prevent extrapolation beyond survey boundaries.
-    krige(transects, variable, extrapolate=True, default_mesh_cell_area=None,
-        adaptive_search_strategy=uniform_search_strategy)
+    krige
         Perform ordinary kriging interpolation and project results onto the mesh grid.
-    register_search_strategy(name, strategy)
+    register_search_strategy
         Register a custom adaptive search strategy function.
-    list_search_strategies()
+    list_search_strategies
         List all available adaptive search strategy names.
 
     Examples
@@ -1026,13 +1053,16 @@ class Kriging:
     custom boundary functions.
 
     **Typical Parameter Ranges:**
-    - k_min: 3-8 (minimum for stable estimates)
-    - k_max: 8-20 (balance between locality and stability)
-    - search_radius: 2-5× correlation range
-    - aspect_ratio: 0.1-1.0 (lower values = stronger anisotropy)
+    
+    - ``k_min``: 3-8 (minimum for stable estimates)
+    - ``k_max``: 8-20 (balance between locality and stability)
+    - ``search_radius``: 2-5× correlation range
+    - ``aspect_ratio``: 0.1-1.0 (lower values = stronger anisotropy)
 
     **Performance Considerations:**
-    - Computational complexity: O(n × m × k³) where n=mesh points, m=data points, k=neighbors
+    
+    - Computational complexity: :math:`\\mathcal{O}(n \\times m \\times k^3)` where :math:`n` = mesh 
+      points, :math:`m` = data points, :math:`k` = neighbors
     - Memory usage scales with mesh size and neighbor count
     - Large search radii increase computational cost but improve spatial continuity
 
@@ -1041,10 +1071,6 @@ class Kriging:
     .. [1] Cressie, N.A.C. (1993). *Statistics for Spatial Data*. John Wiley & Sons.
     .. [2] Chilès, J.P., and Delfiner, P. (2012). *Geostatistics: Modeling Spatial
        Uncertainty*. 2nd ed. John Wiley & Sons.
-    .. [3] Rivoirard, J., Simmonds, J., Foote, K.G., Fernandes, P., and Bez, N. (2000).
-       *Geostatistics for Estimating Fish Abundance*. Blackwell Science.
-    .. [4] Webster, R., and Oliver, M.A. (2007). *Geostatistics for Environmental
-       Scientists*. 2nd ed. John Wiley & Sons.
     """
 
     def __new__(
@@ -1146,27 +1172,27 @@ class Kriging:
         Parameters
         ----------
         crop_function : Callable, default=hull_crop
-            Function that defines the survey boundary for mesh subsetting. The default `hull_crop`
+            Function that defines the survey boundary for mesh subsetting. The default ``hull_crop``
             creates convex hull polygons around transect data with optional buffering. Custom
-            functions must accept `mesh` as a keyword argument. See
-            :func:`echopop.nwfsc_feat.spatial.hull_crop` for more details.
+            functions must accept ``mesh`` as a keyword argument. See 
+            :func:`echopop.geostatistics.hull_crop` for more details.
 
         coordinate_names : Tuple[str, str], default=("longitude", "latitude")
             Column names for spatial coordinates in the cropping function. Uses geographic
-            coordinates by default for compatibility with `hull_crop`.
+            coordinates by default for compatibility with ``hull_crop``.
 
         **kwargs
-            Additional arguments passed to the cropping function. For `hull_crop`:
+            Additional arguments passed to the cropping function. For ``hull_crop``:
 
-            - 'transects' (pd.DataFrame): Survey transect data for boundary definition
-            - 'num_nearest_transects' (int): Number of neighbors for local hull creation
-            - 'mesh_buffer_distance' (float): Buffer distance in nautical miles
-            - 'projection' (str): EPSG code for coordinate system (e.g., 'epsg:4326')
+            - ``'transects' (pandas.DataFrame)``: Survey transect data for boundary definition
+            - ``'num_nearest_transects'(int)``: Number of neighbors for local hull creation
+            - ``'mesh_buffer_distance' (float)``: Buffer distance in nautical miles
+            - ``'projection' (str)``: EPSG code for coordinate system (e.g., ``'epsg:4326'``)
 
         Returns
         -------
         None
-            Updates the `mesh_cropped` attribute with the subsetted mesh.
+            Updates the ``mesh_cropped`` attribute with the subsetted mesh.
 
         Notes
         -----
@@ -1178,6 +1204,7 @@ class Kriging:
         4. **Area Adjustment**: Updating cell areas for boundary cells if needed
 
         **Boundary Methods:**
+        
         - **Convex Hull**: Simple, conservative boundary (default)
         - **Alpha Shapes**: More flexible boundaries for complex geometries
         - **Custom Polygons**: User-defined survey strata or management areas
@@ -1236,79 +1263,89 @@ class Kriging:
 
         Parameters
         ----------
-        transects : pd.DataFrame
+        transects : |pd.DataFrame|
             Georeferenced survey data containing coordinates and the target variable. Must include
-            columns specified in `coordinate_names` and `variable`.
+            columns specified in ``coordinate_names`` and ``variable``.
 
         variable : str
-            Column name of the variable to interpolate (e.g., 'biomass_density').
+            Column name of the variable to interpolate (e.g., ``'biomass_density'``).
 
         extrapolate : bool, default=True
             If True, uses the full mesh grid (may extrapolate beyond data coverage). If False, uses
-            the cropped mesh (requires prior call to `crop_mesh()`).
-
+            the cropped mesh (requires prior call to 
+            :meth:`echopop.geostatistics.Kriging.crop_mesh`).
+            
         default_mesh_cell_area : float, optional
-            Default area (nmi²) for mesh cells when 'area' column is missing from mesh. Required if
-            mesh lacks area information and no 'fraction' column exists.
+            Default area (nmi²) for mesh cells when ``'area'`` column is missing from mesh. 
+            Required if mesh lacks area information and no ``'fraction'`` column exists.
 
         adaptive_search_strategy : str, default='uniform'
             Name of the search strategy for handling sparse data regions. Built-in strategies:
-            - 'uniform': Applies uniform weights to extrapolated points (default)
-            Use `register_search_strategy()` to add custom strategies.
+            
+            - ``'uniform'``: Applies uniform weights to extrapolated points (default). 
+
+            Use :meth:`echopop.geostatistics.Kriging.register_search_strategy` to add custom 
+            strategies.
 
         custom_search_kwargs : Dict[str, Any], default={}
             Additional keyword arguments passed to the adaptive search strategy function. Available
             parameters depend on the selected strategy but may include custom weighting schemes,
             distance thresholds, or algorithm-specific parameters. If the custom function
-            incorporates `coordinate_names` or `kriging_mesh` as arguments, they will be inherited
-            from the class instance. See :func:`echopop.nwfsc_feat.kriging.krige` for more details
-            on internal argument names that can be added to the custom function call.
+            incorporates ``coordinate_names`` or ``kriging_mesh`` as arguments, they will be 
+            inherited from the class instance. See 
+            :func:`echopop.geostatistics.uniform_strategy` for more details on internal argument 
+            names that can be added to the custom function call.
 
         Returns
         -------
-        pd.DataFrame
+        |pd.DataFrame|
             Kriged results with columns:
 
             - Original mesh columns (coordinates, area, etc.)
-            - '{variable}': Kriged estimates (renamed from 'estimate')
-            - 'kriged_variance': Prediction variance from kriging equations
-            - 'sample_variance': Coefficient of variation based variance
-            - 'cell_cv': Cell-level coefficient of variation
+            - ``{variable}``: Column name associated ``variable`` 
+            - ``'kriged_variance'``: Prediction variance from kriging equations
+            - ``'sample_variance'``: Coefficient of variation based variance
+            - ``'cell_cv'``: Cell-level coefficient of variation
 
         Raises
         ------
         KeyError
-            If required columns are missing from `transects` or mesh lacks area info.
+            If required columns are missing from ``transects`` or mesh lacks area info.
         AttributeError
-            If `extrapolate=False` but `mesh_cropped` is None.
+            If ``extrapolate=False`` but ``mesh_cropped`` is None.
         ValueError
-            If `adaptive_search_strategy` is not a registered strategy name.
+            If  ``adaptive_search_strategy`` is not a registered strategy name.
 
         Notes
         -----
         **Kriging Process:**
 
-        1. **Neighbor Search**: Find k-nearest neighbors within search radius
+        1. **Neighbor Search**: Find :math:`k`-nearest neighbors within search radius
         2. **Covariance Matrix**: Build spatial covariance structure using variogram
-        3. **Weight Calculation**: Solve kriging system with SVD for stability
+        3. **Weight Calculation**: Solve kriging system with singular value decomposition (SVD) 
+           for stability
         4. **Prediction**: Compute weighted estimates and prediction variance
         5. **Projection**: Scale results by cell areas for survey totals
 
         **Variance Components:**
+        
         - **Kriged Variance**: From kriging equations, measures prediction uncertainty
         - **Sample Variance**: CV-based measure incorporating data variability
         - **Survey CV**: Overall coefficient of variation for the entire survey
 
         **Quality Indicators:**
+        
         - Negative predictions are truncated to zero with warnings
         - High kriged variance indicates uncertain predictions
         - Large survey CV suggests high spatial variability or poor model fit
 
         **Search Strategy Options:**
+        
         The adaptive search handles regions with insufficient neighbors:
-        - **Interpolation**: k_min ≤ neighbors ≤ k_max within search radius
-        - **Extrapolation**: < k_min neighbors, uses distance-weighted nearest points
-        - **Full Extrapolation**: No neighbors within radius, uses k_min nearest
+        
+        - **Interpolation**: ``k_min`` ≤ neighbors ≤ ``k_max`` within search radius
+        - **Extrapolation**: < ``k_min`` neighbors, uses distance-weighted nearest points
+        - **Full Extrapolation**: No neighbors within radius, uses ``k_min`` nearest
 
         Examples
         --------
@@ -1399,7 +1436,7 @@ class Kriging:
         strategy_func = partial(strategy_callable, **custom_search_kwargs)
 
         # Apply ordinary kriging for interpolation
-        kriged_estimates = krige(
+        kriged_estimates = ordinary_kriging(
             transects=transects,
             kriging_mesh=kriging_mesh,
             coordinate_names=self.coordinate_names,

@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 import pandas as pd
 
@@ -8,14 +8,14 @@ def load_single_biological_sheet(
     biodata_filepath: Path,
     sheet_name: str,
     column_name_map: Dict = {},
-    subset_dict: Optional[Dict] = None,
+    subset_dict: Optional[Dict[str, Any]] = None,
 ) -> pd.DataFrame:
     """
     Load and process a single biological data sheet.
 
     Parameters
     ----------
-    biodata_filepath : Path
+    biodata_filepath : pathlib.Path
         Path to the Excel file
     sheet_name : str
         Name of the sheet to load
@@ -28,7 +28,7 @@ def load_single_biological_sheet(
 
     Returns
     -------
-    pd.DataFrame
+    |pd.DataFrame|
         Processed and validated biological data
     """
     # Read Excel file into memory
@@ -58,22 +58,22 @@ def load_biological_data(
 
     Parameters
     ----------
-    biodata_filepath : Path
+    biodata_filepath : pathlib.Path
         Path to the Excel file containing biological data
     biodata_sheet_map : dict
         Dictionary mapping dataset names to sheet names
-        (e.g., {"specimen": "biodata_specimen", "length": "biodata_length", "catch":
-        "biodata_catch"})
+        (e.g., ``{"specimen": "biodata_specimen", "length": "biodata_length", "catch":
+        "biodata_catch"}``)
     column_name_map : dict, optional
         Dictionary mapping original column names to new column names
-        (e.g., {"frequency": "length_count", "haul": "haul_num"})
+        (e.g., ``{"frequency": "length_count", "haul": "haul_num"}``)
     subset_dict : dict, optional
         Subset dictionary containing ships and species_code for filtering
-        Format: {"ships": {ship_id: {"survey": survey_id, "haul_offset": offset}}, "species_code":
-        [codes]}
+        Format: ``{"ships": {ship_id: {"survey": survey_id, "haul_offset": offset}}, "species_code":
+        [codes]}``
     biodata_label_map : dict, optional
-        Dictionary mapping column names to value replacement dictionaries
-        (e.g., {"sex": {1: "male", 2: "female", 3: "unsexed"}})
+        Dictionary mapping column names to value replacement dictionaries (e.g., 
+        ``{"sex": {1: "male", 2: "female", 3: "unsexed"}}``)
 
     Returns
     -------
@@ -121,16 +121,15 @@ def apply_ship_survey_filters(
 
     Parameters
     ----------
-    df : pd.DataFrame
+    df : |pd.DataFrame|
         Input DataFrame to filter
     subset_dict : dict, optional
         Subset dictionary containing ships and species_code settings
-        Format: {"ships": {ship_id: {"survey": survey_id, "haul_offset": offset}}, "species_code":
-        [codes]}
-
+        Format: ``{"ships": {ship_id: {"survey": survey_id, "haul_offset": offset}}, "species_code":
+        [codes]}``
     Returns
     -------
-    pd.DataFrame
+    |pd.DataFrame|
         Filtered DataFrame
     """
     # Create copy

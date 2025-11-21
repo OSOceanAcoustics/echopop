@@ -152,7 +152,7 @@ $$
     \tag{3.11}
 $$
 
-where $n$ is the number of lag bins and $b$ indexes those lag bins ($b=1, \dots, n$). The weights $w_b$ are associated with each lag bins. Values of $w_b$ are often chosen to be proportional to the number of data pairs in the $b$‑th bin, $N(h_b)$, so that lag bins with more data have greater influence on the fit. When no standardization is applied, these weights are defined as:
+where $n$ is the number of lag bins and $b$ indexes those lag bins ($b=1, \dots, n$). The weights $w_b$ are associated with each lag bin. Values of $w_b$ are often chosen to be proportional to the number of data pairs in the $b$‑th bin, $N(h_b)$, so that lag bins with more data have greater influence on the fit. When no standardization is applied, these weights are defined as:
 
 $$
     w_b = N(h_b).

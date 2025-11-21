@@ -1,28 +1,28 @@
 from functools import lru_cache
-from typing import Literal, Tuple, Union
+from typing import Literal, Tuple, Optional, Union
 
 import numpy as np
 import pandas as pd
 
 
 def impute_missing_sigma_bs(
-    unique_strata: Union[list, np.ndarray], sigma_bs_df: pd.DataFrame
+    unique_strata: Union[list, np.ndarray[np.number]], sigma_bs_df: pd.DataFrame
 ) -> pd.DataFrame:
     """
-    Imputes sigma_bs for strata without measurements or values
+    Imputes :math:`\\sigma_\\text{bs}` for strata without measurements or values
 
     Parameters
     ----------
-    unique_strata : Union[list, np.ndarray]
+    unique_strata : Union[list, |np.ndarray[np.number]|]
         An array comprising all expected stratum numbers.
-    sigma_bs_df : pd.DataFrame
-        DataFrame containing the mean `sigma_bs` calculated for each stratum.
-        Must have stratum as index and 'sigma_bs' column.
+    sigma_bs_df : |pd.DataFrame|
+        DataFrame containing the mean :math:`\\sigma_\\text{bs}` calculated for each stratum. This 
+        DataFrame must be indexed by the stratum and must contain the column ``'sigma_bs'``.
 
     Returns
     -------
-    pd.DataFrame
-        DataFrame with imputed sigma_bs values for missing strata
+    |pd.DataFrame|
+        DataFrame with imputed :math:`\\sigma_\\text{bs}` values for missing strata
 
     Examples
     --------
@@ -47,12 +47,13 @@ def impute_missing_sigma_bs(
 
     Notes
     -----
-    This function iterates through all stratum layers to impute either the
-    nearest neighbor interpolation or mean sigma_bs for strata that are missing values.
+    This function iterates through all stratum layers to impute either the nearest neighbor
+    interpolation or mean :math:`\\sigma_\\text{bs}` for strata that are missing values.
 
     For missing strata, the function:
+    
     1. Finds the nearest stratum below and above the missing stratum
-    2. Interpolates the sigma_bs value as the mean of these neighbors
+    2. Interpolates the :math:`\\sigma_\\text{bs}` value as the mean of these neighbors
     3. If no neighbors exist on one side, uses the available neighbor value
     """
 
@@ -105,27 +106,27 @@ def impute_missing_sigma_bs(
 
 
 def wavenumber(
-    frequency: Union[np.ndarray, float],
+    frequency: Union[np.ndarray[float], float],
     sound_speed_sw: float,
 ) -> np.ndarray[float]:
     """
     Compute the acoustic wavenumber from frequency and sound speed.
 
-    The acoustic wavenumber relates frequency and wavelength through the
-    medium's sound speed, fundamental to acoustic scattering calculations.
+    The acoustic wavenumber relates frequency and wavelength through the medium's sound speed, 
+    fundamental to acoustic scattering calculations.
 
     Parameters
     ----------
-    frequency : Union[np.ndarray, float]
+    frequency : Union[|np.ndarray[float]|, float]
         Acoustic frequency in Hz. Can be scalar or array for multiple frequencies.
     sound_speed_sw : float
-        Sound speed in seawater in m/s, typically ~1500 m/s depending on
-        temperature, salinity, and pressure conditions.
+        Sound speed in seawater in m s :math:`^{-1}`, typically ~1500 m s :math:`^{-1}` depending 
+        on temperature, salinity, and pressure conditions.
 
     Returns
     -------
-    np.ndarray[float]
-        Acoustic wavenumber in rad/m. Same shape as input frequency.
+    |np.ndarray[float]|
+        Acoustic wavenumber in rad m :math:`^{-1}`. Same shape as input frequency.
 
     Examples
     --------
@@ -145,41 +146,43 @@ def wavenumber(
     .. math::
         k = \\frac{2\\pi f}{c}
 
-    where k is wavenumber (rad/m), f is frequency (Hz), and c is sound speed (m/s).
+    where :math:`k` is wavenumber (rad m :math:`^{-1}`), :math:`f` is frequency (Hz), and :math:`c` 
+    is sound speed (m s :math:`^{-1}`).
 
     References
     ----------
-    .. [1] Medwin, H. & Clay, C.S. (1998). Fundamentals of Acoustical
-           Oceanography. Academic Press.
+    .. [1] Medwin, H. & Clay, C.S. (1998). Fundamentals of Acoustical Oceanography. Academic Press.
     """
 
     return 2 * np.pi * frequency / sound_speed_sw
 
 
 def reflection_coefficient(
-    g: Union[np.ndarray, float],
-    h: Union[np.ndarray, float],
+    g: Union[np.ndarray[float], float],
+    h: Union[np.ndarray[float], float],
 ) -> np.ndarray[float]:
     """
     Compute the acoustic reflection coefficient from material properties.
 
-    The reflection coefficient quantifies acoustic impedance mismatch between
-    organism tissue and surrounding seawater, crucial for scattering strength
-    calculations in biological acoustic models.
+    The reflection coefficient quantifies acoustic impedance mismatch between organism tissue and s
+    urrounding seawater, crucial for scattering strength calculations in biological acoustic models.
 
     Parameters
     ----------
-    g : Union[np.ndarray, float]
-        Relative density contrast: ratio of organism density to seawater density.
-        Typical values for zooplankton: 1.01-1.10 (slightly denser than water).
-    h : Union[np.ndarray, float]
-        Relative sound speed contrast: ratio of organism sound speed to
-        seawater sound speed. Typical values: 0.99-1.05.
+    g : Union[|np.ndarray[float]|, float]
+        The density contrast, which is the ratio of organism density to seawater density 
+        (kg m :math:`^{-3}`). For fluid-like, weak scatterers, values for zooplankton are often 
+        close to unity (1.00), typically 1.00-1.05.
+    h : Union[|np.ndarray[float]|, float]
+        The sound speed contrast, which is the ratio of organism sound speed to seawater sound
+        speed (m s :math:`^{-1}`). For fluid-like, weak scatterers, values for zooplankton are 
+        often close to unity (1.00), typically 1.00-1.05.
 
     Returns
     -------
-    np.ndarray[float]
-        Acoustic reflection coefficient (dimensionless). Same shape as inputs.
+    |np.ndarray[float]|
+        Acoustic reflection coefficient (:math:`\mathscr{R}_{12}`, dimensionless) with the same 
+        shape as the inputs.
 
     Examples
     --------
@@ -196,52 +199,106 @@ def reflection_coefficient(
 
     Notes
     -----
-    The reflection coefficient is calculated using the formula:
+    Let the material properties of the surrounding seawater be denoted as :math:`(\\rho_1, c_1)` 
+    and those of the scatterer :math:`(\\rho_2, c_2)`. The density contrast :math:`g` and sound 
+    speed contrast :math:`h` are defined as:
+    
+    .. math:: 
+        g = \\frac{\\rho_2}{\\rho_1}, \\quad h = \\frac{c_2}{c_1}
+    
+    These are then used to compute the reflection coefficient :math:`\\mathscr{R}_{12}`:
 
     .. math::
-        R = \\frac{1 - gh^2}{gh^2} - \\frac{g-1}{g}
-
-    This formulation accounts for both density (g) and compressibility (h)
-    contrasts between the scatterer and surrounding medium.
+        \\mathscr{R}_{12} = \\frac{1 - gh^2}{gh^2} - \\frac{g-1}{g}
+        
+    where :math:`\\mathscr{R}_{12}` is dimensionless. This quantity constitutes a simplification of 
+    the boundary conditions at the interface between the surrounding seawater and scatterer. It 
+    encapsulates how acoustic waves are partially reflected an transmitted due to this impedance 
+    mismatch.
     """
 
-    return (1 - g * h * h) / (g * h * h) - (g - 1) / g
+    # Convert to arrays for consistent operations
+    g_arr = np.asarray(g)
+    h_arr = np.asarray(h)
+    
+    # Validate shapes for broadcasting
+    if g_arr.shape != h_arr.shape:
+        if g_arr.size == 1 or h_arr.size == 1:
+            pass
+        else:
+            raise ValueError(
+                "'g' and 'h' must be scalars, or vectors of the same shape, or one scalar and one "
+                "vector."
+            )
+
+    return (1 - g_arr * h_arr * h_arr) / (g_arr * h_arr * h_arr) - (g_arr - 1) / g_arr
 
 
 def orientation_average(
-    angle: np.ndarray[float],
-    form_function: np.ndarray[complex],
-    theta_mean: float,
-    theta_sd: float,
+    theta: np.ndarray[float],
+    form_function: Union[np.ndarray[complex], np.ndarray[float]],
+    theta_mean: Optional[float] = None,
+    theta_sd: Optional[float] = None,
     distribution: Literal["gaussian", "uniform"] = "gaussian",
-) -> np.ndarray[float]:
+    output_type: Literal["sigma_bs", "f_bs"] = "sigma_bs",
+    convert_type: bool = True,
+) -> list[np.ndarray[float]]:
     """
-    Compute orientation-averaged backscattering cross-section.
+    Compute the orientation-averaged form function (:math:`\\mathscr{f}(f, \\theta)`) for 
+    complex linear scattering coefficient :math:`f_\\text{bs}` or backscattering cross-section 
+    :math:`\\sigma_\\text{bs}`.
 
-    This function integrates the complex form function over organism
-    orientation angles weighted by a probability distribution, accounting
-    for natural variation in organism orientation in the water column.
+    This function integrates the form function, :math:`\mathscr{f}(f, \\theta)`, over the 
+    scatterer's orientation distribution. This effectively weights :math:`\mathscr{f}(f, \\theta)` 
+    using a probability density function (PDF) to account for natural variation in scatterer 
+    orientation in the water column. The result is the orientation-averaged form function 
+    :math:`\\bar{\\mathscr{f}}(f)`.
 
     Parameters
     ----------
-    angle : np.ndarray[float]
-        Array of orientation angles in degrees, typically relative to vertical
-    form_function : np.ndarray[complex]
-        Complex-valued form function f(ka, θ) for each angle and frequency.
-        Should have shape compatible with angle array.
-    theta_mean : float
-        Mean orientation angle in degrees (e.g., 90° for horizontal orientation)
-    theta_sd : float
-        Standard deviation of orientation distribution in degrees
+    theta : |np.ndarray[float]|
+        Array of orientation angles (:math:`\\theta`, °) in degrees, typically relative to the 
+        incident acoustic wave where broadside incidence is considered to be 90°.
+    form_function : |np.ndarray[complex]| or |np.ndarray[float]|
+        The scattering form function that is either the complex linear scattering coefficient 
+        (:math:`f_\\text{bs}(f, \\theta)`) or backscattering cross-section 
+        (:math:`\\sigma_\\text{bs}(f, \\theta)`). 
+        This must be an a complex or float array with the same shape as the array for ``theta``.
+    theta_mean : Optional[float]
+        Mean orientation angle (:math:`\\bar{\\theta}`, °) in degrees.
+    theta_sd : Optional[float]
+        Standard deviation of orientation values (:math:`\\sigma_{\\theta}`, °).
     distribution : Literal["gaussian", "uniform"], default="gaussian"
-        Type of orientation probability distribution:
-        - "gaussian": Normal distribution around theta_mean
-        - "uniform": Uniform distribution over angle range
+        Orientation probability distribution function (PDF) used for averaging. There are two 
+        available options:
+        
+        - ``"gaussian"``: Normal/Gaussian distribution around :math:`\\bar{\\theta}` 
+          (``theta_mean``). This is the default distribution, and requires both ``theta_mean`` and 
+          ``theta_sd`` to be specified.
+        - ``"uniform"``: Uniform distribution over all orientation values in ``theta``.
+
+    output_type : Literal["sigma_bs", "f_bs"], default="sigma_bs"
+        Specifies the desired output type after length averaging:
+
+        - ``"sigma_bs"``: Outputs the length-averaged backscattering cross-section 
+          (:math:`\\sigma_\\text{bs}(f)`, m²). When ``form_function`` is complex, it is converted to 
+          :math:`\\sigma_\\text{bs}` before averaging before averaging when ``convert_type`` is 
+          True. This is the default option.
+        - ``"f_bs"``: Outputs the length-averaged linear scattering coefficient 
+          (:math:`f_\\text{bs}(f)`, m). 
+
+    convert_type : bool, default=True
+        If ``True`` and ``output_type`` is set to ``"sigma_bs"``, the function converts the input 
+        ``form_function`` from complex linear scattering coefficient (:math:`f_\\text{bs}`) to 
+        backscattering cross-section (:math:`\\sigma_\\text{bs}`) before averaging. If ``False``, 
+        the function assumes the input ``form_function`` is already in the desired output type.
 
     Returns
     -------
-    np.ndarray[float]
-        Orientation-averaged backscattering cross-section σ_bs in m²
+    List[|np.ndarray[float]|]       
+        Orientation-averaged backscattering cross-section :math:`\\sigma_\\text{bs}` (m²). When 
+        ``form_function`` represents the linear scattering coefficient (i.e., a complex array), the 
+        output remains :math:`f_\\text{bs}` after averaging. 
 
     Examples
     --------
@@ -251,50 +308,99 @@ def orientation_average(
 
     Notes
     -----
-    The orientation averaging is performed as:
+    The orientation averaging when :math:`\\mathscr{f}(f, \\theta)` is real is defined as:
 
     .. math::
-        \\sigma_{bs} = \\int |f(\\theta)|^2 P(\\theta) d\\theta
+        \\bar{\\mathscr{f}}(f) = \\int \\mathscr{f}(f, \\theta) P(\\theta) d\\theta
 
-    where f(θ) is the complex form function and P(θ) is the orientation
-    probability density function (PDF).
-
-    For Gaussian distributions:
-
+    where :math:`\\mathscr{f}(f, \\theta)` is the form function at frequency :math:`f` and 
+    orientation :math:`\\theta`, and :math:`P(\\theta)` is the probability density function (PDF). 
+    Since :math:`\\mathscr{f}(f, \\theta)` can also be the linear scattering coefficient, the 
+    averaged form function calculation is modified to account for this, defined as:
+    
     .. math::
-        P(\\theta) =
-        \\frac{1}{\\sqrt{2\\pi}\\sigma} \\exp\\left(-\\frac{(\\theta-\\mu)^2}{2\\sigma^2}\\right)
+        \\bar{\\mathscr{f}}(f) = \\sqrt{
+            \\int (|\\mathscr{f}(f, \\theta)|^2) P(\\theta) d\\theta 
+        }
+        
+    which corresponds to the real-valuted root mean square (RMS). When using a Gaussian 
+    distribution, the PDF is defined as:
+    
+    .. math::
+        P(\\theta) = \\frac{1}{\\sqrt{2\\pi}\\sigma_{\\theta}} 
+        \\exp\\left(-\\frac{(\\theta-\\bar{\\theta})^2}{2\\sigma_{\\theta}^2}\\right)
+    
+    When using a uniform distribution, the PDF is constant over the range of :math:`\\theta`:
+    
+    .. math::
+        P(\\theta) = \\frac{1}{n_\\theta}
+    
+    where :math:`n_\\theta` is the number of discrete orientations in :math:`\\theta`.   
 
+    For computational purposes, this integral is approximated using a discrete sum over 
+    :math:`\\theta`:
+    
+    .. math::
+        \\begin{align*}
+            \\bar{\\mathscr{f}}(f) &\\approx
+                \\sum\\limits_{\\theta} \\mathscr{f}(f, \\theta) P(\\theta) \\Delta\\theta
+                \\quad \\text{when }
+                \\bar{\\mathscr{f}}(f) \\rightarrow \\bar{\\mathscr{f}}(f) \\\\
+            \\bar{\\mathscr{f}}(f) &\\approx \\sqrt{
+                \\sum\\limits_{\\theta} |\\mathscr{f}(f, \\theta)|^2 P(\\theta) \\Delta\\theta
+            }
+            \\quad \\text{when }
+            \\mathscr{f}(f, L) \in \mathbb{C} \\text{ and }
+            \\bar{\\mathscr{f}}(f) \\rightarrow \\bar{\\mathscr{f}}(f) \\\\   
+            \\bar{\\mathscr{f}}(f) &\\approx 
+                \\sum\\limits_{\\theta} |\\mathscr{f}(f, \\theta)|^2 P(\\theta) \\Delta\\theta
+                \\quad \\text{when }
+                \\bar{f}_\\text{bs}(f) \\rightarrow \\bar{\\sigma}_\\text{bs}(f) \\\\
+        \\end{align*}    
+
+    where :math:`\\Delta\\theta` is the interval between discrete orientation angles in 
+    :math:`\\theta`. In the case of the bottom equation, the squared magnitude is used when 
+    converting the mean linear scattering coefficient :math:`\\bar{f}_\\text{bs}(f)` to the mean 
+    backscattering cross-section :math:`\\bar{\\sigma}_\\text{bs}(f)`.
     """
 
     # Weight based on distribution input
     # ---- Gaussian (Normal)
     if distribution == "gaussian":
+        if theta_mean is None or theta_sd is None:
+            raise ValueError(
+                "Both 'theta_mean' and 'theta_sd' must be specified for Gaussian distribution."
+            )
         # ---- Get interval
-        orientation_interval = np.diff(angle).mean()
+        orientation_interval = np.diff(theta).mean()
         # ---- Compute the PDF
         PDF = (
             orientation_interval
-            * np.exp(-0.5 * (angle - theta_mean) ** 2 / theta_sd**2)
+            * np.exp(-0.5 * (theta - theta_mean) ** 2 / theta_sd**2)
             / (np.sqrt(2 * np.pi) * theta_sd)
         )
     # ---- Uniform
     elif distribution == "uniform":
         # ---- Compute the PDF
-        PDF = np.ones(len(angle)) / len(angle)
+        PDF = np.ones(len(theta)) / len(theta)
     else:
         raise ValueError("Invalid distribution type. Choose 'gaussian' or 'uniform'.")
 
     # Return the weighted form function
-    # ---- If complex
-    return [
-        (
-            np.sqrt(np.matmul((f[0].real ** 2 + f[0].imag ** 2), PDF))
-            if np.all(np.iscomplex(f))
-            else np.sqrt(np.matmul(f, PDF))
-        )
-        for f in form_function
-    ]
+    result = []
+    for f in form_function:
+        # ---- Output: f_bs
+        if output_type == "f_bs":
+            val = np.sqrt(np.matmul(np.abs(f[0])**2, PDF))
+        # ---- Output: sigma_bs
+        else:
+            if convert_type:
+                # ---- Apply conversion
+                val = np.matmul(np.abs(f[0])**2, PDF)
+            else:
+                val = np.matmul(f[0], PDF)
+        result.append(val)
+    return result
 
 
 def valid_array_row_length(arr: np.ndarray[float]) -> int:
@@ -309,12 +415,133 @@ def length_average(
     length_values: np.ndarray[float],
     ka_f: np.ndarray[float],
     ka_c: np.ndarray[float],
-    form_function: np.ndarray[complex],
+    form_function: Union[np.ndarray[complex], np.ndarray[float]],
     length_mean: float,
     length_deviation: float,
     distribution: Literal["gaussian", "uniform"] = "gaussian",
-) -> np.ndarray[float]:
-    """ """
+    output_type: Literal["sigma_bs", "f_bs"] = "sigma_bs",
+    convert_type: bool = True
+) -> list[np.ndarray[float]]:
+    """ 
+    Compute length-averaged backscattering cross-section (:math:`\\sigma_\\text{bs}(f, L)`) or  
+    linear scattinering coefficient :math:`f_\\text{bs}` (m) or backscattering cross-section 
+    :math:`\\sigma_\\text{bs}` (m²).
+    
+    This function integrates the form function, :math:`\\mathscr{f}(f, L)`, over the scatterer's 
+    length distribution. This effectively weights :math:`\\mathscr{f}(f, L)` using a probability 
+    density function (PDF) to account for natural variation in scatterer length in the water 
+    column. The result is the length-averaged form function :math:`\\bar{\\mathscr{f}}(f)`.
+    
+    Parameters
+    ----------
+    length_values : |np.ndarray[float]|
+        Array of scatterer lengths (:math:`L`, m).
+    ka_f : |np.ndarray[float]|
+        Array of dimensionless wavenumber-length products for each frequency (ka).
+    ka_c : |np.ndarray[float]|
+        Array of reference ka values for each length, typically computed from central frequency.
+    form_function : |np.ndarray[float]| or |np.ndarray[float]|
+        The scattering form function, either the complex linear scattering coefficient 
+        (:math:`f_\\text{bs}(f, L)`) or backscattering cross-section 
+        (:math:`\sigma_\\text{bs}(f, L)`).
+    length_mean : float
+        Mean scatterer length (:math:`\\bar{L}`, m).
+    length_deviation : float
+        Standard deviation of scatterer lengths (:math:`\\sigma_L`, m).
+    distribution : Literal["gaussian", "uniform"], default="gaussian"
+        Length probability distribution function (PDF) used for averaging. There are two available 
+        options:
+        
+        - ``"gaussian"``: Normal/Gaussian distribution around :math:`\\bar{L}` 
+          (``length_mean``). This is the default distribution, and requires both ``length_mean`` and 
+          ``length_sd`` to be specified.
+        - ``"uniform"``: Uniform distribution over all orientation values in ``length_values``.
+        
+    output_type : Literal["sigma_bs", "f_bs"], default="sigma_bs"
+        Specifies the desired output type after length averaging:
+        
+        - ``"sigma_bs"``: Outputs the length-averaged backscattering cross-section 
+          (:math:`\\sigma_\\text{bs}(f)`, m²). When ``form_function`` is complex, it is converted to 
+          :math:`\\sigma_\\text{bs}` before averaging when ``convert_type`` is True. This is the 
+          default option.
+        - ``"f_bs"``: Outputs the length-averaged linear scattering coefficient 
+          (:math:`f_\\text{bs}(f)`, m). 
+
+    convert_type : bool, default=True
+        If ``True`` and ``output_type`` is set to ``"sigma_bs"``, the function converts the input 
+        ``form_function`` from complex linear scattering coefficient (:math:`f_\\text{bs}`) to 
+        backscattering cross-section (:math:`\\sigma_\\text{bs}`) before averaging. If ``False``, 
+        the function assumes the input ``form_function`` is already in the desired output type.
+
+    Returns
+    -------
+    List[|np.ndarray[float]|]
+        Length-averaged backscattering cross-section :math:`\\sigma_\\text{bs}` (m²). When 
+        ``form_function`` is complex, it is converted to :math:`\\sigma_\\text{bs}` before averaging. 
+        The output quantity yields a single length-averaged :math:`\\sigma_\\text{bs}` value for 
+        each frequency.
+        
+    Examples
+    --------
+    >>> lengths = np.linspace(0.01, 0.03, 10)  # 1 to 3 cm
+    >>> sigma_bs_L = length_average(lengths, ka_f, ka_c, form_func, 0.02, 0.005)
+    
+    Notes
+    -----
+    The length averaging when :math:`\\mathscr{f}(f, L)` is real is defined as:
+
+    .. math::
+        \\bar{\mathscr{f}}^*(f) = \\int \\mathscr{f}(f, L) P(L^*) dL^*
+
+    where :math:`\\mathscr{f}(f, L)` is the form function at frequency :math:`f` and normalized 
+    length :math:`L^*`, and :math:`P(L^*)` is the normalized probability density function (PDF) 
+    such that:
+    
+    .. math::
+        P(L^*) = \\frac{P(L)}{\\bar{L}}
+
+    Since :math:`\\mathscr{f}(f, L)` can also be complex, the form function can be modified to 
+    calculate the squared magnitude:
+
+    .. math::
+        \\bar{\\mathscr{f}}^*(f) = \\int (|\\mathscr{f}(f, L)|^2) P(L^*) dL^*
+
+    For Gaussian distributions, the PDF is defined as:
+
+    .. math::
+        P(L^*) = \\frac{1}{\\sqrt{2\pi}\sigma_{L^*}}
+        \\exp\left(-\\frac{(L^*-\\bar{L^*})^2}{2\\sigma_{L^*}^2}\\right)
+
+    For uniform distributions, the PDF is constant over the range of :math:`L^*`:
+
+    .. math::
+        P(L^*) = \\frac{1}{n_{L^*}}
+
+    where :math:`n_{L^*}` is the number of discrete lengths in :math:`L^*`.
+
+    For computational purposes, this integral is approximated using a discrete sum over :math:`L^*`:
+
+    .. math::
+        \\begin{align*}
+            \\bar{\\mathscr{f}}^*(f) &\\approx \\sum_{L^*} |\\mathscr{f}(f, L)| P(L^*) \\Delta L^*
+            \\quad \\text{when }
+            \\bar{\\mathscr{f}}^*(f) \\rightarrow \\bar{\\mathscr{f}}^*(f) \\\\
+            \\bar{\\mathscr{f}}^*(f) &\\approx \\sum_{L^*} |\\mathscr{f}(f, L)|^2 P(L^*) \\Delta L^*
+            \\quad \\text{when }
+            \\bar{f}_\\text{bs}(f) \\rightarrow \\bar{\\sigma}_\\text{bs}^*(f)
+        \\end{align*}
+
+    where :math:`\\Delta L^*` is the interval between discrete length values in :math:`L^*`. In the 
+    case of the bottom equation, the squared magnitude is used when converting the mean linear 
+    scattering coefficient :math:`\\bar{f}_\\text{bs}(f)` to the mean backscattering 
+    cross-section :math:`\\bar{\\sigma}_\\text{bs}^*(f)`. Because 
+    :math:`\\bar{\\sigma}_\\text{bs}^*(f)` is normalized to length, it is in units of m, not m². 
+    Consequently, an additional scaling is required to convert to the true mean backscattering 
+    cross-section :math:`\\bar{\\sigma}_\\text{bs}(f)` in m²:
+    
+    .. math::
+        \\bar{\\sigma}_\\text{bs}(f) = \\bar{\\sigma}_\\text{bs}^*(f) \\times \\bar{L}^2
+    """
 
     # Normalize the length values, if needed
     length_norm = length_values / length_mean
@@ -351,32 +578,35 @@ def length_average(
     ka_weighted_trim = np.where(
         (ka_weighted >= np.nanmin(ka_f)) & (ka_weighted <= np.nanmax(ka_f)), ka_weighted, np.nan
     )
-    # ---- Evaluate
-    # -------- One frequency
-    if len(form_function) == 1:
-        sigma_bs_L = np.array(
-            [
-                (
-                    length_norm**2
-                    * PDF
-                    * np.interp(ka_weighted_trim[0], ka_f[0], form_function[0] ** 2)
-                ).sum()
-            ]
+    
+    # Helper function to copmute the weighted averages
+    def _length_weighted_sum(form, ka_wt, ka_freq):
+        # ---- Interpolate to get the form function at the weighted ka values
+        form_interp = np.interp(ka_wt, ka_freq, form)
+        # ---- Define the weights
+        weights = length_norm**2 * PDF
+        # ---- Compute the weighted sum
+        if output_type == "f_bs":
+            return (weights * form_interp).sum()
+        else:
+            if convert_type:
+                val = (weights * np.abs(form_interp)**2).sum()
+                val *= length_mean**2
+                return val
+            else:
+                return (weights * form_interp).sum()
+    
+    # Evaluate
+    result = []
+    for i in range(len(form_function)):        
+        form_func = form_function[i]
+        # ---- Get weighted sum
+        form_wt = _length_weighted_sum(
+            form_func, ka_weighted_trim[i], ka_f[i, : n_vals[i]]
         )
-    # -------- More than one frequency
-    else:
-        sigma_bs_L = np.array(
-            [
-                (
-                    length_norm**2
-                    * PDF
-                    * np.interp(ka_weighted_trim[i], ka_f[i, : n_vals[i]], form_function[i] ** 2)
-                ).sum()
-                for i in range(len(form_function))
-            ]
-        )
+        result.append(form_wt)
     # ---- Return the weighted average
-    return sigma_bs_L
+    return result
 
 
 def _make_freq_key(
@@ -420,8 +650,6 @@ def generate_frequency_interval(
     key = _make_freq_key(frequency, length_sd_norm, frequency_interval, ndigits)
     return _generate_frequency_interval_cached_key(key)
 
-
-# OPTIMIZATION: More efficient parameter extraction
 def _extract_parameters_optimized(inverted_data: pd.DataFrame) -> pd.DataFrame:
     """
     Extract parameters more efficiently than using .apply().

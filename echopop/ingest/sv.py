@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Dict, Literal, Optional
+from typing import Any, Dict, Literal, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -16,34 +16,31 @@ def read_echoview_sv(
     """
     Read and process Echoview volume backscattering strength (Sv) export data.
 
-    This function reads CSV files exported from Echoview containing acoustic
-    backscatter measurements and performs basic data cleaning including
-    coordinate imputation and transect numbering.
+    This function reads CSV files exported from Echoview containing acoustic backscatter 
+    measurements and performs basic data cleaning including coordinate imputation and transect 
+    numbering.
 
     Parameters
     ----------
-    filename : Path
+    filename : pathlib.Path
         Path to the Echoview CSV export file containing Sv data
     impute_coordinates : bool, default=True
         Whether to impute missing or invalid latitude/longitude coordinates
     transect_num : float, optional
-        Transect number to assign to all data in this file. If None,
-        no transect number is added
+        Transect number to assign to all data in this file. If None, no transect number is added
     validator : Any, optional
         Validation object for data quality checks (currently unused)
 
     Returns
     -------
-    pd.DataFrame or None
-        DataFrame containing processed Sv data with columns for acoustic
-        measurements, coordinates, and metadata. Returns None if file
-        is empty or contains no valid data
+    |pd.DataFrame| or None
+        DataFrame containing processed Sv data with columns for acoustic measurements, coordinates, 
+        and metadata. Returns None if file is empty or contains no valid data
 
     Notes
     -----
-    The function adds a 'filename' column containing the full file path
-    for data provenance tracking. Coordinate imputation uses interpolation
-    methods from the ingest_nasc module.
+    The function adds a `'filename'` column containing the full file path for data provenance 
+    tracking. Coordinate imputation uses interpolation methods from :mod:`echopop.ingest.nasc`.
 
     Examples
     --------
@@ -540,18 +537,17 @@ def ingest_echoview_sv(
     transect_pattern: Optional[str] = None,
     aggregate_method: Literal["cells", "interval", "transect"] = "cells",
     impute_coordinates: bool = True,
-):
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
     r"""
     Complete ingestion pipeline for Echoview Sv export data.
 
-    This is the main entry point for processing Echoview volume backscattering
-    strength exports. It handles file discovery, data loading, coordinate
-    imputation, frequency filtering, and spatial aggregation to produce
-    analysis-ready acoustic datasets.
+    This is the main entry point for processing Echoview volume backscattering strength exports. It 
+    handles file discovery, data loading, coordinate imputation, frequency filtering, and spatial 
+    aggregation to produce analysis-ready acoustic datasets.
 
     Parameters
     ----------
-    sv_path : Path
+    sv_path : pathlib.Path
         Directory path containing Echoview CSV export files
     center_frequencies : Dict[str, float], optional
         Dictionary mapping target frequencies (Hz) to threshold dictionaries
@@ -567,11 +563,11 @@ def ingest_echoview_sv(
 
     Returns
     -------
-    tuple[pd.DataFrame, pd.DataFrame or None]
-        - sv_integrated: Spatially aggregated acoustic data with MultiIndex
-          columns organized by measurement type and frequency
-        - sv_coordinates: Coordinate reference data for spatial analysis,
-          or None if coordinates unavailable
+    tuple[|pd.DataFrame|, |pd.DataFrame| or None]
+        - ``sv_integrated``: Spatially aggregated acoustic data with :class:`pandas.MultiIndex` 
+          columns organized by measurement type and frequency.
+        - ``sv_coordinates``: Coordinate reference data for spatial analysis, or None if 
+          coordinates unavailable.
 
     Raises
     ------
@@ -590,8 +586,8 @@ def ingest_echoview_sv(
     6. **Integration**: Apply spatial aggregation with thresholding
     7. **Output Formatting**: Structure data for downstream analysis
 
-    The function automatically converts frequency units from Hz to kHz to
-    match Echoview export conventions.
+    The function automatically converts frequency units from Hz to kHz to match Echoview export 
+    conventions.
 
     Examples
     --------
