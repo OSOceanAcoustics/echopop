@@ -10,7 +10,8 @@ In this section we describe input files used by Echopop, grouped by data type. T
 
 :::{admonition} EchoPro column names
 :class: note
-There may be some inconsistencies in the columns used by files in `EchoPro` for previous years. All column names described below are based on the files associated with the 2019 survey.:::
+There may be some inconsistencies in the columns used by files in EchoPro for previous years. All column names described below are based on the files associated with the 2019 survey.
+:::
 
 ## Biological data
 
