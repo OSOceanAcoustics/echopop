@@ -3,7 +3,11 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from echopop.ingest.biological import apply_ship_survey_filters, load_biological_data,  load_db_biological_data
+from echopop.ingest.biological import (
+    apply_ship_survey_filters,
+    load_biological_data,
+    load_db_biological_data,
+)
 
 
 def test_load_biological_data_basic(bio_excel_file, bio_sheet_map):
@@ -87,6 +91,7 @@ def test_apply_ship_survey_filters_no_subset(biological_data):
     assert result is not df  # Not the same object
     pd.testing.assert_frame_equal(result, df)  # But same content
 
+
 # Ingest from postgres database tests
 def test_load_biological_data_basic_from_postgres(database_credentials, bio_sheet_map):
     """Test basic loading of biological data without optional parameters."""
@@ -112,7 +117,7 @@ def test_load_biological_data_with_column_map_from_postgres(
 
     if "length" in result:
         assert "length_count" in result["length"].columns
-        assert result["length"].loc[3,"length_count"] == 2
+        assert result["length"].loc[3, "length_count"] == 2
         assert "haul_num" in result["length"].columns
         assert "haul" not in result["length"].columns
 
@@ -124,8 +129,9 @@ def test_load_biological_data_with_column_map_from_postgres(
 
     if "specimen" in result:
         assert "species_code" in result["specimen"].columns
-        assert result["specimen"].loc[2,"species_code"] == 22500
+        assert result["specimen"].loc[2, "species_code"] == 22500
         assert "haul_num" in result["catch"].columns
+
 
 def test_load_biological_data_with_subset_from_postgres(
     database_credentials, bio_sheet_map, pg_subset_dict

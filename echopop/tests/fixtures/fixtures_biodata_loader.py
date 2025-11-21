@@ -1,15 +1,17 @@
-import pandas as pd
-import pytest
-from pathlib import Path
 import os
 import signal
+from pathlib import Path
 from urllib.parse import urlparse
+
+import pandas as pd
 import psycopg
+import pytest
 import testing.postgresql
 
 HERE = Path(__file__).parent.absolute()
 TEST_DATA_ROOT = HERE.parent / "test_data"
 TEST_SQL_FILE = TEST_DATA_ROOT / "Biological" / "test_bio_data.sql"
+
 
 def _create_creds_dict(db_url):
     """Helper function to parse the DB URL into a dict."""
@@ -58,6 +60,7 @@ def database_credentials():
     finally:
         if os.name == "nt":
             signal.SIGINT = original_sigint
+
 
 @pytest.fixture
 def biological_data():
@@ -133,6 +136,7 @@ def subset_dict():
         "species_code": [22500],
     }
 
+
 @pytest.fixture
 def pg_subset_dict():
     """Create subset dictionary for filtering biological data."""
@@ -140,6 +144,7 @@ def pg_subset_dict():
         "ship": {101: {"survey": 2025}},
         "species_code": [22500],
     }
+
 
 @pytest.fixture
 def label_map():
