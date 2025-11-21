@@ -1,6 +1,63 @@
 import pandas as pd
 import pytest
+from pathlib import Path
+import os
+import signal
+from urllib.parse import urlparse
+import psycopg
+import testing.postgresql
 
+HERE = Path(__file__).parent.absolute()
+TEST_DATA_ROOT = HERE.parent / "test_data"
+TEST_SQL_FILE = TEST_DATA_ROOT / "Biological" / "test_bio_data.sql"
+
+def _create_creds_dict(db_url):
+    """Helper function to parse the DB URL into a dict."""
+    url = urlparse(db_url)
+    return {
+        "dbname": url.path.lstrip("/"),
+        "user": url.username,
+        "password": url.password,
+        "host": url.hostname,
+        "port": url.port,
+    }
+
+
+@pytest.fixture(scope="session")
+def database_credentials():
+    """
+    Session-scoped fixture to:
+    1. Start a temporary Postgres database.
+    2. Load 'test_bio_data.sql' into it.
+    3. Yield the *credentials dictionary* for this test DB.
+    """
+    print(f"\n--- Starting new test database from {TEST_SQL_FILE} ---")
+
+    # Make sure signal is compatible with OS
+    original_sigint = signal.SIGINT
+    if os.name == "nt":  # Windows OS
+        signal.SIGINT = signal.SIGTERM
+
+    try:
+        with testing.postgresql.Postgresql() as postgresql:
+
+            try:
+                conn = psycopg.connect(postgresql.url())
+                conn.autocommit = True
+                with conn.cursor() as cur:
+                    with open(TEST_SQL_FILE, "r") as f:
+                        cur.execute(f.read())
+                conn.close()
+            except Exception as e:
+                pytest.fail(f"Failed to load {TEST_SQL_FILE}: {e}")
+
+            creds_dict = _create_creds_dict(postgresql.url())
+
+            yield creds_dict  # Wait for tests to run
+
+    finally:
+        if os.name == "nt":
+            signal.SIGINT = original_sigint
 
 @pytest.fixture
 def biological_data():
@@ -76,6 +133,13 @@ def subset_dict():
         "species_code": [22500],
     }
 
+@pytest.fixture
+def pg_subset_dict():
+    """Create subset dictionary for filtering biological data."""
+    return {
+        "ship": {101: {"survey": 2025}},
+        "species_code": [22500],
+    }
 
 @pytest.fixture
 def label_map():
