@@ -544,8 +544,13 @@ def pcdwba(
 
     # Orientation averaging
     f_bs_orientation = ops.orientation_average(
-        theta_values, f_bs, theta_mean, theta_sd, orientation_distribution["family"],
-        output_type="f_bs", convert_type=False
+        theta_values,
+        f_bs,
+        theta_mean,
+        theta_sd,
+        orientation_distribution["family"],
+        output_type="f_bs",
+        convert_type=False,
     )
 
     # Length-averaged sigma_bs (normalized to length)
@@ -558,7 +563,7 @@ def pcdwba(
         length_mean * length_sd_norm,
         length_distribution["family"],
         output_type="sigma_bs",
-        convert_type=True
+        convert_type=True,
     )
 
     # Switch to logarithmic domain to compute S_V (volumetric backscattering strength)
