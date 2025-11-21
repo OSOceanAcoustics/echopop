@@ -39,18 +39,19 @@ html:
     - docs/custom_echopop.css
 
 sphinx:
-  extra_extensions: [
-    'sphinx_automodapi.automodapi',
-    'numpydoc',
-    'sphinx.ext.autodoc',
-    'sphinxcontrib.bibtex',
-    'sphinx.ext.intersphinx',
-    'sphinx.ext.mathjax',
-    'sphinx.ext.ifconfig',
-    'sphinx.ext.githubpages',
-    'sphinx.ext.napoleon',
-    'sphinx_tippy',
-  ]
+  extra_extensions: 
+    - sphinx_automodapi.automodapi
+    - numpydoc
+    - sphinx.ext.autodoc
+    - sphinxcontrib.bibtex
+    - sphinx.ext.intersphinx
+    - sphinx.ext.mathjax
+    - sphinx.ext.ifconfig
+    - sphinx.ext.githubpages
+    - sphinx.ext.napoleon
+    - sphinx_tippy
+    - sphinx_togglebutton
+    - echopop._sphinx_ext.echoautobody
   config:
     # autodoc_default_options:
     #   members: true
