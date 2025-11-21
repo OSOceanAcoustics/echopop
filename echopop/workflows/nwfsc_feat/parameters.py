@@ -191,7 +191,7 @@ def transect_mesh_region_2015(
     ----------
     region : np.number
         Region identifier (1, 2, or 3):
-        
+
         - Region 1: Parallel transects to latitudes from south of SCB to west of Haida Gwaii
         - Region 2: Transects parallel to longitudes north of Haida Gwaii
         - Region 3: Parallel transects to latitudes west of Haida Gwaii
@@ -200,7 +200,7 @@ def transect_mesh_region_2015(
     -------
     Tuple[np.number, np.number, List[np.number], List[np.number]]
         A tuple containing:
-        
+
         - transect_start (np.number): Starting transect number for the region
         - transect_end (np.number): Ending transect number for the region
         - transect_lower_bound (List[np.number]): Lower boundary values for each transect
@@ -217,7 +217,7 @@ def transect_mesh_region_2015(
     Notes
     -----
     The boundary values are encoded with decimal places that indicate spatial positions:
-    
+
     - .1 indicates western boundary (for regions 1 and 3)
     - .4 indicates eastern boundary (for regions 1 and 3)
     - .6 indicates southern boundary (for region 2)

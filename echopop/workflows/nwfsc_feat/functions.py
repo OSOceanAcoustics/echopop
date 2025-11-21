@@ -377,7 +377,7 @@ def transect_ends_crop(
     transect_mesh_region_function : Callable
         A sorting function that maps specific transect numbers to their respective discretized
         mesh regions. The outputs of this function are expected to be:
-        
+
         - 'transect_start' (np.number): the first transect number of a particular region,
         - 'transect_end' (np.number): the last transect number of a particular region,
         - 'transect_lower_bound' (List[np.number]): a list of encoded transect numbers indicating
@@ -389,7 +389,7 @@ def transect_ends_crop(
     -------
     Tuple[pd.DataFrame, pd.DataFrame]
         A tuple comprising:
-        
+
         - Cropped kriging mesh DataFrame containing only cells within the survey extent
         - Annotated transect data with each transect number's respective mesh region assignment
 

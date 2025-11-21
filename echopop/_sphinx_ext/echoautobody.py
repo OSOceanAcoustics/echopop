@@ -1,10 +1,12 @@
-from sphinx.util.docutils import SphinxDirective
-from sphinx.ext.autodoc import FunctionDocumenter
-from docutils import nodes
+import ast
 import importlib
 import inspect
-import ast
 import textwrap
+
+from docutils import nodes
+from sphinx.ext.autodoc import FunctionDocumenter
+from sphinx.util.docutils import SphinxDirective
+
 
 # ----------------------------
 # FunctionBodyDirective
@@ -32,7 +34,12 @@ class FunctionBodyDirective(SphinxDirective):
             func_node = parsed.body[0]
 
             # remove docstring
-            if (len(func_node.body) > 0) and isinstance(func_node.body[0], ast.Expr) and isinstance(func_node.body[0].value, ast.Constant) and isinstance(func_node.body[0].value.value, str):
+            if (
+                (len(func_node.body) > 0)
+                and isinstance(func_node.body[0], ast.Expr)
+                and isinstance(func_node.body[0].value, ast.Constant)
+                and isinstance(func_node.body[0].value.value, str)
+            ):
                 func_node.body.pop(0)
 
             src_without_doc = ast.unparse(func_node)
@@ -42,15 +49,18 @@ class FunctionBodyDirective(SphinxDirective):
 
     def _make_toggle(self, title_text, code):
         container = nodes.container(classes=["toggle", "toggle-button"])
-        container['data-toggle-label-show'] = "Show source code"
-        container['data-toggle-label-hide'] = "Hide source code"
+        container["data-toggle-label-show"] = "Show source code"
+        container["data-toggle-label-hide"] = "Hide source code"
 
-        title = nodes.paragraph(text=f"Source code for {title_text}", classes=["toggle-button-title"])
+        title = nodes.paragraph(
+            text=f"Source code for {title_text}", classes=["toggle-button-title"]
+        )
         literal = nodes.literal_block(text=code, language="python", classes=["toggle-content"])
 
         container += title
         container += literal
         return container
+
 
 class AllFunctionsDirective(SphinxDirective):
     required_arguments = 1  # full module path, e.g. echopop.module.submodule
@@ -73,7 +83,12 @@ class AllFunctionsDirective(SphinxDirective):
                 func_node = parsed.body[0]
 
                 # Remove docstring
-                if (len(func_node.body) > 0) and isinstance(func_node.body[0], ast.Expr) and isinstance(func_node.body[0].value, ast.Constant) and isinstance(func_node.body[0].value.value, str):
+                if (
+                    (len(func_node.body) > 0)
+                    and isinstance(func_node.body[0], ast.Expr)
+                    and isinstance(func_node.body[0].value, ast.Constant)
+                    and isinstance(func_node.body[0].value.value, str)
+                ):
                     func_node.body.pop(0)
 
                 src_without_doc = ast.unparse(func_node)
@@ -84,11 +99,13 @@ class AllFunctionsDirective(SphinxDirective):
             # Create toggle container
             container = nodes.container(classes=["toggle", "toggle-button"])
             # Optional per-container labels (may not work due to sphinx-togglebutton JS limitations)
-            container['data-toggle-label-show'] = "Show source code"
-            container['data-toggle-label-hide'] = "Hide source code"
+            container["data-toggle-label-show"] = "Show source code"
+            container["data-toggle-label-hide"] = "Hide source code"
 
             title = nodes.paragraph(text=f"Function: {name}", classes=["toggle-button-title"])
-            literal = nodes.literal_block(text=src_without_doc, language="python", classes=["toggle-content"])
+            literal = nodes.literal_block(
+                text=src_without_doc, language="python", classes=["toggle-content"]
+            )
 
             container += title
             container += literal
@@ -96,9 +113,11 @@ class AllFunctionsDirective(SphinxDirective):
 
         return output_nodes
 
+
 # ----------------------------
 # InterlacedModuleDirective
 # ----------------------------
+
 
 class InterlacedModuleDirective(SphinxDirective):
     required_arguments = 1  # module path
@@ -110,14 +129,16 @@ class InterlacedModuleDirective(SphinxDirective):
 
         for name, func in inspect.getmembers(module, inspect.isfunction):
             # --- Render docstring via autodoc ---
-            doc_nodes = FunctionDocumenter(self.env, self.name, self.options, self.state, self.lineno).get_doc(func)
+            doc_nodes = FunctionDocumenter(
+                self.env, self.name, self.options, self.state, self.lineno
+            ).get_doc(func)
             output_nodes.extend(doc_nodes)
 
             # --- Render source toggle ---
             src = inspect.getsource(func)
             container = nodes.container(classes=["toggle", "toggle-button"])
-            container['data-toggle-label-show'] = "Show source code"
-            container['data-toggle-label-hide'] = "Hide source code"
+            container["data-toggle-label-show"] = "Show source code"
+            container["data-toggle-label-hide"] = "Hide source code"
             literal = nodes.literal_block(text=src, language="python", classes=["toggle-content"])
             container += literal
             output_nodes.append(container)

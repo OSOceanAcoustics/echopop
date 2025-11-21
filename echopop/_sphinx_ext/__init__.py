@@ -1,1 +1,3 @@
-from .echoautobody import *
+from . import echoautobody
+
+__all__ = ["echoautobody"]
