@@ -148,9 +148,9 @@ def plot_kriged_mesh(
         Type of plot to produce. Options are:
 
         - 'hexbin': Creates a hexagonal binned plot using :func:`matplotlib.pyplot.hexbin`, which
-          visualizes a summary statistic defined by the user (via the ``reduce_C_function`` argument,
-          which defaults to :func:`numpy.mean`) over a two-dimensional grid of hexagons. The
-          plotted hexagonal bins can be configured using keyword arguments supplied to the
+          visualizes a summary statistic defined by the user (via the ``reduce_C_function``
+          argument, which defaults to :func:`numpy.mean`) over a two-dimensional grid of hexagons.
+          The plotted hexagonal bins can be configured using keyword arguments supplied to the
           ``hexbin_kwargs`` argument.
 
         - 'pcolormesh': Interpolates the variable onto a regular grid using :class:`verde.Chain`

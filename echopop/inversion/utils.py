@@ -181,7 +181,7 @@ def reflection_coefficient(
     Returns
     -------
     |np.ndarray[float]|
-        Acoustic reflection coefficient (:math:`\mathscr{R}_{12}`, dimensionless) with the same
+        Acoustic reflection coefficient (:math:`\\mathscr{R}_{12}`, dimensionless) with the same
         shape as the inputs.
 
     Examples
@@ -248,8 +248,8 @@ def orientation_average(
     complex linear scattering coefficient :math:`f_\\text{bs}` or backscattering cross-section
     :math:`\\sigma_\\text{bs}`.
 
-    This function integrates the form function, :math:`\mathscr{f}(f, \\theta)`, over the
-    scatterer's orientation distribution. This effectively weights :math:`\mathscr{f}(f, \\theta)`
+    This function integrates the form function, :math:`\\mathscr{f}(f, \\theta)`, over the
+    scatterer's orientation distribution. This effectively weights :math:`\\mathscr{f}(f, \\theta)`
     using a probability density function (PDF) to account for natural variation in scatterer
     orientation in the water column. The result is the orientation-averaged form function
     :math:`\\bar{\\mathscr{f}}(f)`.
@@ -350,7 +350,7 @@ def orientation_average(
                 \\sum\\limits_{\\theta} |\\mathscr{f}(f, \\theta)|^2 P(\\theta) \\Delta\\theta
             }
             \\quad \\text{when }
-            \\mathscr{f}(f, L) \in \mathbb{C} \\text{ and }
+            \\mathscr{f}(f, L) \\in \\mathbb{C} \\text{ and }
             \\bar{\\mathscr{f}}(f) \\rightarrow \\bar{\\mathscr{f}}(f) \\\\
             \\bar{\\mathscr{f}}(f) &\\approx
                 \\sum\\limits_{\\theta} |\\mathscr{f}(f, \\theta)|^2 P(\\theta) \\Delta\\theta
@@ -443,7 +443,7 @@ def length_average(
     form_function : |np.ndarray[float]| or |np.ndarray[float]|
         The scattering form function, either the complex linear scattering coefficient
         (:math:`f_\\text{bs}(f, L)`) or backscattering cross-section
-        (:math:`\sigma_\\text{bs}(f, L)`).
+        (:math:`\\sigma_\\text{bs}(f, L)`).
     length_mean : float
         Mean scatterer length (:math:`\\bar{L}`, m).
     length_deviation : float
@@ -477,9 +477,9 @@ def length_average(
     -------
     List[|np.ndarray[float]|]
         Length-averaged backscattering cross-section :math:`\\sigma_\\text{bs}` (m²). When
-        ``form_function`` is complex, it is converted to :math:`\\sigma_\\text{bs}` before averaging.
-        The output quantity yields a single length-averaged :math:`\\sigma_\\text{bs}` value for
-        each frequency.
+        ``form_function`` is complex, it is converted to :math:`\\sigma_\\text{bs}` before
+        averaging. The output quantity yields a single length-averaged :math:`\\sigma_\\text{bs}`
+        value for each frequency.
 
     Examples
     --------
@@ -491,7 +491,7 @@ def length_average(
     The length averaging when :math:`\\mathscr{f}(f, L)` is real is defined as:
 
     .. math::
-        \\bar{\mathscr{f}}^*(f) = \\int \\mathscr{f}(f, L) P(L^*) dL^*
+        \\bar{\\mathscr{f}}^*(f) = \\int \\mathscr{f}(f, L) P(L^*) dL^*
 
     where :math:`\\mathscr{f}(f, L)` is the form function at frequency :math:`f` and normalized
     length :math:`L^*`, and :math:`P(L^*)` is the normalized probability density function (PDF)
@@ -509,8 +509,8 @@ def length_average(
     For Gaussian distributions, the PDF is defined as:
 
     .. math::
-        P(L^*) = \\frac{1}{\\sqrt{2\pi}\sigma_{L^*}}
-        \\exp\left(-\\frac{(L^*-\\bar{L^*})^2}{2\\sigma_{L^*}^2}\\right)
+        P(L^*) = \\frac{1}{\\sqrt{2\\pi}\\sigma_{L^*}}
+        \\exp\\left(-\\frac{(L^*-\\bar{L^*})^2}{2\\sigma_{L^*}^2}\\right)
 
     For uniform distributions, the PDF is constant over the range of :math:`L^*`:
 

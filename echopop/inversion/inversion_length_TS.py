@@ -79,7 +79,7 @@ class InversionLengthTS(InversionBase):
         \\rho_\\text{v} = \\frac{S_\\text{A}}{4\\pi \\times \\sigma_\\text{bs}}
 
     where :math:`\\rho_\\text{v}` is number density (animals :math:`\\text{nmi}^{-2}`) and
-    :math:`S_\\text{A}` is the vertically integrated backscatter over an area (:math:`\\text{m}^2\,
+    :math:`S_\\text{A}` is the vertically integrated backscatter over an area (:math:`\\text{m}^2\\,
     \\text{nmi}^{-2}`) that is commonly called the nautical area scattering coefficient (NASC).
     """
 

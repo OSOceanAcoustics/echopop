@@ -1,7 +1,6 @@
 from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
-import numpy.typing as npt
 import pandas as pd
 from scipy import interpolate as interp
 
@@ -640,7 +639,7 @@ def round_half_up(n: Union[pd.Series, pd.DataFrame]):
 
     Notes
     -----
-    This rounding method is different from NumPy's default :func:`numpy.round`, which uses "round half to e
-    ven" (banker's rounding).
+    This rounding method is different from NumPy's default :func:`numpy.round`, which uses "round
+    half to even" (banker's rounding).
     """
     return n.apply(lambda x: np.floor(x + 0.5) if x >= 0 else np.ceil(x - 0.5))

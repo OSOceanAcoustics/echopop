@@ -46,6 +46,15 @@ parts:
     - file: FEAT_implementation/FEAT_notebooks/diagnostic_plotting
     - file: FEAT_implementation/FEAT_notebooks/report_generation
     - file: FEAT_implementation/offeffort_transect_filtering
+    - file: FEAT_implementation/kriging_mesh_cropping
+    - file: FEAT_implementation/api/index
+      title: FEAT-specific API
+      sections:
+      - file: FEAT_implementation/api/api_functions
+      - file: FEAT_implementation/api/api_biology
+      - file: FEAT_implementation/api/api_apportionment
+      - file: FEAT_implementation/api/api_transect_region_mesh
+      - file: FEAT_implementation/api/api_reporter
   - file: glossary
 - caption: Help & references
   chapters:

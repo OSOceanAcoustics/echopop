@@ -2021,7 +2021,8 @@ def fit_variogram(
         \\hat{w}_b = \\frac{N(h_b)}{\\sum\\limits_{b=1}^{n} N(h_b)}
 
     The function uses Trust Region Reflective algorithm (default in `lmfit.minimizer.minimize()`)
-    which handles parameter bounds robustly and is suitable for the non-linear nature of variogram models.
+    which handles parameter bounds robustly and is suitable for the non-linear nature of variogram
+    models.
 
     References
     ----------

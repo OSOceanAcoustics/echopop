@@ -366,7 +366,7 @@ def pcdwba(
     -----
     The PCDWBA model treats scatterers as fluid-like, weak, uniformly bent cylinders with tapered
     end. This accounts for simplified body curvature geometry and material properties that
-    satisfy the weak scattering assumption (:math:`g,\, h \\approx 1`). The model also includes
+    satisfy the weak scattering assumption (:math:`g,\\, h \\approx 1`). The model also includes
     phase copmensation for these curved geometries.
 
     The form function corresponds to the linear scattering coefficient (:math:`f_\\text{bs}`, m)
@@ -397,17 +397,17 @@ def pcdwba(
     Numerically, the integral is discretized into :math:`n_f^\\text{int}` steps; however, the
     user-defined argument (``n_integration``) sets the minimum number of integration points. This
     enables an adaptive discretization rule that adjusts :math:`n_f^\\text{int}` for each defined
-    frequency. This operates in conjunction with :math:`n_{\lambda}`, which dictates the number of
+    frequency. This operates in conjunction with :math:`n_{\\lambda}`, which dictates the number of
     integration points per wavelength. Furthermore, a bandwidth surrounding the defined center
-    frequencies is based on the variability in body length (:math:`\sigma_L`) bounded by
-    :math:`\\left[1 - 3.1 * \\sigma_L, 1 + 3.1 * \sigma_L \\right]`. These new bandwidths are used
+    frequencies is based on the variability in body length (:math:`\\sigma_L`) bounded by
+    :math:`\\left[1 - 3.1 * \\sigma_L, 1 + 3.1 * \\sigma_L \\right]`. These new bandwidths are used
     to compute the effective length:
 
     .. math::
         k_f L_\\text{max} = \\max_i \\Big(k_f L \\Big) \\left( 1 + 3.1 * \\sigma_L \\right)
 
     When :math:`k_f L_\\text{max} < n_f^\\text{int}`, then the value for
-    ``n_integration`` is used. When :math:`k_f L_\\text{max} \leq n_f^\\text{int}`, then:
+    ``n_integration`` is used. When :math:`k_f L_\\text{max} \\leq n_f^\\text{int}`, then:
 
     .. math::
         n_f^\\text{int} =
@@ -415,8 +415,8 @@ def pcdwba(
 
     The :math:`j^\\text{th}` element of the position matrix (:math:`\\vec{r_0}`) is expressed by the
     radius (:math:`a_j`), taper coefficient (:math:`\\mathscr{T}_j`), and the along-axis tilt angle
-    of the curved cylinder (:math:`\\beta_{jm}`) relative to tilt angle :math:`m`. Variability in the
-    position matrix cartesian coordinates is expressed as :math:`dr_0`. The cylinder is also
+    of the curved cylinder (:math:`\\beta_{jm}`) relative to tilt angle :math:`m`. Variability in
+    the position matrix cartesian coordinates is expressed as :math:`dr_0`. The cylinder is also
     characterized by its respective material properties:
 
     .. math::
@@ -446,8 +446,9 @@ def pcdwba(
     - Sufficient integration points for curved/tapered geometries
 
     While not a crucial assumption, the PCDWBA is particularly well-suited for elongated scatterers
-    like euphausiids in the geometric scattering regime for :math:`1 \lesssim ka \lesssim 10`, where
-    :math:`k` is the acoustic wavenumber and :math:`a` is the radius at the cylinder's midpoint.
+    like euphausiids in the geometric scattering regime for :math:`1 \\lesssim ka \\lesssim 10`,
+    where :math:`k` is the acoustic wavenumber and :math:`a` is the radius at the cylinder's
+    midpoint.
 
     The volumetric scattering coefficient, :math:`S_\\text{v}`, is calculated using the forward
     problem:

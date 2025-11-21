@@ -552,7 +552,7 @@ def merge_echoview_nasc(
     Parameters
     ----------
     nasc_path : Path
-        Directory containing Echoview export files (\*.csv).
+        Directory containing Echoview export files (\\*.csv).
     filename_transect_pattern: str, default = r"T(\\d+)"
         Regular expression used for extracting the transect number from the filename.
     default_transect_spacing : float, default = 10.
@@ -658,8 +658,8 @@ def read_transect_region_haul_key(
 
     Notes
     -----
-    The input file must contain columns that can be mapped to ``"transect_num"``, ``"region_id"``, and
-    ``"haul_num"``, either directly or via the rename_dict.
+    The input file must contain columns that can be mapped to ``"transect_num"``, ``"region_id"``,
+    and ``"haul_num"``, either directly or via the rename_dict.
     """
 
     # Determine appropriate file reader

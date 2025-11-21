@@ -40,8 +40,6 @@ DATA_ROOT = Path("C:/Data/EchopopData/echopop_2019")
 
 # Merge exports
 df_intervals, df_exports = nasc.merge_echoview_nasc(
-    
-    
     nasc_path=DATA_ROOT / "raw_nasc/",
     filename_transect_pattern=r"T(\d+)",
     default_transect_spacing=10.0,

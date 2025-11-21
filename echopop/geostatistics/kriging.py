@@ -872,10 +872,10 @@ class Kriging:
     .. math::
         \\mathbf{z}^*(\\mathbf{u}) = \\sum_{b=1}^n \\lambda_b(\\mathbf{u}) z(\\mathbf{u}_b)
 
-    where :math:`n` is the number of observed locations, :math:`z(\\mathbf{u}_b)` are the known values of a
-    spatially varying variable at locations :math:`\\mathbf{u}_b`, and :math:`\\lambda_b(\\mathbf{u})` are the
-    kriging weights assigned to all known locations :math:`\\mathbf{u}`. This kriging approach is subject
-    to the unbiasedness constraint where:
+    where :math:`n` is the number of observed locations, :math:`z(\\mathbf{u}_b)` are the known
+    values of a spatially varying variable at locations :math:`\\mathbf{u}_b`, and
+    :math:`\\lambda_b(\\mathbf{u})` are the kriging weights assigned to all known locations
+    :math:`\\mathbf{u}`. This kriging approach is subject to the unbiasedness constraint where:
 
     .. math::
         \\sum\\limits_{b=1}^n \\lambda_b = 1
@@ -883,7 +883,7 @@ class Kriging:
     The kriging weights :math:`\\lambda_b` are obtained by solving the kriging system:
 
     .. math::
-        \\mathbf{\Gamma} \\hat{\\mathbf{\\lambda}} = \\hat{\\mathbf{\\gamma}}_\\mathbf{u}
+        \\mathbf{\\Gamma} \\hat{\\mathbf{\\lambda}} = \\hat{\\mathbf{\\gamma}}_\\mathbf{u}
 
     where:
 
