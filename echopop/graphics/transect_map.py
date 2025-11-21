@@ -97,19 +97,19 @@ def plot_transect_map(
         CRS for the plot. This should be either a projected or geodetic coordinate system definition
         compatible with :class:`geopandas.GeoDataFrame`.
     coordinate_names : tuple[str], default=('longitude', 'latitude')
-        Names of the coordinate columns. This is a tuple with an expected order of ``'x'`` and then 
+        Names of the coordinate columns. This is a tuple with an expected order of ``'x'`` and then
         ``'y'``.
     scatter_kwargs : dict, optional
         Additional keyword arguments passed directly to :meth:`matplotlib.axes.Axes.scatter`.
-        For example, you can control marker size, color, alpha, etc., such as: 
+        For example, you can control marker size, color, alpha, etc., such as:
         ``scatter_kwargs={'s': 20, 'c': 'red', 'alpha': 0.7}``
     transect_kwargs : dict, optional
         Additional keyword arguments passed to :meth:`geopandas.GeoDataFrame.plot` for transect
         lines. For example, you can control line color, width, style, etc. such as:
         ``transect_kwargs={'color': 'black', 'linewidth': 1.5}``
     coast_kwargs : dict, optional
-        Additional keyword arguments passed to the coastline plotting function such as 
-        :meth:`cartopy.mpl.geoaxes.GeoAxes.add_feature()`. These control the appearance of the 
+        Additional keyword arguments passed to the coastline plotting function such as
+        :meth:`cartopy.mpl.geoaxes.GeoAxes.add_feature()`. These control the appearance of the
         coastline overlay. Example: ``coast_kwargs={'edgecolor': 'black', 'linewidth': 0.5}``
     axis_kwargs : dict, optional
         Additional keyword arguments passed to axis formatting functions (e.g., setting
@@ -122,7 +122,7 @@ def plot_transect_map(
         Example: ``plot_kwargs={'alpha': 0.8}``
     colorbar_kwargs : dict, optional
         Additional keyword arguments passed to :func:`matplotlib.pyplot.colorbar` for customizing
-        the colorbar. These control label, orientation, ticks, etc. Example: 
+        the colorbar. These control label, orientation, ticks, etc. Example:
         ``colorbar_kwargs={'label': 'Biomass (kg)', 'orientation': 'vertical'}``
     save_path : Path, optional
         Filepath for saving the figure.

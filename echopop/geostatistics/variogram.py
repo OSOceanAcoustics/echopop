@@ -631,21 +631,21 @@ class Variogram:
         \\hat{\\gamma}(h) = \\frac{1}{2N(h)} \\sum\\limits_{i<j:\\; h_{ij}\\approx h}
             \\bigl(z(\\mathbf{x}_j)-z(\\mathbf{x}_i)\\bigr)^2
 
-    here :math:`z(\\mathbf{x}_i)` and :math:`z(\\mathbf{x}_j)` denote the observed (realized) values 
-    of the variable at sample locations :math:`\\mathbf{x}_i` and :math:`\\mathbf{x}_j`, 
+    here :math:`z(\\mathbf{x}_i)` and :math:`z(\\mathbf{x}_j)` denote the observed (realized) values
+    of the variable at sample locations :math:`\\mathbf{x}_i` and :math:`\\mathbf{x}_j`,
     respectively, and :math:`N(h)` is the number of pairs separated by distance h.
 
     The class implements a standardized semivariogram approach where the semivariance
     is normalized by the product of head and tail standard deviations:
 
     .. math::
-        \\hat{\\gamma}_{\\text{std}}(h) = \\frac{1}{2N(h)} \\sum_{i<j:\\; h_{ij}\\approx h} 
-        \\frac{[z(\\mathbf{x}_j) - z(\\mathbf{x}_i)]^2}{\\sigma(\\mathbf{x}_j) \\cdot 
+        \\hat{\\gamma}_{\\text{std}}(h) = \\frac{1}{2N(h)} \\sum_{i<j:\\; h_{ij}\\approx h}
+        \\frac{[z(\\mathbf{x}_j) - z(\\mathbf{x}_i)]^2}{\\sigma(\\mathbf{x}_j) \\cdot
         \\sigma(\\mathbf{x}_i)}
 
-    where :math:`\\sigma(\\mathbf{x}_i)` and :math:`\\sigma(\\mathbf{x}_j)` are local standard 
-    deviations at :math:`\\mathbf{x}_i` and :math:`\\mathbf{x}_j`. This standardization helps 
-    account for local variance heterogeneity and provides more robust variogram estimates for 
+    where :math:`\\sigma(\\mathbf{x}_i)` and :math:`\\sigma(\\mathbf{x}_j)` are local standard
+    deviations at :math:`\\mathbf{x}_i` and :math:`\\mathbf{x}_j`. This standardization helps
+    account for local variance heterogeneity and provides more robust variogram estimates for
     irregularly distributed data [1]_.
 
     Parameters
@@ -721,25 +721,25 @@ class Variogram:
     -----
     The class implements several key applications for fisheries acoustic survey data:
 
-    1. **Standardized Semivariogram**: Uses local variance normalization to handle heteroscedastic 
+    1. **Standardized Semivariogram**: Uses local variance normalization to handle heteroscedastic
        data common in biological surveys.
 
-    2. **Azimuth Filtering**: Supports directional variogram analysis for anisotropic spatial 
+    2. **Azimuth Filtering**: Supports directional variogram analysis for anisotropic spatial
        patterns often observed in marine ecosystems.
 
-    3. **Robust Lag Estimation**: Uses weighted binning approaches that account for irregular 
+    3. **Robust Lag Estimation**: Uses weighted binning approaches that account for irregular
        sampling patterns typical in acoustic transect surveys.
 
-    The theoretical variogram models available include single-family models exponential, Gaussian, 
-    spherical, Bessel functions) and composite models that can capture complex spatial structures 
+    The theoretical variogram models available include single-family models exponential, Gaussian,
+    spherical, Bessel functions) and composite models that can capture complex spatial structures
     with both short-range correlation and periodic patterns [2]_, [3]_.
 
     References
     ----------
     .. [1] Cressie, N.A.C. (1993). *Statistics for Spatial Data*. John Wiley & Sons.
-    .. [2] Chilès, J.P., and Delfiner, P. (2012). *Geostatistics: Modeling Spatial Uncertainty*. 
+    .. [2] Chilès, J.P., and Delfiner, P. (2012). *Geostatistics: Modeling Spatial Uncertainty*.
            2nd ed. John Wiley & Sons.
-    .. [3] Rivoirard, J., Simmonds, J., Foote, K.G., Fernandes, P., and Bez, N. (2000). 
+    .. [3] Rivoirard, J., Simmonds, J., Foote, K.G., Fernandes, P., and Bez, N. (2000).
            *Geostatistics for Estimating Fish Abundance*. Blackwell Science.
 
     """
@@ -794,8 +794,8 @@ class Variogram:
         """
         Compute the empirical variogram from transect data.
 
-        Calculates the standardized semivariogram using the method described in Rivoirard et al. 
-        (2000) [1]_, which is particularly suitable for fisheries acoustic data with irregular 
+        Calculates the standardized semivariogram using the method described in Rivoirard et al.
+        (2000) [1]_, which is particularly suitable for fisheries acoustic data with irregular
         sampling patterns and heterogeneous variance.
 
         Parameters
@@ -812,7 +812,7 @@ class Variogram:
             Maximum azimuth angle deviation (in degrees) for including point pairs. Values less
             than 180° enable directional variogram analysis.
         force_lag_zero : bool, default=True
-            If True, forces the nugget effect to zero by prepending lag 0 with 
+            If True, forces the nugget effect to zero by prepending lag 0 with
             :math:`\\gamma(0) = 0`. This assumes no measurement error or micro-scale variation.
 
         Notes
@@ -870,21 +870,21 @@ class Variogram:
         .. math::
             \\gamma(h) = C_0 + C_1 \\cdot \\mathscr{f}(h; \\theta)
 
-        where :math:`C_0` is the nugget (the value at zero lag), :math:`C_1` is the partial sill 
-        (:math:`C - C_0`), and :math:`\\mathscr{f}(h; \\theta)` is a correlation function that 
-        depends on lag :math:`h` and model-specific parameters :math:`\\theta` 
+        where :math:`C_0` is the nugget (the value at zero lag), :math:`C_1` is the partial sill
+        (:math:`C - C_0`), and :math:`\\mathscr{f}(h; \\theta)` is a correlation function that
+        depends on lag :math:`h` and model-specific parameters :math:`\\theta`
         (e.g., range, sill, power)
 
         The optimization minimizes the weighted residual sum of squares:
 
         .. math::
-            \\min_{\\theta} \\sum_{b=1}^{n} \\hat{w}_b \\left[ \\gamma_\\text{empirical}(h_b) - 
+            \\min_{\\theta} \\sum_{b=1}^{n} \\hat{w}_b \\left[ \\gamma_\\text{empirical}(h_b) -
             \\gamma_\\text{model}(h_b; \\theta) \\right]^2
 
-        where :math:`n` is the number of lag bins and :math:`b` indexes those lag bins 
-        (:math:`b=1, \\dots, n`). The weights :math:`\\hat{w}_b` are associated with each lag bins 
+        where :math:`n` is the number of lag bins and :math:`b` indexes those lag bins
+        (:math:`b=1, \\dots, n`). The weights :math:`\\hat{w}_b` are associated with each lag bins
         and are normalized where:
-        
+
         .. math::
             \\hat{w}_b = \\frac{N(h_b)}{\\sum\\limits_{b=1}^{n} N(h_b)}
 
@@ -896,12 +896,12 @@ class Variogram:
             models (e.g., ``['bessel', 'exponential']``).
         model_parameters : lmfit.Parameters
             Initial parameter values and constraints for optimization. Required parameters depend
-            on the chosen model, but the formatting should follow 
-            :class:`lmfit.parameter.Parameters` specifications. See 
-            :func:`echopop.geostatistics.compute_variogram` for details on available models and 
+            on the chosen model, but the formatting should follow
+            :class:`lmfit.parameter.Parameters` specifications. See
+            :func:`echopop.geostatistics.compute_variogram` for details on available models and
             their respective parameter requirements.
         optimizer_kwargs : dict, default={}
-            Additional arguments passed to :func:`lmfit.minimizer.minimize`. Common options 
+            Additional arguments passed to :func:`lmfit.minimizer.minimize`. Common options
             include ``'max_nfev'`` (maximum function evaluations) and solver-specific parameters.
 
         Returns

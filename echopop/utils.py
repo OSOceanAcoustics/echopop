@@ -24,7 +24,7 @@ def binned_distribution(bins: np.ndarray[np.number]) -> pd.DataFrame:
     -------
     |pd.DataFrame|
         DataFrame with columns:
-        
+
         - ``'bin'``: Original bin values
         - ``'interval'``: :class:`pandas.Interval` objects representing the binning intervals
 
@@ -49,9 +49,9 @@ def binned_distribution(bins: np.ndarray[np.number]) -> pd.DataFrame:
 
     Notes
     -----
-    The function calculates the bin width as the mean of half the differences between consecutive 
-    bin values. This approach works well for both evenly and unevenly spaced bins. The centered 
-    bins extend beyond the original range by one bin width on each side, ensuring that all original 
+    The function calculates the bin width as the mean of half the differences between consecutive
+    bin values. This approach works well for both evenly and unevenly spaced bins. The centered
+    bins extend beyond the original range by one bin width on each side, ensuring that all original
     bin values fall within the created intervals.
     """
 
@@ -75,17 +75,17 @@ def binify(
     Apply binning to biological data using predefined bin distributions.
 
     This function bins continuous variables (like length or age) in biological datasets using bin
-    edge arrays. It creates interval distributions internally and can handle single DataFrames or 
-    dictionaries of DataFrames, automatically skipping DataFrames that don't contain the target 
+    edge arrays. It creates interval distributions internally and can handle single DataFrames or
+    dictionaries of DataFrames, automatically skipping DataFrames that don't contain the target
     column. The data is modified in place.
 
     Parameters
     ----------
     data : |pd.DataFrame| or Dict[str, |pd.DataFrame|]
-        Target data to bin. Can be a single DataFrame or dictionary of DataFrames. Data are 
+        Target data to bin. Can be a single DataFrame or dictionary of DataFrames. Data are
         modified in place.
     bins : np.ndarray[|np.number|]
-        Array of bin edge values. Must be 1-dimensional and contain at least 2 elements. Values 
+        Array of bin edge values. Must be 1-dimensional and contain at least 2 elements. Values
         should be in ascending order for proper binning behavior.
     bin_column : str
         Name of the column in data to apply binning to (e.g., ``'length'``, ``'age'``).
@@ -311,7 +311,7 @@ def apply_filters(
     >>> # Multi-index filtering: Filter by age_bin, length_bin, and sex simultaneously
     >>> apply_filters(df, include_filter={"age_bin": [1], "length_bin": [1, 2, 3], "sex": ["male"]})
     >>> # Combined filtering: Include certain length bins but exclude unsexed
-    >>> apply_filters(df, include_filter={"length_bin": [1, 2, 3]},\ 
+    >>> apply_filters(df, include_filter={"length_bin": [1, 2, 3]},\
         exclude_filter={"sex": "unsexed"})
     """
 

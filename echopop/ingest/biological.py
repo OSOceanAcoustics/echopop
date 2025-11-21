@@ -72,7 +72,7 @@ def load_biological_data(
         Format: ``{"ships": {ship_id: {"survey": survey_id, "haul_offset": offset}}, "species_code":
         [codes]}``
     biodata_label_map : dict, optional
-        Dictionary mapping column names to value replacement dictionaries (e.g., 
+        Dictionary mapping column names to value replacement dictionaries (e.g.,
         ``{"sex": {1: "male", 2: "female", 3: "unsexed"}}``)
 
     Returns

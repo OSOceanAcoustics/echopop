@@ -16,8 +16,8 @@ def read_echoview_sv(
     """
     Read and process Echoview volume backscattering strength (Sv) export data.
 
-    This function reads CSV files exported from Echoview containing acoustic backscatter 
-    measurements and performs basic data cleaning including coordinate imputation and transect 
+    This function reads CSV files exported from Echoview containing acoustic backscatter
+    measurements and performs basic data cleaning including coordinate imputation and transect
     numbering.
 
     Parameters
@@ -34,12 +34,12 @@ def read_echoview_sv(
     Returns
     -------
     |pd.DataFrame| or None
-        DataFrame containing processed Sv data with columns for acoustic measurements, coordinates, 
+        DataFrame containing processed Sv data with columns for acoustic measurements, coordinates,
         and metadata. Returns None if file is empty or contains no valid data
 
     Notes
     -----
-    The function adds a `'filename'` column containing the full file path for data provenance 
+    The function adds a `'filename'` column containing the full file path for data provenance
     tracking. Coordinate imputation uses interpolation methods from :mod:`echopop.ingest.nasc`.
 
     Examples
@@ -541,8 +541,8 @@ def ingest_echoview_sv(
     r"""
     Complete ingestion pipeline for Echoview Sv export data.
 
-    This is the main entry point for processing Echoview volume backscattering strength exports. It 
-    handles file discovery, data loading, coordinate imputation, frequency filtering, and spatial 
+    This is the main entry point for processing Echoview volume backscattering strength exports. It
+    handles file discovery, data loading, coordinate imputation, frequency filtering, and spatial
     aggregation to produce analysis-ready acoustic datasets.
 
     Parameters
@@ -564,9 +564,9 @@ def ingest_echoview_sv(
     Returns
     -------
     tuple[|pd.DataFrame|, |pd.DataFrame| or None]
-        - ``sv_integrated``: Spatially aggregated acoustic data with :class:`pandas.MultiIndex` 
+        - ``sv_integrated``: Spatially aggregated acoustic data with :class:`pandas.MultiIndex`
           columns organized by measurement type and frequency.
-        - ``sv_coordinates``: Coordinate reference data for spatial analysis, or None if 
+        - ``sv_coordinates``: Coordinate reference data for spatial analysis, or None if
           coordinates unavailable.
 
     Raises
@@ -586,7 +586,7 @@ def ingest_echoview_sv(
     6. **Integration**: Apply spatial aggregation with thresholding
     7. **Output Formatting**: Structure data for downstream analysis
 
-    The function automatically converts frequency units from Hz to kHz to match Echoview export 
+    The function automatically converts frequency units from Hz to kHz to match Echoview export
     conventions.
 
     Examples

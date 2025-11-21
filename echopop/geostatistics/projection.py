@@ -9,8 +9,8 @@ def utm_string_generator(longitude: float, latitude: float):
     """
     Generate UTM EPSG projection string from longitude/latitude coordinates.
 
-    This function converts WGS84 coordinates to the appropriate UTM zone EPSG code string, 
-    automatically determining the correct UTM zone based on longitude and the hemisphere 
+    This function converts WGS84 coordinates to the appropriate UTM zone EPSG code string,
+    automatically determining the correct UTM zone based on longitude and the hemisphere
     (north/south) based on latitude.
 
     Parameters
@@ -41,7 +41,7 @@ def utm_string_generator(longitude: float, latitude: float):
     The zone number is calculated as: floor((longitude + 180) / 6) + 1
 
     EPSG codes follow the pattern:
-    
+
     - 326XX for northern hemisphere (where XX is the zero-padded zone number)
     - 327XX for southern hemisphere (where XX is the zero-padded zone number)
     """
@@ -65,14 +65,14 @@ def wgs84_to_utm(geodataframe: gpd.GeoDataFrame):
     """
     Transform a :class:`geopandas.GeoDataFrame` from WGS84 to the appropriate UTM coordinate system.
 
-    This function automatically determines the correct UTM zone based on the median longitude and 
-    latitude of the :class:`geopandas.GeoDataFrame` and transforms the coordinate reference system 
+    This function automatically determines the correct UTM zone based on the median longitude and
+    latitude of the :class:`geopandas.GeoDataFrame` and transforms the coordinate reference system
     (CRS) in place. The transformation improves accuracy for distance and area calculations.
 
     Parameters
     ----------
     geodataframe : geopandas.GeoDataFrame
-        GeoDataFrame containing spatial data with WGS84 coordinates. Must contain columns with 
+        GeoDataFrame containing spatial data with WGS84 coordinates. Must contain columns with
         ``'lat'`` and ``'long'`` in their names (case-insensitive).
 
     Returns
@@ -103,7 +103,7 @@ def wgs84_to_utm(geodataframe: gpd.GeoDataFrame):
     3. Generates the UTM EPSG code using utm_string_generator()
     4. Transforms the GeoDataFrame to the new CRS in place
 
-    The transformation uses the median coordinates to ensure the UTM zone is appropriate for the 
+    The transformation uses the median coordinates to ensure the UTM zone is appropriate for the
     entire dataset, which is particularly important for datasets spanning multiple UTM zones.
     """
 
@@ -132,9 +132,9 @@ def reproject_dataset(
     Transform coordinates using a new projection via `GeoPandas <https://geopandas.org/>`_.
 
     This function converts coordinates from one coordinate reference system (CRS) to another
-    using `GeoPandas <https://geopandas.org/>`_ for accurate cartographic projections. It creates 
-    a temporary :class:`geopandas.GeoDataFrame` to perform the transformation and returns the 
-    results as a :class:`pandas.DataFrame` with new ``'x'`` and ``'y'`` columns containing the 
+    using `GeoPandas <https://geopandas.org/>`_ for accurate cartographic projections. It creates
+    a temporary :class:`geopandas.GeoDataFrame` to perform the transformation and returns the
+    results as a :class:`pandas.DataFrame` with new ``'x'`` and ``'y'`` columns containing the
     projected coordinates.
 
     Parameters
@@ -152,7 +152,7 @@ def reproject_dataset(
     Returns
     -------
     pandas.DataFrame
-        DataFrame with the original data plus new ``'x'`` and ``'y'`` columns containing the 
+        DataFrame with the original data plus new ``'x'`` and ``'y'`` columns containing the
         reprojected coordinates in the target CRS.
 
     Examples
@@ -175,9 +175,9 @@ def reproject_dataset(
 
     Notes
     -----
-    This function leverages `GeoPandas <https://geopandas.org/>`_ for accurate coordinate 
-    transformations, which is more reliable than simple mathematical conversions for cartographic 
-    projections. The geometry column created during processing is automatically dropped from the 
+    This function leverages `GeoPandas <https://geopandas.org/>`_ for accurate coordinate
+    transformations, which is more reliable than simple mathematical conversions for cartographic
+    projections. The geometry column created during processing is automatically dropped from the
     output :class:`pandas.DataFrame`.
     """
 

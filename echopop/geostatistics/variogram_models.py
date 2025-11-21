@@ -1775,7 +1775,7 @@ def compute_variogram(
         represent the desired composite model (e.g. the composite J-Bessel and exponential model).
         Available variogram models and their respective arguments include (alongside
         ``distance_lags``):
-        
+
 
         +----------------------------+-------------------------------+---------------------------+
         | :func:`variogram`          | Input                         | Parameters                |
@@ -1867,7 +1867,7 @@ def compute_variogram(
         |                            |                               | - ``correlation_range``   |
         |                            |                               | - ``hole_effect_range``   |
         +----------------------------+-------------------------------+---------------------------+
-        
+
     Returns
     -------
     variogram : np.ndarray
@@ -1988,14 +1988,14 @@ def fit_variogram(
         Empirical semivariogram values (standardized semivariance) at each lag.
     model : str or List[str]
         Theoretical variogram model specification. Single string for basic models
-        (e.g., ``'exponential'``, ``'gaussian'``, ``'spherical'``, ``'jbessel'``, ``'linear'``). 
-        List of two strings for composite models (e.g., ``['bessel', 'exponential']``, 
+        (e.g., ``'exponential'``, ``'gaussian'``, ``'spherical'``, ``'jbessel'``, ``'linear'``).
+        List of two strings for composite models (e.g., ``['bessel', 'exponential']``,
         ``['bessel', 'gaussian']``, ``['cosine', 'exponential']``).
     model_parameters : lmfit..parameters.Parameters
         Parameter object containing initial values, bounds, and constraints for optimization.
         Required parameters depend on the selected model.
     optimizer_kwargs : dict, default={}
-        Additional keyword arguments passed to :func:`lmfit.minimizer.minimize()`. Common options 
+        Additional keyword arguments passed to :func:`lmfit.minimizer.minimize()`. Common options
         include ``'max_nfev'`` for maximum function evaluations and solver-specific parameters.
 
     Returns
@@ -2010,17 +2010,17 @@ def fit_variogram(
     The optimization minimizes the weighted residual sum of squares:
 
     .. math::
-        \\min_{\\theta} \\sum_{b=1}^{n} \\hat{w}_b \\left[ \\gamma_\\text{empirical}(h_b) - 
+        \\min_{\\theta} \\sum_{b=1}^{n} \\hat{w}_b \\left[ \\gamma_\\text{empirical}(h_b) -
         \\gamma_\\text{model}(h_b; \\theta) \\right]^2
 
-    where :math:`n` is the number of lag bins and :math:`b` indexes those lag bins 
-    (:math:`b=1, \\dots, n`). The weights :math:`\\hat{w}_b` are associated with each lag bins 
+    where :math:`n` is the number of lag bins and :math:`b` indexes those lag bins
+    (:math:`b=1, \\dots, n`). The weights :math:`\\hat{w}_b` are associated with each lag bins
     and are normalized where:
-    
+
     .. math::
         \\hat{w}_b = \\frac{N(h_b)}{\\sum\\limits_{b=1}^{n} N(h_b)}
 
-    The function uses Trust Region Reflective algorithm (default in `lmfit.minimizer.minimize()`) 
+    The function uses Trust Region Reflective algorithm (default in `lmfit.minimizer.minimize()`)
     which handles parameter bounds robustly and is suitable for the non-linear nature of variogram models.
 
     References

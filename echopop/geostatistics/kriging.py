@@ -106,7 +106,7 @@ def uniform_search_strategy(
 
 def search_radius_mask(
     distance_matrix: np.ndarray[float], search_radius: float
-    ) -> np.ndarray[float]:
+) -> np.ndarray[float]:
     """
     Generate a mask for the search radius to identify points within the search distance.
 
@@ -211,7 +211,7 @@ def adaptive_search_radius(
         - ``oos_indices (|np.ndarray[np.number]|)`` \n
         Template array based on the size of the data input and ``k_min`` that will contain indices
         where extrapolation is required where there are fewer than ``k_min`` nearest neighbors.
-        
+
         - ``oos_weights (|np.ndarray[float]|)``
         Weights applied to extraplolated values.
 
@@ -625,7 +625,7 @@ def ordinary_kriging(
     variable: str,
     kriging_parameters: Dict[str, Any],
     variogram_parameters: Dict[str, Any],
-    adaptive_search_strategy: Callable = uniform_search_strategy
+    adaptive_search_strategy: Callable = uniform_search_strategy,
 ) -> np.ndarray[float]:
     """
     Use ordinary kriging to interpolate georeferenced data onto a grid
@@ -643,15 +643,15 @@ def ordinary_kriging(
         must exist as a column in 'transects'.
     kriging_parameters: dict
         Dictionary of kriging parameters, must contain keys:
-        
+
         - ``k_min (int)``: minimum number of neighbors,
         - ``k_max (int)``: maximum number of neighbors,
         - ``search_radius (float)``: radius to consider neighbors,
         - ``anisotropy (float)``: truncation threshold for singular values in SVD solver.
-        
+
     variogram_parameters : Dict[str, Any]
         Dictionary describing the variogram model and parameters, such as:
-        
+
         - ``model`` (str or list of str): variogram model names (e.g., 'bessel', 'exponential'),
         - ``nugget`` (float): nugget effect,
         - ``sill`` (float): sill parameter,
@@ -663,50 +663,50 @@ def ordinary_kriging(
         A `Callable` function that defaults to using a uniform search strategy where out-of-sample
         points are extrapolated using equal weights. User-defined search strategies can be defined
         by parsing any of the internally computed variables:
-        
+
         - ``sparse_radii (|np.ndarray[int]|)`` \n
           Indices where there are fewer than ``k_min`` nearest neighbors.
-        
+
         - ``valid_distances (|np.ndarray[int]|)`` \n
           The number of masked distance matrix values where extrapolation is required.
-        
+
         - ``local_points (|np.ndarray[float]|)``\n
           An array with the sorted distances (from nearest to furthest) relative to each point.
-        
+
         - ``distance_matrix_masked (|np.ndarray[float]|)`` \n
           An array with the search-radius-masked nearest neighbor distances.
-        
+
         - ``nearby_indices (|np.ndarray[int]|)`` \n
           Indices of points that require extrapolation.
-        
+
         - ``k_min (int)`` \n
           The minimum number of nearest neighbors required for including values for kriging within
           the search radius.
-        
+
         - ``k_max (int)`` \n
         The maximum number of nearest neighbors required for including values for kriging detected
         within the search radius.
-        
+
         - ``search_radius (float)`` \n
           Maximum distance (in coordinate units) from the target location to consider neighbors for
           adaptive kriging. Only points within this radius are eligible for inclusion in the
           *k*-nearest neighbor search. The adaptive search radius that identifies the *k*-nearest
           neighbors around each georeferenced value that are subsequently kriged.
-        
+
         - ``wr_indices (|np.ndarray[int]|)`` \n
           Indices of within-radius (WR) (i.e. < ``k_max``) points.
-        
+
         - ``oos_indices (|np.ndarray[np.number]|)`` \n
           Template array based on the size of the data input and ``k_min`` that will contain indices
           where extrapolation is required where there are fewer than ``k_min`` nearest neighbors.
-        
+
         - ``oos_weights (|np.ndarray[float]|)``
           Weights applied to extraplolated values.
 
     Returns
     -------
     A 1D array of the same length as ``transect_df`` containing:
-    
+
         - point estimate (``float``): the kriging predicted value at the target location,
         - kriged variance (``float``): variance estimate associated with the kriging prediction,
         - sample variance (``float``): coefficient of variation based variance estimate,
@@ -795,8 +795,8 @@ def project_kriging_results(
     Returns
     -------
     Tuple[|pd.DataFrame|, float]
-        A tuple containing the output mesh |pd.DataFrame| with columns including the kriged 
-        estimates and variance, sample variance, and cell coefficient of variation (CV). The other 
+        A tuple containing the output mesh |pd.DataFrame| with columns including the kriged
+        estimates and variance, sample variance, and cell coefficient of variation (CV). The other
         value is the overall CV computed for the entire kriging mesh.
     """
 
@@ -872,21 +872,21 @@ class Kriging:
     .. math::
         \\mathbf{z}^*(\\mathbf{u}) = \\sum_{b=1}^n \\lambda_b(\\mathbf{u}) z(\\mathbf{u}_b)
 
-    where :math:`n` is the number of observed locations, :math:`z(\\mathbf{u}_b)` are the known values of a 
-    spatially varying variable at locations :math:`\\mathbf{u}_b`, and :math:`\\lambda_b(\\mathbf{u})` are the 
-    kriging weights assigned to all known locations :math:`\\mathbf{u}`. This kriging approach is subject 
+    where :math:`n` is the number of observed locations, :math:`z(\\mathbf{u}_b)` are the known values of a
+    spatially varying variable at locations :math:`\\mathbf{u}_b`, and :math:`\\lambda_b(\\mathbf{u})` are the
+    kriging weights assigned to all known locations :math:`\\mathbf{u}`. This kriging approach is subject
     to the unbiasedness constraint where:
 
     .. math::
         \\sum\\limits_{b=1}^n \\lambda_b = 1
 
     The kriging weights :math:`\\lambda_b` are obtained by solving the kriging system:
-    
+
     .. math::
         \\mathbf{\Gamma} \\hat{\\mathbf{\\lambda}} = \\hat{\\mathbf{\\gamma}}_\\mathbf{u}
-        
+
     where:
-    
+
     .. math::
 
         \\underbrace{
@@ -913,10 +913,10 @@ class Kriging:
                 1
             \\end{bmatrix}
         }_{\\mathbf{\\hat{\\gamma}}_\\mathbf{u}}\\\\
-            
-    Here, :math:`\\gamma_{i,j}` is the semivariance between locations :math:`i` and :math:`j`, 
-    :math:`\\gamma_{i,\\mathbf{u}} = \\gamma(\\mathbf{u}_i - \\mathbf{u})` is the semivariance 
-    between data point :math:`i` and target location :math:`\\mathbf{u}`, and 
+
+    Here, :math:`\\gamma_{i,j}` is the semivariance between locations :math:`i` and :math:`j`,
+    :math:`\\gamma_{i,\\mathbf{u}} = \\gamma(\\mathbf{u}_i - \\mathbf{u})` is the semivariance
+    between data point :math:`i` and target location :math:`\\mathbf{u}`, and
     :math:`\\mu` is the Lagrange multiplier enforcing the unbiasedness constraint [1]_, [2]_.
 
     Parameters
@@ -941,11 +941,11 @@ class Kriging:
         - ``k_min (int)``: Minimum number of nearest neighbors for kriging (typically 3-8).
         - ``k_max (int)``: Maximum number of nearest neighbors for kriging (typically 8-20).
         - ``search_radius (float)``: Maximum distance for neighbor search in coordinate units.
-        
+
     variogram_params : Dict[str, Any]
         Dictionary containing variogram model parameters:
 
-        - ``model`` (``str`` or ``List[str]``): Variogram model (e.g., ``'exponential'``, 
+        - ``model`` (``str`` or ``List[str]``): Variogram model (e.g., ``'exponential'``,
           ``'gaussian'``, ``'spherical'``, or composite models like ``['bessel', 'exponential']``).
         - ``nugget`` (``float``): Nugget effect representing micro-scale variability.
         - ``sill`` (``float``): Total variance (nugget + partial sill).
@@ -1053,15 +1053,15 @@ class Kriging:
     custom boundary functions.
 
     **Typical Parameter Ranges:**
-    
+
     - ``k_min``: 3-8 (minimum for stable estimates)
     - ``k_max``: 8-20 (balance between locality and stability)
     - ``search_radius``: 2-5× correlation range
     - ``aspect_ratio``: 0.1-1.0 (lower values = stronger anisotropy)
 
     **Performance Considerations:**
-    
-    - Computational complexity: :math:`\\mathcal{O}(n \\times m \\times k^3)` where :math:`n` = mesh 
+
+    - Computational complexity: :math:`\\mathcal{O}(n \\times m \\times k^3)` where :math:`n` = mesh
       points, :math:`m` = data points, :math:`k` = neighbors
     - Memory usage scales with mesh size and neighbor count
     - Large search radii increase computational cost but improve spatial continuity
@@ -1174,7 +1174,7 @@ class Kriging:
         crop_function : Callable, default=hull_crop
             Function that defines the survey boundary for mesh subsetting. The default ``hull_crop``
             creates convex hull polygons around transect data with optional buffering. Custom
-            functions must accept ``mesh`` as a keyword argument. See 
+            functions must accept ``mesh`` as a keyword argument. See
             :func:`echopop.geostatistics.hull_crop` for more details.
 
         coordinate_names : Tuple[str, str], default=("longitude", "latitude")
@@ -1204,7 +1204,7 @@ class Kriging:
         4. **Area Adjustment**: Updating cell areas for boundary cells if needed
 
         **Boundary Methods:**
-        
+
         - **Convex Hull**: Simple, conservative boundary (default)
         - **Alpha Shapes**: More flexible boundaries for complex geometries
         - **Custom Polygons**: User-defined survey strata or management areas
@@ -1272,28 +1272,28 @@ class Kriging:
 
         extrapolate : bool, default=True
             If True, uses the full mesh grid (may extrapolate beyond data coverage). If False, uses
-            the cropped mesh (requires prior call to 
+            the cropped mesh (requires prior call to
             :meth:`echopop.geostatistics.Kriging.crop_mesh`).
-            
+
         default_mesh_cell_area : float, optional
-            Default area (nmi²) for mesh cells when ``'area'`` column is missing from mesh. 
+            Default area (nmi²) for mesh cells when ``'area'`` column is missing from mesh.
             Required if mesh lacks area information and no ``'fraction'`` column exists.
 
         adaptive_search_strategy : str, default='uniform'
             Name of the search strategy for handling sparse data regions. Built-in strategies:
-            
-            - ``'uniform'``: Applies uniform weights to extrapolated points (default). 
 
-            Use :meth:`echopop.geostatistics.Kriging.register_search_strategy` to add custom 
+            - ``'uniform'``: Applies uniform weights to extrapolated points (default).
+
+            Use :meth:`echopop.geostatistics.Kriging.register_search_strategy` to add custom
             strategies.
 
         custom_search_kwargs : Dict[str, Any], default={}
             Additional keyword arguments passed to the adaptive search strategy function. Available
             parameters depend on the selected strategy but may include custom weighting schemes,
             distance thresholds, or algorithm-specific parameters. If the custom function
-            incorporates ``coordinate_names`` or ``kriging_mesh`` as arguments, they will be 
-            inherited from the class instance. See 
-            :func:`echopop.geostatistics.uniform_strategy` for more details on internal argument 
+            incorporates ``coordinate_names`` or ``kriging_mesh`` as arguments, they will be
+            inherited from the class instance. See
+            :func:`echopop.geostatistics.uniform_strategy` for more details on internal argument
             names that can be added to the custom function call.
 
         Returns
@@ -1302,7 +1302,7 @@ class Kriging:
             Kriged results with columns:
 
             - Original mesh columns (coordinates, area, etc.)
-            - ``{variable}``: Column name associated ``variable`` 
+            - ``{variable}``: Column name associated ``variable``
             - ``'kriged_variance'``: Prediction variance from kriging equations
             - ``'sample_variance'``: Coefficient of variation based variance
             - ``'cell_cv'``: Cell-level coefficient of variation
@@ -1322,27 +1322,27 @@ class Kriging:
 
         1. **Neighbor Search**: Find :math:`k`-nearest neighbors within search radius
         2. **Covariance Matrix**: Build spatial covariance structure using variogram
-        3. **Weight Calculation**: Solve kriging system with singular value decomposition (SVD) 
+        3. **Weight Calculation**: Solve kriging system with singular value decomposition (SVD)
            for stability
         4. **Prediction**: Compute weighted estimates and prediction variance
         5. **Projection**: Scale results by cell areas for survey totals
 
         **Variance Components:**
-        
+
         - **Kriged Variance**: From kriging equations, measures prediction uncertainty
         - **Sample Variance**: CV-based measure incorporating data variability
         - **Survey CV**: Overall coefficient of variation for the entire survey
 
         **Quality Indicators:**
-        
+
         - Negative predictions are truncated to zero with warnings
         - High kriged variance indicates uncertain predictions
         - Large survey CV suggests high spatial variability or poor model fit
 
         **Search Strategy Options:**
-        
+
         The adaptive search handles regions with insufficient neighbors:
-        
+
         - **Interpolation**: ``k_min`` ≤ neighbors ≤ ``k_max`` within search radius
         - **Extrapolation**: < ``k_min`` neighbors, uses distance-weighted nearest points
         - **Full Extrapolation**: No neighbors within radius, uses ``k_min`` nearest

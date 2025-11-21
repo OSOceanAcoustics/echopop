@@ -371,11 +371,11 @@ class VariogramGUI:
     """
     Interactive graphical user interface for variogram analysis and model fitting.
 
-    The ``VariogramGUI`` class provides an interactive, tabbed interface for computing, visualizing, 
-    and optimizing empirical and theoretical variograms from spatial data. It is designed for use 
-    in Jupyter environments and leverages ipywidgets, holoviews, and bokeh for dynamic plotting and 
+    The ``VariogramGUI`` class provides an interactive, tabbed interface for computing, visualizing,
+    and optimizing empirical and theoretical variograms from spatial data. It is designed for use
+    in Jupyter environments and leverages ipywidgets, holoviews, and bokeh for dynamic plotting and
     user input.
-    
+
     Parameters
     ----------
     data : pandas.DataFrame
@@ -385,7 +385,7 @@ class VariogramGUI:
     n_lags : int
         Number of lag bins to use for empirical variogram computation.
     coordinates : tuple of str
-        Names of the columns in ``data`` representing spatial coordinates, e.g. 
+        Names of the columns in ``data`` representing spatial coordinates, e.g.
         ``("longitude", "latitude")``.
     variogram_parameters : dict, optional
         Dictionary of initial variogram model parameters and their default values.
@@ -402,17 +402,22 @@ class VariogramGUI:
         ...     variogram_parameters={"sill": {"value": 2.0}, "nugget": {"value": 0.1}}
         ... )
         >>> gui  # Displays the interactive GUI
-        
+
     Notes
     -----
     - All computation and plotting is handled internally; users interact only through the GUI.
-    - For advanced scripting or batch processing, use the :class:`echopop.geostatistics.Variogram` 
+    - For advanced scripting or batch processing, use the :class:`echopop.geostatistics.Variogram`
       class directly.
     """
 
-    def __init__(self, 
-                 data: pd.DataFrame, lag_resolution: float, n_lags: int, coordinates: tuple, 
-                 variogram_parameters: Dict[str, Any] = {}):
+    def __init__(
+        self,
+        data: pd.DataFrame,
+        lag_resolution: float,
+        n_lags: int,
+        coordinates: tuple,
+        variogram_parameters: Dict[str, Any] = {},
+    ):
 
         # Initialize extension
         hv.extension("bokeh")

@@ -105,7 +105,7 @@ def load_geostrata(
     Returns
     -------
     dict
-        Dictionary containing geographic stratification pandas.DataFrames keyed by stratification 
+        Dictionary containing geographic stratification pandas.DataFrames keyed by stratification
         type, each with consolidated latitude intervals from INPFC and KS strata assignments
     """
 

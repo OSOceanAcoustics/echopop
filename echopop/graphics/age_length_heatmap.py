@@ -184,10 +184,10 @@ def plot_age_length_heatmap(
     data : pandas.DataFrame
         DataFrame indexed by ``'length_bin'`` and with columns ``'age_bin'``.
     include_filter : dict, optional
-        Dictionary of filters to include specific data. Passed to 
+        Dictionary of filters to include specific data. Passed to
         :func:`echopop.utils.apply_filters`.
     exclude_filter : dict, optional
-        Dictionary of filters to exclude specific data. Passed to 
+        Dictionary of filters to exclude specific data. Passed to
         :func:`echopop.utils.apply_filters`.
     replace_value : any, optional
         Value to use for missing or filtered data.

@@ -103,16 +103,16 @@ class InvParameters:
     """
     Primary class for managing acoustic scattering model parameters used in matrix inversion.
 
-    This class manages parameter sets used in acoustic inversion analysis, providing 
-    scaling/unscaling functionality, bounds management, and integration with the lmfit optimization 
-    package. It serves as the primary interface for parameter handling in Echopop inversion 
+    This class manages parameter sets used in acoustic inversion analysis, providing
+    scaling/unscaling functionality, bounds management, and integration with the lmfit optimization
+    package. It serves as the primary interface for parameter handling in Echopop inversion
     workflows.
 
     Parameters
     ----------
     parameters : Dict[str, Any]
         Dictionary of parameter specifications compatible with :func:`lmfit.Parameters`:
-        
+
         - ``'value'``: Current parameter value
         - ``'min'``: Lower bound (optional, default=-inf)
         - ``'max'``: Upper bound (optional, default=+inf)

@@ -96,13 +96,13 @@ def transect_coordinate_centroid(spatial_grouped: gpd.GeoSeries):
     """
     Calculate the centroid of a given spatial group.
 
-    This function computes the geometric centroid of a collection of spatial points, which is 
+    This function computes the geometric centroid of a collection of spatial points, which is
     useful for determining the center point of transect lines or other spatial groupings.
 
     Parameters
     ----------
     spatial_grouped: geopandas.GeoSeries
-        A :class:`geopandas.GeoSeries` comprising coordinates (i.e. points). Each element should be 
+        A :class:`geopandas.GeoSeries` comprising coordinates (i.e. points). Each element should be
         a :class:`shapely.Point` geometry representing spatial locations.
 
     Returns
@@ -121,7 +121,7 @@ def transect_coordinate_centroid(spatial_grouped: gpd.GeoSeries):
 
     Notes
     -----
-    The function uses :meth:`geopandas.GeoSeries.union_all` to combine all geometries before 
+    The function uses :meth:`geopandas.GeoSeries.union_all` to combine all geometries before
     calculating the centroid, which ensures proper handling of the spatial reference system.
     """
 
@@ -144,7 +144,7 @@ def transect_extent(transects: pd.DataFrame, projection: str, num_nearest_transe
     ----------
     transects : |pd.DataFrame|
         Dataframe containing survey transect data with columns:
-        
+
         - ``'longitude'``: Longitude coordinates
         - ``'latitude'``: Latitude coordinates
         - ``'transect_num'``: Transect identifier numbers
@@ -152,15 +152,15 @@ def transect_extent(transects: pd.DataFrame, projection: str, num_nearest_transe
     projection : str
         EPSG projection code string (e.g., ``'epsg:4326'`` for WGS84)
     num_nearest_transects : int
-    
+
         Number of nearest neighbor transects to include when generating
         the convex hull around each transect
 
     Returns
     -------
     shapely.Point or shapely.LineString or shapely.Polygon
-        A :class:`shapely.Point`, :class:`shapely.LineString`, or :class:`shapely.Polygon` object 
-        that matches the geometry-type of the input transect data. This object represents the 
+        A :class:`shapely.Point`, :class:`shapely.LineString`, or :class:`shapely.Polygon` object
+        that matches the geometry-type of the input transect data. This object represents the
         union of all transect convex hulls, defining the overall spatial extent of the survey area.
 
     Examples
@@ -173,13 +173,13 @@ def transect_extent(transects: pd.DataFrame, projection: str, num_nearest_transe
     ... })
     >>> extent = transect_extent(transect_data, 'epsg:4326', 2)
     >>> print(f"Extent type: {type(extent)}")
-    
+
     Extent type: :class:`shapely.Polygon`
 
     Notes
     -----
     The function performs the following steps:
-    
+
     1. Converts the DataFrame to a :class:`geopandas.GeoDataFrame` with point geometries
     2. Transforms coordinates from WGS84 to UTM for accurate distance calculations
     3. Calculates centroids for each transect
@@ -187,7 +187,7 @@ def transect_extent(transects: pd.DataFrame, projection: str, num_nearest_transe
     5. Generates convex hulls around each transect and its neighbors
     6. Returns the union of all convex hulls
 
-    The resulting polygon can be used for spatial filtering, mesh cropping, or defining survey 
+    The resulting polygon can be used for spatial filtering, mesh cropping, or defining survey
     boundaries for analysis.
     """
 
@@ -284,7 +284,7 @@ def hull_crop(
         EPSG projection code for the input coordinate system. Default is WGS84.
     coordinate_names : Tuple[str, str], default=("longitude", "latitude")
         Names of the coordinate columns when using DataFrames. Expected format: ``(x_col, y_col)``.
-        
+
     Returns
     -------
     |pd.DataFrame|
@@ -304,7 +304,7 @@ def hull_crop(
     Notes
     -----
     The function performs the following steps:
-    
+
     1. Converts the mesh DataFrame to a :class:`geopandas.GeoDataFrame` with point geometries
     2. Transforms coordinates from WGS84 to UTM for accurate distance calculations
     3. Generates survey extent polygon using :func:`echopop.geostatistics.transect_extent`
@@ -312,11 +312,11 @@ def hull_crop(
     5. Filters mesh cells to those within the buffered polygon
     6. Returns the filtered mesh without geometry column
 
-    The UTM transformation ensures accurate distance calculations for the convex hull generation 
-    and buffering operations. The buffer distance helps ensure adequate mesh coverage around the 
+    The UTM transformation ensures accurate distance calculations for the convex hull generation
+    and buffering operations. The buffer distance helps ensure adequate mesh coverage around the
     survey boundary.
 
-    This method is particularly useful for irregularly shaped survey areas where region-based 
+    This method is particularly useful for irregularly shaped survey areas where region-based
     cropping may be too restrictive or complex.
     """
 
