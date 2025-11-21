@@ -64,4 +64,4 @@ df_nasc_filtered = feat.filter_transect_intervals(
 
 For this particularly example (i.e., the 2011 survey), the effect of the filtering can be visualized below, where 4140 off-effort intervals were removed from the NASC `pandas.DataFrame`:
 
-<iframe src="../../_static/offeffort_transect_filtering.html" width="700" height="400"></iframe>
+<iframe src="../_static/offeffort_transect_filtering.html" width="700" height="400"></iframe>
