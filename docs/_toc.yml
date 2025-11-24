@@ -34,6 +34,8 @@ parts:
     - file: example_notebooks/number_proportions
     - file: example_notebooks/weight_proportions
     - file: example_notebooks/basic_inversion
+    - file: example_notebooks/geostatistical
+    - file: example_notebooks/stratified_resampling
     - file: example_notebooks/plotting
   - file: FEAT_implementation
     title: FEAT-specific software implementation
@@ -47,6 +49,7 @@ parts:
     - file: FEAT_implementation/FEAT_notebooks/report_generation
     - file: FEAT_implementation/offeffort_transect_filtering
     - file: FEAT_implementation/kriging_mesh_cropping
+    - file: FEAT_implementation/kriging_biomass_to_nasc
     - file: FEAT_implementation/api/index
       title: FEAT-specific API
       sections:

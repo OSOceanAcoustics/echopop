@@ -22,9 +22,11 @@ class JollyHampton:
     ----------
     model_parameters : Dict[str, Any]
         Dictionary containing model configuration parameters:
+
         - "transects_per_latitude": Number of transects per degree latitude
         - "strata_transect_proportion": Proportion of transects to sample per stratum
         - "num_replicates": Number of bootstrap replicates
+
     resample_seed : int, optional
         Random seed for reproducible bootstrap resampling, by default None.
 
@@ -53,7 +55,7 @@ class JollyHampton:
     References
     ----------
     Jolly, G.M., and Hampton, I. (1990). A stratified random transect design for acoustic surveys
-    of fish stocks. _Canadian Journal of Fisheries and Aquatic Sciences_, _47_(7), 1282-1291.
+    of fish stocks. Canadian Journal of Fisheries and Aquatic Sciences, 47(7), 1282-1291.
     https://doi.org/10.1139/f90-147
 
     Examples
@@ -120,6 +122,7 @@ class JollyHampton:
         -------
         Tuple[pd.DataFrame, pd.DataFrame]
             Tuple containing:
+
             - Modified data DataFrame with added 'transect_num' column
             - Lookup DataFrame mapping latitude to transect numbers
 
@@ -329,6 +332,7 @@ class JollyHampton:
         -------
         Tuple[awk.Array, awk.Array, awk.Array]
             Tuple containing awkward arrays for:
+
             - Sampled distances
             - Sampled areas
             - Sampled response variable values
@@ -894,6 +898,7 @@ class JollyHampton:
         ci_method : {"bc", "bca", "empirical", "normal", "percentile", "t", "t-jackknife"},
         default "t-jackknife"
             Bootstrap confidence interval method:
+
             - "bc": Bias-corrected
             - "bca": Bias-corrected and accelerated
             - "empirical": Empirical bootstrap

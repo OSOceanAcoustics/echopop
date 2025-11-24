@@ -43,6 +43,7 @@ $$
 
 which is the commonly used representation of individual backscattering cross-sections in the fisheries acoustics literature.
 
+(ts-l-relationship)=
 ### $\textit{TS}$-length relationship
 
 Values of $\sigma_{\text{bs},j}$ often varies as a function of the $j^\text{th}$ animal's body length, $L_j$:

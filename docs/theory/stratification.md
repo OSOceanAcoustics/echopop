@@ -113,8 +113,9 @@ For Pacific hake, two types of stratifications are used:
 - **INPFC**: Stratification set by the International North Pacific Fisheries Commission (INFPC) that is based solely on latitude. The US-Canada bienniel hake survey region encompasses 6 strata.
 - **KS**: Stratification determined based on the Kolomogorov-Smirnov test for differences of the fish length distributions across survey hauls. -->
 
+(stratified-resampling-algo)=
 ## Stratified random sampling
-Jolly and Hampton {cite:t}`jolly_hampton_1990` proposed a stratified random transect design for estimating the mean and variance of any spatially varying survey quantity. While stratified random sampling as a technique can be generalized to many measured quantities {cite:p}`cochran_sampling_1977`, direct use of the algorithm by Jolly and Hampton {cite:t}`jolly_hampton_1990` requires absolute measurements that are not relative to a unit area (e.g. abundance, biomass). Let $z(\mathbf{x})$ be the surface value at location $\mathbf{x}$ in survey region $D$. In effect, this means that if you are measuring $\rho_\text{A}$, then $z(x^t)$ corresponds is the $\rho_\text{A}$ observed at location $x$ along transect $t$. 
+{cite:t}`jolly_hampton_1990` proposed a stratified random transect design for estimating the mean and variance of any spatially varying survey quantity. While stratified random sampling as a technique can be generalized to many measured quantities {cite:p}`cochran_sampling_1977`, direct use of the algorithm by {cite:t}`jolly_hampton_1990` requires absolute measurements that are not relative to a unit area (e.g. abundance, biomass). Let $z(\mathbf{x})$ be the surface value at location $\mathbf{x}$ in survey region $D$. In effect, this means that if you are measuring $\rho_\text{A}$, then $z(x^t)$ corresponds is the $\rho_\text{A}$ observed at location $x$ along transect $t$. 
 
 ### Estimating the mean
 
@@ -204,17 +205,19 @@ $$
 
 The coefficient of variation ($\text{CV}$) provides a dimensionless measure of relative uncertainty by relating the total survey variance with its respective mean:
 
+(intext_eq_221_md)=
 $$
     \text{CV} = 
         \frac{\sqrt{\mathbb{V}(\hat{z})}}{\hat{z}}.
     \tag{2.21}
 $$
 
+(jolly-hampton-bootstrap)=
 ### Bootstrap resampling and confidence intervals
 
 #### Resampling the estimators
 
-The Jolly and Hampton {cite:t}`jolly_hampton_1990` algorithm can also incorporate bootstrapping whereby entire transects are resampled (without replacement) within each stratum, preserving the grouping that defines the spatial process $Z(\mathbf{x})$. For stratum $i$ with $n^i$ transects, each bootstrap replicate $b$ draws a $\hat{p}^*$ proportion of transects:
+{cite:t}`jolly_hampton_1990` algorithm can also incorporate bootstrapping whereby entire transects are resampled (without replacement) within each stratum, preserving the grouping that defines the spatial process $Z(\mathbf{x})$. For stratum $i$ with $n^i$ transects, each bootstrap replicate $b$ draws a $\hat{p}^*$ proportion of transects:
 
 $$
     m^i_b = 
@@ -281,6 +284,7 @@ $$
     \tag{2.27}
 $$
 
+(jolly-hampton-ci)=
 #### Confidence interval estimation
 
 After generating bootstrap replicates for the $\hat{z}_b$, $\mathbb{V}(\hat{z}_b)$variance, and $\text{CV}$, confidence intervals for these quantities can be constructed using a variety of methods. One common approach is using the **percentile method** {cite:p}`efron_bootstrap_1994` that has historically been widely used in survey statistics {cite:p}`cochran_sampling_1977`. Let $\{\hat{z}_b\}_{b=1}^B$ denote the set of bootstrap replicates for the survey mean density, where $B$ is the total number of bootstrap samples. The confidence interval for the survey mean at level $(1-\alpha)$ is:

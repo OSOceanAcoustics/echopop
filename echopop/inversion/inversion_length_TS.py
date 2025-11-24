@@ -124,11 +124,13 @@ class InversionLengthTS(InversionBase):
         ----------
         df_length : pd.DataFrame or list of pd.DataFrame
             Length data containing fish measurements. Can be:
+
             - Single DataFrame with length measurements per haul
             - List of DataFrames to be concatenated
             - Dictionary of DataFrames (values will be used)
 
             Required columns:
+
             - All columns specified in model_params["stratify_by"]
             - "haul_num": Haul identifier
             - "length": Fish length measurements

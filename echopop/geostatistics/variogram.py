@@ -944,7 +944,7 @@ class Variogram:
         # Fit the optimized theoretical variogram model
         (
             self.variogram_params_optimized,
-            self.variogram_params_inital,
+            self.variogram_fit_initial,
             self.variogram_fit_optimized,
         ) = fit_variogram(
             lags=self.lags,
