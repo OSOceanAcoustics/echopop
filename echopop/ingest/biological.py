@@ -3,7 +3,6 @@ from typing import Dict, Optional
 
 import pandas as pd
 import psycopg
-from psycopg.errors import RaiseException
 
 
 def load_single_biological_sheet(
