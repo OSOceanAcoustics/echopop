@@ -36,6 +36,12 @@ jobs:
         python -m pip install --upgrade setuptools wheel
         pip install -r requirements-dev.txt
         pip install -e .
-    - name: Test with pytest
+    - name: Test with pytest (Windows Non-Admin)
+      if: runner.os == 'Windows'
+      uses: dcycle/windows-non-admin-shell-action@v1
+      with:
+        command: pytest
+    - name: Test with pytest (Linux/macOS)
+      if: runner.os != 'Windows'
       run: |
         pytest
