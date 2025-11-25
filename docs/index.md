@@ -37,7 +37,7 @@ for continuing discussions that make Echopop better.
 
 This project is supported by NOAA Fisheries.
 
-```{image} images/noaa_fisheries_logo.png
+```{image} assets/noaa_fisheries_logo.png
 :alt: NOAA_fisheries_logo
 :width: 230px
 ```
@@ -49,4 +49,4 @@ Echopop is licensed under the open source [Apache 2.0 license](https://opensourc
 
 ---------------
 
-Copyright (c) 2022-2024, Echopop Developers.
+Copyright (c) 2022-2025, Echopop Developers.

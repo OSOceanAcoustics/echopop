@@ -182,28 +182,28 @@ def plot_age_length_heatmap(
     Parameters
     ----------
     data : pandas.DataFrame
-        DataFrame indexed by 'length_bin' and with columns 'age_bin'.
+        DataFrame indexed by ``'length_bin'`` and with columns ``'age_bin'``.
     include_filter : dict, optional
-        Dictionary of filters to include specific data. Passed to :func:`utils.apply_filters`.
+        Dictionary of filters to include specific data. Passed to
+        :func:`echopop.utils.apply_filters`.
     exclude_filter : dict, optional
-        Dictionary of filters to exclude specific data. Passed to :func:`utils.apply_filters`.
+        Dictionary of filters to exclude specific data. Passed to
+        :func:`echopop.utils.apply_filters`.
     replace_value : any, optional
         Value to use for missing or filtered data.
     axis_kwargs : dict, optional
         Additional keyword arguments for axis formatting (e.g., labels).
-        Example: `axis_kwargs={'xlabel': 'Age', 'ylabel': 'Length'}`
+        Example: ``axis_kwargs={'xlabel': 'Age', 'ylabel': 'Length'}``
     plot_kwargs : dict, optional
         Additional keyword arguments for :func:`matplotlib.pyplot.subplots`.
     colorbar_kwargs : dict, optional
-        Additional keyword arguments for :func:`matplotlib.pyplot.colorbar`
-        ([docs](https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.colorbar.html)).
+        Additional keyword arguments for :func:`matplotlib.pyplot.colorbar`.
     imshow_kwargs : dict, optional
-        Additional keyword arguments for :meth:`matplotlib.axes.Axes.imshow`
-        ([docs](https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.imshow.html)).
-    save_path : Path, optional
+        Additional keyword arguments for :meth:`matplotlib.axes.Axes.imshow`.
+    save_path : pathlib.Path, optional
         Filepath for saving the figure.
     savefig_kwargs : dict, optional
-        Keyword arguments used by `matplotlib.pyplot.savefig` for saving the figure to the
+        Keyword arguments used by :func:`matplotlib.pyplot.savefig` for saving the figure to the
         associated save filepath.
 
     Returns
@@ -217,8 +217,8 @@ def plot_age_length_heatmap(
     Notes
     -----
     All keyword argument dictionaries are optional and are passed directly to the underlying
-    plotting functions. If a keyword is present in both a specific kwargs dict and `plot_kwargs`,
-    the value in `plot_kwargs` takes precedence.
+    plotting functions. If a keyword is present in both a specific kwargs dict and ``plot_kwargs``,
+    the value in ``plot_kwargs`` takes precedence.
     """
     # Create copies
     axis_kwargs = {} if axis_kwargs is None else axis_kwargs.copy()

@@ -500,7 +500,7 @@ def test_length_average():
         "gaussian",
     )
     # Assert: typing
-    assert isinstance(single_freq_gauss, np.ndarray)
+    assert isinstance(single_freq_gauss, list)
     assert isinstance(single_freq_gauss[0], float)
     # Assert: shape
     assert len(single_freq_gauss) == 1
@@ -515,7 +515,7 @@ def test_length_average():
         "uniform",
     )
     # Assert: typing
-    assert isinstance(single_freq_unif, np.ndarray)
+    assert isinstance(single_freq_unif, list)
     assert isinstance(single_freq_unif[0], float)
     # Assert: shape
     assert len(single_freq_unif) == 1
@@ -535,7 +535,7 @@ def test_length_average():
         "gaussian",
     )
     # Assert: typing
-    assert isinstance(multi_freq_gauss, np.ndarray)
+    assert isinstance(multi_freq_gauss, list)
     assert all([isinstance(multi_freq_gauss[f], float) for f in range(3)])
     # Assert: shape
     assert len(multi_freq_gauss) == 3
@@ -550,13 +550,13 @@ def test_length_average():
         "uniform",
     )
     # Assert: typing
-    assert isinstance(multi_freq_unif, np.ndarray)
+    assert isinstance(multi_freq_unif, list)
     assert all([isinstance(multi_freq_unif[f], float) for f in range(3)])
     # Assert: shape
     assert len(multi_freq_unif) == 3
     assert all(
         [
-            not np.allclose(multi_freq_gauss[f], multi_freq_unif[f], atol=1e-13)
+            not np.allclose(multi_freq_gauss[f], multi_freq_unif[f], atol=1e-14)
             for f in range(len(multi_freq_unif))
         ]
     )

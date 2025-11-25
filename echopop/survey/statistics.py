@@ -481,6 +481,7 @@ def confidence_interval(
         for each variable. Must have the same column structure as bootstrap_samples.
     ci_method : {"bc", "bca", "empirical", "normal", "percentile", "t", "t-jackknife"}
         Method for computing the bootstrap confidence interval:
+
         - "bc": Bias-corrected method[1]_
         - "bca": Bias-corrected and accelerated method[2]_
         - "empirical": Empirical method using bootstrap deviations[1]_

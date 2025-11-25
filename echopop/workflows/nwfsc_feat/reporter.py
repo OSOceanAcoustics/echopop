@@ -1456,8 +1456,9 @@ class Reporter:
         Create kriged age-length abundance reports and write a 3-sheet workbook.
 
         This method:
+
         - Builds aged/unaged full tables (male/female/all), optionally redistributing using
-          the provided `exclude_filter` via apportion.redistribute_population_table
+          the provided ``exclude_filter`` via apportion.redistribute_population_table
         - Converts interval indices to numeric midpoints for table rows/columns
         - Writes per-sex pivot tables using internal write helpers
 
@@ -1469,10 +1470,10 @@ class Reporter:
             Mapping sex -> sheet name (keys: 'male','female','all').
         datatables : dict
             Dictionary with keys:
-            - 'aged' : pandas.DataFrame (required)
-            - 'unaged' : pandas.DataFrame (optional but recommended)
-            The function expects DataFrames with interval-like index levels `length_bin` and
-            column levels `age_bin` and `sex` (or compatible structure).
+
+            - 'aged' : pandas.DataFrame
+            - 'unaged' : pandas.DataFrame
+
         exclude_filter : dict
             Filter dictionary passed to :func:`apportion.reallocate_population_table` to
             zero/exclude strata.
@@ -1916,6 +1917,7 @@ class Reporter:
         Produce a transect-level aged biomass workbook (three sex-specific sheets).
 
         Steps:
+
         - Create age-weight proportions per stratum from `weight_data`
         - Apply optional `exclude_filter` to zero/out strata
         - Multiply transect biomass by age/sex proportions and write per-sex sheets

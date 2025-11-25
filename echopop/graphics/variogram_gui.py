@@ -1,6 +1,6 @@
 import ast
 import traceback
-from typing import Literal, Optional
+from typing import Any, Dict, Literal, Optional
 
 import holoviews as hv
 import ipywidgets as ipw
@@ -368,8 +368,56 @@ echopop.variogram.Variogram</span> class.
 
 
 class VariogramGUI:
+    """
+    Interactive graphical user interface for variogram analysis and model fitting.
 
-    def __init__(self, data, lag_resolution, n_lags, coordinates, variogram_parameters: dict = {}):
+    The ``VariogramGUI`` class provides an interactive, tabbed interface for computing, visualizing,
+    and optimizing empirical and theoretical variograms from spatial data. It is designed for use
+    in Jupyter environments and leverages ipywidgets, holoviews, and bokeh for dynamic plotting and
+    user input.
+
+    Parameters
+    ----------
+    data : pandas.DataFrame
+        Input spatial dataset containing coordinate columns and variables for variogram analysis.
+    lag_resolution : float
+        The distance interval for each lag bin in the variogram calculation.
+    n_lags : int
+        Number of lag bins to use for empirical variogram computation.
+    coordinates : tuple of str
+        Names of the columns in ``data`` representing spatial coordinates, e.g.
+        ``("longitude", "latitude")``.
+    variogram_parameters : dict, optional
+        Dictionary of initial variogram model parameters and their default values.
+
+    Examples
+    --------
+    Instantiate the class in a Jupyter notebook and display the GUI by evaluating the instance:
+
+        >>> gui = VariogramGUI(
+        ...     data=survey_df,
+        ...     lag_resolution=5.0,
+        ...     n_lags=15,
+        ...     coordinates=("longitude", "latitude"),
+        ...     variogram_parameters={"sill": {"value": 2.0}, "nugget": {"value": 0.1}}
+        ... )
+        >>> gui  # Displays the interactive GUI
+
+    Notes
+    -----
+    - All computation and plotting is handled internally; users interact only through the GUI.
+    - For advanced scripting or batch processing, use the :class:`echopop.geostatistics.Variogram`
+      class directly.
+    """
+
+    def __init__(
+        self,
+        data: pd.DataFrame,
+        lag_resolution: float,
+        n_lags: int,
+        coordinates: tuple,
+        variogram_parameters: Dict[str, Any] = {},
+    ):
 
         # Initialize extension
         hv.extension("bokeh")

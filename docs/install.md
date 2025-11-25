@@ -1,12 +1,12 @@
 # Installation
 
-Echopop is not yet available to be installed on PyPI or conda. We plan to enable these distributions at release v0.4.2 after the current code refactoring is completed.
+Echopop is not yet available to be installed on PyPI or conda. We plan to enable these distributions at release v0.5.0 after the current code refactoring is completed.
 
 Until then, you can install Echopop from the repository following the steps below:
 
 ```shell
 # create a conda environment using the supplied requirements files
-conda create -c conda-forge -n echopop --yes python=3.9 --file requirements.txt
+conda create -c conda-forge -n echopop --yes python=3.12 --file requirements.txt
 
 # switch to the newly built environment
 conda activate echopop
@@ -25,11 +25,14 @@ We recommend using the ``libmamba`` solver instead of the classic solver.
    for installation and usage.
 ```
 
+```{danger}
+There are dependency issues with Python 3.14, so it is currently recommended to use Python 3.12 or 3.13 for now until these issues can be resolved.
+```
 
 If you want to create the full development environment so that you can make changes to the Echopop code, use below when creating the conda environment:
 ```shell
 # note the last one docs/requirements.txt is only required for building docs
-conda create -c conda-forge -n echopop --yes python=3.9 --file requirements.txt --file requirements-dev.txt --file docs/requirements.txt
+conda create -c conda-forge -n echopop --yes python=3.12 --file requirements.txt --file requirements-dev.txt --file docs/requirements.txt
 ```
 
 and when installing echopop at the end, use:

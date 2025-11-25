@@ -12,7 +12,7 @@ def load_mesh_data(
 
     Parameters
     ----------
-    mesh_filepath : str or Path
+    mesh_filepath : str or pathlib.Path
         Path to the Excel file containing mesh data
     sheet_name : str
         Name of the sheet containing the mesh data
@@ -21,7 +21,7 @@ def load_mesh_data(
 
     Returns
     -------
-    pd.DataFrame
+    |pd.DataFrame|
         DataFrame containing the mesh data with centroid coordinates and fractions
 
     Examples
@@ -56,7 +56,7 @@ def load_isobath_data(
 
     Parameters
     ----------
-    isobath_filepath : str or Path
+    isobath_filepath : str or pathlib.Path
         Path to the Excel file containing mesh data
     sheet_name : str
         Name of the sheet containing the mesh data
@@ -65,7 +65,7 @@ def load_isobath_data(
 
     Returns
     -------
-    pd.DataFrame
+    |pd.DataFrame|
         DataFrame containing the isobath data with longitude and latitude
 
     Examples

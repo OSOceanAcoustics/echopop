@@ -5,8 +5,8 @@ from echopop.geostatistics.kriging import (
     Kriging,
     adaptive_search_radius,
     count_within_radius,
-    krige,
     kriging_lambda,
+    ordinary_kriging,
     ordinary_kriging_matrix,
     parse_stacked_kriging_array,
     project_kriging_results,
@@ -282,7 +282,7 @@ def test_kriging_point_estimator_basic(sample_biomass_data, sample_variogram_par
     for param_name in sample_variogram_parameters.keys():
         variogram_params[param_name] = sample_variogram_parameters[param_name].value
 
-    result = krige(
+    result = ordinary_kriging(
         sample_biomass_data,
         mesh,
         coordinate_names=("x", "y"),
@@ -329,7 +329,7 @@ def test_krige_basic(sample_transect_df):
         "correlation_range": 0.5,
     }
 
-    result = krige(
+    result = ordinary_kriging(
         sample_transect_df,
         kriging_mesh,
         coordinate_names,

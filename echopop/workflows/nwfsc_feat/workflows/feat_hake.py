@@ -31,7 +31,6 @@ from echopop.workflows.nwfsc_feat import apportionment, biology
 # --------------------------
 DATA_ROOT = Path("C:/Data/EchopopData/echopop_2019")
 # DATA_ROOT = Path("C:/Users/Brandyn Lucca/Documents/Data/echopop_2019")
-
 # ==================================================================================================
 # ==================================================================================================
 # DATA INGESTION
@@ -178,7 +177,7 @@ BIODATA_SEX = {"sex": {1: "male", 2: "female", 3: "unsexed"}}
 #
 dict_df_bio = load_biological_data(
     biodata_filepath=DATA_ROOT / "Biological/1995-2023_biodata_redo.xlsx",
-    BIODATA_SHEETS=BIODATA_SHEETS,
+    biodata_sheet_map=BIODATA_SHEETS,
     column_name_map=FEAT_TO_ECHOPOP_BIODATA_COLUMNS,
     subset_dict=SUBSET_DICT,
     biodata_label_map=BIODATA_SEX,

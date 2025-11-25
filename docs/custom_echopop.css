@@ -8,12 +8,35 @@
 
 /* For smaller scrollable outputs */
 .scroll-output-small pre {
-    max-height: 150px;
-    overflow-y: auto;
+    max-height: 150px !important;
+    overflow-y: auto !important;
+}
+.scroll-output-small .output_area {
+    max-height: 150px !important;
+    overflow-y: auto !important;
 }
 
 /* For larger scrollable outputs */
 .scroll-output-large pre {
     max-height: 300px;
     overflow-y: auto;
+}
+.scroll-output-large .output_area {
+    max-height: 300px !important;
+    overflow-y: auto !important;
+}
+
+/* hide automatic table-number prefixes (covers common theme variants) */
+.caption-number,
+.caption-prefix,
+p.caption > .caption-number,
+p.caption > .caption-prefix,
+p.caption > span:first-child,
+p.caption > strong:first-child {
+  display: none !important;
+}
+
+/* if the number is wrapped in a <span> with no class */
+p.caption > span:first-child:not(.caption-text) {
+  display: none !important;
 }
