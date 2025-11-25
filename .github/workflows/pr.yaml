@@ -20,7 +20,12 @@ jobs:
       fail-fast: false
     steps:
     - name: Check out repository code
-      uses: actions/checkout@v6
+      uses: actions/checkout@v5
+    - name: Setup PostgreSQL Binaries
+      # GitHub action to set up postgreSQL for all 3 platforms
+      uses: ikalnytskyi/action-setup-postgres@v8
+      with:
+        postgres-version: '14'
     - name: Set up Python
       uses: actions/setup-python@v6
       with:
@@ -31,6 +36,12 @@ jobs:
         python -m pip install --upgrade setuptools wheel
         pip install -r requirements-dev.txt
         pip install -e .
-    - name: Test with pytest
+    - name: Test with pytest (Windows Non-Admin)
+      if: runner.os == 'Windows'
+      uses: dcycle/windows-non-admin-shell-action@v1
+      with:
+        command: pytest
+    - name: Test with pytest (Linux/macOS)
+      if: runner.os != 'Windows'
       run: |
         pytest
