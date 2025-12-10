@@ -4,7 +4,7 @@
 ## Backscattering cross-section and target strength
 
 ### General definitions
-For a given scatterer, the backscattering cross section ($\sigma_\text{bs}$, m<sup>2</sup>) is defined by {cite:p}`maclennan_2002`:
+For a given scatterer, the backscattering cross-section ($\sigma_\text{bs}$, m<sup>2</sup>) is defined by {cite:p}`maclennan_2002`:
 
 $$
     \sigma_\text{bs} = 
@@ -19,7 +19,7 @@ $$
     \tag{1.2}
 $$
 
-where no directional dependence is assumed. For an aggregation comprising $N$ animals, the mean backscattering cross-section is:
+where no directional dependence is assumed. For an aggregation comprising $n$ animals, the mean backscattering cross-section is:
 
 $$
     \left< \sigma_\text{bs} \right> =
@@ -27,7 +27,7 @@ $$
             \sum\limits_{j=1}^N \sigma_{\text{bs},j}
         }
         {
-            N
+            n
         },
     \tag{1.3}
 $$

@@ -261,11 +261,23 @@ def plot_kriged_mesh(
         gdf=data, projection=projection, coast_kwargs=coast_kwargs
     )
 
-    # Get the `vmax`
-    vmax = scatter_kwargs.pop("vmax", 10 ** np.round(np.log10(data.loc[:, variable].max())))
-
-    # Get the `vmin`
-    vmin = scatter_kwargs.pop("vmin", 0.0)
+    # Get the `vmax` and `vmin`
+    if plot_type == "scatter":
+        scatter_kwargs["vmax"] = scatter_kwargs.get(
+            "vmax", 10 ** np.round(np.log10(data.loc[:, variable].max()))
+        )
+        scatter_kwargs["vmin"] = scatter_kwargs.get("vmin", 0.0)
+    elif plot_type == "pcolormesh":
+        pseudocolormesh_kwargs["vmax"] = pseudocolormesh_kwargs.get(
+            "vmax", 10 ** np.round(np.log10(data.loc[:, variable].max()))
+        )
+        pseudocolormesh_kwargs["vmin"] = pseudocolormesh_kwargs.get("vmin", 0.0)
+    else:
+        if "norm" not in hexbin_kwargs:
+            hexbin_kwargs["vmax"] = hexbin_kwargs.get(
+                "vmax", 10 ** np.round(np.log10(data.loc[:, variable].max()))
+            )
+            hexbin_kwargs["vmin"] = hexbin_kwargs.get("vmin", 0.0)
 
     # Get the overall data boundaries
     # ---- Compute the total survey extent
@@ -282,7 +294,7 @@ def plot_kriged_mesh(
     colorbar_label = colorbar_kwargs.pop("label", variable)
 
     # Get `cmap`
-    cmap = colorbar_kwargs.pop("cmap", "viridis")
+    colorbar_kwargs["cmap"] = colorbar_kwargs.pop("cmap", "viridis")
 
     # Get figure size
     figsize = plot_kwargs.pop("figsize", gutils.apply_aspect_ratio(5.5, x0, x1, y0, y1))
@@ -314,10 +326,7 @@ def plot_kriged_mesh(
             x=data.geometry.x,
             y=data.geometry.y,
             C=data[variable],
-            cmap=cmap,
             gridsize=gridsize,
-            vmin=vmin,
-            vmax=vmax,
             **hexbin_kwargs,
         )
     elif plot_type == "scatter":
@@ -326,8 +335,6 @@ def plot_kriged_mesh(
             x=data.geometry.x,
             y=data.geometry.y,
             c=data[variable],
-            vmin=vmin,
-            vmax=vmax,
             **scatter_kwargs,
         )
     elif plot_type == "pcolormesh":
@@ -336,15 +343,13 @@ def plot_kriged_mesh(
             data[x], data[y], data[variable], projection, pseudocolormesh_kwargs
         )
         # ---- Plot
-        PLOT = grid_z.plot.pcolormesh(
-            add_colorbar=False, cmap=cmap, vmin=vmin, vmax=vmax, **pseudocolormesh_kwargs
-        )
+        PLOT = grid_z.plot.pcolormesh(add_colorbar=False, **pseudocolormesh_kwargs)
 
     # Define the colorbar
     # ---- Check for a mappable object
     mappable = colorbar_kwargs.pop("mappable", PLOT)
     # ---- Generate the colorbar
-    plt.colorbar(mappable=mappable, ax=ax, label=colorbar_label, cmap=cmap, **colorbar_kwargs)
+    plt.colorbar(mappable=mappable, ax=ax, label=colorbar_label, **colorbar_kwargs)
 
     # Remove margin padding
     ax.margins(0, 0)

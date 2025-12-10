@@ -18,6 +18,8 @@ We can obtain an estimate of biomass density ($\rho_\text{B}$, kg nmi<sup>-2</su
 
 Here $w_j$ is the weight of fish $j$ and $N$ is the total number of fish samples. Many fisheries surveys discretize the observed continuous length ($L$) distributions, which allows {ref}`Eq. (2.1b) <eq-21b>` to instead be expressed as:
 
+<a id="intext_eq_22"></a>
+
 $$
     \left< w \right> = \tilde{\mathbf{L}}^{\mathsf{T}} \mathbf{w},
     \tag{2.2}
@@ -85,7 +87,7 @@ where $\hat{w}$, $\hat{a}$, and $\hat{b}$ are the weight, $y$-intercept, and slo
 
 (intext_eq_27_md)=
 $$
-    w_\ell =
+    \mathcal{W}(\ell) =
         \left[
             10^{\hat{a}} {(L_{\ell}^{*})}^{\hat{b}}
         \right]
@@ -96,7 +98,7 @@ $$
 With the above quantities, the biomass ($B$, kg) can then be estimated by:
 
 $$
-    B = \rho_B A = \rho_A \left< w \right> A,
+    B = \rho_\text{B} A = \rho_\text{A} \left< w \right> A,
     \tag{2.8}
 $$
 

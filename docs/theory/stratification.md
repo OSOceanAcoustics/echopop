@@ -10,11 +10,11 @@ In practice, the acoustic quantities and biological estimates discussed in previ
 
 (intext_eq_29_md)=
 $$
-    \rho_{B; s} = \rho^i_{B; s}(x,y) = \rho_A(x,y) (\tilde{\mathbf{L}}^i_s)^\top \mathbf{w}^i_s,
+    \rho_{\text{B}; s} = \rho^i_{\text{B}; s}(x,y) = \rho_\text{A}(x,y) (\tilde{\mathbf{L}}^i_s)^\top \mathbf{w}^i_s,
     \tag{2.9}
 $$
 
-where $i$ is the stratum, $\rho_A(x,y)$ is the nautical areal number density ({ref}`Eq. 1.15 <eq-115>`) at location $(x, y)$ and $\tilde{\mathbf{L}}^i_s$ is the normalized number frequency ({ref}`Eq. 2.3 <eq-23>` for sex $s$ and stratum $i$):
+where $i$ is the stratum, $\rho_\text{A}(x,y)$ is the nautical areal number density ({ref}`Eq. 1.15 <eq-115>`) at location $(x, y)$ and $\tilde{\mathbf{L}}^i_s$ is the normalized number frequency ({ref}`Eq. 2.3 <eq-23>` for sex $s$ and stratum $i$):
 
 <a id="intext_eq_210"></a>
 
@@ -99,7 +99,7 @@ This would then modify {ref}`Eq. 2.9 <eq-29>` to:
 
 $$
     \rho_{B; s,\alpha} = 
-        \rho^i_{B; s,\alpha}(x,y) = \rho_A(x,y) (\tilde{\mathbf{L}}^i_{s,\alpha})^\top \mathbf{\tilde{w}}^i_{s,\alpha},
+        \rho^i_{\text{B}; s,\alpha}(x,y) = \rho_\text{A}(x,y) (\tilde{\mathbf{L}}^i_{s,\alpha})^\top \mathbf{\tilde{w}}^i_{s,\alpha},
     \tag{S.2e}
 $$
 

@@ -3,7 +3,7 @@
 
 ## Stationarity and the semivariogram
 
-In geostatistics, a **spatial process** or **random field** is a collection of random variables:
+In geostatistics, a **spatial process** or **random field** is a collection of random variables {cite:p}`cressie_statistics`:
 
 <a id="intext_eq_31"></a>
 (intext_eq_31_md)=
@@ -12,7 +12,7 @@ $$
     \tag{3.1}
 $$
 
-where $D \subset \mathbb{R}^d$ is the spatial domain, $d \in \mathbb{N}$ is the dimension of the space, and $Z(\mathbf{x})$ is a random variable that represents the value of some spatially varying quantity (e.g. temperature) at location $\mathbf{x}$. Importantly, the term *process* refers to this entire stochastic system, not a single observation at any specific location. A spatial process is said to be **second-order stationary** if its expected value is constant and its covariance depends only on the separation between two locations:
+where $D \subset \mathbb{R}^d$ is the spatial domain, $d \in \mathbb{N}$ is the dimension of the space, and $Z(\mathbf{x})$ is a random variable that represents the value of some spatially varying quantity (e.g. temperature) at location $\mathbf{x}$. Importantly, the term *process* refers to this entire stochastic system, not a single observation at any specific location {cite:p}`cressie_statistics,stein_1999`. A spatial process is said to be **second-order stationary** if its expected value is constant and its covariance depends only on the separation between two locations:
 
 $$
 \mathbb{E}[Z(\mathbf{x})] = m, \tag{3.2a}
@@ -25,7 +25,7 @@ $$
 \tag{3.2b}
 $$
 
-where $m$ is a constant expected process mean and $\mathbb{C}(\cdot)$ the covariance function. Here $\mathbf{h}$ denotes the lag vector (direction and magnitude) between two locations and $h$ denotes the Euclidean length (scalar lag distance). Either $\mathbf{h}$ or $h$ can be used depending on whether directionality matters, which is discussed later ([**isotropy and anisotropy**](isotropy-and-anisotropy)). For a specific pair of separate locations indexed by $i$ and $j$ ($i, j \in \{1, \dots, n_s \}$, where $n_s$ is the number of samples) define $\mathbf{h}$ and $h$ by:
+where $m$ is a constant expected process mean and $\mathbb{C}(\cdot)$ the covariance function {cite:p}`cressie_statistics`. Here $\mathbf{h}$ denotes the lag vector (direction and magnitude) between two locations and $h$ denotes the Euclidean length (scalar lag distance). Either $\mathbf{h}$ or $h$ can be used depending on whether directionality matters, which is discussed later ([**isotropy and anisotropy**](isotropy-and-anisotropy)). For a specific pair of separate locations indexed by $i$ and $j$ ($i, j \in \{1, \dots, n_s \}$, where $n_s$ is the number of samples) define $\mathbf{h}$ and $h$ by:
 
 $$
 \mathbf{h} = \mathbf{x}_j - \mathbf{x}_i, 
@@ -35,7 +35,7 @@ h = \| \mathbf{h} \| = \| \mathbf{x}_j - \mathbf{x}_i \| =
 \tag{3.3}
 $$
 
-where $x_{i,k}$ denotes the $k$‑th coordinate of $\mathbf{x}_i$ and $k = 1 \dots d$ indexes spatial coordinates (e.g., $d=1$ for a line, $d=2$ for a plane and $d=3$ for three‑dimensional space). The specific pairwise scalar distance used in empirical sums and binning is written $h_{ij}=\|\mathbf{x}_j-\mathbf{x}_i\|$, whereas plain $h$ denotes a generic lag argument in theoretical expressions such as $\gamma(h)$ or $\mathbb{C}(h)$.
+where $x_{i,k}$ denotes the $k$<sup>th</sup> coordinate of $\mathbf{x}_i$ and $k = 1 \dots d$ indexes spatial coordinates (e.g., $d=1$ for a line, $d=2$ for a plane and $d=3$ for three‑dimensional space). The specific pairwise scalar distance used in empirical sums and binning is written $h_{ij}=\|\mathbf{x}_j-\mathbf{x}_i\|$, whereas plain $h$ denotes a generic lag argument in theoretical expressions such as $\gamma(h)$ or $\mathbb{C}(h)$.
 
 :::{admonition} Theoretical vs. empirical expressions
 :class: note
@@ -52,7 +52,7 @@ $$
     \tag{3.4}
 $$
 
-where $\mathbb{C}(0)$ is the variance at zero lag (the process variance). In this context, the semivariogram and covariance function contain equivalent information about spatial correlation. In this document, the scalar $h$ denotes a generic lag distance.
+where $\mathbb{C}(0)$ is the variance at zero lag (the process variance). In this context, the semivariogram and covariance function contain equivalent information about spatial correlation {cite:p}`chiles_geostatistics_2012,webster_2007`. In this document, the scalar $h$ denotes a generic lag distance.
 
 (isotropy-and-anisotropy)=
 ## Isotropy and anisotropy
@@ -77,7 +77,7 @@ $$
     \tag{3.6}
 $$
 
-which means that, for a given $\mathbf{h}$, all possible pairs of locations in the spatial domain separated by $\mathbf{h}$ are considered. The expectation $\mathbb{E}[\cdot]$ then represents the average of these squared differences over all such pairs. Thus, the intrinsic model generalizes the covariance-based approach, allowing spatial correlation to be characterized through the semivariance even when the covariance function is not well-defined. In practice, however, $Z(\mathbf{x})$ is not known everywhere; only a finite set of observations at sampled locations is available. 
+which means that, for a given $\mathbf{h}$, all possible pairs of locations in the spatial domain separated by $\mathbf{h}$ are considered {cite:p}`chiles_geostatistics_2012,montero_2015`. The expectation $\mathbb{E}[\cdot]$ then represents the average of these squared differences over all such pairs. Thus, the intrinsic model generalizes the covariance-based approach, allowing spatial correlation to be characterized through the semivariance even when the covariance function is not well-defined. In practice, however, $Z(\mathbf{x})$ is not known everywhere; only a finite set of observations at sampled locations is available. 
 
 To estimate the semivariogram from data, the theoretical expectation is replaced with an average over all observed pairs of points separated by lag $h$. This leads to the **empirical semivariogram** estimator:
 
@@ -112,7 +112,7 @@ $$
     \tag{3.9}
 $$
 
-where $\sigma(\mathbf{x}_i)$ and $\sigma(\mathbf{x}_j)$ are local standard deviations at $\mathbf{x}_i$ and $\mathbf{x}_j$. This standardization improves robustness to local variance differences and outliers, providing more reliable estimates of spatial correlation in heterogeneous datasets.
+where $\sigma(\mathbf{x}_i)$ and $\sigma(\mathbf{x}_j)$ are local standard deviations at $\mathbf{x}_i$ and $\mathbf{x}_j$. This standardization improves robustness to local variance differences and outliers, providing more reliable estimates of spatial correlation in heterogeneous datasets {cite:p}`webster_2007,goovaerts_1997`.
 
 ## Semivariogram features and interpretation
 
@@ -128,7 +128,7 @@ Theoretical semivariogram models are parametric functions designed to capture th
 
 - **Anisotropy**: In some cases, spatial correlation may vary with direction. Anisotropic models allow the range or sill to depend on the orientation of the lag vector, capturing directional effects in the data.
 
-Interpreting these features provides insight into the spatial structure of the data, the scale of spatial dependence, and the presence of measurement error or micro-scale variability.
+Interpreting these features provides insight into the spatial structure of the data, the scale of spatial dependence, and the presence of measurement error or micro-scale variability {cite:p}`cressie_statistics,chiles_geostatistics_2012`.
 
 A comprehensive list of theoretical variogram models, including their mathematical equations and descriptive properties, is provided in the **[semivariogram equations](semivariogram_eq.md)** reference document. Readers should consult that document for details on specific models, their parameterizations, and guidance on model selection for different types of spatial processes.
 
@@ -145,14 +145,14 @@ $$
     \tag{3.10}
 $$
 
-where $C_0$ is the nugget (the value at zero lag), $C_1$ is the partial sill ($C - C_0$), and $\mathscr{f}(h; \theta)$ is a correlation function that depends on lag $h$ and model-specific parameters $\theta$ (e.g., range, smoothness, periodicity). The process of fitting a variogram model involves finding the set of parameters $\theta$ that best match the empirical semivariogram. This is typically achieved by minimizing the weighted sum of squared differences between the empirical semivariogram values $\gamma_\text{empirical}(h_i)$ and the theoretical model $\gamma_\text{model}(h_i; \theta)$ at each lag $h_i$:
+where $C_0$ is the nugget (the value at zero lag), $C_1$ is the partial sill ($C - C_0$), and $\mathscr{f}(h; \theta)$ is a correlation function that depends on lag $h$ and model-specific parameters $\theta$ (e.g., range, smoothness, periodicity) {cite:p}`matern_spatial_1986,stein_1999,whittle_1954`. The process of fitting a variogram model involves finding the set of parameters $\theta$ that best match the empirical semivariogram. This is typically achieved by minimizing the weighted sum of squared differences between the empirical semivariogram values $\gamma_\text{empirical}(h_i)$ and the theoretical model $\gamma_\text{model}(h_i; \theta)$ at each lag $h_i$:
 
 $$ 
     \min_{\theta} \sum_{b=1}^{n} w_b \left[ \gamma_\text{empirical}(h_b) - \gamma_\text{model}(h_b; \theta) \right]^2,
     \tag{3.11}
 $$
 
-where $n$ is the number of lag bins and $b$ indexes those lag bins ($b=1, \dots, n$). The weights $w_b$ are associated with each lag bin. Values of $w_b$ are often chosen to be proportional to the number of data pairs in the $b$‑th bin, $N(h_b)$, so that lag bins with more data have greater influence on the fit. When no standardization is applied, these weights are defined as:
+where $n$ is the number of lag bins and $b$ indexes those lag bins ($b=1, \dots, n$) {cite:p}`cressie_statistics,webster_2007`. The weights $w_b$ are associated with each lag bin. Values of $w_b$ are often chosen to be proportional to the number of data pairs in the $b$‑th bin, $N(h_b)$, so that lag bins with more data have greater influence on the fit. When no standardization is applied, these weights are defined as:
 
 $$
     w_b = N(h_b).
@@ -168,4 +168,4 @@ $$
 
 ## Assumptions and limitations
 
-Variogram analysis assumes at least intrinsic stationarity of increments and, for second‑order stationarity, a constant mean. If the mean exhibits spatial trend, detrend or model the mean prior to variogram estimation. Variogram estimation is sensitive to outliers, edge effects, and irregular sampling; handle these issues explicitly and document the choices made. Standardized estimators, robust estimators (e.g. Cressie–Hawkins), and careful binning can mitigate some practical problems, but they do not replace the need to evaluate assumptions and diagnostics.
+Variogram analysis assumes at least intrinsic stationarity of increments and, for second‑order stationarity, a constant mean {cite:p}`cressie_statistics,chiles_geostatistics_2012`. If the mean exhibits spatial trend, detrend or model the mean prior to variogram estimation {cite:p}`goovaerts_1997`. Variogram estimation is sensitive to outliers, edge effects, and irregular sampling; handle these issues explicitly and document the choices made {cite:p}`webster_2007`. Standardized estimators, robust estimators (e.g. Cressie–Hawkins), and careful binning can mitigate some practical problems, but they do not replace the need to evaluate assumptions and diagnostics {cite:p}`cressie_statistics,montero_2015`.
