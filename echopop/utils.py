@@ -1,31 +1,31 @@
 from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
-import numpy.typing as npt
 import pandas as pd
 from scipy import interpolate as interp
 
 
-def binned_distribution(bins: npt.NDArray[np.number]) -> pd.DataFrame:
+def binned_distribution(bins: np.ndarray[np.number]) -> pd.DataFrame:
     """
     Create centered bins for data binning operations.
 
     This function takes an array of bin edges and creates centered bins by calculating
     the mean bin width and extending the bins to create proper intervals for binning.
-    The centered bins can be used with pandas.cut() for data discretization.
+    The centered bins can be used with :func:`pandas.cut` for data discretization.
 
     Parameters
     ----------
-    bins : npt.NDArray[np.number]
+    bins : |np.ndarray[np.number]|
         Array of bin edge values. Must be 1-dimensional and contain at least 2 elements.
         Values should be in ascending order for proper binning behavior.
 
     Returns
     -------
-    pd.DataFrame
+    |pd.DataFrame|
         DataFrame with columns:
-        - 'bin': Original bin values
-        - 'interval': pd.Interval objects representing the binning intervals
+
+        - ``'bin'``: Original bin values
+        - ``'interval'``: :class:`pandas.Interval` objects representing the binning intervals
 
     Raises
     ------
@@ -48,12 +48,10 @@ def binned_distribution(bins: npt.NDArray[np.number]) -> pd.DataFrame:
 
     Notes
     -----
-    The function calculates the bin width as the mean of half the differences between
-    consecutive bin values. This approach works well for both evenly and unevenly
-    spaced bins.
-
-    The centered bins extend beyond the original range by one bin width on each side,
-    ensuring that all original bin values fall within the created intervals.
+    The function calculates the bin width as the mean of half the differences between consecutive
+    bin values. This approach works well for both evenly and unevenly spaced bins. The centered
+    bins extend beyond the original range by one bin width on each side, ensuring that all original
+    bin values fall within the created intervals.
     """
 
     # Compute binwidth as mean of half the differences
@@ -69,27 +67,27 @@ def binned_distribution(bins: npt.NDArray[np.number]) -> pd.DataFrame:
 
 def binify(
     data: Union[pd.DataFrame, Dict[str, pd.DataFrame]],
-    bins: npt.NDArray[np.number],
+    bins: np.ndarray[np.number],
     bin_column: str,
 ) -> None:
     """
     Apply binning to biological data using predefined bin distributions.
 
-    This function bins continuous variables (like length or age) in biological datasets
-    using bin edge arrays. It creates interval distributions internally and can handle single
-    DataFrames or dictionaries of DataFrames, automatically skipping DataFrames that
-    don't contain the target column. The data is modified in place.
+    This function bins continuous variables (like length or age) in biological datasets using bin
+    edge arrays. It creates interval distributions internally and can handle single DataFrames or
+    dictionaries of DataFrames, automatically skipping DataFrames that don't contain the target
+    column. The data is modified in place.
 
     Parameters
     ----------
-    data : pd.DataFrame or dict of pd.DataFrame
-        Target data to bin. Can be a single DataFrame or dictionary of DataFrames.
-        Data will be modified in place.
-    bins : npt.NDArray[np.number]
-        Array of bin edge values. Must be 1-dimensional and contain at least 2 elements.
-        Values should be in ascending order for proper binning behavior.
+    data : |pd.DataFrame| or Dict[str, |pd.DataFrame|]
+        Target data to bin. Can be a single DataFrame or dictionary of DataFrames. Data are
+        modified in place.
+    bins : np.ndarray[|np.number|]
+        Array of bin edge values. Must be 1-dimensional and contain at least 2 elements. Values
+        should be in ascending order for proper binning behavior.
     bin_column : str
-        Name of the column in data to apply binning to (e.g., 'length', 'age').
+        Name of the column in data to apply binning to (e.g., ``'length'``, ``'age'``).
 
     Returns
     -------
@@ -283,7 +281,7 @@ def apply_filters(
 
     Parameters
     ----------
-    df : pd.DataFrame
+    df : |pd.DataFrame|
         Input DataFrame to filter
     include_filter : Dict[str, Any], optional
         Dictionary of column/index:value(s) pairs. Rows/columns will be kept if they match. If
@@ -291,33 +289,28 @@ def apply_filters(
     exclude_filter : Dict[str, Any], optional
         Dictionary of column/index:value(s) pairs. Rows/columns will be excluded if they match. If
         value is a list, rows/columns matching any value in the list will be excluded.
-    replace_value : np.number, optional
+    replace_value : |np.number|, optional
         If provided, replaces values in excluded columns with this value instead of dropping them.
 
     Returns
     -------
-    pd.DataFrame
+    |pd.DataFrame|
         Filtered DataFrame
 
     Examples
     --------
     >>> # Row filtering: Keep only females and males from sex column
     >>> apply_filters(df, include_filter={"sex": ["female", "male"]})
-
     >>> # Row filtering: Exclude unsexed specimens and small fish
     >>> apply_filters(df, exclude_filter={"sex": "unsexed", "length": 10})
-
     >>> # Index filtering: Keep rows where length_bin contains values 1-5
     >>> apply_filters(df, include_filter={"length_bin": [1, 2, 3, 4, 5]})
-
     >>> # Column filtering: Keep only female and male columns (wide format)
     >>> apply_filters(df, include_filter={"sex": ["female", "male"]})
-
     >>> # Multi-index filtering: Filter by age_bin, length_bin, and sex simultaneously
     >>> apply_filters(df, include_filter={"age_bin": [1], "length_bin": [1, 2, 3], "sex": ["male"]})
-
     >>> # Combined filtering: Include certain length bins but exclude unsexed
-    >>> apply_filters(df, include_filter={"length_bin": [1, 2, 3]}, \
+    >>> apply_filters(df, include_filter={"length_bin": [1, 2, 3]},\
         exclude_filter={"sex": "unsexed"})
     """
 
@@ -646,7 +639,7 @@ def round_half_up(n: Union[pd.Series, pd.DataFrame]):
 
     Notes
     -----
-    This rounding method is different from NumPy's default `np.round`, which uses "round half to e
-    ven" (banker's rounding).
+    This rounding method is different from NumPy's default :func:`numpy.round`, which uses "round
+    half to even" (banker's rounding).
     """
     return n.apply(lambda x: np.floor(x + 0.5) if x >= 0 else np.ceil(x - 0.5))

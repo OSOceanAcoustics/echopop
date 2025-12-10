@@ -11,10 +11,64 @@ warnings.simplefilter("always")
 
 
 # Single family models
+# ---- Circular
+def circular(distance_lags: np.ndarray, correlation_range: float, sill: float, nugget: float):
+    r"""
+    Circular variogram model with a smooth, finite range and plateau.
+
+    Parameters
+    ----------
+    distance_lags: np.ndarray
+        Array of spatial lag distances.
+    correlation_range : float
+        Range parameter where the model reaches the sill.
+    sill : float
+        Total variance (plateau value).
+    nugget : float, optional
+        Nugget effect representing measurement error and micro-scale variation.
+
+    Returns
+    -------
+    np.ndarray
+        Variogram values at specified lag distances.
+
+    Notes
+    -----
+    The circular variogram model is defined as:
+
+    .. math::
+        \gamma(h) =
+        \begin{cases}
+            N + S \left[1 - \frac{2}{\pi} \arccos\left(\frac{h}{a}\right) + \frac{2h}{\pi a}
+            \sqrt{1 - \left(\frac{h}{a}\right)^2}\right] & \text{if } h < a \\
+            N + S & \text{if } h \geq a
+        \end{cases}
+
+    where:
+    - \gamma(h) is the variogram at lag distance h
+    - N is the nugget effect
+    - S is the sill (plateau value)
+    - a is the range parameter
+
+    This model is suitable for processes with a smooth increase in variance up to a finite range,
+    after which the semivariance remains constant.
+
+    References
+    ----------
+    .. [1] Cressie, N. (1993). Statistics for Spatial Data. Wiley.
+    .. [2] Journel, A.G. & Huijbregts, C.J. (1978). Mining Geostatistics. Academic Press.
+    """
+    hr = distance_lags / correlation_range
+    result = np.where(
+        distance_lags < correlation_range,
+        nugget + sill * (1 - (2 / np.pi) * np.arccos(hr) + (2 * hr / np.pi) * np.sqrt(1 - hr**2)),
+        nugget + sill,
+    )
+    return result
 
 
 # ---- Cubic
-def cubic(distance_lags, sill, nugget, correlation_range):
+def cubic(distance_lags: np.ndarray, sill: float, nugget: float, correlation_range: float):
     """
     Cubic variogram model with smooth transitions and finite range.
 
@@ -75,6 +129,49 @@ def cubic(distance_lags, sill, nugget, correlation_range):
 
     # Calculate variogram
     return nugget + (sill - nugget) * (1 - correlation)
+
+
+# ---- Stable/Ex(ponential)class
+def exclass(distance_lags: np.ndarray, correlation_range: float, sill: float, alpha: float):
+    r"""
+    Generalized (stable) exponential variogram model.
+
+    Parameters
+    ----------
+    distance_lags : np.ndarray
+        Array of spatial lag distances.
+    correlation_range : float
+        Range parameter controlling the scale of spatial correlation.
+    sill : float
+        Total variance (plateau value).
+    alpha : float
+        Shape parameter (controls the rate of decay, 0 < alpha <= 2).
+
+    Returns
+    -------
+    np.ndarray
+        Variogram values at specified lag distances.
+
+    Notes
+    -----
+    The generalized exponential (stable) variogram model is defined as:
+
+    .. math::
+        \gamma(h) = S \left[1 - \exp\left(-\left(\frac{h}{a}\right)^{\alpha}\right)\right]
+
+    where:
+    - \gamma(h) is the variogram at lag distance h
+    - S is the sill (plateau value)
+    - a is the correlation range
+    - \alpha is the shape parameter
+
+    This model generalizes the exponential (alpha=1) and Gaussian (alpha=2) models.
+
+    References
+    ----------
+    .. [1] Wackernagel, H. (2003). Multivariate Geostatistics. Springer.
+    """
+    return sill * (1 - np.exp(-((distance_lags / correlation_range) ** alpha)))
 
 
 # ---- Exponential
@@ -357,6 +454,104 @@ def linear(distance_lags: np.ndarray, sill: float, nugget: float):
     return partial_sill * distance_lags + nugget
 
 
+# --- Linear plateau
+def linear_plateau(distance_lags: np.ndarray, sill: float, correlation_range: float):
+    r"""
+    Linear plateau variogram model with bounded linear growth up to a finite range.
+
+    Parameters
+    ----------
+    distance_lags : np.ndarray
+        Array of spatial lag distances.
+    sill : float
+        Plateau value (maximum semivariance).
+    correlation_range : float
+        Effective range where the plateau is reached.
+
+    Returns
+    -------
+    np.ndarray
+        Variogram values at specified lag distances.
+
+    Notes
+    -----
+    The linear plateau variogram model is defined as:
+
+    .. math::
+        \gamma(h) =
+        \begin{cases}
+            S \cdot \frac{h}{a} & \text{if } h < a \\
+            S & \text{if } h \geq a
+        \end{cases}
+
+    where:
+    - \gamma(h) is the variogram at lag distance h
+    - S is the sill (plateau value)
+    - a is the correlation range
+
+    This model exhibits linear growth up to the specified range, after which the semivariance
+    remains constant. It is suitable for processes with a linear increase in variance up to a
+    threshold, followed by a stable plateau.
+
+    References
+    ----------
+    .. [1] Cressie, N. (1993). Statistics for Spatial Data. Wiley.
+    .. [2] Journel, A.G. & Huijbregts, C.J. (1978). Mining Geostatistics. Academic Press.
+    """
+    return np.where(
+        distance_lags < correlation_range, sill * distance_lags / correlation_range, sill
+    )
+
+
+# ---- Logarithmic
+def logarithmic(distance_lags: np.ndarray, correlation_range: float, sill: float, nugget: float):
+    r"""
+    Logarithmic variogram model with monotonic growth.
+
+    Parameters
+    ----------
+    distance_lags : np.ndarray
+        Array of spatial lag distances.
+    correlation_range : float
+        Range parameter added to the lag in the logarithm.
+    sill : float
+        Total variance (scaling factor).
+    nugget : float, optional
+        Nugget effect representing measurement error and micro-scale variation.
+
+    Returns
+    -------
+    np.ndarray
+        Variogram values at specified lag distances.
+
+    Notes
+    -----
+    The logarithmic variogram model is defined as:
+
+    .. math::
+        \gamma(h) = N + S \log(h + a)
+
+    where:
+    - \gamma(h) is the variogram at lag distance h
+    - N is the nugget effect
+    - S is the sill (scaling factor)
+    - a is the correlation range
+
+    For h = 0, the value is set to the nugget.
+
+    This model is suitable for processes with slow, monotonic increase in variance.
+
+    References
+    ----------
+    .. [1] Wackernagel, H. (2003). Multivariate Geostatistics. Springer.
+    """
+    result = np.zeros_like(distance_lags)
+    mask = distance_lags != 0
+    result[mask] = nugget + sill * np.log(distance_lags[mask] + correlation_range)
+    result[~mask] = nugget  # h == 0
+    return result
+
+
 # ---- Matern
 def matern(distance_lags, sill, nugget, correlation_range, smoothness_parameter):
     """
@@ -542,6 +737,49 @@ def pentaspherical(distance_lags: np.ndarray, sill: float, nugget: float, correl
 
     # Calculate variogram
     return nugget + (sill - nugget) * (1 - correlation)
+
+
+# ---- Periodic
+def periodic(distance_lags: np.ndarray, correlation_range: float, sill: float, nugget: float):
+    r"""
+    Periodic variogram model with regular oscillations.
+
+    Parameters
+    ----------
+    distance_lags : np.ndarray
+        Array of spatial lag distances.
+    correlation_range : float
+        Period of the oscillation (wavelength).
+    sill : float
+        Total variance (scaling factor).
+    nugget : float, optional
+        Nugget effect representing measurement error and micro-scale variation.
+
+    Returns
+    -------
+    np.ndarray
+        Variogram values at specified lag distances.
+
+    Notes
+    -----
+    The periodic variogram model is defined as:
+
+    .. math::
+        \gamma(h) = N + S \left[1 - \cos\left(\frac{2\pi h}{a}\right)\right]
+
+    where:
+    - \gamma(h) is the variogram at lag distance h
+    - N is the nugget effect
+    - S is the sill (scaling factor)
+    - a is the correlation range (period)
+
+    This model is suitable for processes with regular, repeating spatial patterns.
+
+    References
+    ----------
+    .. [1] Wackernagel, H. (2003). Multivariate Geostatistics. Springer.
+    """
+    return nugget + sill * (1 - np.cos(2 * np.pi * distance_lags / correlation_range))
 
 
 # ---- Power law
@@ -789,6 +1027,254 @@ def spherical(distance_lags: np.ndarray, sill: float, nugget: float, correlation
     )
 
 
+def spline(distance_lags: np.ndarray, correlation_range: float, sill: float):
+    r"""
+    Spline variogram model with quadratic-logarithmic growth and plateau.
+
+    Parameters
+    ----------
+    distance_lags : np.ndarray
+        Array of spatial lag distances.
+    correlation_range : float
+        Range parameter where the plateau is reached.
+    sill : float
+        Plateau value (maximum semivariance).
+
+    Returns
+    -------
+    np.ndarray
+        Variogram values at specified lag distances.
+
+    Notes
+    -----
+    The spline variogram model is defined as:
+
+    .. math::
+        \gamma(h) =
+        \begin{cases}
+            h^2 \log(h) & \text{if } h < a \\
+            S & \text{if } h \geq a
+        \end{cases}
+
+    where:
+    - \gamma(h) is the variogram at lag distance h
+    - a is the correlation range
+    - S is the sill (plateau value)
+
+    For h = 0, the value is conventionally set to 0.
+
+    This model is mainly used for theoretical purposes and can produce negative values for h < 1.
+
+    References
+    ----------
+    .. [1] Wackernagel, H. (2003). Multivariate Geostatistics. Springer.
+    """
+    h_safe = np.where(distance_lags == 0, 1e-10, distance_lags)
+    result = h_safe**2 * np.log(h_safe)
+    result = np.where(distance_lags >= correlation_range, sill, result)
+
+
+def stein(distance_lags: np.ndarray, correlation_range: float, smoothness: float):
+    r"""
+    Stein (Matérn) variogram model for flexible smoothness and spatial correlation.
+
+    Parameters
+    ----------
+    distance_lags : np.ndarray
+        Array of spatial lag distances.
+    correlation_range : float
+        Range parameter controlling the scale of spatial correlation.
+    smoothness : float
+        Smoothness parameter (Matérn index).
+
+    Returns
+    -------
+    np.ndarray
+        Variogram values at specified lag distances.
+
+    Notes
+    -----
+    The Stein (Matérn) variogram model is defined as:
+
+    .. math::
+        \gamma(h) = 1 - \frac{2^{1-\nu}}{\Gamma(\nu)} \left(2 \sqrt{\nu} \frac{h}{a}\right)^{\nu}
+        K_{\nu}\left(2 \sqrt{\nu} \frac{h}{a}\right)
+
+    where:
+    - \gamma(h) is the variogram at lag distance h
+    - a is the correlation range
+    - \nu is the smoothness parameter
+    - K_{\nu} is the modified Bessel function of the second kind
+    - \Gamma(\nu) is the gamma function
+
+    This model generalizes the exponential and Gaussian models and is widely used for its
+    flexibility in controlling smoothness.
+
+    References
+    ----------
+    .. [1] Stein, M.L. (1999). Statistical Interpolation of Spatial Data: Some Theory for Kriging.
+    Springer.
+    .. [2] Guttorp, P. & Gneiting, T. (2006). Studies in the Matérn Model. Bernoulli.
+    """
+    distance_lags = np.maximum(distance_lags, 1e-10)
+    arg = 2 * np.sqrt(smoothness) * distance_lags / correlation_range
+    part1 = (2 ** (1 - smoothness)) / special.gamma(smoothness)
+    part2 = arg**smoothness
+    part3 = special.kv(smoothness, arg)
+    return 1 - part1 * part2 * part3
+
+
+# ---- Tetraspherical
+def tetraspherical(distance_lags: np.ndarray, correlation_range: float, sill: float, nugget: float):
+    r"""
+    Tetraspherical variogram model with smooth transition to the sill.
+
+    Parameters
+    ----------
+    distance_lags : np.ndarray
+        Array of spatial lag distances.
+    correlation_range : float
+        Range parameter where the sill is reached.
+    sill : float
+        Total variance (plateau value).
+    nugget : float, optional
+        Nugget effect representing measurement error and micro-scale variation.
+
+    Returns
+    -------
+    np.ndarray
+        Variogram values at specified lag distances.
+
+    Notes
+    -----
+    The tetraspherical variogram model is defined as:
+
+    .. math::
+        \gamma(h) =
+        \begin{cases}
+            N + S \left[ \arcsin\left(\frac{h}{a}\right) + \frac{h}{a} \sqrt{1 -
+            \left(\frac{h}{a}\right)^2} + \frac{2}{3} \frac{h}{a} \left(1 -
+            \left(\frac{h}{a}\right)^2\right)^{3/2} \right], & 0 \leq h \leq a \\
+            N + S, & h > a
+        \end{cases}
+
+    References
+    ----------
+    .. [1] Journel, A.G. & Huijbregts, C.J. (1978). Mining Geostatistics. Academic Press.
+    """
+    hr = distance_lags / correlation_range
+    inside = hr < 1
+    result = np.full_like(distance_lags, nugget + sill)
+    if np.any(inside):
+        term1 = np.arcsin(hr[inside])
+        term2 = hr[inside] * np.sqrt(1 - hr[inside] ** 2)
+        term3 = (2 / 3) * hr[inside] * (1 - hr[inside] ** 2) ** (3 / 2)
+        result[inside] = nugget + sill * (term1 + term2 + term3)
+    return result
+
+
+def wave(distance_lags: np.ndarray, correlation_range: float, sill: float, nugget: float):
+    r"""
+    Wave (hole-effect) variogram model with oscillatory behavior.
+
+    Parameters
+    ----------
+    distance_lags : np.ndarray
+        Array of spatial lag distances.
+    correlation_range : float
+        Range parameter controlling the wavelength of oscillations.
+    sill : float
+        Total variance (plateau value).
+    nugget : float, optional
+        Nugget effect representing measurement error and micro-scale variation.
+
+    Returns
+    -------
+    np.ndarray
+        Variogram values at specified lag distances.
+
+    Notes
+    -----
+    The wave variogram model is defined as:
+
+    .. math::
+        \gamma(h) =
+        N + S \left[1 - \frac{a \sin\left(\pi h / a\right)}{\pi h}\right]
+
+    where:
+    - \gamma(h) is the variogram at lag distance h
+    - N is the nugget effect
+    - S is the sill (plateau value)
+    - a is the correlation range
+
+    For h = 0, the value is set to the nugget.
+
+    This model is suitable for processes with regular oscillatory spatial patterns and
+    hole-effect behavior.
+
+    References
+    ----------
+    .. [1] Chilès, J.P. & Delfiner, P. (2012). Geostatistics: Modeling Spatial Uncertainty. Wiley.
+    .. [2] Wackernagel, H. (2003). Multivariate Geostatistics. Springer.
+    """
+    result = np.zeros_like(distance_lags)
+    mask = distance_lags != 0
+    result[mask] = nugget + sill * (
+        1
+        - (correlation_range * np.sin(np.pi * distance_lags[mask] / correlation_range))
+        / (np.pi * distance_lags[mask])
+    )
+    result[~mask] = nugget  # h == 0
+    return result
+
+
+# ---- Whittle's Elementary Correlation
+def whittle(distance_lags: np.ndarray, sill: float, nugget: float, correlation_range: float):
+    r"""
+    Whittle variogram model using the modified Bessel function of the second kind.
+
+    Parameters
+    ----------
+    distance_lags : np.ndarray
+        Array of spatial lag distances.
+    sill : float
+        Total variance (scaling factor).
+    nugget : float, optional
+        Nugget effect representing measurement error and micro-scale variation.
+    correlation_range : float
+        Range parameter controlling the scale of spatial correlation.
+
+    Returns
+    -------
+    np.ndarray
+        Variogram values at specified lag distances.
+
+    Notes
+    -----
+    The Whittle variogram model is defined as:
+
+    .. math::
+        \gamma(h) = N + S \left[1 - K_1\left(\frac{h}{a}\right)\right]
+
+    where:
+    - \gamma(h) is the variogram at lag distance h
+    - N is the nugget effect
+    - S is the sill (scaling factor)
+    - a is the correlation range
+    - K_1 is the modified Bessel function of the second kind (order 1)
+
+    For h = 0, the value is conventionally set to the nugget.
+
+    References
+    ----------
+    .. [1] Whittle, P. (1954). On stationary processes in the plane. Biometrika.
+    .. [2] Wackernagel, H. (2003). Multivariate Geostatistics. Springer.
+    """
+    distance_lags = np.maximum(distance_lags, 1e-10)
+    val = special.kv(1, distance_lags / correlation_range)
+    return nugget + sill * (1 - val)
+
+
 # Composite family models (i.e. hole-effects)
 # ---- J-Bessel and Gaussian
 def bessel_gaussian(
@@ -825,7 +1311,7 @@ def bessel_gaussian(
 
     .. math::
         γ(h) = C_0 + C_1 \\left(1 - \\exp\\left(-\\frac{h^2}{a_1^2}\\right)
-               \\cdot \\frac{J_1(h/a_2)}{h/(2a_2)}\\right)
+        \\cdot \\frac{J_1(h/a_2)}{h/(2a_2)}\\right)
 
     where:
     - γ(h) is the variogram at lag distance h
@@ -1252,136 +1738,139 @@ VARIOGRAM_MODELS = {
 
 # Variogram wrapper function
 def compute_variogram(
-    distance_lags: np.ndarray,
+    distance_lags: np.ndarray[float],
     variogram_parameters: Optional[Dict[str, float]] = None,
     model: Optional[Union[str, List[str]]] = None,
     **kwargs,
 ):
     """
-    Compute the theoretical semivariogram
+    Compute the theoretical semivariogram.
 
     Parameters
     ----------
-    distance_lags: np.ndarray
-        An array of lag distances
-    variogram_parameters: Optional[Dict[str, float]]
+    distance_lags : |np.ndarray[float]|
+        An array of lag distances.
+    variogram_parameters : Optional[Dict[str, float]]
         An optional dictionary that can contain values for variogram model parameters (see the
-        below table associated with the argument `model`). Alternatively, these parameters can be
-        entered directly and are contained within `kwargs`. Possible parameters include:
-            - `sill` (Sill): The asymptotic value as lags approach infinity.
-            - `nugget` (Nugget): The semivariogram y-intercept that corresponds to variability
-            at lag distances shorter than the lag resolution.
-            - `correlation_range` (Correlation length scale/range): The ascending rate for the
-            semivariogram.
-            - `hole_effect_range` (Hole effect range): The (normalized) length scale/range that
-            'holes' are observed, which represent 'null' (or very small) points compared to their
-            neighboring lags.
-            - `decay_power` (Decay term exponent): An exponential term that is used in certain
-            generalized exponential (or related) semivariogram models that modulates the ascending
-            rate for a semivariogram.
-            - `enhance_semivariance` (Semivariance enhancement): A boolean term that determines
-            whether the correlation decay in certain cosine-related variogram models are enhanced
-            (or not) are further lag distances.
-    model: Optional[Union[ str , list ]]
+        below table associated with the argument ``model``). Alternatively, these parameters can be
+        entered directly and are contained within ``kwargs``. Possible parameters include:
+
+        - ``sill`` (Sill): The asymptotic value as lags approach infinity.
+        - ``nugget`` (Nugget): The semivariogram y-intercept that corresponds to variability
+          at lag distances shorter than the lag resolution.
+        - ``correlation_range`` (Correlation length scale/range): The ascending rate for the
+          semivariogram.
+        - ``hole_effect_range`` (Hole effect range): The (normalized) length scale/range that
+          'holes' are observed, which represent 'null' (or very small) points compared to their
+          neighboring lags.
+        - ``decay_power`` (Decay term exponent): An exponential term that is used in certain
+          generalized exponential (or related) semivariogram models that modulates the ascending
+          rate for a semivariogram.
+        - ``enhance_semivariance`` (Semivariance enhancement): A boolean term that determines
+          whether the correlation decay in certain cosine-related variogram models are enhanced
+          (or not) at further lag distances.
+
+    model : Optional[Union[str, list]]
         A string or list of model names. A single name represents a single family model. Two inputs
         represent the desired composite model (e.g. the composite J-Bessel and exponential model).
         Available variogram models and their respective arguments include (alongside
-        `distance_lags`):
+        ``distance_lags``):
 
-        +----------------------------+-----------------+--------------------------+
-        | :fun:`variogram`           | Input           | Parameters               |
-        | model                      |                 |                          |
-        +============================+=================+==========================+
-        |  :fun:`cubic`              | 'cubic'         | - `sill`                 |
-        |                            |                 | - `nugget`               |
-        |                            |                 | - `correlation_range`    |
-        +----------------------------+-----------------+--------------------------+
-        |  :fun:`exponential`        | 'exponential    | - `sill`                 |
-        |                            |                 | - `nugget`               |
-        |                            |                 | - `correlation_range`    |
-        +----------------------------+-----------------+--------------------------+
-        |  :fun:`gaussian`           | 'gaussian'      | - `sill`                 |
-        |                            |                 | - `nugget`               |
-        |                            |                 | - `correlation_range`    |
-        +----------------------------+-----------------+--------------------------+
-        |  :fun:`jbessel`            | 'jbessel'       | - `sill`                 |
-        |                            |                 | - `nugget`               |
-        |                            |                 | - `hole_effect_range`    |
-        +----------------------------+-----------------+--------------------------+
-        |  :fun:`kbessel`            | 'kbessel'       | - `sill`                 |
-        |                            |                 | - `nugget`               |
-        |                            |                 | - `hole_effect_range`    |
-        +----------------------------+-----------------+--------------------------+
-        |  :fun:`linear`             | 'linear'        | - `nugget`               |
-        |                            |                 | - `sill`                 |
-        +----------------------------+-----------------+--------------------------+
-        |  :fun:`matern`             | 'matern'        | - `sill`                 |
-        |                            |                 | - `nugget`               |
-        |                            |                 | - `correlation_range`    |
-        |                            |                 | - `smoothness_parameter` |
-        +----------------------------+-----------------+--------------------------+
-        |  :fun:`nugget`             | 'nugget'        | - `nugget`               |
-        |                            |                 | - `sill`                 |
-        +----------------------------+-----------------+--------------------------+
-        |  :fun:`pentaspherical`     | 'pentaspherical'| - `sill`                 |
-        |                            |                 | - `nugget`               |
-        |                            |                 | - `correlation_range`    |
-        +----------------------------+-----------------+--------------------------+
-        |  :fun:`power`              | 'power'         | - `nugget`               |
-        |                            |                 | - `sill`                 |
-        |                            |                 | - `power_exponent`       |
-        +----------------------------+-----------------+--------------------------+
-        |  :fun:`quadratic`          | 'quadratic'     | - `sill`                 |
-        |                            |                 | - `nugget`               |
-        |                            |                 | - `correlation_range`    |
-        |                            |                 | - `shape_parameter`      |
-        +----------------------------+-----------------+--------------------------+
-        |  :fun:`sinc`               | 'sinc'          | - `sill`                 |
-        |                            |                 | - `nugget`               |
-        |                            |                 | - `hole_effect_range`    |
-        +----------------------------+-----------------+--------------------------+
-        |  :fun:`spherical`          | 'spherical'     | - `sill`                 |
-        |                            |                 | - `nugget`               |
-        |                            |                 | - `correlation_range`    |
-        +----------------------------+-----------------+--------------------------+
-        |  :fun:`bessel_exponential` | ['bessel',      | - `sill`                 |
-        |                            |  'exponential'] | - `nugget`               |
-        |                            |                 | - `correlation_range`    |
-        |                            |                 | - `decay_power`          |
-        |                            |                 | - `hole_effect_range`    |
-        +----------------------------+-----------------+--------------------------+
-        |  :fun:`bessel_gaussian`    | ['bessel',      | - `sill`                 |
-        |                            |  'gaussian']    | - `nugget`               |
-        |                            |                 | - `correlation_range`    |
-        |                            |                 | - `decay_power`          |
-        |                            |                 | - `hole_effect_range`    |
-        +----------------------------+-----------------+--------------------------+
-        |  :fun:`cosine_exponential` | ['cosine',      | - `sill`                 |
-        |                            |  'exponential'] | - `nugget`               |
-        |                            |                 | - `correlation_range`    |
-        |                            |                 | - `hole_effect_range`    |
-        |                            |                 | - `enhance_semivariance` |
-        +----------------------------+-----------------+--------------------------+
-        |  :fun:`cosine_gaussian`    | ['cosine',      | - `sill`                 |
-        |                            |  'gaussian']    | - `nugget`               |
-        |                            |                 | - `correlation_range`    |
-        |                            |                 | - `hole_effect_range`    |
-        +----------------------------+-----------------+--------------------------+
-        |  :fun:`exponential_linear` | ['exponential', | - `sill`                 |
-        |                            |  'linear']      | - `nugget`               |
-        |                            |                 | - `correlation_range`    |
-        |                            |                 | - `hole_effect_range`    |
-        |                            |                 | - `decay_power`          |
-        +----------------------------+-----------------+--------------------------+
-        |  :fun:`gaussian_linear`    | ['gaussian',    | - `sill`                 |
-        |                            |  'linear']      | - `nugget`               |
-        |                            |                 | - `correlation_range`    |
-        |                            |                 | - `hole_effect_range`    |
-        +----------------------------+-----------------+--------------------------+
+
+        +----------------------------+-------------------------------+---------------------------+
+        | :func:`variogram`          | Input                         | Parameters                |
+        | model                      |                               |                           |
+        +============================+===============================+===========================+
+        | :py:func:`cubic`           | ``'cubic'``                   | - ``sill``                |
+        |                            |                               | - ``nugget``              |
+        |                            |                               | - ``correlation_range``   |
+        +----------------------------+-------------------------------+---------------------------+
+        | :func:`exponential`        | ``'exponential'``             | - ``sill``                |
+        |                            |                               | - ``nugget``              |
+        |                            |                               | - ``correlation_range``   |
+        +----------------------------+-------------------------------+---------------------------+
+        | :func:`gaussian`           | ``'gaussian'``                | - ``sill``                |
+        |                            |                               | - ``nugget``              |
+        |                            |                               | - ``correlation_range``   |
+        +----------------------------+-------------------------------+---------------------------+
+        | :func:`jbessel`            | ``'jbessel'``                 | - ``sill``                |
+        |                            |                               | - ``nugget``              |
+        |                            |                               | - ``hole_effect_range``   |
+        +----------------------------+-------------------------------+---------------------------+
+        | :func:`kbessel`            | ``'kbessel'``                 | - ``sill``                |
+        |                            |                               | - ``nugget``              |
+        |                            |                               | - ``hole_effect_range``   |
+        +----------------------------+-------------------------------+---------------------------+
+        | :func:`linear`             | ``'linear'``                  | - ``nugget``              |
+        |                            |                               | - ``sill``                |
+        +----------------------------+-------------------------------+---------------------------+
+        | :func:`matern`             | ``'matern'``                  | - ``sill``                |
+        |                            |                               | - ``nugget``              |
+        |                            |                               | - ``correlation_range``   |
+        |                            |                               | - ``smoothness_parameter``|
+        +----------------------------+-------------------------------+---------------------------+
+        | :func:`nugget`             | ``'nugget'``                  | - ``nugget``              |
+        |                            |                               | - ``sill``                |
+        +----------------------------+-------------------------------+---------------------------+
+        | :func:`pentaspherical`     | ``'pentaspherical'``          | - ``sill``                |
+        |                            |                               | - ``nugget``              |
+        |                            |                               | - ``correlation_range``   |
+        +----------------------------+-------------------------------+---------------------------+
+        | :func:`power`              | ``'power'``                   | - ``nugget``              |
+        |                            |                               | - ``sill``                |
+        |                            |                               | - ``power_exponent``      |
+        +----------------------------+-------------------------------+---------------------------+
+        | :func:`quadratic`          | ``'quadratic'``               | - ``sill``                |
+        |                            |                               | - ``nugget``              |
+        |                            |                               | - ``correlation_range``   |
+        |                            |                               | - ``shape_parameter``     |
+        +----------------------------+-------------------------------+---------------------------+
+        | :func:`sinc`               | ``'sinc'``                    | - ``sill``                |
+        |                            |                               | - ``nugget``              |
+        |                            |                               | - ``hole_effect_range``   |
+        +----------------------------+-------------------------------+---------------------------+
+        | :func:`spherical`          | ``'spherical'``               | - ``sill``                |
+        |                            |                               | - ``nugget``              |
+        |                            |                               | - ``correlation_range``   |
+        +----------------------------+-------------------------------+---------------------------+
+        | :func:`bessel_exponential` | ``['bessel', 'exponential']`` | - ``sill``                |
+        |                            |                               | - ``nugget``              |
+        |                            |                               | - ``correlation_range``   |
+        |                            |                               | - ``decay_power``         |
+        |                            |                               | - ``hole_effect_range``   |
+        +----------------------------+-------------------------------+---------------------------+
+        | :func:`bessel_gaussian`    | ``['bessel', 'gaussian']``    | - ``sill``                |
+        |                            |                               | - ``nugget``              |
+        |                            |                               | - ``correlation_range``   |
+        |                            |                               | - ``decay_power``         |
+        |                            |                               | - ``hole_effect_range``   |
+        +----------------------------+-------------------------------+---------------------------+
+        | :func:`cosine_exponential` | ``['cosine', 'exponential']`` | - ``sill``                |
+        |                            |                               | - ``nugget``              |
+        |                            |                               | - ``correlation_range``   |
+        |                            |                               | - ``hole_effect_range``   |
+        |                            |                               | - ``enhance_semivariance``|
+        +----------------------------+-------------------------------+---------------------------+
+        | :func:`cosine_gaussian`    | ``['cosine', 'gaussian']``    | - ``sill``                |
+        |                            |                               | - ``nugget``              |
+        |                            |                               | - ``correlation_range``   |
+        |                            |                               | - ``hole_effect_range``   |
+        +----------------------------+-------------------------------+---------------------------+
+        | :func:`exponential_linear` | ``['exponential', 'linear']`` | - ``sill``                |
+        |                            |                               | - ``nugget``              |
+        |                            |                               | - ``correlation_range``   |
+        |                            |                               | - ``hole_effect_range``   |
+        |                            |                               | - ``decay_power``         |
+        +----------------------------+-------------------------------+---------------------------+
+        | :func:`gaussian_linear`    | ``['gaussian', 'linear']``    | - ``sill``                |
+        |                            |                               | - ``nugget``              |
+        |                            |                               | - ``correlation_range``   |
+        |                            |                               | - ``hole_effect_range``   |
+        +----------------------------+-------------------------------+---------------------------+
 
     Returns
-    ----------
-    variogram: np.ndarray
+    -------
+    variogram : np.ndarray
         An array containing the (normalized) semivariance for each lag bin.
     """
 
@@ -1491,23 +1980,23 @@ def fit_variogram(
 
     Parameters
     ----------
-    lags : np.ndarray
+    lags : |np.ndarray[float]|
         Array of lag distances from empirical variogram computation.
-    lag_counts : np.ndarray
+    lag_counts : |np.ndarray[int]|
         Number of data point pairs contributing to each lag estimate. Used as optimization weights.
-    gamma : np.ndarray
+    gamma : |np.ndarray[float]|
         Empirical semivariogram values (standardized semivariance) at each lag.
     model : str or List[str]
         Theoretical variogram model specification. Single string for basic models
-        ('exponential', 'gaussian', 'spherical', 'jbessel', 'linear'). List of two strings
-        for composite models (['bessel', 'exponential'], ['bessel', 'gaussian'],
-        ['cosine', 'exponential']).
-    model_parameters : lmfit.Parameters
+        (e.g., ``'exponential'``, ``'gaussian'``, ``'spherical'``, ``'jbessel'``, ``'linear'``).
+        List of two strings for composite models (e.g., ``['bessel', 'exponential']``,
+        ``['bessel', 'gaussian']``, ``['cosine', 'exponential']``).
+    model_parameters : lmfit..parameters.Parameters
         Parameter object containing initial values, bounds, and constraints for optimization.
         Required parameters depend on the selected model.
     optimizer_kwargs : dict, default={}
-        Additional keyword arguments passed to `lmfit.minimize()`. Common options include
-        'max_nfev' for maximum function evaluations and solver-specific parameters.
+        Additional keyword arguments passed to :func:`lmfit.minimizer.minimize()`. Common options
+        include ``'max_nfev'`` for maximum function evaluations and solver-specific parameters.
 
     Returns
     -------
@@ -1518,36 +2007,22 @@ def fit_variogram(
 
     Notes
     -----
-    The optimization minimizes the weighted objective function:
+    The optimization minimizes the weighted residual sum of squares:
 
     .. math::
-        \\min_{θ} \\sum_{i=1}^{n} w_i [γ_{emp}(h_i) - γ_{model}(h_i; θ)]^2
+        \\min_{\\theta} \\sum_{b=1}^{n} \\hat{w}_b \\left[ \\gamma_\\text{empirical}(h_b) -
+        \\gamma_\\text{model}(h_b; \\theta) \\right]^2
 
-    where w_i = lag_counts[i] are the weights and θ represents the model parameters.
+    where :math:`n` is the number of lag bins and :math:`b` indexes those lag bins
+    (:math:`b=1, \\dots, n`). The weights :math:`\\hat{w}_b` are associated with each lag bins
+    and are normalized where:
 
-    **Available Models:**
+    .. math::
+        \\hat{w}_b = \\frac{N(h_b)}{\\sum\\limits_{b=1}^{n} N(h_b)}
 
-    *Single Models:*
-    - 'cubic': Smooth cubic polynomial with finite range
-    - 'exponential': C₀ + C₁(1 - exp(-h/a))
-    - 'gaussian': C₀ + C₁(1 - exp(-h²/a²))
-    - 'jbessel': C₀ + C₁(1 - J₁(h/a)/(h/2a)) - exhibits hole effects
-    - 'kbessel': K-Bessel function model
-    - 'linear': C₀ + C₁·h - unbounded growth
-    - 'nugget': Pure nugget effect (no spatial correlation)
-    - 'pentaspherical': Quintic polynomial with smooth transitions
-    - 'power': Power law model for fractal processes
-    - 'quadratic': Rational quadratic with polynomial decay
-    - 'sinc': Sinc function with oscillatory behavior
-    - 'spherical': Piecewise function with finite range
-
-    *Composite Models:*
-    - ['bessel', 'exponential']: Periodic patterns with exponential decay
-    - ['bessel', 'gaussian']: Periodic patterns with Gaussian smoothness
-    - ['cosine', 'exponential']: Sinusoidal modulation with exponential decay
-
-    The function uses Trust Region Reflective algorithm (default in lmfit) which handles parameter
-    bounds robustly and is suitable for the non-linear nature of variogram models.
+    The function uses Trust Region Reflective algorithm (default in `lmfit.minimizer.minimize()`)
+    which handles parameter bounds robustly and is suitable for the non-linear nature of variogram
+    models.
 
     References
     ----------
