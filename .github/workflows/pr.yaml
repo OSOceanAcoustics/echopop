@@ -15,12 +15,12 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.12", "3.13"]
         os: [ubuntu-latest, windows-latest, macos-latest]
       fail-fast: false
     steps:
     - name: Check out repository code
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
     - name: Setup PostgreSQL Binaries
       # GitHub action to set up postgreSQL for all 3 platforms
       uses: ikalnytskyi/action-setup-postgres@v8
@@ -31,6 +31,7 @@ jobs:
         port: 5432
         postgres-version: '14'
       id: postgres
+
     - name: Set up Python
       uses: actions/setup-python@v6
       with:

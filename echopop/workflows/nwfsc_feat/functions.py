@@ -377,17 +377,19 @@ def transect_ends_crop(
     transect_mesh_region_function : Callable
         A sorting function that maps specific transect numbers to their respective discretized
         mesh regions. The outputs of this function are expected to be:
+
         - 'transect_start' (np.number): the first transect number of a particular region,
         - 'transect_end' (np.number): the last transect number of a particular region,
         - 'transect_lower_bound' (List[np.number]): a list of encoded transect numbers indicating
-        whether the transect is north, south, west, or east,
+          whether the transect is north, south, west, or east,
         - 'transect_upper_bound' (List[np.number]): a list of encoded transect numbers indicating
-        whether the transect is north, south, west, or east.
+          whether the transect is north, south, west, or east.
 
     Returns
     -------
     Tuple[pd.DataFrame, pd.DataFrame]
         A tuple comprising:
+
         - Cropped kriging mesh DataFrame containing only cells within the survey extent
         - Annotated transect data with each transect number's respective mesh region assignment
 
@@ -793,6 +795,20 @@ def filter_transect_intervals(
         and "transect_num" not in transect_filter_df.columns
     ):
         transect_filter_df.rename(columns={"transect": "transect_num"}, inplace=True)
+
+    # Validation check
+    if not set(transect_filter_df.columns) >= set(["transect_num", "log_start", "log_end"]):
+        # ---- Find mismatch
+        missing = list(
+            set(["transect_num", "log_start", "log_end"]) - set(transect_filter_df.columns)
+        )
+        # ---- Format
+        missing_str = [f"'{v}'" for v in missing]
+        # ---- Print
+        raise KeyError(
+            f"The following columns could not be formatted from 'transect_filter_df': "
+            f"{', '.join(missing_str)}."
+        )
 
     # Apply a filter, if needed
     if subset_filter is not None:

@@ -140,68 +140,63 @@ def plot_kriged_mesh(
         Name of the column to plot.
     projection : str, default='EPSG:4326'
         CRS for the plot. This should be either a projected or geodetic coordinate system definition
-        compatible with with :class:`geopandas.GeoDataFrame`. See the `GeoPandas GeoDataFrame
-        documentation
-        <https://geopandas.org/en/stable/docs/reference/api/geopandas.GeoDataFrame.html>`_ for more
-        details.
+        compatible with with :class:`geopandas.GeoDataFrame`.
     coordinate_names : tuple[str], default=('longitude', 'latitude')
-        Names of the coordinate columns. This is a tuple with an expected order of 'x' and then 'y'.
+        Names of the coordinate columns. This is a tuple with an expected order of ``'x'`` and then
+        ``'y'``.
     plot_type : {'hexbin', 'pcolormesh', 'scatter'}, default='hexbin'
         Type of plot to produce. Options are:
 
-        - 'hexbin': Creates a hexagonal binned plot using :func:`matplotlib.pyplot.hexbin`
-          ([docs](https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.hexbin.html)), which
-          visualizes a summary statistic defined by the user (via the `reduce_C_function` argument,
-          which defaults to :func:`numpy.mean`) over a two-dimensional grid of hexagons. The
-          plotted hexagonal bins can be configured using keyword arguments supplied to the
-          `hexbin_kwargs` argument.
-        - 'pcolormesh': Interpolates the variable onto a regular grid using
-          :func:`interpolation_mesh`, which internally uses the :mod:`verde` library (`verde
-          documentation <https://www.fatiando.org/verde/latest/>`_) for spatial interpolation that
-          returns an :class:`xarray.DataArray`. The resulting grid is then displayed as a
-          pseudocolor mesh using :meth:`xarray.DataArrray.plot.pcolormesh`. The plotted
-          pseudoclor mesh can be configured using keyword arguments supplied to the
-          `pseudocolormesh_kwargs` argument.
+        - 'hexbin': Creates a hexagonal binned plot using :func:`matplotlib.pyplot.hexbin`, which
+          visualizes a summary statistic defined by the user (via the ``reduce_C_function``
+          argument, which defaults to :func:`numpy.mean`) over a two-dimensional grid of hexagons.
+          The plotted hexagonal bins can be configured using keyword arguments supplied to the
+          ``hexbin_kwargs`` argument.
+
+        - 'pcolormesh': Interpolates the variable onto a regular grid using :class:`verde.Chain`
+          for spatial interpolation that returns an :class:`xarray.DataArray`. The resulting grid
+          is then displayed as a pseudocolor mesh using :meth:`xarray.DataArray.plot.pcolormesh`.
+          The plotted pseudocolor mesh can be configured using keyword arguments supplied to the
+          ``pseudocolormesh_kwargs`` argument.
+
         - 'scatter': Plots each data point individually using :meth:`matplotlib.axes.Axes.scatter`
-          (`matplotlib.axes.Axes.scatter docs
-          <https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.scatter.html>`_) coloring
           points based on the variable value. The plotted points can be configured using keyword
-          arguments supplied to the `scatter_kwargs` argument.
+          arguments supplied to the ``scatter_kwargs`` argument.
 
     scatter_kwargs : dict, optional
-        Additional keyword arguments passed directly to `matplotlib.pyplot.scatter` if
-        `plot_type='scatter'`. For example, you can control marker size, color, alpha, etc.
-        Example: `scatter_kwargs={'s': 20, 'c': 'red', 'alpha': 0.7}`
+        Additional keyword arguments passed directly to :func:`matplotlib.pyplot.scatter` if
+        ``plot_type='scatter'``. For example, you can control marker size, color, alpha, etc.
+        Example: ``scatter_kwargs={'s': 20, 'c': 'red', 'alpha': 0.7}``
     hexbin_kwargs : dict, optional
-        Additional keyword arguments passed directly to `matplotlib.pyplot.hexbin` if
-        `plot_type='hexbin'`. For example, you can control grid size, colormap, etc.
-        Example: `hexbin_kwargs={'gridsize': 50, 'cmap': 'viridis'}`
+        Additional keyword arguments passed directly to :func:`matplotlib.pyplot.hexbin` if
+        ``plot_type='hexbin'``. For example, you can control grid size, colormap, etc.
+        Example: ``hexbin_kwargs={'gridsize': 50, 'cmap': 'viridis'}``
     pseudocolormesh_kwargs : dict, optional
         Additional keyword arguments passed to the mesh interpolation and to
-        `xarray.DataArray.plot.pcolormesh` if `plot_type='pcolormesh'`. For example, you can
+        :meth:`xarray.DataArray.plot.pcolormesh` if ``plot_type='pcolormesh'``. For example, you can
         specify mesh spacing, colormap, shading, etc.
-        Example: `pseudocolormesh_kwargs={'spacing': 0.01, 'cmap': 'plasma'}`
+        Example: ``pseudocolormesh_kwargs={'spacing': 0.01, 'cmap': 'plasma'}``
     coast_kwargs : dict, optional
-        Additional keyword arguments passed to the coastline plotting function (e.g., Cartopy's
-        `ax.add_feature`). These control the appearance of the coastline overlay.
-        Example: `coast_kwargs={'edgecolor': 'black', 'linewidth': 0.5}`
+        Additional keyword arguments passed to the coastline plotting function such as
+        :meth:`cartopy.mpl.geoaxes.GeoAxes.add_feature()`. These control the appearance of the
+        coastline overlay. Example: ``coast_kwargs={'edgecolor': 'black', 'linewidth': 0.5}``
     axis_kwargs : dict, optional
         Additional keyword arguments passed to axis formatting functions (e.g., setting
         axis limits, labels, or grid). These are merged with any defaults and passed to
         the axis/axes object.
-        Example: `axis_kwargs={'xlabel': 'Longitude', 'ylabel': 'Latitude', 'xlim': (-130, -120)}`
+        Example: ``axis_kwargs={'xlabel': 'Longitude', 'ylabel': 'Latitude', 'xlim': (-130, -120)}``
     plot_kwargs : dict, optional
         Additional keyword arguments passed to the main plotting function, depending on
-        `plot_type`. These are merged with the specific kwargs above and can override them.
-        Example: `plot_kwargs={'alpha': 0.8}`
+        ``plot_type``. These are merged with the specific kwargs above and can override them.
+        Example: ``plot_kwargs={'alpha': 0.8}``
     colorbar_kwargs : dict, optional
-        Additional keyword arguments passed to `matplotlib.pyplot.colorbar` for customizing
-        the colorbar. These control label, orientation, ticks, etc.
-        Example: `colorbar_kwargs={'label': 'Biomass (kg)', 'orientation': 'vertical'}`
+        Additional keyword arguments passed to :func:`matplotlib.pyplot.colorbar` for customizing
+        the colorbar. These control label, orientation, ticks, etc. Example:
+        ``colorbar_kwargs={'label': 'Biomass (kg)', 'orientation': 'vertical'}``
     save_path : Path, optional
         Filepath for saving the figure.
     savefig_kwargs : dict, optional
-        Keyword arguments used by `matplotlib.pyplot.savefig` for saving the figure to the
+        Keyword arguments used by :func:`matplotlib.pyplot.savefig` for saving the figure to the
         associated save filepath.
 
     Returns
@@ -219,8 +214,8 @@ def plot_kriged_mesh(
     -----
     All keyword argument dictionaries are optional. If provided, they are passed directly to the
     underlying matplotlib or Cartopy plotting functions. If the same keyword is present in both
-    a specific kwargs dict (e.g., `scatter_kwargs`) and `plot_kwargs`, the value in `plot_kwargs`
-    takes precedence.
+    a specific kwargs dict (e.g., ``scatter_kwargs``) and ``plot_kwargs``, the value in
+    ``plot_kwargs`` takes precedence.
     """
 
     # Create copies
@@ -266,11 +261,23 @@ def plot_kriged_mesh(
         gdf=data, projection=projection, coast_kwargs=coast_kwargs
     )
 
-    # Get the `vmax`
-    vmax = scatter_kwargs.pop("vmax", 10 ** np.round(np.log10(data.loc[:, variable].max())))
-
-    # Get the `vmin`
-    vmin = scatter_kwargs.pop("vmin", 0.0)
+    # Get the `vmax` and `vmin`
+    if plot_type == "scatter":
+        scatter_kwargs["vmax"] = scatter_kwargs.get(
+            "vmax", 10 ** np.round(np.log10(data.loc[:, variable].max()))
+        )
+        scatter_kwargs["vmin"] = scatter_kwargs.get("vmin", 0.0)
+    elif plot_type == "pcolormesh":
+        pseudocolormesh_kwargs["vmax"] = pseudocolormesh_kwargs.get(
+            "vmax", 10 ** np.round(np.log10(data.loc[:, variable].max()))
+        )
+        pseudocolormesh_kwargs["vmin"] = pseudocolormesh_kwargs.get("vmin", 0.0)
+    else:
+        if "norm" not in hexbin_kwargs:
+            hexbin_kwargs["vmax"] = hexbin_kwargs.get(
+                "vmax", 10 ** np.round(np.log10(data.loc[:, variable].max()))
+            )
+            hexbin_kwargs["vmin"] = hexbin_kwargs.get("vmin", 0.0)
 
     # Get the overall data boundaries
     # ---- Compute the total survey extent
@@ -287,7 +294,7 @@ def plot_kriged_mesh(
     colorbar_label = colorbar_kwargs.pop("label", variable)
 
     # Get `cmap`
-    cmap = colorbar_kwargs.pop("cmap", "viridis")
+    colorbar_kwargs["cmap"] = colorbar_kwargs.pop("cmap", "viridis")
 
     # Get figure size
     figsize = plot_kwargs.pop("figsize", gutils.apply_aspect_ratio(5.5, x0, x1, y0, y1))
@@ -319,10 +326,7 @@ def plot_kriged_mesh(
             x=data.geometry.x,
             y=data.geometry.y,
             C=data[variable],
-            cmap=cmap,
             gridsize=gridsize,
-            vmin=vmin,
-            vmax=vmax,
             **hexbin_kwargs,
         )
     elif plot_type == "scatter":
@@ -331,8 +335,6 @@ def plot_kriged_mesh(
             x=data.geometry.x,
             y=data.geometry.y,
             c=data[variable],
-            vmin=vmin,
-            vmax=vmax,
             **scatter_kwargs,
         )
     elif plot_type == "pcolormesh":
@@ -341,15 +343,13 @@ def plot_kriged_mesh(
             data[x], data[y], data[variable], projection, pseudocolormesh_kwargs
         )
         # ---- Plot
-        PLOT = grid_z.plot.pcolormesh(
-            add_colorbar=False, cmap=cmap, vmin=vmin, vmax=vmax, **pseudocolormesh_kwargs
-        )
+        PLOT = grid_z.plot.pcolormesh(add_colorbar=False, **pseudocolormesh_kwargs)
 
     # Define the colorbar
     # ---- Check for a mappable object
     mappable = colorbar_kwargs.pop("mappable", PLOT)
     # ---- Generate the colorbar
-    plt.colorbar(mappable=mappable, ax=ax, label=colorbar_label, cmap=cmap, **colorbar_kwargs)
+    plt.colorbar(mappable=mappable, ax=ax, label=colorbar_label, **colorbar_kwargs)
 
     # Remove margin padding
     ax.margins(0, 0)

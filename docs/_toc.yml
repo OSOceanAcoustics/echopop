@@ -7,39 +7,117 @@ parts:
 - caption: Documentation
   chapters:
   - file: install
-  - file: input_files
-  - file: core_data_structure
+    title: Installation guide
   - file: example_notebooks
-    title: Example workflows and analyses
+    title: User guide
     sections:
-    - file: example_notebooks/example_echopop_workflow
-    - file: example_notebooks/report_generation
-    - file: example_notebooks/plotting
-    - file: example_notebooks/diagnostic_plotting
+      - file: FEAT_implementation/echopro_vs_echopop
+        title: Differences between EchoPro and Echopop
+      - file: FEAT_implementation/input_files
+        title: Input files
+      - file: headings/nasc_data_ingestion_h
+        title: NASC data ingestion
+        sections:
+          - file: example_notebooks/nasc_ingestion
+            title: Standard ingestion
+          - file: FEAT_implementation/offeffort_transect_filtering
+            title: Off-effort transect filtering
+      - file: headings/bio_ingestion_h
+        title: Biological data ingestion
+        sections:
+          - file: example_notebooks/biodata_ingestion
+            title: Spreadsheets and delimited files
+          - file: example_notebooks/biodatabase_ingestion
+            title: Database
+      - file: headings/transect_h
+        title: Transect-based analysis
+        sections:
+          - file: example_notebooks/stratify_data
+            title: Stratify acoustic and biological data
+          - file: example_notebooks/number_proportions
+            title: Compute age- and length-binned number proportions
+          - file: example_notebooks/weight_proportions
+            title: Compute age- and length-binned weight proportions
+          - file: example_notebooks/basic_inversion
+            title: Estimate abundance and biomass from backscatter
+      - file: headings/geostats_h_theory
+        title: Geostatistics
+        sections:
+          - file: example_notebooks/geostatistical
+            title: Semivariograms and kriging
+          - file: FEAT_implementation/kriging_mesh_cropping
+            title: Kriging mesh cropping
+      - file: FEAT_implementation/kriging_biomass_to_nasc
+        title: Apportioning kriged abundance, biomass, and NASC
+      - file: example_notebooks/stratified_resampling
+        title: Random sampling estimation 
+      - file: headings/plotting_h
+        title: Plotting
+        sections:
+          - file: example_notebooks/plotting
+            title: Standard plotting
+          - file: FEAT_implementation/FEAT_notebooks/diagnostic_plotting
+            title: Diagnostic plotting
+      - file: FEAT_implementation/FEAT_notebooks/report_generation
+        title: Generating reports
+      - file: FEAT_implementation/FEAT_notebooks/year_specific_workflows
+        title: Running year-specific workflows
   - file: theory
     title: Underlying theory
     sections:
-    - file: theory/acoustics
-    - file: theory/bio_estimates
-    - file: theory/stratification
-    # - file: theory/kriging    
-    - file: theory/apportion_biomass
-    - file: theory/apportion_abundance
-    - file: theory/kriging_eq
-    - file: theory/semivariogram_eq
-    # - file: theory/other
-  - file: implementation
-    title: Software implementation
-    sections:
-    - file: implementation/echopro_vs_echopop
-    - file: implementation/preprocessing_data
-  # - file: algo
-  #   title: Algorithmic implementation
-  #   sections:
-  #   - file: algo1
-  #   - file: algo2
-  - file: glossary
+      - file: theory/acoustics
+        title: Acoustics basics
+      - file: headings/popest_h
+        title: Population estimation
+        sections:
+          - file: theory/bio_estimates
+            title: Transect-based biomass
+          - file: theory/stratification
+            title: Stratification
+      - file: headings/geostats_h
+        title: Geostatistics
+        sections:
+          - file: theory/semivariogram_theory
+            title: Spatial correlation
+          - file: theory/kriging_theory
+            title: Interpolate spatial fields
+          - file: theory/semivariogram_eq
+            title: Theoretical semivariogram models
+      - file: headings/apportion_h
+        title: Apportioning population estimates
+        sections:
+          - file: FEAT_implementation/station_proportions.md
+            title: Weight and number proportion for fish samples
+          - file: FEAT_implementation/apportion_biomass
+            title: Apportioning biomass over transects
+          - file: FEAT_implementation/apportion_abundance
+            title: Apportioning abundance and NASC over transects
+      - file: glossary
+        title: Glossary
 - caption: Help & references
   chapters:
-  - file: api
-  - file: zbibliography
+    - file: headings/genapi_h
+      title: General API
+      sections:
+        - file: api/api_ingest
+        - file: api/api_survey
+        - file: api/api_geostatistics
+        - file: api/inversion/index
+          title: Scattering models and inversion
+          sections:
+          - file: api/inversion/api_basic_ops
+          - file: api/inversion/api_scatteringmod
+          - file: api/inversion/api_invtslength
+          - file: api/inversion/api_invmatrix
+        - file: api/api_utils
+        - file: api/api_graphics
+    - file: headings/featapi_h
+      title: FEAT-specific API
+      sections:
+        - file: FEAT_implementation/api/api_functions
+        - file: FEAT_implementation/api/api_biology
+        - file: FEAT_implementation/api/api_apportionment
+        - file: FEAT_implementation/api/api_transect_region_mesh
+        - file: FEAT_implementation/api/api_reporter
+    - file: zbibliography
+      title: References

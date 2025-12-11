@@ -101,39 +101,36 @@ class InversionBase(abc.ABC):
 
 class InvParameters:
     """
-    Container for acoustic scattering model inversion parameters.
+    Primary class for managing acoustic scattering model parameters used in matrix inversion.
 
-    This class manages parameter sets used in acoustic inversion analysis,
-    providing scaling/unscaling functionality, bounds management, and
-    integration with the lmfit optimization library. It serves as the
-    primary interface for parameter handling in echopop inversion workflows.
+    This class manages parameter sets used in acoustic inversion analysis, providing
+    scaling/unscaling functionality, bounds management, and integration with the lmfit optimization
+    package. It serves as the primary interface for parameter handling in Echopop inversion
+    workflows.
 
     Parameters
     ----------
     parameters : Dict[str, Any]
-        Dictionary of parameter specifications with each parameter containing:
-        - 'value': Current parameter value
-        - 'min': Lower bound (optional, default=-inf)
-        - 'max': Upper bound (optional, default=+inf)
-        - 'vary': Whether parameter should be optimized (optional, default=False)
+        Dictionary of parameter specifications compatible with :func:`lmfit.Parameters`:
+
+        - ``'value'``: Current parameter value
+        - ``'min'``: Lower bound (optional, default=-inf)
+        - ``'max'``: Upper bound (optional, default=+inf)
+        - ``'vary'``: Whether parameter should be optimized (optional, default=False)
 
     Attributes
     ----------
     parameters : Dict[str, Dict[str, Any]]
         Validated parameter dictionary
-    parameter_bounds : Dict[str, Dict[str, float]]
+    values Dict[str, float]
+        Property to get current parameter values as dictionary
+    bounds : Dict[str, Dict[str, float]]
         Original parameter bounds for unscaling operations
-    scaled : bool
-        Current scaling status
+    is_scaled : bool
+        Property to check if parameters are currently scaled
 
     Methods
     -------
-    values
-        Property to get current parameter values as dictionary
-    bounds
-        Property to get parameter bounds as dictionary of (min, max) tuples
-    is_scaled
-        Property to check if parameters are currently scaled
     scale()
         Scale parameters to [0,1] range and return new scaled instance
     unscale()
@@ -162,7 +159,7 @@ class InvParameters:
     The scaling transformation uses min-max normalization:
 
     .. math::
-        x_{scaled} = \\frac{x - x_{min}}{x_{max} - x_{min}}
+        \\hat{x} = \\frac{x - x_\\text{min}}{x_\\text{max} - x_\\text{min}}
 
     This improves optimization convergence by normalizing parameter ranges
     and reducing numerical conditioning issues in multi-parameter problems.

@@ -53,10 +53,10 @@ BIODATA_SHEETS = {
 BIODATA_SHIP_SPECIES = {
     "ships": {
         160: {
-            "survey": 202106
+            "survey": 201906
         },
         584: {
-            "survey": 202113,
+            "survey": 2019097,
             "haul_offset": 200
         }
     },
@@ -248,7 +248,7 @@ BIODATA_SEX = {
 # READ IN DATA
 dict_df_bio = ingestion.load_biological_data(
     biodata_filepath=BIODATA_FILE, 
-    BIODATA_SHEETS=BIODATA_SHEETS, 
+    biodata_sheet_map=BIODATA_SHEETS, 
     column_name_map=FEAT_TO_ECHOPOP_BIODATA_COLUMNS, 
     subset_dict=BIODATA_SHIP_SPECIES, 
    biodata_label_map=BIODATA_SEX
@@ -893,7 +893,8 @@ logging.info(
 
 # KRIGING PARAMETERS CONTAINER
 KRIGING_PARAMETERS = {
-    "search_radius": best_fit_parameters["correlation_range"] * 3,
+    # "search_radius": best_fit_parameters["correlation_range"] * 3,
+    "search_radius": dict_kriging_params["correlation_range"] * 3,
     "aspect_ratio": 0.001,
     "k_min": 3,
     "k_max": 10,
@@ -901,8 +902,15 @@ KRIGING_PARAMETERS = {
 
 # VARIOGRAM PARAMETERS CONTAINER
 VARIOGRAM_PARAMETERS = {
+    # **dict_variogram_params,
     "model": ["exponential", "bessel"],
-    **best_fit_parameters
+    "sill": dict_variogram_params["sill"],
+    "nugget": dict_variogram_params["nugget"],
+    "correlation_range": dict_variogram_params["correlation_range"],
+    "hole_effect_range": dict_variogram_params["hole_effect_range"],
+    "decay_power": dict_variogram_params["decay_power"],
+    # **best_fit_parameters
+    # **dict_variogram_params
 }
 
 # INITIALIZE CLASS OBJECT

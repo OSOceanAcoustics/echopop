@@ -29,15 +29,15 @@ def transform_coordinates(
 
     Parameters
     ----------
-    data : pd.DataFrame
+    data : |pd.DataFrame|
         DataFrame with coordinates
     x_offset : float, default=0.
         Offset to apply to the x-coordinates that corresponds to `coordinate_names[0]`
     y_offset : float, default=0.
         Offset to apply to the y-coordinates that corresponds to `coordinate_names[0]`
     coordinate_names : Tuple[str, str], default=("longitude", "latitude")
-        Names of the coordinate columns when using DataFrames. Expected format: (x_col, y_col).
-    reference : pd.DataFrame, optional
+        Names of the coordinate columns when using DataFrames. Expected format: ``(x_col, y_col)``.
+    reference : |pd.DataFrame|, optional
         Reference DataFrame with x and y coordinates for interpolation that is
         used as an additional offset to the x-axis.
     delta_x : float, optional
@@ -49,7 +49,7 @@ def transform_coordinates(
 
     Returns
     -------
-    pd.DataFrame
+    |pd.DataFrame|
         DataFrame with the new transformed coordinates 'x' and 'y'.
     float or None
         Distance of the pre-transformed x-axis coordinates that can be used to transform other
@@ -96,20 +96,19 @@ def transect_coordinate_centroid(spatial_grouped: gpd.GeoSeries):
     """
     Calculate the centroid of a given spatial group.
 
-    This function computes the geometric centroid of a collection of spatial points,
-    which is useful for determining the center point of transect lines or other
-    spatial groupings.
+    This function computes the geometric centroid of a collection of spatial points, which is
+    useful for determining the center point of transect lines or other spatial groupings.
 
     Parameters
     ----------
-    spatial_grouped: gpd.GeoSeries
-        A GeoSeries comprising coordinates (i.e. points). Each element should be
-        a Point geometry representing spatial locations.
+    spatial_grouped: geopandas.GeoSeries
+        A :class:`geopandas.GeoSeries` comprising coordinates (i.e. points). Each element should be
+        a :class:`shapely.Point` geometry representing spatial locations.
 
     Returns
     -------
     Point
-        A shapely Point object representing the centroid of all input coordinates.
+        A :class:`shapely.Point` object representing the centroid of all input coordinates.
 
     Examples
     --------
@@ -122,9 +121,8 @@ def transect_coordinate_centroid(spatial_grouped: gpd.GeoSeries):
 
     Notes
     -----
-    The function uses the union_all() method to combine all geometries before
-    calculating the centroid, which ensures proper handling of the spatial
-    reference system.
+    The function uses :meth:`geopandas.GeoSeries.union_all` to combine all geometries before
+    calculating the centroid, which ensures proper handling of the spatial reference system.
     """
 
     # Compute the union of all coordinates within `spatial_grouped`
@@ -144,22 +142,26 @@ def transect_extent(transects: pd.DataFrame, projection: str, num_nearest_transe
 
     Parameters
     ----------
-    transects : pd.DataFrame
+    transects : |pd.DataFrame|
         Dataframe containing survey transect data with columns:
-        - 'longitude': Longitude coordinates
-        - 'latitude': Latitude coordinates
-        - 'transect_num': Transect identifier numbers
+
+        - ``'longitude'``: Longitude coordinates
+        - ``'latitude'``: Latitude coordinates
+        - ``'transect_num'``: Transect identifier numbers
+
     projection : str
-        EPSG projection code string (e.g., 'epsg:4326' for WGS84)
+        EPSG projection code string (e.g., ``'epsg:4326'`` for WGS84)
     num_nearest_transects : int
+
         Number of nearest neighbor transects to include when generating
         the convex hull around each transect
 
     Returns
     -------
-    shapely.geometry.base.BaseGeometry
-        A shapely geometry object representing the union of all transect convex hulls,
-        defining the overall spatial extent of the survey area.
+    shapely.Point or shapely.LineString or shapely.Polygon
+        A :class:`shapely.Point`, :class:`shapely.LineString`, or :class:`shapely.Polygon` object
+        that matches the geometry-type of the input transect data. This object represents the
+        union of all transect convex hulls, defining the overall spatial extent of the survey area.
 
     Examples
     --------
@@ -171,20 +173,22 @@ def transect_extent(transects: pd.DataFrame, projection: str, num_nearest_transe
     ... })
     >>> extent = transect_extent(transect_data, 'epsg:4326', 2)
     >>> print(f"Extent type: {type(extent)}")
-    Extent type: <class 'shapely.geometry.polygon.Polygon'>
+
+    Extent type: :class:`shapely.Polygon`
 
     Notes
     -----
     The function performs the following steps:
-    1. Converts the DataFrame to a GeoDataFrame with point geometries
+
+    1. Converts the DataFrame to a :class:`geopandas.GeoDataFrame` with point geometries
     2. Transforms coordinates from WGS84 to UTM for accurate distance calculations
     3. Calculates centroids for each transect
     4. For each transect, finds the nearest neighbor transects
     5. Generates convex hulls around each transect and its neighbors
     6. Returns the union of all convex hulls
 
-    The resulting polygon can be used for spatial filtering, mesh cropping,
-    or defining survey boundaries for analysis.
+    The resulting polygon can be used for spatial filtering, mesh cropping, or defining survey
+    boundaries for analysis.
     """
 
     # Copy
@@ -263,12 +267,12 @@ def hull_crop(
 
     Parameters
     ----------
-    transects : pd.DataFrame
+    transects : |pd.DataFrame|
         Georeferenced survey transect data used for defining the spatial extent for the kriging
-        mesh grid. Must contain columns: 'longitude', 'latitude', 'transect_num'.
-    mesh : pd.DataFrame
+        mesh grid. Must contain columns: ``'longitude'``, ``'latitude'``, ``'transect_num'``.
+    mesh : |pd.DataFrame|
         Complete kriging mesh DataFrame that is subsequently cropped. Must contain columns:
-        'longitude', 'latitude'.
+        ``'longitude'``, ``'latitude'``.
     num_nearest_transects : int, default=3
         The number of nearest-neighbor transects used for defining the local extent around each
         transect. These convex hulls are then combined to generate the full survey extent hull.
@@ -279,13 +283,13 @@ def hull_crop(
     projection : str, default='epsg:4326'
         EPSG projection code for the input coordinate system. Default is WGS84.
     coordinate_names : Tuple[str, str], default=("longitude", "latitude")
-        Names of the coordinate columns when using DataFrames. Expected format: (x_col, y_col).
+        Names of the coordinate columns when using DataFrames. Expected format: ``(x_col, y_col)``.
 
     Returns
     -------
-    pd.DataFrame
+    |pd.DataFrame|
         Cropped mesh DataFrame containing only cells within the buffered survey extent.
-        The 'geometry' column is removed from the output.
+        The ``'geometry'`` column is removed from the output.
 
     Examples
     --------
@@ -300,19 +304,20 @@ def hull_crop(
     Notes
     -----
     The function performs the following steps:
-    1. Converts the mesh DataFrame to a GeoDataFrame with point geometries
+
+    1. Converts the mesh DataFrame to a :class:`geopandas.GeoDataFrame` with point geometries
     2. Transforms coordinates from WGS84 to UTM for accurate distance calculations
-    3. Generates survey extent polygon using transect_extent() function
+    3. Generates survey extent polygon using :func:`echopop.geostatistics.transect_extent`
     4. Applies buffer distance (converted from nautical miles to meters)
     5. Filters mesh cells to those within the buffered polygon
     6. Returns the filtered mesh without geometry column
 
-    The UTM transformation ensures accurate distance calculations for the convex hull
-    generation and buffering operations. The buffer distance helps ensure adequate
-    mesh coverage around the survey boundary.
+    The UTM transformation ensures accurate distance calculations for the convex hull generation
+    and buffering operations. The buffer distance helps ensure adequate mesh coverage around the
+    survey boundary.
 
-    This method is particularly useful for irregularly shaped survey areas where
-    region-based cropping may be too restrictive or complex.
+    This method is particularly useful for irregularly shaped survey areas where region-based
+    cropping may be too restrictive or complex.
     """
 
     # Validate parameters

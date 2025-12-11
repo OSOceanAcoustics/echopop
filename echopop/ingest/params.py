@@ -14,7 +14,7 @@ def load_kriging_variogram_params(
 
     Parameters
     ----------
-    geostatistic_params_filepath : str or Path
+    geostatistic_params_filepath : str or pathlib.Path
         Path to the Excel file containing kriging parameters
     sheet_name : str
         Name of the sheet to load
@@ -24,7 +24,7 @@ def load_kriging_variogram_params(
     Returns
     -------
     tuple
-        Tuple containing (kriging_params_dict, variogram_params_dict)
+        Tuple containing kriging and variogram parameter dictionaries
     """
 
     if not geostatistic_params_filepath.exists():
