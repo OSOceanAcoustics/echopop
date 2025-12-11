@@ -1,8 +1,8 @@
+import contextlib
 import os
 import signal
 from pathlib import Path
 from urllib.parse import urlparse
-import contextlib
 
 import pandas as pd
 import psycopg
@@ -12,6 +12,7 @@ import testing.postgresql
 HERE = Path(__file__).parent.absolute()
 TEST_DATA_ROOT = HERE.parent / "test_data"
 TEST_SQL_FILE = TEST_DATA_ROOT / "Biological" / "test_bio_data.sql"
+
 
 def _create_creds_dict(db_url):
     """Helper function to parse the DB URL into a dict."""
@@ -24,6 +25,7 @@ def _create_creds_dict(db_url):
         "port": url.port,
     }
 
+
 @contextlib.contextmanager
 def get_postgresql_context(original_sigint):
     """
@@ -31,9 +33,10 @@ def get_postgresql_context(original_sigint):
     or starts a local testing.postgresql instance.
     """
 
-    is_github_action = os.environ.get('GITHUB_ACTIONS')
+    is_github_action = os.environ.get("GITHUB_ACTIONS")
 
     if is_github_action:
+
         class CI_Postgres_Wrapper:
             def url(self):
                 return "postgresql://test_user:postgres@localhost:5432/test"
@@ -51,6 +54,7 @@ def get_postgresql_context(original_sigint):
         finally:
             if os.name == "nt":
                 signal.SIGINT = original_sigint
+
 
 @pytest.fixture(scope="session")
 def database_credentials():
