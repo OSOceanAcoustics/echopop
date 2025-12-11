@@ -2,6 +2,7 @@ import os
 import signal
 from pathlib import Path
 from urllib.parse import urlparse
+import contextlib
 
 import pandas as pd
 import psycopg
@@ -11,7 +12,6 @@ import testing.postgresql
 HERE = Path(__file__).parent.absolute()
 TEST_DATA_ROOT = HERE.parent / "test_data"
 TEST_SQL_FILE = TEST_DATA_ROOT / "Biological" / "test_bio_data.sql"
-
 
 def _create_creds_dict(db_url):
     """Helper function to parse the DB URL into a dict."""
@@ -24,42 +24,59 @@ def _create_creds_dict(db_url):
         "port": url.port,
     }
 
+@contextlib.contextmanager
+def get_postgresql_context(original_sigint):
+    """
+    Context manager that either connects to an existing CI server
+    or starts a local testing.postgresql instance.
+    """
+
+    is_github_action = os.environ.get('GITHUB_ACTIONS')
+
+    if is_github_action:
+        class CI_Postgres_Wrapper:
+            def url(self):
+                return "postgresql://test_user:postgres@localhost:5432/test"
+
+        yield CI_Postgres_Wrapper()
+
+    else:
+        if os.name == "nt":
+            signal.SIGINT = signal.SIGTERM
+
+        try:
+            with testing.postgresql.Postgresql() as postgresql:
+                yield postgresql
+
+        finally:
+            if os.name == "nt":
+                signal.SIGINT = original_sigint
 
 @pytest.fixture(scope="session")
 def database_credentials():
     """
     Session-scoped fixture to:
-    1. Start a temporary Postgres database.
+    1. Connect to CI DB or Start a local Postgres database.
     2. Load 'test_bio_data.sql' into it.
     3. Yield the *credentials dictionary* for this test DB.
     """
-    print(f"\n--- Starting new test database from {TEST_SQL_FILE} ---")
-
-    # Make sure signal is compatible with OS
     original_sigint = signal.SIGINT
-    if os.name == "nt":  # Windows OS
-        signal.SIGINT = signal.SIGTERM
 
-    try:
-        with testing.postgresql.Postgresql() as postgresql:
+    with get_postgresql_context(original_sigint) as postgresql:
 
-            try:
-                conn = psycopg.connect(postgresql.url())
-                conn.autocommit = True
-                with conn.cursor() as cur:
-                    with open(TEST_SQL_FILE, "r") as f:
-                        cur.execute(f.read())
-                conn.close()
-            except Exception as e:
-                pytest.fail(f"Failed to load {TEST_SQL_FILE}: {e}")
+        try:
+            conn = psycopg.connect(postgresql.url())
+            conn.autocommit = True
+            with conn.cursor() as cur:
+                with open(TEST_SQL_FILE, "r") as f:
+                    cur.execute(f.read())
+            conn.close()
+        except Exception as e:
+            pytest.fail(f"Failed to load {TEST_SQL_FILE}: {e}")
 
-            creds_dict = _create_creds_dict(postgresql.url())
+        creds_dict = _create_creds_dict(postgresql.url())
 
-            yield creds_dict  # Wait for tests to run
-
-    finally:
-        if os.name == "nt":
-            signal.SIGINT = original_sigint
+        yield creds_dict  # Wait for tests to run
 
 
 @pytest.fixture

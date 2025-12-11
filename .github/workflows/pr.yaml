@@ -24,13 +24,13 @@ jobs:
     - name: Setup PostgreSQL Binaries
       # GitHub action to set up postgreSQL for all 3 platforms
       uses: ikalnytskyi/action-setup-postgres@v8
-      id: postgres
       with:
-        postgres-version: '14'
         username: test_user
-        password: test_password
-        usesuper: false
-        usecreatedb: false
+        password: postgres
+        database: test
+        port: 5432
+        postgres-version: '14'
+      id: postgres
     - name: Set up Python
       uses: actions/setup-python@v6
       with:
