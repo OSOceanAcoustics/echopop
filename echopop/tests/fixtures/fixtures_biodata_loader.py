@@ -1,5 +1,86 @@
+import contextlib
+import os
+import signal
+from pathlib import Path
+from urllib.parse import urlparse
+
 import pandas as pd
+import psycopg
 import pytest
+import testing.postgresql
+
+HERE = Path(__file__).parent.absolute()
+TEST_DATA_ROOT = HERE.parent / "test_data"
+TEST_SQL_FILE = TEST_DATA_ROOT / "Biological" / "test_bio_data.sql"
+
+
+def _create_creds_dict(db_url):
+    """Helper function to parse the DB URL into a dict."""
+    url = urlparse(db_url)
+    return {
+        "dbname": url.path.lstrip("/"),
+        "user": url.username,
+        "password": url.password,
+        "host": url.hostname,
+        "port": url.port,
+    }
+
+
+@contextlib.contextmanager
+def get_postgresql_context(original_sigint):
+    """
+    Context manager that either connects to an existing CI server
+    or starts a local testing.postgresql instance.
+    """
+
+    is_github_action = os.environ.get("GITHUB_ACTIONS")
+
+    if is_github_action:
+
+        class CI_Postgres_Wrapper:
+            def url(self):
+                return "postgresql://test_user:postgres@localhost:5432/test"
+
+        yield CI_Postgres_Wrapper()
+
+    else:
+        if os.name == "nt":
+            signal.SIGINT = signal.SIGTERM
+
+        try:
+            with testing.postgresql.Postgresql() as postgresql:
+                yield postgresql
+
+        finally:
+            if os.name == "nt":
+                signal.SIGINT = original_sigint
+
+
+@pytest.fixture(scope="session")
+def database_credentials():
+    """
+    Session-scoped fixture to:
+    1. Connect to CI DB or Start a local Postgres database.
+    2. Load 'test_bio_data.sql' into it.
+    3. Yield the *credentials dictionary* for this test DB.
+    """
+    original_sigint = signal.SIGINT
+
+    with get_postgresql_context(original_sigint) as postgresql:
+
+        try:
+            conn = psycopg.connect(postgresql.url())
+            conn.autocommit = True
+            with conn.cursor() as cur:
+                with open(TEST_SQL_FILE, "r") as f:
+                    cur.execute(f.read())
+            conn.close()
+        except Exception as e:
+            pytest.fail(f"Failed to load {TEST_SQL_FILE}: {e}")
+
+        creds_dict = _create_creds_dict(postgresql.url())
+
+        yield creds_dict  # Wait for tests to run
 
 
 @pytest.fixture
@@ -73,6 +154,15 @@ def subset_dict():
     """Create subset dictionary for filtering biological data."""
     return {
         "ships": {160: {"survey": 201906}, 584: {"survey": 2019097, "haul_offset": 200}},
+        "species_code": [22500],
+    }
+
+
+@pytest.fixture
+def pg_subset_dict():
+    """Create subset dictionary for filtering biological data."""
+    return {
+        "ship": {101: {"survey": 2025}},
         "species_code": [22500],
     }
 
