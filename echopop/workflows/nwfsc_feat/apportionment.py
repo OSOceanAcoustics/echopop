@@ -110,6 +110,7 @@ def remove_group_from_estimates(
     # Return the partitioned dataset
     return transect_data
 
+
 def remove_group_from_estimates_xr(
     transect_data: pd.DataFrame,
     group_proportions: xr.Dataset,
@@ -152,7 +153,7 @@ def remove_group_from_estimates_xr(
     # Validate that there is a matching column with the Dataset coordinates
     # ---- Get coordinates
     grp_coords = list(group_proportions.coords.keys())
-    if not set(grp_coords) <= set(transect_data.columns):   
+    if not set(grp_coords) <= set(transect_data.columns):
         # ---- Format error
         missing_coords = ", ".join(f"'{c}'" for c in grp_coords)
         raise KeyError(
@@ -174,7 +175,7 @@ def remove_group_from_estimates_xr(
         transect_data["nasc"] = transect_data_cnv["nasc"] * (1 - group_proportions_aligned["nasc"])
     else:
         transect_data.drop(columns=["nasc"], inplace=True)
-        
+
     # Adjust number density and abundance, if present; otherwise, drop to avoid partial evaluation
     # ---- Get variables
     abundance_columns = [
@@ -198,12 +199,13 @@ def remove_group_from_estimates_xr(
         ).to_pandas()
     else:
         transect_data.drop(columns=biomass_columns, inplace=True)
-        
+
     # Restore original indexing
     transect_data.reset_index(inplace=True)
 
     # Return the partitioned transect data
     return transect_data
+
 
 def mesh_biomass_to_nasc(
     mesh_data_df: pd.DataFrame,
@@ -378,6 +380,7 @@ def mesh_biomass_to_nasc(
     # Rename
     mesh_data_df.rename(columns=inverted_link, inplace=True)
 
+
 def mesh_biomass_to_nasc_xr(
     mesh_data: pd.DataFrame,
     biodata: Union[pd.DataFrame, Dict[str, pd.DataFrame]],
@@ -482,9 +485,9 @@ def mesh_biomass_to_nasc_xr(
 
     # Stack the proportions to be as a function of group
     biodata_cnv = {
-        k: ds["proportion_overall"].sum(
-            dim=[v for v in ds.coords.keys() if v not in group_columns]
-        ).to_pandas()
+        k: ds["proportion_overall"]
+        .sum(dim=[v for v in ds.coords.keys() if v not in group_columns])
+        .to_pandas()
         for k, ds in biodata.items()
     }
 
@@ -516,10 +519,10 @@ def mesh_biomass_to_nasc_xr(
 
     # Prefix columns
     stacked_proportions = stacked_proportions.add_prefix("biomass_")
-    
+
     # Add to the mesh
     mesh_data[stacked_proportions.columns.tolist()] = stacked_proportions
-    
+
     # Get the column names of the resulting biomass values
     biomass_columns = stacked_proportions.columns.tolist() + ["biomass"]
 
@@ -535,9 +538,7 @@ def mesh_biomass_to_nasc_xr(
     stratum_sigma_bs_idx = stratum_sigma_bs.reindex(mesh_data.index)
 
     # Calculate NASC
-    mesh_data["nasc"] = (
-        mesh_data["abundance"] * stratum_sigma_bs_idx["sigma_bs"] * 4.0 * np.pi
-    )
+    mesh_data["nasc"] = mesh_data["abundance"] * stratum_sigma_bs_idx["sigma_bs"] * 4.0 * np.pi
 
     # Rename the aligned columns
     # ---- Create inverted link dictionary
@@ -548,6 +549,7 @@ def mesh_biomass_to_nasc_xr(
 
     # Rename
     mesh_data.rename(columns=inverted_link, inplace=True)
+
 
 def impute_kriged_table(
     reference_table_df: pd.DataFrame,
@@ -812,6 +814,7 @@ def distribute_unaged_from_aged(
         )
         return standardized_table_imputed
 
+
 def distribute_unaged_from_aged_xr(
     population_table: xr.DataArray,
     reference_table: xr.DataArray,
@@ -871,14 +874,22 @@ def distribute_unaged_from_aged_xr(
     reference_coords = list(reference_table.coords.keys())
 
     # Aggregate the grouped dimensions
-    grouped_table = population_table.sum(
-        dim=[v for v in population_table.coords.keys() if v not in set(table_coords)]
-    ).to_dataframe(name="value")["value"].unstack(table_noncoords)
+    grouped_table = (
+        population_table.sum(
+            dim=[v for v in population_table.coords.keys() if v not in set(table_coords)]
+        )
+        .to_dataframe(name="value")["value"]
+        .unstack(table_noncoords)
+    )
 
     # Aggregate the reference
-    grouped_reference = reference_table.sum(
-        dim=[v for v in population_table.coords.keys() if v not in set(reference_coords)]
-    ).to_dataframe(name="value")["value"].unstack(table_noncoords)
+    grouped_reference = (
+        reference_table.sum(
+            dim=[v for v in population_table.coords.keys() if v not in set(reference_coords)]
+        )
+        .to_dataframe(name="value")["value"]
+        .unstack(table_noncoords)
+    )
 
     # Get the shared index names across the reference tables
     reference_index_names = list(grouped_reference.index.names)
@@ -1255,6 +1266,7 @@ def distribute_population_estimates(
     else:
         return apportioned_grouped_pvt
 
+
 def distribute_population_estimates_xr(
     data: pd.DataFrame,
     proportions: Union[Dict[str, xr.Dataset], xr.Dataset],
@@ -1287,8 +1299,8 @@ def distribute_population_estimates_xr(
         List of column names that define the biological groups for distribution and stratification
         (e.g. ["sex", "age_bin", "length_bin", "stratum_ks"]).
     data_proportions_xr_link : Optional[Dict[str, str]], default None
-        Dictionary mapping column names from 'data' to those in 'proportions'. For 
-        instance, the dictionary `{'stratum_A': 'stratum_B'}` links 'stratum_A' within 
+        Dictionary mapping column names from 'data' to those in 'proportions'. For
+        instance, the dictionary `{'stratum_A': 'stratum_B'}` links 'stratum_A' within
         'data' with 'stratum_B' in the 'proportions' Dataset(s).
 
     Returns
@@ -1330,7 +1342,8 @@ def distribute_population_estimates_xr(
         proportions_group_columns.update(ds.coords.keys())
     # ---- Only require group_columns to be present in at least one of the sources
     missing = [
-        col for col in group_columns
+        col
+        for col in group_columns
         if col not in data.columns and col not in proportions_group_columns
     ]
     if missing:
@@ -1348,8 +1361,7 @@ def distribute_population_estimates_xr(
 
     # Parse the additional columns that are required for grouping
     proportions_group_columns = {
-        k: [c for c in ds.coords.keys() if c in group_columns]
-        for k, ds in proportions.items()
+        k: [c for c in ds.coords.keys() if c in group_columns] for k, ds in proportions.items()
     }
 
     # Convert xarray proportions to DataFrame(s) and align with group_columns
@@ -1364,7 +1376,7 @@ def distribute_population_estimates_xr(
             df,
             index_cols=[v for v in proportions_group_columns[k] if v not in data_group_columns],
             strat_cols=data_group_columns,
-            value_col="proportion_overall"
+            value_col="proportion_overall",
         )
         proportions_grouped_pvt[k] = df_pvt
     # ---- Get the normalization constant
@@ -1376,13 +1388,13 @@ def distribute_population_estimates_xr(
 
     # Distribute the variable over each table
     apportioned_groups = {
-        k: df.mul(data_pvt[variable]).fillna(0.0).stack(data_group_columns).to_xarray() 
+        k: df.mul(data_pvt[variable]).fillna(0.0).stack(data_group_columns).to_xarray()
         for k, df in proportions_pvt.items()
     }
     # ---- Update names
     for arr in apportioned_groups.values():
         arr.name = variable
-    
+
     # Return
     if len(apportioned_groups) == 1:
         return next(iter(apportioned_groups.values()))

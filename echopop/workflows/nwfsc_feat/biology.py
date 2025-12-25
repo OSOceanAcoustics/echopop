@@ -6,6 +6,7 @@ import xarray as xr
 
 from ...utils import apply_filters, binned_distribution, create_grouped_table
 
+
 def length_binned_weights(
     data: pd.DataFrame,
     length_bins: np.ndarray,
@@ -141,6 +142,7 @@ def length_binned_weights(
             return result.to_frame("all")
         else:
             return result
+
 
 def length_binned_weights_xr(
     data: pd.DataFrame,
@@ -289,19 +291,23 @@ def length_binned_weights_xr(
             pivot_result = result.to_frame("all")
         else:
             pivot_result = result
-    
+
     # Convert to an xarray.DataArray
     return xr.DataArray(
-        pivot_result.values,                    # the underlying data
-        dims=["length_bin"] + group_cols,       # dynamically name dimensions
+        pivot_result.values,  # the underlying data
+        dims=["length_bin"] + group_cols,  # dynamically name dimensions
         coords={
-            "length_bin": pivot_result.index,   # always index
-            **{col: pivot_result.columns.get_level_values(col) 
-            if isinstance(pivot_result.columns, pd.MultiIndex) 
-            else pivot_result.columns
-            for col in group_cols}          # dynamic grouping coordinates
+            "length_bin": pivot_result.index,  # always index
+            **{
+                col: (
+                    pivot_result.columns.get_level_values(col)
+                    if isinstance(pivot_result.columns, pd.MultiIndex)
+                    else pivot_result.columns
+                )
+                for col in group_cols
+            },  # dynamic grouping coordinates
         },
-        name="weight_fitted"
+        name="weight_fitted",
     )
 
 
