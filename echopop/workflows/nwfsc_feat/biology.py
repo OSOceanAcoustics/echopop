@@ -2,9 +2,9 @@ from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
+import xarray as xr
 
 from ...utils import apply_filters, binned_distribution, create_grouped_table
-
 
 def length_binned_weights(
     data: pd.DataFrame,
@@ -141,6 +141,168 @@ def length_binned_weights(
             return result.to_frame("all")
         else:
             return result
+
+def length_binned_weights_xr(
+    data: pd.DataFrame,
+    length_bins: np.ndarray,
+    regression_coefficients: Union[pd.Series, pd.DataFrame],
+    impute_bins: bool = True,
+    minimum_count_threshold: int = 0,
+) -> xr.DataArray:
+    """
+    Compute length-binned average weights using regression coefficients and observed data.
+
+    This function calculates fitted weights for length bins by combining modeled weights
+    (from length-weight regression) with observed mean weights. For bins with sufficient
+    sample sizes, observed means are used; for bins with low sample sizes, modeled weights
+    are used if imputation is enabled.
+
+    Parameters
+    ----------
+    data : pd.DataFrame
+        Specimen data containing 'length', 'weight', and 'length_bin' columns.
+        The 'length_bin' column must already exist in the data.
+    length_distribution : pd.DataFrame
+        DataFrame with length bin information, containing 'bin' and 'interval' columns.
+    regression_coefficients : pd.Series or pd.DataFrame
+        Length-weight regression coefficients from fit_length_weight_regression().
+        If DataFrame, represents grouped coefficients (e.g., by sex).
+    impute_bins : bool, default True
+        Whether to use modeled weights for bins with insufficient data.
+        If False, only observed means are used regardless of sample size.
+    minimum_count_threshold : int, default 0
+        Minimum number of specimens required to use observed mean instead of modeled weight.
+        Only relevant when impute_bins=True.
+
+    Returns
+    -------
+    xr.DataArray
+        Fitted weights indexed by length bin and grouping dimensions.
+
+        Dimensions
+        ----------
+        length_bin
+            Length-bin intervals.
+        *group_dims
+            One dimension per grouping variable implied by
+            ``regression_coefficients`` (e.g., ``sex``). Present only when
+            grouped coefficients are supplied.
+
+        Data
+        ----
+        weight_fitted
+            Fitted weight values for each coordinate combination.
+
+    Examples
+    --------
+    >>> # Single coefficient set
+    >>> coeffs = fit_length_weight_regression(specimen_data)
+    >>> fitted = compute_binned_weights(specimen_data, length_dist, coeffs)
+
+    >>> # Grouped coefficients (e.g., by sex)
+    >>> sex_coeffs = specimen_data.groupby('sex').apply(fit_length_weight_regression)
+    >>> fitted = compute_binned_weights(specimen_data, length_dist, sex_coeffs,
+    ...                                minimum_count_threshold=5)
+
+    >>> # No imputation - use only observed means
+    >>> fitted = compute_binned_weights(specimen_data, length_dist, coeffs,
+    ...                                impute_bins=False)
+    """
+    # Make a copy to avoid modifying original data
+    data = data.copy()  # Create length distribution from bins
+    length_distribution = binned_distribution(length_bins)
+
+    # Handle different coefficient input types
+    if isinstance(regression_coefficients, pd.Series):
+        # Single set of coefficients - convert to DataFrame for consistent processing
+        regression_df = pd.DataFrame([regression_coefficients])
+        # Reset index to avoid grouping complications
+        regression_df.reset_index(drop=True, inplace=True)
+        # Assign metadata variables required for the output
+        is_grouped = False
+        group_cols = []
+    else:
+        # Already a DataFrame from groupby operation
+        regression_df = regression_coefficients.reset_index()
+        # Assign metadata variables required for the output
+        is_grouped = True
+        group_cols = [name for name in regression_coefficients.index.names if name is not None]
+
+    # Initialize fitted weights dataframe
+    weight_fitted_df = length_distribution.copy()
+
+    # Cross merge with regression coefficients
+    weight_fitted_df = weight_fitted_df.merge(regression_df, how="cross").rename(
+        columns={"interval": "length_bin"}
+    )
+
+    # Predict weight per bin using allometric relationship: weight = 10^intercept * length^slope
+    weight_fitted_df["weight_modeled"] = (
+        10.0 ** weight_fitted_df["intercept"] * weight_fitted_df["bin"] ** weight_fitted_df["slope"]
+    )
+
+    # Get the column names if any grouping is required
+    index_cols = group_cols + ["length_bin"]
+
+    # Quantize weight counts per length bin
+    binned_weight_distribution = (
+        data.groupby(index_cols, observed=False)["length"].size().fillna(0).to_frame("count")
+    )
+
+    # Quantize weight means per length bin
+    binned_weight_distribution["weight_mean"] = (
+        data.groupby(index_cols, observed=False)["weight"].mean().fillna(0)
+    )
+
+    # Merge with the fitted weights
+    binned_weight_distribution["weight_modeled"] = weight_fitted_df.set_index(index_cols)[
+        "weight_modeled"
+    ]
+
+    # Create distribution mask based on imputation settings
+    if impute_bins:
+        # Use modeled weights when count is below threshold
+        if minimum_count_threshold > 0:
+            distribution_mask = binned_weight_distribution["count"] < minimum_count_threshold
+        else:
+            # When threshold is 0, use modeled weights for empty bins only
+            distribution_mask = binned_weight_distribution["count"] == 0
+    else:
+        # No imputation - always use observed means (mask is all False)
+        distribution_mask = pd.Series(False, index=binned_weight_distribution.index)
+
+    # Apply mask to determine final fitted weights
+    binned_weight_distribution["weight_fitted"] = np.where(
+        distribution_mask,
+        binned_weight_distribution["weight_modeled"],
+        binned_weight_distribution["weight_mean"],
+    )
+
+    # Reset index and prepare output
+    result = binned_weight_distribution.reset_index()
+
+    # Mutate, if needed, or otherwise return the pivoted DataFrame
+    if is_grouped:
+        pivot_result = result.pivot(index="length_bin", columns=group_cols, values="weight_fitted")
+    else:
+        if isinstance(result, pd.Series):
+            pivot_result = result.to_frame("all")
+        else:
+            pivot_result = result
+    
+    # Convert to an xarray.DataArray
+    return xr.DataArray(
+        pivot_result.values,                    # the underlying data
+        dims=["length_bin"] + group_cols,       # dynamically name dimensions
+        coords={
+            "length_bin": pivot_result.index,   # always index
+            **{col: pivot_result.columns.get_level_values(col) 
+            if isinstance(pivot_result.columns, pd.MultiIndex) 
+            else pivot_result.columns
+            for col in group_cols}          # dynamic grouping coordinates
+        },
+        name="weight_fitted"
+    )
 
 
 def compute_abundance(

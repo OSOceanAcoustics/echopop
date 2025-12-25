@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
 import pandas as pd
+import xarray as xr
 
 from ... import utils
 
@@ -11,7 +12,7 @@ warnings.simplefilter("always")
 
 def remove_group_from_estimates(
     transect_data: pd.DataFrame,
-    group_proportions: Dict[str, Union[pd.DataFrame, pd.Series]],
+    group_proportions: xr.Dataset,
 ) -> pd.DataFrame:
     """
     Partition NASC, abundance (and number density), and biomass (and biomass density) transect
@@ -22,14 +23,11 @@ def remove_group_from_estimates(
     transect_data : pd.DataFrame
         DataFrame containing transect data with number densities already computed. Must include:
         - A column that matches the index of the `group_proportions` DataFrames/Series.
-    group_proportions : Dict[str, Union[pd.DataFrame, pd.Series]]
-        Dictionary containing partitioning data for NASC, abundance, and biomass. Valid key names
-        are limited to 'abundance', 'biomass', and 'nasc'. Each key maps to different variables:
-        - 'abundance': pd.Series or DataFrame with abundance proportions. This partitions the
-        number density and abundance estimates.
-        - 'biomass': pd.Series or DataFrame with biomass proportions. This partitions the biomass
-        density and biomass estimates.
-        - 'nasc': pd.Series or DataFrame with NASC proportions.
+    group_proportions : xr.Dataset
+        xarray.Dataset containing partitioning data for NASC, abundance, and biomass.
+        Valid variable names are limited to 'abundance', 'biomass', and 'nasc'.
+        Each variable must be a 1D DataArray with dimensions matching grouping columns in
+        `transect_data`.
 
     Returns
     -------
@@ -39,9 +37,9 @@ def remove_group_from_estimates(
 
     Notes
     -----
-    The DataFrames/Series in `group_proportions` must have indices that correspond to values in the
-    `transect data`. Missing indices will result in NaN values for those rows. The function
-    automatically identifies and uses the appropriate index columns for merging.
+    The DataArrays in `group_proportions` must have dimensions that correspond to columns in the
+    `transect_data`. Missing indices will result in NaN values for those rows. The function
+    automatically identifies and uses the appropriate columns for merging.
     """
 
     # Create copy
@@ -112,6 +110,100 @@ def remove_group_from_estimates(
     # Return the partitioned dataset
     return transect_data
 
+def remove_group_from_estimates_xr(
+    transect_data: pd.DataFrame,
+    group_proportions: xr.Dataset,
+) -> pd.DataFrame:
+    """
+    Partition NASC, abundance (and number density), and biomass (and biomass density) transect
+    values across indexed groups.
+
+    Parameters
+    ----------
+    transect_data : pd.DataFrame
+        DataFrame containing transect data with number densities already computed. Must include:
+        - A column that matches the index of the `group_proportions` DataArrays.
+    group_proportions : xr.Dataset
+        xarray.Dataset containing partitioning data for NASC, abundance, and biomass.
+        Valid variable names are limited to 'abundance', 'biomass', and 'nasc'.
+        Each variable must be a 1D DataArray with dimensions matching grouping columns in
+        `transect_data`.
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame with the same structure as the input dataset, but with defined partitions applied
+        to NASC and the other abundance/biomass columns.
+
+    Notes
+    -----
+    The DataArrays in `group_proportions` must have dimensions that correspond to columns in the
+    `transect_data`. Missing indices will result in NaN values for those rows. The function
+    automatically identifies and uses the appropriate columns for merging.
+    """
+
+    # Create copy
+    transect_data = transect_data.copy()
+
+    # Empty Dataset not allowed
+    if len(group_proportions.data_vars) == 0:
+        raise ValueError("Input 'group_proportions' Dataset cannot be empty.")
+
+    # Validate that there is a matching column with the Dataset coordinates
+    # ---- Get coordinates
+    grp_coords = list(group_proportions.coords.keys())
+    if not set(grp_coords) <= set(transect_data.columns):   
+        # ---- Format error
+        missing_coords = ", ".join(f"'{c}'" for c in grp_coords)
+        raise KeyError(
+            f"The following coordinates from 'group_proportions' could not be found in "
+            f"'transect_data': {missing_coords}."
+        )
+
+    # Index the transect data based on the DataArray dimensions
+    transect_data.set_index(grp_coords, inplace=True)
+    transect_data_cnv = transect_data.to_xarray()
+
+    # Align coordinates
+    group_proportions_aligned = group_proportions.sel(
+        {coord: transect_data_cnv[coord] for coord in grp_coords}
+    )
+
+    # Adjust NASC, if present; otherwise, drop to avoid partial evaluation
+    if "nasc" in group_proportions_aligned:
+        transect_data["nasc"] = transect_data_cnv["nasc"] * (1 - group_proportions_aligned["nasc"])
+    else:
+        transect_data.drop(columns=["nasc"], inplace=True)
+        
+    # Adjust number density and abundance, if present; otherwise, drop to avoid partial evaluation
+    # ---- Get variables
+    abundance_columns = [
+        v for v in transect_data_cnv.data_vars if ("abundance" in v or "number_density" in v)
+    ]
+    if "abundance" in group_proportions_aligned:
+        transect_data[abundance_columns] = (
+            transect_data_cnv[abundance_columns] * (1 - group_proportions_aligned["abundance"])
+        ).to_pandas()
+    else:
+        transect_data.drop(columns=abundance_columns, inplace=True)
+
+    # Adjust biomass and biomass density, if present; otherwise, drop to avoid partial evaluation
+    # ---- Get variables
+    biomass_columns = [
+        v for v in transect_data_cnv.data_vars if ("biomass" in v or "biomass_density" in v)
+    ]
+    if "biomass" in group_proportions_aligned:
+        transect_data[biomass_columns] = (
+            transect_data_cnv[biomass_columns] * (1 - group_proportions_aligned["biomass"])
+        ).to_pandas()
+    else:
+        transect_data.drop(columns=biomass_columns, inplace=True)
+        
+    # Restore original indexing
+    transect_data.reset_index(inplace=True)
+
+    # Return the partitioned transect data
+    return transect_data
 
 def mesh_biomass_to_nasc(
     mesh_data_df: pd.DataFrame,
@@ -286,6 +378,176 @@ def mesh_biomass_to_nasc(
     # Rename
     mesh_data_df.rename(columns=inverted_link, inplace=True)
 
+def mesh_biomass_to_nasc_xr(
+    mesh_data: pd.DataFrame,
+    biodata: Union[pd.DataFrame, Dict[str, pd.DataFrame]],
+    mesh_biodata_link: Dict[str, str],
+    stratum_weights: pd.DataFrame,
+    stratum_sigma_bs: pd.DataFrame,
+    group_columns: List[str] = [],
+) -> None:
+    """
+    Convert biomass estimates distributed across a grid or mesh into grouped (e.g. sex-specific)
+    abundance and NASC values.
+
+    This function takes kriged biomass density estimates from a mesh/grid and converts them to
+    abundance and NASC (Nautical Area Scattering Coefficient) values by applying biological
+    proportion data and acoustic backscattering coefficients. The function modifies the input
+    mesh DataFrame in place.
+
+    Parameters
+    ----------
+    mesh_data_df : pd.DataFrame
+        DataFrame containing kriged biomass density estimates with spatial mesh information.
+        Must contain columns for linking to biodata and either 'biomass', or 'biomass_density'
+        and 'area', columns.
+    biodata : pd.DataFrame or Dict[str, pd.DataFrame]
+        Biological proportion data. Can be a single DataFrame or dictionary of DataFrames
+        containing proportion data for different biological groups (e.g., aged/unaged).
+    mesh_biodata_link : Dict[str, str]
+        Dictionary mapping column names from mesh_data_df to biodata column names for joining.
+        Example: {"geostratum_ks": "stratum_ks"}
+    stratum_weights_df : pd.DataFrame
+        DataFrame containing average weights per stratum for converting biomass to abundance.
+        Index should match the linked columns from mesh_biodata_link.
+    stratum_sigma_bs_df : pd.DataFrame
+        DataFrame containing sigma_bs (backscattering coefficient) values per stratum.
+        Must have 'sigma_bs' column with index matching linked columns.
+    group_by : List[str], default []
+        List of column names to group biological data by (e.g., ["sex", "age_bin"]).
+
+    Returns
+    -------
+    None
+        Function modifies mesh_data_df in place, adding new columns for biomass, abundance,
+        and NASC values.
+
+    Raises
+    ------
+    KeyError
+        If required link columns are missing from biodata or mesh DataFrames.
+
+    Notes
+    -----
+    The function performs the following steps:
+    1. Computes biomass from biomass_density x area if not present
+    2. Links mesh data to biological proportions using mesh_biodata_link
+    3. Applies proportions to distribute total biomass across biological groups
+    4. Converts biomass to abundance using stratum weights
+    5. Calculates NASC using abundance and sigma_bs values
+
+    The NASC calculation uses the formula: NASC = abundance x sigma_bs x 4π
+    """
+
+    # Convert to a Dictionary if needed
+    if isinstance(biodata, xr.Dataset):
+        biodata = {"": biodata}
+
+    # Get the coordinates that will be used for setting shared indices
+    coord_names = set()
+    for ds in biodata.values():
+        coord_names.update(ds.coords.keys())
+
+    # Check
+    # ---- Setdiff: biodata
+    missing_biodata_columns = set(list(mesh_biodata_link.values())).difference(coord_names)
+    if len(missing_biodata_columns) > 0:
+        raise KeyError(
+            f"The following link columns were missing from the biological data: "
+            f"{', '.join(col for col in missing_biodata_columns)}."
+        )
+    # ---- Setdiff: mesh
+    missing_mesh_columns = set(list(mesh_biodata_link.keys())).difference(mesh_data.columns)
+    if len(missing_mesh_columns) > 0:
+        raise KeyError(
+            f"The following link columns were missing from the mesh DataFrame: "
+            f"{', '.join(col for col in missing_mesh_columns)}."
+        )
+    # ---- Biomass column
+    if "biomass" not in mesh_data.columns:
+        raise KeyError(
+            "The input kriging mesh DataFrame does not have a column 'biomass'. Please compute the "
+            "kriged biomass."
+        )
+
+    # Set the link column names
+    mesh_data.rename(columns=mesh_biodata_link, inplace=True)
+
+    # Map the link columns
+    mesh_index = list(mesh_biodata_link.values())
+
+    # Index
+    mesh_data.set_index(mesh_index, inplace=True)
+    mesh_data.sort_index(inplace=True)
+
+    # Stack the proportions to be as a function of group
+    biodata_cnv = {
+        k: ds["proportion_overall"].sum(
+            dim=[v for v in ds.coords.keys() if v not in group_columns]
+        ).to_pandas()
+        for k, ds in biodata.items()
+    }
+
+    # Get the column names of the biodata
+    biodata_columns = sorted(
+        set(
+            col
+            for df in biodata_cnv.values()
+            if isinstance(df, pd.DataFrame)
+            for col in df.columns.tolist()
+        )
+    )
+    # ---- Fill in if empty
+    if len(biodata_columns) == 0:
+        biodata_columns = set(["apportioned"])
+
+    # Stack the proportions
+    stacked_proportions = pd.concat(list(biodata_cnv.values()), axis=1)
+
+    # If only a single expected output, summarize
+    if len(biodata_columns) == 1:
+        stacked_proportions = stacked_proportions.sum(axis=1).to_frame(list(biodata_columns)[0])
+
+    # Multiply by biomass column, broadcasting over all columns
+    stacked_proportions = stacked_proportions.mul(mesh_data["biomass"], axis=0).dropna()
+
+    # Group columns by name and sum (to handle duplicate columns from stacking)
+    stacked_proportions = stacked_proportions.T.groupby(stacked_proportions.columns).sum().T
+
+    # Prefix columns
+    stacked_proportions = stacked_proportions.add_prefix("biomass_")
+    
+    # Add to the mesh
+    mesh_data[stacked_proportions.columns.tolist()] = stacked_proportions
+    
+    # Get the column names of the resulting biomass values
+    biomass_columns = stacked_proportions.columns.tolist() + ["biomass"]
+
+    # Reindex the stratum weights
+    stratum_weights_idx = stratum_weights.reindex(mesh_data.index)
+
+    # Calculate abundance
+    mesh_data[[f"abundance_{name}" for name in biodata_columns] + ["abundance"]] = mesh_data[
+        biomass_columns
+    ].div(stratum_weights_idx, axis=0)
+
+    # Index the stratum sigma_bs
+    stratum_sigma_bs_idx = stratum_sigma_bs.reindex(mesh_data.index)
+
+    # Calculate NASC
+    mesh_data["nasc"] = (
+        mesh_data["abundance"] * stratum_sigma_bs_idx["sigma_bs"] * 4.0 * np.pi
+    )
+
+    # Rename the aligned columns
+    # ---- Create inverted link dictionary
+    inverted_link = {v: k for k, v in mesh_biodata_link.items()}
+
+    # Reset the index
+    mesh_data.reset_index(inplace=True)
+
+    # Rename
+    mesh_data.rename(columns=inverted_link, inplace=True)
 
 def impute_kriged_table(
     reference_table_df: pd.DataFrame,
@@ -296,46 +558,57 @@ def impute_kriged_table(
     table_reference_indices: List[str],
 ) -> pd.DataFrame:
     """
-    Perform nearest-neighbor imputation of missing values in population apportionment tables.
+    Convert biomass estimates distributed across a grid or mesh into grouped (e.g. sex-specific)
+    abundance and NASC values.
 
-    This function fills missing values in standardized population tables by finding the nearest
-    non-zero reference values and using them to impute proportional values based on the
-    reference table structure.
+    This function takes kriged biomass density estimates from a mesh/grid and converts them to
+    abundance and NASC (Nautical Area Scattering Coefficient) values by applying biological
+    proportion data and acoustic backscattering coefficients. The function modifies the input
+    mesh DataFrame in place.
 
     Parameters
     ----------
-    reference_table_df : pd.DataFrame
-        Reference table used to determine which values should be imputed and to calculate
-        imputation ratios. Typically contains aged fish data with complete age structure.
-    initial_table_df : pd.DataFrame
-        Original population table before standardization. Used to determine which cells
-        have actual data vs. missing values.
-    standardized_table_df : pd.DataFrame
-        Standardized population table that needs imputation. This will be modified with
-        imputed values.
-    group_by : List[str]
-        List of column names that define the grouping variables (e.g., ["sex"]).
-    impute_variable : List[str]
-        List of variables that define the dimension being imputed (e.g., ["age_bin"]).
-    table_reference_indices : List[str]
-        List of index names that are in the reference table but not in the population table.
+    mesh_data : pd.DataFrame
+        DataFrame containing kriged biomass density estimates with spatial mesh information.
+        Must contain columns for linking to biodata and either 'biomass', or 'biomass_density'
+        and 'area', columns.
+    biodata : Union[xr.Dataset, Dict[str, xr.Dataset]]
+        Biological proportion data. Can be a single xarray.Dataset or a dictionary of Datasets
+        containing proportion data for different biological groups (e.g., aged/unaged).
+        Each Dataset must contain a variable named "proportion_overall".
+    mesh_biodata_link : Dict[str, str]
+        Dictionary mapping column names from mesh_data to biodata column names for joining.
+        Example: {"geostratum_ks": "stratum_ks"}
+    stratum_weights : pd.DataFrame
+        DataFrame containing average weights per stratum for converting biomass to abundance.
+        Index should match the linked columns from mesh_biodata_link.
+    stratum_sigma_bs : pd.DataFrame
+        DataFrame containing sigma_bs (backscattering coefficient) values per stratum.
+        Must have 'sigma_bs' column with index matching linked columns.
+    group_columns : List[str], default []
+        List of column names to group biological data by (e.g., ["sex", "age_bin"]).
 
     Returns
     -------
-    pd.DataFrame
-        Copy of standardized_table_df with missing values imputed using nearest-neighbor
-        approach based on reference table proportions.
+    None
+        Function modifies mesh_data in place, adding new columns for biomass, abundance,
+        and NASC values.
+
+    Raises
+    ------
+    KeyError
+        If required link columns are missing from biodata or mesh DataFrames.
 
     Notes
     -----
-    The imputation algorithm:
-    1. Identifies cells in the reference table that are zero (missing in reference)
-    2. Finds corresponding non-zero cells in the initial table
-    3. For each missing cell, finds the nearest non-zero reference cell
-    4. Imputes values using proportional scaling based on reference ratios
+    The function performs the following steps:
+    1. Computes biomass from biomass_density x area if not present
+    2. Links mesh data to biological proportions using mesh_biodata_link
+    3. Applies proportions to distribute total biomass across biological groups
+    4. Converts biomass to abundance using stratum weights
+    5. Calculates NASC using abundance and sigma_bs values
 
-    This approach preserves the biological structure while filling gaps in the data
-    using the most similar available information.
+    The NASC calculation uses the formula: NASC = abundance x sigma_bs x 4π
     """
 
     # Sum the reference proportions across the impute variable
@@ -539,9 +812,168 @@ def distribute_unaged_from_aged(
         )
         return standardized_table_imputed
 
+def distribute_unaged_from_aged_xr(
+    population_table: xr.DataArray,
+    reference_table: xr.DataArray,
+    group_columns: List[str] = [],
+    impute: bool = True,
+    impute_variable: Optional[List[str]] = None,
+) -> pd.DataFrame:
+    """
+    Standardize kriged population estimates using reference proportions and optionally impute
+    missing values.
+
+    This function standardizes population estimates (e.g., unaged fish distributions) by applying
+    reference proportions (e.g., from aged fish data) to ensure consistent age structure across
+    datasets. It can also perform nearest-neighbor imputation for missing values.
+
+    Parameters
+    ----------
+    population_table : pd.DataFrame
+        Population estimates to be standardized. Should be a pivot table or similar structure
+        with biological groups as index/columns.
+    reference_table : pd.DataFrame
+        Reference population data used for standardization. Should have the same or compatible
+        structure as population_table with additional detail (e.g., age information).
+    group_by : List[str]
+        List of column names that define the grouping variables for standardization
+        (e.g., ["sex"] to standardize within each sex).
+    impute : bool, default True
+        Whether to perform nearest-neighbor imputation for missing values after standardization.
+    impute_variable : List[str], optional
+        List of variables to use for imputation. Required if impute=True.
+        Typically refers to the dimension being imputed (e.g., ["age_bin"]).
+
+    Returns
+    -------
+    pd.DataFrame
+        Standardized population estimates with the same structure as population_table
+        but adjusted according to reference proportions. If impute=True, missing values
+        are filled using nearest-neighbor imputation.
+
+    Notes
+    -----
+    The standardization process:
+    1. Computes reference proportions from the reference table
+    2. Applies these proportions to the population table
+    3. Redistributes values to match reference age/size structure
+    4. Optionally imputes missing values using nearest neighbors
+
+    This is commonly used to distribute unaged fish data according to the age
+    structure observed in aged fish samples from the same area/stratum.
+    """
+
+    # Get original table coordinates
+    table_coords = list(population_table.coords.keys())
+    table_noncoords = list(set(table_coords) - set(group_columns + ["length_bin"]))
+
+    # Get reference coordinates
+    reference_coords = list(reference_table.coords.keys())
+
+    # Aggregate the grouped dimensions
+    grouped_table = population_table.sum(
+        dim=[v for v in population_table.coords.keys() if v not in set(table_coords)]
+    ).to_dataframe(name="value")["value"].unstack(table_noncoords)
+
+    # Aggregate the reference
+    grouped_reference = reference_table.sum(
+        dim=[v for v in population_table.coords.keys() if v not in set(reference_coords)]
+    ).to_dataframe(name="value")["value"].unstack(table_noncoords)
+
+    # Get the shared index names across the reference tables
+    reference_index_names = list(grouped_reference.index.names)
+
+    # Get the indices for each reference table required for summation that must be unstacked
+    reference_stack_indices = list(set(reference_index_names).difference(table_coords))
+
+    # Reorient the columns accordingly
+    population_table_reshape = grouped_table.sum(axis=1).unstack(group_columns)
+
+    # Standardize the apportioned table values
+    standardized_table = (
+        population_table_reshape
+        * grouped_reference.sum(axis=1).unstack(reference_stack_indices + group_columns)
+        / grouped_reference.unstack(reference_stack_indices).sum(axis=1).unstack(group_columns)
+    ).fillna(0.0)
+
+    # If imputation is requested, perform it
+    if not impute:
+        return standardized_table.unstack().to_xarray()
+    else:
+        # ---- Impute
+        standardized_table_imputed = impute_kriged_table(
+            reference_table_df=grouped_reference,
+            initial_table_df=population_table_reshape,
+            standardized_table_df=standardized_table,
+            table_reference_indices=reference_stack_indices,
+            group_by=group_columns,
+            impute_variable=impute_variable,
+        )
+        return standardized_table_imputed.unstack().to_xarray()
+
 
 def sum_population_tables(
     population_table: Dict[str, pd.DataFrame],
+    table_names: List[str],
+    table_index: List[str],
+    table_columns: List[str],
+) -> pd.DataFrame:
+    """
+    Combine and sum population estimates across defined tables to yield a single population table.
+
+    This function takes multiple population estimate tables and combines them into a single
+    consolidated table by stacking, pivoting, and summing the values across common dimensions.
+
+    Parameters
+    ----------
+    population_table : Dict[str, pd.DataFrame]
+        Dictionary of population estimate tables to combine. Keys are table names (e.g., "aged",
+        "unaged", "speciesA", "speciesB) and values are DataFrames with population data.
+    table_names : List[str]
+        List of table names (keys) from population_table to include in the combination. Tables not
+        in this list will be ignored.
+    table_index : List[str]
+        List of column names to use as the index in the final combined table (e.g., ["length_bin"]).
+    table_columns : List[str]
+        List of column names to use as columns in the final combined table (e.g., ["age_bin",
+        "sex"]).
+
+    Returns
+    -------
+    pd.DataFrame
+        Combined population table with table_index as index and table_columns as columns.
+        Values are summed across all input tables for each index/column combination.
+
+    Notes
+    -----
+    The combination process:
+    1. Filters population_table to include only tables listed in table_names
+    2. Stacks each table to convert to long format with 'value' column
+    3. Creates pivot tables with consistent index and column structure
+    4. Sums all pivot tables element-wise to get final combined table
+    """
+
+    # Subset the table to only include the tables-of-interest
+    tables_to_combine = {
+        k: v.stack(v.columns.names, future_stack=True).to_frame("value")
+        for k, v in population_table.items()
+        if k in table_names
+    }
+
+    # Create a pivot table for each table with identical indices
+    compatible_tables = {
+        k: utils.create_pivot_table(
+            v, index_cols=table_index, strat_cols=table_columns, value_col="value"
+        )
+        for k, v in tables_to_combine.items()
+    }
+
+    # Sum the compatible tables
+    return sum(compatible_tables.values())
+
+
+def sum_population_tables_xr(
+    population_table: Dict[str, xr.DataArray],
     table_names: List[str],
     table_index: List[str],
     table_columns: List[str],
@@ -822,3 +1254,137 @@ def distribute_population_estimates(
         return next(iter(apportioned_grouped_pvt.values()))
     else:
         return apportioned_grouped_pvt
+
+def distribute_population_estimates_xr(
+    data: pd.DataFrame,
+    proportions: Union[Dict[str, xr.Dataset], xr.Dataset],
+    variable: str,
+    group_columns: List[str] = [],
+    data_proportions_link: Optional[Dict[str, str]] = None,
+) -> Union[xr.DataArray, Dict[str, xr.DataArray]]:
+    """
+    Distribute population estimates (e.g. abundance, biomass) using proportions grouped by metrics
+    such as age and length bins.
+
+    This function takes population estimates and distributes them across different biological
+    categories (e.g. sex, age, length) using calculated proportions. The distribution is performed
+    by multiplying the population estimates with the corresponding proportions.
+
+    Parameters
+    ----------
+    data : pd.DataFrame
+        DataFrame containing population estimates. Must contain the columns specified by
+        'variable' and 'group_columns'. If 'data_proportions_xr_link' is defined, then the
+        key value must also be present in the DataFrame.
+    proportions : Union[Dict[str, xr.Dataset], xr.Dataset]
+        Proportion data for distributing the population estimates. Can be a single xarray.Dataset
+        or a dictionary of Datasets (e.g., {"aged": ds_aged, "unaged": ds_unaged}).
+        Each Dataset must contain a variable named "proportion_overall".
+    variable : str
+        Name of the column in data containing the values to distribute (e.g. "biomass",
+        "abundance").
+    group_columns : List[str]
+        List of column names that define the biological groups for distribution and stratification
+        (e.g. ["sex", "age_bin", "length_bin", "stratum_ks"]).
+    data_proportions_xr_link : Optional[Dict[str, str]], default None
+        Dictionary mapping column names from 'data' to those in 'proportions'. For 
+        instance, the dictionary `{'stratum_A': 'stratum_B'}` links 'stratum_A' within 
+        'data' with 'stratum_B' in the 'proportions' Dataset(s).
+
+    Returns
+    -------
+    Union[xr.DataArray, Dict[str, xr.DataArray]]
+        Distributed estimates. If a single group is present, returns an xarray.DataArray.
+        Otherwise, returns a dictionary of xarray.DataArray objects, each containing the original
+        biological group structure with values distributed according to proportions.
+
+    Notes
+    -----
+    The DataArrays in `proportions` must have dimensions that correspond to columns in the
+    `data`. Missing indices will result in NaN values for those rows. The function
+    automatically identifies and uses the appropriate columns for merging and grouping.
+    """
+
+    # Create copy
+    data = data.copy()
+
+    # Type-check and normalize proportions_xr input
+    if isinstance(proportions, xr.Dataset):
+        proportions = {"data": proportions}
+
+    # Verify that `variable` exists
+    if variable not in data.columns:
+        raise ValueError(f"Variable '{variable}' missing from `data`.")
+
+    # Rename stratum naming, if defined
+    if data_proportions_link is not None:
+        data_stratum = next(iter(data_proportions_link))
+        if data_stratum not in data.columns:
+            raise KeyError(f"Stratum '{data_stratum}' missing from `data`.")
+        data.rename(columns=data_proportions_link, inplace=True)
+
+    # Validate group_columns overlapping with data and proportions_xr
+    # ---- proportions
+    proportions_group_columns = set()
+    for ds in proportions.values():
+        proportions_group_columns.update(ds.coords.keys())
+    # ---- Only require group_columns to be present in at least one of the sources
+    missing = [
+        col for col in group_columns
+        if col not in data.columns and col not in proportions_group_columns
+    ]
+    if missing:
+        missing_str = ", ".join(f"'{c}'" for c in missing)
+        raise KeyError(
+            f"The following columns from 'group_columns' could not be found in either "
+            f"'data' or 'proportions_xr': {missing_str}."
+        )
+
+    # Sum data variable over indices
+    data_group_columns = [col for col in group_columns if col in data.columns]
+    data_pvt = data.pivot_table(
+        index=data_group_columns, values=variable, aggfunc="sum", observed=False
+    )
+
+    # Parse the additional columns that are required for grouping
+    proportions_group_columns = {
+        k: [c for c in ds.coords.keys() if c in group_columns]
+        for k, ds in proportions.items()
+    }
+
+    # Convert xarray proportions to DataFrame(s) and align with group_columns
+    proportions_grouped_pvt = {}
+    for k, ds in proportions.items():
+        # ---- Use the main variable: "proportion_overall"
+        da = ds["proportion_overall"]
+        # ---- Convert to DataFrame and reset index for merging
+        df = da.to_dataframe().reset_index()
+        # ---- Pivot to match only the available group columns
+        df_pvt = utils.create_pivot_table(
+            df,
+            index_cols=[v for v in proportions_group_columns[k] if v not in data_group_columns],
+            strat_cols=data_group_columns,
+            value_col="proportion_overall"
+        )
+        proportions_grouped_pvt[k] = df_pvt
+    # ---- Get the normalization constant
+    denominator = sum(df.sum() for df in proportions_grouped_pvt.values())
+    # ---- Apply normalization
+    proportions_pvt = {
+        k: (df / denominator).fillna(0.0) for k, df in proportions_grouped_pvt.items()
+    }
+
+    # Distribute the variable over each table
+    apportioned_groups = {
+        k: df.mul(data_pvt[variable]).fillna(0.0).stack(data_group_columns).to_xarray() 
+        for k, df in proportions_pvt.items()
+    }
+    # ---- Update names
+    for arr in apportioned_groups.values():
+        arr.name = variable
+    
+    # Return
+    if len(apportioned_groups) == 1:
+        return next(iter(apportioned_groups.values()))
+    else:
+        return apportioned_groups
