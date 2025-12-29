@@ -996,17 +996,17 @@ def sum_population_tables_xr(
     """
     Combine and sum population estimates across defined tables to yield a single population table.
 
-    This function takes a dictionary of xarray Datasets, each representing a population estimate 
+    This function takes a dictionary of xarray Datasets, each representing a population estimate
     table (e.g., "aged", "unaged"), and combines them into a single consolidated xarray DataArray by
     aggregating over non-grouped dimensions and summing values across all input tables.
     Parameters
     ----------
     population_table : Dict[str, xr.Dataset]
         Dictionary of population estimate tables to combine. Keys are table names (e.g., "aged",
-        "unaged", "speciesA", "speciesB") and values are xarray Datasets with population data. Each 
+        "unaged", "speciesA", "speciesB") and values are xarray Datasets with population data. Each
         Dataset should have compatible coordinate/dimension names.
     group_columns : List[str], optional
-        List of coordinate names to retain as dimensions in the final combined table (e.g., 
+        List of coordinate names to retain as dimensions in the final combined table (e.g.,
         ["sex", "age_bin"]). All other coordinates will be summed over.
 
     Returns
@@ -1022,7 +1022,7 @@ def sum_population_tables_xr(
     2. Determines which coordinates are not in group_columns and sums over those dimensions.
     3. Converts each aggregated Dataset to a DataFrame, aligns, and sums them element-wise.
     4. Returns the result as an xarray DataArray with group_columns as dimensions.
-    
+
     Examples
     --------
     >>> combined = sum_population_table(
@@ -1030,7 +1030,7 @@ def sum_population_tables_xr(
     ...     group_columns=["sex", "age_bin", "length_bin"]
     ... )
     >>> print(combined)
-    <xarray.DataArray ...>    
+    <xarray.DataArray ...>
 
     """
 
@@ -1042,9 +1042,9 @@ def sum_population_tables_xr(
 
     # Aggregate the grouped dimensions
     grouped_tables = {
-        k: ds.sum(
-            dim=[v for v in da.coords.keys() if v not in set(table_coords)]
-        ).to_dataframe(name="value")["value"].unstack()
+        k: ds.sum(dim=[v for v in da.coords.keys() if v not in set(table_coords)])
+        .to_dataframe(name="value")["value"]
+        .unstack()
         for k, ds in population_table.items()
     }
 
@@ -1182,6 +1182,7 @@ def reallocate_excluded_estimates(
     # Return the the redistributed table
     return redistributed_table
 
+
 def reallocate_excluded_estimates_xr(
     population_table: xr.DataArray,
     exclusion_filter: Dict[str, Any],
@@ -1211,10 +1212,10 @@ def reallocate_excluded_estimates_xr(
     Returns
     -------
     Union[xr.Dataset, xr.DataArray]
-        If `group_columns` is not empty, returns an xarray.Dataset with excluded segments removed 
-        and their values redistributed proportionally across remaining groups, preserving the 
-        'group_columns' as dimensions. If `group_columns` is empty, returns an xarray.DataArray 
-        with the same structure as the input, but with excluded segments removed and their values 
+        If `group_columns` is not empty, returns an xarray.Dataset with excluded segments removed
+        and their values redistributed proportionally across remaining groups, preserving the
+        'group_columns' as dimensions. If `group_columns` is empty, returns an xarray.DataArray
+        with the same structure as the input, but with excluded segments removed and their values
         redistributed.
 
     Raises
@@ -1252,22 +1253,22 @@ def reallocate_excluded_estimates_xr(
     >>> print(result)
     <xarray.DataArray ...>
     """
-    
+
     # If no appropriate filter is defined, then nothing is redistributed
     if len(exclusion_filter) == 0:
         return population_table
 
     # Convert to DataFrame
     population_est = population_table.to_series().unstack(group_columns)
-    
+
     # Apply inverse of exclusion filter to get the values being excluded
     population_excluded = utils.apply_filters(population_est, include_filter=exclusion_filter)
-    
+
     # Replace the excluded values in the full table with 0.
     population_masked = utils.apply_filters(
         population_est, exclude_filter=exclusion_filter, replace_value=0.0
     )
-    
+
     # Get the sums for each group across the excluded and filtered tables
     # ---- Filtered/included
     population_masked_sum = population_masked.sum()
@@ -1278,15 +1279,15 @@ def reallocate_excluded_estimates_xr(
         population_excluded_sum = population_excluded_sum.reindex(
             index=population_masked_sum.index, method="ffill"
         )
-        
+
     # Get the redistributed values that will be added to the filtered table values
     population_adjusted = (
         population_masked * population_excluded_sum / population_masked_sum
     ).fillna(0.0)
-    
+
     # Add the adjustments to the masked table
     population_masked += population_adjusted
-    
+
     # Unstack and return to DataArray
     result = population_masked.to_xarray().squeeze()
     if isinstance(result, xr.DataArray) and not result.name:
