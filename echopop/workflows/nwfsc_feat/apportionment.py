@@ -991,7 +991,6 @@ def sum_population_tables(
 
 def sum_population_tables_xr(
     population_table: Dict[str, xr.Dataset],
-    group_columns: List[str] = [],
 ) -> xr.DataArray:
     """
     Combine and sum population estimates across defined tables to yield a single population table.
@@ -1037,15 +1036,12 @@ def sum_population_tables_xr(
     # Get all unique coordinate names
     table_coords = {coord for ds in population_table.values() for coord in ds.coords.keys()}
 
-    # Non-group columns to aggregate over
-    table_noncoords = list(set(table_coords) - set(group_columns))
-
     # Aggregate the grouped dimensions
     grouped_tables = {
-        k: ds.sum(dim=[v for v in da.coords.keys() if v not in set(table_coords)])
+        k: da.sum(dim=[v for v in da.coords.keys() if v not in set(table_coords)])
         .to_dataframe(name="value")["value"]
         .unstack()
-        for k, ds in population_table.items()
+        for k, da in population_table.items()
     }
 
     # Stack the tables
@@ -1054,19 +1050,20 @@ def sum_population_tables_xr(
         for k, v in grouped_tables.items()
     }
 
-    # Create a pivot table for each table with identical indices
-    compatible_tables = {
-        k: utils.create_pivot_table(
-            v, index_cols=table_index, strat_cols=table_columns, value_col="value"
-        )
-        for k, v in stacked_tables.items()
-    }
+    # Find common indices across all DataFrames
+    common_indices = set.intersection(*(set(df.index.names) for df in stacked_tables.values()))
+
+    # Collapse excess indices for all DataFrames (no explicit loop)
+    def collapse_to_common(df):
+        return df.groupby(level=list(common_indices), observed=True).sum()
+
+    reduced_data = {k: collapse_to_common(df) for k, df in stacked_tables.items()}
 
     # Sum the compatible tables
-    table_summed = sum(compatible_tables.values())
+    table_summed = sum(reduced_data.values())
 
     # Return the full DataArray
-    result = table_summed.unstack().to_xarray()
+    result = table_summed["value"].to_xarray()
     result.name = "estimate"
     return result
 

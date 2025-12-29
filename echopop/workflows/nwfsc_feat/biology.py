@@ -560,6 +560,7 @@ def compute_biomass(
     # Reset the index
     dataset.reset_index(inplace=True)
 
+
 def compute_biomass_xr(
     dataset: pd.DataFrame,
     stratum_weights: Optional[Union[xr.DataArray, float]] = None,

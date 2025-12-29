@@ -2503,8 +2503,8 @@ def get_weight_proportions_slice_xr(
     )
     if not filter_keys_present:
         raise ValueError(
-            f"Filter keys {list(include_filter.keys())} not found in 'weight_proportions' ",
-            f"coordinates.",
+            f"Filter keys {list(include_filter.keys())} not found in 'weight_proportions' "
+            f"coordinates."
         )
 
     # Convert to DataFrame

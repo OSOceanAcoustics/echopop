@@ -1179,7 +1179,6 @@ da_kriged_abundance_table = apportionment.sum_population_tables_xr(
         "aged": dict_ds_kriged_abundance_table["aged"],
         "unaged": dict_ds_kriged_abundance_table["standardized_unaged"]
     },
-    group_columns=["sex"]
 )
 
 A = da_kriged_abundance_table.to_dataframe().pivot_table(columns=["age_bin", "sex"], 
@@ -1204,7 +1203,6 @@ da_kriged_biomass_table = apportionment.sum_population_tables_xr(
         "aged": dict_ds_kriged_biomass_table["aged"],
         "unaged": dict_ds_kriged_biomass_table["standardized_unaged"]
     },
-    group_columns=["sex"]
 )
 
 A = da_kriged_biomass_table.to_dataframe().pivot_table(columns=["age_bin", "sex"], 

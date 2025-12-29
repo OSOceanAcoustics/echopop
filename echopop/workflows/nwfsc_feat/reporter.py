@@ -4,8 +4,8 @@ from typing import Any, Dict, List, Literal, Optional, Union
 
 import numpy as np
 import pandas as pd
-import xarray as xr
 import pandas.io.formats.excel as pdif
+import xarray as xr
 from openpyxl import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
 
@@ -1251,7 +1251,7 @@ class Reporter:
         # Create DataFrame copies
         kriged_data = kriged_data.copy()
         weight_data = weight_data.to_series().to_frame(name="weight")
-        
+
         # Reformat the weight data to the expected setup
         weight_indices = list(weight_data.index.names)
         # ---- Pivot with only length bins are indices
@@ -1517,15 +1517,15 @@ class Reporter:
 
         # Update the filepath
         filepath = self.save_directory / filename
-        
+
         # Convert xr.DataArrays to DataFrames
         datatables_cnv = {}
         for k, da in datatables.items():
             datatables_cnv[k] = da.to_dataframe()
-            
+
         # Pull the aged dataset
         aged_table = datatables_cnv["aged"].unstack().sum(axis=1).unstack(["age_bin", "sex"])
-        
+
         # Redistribute the aged table, if required
         aged_table = apportionment.reallocate_excluded_estimates_xr(
             aged_table, exclude_filter, ["sex"]
@@ -1558,7 +1558,7 @@ class Reporter:
         # Reorient the unaged tabled
         unaged_table = (
             datatables_cnv["unaged"].unstack().sum(axis=1).unstack("sex").loc[:, ["male", "female"]]
-        )       
+        )
         # ---- Convert the indices to numerics
         unaged_table.index = (
             pd.Series(unaged_table.index, name="length_bin")
@@ -1638,12 +1638,11 @@ class Reporter:
 
         # Update the filepath
         filepath = self.save_directory / filename
-        
+
         # Convert xr.DataArrays to DataFrames
         datatables_cnv = {}
         for k, da in datatables.items():
             datatables_cnv[k] = da.to_dataframe()
-            
 
         # Pull the aged dataset
         aged_table = datatables_cnv["aged"].unstack().sum(axis=1).unstack(["age_bin", "sex"])
@@ -1680,7 +1679,7 @@ class Reporter:
         # Reorient the unaged tabled
         unaged_table = (
             datatables_cnv["unaged"].unstack().sum(axis=1).unstack("sex").loc[:, ["male", "female"]]
-        )       
+        )
         # ---- Convert the indices to numerics
         unaged_table.index = (
             pd.Series(unaged_table.index, name="length_bin")
@@ -1984,7 +1983,7 @@ class Reporter:
         # Create copy
         transect_data = transect_data.copy()
         weight_data_cnv = weight_data.copy().to_dataframe(name="weight")
-        
+
         # Convert DataArray to DataFrame
         id_cols = list(
             set(list(weight_data_cnv.index.names)).difference(set(["age_bin", "length_bin", "sex"]))
@@ -2084,12 +2083,12 @@ class Reporter:
 
         # Update the filepath
         filepath = self.save_directory / filename
-        
+
         # Convert xr.DataArrays to DataFrames
         datatables_cnv = {}
         for k, da in datatables.items():
             datatables_cnv[k] = da.to_dataframe()
-            
+
         # Pull the aged dataset
         aged_table = datatables_cnv["aged"].unstack().sum(axis=1).unstack(["age_bin", "sex"])
 
@@ -2120,7 +2119,7 @@ class Reporter:
         # Reorient the unaged tabled
         unaged_table = (
             datatables_cnv["unaged"].unstack().sum(axis=1).unstack("sex").loc[:, ["male", "female"]]
-        )   
+        )
         # ---- Convert the indices to numerics
         unaged_table.index = (
             pd.Series(unaged_table.index, name="length_bin")
@@ -2200,10 +2199,10 @@ class Reporter:
 
         # Create copy
         datatable = datatable.copy()
-    
+
         # Convert xr.DataArray to DataFrame
         datatable_cnv = datatable.to_dataframe()
-        
+
         # Update the filepath
         filepath = self.save_directory / filename
 
