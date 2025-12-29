@@ -1492,12 +1492,14 @@ def scale_weights_by_stratum_xr(
     """
 
     # Compute the total subgrouped weights
-    subgroup_weights = weight_data.sum(dim=[d for d in weight_data.dims if d in ["length_bin"]])
+    subgroup_weights = weight_data.sum(
+        dim=[d for d in weight_data.dims if d in ["length_bin"]]
+    ).astype(float)
 
     # Calculate the total grouped weights
     group_weights = subgroup_weights.sum(
         dim=[d for d in subgroup_weights.dims if d not in group_columns]
-    )
+    ).astype(float)
 
     # Rescale the catch weights
     scaled_weights = (subgroup_weights / group_weights) * catch_data.groupby(group_columns)[

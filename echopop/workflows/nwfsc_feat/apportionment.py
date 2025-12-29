@@ -821,7 +821,7 @@ def distribute_unaged_from_aged_xr(
     group_columns: List[str] = [],
     impute: bool = True,
     impute_variable: Optional[List[str]] = None,
-) -> pd.DataFrame:
+) -> xr.DataArray:
     """
     Standardize kriged population estimates using reference proportions and optionally impute
     missing values.
@@ -909,7 +909,10 @@ def distribute_unaged_from_aged_xr(
 
     # If imputation is requested, perform it
     if not impute:
-        return standardized_table.unstack().to_xarray()
+        result = standardized_table.unstack().to_xarray()
+        if population_table.name:
+            result.name = population_table.name
+        return result
     else:
         # ---- Impute
         standardized_table_imputed = impute_kriged_table(
@@ -920,7 +923,10 @@ def distribute_unaged_from_aged_xr(
             group_by=group_columns,
             impute_variable=impute_variable,
         )
-        return standardized_table_imputed.unstack().to_xarray()
+        result = standardized_table_imputed.unstack().to_xarray()
+        if population_table.name:
+            result.name = population_table.name
+        return result
 
 
 def sum_population_tables(
@@ -984,51 +990,68 @@ def sum_population_tables(
 
 
 def sum_population_tables_xr(
-    population_table: Dict[str, xr.DataArray],
-    table_names: List[str],
-    table_index: List[str],
-    table_columns: List[str],
-) -> pd.DataFrame:
+    population_table: Dict[str, xr.Dataset],
+    group_columns: List[str] = [],
+) -> xr.DataArray:
     """
     Combine and sum population estimates across defined tables to yield a single population table.
 
-    This function takes multiple population estimate tables and combines them into a single
-    consolidated table by stacking, pivoting, and summing the values across common dimensions.
-
+    This function takes a dictionary of xarray Datasets, each representing a population estimate 
+    table (e.g., "aged", "unaged"), and combines them into a single consolidated xarray DataArray by
+    aggregating over non-grouped dimensions and summing values across all input tables.
     Parameters
     ----------
-    population_table : Dict[str, pd.DataFrame]
+    population_table : Dict[str, xr.Dataset]
         Dictionary of population estimate tables to combine. Keys are table names (e.g., "aged",
-        "unaged", "speciesA", "speciesB) and values are DataFrames with population data.
-    table_names : List[str]
-        List of table names (keys) from population_table to include in the combination. Tables not
-        in this list will be ignored.
-    table_index : List[str]
-        List of column names to use as the index in the final combined table (e.g., ["length_bin"]).
-    table_columns : List[str]
-        List of column names to use as columns in the final combined table (e.g., ["age_bin",
-        "sex"]).
+        "unaged", "speciesA", "speciesB") and values are xarray Datasets with population data. Each 
+        Dataset should have compatible coordinate/dimension names.
+    group_columns : List[str], optional
+        List of coordinate names to retain as dimensions in the final combined table (e.g., 
+        ["sex", "age_bin"]). All other coordinates will be summed over.
 
     Returns
     -------
-    pd.DataFrame
-        Combined population table with table_index as index and table_columns as columns.
-        Values are summed across all input tables for each index/column combination.
+    xr.DataArray
+        Combined population table as an xarray DataArray, with group_columns as dimensions.
+        Values are summed across all input tables for each group_columns combination.
 
     Notes
     -----
     The combination process:
-    1. Filters population_table to include only tables listed in table_names
-    2. Stacks each table to convert to long format with 'value' column
-    3. Creates pivot tables with consistent index and column structure
-    4. Sums all pivot tables element-wise to get final combined table
+    1. Identifies all unique coordinate names across the input Datasets.
+    2. Determines which coordinates are not in group_columns and sums over those dimensions.
+    3. Converts each aggregated Dataset to a DataFrame, aligns, and sums them element-wise.
+    4. Returns the result as an xarray DataArray with group_columns as dimensions.
+    
+    Examples
+    --------
+    >>> combined = sum_population_table(
+    ...     population_table={"aged": ds_aged, "unaged": ds_unaged},
+    ...     group_columns=["sex", "age_bin", "length_bin"]
+    ... )
+    >>> print(combined)
+    <xarray.DataArray ...>    
+
     """
 
-    # Subset the table to only include the tables-of-interest
-    tables_to_combine = {
+    # Get all unique coordinate names
+    table_coords = {coord for ds in population_table.values() for coord in ds.coords.keys()}
+
+    # Non-group columns to aggregate over
+    table_noncoords = list(set(table_coords) - set(group_columns))
+
+    # Aggregate the grouped dimensions
+    grouped_tables = {
+        k: ds.sum(
+            dim=[v for v in da.coords.keys() if v not in set(table_coords)]
+        ).to_dataframe(name="value")["value"].unstack()
+        for k, ds in population_table.items()
+    }
+
+    # Stack the tables
+    stacked_tables = {
         k: v.stack(v.columns.names, future_stack=True).to_frame("value")
-        for k, v in population_table.items()
-        if k in table_names
+        for k, v in grouped_tables.items()
     }
 
     # Create a pivot table for each table with identical indices
@@ -1036,11 +1059,16 @@ def sum_population_tables_xr(
         k: utils.create_pivot_table(
             v, index_cols=table_index, strat_cols=table_columns, value_col="value"
         )
-        for k, v in tables_to_combine.items()
+        for k, v in stacked_tables.items()
     }
 
     # Sum the compatible tables
-    return sum(compatible_tables.values())
+    table_summed = sum(compatible_tables.values())
+
+    # Return the full DataArray
+    result = table_summed.unstack().to_xarray()
+    result.name = "estimate"
+    return result
 
 
 def reallocate_excluded_estimates(
@@ -1153,6 +1181,117 @@ def reallocate_excluded_estimates(
 
     # Return the the redistributed table
     return redistributed_table
+
+def reallocate_excluded_estimates_xr(
+    population_table: xr.DataArray,
+    exclusion_filter: Dict[str, Any],
+    group_columns: List[str] = [],
+) -> Union[xr.Dataset, xr.DataArray]:
+    """
+    Redistribute population estimates across groups after excluding a specific subset.
+
+    This function removes specified population segments (e.g., age-1 fish) and redistributes
+    their population estimates proportionally across the remaining groups. This is commonly used
+    when certain age classes need to be excluded from final estimates but their contributions
+    should be reallocated to other age groups.
+
+    Parameters
+    ----------
+    population_table : xr.DataArray
+        Population estimates as an xarray DataArray, typically with biological groups as dimensions.
+    exclusion_filter : Dict[str, Any]
+        Dictionary specifying which population segments to exclude and redistribute. Keys are
+        dimension names, values are the categories to exclude. Example: {"age_bin": [1]} to
+        exclude age-1 fish.
+    group_columns : List[str], optional
+        List of dimension names that define the grouping variables for redistribution (e.g., ["sex"]
+        to redistribute within each sex separately). If empty, redistribution is performed over all
+        dimensions.
+
+    Returns
+    -------
+    Union[xr.Dataset, xr.DataArray]
+        If `group_columns` is not empty, returns an xarray.Dataset with excluded segments removed 
+        and their values redistributed proportionally across remaining groups, preserving the 
+        'group_columns' as dimensions. If `group_columns` is empty, returns an xarray.DataArray 
+        with the same structure as the input, but with excluded segments removed and their values 
+        redistributed.
+
+    Raises
+    ------
+    UserWarning
+        If the redistributed table sums don't match the original table sums within tolerance.
+
+    Notes
+    -----
+    The redistribution algorithm:
+    1. Identifies population segments matching the exclusion filter.
+    2. Calculates the total excluded biomass/abundance for each group.
+    3. Removes excluded segments (sets them to zero).
+    4. Redistributes excluded totals proportionally across remaining segments.
+    5. Ensures total population remains constant after redistribution.
+
+    This maintains the biological realism of population estimates while allowing for policy-based
+    exclusions (e.g., removing age-1 fish from assessments).
+
+    Examples
+    --------
+    >>> result = reallocate_excluded_estimates_xr(
+    ...     population_table=da_population,
+    ...     exclusion_filter={"age_bin": [1]},
+    ...     group_columns=["sex", "age_bin"]
+    ... )
+    >>> print(result)
+    <xarray.Dataset ...>
+
+    >>> result = reallocate_excluded_estimates_xr(
+    ...     population_table=da_population,
+    ...     exclusion_filter={"age_bin": [1]},
+    ...     group_columns=[]
+    ... )
+    >>> print(result)
+    <xarray.DataArray ...>
+    """
+    
+    # If no appropriate filter is defined, then nothing is redistributed
+    if len(exclusion_filter) == 0:
+        return population_table
+
+    # Convert to DataFrame
+    population_est = population_table.to_series().unstack(group_columns)
+    
+    # Apply inverse of exclusion filter to get the values being excluded
+    population_excluded = utils.apply_filters(population_est, include_filter=exclusion_filter)
+    
+    # Replace the excluded values in the full table with 0.
+    population_masked = utils.apply_filters(
+        population_est, exclude_filter=exclusion_filter, replace_value=0.0
+    )
+    
+    # Get the sums for each group across the excluded and filtered tables
+    # ---- Filtered/included
+    population_masked_sum = population_masked.sum()
+    # ---- Excluded
+    population_excluded_sum = population_excluded.sum()
+    # ---- Handling if `pandas.Series`
+    if isinstance(population_excluded_sum, pd.Series):
+        population_excluded_sum = population_excluded_sum.reindex(
+            index=population_masked_sum.index, method="ffill"
+        )
+        
+    # Get the redistributed values that will be added to the filtered table values
+    population_adjusted = (
+        population_masked * population_excluded_sum / population_masked_sum
+    ).fillna(0.0)
+    
+    # Add the adjustments to the masked table
+    population_masked += population_adjusted
+    
+    # Unstack and return to DataArray
+    result = population_masked.to_xarray().squeeze()
+    if isinstance(result, xr.DataArray) and not result.name:
+        result.name = population_table.name
+    return result
 
 
 def distribute_population_estimates(
