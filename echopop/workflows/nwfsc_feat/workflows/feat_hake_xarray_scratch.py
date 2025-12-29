@@ -737,6 +737,11 @@ biology.compute_biomass(
     df_average_weight=df_averaged_weight,
 )
 
+biology.compute_biomass_xr(
+    dataset=df_nasc_no_age1,
+    stratum_weights=da_averaged_weight,
+)
+
 # ==================================================================================================
 # Get proportions for each stratum specific to age-1
 # --------------------------------------------------
@@ -854,7 +859,7 @@ dict_ds_transect_biomass_table = apportionment.distribute_population_estimates_x
     variable = "biomass",
     group_columns = ["sex", "age_bin", "length_bin", "stratum_ks"]
 )
-pd.set_option('display.max_rows', None)
+pd.set_option('display.max_rows', 30)
 dict_transect_biomass_table["aged"] - dict_ds_transect_biomass_table["aged"].to_dataframe().unstack(["stratum_ks"])
 
 A = dict_transect_biomass_table["aged"].sum().sum() + dict_transect_biomass_table["unaged"].sum().sum() 
@@ -1064,7 +1069,7 @@ apportionment.mesh_biomass_to_nasc_xr(
     biodata=dict_da_weight_proportion,
     group_columns=["sex", "stratum_ks"],
     mesh_biodata_link={"geostratum_ks": "stratum_ks"},
-    stratum_weights=df_averaged_weight["all"],
+    stratum_weights=da_averaged_weight.sel(sex="all"),
     stratum_sigma_bs=invert_hake.sigma_bs_strata,
 )
 

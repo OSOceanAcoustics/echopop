@@ -469,7 +469,7 @@ def compute_biomass(
     dataset: pd.DataFrame,
     stratify_by: List[str] = [],
     group_by: List[str] = [],
-    df_average_weight: Optional[Union[pd.DataFrame, pd.Series, float]] = None,
+    df_average_weight: Optional[Union[xr.DataArray, float]] = None,
 ):
     """
     Convert number density and abundance estimates to biomass density and total biomass,
@@ -556,6 +556,101 @@ def compute_biomass(
         dataset["biomass_density"] = dataset["number_density"] * df_average_weight["all"]
         # ---- Compute biomass
         dataset["biomass"] = dataset["abundance"] * df_average_weight["all"]
+
+    # Reset the index
+    dataset.reset_index(inplace=True)
+
+def compute_biomass_xr(
+    dataset: pd.DataFrame,
+    stratum_weights: Optional[Union[xr.DataArray, float]] = None,
+):
+    """
+    Convert number density and abundance estimates to biomass density and total biomass,
+    respectively.
+
+    Parameters
+    ----------
+    dataset : pd.DataFrame
+        DataFrame containing transect data with number densities already computed. Must include:
+        - 'number_density': Number of animals per unit area (animals/nmi²)
+        - 'abundance': Total number of animals in each interval (animals)
+    stratify_by : List[str], default []
+        Column name to use for stratification when aligning with the number proportions dictionary,
+        if specified.
+    group_by : List[str], default []
+        Grouping columns to apply to number density and abundances (e.g. sex). This will produce
+        additional columns formatted as `number_density_{group}` and `abundance_{group}`.
+    df_average_weight : Optional[Dict[str, pd.DataFrame]], default None
+        DataFrame or Series containing the average weight data for defined strata. This DataFrame
+        must be:
+        - Indexed by the same column as `stratify_by` if specified
+        - If a DataFrame, the columns should correspond to the grouping defined in `group_by`. For
+        example, if `group_by=['sex']`, then the DataFrame should have a column for each. If there
+        are additional groups that are present in the DataFrame but will not be used, then a
+        global set of values named 'all' should be present.
+
+    Returns
+    -------
+    None
+        Function modifies the transect DataFrame in-place.
+
+    Examples
+    --------
+    >>> # Calculate biomass from abundance using weight table
+    >>> weight_table = pd.DataFrame({'female': [0.5, 0.6], 'male': [0.4, 0.5], 'all': [0.45, 0.55]})
+    >>> dataset = pd.DataFrame({'abundance_female': [100, 200], 'abundance_male': [150, 250], \
+        'abundance': [250, 450]})
+    >>> compute_biomass(
+    ...     dataset=dataset,
+    ...     stratify_by=['stratum'],
+    ...     group_by=['sex'],
+    ...     df_average_weight=df_stratum_weights,
+    ... )
+    >>> # Creates 'biomass_female', 'biomass_male' in-place
+    """
+
+    # Convert DataArray to DataFrame for compatibility
+    if isinstance(stratum_weights, xr.DataArray):
+        dataset_nonids = list(set(set(stratum_weights.coords)).difference(dataset.columns))
+        stratum_weights = stratum_weights.to_series().unstack(dataset_nonids)
+
+    # Ensure weights are properly aligned with the associated dataset
+    # ---- Type
+    if isinstance(stratum_weights, pd.Series):
+        # ---- Convert to DataFrame
+        stratum_weights = stratum_weights.to_frame("all")
+    elif isinstance(stratum_weights, float):
+        stratum_weights = pd.DataFrame({"all": [stratum_weights]}, index=dataset.index)
+
+    # Find overlapping indices
+    idx_names = list(set(set(stratum_weights.index.names)).intersection(set(dataset.columns)))
+    # nonidx_names = [id for id in group_columns if id not in idx_names]
+    nonidx_names = [id for id in list(stratum_weights.columns.names) if id not in idx_names]
+
+    # If grouped beyond just index
+    if len(nonidx_names) > 0:
+        # ---- Compute the biomass densities across groups
+        matrix_multiply_grouped_table(
+            dataset,
+            table=stratum_weights,
+            group=nonidx_names[0],
+            variable="number_density",
+            output_variable="biomass_density",
+        )
+        # ---- Compute the biomass densities across groups
+        matrix_multiply_grouped_table(
+            dataset,
+            table=stratum_weights,
+            group=nonidx_names[0],
+            variable="abundance",
+            output_variable="biomass",
+        )
+    # Ungrouped
+    else:
+        # ---- Compute biomass densities
+        dataset["biomass_density"] = dataset["number_density"] * stratum_weights["all"]
+        # ---- Compute biomass
+        dataset["biomass"] = dataset["abundance"] * stratum_weights["all"]
 
     # Reset the index
     dataset.reset_index(inplace=True)

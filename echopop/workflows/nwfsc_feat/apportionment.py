@@ -527,7 +527,7 @@ def mesh_biomass_to_nasc_xr(
     biomass_columns = stacked_proportions.columns.tolist() + ["biomass"]
 
     # Reindex the stratum weights
-    stratum_weights_idx = stratum_weights.reindex(mesh_data.index)
+    stratum_weights_idx = stratum_weights.to_series().reindex(mesh_data.index)
 
     # Calculate abundance
     mesh_data[[f"abundance_{name}" for name in biodata_columns] + ["abundance"]] = mesh_data[
