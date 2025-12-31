@@ -38,4 +38,4 @@ def plotting_heatmap_data():
     df = pd.DataFrame(np.random.rand(3, 3), index=idx, columns=cols)
     df.index.name = "length_bin"
     df.columns.name = "age_bin"
-    return df
+    return df.stack().to_xarray()

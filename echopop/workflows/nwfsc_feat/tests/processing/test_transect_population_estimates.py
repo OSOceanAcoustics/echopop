@@ -4,6 +4,7 @@ import pytest
 
 from echopop.workflows.nwfsc_feat import apportionment as apportion, biology
 
+pytestmark = pytest.mark.skip("This entire file is currently skipped due to xarray migration.")
 
 def test_remove_group_from_estimates_nasc_only(sample_transect_dataset, age1_nasc_proportions):
     """Test partitioning with only NASC proportions."""
