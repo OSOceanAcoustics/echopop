@@ -1,6 +1,5 @@
 import functools
 import operator
-from itertools import product
 from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
