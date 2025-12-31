@@ -29,8 +29,8 @@ from echopop.workflows.nwfsc_feat import apportionment, biology
 # ==================================================================================================
 # DEFINE DATA ROOT DIRECTORY
 # --------------------------
-# DATA_ROOT = Path("C:/Data/EchopopData/echopop_2019")
-DATA_ROOT = Path("C:/Users/Brandyn Lucca/Documents/Data/echopop_2019")
+DATA_ROOT = Path("C:/Data/EchopopData/echopop_2019")
+# DATA_ROOT = Path("C:/Users/Brandyn Lucca/Documents/Data/echopop_2019")
 # ==================================================================================================
 # ==================================================================================================
 # DATA INGESTION
@@ -950,10 +950,10 @@ vgm.calculate_empirical_variogram(
 variogram_parameters_lmfit = Parameters()
 variogram_parameters_lmfit.add_many(
     ("nugget", dict_variogram_params["nugget"], True, 0.0),
-    ("sill", dict_variogram_params["sill"], True, 0.0),
-    ("correlation_range", dict_variogram_params["correlation_range"], True, 0.0),
-    ("hole_effect_range", dict_variogram_params["hole_effect_range"], True, 0.0),
-    ("decay_power", dict_variogram_params["decay_power"], True, 1.25, 1.75),
+    ("sill", dict_variogram_params["sill"], False, 0.0),
+    ("correlation_range", dict_variogram_params["correlation_range"], False, 0.0),
+    ("hole_effect_range", dict_variogram_params["hole_effect_range"], False, 0.0, 0.1),
+    ("decay_power", dict_variogram_params["decay_power"], False, 1.25, 1.75),
 )
 
 # Set up optimization parameters used for fitting the variogram
@@ -1053,6 +1053,7 @@ df_kriged_results_da = df_kriged_results.copy()
 # Compute biomass
 df_kriged_results["biomass"] = df_kriged_results["biomass_density"] * df_kriged_results["area"]
 df_kriged_results_da["biomass"] = df_kriged_results_da["biomass_density"] * df_kriged_results_da["area"]
+
 # Convert biomass to abundance to NASC
 apportionment.mesh_biomass_to_nasc(
     mesh_data_df=df_kriged_results,
@@ -1226,7 +1227,7 @@ df_kriged_abundance_table_noage1 = apportionment.reallocate_excluded_estimates(
 ds_kriged_abundance_table_noage1 = apportionment.reallocate_excluded_estimates_xr(
     population_table=da_kriged_abundance_table,
     exclusion_filter={"age_bin": [1]},
-    group_columdf_kriged_abundance_table_noage1ns=["sex"],
+    group_columns=["sex"],
 )
 
 A = df_kriged_abundance_table_noage1.swaplevel(axis=1)
