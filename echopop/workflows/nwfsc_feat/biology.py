@@ -614,7 +614,14 @@ def compute_biomass_xr(
     if isinstance(stratum_weights, xr.DataArray):
         dataset_nonids = list(set(set(stratum_weights.coords)).difference(dataset.columns))
         stratum_weights = stratum_weights.to_series().unstack(dataset_nonids)
-
+        
+    # Find overlapping indices
+    idx_names = list(set(set(stratum_weights.index.names)).intersection(set(dataset.columns)))
+    nonidx_names = [id for id in list(stratum_weights.columns.names) if id not in idx_names]
+    
+    # Set index
+    dataset.set_index(idx_names, inplace=True)
+    
     # Ensure weights are properly aligned with the associated dataset
     # ---- Type
     if isinstance(stratum_weights, pd.Series):
@@ -622,12 +629,7 @@ def compute_biomass_xr(
         stratum_weights = stratum_weights.to_frame("all")
     elif isinstance(stratum_weights, float):
         stratum_weights = pd.DataFrame({"all": [stratum_weights]}, index=dataset.index)
-
-    # Find overlapping indices
-    idx_names = list(set(set(stratum_weights.index.names)).intersection(set(dataset.columns)))
-    # nonidx_names = [id for id in group_columns if id not in idx_names]
-    nonidx_names = [id for id in list(stratum_weights.columns.names) if id not in idx_names]
-
+        
     # If grouped beyond just index
     if len(nonidx_names) > 0:
         # ---- Compute the biomass densities across groups
