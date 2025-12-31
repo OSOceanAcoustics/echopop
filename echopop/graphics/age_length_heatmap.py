@@ -231,7 +231,7 @@ def plot_age_length_heatmap(
     # Input validation and type-checking
     if not isinstance(data, xr.DataArray):
         raise TypeError(f"'data' must be an xr.DataArray. It is instead: {type(data)}.")
-    
+
     # Convert to DataFrame
     # ---- Get name of variable
     if not data.name:
@@ -241,11 +241,11 @@ def plot_age_length_heatmap(
     data_cnv = data.to_dataframe()[var]
     # ---- Re-arrange variables for expected MultiIndex columns
     idx_cols = set(data_cnv.index.names) - {"length_bin"}
-    # ---- Assign order 
+    # ---- Assign order
     ordered_cols = ["age_bin"] + list(idx_cols - {"age_bin"})
     # ---- Stack
     data_cnv_ord = data_cnv.unstack(ordered_cols)
-    
+
     # Index check
     if "length_bin" not in data_cnv_ord.index.names:
         raise IndexError(

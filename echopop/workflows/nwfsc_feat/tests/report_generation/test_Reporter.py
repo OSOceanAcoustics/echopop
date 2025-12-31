@@ -6,6 +6,7 @@ from echopop.workflows.nwfsc_feat import Reporter
 
 pytestmark = pytest.mark.skip("This entire file is currently skipped due to xarray migration.")
 
+
 def test_Reporter(tmp_path):
     """
     Test Reporter class initialization

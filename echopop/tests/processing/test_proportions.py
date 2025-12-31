@@ -7,6 +7,8 @@ from echopop import utils
 from echopop.survey import proportions as get_proportions
 
 pytestmark = pytest.mark.skip("This entire file is currently skipped due to xarray migration.")
+
+
 def test_compute_binned_counts_size_aggregation(sample_specimen_data):
     """Test size aggregation (default)."""
     result = get_proportions.compute_binned_counts(

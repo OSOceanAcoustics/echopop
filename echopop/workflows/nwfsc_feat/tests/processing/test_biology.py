@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
-import xarray as xr
 import pytest
+import xarray as xr
 
 from echopop.survey.biology import fit_length_weight_regression
 from echopop.workflows.nwfsc_feat import biology
@@ -17,7 +17,7 @@ def test_length_binned_weights_basic_functionality(
 
     # Typing
     assert isinstance(result, xr.DataArray)
-    
+
     # Should return long format with additional columns when no grouping
     expected_coords = ["length_bin"]
     assert list(result.coords) == expected_coords
@@ -32,12 +32,13 @@ def test_length_binned_weights_grouped_coefficients(
     result = biology.length_binned_weights(
         sample_specimen_data, sample_length_bins, grouped_regression_coefficients
     )
-    
+
     # Should return wide format with sex as columns when grouping
-    expected_coords= ["length_bin", "sex"]
-    
+    expected_coords = ["length_bin", "sex"]
+
     assert list(result.coords) == expected_coords
     assert result.coords.sizes == {"length_bin": 4, "sex": 3}
+
 
 def test_length_binned_weights_impute_bins_false(
     sample_specimen_data, sample_length_bins, single_regression_coefficients
@@ -79,9 +80,10 @@ def test_length_binned_weights_minimum_count_threshold(
 
     # Sizes
     assert len(result_high) == len(result_low)
-    
+
     # Arrays should not be equal
     assert not all(result_high == result_low)
+
 
 @pytest.mark.skip(reason="This test is outdated for xarray migration.")
 def test_length_binned_weights_zero_threshold(
@@ -100,6 +102,7 @@ def test_length_binned_weights_zero_threshold(
     expected_columns = ["length_bin", "count", "weight_mean", "weight_modeled", "weight_fitted"]
     assert list(result.columns) == expected_columns
 
+
 @pytest.mark.skip(reason="This test is outdated for xarray migration.")
 def test_length_binned_weights_minimal_data(
     reduced_specimen_data, sample_length_bins, single_regression_coefficients
@@ -111,6 +114,7 @@ def test_length_binned_weights_minimal_data(
 
     assert isinstance(result, pd.DataFrame)
     assert len(result) >= 0
+
 
 @pytest.mark.skip(reason="This test is outdated for xarray migration.")
 def test_length_binned_weights_missing_weights(
@@ -125,6 +129,7 @@ def test_length_binned_weights_missing_weights(
     # Should return long format with additional columns when no grouping
     expected_columns = ["length_bin", "count", "weight_mean", "weight_modeled", "weight_fitted"]
     assert list(result.columns) == expected_columns
+
 
 @pytest.mark.skip(reason="This test is outdated for xarray migration.")
 def test_length_binned_weights_large_dataset(
@@ -142,6 +147,7 @@ def test_length_binned_weights_large_dataset(
     assert list(result.columns) == expected_columns
     assert not result["weight_fitted"].isna().any()
 
+
 @pytest.mark.skip(reason="This test is outdated for xarray migration.")
 def test_length_binned_weights_empty_data(
     null_specimen_data, sample_length_bins, single_regression_coefficients
@@ -153,6 +159,7 @@ def test_length_binned_weights_empty_data(
 
     assert isinstance(result, pd.DataFrame)
     # Should return bins with modeled weights only
+
 
 @pytest.mark.skip(reason="This test is outdated for xarray migration.")
 def test_length_binned_weights_uneven_distribution(
@@ -171,6 +178,7 @@ def test_length_binned_weights_uneven_distribution(
     expected_columns = ["length_bin", "count", "weight_mean", "weight_modeled", "weight_fitted"]
     assert list(result.columns) == expected_columns
 
+
 @pytest.mark.skip(reason="This test is outdated for xarray migration.")
 def test_length_binned_weights_multiple_groups(
     specimen_data_multiple_groups, sample_length_bins, coefficients_with_multiple_groups
@@ -187,6 +195,7 @@ def test_length_binned_weights_multiple_groups(
     assert isinstance(result.columns, pd.MultiIndex) or len(result.columns) > 0
     assert len(result) > 0
 
+
 @pytest.mark.skip(reason="This test is outdated for xarray migration.")
 def test_length_binned_weights_preserves_original_data(
     sample_specimen_data, sample_length_bins, single_regression_coefficients
@@ -200,6 +209,7 @@ def test_length_binned_weights_preserves_original_data(
 
     # Original data should be unchanged (function makes copy)
     pd.testing.assert_frame_equal(sample_specimen_data, original_data)
+
 
 @pytest.mark.skip(reason="This test is outdated for xarray migration.")
 def test_length_binned_weights_deterministic_results(
@@ -216,6 +226,7 @@ def test_length_binned_weights_deterministic_results(
 
     pd.testing.assert_frame_equal(result1, result2)
 
+
 @pytest.mark.skip(reason="This test is outdated for xarray migration.")
 def test_length_binned_weights_realistic_coefficients(sample_specimen_data, sample_length_bins):
     """Test with realistic regression coefficients."""
@@ -230,6 +241,7 @@ def test_length_binned_weights_realistic_coefficients(sample_specimen_data, samp
     assert list(result.columns) == expected_columns
     assert result["weight_fitted"].min() > 0  # Weights should be positive
 
+
 @pytest.mark.skip(reason="This test is outdated for xarray migration.")
 def test_length_binned_weights_column_filtering(
     sample_specimen_data, sample_length_bins, single_regression_coefficients
@@ -243,6 +255,7 @@ def test_length_binned_weights_column_filtering(
     expected_columns = ["length_bin", "count", "weight_mean", "weight_modeled", "weight_fitted"]
     assert list(result.columns) == expected_columns
 
+
 @pytest.mark.skip(reason="This test is outdated for xarray migration.")
 def test_length_binned_weights_weight_values_reasonable(
     sample_specimen_data, sample_length_bins, single_regression_coefficients
@@ -255,6 +268,7 @@ def test_length_binned_weights_weight_values_reasonable(
     # Weight values should be positive and finite
     assert (result["weight_fitted"] > 0).all()
     assert np.isfinite(result["weight_fitted"]).all()
+
 
 @pytest.mark.skip(reason="This test is outdated for xarray migration.")
 def test_length_binned_weights_integration_with_fit_regression(
@@ -272,6 +286,7 @@ def test_length_binned_weights_integration_with_fit_regression(
     # Should return long format with additional columns when no grouping
     expected_columns = ["length_bin", "count", "weight_mean", "weight_modeled", "weight_fitted"]
     assert list(result.columns) == expected_columns
+
 
 @pytest.mark.skip(reason="This test is outdated for xarray migration.")
 def test_length_binned_weights_different_imputation_strategies(

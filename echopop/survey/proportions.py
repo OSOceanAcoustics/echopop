@@ -9,6 +9,7 @@ import xarray as xr
 
 from .. import utils
 
+
 def compute_binned_counts(
     data: pd.DataFrame,
     groupby_cols: List[str],
@@ -47,6 +48,7 @@ def compute_binned_counts(
 
     # Convert to xarray.DataArray
     return aggregate.to_xarray().to_dataarray()
+
 
 def number_proportions(
     data: Union[xr.DataArray, xr.Dataset],
@@ -271,6 +273,7 @@ def apply_weight_interpolation(
         result_df[dependent_var] *= result_df[count_col]
 
     return result_df
+
 
 def binned_weights(
     length_data: pd.DataFrame,
@@ -635,6 +638,7 @@ def calculate_within_group_proportions(
     ]
     return pd.concat(series, axis=0)
 
+
 def stratum_averaged_weight(
     number_proportions: Dict[str, xr.Dataset],
     length_weight_data: xr.DataArray,
@@ -833,6 +837,7 @@ def aggregate_stratum_weights(input_data, stratum_col="stratum_num"):
 
     return final_df
 
+
 def scale_weights_by_stratum(
     weight_data: xr.DataArray,
     catch_data: pd.DataFrame,
@@ -897,6 +902,7 @@ def scale_weights_by_stratum(
     # Return the array
     return scaled_weights.fillna(0.0)
 
+
 def weight_proportions(
     weight_data: xr.DataArray,
     catch_data: pd.DataFrame,
@@ -957,6 +963,7 @@ def weight_proportions(
     arr = weight_data / total_weights
     arr.name = "proportion_overall"
     return arr.to_dataset()
+
 
 def scale_weight_proportions(
     scaled_weight_data: xr.DataArray,
@@ -1077,6 +1084,7 @@ def scale_weight_proportions(
     # Distribute the within-group proportions to get the overall proportions
     return weight_length_proportions_all * weight_grouped_props
 
+
 def get_nasc_proportions_slice(
     number_proportions: xr.DataArray,
     ts_length_regression_parameters: Dict[str, float],
@@ -1183,6 +1191,7 @@ def get_nasc_proportions_slice(
     # Calculate and return proportions
     return (target_weighted_sigma_bs / aggregate_weighted_sigma_bs).to_xarray()
 
+
 def get_number_proportions_slice(
     number_proportions: xr.DataArray,
     group_columns: List[str] = [],
@@ -1282,6 +1291,7 @@ def get_number_proportions_slice(
             return intermediate_result.stack().to_xarray()
         elif isinstance(intermediate_result, pd.Series):
             return intermediate_result.to_xarray()
+
 
 def get_weight_proportions_slice(
     weight_proportions: xr.Dataset,

@@ -6,6 +6,7 @@ import xarray as xr
 
 from ...utils import apply_filters, binned_distribution, create_grouped_table
 
+
 def length_binned_weights(
     data: pd.DataFrame,
     length_bins: np.ndarray,
@@ -72,7 +73,7 @@ def length_binned_weights(
     >>> fitted = compute_binned_weights(specimen_data, length_dist, coeffs,
     ...                                impute_bins=False)
     """
-    
+
     # Make a copy to avoid modifying original data
     data = data.copy()  # Create length distribution from bins
     length_distribution = binned_distribution(length_bins)
@@ -147,8 +148,8 @@ def length_binned_weights(
     pivot_result = result.pivot(index="length_bin", columns=group_cols, values="weight_fitted")
     if isinstance(pivot_result, pd.Series):
         pivot_result = pivot_result.to_frame("all")
-    
-    # Get dimensions and coordinates 
+
+    # Get dimensions and coordinates
     if group_cols:
         dims = ["length_bin"] + group_cols
         coords = {
@@ -171,7 +172,7 @@ def length_binned_weights(
         else:
             coords = {"length_bin": pivot_result.index}
         output = pivot_result.values.squeeze()
-    
+
     # Convert to an xarray.DataArray
     return xr.DataArray(
         output,
@@ -179,6 +180,7 @@ def length_binned_weights(
         coords=coords,
         name="weight_fitted",
     )
+
 
 def compute_abundance(
     dataset: pd.DataFrame,
@@ -243,7 +245,7 @@ def compute_abundance(
             group_cols=list(shared_coords),
             strat_cols=list(nonidx_names),
             index_cols=list(idx_names),
-            value_col="proportion_overall"
+            value_col="proportion_overall",
         )
         # ---- Apply exclusion filter, if required
         grouped_proportions_excl = apply_filters(grouped_proportions, exclude_filter=exclude_filter)
@@ -254,7 +256,7 @@ def compute_abundance(
             abundance_vals = dataset["abundance"].values
         else:
             number_density_vals = dataset["number_density"].values[:, None]
-            abundance_vals = dataset["abundance"].values[:, None]        
+            abundance_vals = dataset["abundance"].values[:, None]
         # ---- Set the index
         dataset.set_index(idx_names, inplace=True)
         # ---- Reindex the table
@@ -262,7 +264,7 @@ def compute_abundance(
         # ---- Compute number density
         grouped_number_density = number_density_vals * grouped_proportions_ridx
         # ---- Compute abundance
-        grouped_abundance = abundance_vals * grouped_proportions_ridx        
+        grouped_abundance = abundance_vals * grouped_proportions_ridx
         # ---- Add the number densities to the dataset
         dataset[grouped_number_density.columns.map(lambda c: f"number_density_{c}")] = (
             grouped_number_density.values
@@ -273,6 +275,7 @@ def compute_abundance(
         )
         # ---- Reset the index
         dataset.reset_index(inplace=True)
+
 
 def matrix_multiply_grouped_table(
     dataset: pd.DataFrame,
@@ -341,6 +344,7 @@ def matrix_multiply_grouped_table(
     # Compute the overall output variable
     dataset[output_variable] = dataset[column_map].sum(axis=1) + remainder_matrix
 
+
 def compute_biomass(
     dataset: pd.DataFrame,
     stratum_weights: Optional[Union[xr.DataArray, float]] = None,
@@ -394,14 +398,14 @@ def compute_biomass(
     if isinstance(stratum_weights, xr.DataArray):
         dataset_nonids = list(set(set(stratum_weights.coords)).difference(dataset.columns))
         stratum_weights = stratum_weights.to_series().unstack(dataset_nonids)
-        
+
     # Find overlapping indices
     idx_names = list(set(set(stratum_weights.index.names)).intersection(set(dataset.columns)))
     nonidx_names = [id for id in list(stratum_weights.columns.names) if id not in idx_names]
-    
+
     # Set index
     dataset.set_index(idx_names, inplace=True)
-    
+
     # Ensure weights are properly aligned with the associated dataset
     # ---- Type
     if isinstance(stratum_weights, pd.Series):
@@ -409,7 +413,7 @@ def compute_biomass(
         stratum_weights = stratum_weights.to_frame("all")
     elif isinstance(stratum_weights, float):
         stratum_weights = pd.DataFrame({"all": [stratum_weights]}, index=dataset.index)
-        
+
     # If grouped beyond just index
     if len(nonidx_names) > 0:
         # ---- Compute the biomass densities across groups

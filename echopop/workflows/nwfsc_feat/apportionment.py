@@ -9,6 +9,7 @@ from ... import utils
 
 warnings.simplefilter("always")
 
+
 def remove_group_from_estimates(
     transect_data: pd.DataFrame,
     group_proportions: xr.Dataset,
@@ -103,6 +104,7 @@ def remove_group_from_estimates(
 
     # Return the partitioned transect data
     return transect_data
+
 
 def mesh_biomass_to_nasc(
     mesh_data: pd.DataFrame,
@@ -451,6 +453,7 @@ def impute_kriged_table(
     # Return the imputed standardized table
     return standardized_table_copy
 
+
 def distribute_unaged_from_aged(
     population_table: xr.DataArray,
     reference_table: xr.DataArray,
@@ -564,6 +567,7 @@ def distribute_unaged_from_aged(
             result.name = population_table.name
         return result
 
+
 def sum_population_tables(
     population_table: Dict[str, xr.Dataset],
 ) -> xr.DataArray:
@@ -641,6 +645,7 @@ def sum_population_tables(
     result = table_summed["value"].to_xarray()
     result.name = "estimate"
     return result
+
 
 def reallocate_excluded_estimates(
     population_table: xr.DataArray,
@@ -752,6 +757,7 @@ def reallocate_excluded_estimates(
     if isinstance(result, xr.DataArray) and not result.name:
         result.name = population_table.name
     return result
+
 
 def distribute_population_estimates(
     data: pd.DataFrame,
