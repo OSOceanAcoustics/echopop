@@ -1,1 +1,1 @@
-from ._version import version as __version__  # noqa
+from _echopop_version import version as __version__  # noqa
