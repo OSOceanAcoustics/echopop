@@ -1241,8 +1241,10 @@ class Reporter:
         """
 
         # Type checking
-        if not isinstance(kriged_data, pd.DataFrame) or not isinstance(weight_data, pd.DataFrame):
-            raise TypeError("'kriged_data' and 'weight_data' must be `pandas.DataFrame`s.")
+        if not isinstance(kriged_data, pd.DataFrame): 
+            raise TypeError("'kriged_data' must be a `pandas.DataFrame`.")
+        if not isinstance(weight_data, xr.DataArray):
+            raise TypeError("'weight_data' must be an `xarray.DataArray`.")
         if not isinstance(sheetnames, dict) or not isinstance(kriged_stratum_link, dict):
             raise TypeError("'sheetnames' and 'kriged_stratum_link' must be `dict`s.")
         if not isinstance(filename, str):
@@ -1527,7 +1529,7 @@ class Reporter:
         aged_table = datatables_cnv["aged"].unstack().sum(axis=1).unstack(["age_bin", "sex"])
 
         # Redistribute the aged table, if required
-        aged_table = apportionment.reallocate_excluded_estimates_xr(
+        aged_table = apportionment.reallocate_excluded_estimates(
             aged_table, exclude_filter, ["sex"]
         )
 
@@ -1973,8 +1975,8 @@ class Reporter:
         # Type checking
         if not isinstance(transect_data, pd.DataFrame):
             raise TypeError("'transect_data' must be a `pandas.DataFrame`.")
-        if not isinstance(weight_data, pd.DataFrame):
-            raise TypeError("'weight_data' must be a `pandas.DataFrame`.")
+        if not isinstance(weight_data, xr.DataArray):
+            raise TypeError("'weight_data' must be an `xarray.DataArray`.")
         if not isinstance(filename, str):
             raise TypeError("'filename' must be a `str`.")
         if not isinstance(sheetnames, dict):
@@ -1982,24 +1984,22 @@ class Reporter:
 
         # Create copy
         transect_data = transect_data.copy()
-        weight_data_cnv = weight_data.copy().to_dataframe(name="weight")
-
-        # Convert DataArray to DataFrame
-        id_cols = list(
-            set(list(weight_data_cnv.index.names)).difference(set(["age_bin", "length_bin", "sex"]))
-        )
-
+        weight_data = weight_data.to_series().to_frame(name="weight")
+        
+        # Reformat the weight data to the expected setup
+        weight_indices = list(weight_data.index.names)
+        # ---- Pivot with only length bins are indices
+        weight_data = weight_data.unstack(list(set(weight_indices) - set(["length_bin"])))["weight"]
+        
         # Update the filepath
         filepath = self.save_directory / filename
-
+        
         # Get the stratum name
         stratum_name = list(set(weight_data.columns.names).difference(["age_bin", "sex"]))
 
         # Sum across lengths
-        age_weight_sums = (
-            weight_data_cnv.unstack(["length_bin"]).sum(axis=1).unstack(id_cols + ["sex"])
-        )
-
+        age_weight_sums = weight_data.sum(axis=0).unstack(["sex"] + stratum_name)
+        
         # Apply exclusion filter, if supplied
         age_weight_sums_filtered = utils.apply_filters(
             age_weight_sums, exclude_filter=exclude_filter, replace_value=0.0
@@ -2190,8 +2190,8 @@ class Reporter:
         """
 
         # Type checking
-        if not isinstance(datatable, pd.DataFrame):
-            raise TypeError("'datatable' must be a `pandas.DataFrame`.")
+        if not isinstance(datatable, xr.DataArray):
+            raise TypeError("'datatable' must be an `xarray.DataArray`.")
         if not isinstance(filename, str):
             raise TypeError("'filename' must be a `str`.")
         if not isinstance(sheetnames, dict):
