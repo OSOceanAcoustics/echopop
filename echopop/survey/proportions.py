@@ -373,7 +373,7 @@ def binned_weights(
         raise ValueError(
             "'length_weight_data' must be provided when 'interpolate_regression'=True."
         )
-        
+
     # Validate coordinates
     if "length_bin" not in length_weight_data.coords:
         raise ValueError("'length_weight_data' must have 'length_bin' as a coordinate.")
@@ -381,10 +381,10 @@ def binned_weights(
     # Match the inclusion filter, if needed
     if include_filter:
         length_weight_data = length_weight_data.sel(include_filter)
-        
+
     # Convert to a DataFrame for interpolation
     length_weight_data_cnv = length_weight_data.to_dataframe().reset_index()
-        
+
     # Extract the defining lengths for each interval category of length_bin
     length_weight_data_cnv["length"] = (
         length_weight_data_cnv["length_bin"].map(lambda x: x.mid).astype(float)
