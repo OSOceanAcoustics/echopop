@@ -72,7 +72,7 @@ include = ["echopop*"]
 version_scheme = "post-release"
 local_scheme = "no-local-version"
 fallback_version = "0.0.0"
-write_to = "_echopop_version.py"
+write_to = "echopop/_version.py"
 write_to_template = 'version = "{version}"  # noqa'
 
 [tool.black]
