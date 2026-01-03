@@ -107,32 +107,18 @@ def number_proportions(
             missing_str = "', '".join(missing_keys)
             raise KeyError(f"Variables in 'exclude_filters' not found in 'data': '{missing_str}'.")
 
-    # Validate that the variables are 'count'.
-    if isinstance(data, xr.DataArray):
-        if data.name != "count" and not (
-            "variable" in data.coords and np.all(data.coords["variable"] == "count")
-        ):
-            raise ValueError("Input DataArray must be count data labeled as 'count'.")
-    elif isinstance(data, xr.Dataset):
-        for k, da in data.data_vars.items():
-            if not ("variable" in da.coords and np.all(da.coords["variable"] == "count")):
-                raise ValueError(
-                    f"Variable '{k}' in the Dataset must have a 'variable' coordinate labeled as "
-                    f"'count'."
-                )
-
     # Apply exclude_filters to each variable, transform to DataFrame, filter, then back to DataArray
     filtered_vars = {}
     for varname, da in data.data_vars.items():
         filt = exclude_filters.get(varname, {})
         if filt:
-            da_filtered = da.drop_sel(filt)
+            da = da.drop_sel(filt)
         # ---- Convert back to DataArray
         if da.size == 0:
             # ---- If all filtered out, create empty DataArray with same dims
             filtered_vars[varname] = da.isel({d: slice(0) for d in da.dims})
         else:
-            filtered_vars[varname] = da_filtered
+            filtered_vars[varname] = da
 
     # Compute group totals and overall total for each variable
     group_totals = {}
@@ -417,9 +403,8 @@ def binned_weights(
 
 def calculate_adjusted_proportions(
     group_keys: List[str],
-    aggregate_table: pd.DataFrame,
-    group_proportions_table: pd.DataFrame,
-    group_by=List[str],
+    aggregate_proportions: pd.DataFrame,
+    group_proportions: pd.DataFrame,
 ) -> pd.DataFrame:
     """
     Calculate adjusted proportions across multiple groups.
@@ -453,49 +438,41 @@ def calculate_adjusted_proportions(
     ...     sex_proportions_table
     ... )
     """
+    
+    # Initialize the dictionary for the group-specific DataArrays
     adjusted_props = {}
-    first_group = group_keys[0]  # Use first group as reference
-
+    # ---- Use the first group as the reference
+    first_group = group_keys[0]
+    
     # For all other groups, calculate relative to the first group
     for group in group_keys[1:]:
-        adjusted_props[group] = aggregate_table.loc[group] / (
-            # aggregate_table.loc[group] + sex_proportions_table.loc[first_group]
-            aggregate_table.loc[group]
-            + group_proportions_table.loc[first_group]
+        adjusted_props[group] = aggregate_proportions.sel(group=group) / (
+            aggregate_proportions.sel(group=group) + group_proportions.sel(group=first_group)
         )
 
     # Calculate first group proportion using all other adjusted proportions
     if len(group_keys) > 1:
-        # adjusted_props[first_group] = sex_proportions_table.loc[first_group] / (
-        #     sex_proportions_table.loc[first_group]
-        #     + pd.concat([adjusted_props[g] for g in group_keys[1:]], axis=0)
-        # )
-        adjusted_props[first_group] = group_proportions_table.loc[first_group] / (
-            group_proportions_table.loc[first_group]
-            + pd.concat([adjusted_props[g] for g in group_keys[1:]], axis=0)
+        other_adjusted = sum(adjusted_props[g] for g in group_keys[1:])
+        adjusted_props[first_group] = group_proportions.sel(group=first_group) / (
+            group_proportions.sel(group=first_group) + other_adjusted
         )
     else:
-        # If only one group, it gets 100% of the proportions
-        # adjusted_props[first_group] = sex_proportions_table.loc[first_group]
-        adjusted_props[first_group] = group_proportions_table.loc[first_group]
+        # ---- If only one group, it gets 100% of the proportions
+        adjusted_props[first_group] = group_proportions.sel(group=first_group)
 
-    # Combine into a single DataFrame with proper multi-index
-    adjusted_proportions = pd.concat(
-        # [adjusted_props[group] for group in group_keys], keys=group_keys, names=["group", "sex"]
-        [adjusted_props[group] for group in group_keys],
-        keys=group_keys,
-        names=["group"] + group_by,
+    # Combine into a single DataArray with 'group' dimension
+    return xr.concat(
+        [adjusted_props[group].expand_dims({"group": [group]}) for group in group_keys],
+        dim="group"
     )
-
-    return adjusted_proportions
 
 
 def calculate_grouped_weights(
-    binned_weight_table_pvt: pd.DataFrame,
-    length_proportions_pvt: pd.DataFrame,
-    length_proportions_pvt_all: pd.DataFrame,
-    aggregate_table: pd.DataFrame,
-    adjusted_proportions: pd.DataFrame,
+    length_weight_data: xr.DataArray,
+    within_group_proportions: pd.DataFrame,
+    within_group_proportions_all: pd.DataFrame,
+    aggregate_proportions: xr.DataArray,
+    adjusted_proportions: xr.DataArray,
     group_keys: List[str],
 ) -> pd.DataFrame:
     """
@@ -540,52 +517,73 @@ def calculate_grouped_weights(
     """
 
     # Initialize the dictionary to contain the grouped weights
-    weights_dict = {}
+    weight_das = {}
 
-    # Gather the index names
-    non_length_level = [lvl for lvl in binned_weight_table_pvt.index.names if lvl != "length_bin"][
-        0
-    ]
+    # Identify non-length dimensions (grouping dimensions)
+    non_length_dims = [d for d in length_weight_data.dims if d != "length_bin"]
 
-    # Define the grouping categories
-    grouping_categories = (
-        binned_weight_table_pvt.index.get_level_values(non_length_level).unique().to_list()
-    )
-
-    # Weight for all sexes combined
-    if "all" in grouping_categories and "all" in binned_weight_table_pvt.index:
-        weight_all = binned_weight_table_pvt.loc["all"]["weight_fitted"].dot(
-            sum(
-                length_proportions_pvt_all.loc[group] * aggregate_table.loc[group]
-                for group in group_keys
-            )
+    # Get grouping categories from the first non-length dimension
+    if not non_length_dims:
+        raise ValueError("'length_weight_data' must have at least one dimension not 'length_bin'.")
+    elif len(non_length_dims) > 1:
+        # ---- Current dimensions
+        all_dims = ", ".join(f"'{c}'" for c in non_length_dims)
+        raise ValueError(
+            f"'length_weight_data' must only have one additional dimension besides 'length_bin'. "
+            f"Got: {all_dims}."
         )
-        weights_dict["all"] = weight_all
 
-    # Weight for each group individually
-    if non_length_level in adjusted_proportions.index.names:
-        for grouping in [g for g in grouping_categories]:  # if g != "all"]:
-            if grouping in adjusted_proportions.index.get_level_values(non_length_level):
-                weight_base = binned_weight_table_pvt.loc[
-                    "all" if "all" in binned_weight_table_pvt.index else grouping
-                ]["weight_fitted"]
-                weight_grouping = weight_base.dot(
-                    sum(
-                        length_proportions_pvt.loc[(group, grouping)]
-                        * adjusted_proportions.loc[(group, grouping)]
-                        for group in group_keys
-                        if (group, grouping) in length_proportions_pvt.index
-                    )
+    # Weight for 'all' category combined
+    grouping_dim = non_length_dims[0]
+    grouping_vals = length_weight_data[grouping_dim].values
+    if "all" in grouping_vals:
+        weight_all_values = length_weight_data.sel({grouping_dim: "all"})
+        weighted_sum = sum(
+            (within_group_proportions_all.sel(group=g) * weight_all_values).sum(dim="length_bin") * 
+            aggregate_proportions.sel(group=g)
+            for g in group_keys
+        )
+        weight_das["all"] = weighted_sum
+    
+    # Weight for each grouping category individually
+    if grouping_dim in adjusted_proportions.dims:
+        for grouping in grouping_vals:
+            # ---- Skip if "all" to avoid double-processing
+            if grouping == "all":
+                continue            
+            if grouping in adjusted_proportions.coords[grouping_dim].values:
+                # ---- Use 'all' weights if available, otherwise use category-specific weights
+                if "all" in grouping_vals:
+                    weight_base = length_weight_data.sel({grouping_dim: "all"})
+                else:
+                    weight_base = length_weight_data.sel({grouping_dim: grouping})
+                # ---- Weighted sums
+                weighted_sum = sum(
+                    (within_group_proportions.sel(group=g, **{grouping_dim: grouping}) * 
+                    weight_base).sum(dim="length_bin") *
+                    adjusted_proportions.sel(group=g, **{grouping_dim: grouping})
+                    for g in group_keys
+                    if grouping in within_group_proportions.sel(group=g).coords[grouping_dim].values
                 )
-                weights_dict[grouping] = weight_grouping
-
-    # Combine into final DataFrame
-    weights_df = pd.DataFrame(weights_dict)
-    # ---- Apply name change
-    weights_df.columns.name = non_length_level
-    return weights_df
-
-
+                weight_das[grouping] = weighted_sum
+                
+    # Combine into final DataArray
+    if "all" in grouping_vals:
+        ordered_cats = ["all"] + [c for c in grouping_vals if c != "all"]
+    else:
+        ordered_cats = list(grouping_vals)
+        
+    # Format and return
+    result = xr.concat(
+        [weight_das[cat] for cat in ordered_cats if cat in weight_das],
+        dim=xr.DataArray(
+            [cat for cat in ordered_cats if cat in weight_das],
+            dims=[grouping_dim],
+            name=grouping_dim
+        )
+    ).fillna(0.)
+    return result
+    
 def calculate_within_group_proportions(
     proportions_dict: Dict[str, pd.DataFrame],
     group_cols: List[str],
@@ -695,78 +693,88 @@ def stratum_averaged_weight(
     # Get variable names for number proportions
     proportion_vars = list(number_proportions.keys())
 
-    # Convert to DataFrames and transform
-    number_proportions_cnv = {
-        k: v.to_dataframe().reset_index() for k, v in number_proportions.items()
-    }
+    # Identify non-length dimensions from length_weight_data
+    grps = [d for d in length_weight_data.dims if d != "length_bin"]
 
-    # Calculate the aggregate proportions for each variable (across-group proportions)
-    # ---- These are grouped based on the data dimensions
-    grps = list(set(length_weight_data.dims) - set(["length_bin"]))
+    # Reorganize the individual DataArrays
+    das_list = [ds["proportion"] for ds in number_proportions.values()]
+    das_aligned = xr.align(*das_list, join="inner")
 
-    # Create aggregate table with summed proportions per group (e.g. strata)
-    aggregate_proportions = utils.create_grouped_table(
-        number_proportions_cnv,
-        group_cols=grps + group_columns,
-        index_cols=["group"],
-        strat_cols=group_columns,
-        value_col="proportion_overall",
-    )
+    # Find shared dimensions
+    shared_dims = set().union(*map(lambda da: da.dims, das_list))
+    
+    # Extract proportion_overall and add group dimension
+    proportion_arrays = []
+    for group_name, ds in number_proportions.items():
+        # ---- Get the grouped array
+        grouped_array = (
+            ds["proportion_overall"].sum(dim=[d for d in ds.dims if d not in group_columns])
+        )
+        # ---- Expand the dimensions
+        proportion_arrays.append(
+            grouped_array.expand_dims({"group": [group_name]})
+        )
+    aggregate_proportions = xr.concat(proportion_arrays, dim="group")
 
-    # Compute the within-grouped proportions
-    # ---- Execute calculation
-    length_proportions_df = calculate_within_group_proportions(
-        number_proportions_cnv,
-        group_cols=grps + group_columns,
-    )
-    # ---- Convert into a table for just the within-grouped proportions
-    length_proportions_group = utils.create_pivot_table(
-        length_proportions_df,
-        index_cols=["group"] + grps + ["length_bin"],
-        strat_cols=group_columns,
-        value_col="within_group_proportion",
-    )
-    # ---- Create table for the combined within-grouped proportions needed for later calculations
-    length_proportions_all = utils.create_pivot_table(
-        length_proportions_df,
-        index_cols=["group", "length_bin"],
-        strat_cols=group_columns,
-        value_col="proportion",
-    )
+    # Calculate the within-group proportions
+    within_grp_props_orig = xr.concat(
+        [
+            da.sum(dim=[d for d in da.dims if d not in shared_dims]) 
+            for da in das_aligned
+        ],
+        dim=xr.IndexVariable("group", list(number_proportions.keys())),
+        join="outer"
+    ).sum(dim=shared_dims - set([*["length_bin"], *group_columns, *grps]))
+    # ---- Get the grouped aggregates for normalizing
+    within_grp_props_norm = xr.concat(
+        [
+            da.sum(dim=[d for d in da.dims if d not in shared_dims]) 
+            for da in das_aligned
+        ],
+        dim=xr.IndexVariable("group", list(number_proportions.keys()))
+    ).sum(dim=["age_bin", "length_bin"])
+    within_grp_props = within_grp_props_orig / within_grp_props_norm
 
-    # Convert the binned weights (with `sex="all"` included) into the correctly formatted table
-    binned_weights = (
-        length_weight_data.to_dataframe()
-        .reset_index()
-        .set_index(grps + ["length_bin"])
-        .sort_index()
-    )
-
-    # Create table for the overall sexed group proportions
-    group_proportions = utils.create_grouped_table(
-        number_proportions_cnv,
-        group_cols=grps + group_columns,
-        index_cols=["group"] + grps,
-        strat_cols=group_columns,
-        value_col="proportion_overall",
-    )
+    # Generalize the overall groups
+    within_grp_props_all_norm = xr.concat(
+        [
+            da.sum(dim=[d for d in da.dims if d not in shared_dims]) 
+            for da in das_aligned
+        ],
+        dim=xr.IndexVariable("group", list(number_proportions.keys()))
+    ).sum(dim=["age_bin", "length_bin", *grps])
+    within_grp_props_all = (within_grp_props_orig / within_grp_props_all_norm).sum(dim=grps)
+    
+    # Create list of arrays for overall proportions
+    das_list_overall = [ds["proportion_overall"] for ds in number_proportions.values()]
+    das_aligned_overall = xr.align(*das_list_overall, join="inner")
+    
+    # Compute the grouped overall proportions
+    within_grp_props_overall = xr.concat(
+        [
+            da.sum(dim=[d for d in da.dims if d not in shared_dims]) 
+            for da in das_aligned_overall
+        ],
+        dim=xr.IndexVariable("group", list(number_proportions.keys())),
+        join="outer"
+    ).sum(dim=shared_dims - set([*group_columns, *grps]))
 
     # Compute the re-weighted proportions from the mixture of the different groups
     adjusted_proportions = calculate_adjusted_proportions(
-        proportion_vars, aggregate_proportions, group_proportions, grps
+        proportion_vars, aggregate_proportions, within_grp_props_overall
     )
 
     # Calculate final weights
     fitted_weights = calculate_grouped_weights(
-        binned_weight_table_pvt=binned_weights,
-        length_proportions_pvt=length_proportions_group,
-        length_proportions_pvt_all=length_proportions_all,
-        aggregate_table=aggregate_proportions,
-        adjusted_proportions=adjusted_proportions,
-        group_keys=proportion_vars,
+        length_weight_data, 
+        within_grp_props, 
+        within_grp_props_all,
+        aggregate_proportions, 
+        adjusted_proportions, 
+        proportion_vars,
     )
 
-    return xr.DataArray(fitted_weights)
+    return fitted_weights
 
 
 def aggregate_stratum_weights(input_data, stratum_col="stratum_num"):
