@@ -438,12 +438,12 @@ def calculate_adjusted_proportions(
     ...     sex_proportions_table
     ... )
     """
-    
+
     # Initialize the dictionary for the group-specific DataArrays
     adjusted_props = {}
     # ---- Use the first group as the reference
     first_group = group_keys[0]
-    
+
     # For all other groups, calculate relative to the first group
     for group in group_keys[1:]:
         adjusted_props[group] = aggregate_proportions.sel(group=group) / (
@@ -462,8 +462,7 @@ def calculate_adjusted_proportions(
 
     # Combine into a single DataArray with 'group' dimension
     return xr.concat(
-        [adjusted_props[group].expand_dims({"group": [group]}) for group in group_keys],
-        dim="group"
+        [adjusted_props[group].expand_dims({"group": [group]}) for group in group_keys], dim="group"
     )
 
 
@@ -539,18 +538,18 @@ def calculate_grouped_weights(
     if "all" in grouping_vals:
         weight_all_values = length_weight_data.sel({grouping_dim: "all"})
         weighted_sum = sum(
-            (within_group_proportions_all.sel(group=g) * weight_all_values).sum(dim="length_bin") * 
-            aggregate_proportions.sel(group=g)
+            (within_group_proportions_all.sel(group=g) * weight_all_values).sum(dim="length_bin")
+            * aggregate_proportions.sel(group=g)
             for g in group_keys
         )
         weight_das["all"] = weighted_sum
-    
+
     # Weight for each grouping category individually
     if grouping_dim in adjusted_proportions.dims:
         for grouping in grouping_vals:
             # ---- Skip if "all" to avoid double-processing
             if grouping == "all":
-                continue            
+                continue
             if grouping in adjusted_proportions.coords[grouping_dim].values:
                 # ---- Use 'all' weights if available, otherwise use category-specific weights
                 if "all" in grouping_vals:
@@ -559,31 +558,34 @@ def calculate_grouped_weights(
                     weight_base = length_weight_data.sel({grouping_dim: grouping})
                 # ---- Weighted sums
                 weighted_sum = sum(
-                    (within_group_proportions.sel(group=g, **{grouping_dim: grouping}) * 
-                    weight_base).sum(dim="length_bin") *
-                    adjusted_proportions.sel(group=g, **{grouping_dim: grouping})
+                    (
+                        within_group_proportions.sel(group=g, **{grouping_dim: grouping})
+                        * weight_base
+                    ).sum(dim="length_bin")
+                    * adjusted_proportions.sel(group=g, **{grouping_dim: grouping})
                     for g in group_keys
                     if grouping in within_group_proportions.sel(group=g).coords[grouping_dim].values
                 )
                 weight_das[grouping] = weighted_sum
-                
+
     # Combine into final DataArray
     if "all" in grouping_vals:
         ordered_cats = ["all"] + [c for c in grouping_vals if c != "all"]
     else:
         ordered_cats = list(grouping_vals)
-        
+
     # Format and return
     result = xr.concat(
         [weight_das[cat] for cat in ordered_cats if cat in weight_das],
         dim=xr.DataArray(
             [cat for cat in ordered_cats if cat in weight_das],
             dims=[grouping_dim],
-            name=grouping_dim
-        )
-    ).fillna(0.)
+            name=grouping_dim,
+        ),
+    ).fillna(0.0)
     return result
-    
+
+
 def calculate_within_group_proportions(
     proportions_dict: Dict[str, pd.DataFrame],
     group_cols: List[str],
@@ -702,61 +704,47 @@ def stratum_averaged_weight(
 
     # Find shared dimensions
     shared_dims = set().union(*map(lambda da: da.dims, das_list))
-    
+
     # Extract proportion_overall and add group dimension
     proportion_arrays = []
     for group_name, ds in number_proportions.items():
         # ---- Get the grouped array
-        grouped_array = (
-            ds["proportion_overall"].sum(dim=[d for d in ds.dims if d not in group_columns])
+        grouped_array = ds["proportion_overall"].sum(
+            dim=[d for d in ds.dims if d not in group_columns]
         )
         # ---- Expand the dimensions
-        proportion_arrays.append(
-            grouped_array.expand_dims({"group": [group_name]})
-        )
+        proportion_arrays.append(grouped_array.expand_dims({"group": [group_name]}))
     aggregate_proportions = xr.concat(proportion_arrays, dim="group")
 
     # Calculate the within-group proportions
     within_grp_props_orig = xr.concat(
-        [
-            da.sum(dim=[d for d in da.dims if d not in shared_dims]) 
-            for da in das_aligned
-        ],
+        [da.sum(dim=[d for d in da.dims if d not in shared_dims]) for da in das_aligned],
         dim=xr.IndexVariable("group", list(number_proportions.keys())),
-        join="outer"
+        join="outer",
     ).sum(dim=shared_dims - set([*["length_bin"], *group_columns, *grps]))
     # ---- Get the grouped aggregates for normalizing
     within_grp_props_norm = xr.concat(
-        [
-            da.sum(dim=[d for d in da.dims if d not in shared_dims]) 
-            for da in das_aligned
-        ],
-        dim=xr.IndexVariable("group", list(number_proportions.keys()))
+        [da.sum(dim=[d for d in da.dims if d not in shared_dims]) for da in das_aligned],
+        dim=xr.IndexVariable("group", list(number_proportions.keys())),
     ).sum(dim=["age_bin", "length_bin"])
     within_grp_props = within_grp_props_orig / within_grp_props_norm
 
     # Generalize the overall groups
     within_grp_props_all_norm = xr.concat(
-        [
-            da.sum(dim=[d for d in da.dims if d not in shared_dims]) 
-            for da in das_aligned
-        ],
-        dim=xr.IndexVariable("group", list(number_proportions.keys()))
+        [da.sum(dim=[d for d in da.dims if d not in shared_dims]) for da in das_aligned],
+        dim=xr.IndexVariable("group", list(number_proportions.keys())),
     ).sum(dim=["age_bin", "length_bin", *grps])
     within_grp_props_all = (within_grp_props_orig / within_grp_props_all_norm).sum(dim=grps)
-    
+
     # Create list of arrays for overall proportions
     das_list_overall = [ds["proportion_overall"] for ds in number_proportions.values()]
     das_aligned_overall = xr.align(*das_list_overall, join="inner")
-    
+
     # Compute the grouped overall proportions
     within_grp_props_overall = xr.concat(
-        [
-            da.sum(dim=[d for d in da.dims if d not in shared_dims]) 
-            for da in das_aligned_overall
-        ],
+        [da.sum(dim=[d for d in da.dims if d not in shared_dims]) for da in das_aligned_overall],
         dim=xr.IndexVariable("group", list(number_proportions.keys())),
-        join="outer"
+        join="outer",
     ).sum(dim=shared_dims - set([*group_columns, *grps]))
 
     # Compute the re-weighted proportions from the mixture of the different groups
@@ -766,11 +754,11 @@ def stratum_averaged_weight(
 
     # Calculate final weights
     fitted_weights = calculate_grouped_weights(
-        length_weight_data, 
-        within_grp_props, 
+        length_weight_data,
+        within_grp_props,
         within_grp_props_all,
-        aggregate_proportions, 
-        adjusted_proportions, 
+        aggregate_proportions,
+        adjusted_proportions,
         proportion_vars,
     )
 
