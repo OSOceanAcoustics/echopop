@@ -17,6 +17,8 @@ There may be some inconsistencies in the columns used by files in EchoPro for pr
 
 ### Length
 
+The "length" spreadsheet/dataframe include data from station 1, in which fish are lengthed individually but not aged nor weighted.
+
 Echopop column | EchoPro column | Data type | Units | Description
 --- | --- | --- | ----- | --- 
 haul_num | Haul | integer<br>float |   | Haul number. <br> Rows with empty values are removed
@@ -26,6 +28,8 @@ length | Length | float | cm <br> (0.0, ∞) | Animal fork length <br> Missing v
 length_count | Frequency | integer | count <br> [0, ∞)  | Number of animals with the corresponding binned fork length <br> Missing values are replaced with 0
 
 ### Specimen
+
+The "specimen" spreadsheet/dataframe include data from station 2, in which each individual fish is weighted and aged.
 
 Echopop column | EchoPro column | Data type | Units &nbsp; | Description
 --- | --- | --- | --- | --- 
@@ -37,6 +41,8 @@ weight | Weight | float | kg <br> (0.0, ∞) | Specimen weight <br> Missing valu
 age | Age | float <br> integer | years <br> [0.0, ∞)  | Age of the animal <br> Missing values are replaced with `NaN`
 
 ### Catch
+
+The "catch" spreadsheet/dataframe include the total weight for unaged fish for the entire haul.
 
 Echopop column | EchoPro column | Data type | Units |  Description
 --- | --- | --- | --- | --- 
