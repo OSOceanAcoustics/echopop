@@ -39,9 +39,6 @@ def compute_binned_counts(
     # Copy the dataset
     df = data.copy()
 
-    # Copy the dataset
-    df = data.copy()
-
     # Apply aggregation
     aggregate = df.groupby(groupby_cols, observed=False)[count_col].agg(agg_func).to_frame("count")
 
@@ -51,7 +48,7 @@ def compute_binned_counts(
 
 def number_proportions(
     data: Union[xr.DataArray, xr.Dataset],
-    group_columns: list = ["stratum_num"],
+    group_columns: list = [],
     exclude_filters: dict = {},
 ) -> Union[xr.DataArray, xr.Dataset]:
     """
@@ -128,18 +125,13 @@ def number_proportions(
     filtered_vars = {}
     for varname, da in data.data_vars.items():
         filt = exclude_filters.get(varname, {})
-        df = da.to_dataframe().reset_index()
         if filt:
-            df = utils.apply_filters(df, exclude_filter=filt)
-        # Convert back to DataArray
-        if len(df) == 0:
-            # If all filtered out, create empty DataArray with same dims
+            da_filtered = da.drop_sel(filt)
+        # ---- Convert back to DataArray
+        if da.size == 0:
+            # ---- If all filtered out, create empty DataArray with same dims
             filtered_vars[varname] = da.isel({d: slice(0) for d in da.dims})
         else:
-            # Set index and unstack to restore original shape
-            idx_cols = [c for c in df.columns if c in da.dims]
-            df = df.set_index(idx_cols)
-            da_filtered = df[varname].to_xarray().fillna(0)
             filtered_vars[varname] = da_filtered
 
     # Compute group totals and overall total for each variable
@@ -151,8 +143,10 @@ def number_proportions(
             sum_dims = [d for d in da.dims if d not in group_columns]
             if sum_dims:
                 group_total = da.sum(dim=sum_dims, skipna=True)
+            elif group_columns:
+                group_total = da.groupby(group_columns).sum()
             else:
-                group_total = da.copy()
+                group_total = da.sum(skipna=True)
         group_totals[varname] = group_total
 
     # Calculate grand totals
@@ -166,11 +160,18 @@ def number_proportions(
             group_total_full = group_totals[varname]
             # ---- Expand group_total_full to match da's shape
             for d in sum_dims:
-                group_total_full = group_total_full.expand_dims({d: da.coords[d]})
+                if d not in group_total_full.dims:
+                    group_total_full = group_total_full.expand_dims({d: da.coords[d]})
             proportion = da / group_total_full
+            proportion_overall = da / overall_total
+        elif group_columns:
+            # ---- Broadcast
+            sel_dict = {g: da.coords[g] for g in group_columns}
+            proportion = da / group_totals[varname].sel(**sel_dict)
+            proportion_overall = da / overall_total.sel(**sel_dict)
         else:
             proportion = da / group_totals[varname]
-        proportion_overall = da / overall_total
+            proportion_overall = da / overall_total
         # ---- Attach as new DataArrays with appropriate names
         output[varname] = xr.Dataset(
             {
@@ -1171,7 +1172,7 @@ def get_nasc_proportions_slice(
     # Create pivot table including filter dimensions
     filtered_population_table = utils.create_pivot_table(
         number_proportions_cnv,
-        index_cols=list(include_filter.keys()) + ["length_bin"],
+        index_cols=[*include_filter, *exclude_filter, "length_bin"],
         strat_cols=group_columns,
         value_col="proportion",
     )
@@ -1182,7 +1183,12 @@ def get_nasc_proportions_slice(
     )
 
     # Aggregate target group over length and strata dimensions
-    target_group_aggregated = target_group_table.unstack("length_bin").sum().unstack(group_columns)
+    if len(target_group_table.index.names) > 1:
+        target_group_aggregated = (
+            target_group_table.unstack("length_bin").sum().unstack(group_columns)
+        )
+    else:
+        return target_group_table.sum().to_xarray()
 
     # Calculate weighted sigma_bs for target group
     target_weighted_sigma_bs = (target_group_aggregated.T * sigma_bs_equiv).T.sum(axis=0)
@@ -1360,12 +1366,13 @@ def get_weight_proportions_slice(
 
     # Check if filter keys are present in weight proportions
     filter_keys_present = all(
-        key in list(weight_proportions.coords.keys()) for key in include_filter.keys()
+        key in list(weight_proportions.coords.keys()) 
+        for key in [*include_filter.keys(), *exclude_filter.keys()]
     )
     if not filter_keys_present:
         raise ValueError(
-            f"Filter keys {list(include_filter.keys())} not found in 'weight_proportions' "
-            f"coordinates."
+            f"Filter keys {[*include_filter.keys(), *exclude_filter.keys()]} not found in "
+            f"'weight_proportions' coordinates."
         )
 
     # Convert to DataFrame
@@ -1427,9 +1434,21 @@ def get_weight_proportions_slice(
                 ]
             )
             # ---- Apply threshold mask
-            threshold_mask = (target_group_weight_proportions <= weight_proportion_threshold) & (
-                filtered_number_proportions <= weight_proportion_threshold
-            )
+            threshold_mask_num = (filtered_number_proportions <= weight_proportion_threshold)            
             # ---- Set masked values to 0
-            proportions_weight = xr.where(threshold_mask, 0, proportions_weight)
-    return next(iter(proportions_weight.data_vars.values())).squeeze()
+            proportions_weight = xr.where(
+                (threshold_mask_num.values), 0, proportions_weight
+            )
+            
+    # Apply weight thresholding
+    threshold_mask_wgts = (target_group_weight_proportions <= weight_proportion_threshold)
+    proportions_weight = xr.where(
+        (threshold_mask_wgts.values), 0, proportions_weight
+    )
+    
+    # Coerce to an array, if required
+    if isinstance(proportions_weight, xr.Dataset):
+        output = next(iter(proportions_weight.data_vars.values()))
+    else:
+        output = proportions_weight
+    return output.squeeze()
