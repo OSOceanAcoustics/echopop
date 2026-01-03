@@ -117,7 +117,7 @@ reporter.kriged_aged_biomass_mesh_report(
     filename="kriged_aged_biomass_mesh_full.xlsx",
     sheetnames={"all": "Sheet1", "male": "Sheet2", "female": "Sheet3"},
     kriged_data=df_kriged_results,
-    weight_data=dict_df_weight_distr["aged"],
+    weight_data=ds_da_weight_dist["aged"],
     kriged_stratum_link={"geostratum_ks": "stratum_ks"},
 )
 
@@ -126,7 +126,7 @@ reporter.kriged_aged_biomass_mesh_report(
     filename="kriged_aged_biomass_mesh_nonzero.xlsx",
     sheetnames={"all": "Sheet1", "male": "Sheet2", "female": "Sheet3"},
     kriged_data=df_kriged_results[df_kriged_results["biomass"] > 0.0],
-    weight_data=dict_df_weight_distr["aged"],
+    weight_data=ds_da_weight_dist["aged"],
     kriged_stratum_link={"geostratum_ks": "stratum_ks"},
 )
 
@@ -163,7 +163,7 @@ reporter.kriged_mesh_results_report(
 reporter.kriged_length_age_abundance_report(
     filename="kriged_length_age_abundance_report.xlsx",
     sheetnames={"male": "Sheet1", "female": "Sheet2", "all": "Sheet3"},
-    datatables=dict_kriged_abundance_table,
+    datatables=dict_ds_kriged_abundance_table,
 )
 
 ####################################################################################################
@@ -173,7 +173,7 @@ reporter.kriged_length_age_abundance_report(
 reporter.kriged_length_age_biomass_report(
     filename="kriged_length_age_biomass_report.xlsx",
     sheetnames={"male": "Sheet1", "female": "Sheet2", "all": "Sheet3"},
-    datatables=dict_kriged_biomass_table,
+    datatables=dict_ds_kriged_biomass_table,
 )
 
 ####################################################################################################
@@ -193,7 +193,7 @@ reporter.kriging_input_report(
 reporter.transect_length_age_abundance_report(
     filename="transect_length_age_abundance_report.xlsx",
     sheetnames={"male": "Sheet1", "female": "Sheet2", "all": "Sheet3"},
-    datatables=dict_transect_abundance_table,
+    datatables=dict_ds_transect_abundance_table,
 )
 
 ####################################################################################################
@@ -203,7 +203,7 @@ reporter.transect_length_age_abundance_report(
 reporter.transect_length_age_biomass_report(
     filename="kriged_length_age_biomass_report.xlsx",
     sheetnames={"male": "Sheet1", "female": "Sheet2", "all": "Sheet3"},
-    datatable=dict_transect_biomass_table["aged"],
+    datatable=dict_ds_transect_biomass_table["aged"],
 )
 
 ####################################################################################################
@@ -215,7 +215,7 @@ reporter.transect_aged_biomass_report(
     filename="transect_aged_biomass_report_full.xlsx",
     sheetnames={"all": "Sheet1", "male": "Sheet2", "female": "Sheet3"},
     transect_data=df_nasc_noage1_prt,
-    weight_data=dict_df_weight_distr["aged"],
+    weight_data=ds_da_weight_dist["aged"],
 )
 
 # Nonzero values
@@ -223,7 +223,7 @@ reporter.transect_aged_biomass_report(
     filename="transect_aged_biomass_report_nonzero.xlsx",
     sheetnames={"all": "Sheet1", "male": "Sheet2", "female": "Sheet3"},
     transect_data=df_nasc_noage1_prt[df_nasc_noage1_prt["biomass"] > 0.0],
-    weight_data=dict_df_weight_distr["aged"],
+    weight_data=ds_da_weight_dist["aged"],
 )
 
 ####################################################################################################
@@ -235,7 +235,7 @@ reporter.transect_population_results_report(
     filename="transect_population_results_full.xlsx",
     sheetname="Sheet1",
     transect_data=df_nasc_noage1_prt,
-    weight_strata_data=df_averaged_weight,
+    weight_strata_data=da_averaged_weight,
     sigma_bs_stratum=sigma_bs_strata,
     stratum_name="stratum_ks",
 )
@@ -245,7 +245,7 @@ reporter.transect_population_results_report(
     filename="transect_population_results_nonzero.xlsx",
     sheetname="Sheet1",
     transect_data=df_nasc_noage1_prt[df_nasc_noage1_prt["nasc"] > 0.0],
-    weight_strata_data=df_averaged_weight,
+    weight_strata_data=da_averaged_weight,
     sigma_bs_stratum=sigma_bs_strata,
     stratum_name="stratum_ks",
 )

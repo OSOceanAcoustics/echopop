@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Literal, Optional, Union
 import numpy as np
 import pandas as pd
 import pandas.io.formats.excel as pdif
+import xarray as xr
 from openpyxl import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
 
@@ -1184,7 +1185,7 @@ class Reporter:
         filename: str,
         sheetnames: Dict[str, str],
         kriged_data: pd.DataFrame,
-        weight_data: pd.DataFrame,
+        weight_data: xr.DataArray,
         kriged_stratum_link: Dict[str, str],
         exclude_filter: Dict[str, Any] = {},
     ) -> None:
@@ -1240,8 +1241,10 @@ class Reporter:
         """
 
         # Type checking
-        if not isinstance(kriged_data, pd.DataFrame) or not isinstance(weight_data, pd.DataFrame):
-            raise TypeError("'kriged_data' and 'weight_data' must be `pandas.DataFrame`s.")
+        if not isinstance(kriged_data, pd.DataFrame):
+            raise TypeError("'kriged_data' must be a `pandas.DataFrame`.")
+        if not isinstance(weight_data, xr.DataArray):
+            raise TypeError("'weight_data' must be an `xarray.DataArray`.")
         if not isinstance(sheetnames, dict) or not isinstance(kriged_stratum_link, dict):
             raise TypeError("'sheetnames' and 'kriged_stratum_link' must be `dict`s.")
         if not isinstance(filename, str):
@@ -1249,7 +1252,12 @@ class Reporter:
 
         # Create DataFrame copies
         kriged_data = kriged_data.copy()
-        weight_data = weight_data.copy()
+        weight_data = weight_data.to_series().to_frame(name="weight")
+
+        # Reformat the weight data to the expected setup
+        weight_indices = list(weight_data.index.names)
+        # ---- Pivot with only length bins are indices
+        weight_data = weight_data.unstack(list(set(weight_indices) - set(["length_bin"])))["weight"]
 
         # Update the filepath
         filepath = self.save_directory / filename
@@ -1449,7 +1457,7 @@ class Reporter:
         self,
         filename: str,
         sheetnames: Dict[str, str],
-        datatables: Dict[str, pd.DataFrame],
+        datatables: Dict[str, xr.DataArray],
         exclude_filter: Dict[str, Any] = {},
     ) -> None:
         """
@@ -1512,8 +1520,13 @@ class Reporter:
         # Update the filepath
         filepath = self.save_directory / filename
 
+        # Convert xr.DataArrays to DataFrames
+        datatables_cnv = {}
+        for k, da in datatables.items():
+            datatables_cnv[k] = da.to_dataframe()
+
         # Pull the aged dataset
-        aged_table = datatables["aged"].copy().sum(axis=1).unstack(["age_bin", "sex"])
+        aged_table = datatables_cnv["aged"].unstack().sum(axis=1).unstack(["age_bin", "sex"])
 
         # Redistribute the aged table, if required
         aged_table = apportionment.reallocate_excluded_estimates(
@@ -1546,7 +1559,7 @@ class Reporter:
 
         # Reorient the unaged tabled
         unaged_table = (
-            datatables["unaged"].copy().sum(axis=1).unstack("sex").loc[:, ["male", "female"]]
+            datatables_cnv["unaged"].unstack().sum(axis=1).unstack("sex").loc[:, ["male", "female"]]
         )
         # ---- Convert the indices to numerics
         unaged_table.index = (
@@ -1628,8 +1641,13 @@ class Reporter:
         # Update the filepath
         filepath = self.save_directory / filename
 
+        # Convert xr.DataArrays to DataFrames
+        datatables_cnv = {}
+        for k, da in datatables.items():
+            datatables_cnv[k] = da.to_dataframe()
+
         # Pull the aged dataset
-        aged_table = datatables["aged"].copy().sum(axis=1).unstack(["age_bin", "sex"])
+        aged_table = datatables_cnv["aged"].unstack().sum(axis=1).unstack(["age_bin", "sex"])
 
         # Redistribute the aged table, if required
         aged_table = apportionment.reallocate_excluded_estimates(
@@ -1662,7 +1680,7 @@ class Reporter:
 
         # Reorient the unaged tabled
         unaged_table = (
-            datatables["unaged"].copy().sum(axis=1).unstack("sex").loc[:, ["male", "female"]]
+            datatables_cnv["unaged"].unstack().sum(axis=1).unstack("sex").loc[:, ["male", "female"]]
         )
         # ---- Convert the indices to numerics
         unaged_table.index = (
@@ -1910,7 +1928,7 @@ class Reporter:
         filename: str,
         sheetnames: Dict[str, str],
         transect_data: pd.DataFrame,
-        weight_data: pd.DataFrame,
+        weight_data: xr.DataArray,
         exclude_filter: Dict[str, Any] = {},
     ) -> None:
         """
@@ -1957,8 +1975,8 @@ class Reporter:
         # Type checking
         if not isinstance(transect_data, pd.DataFrame):
             raise TypeError("'transect_data' must be a `pandas.DataFrame`.")
-        if not isinstance(weight_data, pd.DataFrame):
-            raise TypeError("'weight_data' must be a `pandas.DataFrame`.")
+        if not isinstance(weight_data, xr.DataArray):
+            raise TypeError("'weight_data' must be an `xarray.DataArray`.")
         if not isinstance(filename, str):
             raise TypeError("'filename' must be a `str`.")
         if not isinstance(sheetnames, dict):
@@ -1966,7 +1984,12 @@ class Reporter:
 
         # Create copy
         transect_data = transect_data.copy()
-        weight_data = weight_data.copy()
+        weight_data = weight_data.to_series().to_frame(name="weight")
+
+        # Reformat the weight data to the expected setup
+        weight_indices = list(weight_data.index.names)
+        # ---- Pivot with only length bins are indices
+        weight_data = weight_data.unstack(list(set(weight_indices) - set(["length_bin"])))["weight"]
 
         # Update the filepath
         filepath = self.save_directory / filename
@@ -1975,7 +1998,7 @@ class Reporter:
         stratum_name = list(set(weight_data.columns.names).difference(["age_bin", "sex"]))
 
         # Sum across lengths
-        age_weight_sums = weight_data.sum(axis=0).unstack(["age_bin"]).T
+        age_weight_sums = weight_data.sum(axis=0).unstack(["sex"] + stratum_name)
 
         # Apply exclusion filter, if supplied
         age_weight_sums_filtered = utils.apply_filters(
@@ -2017,7 +2040,7 @@ class Reporter:
             str,
             str,
         ],
-        datatables: Dict[str, pd.DataFrame],
+        datatables: Dict[str, xr.DataArray],
     ) -> None:
         """
         Write an un-kriged transect length-age abundance workbook (3 sheets).
@@ -2061,8 +2084,13 @@ class Reporter:
         # Update the filepath
         filepath = self.save_directory / filename
 
+        # Convert xr.DataArrays to DataFrames
+        datatables_cnv = {}
+        for k, da in datatables.items():
+            datatables_cnv[k] = da.to_dataframe()
+
         # Pull the aged dataset
-        aged_table = datatables["aged"].sum(axis=1).unstack(["age_bin", "sex"])
+        aged_table = datatables_cnv["aged"].unstack().sum(axis=1).unstack(["age_bin", "sex"])
 
         # Reorient the aged table
         # ---- Convert the indices to numerics
@@ -2089,7 +2117,9 @@ class Reporter:
         aged_full_table = pd.concat([aged_table, aged_table_all], axis=1)
 
         # Reorient the unaged tabled
-        unaged_table = datatables["unaged"].sum(axis=1).unstack("sex").loc[:, ["male", "female"]]
+        unaged_table = (
+            datatables_cnv["unaged"].unstack().sum(axis=1).unstack("sex").loc[:, ["male", "female"]]
+        )
         # ---- Convert the indices to numerics
         unaged_table.index = (
             pd.Series(unaged_table.index, name="length_bin")
@@ -2122,7 +2152,7 @@ class Reporter:
             str,
             str,
         ],
-        datatable: pd.DataFrame,
+        datatable: xr.DataArray,
     ) -> None:
         """
         Write an un-kriged transect age-length biomass workbook.
@@ -2160,8 +2190,8 @@ class Reporter:
         """
 
         # Type checking
-        if not isinstance(datatable, pd.DataFrame):
-            raise TypeError("'datatable' must be a `pandas.DataFrame`.")
+        if not isinstance(datatable, xr.DataArray):
+            raise TypeError("'datatable' must be an `xarray.DataArray`.")
         if not isinstance(filename, str):
             raise TypeError("'filename' must be a `str`.")
         if not isinstance(sheetnames, dict):
@@ -2170,11 +2200,14 @@ class Reporter:
         # Create copy
         datatable = datatable.copy()
 
+        # Convert xr.DataArray to DataFrame
+        datatable_cnv = datatable.to_dataframe()
+
         # Update the filepath
         filepath = self.save_directory / filename
 
         # Pull the aged dataset
-        aged_table = datatable.sum(axis=1).unstack(["age_bin", "sex"])
+        aged_table = datatable_cnv.unstack().sum(axis=1).unstack(["age_bin", "sex"])
 
         # Reorient the aged table
         # ---- Convert the indices to numerics
@@ -2233,7 +2266,7 @@ class Reporter:
         filename: str,
         sheetname: str,
         transect_data: pd.DataFrame,
-        weight_strata_data: pd.DataFrame,
+        weight_strata_data: xr.DataArray,
         sigma_bs_stratum: pd.DataFrame,
         stratum_name: str,
     ) -> None:
@@ -2280,8 +2313,8 @@ class Reporter:
         # Type checking
         if not isinstance(transect_data, pd.DataFrame):
             raise TypeError("'transect_data' must be a `pandas.DataFrame`.")
-        if not isinstance(weight_strata_data, pd.DataFrame):
-            raise TypeError("'weight_strata_data' must be a `pandas.DataFrame`.")
+        if not isinstance(weight_strata_data, xr.DataArray):
+            raise TypeError("'weight_strata_data' must be a `xarray.DataArray`.")
         if not isinstance(sigma_bs_stratum, pd.DataFrame):
             raise TypeError("'sigma_bs_stratum' must be a `pandas.DataFrame`.")
         if not isinstance(stratum_name, str):
@@ -2328,7 +2361,7 @@ class Reporter:
 
         # Create copy
         transect_data = transect_data.copy()
-        weight_strata_data = weight_strata_data.copy()
+        weight_strata_data = weight_strata_data.copy().to_series().unstack(["sex"])
         sigma_bs_stratum = sigma_bs_stratum.copy()
 
         # Set index
