@@ -1364,7 +1364,7 @@ def get_weight_proportions_slice(
 
     # Check if filter keys are present in weight proportions
     filter_keys_present = all(
-        key in list(weight_proportions.coords.keys()) 
+        key in list(weight_proportions.coords.keys())
         for key in [*include_filter.keys(), *exclude_filter.keys()]
     )
     if not filter_keys_present:
@@ -1432,18 +1432,14 @@ def get_weight_proportions_slice(
                 ]
             )
             # ---- Apply threshold mask
-            threshold_mask_num = (filtered_number_proportions <= weight_proportion_threshold)            
+            threshold_mask_num = filtered_number_proportions <= weight_proportion_threshold
             # ---- Set masked values to 0
-            proportions_weight = xr.where(
-                (threshold_mask_num.values), 0, proportions_weight
-            )
-            
+            proportions_weight = xr.where((threshold_mask_num.values), 0, proportions_weight)
+
     # Apply weight thresholding
-    threshold_mask_wgts = (target_group_weight_proportions <= weight_proportion_threshold)
-    proportions_weight = xr.where(
-        (threshold_mask_wgts.values), 0, proportions_weight
-    )
-    
+    threshold_mask_wgts = target_group_weight_proportions <= weight_proportion_threshold
+    proportions_weight = xr.where((threshold_mask_wgts.values), 0, proportions_weight)
+
     # Coerce to an array, if required
     if isinstance(proportions_weight, xr.Dataset):
         output = next(iter(proportions_weight.data_vars.values()))
