@@ -43,7 +43,7 @@ def compute_binned_counts(
     aggregate = df.groupby(groupby_cols, observed=False)[count_col].agg(agg_func).to_frame("count")
 
     # Convert to xarray.DataArray
-    return aggregate.to_xarray().to_dataarray()
+    return aggregate.to_xarray()["count"]
 
 
 def number_proportions(
