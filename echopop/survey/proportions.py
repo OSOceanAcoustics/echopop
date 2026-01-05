@@ -1014,51 +1014,49 @@ def get_nasc_proportions_slice(
     group_columns: List[str] = [],
 ) -> pd.Series:
     """
-    Calculate detailed weight proportions using xarray and pandas, with adjustments for reference
-    and fitted weights.
+    Extract and aggregate NASC proportions for specified groups from an xarray.DataArray, with
+    dynamic filtering.
 
-    This function computes comprehensive weight proportions for a group, accounting for reference
-    proportions, length-binned proportions, and fitted weight tables. All grouping and dimension
-    logic is handled dynamically based on the provided xarray objects and group_columns.
+    This function selects and aggregates NASC proportions from an xarray.DataArray according to
+    user-specified grouping columns and filters, and returns the result as an xarray.DataArray.
+    All grouping and filtering logic is handled dynamically based on the provided arguments.
 
     Parameters
     ----------
-    scaled_weight_data : xr.DataArray
-        xarray DataArray of scaled weights for the group, with dimensions including those in
-        group_columns.
-    reference_weight_proportions : xr.DataArray
-        xarray DataArray of reference weight proportions for comparison, with compatible dimensions.
-    catch_data : pd.DataFrame
-        DataFrame containing catch data, including columns for group_columns and "weight".
     number_proportions : xr.DataArray
-        xarray DataArray of number proportions by relevant grouping factors.
-    binned_weights : xr.DataArray
-        xarray DataArray of fitted weights by length bins (and possibly other groupings).
-    group_columns : list of str
-        List of dimension/column names used for grouping (e.g., ['sex', 'stratum_ks']).
+        xarray.DataArray of number proportions by relevant grouping factors, with dimensions
+        including those in group_columns and binning columns (e.g., 'sex').
+    exclude_filter : Dict[str, Any], optional
+        Dictionary specifying values to exclude for filtering.
+    include_filter : Dict[str, Any], optional
+        Dictionary specifying values to include for filtering.
+    ts_length_regression_parameters : Dict[str, float]
+        Target strength-length regression parameters:
+        - slope: regression slope
+        - intercept: regression intercept
+    group_columns : list of str, optional
+        List of dimension names to use for grouping (e.g., ['stratum_num']).
 
     Returns
     -------
     xr.DataArray
-        DataArray containing the calculated detailed weight proportions, indexed by all grouping
-        and binning dimensions present in the input data.
+        DataArray containing the aggregated NASC proportions for each group/stratum,
+        indexed by group_columns.
 
     Notes
     -----
-    - No column or dimension names are hard-coded; all grouping is dynamic.
-    - The function assumes that grouping and binning columns are consistent across all input
-    objects.
-    - Missing or extra group/category combinations are handled automatically by xarray/pandas.
+    - No dimension names are hard-coded; all grouping and filtering is dynamic.
+    - The function assumes that grouping and binning dimensions are consistent with the DataArray
+    structure.
+    - Filtering is applied dynamically using include_filter and exclude_filter.
+    - Output is an xarray.DataArray indexed by group_columns.
 
     Examples
     --------
-    >>> props = scale_weight_proportions(
-    ...     scaled_weight_data=da_scaled_unaged_weights,
-    ...     reference_weight_proportions=ds_da_weight_proportion["aged"],
-    ...     catch_data=dict_df_bio["catch"],
-    ...     number_proportions=dict_ds_number_proportion["unaged"],
-    ...     binned_weights=da_binned_weights_all,
-    ...     group_columns=["stratum_ks"]
+    >>> props = get_nasc_proportions_slice(
+    ...     number_proportions=aged_data,
+    ...     group_columns=["stratum_ks"],
+    ...     include_filter={"age_bin": [1]}
     ... )
     >>> print(props)
     <xarray.DataArray ...>
