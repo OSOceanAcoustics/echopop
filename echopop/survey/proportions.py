@@ -1151,7 +1151,10 @@ def get_number_proportions_slice(
     """
 
     # Determine index columns from filter keys and length_bin
-    index_set = set(list(exclude_filter.keys()) + list(include_filter.keys()) + ["length_bin"])
+    filter_indices = set(list(exclude_filter.keys()) + list(include_filter.keys()) + ["length_bin"])
+    
+    # Intersect with actually available columns/indices
+    index_set = set(number_proportions.coords).intersection(filter_indices)
 
     # Get length-binned proportions aggregated based on group_columns
     aggregate_array = number_proportions["proportion"].sum(
@@ -1160,11 +1163,21 @@ def get_number_proportions_slice(
 
     # Apply filters, if any
     if include_filter:
-        aggregate_array = aggregate_array.sel(include_filter)
+        # ---- Parse existing labels
+        to_keep = {k: v for k, v in include_filter.items() if k in aggregate_array.coords}
+        if to_keep:
+            aggregate_array = aggregate_array.sel(to_keep)
     if exclude_filter:
-        aggregate_array = aggregate_array.drop_sel(exclude_filter)
+        # ---- Parse existing labels
+        to_drop = {k: v for k, v in exclude_filter.items() if k in aggregate_array.coords}
+        if to_drop:
+            aggregate_array = aggregate_array.drop_sel(to_drop)
     # ---- Drop any singleton coordinates
     grouped_props = aggregate_array.squeeze(drop=True)
+    
+    # Handle aggregation if no filter is applied
+    if len(include_filter) == 0 and len(exclude_filter) == 0:
+        return grouped_props
 
     # Aggregate further over the defined group_columns
     return grouped_props.sum(dim=[d for d in grouped_props.coords if d not in group_columns])
@@ -1235,35 +1248,29 @@ def get_weight_proportions_slice(
     <xarray.DataArray ...>
     """
 
-    # Check if filter keys are present in weight proportions
-    filter_keys_present = all(
-        key in list(weight_proportions.coords.keys())
-        for key in [*include_filter.keys(), *exclude_filter.keys()]
+    # Determine index columns from filter keys and length_bin
+    index_set = set(list(exclude_filter.keys()) + list(include_filter.keys()) + ["length_bin"])
+
+    # Get length-binned proportions aggregated based on group_columns
+    aggregate_array = weight_proportions["proportion_overall"].sum(
+        dim=[d for d in weight_proportions.coords if d not in [*group_columns, *index_set]]
     )
-    if not filter_keys_present:
-        raise ValueError(
-            f"Filter keys {[*include_filter.keys(), *exclude_filter.keys()]} not found in "
-            f"'weight_proportions' coordinates."
-        )
 
-    # Convert to DataFrame
-    weight_proportions_cnv = weight_proportions.to_dataframe()
-
-    # Calculate basic weight proportions for target group
-    target_weight_table = utils.apply_filters(
-        weight_proportions_cnv, include_filter=include_filter, exclude_filter=exclude_filter
-    ).to_xarray()
-    # ---- Convert to DataArray, if needed
-    if isinstance(target_weight_table, xr.Dataset):
-        target_weight_table = target_weight_table.to_dataarray()
+    # Apply filters, if any
+    if include_filter:
+        aggregate_array = aggregate_array.sel(include_filter)
+    if exclude_filter:
+        aggregate_array = aggregate_array.drop_sel(exclude_filter)
+    # ---- Drop any singleton coordinates
+    grouped_props = aggregate_array.squeeze(drop=True)
 
     # Aggregate target group proportions
-    target_group_weight_proportions = target_weight_table.sum(
-        dim=[d for d in target_weight_table.dims if d not in group_columns], skipna=True
+    target_group_weight_proportions = grouped_props.sum(
+        dim=[d for d in grouped_props.dims if d not in group_columns], skipna=True
     )
 
     # Normalize by the unfiltered proportions
-    total_weight_proportions = weight_proportions.sum(
+    total_weight_proportions = weight_proportions["proportion_overall"].sum(
         dim=[d for d in weight_proportions.dims if d not in group_columns], skipna=True
     )
     proportions_weight = target_group_weight_proportions / total_weight_proportions
@@ -1312,10 +1319,6 @@ def get_weight_proportions_slice(
     # Apply weight thresholding
     threshold_mask_wgts = target_group_weight_proportions <= weight_proportion_threshold
     proportions_weight = xr.where((threshold_mask_wgts.values), 0, proportions_weight)
-
-    # Coerce to an array, if required
-    if isinstance(proportions_weight, xr.Dataset):
-        output = next(iter(proportions_weight.data_vars.values()))
-    else:
-        output = proportions_weight
-    return output.squeeze()
+    
+    # Output the masked proportions array
+    return proportions_weight
