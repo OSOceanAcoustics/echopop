@@ -1060,7 +1060,8 @@ def get_nasc_proportions_slice(
 
     # Compute equivalent sigma_bs using target strength-length regression
     sigma_bs_equiv = xr.DataArray(
-        10 ** (
+        10
+        ** (
             (
                 ts_length_regression_parameters["slope"] * np.log10(length_vals)
                 + ts_length_regression_parameters["intercept"]
@@ -1068,7 +1069,7 @@ def get_nasc_proportions_slice(
             / 10.0
         ),
         dims=["length_bin"],
-        coords={"length_bin": length_vals.index}
+        coords={"length_bin": length_vals.index},
     )
 
     # Get length-binned proportions aggregated based on group_columns
@@ -1096,7 +1097,7 @@ def get_nasc_proportions_slice(
     )
 
     # Calculate the proportions
-    return weighted_sigma_bs / aggregate_weighted_sigma_bs 
+    return weighted_sigma_bs / aggregate_weighted_sigma_bs
 
 
 def get_number_proportions_slice(
@@ -1152,7 +1153,7 @@ def get_number_proportions_slice(
 
     # Determine index columns from filter keys and length_bin
     filter_indices = set(list(exclude_filter.keys()) + list(include_filter.keys()) + ["length_bin"])
-    
+
     # Intersect with actually available columns/indices
     index_set = set(number_proportions.coords).intersection(filter_indices)
 
@@ -1174,13 +1175,14 @@ def get_number_proportions_slice(
             aggregate_array = aggregate_array.drop_sel(to_drop)
     # ---- Drop any singleton coordinates
     grouped_props = aggregate_array.squeeze(drop=True)
-    
+
     # Handle aggregation if no filter is applied
     if len(include_filter) == 0 and len(exclude_filter) == 0:
         return grouped_props
 
     # Aggregate further over the defined group_columns
     return grouped_props.sum(dim=[d for d in grouped_props.coords if d not in group_columns])
+
 
 def get_weight_proportions_slice(
     weight_proportions: xr.Dataset,
@@ -1319,6 +1321,6 @@ def get_weight_proportions_slice(
     # Apply weight thresholding
     threshold_mask_wgts = target_group_weight_proportions <= weight_proportion_threshold
     proportions_weight = xr.where((threshold_mask_wgts.values), 0, proportions_weight)
-    
+
     # Output the masked proportions array
     return proportions_weight
