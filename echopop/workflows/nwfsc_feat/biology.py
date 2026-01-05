@@ -287,11 +287,11 @@ def compute_abundance(
 
 def matrix_multiply_grouped_table(
     dataset: pd.DataFrame,
-    table: pd.DataFrame,
+    table: xr.DataArray,
     variable: str,
     output_variable: str,
     group: Optional[str] = None,
-) -> Tuple[pd.DataFrame, pd.DataFrame]:
+) -> None:
     """
     Multiply multiple data columns by identically indexed grouped table columns from a separate
     DataFrame.
@@ -300,8 +300,8 @@ def matrix_multiply_grouped_table(
     ----------
     dataset : pd.DataFrame
         DataFrame containing the data to be multiplied.
-    table : pd.DataFrame
-        DataFrame containing the grouped table with columns to multiply against.
+    table : xr.DataArray
+        DataArray containing the grouped table with columns to multiply against.
     variable : str
         The name of the variable in `dataset` that will be multiplied by the grouped table.
         This variable should have columns named as `{variable}_{suffix}` where `suffix` is a
@@ -323,40 +323,40 @@ def matrix_multiply_grouped_table(
     suffixes = variable_columns.str.replace(prefix_pattern, "", regex=False).to_list()
 
     # Reindex table
-    table_ridx = table.reindex(dataset.index).fillna(0.0)
+    ridx = {
+        k: dataset.reset_index()[k] for k in dataset.index.names
+    }
+    table_ridx = table.reindex(ridx).fillna(0.0) 
 
     # Apply an inclusion filter
-    target_groups = apply_filters(table_ridx, include_filter={group: suffixes})
+    table_groups = table_ridx.sel({group: suffixes})
 
     # Get columns that also exist for dataset
-    variable_overlap = [prefix_pattern + col for col in target_groups.columns]
-
-    # Reindex the target grouped table
-    target_groups_idx = target_groups.reindex(dataset.index)
+    variable_overlap = [prefix_pattern + col for col in table_groups[group].values]
 
     # Run the multiplication
-    table_matrix = dataset.filter(variable_overlap).to_numpy() * target_groups_idx
+    table_matrix = dataset.filter(variable_overlap).to_numpy() * table_groups.T
 
-    # Set up column names
-    column_map = target_groups_idx.columns.map(lambda c: f"{output_variable}_{c}")
+    # Set up new columns
+    new_columns = [f"{output_variable}_{c}" for c in table_groups[group].values]
 
     # Add the output variables
-    dataset[column_map] = table_matrix.fillna(0.0).values
+    dataset[new_columns] = table_matrix.fillna(0.0).values
 
     # Calculate the remainder comprising the ungrouped values
     remainder = dataset[variable] - dataset[variable_overlap].fillna(0.0).sum(axis=1)
 
     # Calculate the output variable for the ungrouped/excluded values
-    remainder_matrix = remainder * table_ridx["all"].fillna(0.0)
+    remainder_matrix = remainder * table_ridx.sel({group: "all"}).fillna(0.0)
 
     # Compute the overall output variable
-    dataset[output_variable] = dataset[column_map].sum(axis=1) + remainder_matrix
+    dataset[output_variable] = dataset[new_columns].sum(axis=1) + remainder_matrix
 
 
 def compute_biomass(
     dataset: pd.DataFrame,
     stratum_weights: Optional[Union[xr.DataArray, float]] = None,
-):
+) -> None:
     """
     Convert number density and abundance estimates to biomass density and total biomass,
     respectively.
@@ -402,25 +402,12 @@ def compute_biomass(
     >>> # Creates 'biomass_female', 'biomass_male' in-place
     """
 
-    # Convert DataArray to DataFrame for compatibility
-    if isinstance(stratum_weights, xr.DataArray):
-        dataset_nonids = list(set(set(stratum_weights.coords)).difference(dataset.columns))
-        stratum_weights = stratum_weights.to_series().unstack(dataset_nonids)
-
     # Find overlapping indices
-    idx_names = list(set(set(stratum_weights.index.names)).intersection(set(dataset.columns)))
-    nonidx_names = [id for id in list(stratum_weights.columns.names) if id not in idx_names]
+    idx_names = list(set(stratum_weights.coords).intersection(set(dataset.columns)))
+    nonidx_names = [id for id in set(stratum_weights.coords) if id not in idx_names]
 
     # Set index
     dataset.set_index(idx_names, inplace=True)
-
-    # Ensure weights are properly aligned with the associated dataset
-    # ---- Type
-    if isinstance(stratum_weights, pd.Series):
-        # ---- Convert to DataFrame
-        stratum_weights = stratum_weights.to_frame("all")
-    elif isinstance(stratum_weights, float):
-        stratum_weights = pd.DataFrame({"all": [stratum_weights]}, index=dataset.index)
 
     # If grouped beyond just index
     if len(nonidx_names) > 0:
@@ -440,13 +427,20 @@ def compute_biomass(
             variable="abundance",
             output_variable="biomass",
         )
-    # Ungrouped
+    # ---- Ungrouped
     else:
+        # ---- Reindex table
+        ridx = {
+            k: dataset.reset_index()[k] for k in dataset.index.names
+        }
+        stratum_weights_ridx = stratum_weights.reindex(ridx).fillna(0.0) 
         # ---- Compute biomass densities
-        dataset["biomass_density"] = dataset["number_density"] * stratum_weights["all"]
+        dataset["biomass_density"] = dataset["number_density"] * stratum_weights_ridx.sel(
+            {nonidx_names[0]: "all"}
+        )
         # ---- Compute biomass
-        dataset["biomass"] = dataset["abundance"] * stratum_weights["all"]
-
+        dataset["biomass"] = dataset["abundance"] * stratum_weights.sel({nonidx_names[0]: "all"})
+        
     # Reset the index
     dataset.reset_index(inplace=True)
 
