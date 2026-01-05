@@ -847,43 +847,33 @@ def distribute_population_estimates(
 
     # Sum data variable over indices
     data_group_columns = [col for col in group_columns if col in data.columns]
-    data_pvt = data.pivot_table(
+    data_array = data.pivot_table(
         index=data_group_columns, values=variable, aggfunc="sum", observed=False
-    )
+    ).to_xarray()
 
     # Parse the additional columns that are required for grouping
     proportions_group_columns = {
         k: [c for c in ds.coords.keys() if c in group_columns] for k, ds in proportions.items()
     }
 
-    # Convert xarray proportions to DataFrame(s) and align with group_columns
-    proportions_grouped_pvt = {}
-    for k, ds in proportions.items():
-        # ---- Use the main variable: "proportion_overall"
-        da = ds["proportion_overall"]
-        # ---- Convert to DataFrame and reset index for merging
-        df = da.to_dataframe().reset_index()
-        # ---- Pivot to match only the available group columns
-        df_pvt = utils.create_pivot_table(
-            df,
-            index_cols=[v for v in proportions_group_columns[k] if v not in data_group_columns],
-            strat_cols=data_group_columns,
-            value_col="proportion_overall",
+    # Calculate the proportions
+    # ---- Totals (for normalization)
+    group_totals = sum(
+        ds["proportion_overall"].sum(
+            dim=[c for c in proportions_group_columns[k] if c not in data_group_columns]
         )
-        proportions_grouped_pvt[k] = df_pvt
-    # ---- Get the normalization constant
-    denominator = sum(df.sum() for df in proportions_grouped_pvt.values())
+        for k, ds in proportions.items()
+    )
     # ---- Apply normalization
-    proportions_pvt = {
-        k: (df / denominator).fillna(0.0) for k, df in proportions_grouped_pvt.items()
+    proportions_norm = {
+        k: (ds["proportion_overall"] / group_totals).fillna(0.0) for k, ds in proportions.items()
     }
 
     # Distribute the variable over each table
     apportioned_groups = {
-        k: df.mul(data_pvt[variable]).fillna(0.0).stack(data_group_columns).to_xarray()
-        for k, df in proportions_pvt.items()
+        k: proportions_norm[k] * data_array[variable] for k in proportions_norm.keys()
     }
-    # ---- Update names
+    # ---- Update DataArray names
     for arr in apportioned_groups.values():
         arr.name = variable
 
