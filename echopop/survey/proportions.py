@@ -14,7 +14,7 @@ def compute_binned_counts(
     groupby_cols: List[str],
     count_col: str,
     agg_func: str = "size",
-) -> pd.DataFrame:
+) -> xr.DataArray:
     """
     Compute binned counts with grouping.
 
@@ -32,8 +32,8 @@ def compute_binned_counts(
 
     Returns
     -------
-    pd.DataFrame
-        Grouped counts
+    xr.DataArray
+        Grouped counts with coordinates based on the column names provided in 'groupby_cols'.
     """
 
     # Copy the dataset
