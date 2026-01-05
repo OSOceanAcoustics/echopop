@@ -29,8 +29,8 @@ from echopop.workflows.nwfsc_feat import apportionment, biology
 # ==================================================================================================
 # DEFINE DATA ROOT DIRECTORY
 # --------------------------
-DATA_ROOT = Path("C:/Data/EchopopData/echopop_2019")
-# DATA_ROOT = Path("C:/Users/Brandyn Lucca/Documents/Data/echopop_2019")
+# DATA_ROOT = Path("C:/Data/EchopopData/echopop_2019")
+DATA_ROOT = Path("C:/Users/Brandyn Lucca/Documents/Data/echopop_2019")
 # ==================================================================================================
 # ==================================================================================================
 # DATA INGESTION
@@ -582,7 +582,7 @@ da_age1_weight_proportions = proportions.get_weight_proportions_slice(
 # ==================================================================================================
 # Apply the calculated proportions to the abundance, biomass, and NASC estimates
 # ------------------------------------------------------------------------------
-df_nasc_no_age1_prt_da = apportionment.remove_group_from_estimates(
+df_nasc_no_age1_prt = apportionment.remove_group_from_estimates(
     transect_data=df_nasc_no_age1,
     group_proportions=xr.Dataset({
         "nasc": da_age1_nasc_proportions,
@@ -595,17 +595,17 @@ df_nasc_no_age1_prt_da = apportionment.remove_group_from_estimates(
 # Distribute transect abundances across age-length-sex bins
 # ---------------------------------------------------------
 dict_ds_transect_abundance_table = apportionment.distribute_population_estimates(
-    data = df_nasc_no_age1_prt_da,
+    data = df_nasc_no_age1_prt,
     proportions = dict_ds_number_proportion,
     variable = "abundance",
-    group_columns = ["sex", "age_bin", "length_bin", "stratum_ks"]
+    group_columns= ["sex", "age_bin", "length_bin", "stratum_ks"]
 )
 
 # ==================================================================================================
 # Distribute transect biomasses across age-length-sex bins
 # ---------------------------------------------------------
 dict_ds_transect_biomass_table = apportionment.distribute_population_estimates(
-    data = df_nasc_no_age1_prt_da,
+    data = df_nasc_no_age1_prt,
     proportions=dict_da_weight_proportion,
     variable = "biomass",
     group_columns = ["sex", "age_bin", "length_bin", "stratum_ks"]
@@ -615,7 +615,7 @@ dict_ds_transect_biomass_table = apportionment.distribute_population_estimates(
 # Distribute transect biomasses across age-length-sex bins for aged fish only
 # ---------------------------------------------------------------------------
 ds_transect_aged_biomass_table = apportionment.distribute_population_estimates(
-    data=df_nasc_no_age1_prt_da,
+    data=df_nasc_no_age1_prt,
     proportions=dict_da_weight_proportion["aged"],
     variable="biomass",
     group_columns = ["sex", "age_bin", "length_bin", "stratum_ks"]
@@ -820,7 +820,6 @@ dict_ds_kriged_biomass_table = apportionment.distribute_population_estimates(
     data_proportions_link={"geostratum_ks": "stratum_ks"}
 )
 
-
 # ##################################################################################################
 # Standardize the unaged abundance estimates to be distributed over age
 # ---------------------------------------------------------------------
@@ -830,6 +829,225 @@ dict_ds_kriged_abundance_table["standardized_unaged"] = apportionment.distribute
     group_columns = ["sex"],
     impute = False
 )
+
+population_table = dict_ds_kriged_biomass_table["unaged"]
+reference_table = dict_ds_kriged_biomass_table["aged"]
+# group_columns = ["stratum_ks"]
+group_columns = ["sex"]
+impute = True
+impute=True
+impute_variable=["age_bin"]
+    
+# Get original table coordinates
+table_coords = list(population_table.coords.keys())
+table_noncoords = list(set(table_coords) - set(group_columns + ["length_bin"]))
+
+# Get reference coordinates
+reference_coords = list(reference_table.coords.keys())
+
+# Standardize the apportioned table values
+standardized_table = (
+    population_table.sum(dim=group_columns)
+    * reference_table.sum(dim=group_columns)
+    / reference_table.sum(dim=list(set(reference_coords).difference(table_coords)) + group_columns)
+).fillna(0.0)
+
+#############################################
+initial_table = population_table.sum(dim=group_columns)
+reference_table = reference_table.copy()
+standardized_table = standardized_table.copy()
+group_columns = group_columns
+subgroup_coords = table_noncoords
+impute_variable = impute_variable
+
+####
+# Extract dimensions
+group_dim = group_columns[0]
+impute_dim = impute_variable[0]
+subgroup_dim = subgroup_coords[0]
+
+# Get group and impute coordinate values
+group_vals = reference_table.coords[subgroup_dim].values
+impute_vals = reference_table.coords[impute_dim].values
+interval_dim = [d for d in reference_table.dims if d not in group_columns + impute_variable][0]
+interval_vals = reference_table.coords[interval_dim].values
+
+# Sum reference_table across all dims except group_columns + impute_variable
+reference_summed = reference_table.sum(dim=[c for c in reference_table.dims if c not in [subgroup_dim, interval_dim]])
+
+# Mask for zeros/non-zeros along impute_variable
+ref_zero_mask = reference_summed == 0.0
+ref_nonzero_mask = reference_summed != 0.0
+
+# Create translation for row numbers
+interval_to_numeric = {interval: i for i, interval in enumerate(reference_summed.coords[interval_dim].values)}
+
+# Prepare output
+imputed = standardized_table.copy()
+
+ # Get the nearest-neighbor rows and recompute the indices
+imputed_rows = {
+    col: arr[
+        np.argmin(
+            np.abs(
+                ref_zero_rows[col][table_nonzeros_mask[col]][:, np.newaxis]
+                - ref_nonzero_rows[col]
+            ),
+            axis=1,
+        )
+    ]
+    for col, arr in ref_nonzero_rows.items()
+}
+
+for g in group_vals:
+    ref_col = reference_summed.sel({subgroup_dim: g})
+    ref_zero_mask_col = (ref_col == 0.0).values
+    ref_nonzero_mask_col = (ref_col != 0.0).values
+
+    # Indices for zero/nonzero
+    ref_zero_idx = np.where(ref_zero_mask_col)[0]
+    ref_nonzero_idx = np.where(ref_nonzero_mask_col)[0]
+    if len(ref_zero_idx) == 0 or len(ref_nonzero_idx) == 0:
+        continue
+
+    # Map intervals to numeric
+    interval_to_numeric = {v: i for i, v in enumerate(interval_vals)}
+
+    # Mask for initial_table nonzero at zero indices
+    initial_col = initial_table.sel({subgroup_dim: g})
+    table_nonzero_mask = (initial_col.values[ref_zero_idx] != 0.0)
+    nonzero_reference_to_table_idx = ref_zero_idx[table_nonzero_mask]
+
+    # Find nearest nonzero for each zero needing imputation
+    nearest = ref_nonzero_idx[np.argmin(np.abs(nonzero_reference_to_table_idx[:, None] - ref_nonzero_idx), axis=1)]
+
+    # Impute for each (interval, group)
+    for i, (row, nrow) in enumerate(zip(nonzero_reference_to_table_idx, nearest)):
+        idx = {interval_dim: interval_vals[row], subgroup_dim: g}
+        nidx = {interval_dim: interval_vals[nrow], subgroup_dim: g}
+        # For all impute_dim values at this (interval, group)
+        for age in impute_vals:
+            idx_full = {**idx, impute_dim: age}
+            nidx_full = {**nidx, impute_dim: age}
+            # try:
+            imputed_val = (
+                initial_table.sel({interval_dim: interval_vals[row], subgroup_dim: g}).sel({impute_dim: age}).item()
+                * reference_table.sel(nidx_full).item()
+                / reference_summed.sel(nidx).item()
+            )
+            imputed.loc[idx_full] = imputed_val
+            except Exception:
+                continue
+
+# Broadcast all arrays to the same shape 
+ref_zero_mask_b, initial_table_b, standardized_table_b = xr.broadcast(
+    ref_zero_mask, initial_table, standardized_table
+)
+ref_nonzero_mask_b, reference_group_stk_b, reference_stk_b = xr.broadcast(
+    ref_nonzero_mask, reference_summed, reference_table
+)
+
+# Convert DataArrays to numpy arrays
+ref_zero_mask_np = ref_zero_mask_b.values
+initial_vals = initial_table_b.values
+standardized_vals = standardized_table_b.values
+ref_nonzero_mask_np = ref_nonzero_mask_b.values
+reference_group_vals = reference_group_stk_b.values
+reference_stk_vals = reference_stk_b.values
+
+# For each impute_variable coordinate, find the nearest nonzero along that axis
+ivar = impute_variable[0]
+ivals = reference_summed.coords[ivar].values
+zero_idx = np.where(ref_zero_mask_b)
+nonzero_idx = np.where(ref_nonzero_mask_b)
+
+# Build an array of nearest nonzero indices for each zero index
+nearest_nonzero_idx = np.full(ref_zero_mask_b.shape, -1, dtype=int)
+for i in range(ref_zero_mask_b.shape[0]):
+    nonzero_locs = np.where(ref_nonzero_mask_b[i])[0]
+    if len(nonzero_locs) == 0:
+        continue
+    zero_locs = np.where(ref_zero_mask_b[i])[0]
+    if len(zero_locs) == 0:
+        continue
+    # For each zero, find nearest nonzero
+    for j, zl in enumerate(zero_locs):
+        nearest = nonzero_locs[np.argmin(np.abs(zl - nonzero_locs))]
+        nearest_nonzero_idx[i, zl] = nearest
+
+# Get all group_columns coordinate combinations
+mask_dims = initial_table.coords[list(set(initial_table.coords) - {"length_bin"})[0]].values
+group_coords = {dim: reference_summed.coords[dim].values for dim in group_columns}
+impute_coords = {dim: reference_table.coords[dim].values for dim in impute_variable}
+
+# Get numpy arrays for all relevant DataArrays
+initial_vals = initial_table_b.values
+reference_group_vals = reference_group_stk_b.values
+reference_stk_vals = reference_stk_b.values
+
+# Only impute where zero in reference and nonzero in initial
+mask = (ref_zero_mask_b.values & (initial_vals != 0.0) & (nearest_nonzero_idx != -1))
+idx = np.where(mask)
+
+# Vectorized imputation
+imputed_table = standardized_table_b.copy()
+
+# Only impute where zero in reference and nonzero in initial
+mask = (ref_zero_mask_b & (initial_table_b != 0.0) & (nearest_nonzero_idx != -1))
+idx = np.where(mask)
+
+# Build indexers for advanced indexing
+idx_nonzero = (idx[0], nearest_nonzero_idx[idx])
+
+# Compute imputed values in numpy
+imputed_values = (
+    initial_vals[idx]
+    * reference_group_vals[idx_nonzero]
+    / reference_stk_vals[idx_nonzero]
+)
+
+
+# Build indexers for advanced indexing
+idx_nonzero = (idx[0], nearest_nonzero_idx[idx])
+imputed_values = (
+    initial_table_b[idx]
+    * reference_group_stk_b[idx_nonzero]
+    / reference_stk_b[idx_nonzero]
+)
+imputed_table.values[idx] = imputed_values
+
+# Check coordinates
+missing_coords = [c for c in initial_table.coords if c not in reference_summed.coords]
+if not all(col in reference_stk.columns for col in initial_table_df.columns):
+    # ---- Get difference
+    missing_columns = set(initial_table.coords).difference(reference_stk.columns)
+    # ---- Print warning
+    warnings.warn(
+        f"The following columns are missing from the reference table and will therefore be "
+        f"skipped during imputation: {', '.join(missing_columns)}. ",
+        stacklevel=2,
+    )
+
+# If imputation is requested, perform it
+if not impute:
+    result = standardized_table.unstack().to_xarray()
+    if population_table.name:
+        result.name = population_table.name
+    return result
+else:
+    # ---- Impute
+    standardized_table_imputed = impute_kriged_table(
+        reference_table_df=grouped_reference,
+        initial_table_df=population_table_reshape,
+        standardized_table_df=standardized_table,
+        table_reference_indices=reference_stack_indices,
+        group_by=group_columns,
+        impute_variable=impute_variable,
+    )
+    result = standardized_table_imputed.unstack().to_xarray()
+    if population_table.name:
+        result.name = population_table.name
+    return result
 
 # ##################################################################################################
 # Standardize the unaged abundance estimates to be distributed over age
