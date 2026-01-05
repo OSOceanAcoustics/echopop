@@ -1055,9 +1055,6 @@ def get_nasc_proportions_slice(
     <xarray.DataArray ...>
     """
 
-    # Transform to DataFrame
-    number_proportions_cnv = number_proportions.to_dataframe().reset_index()
-
     # Get length values from length bins
     length_vals = number_proportions["length_bin"].to_series().map(lambda x: x.mid).astype(float)
 
@@ -1156,52 +1153,21 @@ def get_number_proportions_slice(
     # Determine index columns from filter keys and length_bin
     index_set = set(list(exclude_filter.keys()) + list(include_filter.keys()) + ["length_bin"])
 
-    # Convert to a DataFrame
-    number_proportions_cnv = number_proportions.to_dataframe()
-
-    # Intersect with actually available columns/indices
-    available_columns = set(
-        list(number_proportions_cnv.index.names) + list(number_proportions_cnv.columns)
-    )
-    index_set = index_set.intersection(available_columns)
-
-    # Separate stratification columns from index columns
-    column_set = set(group_columns).difference(index_set)
-
-    # Create pivot table
-    group_table = utils.create_pivot_table(
-        number_proportions_cnv.reset_index(),
-        index_cols=list(index_set),
-        strat_cols=list(column_set),
-        value_col="proportion",
+    # Get length-binned proportions aggregated based on group_columns
+    aggregate_array = number_proportions["proportion"].sum(
+        dim=[d for d in number_proportions.coords if d not in [*group_columns, *index_set]]
     )
 
-    # Apply filters
-    filtered_table = utils.apply_filters(
-        group_table, include_filter=include_filter, exclude_filter=exclude_filter
-    )
+    # Apply filters, if any
+    if include_filter:
+        aggregate_array = aggregate_array.sel(include_filter)
+    if exclude_filter:
+        aggregate_array = aggregate_array.drop_sel(exclude_filter)
+    # ---- Drop any singleton coordinates
+    grouped_props = aggregate_array.squeeze(drop=True)
 
-    # Return the filtered sums if only a single group column is defined
-    if len(group_columns) == 1:
-        return filtered_table.sum(axis=0).to_xarray()
-
-    # Handle aggregation for multiple groupings
-    current_dimensions = set(list(filtered_table.index.names) + list(filtered_table.columns.names))
-
-    # If already at target dimensions, return as-is
-    if len(current_dimensions.difference(set(group_columns))) == 0:
-        return filtered_table.stack().to_xarray()
-    else:
-        # ---- Find current index groupings
-        additional_grps = list(set(group_columns).intersection(set(filtered_table.index.names)))
-        # ---- Aggregate step by step starting with length bins
-        intermediate_result = filtered_table.unstack(additional_grps).sum()
-        # ---- Final dimensions
-        if isinstance(intermediate_result, pd.DataFrame):
-            return intermediate_result.stack().to_xarray()
-        elif isinstance(intermediate_result, pd.Series):
-            return intermediate_result.to_xarray()
-
+    # Aggregate further over the defined group_columns
+    return grouped_props.sum(dim=[d for d in grouped_props.coords if d not in group_columns])
 
 def get_weight_proportions_slice(
     weight_proportions: xr.Dataset,
