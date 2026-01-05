@@ -1059,54 +1059,47 @@ def get_nasc_proportions_slice(
     number_proportions_cnv = number_proportions.to_dataframe().reset_index()
 
     # Get length values from length bins
-    length_vals = number_proportions_cnv["length_bin"].apply(lambda x: x.mid).astype(float).unique()
+    length_vals = number_proportions["length_bin"].to_series().map(lambda x: x.mid).astype(float)
 
     # Compute equivalent sigma_bs using target strength-length regression
-    sigma_bs_equiv = 10 ** (
-        (
-            ts_length_regression_parameters["slope"] * np.log10(length_vals)
-            + ts_length_regression_parameters["intercept"]
-        )
-        / 10.0
+    sigma_bs_equiv = xr.DataArray(
+        10 ** (
+            (
+                ts_length_regression_parameters["slope"] * np.log10(length_vals)
+                + ts_length_regression_parameters["intercept"]
+            )
+            / 10.0
+        ),
+        dims=["length_bin"],
+        coords={"length_bin": length_vals.index}
     )
 
-    # Create pivot table for total population (all groups)
-    aggregate_table = utils.create_pivot_table(
-        number_proportions_cnv,
-        index_cols=["length_bin"],
-        strat_cols=group_columns,
-        value_col="proportion",
+    # Get length-binned proportions aggregated based on group_columns
+    aggregate_array = number_proportions["proportion"].sum(
+        dim=[d for d in number_proportions.coords if d not in [*group_columns, "length_bin"]]
     )
 
     # Calculate total weighted sigma_bs for all strata
-    aggregate_weighted_sigma_bs = (aggregate_table.T * sigma_bs_equiv).T.sum(axis=0)
-
-    # Create pivot table including filter dimensions
-    filtered_population_table = utils.create_pivot_table(
-        number_proportions_cnv,
-        index_cols=[*include_filter, *exclude_filter, "length_bin"],
-        strat_cols=group_columns,
-        value_col="proportion",
+    aggregate_weighted_sigma_bs = (aggregate_array * sigma_bs_equiv.T).sum(
+        dim=[d for d in aggregate_array.coords if d not in group_columns]
     )
 
-    # Apply filter to extract target group
-    target_group_table = utils.apply_filters(
-        filtered_population_table, include_filter=include_filter, exclude_filter=exclude_filter
+    # Apply filters, if any
+    filtered_proportions = number_proportions["proportion"]
+    if include_filter:
+        filtered_proportions = filtered_proportions.sel(include_filter)
+    if exclude_filter:
+        filtered_proportions = filtered_proportions.drop_sel(exclude_filter)
+    # ---- Drop any singleton coordinates
+    grouped_props = filtered_proportions.squeeze(drop=True)
+
+    # Weight sigma_bs
+    weighted_sigma_bs = (grouped_props * sigma_bs_equiv.T).sum(
+        dim=[d for d in grouped_props.coords if d not in group_columns]
     )
 
-    # Aggregate target group over length and strata dimensions
-    if len(target_group_table.index.names) > 1:
-        target_group_aggregated = (
-            target_group_table.unstack("length_bin").sum().unstack(group_columns)
-        )
-    else:
-        return target_group_table.sum().to_xarray()
-
-    # Calculate weighted sigma_bs for target group
-    target_weighted_sigma_bs = (target_group_aggregated.T * sigma_bs_equiv).T.sum(axis=0)
-
-    # Calculate and return proportions
-    return (target_weighted_sigma_bs / aggregate_weighted_sigma_bs).to_xarray()
+    # Calculate the proportions
+    return weighted_sigma_bs / aggregate_weighted_sigma_bs 
 
 
 def get_number_proportions_slice(
