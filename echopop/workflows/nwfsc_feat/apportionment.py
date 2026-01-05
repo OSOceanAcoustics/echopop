@@ -1,3 +1,5 @@
+import functools
+import operator
 import warnings
 from typing import Any, Dict, List, Optional, Union
 
@@ -207,72 +209,62 @@ def mesh_biomass_to_nasc(
     # Index
     mesh_data.set_index(mesh_index, inplace=True)
     mesh_data.sort_index(inplace=True)
+    # ---- Convert to Dataset
+    mesh_dataset = mesh_data.to_xarray()
 
     # Stack the proportions to be as a function of group
-    biodata_cnv = {
-        k: ds["proportion_overall"]
-        .sum(dim=[v for v in ds.coords.keys() if v not in group_columns])
-        .to_pandas()
+    biodata_grouped = {
+        k: ds["proportion_overall"].sum(dim=[v for v in ds.coords.keys() if v not in group_columns])
         for k, ds in biodata.items()
     }
-
-    # Get the column names of the biodata
-    biodata_columns = sorted(
+    # ---- Get the coordinate values
+    nonmesh_idx = list(
         set(
-            col
-            for df in biodata_cnv.values()
-            if isinstance(df, pd.DataFrame)
-            for col in df.columns.tolist()
+            coord
+            for da in biodata_grouped.values()
+            for coord in da.coords
+            if coord not in mesh_index
+        )
+    )
+    biodata_coords = sorted(
+        set(
+            coord
+            for da in biodata_grouped.values()
+            if isinstance(da, xr.DataArray)
+            for coord in da.coords[nonmesh_idx[0]].values
         )
     )
     # ---- Fill in if empty
-    if len(biodata_columns) == 0:
-        biodata_columns = set(["apportioned"])
+    if len(biodata_coords) == 0:
+        biodata_coords = ["apportioned"]
 
-    # Stack the proportions
-    stacked_proportions = pd.concat(list(biodata_cnv.values()), axis=1)
+    # Sum over all Datasets
+    grouped_total_proportions = functools.reduce(operator.add, biodata_grouped.values())
 
-    # If only a single expected output, summarize
-    if len(biodata_columns) == 1:
-        stacked_proportions = stacked_proportions.sum(axis=1).to_frame(list(biodata_columns)[0])
+    # Multiply the biomass by these combined proportions
+    biomass_coords = [f"biomass_{c}" for c in biodata_coords]
+    biomass_array = grouped_total_proportions.reindex_like(mesh_dataset) * mesh_dataset["biomass"]
+    # ---- Add to original mesh Dataframe
+    mesh_data[biomass_coords] = biomass_array
 
-    # Multiply by biomass column, broadcasting over all columns
-    stacked_proportions = stacked_proportions.mul(mesh_data["biomass"], axis=0).dropna()
+    # Convert to abundance
+    abundance_coords = [f"abundance_{c}" for c in biodata_coords] + ["abundance"]
+    biomass_array = mesh_data[biomass_coords + ["biomass"]].to_xarray().to_dataarray(dim="variable")
+    abundance_array = biomass_array / stratum_weights.reindex_like(mesh_dataset)
+    # ---- Add to original mesh DataFrame
+    mesh_data[abundance_coords] = abundance_array.T
 
-    # Group columns by name and sum (to handle duplicate columns from stacking)
-    stacked_proportions = stacked_proportions.T.groupby(stacked_proportions.columns).sum().T
-
-    # Prefix columns
-    stacked_proportions = stacked_proportions.add_prefix("biomass_")
-
-    # Add to the mesh
-    mesh_data[stacked_proportions.columns.tolist()] = stacked_proportions
-
-    # Get the column names of the resulting biomass values
-    biomass_columns = stacked_proportions.columns.tolist() + ["biomass"]
-
-    # Reindex the stratum weights
-    stratum_weights_idx = stratum_weights.to_series().reindex(mesh_data.index)
-
-    # Calculate abundance
-    mesh_data[[f"abundance_{name}" for name in biodata_columns] + ["abundance"]] = mesh_data[
-        biomass_columns
-    ].div(stratum_weights_idx, axis=0)
-
-    # Index the stratum sigma_bs
-    stratum_sigma_bs_idx = stratum_sigma_bs.reindex(mesh_data.index)
-
-    # Calculate NASC
-    mesh_data["nasc"] = mesh_data["abundance"] * stratum_sigma_bs_idx["sigma_bs"] * 4.0 * np.pi
-
-    # Rename the aligned columns
-    # ---- Create inverted link dictionary
-    inverted_link = {v: k for k, v in mesh_biodata_link.items()}
+    # Convert to NASC
+    mesh_data["nasc"] = (
+        mesh_data["abundance"] * stratum_sigma_bs["sigma_bs"].reindex_like(mesh_data) * 4.0 * np.pi
+    )
 
     # Reset the index
     mesh_data.reset_index(inplace=True)
 
     # Rename
+    # ---- Create inverted link dictionary
+    inverted_link = {v: k for k, v in mesh_biodata_link.items()}
     mesh_data.rename(columns=inverted_link, inplace=True)
 
 
