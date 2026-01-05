@@ -844,71 +844,6 @@ def aggregate_stratum_weights(input_data, stratum_col="stratum_num"):
     return final_df
 
 
-def scale_weights_by_stratum(
-    weight_data: xr.DataArray,
-    catch_data: pd.DataFrame,
-    group_columns: List[str] = [],
-) -> xr.DataArray:
-    """
-    Scale weights in an xarray DataArray using reference weights from catch data, grouped
-    dynamically.
-
-    This function rescales the weights in the input xarray DataArray so that, for each group
-    defined by group_columns, the sum of weights matches the total catch weight for that group,
-    while preserving the relative proportions within each group.
-
-    Parameters
-    ----------
-    weight_data : xr.DataArray
-        xarray DataArray containing weights to be rescaled. Must have dimensions including those in
-        group_columns.
-    catch_data : pd.DataFrame
-        DataFrame with catch data, including columns for group_columns and a "weight" column.
-    group_columns : list of str, default []
-        List of dimension/column names to group by (e.g., strata, sex, etc.).
-
-    Returns
-    -------
-    xr.DataArray
-        DataArray with weights scaled to match the reference catch weight distribution for each
-        group.
-
-    Notes
-    -----
-    - No column or dimension names are hard-coded; all grouping is dynamic.
-    - The function assumes that grouping columns are consistent between weight_data and catch_data.
-    - Missing or extra group/category combinations are handled automatically by xarray/pandas.
-
-    Examples
-    --------
-    >>> standardized_weights = scale_weights_by_stratum(
-    ...     weight_data=ds_da_weight_dist["unaged"],
-    ...     catch_data=dict_df_bio["catch"],
-    ...     group_columns=["stratum_ks"]
-    ... )
-    >>> print(standardized_weights)
-    <xarray.DataArray ...>
-    """
-
-    # Compute the total subgrouped weights
-    subgroup_weights = weight_data.sum(
-        dim=[d for d in weight_data.dims if d in ["length_bin"]]
-    ).astype(float)
-
-    # Calculate the total grouped weights
-    group_weights = subgroup_weights.sum(
-        dim=[d for d in subgroup_weights.dims if d not in group_columns]
-    ).astype(float)
-
-    # Rescale the catch weights
-    scaled_weights = (subgroup_weights / group_weights) * catch_data.groupby(group_columns)[
-        "weight"
-    ].sum().to_xarray()
-
-    # Return the array
-    return scaled_weights.fillna(0.0)
-
-
 def weight_proportions(
     weight_data: xr.DataArray,
     catch_data: pd.DataFrame,
@@ -971,8 +906,8 @@ def weight_proportions(
     return arr.to_dataset()
 
 
-def scale_weight_proportions(
-    scaled_weight_data: xr.DataArray,
+def fitted_weight_proportions(
+    weight_data: xr.DataArray,
     reference_weight_proportions: xr.Dataset,
     catch_data: pd.DataFrame,
     number_proportions: xr.DataArray,
@@ -980,8 +915,8 @@ def scale_weight_proportions(
     group_columns: List[str] = [],
 ) -> xr.Dataset:
     """
-    Calculate detailed weight proportions using xarray and pandas, with adjustments for reference
-    and fitted weights.
+    Calculate weight proportions based on fitted weights with adjustments based on reference 
+    values.
 
     This function computes comprehensive weight proportions for a group, accounting for reference
     proportions, length-binned proportions, and fitted weight tables. All grouping and dimension
@@ -1008,17 +943,10 @@ def scale_weight_proportions(
     xr.DataArray
         DataArray containing the calculated detailed weight proportions, indexed by all grouping
         and binning dimensions present in the input data.
-
-    Notes
-    -----
-    - No column or dimension names are hard-coded; all grouping is dynamic.
-    - The function assumes that grouping and binning columns are consistent across all input
-    objects.
-    - Missing or extra group/category combinations are handled automatically by xarray/pandas.
-
+        
     Examples
     --------
-    >>> props = scale_weight_proportions(
+    >>> props = fitted_weight_proportions(
     ...     scaled_weight_data=da_scaled_unaged_weights,
     ...     reference_weight_proportions=ds_da_weight_proportion["aged"],
     ...     catch_data=dict_df_bio["catch"],
@@ -1030,65 +958,52 @@ def scale_weight_proportions(
     <xarray.DataArray ...>
     """
 
-    # Calculate grouped catch data
-    grouped_catch_data = catch_data.groupby(group_columns)["weight"].sum().to_xarray()
+    # Compute the total subgrouped weights
+    subgroup_weights = weight_data.groupby(group_columns).sum(dim="length_bin").astype(float)
 
     # Calculate the total grouped weights
-    group_weights = scaled_weight_data.sum(
-        dim=[d for d in scaled_weight_data.dims if d not in group_columns]
+    group_weights = xr.DataArray(
+        subgroup_weights.to_numpy().sum(axis=1),
+        dims=group_columns,
+        coords={col: weight_data.coords[col] for col in group_columns}
     )
 
-    # Get the total grouped weights
-    total_weights = grouped_catch_data + group_weights
+    # Rescale the catch weights
+    scaled_weights = (subgroup_weights / group_weights) * catch_data.groupby(group_columns)[
+        "weight"
+    ].sum().to_xarray().fillna(0.)
 
-    # Compute the overall weight proportions
-    weight_props = scaled_weight_data / total_weights
+    # Calculate the grouped weight proportions
+    weight_grouped_props = (scaled_weights / scaled_weights.sum(
+        dim=[d for d in scaled_weights.coords if d not in group_columns]    
+    )).fillna(0.).squeeze()
 
-    # Compute the within-group weight proportions
-    weight_grouped_props = (
-        weight_props
-        / weight_props.sum(dim=[d for d in weight_props.dims if d not in group_columns])
-    ).fillna(0.0)
-
-    # Convert the number proportions to DataFrames and transform
-    number_proportions_cnv = {"data": number_proportions.to_dataframe().reset_index()}
-
-    # Length-binned weight proportions
-    length_weight_props = calculate_within_group_proportions(
-        number_proportions_cnv, list(weight_grouped_props.dims)
+    # Calculate the number proportions based on group_columns
+    length_bin_props = number_proportions["proportion"].sum(
+        dim=[d for d in number_proportions.coords if d not in group_columns + ["length_bin"]]
     )
-
-    # Reindex the number proportions to generate pivot table
-    length_weight_props_all = utils.create_pivot_table(
-        length_weight_props,
-        index_cols=["group", "length_bin"],
-        strat_cols=group_columns,
-        value_col="proportion",
-    )
-
+    
     # Calculate the average weights per length bin within each stratum
-    fitted_weights = length_weight_props_all.T * binned_weights.to_numpy().squeeze()
+    fitted_length_weights = (length_bin_props * binned_weights).fillna(0.)
 
-    # Compute the average within-group weight proportions
-    fitted_weight_proportions = (
-        (fitted_weights.T / fitted_weights.sum(axis=1)).astype(float).fillna(0.0)
+    # Calculate the weight proportions
+    # ---- Get the grouped total fitted weights
+    total_fitted_weights = fitted_length_weights.sum(
+        dim=[d for d in fitted_length_weights.coords if d not in group_columns]
     )
+    # ---- Compute proportions
+    fitted_weight_props = (fitted_length_weights / total_fitted_weights).fillna(0.).squeeze()
 
     # Get the overall weight proportions per group for the reference data
     grouped_reference_proportions = reference_weight_proportions.sum(
         dim=[d for d in reference_weight_proportions.dims if d not in group_columns]
     )
-
-    # Compute the complementary proportions
-    stratum_data_proportions = 1 - grouped_reference_proportions
-
-    # Distribute the relative proportions of the defined group relative to total grouped weights
-    weight_length_proportions_all = stratum_data_proportions * xr.DataArray(
-        fitted_weight_proportions.loc["data"]
-    )
-
+    
+    # Calculate the complementary proportions
+    compl_data_props = 1 - grouped_reference_proportions
+    
     # Distribute the within-group proportions to get the overall proportions
-    return weight_length_proportions_all * weight_grouped_props
+    return compl_data_props * fitted_weight_props * weight_grouped_props
 
 
 def get_nasc_proportions_slice(
