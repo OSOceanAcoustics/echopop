@@ -448,10 +448,11 @@ ds_da_weight_dist["unaged"] = proportions.binned_weights(
 # Calculate the average weights pre stratum when combining different datasets
 # ---------------------------------------------------------------------------
 da_averaged_weight = proportions.stratum_averaged_weight(
-    dict_ds_number_proportion,
-    da_binned_weight_table,
+    number_proportions=dict_ds_number_proportion,
+    length_weight_data=da_binned_weight_table,
     group_columns=["stratum_ks"]
 )
+
 # ==================================================================================================
 # Compute the length-binned weight proportions for aged fish
 # ----------------------------------------------------------
@@ -467,19 +468,10 @@ dict_da_weight_proportion["aged"] = proportions.weight_proportions(
 )
 
 # ==================================================================================================
-# Compute the standardized haul weights for unaged fish
-# -----------------------------------------------------
-da_scaled_unaged_weights = proportions.scale_weights_by_stratum(
-    weight_data=ds_da_weight_dist["unaged"], 
-    catch_data=dict_df_bio["catch"], 
-    group_columns=["stratum_ks"]
-)
-
-# ==================================================================================================
-# Compute the standardized weight proportionsfor unaged fish
+# Compute the standardized weight proportions for unaged fish
 # ----------------------------------------------------------
-dict_da_weight_proportion["unaged"] = proportions.scale_weight_proportions(
-    scaled_weight_data=da_scaled_unaged_weights,
+dict_da_weight_proportion["unaged"] = proportions.fitted_weight_proportions(
+    weight_data=ds_da_weight_dist["unaged"],
     reference_weight_proportions=dict_da_weight_proportion["aged"],
     catch_data=dict_df_bio["catch"],
     number_proportions=dict_ds_number_proportion["unaged"],
@@ -542,7 +534,6 @@ df_nasc_no_age1["area_interval"] = (
 # Calculate (and apportion) number densities to abundance, and number densities/abundance for each
 # sex
 # --------------------------------------------------------------------------------------------------
-
 biology.compute_abundance(
     dataset=df_nasc_no_age1,
     exclude_filter={"sex": "unsexed"},
@@ -569,6 +560,7 @@ da_age1_nasc_proportions = proportions.get_nasc_proportions_slice(
     ts_length_regression_parameters={"slope": 20.0, "intercept": -68.0},
     include_filter={"age_bin": [1]},
 )
+
 
 # Age-1 number proportions
 da_age1_number_proportions = proportions.get_number_proportions_slice(
