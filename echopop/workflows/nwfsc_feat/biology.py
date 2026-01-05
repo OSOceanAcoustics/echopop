@@ -186,7 +186,7 @@ def compute_abundance(
     dataset: pd.DataFrame,
     exclude_filter: Dict[str, str] = {},
     number_proportions: Optional[Dict[str, xr.Dataset]] = None,
-):
+) -> None:
     """
     Convert number density estimates in abundances.
 
@@ -233,46 +233,54 @@ def compute_abundance(
         # ---- Get the set of coordinate names for each DataArray
         coord_sets = [set(da.coords) for da in overall_props.values()]
         # ---- Find the intersection (shared coordinates)
-        shared_coords = set.intersection(*coord_sets) - {"variable", "length_bin"}
+        shared_coords = set.intersection(*coord_sets) - {"length_bin"}
         # ---- Find overlapping indices
         idx_names = list(shared_coords.intersection(set(dataset.columns)))
         nonidx_names = [id for id in list(shared_coords) if id not in idx_names]
-        # ---- Convert Datasets to DataFrames for compatibility
-        overall_props_cnv = {k: ds.to_dataframe() for k, ds in overall_props.items()}
         # ---- Create grouped table from number proportions
-        grouped_proportions = create_grouped_table(
-            overall_props_cnv,
-            group_cols=list(shared_coords),
-            strat_cols=list(nonidx_names),
-            index_cols=list(idx_names),
-            value_col="proportion_overall",
+        grouped_proportions = sum(
+            da.sum(dim=[d for d in da.dims if d not in shared_coords])
+            for da in overall_props.values()
         )
         # ---- Apply exclusion filter, if required
-        grouped_proportions_excl = apply_filters(grouped_proportions, exclude_filter=exclude_filter)
+        if exclude_filter:
+            # ---- Parse existing labels
+            to_drop = {
+                k: v for k, v in exclude_filter.items()
+                if k in grouped_proportions.coords and v in grouped_proportions.coords[k].values
+            }
+            if to_drop:
+                grouped_proportions_excl = grouped_proportions.drop_sel(to_drop)
+            else:
+                grouped_proportions_excl = grouped_proportions
+        else:
+            grouped_proportions_excl = grouped_proportions
         # ---- Refine if no grouping
         if len(nonidx_names) == 0:
-            grouped_proportions_excl = grouped_proportions_excl["proportion_overall"]
             number_density_vals = dataset["number_density"].values
             abundance_vals = dataset["abundance"].values
         else:
             number_density_vals = dataset["number_density"].values[:, None]
-            abundance_vals = dataset["abundance"].values[:, None]
-        # ---- Set the index
+            abundance_vals = dataset["abundance"].values[:, None]        
+        # ---- Reindex the DataArray
+        ridx = {
+            k: dataset[k] for k in idx_names
+        }
+        grouped_proportions_ridx = grouped_proportions_excl.reindex(ridx).fillna(0.0)  
+        # ---- Set the index of the tabular data
         dataset.set_index(idx_names, inplace=True)
-        # ---- Reindex the table
-        grouped_proportions_ridx = grouped_proportions_excl.reindex(dataset.index).fillna(0.0)
         # ---- Compute number density
         grouped_number_density = number_density_vals * grouped_proportions_ridx
         # ---- Compute abundance
         grouped_abundance = abundance_vals * grouped_proportions_ridx
         # ---- Add the number densities to the dataset
-        dataset[grouped_number_density.columns.map(lambda c: f"number_density_{c}")] = (
-            grouped_number_density.values
-        )
+        dataset[
+            [f"number_density_{c}" for c in grouped_number_density.coords[nonidx_names[0]].values]
+        ] = grouped_number_density
         # ---- Add abundances to the dataset
-        dataset[grouped_abundance.columns.map(lambda c: f"abundance_{c}")] = (
-            grouped_abundance.values
-        )
+        dataset[
+            [f"abundance_{c}" for c in grouped_abundance.coords[nonidx_names[0]].values]
+        ] = grouped_abundance
         # ---- Reset the index
         dataset.reset_index(inplace=True)
 
