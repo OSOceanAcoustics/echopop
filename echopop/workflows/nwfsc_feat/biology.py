@@ -1,10 +1,10 @@
-from typing import Dict, Optional, Tuple, Union
+from typing import Dict, Optional, Union
 
 import numpy as np
 import pandas as pd
 import xarray as xr
 
-from ...utils import apply_filters, binned_distribution, create_grouped_table
+from ...utils import binned_distribution
 
 
 def length_binned_weights(
@@ -246,7 +246,8 @@ def compute_abundance(
         if exclude_filter:
             # ---- Parse existing labels
             to_drop = {
-                k: v for k, v in exclude_filter.items()
+                k: v
+                for k, v in exclude_filter.items()
                 if k in grouped_proportions.coords and v in grouped_proportions.coords[k].values
             }
             if to_drop:
@@ -261,12 +262,10 @@ def compute_abundance(
             abundance_vals = dataset["abundance"].values
         else:
             number_density_vals = dataset["number_density"].values[:, None]
-            abundance_vals = dataset["abundance"].values[:, None]        
+            abundance_vals = dataset["abundance"].values[:, None]
         # ---- Reindex the DataArray
-        ridx = {
-            k: dataset[k] for k in idx_names
-        }
-        grouped_proportions_ridx = grouped_proportions_excl.reindex(ridx).fillna(0.0)  
+        ridx = {k: dataset[k] for k in idx_names}
+        grouped_proportions_ridx = grouped_proportions_excl.reindex(ridx).fillna(0.0)
         # ---- Set the index of the tabular data
         dataset.set_index(idx_names, inplace=True)
         # ---- Compute number density
@@ -278,9 +277,9 @@ def compute_abundance(
             [f"number_density_{c}" for c in grouped_number_density.coords[nonidx_names[0]].values]
         ] = grouped_number_density
         # ---- Add abundances to the dataset
-        dataset[
-            [f"abundance_{c}" for c in grouped_abundance.coords[nonidx_names[0]].values]
-        ] = grouped_abundance
+        dataset[[f"abundance_{c}" for c in grouped_abundance.coords[nonidx_names[0]].values]] = (
+            grouped_abundance
+        )
         # ---- Reset the index
         dataset.reset_index(inplace=True)
 
@@ -323,10 +322,8 @@ def matrix_multiply_grouped_table(
     suffixes = variable_columns.str.replace(prefix_pattern, "", regex=False).to_list()
 
     # Reindex table
-    ridx = {
-        k: dataset.reset_index()[k] for k in dataset.index.names
-    }
-    table_ridx = table.reindex(ridx).fillna(0.0) 
+    ridx = {k: dataset.reset_index()[k] for k in dataset.index.names}
+    table_ridx = table.reindex(ridx).fillna(0.0)
 
     # Apply an inclusion filter
     table_groups = table_ridx.sel({group: suffixes})
@@ -430,17 +427,15 @@ def compute_biomass(
     # ---- Ungrouped
     else:
         # ---- Reindex table
-        ridx = {
-            k: dataset.reset_index()[k] for k in dataset.index.names
-        }
-        stratum_weights_ridx = stratum_weights.reindex(ridx).fillna(0.0) 
+        ridx = {k: dataset.reset_index()[k] for k in dataset.index.names}
+        stratum_weights_ridx = stratum_weights.reindex(ridx).fillna(0.0)
         # ---- Compute biomass densities
         dataset["biomass_density"] = dataset["number_density"] * stratum_weights_ridx.sel(
             {nonidx_names[0]: "all"}
         )
         # ---- Compute biomass
         dataset["biomass"] = dataset["abundance"] * stratum_weights.sel({nonidx_names[0]: "all"})
-        
+
     # Reset the index
     dataset.reset_index(inplace=True)
 
