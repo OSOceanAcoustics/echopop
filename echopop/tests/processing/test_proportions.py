@@ -497,7 +497,7 @@ def test_fitted_weight_proportions(
         data=xr.Dataset({"aged": aged_dataarray, "unaged": unaged_dataarray}),
         group_columns=["stratum_num", "sex"],
     )
-    
+
     # Generate weight distribution
     weight_data = (
         pd.DataFrame(
@@ -505,15 +505,16 @@ def test_fitted_weight_proportions(
                 "length_bin": np.repeat(number_props["unaged"]["length_bin"].values, 2),
                 "stratum_num": np.repeat([1, 2], 3),
                 "sex": np.tile(["male", "female"], 3),
-                "weight": np.repeat([1, 2, 3], 2)
+                "weight": np.repeat([1, 2, 3], 2),
             }
-        ).set_index(["length_bin", "sex", "stratum_num"])
+        )
+        .set_index(["length_bin", "sex", "stratum_num"])
         .to_xarray()
         .to_dataarray()
         .squeeze("variable")
         .reset_coords("variable", drop=True)
     ).fillna(0.0)
-    
+
     # Get the length-binned weights
     lb_weights = (
         pd.DataFrame(
@@ -562,36 +563,37 @@ def test_fitted_weight_proportions(
         result_da.sel(sex="male", length_bin="(20, 30]") == pytest.approx([0.20242915, 0.09970993])
     ).all()
     assert (
-        result_da.sel(sex="male", length_bin="(30, 40]") == pytest.approx([0.30364372, 0.1495649 ])
+        result_da.sel(sex="male", length_bin="(30, 40]") == pytest.approx([0.30364372, 0.1495649])
     ).all()
 
     # Summed results
     assert (
-        result_da.sum(dim=["length_bin"]) == 
-        pytest.approx(np.array([[0.20242915, 0.60728745], 
-                                [0.49854967, 0.2991298 ]]))
+        result_da.sum(dim=["length_bin"])
+        == pytest.approx(np.array([[0.20242915, 0.60728745], [0.49854967, 0.2991298]]))
     ).all()
     assert (
-        result_da.sum(dim=["sex"]) == 
-        pytest.approx(np.array([[0.13495277, 0.26990553, 0.4048583 ], 
-                                [0.13294658, 0.26589316, 0.39883974]]))
+        result_da.sum(dim=["sex"])
+        == pytest.approx(
+            np.array([[0.13495277, 0.26990553, 0.4048583], [0.13294658, 0.26589316, 0.39883974]])
+        )
     ).all()
     assert (
-        result_da.sum(dim=["stratum_num"]) == 
-        pytest.approx(np.array([[0.1168298 , 0.15106954], 
-                                [0.23365961, 0.30213908],
-                                [0.35048941, 0.45320863]]))
+        result_da.sum(dim=["stratum_num"])
+        == pytest.approx(
+            np.array([[0.1168298, 0.15106954], [0.23365961, 0.30213908], [0.35048941, 0.45320863]])
+        )
     ).all()
     assert (
         result_da.sum(dim=["stratum_num", "length_bin"]) == pytest.approx([0.70097882, 0.90641725])
     ).all()
     assert (
-        result_da.sum(dim=["stratum_num", "sex"]) == 
-        pytest.approx([0.26789935, 0.53579869, 0.80369804])
+        result_da.sum(dim=["stratum_num", "sex"])
+        == pytest.approx([0.26789935, 0.53579869, 0.80369804])
     ).all()
     assert (
-        result_da.sum(dim=["length_bin", "sex"]) == pytest.approx([0.8097166 , 0.79767948])
+        result_da.sum(dim=["length_bin", "sex"]) == pytest.approx([0.8097166, 0.79767948])
     ).all()
+
 
 # =============================================================================
 # TESTS FOR NEW PROPORTION SLICING FUNCTIONS

@@ -1177,7 +1177,7 @@ def get_number_proportions_slice(
             aggregate_array = aggregate_array.drop_sel(to_drop)
     # ---- Drop any singleton coordinates
     grouped_props = aggregate_array.squeeze(drop=True)
-    
+
     # Aggregate further over the defined group_columns
     return grouped_props.sum(dim=[d for d in grouped_props.coords if d not in group_columns])
 
