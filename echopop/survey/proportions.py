@@ -111,8 +111,15 @@ def number_proportions(
     filtered_vars = {}
     for varname, da in data.data_vars.items():
         filt = exclude_filters.get(varname, {})
+        filt_pruned = {}
+        # ---- Subset filter with overlapping coordinates
+        filt_pruned = {k: v for k, v in filt.items() if k in data.coords}
+        # ---- Ensure valid values
+        filt_pruned.update({
+            k: list(set(v).intersection(data.coords[k].values)) for k, v in filt_pruned.items()      
+        })
         if filt:
-            da = da.drop_sel(filt)
+            da = da.drop_sel(filt_pruned)
         # ---- Convert back to DataArray
         if da.size == 0:
             # ---- If all filtered out, create empty DataArray with same dims
