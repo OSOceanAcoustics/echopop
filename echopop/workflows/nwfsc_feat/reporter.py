@@ -1523,16 +1523,21 @@ class Reporter:
         # Convert xr.DataArrays to DataFrames
         datatables_cnv = {}
         for k, da in datatables.items():
-            datatables_cnv[k] = da.to_dataframe()
+            # ---- Get coordinates
+            agg_coords = set(da.coords) - {"length_bin", "sex", "age_bin"}
+            # ---- Aggregate
+            da_agg = da.sum(dim=agg_coords)
+            # ---- Re-allocate, if needed
+            if k == "aged":
+                da_agg = apportionment.reallocate_excluded_estimates(
+                    da_agg, exclude_filter, ["sex"]
+                )
+            # ---- Convert to DataFrame
+            datatables_cnv[k] = da_agg.to_series()
 
         # Pull the aged dataset
-        aged_table = datatables_cnv["aged"].unstack().sum(axis=1).unstack(["age_bin", "sex"])
-
-        # Redistribute the aged table, if required
-        aged_table = apportionment.reallocate_excluded_estimates(
-            aged_table, exclude_filter, ["sex"]
-        )
-
+        aged_table = datatables_cnv["aged"].unstack(["age_bin", "sex"])
+        
         # Reorient the aged table
         # ---- Convert the indices to numerics
         aged_table.index = (
@@ -1559,7 +1564,7 @@ class Reporter:
 
         # Reorient the unaged tabled
         unaged_table = (
-            datatables_cnv["unaged"].unstack().sum(axis=1).unstack("sex").loc[:, ["male", "female"]]
+            datatables_cnv["unaged"].unstack("sex")
         )
         # ---- Convert the indices to numerics
         unaged_table.index = (
@@ -1644,15 +1649,20 @@ class Reporter:
         # Convert xr.DataArrays to DataFrames
         datatables_cnv = {}
         for k, da in datatables.items():
-            datatables_cnv[k] = da.to_dataframe()
+            # ---- Get coordinates
+            agg_coords = set(da.coords) - {"length_bin", "sex", "age_bin"}
+            # ---- Aggregate
+            da_agg = da.sum(dim=agg_coords)
+            # ---- Re-allocate, if needed
+            if k == "aged":
+                da_agg = apportionment.reallocate_excluded_estimates(
+                    da_agg, exclude_filter, ["sex"]
+                )
+            # ---- Convert to DataFrame
+            datatables_cnv[k] = da_agg.to_series()
 
         # Pull the aged dataset
-        aged_table = datatables_cnv["aged"].unstack().sum(axis=1).unstack(["age_bin", "sex"])
-
-        # Redistribute the aged table, if required
-        aged_table = apportionment.reallocate_excluded_estimates(
-            aged_table, exclude_filter, ["sex"]
-        )
+        aged_table = datatables_cnv["aged"].unstack(["age_bin", "sex"])
 
         # Reorient the aged table
         # ---- Convert the indices to numerics
@@ -1680,7 +1690,7 @@ class Reporter:
 
         # Reorient the unaged tabled
         unaged_table = (
-            datatables_cnv["unaged"].unstack().sum(axis=1).unstack("sex").loc[:, ["male", "female"]]
+            datatables_cnv["unaged"].unstack("sex")
         )
         # ---- Convert the indices to numerics
         unaged_table.index = (
@@ -2087,10 +2097,13 @@ class Reporter:
         # Convert xr.DataArrays to DataFrames
         datatables_cnv = {}
         for k, da in datatables.items():
-            datatables_cnv[k] = da.to_dataframe()
+            # ---- Get coordinates
+            agg_coords = set(da.coords) - {"length_bin", "sex", "age_bin"}
+            # ---- Convert to DataFrame
+            datatables_cnv[k] = da.sum(dim=agg_coords).to_series()
 
         # Pull the aged dataset
-        aged_table = datatables_cnv["aged"].unstack().sum(axis=1).unstack(["age_bin", "sex"])
+        aged_table = datatables_cnv["aged"].unstack(["age_bin", "sex"])
 
         # Reorient the aged table
         # ---- Convert the indices to numerics
@@ -2118,7 +2131,7 @@ class Reporter:
 
         # Reorient the unaged tabled
         unaged_table = (
-            datatables_cnv["unaged"].unstack().sum(axis=1).unstack("sex").loc[:, ["male", "female"]]
+            datatables_cnv["unaged"].unstack("sex")
         )
         # ---- Convert the indices to numerics
         unaged_table.index = (
