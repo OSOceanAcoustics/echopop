@@ -610,82 +610,75 @@ def distribute_unaged_from_aged(
 
 
 def sum_population_tables(
-    population_table: Dict[str, xr.Dataset],
+    population_tables: Dict[str, xr.DataArray],
 ) -> xr.DataArray:
     """
-    Combine and sum population estimates across defined tables to yield a single population table.
+    Combine and sum population estimates from multiple input tables into a single result.
 
-    This function takes a dictionary of xarray Datasets, each representing a population estimate
-    table (e.g., "aged", "unaged"), and combines them into a single consolidated xarray DataArray by
-    aggregating over non-grouped dimensions and summing values across all input tables.
+    This function takes a dictionary of population estimate tables and produces a single table by
+    summing over any dimensions that are not shared by all input tables. Only dimensions present in
+    every input table are retained in the result.
+
     Parameters
     ----------
-    population_table : Dict[str, xr.Dataset]
-        Dictionary of population estimate tables to combine. Keys are table names (e.g., "aged",
-        "unaged", "speciesA", "speciesB") and values are xarray Datasets with population data. Each
-        Dataset should have compatible coordinate/dimension names.
-    group_columns : List[str], optional
-        List of coordinate names to retain as dimensions in the final combined table (e.g.,
-        ["sex", "age_bin"]). All other coordinates will be summed over.
-
+    population_tables : Dict[str, xr.DataArray]
+        Dictionary of population estimate tables to combine. Keys are table names and values are
+        population tables with compatible dimensions.
+        
     Returns
     -------
     xr.DataArray
-        Combined population table as an xarray DataArray, with group_columns as dimensions.
-        Values are summed across all input tables for each group_columns combination.
+        Combined population table with only the shared dimensions retained. Values are summed
+        across all input tables for each combination of shared dimensions.
 
     Notes
     -----
-    The combination process:
-    1. Identifies all unique coordinate names across the input Datasets.
-    2. Determines which coordinates are not in group_columns and sums over those dimensions.
-    3. Converts each aggregated Dataset to a DataFrame, aligns, and sums them element-wise.
-    4. Returns the result as an xarray DataArray with group_columns as dimensions.
+    - Any dimension not present in all input tables is summed over before combining.
+    - The result is aligned on shared dimensions and summed element-wise.
+    - The function is robust to input tables with different sets of dimensions, as long as there is 
+    at least one shared dimension.
 
     Examples
     --------
-    >>> combined = sum_population_table(
-    ...     population_table={"aged": ds_aged, "unaged": ds_unaged},
-    ...     group_columns=["sex", "age_bin", "length_bin"]
-    ... )
+    >>> combined = sum_population_tables({
+    ...     "aged": table_aged,
+    ...     "unaged": table_unaged
+    ... })
     >>> print(combined)
     <xarray.DataArray ...>
-
     """
+    
+    # Validate typing
+    for k, v in population_tables.items():
+        if not isinstance(v, xr.DataArray):
+            raise TypeError(f"Value for key '{k}' is not an xr.DataArray.")
 
-    # Get all unique coordinate names
-    table_coords = {coord for ds in population_table.values() for coord in ds.coords.keys()}
+    # Find all dimensions
+    dims_sets = [set(da.dims) for da in population_tables.values()]
+    
+    # Check for shared dimensions
+    shared_dims = set.intersection(*dims_sets)
+    if not shared_dims:
+        raise ValueError("No shared dimensions found across all input tables.")
 
-    # Aggregate the grouped dimensions
-    grouped_tables = {
-        k: da.sum(dim=[v for v in da.coords.keys() if v not in set(table_coords)])
-        .to_dataframe(name="value")["value"]
-        .unstack()
-        for k, da in population_table.items()
+    # Find mismatched dimensions
+    unique_dims = set.union(*dims_sets) - set.intersection(*dims_sets)
+
+    # Reduce the dimensions for alignment
+    population_tables_reduced = {
+        k: da.sum(dim=[d for d in da.coords if d in unique_dims])
+        for k, da in population_tables.items()
     }
 
-    # Stack the tables
-    stacked_tables = {
-        k: v.stack(v.columns.names, future_stack=True).to_frame("value")
-        for k, v in grouped_tables.items()
-    }
+    # Format into list for alignment
+    population_tables_list = [da for da in population_tables_reduced.values()]
 
-    # Find common indices across all DataFrames
-    common_indices = set.intersection(*(set(df.index.names) for df in stacked_tables.values()))
+    # Ensure alignment
+    population_tables_aligned = xr.align(*population_tables_list)
+    
+    # Sum over the tables
+    return sum(population_tables_aligned)
 
-    # Collapse excess indices for all DataFrames (no explicit loop)
-    def collapse_to_common(df):
-        return df.groupby(level=list(common_indices), observed=True).sum()
-
-    reduced_data = {k: collapse_to_common(df) for k, df in stacked_tables.items()}
-
-    # Sum the compatible tables
-    table_summed = sum(reduced_data.values())
-
-    # Return the full DataArray
-    result = table_summed["value"].to_xarray()
-    result.name = "estimate"
-    return result
 
 
 def reallocate_excluded_estimates(
