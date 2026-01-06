@@ -649,9 +649,12 @@ def sum_population_tables(
     """
     
     # Validate typing
-    for k, v in population_tables.items():
-        if not isinstance(v, xr.DataArray):
-            raise TypeError(f"Value for key '{k}' is not an xr.DataArray.")
+    if not population_tables:
+        raise ValueError("Input 'population_tables' dictionary is empty.")
+    else:
+        for k, v in population_tables.items():
+            if not isinstance(v, xr.DataArray):
+                raise TypeError(f"Value for key '{k}' is not an xr.DataArray.")
 
     # Find all dimensions
     dims_sets = [set(da.dims) for da in population_tables.values()]
@@ -685,112 +688,116 @@ def reallocate_excluded_estimates(
     population_table: xr.DataArray,
     exclusion_filter: Dict[str, Any],
     group_columns: List[str] = [],
-) -> Union[xr.Dataset, xr.DataArray]:
+) -> xr.DataArray:
     """
-    Redistribute population estimates across groups after excluding a specific subset.
+    Redistribute population estimates after excluding specified segments.
 
-    This function removes specified population segments (e.g., age-1 fish) and redistributes
-    their population estimates proportionally across the remaining groups. This is commonly used
-    when certain age classes need to be excluded from final estimates but their contributions
-    should be reallocated to other age groups.
+    Removes population segments matching the exclusion filter and proportionally reallocates their 
+    values across the remaining segments, preserving totals within each group defined by 
+    `group_columns`. This is useful for excluding specific categories (e.g., age-1 fish) while 
+    maintaining total population estimates within groups.
 
     Parameters
     ----------
     population_table : xr.DataArray
-        Population estimates as an xarray DataArray, typically with biological groups as dimensions.
+        Population estimates. Must have all dimensions referenced in `exclusion_filter` and 
+        `group_columns`.
     exclusion_filter : Dict[str, Any]
-        Dictionary specifying which population segments to exclude and redistribute. Keys are
-        dimension names, values are the categories to exclude. Example: {"age_bin": [1]} to
-        exclude age-1 fish.
+        Dictionary specifying which segments to exclude. Keys are dimension names, values are 
+        categories to exclude. Example: {"age_bin": [1]} excludes age-1 fish.
     group_columns : List[str], optional
-        List of dimension names that define the grouping variables for redistribution (e.g., ["sex"]
-        to redistribute within each sex separately). If empty, redistribution is performed over all
-        dimensions.
+        Dimensions to group by when redistributing excluded values (e.g., ["sex"]). If empty, 
+        redistribution is performed over all dimensions.
 
     Returns
     -------
-    Union[xr.Dataset, xr.DataArray]
-        If `group_columns` is not empty, returns an xarray.Dataset with excluded segments removed
-        and their values redistributed proportionally across remaining groups, preserving the
-        'group_columns' as dimensions. If `group_columns` is empty, returns an xarray.DataArray
-        with the same structure as the input, but with excluded segments removed and their values
-        redistributed.
+    xr.DataArray
+        Population table with excluded segments set to zero and their values redistributed across 
+        remaining segments.
 
     Raises
     ------
+    ValueError
+        If any exclusion_filter or group_columns dimension is missing from population_table.
     UserWarning
-        If the redistributed table sums don't match the original table sums within tolerance.
-
+        If the sum of the redistributed table does not match the original within a small tolerance.
+        
     Notes
     -----
-    The redistribution algorithm:
-    1. Identifies population segments matching the exclusion filter.
-    2. Calculates the total excluded biomass/abundance for each group.
-    3. Removes excluded segments (sets them to zero).
-    4. Redistributes excluded totals proportionally across remaining segments.
-    5. Ensures total population remains constant after redistribution.
-
-    This maintains the biological realism of population estimates while allowing for policy-based
-    exclusions (e.g., removing age-1 fish from assessments).
-
+    - Excluded segments are set to zero.
+    - Their totals are redistributed proportionally across remaining segments within each group.
+    - The function preserves the total population within each group defined by `group_columns`.
+    
     Examples
     --------
     >>> result = reallocate_excluded_estimates(
     ...     population_table=da_population,
     ...     exclusion_filter={"age_bin": [1]},
-    ...     group_columns=["sex", "age_bin"]
-    ... )
-    >>> print(result)
-    <xarray.Dataset ...>
-
-    >>> result = reallocate_excluded_estimates(
-    ...     population_table=da_population,
-    ...     exclusion_filter={"age_bin": [1]},
-    ...     group_columns=[]
+    ...     group_columns=["sex"]
     ... )
     >>> print(result)
     <xarray.DataArray ...>
     """
-
+    
     # If no appropriate filter is defined, then nothing is redistributed
-    if len(exclusion_filter) == 0:
+    if not exclusion_filter:
         return population_table
-
-    # Convert to DataFrame
-    population_est = population_table.to_series().unstack(group_columns)
-
+    
+    # Validate the exclusion filter
+    missing_coords = [c for c in exclusion_filter if c not in population_table.dims]
+    if missing_coords:
+        missing_coords_str = "', '".join(missing_coords)
+        raise ValueError(
+            f"Dimensions in 'exclusion_filter' not found in 'population_table': "
+            f"{missing_coords_str}."
+        )
+        
+    # Validate grouping columns
+    missing_groups = [g for g in group_columns if g not in population_table.dims]
+    if missing_groups:
+        missing_groups_str = "', '".join(missing_groups)
+        raise ValueError(
+            f"Dimensions in 'group_columns' not found in 'population_table': "
+            f"{missing_groups_str}."
+        )
+    
     # Apply inverse of exclusion filter to get the values being excluded
-    population_excluded = utils.apply_filters(population_est, include_filter=exclusion_filter)
+    population_excluded = population_table.sel(exclusion_filter)
 
-    # Replace the excluded values in the full table with 0.
-    population_masked = utils.apply_filters(
-        population_est, exclude_filter=exclusion_filter, replace_value=0.0
+    # Replace the excluded values in the full table with 0
+    population_masked = population_table.copy()
+    population_masked.loc[exclusion_filter] = 0.0
+
+    # Sum values over dimensions based on group_columns
+    # ---- Values retained
+    population_excluded_sum = population_excluded.sum(
+        dim=[d for d in population_excluded.dims if d not in group_columns]
+    )
+    # ---- Values removed
+    population_masked_sum = population_masked.sum(
+        dim=[d for d in population_excluded.dims if d not in group_columns]
     )
 
-    # Get the sums for each group across the excluded and filtered tables
-    # ---- Filtered/included
-    population_masked_sum = population_masked.sum()
-    # ---- Excluded
-    population_excluded_sum = population_excluded.sum()
-    # ---- Handling if `pandas.Series`
-    if isinstance(population_excluded_sum, pd.Series):
-        population_excluded_sum = population_excluded_sum.reindex(
-            index=population_masked_sum.index, method="ffill"
-        )
-
-    # Get the redistributed values that will be added to the filtered table values
+    # Get the redistributed values that will be added to the filtered table
     population_adjusted = (
         population_masked * population_excluded_sum / population_masked_sum
-    ).fillna(0.0)
+    ).fillna(0.)
 
     # Add the adjustments to the masked table
     population_masked += population_adjusted
-
-    # Unstack and return to DataArray
-    result = population_masked.to_xarray().squeeze()
-    if isinstance(result, xr.DataArray) and not result.name:
-        result.name = population_table.name
-    return result
+    
+    # Check for conservation of summed estimates
+    orig_total = float(population_table.sum())
+    masked_total = float(population_masked.sum())
+    if not np.isclose(orig_total, masked_total):
+        warnings.warn(
+            f"Redistributed table sum ({masked_total}) does not match the original ({orig_total}) "
+            f"within tolerance.",
+            stacklevel = 2
+        )
+    
+    # Return the adjusted population distribution
+    return population_masked
 
 
 def distribute_population_estimates(
