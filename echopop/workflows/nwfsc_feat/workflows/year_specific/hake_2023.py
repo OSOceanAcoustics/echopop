@@ -674,8 +674,8 @@ feat_biology.compute_abundance(
 
 # COMPUTE STRATUM-AVERAGED WEIGHTS
 da_averaged_weight = proportions.stratum_averaged_weight(
-    dict_ds_number_proportion,
-    da_binned_weight_table,
+    number_proportions=dict_ds_number_proportion,
+    length_weight_data=da_binned_weight_table,
     group_columns=["stratum_ks"]
 )
 
