@@ -1537,7 +1537,7 @@ class Reporter:
 
         # Pull the aged dataset
         aged_table = datatables_cnv["aged"].unstack(["age_bin", "sex"])
-        
+
         # Reorient the aged table
         # ---- Convert the indices to numerics
         aged_table.index = (
@@ -1563,9 +1563,7 @@ class Reporter:
         aged_full_table = pd.concat([aged_table, aged_table_all], axis=1)
 
         # Reorient the unaged tabled
-        unaged_table = (
-            datatables_cnv["unaged"].unstack("sex")
-        )
+        unaged_table = datatables_cnv["unaged"].unstack("sex")
         # ---- Convert the indices to numerics
         unaged_table.index = (
             pd.Series(unaged_table.index, name="length_bin")
@@ -1689,9 +1687,7 @@ class Reporter:
         aged_full_table = pd.concat([aged_table, aged_table_all], axis=1) * 1e-9
 
         # Reorient the unaged tabled
-        unaged_table = (
-            datatables_cnv["unaged"].unstack("sex")
-        )
+        unaged_table = datatables_cnv["unaged"].unstack("sex")
         # ---- Convert the indices to numerics
         unaged_table.index = (
             pd.Series(unaged_table.index, name="length_bin")
@@ -2130,9 +2126,7 @@ class Reporter:
         aged_full_table = pd.concat([aged_table, aged_table_all], axis=1)
 
         # Reorient the unaged tabled
-        unaged_table = (
-            datatables_cnv["unaged"].unstack("sex")
-        )
+        unaged_table = datatables_cnv["unaged"].unstack("sex")
         # ---- Convert the indices to numerics
         unaged_table.index = (
             pd.Series(unaged_table.index, name="length_bin")

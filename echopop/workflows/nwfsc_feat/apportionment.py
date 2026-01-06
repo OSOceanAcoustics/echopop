@@ -7,8 +7,6 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from ... import utils
-
 warnings.simplefilter("always")
 
 
@@ -277,8 +275,8 @@ def impute_kriged_table(
     impute_variable: List[str],
 ) -> xr.DataArray:
     """
-Impute missing or zero-valued slices in a standardized xarray DataArray using reference and initial 
-tables.
+    Impute missing or zero-valued slices in a standardized xarray DataArray using reference and
+    initial tables.
 
     This function identifies zero-valued intervals in the reference table for grouped estimates,
     finds the nearest nonzero reference interval and imputes values in the standardized table using
@@ -288,10 +286,10 @@ tables.
     Parameters
     ----------
     initial_table : xr.DataArray
-        The initial (unstandardized) table, typically representing population or abundance 
+        The initial (unstandardized) table, typically representing population or abundance
         estimates.
     reference_table : xr.DataArray
-        The reference table used to guide imputation, typically representing a more complete or 
+        The reference table used to guide imputation, typically representing a more complete or
         trusted set of estimates.
     standardized_table : xr.DataArray
         The standardized table to be imputed, which will be updated and returned.
@@ -305,7 +303,7 @@ tables.
     Returns
     -------
     xr.DataArray
-        The imputed standardized table, with missing or zero-valued slices replaced by imputed 
+        The imputed standardized table, with missing or zero-valued slices replaced by imputed
         values.
 
     Raises
@@ -316,13 +314,13 @@ tables.
     Notes
     -----
     The imputation is performed as follows:
-    - For each group, identify intervals in the reference table that are zero but nonzero in the 
+    - For each group, identify intervals in the reference table that are zero but nonzero in the
     initial table.
     - For each such interval, find the nearest nonzero interval in the reference table.
     - Impute values in the standardized table using the formula:
-        imputed = initial[interval] * sum referenced[impute variable x interval] / 
+        imputed = initial[interval] * sum referenced[impute variable x interval] /
         summed reference[interval]
-      where the reference values are taken from the nearest nonzero interval.
+        where the reference values are taken from the nearest nonzero interval.
     - The function updates the standardized table in-place and returns it.
     """
 
@@ -347,15 +345,11 @@ tables.
 
     # Gather indices for each grouping
     ref_zero_indices = {
-        c: reference_summed.coords[interval_dim].values[
-            ref_zero_mask.sel({subgroup_dim: c})
-        ]    
+        c: reference_summed.coords[interval_dim].values[ref_zero_mask.sel({subgroup_dim: c})]
         for c in group_vals
     }
     ref_nonzero_indices = {
-        c: reference_summed.coords[interval_dim].values[
-            ref_nonzero_mask.sel({subgroup_dim: c})
-        ]    
+        c: reference_summed.coords[interval_dim].values[ref_nonzero_mask.sel({subgroup_dim: c})]
         for c in group_vals
     }
 
@@ -376,17 +370,17 @@ tables.
 
     # Check dimensions
     extra_subgroup_coords = list(
-        set(reference_summed.coords[subgroup_dim].values) ^ 
-        set(initial_table.coords[subgroup_dim].values)
+        set(reference_summed.coords[subgroup_dim].values)
+        ^ set(initial_table.coords[subgroup_dim].values)
     )
     if extra_subgroup_coords:
         extra_str = "', '".join(extra_subgroup_coords)
         # ---- Print warning
         warnings.warn(
-            f"The following keys for coordinate '{subgroup_dim}' are missing from the reference table "
-            f"and will therefore be skipped during imputation: '{extra_str}'. ",
+            f"The following keys for coordinate '{subgroup_dim}' are missing from the reference "
+            f"table and will therefore be skipped during imputation: '{extra_str}'. ",
             stacklevel=2,
-        )    
+        )
 
     # Apply the non-zero reference indices to each column
     table_nonzeros_mask = {
@@ -396,8 +390,7 @@ tables.
 
     # Get actual indices of masked values
     nonzero_reference_to_table_indices = {
-        v: np.array(ref_zero_indices[v])[table_nonzeros_mask[v]]
-        for v in table_nonzeros_mask
+        v: np.array(ref_zero_indices[v])[table_nonzeros_mask[v]] for v in table_nonzeros_mask
     }
 
     # Get the nearest-neighbor rows and recompute the indices
@@ -417,11 +410,11 @@ tables.
     # Impute to replace these values
     imputed_values = {
         v: (
-            initial_table.sel(
-                {subgroup_dim: v}
-            ).loc[nonzero_reference_to_table_indices[v]].to_numpy()[:, None] *
-            reference_grouped_sum.sel({subgroup_dim: v}).isel({interval_dim: imputed_rows[v]}) /
-            reference_summed.sel({subgroup_dim: v}).isel({interval_dim: imputed_rows[v]})
+            initial_table.sel({subgroup_dim: v})
+            .loc[nonzero_reference_to_table_indices[v]]
+            .to_numpy()[:, None]
+            * reference_grouped_sum.sel({subgroup_dim: v}).isel({interval_dim: imputed_rows[v]})
+            / reference_summed.sel({subgroup_dim: v}).isel({interval_dim: imputed_rows[v]})
         )
         for v in reference_summed.coords[subgroup_dim].values
     }
@@ -438,7 +431,7 @@ tables.
         }
         # ---- Apply imputed values
         target_table.loc[coords] = imp_da.data
-        # ---- Validate that imputation correctly applied 
+        # ---- Validate that imputation correctly applied
         if target_table.loc[coords].equals(standardized_table.loc[coords]):
             interval_str = "', '".join(
                 str(x) for x in nonzero_reference_to_table_indices[group_key]
@@ -463,54 +456,54 @@ def distribute_unaged_from_aged(
     """
     Standardize and optionally impute population estimates using reference proportions.
 
-    This function redistributes population estimates (e.g., unaged fish) to match the age/size 
-    structure observed in a reference table (e.g., aged fish), ensuring consistency across 
-    biological groups. Standardization is performed by summing over the dimensions in 
-    `collapse_dims`, then scaling by the corresponding reference proportions. Optionally, 
+    This function redistributes population estimates (e.g., unaged fish) to match the age/size
+    structure observed in a reference table (e.g., aged fish), ensuring consistency across
+    biological groups. Standardization is performed by summing over the dimensions in
+    `collapse_dims`, then scaling by the corresponding reference proportions. Optionally,
     nearest-neighbor imputation is performed for missing or zero-valued intervals.
 
     Parameters
     ----------
     population_table : xr.DataArray
-        The input population estimates to be standardized. Must have coordinates for all 
+        The input population estimates to be standardized. Must have coordinates for all
         `collapse_dims` and typically for "length_bin".
     reference_table : xr.DataArray
-        The reference population data used for standardization. Should have matching or compatible 
-        coordinates/dimensions as `population_table`, with additional detail (e.g., age 
+        The reference population data used for standardization. Should have matching or compatible
+        coordinates/dimensions as `population_table`, with additional detail (e.g., age
         information).
     collapse_dims : List[str], default []
-        List of dimension names to collapse (sum over) during standardization (e.g., ["sex"]). 
-        These dimensions are summed over in the initial step, and the resulting standardized table 
+        List of dimension names to collapse (sum over) during standardization (e.g., ["sex"]).
+        These dimensions are summed over in the initial step, and the resulting standardized table
         will not have these dimensions.
     impute : bool, default True
         If True, perform nearest-neighbor imputation for missing/zero values after standardization.
     impute_variable : List[str], optional
-        List of dimension names along which imputation is performed (e.g., ["age_bin"]). 
+        List of dimension names along which imputation is performed (e.g., ["age_bin"]).
         Required if `impute=True`.
 
     Returns
     -------
     xr.DataArray
-        Standardized (and optionally imputed) population estimates, with the same structure as 
+        Standardized (and optionally imputed) population estimates, with the same structure as
         `population_table` but adjusted according to reference proportions.
-        
+
     Raises
     ------
     ValueError
         If required coordinates (e.g., "length_bin") are missing from either input table.
         If impute=True and `impute_variable` is not provided.
-        
+
     Notes
     -----
-    - `collapse_dims` are the dimensions that will be summed over (collapsed) in both 
-    `population_table` and `reference_table`. For example, if `collapse_dims=["stratum"]`, the 
+    - `collapse_dims` are the dimensions that will be summed over (collapsed) in both
+    `population_table` and `reference_table`. For example, if `collapse_dims=["stratum"]`, the
     result will sum over the "stratum" dimension, producing a table without "stratum".
-    - The function expects both `population_table` and `reference_table` to have compatible 
+    - The function expects both `population_table` and `reference_table` to have compatible
     coordinates and dimensions.
     - If `impute=True`, missing or zero-valued slices are filled using nearest-neighbor imputation.
-    - The function validates that required coordinates (e.g., "length_bin") are present and raises 
+    - The function validates that required coordinates (e.g., "length_bin") are present and raises
     an error if not.
-    
+
     Examples
     --------
     >>> result = distribute_unaged_from_aged(
@@ -523,25 +516,24 @@ def distribute_unaged_from_aged(
     >>> print(result)
     <xarray.DataArray ...>
     """
-    
+
     # Coordinate validation for length bins
     if "length_bin" not in set(population_table.coords) & set(reference_table.coords):
         raise ValueError("Required coordinate 'length_bin' missing from the input tables.")
-    
+
     # Coordinate validation for collapse dimensions
-    if (
-        collapse_dims and 
-        not all(
-            [d for d in collapse_dims if d in (
-                set(population_table.coords) & set(reference_table.coords)
-        )]
-        )
+    if collapse_dims and not all(
+        [
+            d
+            for d in collapse_dims
+            if d in (set(population_table.coords) & set(reference_table.coords))
+        ]
     ):
         collapse_str = "', '".join(collapse_dims)
         raise ValueError(
             f"Coordinate(s) for 'collapse_dims' ('{collapse_str}') missing from the input tables."
         )
-    
+
     # Validate arguments for imputation
     if impute and not impute_variable:
         raise ValueError(
@@ -555,7 +547,7 @@ def distribute_unaged_from_aged(
 
     # Get original table coordinates
     table_coords = list(population_table.coords.keys())
-    # ---- Inherited grouping coordinate 
+    # ---- Inherited grouping coordinate
     table_noncoords = list(set(table_coords) - set(collapse_dims + ["length_bin"]))
 
     # Get reference coordinates
@@ -599,12 +591,12 @@ def distribute_unaged_from_aged(
             )
         # ---- Imputation
         standardized_table_imputed = impute_kriged_table(
-            initial_table = population_table.sum(dim=collapse_dims),
-            reference_table = reference_table,
-            standardized_table = standardized_table,
-            group_columns = collapse_dims,
-            subgroup_coords = table_noncoords,
-            impute_variable = impute_variable,
+            initial_table=population_table.sum(dim=collapse_dims),
+            reference_table=reference_table,
+            standardized_table=standardized_table,
+            group_columns=collapse_dims,
+            subgroup_coords=table_noncoords,
+            impute_variable=impute_variable,
         )
         return standardized_table_imputed
 
@@ -624,7 +616,7 @@ def sum_population_tables(
     population_tables : Dict[str, xr.DataArray]
         Dictionary of population estimate tables to combine. Keys are table names and values are
         population tables with compatible dimensions.
-        
+
     Returns
     -------
     xr.DataArray
@@ -635,7 +627,7 @@ def sum_population_tables(
     -----
     - Any dimension not present in all input tables is summed over before combining.
     - The result is aligned on shared dimensions and summed element-wise.
-    - The function is robust to input tables with different sets of dimensions, as long as there is 
+    - The function is robust to input tables with different sets of dimensions, as long as there is
     at least one shared dimension.
 
     Examples
@@ -647,7 +639,7 @@ def sum_population_tables(
     >>> print(combined)
     <xarray.DataArray ...>
     """
-    
+
     # Validate typing
     if not population_tables:
         raise ValueError("Input 'population_tables' dictionary is empty.")
@@ -658,7 +650,7 @@ def sum_population_tables(
 
     # Find all dimensions
     dims_sets = [set(da.dims) for da in population_tables.values()]
-    
+
     # Check for shared dimensions
     shared_dims = set.intersection(*dims_sets)
     if not shared_dims:
@@ -678,10 +670,9 @@ def sum_population_tables(
 
     # Ensure alignment
     population_tables_aligned = xr.align(*population_tables_list)
-    
+
     # Sum over the tables
     return sum(population_tables_aligned)
-
 
 
 def reallocate_excluded_estimates(
@@ -692,27 +683,27 @@ def reallocate_excluded_estimates(
     """
     Redistribute population estimates after excluding specified segments.
 
-    Removes population segments matching the exclusion filter and proportionally reallocates their 
-    values across the remaining segments, preserving totals within each group defined by 
-    `group_columns`. This is useful for excluding specific categories (e.g., age-1 fish) while 
+    Removes population segments matching the exclusion filter and proportionally reallocates their
+    values across the remaining segments, preserving totals within each group defined by
+    `group_columns`. This is useful for excluding specific categories (e.g., age-1 fish) while
     maintaining total population estimates within groups.
 
     Parameters
     ----------
     population_table : xr.DataArray
-        Population estimates. Must have all dimensions referenced in `exclusion_filter` and 
+        Population estimates. Must have all dimensions referenced in `exclusion_filter` and
         `group_columns`.
     exclusion_filter : Dict[str, Any]
-        Dictionary specifying which segments to exclude. Keys are dimension names, values are 
+        Dictionary specifying which segments to exclude. Keys are dimension names, values are
         categories to exclude. Example: {"age_bin": [1]} excludes age-1 fish.
     group_columns : List[str], optional
-        Dimensions to group by when redistributing excluded values (e.g., ["sex"]). If empty, 
+        Dimensions to group by when redistributing excluded values (e.g., ["sex"]). If empty,
         redistribution is performed over all dimensions.
 
     Returns
     -------
     xr.DataArray
-        Population table with excluded segments set to zero and their values redistributed across 
+        Population table with excluded segments set to zero and their values redistributed across
         remaining segments.
 
     Raises
@@ -721,13 +712,13 @@ def reallocate_excluded_estimates(
         If any exclusion_filter or group_columns dimension is missing from population_table.
     UserWarning
         If the sum of the redistributed table does not match the original within a small tolerance.
-        
+
     Notes
     -----
     - Excluded segments are set to zero.
     - Their totals are redistributed proportionally across remaining segments within each group.
     - The function preserves the total population within each group defined by `group_columns`.
-    
+
     Examples
     --------
     >>> result = reallocate_excluded_estimates(
@@ -738,11 +729,11 @@ def reallocate_excluded_estimates(
     >>> print(result)
     <xarray.DataArray ...>
     """
-    
+
     # If no appropriate filter is defined, then nothing is redistributed
     if not exclusion_filter:
         return population_table
-    
+
     # Validate the exclusion filter
     missing_coords = [c for c in exclusion_filter if c not in population_table.dims]
     if missing_coords:
@@ -751,7 +742,7 @@ def reallocate_excluded_estimates(
             f"Dimensions in 'exclusion_filter' not found in 'population_table': "
             f"{missing_coords_str}."
         )
-        
+
     # Validate grouping columns
     missing_groups = [g for g in group_columns if g not in population_table.dims]
     if missing_groups:
@@ -760,7 +751,7 @@ def reallocate_excluded_estimates(
             f"Dimensions in 'group_columns' not found in 'population_table': "
             f"{missing_groups_str}."
         )
-    
+
     # Apply inverse of exclusion filter to get the values being excluded
     population_excluded = population_table.sel(exclusion_filter)
 
@@ -781,11 +772,11 @@ def reallocate_excluded_estimates(
     # Get the redistributed values that will be added to the filtered table
     population_adjusted = (
         population_masked * population_excluded_sum / population_masked_sum
-    ).fillna(0.)
+    ).fillna(0.0)
 
     # Add the adjustments to the masked table
     population_masked += population_adjusted
-    
+
     # Check for conservation of summed estimates
     orig_total = float(population_table.sum())
     masked_total = float(population_masked.sum())
@@ -793,9 +784,9 @@ def reallocate_excluded_estimates(
         warnings.warn(
             f"Redistributed table sum ({masked_total}) does not match the original ({orig_total}) "
             f"within tolerance.",
-            stacklevel = 2
+            stacklevel=2,
         )
-    
+
     # Return the adjusted population distribution
     return population_masked
 
@@ -912,7 +903,7 @@ def distribute_population_estimates(
 
     # Distribute the variable over each table
     apportioned_groups = {
-        k: proportions_norm[k].reindex_like(data_array[variable]) * data_array[variable] 
+        k: proportions_norm[k].reindex_like(data_array[variable]) * data_array[variable]
         for k in proportions_norm.keys()
     }
     # ---- Update DataArray names
