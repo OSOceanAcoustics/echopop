@@ -269,89 +269,100 @@ def mesh_biomass_to_nasc(
 
 
 def impute_kriged_table(
-    reference_table_df: pd.DataFrame,
-    initial_table_df: pd.DataFrame,
-    standardized_table_df: pd.DataFrame,
-    group_by: List[str],
+    initial_table: xr.DataArray,
+    reference_table: xr.DataArray,
+    standardized_table: xr.DataArray,
+    group_columns: List[str],
+    subgroup_coords: List[str],
     impute_variable: List[str],
-    table_reference_indices: List[str],
-) -> pd.DataFrame:
+) -> xr.DataArray:
     """
-    Convert biomass estimates distributed across a grid or mesh into grouped (e.g. sex-specific)
-    abundance and NASC values.
+Impute missing or zero-valued slices in a standardized xarray DataArray using reference and initial 
+tables.
 
-    This function takes kriged biomass density estimates from a mesh/grid and converts them to
-    abundance and NASC (Nautical Area Scattering Coefficient) values by applying biological
-    proportion data and acoustic backscattering coefficients. The function modifies the input
-    mesh DataFrame in place.
+    This function identifies zero-valued intervals in the reference table for grouped estimates,
+    finds the nearest nonzero reference interval and imputes values in the standardized table using
+    a ratio-based approach. The imputation is performed only where the initial table is nonzero and
+    the reference table is zero, and is done for each group and interval independently.
 
     Parameters
     ----------
-    mesh_data : pd.DataFrame
-        DataFrame containing kriged biomass density estimates with spatial mesh information.
-        Must contain columns for linking to biodata and either 'biomass', or 'biomass_density'
-        and 'area', columns.
-    biodata : Union[xr.Dataset, Dict[str, xr.Dataset]]
-        Biological proportion data. Can be a single xarray.Dataset or a dictionary of Datasets
-        containing proportion data for different biological groups (e.g., aged/unaged).
-        Each Dataset must contain a variable named "proportion_overall".
-    mesh_biodata_link : Dict[str, str]
-        Dictionary mapping column names from mesh_data to biodata column names for joining.
-        Example: {"geostratum_ks": "stratum_ks"}
-    stratum_weights : pd.DataFrame
-        DataFrame containing average weights per stratum for converting biomass to abundance.
-        Index should match the linked columns from mesh_biodata_link.
-    stratum_sigma_bs : pd.DataFrame
-        DataFrame containing sigma_bs (backscattering coefficient) values per stratum.
-        Must have 'sigma_bs' column with index matching linked columns.
-    group_columns : List[str], default []
-        List of column names to group biological data by (e.g., ["sex", "age_bin"]).
+    initial_table : xr.DataArray
+        The initial (unstandardized) table, typically representing population or abundance 
+        estimates.
+    reference_table : xr.DataArray
+        The reference table used to guide imputation, typically representing a more complete or 
+        trusted set of estimates.
+    standardized_table : xr.DataArray
+        The standardized table to be imputed, which will be updated and returned.
+    group_columns : List[str]
+        List of dimension names used to group the data (e.g., ["stratum"]).
+    subgroup_coords : List[str]
+        List of coordinate names that define subgroups (typically a subset of group_columns).
+    impute_variable : List[str]
+        List of dimension names along which imputation is performed (e.g., ["age_bin"]).
 
     Returns
     -------
-    None
-        Function modifies mesh_data in place, adding new columns for biomass, abundance,
-        and NASC values.
+    xr.DataArray
+        The imputed standardized table, with missing or zero-valued slices replaced by imputed 
+        values.
 
     Raises
     ------
-    KeyError
-        If required link columns are missing from biodata or mesh DataFrames.
+    ValueError
+        If imputation fails for any group and interval combination.
 
     Notes
     -----
-    The function performs the following steps:
-    1. Computes biomass from biomass_density x area if not present
-    2. Links mesh data to biological proportions using mesh_biodata_link
-    3. Applies proportions to distribute total biomass across biological groups
-    4. Converts biomass to abundance using stratum weights
-    5. Calculates NASC using abundance and sigma_bs values
-
-    The NASC calculation uses the formula: NASC = abundance x sigma_bs x 4π
+    The imputation is performed as follows:
+    - For each group, identify intervals in the reference table that are zero but nonzero in the 
+    initial table.
+    - For each such interval, find the nearest nonzero interval in the reference table.
+    - Impute values in the standardized table using the formula:
+        imputed = initial[interval] * sum referenced[impute variable x interval] / 
+        summed reference[interval]
+      where the reference values are taken from the nearest nonzero interval.
+    - The function updates the standardized table in-place and returns it.
     """
 
-    # Sum the reference proportions across the impute variable
-    reference_stk = (
-        reference_table_df.sum(axis=1).unstack(impute_variable).sum(axis=1).unstack(group_by)
+    # Extract dimensions
+    subgroup_dim = subgroup_coords[0]
+
+    # Get group and impute coordinate values
+    group_vals = reference_table.coords[subgroup_dim].values
+    interval_dim = [d for d in reference_table.dims if d not in group_columns + impute_variable][0]
+
+    # Sum reference_table across all dims except group_columns + impute_variable
+    reference_summed = reference_table.sum(
+        dim=[c for c in reference_table.dims if c not in [subgroup_dim, interval_dim]]
     )
 
-    # Unstack the grouping and imputate variable
-    reference_group_stk = reference_table_df.sum(axis=1).unstack(group_by + impute_variable)
+    # Sum reference_table across all group_columns
+    reference_grouped_sum = reference_table.sum(dim=group_columns)
 
-    # Get the mask for all 0.0's and non-zeros
-    ref_zero_mask = reference_stk == 0.0
-    ref_nonzero_mask = reference_stk != 0.0
+    # Mask for zeros/non-zeros along impute_variable
+    ref_zero_mask = reference_summed == 0.0
+    ref_nonzero_mask = reference_summed != 0.0
 
-    # Gather the indices for each column
+    # Gather indices for each grouping
     ref_zero_indices = {
-        col: reference_stk.index[ref_zero_mask[col]].tolist() for col in reference_stk.columns
+        c: reference_summed.coords[interval_dim].values[
+            ref_zero_mask.sel({subgroup_dim: c})
+        ]    
+        for c in group_vals
     }
     ref_nonzero_indices = {
-        col: reference_stk.index[ref_nonzero_mask[col]].tolist() for col in reference_stk.columns
+        c: reference_summed.coords[interval_dim].values[
+            ref_nonzero_mask.sel({subgroup_dim: c})
+        ]    
+        for c in group_vals
     }
 
     # Create translation for row numbers
-    interval_to_numeric = {interval: i for i, interval in enumerate(reference_stk.index)}
+    interval_to_numeric = {
+        interval: i for i, interval in enumerate(reference_summed.coords[interval_dim].values)
+    }
 
     # Convert to row numbers
     ref_zero_rows = {
@@ -363,50 +374,31 @@ def impute_kriged_table(
         for col, intervals in ref_nonzero_indices.items()
     }
 
-    # Check keys
-    if not all(col in reference_stk.columns for col in initial_table_df.columns):
-        # ---- Get difference
-        missing_columns = set(initial_table_df.columns).difference(reference_stk.columns)
+    # Check dimensions
+    extra_subgroup_coords = list(
+        set(reference_summed.coords[subgroup_dim].values) ^ 
+        set(initial_table.coords[subgroup_dim].values)
+    )
+    if extra_subgroup_coords:
+        extra_str = "', '".join(extra_subgroup_coords)
         # ---- Print warning
         warnings.warn(
-            f"The following columns are missing from the reference table and will therefore be "
-            f"skipped during imputation: {', '.join(missing_columns)}. ",
+            f"The following keys for coordinate '{subgroup_dim}' are missing from the reference table "
+            f"and will therefore be skipped during imputation: '{extra_str}'. ",
             stacklevel=2,
-        )
+        )    
 
     # Apply the non-zero reference indices to each column
     table_nonzeros_mask = {
-        col: initial_table_df[col].loc[ref_zero_indices[col]] != 0.0
-        for col in reference_stk.columns
+        v: initial_table.sel({subgroup_dim: v}).loc[ref_zero_indices[v]] != 0.0
+        for v in ref_zero_indices
     }
 
-    # Get the actual indices of the masked values
+    # Get actual indices of masked values
     nonzero_reference_to_table_indices = {
-        col: np.array(ref_zero_indices[col])[table_nonzeros_mask[col]]
-        for col in table_nonzeros_mask
+        v: np.array(ref_zero_indices[v])[table_nonzeros_mask[v]]
+        for v in table_nonzeros_mask
     }
-
-    # Convert to numeric indices for compatibility with `iloc`
-    nonzero_reference_to_table_rows = {
-        col: np.array([interval_to_numeric[ival] for ival in intervals])
-        for col, intervals in nonzero_reference_to_table_indices.items()
-    }
-
-    # Create copy of table
-    standardized_table_copy = standardized_table_df.copy()
-
-    # Define the column indices to ensure consistent ordering across the table
-    # ---- Original table indices
-    column_indices = table_reference_indices + group_by
-    # ---- Reverse table indices
-    column_indices_rev = list(reversed(column_indices))
-
-    # Check if the columns are in the expected order
-    if list(standardized_table_copy.columns.names) == column_indices:
-        # ---- Swap the indices
-        standardized_table_copy.columns = standardized_table_copy.columns.reorder_levels(
-            column_indices_rev
-        )
 
     # Get the nearest-neighbor rows and recompute the indices
     imputed_rows = {
@@ -424,140 +416,197 @@ def impute_kriged_table(
 
     # Impute to replace these values
     imputed_values = {
-        col: (
-            initial_table_df[col].loc[nonzero_reference_to_table_indices[col]].to_numpy()
-            * reference_group_stk.iloc[imputed_rows[col]][col].T
-            / reference_stk.iloc[imputed_rows[col]][col]
-        ).T
-        for col in reference_stk.columns
+        v: (
+            initial_table.sel(
+                {subgroup_dim: v}
+            ).loc[nonzero_reference_to_table_indices[v]].to_numpy()[:, None] *
+            reference_grouped_sum.sel({subgroup_dim: v}).isel({interval_dim: imputed_rows[v]}) /
+            reference_summed.sel({subgroup_dim: v}).isel({interval_dim: imputed_rows[v]})
+        )
+        for v in reference_summed.coords[subgroup_dim].values
     }
 
+    # Prepare output
+    target_table = standardized_table.copy()
+
     # Update the standardized values
-    for col in initial_table_df.columns:
-        if col in reference_stk.columns:
-            standardized_table_copy.iloc[
-                nonzero_reference_to_table_rows[col], standardized_table_copy.columns.get_loc(col)
-            ] = imputed_values[col]
+    for group_key, imp_da in imputed_values.items():
+        # ---- Get the coordinate mapping
+        coords = {
+            subgroup_dim: group_key,
+            interval_dim: nonzero_reference_to_table_indices[group_key],
+        }
+        # ---- Apply imputed values
+        target_table.loc[coords] = imp_da.data
+        # ---- Validate that imputation correctly applied 
+        if target_table.loc[coords].equals(standardized_table.loc[coords]):
+            interval_str = "', '".join(
+                str(x) for x in nonzero_reference_to_table_indices[group_key]
+            )
+            # ---- Format error keys
+            raise ValueError(
+                f"Imputation failed for group '{subgroup_dim}' = '{group_key}' at the following "
+                f"'{interval_dim}' intervals: '{interval_str}'."
+            )
 
-    # Return to the original column index order
-    standardized_table_copy = standardized_table_copy.reorder_levels(column_indices, axis=1)
-
-    # Return the imputed standardized table
-    return standardized_table_copy
+    # Return the imputed table
+    return target_table
 
 
 def distribute_unaged_from_aged(
     population_table: xr.DataArray,
     reference_table: xr.DataArray,
-    group_columns: List[str] = [],
+    collapse_dims: List[str] = [],
     impute: bool = True,
     impute_variable: Optional[List[str]] = None,
 ) -> xr.DataArray:
     """
-    Standardize kriged population estimates using reference proportions and optionally impute
-    missing values.
+    Standardize and optionally impute population estimates using reference proportions.
 
-    This function standardizes population estimates (e.g., unaged fish distributions) by applying
-    reference proportions (e.g., from aged fish data) to ensure consistent age structure across
-    datasets. It can also perform nearest-neighbor imputation for missing values.
+    This function redistributes population estimates (e.g., unaged fish) to match the age/size 
+    structure observed in a reference table (e.g., aged fish), ensuring consistency across 
+    biological groups. Standardization is performed by summing over the dimensions in 
+    `collapse_dims`, then scaling by the corresponding reference proportions. Optionally, 
+    nearest-neighbor imputation is performed for missing or zero-valued intervals.
 
     Parameters
     ----------
-    population_table : pd.DataFrame
-        Population estimates to be standardized. Should be a pivot table or similar structure
-        with biological groups as index/columns.
-    reference_table : pd.DataFrame
-        Reference population data used for standardization. Should have the same or compatible
-        structure as population_table with additional detail (e.g., age information).
-    group_by : List[str]
-        List of column names that define the grouping variables for standardization
-        (e.g., ["sex"] to standardize within each sex).
+    population_table : xr.DataArray
+        The input population estimates to be standardized. Must have coordinates for all 
+        `collapse_dims` and typically for "length_bin".
+    reference_table : xr.DataArray
+        The reference population data used for standardization. Should have matching or compatible 
+        coordinates/dimensions as `population_table`, with additional detail (e.g., age 
+        information).
+    collapse_dims : List[str], default []
+        List of dimension names to collapse (sum over) during standardization (e.g., ["sex"]). 
+        These dimensions are summed over in the initial step, and the resulting standardized table 
+        will not have these dimensions.
     impute : bool, default True
-        Whether to perform nearest-neighbor imputation for missing values after standardization.
+        If True, perform nearest-neighbor imputation for missing/zero values after standardization.
     impute_variable : List[str], optional
-        List of variables to use for imputation. Required if impute=True.
-        Typically refers to the dimension being imputed (e.g., ["age_bin"]).
+        List of dimension names along which imputation is performed (e.g., ["age_bin"]). 
+        Required if `impute=True`.
 
     Returns
     -------
-    pd.DataFrame
-        Standardized population estimates with the same structure as population_table
-        but adjusted according to reference proportions. If impute=True, missing values
-        are filled using nearest-neighbor imputation.
-
+    xr.DataArray
+        Standardized (and optionally imputed) population estimates, with the same structure as 
+        `population_table` but adjusted according to reference proportions.
+        
+    Raises
+    ------
+    ValueError
+        If required coordinates (e.g., "length_bin") are missing from either input table.
+        If impute=True and `impute_variable` is not provided.
+        
     Notes
     -----
-    The standardization process:
-    1. Computes reference proportions from the reference table
-    2. Applies these proportions to the population table
-    3. Redistributes values to match reference age/size structure
-    4. Optionally imputes missing values using nearest neighbors
-
-    This is commonly used to distribute unaged fish data according to the age
-    structure observed in aged fish samples from the same area/stratum.
+    - `collapse_dims` are the dimensions that will be summed over (collapsed) in both 
+    `population_table` and `reference_table`. For example, if `collapse_dims=["stratum"]`, the 
+    result will sum over the "stratum" dimension, producing a table without "stratum".
+    - The function expects both `population_table` and `reference_table` to have compatible 
+    coordinates and dimensions.
+    - If `impute=True`, missing or zero-valued slices are filled using nearest-neighbor imputation.
+    - The function validates that required coordinates (e.g., "length_bin") are present and raises 
+    an error if not.
+    
+    Examples
+    --------
+    >>> result = distribute_unaged_from_aged(
+    ...     population_table=da_unaged,
+    ...     reference_table=da_aged,
+    ...     collapse_dims=["sex"],
+    ...     impute=True,
+    ...     impute_variable=["age_bin"]
+    ... )
+    >>> print(result)
+    <xarray.DataArray ...>
     """
+    
+    # Coordinate validation for length bins
+    if "length_bin" not in set(population_table.coords) & set(reference_table.coords):
+        raise ValueError("Required coordinate 'length_bin' missing from the input tables.")
+    
+    # Coordinate validation for collapse dimensions
+    if (
+        collapse_dims and 
+        not all(
+            [d for d in collapse_dims if d in (
+                set(population_table.coords) & set(reference_table.coords)
+        )]
+        )
+    ):
+        collapse_str = "', '".join(collapse_dims)
+        raise ValueError(
+            f"Coordinate(s) for 'collapse_dims' ('{collapse_str}') missing from the input tables."
+        )
+    
+    # Validate arguments for imputation
+    if impute and not impute_variable:
+        raise ValueError(
+            "A string argument for 'impute_variable' must be provided if 'impute'=True"
+        )
+    elif impute and not set(impute_variable).issubset(reference_table.coords):
+        raise ValueError(
+            f"Variable for 'impute_variable' ('{impute_variable[0]}') missing from "
+            f"'reference_table'."
+        )
 
     # Get original table coordinates
     table_coords = list(population_table.coords.keys())
-    table_noncoords = list(set(table_coords) - set(group_columns + ["length_bin"]))
+    # ---- Inherited grouping coordinate 
+    table_noncoords = list(set(table_coords) - set(collapse_dims + ["length_bin"]))
 
     # Get reference coordinates
     reference_coords = list(reference_table.coords.keys())
 
-    # Aggregate the grouped dimensions
-    grouped_table = (
-        population_table.sum(
-            dim=[v for v in population_table.coords.keys() if v not in set(table_coords)]
-        )
-        .to_dataframe(name="value")["value"]
-        .unstack(table_noncoords)
-    )
-
-    # Aggregate the reference
-    grouped_reference = (
-        reference_table.sum(
-            dim=[v for v in population_table.coords.keys() if v not in set(reference_coords)]
-        )
-        .to_dataframe(name="value")["value"]
-        .unstack(table_noncoords)
-    )
-
-    # Get the shared index names across the reference tables
-    reference_index_names = list(grouped_reference.index.names)
-
-    # Get the indices for each reference table required for summation that must be unstacked
-    reference_stack_indices = list(set(reference_index_names).difference(table_coords))
-
-    # Reorient the columns accordingly
-    population_table_reshape = grouped_table.sum(axis=1).unstack(group_columns)
-
     # Standardize the apportioned table values
     standardized_table = (
-        population_table_reshape
-        * grouped_reference.sum(axis=1).unstack(reference_stack_indices + group_columns)
-        / grouped_reference.unstack(reference_stack_indices).sum(axis=1).unstack(group_columns)
+        population_table.sum(dim=collapse_dims)
+        * reference_table.sum(dim=collapse_dims)
+        / reference_table.sum(
+            dim=list(set(reference_coords).difference(table_coords)) + collapse_dims
+        )
     ).fillna(0.0)
 
     # If imputation is requested, perform it
     if not impute:
-        result = standardized_table.unstack().to_xarray()
-        if population_table.name:
-            result.name = population_table.name
-        return result
+        return standardized_table
     else:
-        # ---- Impute
+        # ---- Validate grouping coordinates
+        if len(table_noncoords) == 0:
+            table_coords_str = "', '".join(table_coords)
+            raise ValueError(
+                f"No subgroup coordinate could be determined for imputation. Current coordinates "
+                f"comprise '{table_coords_str}'. Please ensure that at least one additional "
+                f"coordinate exists that does not overlap with 'length_bin' and coordinates "
+                f"supplied to 'collapse_dims'."
+            )
+        elif len(table_noncoords) > 1:
+            table_noncoords_str = "', '".join(table_noncoords)
+            raise ValueError(
+                f"Ambiguous subgroup coordinates for imputation: '{table_noncoords_str}'. "
+                f"Only one grouping dimension is supported for imputation. "
+                f"Please specify 'collapse_dims' to reduce ambiguity."
+            )
+        elif not all(coord in reference_table.coords for coord in table_noncoords):
+            missing = [coord for coord in table_noncoords if coord not in reference_table.coords]
+            missing_str = "', '".join(missing)
+            raise ValueError(
+                f"Inherited subgroup coordinate(s) missing from input tables: '{missing_str}'. "
+                "Please ensure all subgroup coordinates are present in both tables."
+            )
+        # ---- Imputation
         standardized_table_imputed = impute_kriged_table(
-            reference_table_df=grouped_reference,
-            initial_table_df=population_table_reshape,
-            standardized_table_df=standardized_table,
-            table_reference_indices=reference_stack_indices,
-            group_by=group_columns,
-            impute_variable=impute_variable,
+            initial_table = population_table.sum(dim=collapse_dims),
+            reference_table = reference_table,
+            standardized_table = standardized_table,
+            group_columns = collapse_dims,
+            subgroup_coords = table_noncoords,
+            impute_variable = impute_variable,
         )
-        result = standardized_table_imputed.unstack().to_xarray()
-        if population_table.name:
-            result.name = population_table.name
-        return result
+        return standardized_table_imputed
 
 
 def sum_population_tables(
@@ -863,7 +912,8 @@ def distribute_population_estimates(
 
     # Distribute the variable over each table
     apportioned_groups = {
-        k: proportions_norm[k] * data_array[variable] for k in proportions_norm.keys()
+        k: proportions_norm[k].reindex_like(data_array[variable]) * data_array[variable] 
+        for k in proportions_norm.keys()
     }
     # ---- Update DataArray names
     for arr in apportioned_groups.values():
