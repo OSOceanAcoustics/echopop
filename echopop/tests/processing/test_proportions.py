@@ -15,7 +15,7 @@ def test_compute_binned_counts_size_aggregation(sample_specimen_data):
     )
 
     assert isinstance(result, xr.DataArray)
-    assert set(result.coords) == set(["variable", "stratum_num", "length_bin"])
+    assert set(result.coords) == set(["stratum_num", "length_bin"])
     assert result.sum() == len(sample_specimen_data)
 
 
@@ -26,7 +26,7 @@ def test_compute_binned_counts_sum_aggregation(sample_length_data):
     )
 
     assert isinstance(result, xr.DataArray)
-    assert set(result.coords) == set(["variable", "stratum_num", "length_bin"])
+    assert set(result.coords) == set(["stratum_num", "length_bin"])
     assert result.sum() == sample_length_data["length_count"].sum()
 
 
@@ -37,7 +37,7 @@ def test_compute_binned_counts_mean_aggregation(sample_specimen_data):
     )
 
     assert isinstance(result, xr.DataArray)
-    assert set(result.coords) == set(["variable", "stratum_num", "length_bin"])
+    assert set(result.coords) == set(["stratum_num", "length_bin"])
     assert len(result) > 0
 
 
@@ -48,7 +48,7 @@ def test_compute_binned_counts_count_aggregation(sample_specimen_data):
     )
 
     assert isinstance(result, xr.DataArray)
-    assert set(result.coords) == set(["variable", "stratum_num", "length_bin"])
+    assert set(result.coords) == set(["stratum_num", "length_bin"])
     assert result.sum() == len(sample_specimen_data)
 
 
@@ -59,7 +59,7 @@ def test_compute_binned_counts_default_size(sample_specimen_data):
     )
 
     assert isinstance(result, xr.DataArray)
-    assert set(result.coords) == set(["variable", "stratum_num", "length_bin"])
+    assert set(result.coords) == set(["stratum_num", "length_bin"])
     assert result.sum() == len(sample_specimen_data)
 
 
@@ -69,8 +69,8 @@ def test_compute_binned_counts_single_group_column(sample_specimen_data):
         sample_specimen_data, ["stratum_num"], "length", agg_func="size"
     )
 
-    assert set(result.coords) == set(["variable", "stratum_num"])
-    assert len(result.sel(variable="count")) == len(sample_specimen_data["stratum_num"].unique())
+    assert set(result.coords) == set(["stratum_num"])
+    assert len(result) == len(sample_specimen_data["stratum_num"].unique())
 
 
 def test_compute_binned_counts_complex_grouping(sample_specimen_data):
@@ -83,7 +83,7 @@ def test_compute_binned_counts_complex_grouping(sample_specimen_data):
     )
 
     assert isinstance(result, xr.DataArray)
-    assert set(result.coords) == set(["variable", "stratum_num", "length_bin", "age_bin", "sex"])
+    assert set(result.coords) == set(["stratum_num", "length_bin", "age_bin", "sex"])
     assert result.size == sample_specimen_data.nunique().filter(set(result.coords)).product()
 
 
@@ -94,7 +94,7 @@ def test_compute_binned_counts_empty_data(empty_specimen_data):
     )
 
     assert isinstance(result, xr.DataArray)
-    assert result.shape == (1, 0, 0)
+    assert result.shape == (0, 0)
 
 
 def test_compute_binned_counts_different_numeric_columns(sample_specimen_data):
@@ -160,7 +160,7 @@ def test_number_proportions_single_dataarray(aged_dataarray):
     # Check that result is a Dataset and has the right coords
     assert isinstance(result, xr.Dataset)
     assert set(result.data_vars) == {"proportion_overall", "proportion", "count"}
-    assert set(result.coords) == (set(aged_dataarray.coords) - {"variable"})
+    assert set(result.coords) == (set(aged_dataarray.coords))
 
     # Check that proportions sum to 1.0 for each stratum
     assert all(result["proportion"].sum(dim=["length_bin", "age_bin", "sex"]) == 1)
@@ -182,13 +182,13 @@ def test_number_proportions_multiple_dataarrays(aged_dataarray, unaged_dataarray
     # Check the aged DataArray
     aged = result["aged"]
     assert isinstance(aged, xr.Dataset)
-    assert set(aged.coords) == ({*aged_dataarray.coords} - {"variable"})
+    assert set(aged.coords) == ({*aged_dataarray.coords})
     assert set(aged.data_vars) == {"count", "proportion", "proportion_overall"}
 
     # Check the unaged dataframe
     unaged = result["unaged"]
     assert isinstance(unaged, xr.Dataset)
-    assert set(unaged.coords) == ({*unaged_dataarray.coords} - {"variable"})
+    assert set(unaged.coords) == ({*unaged_dataarray.coords})
     assert set(unaged.data_vars) == {"count", "proportion", "proportion_overall"}
 
     # Check sums of within-group proportions
@@ -390,36 +390,6 @@ def test_calculate_within_group_proportions(proportion_dict):
     assert np.isclose(aged_male_within, 0.8)
 
 
-def test_calculate_adjusted_proportions(proportion_dict):
-    """Test the calculate_adjusted_proportions function."""
-    # First create the necessary inputs
-    group_keys = list(proportion_dict.keys())
-
-    aggregate_table = utils.create_grouped_table(
-        proportion_dict, ["stratum_num"], ["group"], ["stratum_num"], "proportion_overall"
-    )
-
-    sex_proportions_table = utils.create_grouped_table(
-        proportion_dict,
-        ["stratum_num", "sex"],
-        ["group", "sex"],
-        ["stratum_num"],
-        "proportion_overall",
-    )
-
-    result = get_proportions.calculate_adjusted_proportions(
-        group_keys, aggregate_table, sex_proportions_table, ["sex"]
-    )
-
-    # Check that we get multi-index with group and sex
-    assert isinstance(result.index, pd.MultiIndex)
-    assert result.index.names == ["group", "sex"]
-
-    # Check that the adjusted proportions for the first group are calculated correctly
-    # For stratum 1, the adjusted proportion for aged should be higher than raw proportion
-    assert result.loc[("aged", "female"), 1] > sex_proportions_table.loc[("aged", "female"), 1]
-
-
 def test_stratum_averaged_weight(proportion_test_dict, test_weight_table):
     """Test the stratum_averaged_weight function."""
     result = get_proportions.stratum_averaged_weight(
@@ -484,37 +454,6 @@ def test_aggregate_stratum_weights_missing_level(weights_df_missing_stratum):
     assert result.empty
 
 
-def test_scale_weights_by_stratum_basic(simple_weights_df, simple_stratum_weights):
-    """Test basic functionality of standardizing weights by stratum."""
-    # Call the function
-    result = get_proportions.scale_weights_by_stratum(
-        weight_data=simple_weights_df,
-        catch_data=simple_stratum_weights,
-        group_columns=["stratum_num"],
-    )
-
-    # Check result is a DataFrame
-    assert isinstance(result, xr.DataArray)
-
-    # Get the sum of weights per stratum in original data
-    stratum_sums = simple_weights_df.sum(dim=["sex"])
-
-    # Check the values are transformed correctly
-    # For female, stratum 1: original proportion * reference weight
-    female_stratum1_proportion = simple_weights_df.sel(
-        stratum_num=1, sex="female"
-    ) / stratum_sums.sel(stratum_num=1)
-    female_stratum1_standardized = female_stratum1_proportion * 100.0
-    assert result.sel(stratum_num=1, sex="female") == female_stratum1_standardized
-
-    # For male, stratum 2: original proportion * reference weight
-    male_stratum2_proportion = simple_weights_df.sel(stratum_num=2, sex="male") / stratum_sums.sel(
-        stratum_num=2
-    )
-    male_stratum2_standardized = male_stratum2_proportion * 150.0
-    assert result.sel(stratum_num=2, sex="male") == male_stratum2_standardized
-
-
 def test_weight_proportions_basic(weight_distr_dict, catch_data_df):
     """Test basic functionality of weight proportions calculation."""
 
@@ -538,22 +477,13 @@ def test_weight_proportions_basic(weight_distr_dict, catch_data_df):
     assert (result.sel(stratum_num=2).values == np.array([15.2, 12.7]) / total_stratum2).all()
 
 
-def test_scale_weight_proportions_basic(
-    simple_weights_df,
-    simple_stratum_weights,
+def test_fitted_weight_proportions(
     weight_distr_dict,
     catch_data_df,
     aged_dataarray,
     unaged_dataarray,
 ):
     """Test basic functionality of standardized weight proportions."""
-
-    # Scale weights by stratum first
-    strata_weights = get_proportions.scale_weights_by_stratum(
-        weight_data=simple_weights_df,
-        catch_data=simple_stratum_weights,
-        group_columns=["stratum_num"],
-    )
 
     # Tabulate weight proportions
     weight_props = get_proportions.weight_proportions(
@@ -567,7 +497,23 @@ def test_scale_weight_proportions_basic(
         data=xr.Dataset({"aged": aged_dataarray, "unaged": unaged_dataarray}),
         group_columns=["stratum_num", "sex"],
     )
-
+    
+    # Generate weight distribution
+    weight_data = (
+        pd.DataFrame(
+            {
+                "length_bin": np.repeat(number_props["unaged"]["length_bin"].values, 2),
+                "stratum_num": np.repeat([1, 2], 3),
+                "sex": np.tile(["male", "female"], 3),
+                "weight": np.repeat([1, 2, 3], 2)
+            }
+        ).set_index(["length_bin", "sex", "stratum_num"])
+        .to_xarray()
+        .to_dataarray()
+        .squeeze("variable")
+        .reset_coords("variable", drop=True)
+    ).fillna(0.0)
+    
     # Get the length-binned weights
     lb_weights = (
         pd.DataFrame(
@@ -585,16 +531,16 @@ def test_scale_weight_proportions_basic(
     )
 
     # Call the function directly - this just tests if it runs without errors
-    result = get_proportions.scale_weight_proportions(
-        scaled_weight_data=strata_weights,
+    result = get_proportions.fitted_weight_proportions(
+        weight_data=weight_data,
         reference_weight_proportions=weight_props,
         catch_data=catch_data_df,
-        number_proportions=number_props["unaged"],
+        number_proportions=number_props["unaged"].reset_coords("variable", drop=True),
         binned_weights=lb_weights,
         group_columns=["stratum_num"],
     )
 
-    # Verify it returns a DataFrame
+    # Verify it returns a DataArray
     assert isinstance(result, xr.Dataset)
 
     # Convert to Array for ease of comparisons
@@ -606,19 +552,46 @@ def test_scale_weight_proportions_basic(
     # Assert results
     assert (
         result_da.sel(sex="female", length_bin="(20, 30]")
-        == pytest.approx([0.15074511, 0.14485936])
+        == pytest.approx([0.06747638, 0.16618322])
     ).all()
     assert (
         result_da.sel(sex="female", length_bin="(30, 40]")
-        == pytest.approx([0.22611767, 0.21728903])
+        == pytest.approx([0.10121457, 0.24927484])
     ).all()
     assert (
-        result_da.sel(sex="male", length_bin="(20, 30]") == pytest.approx([0.11916042, 0.1210338])
+        result_da.sel(sex="male", length_bin="(20, 30]") == pytest.approx([0.20242915, 0.09970993])
     ).all()
     assert (
-        result_da.sel(sex="male", length_bin="(30, 40]") == pytest.approx([0.17874063, 0.18155071])
+        result_da.sel(sex="male", length_bin="(30, 40]") == pytest.approx([0.30364372, 0.1495649 ])
     ).all()
 
+    # Summed results
+    assert (
+        result_da.sum(dim=["length_bin"]) == 
+        pytest.approx(np.array([[0.20242915, 0.60728745], 
+                                [0.49854967, 0.2991298 ]]))
+    ).all()
+    assert (
+        result_da.sum(dim=["sex"]) == 
+        pytest.approx(np.array([[0.13495277, 0.26990553, 0.4048583 ], 
+                                [0.13294658, 0.26589316, 0.39883974]]))
+    ).all()
+    assert (
+        result_da.sum(dim=["stratum_num"]) == 
+        pytest.approx(np.array([[0.1168298 , 0.15106954], 
+                                [0.23365961, 0.30213908],
+                                [0.35048941, 0.45320863]]))
+    ).all()
+    assert (
+        result_da.sum(dim=["stratum_num", "length_bin"]) == pytest.approx([0.70097882, 0.90641725])
+    ).all()
+    assert (
+        result_da.sum(dim=["stratum_num", "sex"]) == 
+        pytest.approx([0.26789935, 0.53579869, 0.80369804])
+    ).all()
+    assert (
+        result_da.sum(dim=["length_bin", "sex"]) == pytest.approx([0.8097166 , 0.79767948])
+    ).all()
 
 # =============================================================================
 # TESTS FOR NEW PROPORTION SLICING FUNCTIONS
@@ -651,7 +624,9 @@ def test_get_nasc_proportions_slice():
         "count"
     ].to_xarray()
     data_cnv = data_cnv.assign_coords(variable="count")
-    aged_props = get_proportions.number_proportions(data=data_cnv, group_columns=["stratum_num"])
+    aged_props = get_proportions.number_proportions(
+        data=data_cnv, group_columns=["stratum_num"]
+    ).reset_coords("variable", drop=True)
 
     ts_params = {"slope": 20.0, "intercept": -68.0}
 
@@ -708,7 +683,7 @@ def test_get_nasc_proportions_slice():
     # Try different grouping
     sexed_props = get_proportions.number_proportions(data=data_cnv, group_columns=["sex"])
     result_sex = get_proportions.get_nasc_proportions_slice(
-        number_proportions=sexed_props,
+        number_proportions=sexed_props.reset_coords("variable", drop=True),
         ts_length_regression_parameters=ts_params,
         group_columns=["sex"],
     )
@@ -744,7 +719,9 @@ def test_get_number_proportions_slice():
         "count"
     ].to_xarray()
     data_cnv = data_cnv.assign_coords(variable="count")
-    aged_props = get_proportions.number_proportions(data=data_cnv, group_columns=["stratum_num"])
+    aged_props = get_proportions.number_proportions(
+        data=data_cnv, group_columns=["stratum_num"]
+    ).reset_coords("variable", drop=True)
 
     # Convert to proportions using the correct workflow
     result = get_proportions.get_number_proportions_slice(
@@ -796,7 +773,7 @@ def test_get_number_proportions_slice():
     # Try different grouping
     sexed_props = get_proportions.number_proportions(data=data_cnv, group_columns=["sex"])
     result_sex = get_proportions.get_number_proportions_slice(
-        number_proportions=sexed_props,
+        number_proportions=sexed_props.reset_coords("variable", drop=True),
         group_columns=["sex"],
     )
 
@@ -848,7 +825,9 @@ def test_get_weight_proportions_slice():
     # Normalize to get proportions
     weight_data = weight_data.div(weight_data.sum(axis=0), axis=1).fillna(0)
     # ---- Convert to DataArray
-    weight_cnv = weight_data.stack().to_xarray().rename("proportion_overall")
+    weight_cnv = xr.Dataset(
+        {"proportion_overall": weight_data.stack().to_xarray().rename("proportion_overall")}
+    )
 
     # Apply binning using utils.binify (like the real workflow)
     utils.binify(test_data, bins=length_bins, bin_column="length")
@@ -858,7 +837,6 @@ def test_get_weight_proportions_slice():
     data_cnv = test_data.set_index(["length_bin", "age_bin", "stratum_num", "sex"])[
         "count"
     ].to_xarray()
-    data_cnv = data_cnv.assign_coords(variable="count")
     aged_props = {
         "aged": get_proportions.number_proportions(data=data_cnv, group_columns=["stratum_num"])
     }

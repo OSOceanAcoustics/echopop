@@ -111,15 +111,10 @@ def number_proportions(
     filtered_vars = {}
     for varname, da in data.data_vars.items():
         filt = exclude_filters.get(varname, {})
-        filt_pruned = {}
         # ---- Subset filter with overlapping coordinates
         filt_pruned = {k: v for k, v in filt.items() if k in data.coords}
-        # ---- Ensure valid values
-        filt_pruned.update(
-            {k: list(set(v).intersection(data.coords[k].values)) for k, v in filt_pruned.items()}
-        )
         if filt:
-            da = da.drop_sel(filt_pruned)
+            da = da.drop_sel(filt_pruned, errors="ignore")
         # ---- Convert back to DataArray
         if da.size == 0:
             # ---- If all filtered out, create empty DataArray with same dims
@@ -733,14 +728,14 @@ def stratum_averaged_weight(
     within_grp_props_norm = xr.concat(
         [da.sum(dim=[d for d in da.dims if d not in shared_dims]) for da in das_aligned],
         dim=xr.IndexVariable("group", list(number_proportions.keys())),
-    ).sum(dim=["age_bin", "length_bin"])
+    ).sum(dim=shared_dims - set([*group_columns, *grps]))
     within_grp_props = within_grp_props_orig / within_grp_props_norm
 
     # Generalize the overall groups
     within_grp_props_all_norm = xr.concat(
         [da.sum(dim=[d for d in da.dims if d not in shared_dims]) for da in das_aligned],
         dim=xr.IndexVariable("group", list(number_proportions.keys())),
-    ).sum(dim=["age_bin", "length_bin", *grps])
+    ).sum(dim=shared_dims - set([*group_columns, *grps]))
     within_grp_props_all = (within_grp_props_orig / within_grp_props_all_norm).sum(dim=grps)
 
     # Create list of arrays for overall proportions
@@ -1012,7 +1007,7 @@ def get_nasc_proportions_slice(
     include_filter: Dict[str, Any] = {},
     exclude_filter: Dict[str, Any] = {},
     group_columns: List[str] = [],
-) -> pd.Series:
+) -> xr.DataArray:
     """
     Extract and aggregate NASC proportions for specified groups from an xarray.DataArray, with
     dynamic filtering.
@@ -1182,11 +1177,7 @@ def get_number_proportions_slice(
             aggregate_array = aggregate_array.drop_sel(to_drop)
     # ---- Drop any singleton coordinates
     grouped_props = aggregate_array.squeeze(drop=True)
-
-    # Handle aggregation if no filter is applied
-    if len(include_filter) == 0 and len(exclude_filter) == 0:
-        return grouped_props
-
+    
     # Aggregate further over the defined group_columns
     return grouped_props.sum(dim=[d for d in grouped_props.coords if d not in group_columns])
 
