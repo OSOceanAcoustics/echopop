@@ -591,21 +591,13 @@ dict_da_weight_proportion["aged"] = proportions.weight_proportions(
     group_columns = ["stratum_ks"]
 )
 
-# UNAGED SCALING
-logging.info("Scaling unaged binned weights...")
-da_scaled_unaged_weights = proportions.scale_weights_by_stratum(
-    weight_data=ds_da_weight_dist["unaged"], 
-    catch_data=dict_df_bio["catch"], 
-    group_columns=["stratum_ks"]
-)
-
 # UNAGED WEIGHT PROPORTIONS
 logging.info(
     "Computing unaged weight proportions\n"
     "     Scaling weight proportions in reference to the aged estimates"
     )
-dict_da_weight_proportion["unaged"] = proportions.scale_weight_proportions(
-    scaled_weight_data=da_scaled_unaged_weights,
+dict_da_weight_proportion["unaged"] = proportions.fitted_weight_proportions(
+    weight_data=ds_da_weight_dist["unaged"],
     reference_weight_proportions=dict_da_weight_proportion["aged"],
     catch_data=dict_df_bio["catch"],
     number_proportions=dict_ds_number_proportion["unaged"],
@@ -959,7 +951,7 @@ logging.info(
 dict_ds_kriged_abundance_table["standardized_unaged"] = feat_apportion.distribute_unaged_from_aged(
     population_table = dict_ds_kriged_abundance_table["unaged"],
     reference_table = dict_ds_kriged_abundance_table["aged"],
-    group_columns = ["sex"],
+    collapse_dims = ["stratum_ks"],
     impute = False 
 )
 
@@ -983,7 +975,7 @@ logging.info(
 dict_ds_kriged_biomass_table["standardized_unaged"] = feat_apportion.distribute_unaged_from_aged(
     population_table = dict_ds_kriged_biomass_table["unaged"],
     reference_table = dict_ds_kriged_biomass_table["aged"],
-    group_columns = ["sex"],
+    collapse_dims = ["stratum_ks"],
     impute=True,
     impute_variable=["age_bin"],
 )
@@ -992,7 +984,7 @@ dict_ds_kriged_biomass_table["standardized_unaged"] = feat_apportion.distribute_
 # ---- ABUNDANCE
 logging.info("Consolidating abundance tables...")
 da_kriged_abundance_table = feat_apportion.sum_population_tables(
-    population_table={
+    population_tables={
         "aged": dict_ds_kriged_abundance_table["aged"],
         "unaged": dict_ds_kriged_abundance_table["standardized_unaged"]
     },
@@ -1001,7 +993,7 @@ logging.info("Abundance table complete\n'da_kriged_abundance_table' created.")
 # ---- Biomass
 logging.info("Consolidating biomass tables...")
 da_kriged_biomass_table = feat_apportion.sum_population_tables(
-    population_table={
+    population_tables={
         "aged": dict_ds_kriged_biomass_table["aged"],
         "unaged": dict_ds_kriged_biomass_table["standardized_unaged"]
     },
