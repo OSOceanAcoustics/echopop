@@ -5,15 +5,15 @@ import pytest
 
 from echopop.ingest.biological import (
     apply_ship_survey_filters,
-    load_biological_data,
-    load_db_biological_data,
+    load_biological_data_excel,
+    load_biological_data_database,
 )
 
 
 def test_load_biological_data_basic(bio_excel_file, bio_sheet_map):
     """Test basic loading of biological data without optional parameters."""
     # Pass an empty dict instead of None for column_name_map
-    result = load_biological_data(bio_excel_file, bio_sheet_map, column_name_map={})
+    result = load_biological_data_excel(bio_excel_file, bio_sheet_map, column_name_map={})
 
     assert isinstance(result, dict)
     assert set(result.keys()) == set(bio_sheet_map.keys())
@@ -25,7 +25,7 @@ def test_load_biological_data_basic(bio_excel_file, bio_sheet_map):
 
 def test_load_biological_data_with_column_map(bio_excel_file, bio_sheet_map, bio_column_map):
     """Test loading with column name mapping."""
-    result = load_biological_data(bio_excel_file, bio_sheet_map, column_name_map=bio_column_map)
+    result = load_biological_data_excel(bio_excel_file, bio_sheet_map, column_name_map=bio_column_map)
 
     if "length" in result:
         assert "length_count" in result["length"].columns
@@ -41,7 +41,7 @@ def test_load_biological_data_with_column_map(bio_excel_file, bio_sheet_map, bio
 def test_load_biological_data_with_subset(bio_excel_file, bio_sheet_map, subset_dict):
     """Test loading with subset filtering."""
     # Pass an empty dict for column_name_map
-    result = load_biological_data(
+    result = load_biological_data_excel(
         bio_excel_file, bio_sheet_map, column_name_map={}, subset_dict=subset_dict
     )
 
@@ -55,7 +55,7 @@ def test_load_biological_data_with_subset(bio_excel_file, bio_sheet_map, subset_
 
 def test_load_biological_data_with_label_map(bio_excel_file, bio_sheet_map, label_map):
     """Test loading with label mapping."""
-    result = load_biological_data(
+    result = load_biological_data_excel(
         bio_excel_file, bio_sheet_map, column_name_map={}, biodata_label_map=label_map
     )
 
@@ -70,7 +70,7 @@ def test_load_biological_data_file_not_found(bio_sheet_map):
     non_existent_file = Path("non_existent_file.xlsx")
 
     with pytest.raises(FileNotFoundError):
-        load_biological_data(non_existent_file, bio_sheet_map)
+        load_biological_data_excel(non_existent_file, bio_sheet_map)
 
 
 # Ship/survey filter tests
@@ -93,13 +93,12 @@ def test_apply_ship_survey_filters_no_subset(biological_data):
 
 
 # Ingest from postgres database tests
-def test_load_biological_data_basic_from_postgres(database_credentials, bio_sheet_map):
+def test_load_biological_data_basic_from_postgres(database_credentials):
     """Test basic loading of biological data without optional parameters."""
     # Pass an empty dict instead of None for column_name_map
-    result = load_db_biological_data(database_credentials, bio_sheet_map, column_name_map={})
+    result = load_biological_data_database(database_credentials, column_name_map={})
 
     assert isinstance(result, dict)
-    assert set(result.keys()) == set(bio_sheet_map.keys())
 
     for df in result.values():
         assert isinstance(df, pd.DataFrame)
@@ -107,12 +106,12 @@ def test_load_biological_data_basic_from_postgres(database_credentials, bio_shee
 
 
 def test_load_biological_data_with_column_map_from_postgres(
-    database_credentials, bio_sheet_map, bio_column_map
+    database_credentials, bio_column_map
 ):
     """Test loading with column name mapping."""
 
-    result = load_db_biological_data(
-        database_credentials, bio_sheet_map, column_name_map=bio_column_map
+    result = load_biological_data_database(
+        database_credentials, column_name_map=bio_column_map
     )
 
     if "length" in result:
@@ -134,12 +133,12 @@ def test_load_biological_data_with_column_map_from_postgres(
 
 
 def test_load_biological_data_with_subset_from_postgres(
-    database_credentials, bio_sheet_map, pg_subset_dict
+    database_credentials, pg_subset_dict
 ):
     """Test loading with subset filtering."""
     # Pass an empty dict for column_name_map
-    result = load_db_biological_data(
-        database_credentials, bio_sheet_map, column_name_map={}, subset_dict=pg_subset_dict
+    result = load_biological_data_database(
+        database_credentials, column_name_map={}, subset_dict=pg_subset_dict
     )
 
     for df in result.values():
@@ -151,11 +150,11 @@ def test_load_biological_data_with_subset_from_postgres(
 
 
 def test_load_biological_data_with_label_map_from_postgres(
-    database_credentials, bio_sheet_map, label_map
+    database_credentials, label_map
 ):
     """Test loading with label mapping."""
-    result = load_db_biological_data(
-        database_credentials, bio_sheet_map, column_name_map={}, biodata_label_map=label_map
+    result = load_biological_data_database(
+        database_credentials, column_name_map={}, biodata_label_map=label_map
     )
 
     for df in result.values():

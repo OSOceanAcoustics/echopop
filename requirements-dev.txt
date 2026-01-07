@@ -5,3 +5,6 @@ isort
 pre-commit
 pytest
 tox
+postgresql
+# Requires pip install
+testing.postgresql

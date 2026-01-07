@@ -226,7 +226,7 @@ BIODATA_SEX = {
 }
 
 # READ IN DATA
-dict_df_bio = ingestion.load_biological_data(
+dict_df_bio = ingestion.load_biological_data_excel(
     biodata_filepath=BIODATA_FILE, 
     biodata_sheet_map=BIODATA_SHEETS, 
     column_name_map=FEAT_TO_ECHOPOP_BIODATA_COLUMNS, 

@@ -47,7 +47,7 @@ def load_single_biological_sheet(
     return df_filtered
 
 
-def load_biological_data(
+def load_biological_data_excel(
     biodata_filepath: Path,
     biodata_sheet_map: Dict[str, str],
     column_name_map: Dict[str, str] = None,
@@ -87,7 +87,7 @@ def load_biological_data(
     >>> subset = {"ships": {160: {"survey": 201906}}, "species_code": [22500]}
     >>> col_map = {"frequency": "length_count", "haul": "haul_num"}
     >>> label_map = {"sex": {1: "male", 2: "female", 3: "unsexed"}}
-    >>> bio_data = load_biological_data("biodata.xlsx", sheet_map, col_map, subset, label_map)
+    >>> bio_data = load_biological_data_excel("biodata.xlsx", sheet_map, col_map, subset, label_map)
     """
 
     if not biodata_filepath.exists():
@@ -113,9 +113,8 @@ def load_biological_data(
     return biodata_dict
 
 
-def load_db_biological_data(
+def load_biological_data_database(
     db_credentials: Dict[str, str],
-    biodata_sheet_map: Dict[str, str],
     column_name_map: Dict[str, str] = None,
     subset_dict: Optional[Dict] = None,
     biodata_label_map: Optional[Dict[str, Dict]] = None,
@@ -128,10 +127,6 @@ def load_db_biological_data(
         Dictionary containing database credentials
         (e.g., {"host": "localhost", "port": "5432", "dbname": "fisheries", "schema": "biodata"
         "user": "<USERNAME>", "password": "<PASSWORD>"})
-    biodata_sheet_map : dict
-        Dictionary mapping dataset names to sheet names
-        (e.g., {"specimen": "biodata_specimen", "length": "biodata_length", "catch":
-        "biodata_catch"})
     column_name_map : dict, optional
         Dictionary mapping original column names to new column names
         (e.g., {"frequency": "length_count", "haul": "haul_num"})
@@ -148,7 +143,6 @@ def load_db_biological_data(
         Dictionary containing processed biological DataFrames keyed by dataset name
     Examples
     --------
-    >>> sheet_map = {"catch": "biodata_catch", "length": "biodata_length"}
     >>> subset = {"ships": {160: {"survey": 201906}}, "species_code": [22500]}
     >>> col_map = {"frequency": "length_count", "haul": "haul_num"}
     >>> label_map = {"sex": {1: "male", 2: "female", 3: "unsexed"}}

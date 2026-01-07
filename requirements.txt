@@ -7,7 +7,6 @@ pandas
 scipy
 numba>=0.63.0b1
 psycopg
-testing.postgresql
 # Spatial data processing stack
 cartopy
 geopandas
