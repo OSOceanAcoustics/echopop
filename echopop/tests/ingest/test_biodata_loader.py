@@ -5,8 +5,8 @@ import pytest
 
 from echopop.ingest.biological import (
     apply_ship_survey_filters,
-    load_biological_data_excel,
     load_biological_data_database,
+    load_biological_data_excel,
 )
 
 
@@ -25,7 +25,9 @@ def test_load_biological_data_basic(bio_excel_file, bio_sheet_map):
 
 def test_load_biological_data_with_column_map(bio_excel_file, bio_sheet_map, bio_column_map):
     """Test loading with column name mapping."""
-    result = load_biological_data_excel(bio_excel_file, bio_sheet_map, column_name_map=bio_column_map)
+    result = load_biological_data_excel(
+        bio_excel_file, bio_sheet_map, column_name_map=bio_column_map
+    )
 
     if "length" in result:
         assert "length_count" in result["length"].columns
@@ -105,14 +107,10 @@ def test_load_biological_data_basic_from_postgres(database_credentials):
         assert not df.empty
 
 
-def test_load_biological_data_with_column_map_from_postgres(
-    database_credentials, bio_column_map
-):
+def test_load_biological_data_with_column_map_from_postgres(database_credentials, bio_column_map):
     """Test loading with column name mapping."""
 
-    result = load_biological_data_database(
-        database_credentials, column_name_map=bio_column_map
-    )
+    result = load_biological_data_database(database_credentials, column_name_map=bio_column_map)
 
     if "length" in result:
         assert "length_count" in result["length"].columns
@@ -132,9 +130,7 @@ def test_load_biological_data_with_column_map_from_postgres(
         assert "haul_num" in result["catch"].columns
 
 
-def test_load_biological_data_with_subset_from_postgres(
-    database_credentials, pg_subset_dict
-):
+def test_load_biological_data_with_subset_from_postgres(database_credentials, pg_subset_dict):
     """Test loading with subset filtering."""
     # Pass an empty dict for column_name_map
     result = load_biological_data_database(
@@ -149,9 +145,7 @@ def test_load_biological_data_with_subset_from_postgres(
             assert df["ship"].unique() == [101]
 
 
-def test_load_biological_data_with_label_map_from_postgres(
-    database_credentials, label_map
-):
+def test_load_biological_data_with_label_map_from_postgres(database_credentials, label_map):
     """Test loading with label mapping."""
     result = load_biological_data_database(
         database_credentials, column_name_map={}, biodata_label_map=label_map

@@ -1,5 +1,5 @@
 from . import nasc, sv
-from .biological import load_biological_data_excel, load_biological_data_database
+from .biological import load_biological_data_database, load_biological_data_excel
 from .mesh import load_isobath_data, load_mesh_data
 from .params import load_kriging_variogram_params
 from .strata import join_geostrata_by_latitude, join_strata_by_haul, load_geostrata, load_strata
