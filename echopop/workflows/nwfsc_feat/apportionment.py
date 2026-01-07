@@ -275,59 +275,59 @@ def impute_kriged_table(
     impute_variable: List[str],
 ) -> xr.DataArray:
     """
-    Impute missing or zero-valued slices in a standardized xarray DataArray using reference and
-    initial tables.
+        Impute missing or zero-valued slices in a standardized xarray DataArray using reference and
+        initial tables.
 
-    This function identifies zero-valued intervals in the reference table for grouped estimates,
-    finds the nearest nonzero reference interval and imputes values in the standardized table using
-    a ratio-based approach. The imputation is performed only where the initial table is nonzero and
-    the reference table is zero, and is done for each group and interval independently.
+        This function identifies zero-valued intervals in the reference table for grouped estimates,
+        finds the nearest nonzero reference interval and imputes values in the standardized table using
+        a ratio-based approach. The imputation is performed only where the initial table is nonzero and
+        the reference table is zero, and is done for each group and interval independently.
 
-    Parameters
-    ----------
-    initial_table : xr.DataArray
-        The initial (unstandardized) table, typically representing population or abundance
-        estimates.
-    reference_table : xr.DataArray
-        The reference table used to guide imputation, typically representing a more complete or
-        trusted set of estimates.
-    standardized_table : xr.DataArray
-        The standardized table to be imputed, which will be updated and returned.
-    group_columns : List[str]
-        List of dimension names used to group the data (e.g., ["stratum"]).
-    subgroup_coords : List[str]
-        List of coordinate names that define subgroups (typically a subset of group_columns).
-    impute_variable : List[str]
-        List of dimension names along which imputation is performed (e.g., ["age_bin"]).
+        Parameters
+        ----------
+        initial_table : xr.DataArray
+            The initial (unstandardized) table, typically representing population or abundance
+            estimates.
+        reference_table : xr.DataArray
+            The reference table used to guide imputation, typically representing a more complete or
+            trusted set of estimates.
+        standardized_table : xr.DataArray
+            The standardized table to be imputed, which will be updated and returned.
+        group_columns : List[str]
+            List of dimension names used to group the data (e.g., ["stratum"]).
+        subgroup_coords : List[str]
+            List of coordinate names that define subgroups (typically a subset of group_columns).
+        impute_variable : List[str]
+            List of dimension names along which imputation is performed (e.g., ["age_bin"]).
 
-    Returns
-    -------
-    xr.DataArray
-        The imputed standardized table, with missing or zero-valued slices replaced by imputed
-        values.
+        Returns
+        -------
+        xr.DataArray
+            The imputed standardized table, with missing or zero-valued slices replaced by imputed
+            values.
 
-    Raises
-    ------
-    ValueError
-        If imputation fails for any group and interval combination.
+        Raises
+        ------
+        ValueError
+            If imputation fails for any group and interval combination.
 
-    Notes
-    -----
-The imputation is performed as follows:
+        Notes
+        -----
+    The imputation is performed as follows:
 
-    - For each group, identify intervals in the reference table that are zero but nonzero in the
-      initial table.
+        - For each group, identify intervals in the reference table that are zero but nonzero in the
+          initial table.
 
-    - For each such interval, find the nearest nonzero interval in the reference table.
+        - For each such interval, find the nearest nonzero interval in the reference table.
 
-    - Impute values in the standardized table using the formula:
-    
-      | ``imputed = initial[interval] * sum referenced[impute variable x interval] /``
-      | ``summed reference[interval]``
+        - Impute values in the standardized table using the formula:
 
-      where the reference values are taken from the nearest nonzero interval.
+          | ``imputed = initial[interval] * sum referenced[impute variable x interval] /``
+          | ``summed reference[interval]``
 
-    - The function updates the standardized table in-place and returns it.
+          where the reference values are taken from the nearest nonzero interval.
+
+        - The function updates the standardized table in-place and returns it.
     """
 
     # Extract dimensions
@@ -501,16 +501,16 @@ def distribute_unaged_from_aged(
 
     Notes
     -----
-    
+
     - `collapse_dims` are the dimensions that will be summed over (collapsed) in both
       `population_table` and `reference_table`. For example, if `collapse_dims=["stratum"]`, the
       result will sum over the "stratum" dimension, producing a table without "stratum".
-    
+
     - The function expects both `population_table` and `reference_table` to have compatible
       coordinates and dimensions.
-    
+
     - If `impute=True`, missing or zero-valued slices are filled using nearest-neighbor imputation.
-    
+
     - The function validates that required coordinates (e.g., "length_bin") are present and raises
       an error if not.
 
@@ -635,11 +635,11 @@ def sum_population_tables(
 
     Notes
     -----
-    
+
     - Any dimension not present in all input tables is summed over before combining.
-    
+
     - The result is aligned on shared dimensions and summed element-wise.
-    
+
     - The function is robust to input tables with different sets of dimensions, as long as there is
       at least one shared dimension.
 
