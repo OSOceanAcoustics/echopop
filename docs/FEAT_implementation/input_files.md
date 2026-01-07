@@ -17,7 +17,8 @@ There may be some inconsistencies in the columns used by files in EchoPro for pr
 
 ### Length
 
-The "length" spreadsheet/dataframe include data from station 1, in which fish are lengthed individually but not aged nor weighted.
+The "length" spreadsheet/dataframe includes data from station 1, in which fish are lengthed individually but neither aged nor weighed. The fish lengths are aggregated by length bins and reported as counts for each bin, rather than reported individually as in the "specimen" spreadsheet/dataframe below.
+
 
 Echopop column | EchoPro column | Data type | Units | Description
 --- | --- | --- | ----- | --- 
@@ -29,7 +30,7 @@ length_count | Frequency | integer | count <br> [0, ∞)  | Number of animals wi
 
 ### Specimen
 
-The "specimen" spreadsheet/dataframe include data from station 2, in which each individual fish is weighted and aged.
+The "specimen" spreadsheet/dataframe includes data from station 2, in which each individual fish is weighed and aged.
 
 Echopop column | EchoPro column | Data type | Units &nbsp; | Description
 --- | --- | --- | --- | --- 
@@ -42,7 +43,7 @@ age | Age | float <br> integer | years <br> [0.0, ∞)  | Age of the animal <br>
 
 ### Catch
 
-The "catch" spreadsheet/dataframe include the total weight for unaged fish for the entire haul.
+The "catch" spreadsheet/dataframe includes the total weight for unaged fish for the entire haul.
 
 Echopop column | EchoPro column | Data type | Units |  Description
 --- | --- | --- | --- | --- 
