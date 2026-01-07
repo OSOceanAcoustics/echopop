@@ -313,14 +313,20 @@ def impute_kriged_table(
 
     Notes
     -----
-    The imputation is performed as follows:
+The imputation is performed as follows:
+
     - For each group, identify intervals in the reference table that are zero but nonzero in the
-    initial table.
+      initial table.
+
     - For each such interval, find the nearest nonzero interval in the reference table.
+
     - Impute values in the standardized table using the formula:
-        imputed = initial[interval] * sum referenced[impute variable x interval] /
-        summed reference[interval]
-        where the reference values are taken from the nearest nonzero interval.
+    
+      | ``imputed = initial[interval] * sum referenced[impute variable x interval] /``
+      | ``summed reference[interval]``
+
+      where the reference values are taken from the nearest nonzero interval.
+
     - The function updates the standardized table in-place and returns it.
     """
 
@@ -472,7 +478,7 @@ def distribute_unaged_from_aged(
         coordinates/dimensions as `population_table`, with additional detail (e.g., age
         information).
     collapse_dims : List[str], default []
-        List of dimension names to collapse (sum over) during standardization (e.g., ["sex"]).
+        List of dimension names to collapse (sum over) during standardization (e.g., ["stratum"]).
         These dimensions are summed over in the initial step, and the resulting standardized table
         will not have these dimensions.
     impute : bool, default True
@@ -495,14 +501,18 @@ def distribute_unaged_from_aged(
 
     Notes
     -----
+    
     - `collapse_dims` are the dimensions that will be summed over (collapsed) in both
-    `population_table` and `reference_table`. For example, if `collapse_dims=["stratum"]`, the
-    result will sum over the "stratum" dimension, producing a table without "stratum".
+      `population_table` and `reference_table`. For example, if `collapse_dims=["stratum"]`, the
+      result will sum over the "stratum" dimension, producing a table without "stratum".
+    
     - The function expects both `population_table` and `reference_table` to have compatible
-    coordinates and dimensions.
+      coordinates and dimensions.
+    
     - If `impute=True`, missing or zero-valued slices are filled using nearest-neighbor imputation.
+    
     - The function validates that required coordinates (e.g., "length_bin") are present and raises
-    an error if not.
+      an error if not.
 
     Examples
     --------
@@ -625,10 +635,13 @@ def sum_population_tables(
 
     Notes
     -----
+    
     - Any dimension not present in all input tables is summed over before combining.
+    
     - The result is aligned on shared dimensions and summed element-wise.
+    
     - The function is robust to input tables with different sets of dimensions, as long as there is
-    at least one shared dimension.
+      at least one shared dimension.
 
     Examples
     --------

@@ -68,6 +68,16 @@ See {ref}`Equation 2.1b <intext_eq_21_md>` for more details.
 
 :::
 
+(eq-22)=
+:::{admonition} Discretized length-weight distributions
+$$
+    \left< w \right> = \tilde{\mathbf{L}}^{\mathsf{T}} \mathbf{w}
+$$
+
+See {ref}`Equation 2.2b <intext_eq_22_md>` for more details.
+
+:::
+
 (eq-23)=
 :::{admonition} Normalized length frequency distribution
 \begin{align*}

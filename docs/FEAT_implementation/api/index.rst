@@ -1,2 +1,0 @@
-FEAT-specific implementation
-============================

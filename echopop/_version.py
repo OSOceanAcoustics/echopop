@@ -1,1 +1,1 @@
-version = "0.5.0.post62"  # noqa
+version = "0.5.0.post60"  # noqa
