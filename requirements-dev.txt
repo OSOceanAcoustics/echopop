@@ -5,6 +5,7 @@ isort
 pre-commit
 pytest
 tox
-postgresql
+# Only required for local windows development
+# postgresql
 # Requires pip install
 testing.postgresql
