@@ -275,41 +275,41 @@ def impute_kriged_table(
     impute_variable: List[str],
 ) -> xr.DataArray:
     """
-    Impute missing or zero-valued slices in a standardized xarray DataArray using reference and
-    initial tables.
+        Impute missing or zero-valued slices in a standardized xarray DataArray using reference and
+        initial tables.
 
-    This function identifies zero-valued intervals in the reference table for grouped estimates,
-    finds the nearest nonzero reference interval and imputes values in the standardized table using
-    a ratio-based approach. The imputation is performed only where the initial table is nonzero and
-    the reference table is zero, and is done for each group and interval independently.
+        This function identifies zero-valued intervals in the reference table for grouped estimates,
+        finds the nearest nonzero reference interval and imputes values in the standardized table using
+        a ratio-based approach. The imputation is performed only where the initial table is nonzero and
+        the reference table is zero, and is done for each group and interval independently.
 
-    Parameters
-    ----------
-    initial_table : xr.DataArray
-        The initial (unstandardized) table, typically representing population or abundance
-        estimates.
-    reference_table : xr.DataArray
-        The reference table used to guide imputation, typically representing a more complete or
-        trusted set of estimates.
-    standardized_table : xr.DataArray
-        The standardized table to be imputed, which will be updated and returned.
-    group_columns : List[str]
-        List of dimension names used to group the data (e.g., ["stratum"]).
-    subgroup_coords : List[str]
-        List of coordinate names that define subgroups (typically a subset of group_columns).
-    impute_variable : List[str]
-        List of dimension names along which imputation is performed (e.g., ["age_bin"]).
+        Parameters
+        ----------
+        initial_table : xr.DataArray
+            The initial (unstandardized) table, typically representing population or abundance
+            estimates.
+        reference_table : xr.DataArray
+            The reference table used to guide imputation, typically representing a more complete or
+            trusted set of estimates.
+        standardized_table : xr.DataArray
+            The standardized table to be imputed, which will be updated and returned.
+        group_columns : List[str]
+            List of dimension names used to group the data (e.g., ["stratum"]).
+        subgroup_coords : List[str]
+            List of coordinate names that define subgroups (typically a subset of group_columns).
+        impute_variable : List[str]
+            List of dimension names along which imputation is performed (e.g., ["age_bin"]).
 
-    Returns
-    -------
-    xr.DataArray
-        The imputed standardized table, with missing or zero-valued slices replaced by imputed
-        values.
+        Returns
+        -------
+        xr.DataArray
+            The imputed standardized table, with missing or zero-valued slices replaced by imputed
+            values.
 
-    Raises
-    ------
-    ValueError
-        If imputation fails for any group and interval combination.
+        Raises
+        ------
+        ValueError
+            If imputation fails for any group and interval combination.
 
     Notes
     -----
@@ -318,7 +318,7 @@ def impute_kriged_table(
     - For each group, identify intervals in the reference table that are zero but nonzero in the
         initial table.
 
-    - For each such interval, find the nearest nonzero interval in the reference table.
+        - For each such interval, find the nearest nonzero interval in the reference table.
 
     - Impute values in the standardized table using the formula:
 
@@ -327,7 +327,9 @@ def impute_kriged_table(
 
         where the reference values are taken from the nearest nonzero interval.
 
-    - The function updates the standardized table in-place and returns it.
+          where the reference values are taken from the nearest nonzero interval.
+
+        - The function updates the standardized table in-place and returns it.
     """
 
     # Extract dimensions
