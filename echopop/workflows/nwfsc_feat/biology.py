@@ -1,9 +1,10 @@
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, Optional, Union
 
 import numpy as np
 import pandas as pd
+import xarray as xr
 
-from ...utils import apply_filters, binned_distribution, create_grouped_table
+from ...utils import binned_distribution
 
 
 def length_binned_weights(
@@ -12,7 +13,7 @@ def length_binned_weights(
     regression_coefficients: Union[pd.Series, pd.DataFrame],
     impute_bins: bool = True,
     minimum_count_threshold: int = 0,
-) -> pd.DataFrame:
+) -> xr.DataArray:
     """
     Compute length-binned average weights using regression coefficients and observed data.
 
@@ -40,9 +41,22 @@ def length_binned_weights(
 
     Returns
     -------
-    pd.DataFrame
-        DataFrame with fitted weights for each length bin and group combination.
-        Contains grouping columns (if any), 'length_bin', and 'weight_fitted'.
+    xr.DataArray
+        Fitted weights indexed by length bin and grouping dimensions.
+
+        Dimensions
+        ----------
+        length_bin
+            Length-bin intervals.
+        *group_dims
+            One dimension per grouping variable implied by
+            ``regression_coefficients`` (e.g., ``sex``). Present only when
+            grouped coefficients are supplied.
+
+        Data
+        ----
+        weight_fitted
+            Fitted weight values for each coordinate combination.
 
     Examples
     --------
@@ -59,24 +73,22 @@ def length_binned_weights(
     >>> fitted = compute_binned_weights(specimen_data, length_dist, coeffs,
     ...                                impute_bins=False)
     """
+
     # Make a copy to avoid modifying original data
     data = data.copy()  # Create length distribution from bins
     length_distribution = binned_distribution(length_bins)
 
     # Handle different coefficient input types
     if isinstance(regression_coefficients, pd.Series):
-        # Single set of coefficients - convert to DataFrame for consistent processing
+        # ---- Single set of coefficients - convert to DataFrame for consistent processing
         regression_df = pd.DataFrame([regression_coefficients])
-        # Reset index to avoid grouping complications
+        # ---- Reset index to avoid grouping complications
         regression_df.reset_index(drop=True, inplace=True)
-        # Assign metadata variables required for the output
-        is_grouped = False
+        # ---- Assign metadata variables required for the output
         group_cols = []
     else:
-        # Already a DataFrame from groupby operation
+        # ---- Already a DataFrame from groupby operation
         regression_df = regression_coefficients.reset_index()
-        # Assign metadata variables required for the output
-        is_grouped = True
         group_cols = [name for name in regression_coefficients.index.names if name is not None]
 
     # Initialize fitted weights dataframe
@@ -93,20 +105,20 @@ def length_binned_weights(
     )
 
     # Get the column names if any grouping is required
-    cols = group_cols + ["length_bin"]
+    index_cols = group_cols + ["length_bin"]
 
     # Quantize weight counts per length bin
     binned_weight_distribution = (
-        data.groupby(cols, observed=False)["length"].size().fillna(0).to_frame("count")
+        data.groupby(index_cols, observed=False)["length"].size().fillna(0).to_frame("count")
     )
 
     # Quantize weight means per length bin
     binned_weight_distribution["weight_mean"] = (
-        data.groupby(cols, observed=False)["weight"].mean().fillna(0)
+        data.groupby(index_cols, observed=False)["weight"].mean().fillna(0)
     )
 
     # Merge with the fitted weights
-    binned_weight_distribution["weight_modeled"] = weight_fitted_df.set_index(cols)[
+    binned_weight_distribution["weight_modeled"] = weight_fitted_df.set_index(index_cols)[
         "weight_modeled"
     ]
 
@@ -133,23 +145,48 @@ def length_binned_weights(
     result = binned_weight_distribution.reset_index()
 
     # Mutate, if needed, or otherwise return the pivoted DataFrame
-    if is_grouped:
-        pivot_result = result.pivot(index="length_bin", columns=group_cols, values="weight_fitted")
-        return pivot_result
+    pivot_result = result.pivot(index="length_bin", columns=group_cols, values="weight_fitted")
+    if isinstance(pivot_result, pd.Series):
+        pivot_result = pivot_result.to_frame("all")
+
+    # Get dimensions and coordinates
+    if group_cols:
+        dims = ["length_bin"] + group_cols
+        coords = {
+            "length_bin": pivot_result.index,
+            **{
+                col: (
+                    pivot_result.columns.get_level_values(col)
+                    if isinstance(pivot_result.columns, pd.MultiIndex)
+                    else pivot_result.columns
+                )
+                for col in group_cols
+            },
+        }
+        output = pivot_result.values
     else:
-        if isinstance(result, pd.Series):
-            return result.to_frame("all")
+        dims = ["length_bin"]
+        # ---- Convert MultiIndex to Index with no name to avoid conflict
+        if isinstance(pivot_result.index, pd.MultiIndex) and len(pivot_result.index.names) == 1:
+            coords = {"length_bin": pivot_result.index.get_level_values(0)}
         else:
-            return result
+            coords = {"length_bin": pivot_result.index}
+        output = pivot_result.values.squeeze()
+
+    # Convert to an xarray.DataArray
+    return xr.DataArray(
+        output,
+        dims=dims,
+        coords=coords,
+        name="weight_fitted",
+    )
 
 
 def compute_abundance(
     dataset: pd.DataFrame,
-    stratify_by: List[str] = [],
-    group_by: List[str] = [],
     exclude_filter: Dict[str, str] = {},
-    number_proportions: Optional[Dict[str, pd.DataFrame]] = None,
-):
+    number_proportions: Optional[Dict[str, xr.Dataset]] = None,
+) -> None:
     """
     Convert number density estimates in abundances.
 
@@ -191,39 +228,57 @@ def compute_abundance(
 
     # Compute grouped values, if needed
     if number_proportions is not None:
-        # ---- Set the index
-        dataset.set_index(stratify_by, inplace=True)
+        # ---- Select overall proportions from each dataset
+        overall_props = {k: ds["proportion_overall"] for k, ds in number_proportions.items()}
+        # ---- Get the set of coordinate names for each DataArray
+        coord_sets = [set(da.coords) for da in overall_props.values()]
+        # ---- Find the intersection (shared coordinates)
+        shared_coords = set.intersection(*coord_sets) - {"length_bin"}
+        # ---- Find overlapping indices
+        idx_names = list(shared_coords.intersection(set(dataset.columns)))
+        nonidx_names = [id for id in list(shared_coords) if id not in idx_names]
         # ---- Create grouped table from number proportions
-        grouped_proportions = create_grouped_table(
-            number_proportions,
-            group_cols=stratify_by + group_by,
-            strat_cols=group_by,
-            index_cols=stratify_by,
-            value_col="proportion_overall",
+        grouped_proportions = sum(
+            da.sum(dim=[d for d in da.dims if d not in shared_coords])
+            for da in overall_props.values()
         )
         # ---- Apply exclusion filter, if required
-        grouped_proportions_excl = apply_filters(grouped_proportions, exclude_filter=exclude_filter)
+        if exclude_filter:
+            # ---- Parse existing labels
+            to_drop = {
+                k: v
+                for k, v in exclude_filter.items()
+                if k in grouped_proportions.coords and v in grouped_proportions.coords[k].values
+            }
+            if to_drop:
+                grouped_proportions_excl = grouped_proportions.drop_sel(to_drop)
+            else:
+                grouped_proportions_excl = grouped_proportions
+        else:
+            grouped_proportions_excl = grouped_proportions
         # ---- Refine if no grouping
-        if len(group_by) == 0:
-            grouped_proportions_excl = grouped_proportions_excl["proportion_overall"]
+        if len(nonidx_names) == 0:
             number_density_vals = dataset["number_density"].values
             abundance_vals = dataset["abundance"].values
         else:
             number_density_vals = dataset["number_density"].values[:, None]
             abundance_vals = dataset["abundance"].values[:, None]
-        # ---- Reindex the table
-        grouped_proportions_ridx = grouped_proportions_excl.reindex(dataset.index).fillna(0.0)
+        # ---- Reindex the DataArray
+        ridx = {k: dataset[k] for k in idx_names}
+        grouped_proportions_ridx = grouped_proportions_excl.reindex(ridx).fillna(0.0)
+        # ---- Set the index of the tabular data
+        dataset.set_index(idx_names, inplace=True)
         # ---- Compute number density
         grouped_number_density = number_density_vals * grouped_proportions_ridx
         # ---- Compute abundance
         grouped_abundance = abundance_vals * grouped_proportions_ridx
         # ---- Add the number densities to the dataset
-        dataset[grouped_number_density.columns.map(lambda c: f"number_density_{c}")] = (
-            grouped_number_density.values
-        )
+        dataset[
+            [f"number_density_{c}" for c in grouped_number_density.coords[nonidx_names[0]].values]
+        ] = grouped_number_density
         # ---- Add abundances to the dataset
-        dataset[grouped_abundance.columns.map(lambda c: f"abundance_{c}")] = (
-            grouped_abundance.values
+        dataset[[f"abundance_{c}" for c in grouped_abundance.coords[nonidx_names[0]].values]] = (
+            grouped_abundance
         )
         # ---- Reset the index
         dataset.reset_index(inplace=True)
@@ -231,11 +286,11 @@ def compute_abundance(
 
 def matrix_multiply_grouped_table(
     dataset: pd.DataFrame,
-    table: pd.DataFrame,
+    table: xr.DataArray,
     variable: str,
     output_variable: str,
     group: Optional[str] = None,
-) -> Tuple[pd.DataFrame, pd.DataFrame]:
+) -> None:
     """
     Multiply multiple data columns by identically indexed grouped table columns from a separate
     DataFrame.
@@ -244,8 +299,8 @@ def matrix_multiply_grouped_table(
     ----------
     dataset : pd.DataFrame
         DataFrame containing the data to be multiplied.
-    table : pd.DataFrame
-        DataFrame containing the grouped table with columns to multiply against.
+    table : xr.DataArray
+        DataArray containing the grouped table with columns to multiply against.
     variable : str
         The name of the variable in `dataset` that will be multiplied by the grouped table.
         This variable should have columns named as `{variable}_{suffix}` where `suffix` is a
@@ -267,42 +322,38 @@ def matrix_multiply_grouped_table(
     suffixes = variable_columns.str.replace(prefix_pattern, "", regex=False).to_list()
 
     # Reindex table
-    table_ridx = table.reindex(dataset.index).fillna(0.0)
+    ridx = {k: dataset.reset_index()[k] for k in dataset.index.names}
+    table_ridx = table.reindex(ridx).fillna(0.0)
 
     # Apply an inclusion filter
-    target_groups = apply_filters(table_ridx, include_filter={group: suffixes})
+    table_groups = table_ridx.sel({group: suffixes})
 
     # Get columns that also exist for dataset
-    variable_overlap = [prefix_pattern + col for col in target_groups.columns]
-
-    # Reindex the target grouped table
-    target_groups_idx = target_groups.reindex(dataset.index)
+    variable_overlap = [prefix_pattern + col for col in table_groups[group].values]
 
     # Run the multiplication
-    table_matrix = dataset.filter(variable_overlap).to_numpy() * target_groups_idx
+    table_matrix = dataset.filter(variable_overlap).to_numpy() * table_groups.T
 
-    # Set up column names
-    column_map = target_groups_idx.columns.map(lambda c: f"{output_variable}_{c}")
+    # Set up new columns
+    new_columns = [f"{output_variable}_{c}" for c in table_groups[group].values]
 
     # Add the output variables
-    dataset[column_map] = table_matrix.fillna(0.0).values
+    dataset[new_columns] = table_matrix.fillna(0.0).values
 
     # Calculate the remainder comprising the ungrouped values
     remainder = dataset[variable] - dataset[variable_overlap].fillna(0.0).sum(axis=1)
 
     # Calculate the output variable for the ungrouped/excluded values
-    remainder_matrix = remainder * table_ridx["all"].fillna(0.0)
+    remainder_matrix = remainder * table_ridx.sel({group: "all"}).fillna(0.0)
 
     # Compute the overall output variable
-    dataset[output_variable] = dataset[column_map].sum(axis=1) + remainder_matrix
+    dataset[output_variable] = dataset[new_columns].sum(axis=1) + remainder_matrix
 
 
 def compute_biomass(
     dataset: pd.DataFrame,
-    stratify_by: List[str] = [],
-    group_by: List[str] = [],
-    df_average_weight: Optional[Union[pd.DataFrame, pd.Series, float]] = None,
-):
+    stratum_weights: Optional[Union[xr.DataArray, float]] = None,
+) -> None:
     """
     Convert number density and abundance estimates to biomass density and total biomass,
     respectively.
@@ -348,46 +399,42 @@ def compute_biomass(
     >>> # Creates 'biomass_female', 'biomass_male' in-place
     """
 
-    # Set the index for the dataset
-    dataset.set_index(stratify_by, inplace=True)
+    # Find overlapping indices
+    idx_names = list(set(stratum_weights.coords).intersection(set(dataset.columns)))
+    nonidx_names = [id for id in set(stratum_weights.coords) if id not in idx_names]
 
-    # Handle stratification and weight alignment
-    if isinstance(df_average_weight, (pd.DataFrame, pd.Series)):
-        # ---- Ensure weights are properly aligned with the associated dataset
-        if hasattr(df_average_weight, "columns") and not set(
-            df_average_weight.index.names
-        ).intersection(stratify_by):
-            df_average_weight.set_index(stratify_by, inplace=True)
-        elif isinstance(df_average_weight, pd.Series):
-            df_average_weight = df_average_weight.to_frame("all")
-    else:
-        # ---- Create associated Series from a single float
-        df_average_weight = pd.DataFrame({"all": df_average_weight}, index=dataset.index)
+    # Set index
+    dataset.set_index(idx_names, inplace=True)
 
-    # If grouped
-    if len(group_by) > 0:
+    # If grouped beyond just index
+    if len(nonidx_names) > 0:
         # ---- Compute the biomass densities across groups
         matrix_multiply_grouped_table(
             dataset,
-            table=df_average_weight,
-            group=group_by[0],
+            table=stratum_weights,
+            group=nonidx_names[0],
             variable="number_density",
             output_variable="biomass_density",
         )
         # ---- Compute the biomass densities across groups
         matrix_multiply_grouped_table(
             dataset,
-            table=df_average_weight,
-            group=group_by[0],
+            table=stratum_weights,
+            group=nonidx_names[0],
             variable="abundance",
             output_variable="biomass",
         )
-    # Ungrouped
+    # ---- Ungrouped
     else:
+        # ---- Reindex table
+        ridx = {k: dataset.reset_index()[k] for k in dataset.index.names}
+        stratum_weights_ridx = stratum_weights.reindex(ridx).fillna(0.0)
         # ---- Compute biomass densities
-        dataset["biomass_density"] = dataset["number_density"] * df_average_weight["all"]
+        dataset["biomass_density"] = dataset["number_density"] * stratum_weights_ridx.sel(
+            {nonidx_names[0]: "all"}
+        )
         # ---- Compute biomass
-        dataset["biomass"] = dataset["abundance"] * df_average_weight["all"]
+        dataset["biomass"] = dataset["abundance"] * stratum_weights.sel({nonidx_names[0]: "all"})
 
     # Reset the index
     dataset.reset_index(inplace=True)

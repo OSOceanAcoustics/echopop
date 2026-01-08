@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import xarray as xr
 from matplotlib.ticker import FixedLocator
 
 from .. import utils
@@ -165,7 +166,7 @@ def format_heatmap_mapping(
 
 
 def plot_age_length_heatmap(
-    data: pd.DataFrame,
+    data: xr.DataArray,
     include_filter: Dict[str, Any] = {},
     exclude_filter: Dict[str, Any] = {},
     replace_value=None,
@@ -228,31 +229,41 @@ def plot_age_length_heatmap(
     savefig_kwargs = {} if savefig_kwargs is None else savefig_kwargs.copy()
 
     # Input validation and type-checking
-    if not isinstance(data, pd.DataFrame):
-        raise TypeError("Data must be a pandas.DataFrame.")
-    if data.empty:
-        raise ValueError("Input data is empty.")
-    # if not hasattr(data.index, "mid") or not hasattr(data.columns, "mid"):
-    #     raise TypeError("Data index and columns must be pandas.IntervalIndex.")
+    if not isinstance(data, xr.DataArray):
+        raise TypeError(f"'data' must be an xr.DataArray. It is instead: {type(data)}.")
+
+    # Convert to DataFrame
+    # ---- Get name of variable
+    if not data.name:
+        data.name = "estimate"
+    var = data.name
+    # ---- Parse out
+    data_cnv = data.to_dataframe()[var]
+    # ---- Re-arrange variables for expected MultiIndex columns
+    idx_cols = set(data_cnv.index.names) - {"length_bin"}
+    # ---- Assign order
+    ordered_cols = ["age_bin"] + list(idx_cols - {"age_bin"})
+    # ---- Stack
+    data_cnv_ord = data_cnv.unstack(ordered_cols)
 
     # Index check
-    if "length_bin" not in data.index.names:
+    if "length_bin" not in data_cnv_ord.index.names:
         raise IndexError(
-            f"The input DataFrame is expected to be indexed by 'length_bin'. Please "
-            f"make sure to set the DataFrame index before plotting. Current index/indices: "
-            f"{', '.join(data.index.names)}."
+            f"The input DataArray is expected to be indexed by 'length_bin'. Please "
+            f"make sure to set the DataArray index before plotting. Current index/indices: "
+            f"{', '.join(data_cnv_ord.index.names)}."
         ) from None
 
     # Column check
-    if "age_bin" not in data.columns.names:
+    if "age_bin" not in data_cnv_ord.columns.names:
         raise KeyError(
-            f"The input DataFrame is expected to be have the column 'age_bin'. The DataFrame has "
-            f"the current column(s): {', '.join(data.columns.names)}."
+            f"The input DataArray is expected to be have the column 'age_bin'. The DataArray has "
+            f"the current column(s): {', '.join(data_cnv_ord.columns.names)}."
         ) from None
 
     # Filter the dataset
     data_subset = utils.apply_filters(
-        data,
+        data_cnv_ord,
         include_filter=include_filter,
         exclude_filter=exclude_filter,
         replace_value=replace_value,

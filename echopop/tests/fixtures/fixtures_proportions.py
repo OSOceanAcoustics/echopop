@@ -165,6 +165,17 @@ def aged_dataframe():
 
 
 @pytest.fixture
+def aged_dataarray(aged_dataframe):
+    """Create sample aged count data with stratum, length, age, and sex."""
+
+    dat_da = aged_dataframe.set_index(["stratum_num", "length_bin", "age_bin", "sex"])[
+        "count"
+    ].to_xarray()
+    dat_da = dat_da.assign_coords({"variable": "count"})
+    return dat_da
+
+
+@pytest.fixture
 def unaged_dataframe():
     """Create sample unaged count data with stratum, length and sex."""
     data = {
@@ -175,6 +186,16 @@ def unaged_dataframe():
         "count": [30, 40, 10, 35, 45, 15],
     }
     return pd.DataFrame(data)
+
+
+@pytest.fixture
+def unaged_dataarray(unaged_dataframe):
+    """Create sample aged count data with stratum, length, age, and sex."""
+
+    dat_da = unaged_dataframe.set_index(["stratum_num", "length_bin", "sex"])["count"].to_xarray()
+    dat_da = dat_da.assign_coords({"variable": "count"})
+
+    return dat_da
 
 
 @pytest.fixture
@@ -242,7 +263,11 @@ def length_weight_dataset_wide_format(grouped_length_weight_data):
 
     # Return long format DataFrame (not pivot table) as expected by binned_weights function
     # This should match the long format returned by length_binned_weights
-    return df[["sex", "length_bin", "weight_fitted"]]
+    return (
+        df[["sex", "length_bin", "weight_fitted"]]
+        .set_index(["sex", "length_bin"])["weight_fitted"]
+        .to_xarray()
+    )
 
 
 @pytest.fixture
@@ -324,25 +349,47 @@ def weight_table():
 def proportion_test_dict():
     """Create sample proportion dictionary for testing stratum_averaged_weight."""
     # First group - aged data
-    aged_data = pd.DataFrame(
-        {
-            "stratum_num": [1, 1, 1, 2, 2, 2],
-            "sex": ["female", "male", "male", "female", "male", "female"],
-            "length_bin": ["(10, 20]", "(10, 20]", "(20, 30]", "(10, 20]", "(20, 30]", "(20, 30]"],
-            "proportion": [0.3, 0.4, 0.1, 0.05, 0.15, 0.1],
-            "proportion_overall": [0.15, 0.2, 0.05, 0.025, 0.075, 0.05],
-        }
+    aged_data = (
+        pd.DataFrame(
+            {
+                "stratum_num": [1, 1, 1, 2, 2, 2],
+                "sex": ["female", "male", "male", "female", "male", "female"],
+                "length_bin": [
+                    "(10, 20]",
+                    "(10, 20]",
+                    "(20, 30]",
+                    "(10, 20]",
+                    "(20, 30]",
+                    "(20, 30]",
+                ],
+                "proportion": [0.3, 0.4, 0.1, 0.05, 0.15, 0.1],
+                "proportion_overall": [0.15, 0.2, 0.05, 0.025, 0.075, 0.05],
+            }
+        )
+        .set_index(["stratum_num", "sex", "length_bin"])
+        .to_xarray()
     )
 
     # Second group - unaged data
-    unaged_data = pd.DataFrame(
-        {
-            "stratum_num": [1, 1, 1, 2, 2, 2],
-            "sex": ["female", "male", "male", "female", "male", "female"],
-            "length_bin": ["(10, 20]", "(10, 20]", "(20, 30]", "(10, 20]", "(20, 30]", "(20, 30]"],
-            "proportion": [0.25, 0.35, 0.2, 0.1, 0.2, 0.1],
-            "proportion_overall": [0.125, 0.175, 0.1, 0.05, 0.1, 0.05],
-        }
+    unaged_data = (
+        pd.DataFrame(
+            {
+                "stratum_num": [1, 1, 1, 2, 2, 2],
+                "sex": ["female", "male", "male", "female", "male", "female"],
+                "length_bin": [
+                    "(10, 20]",
+                    "(10, 20]",
+                    "(20, 30]",
+                    "(10, 20]",
+                    "(20, 30]",
+                    "(20, 30]",
+                ],
+                "proportion": [0.25, 0.35, 0.2, 0.1, 0.2, 0.1],
+                "proportion_overall": [0.125, 0.175, 0.1, 0.05, 0.1, 0.05],
+            }
+        )
+        .set_index(["stratum_num", "sex", "length_bin"])
+        .to_xarray()
     )
 
     return {"aged": aged_data, "unaged": unaged_data}
@@ -360,7 +407,16 @@ def test_weight_table():
     index = pd.Index(["(10, 20]", "(20, 30]"], name="length_bin")
     data_df = pd.DataFrame(data, index=index)
     data_df.columns.rename("sex", inplace=True)
-    return data_df
+
+    return (
+        data_df.stack()
+        .to_frame(name="weight_fitted")
+        .to_xarray()
+        .to_dataarray(dim="weight_fitted")
+        .squeeze()
+        .rename("weight_fitted")
+        .reset_coords("weight_fitted", drop=True)
+    )
 
 
 @pytest.fixture
@@ -381,10 +437,25 @@ def weights_df_fixture():
 def weight_distr_dict(weights_df_fixture):
     """Create a dictionary with weight distribution DataFrames."""
     # Create a variation for the unaged group
-    unaged_df = weights_df_fixture.copy()
-    unaged_df.iloc[0] = [5.2, 7.8, 4.3, 6.1]
+    aged_da = (
+        weights_df_fixture.T.rename({0: "weight"}, axis=1)
+        .to_xarray()
+        .to_dataarray()
+        .squeeze()
+        .rename("weight")
+        .reset_coords("variable", drop=True)
+    )
+    unaged_da = (
+        weights_df_fixture.T.rename({0: "weight"}, axis=1)
+        .to_xarray()
+        .assign(weight=lambda x: x.weight + 2)
+        .to_dataarray()
+        .squeeze()
+        .rename("weight")
+        .reset_coords("variable", drop=True)
+    )
 
-    return {"aged": weights_df_fixture, "unaged": unaged_df}
+    return {"aged": aged_da, "unaged": unaged_da}
 
 
 @pytest.fixture
@@ -552,21 +623,17 @@ def standardized_data_fixture():
 @pytest.fixture
 def simple_weights_df():
     """Create a simple multi-level column DataFrame with stratum_num in columns."""
-    # Create multi-level columns with sex and stratum_num
-    columns = pd.MultiIndex.from_tuples(
-        [
-            ("female", 1),
-            ("female", 2),
-            ("male", 1),
-            ("male", 2),
-        ],
-        names=["sex", "stratum_num"],
-    )
 
     # Create simple data with one row
-    data = np.array([[10.5, 15.2, 8.3, 12.7]])
+    data = pd.DataFrame(
+        {
+            "sex": ["female", "female", "male", "male"],
+            "stratum_num": [1, 2, 1, 2],
+            "weight": [10.5, 15.2, 8.3, 12.7],
+        }
+    ).set_index(["stratum_num", "sex"])
 
-    return pd.DataFrame(data=data, columns=columns)
+    return data.to_xarray()["weight"]
 
 
 @pytest.fixture
