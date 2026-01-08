@@ -11,6 +11,7 @@ parts:
   - file: example_notebooks
     title: User guide
     sections:
+      - file: FEAT_implementation/overall_workflow
       - file: FEAT_implementation/echopro_vs_echopop
         title: Differences between EchoPro and Echopop
       - file: FEAT_implementation/input_files
