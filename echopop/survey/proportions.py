@@ -1256,6 +1256,9 @@ def get_weight_proportions_slice(
     >>> weight_props = get_weight_proportions_slice(
     ...     weight_proportions,
     ...     group_columns=["stratum_ks"],
+    >>> weight_props = get_weight_proportions_slice(
+    ...     weight_proportions,
+    ...     group_columns=["stratum_ks"],
     ...     include_filter={"age_bin": [1]},
     ...     number_proportions={"aged": ds_aged, "unaged": ds_unaged},
     ...     length_threshold_min=10.0
