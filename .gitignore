@@ -1,5 +1,5 @@
 .DS_Store
-_echopop_version.py
+*_version.py
 .vscode
 
 # ignore output reports, if they were produced
@@ -143,3 +143,9 @@ com_crashlytics_export_strings.xml
 crashlytics.properties
 crashlytics-build.properties
 fabric.properties
+
+# Ignore all pickle files
+*.pkl
+
+# Ignore pickle files in any subfolder
+**/*.pkl

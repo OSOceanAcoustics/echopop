@@ -5,7 +5,9 @@ numpy
 openpyxl
 pandas
 scipy
-# Spatial stack
+numba>=0.63.0b1
+# Spatial data processing stack
+cartopy
 geopandas
 geopy
 pyproj
@@ -19,7 +21,6 @@ traitlets
 ipympl
 jupyter_bokeh>=3.0.5
 # Static visualization stack
-cartopy
 matplotlib
 # Interactive visualization stack
 bokeh

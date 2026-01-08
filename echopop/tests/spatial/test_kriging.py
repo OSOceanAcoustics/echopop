@@ -1,13 +1,12 @@
 import numpy as np
 import pandas as pd
 
-from echopop.nwfsc_feat.FEAT import get_survey_western_extents, western_boundary_search_strategy
-from echopop.nwfsc_feat.kriging import (
+from echopop.geostatistics.kriging import (
     Kriging,
     adaptive_search_radius,
     count_within_radius,
-    krige,
     kriging_lambda,
+    ordinary_kriging,
     ordinary_kriging_matrix,
     parse_stacked_kriging_array,
     project_kriging_results,
@@ -126,9 +125,7 @@ def test_adaptive_search_radius_basic():
 
 def test_adaptive_search_radius_with_strategy(
     sample_sparse_distance_matrix,
-    sample_mesh_coordinates,
     sample_kriging_settings,
-    sample_western_extent,
 ):
     """Test adaptive_search_radius with custom search strategy."""
     k_min = sample_kriging_settings["kriging_parameters"]["kmin"]
@@ -150,9 +147,7 @@ def test_adaptive_search_radius_with_strategy(
 
 def test_adaptive_search_radius_western_boundary(
     sample_sparse_distance_matrix,
-    sample_mesh_coordinates,
     sample_kriging_settings,
-    sample_western_extent,
 ):
     """Test adaptive_search_radius with western boundary strategy."""
     k_min = sample_kriging_settings["kriging_parameters"]["kmin"]
@@ -287,7 +282,7 @@ def test_kriging_point_estimator_basic(sample_biomass_data, sample_variogram_par
     for param_name in sample_variogram_parameters.keys():
         variogram_params[param_name] = sample_variogram_parameters[param_name].value
 
-    result = krige(
+    result = ordinary_kriging(
         sample_biomass_data,
         mesh,
         coordinate_names=("x", "y"),
@@ -334,7 +329,7 @@ def test_krige_basic(sample_transect_df):
         "correlation_range": 0.5,
     }
 
-    result = krige(
+    result = ordinary_kriging(
         sample_transect_df,
         kriging_mesh,
         coordinate_names,
@@ -594,102 +589,3 @@ def test_uniform_search_strategy_basic():
     assert isinstance(updated_wr_indices, np.ndarray)
     assert isinstance(updated_oos_indices, np.ndarray)
     assert isinstance(updated_oos_weights, np.ndarray)
-
-
-# ==================================================================================================
-# Test western_boundary_search_strategy
-# --------------------------------------
-def test_western_boundary_search_strategy_basic(sample_western_extent):
-    """Test basic functionality of western_boundary_search_strategy."""
-    # Create mock data
-    kriging_mesh = pd.DataFrame(
-        {"x": [-1.0, 0.0, 1.0], "y": [0.0, 1.0, 2.0], "transect_num": [1, 2, 3]}
-    )
-
-    sparse_radii = np.array([0, 1, 2])
-    valid_distances = np.array([2, 2, 2])
-    local_points = np.array([[0, 1, 2], [1, 0, 1], [2, 1, 0]], dtype=float)
-    distance_matrix_masked = np.array([[0, 1, 2], [1, 0, 1], [2, 1, 0]], dtype=float)
-    nearby_indices = np.array([[0, 1], [1, 0], [2, 1]])
-    k_min = 2
-    k_max = 3
-    search_radius = 1.5
-    wr_indices = np.array([[0, 1, 2], [1, 0, 2], [2, 1, 0]], dtype=float)
-    oos_indices = np.full((3, 2), np.nan)
-    oos_weights = np.ones(3)
-
-    result = western_boundary_search_strategy(
-        kriging_mesh,
-        sample_western_extent,
-        coordinate_names=("x", "y"),
-        sparse_radii=sparse_radii,
-        valid_distances=valid_distances,
-        local_points=local_points,
-        distance_matrix_masked=distance_matrix_masked,
-        nearby_indices=nearby_indices,
-        k_min=k_min,
-        k_max=k_max,
-        search_radius=search_radius,
-        wr_indices=wr_indices,
-        oos_indices=oos_indices,
-        oos_weights=oos_weights,
-    )
-
-    # Check that result is a tuple with 3 elements
-    assert isinstance(result, tuple)
-    assert len(result) == 3
-
-    # Check that each element is a numpy array
-    updated_wr_indices, updated_oos_indices, updated_oos_weights = result
-    assert isinstance(updated_wr_indices, np.ndarray)
-    assert isinstance(updated_oos_indices, np.ndarray)
-    assert isinstance(updated_oos_weights, np.ndarray)
-
-    # Check that weights are positive
-    assert all(w > 0 for w in updated_oos_weights)  # All weights should be positive
-
-
-# ==================================================================================================
-# Test get_survey_western_extents
-# --------------------------------
-def test_get_survey_western_extents_basic(sample_mesh_coordinates):
-    """Test basic functionality of get_survey_western_extents."""
-    # Add latitude column to mesh coordinates
-    mesh_with_lat = sample_mesh_coordinates.copy()
-    mesh_with_lat["latitude"] = mesh_with_lat["y"] + 46.0  # Add realistic latitude
-
-    result = get_survey_western_extents(
-        mesh_with_lat, coordinate_names=("x", "y"), latitude_threshold=45.0
-    )
-
-    # Check that result is a DataFrame
-    assert isinstance(result, pd.DataFrame)
-
-    # Check that it has the expected columns
-    expected_columns = {"transect_num", "x", "y"}
-    assert set(result.columns) == expected_columns
-
-    # Check that each transect has one entry
-    transect_counts = result["transect_num"].value_counts()
-    assert all(count == 1 for count in transect_counts.values)
-
-
-def test_get_survey_western_extents_westernmost(sample_mesh_coordinates):
-    """Test that get_survey_western_extents returns westernmost points."""
-    # Add latitude column to mesh coordinates
-    mesh_with_lat = sample_mesh_coordinates.copy()
-    mesh_with_lat["latitude"] = mesh_with_lat["y"] + 46.0  # Add realistic latitude
-
-    result = get_survey_western_extents(
-        mesh_with_lat, coordinate_names=("x", "y"), latitude_threshold=45.0
-    )
-
-    # For each transect, the x-coordinate should be the minimum
-    for transect_num in result["transect_num"].unique():
-        original_transect = mesh_with_lat[mesh_with_lat["transect_num"] == transect_num]
-        result_transect = result[result["transect_num"] == transect_num]
-
-        min_x = original_transect["x"].min()
-        result_x = result_transect["x"].iloc[0]
-
-        assert result_x == min_x

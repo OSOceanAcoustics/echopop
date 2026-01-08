@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from echopop.nwfsc_feat.graphics import utils as gutils
+from echopop.graphics import utils as gutils
 
 
 def test_scale_sizes_basic():

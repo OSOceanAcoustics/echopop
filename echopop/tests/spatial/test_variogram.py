@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from echopop.nwfsc_feat.variogram import empirical_variogram, quantize_lags, semivariance
+from echopop.geostatistics.variogram import empirical_variogram, quantize_lags, semivariance
 
 
 # ==================================================================================================
