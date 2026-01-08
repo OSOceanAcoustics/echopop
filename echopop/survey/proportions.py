@@ -727,7 +727,7 @@ def stratum_averaged_weight(
     within_grp_props_orig = xr.concat(
         within_grp_props_list,
         dim=xr.IndexVariable("group", list(number_proportions.keys())),
-        join="outer"
+        join="outer",
     ).sum(dim=shared_dims - set([*["length_bin"], *group_columns, *grps]))
     # ---- Get the grouped aggregates for normalizing
     within_grp_props_norm = xr.concat(
@@ -735,7 +735,7 @@ def stratum_averaged_weight(
         dim=xr.IndexVariable("group", list(number_proportions.keys())),
     ).sum(dim=shared_dims - set([*group_columns, *grps]))
     within_grp_props = within_grp_props_orig / within_grp_props_norm
-    
+
     # Generalize the overall groups
     within_grp_props_all = within_grp_props.sum(dim=grps)
 
@@ -871,7 +871,7 @@ def weight_proportions(
     Notes
     -----
     - No column or dimension names are hard-coded; all logic is dynamic.
-    - The function assumes that grouping columns are consistent between weight_data 
+    - The function assumes that grouping columns are consistent between weight_data
       and catch_data.
     - Missing or extra group/category combinations are handled automatically by xarray/pandas.
 
