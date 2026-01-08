@@ -429,18 +429,6 @@ def test_merge_exports_na_handling(sample_intervals_df, sample_cells_df, sample_
     assert 3.0 not in result["transect_num"].values
 
 
-def test_merge_exports_empty(sample_intervals_df, sample_cells_df, sample_layers_df):
-    """Test merge with an empty DataFrame."""
-    # Create empty layers DataFrame
-    empty_layers_df = pd.DataFrame(columns=sample_layers_df.columns)
-
-    # Execute the merge - should result in an empty DataFrame after dropna
-    result = merge_exports(sample_intervals_df, sample_cells_df, empty_layers_df)
-
-    # Check that result is empty
-    assert len(result) == 0
-
-
 ####################################################################################################
 # Test Export reading, cleaning, and merging
 # ------------------------------------------

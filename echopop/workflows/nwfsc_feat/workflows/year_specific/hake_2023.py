@@ -602,7 +602,7 @@ dict_da_weight_proportion["unaged"] = proportions.fitted_weight_proportions(
     catch_data=dict_df_bio["catch"],
     number_proportions=dict_ds_number_proportion["unaged"],
     binned_weights=da_binned_weights_all,
-    group_columns=["stratum_ks"]
+    stratum_dim=["stratum_ks"]
 )
 
 # ==================================================================================================

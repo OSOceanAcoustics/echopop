@@ -2204,17 +2204,14 @@ class Reporter:
         if not isinstance(sheetnames, dict):
             raise TypeError("'sheetname' must be a `dict`.")
 
-        # Create copy
-        datatable = datatable.copy()
-
-        # Convert xr.DataArray to DataFrame
-        datatable_cnv = datatable.to_dataframe()
-
         # Update the filepath
         filepath = self.save_directory / filename
 
         # Pull the aged dataset
-        aged_table = datatable_cnv.unstack().sum(axis=1).unstack(["age_bin", "sex"])
+        # ---- Get coordinates
+        agg_coords = set(datatable.coords) - {"length_bin", "sex", "age_bin"}
+        # ---- Convert to DataFrame
+        aged_table = datatable.sum(dim=agg_coords).to_series().unstack(["age_bin", "sex"])
 
         # Reorient the aged table
         # ---- Convert the indices to numerics
