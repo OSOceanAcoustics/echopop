@@ -1,5 +1,5 @@
 (offeffort-transect-filtering)=
-# Filtering off-effort transect intervals
+# Filter off-effort transect intervals
 
 ## Removing off-effort intervals from transects
 

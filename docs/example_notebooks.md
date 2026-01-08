@@ -1,4 +1,5 @@
-# Example notebooks
+(user_guide)=
+# User guide
 
 The notebooks in this section demonstrate how to use Echopop functions to string together a workflow to infer biomass and other population variables using the combination of acoustic and biological data.  
 
@@ -23,4 +24,9 @@ The workflows have been broken up into the following sections:
 - [](number-proportions)
 - [](weight-proportions)
 - [](basic-inversion)
+- [](geostats)
+- [](kriged-biomass-to-nasc)
+- [](jolly-hampton)
 - [](basic-plotting)
+- [](report-generation)
+- [](year-specific-workflows)

@@ -6,11 +6,6 @@ Echopop is available for installation via pip, conda-forge, or by cloning the re
 Ensure you have Python 3.12 or 3.13 installed, as Python 3.14 has known dependency issues.
 ```
 
-### Optional: Using WSL on Windows
-
-For Windows users, consider creating environments in Windows Subsystem for Linux (WSL) for improved compatibility with Linux-based tools. See the [official WSL documentation](https://docs.microsoft.com/en-us/windows/wsl/) for setup instructions.
-
-
 ## pip
 
 [![PyPI version](https://img.shields.io/pypi/v/echopop)](https://pypi.org/project/echopop/)
@@ -69,3 +64,7 @@ pip install -e .
 :class: example
 The `-e` flag means that you are installing Echopop in a development mode, which allows you to not only use but also develop and edit the source code.
 :::
+
+## Optional: Using WSL on Windows
+
+For Windows users, consider creating environments in Windows Subsystem for Linux (WSL) for improved compatibility with Linux-based tools. See the [official WSL documentation](https://docs.microsoft.com/en-us/windows/wsl/) for setup instructions.

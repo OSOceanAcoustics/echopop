@@ -6,7 +6,7 @@ The challenges associated with apportioning the kriged population estimates are 
 
 (apportion-trawl-stations)=
 ## Station 1 (*unaged*)
-Fish specimens are first sorted according to sex. Their respective standard lengths are then grouped by sex and binned into length distributions ({ref}`Eq. 2.2 <intext_eq_22>`). Haul weights correspond to the bulk total of all unaged fish for each trawl. This results in a bifurcated dataset where the length measurements are stored separately from the catch data. 
+Fish specimens are first sorted according to sex. Their respective standard lengths are then grouped by sex and binned into length distributions ({ref}`Eq. 2.2 <eq-22>`). Haul weights correspond to the bulk total of all unaged fish for each trawl. This results in a bifurcated dataset where the length measurements are stored separately from the catch data. 
 
 ### Length
 | Haul      | Sex          | Length     | Count               |
@@ -39,7 +39,7 @@ Fish specimens are first sorted according to sex. Their respective standard leng
 
 ## Combining the aged and unaged datasets
 
-While the binned lengths and ages from aged data can be used to [directly apportion population estimates](apportion_biomass.md#apportion-aged), the unaged measurements need to be [further processed](apportion_biomass.md#apportion-unaged) such that they share the same dimensions as the aged data. In practice, [hauls are stratified](../theory/stratification.md#stratification) based on their length distributions (as determined by a KS-based cluster analysis) or latitudes (INPFC).
+While the binned lengths and ages from aged data can be used to [directly apportion population estimates](apportion-aged), the unaged measurements need to be [further processed](apportion-unaged) such that they share the same dimensions as the aged data. In practice, [hauls are stratified](stratification-intro) based on their length distributions (as determined by a KS-based cluster analysis) or latitudes (INPFC).
 
 ## Overall weight proportion of aged and unaged fish samples
 

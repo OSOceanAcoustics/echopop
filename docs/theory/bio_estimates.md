@@ -20,6 +20,7 @@ Here $w_j$ is the weight of fish $j$ and $N$ is the total number of fish samples
 
 <a id="intext_eq_22"></a>
 
+(intext_eq_22_md)=
 $$
     \left< w \right> = \tilde{\mathbf{L}}^{\mathsf{T}} \mathbf{w},
     \tag{2.2}

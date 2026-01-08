@@ -676,10 +676,14 @@ def stratum_averaged_weight(
 
     Notes
     -----
+
     - The function assumes that the length bins in number_proportions and length_weight_data match.
+
     - The function requires an 'all' group category in length_weight_data for calculating combined
-    weights.
+      weights.
+
     - Missing strata or group categories will be excluded from the final results.
+
     - All calculations are performed using xarray and pandas interconversion for flexibility.
 
     Examples
@@ -1045,9 +1049,12 @@ def get_nasc_proportions_slice(
     Notes
     -----
     - No dimension names are hard-coded; all grouping and filtering is dynamic.
+
     - The function assumes that grouping and binning dimensions are consistent with the DataArray
-    structure.
+      structure.
+
     - Filtering is applied dynamically using include_filter and exclude_filter.
+
     - Output is an xarray.DataArray indexed by group_columns.
 
     Examples
@@ -1140,10 +1147,14 @@ def get_number_proportions_slice(
 
     Notes
     -----
+
     - No dimension names are hard-coded; all grouping and filtering is dynamic.
+
     - The function assumes that grouping and binning dimensions are consistent with the DataArray
-    structure.
+      structure.
+
     - Filtering is applied dynamically using include_filter and exclude_filter.
+
     - Output is an xarray.DataArray indexed by group_columns.
 
     Examples
@@ -1233,6 +1244,7 @@ def get_weight_proportions_slice(
     Notes
     -----
     Thresholding Logic:
+
     1. Calculate target group weight proportions.
     2. If number_proportions are provided, calculate corresponding number thresholds.
     3. If length_threshold_min is set, exclude length bins below this threshold.
@@ -1241,6 +1253,9 @@ def get_weight_proportions_slice(
 
     Examples
     --------
+    >>> weight_props = get_weight_proportions_slice(
+    ...     weight_proportions,
+    ...     group_columns=["stratum_ks"],
     >>> weight_props = get_weight_proportions_slice(
     ...     weight_proportions,
     ...     group_columns=["stratum_ks"],
