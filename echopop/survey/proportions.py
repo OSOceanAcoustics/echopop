@@ -930,7 +930,7 @@ def fitted_weight_proportions(
     binned_weights : xr.DataArray
         xarray DataArray of fitted weights by length bins (and possibly other groupings).
     stratum_dim : list of str
-        List of dimension/column names used for grouping (e.g., ['stratum_ks']).
+        Stratification dimension name (e.g., ['stratum_ks']).
 
     Returns
     -------
@@ -952,7 +952,7 @@ def fitted_weight_proportions(
     <xarray.DataArray ...>
     """
 
-    # Compute the total subgrouped weights
+    # Compute the total strata weights
     subgroup_weights = weight_data.groupby(stratum_dim).sum(dim="length_bin").astype(float)
 
     # Calculate the total grouped weights
@@ -1108,7 +1108,7 @@ def get_nasc_proportions_slice(
 
 def get_number_proportions_slice(
     number_proportions: xr.DataArray,
-    group_columns: List[str] = [],
+    stratum_dim: List[str] = [],
     exclude_filter: Dict[str, Any] = {},
     include_filter: Dict[str, Any] = {},
 ) -> xr.DataArray:
@@ -1125,8 +1125,8 @@ def get_number_proportions_slice(
     number_proportions : xr.DataArray
         xarray.DataArray of number proportions by relevant grouping factors, with dimensions
         including those in group_columns and binning columns (e.g., 'length_bin').
-    group_columns : list of str, optional
-        List of dimension names to use for grouping (e.g., ['stratum_ks']).
+    stratum_dim : list of str
+        Stratification dimension name (e.g., ['stratum_ks']).
     exclude_filter : Dict[str, Any], optional
         Dictionary specifying values to exclude for filtering.
     include_filter : Dict[str, Any], optional
@@ -1163,9 +1163,9 @@ def get_number_proportions_slice(
     # Intersect with actually available columns/indices
     index_set = set(number_proportions.coords).intersection(filter_indices)
 
-    # Get length-binned proportions aggregated based on group_columns
+    # Get length-binned proportions aggregated based on strata
     aggregate_array = number_proportions["proportion"].sum(
-        dim=[d for d in number_proportions.coords if d not in [*group_columns, *index_set]]
+        dim=[d for d in number_proportions.coords if d not in [*stratum_dim, *index_set]]
     )
 
     # Apply filters, if any
@@ -1182,13 +1182,13 @@ def get_number_proportions_slice(
     # ---- Drop any singleton coordinates
     grouped_props = aggregate_array.squeeze(drop=True)
 
-    # Aggregate further over the defined group_columns
-    return grouped_props.sum(dim=[d for d in grouped_props.coords if d not in group_columns])
+    # Aggregate further over the defined strata
+    return grouped_props.sum(dim=[d for d in grouped_props.coords if d not in stratum_dim])
 
 
 def get_weight_proportions_slice(
     weight_proportions: xr.Dataset,
-    group_columns: List[str] = [],
+    stratum_dim: List[str] = [],
     include_filter: Dict[str, Any] = {},
     exclude_filter: Dict[str, Any] = {},
     number_proportions: Dict[str, xr.Dataset] = {},
@@ -1209,8 +1209,8 @@ def get_weight_proportions_slice(
     ----------
     weight_proportions : xr.Dataset
         Dataset with weight proportions and all relevant grouping dimensions.
-    group_columns : List[str], optional
-        List of dimension names to group/aggregate by (e.g., ["stratum_ks"]).
+    stratum_dim : list of str
+        Stratification dimension name (e.g., ['stratum_ks']).
     include_filter : Dict[str, Any], default {}
         Dictionary of filter criteria for the target group (e.g., {"age_bin": [1]}).
     exclude_filter : Dict[str, Any], default {}
@@ -1255,9 +1255,9 @@ def get_weight_proportions_slice(
     # Determine index columns from filter keys and length_bin
     index_set = set(list(exclude_filter.keys()) + list(include_filter.keys()) + ["length_bin"])
 
-    # Get length-binned proportions aggregated based on group_columns
+    # Get length-binned proportions aggregated based on strata
     aggregate_array = weight_proportions["proportion_overall"].sum(
-        dim=[d for d in weight_proportions.coords if d not in [*group_columns, *index_set]]
+        dim=[d for d in weight_proportions.coords if d not in [*stratum_dim, *index_set]]
     )
 
     # Apply filters, if any
@@ -1268,14 +1268,14 @@ def get_weight_proportions_slice(
     # ---- Drop any singleton coordinates
     grouped_props = aggregate_array.squeeze(drop=True)
 
-    # Aggregate target group proportions
+    # Aggregate target stratum proportions
     target_group_weight_proportions = grouped_props.sum(
-        dim=[d for d in grouped_props.dims if d not in group_columns], skipna=True
+        dim=[d for d in grouped_props.dims if d not in stratum_dim], skipna=True
     )
 
     # Normalize by the unfiltered proportions
     total_weight_proportions = weight_proportions["proportion_overall"].sum(
-        dim=[d for d in weight_proportions.dims if d not in group_columns], skipna=True
+        dim=[d for d in weight_proportions.dims if d not in stratum_dim], skipna=True
     )
     proportions_weight = target_group_weight_proportions / total_weight_proportions
 
@@ -1299,7 +1299,7 @@ def get_weight_proportions_slice(
             filtered_number_proportions_grp = {
                 key: get_number_proportions_slice(
                     ds,
-                    group_columns=group_columns + ["length_bin"],
+                    group_columns=stratum_dim + ["length_bin"],
                     exclude_filter=length_exclusion_filter,
                     include_filter=include_filter,
                 )
@@ -1312,7 +1312,7 @@ def get_weight_proportions_slice(
                 dim=[
                     d
                     for d in next(iter(filtered_number_proportions_grp.values())).dims
-                    if d not in group_columns
+                    if d not in stratum_dim
                 ]
             )
             # ---- Apply threshold mask

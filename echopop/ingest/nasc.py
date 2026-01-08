@@ -530,7 +530,7 @@ def merge_exports(
     merged_df = df_cells.merge(df_intervals, how="outer").merge(df_layers, how="outer")
 
     # Drop NA
-    merged_df.dropna(inplace=True)
+    merged_df.dropna(subset=["interval", "nasc"], inplace=True)
 
     # Restore the original datatypes
     merged_df = merged_df.astype(all_dtypes)
