@@ -1,10 +1,10 @@
 ####################################################################################################
 # FEAT hake survey: age-1 fish excluded
 # CHANGES:
-# - L225: Remove age-1 dominated hauls from the transect-region-haul dataset, if any
-# - L292: Ensure that age-1 dominated hauls are removed from the biological data
-# - L783: Calculate the NASC, abundance, and biomass proportions attributed to age-1 fish
-# - L1140: Redistribute the age-1-associated abundance and biomass estimates from the kriged results
+# - L201: Remove age-1 dominated hauls from the transect-region-haul dataset, if any
+# - L254: Ensure that age-1 dominated hauls are removed from the biological data
+# - L694: Calculate the NASC, abundance, and biomass proportions attributed to age-1 fish
+# - L1038: Redistribute the age-1-associated abundance and biomass estimates from the kriged results
 # -------------------------------------
 from pathlib import Path
 
