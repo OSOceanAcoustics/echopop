@@ -184,9 +184,13 @@ df_nasc = feat.filter_transect_intervals(
     subset_filter=SURVEY_FILTER
 )
 logging.info(
-    "NASC ingestion complete\n"
-    "'df_nasc' created."
+    "!!! [2001] WARNING:\n"
+    "Columns 'region_id', 'layer_height', and 'layer_mean_depth' missing. "
+    "Stand-in values have been added."
 )
+df_nasc["region_id"] = 999
+df_nasc["layer_height"] = 0.
+df_nasc["layer_mean_depth"] = 0.
 # ==================================================================================================
 # INGEST BIODATA
 logging.info(
