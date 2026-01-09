@@ -1299,12 +1299,14 @@ def get_weight_proportions_slice(
         # ---- Optional length-based threshold filter
         if length_threshold_min:
             # ---- Get all unique length values across datasets
-            all_length_vals = np.unique(np.concatenate(
-                [
-                    [bin.mid for bin in ds["length_bin"].values]
-                    for ds in number_proportions.values()
-                ]
-            ))
+            all_length_vals = np.unique(
+                np.concatenate(
+                    [
+                        [bin.mid for bin in ds["length_bin"].values]
+                        for ds in number_proportions.values()
+                    ]
+                )
+            )
             # ---- Create length exclusion filter
             length_exclusion_filter = {
                 "length_bin": all_length_vals[all_length_vals < length_threshold_min],
@@ -1333,10 +1335,10 @@ def get_weight_proportions_slice(
             # ---- Align/reindex
             proportions_weight = proportions_weight.reindex_like(
                 filtered_number_proportions
-            ).fillna(0.)
+            ).fillna(0.0)
             target_group_weight_proportions = target_group_weight_proportions.reindex_like(
                 filtered_number_proportions
-            ).fillna(0.)
+            ).fillna(0.0)
             # ---- Apply threshold mask
             threshold_mask_num = filtered_number_proportions <= weight_proportion_threshold
             # ---- Set masked values to 0
