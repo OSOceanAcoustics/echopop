@@ -1038,14 +1038,14 @@ logging.info("Biomass table complete\n'df_kriged_biomass_table' created.")
 ############################### CHANGES FOR AGE-1 EXCLUSION ########################################
 # REDISTRIBUTE AGE-1 ABUNDANCES
 logging.info("Redistributing kriged age-1 abundances and biomasses...")
-df_kriged_abundance_table_noage1 = feat_apportion.reallocate_excluded_estimates(
+da_kriged_abundance_table_noage1 = feat_apportion.reallocate_excluded_estimates(
     population_table=da_kriged_abundance_table,
     exclusion_filter={"age_bin": [1]},
     group_columns=["sex"],
 )
 
 # REDISTRIBTUE AGE-1 BIOMASS
-df_kriged_biomass_table_noage1 = feat_apportion.reallocate_excluded_estimates(
+da_kriged_biomass_table_noage1 = feat_apportion.reallocate_excluded_estimates(
     population_table=da_kriged_biomass_table,
     exclusion_filter={"age_bin": [1]},
     group_columns=["sex"],
