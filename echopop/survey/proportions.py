@@ -1299,12 +1299,12 @@ def get_weight_proportions_slice(
         # ---- Optional length-based threshold filter
         if length_threshold_min:
             # ---- Get all unique length values across datasets
-            all_length_vals = np.concatenate(
+            all_length_vals = np.unique(np.concatenate(
                 [
-                    np.unique([bin.mid for bin in ds["length_bin"].values])
+                    [bin.mid for bin in ds["length_bin"].values]
                     for ds in number_proportions.values()
                 ]
-            )
+            ))
             # ---- Create length exclusion filter
             length_exclusion_filter = {
                 "length_bin": all_length_vals[all_length_vals < length_threshold_min],
@@ -1314,7 +1314,7 @@ def get_weight_proportions_slice(
             filtered_number_proportions_grp = {
                 key: get_number_proportions_slice(
                     ds,
-                    group_columns=stratum_dim + ["length_bin"],
+                    stratum_dim=stratum_dim + ["length_bin"],
                     exclude_filter=length_exclusion_filter,
                     include_filter=include_filter,
                 )
@@ -1330,10 +1330,17 @@ def get_weight_proportions_slice(
                     if d not in stratum_dim
                 ]
             )
+            # ---- Align/reindex
+            proportions_weight = proportions_weight.reindex_like(
+                filtered_number_proportions
+            ).fillna(0.)
+            target_group_weight_proportions = target_group_weight_proportions.reindex_like(
+                filtered_number_proportions
+            ).fillna(0.)
             # ---- Apply threshold mask
             threshold_mask_num = filtered_number_proportions <= weight_proportion_threshold
             # ---- Set masked values to 0
-            proportions_weight = xr.where((threshold_mask_num.values), 0, proportions_weight)
+            proportions_weight = xr.where(threshold_mask_num.values, 0, proportions_weight)
 
     # Apply weight thresholding
     threshold_mask_wgts = target_group_weight_proportions <= weight_proportion_threshold
