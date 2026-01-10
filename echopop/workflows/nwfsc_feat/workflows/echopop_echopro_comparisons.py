@@ -81,5 +81,17 @@ echopro_aged_length_haul_counts = read_all_aged_length_haul_counts(ECHOPRO_ROOT 
 echopop_aged_length_haul_counts = read_all_aged_length_haul_counts(ECHOPRO_ROOT / echopop)
 
 plot_all_aged_length_haul_count_comparisons(
-    echopro_aged_length_haul_counts, echopop_aged_length_haul_counts
+    echopro_dict=echopro_aged_length_haul_counts, 
+    echopop_dict=echopop_aged_length_haul_counts
+)
+
+
+
+echopro = "total_len_haul_counts_table.xlsx"
+echopop = "total_length_haul_counts.xlsx"
+echopro_aged_length_haul_counts = read_all_aged_length_haul_counts(ECHOPRO_ROOT / echopro)
+echopop_aged_length_haul_counts = read_all_aged_length_haul_counts(ECHOPRO_ROOT / echopop)
+plot_all_aged_length_haul_count_comparisons(
+    echopro_dict=echopro_aged_length_haul_counts, 
+    echopop_dict=echopop_aged_length_haul_counts
 )
