@@ -15,7 +15,7 @@ import pandas as pd
 # ROOT REPORT DIRECTORY FOR ECHOPOP
 ECHOPOP_ROOT = Path("C:/Data/EchopopData/echopop_2023/reports")
 # ROOT REPORT DIRECTORY FOR ECHOPRO
-ECHOPRO_ROOT = Path("C:/Data/EchopopData/echopop_2023/reports")
+ECHOPRO_ROOT = Path("C:/Data/EchopopData/echopop_2023/echopro_reports")
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # SAVE DIRECTORIES
 # ----------------
@@ -26,72 +26,106 @@ SAVE_DIRECTORY = ECHOPOP_ROOT / "echopop_echopro_comparisons"
 # ---- report-type keys
 ECHOPRO_TO_ECHOPOP_FILE_MAP = {
     "aged_length_haul_counts": {
-        "aged_len_haul_counts_table.xlsx": "aged_length_haul_counts.xlsx"
+        "echopro": "aged_len_haul_counts_table.xlsx",
+        "echopop": "aged_length_haul_counts.xlsx"
     },
     "total_length_haul_counts": {
-        "total_len_haul_counts_table.xlsx": "total_length_haul_counts.xlsx"
+        "echopro": "total_len_haul_counts_table.xlsx",
+        "echopop": "total_length_haul_counts.xlsx"
     },
     "aged_kriged_mesh_biomass_full": {
-        "EchoPro_kriged_aged_output-2023_1.xlsx": "kriged_aged_biomass_mesh_full.xlsx"
+        "echopro": "EchoPro_kriged_aged_output-2023_1.xlsx",
+        "echopop": "kriged_aged_biomass_mesh_full.xlsx"
     },
     "aged_kriged_mesh_biomass_subset": {
-        "EchoPro_kriged_aged_output-2023_0.xlsx": "kriged_aged_biomass_mesh_nonzero.xlsx"
+        "echopro": "EchoPro_kriged_aged_output-2023_0.xlsx",
+        "echopop": "kriged_aged_biomass_mesh_nonzero.xlsx"
     },
     "kriged_mesh_biomass_full": {
-        "EchoPro_kriged_output-08-Dec-2023_0.xlsx": "kriged_biomass_mesh_full.xlsx"
+        "echopro": "EchoPro_kriged_output-08-Dec-2023_0.xlsx",
+        "echopop": "kriged_biomass_mesh_full.xlsx"
     },
     "kriged_mesh_biomass_subset": {
-        "EchoPro_kriged_output-08-Dec-2023_1.xlsx": "kriged_biomass_mesh_nonzero.xlsx"
+        "echopro": "EchoPro_kriged_output-08-Dec-2023_1.xlsx",
+        "echopop": "kriged_biomass_mesh_nonzero.xlsx"
     },
     "kriging_input": {
-        "kriging_input.xlsx": "kriging_input_report.xlsx"
+        "echopro": "kriging_input.xlsx",
+        "echopop": "kriging_input_report.xlsx"
     },
     "kriged_length_age_abundance": {
-        "kriged_len_age_abundance_table.xlsx": "kriged_length_age_abundance_report.xlsx"
+        "echopro": "kriged_len_age_abundance_table.xlsx",
+        "echopop": "kriged_length_age_abundance_report.xlsx"
     },
     "kriged_length_age_biomass": {
-        "kriged_len_age_biomass_table.xlsx": "kriged_length_age_biomass_report.xlsx"
+        "echopro": "kriged_len_age_biomass_table.xlsx",
+        "echopop": "kriged_length_age_biomass_report.xlsx"
     },
     "aged_transect_biomass_full": {
-        "EchoPro_un-kriged_aged_output-2023_0.xlsx": "transect_aged_biomass_report_full.xlsx"
+        "echopro": "EchoPro_un-kriged_aged_output-2023_0.xlsx",
+        "echopop": "transect_aged_biomass_report_full.xlsx"
     },
     "aged_transect_biomass_subset": {
-        "EchoPro_un-kriged_aged_output-2023_1.xlsx": "transect_aged_biomass_report_nonzero.xlsx"
+        "echopro": "EchoPro_un-kriged_aged_output-2023_1.xlsx",
+        "echopop": "transect_aged_biomass_report_nonzero.xlsx"
     },
     "transect_length_age_abundance": {
-        "un-kriged_len_age_abundance_table.xlsx": "transect_length_age_abundance_report.xlsx"
+        "echopro": "un-kriged_len_age_abundance_table.xlsx",
+        "echopop": "transect_length_age_abundance_report.xlsx"
     },
     "transect_length_age_biomass": {
-        "un-kriged_len_age_biomass_table.xlsx": "transect_length_age_biomass_report.xlsx"
+        "echopro": "un-kriged_len_age_biomass_table.xlsx",
+        "echopop": "transect_length_age_biomass_report.xlsx"
     },
     "transect_results_full": {
-        "EchoPro_un-kriged_output-08-Dec-2023_0.xlsx.xlsx": "transect_population_results_full.xlsx"
+        "echopro": "EchoPro_un-kriged_output-08-Dec-2023_0.xlsx.xlsx",
+        "echopop": "transect_population_results_full.xlsx"
     },
     "transect_results_subset": {
-        "EchoPro_un-kriged_output-08-Dec-2023_0.xlsx": "transect_population_results_nonzero.xlsx"
+        "echopro": "EchoPro_un-kriged_output-08-Dec-2023_0.xlsx",
+        "echopop": "transect_population_results_nonzero.xlsx"
     }
 }
 
+
+
 ####
-echopro = "aged_len_haul_counts_table.xlsx"
-echopop = "aged_length_haul_counts.xlsx"
-
-# Read in file
-echopro_aged_length_haul_counts = read_all_aged_length_haul_counts(ECHOPRO_ROOT / echopro)
-echopop_aged_length_haul_counts = read_all_aged_length_haul_counts(ECHOPRO_ROOT / echopop)
-
-plot_all_aged_length_haul_count_comparisons(
-    echopro_dict=echopro_aged_length_haul_counts, 
-    echopop_dict=echopop_aged_length_haul_counts
+# Aged length haul counts
+echopro_aged_length_haul_counts = read_pivot_table_report(ECHOPRO_ROOT / ECHOPRO_TO_ECHOPOP_FILE_MAP["aged_length_haul_counts"]["echopro"])
+echopop_aged_length_haul_counts = read_pivot_table_report(ECHOPOP_ROOT / ECHOPRO_TO_ECHOPOP_FILE_MAP["aged_length_haul_counts"]["echopop"])
+save_filepath = ECHOPRO_ROOT / "test.png"
+plot_haul_count_comparisons(
+    echopro=echopro_aged_length_haul_counts, 
+    echopop=echopop_aged_length_haul_counts,
 )
 
+# Total length haul counts
+echopro_total_length_haul_counts = read_pivot_table_report(ECHOPRO_ROOT / ECHOPRO_TO_ECHOPOP_FILE_MAP["total_length_haul_counts"]["echopro"])
+echopop_total_length_haul_counts = read_pivot_table_report(ECHOPOP_ROOT / ECHOPRO_TO_ECHOPOP_FILE_MAP["total_length_haul_counts"]["echopop"])
 
-
-echopro = "total_len_haul_counts_table.xlsx"
-echopop = "total_length_haul_counts.xlsx"
-echopro_aged_length_haul_counts = read_all_aged_length_haul_counts(ECHOPRO_ROOT / echopro)
-echopop_aged_length_haul_counts = read_all_aged_length_haul_counts(ECHOPRO_ROOT / echopop)
-plot_all_aged_length_haul_count_comparisons(
-    echopro_dict=echopro_aged_length_haul_counts, 
-    echopop_dict=echopop_aged_length_haul_counts
+plot_haul_count_comparisons(
+    echopro=echopro_total_length_haul_counts, 
+    echopop=echopop_total_length_haul_counts
 )
+
+# Kriged aged abundance
+echopro_kriged_abundance_table = read_pivot_table_report(
+    filepath=ECHOPRO_ROOT / ECHOPRO_TO_ECHOPOP_FILE_MAP["kriged_length_age_abundance"]["echopro"]
+)
+echopop_kriged_abundance_table = read_pivot_table_report(
+    filepath=ECHOPOP_ROOT / ECHOPRO_TO_ECHOPOP_FILE_MAP["kriged_length_age_abundance"]["echopop"]
+)
+
+echopro = echopro_kriged_abundance_table
+echopop = echopop_kriged_abundance_table
+show_plot = True
+save_filepath = None
+log_transform = True
+
+
+plot_population_table_comparisons(echopro, echopop, log_transform=True)
+
+
+
+echopro["male"].sum().sum()
+echopop["male"].sum().sum()
