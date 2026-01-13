@@ -48,4 +48,4 @@ class ValidatePCDWBASettings(BaseDictionary):
     orientation_distribution: DistributionParameters = Field(default_factory=DistributionParameters)
     taper_order: float = Field(default=10.0, gt=0.0, allow_inf_nan=False)
     type: str
-    model_config = ConfigDict(title="PCDWBA model settings and additional arguments")
+    model_config = ConfigDict(title="PCDWBA model settings and additional arguments", extra="allow")
