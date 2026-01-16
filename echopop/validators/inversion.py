@@ -3,10 +3,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
 
 import numpy as np
-import pandas as pd
+import xarray as xr
 from pydantic import ConfigDict, Field, RootModel, ValidationError, field_validator, model_validator
 
-from ..core.validators import BaseDataFrame, BaseDictionary
+from ..core.validators import BaseDictionary
 
 if TYPE_CHECKING:
     from ..inversion import InvParameters
@@ -89,54 +89,6 @@ class ValidateLengthTS(BaseDictionary):
         return v
 
 
-class ScatterDF(BaseDataFrame):
-    """
-    Validates MultiIndex DataFrame structure with required top-level columns and nested frequency
-    index.
-
-    Ensures the top-level column names include 'sv_mean', 'nasc', and 'thickness_mean', and that
-    the second-level column names ('frequency') are numeric. All values under each frequency must
-    be floats.
-    """
-
-    class Config(BaseDataFrame.Config):
-        title = "acoustic backscatter export DataFrame"
-        multiindex_strict = True
-        multiindex_coerce = True
-        unique_column_names = False
-
-    @classmethod
-    def pre_validate(cls, df: pd.DataFrame) -> pd.DataFrame:
-        # Raise Error if not a MultiIndex DataFrame
-        if not isinstance(df.columns, pd.MultiIndex):
-            raise TypeError("Expected MultiIndex columns.")
-
-        # Check for required top-level columns
-        # ---- Get the top level indices
-        top_level = set(df.columns.get_level_values(0))
-        # ---- Identify missing columns
-        missing_columns = {"sv_mean", "nasc", "thickness_mean"} - top_level
-        # ---- Raise Error, if needed
-        if missing_columns:
-            # ---- Format
-            missing_str = ", ".join(f"'{col}'" for col in missing_columns)
-            raise KeyError(f"Missing required top-level columns: {missing_str}.")
-
-        # Check for nested column 'frequency'
-        if "frequency" not in df.columns.names:
-            # ---- Get current column names
-            current_names = list(df.columns.names)
-            # ---- Format
-            current_str = ", ".join(f"'{col}'" for col in current_names if col)
-            # ---- Raise Error
-            raise KeyError(
-                f"Missing required nested column index 'frequency'. Current column indices are: "
-                f"{current_str}."
-            )
-
-        return df
-
-
 class EnvironmentParameters(BaseDictionary):
     """
     Environmental and medium parameters for acoustic scattering models.
@@ -180,14 +132,26 @@ class ValidateInversionMatrix(BaseDictionary):
     Validation model for InversionMatrix class configuration.
     """
 
-    data: pd.DataFrame
+    data: xr.Dataset
     simulation_settings: SimulationParameters = Field(default_factory=SimulationParameters)
     model_config = ConfigDict(title="scattering model inversion analysis")
 
     @field_validator("data", mode="after")
     def validate_data(cls, v):
-        # Validate with pandera
-        return ScatterDF.validate(v)
+
+        # Validate coordinates
+        if "frequency" not in v.coords:
+            raise KeyError("Required coordinate 'frequency' missing from input xarray.Dataset.")
+
+        # Validate data variables
+        missing_vars = {"sv_mean", "nasc", "thickness_mean"} - set(v.data_vars)
+        # ---- Raise Error, if needed
+        if missing_vars:
+            # ---- Format
+            missing_str = ", ".join(f"'{col}'" for col in missing_vars)
+            raise KeyError(f"Missing required data variables from xarray.Dataset: {missing_str}.")
+
+        return v
 
 
 class ModelSettingsParameters(BaseDictionary):
@@ -354,3 +318,15 @@ class ModelInputParameters(RootModel[Dict[str, "SingleParameter"]]):
         Factory creation method
         """
         return cls.judge(**kwargs).model_dump(exclude_none=True)
+
+
+# Rebuild models with forward references after all classes are defined
+_model_rebuilt = False
+
+
+def ensure_model_rebuilt():
+    """Ensure model is rebuilt with forward references resolved."""
+    global _model_rebuilt
+    if not _model_rebuilt:
+        ValidateBuildModelArgs.model_rebuild()
+        _model_rebuilt = True

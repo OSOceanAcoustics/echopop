@@ -401,7 +401,13 @@ def binned_weights(
     )
 
     # Return the grouped sums
-    return result.groupby(group_columns, observed=False)["weight"].sum().to_xarray().fillna(0.0)
+    return (
+        result.groupby(group_columns, observed=False)["weight"]
+        .sum()
+        .to_xarray()
+        .fillna(0.0)
+        .astype(float)
+    )
 
 
 def calculate_adjusted_proportions(

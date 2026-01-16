@@ -1,6 +1,5 @@
 from pathlib import Path
 
-from echopop import utils
 from echopop.ingest import sv
 from echopop.inversion import InversionMatrix, InvParameters, estimate_population
 
@@ -40,8 +39,16 @@ sv_data, nasc_coordinates = sv.ingest_echoview_sv(
 # DATA SUBSET
 # ==================================================================================================
 
-sv_data_sub = utils.apply_filters(sv_data, include_filter={"transect_num": [1, 2, 3]})
-
+# sv_data_sub = sv_data.sel(transect_num=[1,2,3])
+if PROCESSING_METHOD == "transect":
+    sv_data_sub = sv_data.where(sv_data["transect_num"].isin([1, 2]), drop=True)
+elif PROCESSING_METHOD == "interval": 
+    sv_data_sub = sv_data.where((sv_data["transect_num"].isin([1])) & 
+                                sv_data["interval"].isin([13, 29, 30, 31]), 
+                                drop=True)
+else:
+    out = sv_data.sel(transect_num=2, interval=17)
+    sv_data_sub = out.where(out["layer"] < 15, drop=True)
 # ==================================================================================================
 # ==================================================================================================
 # DEFINE PARAMETERS
@@ -60,6 +67,12 @@ MODEL_PARAMETERS = {
 }
 
 # Model-specific settings, including distributions
+ENVIRONMENT = {
+    "sound_speed_sw": 1500.0,
+    "density_sw": 1026.9,
+}
+
+
 MODEL_SETTINGS = {
     "type": "pcdwba",
     "taper_order": 10.0,
@@ -68,15 +81,10 @@ MODEL_SETTINGS = {
     "n_wavelength": 10,
     "orientation_distribution": {"family": "gaussian", "bins": 60},
     "length_distribution": {"family": "gaussian", "bins": 100},
-}
-
-ENVIRONMENT = {
-    "sound_speed_sw": 1500.0,
-    "density_sw": 1026.9,
+    "environment": ENVIRONMENT,
 }
 
 SIMULATION_SETTINGS = {
-    "environment": ENVIRONMENT,
     "monte_carlo": True,
     "mc_realizations": 20,
     "minimum_frequency_count": 2,
@@ -102,7 +110,6 @@ OPTIMIZATION_KWARGS = {
     },
 }
 
-
 def run_krill_inversion_workflow():
     # ==================================================================================================
     # ==================================================================================================
@@ -117,7 +124,6 @@ def run_krill_inversion_workflow():
     # ==================================================================================================
     # INITIALIZE
     # ==================================================================================================
-
     inversion_krill = InversionMatrix(sv_data_sub, SIMULATION_SETTINGS)
 
     # ==================================================================================================
@@ -131,7 +137,7 @@ def run_krill_inversion_workflow():
     # ==================================================================================================
     # BUILD AND FORMAT SCATTERING MODEL OPTIMIZERS
     # ==================================================================================================
-    df_inversion_results = inversion_krill.invert(optimization_kwargs=OPTIMIZATION_KWARGS)
+    inversion_results = inversion_krill.invert(optimization_kwargs=OPTIMIZATION_KWARGS)
 
     # ==================================================================================================
     # ==================================================================================================
@@ -139,9 +145,12 @@ def run_krill_inversion_workflow():
     # ==================================================================================================
 
     return estimate_population(
-        df_inversion_results,
+        inversion_results,
         nasc_coordinates,
-        aggregate_method="transect",
+        aggregate_method=PROCESSING_METHOD,
         density_sw=ENVIRONMENT["density_sw"],
         reference_frequency=120e3,
     )
+    
+run_krill_inversion_workflow()
+
