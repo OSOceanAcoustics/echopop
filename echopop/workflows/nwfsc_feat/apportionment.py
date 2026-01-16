@@ -435,18 +435,19 @@ def impute_kriged_table(
             subgroup_dim: group_key,
             interval_dim: nonzero_reference_to_table_indices[group_key],
         }
-        # ---- Apply imputed values
-        target_table.loc[coords] = imp_da.data
-        # ---- Validate that imputation correctly applied
-        if target_table.loc[coords].equals(standardized_table.loc[coords]):
-            interval_str = "', '".join(
-                str(x) for x in nonzero_reference_to_table_indices[group_key]
-            )
-            # ---- Format error keys
-            raise ValueError(
-                f"Imputation failed for group '{subgroup_dim}' = '{group_key}' at the following "
-                f"'{interval_dim}' intervals: '{interval_str}'."
-            )
+        # ---- Apply imputed values if any coords are provided
+        if coords[interval_dim].size > 0:
+            target_table.loc[coords] = imp_da.data
+            # ---- Validate that imputation correctly applied
+            if target_table.loc[coords].equals(standardized_table.loc[coords]):
+                interval_str = "', '".join(
+                    str(x) for x in nonzero_reference_to_table_indices[group_key]
+                )
+                # ---- Format error keys
+                raise ValueError(
+                    f"Imputation failed for group '{subgroup_dim}' = '{group_key}' at the "
+                    f"following '{interval_dim}' intervals: '{interval_str}'."
+                )
 
     # Return the imputed table
     return target_table
