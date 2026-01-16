@@ -401,9 +401,13 @@ def binned_weights(
     )
 
     # Return the grouped sums
-    return result.groupby(
-        group_columns, observed=False
-    )["weight"].sum().to_xarray().fillna(0.0).astype(float)
+    return (
+        result.groupby(group_columns, observed=False)["weight"]
+        .sum()
+        .to_xarray()
+        .fillna(0.0)
+        .astype(float)
+    )
 
 
 def calculate_adjusted_proportions(
@@ -1003,7 +1007,7 @@ def fitted_weight_proportions(
     grouped_reference_proportions = reference_weight_proportions.sum(
         dim=[d for d in reference_weight_proportions.dims if d not in stratum_dim]
     )
-    
+
     # Calculate the complementary proportions
     compl_data_props = 1 - grouped_reference_proportions
 
