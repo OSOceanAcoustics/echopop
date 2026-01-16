@@ -117,6 +117,7 @@ ISOBATH_SHEET = "Smoothing_EasyKrig"
 import logging
 import numpy as np
 import pandas as pd
+import xarray as xr
 from lmfit import Parameters
 
 from echopop.workflows.nwfsc_feat import functions as feat, parameters as feat_parameters, Reporter
@@ -436,7 +437,7 @@ logging.info(
     )
 
 # SEX-SPECIFIC
-df_binned_weights_sex = feat_biology.length_binned_weights(
+da_binned_weights_sex = feat_biology.length_binned_weights(
     data=dict_df_bio["specimen"],
     length_bins=LENGTH_BINS,
     regression_coefficients=dict_length_weight_coefs["sex"],
@@ -445,7 +446,7 @@ df_binned_weights_sex = feat_biology.length_binned_weights(
 )
 
 # ALL FISH
-df_binned_weights_all = feat_biology.length_binned_weights(
+da_binned_weights_all = feat_biology.length_binned_weights(
     data=dict_df_bio["specimen"].assign(sex="all"),
     length_bins=LENGTH_BINS,
     regression_coefficients=dict_length_weight_coefs["all"],
@@ -454,8 +455,10 @@ df_binned_weights_all = feat_biology.length_binned_weights(
 )
 
 # COMBINE
-binned_weight_table = pd.concat([df_binned_weights_sex, df_binned_weights_all], axis=1)
-# ==================================================================================================
+da_binned_weight_table = xr.concat(
+    [da_binned_weights_sex, da_binned_weights_all],
+    dim = "sex"
+)# ==================================================================================================
 # COMPUTE COUNT DISTRIBUTIONS PER AGE- AND LENGTH-BINS
 logging.info(
     "Computing the counts per age- and length-bins across sex.\n"
@@ -463,23 +466,23 @@ logging.info(
     "     Grouping by: 'sex'"
     )
 
-# DICTIONARY CONTAINER
-dict_df_counts = {}
+# DATASET CONTAINER
+ds_counts = xr.Dataset()
 
 # AGED
-dict_df_counts["aged"] = proportions.compute_binned_counts(
-    data=dict_df_bio["specimen"].dropna(subset=["age", "length", "weight"]), 
-    groupby_cols=["stratum_ks", "length_bin", "age_bin", "sex"], 
+ds_counts["aged"] = proportions.compute_binned_counts(
+    data=dict_df_bio["specimen"].dropna(subset=["age", "length", "weight"]),
+    groupby_cols=["stratum_ks", "length_bin", "age_bin", "sex"],
     count_col="length",
-    agg_func="size"
+    agg_func="size",
 )
 
 # UNAGED
-dict_df_counts["unaged"] = proportions.compute_binned_counts(
-    data=dict_df_bio["length"].copy().dropna(subset=["length"]), 
-    groupby_cols=["stratum_ks", "length_bin", "sex"], 
+ds_counts["unaged"] = proportions.compute_binned_counts(
+    data=dict_df_bio["length"].copy().dropna(subset=["length"]),
+    groupby_cols=["stratum_ks", "length_bin", "sex"],
     count_col="length_count",
-    agg_func="sum"
+    agg_func="sum",
 )
 # ==================================================================================================
 # COMPUTE NUMBER PROPORTIONS
@@ -488,8 +491,8 @@ logging.info(
     "     Stratifying by: 'stratum_ks'\n"
     "     Excluding: 'sex'='unsexed' from 'dict_df_counts['aged']'"
     )
-dict_df_number_proportions = proportions.number_proportions(
-    data=dict_df_counts, 
+dict_ds_number_proportion = proportions.number_proportions(
+    data=ds_counts,
     group_columns=["stratum_ks"],
     exclude_filters={"aged": {"sex": "unsexed"}},
 )
@@ -502,16 +505,15 @@ logging.info(
     "     Excluding: 'sex'='unsexed'"
     )
 
-# DICTIONARY CONTAINER
-dict_df_weight_distr = {}
+# DATASET CONTAINER
+ds_da_weight_dist = xr.Dataset()
 
 # AGED
-dict_df_weight_distr["aged"] = proportions.binned_weights(
-    length_dataset=dict_df_bio["specimen"],
-    include_filter = {"sex": ["female", "male"]},
+ds_da_weight_dist["aged"] = proportions.binned_weights(
+    length_data=dict_df_bio["specimen"],
+    include_filter={"sex": ["female", "male"]},
     interpolate_regression=False,
-    contrast_vars="sex",
-    table_cols=["stratum_ks", "sex", "age_bin"]
+    group_columns=["stratum_ks", "sex", "age_bin"],
 )
 
 # UNAGED
@@ -519,13 +521,12 @@ logging.info(
     "Unaged binned weights require additional processing steps.\n"
     "     Interpolating binned length-weight regression estimates: True"
     )
-dict_df_weight_distr["unaged"] = proportions.binned_weights(
-    length_dataset=dict_df_bio["length"],
-    length_weight_dataset=binned_weight_table,
-    include_filter = {"sex": ["female", "male"]},
+ds_da_weight_dist["unaged"] = proportions.binned_weights(
+    length_data=dict_df_bio["length"],
+    include_filter={"sex": ["female", "male"]},
     interpolate_regression=True,
-    contrast_vars="sex",
-    table_cols=["stratum_ks", "sex"]
+    length_weight_data=da_binned_weight_table,
+    group_columns=["stratum_ks", "sex"],
 )
 # ==================================================================================================
 # COMPUTE WEIGHT PROPORTIONS
@@ -535,24 +536,15 @@ logging.info(
     "     Grouping by: 'sex'"
     )
 
-# DICTIONARY CONTAINER
-dict_df_weight_proportions = {}
+# DATAARRAY CONTAINER
+dict_da_weight_proportion = {}
 
 # AGED WEIGHT PROPORTIONS
 logging.info("Computing aged weight proportions...")
-dict_df_weight_proportions["aged"] = proportions.weight_proportions(
-    weight_data=dict_df_weight_distr, 
+dict_da_weight_proportion["aged"] = proportions.weight_proportions(
+    weight_data=ds_da_weight_dist["aged"], 
     catch_data=dict_df_bio["catch"], 
-    group="aged",
-    stratum_col="stratum_ks"
-)
-
-# UNAGED SCALING
-logging.info("Scaling unaged binned weights...")
-standardized_sexed_unaged_weights_df = proportions.scale_weights_by_stratum(
-    weights_df=dict_df_weight_distr["unaged"], 
-    reference_weights_df=dict_df_bio["catch"].groupby(["stratum_ks"])["weight"].sum(),
-    stratum_col="stratum_ks",
+    group_columns = ["stratum_ks"]
 )
 
 # UNAGED WEIGHT PROPORTIONS
@@ -560,15 +552,13 @@ logging.info(
     "Computing unaged weight proportions\n"
     "     Scaling weight proportions in reference to the aged estimates"
     )
-dict_df_weight_proportions["unaged"] = proportions.scale_weight_proportions(
-    weight_data=standardized_sexed_unaged_weights_df, 
-    reference_weight_proportions=dict_df_weight_proportions["aged"], 
-    catch_data=dict_df_bio["catch"], 
-    number_proportions=dict_df_number_proportions,
-    binned_weights=binned_weight_table["all"],
-    group="unaged",
-    group_columns = ["sex"],
-    stratum_col = "stratum_ks"
+dict_da_weight_proportion["unaged"] = proportions.fitted_weight_proportions(
+    weight_data=ds_da_weight_dist["unaged"],
+    reference_weight_proportions=dict_da_weight_proportion["aged"],
+    catch_data=dict_df_bio["catch"],
+    number_proportions=dict_ds_number_proportion["unaged"],
+    binned_weights=da_binned_weights_all,
+    stratum_dim=["stratum_ks"]
 )
 # ==================================================================================================
 # NASC TO BIOMASS CONVERSION
@@ -633,18 +623,15 @@ logging.info(
 )
 feat_biology.compute_abundance(
     dataset=df_nasc,
-    stratify_by=["stratum_ks"],
-    group_by=["sex"],
     exclude_filter={"sex": "unsexed"},
-    number_proportions=dict_df_number_proportions
+    number_proportions=dict_ds_number_proportion,
 )
 
 # COMPUTE STRATUM-AVERAGED WEIGHTS
-df_averaged_weight = proportions.stratum_averaged_weight(
-    proportions_dict=dict_df_number_proportions, 
-    binned_weight_table=binned_weight_table,
-    stratify_by=["stratum_ks"],
-    group_by=["sex"],
+da_averaged_weight = proportions.stratum_averaged_weight(
+    number_proportions=dict_ds_number_proportion,
+    length_weight_data=da_binned_weight_table,
+    group_columns=["stratum_ks"]
 )
 
 # COMPUTE BIOMASS
@@ -655,9 +642,7 @@ logging.info(
 )
 feat_biology.compute_biomass(
     dataset=df_nasc,
-    stratify_by=["stratum_ks"],
-    group_by=["sex"],
-    df_average_weight=df_averaged_weight,
+    stratum_weights=da_averaged_weight,
 )
 logging.info(
     "NASC to biomass conversion complete\n"
@@ -679,31 +664,28 @@ logging.info(
 
 # ABUNDANCE
 logging.info("Distributing abundances...")
-dict_transect_abundance_table = feat_apportion.distribute_population_estimates(
-    data=df_nasc,
-    proportions=dict_df_number_proportions,
-    variable="abundance",
-    group_by=["sex", "age_bin", "length_bin"],
-    stratify_by=["stratum_ks"],
+dict_ds_transect_abundance_table = feat_apportion.distribute_population_estimates(
+    data = df_nasc,
+    proportions = dict_ds_number_proportion,
+    variable = "abundance",
+    group_columns = ["sex", "age_bin", "length_bin", "stratum_ks"]
 )
 # BIOMASS [ALL]
 logging.info("Distributing biomass...")
-dict_transect_biomass_table = feat_apportion.distribute_population_estimates(
+dict_ds_transect_biomass_table = feat_apportion.distribute_population_estimates(
     data=df_nasc,
-    proportions=dict_df_weight_proportions,
-    variable="biomass",
-    group_by=["sex", "age_bin", "length_bin"],
-    stratify_by=["stratum_ks"],
+    proportions=dict_da_weight_proportion,
+    variable = "biomass",
+    group_columns = ["sex", "age_bin", "length_bin", "stratum_ks"]
 )
 logging.info("Biomass distribution complete\n'dict_transect_biomass_table' created.")
 # BIOMASS [AGED-ONLY]
 logging.info("Distributing biomass...\n     Aged-only weight proportions: True")
 df_transect_aged_biomass_table = feat_apportion.distribute_population_estimates(
     data=df_nasc,
-    proportions=dict_df_weight_proportions["aged"],
+    proportions=dict_da_weight_proportion["aged"],
     variable="biomass",
-    group_by=["sex", "age_bin", "length_bin"],
-    stratify_by=["stratum_ks"],
+    group_columns = ["sex", "age_bin", "length_bin", "stratum_ks"]
 )
 # ==================================================================================================
 # GEOSTATISTICS
@@ -875,12 +857,12 @@ logging.info("New column in 'df_kriged_results': 'biomass'")
 
 # BIOMASS TO NASC
 feat_apportion.mesh_biomass_to_nasc(
-    mesh_data_df=df_kriged_results,
-    biodata=dict_df_weight_proportions,
-    group_by=["sex"],
+    mesh_data=df_kriged_results,
+    biodata=dict_da_weight_proportion,
+    group_columns=["sex", "stratum_ks"],
     mesh_biodata_link={"geostratum_ks": "stratum_ks"},
-    stratum_weights_df=df_averaged_weight["all"],
-    stratum_sigma_bs_df=invert_hake.sigma_bs_strata,    
+    stratum_weights=da_averaged_weight.sel(sex="all"),
+    stratum_sigma_bs=invert_hake.sigma_bs_strata,  
 )
 logging.info(
     "Biomass density to NASC conversion complete\n"
@@ -899,13 +881,12 @@ logging.info(
 
 # ABUNDANCE [ALL]
 logging.info("Distributing abundances...")
-dict_kriged_abundance_table = feat_apportion.distribute_population_estimates(
+dict_ds_kriged_abundance_table = feat_apportion.distribute_population_estimates(
     data=df_kriged_results,
-    proportions=dict_df_number_proportions,
-    variable="abundance",
-    group_by=["sex", "age_bin", "length_bin"],
-    stratify_by=["stratum_ks"],
-    data_proportions_link={"geostratum_ks": "stratum_ks"},
+    proportions = dict_ds_number_proportion,
+    variable = "abundance",
+    group_columns = ["sex", "age_bin", "length_bin", "stratum_ks"],
+    data_proportions_link={"geostratum_ks": "stratum_ks"}
 )
 logging.info("Abundance distributions complete\n'dict_kriged_abundance_table' created.")
 
@@ -915,22 +896,21 @@ logging.info(
     "     Reference: Aged abundances\n"
     "     Imputing missing bins: False"
 )
-dict_kriged_abundance_table["standardized_unaged"] = feat_apportion.distribute_unaged_from_aged(
-    population_table=dict_kriged_abundance_table["unaged"],
-    reference_table=dict_kriged_abundance_table["aged"],
-    group_by=["sex"],
-    impute=False,    
+dict_ds_kriged_abundance_table["standardized_unaged"] = feat_apportion.distribute_unaged_from_aged(
+    population_table = dict_ds_kriged_abundance_table["unaged"],
+    reference_table = dict_ds_kriged_abundance_table["aged"],
+    collapse_dims = ["stratum_ks"],
+    impute = False 
 )
 
 # BIOMASS [ALL]
 logging.info("Distributing biomass...")
-dict_kriged_biomass_table = feat_apportion.distribute_population_estimates(
-    data=df_kriged_results,
-    proportions=dict_df_weight_proportions,
-    variable="biomass",
-    group_by=["sex", "age_bin", "length_bin"],
-    stratify_by=["stratum_ks"],
-    data_proportions_link={"geostratum_ks": "stratum_ks"},
+dict_ds_kriged_biomass_table = feat_apportion.distribute_population_estimates(
+    data = df_kriged_results,
+    proportions = dict_da_weight_proportion,
+    variable = "biomass",
+    group_columns = ["sex", "age_bin", "length_bin", "stratum_ks"],
+    data_proportions_link={"geostratum_ks": "stratum_ks"}
 )
 logging.info("Biomass distribution complete\n'dict_kriged_biomass_table' created.")
 
@@ -940,10 +920,10 @@ logging.info(
     "     Reference: Aged biomass\n"
     "     Imputing missing bins: True"
 )
-dict_kriged_biomass_table["standardized_unaged"] = feat_apportion.distribute_unaged_from_aged(
-    population_table=dict_kriged_biomass_table["unaged"],
-    reference_table=dict_kriged_biomass_table["aged"],
-    group_by=["sex"],
+dict_ds_kriged_biomass_table["standardized_unaged"] = feat_apportion.distribute_unaged_from_aged(
+    population_table = dict_ds_kriged_biomass_table["unaged"],
+    reference_table = dict_ds_kriged_biomass_table["aged"],
+    collapse_dims = ["stratum_ks"],
     impute=True,
     impute_variable=["age_bin"],
 )
@@ -951,20 +931,20 @@ dict_kriged_biomass_table["standardized_unaged"] = feat_apportion.distribute_una
 # CONSOLIDATE
 # ---- ABUNDANCE
 logging.info("Consolidating abundance tables...")
-df_kriged_abundance_table = feat_apportion.sum_population_tables(
-    population_table=dict_kriged_abundance_table,
-    table_names=["aged", "standardized_unaged"],
-    table_index=["length_bin"],
-    table_columns=["age_bin", "sex"],
+da_kriged_abundance_table = feat_apportion.sum_population_tables(
+    population_tables={
+        "aged": dict_ds_kriged_abundance_table["aged"],
+        "unaged": dict_ds_kriged_abundance_table["standardized_unaged"]
+    },
 )
 logging.info("Abundance table complete\n'df_kriged_abundance_table' created.")
 # ---- Biomass
 logging.info("Consolidating biomass tables...")
-df_kriged_biomass_table = feat_apportion.sum_population_tables(
-    population_table=dict_kriged_biomass_table,
-    table_names=["aged", "standardized_unaged"],
-    table_index=["length_bin"],
-    table_columns=["age_bin", "sex"],
+da_kriged_biomass_table = feat_apportion.sum_population_tables(
+    population_tables={
+        "aged": dict_ds_kriged_biomass_table["aged"],
+        "unaged": dict_ds_kriged_biomass_table["standardized_unaged"]
+    },
 )
 # ==================================================================================================
 # JOLLY AND HAMPTON (1990) ANALYSIS
@@ -1059,7 +1039,7 @@ reporter.kriged_aged_biomass_mesh_report(
     filename="kriged_aged_biomass_mesh_full.xlsx",
     sheetnames={"all": "Sheet1", "male": "Sheet2", "female": "Sheet3"},
     kriged_data=df_kriged_results,
-    weight_data=dict_df_weight_distr["aged"],
+    weight_data=ds_da_weight_dist["aged"],
     kriged_stratum_link={"geostratum_ks": "stratum_ks"},
 )
 
@@ -1068,7 +1048,7 @@ reporter.kriged_aged_biomass_mesh_report(
     filename="kriged_aged_biomass_mesh_nonzero.xlsx",
     sheetnames={"all": "Sheet1", "male": "Sheet2", "female": "Sheet3"},
     kriged_data=df_kriged_results[df_kriged_results["biomass"] > 0.],
-    weight_data=dict_df_weight_distr["aged"],
+    weight_data=ds_da_weight_dist["aged"],
     kriged_stratum_link={"geostratum_ks": "stratum_ks"},
 )
 
@@ -1100,14 +1080,14 @@ reporter.kriged_mesh_results_report(
 reporter.kriged_length_age_abundance_report(
     filename="kriged_length_age_abundance_report.xlsx",
     sheetnames={"male": "Sheet1", "female": "Sheet2", "all": "Sheet3"},
-    datatables=dict_kriged_abundance_table,
+    datatables=dict_ds_kriged_abundance_table,
 )
 
 # KRIGED LENGTH-AGE BIOMASS
 reporter.kriged_length_age_biomass_report(
     filename="kriged_length_age_biomass_report.xlsx",
     sheetnames={"male": "Sheet1", "female": "Sheet2", "all": "Sheet3"},
-    datatables=dict_kriged_biomass_table,
+    datatables=dict_ds_kriged_biomass_table,
 )
 
 # KRIGING INPUT
@@ -1121,14 +1101,14 @@ reporter.kriging_input_report(
 reporter.transect_length_age_abundance_report(
     filename="transect_length_age_abundance_report.xlsx",
     sheetnames={"male": "Sheet1", "female": "Sheet2", "all": "Sheet3"},
-    datatables=dict_transect_abundance_table,
+    datatables=dict_ds_transect_abundance_table,
 )
 
 # TRANSECT LENGTH-AGE BIOMASS
 reporter.transect_length_age_biomass_report(
     filename="transect_length_age_biomass_report.xlsx",
     sheetnames={"male": "Sheet1", "female": "Sheet2", "all": "Sheet3"},
-    datatable=dict_transect_biomass_table["aged"],
+    datatable=dict_ds_transect_biomass_table["aged"],
 )
 
 # TRANSECT AGED BIOMASS
@@ -1138,7 +1118,7 @@ reporter.transect_aged_biomass_report(
     filename="transect_aged_biomass_report_full.xlsx",
     sheetnames={"all": "Sheet1", "male": "Sheet2", "female": "Sheet3"},
     transect_data=df_nasc,
-    weight_data=dict_df_weight_distr["aged"],
+    weight_data=ds_da_weight_dist["aged"],
 )
 
 # Nonzero values
@@ -1146,7 +1126,7 @@ reporter.transect_aged_biomass_report(
     filename="transect_aged_biomass_report_nonzero.xlsx",
     sheetnames={"all": "Sheet1", "male": "Sheet2", "female": "Sheet3"},
     transect_data=df_nasc[df_nasc["biomass"] > 0.],
-    weight_data=dict_df_weight_distr["aged"],
+    weight_data=ds_da_weight_dist["aged"],
 )
 
 # TRANSECT RESULTS
@@ -1156,7 +1136,7 @@ reporter.transect_population_results_report(
     filename="transect_population_results_full.xlsx",
     sheetname="Sheet1",
     transect_data=df_nasc,
-    weight_strata_data=df_averaged_weight,
+    weight_strata_data=da_averaged_weight,
     sigma_bs_stratum=invert_hake.sigma_bs_strata,
     stratum_name="stratum_ks",
 )
@@ -1166,7 +1146,7 @@ reporter.transect_population_results_report(
     filename="transect_population_results_nonzero.xlsx",
     sheetname="Sheet1",
     transect_data=df_nasc[df_nasc["nasc"] > 0.],
-    weight_strata_data=df_averaged_weight,
+    weight_strata_data=da_averaged_weight,
     sigma_bs_stratum=invert_hake.sigma_bs_strata,
     stratum_name="stratum_ks",
 )
