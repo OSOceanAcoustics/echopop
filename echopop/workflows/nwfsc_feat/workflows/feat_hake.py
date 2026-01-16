@@ -12,7 +12,7 @@ from echopop.geostatistics import cropping, kriging, variogram
 from echopop.ingest import (
     join_geostrata_by_latitude,
     join_strata_by_haul,
-    load_biological_data,
+    load_biological_data_excel,
     load_geostrata,
     load_isobath_data,
     load_kriging_variogram_params,
@@ -173,7 +173,7 @@ FEAT_TO_ECHOPOP_BIODATA_COLUMNS = {
 BIODATA_SEX = {"sex": {1: "male", 2: "female", 3: "unsexed"}}
 
 #
-dict_df_bio = load_biological_data(
+dict_df_bio = load_biological_data_excel(
     biodata_filepath=DATA_ROOT / "Biological/1995-2023_biodata_redo.xlsx",
     biodata_sheet_map=BIODATA_SHEETS,
     column_name_map=FEAT_TO_ECHOPOP_BIODATA_COLUMNS,
