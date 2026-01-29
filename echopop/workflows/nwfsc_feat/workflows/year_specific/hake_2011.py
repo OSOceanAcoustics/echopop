@@ -89,7 +89,7 @@ BIODATA_SHIP_SPECIES = {
 # BIODATA PROCESSING: AGE-1 DOMINATED HAULS
 # ---- This is a list of age-1 dominated haul numbers that should be designated for removal. If no
 # ---- hauls should be removed, then set `AGE1_DOMINATED_HAULS` to `[]`
-AGE1_DOMINATED_HAULS = []
+AGE1_DOMINATED_HAULS = [1, 7, 9, 11, 12, 15, 26]
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # HAUL STRATIFICATION FILE
 HAUL_STRATA_FILE = (
@@ -239,21 +239,24 @@ else:
         transect_region_haul_key_df=df_transect_region_haul_key
     )
 
-    # FILTER
-    logging.info(
-        f"---- Filtering out off-effort transect intervals based on: {TRANSECT_BOUNDARY_FILE}\n"
-        f"     Survey filter: '{SURVEY_FILTER}'"
-    )
-    df_nasc = feat.filter_transect_intervals(
-        nasc_df=df_nasc, 
-        transect_filter_df=TRANSECT_BOUNDARY_FILE,
-        transect_filter_sheet=TRANSECT_BOUNDARY_SHEET,
-        subset_filter=SURVEY_FILTER
-    )
+# FILTER
+logging.info(
+    f"---- Filtering out off-effort transect intervals based on: {TRANSECT_BOUNDARY_FILE}\n"
+    f"     Survey filter: '{SURVEY_FILTER}'"
+)
+df_nasc = feat.filter_transect_intervals(
+    nasc_df=df_nasc, 
+    transect_filter_df=TRANSECT_BOUNDARY_FILE,
+    transect_filter_sheet=TRANSECT_BOUNDARY_SHEET,
+    subset_filter=SURVEY_FILTER
+)
 logging.info(
     "NASC ingestion complete\n"
     "'df_nasc' created."
 )
+
+# DROP TRANSECTS
+df_nasc = utils.apply_filters(df_nasc, include_filter={"transect_num": np.arange(1, 144)})
 # ==================================================================================================
 # INGEST BIODATA
 logging.info(
@@ -923,7 +926,7 @@ if OPTIMIZE_VARIOGRAM:
         "     Azimuth angle filter: 180.0 deg.\n"
     )
     vgm.calculate_empirical_variogram(
-        data=df_nasc,
+        data=df_nasc_proc,
         variable="biomass_density",
         azimuth_filter=True,
         azimuth_angle_threshold=180.,
@@ -1196,7 +1199,7 @@ logging.info(
     "     Stratum transect sampling proportion: 0.75\n"
     "     Stratifying by: 'geostratum_ks'"
 )
-jh.stratified_bootstrap(data_df=df_nasc, 
+jh.stratified_bootstrap(data_df=df_nasc_proc, 
                         stratify_by=["geostratum_inpfc"], 
                         variable="biomass")
 logging.info(
@@ -1322,7 +1325,7 @@ reporter.kriged_length_age_biomass_report(
 reporter.kriging_input_report(
     filename="kriging_input_report.xlsx",
     sheetname="Sheet1",
-    transect_data=df_nasc,
+    transect_data=df_nasc_proc,
 )
 
 # TRANSECT LENGTH-AGE ABUNDANCES
@@ -1345,7 +1348,7 @@ reporter.transect_length_age_biomass_report(
 reporter.transect_aged_biomass_report(
     filename="transect_aged_biomass_report_full.xlsx",
     sheetnames={"all": "Sheet1", "male": "Sheet2", "female": "Sheet3"},
-    transect_data=df_nasc,
+    transect_data=df_nasc_proc,
     weight_data=ds_da_weight_dist["aged"],
 )
 
@@ -1353,7 +1356,7 @@ reporter.transect_aged_biomass_report(
 reporter.transect_aged_biomass_report(
     filename="transect_aged_biomass_report_nonzero.xlsx",
     sheetnames={"all": "Sheet1", "male": "Sheet2", "female": "Sheet3"},
-    transect_data=df_nasc[df_nasc["biomass"] > 0.],
+    transect_data=df_nasc_proc[df_nasc_proc["biomass"] > 0.],
     weight_data=ds_da_weight_dist["aged"],
 )
 
@@ -1363,11 +1366,12 @@ reporter.transect_aged_biomass_report(
 reporter.transect_population_results_report(
     filename="transect_population_results_full.xlsx",
     sheetname="Sheet1",
-    transect_data=df_nasc,
+    transect_data=df_nasc_proc,
     weight_strata_data=da_averaged_weight,
     sigma_bs_stratum=invert_hake.sigma_bs_strata,
     stratum_name="stratum_ks",
 )
+
 
 # Nonzero values
 reporter.transect_population_results_report(

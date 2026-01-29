@@ -269,6 +269,9 @@ logging.info(
     "NASC ingestion complete\n"
     "'df_nasc' created."
 )
+
+# DROP TRANSECTS
+df_nasc = utils.apply_filters(df_nasc, include_filter={"transect_num": np.arange(1, 1120)})
 # ==================================================================================================
 # INGEST BIODATA
 logging.info(
@@ -926,7 +929,7 @@ if OPTIMIZE_VARIOGRAM:
         "     Azimuth angle filter: 180.0 deg.\n"
     )
     vgm.calculate_empirical_variogram(
-        data=df_nasc,
+        data=df_nasc_proc,
         variable="biomass_density",
         azimuth_filter=True,
         azimuth_angle_threshold=180.,

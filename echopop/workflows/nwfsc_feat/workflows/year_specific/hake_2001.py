@@ -40,6 +40,8 @@ except Exception:
 NASC_EXPORTS_FILES = DATA_ROOT / "Exports/US&CAN_detailsa_2001_table1y+_ALL_final.xlsx"
 # NASC EXPORTS SHEET
 NASC_EXPORTS_SHEET = "updated data"
+# REMOVE AGE-1 (I.E., AGE-2+ ONLY)?
+REMOVE_AGE1 = True
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # TRANSECT BOUNDARY FILE
 TRANSECT_BOUNDARY_FILE = DATA_ROOT / "Kriging_files/Kriging_grid_files/Transect Bounds to 2011.xlsx"
@@ -199,6 +201,14 @@ df_nasc = feat.filter_transect_intervals(
     transect_filter_sheet=TRANSECT_BOUNDARY_SHEET,
     subset_filter=SURVEY_FILTER
 )
+logging.info(
+    "!!! [2001] WARNING:\n"
+    "Columns 'region_id', 'layer_height', and 'layer_mean_depth' missing. "
+    "Stand-in values have been added."
+)
+df_nasc["region_id"] = 999
+df_nasc["layer_height"] = 0.
+df_nasc["layer_mean_depth"] = 0.
 logging.info(
     "NASC ingestion complete\n"
     "'df_nasc' created."
@@ -826,8 +836,6 @@ df_nasc_proc, delta_longitude, delta_latitude = geostatistics.transform_coordina
     y_offset = 45.,   
 )
 
-
-
 # MESH
 df_mesh, _, _ = geostatistics.transform_coordinates(
     data = df_mesh,
@@ -868,7 +876,7 @@ if OPTIMIZE_VARIOGRAM:
         "     Azimuth angle filter: 180.0 deg.\n"
     )
     vgm.calculate_empirical_variogram(
-        data=df_nasc,
+        data=df_nasc_proc,
         variable="biomass_density",
         azimuth_filter=True,
         azimuth_angle_threshold=180.,
@@ -1141,7 +1149,7 @@ logging.info(
     "     Stratum transect sampling proportion: 0.75\n"
     "     Stratifying by: 'geostratum_ks'"
 )
-jh.stratified_bootstrap(data_df=df_nasc, 
+jh.stratified_bootstrap(data_df=df_nasc_proc, 
                         stratify_by=["geostratum_inpfc"], 
                         variable="biomass")
 logging.info(
@@ -1267,7 +1275,7 @@ reporter.kriged_length_age_biomass_report(
 reporter.kriging_input_report(
     filename="kriging_input_report.xlsx",
     sheetname="Sheet1",
-    transect_data=df_nasc,
+    transect_data=df_nasc_proc,
 )
 
 # TRANSECT LENGTH-AGE ABUNDANCES
@@ -1290,7 +1298,7 @@ reporter.transect_length_age_biomass_report(
 reporter.transect_aged_biomass_report(
     filename="transect_aged_biomass_report_full.xlsx",
     sheetnames={"all": "Sheet1", "male": "Sheet2", "female": "Sheet3"},
-    transect_data=df_nasc,
+    transect_data=df_nasc_proc,
     weight_data=ds_da_weight_dist["aged"],
 )
 
@@ -1298,7 +1306,7 @@ reporter.transect_aged_biomass_report(
 reporter.transect_aged_biomass_report(
     filename="transect_aged_biomass_report_nonzero.xlsx",
     sheetnames={"all": "Sheet1", "male": "Sheet2", "female": "Sheet3"},
-    transect_data=df_nasc[df_nasc["biomass"] > 0.],
+    transect_data=df_nasc_proc[df_nasc_proc["biomass"] > 0.],
     weight_data=ds_da_weight_dist["aged"],
 )
 
@@ -1308,11 +1316,12 @@ reporter.transect_aged_biomass_report(
 reporter.transect_population_results_report(
     filename="transect_population_results_full.xlsx",
     sheetname="Sheet1",
-    transect_data=df_nasc,
+    transect_data=df_nasc_proc,
     weight_strata_data=da_averaged_weight,
     sigma_bs_stratum=invert_hake.sigma_bs_strata,
     stratum_name="stratum_ks",
 )
+
 
 # Nonzero values
 reporter.transect_population_results_report(
@@ -1343,19 +1352,19 @@ if COMPARE:
             "echopop": "total_length_haul_counts.xlsx"
         },
         "aged_kriged_mesh_biomass_full": {
-            "echopro": "EchoPro_kriged_aged_output-2021_1.xlsx",
+            "echopro": "EchoPro_kriged_aged_output-2001_1.xlsx",
             "echopop": "kriged_aged_biomass_mesh_full.xlsx"
         },
         "aged_kriged_mesh_biomass_subset": {
-            "echopro": "EchoPro_kriged_aged_output-2021_0.xlsx",
+            "echopro": "EchoPro_kriged_aged_output-2001_0.xlsx",
             "echopop": "kriged_aged_biomass_mesh_nonzero.xlsx"
         },
         "kriged_mesh_biomass_full": {
-            "echopro": "EchoPro_kriged_output-27-Jan-2026_0.xlsx",
+            "echopro": "EchoPro_kriged_output-28-Jan-2026_0.xlsx",
             "echopop": "kriged_biomass_mesh_full.xlsx"
         },
         "kriged_mesh_biomass_subset": {
-            "echopro": "EchoPro_kriged_output-27-Jan-2026_1.xlsx",
+            "echopro": "EchoPro_kriged_output-28-Jan-2026_1.xlsx",
             "echopop": "kriged_biomass_mesh_nonzero.xlsx"
         },
         "kriging_input": {
@@ -1371,11 +1380,11 @@ if COMPARE:
             "echopop": "kriged_length_age_biomass_report.xlsx"
         },
         "aged_transect_biomass_full": {
-            "echopro": "EchoPro_un-kriged_aged_output-2021_0.xlsx",
+            "echopro": "EchoPro_un-kriged_aged_output-2001_0.xlsx",
             "echopop": "transect_aged_biomass_report_full.xlsx"
         },
         "aged_transect_biomass_subset": {
-            "echopro": "EchoPro_un-kriged_aged_output-2021_1.xlsx",
+            "echopro": "EchoPro_un-kriged_aged_output-2001_1.xlsx",
             "echopop": "transect_aged_biomass_report_nonzero.xlsx"
         },
         "transect_length_age_abundance": {
@@ -1387,11 +1396,11 @@ if COMPARE:
             "echopop": "transect_length_age_biomass_report.xlsx"
         },
         "transect_results_full": {
-            "echopro": "EchoPro_un-kriged_output-27-Jan-2026_0.xlsx",
+            "echopro": "EchoPro_un-kriged_output-28-Jan-2026_0.xlsx",
             "echopop": "transect_population_results_full.xlsx"
         },
         "transect_results_subset": {
-            "echopro": "EchoPro_un-kriged_output-27-Jan-2026_1.xlsx",
+            "echopro": "EchoPro_un-kriged_output-28-Jan-2026_1.xlsx",
             "echopop": "transect_population_results_nonzero.xlsx"
         }
     }

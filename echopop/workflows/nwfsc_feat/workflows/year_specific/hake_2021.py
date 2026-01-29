@@ -82,7 +82,14 @@ BIODATA_SHIP_SPECIES = {
 # BIODATA PROCESSING: AGE-1 DOMINATED HAULS
 # ---- This is a list of age-1 dominated haul numbers that should be designated for removal. If no
 # ---- hauls should be removed, then set `AGE1_DOMINATED_HAULS` to `[]`
-AGE1_DOMINATED_HAULS = []
+AGE1_DOMINATED_HAULS = [4, 9, 10, 13, 15, 18, 23, 30, 35, 39, 41, 48, 60, 69, 227]
+# ----> NOTE: 
+# ----> IN ECHOPRO [for context]: 
+# if dat0(1,1) == 2015
+#     % remove age1 hauls but not those used in transect_region_hual files, 
+#     % to be consistent with K-S stratification
+#     para.proc.age1_haul = [4 9 10 13 15 18 23 30 35 39 41 48 60 69 227];
+# end
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # HAUL STRATIFICATION FILE
 HAUL_STRATA_FILE = DATA_ROOT / "Stratification/US&CAN strata 2021_final.xlsx"
@@ -262,6 +269,9 @@ logging.info(
     "NASC ingestion complete\n"
     "'df_nasc' created."
 )
+
+# DROP TRANSECTS
+df_nasc = utils.apply_filters(df_nasc, include_filter={"transect_num": np.arange(1, 122)})
 # ==================================================================================================
 # INGEST BIODATA
 logging.info(
@@ -918,7 +928,7 @@ if OPTIMIZE_VARIOGRAM:
         "     Azimuth angle filter: 180.0 deg.\n"
     )
     vgm.calculate_empirical_variogram(
-        data=df_nasc,
+        data=df_nasc_proc,
         variable="biomass_density",
         azimuth_filter=True,
         azimuth_angle_threshold=180.,
@@ -1201,7 +1211,7 @@ logging.info(
     "     Stratum transect sampling proportion: 0.75\n"
     "     Stratifying by: 'geostratum_ks'"
 )
-jh.stratified_bootstrap(data_df=df_nasc, 
+jh.stratified_bootstrap(data_df=df_nasc_proc, 
                         stratify_by=["geostratum_inpfc"], 
                         variable="biomass")
 logging.info(

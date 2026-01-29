@@ -444,7 +444,10 @@ def impute_kriged_table(
         # ---- Apply imputed values
         target_table.loc[coords] = imp_da.data
         # ---- Validate that imputation correctly applied
-        if target_table.loc[coords].equals(standardized_table.loc[coords]):
+        if (
+            target_table.loc[coords].size > 0 and 
+            target_table.loc[coords].equals(standardized_table.loc[coords])
+        ):
             interval_str = "', '".join(
                 str(x) for x in nonzero_reference_to_table_indices[group_key]
             )

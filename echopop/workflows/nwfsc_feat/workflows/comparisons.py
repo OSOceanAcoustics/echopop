@@ -140,19 +140,28 @@ def align_dataframes(df1: pd.DataFrame, df2: pd.DataFrame) -> Tuple[pd.DataFrame
     # ) if ref_columns is df1.columns else ref_columns.append(df1.columns.difference(ref_columns))
 
     # Reindex both DataFrames to the full set, in the chosen order
-    if not df1[df1.index.duplicated(keep=False)].empty:
-        df1 = df1.groupby(
-            [df1.index.get_level_values(0)]
-        )[["biomass_density", "number_density", "nasc"]].sum()
+    if not df1[df1.index.duplicated(keep=False)].empty:        
+        cols = [c for c in df1.columns if c not in ["longitude", "latitude"]]
+        df1_agg = df1.groupby(list(df1.index.names), sort=False)[cols].sum()
+        for col in ["longitude", "latitude"]:
+            df1_agg[col] = df1.groupby(list(df1.index.names), sort=False)[col].first()
+        df1_agg = df1_agg[df1.columns]
+    else:
+        df1_agg = df1.copy()
+        
     if not df2[df2.index.duplicated(keep=False)].empty:
-        df2 = df2.groupby(
-            [df2.index.get_level_values(0)]
-        )[["biomass_density", "number_density", "nasc"]].sum()  
+        cols = [c for c in df1.columns if c not in ["longitude", "latitude"]]
+        df2_agg = df2.groupby(list(df2.index.names), sort=False)[cols].sum()
+        for col in ["longitude", "latitude"]:
+            df2_agg[col] = df2.groupby(list(df2.index.names), sort=False)[col].first()
+        df2_agg = df2_agg[df2.columns]
+    else:
+        df2_agg = df2.copy()
     # df1_aligned = df1.reindex(index=all_index, columns=all_columns).fillna(0.)
     # df2_aligned = df2.reindex(index=all_index, columns=all_columns).fillna(0.)
     
     # Return the aligned DataFrames
-    return df1, df2
+    return df1_agg, df2_agg
 
 def read_pivot_table_report(filepath: Path) -> Dict[str, pd.DataFrame]:
     """
@@ -1048,6 +1057,9 @@ def plot_geodata(
         
         if out_path is not None:
             plt.savefig(out_path, dpi=300)
+            print(
+                f"Figure saved at {out_path.as_posix()}."
+            )
         if show_plot:
             plt.show()
         else:

@@ -253,6 +253,9 @@ df_nasc = feat.filter_transect_intervals(
     transect_filter_sheet=TRANSECT_BOUNDARY_SHEET,
     subset_filter=SURVEY_FILTER
 )
+
+# DROP TRANSECTS
+df_nasc = utils.apply_filters(df_nasc, include_filter={"transect_num": np.arange(1, 144)})
 # ==================================================================================================
 # INGEST BIODATA
 logging.info(
@@ -921,7 +924,7 @@ if OPTIMIZE_VARIOGRAM:
         "     Azimuth angle filter: 180.0 deg.\n"
     )
     vgm.calculate_empirical_variogram(
-        data=df_nasc,
+        data=df_nasc_proc,
         variable="biomass_density",
         azimuth_filter=True,
         azimuth_angle_threshold=180.,
@@ -1194,7 +1197,7 @@ logging.info(
     "     Stratum transect sampling proportion: 0.75\n"
     "     Stratifying by: 'geostratum_ks'"
 )
-jh.stratified_bootstrap(data_df=df_nasc, 
+jh.stratified_bootstrap(data_df=df_nasc_proc, 
                         stratify_by=["geostratum_inpfc"], 
                         variable="biomass")
 logging.info(
@@ -1320,7 +1323,7 @@ reporter.kriged_length_age_biomass_report(
 reporter.kriging_input_report(
     filename="kriging_input_report.xlsx",
     sheetname="Sheet1",
-    transect_data=df_nasc,
+    transect_data=df_nasc_proc,
 )
 
 # TRANSECT LENGTH-AGE ABUNDANCES
@@ -1343,7 +1346,7 @@ reporter.transect_length_age_biomass_report(
 reporter.transect_aged_biomass_report(
     filename="transect_aged_biomass_report_full.xlsx",
     sheetnames={"all": "Sheet1", "male": "Sheet2", "female": "Sheet3"},
-    transect_data=df_nasc,
+    transect_data=df_nasc_proc,
     weight_data=ds_da_weight_dist["aged"],
 )
 
@@ -1351,7 +1354,7 @@ reporter.transect_aged_biomass_report(
 reporter.transect_aged_biomass_report(
     filename="transect_aged_biomass_report_nonzero.xlsx",
     sheetnames={"all": "Sheet1", "male": "Sheet2", "female": "Sheet3"},
-    transect_data=df_nasc[df_nasc["biomass"] > 0.],
+    transect_data=df_nasc_proc[df_nasc_proc["biomass"] > 0.],
     weight_data=ds_da_weight_dist["aged"],
 )
 
@@ -1361,11 +1364,12 @@ reporter.transect_aged_biomass_report(
 reporter.transect_population_results_report(
     filename="transect_population_results_full.xlsx",
     sheetname="Sheet1",
-    transect_data=df_nasc,
+    transect_data=df_nasc_proc,
     weight_strata_data=da_averaged_weight,
     sigma_bs_stratum=invert_hake.sigma_bs_strata,
     stratum_name="stratum_ks",
 )
+
 
 # Nonzero values
 reporter.transect_population_results_report(

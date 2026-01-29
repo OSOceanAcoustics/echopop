@@ -41,7 +41,7 @@ except Exception:
 # ---- spreadsheet will be read in. This also requires defining `NASC_EXPORTS_SHEET`
 NASC_PREPROCESSED = True
 # NASC EXPORTS FILE(S)
-NASC_EXPORTS_FILES = DATA_ROOT / "raw_nasc/"
+NASC_EXPORTS_FILES = DATA_ROOT / "Exports/US&CAN_detailsa_2019_table2y+_ALL_final - updated.xlsx"
 # NASC EXPORTS SHEET
 NASC_EXPORTS_SHEET = "Sheet1"
 # REMOVE AGE-1 (I.E., AGE-2+ ONLY)?
@@ -257,6 +257,9 @@ logging.info(
     "NASC ingestion complete\n"
     "'df_nasc' created."
 )
+
+# DROP TRANSECTS
+df_nasc = utils.apply_filters(df_nasc, include_filter={"transect_num": np.arange(1, 144)})
 # ==================================================================================================
 # INGEST BIODATA
 logging.info(
@@ -923,7 +926,7 @@ if OPTIMIZE_VARIOGRAM:
         "     Azimuth angle filter: 180.0 deg.\n"
     )
     vgm.calculate_empirical_variogram(
-        data=df_nasc,
+        data=df_nasc_proc,
         variable="biomass_density",
         azimuth_filter=True,
         azimuth_angle_threshold=180.,
@@ -1203,7 +1206,7 @@ logging.info(
     "     Stratum transect sampling proportion: 0.75\n"
     "     Stratifying by: 'geostratum_ks'"
 )
-jh.stratified_bootstrap(data_df=df_nasc, 
+jh.stratified_bootstrap(data_df=df_nasc_proc, 
                         stratify_by=["geostratum_inpfc"], 
                         variable="biomass")
 logging.info(
