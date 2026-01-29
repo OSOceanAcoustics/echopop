@@ -8,7 +8,7 @@
 # PARAMETER ENTRY
 # ---------------
 from pathlib import Path
-import pandas as pd
+from echopop.workflows.nwfsc_feat.workflows import comparisons as comp
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # DATA DIRECTORIES
 # ----------------
@@ -78,7 +78,7 @@ ECHOPRO_TO_ECHOPOP_FILE_MAP = {
         "echopop": "transect_length_age_biomass_report.xlsx"
     },
     "transect_results_full": {
-        "echopro": "EchoPro_un-kriged_output-08-Dec-2023_0.xlsx.xlsx",
+        "echopro": "EchoPro_un-kriged_output-08-Dec-2023_0.xlsx",
         "echopop": "transect_population_results_full.xlsx"
     },
     "transect_results_subset": {
@@ -87,45 +87,249 @@ ECHOPRO_TO_ECHOPOP_FILE_MAP = {
     }
 }
 
-
-
 ####
 # Aged length haul counts
-echopro_aged_length_haul_counts = read_pivot_table_report(ECHOPRO_ROOT / ECHOPRO_TO_ECHOPOP_FILE_MAP["aged_length_haul_counts"]["echopro"])
-echopop_aged_length_haul_counts = read_pivot_table_report(ECHOPOP_ROOT / ECHOPRO_TO_ECHOPOP_FILE_MAP["aged_length_haul_counts"]["echopop"])
-save_filepath = ECHOPRO_ROOT / "test.png"
-plot_haul_count_comparisons(
+echopro_aged_length_haul_counts = comp.read_pivot_table_report(ECHOPRO_ROOT / ECHOPRO_TO_ECHOPOP_FILE_MAP["aged_length_haul_counts"]["echopro"])
+echopop_aged_length_haul_counts = comp.read_pivot_table_report(ECHOPOP_ROOT / ECHOPRO_TO_ECHOPOP_FILE_MAP["aged_length_haul_counts"]["echopop"])
+comp.plot_haul_count_comparisons(
     echopro=echopro_aged_length_haul_counts, 
     echopop=echopop_aged_length_haul_counts,
+    save_filepath=SAVE_DIRECTORY / "aged_length_haul_counts.png"
 )
 
 # Total length haul counts
-echopro_total_length_haul_counts = read_pivot_table_report(ECHOPRO_ROOT / ECHOPRO_TO_ECHOPOP_FILE_MAP["total_length_haul_counts"]["echopro"])
-echopop_total_length_haul_counts = read_pivot_table_report(ECHOPOP_ROOT / ECHOPRO_TO_ECHOPOP_FILE_MAP["total_length_haul_counts"]["echopop"])
-
-plot_haul_count_comparisons(
+echopro_total_length_haul_counts = comp.read_pivot_table_report(ECHOPRO_ROOT / ECHOPRO_TO_ECHOPOP_FILE_MAP["total_length_haul_counts"]["echopro"])
+echopop_total_length_haul_counts = comp.read_pivot_table_report(ECHOPOP_ROOT / ECHOPRO_TO_ECHOPOP_FILE_MAP["total_length_haul_counts"]["echopop"])
+comp.plot_haul_count_comparisons(
     echopro=echopro_total_length_haul_counts, 
-    echopop=echopop_total_length_haul_counts
+    echopop=echopop_total_length_haul_counts,
+    save_filepath=SAVE_DIRECTORY / "total_length_haul_counts.png"
 )
 
 # Kriged aged abundance
-echopro_kriged_abundance_table = read_pivot_table_report(
+echopro_kriged_abundance_table = comp.read_pivot_table_report(
     filepath=ECHOPRO_ROOT / ECHOPRO_TO_ECHOPOP_FILE_MAP["kriged_length_age_abundance"]["echopro"]
 )
-echopop_kriged_abundance_table = read_pivot_table_report(
+echopop_kriged_abundance_table = comp.read_pivot_table_report(
     filepath=ECHOPOP_ROOT / ECHOPRO_TO_ECHOPOP_FILE_MAP["kriged_length_age_abundance"]["echopop"]
 )
+comp.plot_population_table_comparisons(
+    echopro=echopro_kriged_abundance_table, 
+    echopop=echopop_kriged_abundance_table, 
+    log_transform=True,
+    save_filepath=SAVE_DIRECTORY / "kriged_length_age_abundance.png"
+)
 
-echopro = echopro_kriged_abundance_table
-echopop = echopop_kriged_abundance_table
-show_plot = True
-save_filepath = None
-log_transform = True
+# Transect aged abundance
+echopro_transect_abundance_table = comp.read_pivot_table_report(
+    filepath=ECHOPRO_ROOT / ECHOPRO_TO_ECHOPOP_FILE_MAP["transect_length_age_abundance"]["echopro"]
+)
+echopop_transect_abundance_table = comp.read_pivot_table_report(
+    filepath=ECHOPOP_ROOT / ECHOPRO_TO_ECHOPOP_FILE_MAP["transect_length_age_abundance"]["echopop"]
+)
+comp.plot_population_table_comparisons(
+    echopro=echopro_transect_abundance_table, 
+    echopop=echopop_transect_abundance_table, 
+    log_transform=True,
+    save_filepath=SAVE_DIRECTORY / "transect_length_age_abundance.png"
+)
+
+# Kriged aged biomass
+echopro_kriged_biomass_table = comp.read_pivot_table_report(
+    filepath=ECHOPRO_ROOT / ECHOPRO_TO_ECHOPOP_FILE_MAP["kriged_length_age_biomass"]["echopro"]
+)
+echopop_kriged_biomass_table = comp.read_pivot_table_report(
+    filepath=ECHOPOP_ROOT / ECHOPRO_TO_ECHOPOP_FILE_MAP["kriged_length_age_biomass"]["echopop"]
+)
+comp.plot_population_table_comparisons(
+    echopro=echopro_kriged_biomass_table, 
+    echopop=echopop_kriged_biomass_table, 
+    log_transform=True,
+    save_filepath=SAVE_DIRECTORY / "kriged_length_age_biomass.png"
+)
+
+# Transect aged biomass
+echopro_transect_biomass_table = comp.read_pivot_table_report(
+    filepath=ECHOPRO_ROOT / ECHOPRO_TO_ECHOPOP_FILE_MAP["transect_length_age_biomass"]["echopro"]
+)
+echopop_transect_biomass_table = comp.read_pivot_table_report(
+    filepath=ECHOPOP_ROOT / ECHOPRO_TO_ECHOPOP_FILE_MAP["transect_length_age_biomass"]["echopop"]
+)
+comp.plot_population_table_comparisons(
+    echopro=echopro_transect_biomass_table, 
+    echopop=echopop_transect_biomass_table, 
+    log_transform=True,
+    save_filepath=SAVE_DIRECTORY / "transect_length_age_biomass.png"
+)
+
+# Kriging inputs
+echopro_kriging_input = comp.read_geodata(
+    filepath=ECHOPRO_ROOT / ECHOPRO_TO_ECHOPOP_FILE_MAP["kriging_input"]["echopro"]
+)
+echopop_kriging_input = comp.read_geodata(
+    filepath=ECHOPOP_ROOT / ECHOPRO_TO_ECHOPOP_FILE_MAP["kriging_input"]["echopop"]
+) 
+
+comp.plot_geodata(
+    echopro=echopro_kriging_input,
+    echopop=echopop_kriging_input,
+    save_filepath=SAVE_DIRECTORY / "kriging_input.png"
+)
+
+# Transect population estimates
+echopro_transect_estimates = comp.read_geodata(
+    filepath=ECHOPRO_ROOT / ECHOPRO_TO_ECHOPOP_FILE_MAP["transect_results_full"]["echopro"],
+)
+
+echopop_transect_estimates = comp.read_geodata(
+    filepath=ECHOPOP_ROOT / ECHOPRO_TO_ECHOPOP_FILE_MAP["transect_results_full"]["echopop"],
+)
+
+comp.plot_geodata(
+    echopro=echopro_transect_estimates,
+    echopop=echopop_transect_estimates,
+    save_filepath={
+        ("abundance", "abundance_male", "abundance_female"): 
+            SAVE_DIRECTORY / "transect_abundances.png",
+        ("number_density", "number_density_male", "number_density_female"):
+            SAVE_DIRECTORY / "transect_number_densities.png",
+        ("biomass", "biomass_male", "biomass_female"):
+            SAVE_DIRECTORY / "transect_biomasses.png",
+        ("biomass_density", "biomass_density_male", "biomass_density_female"):
+            SAVE_DIRECTORY / "transect_biomass_densities.png",
+        "nasc": SAVE_DIRECTORY / "transect_nasc.png",
+    }
+)
+
+# Kriging population estimates
+echopro_kriged_estimates = comp.read_geodata(
+    filepath=ECHOPRO_ROOT / ECHOPRO_TO_ECHOPOP_FILE_MAP["kriged_mesh_biomass_full"]["echopro"],
+)
+
+echopop_kriged_estimates = comp.read_geodata(
+    filepath=ECHOPOP_ROOT / ECHOPRO_TO_ECHOPOP_FILE_MAP["kriged_mesh_biomass_full"]["echopop"],
+)
+
+comp.plot_geodata(
+    echopro=echopro_kriged_estimates,
+    echopop=echopop_kriged_estimates,
+    save_filepath={
+        ("abundance", "abundance_male", "abundance_female"): 
+            SAVE_DIRECTORY / "kriged_abundances.png",
+        ("biomass", "biomass_male", "biomass_female"):
+            SAVE_DIRECTORY / "kriged_biomasses.png",
+        "nasc": SAVE_DIRECTORY / "kriged_nasc.png",
+    }
+)
+
+stratum_idx = 2
+
+# Get aggregate proportions for this stratum
+fac1_ALL = aggregate_proportions.sel(group="unaged", stratum_ks=stratum_idx)  # scalar
+fac2_ALL = aggregate_proportions.sel(group="aged", stratum_ks=stratum_idx)    # scalar
+
+# Get within-group proportions for this stratum
+Len_key_Nn = within_group_proportions_all.sel(group="unaged", stratum_ks=stratum_idx)  # (length_bin,)
+Len_Age_key_ALL = within_group_proportions_all.sel(group="aged", stratum_ks=stratum_idx)  # (age_bin, length_bin) or (length_bin,) if no age_bin
+
+# If Len_Age_key_ALL has age_bin, sum over it
+if "age_bin" in Len_Age_key_ALL.dims:
+    Len_Age_key_ALL_sum = Len_Age_key_ALL.sum(dim="age_bin")  # (length_bin,)
+else:
+    Len_Age_key_ALL_sum = Len_Age_key_ALL  # (length_bin,)
+
+# Get weights for this stratum
+weights = weight_all_values  # (length_bin,)
+
+# Compute the dot product, matching MATLAB logic
+result = ((fac1_ALL * Len_key_Nn + fac2_ALL * Len_Age_key_ALL_sum) * weights).sum().item()
+
+# Aged transect population estimates
+echopro_aged_kriged_estimates = comp.read_aged_geodata(
+    filepath=ECHOPRO_ROOT / ECHOPRO_TO_ECHOPOP_FILE_MAP["aged_kriged_mesh_biomass_full"]["echopro"],
+)
+
+echopop_aged_kriged_estimates = comp.read_aged_geodata(
+    filepath=ECHOPOP_ROOT / ECHOPRO_TO_ECHOPOP_FILE_MAP["aged_kriged_mesh_biomass_full"]["echopop"],
+)
 
 
-plot_population_table_comparisons(echopro, echopop, log_transform=True)
+echopro=echopro_aged_kriged_estimates.copy()
+echopop=echopop_aged_kriged_estimates.copy()
+show_plot=True
+save_directory = SAVE_DIRECTORY
+import re
 
+# Get all sex keys
+all_sexes = sorted(set(echopro.keys()) | set(echopop.keys()))
+n = len(all_sexes)
 
+def get_age_columns(df):
+    return [col for col in df.columns if re.fullmatch(r"\d+", str(col))]
 
-echopro["male"].sum().sum()
-echopop["male"].sum().sum()
+age_sex = {}
+# Iterate through for plots
+# for i, sex in enumerate(all_sexes):
+i = 0
+sex = "all"
+
+import xarray as xr
+import pandas as pd
+# ---- Initialize sub-key
+age_sex[sex] = {}
+# ---- Extract
+echopro_s = echopro.get(sex).copy()
+echopop_s = echopop.get(sex).copy()
+# ---- Find the age-columns
+age_columns_echopro = get_age_columns(echopro_s)
+age_columns_echopop = get_age_columns(echopop_s)
+# ---- Get complete list of ages
+all_ages = list(set(age_columns_echopro + age_columns_echopop))
+# ---- Index
+echopro_s.set_index(
+    ["longitude", "latitude", "geometry"],
+    inplace = True
+)
+echopop_s.set_index(
+    ["longitude", "latitude", "geometry"],
+    inplace = True    
+)
+# ---- Get missing columns for completion
+echopro_missing = [c for c in age_columns_echopop if c not in age_columns_echopro]
+echopop_missing = [c for c in age_columns_echopro if c not in age_columns_echopop]
+# ---- Back-fill
+if echopro_missing:
+    to_add = pd.DataFrame(
+        {
+            k: 0 for k in echopro_missing
+        },
+        index = echopro_s.index
+    )
+    echopro_s = pd.concat([echopro_s, to_add], axis=1)
+if echopop_missing:
+    to_add = pd.DataFrame(
+        {
+            k: 0 for k in echopop_missing
+        },
+        index = echopop_s.index
+    )
+    echopop_s = pd.concat([echopop_s, to_add], axis=1)    
+# ---- Filter/prune 
+echopro_f = echopro_s.filter(["biomass"] + all_ages)
+echopop_f = echopop_s.filter(["biomass"] + all_ages)
+# ---- Get difference
+diffs = (echopop_f - echopro_f).infer_objects(copy=False).fillna(0.)
+# ---- Update the dictionary
+for j in ["biomass"] + all_ages:
+    age_sex[sex].update({
+        f"{j}": {
+            "echopro": echopro_f,
+            "echopop": echopop_f,
+            "diff": diffs
+        }
+    })
+    
+# Now iterate through each sex and dataset for plotting across ages
+i = "biomass"
+ECHOPRO_ROOT = Path("C:/Data/EchopopData/echopop_2019/reports_echopro")
+age_sex[i][j]

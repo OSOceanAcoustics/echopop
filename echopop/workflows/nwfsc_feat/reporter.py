@@ -768,7 +768,7 @@ def write_aged_dataframe_report(
 
 def prepare_age_length_tables(
     aged_full_table: pd.DataFrame,
-    unaged_full_table: pd.DataFrame,
+    unaged_full_table: Optional[pd.DataFrame] = None,
 ) -> Dict[str, pd.DataFrame]:
     """
     Add 'Un-aged' column, margin rows and return sex-specific pivot tables for writing.
@@ -777,7 +777,7 @@ def prepare_age_length_tables(
     ----------
     aged_full_table : pandas.DataFrame
         Concatenated aged tables by sex and 'all'.
-    unaged_full_table : pandas.DataFrame
+    unaged_full_table : pandas.DataFrame, optional
         Unaged counts for each sex (and 'all').
 
     Returns
@@ -791,12 +791,6 @@ def prepare_age_length_tables(
         If inputs are not DataFrames.
     """
 
-    # Type checking
-    if not isinstance(aged_full_table, pd.DataFrame) or not isinstance(
-        unaged_full_table, pd.DataFrame
-    ):
-        raise TypeError("Both the aged and unaged tables must be `pandas.DataFrame`s.")
-
     # Initialize dictionary
     sex_tables = {}
 
@@ -805,8 +799,9 @@ def prepare_age_length_tables(
         # Concatenate the aged and unaged tables
         # ---- Create copy of aged table
         full_table = aged_full_table.copy()[sex]
-        # ---- Add "unaged" column
-        full_table["Un-aged"] = unaged_full_table[sex]
+        if unaged_full_table is not None:
+            # ---- Add "unaged" column
+            full_table["Un-aged"] = unaged_full_table[sex]
 
         # Add margins
         # ---- Across length bins
@@ -1593,7 +1588,7 @@ class Reporter:
         self,
         filename: str,
         sheetnames: Dict[str, str],
-        datatables: Dict[str, pd.DataFrame],
+        datatable: xr.DataArray,
         exclude_filter: Dict[str, Any] = {},
     ) -> None:
         """
@@ -1608,8 +1603,8 @@ class Reporter:
             Output filename.
         sheetnames : dict
             Mapping sex -> worksheet name.
-        datatables : dict
-            Dictionary with 'aged' and optional 'unaged' pandas DataFrames as described elsewhere.
+        datatable : xarray.DataArray
+            DataArray of consolidated aged and unaged biomass estimates.
         exclude_filter : dict
             Filter dict forwarded to :func:`apportion.reallocate_population_table`.
 
@@ -1627,15 +1622,13 @@ class Reporter:
         Examples
         --------
         >>> reports = Reporter("out")
-        >>> reports.kriged_length_age_biomass_report({'aged':aged_df, 'unaged':unaged_df}, {},
+        >>> reports.kriged_length_age_biomass_report(da_full, {},
         "krig_biomass.xlsx", sheetnames)
         """
 
         # Type checking
-        if not isinstance(datatables, dict):
-            raise TypeError("'datatables' must be a `dict`.")
-        if "aged" not in datatables or "unaged" not in datatables:
-            raise KeyError("'datatables' must contain 'aged' and 'unaged' keys.")
+        if not isinstance(datatable, xr.DataArray):
+            raise TypeError("'datatable' must be a `xarray.DataArray`.")
         if not isinstance(filename, str):
             raise TypeError("'filename' must be a `str`.")
         if not isinstance(sheetnames, dict):
@@ -1644,65 +1637,38 @@ class Reporter:
         # Update the filepath
         filepath = self.save_directory / filename
 
-        # Convert xr.DataArrays to DataFrames
-        datatables_cnv = {}
-        for k, da in datatables.items():
-            # ---- Get coordinates
-            agg_coords = set(da.coords) - {"length_bin", "sex", "age_bin"}
-            # ---- Aggregate
-            da_agg = da.sum(dim=agg_coords)
-            # ---- Re-allocate, if needed
-            if k == "aged":
-                da_agg = apportionment.reallocate_excluded_estimates(
-                    da_agg, exclude_filter, ["sex"]
-                )
-            # ---- Convert to DataFrame
-            datatables_cnv[k] = da_agg.to_series()
-
+        # Convert xr.DataArray to DataFrame
+        datatable_cnv = datatable.to_series()
+        
         # Pull the aged dataset
-        aged_table = datatables_cnv["aged"].unstack(["age_bin", "sex"])
+        table_cnv = datatable_cnv.unstack(["age_bin", "sex"])
 
         # Reorient the aged table
         # ---- Convert the indices to numerics
-        aged_table.index = (
-            pd.Series(aged_table.index, name="length_bin")
+        table_cnv.index = (
+            pd.Series(table_cnv.index, name="length_bin")
             .apply(lambda x: x.mid)
             .values.to_numpy()
             .astype(int)
         )
         # ---- Restack sex
-        aged_table = aged_table.stack("sex", future_stack=True)
+        table_cnv = table_cnv.stack("sex", future_stack=True)
         # ---- Convert the column indices to numerics
-        aged_table.columns = (
-            pd.Series(aged_table.columns).apply(lambda x: x.mid).values.to_numpy().astype(int)
+        table_cnv.columns = (
+            pd.Series(table_cnv.columns).apply(lambda x: x.mid).values.to_numpy().astype(int)
         )
         # ---- Swap the index levels
-        aged_table = aged_table.unstack("sex").swaplevel(axis=1)
+        table_cnv = table_cnv.unstack("sex").swaplevel(axis=1)
 
-        # Add "all" to the aged table
-        aged_table_all = aged_table["male"] + aged_table["female"]
+        # Add "all"
+        table_all = table_cnv["male"] + table_cnv["female"]
         # ---- Convert into a MultiIndex
-        aged_table_all.columns = pd.MultiIndex.from_product([["all"], aged_table_all.columns])
+        table_all.columns = pd.MultiIndex.from_product([["all"], table_all.columns])
         # ---- Concatenate
-        aged_full_table = pd.concat([aged_table, aged_table_all], axis=1) * 1e-9
-
-        # Reorient the unaged tabled
-        unaged_table = datatables_cnv["unaged"].unstack("sex")
-        # ---- Convert the indices to numerics
-        unaged_table.index = (
-            pd.Series(unaged_table.index, name="length_bin")
-            .apply(lambda x: x.mid)
-            .values.to_numpy()
-            .astype(int)
-        )
-
-        # Add "all" to the unaged table
-        unaged_table_all = (unaged_table["male"] + unaged_table["female"]).to_frame("all")
-        # ---- Concatenate
-        unaged_full_table = pd.concat([unaged_table, unaged_table_all], axis=1) * 1e-9
-
+        aged_full_table = pd.concat([table_cnv, table_all], axis=1) * 1e-9
+        
         # Prepare and format the tables
-        sex_tables = prepare_age_length_tables(aged_full_table, unaged_full_table)
+        sex_tables = prepare_age_length_tables(aged_full_table)
 
         # Create the report
         write_age_length_table_report(
@@ -2004,16 +1970,36 @@ class Reporter:
         stratum_name = list(set(weight_data.columns.names).difference(["age_bin", "sex"]))
 
         # Sum across lengths
-        age_weight_sums = weight_data.sum(axis=0).unstack(["sex"] + stratum_name)
+        age_weight_sums = weight_data.sum(axis=0)#.unstack(["sex"] + stratum_name)
 
         # Apply exclusion filter, if supplied
-        age_weight_sums_filtered = utils.apply_filters(
-            age_weight_sums, exclude_filter=exclude_filter, replace_value=0.0
-        )
+        if exclude_filter:            
+            # ---- Exclusive
+            population_masked = utils.apply_filters(
+                age_weight_sums, exclude_filter=exclude_filter, replace_value=0.0
+            )
+            # ---- Inclusive
+            population_excluded = utils.apply_filters(
+                age_weight_sums, include_filter=exclude_filter
+            ).reindex(population_masked.index).fillna(0.)
+            # ---- Get the bulk sums
+            population_masked_sum = population_masked.unstack("age_bin").sum(axis=1)
+            population_excluded_sum = population_excluded.unstack("age_bin").sum(axis=1)
+            # ---- Make adjustment
+            population_adjusted = (
+                population_masked * population_excluded_sum / population_masked_sum
+            )
+            # ---- Apply
+            population_masked += population_adjusted
+        else:
+            population_masked = age_weight_sums
+
 
         # Compute the pivoted weight proportions
-        age_weight_proportions = pivot_aged_weight_proportions(age_weight_sums_filtered)
-
+        age_weight_proportions = pivot_aged_weight_proportions(
+            population_masked.unstack(["sex"] + stratum_name)
+        )
+        
         # Set the index
         transect_data.set_index(stratum_name, inplace=True)
 
@@ -2028,7 +2014,7 @@ class Reporter:
             )
             for sex in ["all", "female", "male"]
         }
-
+        
         # Format the tables
         prepare_aged_biomass_dataframes(transect_tables)
 
@@ -2244,7 +2230,7 @@ class Reporter:
         for sex in ["male", "female", "all"]:
             # Concatenate the aged and unaged tables
             # ---- Create copy of aged table
-            full_table = aged_full_table.copy()[sex]
+            full_table = aged_full_table.copy()[sex] * 1e-9
             # ---- Add margins
             # -------- Across length bins
             full_table["Subtotal"] = full_table.sum(axis=1)
@@ -2359,6 +2345,11 @@ class Reporter:
             "sig_b": "sig_b",
             "wgt_per_fish": "wgt_per_fish",
         }
+        
+        # Drop un-unique columns
+        non_unique_cols = [c for c in transect_data.columns if c in RENAME_MAP.values()]
+        # ---- Remove
+        transect_data = transect_data.drop(columns=non_unique_cols)
 
         # Update the filepath
         filepath = self.save_directory / filename
