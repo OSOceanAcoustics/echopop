@@ -3,6 +3,7 @@ from typing import Literal, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
+import xarray as xr
 
 
 def impute_missing_sigma_bs(
@@ -649,25 +650,41 @@ def generate_frequency_interval(
     return _generate_frequency_interval_cached_key(key)
 
 
-def _extract_parameters_optimized(inverted_data: pd.DataFrame) -> pd.DataFrame:
+def _extract_parameters_optimized(inverted_data: xr.Dataset) -> pd.DataFrame:
     """
     Extract parameters more efficiently than using .apply().
 
-    This optimized version avoids the overhead of pandas .apply()
-    by using direct iteration and batch DataFrame construction.
+    This function extracts InvParameters objects from the Dataset's 'parameters' coordinate and
+    converts them to a DataFrame with parameter values as columns.
 
     Parameters
     ----------
-    inverted_data : pd.DataFrame
-        DataFrame with 'parameters' column containing InvParameters objects
+    inverted_data : xr.Dataset
+        Dataset with 'parameters' coordinate containing InvParameters objects.
 
     Returns
     -------
     pd.DataFrame
-        DataFrame with parameter values as columns
+        DataFrame with parameter values as columns, indexed by the appropriate dimensions
+        excluding 'frequency'.
     """
-    # Extract all parameter dictionaries at once
-    param_dicts = [obj.values for obj in inverted_data["parameters"]]
 
-    # Construct DataFrame in one operation
-    return pd.DataFrame(param_dicts, index=inverted_data.index)
+    # Extract parameter objects from coordinates
+    param_objects = inverted_data.coords["parameters"].values
+
+    # Extract all parameter dictionaries
+    param_dicts = [obj.values for obj in param_objects]
+
+    # Convert to DataFrame
+    params = pd.DataFrame(param_dicts)
+
+    # Get the index from inverted_data - handle both MultiIndex and regular index
+    if "point" in inverted_data.indexes and hasattr(inverted_data.indexes["point"], "names"):
+        params.index = inverted_data.indexes["point"]
+    else:
+        dim_names = [d for d in inverted_data.dims if d != "frequency"]
+        if dim_names:
+            params.index = inverted_data.indexes[dim_names[0]]
+
+    # Return
+    return params

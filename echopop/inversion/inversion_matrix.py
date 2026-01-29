@@ -1,12 +1,14 @@
 import time
 import warnings
-from typing import Any, Dict
+from typing import Any, Dict, Union
 
 import numpy as np
 import pandas as pd
+import xarray as xr
 from lmfit import Minimizer, Parameters
 from pydantic import ValidationError
 
+from ..ingest.sv import df_to_xarray
 from ..validators.scattering_models import SCATTERING_MODEL_PARAMETERS
 from .inversion_base import InversionBase, InvParameters
 
@@ -135,7 +137,7 @@ def prepare_minimizer(
     simulation_settings: Dict[str, Any],
     verbose: bool,
     **kwargs,
-):
+) -> Union[Minimizer, None]:
     """
     Prepare lmfit.Minimizer objects for Monte Carlo optimization.
 
@@ -192,36 +194,39 @@ def prepare_minimizer(
     Sv_measured = Sv_measured.to_numpy()[valid_idx].astype(float)
 
     # Initialize with Monte Carlo sampling
-    if simulation_settings["monte_carlo"]:
-        parameters_lmfit = monte_carlo_initialize(
-            parameters_lmfit, center_frequencies, Sv_measured, scattering_params, model_settings
-        )
-    else:
-        parameters_lmfit = parameters_lmfit[0]
-
-    # Set `iter_cb` if verbose
-    if verbose:
-        if "iter_cb" in simulation_settings and simulation_settings["iter_cb"]:
-            iter_cb_arg = simulation_settings["iter_cb"]
+    if len(Sv_measured) > 0:
+        if simulation_settings["monte_carlo"]:
+            parameters_lmfit = monte_carlo_initialize(
+                parameters_lmfit, center_frequencies, Sv_measured, scattering_params, model_settings
+            )
         else:
-            iter_cb_arg = mininizer_print_cb
+            parameters_lmfit = parameters_lmfit[0]
+
+        # Set `iter_cb` if verbose
+        if verbose:
+            if "iter_cb" in simulation_settings and simulation_settings["iter_cb"]:
+                iter_cb_arg = simulation_settings["iter_cb"]
+            else:
+                iter_cb_arg = mininizer_print_cb
+        else:
+            iter_cb_arg = None
+        # Generate `Minimizer` function class required for bounded optimization
+        return [
+            Minimizer(
+                fit_Sv,
+                parameters_lmfit,
+                fcn_args=(
+                    Sv_measured,
+                    center_frequencies,
+                    scattering_params,
+                    model_settings,
+                ),
+                iter_cb=iter_cb_arg,
+                nan_policy="omit",
+            )
+        ]
     else:
-        iter_cb_arg = None
-    # Generate `Minimizer` function class required for bounded optimization
-    return [
-        Minimizer(
-            fit_Sv,
-            parameters_lmfit,
-            fcn_args=(
-                Sv_measured,
-                center_frequencies,
-                scattering_params,
-                model_settings,
-            ),
-            iter_cb=iter_cb_arg,
-            nan_policy="omit",
-        )
-    ]
+        return None
 
 
 def fit_Sv(
@@ -648,7 +653,7 @@ class InversionMatrix(InversionBase):
 
     def __new__(
         cls,
-        data: pd.DataFrame,
+        data: xr.Dataset,
         simulation_settings: Dict[str, Any],
         verbose: bool = True,
     ):
@@ -668,7 +673,16 @@ class InversionMatrix(InversionBase):
         self = super().__new__(cls)
 
         # Update attributes
-        self.measurements = valid_args["data"].copy()
+        # ---- Format dataset to dataframe
+        data_fmt = valid_args["data"].copy().to_dataframe().reset_index()
+        # ---- Check for cases where a coordinate a singleton
+        unmapped_idx = list(
+            set(data_fmt.columns).intersection(
+                set(["transect_num", "interval", "layer", "longitude", "latitude", "frequency"])
+            )
+        )
+        # ---- Set the index and rotate frequency
+        self.measurements = data_fmt.set_index(unmapped_idx).unstack("frequency")
         self.simulation_settings = valid_args["simulation_settings"]
         self.verbose = verbose
 
@@ -677,7 +691,7 @@ class InversionMatrix(InversionBase):
 
     def __init__(
         self,
-        data: pd.DataFrame,
+        data: xr.Dataset,
         simulation_settings: Dict[str, Any],
         verbose: bool = True,
     ):
@@ -690,9 +704,9 @@ class InversionMatrix(InversionBase):
 
         Parameters
         ----------
-        data : pd.DataFrame
-            MultiIndex DataFrame containing acoustic measurements with required columns 'sv_mean',
-            'nasc', and 'thickness_mean' at top level, and 'frequency' as nested index level.
+        data : xr.Dataset
+            Dataset containing acoustic measurements with required variables 'sv_mean',
+            'nasc', and 'thickness_mean' at top level, and at least 'frequency' as a coordinate.
         simulation_settings : Dict[str, Any]
             Dictionary containing simulation configuration including:
             - environment: Environmental parameters (sound speed, density)
@@ -871,7 +885,7 @@ class InversionMatrix(InversionBase):
         # Add the `lmfit.Minimizer` objects to the dataset
         self._set_minimizers()
 
-    def invert(self, optimization_kwargs: Dict[str, Any]):
+    def invert(self, optimization_kwargs: Dict[str, Any]) -> xr.Dataset:
         """
         Execute acoustic scattering parameter inversion for all measurements.
 
@@ -896,10 +910,11 @@ class InversionMatrix(InversionBase):
 
         Returns
         -------
-        pd.DataFrame
-            DataFrame containing original acoustic measurements plus inversion
-            results in 'parameters' column. Each entry is an InvParameters
-            object with optimized parameter values and metadata.
+        xarray.Dataset
+            Dataset containing the original acoustic measurements (mean Sv and NASC), weighted
+            latitudes and longitudes, and layer thickness means as data variables. The increment(s)
+            used for integration (i.e., cells, interval, transect), frequency, and inversion
+            parameters are assigned as the coordinates.
 
         Notes
         -----
@@ -931,7 +946,7 @@ class InversionMatrix(InversionBase):
         ... }
         >>> results = inv_matrix.invert(optimization_config)
         >>> # Access optimized parameters for first measurement
-        >>> optimal_params = results.iloc[0]["parameters"]
+        >>> optimal_params = results.sel(transect_num=1)["parameters"].item()
         """
 
         # Run optimization
@@ -955,7 +970,9 @@ class InversionMatrix(InversionBase):
 
         # Bundle the parameter results and add to the output
         output["parameters"] = [
-            InvParameters.from_series(row.drop("Q")) for _, row in inversion_results.iterrows()
+            InvParameters.from_series(row.drop("Q")) if not row.isna().all() else None
+            for _, row in inversion_results.iterrows()
         ]
 
-        return output
+        # Convert to xarray
+        return df_to_xarray(output)
