@@ -37,7 +37,7 @@ except Exception:
     COMPARE = False
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # NASC EXPORTS FILE(S)
-NASC_EXPORTS_FILES = DATA_ROOT / "Exports/US&CAN_detailsa_1998_table1y+_ALL_final.xlsx"
+NASC_EXPORTS_FILES = DATA_ROOT / "Exports/US&CAN_detailsa_1998_table2y+_ALL_final.xlsx"
 # NASC EXPORTS SHEET
 NASC_EXPORTS_SHEET = "Sheet1"
 # REMOVE AGE-1 (I.E., AGE-2+ ONLY)?
@@ -107,7 +107,7 @@ GEOSTRATA_SHEETS = {
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # KRIGING MESH FILE 
 KRIGING_MESH_FILE = (
-    DATA_ROOT / "Kriging_files/Kriging_grid_files/krig_grid2_5nm_cut_centroids_2013.xlsx"
+    DATA_ROOT / "Kriging_files/Kriging_grid_files/krig_grid2_5nm_cut_centroids_1998.xlsx"
 )
 # KRIGING MESH SHEET
 KRIGING_MESH_SHEET = "krigedgrid2_5nm_forChu"
@@ -123,7 +123,7 @@ OPTIMIZE_VARIOGRAM = False
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # 200m ISOBATH FILE
 ISOBATH_FILE = (
-    DATA_ROOT / "Kriging_files/Kriging_grid_files/transformation_isobath_coordinates.xlsx"
+    DATA_ROOT / "Kriging_files/Kriging_grid_files/Smoothing_EasyKrig1998.xlsx"
 )
 # 200m ISOBATH SHEET
 ISOBATH_SHEET = "Smoothing_EasyKrig"
@@ -792,7 +792,6 @@ df_nasc_proc, delta_longitude, delta_latitude = geostatistics.transform_coordina
     x_offset = -124.78338,
     y_offset = 45.,   
 )
-
 
 logging.info(
     f"!!! [1998] WARNING:\n"
@@ -1525,6 +1524,3 @@ if COMPARE:
         },
         show_plot=SHOW_PLOT
     )
-
-
-

@@ -105,7 +105,7 @@ HAUL_STRATA_SHEETS = {
 # GEOGRAPHIC STRATIFICATION FILE
 GEOSTRATA_FILE = (
     DATA_ROOT / 
-    "Stratification/Stratification_geographic_Lat.xlsx"
+    "Stratification/Stratification_geographic_Lat_rev.xlsx"
 )
 # GEOGRAPHIC STRATIFICATION SHEET MAP
 # ---- Valid keys are limited to "ks" and "inpfc"
@@ -123,7 +123,7 @@ KRIGING_MESH_SHEET = "krigedgrid2_5nm_forChu"
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # KRIGING AND VARIOGRAM PARAMETERS FILE
 KRIGING_VARIOGRAM_PARAMETERS_FILE = (
-    DATA_ROOT / "Kriging_files/default_vario_krig_settings_orig.xlsx"
+    DATA_ROOT / "Kriging_files/default_vario_krig_settings_final.xlsx"
 )
 # KRIGING AND VARIOGRAM PARAMETERS SHEET
 KRIGING_VARIGORAM_PARAMETERS_SHEET = "Sheet1"

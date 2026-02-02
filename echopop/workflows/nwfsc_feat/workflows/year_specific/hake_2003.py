@@ -318,7 +318,8 @@ logging.info(
 FEAT_TO_ECHOPOP_STRATA_COLUMNS = {
     "wt": "nasc_proportion",
     "haul": "haul_num",
-    "strata": "stratum_num"
+    "strata": "stratum_num",
+    "length": "stratum_length"
 }
 
 # READ IN STRATA FILE 

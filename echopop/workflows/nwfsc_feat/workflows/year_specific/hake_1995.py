@@ -37,7 +37,7 @@ except Exception:
     COMPARE = False
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # NASC EXPORTS FILE(S)
-NASC_EXPORTS_FILES = DATA_ROOT / "Exports/US&CAN_detailsa_1995_table1y+_ALL_final.xlsx"
+NASC_EXPORTS_FILES = DATA_ROOT / "Exports/US&CAN_detailsa_1995_table2y+_ALL_final.xlsx"
 # NASC EXPORTS SHEET
 NASC_EXPORTS_SHEET = "Sheet1"
 # REMOVE AGE-1 (I.E., AGE-2+ ONLY)?
@@ -113,7 +113,7 @@ KRIGING_MESH_SHEET = "krigedgrid2_5nm_forChu"
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # KRIGING AND VARIOGRAM PARAMETERS FILE
 KRIGING_VARIOGRAM_PARAMETERS_FILE = (
-    DATA_ROOT / "Kriging_files/default_vario_krig_settings_orig.xlsx"
+    DATA_ROOT / "Kriging_files/default_vario_krig_settings_final.xlsx"
 )
 # KRIGING AND VARIOGRAM PARAMETERS SHEET
 KRIGING_VARIGORAM_PARAMETERS_SHEET = "Sheet1"
@@ -204,9 +204,11 @@ df_nasc = feat.filter_transect_intervals(
 logging.info(
     f"!!! [1995] WARNING:\n"
     f"{sum(np.isnan(df_nasc["distance_s"]))} rows had missing vessel log distances.\nThese are "
-    f"incompatible with the workflow and will therefore be removed accordingly."
+    f"incompatible with the workflow and will therefore be replaced accordingly."
 )
-df_nasc.dropna(subset=["distance_s"], inplace=True)
+
+df_nasc.fillna({"distance_s": 0.0, "distance_e": 0.5}, inplace=True)
+
 logging.info(
     "!!! [1995] WARNING:\n"
     "Longitude values in 'df_nasc' are in deg.W. However, they must be in deg.E. These have been "
@@ -625,6 +627,7 @@ logging.info(
     "Defining transect interval distances...\n"
     "     Along-transect interval distance (nmi) threshold: 0.5 nmi"
 )
+
 transect.compute_interval_distance(df_nasc=df_nasc, interval_threshold=0.05)
 
 # SET TRANSECT INTERVAL AREAS
