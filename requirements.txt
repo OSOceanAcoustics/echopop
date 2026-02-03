@@ -28,4 +28,5 @@ seaborn
 bokeh
 geoviews
 holoviews
+hvplot
 ipywidgets

@@ -33,4 +33,5 @@ dependencies:
   - bokeh
   - geoviews
   - holoviews
+  - hvplot
   - ipywidgets

@@ -60,7 +60,9 @@ dependencies = [
     "bokeh",
     "geoviews",
     "holoviews",
+    "hvplot",
     "ipywidgets"
+    
 ]
 
 [project.urls]
