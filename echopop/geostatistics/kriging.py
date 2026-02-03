@@ -1104,7 +1104,7 @@ class Kriging:
 
         # Update attributes
         self.__dict__.update(valid_args)
-        
+
         # Initialize survey CV
         self.survey_cv = None
 
