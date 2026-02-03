@@ -83,6 +83,7 @@ parts:
             title: Spatial correlation
           - file: theory/kriging_theory
             title: Interpolate spatial fields
+          - file: theory/adaptive_search
           - file: theory/semivariogram_eq
             title: Theoretical semivariogram models
       - file: headings/apportion_h
