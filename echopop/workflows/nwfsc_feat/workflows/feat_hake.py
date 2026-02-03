@@ -533,7 +533,7 @@ df_nasc_no_age1["area_interval"] = (
 # --------------------------------------------------------------------------------------------------
 
 biology.compute_abundance(
-    dataset=df_nasc_no_age1,
+    transect_data=df_nasc_no_age1,
     exclude_filter={"sex": "unsexed"},
     number_proportions=dict_ds_number_proportion,
 )
@@ -544,7 +544,7 @@ biology.compute_abundance(
 # --------------------------------------------------------------------------------------------------
 
 biology.compute_biomass(
-    dataset=df_nasc_no_age1,
+    transect_data=df_nasc_no_age1,
     stratum_weights=da_averaged_weight,
 )
 
