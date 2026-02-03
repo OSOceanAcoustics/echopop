@@ -34,7 +34,7 @@ def fit_length_weight_regression(data: pd.DataFrame) -> pd.Series:
     """
     # Remove missing values
     clean_data = data.dropna(subset=["length", "weight"])
-    
+
     # Check for valid values
     if clean_data.empty:
         return pd.Series({"slope": np.nan, "intercept": np.nan})
