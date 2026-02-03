@@ -781,6 +781,10 @@ df_kriged_results = krg.krige(
     adaptive_search_strategy="FEAT_strategy",
     custom_search_kwargs=FEAT_STRATEGY_KWARGS,
 )
+
+# Print the global survey CV
+print(f"Global kriging survey CV: {krg.survey_cv:.3f}.")
+
 # ##################################################################################################
 # Back-calculate sex-specific biomass and abundance, and total NASC from the kriged biomass
 # density estimates

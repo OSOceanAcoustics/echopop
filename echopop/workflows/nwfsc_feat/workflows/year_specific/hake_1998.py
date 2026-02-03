@@ -639,7 +639,7 @@ logging.info(
     "     Excluding: 'sex'='unsexed' from 'dict_df_number_proportions'"    
 )
 feat_biology.compute_abundance(
-    dataset=df_nasc,
+    transect_data=df_nasc,
     exclude_filter={"sex": "unsexed"},
     number_proportions=dict_ds_number_proportion,
 )
@@ -964,7 +964,11 @@ df_kriged_results = krg.krige(
     adaptive_search_strategy="FEAT_strategy",
     custom_search_kwargs=FEAT_STRATEGY_KWARGS
 )
-
+logging.info(
+    f"Kriging complete\n"
+    f"'df_kriged_results' created.\n"
+    f"Global survey CV: {krg.survey_cv:.3f}"
+)
 # ==================================================================================================
 # CONVERT BIOMASS DENSITY TO NASC
 logging.info(

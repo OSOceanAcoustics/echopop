@@ -655,9 +655,10 @@ logging.info(
     "     Grouping by: 'sex'\n"
     "     Excluding: 'sex'='unsexed' from 'dict_df_number_proportions'"
 )
-feat_biology.compute_biomass(
+feat_biology.compute_abundance(
     transect_data=df_nasc,
-    stratum_weights=da_averaged_weight,
+    exclude_filter={"sex": "unsexed"},
+    number_proportions=dict_ds_number_proportion,
 )
 
 # COMPUTE STRATUM-AVERAGED WEIGHTS
@@ -905,7 +906,12 @@ df_kriged_results = krg.krige(
     adaptive_search_strategy="FEAT_strategy",
     custom_search_kwargs=FEAT_STRATEGY_KWARGS,
 )
-logging.info(f"Kriging complete\n" f"'df_kriged_results' created.")
+
+logging.info(
+    f"Kriging complete\n"
+    f"'df_kriged_results' created.\n"
+    f"Global survey CV: {krg.survey_cv:.3f}"
+)
 ####################################################################################################
 # ==================================================================================================
 # CONVERT BIOMASS DENSITY TO NASC

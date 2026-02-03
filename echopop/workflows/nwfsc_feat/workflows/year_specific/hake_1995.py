@@ -975,6 +975,12 @@ df_kriged_results = krg.krige(
     adaptive_search_strategy="FEAT_strategy",
     custom_search_kwargs=FEAT_STRATEGY_KWARGS
 )
+
+logging.info(
+    f"Kriging complete\n"
+    f"'df_kriged_results' created.\n"
+    f"Global survey CV: {krg.survey_cv:.3f}"
+)
 # ==================================================================================================
 # CONVERT BIOMASS DENSITY TO NASC
 logging.info(
