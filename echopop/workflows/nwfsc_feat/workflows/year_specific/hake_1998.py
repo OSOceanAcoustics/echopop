@@ -1245,7 +1245,6 @@ reporter.transect_length_age_biomass_report(
     sheetnames={"male": "Sheet1", "female": "Sheet2", "all": "Sheet3"},
     datatable=da_transect_biomass_table,
 )
-
 # TRANSECT AGED BIOMASS
 
 # Full values

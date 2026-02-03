@@ -244,7 +244,7 @@ else:
     logging.info(
         "---- Finalizing NASC export ingestion\n"
         "     Searching for the export regions: 'Age-1 Hake', 'Age-1 Hake Mix', 'Hake', 'Hake Mix'"
-        "     Imputing overlapping region IDs within each interval: True"
+        "     \nImputing overlapping region IDs within each interval: True"
     )
     df_nasc = ingestion.nasc.consolidate_echvoiew_nasc(
         df_merged=df_exports_with_regions,

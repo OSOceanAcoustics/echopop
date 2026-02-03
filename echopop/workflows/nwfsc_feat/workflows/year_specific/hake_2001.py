@@ -209,10 +209,6 @@ logging.info(
 df_nasc["region_id"] = 999
 df_nasc["layer_height"] = 0.
 df_nasc["layer_mean_depth"] = 0.
-logging.info(
-    "NASC ingestion complete\n"
-    "'df_nasc' created."
-)
 # ==================================================================================================
 # INGEST BIODATA
 logging.info(

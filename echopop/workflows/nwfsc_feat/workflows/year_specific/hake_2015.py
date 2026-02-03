@@ -139,7 +139,6 @@ import logging
 import numpy as np
 import pandas as pd
 import xarray as xr
-import xarray as xr
 from lmfit import Parameters
 from echopop.workflows.nwfsc_feat import functions as feat, parameters as feat_parameters, Reporter
 import echopop.ingest as ingestion

@@ -1,0 +1,2110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>VariogramGUI</title>
+</head>
+<body>
+
+
+<!-- Load require.js. Delete this if your page already loads require.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js" crossorigin="anonymous"></script>
+
+<script type="application/vnd.jupyter.widget-state+json">
+{
+  "version_major": 2,
+  "version_minor": 0,
+  "state": {
+    "9e8f7983a40644888e2f0d03e4b4092d": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {
+        "height": "5px"
+      }
+    },
+    "7a997e305f3f488d9cc18cc37557eb51": {
+      "model_name": "BoxModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "children": [],
+        "layout": "IPY_MODEL_9e8f7983a40644888e2f0d03e4b4092d"
+      }
+    },
+    "fa46677943374e51883f6cb57e04120f": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {
+        "width": "10px"
+      }
+    },
+    "44852b46839544e9ac1e070df92abe65": {
+      "model_name": "BoxModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "children": [],
+        "layout": "IPY_MODEL_fa46677943374e51883f6cb57e04120f"
+      }
+    },
+    "a54aefb5328549f7939f09480de04cd9": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {
+        "border_bottom": "1px solid black",
+        "border_left": "1px solid black",
+        "border_right": "1px solid black",
+        "border_top": "1px solid black",
+        "height": "500px",
+        "width": "800px"
+      }
+    },
+    "eca3037a0d654397ba2b163cc37e1209": {
+      "model_name": "OutputModel",
+      "model_module": "@jupyter-widgets/output",
+      "model_module_version": "1.0.0",
+      "state": {
+        "_dom_classes": [],
+        "layout": "IPY_MODEL_a54aefb5328549f7939f09480de04cd9",
+        "outputs": []
+      }
+    },
+    "d3ef5ebefab44e59ac27bbc097235667": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {
+        "width": "600px"
+      }
+    },
+    "1b2f36ed989946b2b9e056c388d1f039": {
+      "model_name": "HTMLStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "d116becfafc0494981ec6165427063ac": {
+      "model_name": "HTMLModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "layout": "IPY_MODEL_d3ef5ebefab44e59ac27bbc097235667",
+        "style": "IPY_MODEL_1b2f36ed989946b2b9e056c388d1f039"
+      }
+    },
+    "12b54c1aa29f4689a0820c0b2a090465": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "266add0d4d474cadade79be6162e071a": {
+      "model_name": "HTMLStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "4203bf81a7f9449d8fc6ef0ce928da66": {
+      "model_name": "HTMLModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "layout": "IPY_MODEL_12b54c1aa29f4689a0820c0b2a090465",
+        "style": "IPY_MODEL_266add0d4d474cadade79be6162e071a",
+        "value": "<div style='background-color: white; padding: 10px; border-radius: 5px;'><h1><u>Variogram Analysis Interactive GUI</u></h1>\n<p><span style='font-size:24px; line-height:1; margin:0; padding:0; display:block;'>\n<b>Overview</b></span></p>\n<p><span style='font-size:18px; line-height:1; margin:0; padding:0; display:block;'>\n<b><i>Variogram initialization</i></b></span></p>\n<p><span style='font-size:14px; line-height:1.5; margin:0; padding:0; display:block;'>\nSet the values for the <b>lag resolution</b> and <b>number of lags</b> used for computing the\nempirical and theoretical variograms. The initial values correspond to those used for creating\nthe <span style='color: #4EC9B0; background-color: white; padding: 2px 4px; border-radius: 3px;\nfont-family: monospace; font-weight: bold;'>VariogramGUI</span> object:\n</span></p>\n<ul style='margin: 5px 0; padding-left: 20px; line-height: 1.2;'>\n<li style='margin: 2px 0; padding: 0;'><b>Lag resolution:</b>\n0.002</li>\n<li style='margin: 2px 0; padding: 0;'><b>Number of lags:</b>\n30</li>\n<li style='margin: 2px 0; padding: 0;'><b>Coordinates:</b>\n('x', 'y')</li>\n</ul>\n\n<p><span style='font-size:14px; line-height:1.5; margin:0; padding:0; display:block;'>\nThe coordinates correspond to the <i>x</i>- and <i>y</i>-coordinates of the geospatial dataset.\nThis variable is static and remains constant. Once the variables have been changed to the\ndesired values, click <span style='background-color: #337ab7; padding: 2px 4px;\nborder-radius: 3px; font-family: monospace; font-weight: bold; color: white;'>Initialize\nvariogram</span> and proceed to the next tab: <span style='background-color: lightgrey;\ncolor: black; padding: 2px 4px; border-radius: 3px; font-family: monospace; font-weight: bold;'>\nEmpirical variogram</span>.\n</span></p>\n<p><span style='font-size:18px; line-height:1; margin:0; padding:0; display:block;'>\n<b><i>Empirical variogram</i></b></span></p>\n<p><span style='font-size:14px; line-height:1.5; margin:0; padding:0; display:block;'>\nSelect the variable that will be used for the variogram analysis. There are currently three\noptions available:</span></p>\n<ul style='margin: 5px 0; padding-left: 20px; line-height: 1.2;'>\n    <li style='margin: 2px 0; padding: 0;'><b>Number density (animals nmi\u207b\u00b2)</b></li><li style='margin: 2px 0; padding: 0;'><b>Biomass density (kg nmi\u207b\u00b2)</b></li><li style='margin: 2px 0; padding: 0;'><b>NASC (m\u00b2 nmi\u207b\u00b2)</b></li>\n</ul>\n\n<p><span style='font-size:14px; line-height:1.5; margin:0; padding:0; display:block;'>\nThe azimuth angle filter is optional and will only be applied if the box is checked. This\naccounts for directionality in spatial autocorrelation. Valid values are bounded between 0\u00b0 and\n180\u00b0. Once the parameters are set to their desired values, click <span\nstyle='background-color: #337ab7; padding: 2px 4px; border-radius: 3px; font-family: monospace;\nfont-weight: bold; color: white;'>Compute empirical variogram</span>. This will calculate the\nsemivariance (\ud835\udf38) across the defined lag distances (\ud835\udc89), which will render an interactive figure\nto the right of the control panel. Hovering the mouse cursor over individual points, whose\nsizes are scaled to their respective lag counts, will provide lag-specific details. Once this\nstep is completed, proceed to the next tab: <span style='background-color: lightgrey;\ncolor: black; padding: 2px 4px; border-radius: 3px; font-family: monospace; font-weight: bold;'>\nVariogram model</span>.\n</span>\n</span></p>\n<p><span style='font-size:18px; line-height:1; margin:0; padding:0; display:block;'>\n<b><i>Variogram model</i></b></span></p>\n<p><span style='font-size:14px; line-height:1.5; margin:0; padding:0; display:block;'>\nSelect one of the specific variogram models available in the <b><code>Variogram model</code></b> dropdown\nmenu. The current models are available:\n</span></p>\n<div style='display: flex; margin: 5px 0;'>\n    <ul style='margin: 0; padding-left: 20px; padding-right: 5px; line-height: 1.2; width: 50%;'>\n    <li style='margin: 2px 0; padding: 0;'><b>Bessel-Exponential</b></li><li style='margin: 2px 0; padding: 0;'><b>Bessel-Gaussian</b></li><li style='margin: 2px 0; padding: 0;'><b>Cosine-Exponential</b></li><li style='margin: 2px 0; padding: 0;'><b>Cosine-Gaussian</b></li><li style='margin: 2px 0; padding: 0;'><b>Cubic</b></li><li style='margin: 2px 0; padding: 0;'><b>Exponential</b></li><li style='margin: 2px 0; padding: 0;'><b>Exponential-Linear</b></li><li style='margin: 2px 0; padding: 0;'><b>Gaussian</b></li><li style='margin: 2px 0; padding: 0;'><b>Gaussian-Linear</b></li>\n    </ul>\n    <ul style='margin: 0; padding-left: 5px; line-height: 1.2; width: 50%;'>\n    <li style='margin: 2px 0; padding: 0;'><b>J-Bessel</b></li><li style='margin: 2px 0; padding: 0;'><b>K-Bessel</b></li><li style='margin: 2px 0; padding: 0;'><b>Linear</b></li><li style='margin: 2px 0; padding: 0;'><b>Mat\u00e9rn</b></li><li style='margin: 2px 0; padding: 0;'><b>Nugget</b></li><li style='margin: 2px 0; padding: 0;'><b>Pentaspherical</b></li><li style='margin: 2px 0; padding: 0;'><b>Power law</b></li><li style='margin: 2px 0; padding: 0;'><b>Rational quadratic</b></li><li style='margin: 2px 0; padding: 0;'><b>Cardinal sine</b></li><li style='margin: 2px 0; padding: 0;'><b>Spherical</b></li>\n    </ul>\n</div>\n\n<p><span style='font-size:14px; line-height:1.5; margin:0; padding:0; display:block;'>\nEach model selection from the dropdown menu will dynamically populate the window with the model-\nspecific parameters. For example, selecting <b><code>Exponential</code></b> will bring up the following\nparameters:\n</span></p>\n<ul style='margin: 5px 0; padding-left: 20px; line-height: 1.2;'>\n    <li style='margin: 2px 0; padding: 0;'><b>Correlation range (a)</b></li><li style='margin: 2px 0; padding: 0;'><b>Sill (C)</b></li><li style='margin: 2px 0; padding: 0;'><b>Nugget (C\u2080)</b></li>\n</ul>\n\n<p><span style='font-size:14px; line-height:1.5; margin:0; padding:0; display:block;'>\nAlternatively, selecting <b><code>Mat\u00e9rn</code></b> produces:\n</span></p>\n<ul style='margin: 5px 0; padding-left: 20px; line-height: 1.2;'>\n    <li style='margin: 2px 0; padding: 0;'><b>Correlation range (a)</b></li><li style='margin: 2px 0; padding: 0;'><b>Sill (C)</b></li><li style='margin: 2px 0; padding: 0;'><b>Nugget (C\u2080)</b></li><li style='margin: 2px 0; padding: 0;'><b>Mat\u00e9rn shape parameter (\u03bd)</b></li>\n</ul>\n\n<p><span style='font-size:14px; line-height:1.5; margin:0; padding:0; display:block;'>\nOnce the parameters are set to their desired values, click <span\nstyle='background-color: #337ab7; padding: 2px 4px; border-radius: 3px; font-family: monospace;\nfont-weight: bold; color: white;'>Compute theoretical variogram</span>. This will model the\nsemivariance and overlay a <span style='background-color:black; color:white;'><b>black line</b>\n</span> on top of the empirical variogram results. When a dictionary is provided for <span\nstyle='background-color:white; font-family: monospace'>variogram_parameters</span> when\ncreating the <span style='color: #4EC9B0; background-color: white; padding: 2px 4px;\nborder-radius: 3px; font-family: monospace; font-weight: bold;'> VariogramGUI</span> object,\nthe default values for each parameter will automatically inherit those from that input. This\nrepresents the <i>initial model fit</i>. Proceed to the next tab: <span\nstyle='background-color: lightgrey; color: black; padding: 2px 4px; border-radius: 3px;\nfont-family: monospace; font-weight: bold;'>Optimize variogram parameters</span>.\n</span></p>\n<p><span style='font-size:18px; line-height:1; margin:0; padding:0; display:block;'>\n<b><i>Optimize variogram parameters</i></b></span></p>\n<p><span style='font-size:14px; line-height:1.5; margin:0; padding:0; display:block;'>\nVariogram model parameter optimization is used to compute the best-fit values for the model\ndefined within the <span style='background-color: lightgrey; color: black; padding: 2px 4px;\nborder-radius: 3px; font-family: monospace; font-weight: bold;'>Variogram model</span> tab.\nFirst, click the <span style='background-color: #00bcd4; padding: 2px 4px; border-radius: 3px;\nfont-family: monospace; font-weight: bold; color: white;'>Update parameter bounds</span> button\nto populate the window with the model-specific parameters. Each parameter will have four\noptions: <b><code>Min</code></b>, <b><code>Value</code></b>, <b><code>Max</code></b>, and <b><code>Vary</code></b>. This provides\ninstructions to the built-in optimization algorithm on how to use each variable. When\n<b><code>Vary</code></b> is unchecked, <b><code>Value</code></b> defines the constant value for that particular\nparameter. Otherwise, <b><code>Value</code></b> is the initial value at the start of the optimization\nalgorithm. <b><code>Min</code></b> and <b><code>Max</code></b> correspond to the minimum and maximum values that the\noptimizer is allowed to evaluate, respectively.\n</span></p>\n<p><span style='font-size:14px; line-height:1.5; margin:0; padding:0; display:block;'>\nThe <b><code>Optimization kwargs</code></b> text area represents a formattable dictionary used to inform\nthe <code>lmfit</code>-based optimizer. The optimizer uses the least-squares minimizer, so all <code>lmfit</code>\nkeyword arguments specific to <code>method=\"least_squares\"</code> are valid here. This allows for a\ndictionary like below to be entered into this textfield that will be passed into the optimizer:\n</span></p>\n<pre style='background-color: #f4f4f4; padding: 4px 6px; border-radius: 3px; margin: 2px 0;\nfont-family: monospace; font-size: 14px; line-height: 1.2;'>\n{\n    'max_nfev': 500,\n    'ftol': 1e-8,\n    'xtol': 1e-8,\n    'gtol': 1e-8,\n    'diff_step': 1e-10,\n    'jac': '3-point'\n}</pre>\n\n<p><span style='font-size:14px; line-height:1.5; margin:0; padding:0; display:block;'>\nAfter setting up all of the parameter definitions and optimizer keyword arguments, click\n<span style='background-color: #337ab7; padding: 2px 4px; border-radius: 3px;\nfont-family: monospace; font-weight: bold; color: white;'>Optimize variogram parameters</span>\nto compute the best-fit variogram parameters. This will produce a <span\nstyle='background-color:red; color:white;'><b>red line</b></span> representing the updated\nmodeled variogram using the optimized parameters. An additional report will provide a printout\nof the best-fit parameters, with bold variables indicating those that were actually minimized\nand not held constant. If the GUI instance was stored as a variable, then the parameters can\nalso be extracted as a dictionary via <span style='color: #4EC9B0; background-color: white;\npadding: 2px 4px; border-radius: 3px; font-family: monospace; font-weight: bold;'>\nVariogramGUI.optimized_parameters</span>.\n</span></p>\n<p><span style='font-size:18px; line-height:1; margin:0; padding:0; display:block;'>\n<b><i>See also</i></b></span></p>\n<p>Documentation for the <span style='color: #4EC9B0; background-color: white; padding: 2px 4px;\nborder-radius: 3px; font-family: monospace; font-weight: bold;'>\nechopop.variogram.Variogram</span> class.</p></div>"
+      }
+    },
+    "8ff2f7f102d84ff6be3befb33788505c": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "6523fef7eaa74d95bc4a2065a57e4450": {
+      "model_name": "VBoxModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "children": [
+          "IPY_MODEL_4203bf81a7f9449d8fc6ef0ce928da66"
+        ],
+        "layout": "IPY_MODEL_8ff2f7f102d84ff6be3befb33788505c"
+      }
+    },
+    "d04ba4c3ac344417993e1c74f64ab10b": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {
+        "width": "60px"
+      }
+    },
+    "14a41d364b0b4408b4494f9cdf4403b0": {
+      "model_name": "DescriptionStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "0084a4caf1d2495887e6b611a329d100": {
+      "model_name": "BoundedFloatTextModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "layout": "IPY_MODEL_d04ba4c3ac344417993e1c74f64ab10b",
+        "max": 1e+99,
+        "min": 1e-10,
+        "step": 0.0002,
+        "style": "IPY_MODEL_14a41d364b0b4408b4494f9cdf4403b0",
+        "value": 0.002
+      }
+    },
+    "213614d8fa6543908f06eda6b74e719a": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "9e9b50388ef04cb898743eb0782dd761": {
+      "model_name": "HTMLStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "073bce10dcd24431b65bb8da816a2916": {
+      "model_name": "HTMLModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "layout": "IPY_MODEL_213614d8fa6543908f06eda6b74e719a",
+        "style": "IPY_MODEL_9e9b50388ef04cb898743eb0782dd761",
+        "value": "<div style='background-color: white; padding: 10px; border-radius: 5px;'><p style='line-height: 0.25;'><b>Lag resolution</b></p></div>"
+      }
+    },
+    "c9c5adee04c74ffab21bbec90024778d": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "14df765f981e4484b826dae53d3ac746": {
+      "model_name": "VBoxModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "children": [
+          "IPY_MODEL_073bce10dcd24431b65bb8da816a2916",
+          "IPY_MODEL_0084a4caf1d2495887e6b611a329d100"
+        ],
+        "layout": "IPY_MODEL_c9c5adee04c74ffab21bbec90024778d"
+      }
+    },
+    "0444b6cf5a73472b8c9e701a93a6472e": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {
+        "width": "60px"
+      }
+    },
+    "d7547acc12cc4af38ef04bea5cd6592f": {
+      "model_name": "DescriptionStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "43bbea606c4f44c4a7d6903e767fea76": {
+      "model_name": "BoundedIntTextModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "layout": "IPY_MODEL_0444b6cf5a73472b8c9e701a93a6472e",
+        "max": 999999999999999967336168804116691273849533185806555472917961779471295845921727862608739868455469056,
+        "min": 2,
+        "style": "IPY_MODEL_d7547acc12cc4af38ef04bea5cd6592f",
+        "value": 30
+      }
+    },
+    "dea18558d3594f2f89169a864d11e0b1": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "6d86a8475e7f4e5681f933de0400d121": {
+      "model_name": "HTMLStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "f7060b8b00e84602b0669589e6027ba3": {
+      "model_name": "HTMLModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "layout": "IPY_MODEL_dea18558d3594f2f89169a864d11e0b1",
+        "style": "IPY_MODEL_6d86a8475e7f4e5681f933de0400d121",
+        "value": "<div style='background-color: white; padding: 10px; border-radius: 5px;'><p style='line-height: 0.25;'><b>Number of lags</b></p></div>"
+      }
+    },
+    "10b3f780a6db4f94a7b1ff63c6e82f05": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "595b9b9ccad343b0871c0da47f85e2b6": {
+      "model_name": "VBoxModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "children": [
+          "IPY_MODEL_f7060b8b00e84602b0669589e6027ba3",
+          "IPY_MODEL_43bbea606c4f44c4a7d6903e767fea76"
+        ],
+        "layout": "IPY_MODEL_10b3f780a6db4f94a7b1ff63c6e82f05"
+      }
+    },
+    "b1b18267f8d348479aae97662359e339": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "f817c3d351704177b2a55e3c2bb4d8a0": {
+      "model_name": "HBoxModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "children": [
+          "IPY_MODEL_14df765f981e4484b826dae53d3ac746",
+          "IPY_MODEL_44852b46839544e9ac1e070df92abe65",
+          "IPY_MODEL_595b9b9ccad343b0871c0da47f85e2b6"
+        ],
+        "layout": "IPY_MODEL_b1b18267f8d348479aae97662359e339"
+      }
+    },
+    "41abfda3623247fc9d392edb2710458d": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "62d21c7956e54ed19b666600a874aa82": {
+      "model_name": "HTMLStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "1c80bd20cf9c4506870ec4ceeb5d7665": {
+      "model_name": "HTMLModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "layout": "IPY_MODEL_41abfda3623247fc9d392edb2710458d",
+        "style": "IPY_MODEL_62d21c7956e54ed19b666600a874aa82",
+        "value": "<div style='background-color: white; padding: 10px; border-radius: 5px;'><p><strong>Coordinate names:</strong> ('x', 'y')</p></div>"
+      }
+    },
+    "399dcad7f9f0447e910daeab2a273966": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {
+        "width": "300px"
+      }
+    },
+    "e2e15b6314e9438ca0dbd86a197f6f91": {
+      "model_name": "ButtonStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "edecee256ddc42369bf1c6deaf9b1ee2": {
+      "model_name": "ButtonModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "button_style": "primary",
+        "description": "Initialize variogram",
+        "layout": "IPY_MODEL_399dcad7f9f0447e910daeab2a273966",
+        "style": "IPY_MODEL_e2e15b6314e9438ca0dbd86a197f6f91"
+      }
+    },
+    "6913269e006c46e1b2c22840178dbb8a": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {
+        "margin": "0 0 0 0",
+        "padding": "0 0 0 0"
+      }
+    },
+    "1fdaa6e5134f4e108ec8c5b746fc4fb5": {
+      "model_name": "VBoxModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "children": [
+          "IPY_MODEL_f817c3d351704177b2a55e3c2bb4d8a0",
+          "IPY_MODEL_1c80bd20cf9c4506870ec4ceeb5d7665",
+          "IPY_MODEL_7a997e305f3f488d9cc18cc37557eb51",
+          "IPY_MODEL_edecee256ddc42369bf1c6deaf9b1ee2"
+        ],
+        "layout": "IPY_MODEL_6913269e006c46e1b2c22840178dbb8a"
+      }
+    },
+    "211f995f4a614c4a925391a788ed6f59": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {
+        "width": "250px"
+      }
+    },
+    "6011b133a0484f0992addca42d379529": {
+      "model_name": "DescriptionStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "b40ab8e2de684b249b6a70d637c37b61": {
+      "model_name": "DropdownModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "_options_labels": [
+          "Number density (animals nmi\u207b\u00b2)",
+          "Biomass density (kg nmi\u207b\u00b2)",
+          "NASC (m\u00b2 nmi\u207b\u00b2)"
+        ],
+        "index": 1,
+        "layout": "IPY_MODEL_211f995f4a614c4a925391a788ed6f59",
+        "style": "IPY_MODEL_6011b133a0484f0992addca42d379529"
+      }
+    },
+    "154f7fe744e642e6b67a8c46bf78981e": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "52abf1da7b104882b91f42d3d797b2a4": {
+      "model_name": "HTMLStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "42ce624ebfa04b2cb463bce6869fa1cf": {
+      "model_name": "HTMLModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "layout": "IPY_MODEL_154f7fe744e642e6b67a8c46bf78981e",
+        "style": "IPY_MODEL_52abf1da7b104882b91f42d3d797b2a4",
+        "value": "<div style='background-color: white; padding: 10px; border-radius: 5px;'><p style='line-height: 0.25;'><b>Variable</b></p></div>"
+      }
+    },
+    "035d671c6ba24bf9ac45fe577de93b49": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "488df10adb804ea589fcb1920960d76a": {
+      "model_name": "VBoxModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "children": [
+          "IPY_MODEL_42ce624ebfa04b2cb463bce6869fa1cf",
+          "IPY_MODEL_b40ab8e2de684b249b6a70d637c37b61"
+        ],
+        "layout": "IPY_MODEL_035d671c6ba24bf9ac45fe577de93b49"
+      }
+    },
+    "9abf73cb39384924a82e784fe1c7eb34": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {
+        "margin": "0 5px 0 0",
+        "width": "30px"
+      }
+    },
+    "8ecb6017430c4aabafbc48229ebdcbd8": {
+      "model_name": "CheckboxStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "48599932cefb4a30b95a49c6d14dffe7": {
+      "model_name": "CheckboxModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "indent": false,
+        "layout": "IPY_MODEL_9abf73cb39384924a82e784fe1c7eb34",
+        "style": "IPY_MODEL_8ecb6017430c4aabafbc48229ebdcbd8",
+        "value": true
+      }
+    },
+    "9e09acb398c646f7b36770a45ab17dae": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {
+        "width": "50px"
+      }
+    },
+    "71c4081f76d34bb8b578a64163321684": {
+      "model_name": "DescriptionStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "9e1534154a654e7e80b2f2685a65308e": {
+      "model_name": "BoundedFloatTextModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "layout": "IPY_MODEL_9e09acb398c646f7b36770a45ab17dae",
+        "max": 180.0,
+        "step": 1.0,
+        "style": "IPY_MODEL_71c4081f76d34bb8b578a64163321684",
+        "value": 180.0
+      }
+    },
+    "80c7642d2c5d412e8483ce7ef6bb88d7": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {
+        "display": "",
+        "margin": "0 0 0 3px",
+        "width": "auto"
+      }
+    },
+    "e3735c7892ec4c89b742cea2d568e714": {
+      "model_name": "LabelStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "c5fff11debc9423591319af5452435c4": {
+      "model_name": "LabelModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "layout": "IPY_MODEL_80c7642d2c5d412e8483ce7ef6bb88d7",
+        "style": "IPY_MODEL_e3735c7892ec4c89b742cea2d568e714",
+        "value": "\u00b0"
+      }
+    },
+    "3b3031bcf512474b9fe9d9624be7ea69": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {
+        "align_items": "center"
+      }
+    },
+    "d5172a419247424c8c53dc49cf16af97": {
+      "model_name": "HBoxModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "children": [
+          "IPY_MODEL_9e1534154a654e7e80b2f2685a65308e",
+          "IPY_MODEL_c5fff11debc9423591319af5452435c4"
+        ],
+        "layout": "IPY_MODEL_3b3031bcf512474b9fe9d9624be7ea69"
+      }
+    },
+    "933a404fc5b64e5687f807643d4addb8": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {
+        "align_items": "center",
+        "justify_content": "flex-start"
+      }
+    },
+    "edf1868495cc49b3a0b91aa4591ab1a3": {
+      "model_name": "HBoxModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "children": [
+          "IPY_MODEL_48599932cefb4a30b95a49c6d14dffe7",
+          "IPY_MODEL_d5172a419247424c8c53dc49cf16af97"
+        ],
+        "layout": "IPY_MODEL_933a404fc5b64e5687f807643d4addb8"
+      }
+    },
+    "55f725cd5d3c4d7fb4715cba6290bf53": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "adf46cf57e224fe7bf5591e675a06c51": {
+      "model_name": "HTMLStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "f1be5587eeb34beca3845583eaba0051": {
+      "model_name": "HTMLModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "layout": "IPY_MODEL_55f725cd5d3c4d7fb4715cba6290bf53",
+        "style": "IPY_MODEL_adf46cf57e224fe7bf5591e675a06c51",
+        "value": "<div style='background-color: white; padding: 10px; border-radius: 5px;'><p style='line-height: 0.25;'><b>Azimuth angle filter</b> (<i>check box to apply filter</i>)</p></div>"
+      }
+    },
+    "a3fd2fdd0e3d41428c265f9b4758d836": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "5c73acd5208f445fbb7fbd7cca9a9b23": {
+      "model_name": "VBoxModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "children": [
+          "IPY_MODEL_f1be5587eeb34beca3845583eaba0051",
+          "IPY_MODEL_edf1868495cc49b3a0b91aa4591ab1a3"
+        ],
+        "layout": "IPY_MODEL_a3fd2fdd0e3d41428c265f9b4758d836"
+      }
+    },
+    "17deb4e66b3947059d215e7a28bb2fab": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {
+        "width": "300px"
+      }
+    },
+    "f03d031296784f289ca3df5e4341348b": {
+      "model_name": "ButtonStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "216bb1223a4641f984214af44b6134fa": {
+      "model_name": "ButtonModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "button_style": "primary",
+        "description": "Compute empirical variogram",
+        "layout": "IPY_MODEL_17deb4e66b3947059d215e7a28bb2fab",
+        "style": "IPY_MODEL_f03d031296784f289ca3df5e4341348b"
+      }
+    },
+    "296009547fa2401096131009d9d6ac6b": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "fbc5677d3c8c4613b1d2e700499e60bb": {
+      "model_name": "VBoxModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "children": [
+          "IPY_MODEL_488df10adb804ea589fcb1920960d76a",
+          "IPY_MODEL_5c73acd5208f445fbb7fbd7cca9a9b23",
+          "IPY_MODEL_7a997e305f3f488d9cc18cc37557eb51",
+          "IPY_MODEL_216bb1223a4641f984214af44b6134fa"
+        ],
+        "layout": "IPY_MODEL_296009547fa2401096131009d9d6ac6b"
+      }
+    },
+    "67a72c55b75a4c3295feaa5f86e8ba5d": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "cf95aad7d41043018482c0c20156febd": {
+      "model_name": "OutputModel",
+      "model_module": "@jupyter-widgets/output",
+      "model_module_version": "1.0.0",
+      "state": {
+        "_dom_classes": [],
+        "layout": "IPY_MODEL_67a72c55b75a4c3295feaa5f86e8ba5d",
+        "outputs": []
+      }
+    },
+    "fa40b3e4ece94377ad8908e2be8d428f": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {
+        "width": "200px"
+      }
+    },
+    "5cdc0a3c26b14390975487439fc9c0a5": {
+      "model_name": "DescriptionStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "c87c3be7596d4559b6c6f28e05795b94": {
+      "model_name": "DropdownModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "_options_labels": [
+          "Bessel-Exponential",
+          "Bessel-Gaussian",
+          "Cosine-Exponential",
+          "Cosine-Gaussian",
+          "Cubic",
+          "Exponential",
+          "Exponential-Linear",
+          "Gaussian",
+          "Gaussian-Linear",
+          "J-Bessel",
+          "K-Bessel",
+          "Linear",
+          "Mat\u00e9rn",
+          "Nugget",
+          "Pentaspherical",
+          "Power law",
+          "Rational quadratic",
+          "Cardinal sine",
+          "Spherical"
+        ],
+        "layout": "IPY_MODEL_fa40b3e4ece94377ad8908e2be8d428f",
+        "style": "IPY_MODEL_5cdc0a3c26b14390975487439fc9c0a5"
+      }
+    },
+    "64933a3f395b44d0afdc93be88cc060f": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "00d796c1d07d42209ade865ca0822a6e": {
+      "model_name": "HTMLStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "3931e3a48b4043e08d18f80f4b39483a": {
+      "model_name": "HTMLModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "layout": "IPY_MODEL_64933a3f395b44d0afdc93be88cc060f",
+        "style": "IPY_MODEL_00d796c1d07d42209ade865ca0822a6e",
+        "value": "<div style='background-color: white; padding: 10px; border-radius: 5px;'><p style='line-height: 0.25;'><b>Variogram model</b> (<i>select one</i>)</p></div>"
+      }
+    },
+    "5b04298910a84e908882634c1540de3e": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "2260209839d947aa9af6a1ece6c445e9": {
+      "model_name": "VBoxModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "children": [
+          "IPY_MODEL_3931e3a48b4043e08d18f80f4b39483a",
+          "IPY_MODEL_c87c3be7596d4559b6c6f28e05795b94"
+        ],
+        "layout": "IPY_MODEL_5b04298910a84e908882634c1540de3e"
+      }
+    },
+    "9f3500e1d58d49f29db0468be6a4798d": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {
+        "width": "300px"
+      }
+    },
+    "aefc349cc7624333b75a74c5b57ae7ed": {
+      "model_name": "ButtonStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "b9203fd58f6b4050b18effb4d499664e": {
+      "model_name": "ButtonModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "button_style": "primary",
+        "description": "Compute theoretical variogram",
+        "layout": "IPY_MODEL_9f3500e1d58d49f29db0468be6a4798d",
+        "style": "IPY_MODEL_aefc349cc7624333b75a74c5b57ae7ed"
+      }
+    },
+    "2b0561bcd186466bbaac291cde6bbe59": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "b854754c21ec4f028b3887fd815bd4a9": {
+      "model_name": "VBoxModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "children": [
+          "IPY_MODEL_2260209839d947aa9af6a1ece6c445e9",
+          "IPY_MODEL_cf95aad7d41043018482c0c20156febd",
+          "IPY_MODEL_7a997e305f3f488d9cc18cc37557eb51",
+          "IPY_MODEL_b9203fd58f6b4050b18effb4d499664e"
+        ],
+        "layout": "IPY_MODEL_2b0561bcd186466bbaac291cde6bbe59"
+      }
+    },
+    "5bbed61f0c0948c6a35a7419648b6248": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "eef424055fae48349eb306f12c4194cd": {
+      "model_name": "OutputModel",
+      "model_module": "@jupyter-widgets/output",
+      "model_module_version": "1.0.0",
+      "state": {
+        "_dom_classes": [],
+        "layout": "IPY_MODEL_5bbed61f0c0948c6a35a7419648b6248",
+        "outputs": []
+      }
+    },
+    "1323f575e77d4edabaa1042e629022b9": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {
+        "height": "200px",
+        "width": "275px"
+      }
+    },
+    "98fd67ca2d4e459da32829090ee157e6": {
+      "model_name": "TextStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "08af780837844bfab3b6ad03cdef9916": {
+      "model_name": "TextareaModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "layout": "IPY_MODEL_1323f575e77d4edabaa1042e629022b9",
+        "placeholder": "Enter `lmfit` optimization kwargs as a dictionary...",
+        "style": "IPY_MODEL_98fd67ca2d4e459da32829090ee157e6",
+        "value": "{}"
+      }
+    },
+    "fb8586a782df4249ac41bbe3e73beb5b": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {
+        "width": "300px"
+      }
+    },
+    "86b45b281f0943ab83fd1fca8ce1f5cd": {
+      "model_name": "ButtonStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "857d4b87b1fe41ad9184b1714dfa33c0": {
+      "model_name": "ButtonModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "button_style": "info",
+        "description": "Update parameter bounds",
+        "layout": "IPY_MODEL_fb8586a782df4249ac41bbe3e73beb5b",
+        "style": "IPY_MODEL_86b45b281f0943ab83fd1fca8ce1f5cd"
+      }
+    },
+    "6df745176268468690a1f9c86d14ed10": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {
+        "width": "300px"
+      }
+    },
+    "8c395ec64e9f42f5b87116c61e2199c4": {
+      "model_name": "ButtonStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "fe13de3ca770447595993226b4441a19": {
+      "model_name": "ButtonModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "button_style": "primary",
+        "description": "Optimize variogram parameters",
+        "layout": "IPY_MODEL_6df745176268468690a1f9c86d14ed10",
+        "style": "IPY_MODEL_8c395ec64e9f42f5b87116c61e2199c4"
+      }
+    },
+    "013821208e664bc6affe5fd6ae933c06": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "8c472e1f28fb4e8795b070464e474eba": {
+      "model_name": "HTMLStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "481694f3f64242f78b0d9082b78ed424": {
+      "model_name": "HTMLModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "layout": "IPY_MODEL_013821208e664bc6affe5fd6ae933c06",
+        "style": "IPY_MODEL_8c472e1f28fb4e8795b070464e474eba",
+        "value": "<div style='background-color: white; padding: 10px; border-radius: 5px;'><p><span style='font-size:18px; line-height:1; margin:0; padding:0; display:block;'><b>Parameter boundaries and variation</b></span><span style='font-size:14px; line-height:1.5; margin:0; padding:0; display:block;'><i>Click 'Update parameter bounds' to select which parameters to optimize</i></span></p></div>"
+      }
+    },
+    "8cf11fbace154960b063233c13a71778": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {
+        "margin": "0",
+        "padding": "0"
+      }
+    },
+    "d6c687e868ec4c79a0f9f4c1b4d55869": {
+      "model_name": "VBoxModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "children": [
+          "IPY_MODEL_481694f3f64242f78b0d9082b78ed424"
+        ],
+        "layout": "IPY_MODEL_8cf11fbace154960b063233c13a71778"
+      }
+    },
+    "74c10a8f44e14a09b24d5cfd9bbdd55e": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "76aeedc839a146d19603b2e1fe1e64d1": {
+      "model_name": "VBoxModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "children": [
+          "IPY_MODEL_d6c687e868ec4c79a0f9f4c1b4d55869",
+          "IPY_MODEL_857d4b87b1fe41ad9184b1714dfa33c0",
+          "IPY_MODEL_eef424055fae48349eb306f12c4194cd"
+        ],
+        "layout": "IPY_MODEL_74c10a8f44e14a09b24d5cfd9bbdd55e"
+      }
+    },
+    "4f0f3030d32a4158821ab1193be2fca3": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "a0c16d02ba7240b3b92dbb831324f87a": {
+      "model_name": "HTMLStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "7f0cda5bc6d74a2aaf9978a7850c2e7e": {
+      "model_name": "HTMLModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "layout": "IPY_MODEL_4f0f3030d32a4158821ab1193be2fca3",
+        "style": "IPY_MODEL_a0c16d02ba7240b3b92dbb831324f87a",
+        "value": "<div style='background-color: white; padding: 10px; border-radius: 5px;'><p><strong>Optimization kwargs (lmfit dictionary):</strong></p></div>"
+      }
+    },
+    "867295f25d534bf28c9d70d61f0eaaf2": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "0fcba731ac89436ca632faa9c9970823": {
+      "model_name": "VBoxModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "children": [
+          "IPY_MODEL_7f0cda5bc6d74a2aaf9978a7850c2e7e",
+          "IPY_MODEL_08af780837844bfab3b6ad03cdef9916"
+        ],
+        "layout": "IPY_MODEL_867295f25d534bf28c9d70d61f0eaaf2"
+      }
+    },
+    "f45702f773cd40cc866bd2fa6eae39ce": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "e03a8e873f114ee18b66d62c41d5585e": {
+      "model_name": "VBoxModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "children": [
+          "IPY_MODEL_76aeedc839a146d19603b2e1fe1e64d1",
+          "IPY_MODEL_7a997e305f3f488d9cc18cc37557eb51",
+          "IPY_MODEL_0fcba731ac89436ca632faa9c9970823",
+          "IPY_MODEL_7a997e305f3f488d9cc18cc37557eb51",
+          "IPY_MODEL_fe13de3ca770447595993226b4441a19"
+        ],
+        "layout": "IPY_MODEL_f45702f773cd40cc866bd2fa6eae39ce"
+      }
+    },
+    "46c407d14b874bce9601a4a26bb0d26e": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "155c28714da74923b451f40a5d2b9820": {
+      "model_name": "AccordionModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "children": [
+          "IPY_MODEL_6523fef7eaa74d95bc4a2065a57e4450",
+          "IPY_MODEL_1fdaa6e5134f4e108ec8c5b746fc4fb5",
+          "IPY_MODEL_fbc5677d3c8c4613b1d2e700499e60bb",
+          "IPY_MODEL_b854754c21ec4f028b3887fd815bd4a9",
+          "IPY_MODEL_e03a8e873f114ee18b66d62c41d5585e"
+        ],
+        "layout": "IPY_MODEL_46c407d14b874bce9601a4a26bb0d26e",
+        "titles": [
+          "Instructions",
+          "Initialize variogram",
+          "Empirical variogram",
+          "Variogram model",
+          "Optimize variogram parameters"
+        ]
+      }
+    },
+    "4c831296c40f4d44bd8804346b689911": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "07d665de8c1d4d508c34593e519a3ad4": {
+      "model_name": "VBoxModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "children": [
+          "IPY_MODEL_eca3037a0d654397ba2b163cc37e1209",
+          "IPY_MODEL_d116becfafc0494981ec6165427063ac"
+        ],
+        "layout": "IPY_MODEL_4c831296c40f4d44bd8804346b689911"
+      }
+    },
+    "a918eee7bb0e4a688300df8aaaa52ba0": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {
+        "width": "100%"
+      }
+    },
+    "3da11e9bb45b45b0a4dc070324986356": {
+      "model_name": "HBoxModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "children": [
+          "IPY_MODEL_155c28714da74923b451f40a5d2b9820",
+          "IPY_MODEL_07d665de8c1d4d508c34593e519a3ad4"
+        ],
+        "layout": "IPY_MODEL_a918eee7bb0e4a688300df8aaaa52ba0"
+      }
+    },
+    "e3ba4c1fe3dc4597b37b101fbf95cb19": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "cbe71d26ed184a94bbf8d948cd6bbd61": {
+      "model_name": "HTMLStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "b0ccb3a8030846dd86ac9c99249e5896": {
+      "model_name": "HTMLModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "layout": "IPY_MODEL_e3ba4c1fe3dc4597b37b101fbf95cb19",
+        "style": "IPY_MODEL_cbe71d26ed184a94bbf8d948cd6bbd61",
+        "value": "<div style='background-color: white; padding: 10px; border-radius: 5px;'><h1><u>Variogram Analysis Interactive GUI</u></h1>\n<p><span style='font-size:24px; line-height:1; margin:0; padding:0; display:block;'>\n<b>Overview</b></span></p>\n<p><span style='font-size:18px; line-height:1; margin:0; padding:0; display:block;'>\n<b><i>Variogram initialization</i></b></span></p>\n<p><span style='font-size:14px; line-height:1.5; margin:0; padding:0; display:block;'>\nSet the values for the <b>lag resolution</b> and <b>number of lags</b> used for computing the\nempirical and theoretical variograms. The initial values correspond to those used for creating\nthe <span style='color: #4EC9B0; background-color: white; padding: 2px 4px; border-radius: 3px;\nfont-family: monospace; font-weight: bold;'>VariogramGUI</span> object:\n</span></p>\n<ul style='margin: 5px 0; padding-left: 20px; line-height: 1.2;'>\n<li style='margin: 2px 0; padding: 0;'><b>Lag resolution:</b>\n0.002</li>\n<li style='margin: 2px 0; padding: 0;'><b>Number of lags:</b>\n30</li>\n<li style='margin: 2px 0; padding: 0;'><b>Coordinates:</b>\n('x', 'y')</li>\n</ul>\n\n<p><span style='font-size:14px; line-height:1.5; margin:0; padding:0; display:block;'>\nThe coordinates correspond to the <i>x</i>- and <i>y</i>-coordinates of the geospatial dataset.\nThis variable is static and remains constant. Once the variables have been changed to the\ndesired values, click <span style='background-color: #337ab7; padding: 2px 4px;\nborder-radius: 3px; font-family: monospace; font-weight: bold; color: white;'>Initialize\nvariogram</span> and proceed to the next tab: <span style='background-color: lightgrey;\ncolor: black; padding: 2px 4px; border-radius: 3px; font-family: monospace; font-weight: bold;'>\nEmpirical variogram</span>.\n</span></p>\n<p><span style='font-size:18px; line-height:1; margin:0; padding:0; display:block;'>\n<b><i>Empirical variogram</i></b></span></p>\n<p><span style='font-size:14px; line-height:1.5; margin:0; padding:0; display:block;'>\nSelect the variable that will be used for the variogram analysis. There are currently three\noptions available:</span></p>\n<ul style='margin: 5px 0; padding-left: 20px; line-height: 1.2;'>\n    <li style='margin: 2px 0; padding: 0;'><b>Number density (animals nmi\u207b\u00b2)</b></li><li style='margin: 2px 0; padding: 0;'><b>Biomass density (kg nmi\u207b\u00b2)</b></li><li style='margin: 2px 0; padding: 0;'><b>NASC (m\u00b2 nmi\u207b\u00b2)</b></li>\n</ul>\n\n<p><span style='font-size:14px; line-height:1.5; margin:0; padding:0; display:block;'>\nThe azimuth angle filter is optional and will only be applied if the box is checked. This\naccounts for directionality in spatial autocorrelation. Valid values are bounded between 0\u00b0 and\n180\u00b0. Once the parameters are set to their desired values, click <span\nstyle='background-color: #337ab7; padding: 2px 4px; border-radius: 3px; font-family: monospace;\nfont-weight: bold; color: white;'>Compute empirical variogram</span>. This will calculate the\nsemivariance (\ud835\udf38) across the defined lag distances (\ud835\udc89), which will render an interactive figure\nto the right of the control panel. Hovering the mouse cursor over individual points, whose\nsizes are scaled to their respective lag counts, will provide lag-specific details. Once this\nstep is completed, proceed to the next tab: <span style='background-color: lightgrey;\ncolor: black; padding: 2px 4px; border-radius: 3px; font-family: monospace; font-weight: bold;'>\nVariogram model</span>.\n</span>\n</span></p>\n<p><span style='font-size:18px; line-height:1; margin:0; padding:0; display:block;'>\n<b><i>Variogram model</i></b></span></p>\n<p><span style='font-size:14px; line-height:1.5; margin:0; padding:0; display:block;'>\nSelect one of the specific variogram models available in the <b><code>Variogram model</code></b> dropdown\nmenu. The current models are available:\n</span></p>\n<div style='display: flex; margin: 5px 0;'>\n    <ul style='margin: 0; padding-left: 20px; padding-right: 5px; line-height: 1.2; width: 50%;'>\n    <li style='margin: 2px 0; padding: 0;'><b>Bessel-Exponential</b></li><li style='margin: 2px 0; padding: 0;'><b>Bessel-Gaussian</b></li><li style='margin: 2px 0; padding: 0;'><b>Cosine-Exponential</b></li><li style='margin: 2px 0; padding: 0;'><b>Cosine-Gaussian</b></li><li style='margin: 2px 0; padding: 0;'><b>Cubic</b></li><li style='margin: 2px 0; padding: 0;'><b>Exponential</b></li><li style='margin: 2px 0; padding: 0;'><b>Exponential-Linear</b></li><li style='margin: 2px 0; padding: 0;'><b>Gaussian</b></li><li style='margin: 2px 0; padding: 0;'><b>Gaussian-Linear</b></li>\n    </ul>\n    <ul style='margin: 0; padding-left: 5px; line-height: 1.2; width: 50%;'>\n    <li style='margin: 2px 0; padding: 0;'><b>J-Bessel</b></li><li style='margin: 2px 0; padding: 0;'><b>K-Bessel</b></li><li style='margin: 2px 0; padding: 0;'><b>Linear</b></li><li style='margin: 2px 0; padding: 0;'><b>Mat\u00e9rn</b></li><li style='margin: 2px 0; padding: 0;'><b>Nugget</b></li><li style='margin: 2px 0; padding: 0;'><b>Pentaspherical</b></li><li style='margin: 2px 0; padding: 0;'><b>Power law</b></li><li style='margin: 2px 0; padding: 0;'><b>Rational quadratic</b></li><li style='margin: 2px 0; padding: 0;'><b>Cardinal sine</b></li><li style='margin: 2px 0; padding: 0;'><b>Spherical</b></li>\n    </ul>\n</div>\n\n<p><span style='font-size:14px; line-height:1.5; margin:0; padding:0; display:block;'>\nEach model selection from the dropdown menu will dynamically populate the window with the model-\nspecific parameters. For example, selecting <b><code>Exponential</code></b> will bring up the following\nparameters:\n</span></p>\n<ul style='margin: 5px 0; padding-left: 20px; line-height: 1.2;'>\n    <li style='margin: 2px 0; padding: 0;'><b>Correlation range (a)</b></li><li style='margin: 2px 0; padding: 0;'><b>Sill (C)</b></li><li style='margin: 2px 0; padding: 0;'><b>Nugget (C\u2080)</b></li>\n</ul>\n\n<p><span style='font-size:14px; line-height:1.5; margin:0; padding:0; display:block;'>\nAlternatively, selecting <b><code>Mat\u00e9rn</code></b> produces:\n</span></p>\n<ul style='margin: 5px 0; padding-left: 20px; line-height: 1.2;'>\n    <li style='margin: 2px 0; padding: 0;'><b>Correlation range (a)</b></li><li style='margin: 2px 0; padding: 0;'><b>Sill (C)</b></li><li style='margin: 2px 0; padding: 0;'><b>Nugget (C\u2080)</b></li><li style='margin: 2px 0; padding: 0;'><b>Mat\u00e9rn shape parameter (\u03bd)</b></li>\n</ul>\n\n<p><span style='font-size:14px; line-height:1.5; margin:0; padding:0; display:block;'>\nOnce the parameters are set to their desired values, click <span\nstyle='background-color: #337ab7; padding: 2px 4px; border-radius: 3px; font-family: monospace;\nfont-weight: bold; color: white;'>Compute theoretical variogram</span>. This will model the\nsemivariance and overlay a <span style='background-color:black; color:white;'><b>black line</b>\n</span> on top of the empirical variogram results. When a dictionary is provided for <span\nstyle='background-color:white; font-family: monospace'>variogram_parameters</span> when\ncreating the <span style='color: #4EC9B0; background-color: white; padding: 2px 4px;\nborder-radius: 3px; font-family: monospace; font-weight: bold;'> VariogramGUI</span> object,\nthe default values for each parameter will automatically inherit those from that input. This\nrepresents the <i>initial model fit</i>. Proceed to the next tab: <span\nstyle='background-color: lightgrey; color: black; padding: 2px 4px; border-radius: 3px;\nfont-family: monospace; font-weight: bold;'>Optimize variogram parameters</span>.\n</span></p>\n<p><span style='font-size:18px; line-height:1; margin:0; padding:0; display:block;'>\n<b><i>Optimize variogram parameters</i></b></span></p>\n<p><span style='font-size:14px; line-height:1.5; margin:0; padding:0; display:block;'>\nVariogram model parameter optimization is used to compute the best-fit values for the model\ndefined within the <span style='background-color: lightgrey; color: black; padding: 2px 4px;\nborder-radius: 3px; font-family: monospace; font-weight: bold;'>Variogram model</span> tab.\nFirst, click the <span style='background-color: #00bcd4; padding: 2px 4px; border-radius: 3px;\nfont-family: monospace; font-weight: bold; color: white;'>Update parameter bounds</span> button\nto populate the window with the model-specific parameters. Each parameter will have four\noptions: <b><code>Min</code></b>, <b><code>Value</code></b>, <b><code>Max</code></b>, and <b><code>Vary</code></b>. This provides\ninstructions to the built-in optimization algorithm on how to use each variable. When\n<b><code>Vary</code></b> is unchecked, <b><code>Value</code></b> defines the constant value for that particular\nparameter. Otherwise, <b><code>Value</code></b> is the initial value at the start of the optimization\nalgorithm. <b><code>Min</code></b> and <b><code>Max</code></b> correspond to the minimum and maximum values that the\noptimizer is allowed to evaluate, respectively.\n</span></p>\n<p><span style='font-size:14px; line-height:1.5; margin:0; padding:0; display:block;'>\nThe <b><code>Optimization kwargs</code></b> text area represents a formattable dictionary used to inform\nthe <code>lmfit</code>-based optimizer. The optimizer uses the least-squares minimizer, so all <code>lmfit</code>\nkeyword arguments specific to <code>method=\"least_squares\"</code> are valid here. This allows for a\ndictionary like below to be entered into this textfield that will be passed into the optimizer:\n</span></p>\n<pre style='background-color: #f4f4f4; padding: 4px 6px; border-radius: 3px; margin: 2px 0;\nfont-family: monospace; font-size: 14px; line-height: 1.2;'>\n{\n    'max_nfev': 500,\n    'ftol': 1e-8,\n    'xtol': 1e-8,\n    'gtol': 1e-8,\n    'diff_step': 1e-10,\n    'jac': '3-point'\n}</pre>\n\n<p><span style='font-size:14px; line-height:1.5; margin:0; padding:0; display:block;'>\nAfter setting up all of the parameter definitions and optimizer keyword arguments, click\n<span style='background-color: #337ab7; padding: 2px 4px; border-radius: 3px;\nfont-family: monospace; font-weight: bold; color: white;'>Optimize variogram parameters</span>\nto compute the best-fit variogram parameters. This will produce a <span\nstyle='background-color:red; color:white;'><b>red line</b></span> representing the updated\nmodeled variogram using the optimized parameters. An additional report will provide a printout\nof the best-fit parameters, with bold variables indicating those that were actually minimized\nand not held constant. If the GUI instance was stored as a variable, then the parameters can\nalso be extracted as a dictionary via <span style='color: #4EC9B0; background-color: white;\npadding: 2px 4px; border-radius: 3px; font-family: monospace; font-weight: bold;'>\nVariogramGUI.optimized_parameters</span>.\n</span></p>\n<p><span style='font-size:18px; line-height:1; margin:0; padding:0; display:block;'>\n<b><i>See also</i></b></span></p>\n<p>Documentation for the <span style='color: #4EC9B0; background-color: white; padding: 2px 4px;\nborder-radius: 3px; font-family: monospace; font-weight: bold;'>\nechopop.variogram.Variogram</span> class.</p></div>"
+      }
+    },
+    "06c698716bf545dfb2f12b5c6da44dff": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "2b5e9d376d084563b7246623c7685494": {
+      "model_name": "VBoxModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "children": [
+          "IPY_MODEL_b0ccb3a8030846dd86ac9c99249e5896"
+        ],
+        "layout": "IPY_MODEL_06c698716bf545dfb2f12b5c6da44dff"
+      }
+    },
+    "fcc0cc92d2524ab49624e5cb6b70682b": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {
+        "width": "60px"
+      }
+    },
+    "361b5d0786ce4f7390308169df8e1448": {
+      "model_name": "DescriptionStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "e8ebd17c43814269a0e1fe0c79150a21": {
+      "model_name": "BoundedFloatTextModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "layout": "IPY_MODEL_fcc0cc92d2524ab49624e5cb6b70682b",
+        "max": 1e+99,
+        "min": 1e-10,
+        "step": 0.0002,
+        "style": "IPY_MODEL_361b5d0786ce4f7390308169df8e1448",
+        "value": 0.002
+      }
+    },
+    "c911cc31efca4e54abef3799040d447e": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "f436d103c6ca46339dfbd53a00608005": {
+      "model_name": "HTMLStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "016a76af218c4894b0b70925660b7d3b": {
+      "model_name": "HTMLModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "layout": "IPY_MODEL_c911cc31efca4e54abef3799040d447e",
+        "style": "IPY_MODEL_f436d103c6ca46339dfbd53a00608005",
+        "value": "<div style='background-color: white; padding: 10px; border-radius: 5px;'><p style='line-height: 0.25;'><b>Lag resolution</b></p></div>"
+      }
+    },
+    "9ca8197a5f464413b13c9d7a81046cac": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "00dd3de5acc542acadc11374987fecfe": {
+      "model_name": "VBoxModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "children": [
+          "IPY_MODEL_016a76af218c4894b0b70925660b7d3b",
+          "IPY_MODEL_e8ebd17c43814269a0e1fe0c79150a21"
+        ],
+        "layout": "IPY_MODEL_9ca8197a5f464413b13c9d7a81046cac"
+      }
+    },
+    "db585d7b3fce4acc83ae98107e22b0ca": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {
+        "width": "60px"
+      }
+    },
+    "966e109cdb8549ad9949331711c76d98": {
+      "model_name": "DescriptionStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "5de2d3b179b6499b8a3f79180b94924e": {
+      "model_name": "BoundedIntTextModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "layout": "IPY_MODEL_db585d7b3fce4acc83ae98107e22b0ca",
+        "max": 999999999999999967336168804116691273849533185806555472917961779471295845921727862608739868455469056,
+        "min": 2,
+        "style": "IPY_MODEL_966e109cdb8549ad9949331711c76d98",
+        "value": 30
+      }
+    },
+    "834ae4a18bcd4b5d962edcb6587f5dd7": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "501f81db86224473bbb1ea1e521f0e62": {
+      "model_name": "HTMLStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "746ba7cb827d40f8a9586e5a221e9510": {
+      "model_name": "HTMLModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "layout": "IPY_MODEL_834ae4a18bcd4b5d962edcb6587f5dd7",
+        "style": "IPY_MODEL_501f81db86224473bbb1ea1e521f0e62",
+        "value": "<div style='background-color: white; padding: 10px; border-radius: 5px;'><p style='line-height: 0.25;'><b>Number of lags</b></p></div>"
+      }
+    },
+    "9120705582de43f48c2ed9319faf73d6": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "c747fb3a5d3a4e42a4ff8a730625de94": {
+      "model_name": "VBoxModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "children": [
+          "IPY_MODEL_746ba7cb827d40f8a9586e5a221e9510",
+          "IPY_MODEL_5de2d3b179b6499b8a3f79180b94924e"
+        ],
+        "layout": "IPY_MODEL_9120705582de43f48c2ed9319faf73d6"
+      }
+    },
+    "9442a679080f4623a51b05e8f7b0a254": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "a37f331d5736497a956c1baeb6b9f811": {
+      "model_name": "HBoxModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "children": [
+          "IPY_MODEL_00dd3de5acc542acadc11374987fecfe",
+          "IPY_MODEL_44852b46839544e9ac1e070df92abe65",
+          "IPY_MODEL_c747fb3a5d3a4e42a4ff8a730625de94"
+        ],
+        "layout": "IPY_MODEL_9442a679080f4623a51b05e8f7b0a254"
+      }
+    },
+    "6d96547d928a40efa58e8eb85f3c00af": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "a4d79b3e4dc84e329e10adaac12aaa9a": {
+      "model_name": "HTMLStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "48428ac32974423d9970b6b0fd4842af": {
+      "model_name": "HTMLModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "layout": "IPY_MODEL_6d96547d928a40efa58e8eb85f3c00af",
+        "style": "IPY_MODEL_a4d79b3e4dc84e329e10adaac12aaa9a",
+        "value": "<div style='background-color: white; padding: 10px; border-radius: 5px;'><p><strong>Coordinate names:</strong> ('x', 'y')</p></div>"
+      }
+    },
+    "477d86e3f3154515afabdca5c0c7dabe": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {
+        "width": "300px"
+      }
+    },
+    "318bf73b25a942b388245d545c0ec218": {
+      "model_name": "ButtonStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "9411d75e7f0649d3b0f26d9735c8bc26": {
+      "model_name": "ButtonModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "button_style": "primary",
+        "description": "Initialize variogram",
+        "layout": "IPY_MODEL_477d86e3f3154515afabdca5c0c7dabe",
+        "style": "IPY_MODEL_318bf73b25a942b388245d545c0ec218"
+      }
+    },
+    "e2290c1d70134115b62d100d44a0c363": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {
+        "margin": "0 0 0 0",
+        "padding": "0 0 0 0"
+      }
+    },
+    "19fb434f6879498ea81ed5bccda4ba33": {
+      "model_name": "VBoxModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "children": [
+          "IPY_MODEL_a37f331d5736497a956c1baeb6b9f811",
+          "IPY_MODEL_48428ac32974423d9970b6b0fd4842af",
+          "IPY_MODEL_7a997e305f3f488d9cc18cc37557eb51",
+          "IPY_MODEL_9411d75e7f0649d3b0f26d9735c8bc26"
+        ],
+        "layout": "IPY_MODEL_e2290c1d70134115b62d100d44a0c363"
+      }
+    },
+    "5c7952c3edf647a4bd4b2c1f81f3b84f": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {
+        "width": "250px"
+      }
+    },
+    "79f2f54ae3b744c08cf0530d3dbe886c": {
+      "model_name": "DescriptionStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "c7fcea4b20cc41d4b62551d4a4e124cb": {
+      "model_name": "DropdownModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "_options_labels": [
+          "Number density (animals nmi\u207b\u00b2)",
+          "Biomass density (kg nmi\u207b\u00b2)",
+          "NASC (m\u00b2 nmi\u207b\u00b2)"
+        ],
+        "index": 1,
+        "layout": "IPY_MODEL_5c7952c3edf647a4bd4b2c1f81f3b84f",
+        "style": "IPY_MODEL_79f2f54ae3b744c08cf0530d3dbe886c"
+      }
+    },
+    "e3039596ebba4ef3b1ca0ccefe509fa0": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "7d16062aac9a4ed2844cefcfd2d7bb04": {
+      "model_name": "HTMLStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "09ff0751c59b442f9077373d00fd5366": {
+      "model_name": "HTMLModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "layout": "IPY_MODEL_e3039596ebba4ef3b1ca0ccefe509fa0",
+        "style": "IPY_MODEL_7d16062aac9a4ed2844cefcfd2d7bb04",
+        "value": "<div style='background-color: white; padding: 10px; border-radius: 5px;'><p style='line-height: 0.25;'><b>Variable</b></p></div>"
+      }
+    },
+    "31a5c9d5080c47f0a3280979a2f598dd": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "cfd960876a284a3dbfc673cb402f7a42": {
+      "model_name": "VBoxModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "children": [
+          "IPY_MODEL_09ff0751c59b442f9077373d00fd5366",
+          "IPY_MODEL_c7fcea4b20cc41d4b62551d4a4e124cb"
+        ],
+        "layout": "IPY_MODEL_31a5c9d5080c47f0a3280979a2f598dd"
+      }
+    },
+    "4ae28479ac35456f9338877ba54e23ae": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {
+        "margin": "0 5px 0 0",
+        "width": "30px"
+      }
+    },
+    "19a947e4cb21490f80a0527f2a8f2f1c": {
+      "model_name": "CheckboxStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "065087ac0ae34b77a60d949c04f0e4d6": {
+      "model_name": "CheckboxModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "indent": false,
+        "layout": "IPY_MODEL_4ae28479ac35456f9338877ba54e23ae",
+        "style": "IPY_MODEL_19a947e4cb21490f80a0527f2a8f2f1c",
+        "value": true
+      }
+    },
+    "ee6cff88f69c4ab7a814698660927925": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {
+        "width": "50px"
+      }
+    },
+    "5c2cb9603219416087784f53bd88a3ea": {
+      "model_name": "DescriptionStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "91ea9322729b4757aaece09e0e52c867": {
+      "model_name": "BoundedFloatTextModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "layout": "IPY_MODEL_ee6cff88f69c4ab7a814698660927925",
+        "max": 180.0,
+        "step": 1.0,
+        "style": "IPY_MODEL_5c2cb9603219416087784f53bd88a3ea",
+        "value": 180.0
+      }
+    },
+    "4909c6feb7444fb28aa7196d2f3d7fcf": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {
+        "display": "",
+        "margin": "0 0 0 3px",
+        "width": "auto"
+      }
+    },
+    "13b06289f40048509fed02138b01009d": {
+      "model_name": "LabelStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "0e7143d5771f45fc97c3dc916d800c02": {
+      "model_name": "LabelModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "layout": "IPY_MODEL_4909c6feb7444fb28aa7196d2f3d7fcf",
+        "style": "IPY_MODEL_13b06289f40048509fed02138b01009d",
+        "value": "\u00b0"
+      }
+    },
+    "8731577fbece4c8686a2be6a46ea311f": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {
+        "align_items": "center"
+      }
+    },
+    "da85f4ebe6a940b9adac55d5a348b976": {
+      "model_name": "HBoxModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "children": [
+          "IPY_MODEL_91ea9322729b4757aaece09e0e52c867",
+          "IPY_MODEL_0e7143d5771f45fc97c3dc916d800c02"
+        ],
+        "layout": "IPY_MODEL_8731577fbece4c8686a2be6a46ea311f"
+      }
+    },
+    "fea602ae60f94c128aefcaa48ca4d514": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {
+        "align_items": "center",
+        "justify_content": "flex-start"
+      }
+    },
+    "e2a6001702d94b79a73bc7983f6c1f33": {
+      "model_name": "HBoxModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "children": [
+          "IPY_MODEL_065087ac0ae34b77a60d949c04f0e4d6",
+          "IPY_MODEL_da85f4ebe6a940b9adac55d5a348b976"
+        ],
+        "layout": "IPY_MODEL_fea602ae60f94c128aefcaa48ca4d514"
+      }
+    },
+    "0a441e26c32a48739d72317d36e279df": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "50416e7edd97417c816c9bda753e9c0e": {
+      "model_name": "HTMLStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "e74aee23a4f844a4a31e25e6ce71e71f": {
+      "model_name": "HTMLModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "layout": "IPY_MODEL_0a441e26c32a48739d72317d36e279df",
+        "style": "IPY_MODEL_50416e7edd97417c816c9bda753e9c0e",
+        "value": "<div style='background-color: white; padding: 10px; border-radius: 5px;'><p style='line-height: 0.25;'><b>Azimuth angle filter</b> (<i>check box to apply filter</i>)</p></div>"
+      }
+    },
+    "f31efb56453d4622a475e3bba3cff178": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "6bb4025ea89e460bbc21c0838a941146": {
+      "model_name": "VBoxModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "children": [
+          "IPY_MODEL_e74aee23a4f844a4a31e25e6ce71e71f",
+          "IPY_MODEL_e2a6001702d94b79a73bc7983f6c1f33"
+        ],
+        "layout": "IPY_MODEL_f31efb56453d4622a475e3bba3cff178"
+      }
+    },
+    "fadb802904394c5dbcf36779aacd0571": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {
+        "width": "300px"
+      }
+    },
+    "033023016ced41c191c71400bc72bd6d": {
+      "model_name": "ButtonStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "ac43c9878b6b4b7da33d107d5fdd1187": {
+      "model_name": "ButtonModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "button_style": "primary",
+        "description": "Compute empirical variogram",
+        "layout": "IPY_MODEL_fadb802904394c5dbcf36779aacd0571",
+        "style": "IPY_MODEL_033023016ced41c191c71400bc72bd6d"
+      }
+    },
+    "c668a0c58fb844d98728bc2fee7cdc25": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "819109739a6c4246ade391a24bbd5c7a": {
+      "model_name": "VBoxModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "children": [
+          "IPY_MODEL_cfd960876a284a3dbfc673cb402f7a42",
+          "IPY_MODEL_6bb4025ea89e460bbc21c0838a941146",
+          "IPY_MODEL_7a997e305f3f488d9cc18cc37557eb51",
+          "IPY_MODEL_ac43c9878b6b4b7da33d107d5fdd1187"
+        ],
+        "layout": "IPY_MODEL_c668a0c58fb844d98728bc2fee7cdc25"
+      }
+    },
+    "8cc76468e2d2410f8a888bb267cf4478": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "b79adca4e88148569f16c990be162235": {
+      "model_name": "OutputModel",
+      "model_module": "@jupyter-widgets/output",
+      "model_module_version": "1.0.0",
+      "state": {
+        "_dom_classes": [],
+        "layout": "IPY_MODEL_8cc76468e2d2410f8a888bb267cf4478",
+        "outputs": []
+      }
+    },
+    "615cffc062ee496bbed2404e362dde4d": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {
+        "width": "200px"
+      }
+    },
+    "78b1681031444ab7b0138d80bd996285": {
+      "model_name": "DescriptionStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "c1a870f59a4c4d25884ce98a1dbdbeb8": {
+      "model_name": "DropdownModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "_options_labels": [
+          "Bessel-Exponential",
+          "Bessel-Gaussian",
+          "Cosine-Exponential",
+          "Cosine-Gaussian",
+          "Cubic",
+          "Exponential",
+          "Exponential-Linear",
+          "Gaussian",
+          "Gaussian-Linear",
+          "J-Bessel",
+          "K-Bessel",
+          "Linear",
+          "Mat\u00e9rn",
+          "Nugget",
+          "Pentaspherical",
+          "Power law",
+          "Rational quadratic",
+          "Cardinal sine",
+          "Spherical"
+        ],
+        "layout": "IPY_MODEL_615cffc062ee496bbed2404e362dde4d",
+        "style": "IPY_MODEL_78b1681031444ab7b0138d80bd996285"
+      }
+    },
+    "fc830e2bfd884d0a919975ee312c73bd": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "257ff873c624471a92b88953db6a55d4": {
+      "model_name": "HTMLStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "975513a468f8453d92dd6b1bf4ed2b85": {
+      "model_name": "HTMLModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "layout": "IPY_MODEL_fc830e2bfd884d0a919975ee312c73bd",
+        "style": "IPY_MODEL_257ff873c624471a92b88953db6a55d4",
+        "value": "<div style='background-color: white; padding: 10px; border-radius: 5px;'><p style='line-height: 0.25;'><b>Variogram model</b> (<i>select one</i>)</p></div>"
+      }
+    },
+    "76bcec2288ea4ea99b839f4c7dbdf533": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "71b761a5610641af8d6878aaae27fbea": {
+      "model_name": "VBoxModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "children": [
+          "IPY_MODEL_975513a468f8453d92dd6b1bf4ed2b85",
+          "IPY_MODEL_c1a870f59a4c4d25884ce98a1dbdbeb8"
+        ],
+        "layout": "IPY_MODEL_76bcec2288ea4ea99b839f4c7dbdf533"
+      }
+    },
+    "1ca8305cc2db422ea64923c49299419e": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {
+        "width": "300px"
+      }
+    },
+    "fdd8f2d7d2314a5ea7aa2e37d9226a0c": {
+      "model_name": "ButtonStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "208799a10f5146e18ba02b66b1241a9d": {
+      "model_name": "ButtonModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "button_style": "primary",
+        "description": "Compute theoretical variogram",
+        "layout": "IPY_MODEL_1ca8305cc2db422ea64923c49299419e",
+        "style": "IPY_MODEL_fdd8f2d7d2314a5ea7aa2e37d9226a0c"
+      }
+    },
+    "c8750dfebd37417787a15bf0e4521168": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "49635a761e2848bd828285bee4c5e2f1": {
+      "model_name": "VBoxModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "children": [
+          "IPY_MODEL_71b761a5610641af8d6878aaae27fbea",
+          "IPY_MODEL_b79adca4e88148569f16c990be162235",
+          "IPY_MODEL_7a997e305f3f488d9cc18cc37557eb51",
+          "IPY_MODEL_208799a10f5146e18ba02b66b1241a9d"
+        ],
+        "layout": "IPY_MODEL_c8750dfebd37417787a15bf0e4521168"
+      }
+    },
+    "83eb4f51466e4dbb847c67c37cfa5076": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "d9e68415811248e2865b2abd488e48ec": {
+      "model_name": "OutputModel",
+      "model_module": "@jupyter-widgets/output",
+      "model_module_version": "1.0.0",
+      "state": {
+        "_dom_classes": [],
+        "layout": "IPY_MODEL_83eb4f51466e4dbb847c67c37cfa5076",
+        "outputs": []
+      }
+    },
+    "113fb3dedcea4c73b1ec6fa45c76fc2b": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {
+        "height": "200px",
+        "width": "275px"
+      }
+    },
+    "2ef85e32434a4314890b8f76cda2d6c2": {
+      "model_name": "TextStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "29c28cb4390e42dc9b789590ab7ddefa": {
+      "model_name": "TextareaModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "layout": "IPY_MODEL_113fb3dedcea4c73b1ec6fa45c76fc2b",
+        "placeholder": "Enter `lmfit` optimization kwargs as a dictionary...",
+        "style": "IPY_MODEL_2ef85e32434a4314890b8f76cda2d6c2",
+        "value": "{}"
+      }
+    },
+    "2b24ec37ac284b4a9b6de77a78b32c48": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {
+        "width": "300px"
+      }
+    },
+    "0deeb6d2a79c483193dbce49c1e31b48": {
+      "model_name": "ButtonStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "0d5390bb03d042c1bfb3f62ef694d120": {
+      "model_name": "ButtonModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "button_style": "info",
+        "description": "Update parameter bounds",
+        "layout": "IPY_MODEL_2b24ec37ac284b4a9b6de77a78b32c48",
+        "style": "IPY_MODEL_0deeb6d2a79c483193dbce49c1e31b48"
+      }
+    },
+    "c1ae3a1bd5464458ac87a5795ca6fac5": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {
+        "width": "300px"
+      }
+    },
+    "32a77050460748c7b1aee7897d445ec3": {
+      "model_name": "ButtonStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "d6bbb8582fe94285b939a2bb670e77ba": {
+      "model_name": "ButtonModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "button_style": "primary",
+        "description": "Optimize variogram parameters",
+        "layout": "IPY_MODEL_c1ae3a1bd5464458ac87a5795ca6fac5",
+        "style": "IPY_MODEL_32a77050460748c7b1aee7897d445ec3"
+      }
+    },
+    "029a4e03e4a94d2990b2d533cb7c70f7": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "90a4267a5cc147918a0bb52778289745": {
+      "model_name": "HTMLStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "ec1f7820041045e7a9bcc08a30d462a3": {
+      "model_name": "HTMLModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "layout": "IPY_MODEL_029a4e03e4a94d2990b2d533cb7c70f7",
+        "style": "IPY_MODEL_90a4267a5cc147918a0bb52778289745",
+        "value": "<div style='background-color: white; padding: 10px; border-radius: 5px;'><p><span style='font-size:18px; line-height:1; margin:0; padding:0; display:block;'><b>Parameter boundaries and variation</b></span><span style='font-size:14px; line-height:1.5; margin:0; padding:0; display:block;'><i>Click 'Update parameter bounds' to select which parameters to optimize</i></span></p></div>"
+      }
+    },
+    "5aad52796d85472cb986d0f868289739": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {
+        "margin": "0",
+        "padding": "0"
+      }
+    },
+    "7ba618f33ded443cba1643514d60c270": {
+      "model_name": "VBoxModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "children": [
+          "IPY_MODEL_ec1f7820041045e7a9bcc08a30d462a3"
+        ],
+        "layout": "IPY_MODEL_5aad52796d85472cb986d0f868289739"
+      }
+    },
+    "a7f7ebf309fe47d6a7a71012fc6450c7": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "1243d957c1864961a30e3caddb842797": {
+      "model_name": "VBoxModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "children": [
+          "IPY_MODEL_7ba618f33ded443cba1643514d60c270",
+          "IPY_MODEL_0d5390bb03d042c1bfb3f62ef694d120",
+          "IPY_MODEL_d9e68415811248e2865b2abd488e48ec"
+        ],
+        "layout": "IPY_MODEL_a7f7ebf309fe47d6a7a71012fc6450c7"
+      }
+    },
+    "fed3d0f781a54097b62287bf00defd84": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "17a003dacc7d4691bfde0bda04b059a4": {
+      "model_name": "HTMLStyleModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "114dcab9a84b4ea4b49c84f4c91ec7e7": {
+      "model_name": "HTMLModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "layout": "IPY_MODEL_fed3d0f781a54097b62287bf00defd84",
+        "style": "IPY_MODEL_17a003dacc7d4691bfde0bda04b059a4",
+        "value": "<div style='background-color: white; padding: 10px; border-radius: 5px;'><p><strong>Optimization kwargs (lmfit dictionary):</strong></p></div>"
+      }
+    },
+    "8f61d73fe15e4a69ab38ec8ca7ade27e": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "10f9a74076e04a93905bff410def8ad6": {
+      "model_name": "VBoxModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "children": [
+          "IPY_MODEL_114dcab9a84b4ea4b49c84f4c91ec7e7",
+          "IPY_MODEL_29c28cb4390e42dc9b789590ab7ddefa"
+        ],
+        "layout": "IPY_MODEL_8f61d73fe15e4a69ab38ec8ca7ade27e"
+      }
+    },
+    "cb794a5336bb454b98ecb8312c69ef68": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "db6c1a90070b4cf4ba285c3f7948009a": {
+      "model_name": "VBoxModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "children": [
+          "IPY_MODEL_1243d957c1864961a30e3caddb842797",
+          "IPY_MODEL_7a997e305f3f488d9cc18cc37557eb51",
+          "IPY_MODEL_10f9a74076e04a93905bff410def8ad6",
+          "IPY_MODEL_7a997e305f3f488d9cc18cc37557eb51",
+          "IPY_MODEL_d6bbb8582fe94285b939a2bb670e77ba"
+        ],
+        "layout": "IPY_MODEL_cb794a5336bb454b98ecb8312c69ef68"
+      }
+    },
+    "549d1c1f5e3547be8585157b316b4e92": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "5883b59d3ec641f58aa9a6fd13722935": {
+      "model_name": "AccordionModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "children": [
+          "IPY_MODEL_6523fef7eaa74d95bc4a2065a57e4450",
+          "IPY_MODEL_1fdaa6e5134f4e108ec8c5b746fc4fb5",
+          "IPY_MODEL_fbc5677d3c8c4613b1d2e700499e60bb",
+          "IPY_MODEL_b854754c21ec4f028b3887fd815bd4a9",
+          "IPY_MODEL_e03a8e873f114ee18b66d62c41d5585e"
+        ],
+        "layout": "IPY_MODEL_549d1c1f5e3547be8585157b316b4e92",
+        "titles": [
+          "Instructions",
+          "Initialize variogram",
+          "Empirical variogram",
+          "Variogram model",
+          "Optimize variogram parameters"
+        ]
+      }
+    },
+    "fade25d99a1d4688be0cf28871aa03e5": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {}
+    },
+    "9bd20b199ea74f89b8ee8afce40850fd": {
+      "model_name": "VBoxModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "children": [
+          "IPY_MODEL_eca3037a0d654397ba2b163cc37e1209",
+          "IPY_MODEL_d116becfafc0494981ec6165427063ac"
+        ],
+        "layout": "IPY_MODEL_fade25d99a1d4688be0cf28871aa03e5"
+      }
+    },
+    "ad425b0263d44ed195d2262682c7ffb9": {
+      "model_name": "LayoutModel",
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "2.0.0",
+      "state": {
+        "width": "100%"
+      }
+    },
+    "be871d61e97e431089ccbc8944baf67e": {
+      "model_name": "HBoxModel",
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "2.0.0",
+      "state": {
+        "_dom_classes": [],
+        "children": [
+          "IPY_MODEL_5883b59d3ec641f58aa9a6fd13722935",
+          "IPY_MODEL_9bd20b199ea74f89b8ee8afce40850fd"
+        ],
+        "layout": "IPY_MODEL_ad425b0263d44ed195d2262682c7ffb9"
+      }
+    }
+  }
+}
+</script>
+<script type="application/vnd.jupyter.widget-view+json">
+{"version_major": 2, "version_minor": 0, "model_id": "be871d61e97e431089ccbc8944baf67e"}
+</script>
+
+</body>
+</html>

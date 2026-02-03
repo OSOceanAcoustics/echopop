@@ -538,14 +538,12 @@ class Diagnostics:
         cv_data["x"] = survey_data["x_plot"].to_numpy()
         cv_data["y"] = survey_data["mean"].to_numpy()
         # ---- Create tool
-        hover_tool = HoverTool(
-            tooltips="""
+        hover_tool = HoverTool(tooltips="""
             <div>
             <span style="font-style: italic;">CV</span> [mean ± <i>CI</i>]:
             @mean{0.000} [@lower{0.000}, @upper{0.000}]
             </div>
-            """
-        )
+            """)
         # ---- Define layer
         cv_points_layer = hv.Points(
             cv_data, kdims=["x", "y"], vdims=["agg_type", "lower", "mean", "upper"]

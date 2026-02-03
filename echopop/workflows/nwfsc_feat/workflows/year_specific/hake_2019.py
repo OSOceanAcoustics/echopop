@@ -1004,15 +1004,13 @@ KRIGING_PARAMETERS = {
 
 # VARIOGRAM PARAMETERS CONTAINER
 VARIOGRAM_PARAMETERS = {
-    # **dict_variogram_params,
     "model": ["exponential", "bessel"],
     "sill": dict_variogram_params["sill"],
     "nugget": dict_variogram_params["nugget"],
     "correlation_range": dict_variogram_params["correlation_range"],
     "hole_effect_range": dict_variogram_params["hole_effect_range"],
     "decay_power": dict_variogram_params["decay_power"],
-    # **best_fit_parameters
-    # **dict_variogram_params
+    **best_fit_parameters
 }
 
 # INITIALIZE CLASS OBJECT
