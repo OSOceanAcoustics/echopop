@@ -414,7 +414,7 @@ def impute_kriged_table(
     # Break and raise warning if no imputation occurs
     if all([len(v) == 0 for v in imputed_rows.values()]):
         warnings.warn(
-            f"No missing values detected. Imputation was skipped.",
+            "No missing values detected. Imputation was skipped.",
             stacklevel=2,
         )
         return standardized_table
