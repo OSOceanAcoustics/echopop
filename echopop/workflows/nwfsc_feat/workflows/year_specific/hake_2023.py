@@ -711,7 +711,7 @@ logging.info(
     "     Excluding: 'sex'='unsexed' from 'dict_df_number_proportions'"    
 )
 feat_biology.compute_abundance(
-    transect_data=df_nasc,
+    dataset=df_nasc,
     exclude_filter={"sex": "unsexed"},
     number_proportions=dict_ds_number_proportion,
 )
