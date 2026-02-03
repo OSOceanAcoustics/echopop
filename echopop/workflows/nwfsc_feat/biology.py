@@ -359,7 +359,9 @@ def compute_biomass(
 ) -> None:
     """
     Convert number density and abundance estimates to biomass density and total biomass,
-    respectively.
+    respectively. This is done by aligning transect data with either a scalar average weight that 
+    is applied globally, or group-specific averaged weights (e.g., by stratum and sex). When 
+    grouped, the biomass density and biomass estimates are computed across all defined groups.
 
     Parameters
     ----------
