@@ -736,7 +736,7 @@ logging.info(
     "     Excluding: 'sex'='unsexed' from 'dict_df_number_proportions'"    
 )
 feat_biology.compute_abundance(
-    dataset=df_nasc,
+    transect_data=df_nasc,
     exclude_filter={"sex": "unsexed"},
     number_proportions=dict_ds_number_proportion,
 )
@@ -755,7 +755,7 @@ logging.info(
     "     Grouping by: 'sex'\n"  
 )
 feat_biology.compute_biomass(
-    dataset=df_nasc,
+    transect_data=df_nasc,
     stratum_weights=da_averaged_weight,
 )
 logging.info(

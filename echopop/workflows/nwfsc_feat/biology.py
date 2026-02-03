@@ -183,7 +183,7 @@ def length_binned_weights(
 
 
 def compute_abundance(
-    dataset: pd.DataFrame,
+    transect_data: pd.DataFrame,
     exclude_filter: Dict[str, str] = {},
     number_proportions: Optional[Dict[str, xr.Dataset]] = None,
 ) -> None:
@@ -192,10 +192,13 @@ def compute_abundance(
 
     Parameters
     ----------
-    dataset : pd.DataFrame
+    transect_data : pd.DataFrame
         DataFrame containing transect data with number densities already computed. Must include:
+        
         - 'number_density': Number of animals per unit area (animals/nmi²)
+        
         - 'area_interval': Area of each sampling interval (nmi²)
+        
     stratify_by : List[str], default []
         Column name to use for stratification when aligning with the number proportions dictionary,
         if specified.
@@ -224,7 +227,7 @@ def compute_abundance(
     """
 
     # If no grouping, run the simple abundance calculation
-    dataset["abundance"] = dataset["area_interval"] * dataset["number_density"]
+    transect_data["abundance"] = transect_data["area_interval"] * transect_data["number_density"]
 
     # Compute grouped values, if needed
     if number_proportions is not None:
@@ -235,7 +238,7 @@ def compute_abundance(
         # ---- Find the intersection (shared coordinates)
         shared_coords = set.intersection(*coord_sets) - {"length_bin"}
         # ---- Find overlapping indices
-        idx_names = list(shared_coords.intersection(set(dataset.columns)))
+        idx_names = list(shared_coords.intersection(set(transect_data.columns)))
         nonidx_names = [id for id in list(shared_coords) if id not in idx_names]
         # ---- Create grouped table from number proportions
         grouped_proportions = sum(
@@ -258,57 +261,55 @@ def compute_abundance(
             grouped_proportions_excl = grouped_proportions
         # ---- Refine if no grouping
         if len(nonidx_names) == 0:
-            number_density_vals = dataset["number_density"].values
-            abundance_vals = dataset["abundance"].values
+            number_density_vals = transect_data["number_density"].values
+            abundance_vals = transect_data["abundance"].values
         else:
-            number_density_vals = dataset["number_density"].values[:, None]
-            abundance_vals = dataset["abundance"].values[:, None]
+            number_density_vals = transect_data["number_density"].values[:, None]
+            abundance_vals = transect_data["abundance"].values[:, None]
         # ---- Reindex the DataArray
-        ridx = {k: dataset[k] for k in idx_names}
+        ridx = {k: transect_data[k] for k in idx_names}
         grouped_proportions_ridx = grouped_proportions_excl.reindex(ridx).fillna(0.0)
         # ---- Set the index of the tabular data
-        dataset.set_index(idx_names, inplace=True)
+        transect_data.set_index(idx_names, inplace=True)
         # ---- Compute number density
         grouped_number_density = number_density_vals * grouped_proportions_ridx
         # ---- Compute abundance
         grouped_abundance = abundance_vals * grouped_proportions_ridx
         # ---- Add the number densities to the dataset
-        dataset[
+        transect_data[
             [f"number_density_{c}" for c in grouped_number_density.coords[nonidx_names[0]].values]
         ] = grouped_number_density
         # ---- Add abundances to the dataset
-        dataset[[f"abundance_{c}" for c in grouped_abundance.coords[nonidx_names[0]].values]] = (
+        transect_data[[f"abundance_{c}" for c in grouped_abundance.coords[nonidx_names[0]].values]] = (
             grouped_abundance
         )
         # ---- Reset the index
-        dataset.reset_index(inplace=True)
+        transect_data.reset_index(inplace=True)
 
-
-# !!! ----> Rename `dataset` to not be `dataset` since it is a DataFrame, not an xarray object
 def matrix_multiply_grouped_table(
-    dataset: pd.DataFrame,
-    table: xr.DataArray,
+    transect_data: pd.DataFrame,
+    weights: xr.DataArray,
     variable: str,
     output_variable: str,
     group: Optional[str] = None,
 ) -> None:
     """
-    Multiply multiple data columns by identically indexed grouped table columns from a separate
+    Multiply multiple data columns by identically indexed grouped array from a separate
     DataFrame.
 
     Parameters
     ----------
-    dataset : pd.DataFrame
+    transect_data : pd.DataFrame
         DataFrame containing the data to be multiplied.
-    table : xr.DataArray
+    weights : xr.DataArray
         DataArray containing the grouped table with columns to multiply against.
     variable : str
-        The name of the variable in `dataset` that will be multiplied by the grouped table.
-        This variable should have columns named as `{variable}_{suffix}` where `suffix` is a
+        The name of the variable in ``transect_data`` that will be multiplied by the grouped table.
+        This variable should have columns named as ``{variable}_{suffix}`` where ``suffix`` is a
         group identifier.
     output_variable : str
-        The name of the output variable/column that will be created in `dataset` to store the
-        results.
+        The name of the output variable/column that will be created in ``transect_data`` to store 
+        the results.
     group : Optional[str], default None
         The specific group to filter the grouped table by. If None, all groups will be used.
     """
@@ -317,42 +318,42 @@ def matrix_multiply_grouped_table(
     prefix_pattern = variable + "_"
 
     # Get the overlapping columns
-    variable_columns = dataset.filter(like=prefix_pattern).columns
+    variable_columns = transect_data.filter(like=prefix_pattern).columns
 
     # Gather the suffixes corresponding to the target group
     suffixes = variable_columns.str.replace(prefix_pattern, "", regex=False).to_list()
 
     # Reindex table
-    ridx = {k: dataset.reset_index()[k] for k in dataset.index.names}
-    table_ridx = table.reindex(ridx).fillna(0.0)
+    ridx = {k: transect_data.reset_index()[k] for k in transect_data.index.names}
+    table_ridx = weights.reindex(ridx).fillna(0.0)
 
     # Apply an inclusion filter
     table_groups = table_ridx.sel({group: suffixes})
 
-    # Get columns that also exist for dataset
+    # Get columns that also exist for transect_data
     variable_overlap = [prefix_pattern + col for col in table_groups[group].values]
 
     # Run the multiplication
-    table_matrix = dataset.filter(variable_overlap).to_numpy() * table_groups.T
+    table_matrix = transect_data.filter(variable_overlap).to_numpy() * table_groups.T
 
     # Set up new columns
     new_columns = [f"{output_variable}_{c}" for c in table_groups[group].values]
 
     # Add the output variables
-    dataset[new_columns] = table_matrix.fillna(0.0).values
+    transect_data[new_columns] = table_matrix.fillna(0.0).values
 
     # Calculate the remainder comprising the ungrouped values
-    remainder = dataset[variable] - dataset[variable_overlap].fillna(0.0).sum(axis=1)
+    remainder = transect_data[variable] - transect_data[variable_overlap].fillna(0.0).sum(axis=1)
 
     # Calculate the output variable for the ungrouped/excluded values
     remainder_matrix = remainder * table_ridx.sel({group: "all"}).fillna(0.0)
 
     # Compute the overall output variable
-    dataset[output_variable] = dataset[new_columns].sum(axis=1) + remainder_matrix
+    transect_data[output_variable] = transect_data[new_columns].sum(axis=1) + remainder_matrix
 
 
 def compute_biomass(
-    dataset: pd.DataFrame,
+    transect_data: pd.DataFrame,
     stratum_weights: Optional[Union[xr.DataArray, float]] = None,
 ) -> None:
     """
@@ -361,67 +362,47 @@ def compute_biomass(
 
     Parameters
     ----------
-    dataset : pd.DataFrame
+    transect_data : pd.DataFrame
         DataFrame containing transect data with number densities already computed. Must include:
+        
         - 'number_density': Number of animals per unit area (animals/nmi²)
+        
         - 'abundance': Total number of animals in each interval (animals)
-    stratify_by : List[str], default []
-        Column name to use for stratification when aligning with the number proportions dictionary,
-        if specified.
-    group_by : List[str], default []
-        Grouping columns to apply to number density and abundances (e.g. sex). This will produce
-        additional columns formatted as `number_density_{group}` and `abundance_{group}`.
-    df_average_weight : Optional[Dict[str, pd.DataFrame]], default None
-        DataFrame or Series containing the average weight data for defined strata. This DataFrame
-        must be:
-        - Indexed by the same column as `stratify_by` if specified
-        - If a DataFrame, the columns should correspond to the grouping defined in `group_by`. For
-        example, if `group_by=['sex']`, then the DataFrame should have a column for each. If there
-        are additional groups that are present in the DataFrame but will not be used, then a
-        global set of values named 'all' should be present.
+        
+    stratum_weights : xr.DataArray, float, optional
+        A float or DataArray containing average weight estimates. When this is a float, the 
+        quantity is applied to all values uniformly. When it is a DataArray, then the coordinates 
+        are used to partition biomass estimates into separate groups via: 
+        ``biomass_density_{coordinate}`` (e.g., 'biomass_density_male') and 
+        ``biomass_{coordinate}`` (e.g., 'biomass_female').
 
     Returns
     -------
     None
         Function modifies the transect DataFrame in-place.
-
-    Examples
-    --------
-    >>> # Calculate biomass from abundance using weight table
-    >>> weight_table = pd.DataFrame({'female': [0.5, 0.6], 'male': [0.4, 0.5], 'all': [0.45, 0.55]})
-    >>> dataset = pd.DataFrame({'abundance_female': [100, 200], 'abundance_male': [150, 250], \
-        'abundance': [250, 450]})
-    >>> compute_biomass(
-    ...     dataset=dataset,
-    ...     stratify_by=['stratum'],
-    ...     group_by=['sex'],
-    ...     df_average_weight=df_stratum_weights,
-    ... )
-    >>> # Creates 'biomass_female', 'biomass_male' in-place
     """
 
     # Find overlapping indices
-    idx_names = list(set(stratum_weights.coords).intersection(set(dataset.columns)))
+    idx_names = list(set(stratum_weights.coords).intersection(set(transect_data.columns)))
     nonidx_names = [id for id in set(stratum_weights.coords) if id not in idx_names]
 
     # Set index
-    dataset.set_index(idx_names, inplace=True)
+    transect_data.set_index(idx_names, inplace=True)
 
-    # !!! ----> Rename `dataset` to not be `dataset` since it is a DataFrame, not an xarray object
     # If grouped beyond just index
     if len(nonidx_names) > 0:
         # ---- Compute the biomass densities across groups
         matrix_multiply_grouped_table(
-            dataset,
-            table=stratum_weights,
+            transect_data,
+            weights=stratum_weights,
             group=nonidx_names[0],
             variable="number_density",
             output_variable="biomass_density",
         )
         # ---- Compute the biomass densities across groups
         matrix_multiply_grouped_table(
-            dataset,
-            table=stratum_weights,
+            transect_data,
+            weights=stratum_weights,
             group=nonidx_names[0],
             variable="abundance",
             output_variable="biomass",
@@ -429,17 +410,19 @@ def compute_biomass(
     # ---- Ungrouped
     else:
         # ---- Reindex table
-        ridx = {k: dataset.reset_index()[k] for k in dataset.index.names}
+        ridx = {k: transect_data.reset_index()[k] for k in transect_data.index.names}
         stratum_weights_ridx = stratum_weights.reindex(ridx).fillna(0.0)
         # ---- Compute biomass densities
-        dataset["biomass_density"] = dataset["number_density"] * stratum_weights_ridx.sel(
-            {nonidx_names[0]: "all"}
+        transect_data["biomass_density"] = (
+            transect_data["number_density"] * stratum_weights_ridx.sel(
+                {nonidx_names[0]: "all"}
+                )
         )
         # ---- Compute biomass
-        dataset["biomass"] = dataset["abundance"] * stratum_weights.sel({nonidx_names[0]: "all"})
+        transect_data["biomass"] = transect_data["abundance"] * stratum_weights.sel({nonidx_names[0]: "all"})
 
     # Reset the index
-    dataset.reset_index(inplace=True)
+    transect_data.reset_index(inplace=True)
 
 
 def remove_specimen_hauls(
