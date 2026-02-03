@@ -65,9 +65,7 @@ def remove_group_from_estimates(
     transect_data_cnv = transect_data.to_xarray()
 
     # Align coordinates
-    group_proportions_aligned = group_proportions.sel(
-        {coord: transect_data_cnv[coord] for coord in grp_coords}
-    )
+    group_proportions_aligned = group_proportions.reindex_like(transect_data_cnv).fillna(0.0)
 
     # Adjust NASC, if present; otherwise, drop to avoid partial evaluation
     if "nasc" in group_proportions_aligned:
@@ -413,6 +411,14 @@ def impute_kriged_table(
         for col, arr in ref_nonzero_rows.items()
     }
 
+    # Break and raise warning if no imputation occurs
+    if all([len(v) == 0 for v in imputed_rows.values()]):
+        warnings.warn(
+            "No missing values detected. Imputation was skipped.",
+            stacklevel=2,
+        )
+        return standardized_table
+
     # Impute to replace these values
     imputed_values = {
         v: (
@@ -435,19 +441,20 @@ def impute_kriged_table(
             subgroup_dim: group_key,
             interval_dim: nonzero_reference_to_table_indices[group_key],
         }
-        # ---- Apply imputed values if any coords are provided
-        if coords[interval_dim].size > 0:
-            target_table.loc[coords] = imp_da.data
-            # ---- Validate that imputation correctly applied
-            if target_table.loc[coords].equals(standardized_table.loc[coords]):
-                interval_str = "', '".join(
-                    str(x) for x in nonzero_reference_to_table_indices[group_key]
-                )
-                # ---- Format error keys
-                raise ValueError(
-                    f"Imputation failed for group '{subgroup_dim}' = '{group_key}' at the "
-                    f"following '{interval_dim}' intervals: '{interval_str}'."
-                )
+        # ---- Apply imputed values
+        target_table.loc[coords] = imp_da.data
+        # ---- Validate that imputation correctly applied
+        if target_table.loc[coords].size > 0 and target_table.loc[coords].equals(
+            standardized_table.loc[coords]
+        ):
+            interval_str = "', '".join(
+                str(x) for x in nonzero_reference_to_table_indices[group_key]
+            )
+            # ---- Format error keys
+            raise ValueError(
+                f"Imputation failed for group '{subgroup_dim}' = '{group_key}' at the following "
+                f"'{interval_dim}' intervals: '{interval_str}'."
+            )
 
     # Return the imputed table
     return target_table

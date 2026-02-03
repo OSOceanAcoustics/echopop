@@ -284,6 +284,7 @@ def compute_abundance(
         dataset.reset_index(inplace=True)
 
 
+# !!! ----> Rename `dataset` to not be `dataset` since it is a DataFrame, not an xarray object
 def matrix_multiply_grouped_table(
     dataset: pd.DataFrame,
     table: xr.DataArray,
@@ -406,6 +407,7 @@ def compute_biomass(
     # Set index
     dataset.set_index(idx_names, inplace=True)
 
+    # !!! ----> Rename `dataset` to not be `dataset` since it is a DataFrame, not an xarray object
     # If grouped beyond just index
     if len(nonidx_names) > 0:
         # ---- Compute the biomass densities across groups

@@ -11,6 +11,7 @@ dependencies:
   - openpyxl
   - pandas
   - scipy
+  - xarray>=2026.01.0
   # Spatial stack
   - geopandas
   - geopy
@@ -27,6 +28,7 @@ dependencies:
   # Static visualization stack
   - cartopy
   - matplotlib
+  - seaborn
   # Interactive visualization stack
   - bokeh
   - geoviews

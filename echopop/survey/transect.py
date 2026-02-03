@@ -58,7 +58,7 @@ def compute_interval_distance(
 
     # Identify and correct erroneous interval lengths
     # ---- Calculate median interval for comparison
-    median_interval = np.median(df_nasc["distance_interval"])
+    median_interval = np.nanmedian(df_nasc["distance_interval"])
 
     # Find intervals that deviate significantly from median
     deviation_mask = np.abs(df_nasc["distance_interval"] - median_interval) > interval_threshold
