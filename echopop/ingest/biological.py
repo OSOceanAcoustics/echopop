@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 import pandas as pd
+import psycopg
 
 
 def load_single_biological_sheet(
@@ -46,7 +47,7 @@ def load_single_biological_sheet(
     return df_filtered
 
 
-def load_biological_data(
+def load_biological_data_excel(
     biodata_filepath: Path,
     biodata_sheet_map: Dict[str, str],
     column_name_map: Dict[str, str] = None,
@@ -86,7 +87,7 @@ def load_biological_data(
     >>> subset = {"ships": {160: {"survey": 201906}}, "species_code": [22500]}
     >>> col_map = {"frequency": "length_count", "haul": "haul_num"}
     >>> label_map = {"sex": {1: "male", 2: "female", 3: "unsexed"}}
-    >>> bio_data = load_biological_data("biodata.xlsx", sheet_map, col_map, subset, label_map)
+    >>> bio_data = load_biological_data_excel("biodata.xlsx", sheet_map, col_map, subset, label_map)
     """
 
     if not biodata_filepath.exists():
@@ -110,6 +111,96 @@ def load_biological_data(
                     df[col] = df[col].map(mapping).fillna(df[col])
 
     return biodata_dict
+
+
+def load_biological_data_database(
+    db_credentials: Dict[str, str],
+    column_name_map: Dict[str, str] = None,
+    subset_dict: Optional[Dict] = None,
+    biodata_label_map: Optional[Dict[str, Dict]] = None,
+) -> Dict[str, pd.DataFrame]:
+    """
+    Load biological data from a postgres database.
+    Parameters
+    ----------
+    db_credentials : dict
+        Dictionary containing database credentials
+        (e.g., {"host": "localhost", "port": "5432", "dbname": "fisheries", "schema": "biodata"
+        "user": "<USERNAME>", "password": "<PASSWORD>"})
+    column_name_map : dict, optional
+        Dictionary mapping original column names to new column names
+        (e.g., {"frequency": "length_count", "haul": "haul_num"})
+    subset_dict : dict, optional
+        Subset dictionary containing ships and species_code for filtering
+        Format: {"ships": {ship_id: {"survey": survey_id, "haul_offset": offset}}, "species_code":
+        [codes]}
+    biodata_label_map : dict, optional
+        Dictionary mapping column names to value replacement dictionaries
+        (e.g., {"sex": {1: "male", 2: "female", 3: "unsexed"}})
+    Returns
+    -------
+    dict
+        Dictionary containing processed biological DataFrames keyed by dataset name
+    Examples
+    --------
+    >>> subset = {"ships": {160: {"survey": 201906}}, "species_code": [22500]}
+    >>> col_map = {"frequency": "length_count", "haul": "haul_num"}
+    >>> label_map = {"sex": {1: "male", 2: "female", 3: "unsexed"}}
+    """
+
+    try:
+        conn = psycopg.connect(
+            host=db_credentials["host"],
+            dbname=db_credentials["dbname"],
+            user=db_credentials["user"],
+            password=db_credentials["password"],
+            port=db_credentials["port"],
+        )
+        conn.autocommit = False
+
+        views = ["catch", "length", "specimen"]
+        trawl_report = "trawl_report_"
+        schema = db_credentials["schema"] if "schema" in db_credentials else "public"
+        biodata_dict = {}
+
+        for view in views:
+            query = f"SELECT * FROM {schema}.{trawl_report}{view};"
+            df_initial = pd.read_sql_query(query, conn)
+
+            # Force the column names to be lower case
+            df_initial.columns = df_initial.columns.str.lower()
+
+            # Rename the columns
+            if column_name_map:
+                df_initial.rename(columns=column_name_map, inplace=True)
+
+            biodata_dict[view] = apply_ship_survey_filters(df_initial, subset_dict)
+
+        # Apply label mappings if provided
+        if biodata_label_map:
+            # ---- For each column mapping in the label map
+            for col, mapping in biodata_label_map.items():
+                # ---- Apply to each dataframe that has that column
+                for name, df in biodata_dict.items():
+                    if isinstance(df, pd.DataFrame) and col in df.columns:
+                        df[col] = df[col].map(mapping).fillna(df[col])
+
+        # Validate data types
+        biodata_dict["specimen"]["length"] = pd.to_numeric(biodata_dict["specimen"]["length"])
+        biodata_dict["specimen"]["weight"] = pd.to_numeric(biodata_dict["specimen"]["weight"])
+
+        # Validate Required Age Data
+        if biodata_dict["specimen"]["age"].isnull().all():
+            raise ValueError("Specimen age data not found")
+
+        return biodata_dict
+    except psycopg.Error as e:
+        print(f"Database error: {e}")
+
+    finally:
+        if "conn" in locals() and conn:
+            conn.rollback()
+            conn.close()
 
 
 def apply_ship_survey_filters(
