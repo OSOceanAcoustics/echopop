@@ -466,21 +466,29 @@ logging.info(
     "         KS: 'geostratum_ks'"
 )
 # ---- NASC [INPFC]
-df_nasc = ingestion.join_geostrata_by_latitude(data=df_nasc,
-                                               geostrata_df=df_dict_geostrata["inpfc"],
-                                               stratum_name="geostratum_inpfc")
+df_nasc = ingestion.join_geostrata_by_latitude(
+    data=df_nasc,
+    geostrata_df=df_dict_geostrata["inpfc"],
+    stratum_name="geostratum_inpfc"
+)
 # ---- NASC [KS]
-df_nasc = ingestion.join_geostrata_by_latitude(data=df_nasc,
-                                               geostrata_df=df_dict_geostrata["ks"],
-                                               stratum_name="geostratum_ks")
+df_nasc = ingestion.join_geostrata_by_latitude(
+    data=df_nasc,
+    geostrata_df=df_dict_geostrata["ks"],
+    stratum_name="geostratum_ks"
+)
 # ---- MESH [INPFC]
-df_mesh = ingestion.join_geostrata_by_latitude(data=df_mesh, 
-                                               geostrata_df=df_dict_geostrata["inpfc"], 
-                                               stratum_name="geostratum_inpfc")
+df_mesh = ingestion.join_geostrata_by_latitude(
+    data=df_mesh, 
+    geostrata_df=df_dict_geostrata["inpfc"], 
+    stratum_name="geostratum_inpfc"
+)
 # ---- MESH [KS]
-df_mesh = ingestion.join_geostrata_by_latitude(data=df_mesh, 
-                                               geostrata_df=df_dict_geostrata["ks"], 
-                                               stratum_name="geostratum_ks")
+df_mesh = ingestion.join_geostrata_by_latitude(
+    data=df_mesh, 
+    geostrata_df=df_dict_geostrata["ks"], 
+    stratum_name="geostratum_ks"
+)
 logging.info("Strata application complete!")
 # ==================================================================================================
 # BINIFY DATA 
@@ -724,7 +732,7 @@ logging.info(
     "     Excluding: 'sex'='unsexed' from 'dict_df_number_proportions'"    
 )
 feat_biology.compute_abundance(
-    transect_data=df_nasc,
+    dataset=df_nasc,
     exclude_filter={"sex": "unsexed"},
     number_proportions=dict_ds_number_proportion,
 )

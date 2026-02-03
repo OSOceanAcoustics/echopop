@@ -194,11 +194,11 @@ def compute_abundance(
     ----------
     transect_data : pd.DataFrame
         DataFrame containing transect data with number densities already computed. Must include:
-        
+
         - 'number_density': Number of animals per unit area (animals/nmi²)
-        
+
         - 'area_interval': Area of each sampling interval (nmi²)
-        
+
     stratify_by : List[str], default []
         Column name to use for stratification when aligning with the number proportions dictionary,
         if specified.
@@ -280,11 +280,12 @@ def compute_abundance(
             [f"number_density_{c}" for c in grouped_number_density.coords[nonidx_names[0]].values]
         ] = grouped_number_density
         # ---- Add abundances to the dataset
-        transect_data[[f"abundance_{c}" for c in grouped_abundance.coords[nonidx_names[0]].values]] = (
-            grouped_abundance
-        )
+        transect_data[
+            [f"abundance_{c}" for c in grouped_abundance.coords[nonidx_names[0]].values]
+        ] = grouped_abundance
         # ---- Reset the index
         transect_data.reset_index(inplace=True)
+
 
 def matrix_multiply_grouped_table(
     transect_data: pd.DataFrame,
@@ -308,7 +309,7 @@ def matrix_multiply_grouped_table(
         This variable should have columns named as ``{variable}_{suffix}`` where ``suffix`` is a
         group identifier.
     output_variable : str
-        The name of the output variable/column that will be created in ``transect_data`` to store 
+        The name of the output variable/column that will be created in ``transect_data`` to store
         the results.
     group : Optional[str], default None
         The specific group to filter the grouped table by. If None, all groups will be used.
@@ -364,16 +365,16 @@ def compute_biomass(
     ----------
     transect_data : pd.DataFrame
         DataFrame containing transect data with number densities already computed. Must include:
-        
+
         - 'number_density': Number of animals per unit area (animals/nmi²)
-        
+
         - 'abundance': Total number of animals in each interval (animals)
-        
+
     stratum_weights : xr.DataArray, float, optional
-        A float or DataArray containing average weight estimates. When this is a float, the 
-        quantity is applied to all values uniformly. When it is a DataArray, then the coordinates 
-        are used to partition biomass estimates into separate groups via: 
-        ``biomass_density_{coordinate}`` (e.g., 'biomass_density_male') and 
+        A float or DataArray containing average weight estimates. When this is a float, the
+        quantity is applied to all values uniformly. When it is a DataArray, then the coordinates
+        are used to partition biomass estimates into separate groups via:
+        ``biomass_density_{coordinate}`` (e.g., 'biomass_density_male') and
         ``biomass_{coordinate}`` (e.g., 'biomass_female').
 
     Returns
@@ -413,13 +414,13 @@ def compute_biomass(
         ridx = {k: transect_data.reset_index()[k] for k in transect_data.index.names}
         stratum_weights_ridx = stratum_weights.reindex(ridx).fillna(0.0)
         # ---- Compute biomass densities
-        transect_data["biomass_density"] = (
-            transect_data["number_density"] * stratum_weights_ridx.sel(
-                {nonidx_names[0]: "all"}
-                )
-        )
+        transect_data["biomass_density"] = transect_data[
+            "number_density"
+        ] * stratum_weights_ridx.sel({nonidx_names[0]: "all"})
         # ---- Compute biomass
-        transect_data["biomass"] = transect_data["abundance"] * stratum_weights.sel({nonidx_names[0]: "all"})
+        transect_data["biomass"] = transect_data["abundance"] * stratum_weights.sel(
+            {nonidx_names[0]: "all"}
+        )
 
     # Reset the index
     transect_data.reset_index(inplace=True)
