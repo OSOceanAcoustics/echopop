@@ -65,8 +65,8 @@ def remove_group_from_estimates(
     transect_data_cnv = transect_data.to_xarray()
 
     # Align coordinates
-    group_proportions_aligned = group_proportions.reindex_like(transect_data_cnv).fillna(0.)
-        
+    group_proportions_aligned = group_proportions.reindex_like(transect_data_cnv).fillna(0.0)
+
     # Adjust NASC, if present; otherwise, drop to avoid partial evaluation
     if "nasc" in group_proportions_aligned:
         transect_data["nasc"] = transect_data_cnv["nasc"] * (1 - group_proportions_aligned["nasc"])
@@ -410,7 +410,7 @@ def impute_kriged_table(
         ]
         for col, arr in ref_nonzero_rows.items()
     }
-    
+
     # Break and raise warning if no imputation occurs
     if all([len(v) == 0 for v in imputed_rows.values()]):
         warnings.warn(
@@ -444,9 +444,8 @@ def impute_kriged_table(
         # ---- Apply imputed values
         target_table.loc[coords] = imp_da.data
         # ---- Validate that imputation correctly applied
-        if (
-            target_table.loc[coords].size > 0 and 
-            target_table.loc[coords].equals(standardized_table.loc[coords])
+        if target_table.loc[coords].size > 0 and target_table.loc[coords].equals(
+            standardized_table.loc[coords]
         ):
             interval_str = "', '".join(
                 str(x) for x in nonzero_reference_to_table_indices[group_key]

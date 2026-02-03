@@ -544,7 +544,7 @@ def calculate_grouped_weights(
             (aggregate_proportions * within_group_proportions_all) * weight_all_values
         ).sum(dim=["length_bin", "group"])
         weight_das["all"] = weighted_sum
-                
+
     # Weight for each grouping category individually
     if grouping_dim in adjusted_proportions.dims:
         for grouping in grouping_vals:
@@ -705,32 +705,25 @@ def stratum_averaged_weight(
 
     # Compute the overall proportions across all animals
     # ---- Extract arrays
-    das_list = [
-        ds["proportion_overall"] for ds in number_proportions.values()
-    ]
+    das_list = [ds["proportion_overall"] for ds in number_proportions.values()]
     # ---- Sum over the target dimensions
     das_list_sum = []
-    for da in das_list:   
+    for da in das_list:
         # ---- Find sum dimensions
-        current_coords = [
-            d for d in da.dims if d not in group_columns + grps + ["length_bin"]
-        ]            
+        current_coords = [d for d in da.dims if d not in group_columns + grps + ["length_bin"]]
         # ---- Append summed
         das_list_sum.append(da.sum(dim=current_coords, skipna=True))
     # ---- Convert to DataArray
     within_grp_props_unnorm = xr.concat(
-        das_list_sum,
-        dim=xr.IndexVariable("group", list(number_proportions.keys())),
-        join="inner"
+        das_list_sum, dim=xr.IndexVariable("group", list(number_proportions.keys())), join="inner"
     )
     # ---- Normalize
     within_grp_props = within_grp_props_unnorm / within_grp_props_unnorm.sum(dim=["length_bin"])
     # ---- Get for all
-    within_grp_props_all = (
-        within_grp_props_unnorm.sum(dim=grps) / 
-        within_grp_props_unnorm.sum(dim=grps + ["length_bin"])
+    within_grp_props_all = within_grp_props_unnorm.sum(dim=grps) / within_grp_props_unnorm.sum(
+        dim=grps + ["length_bin"]
     )
-    
+
     # Extract proportion_overall and add group dimension
     proportion_arrays = []
     for group_name, ds in number_proportions.items():
@@ -741,12 +734,12 @@ def stratum_averaged_weight(
         # ---- Expand the dimensions
         proportion_arrays.append(grouped_array.expand_dims({"group": [group_name]}))
     aggregate_proportions = xr.concat(proportion_arrays, dim="group")
-    
+
     # Compute the re-weighted proportions from the mixture of the different groups
     adjusted_proportions = calculate_adjusted_proportions(
         proportion_vars, aggregate_proportions, within_grp_props_unnorm.sum(dim=["length_bin"])
     )
-    
+
     # Calculate final weights
     fitted_weights = calculate_grouped_weights(
         length_weight_data=length_weight_data,
@@ -882,7 +875,7 @@ def weight_proportions(
 
     # Align in case of mismatch in groupings
     weights_aligned = xr.align(*(catch_weights, group_weights), join="outer", fill_value=0.0)
-    
+
     # Get the overall sums
     total_weights = sum(weights_aligned)
 
@@ -1332,11 +1325,7 @@ def get_weight_proportions_slice(
             threshold_mask_num, proportions_weight = xr.align(
                 threshold_mask_num, proportions_weight, join="outer", fill_value=0.0
             )
-            proportions_weight = xr.where(
-                (threshold_mask_num), 
-                0, 
-                proportions_weight
-            ).fillna(0.0)
+            proportions_weight = xr.where((threshold_mask_num), 0, proportions_weight).fillna(0.0)
 
     # Apply weight thresholding
     threshold_mask_wgts = target_group_weight_proportions <= weight_proportion_threshold

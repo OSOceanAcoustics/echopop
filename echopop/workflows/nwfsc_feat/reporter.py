@@ -1639,7 +1639,7 @@ class Reporter:
 
         # Convert xr.DataArray to DataFrame
         datatable_cnv = datatable.to_series()
-        
+
         # Pull the aged dataset
         table_cnv = datatable_cnv.unstack(["age_bin", "sex"])
 
@@ -1666,7 +1666,7 @@ class Reporter:
         table_all.columns = pd.MultiIndex.from_product([["all"], table_all.columns])
         # ---- Concatenate
         aged_full_table = pd.concat([table_cnv, table_all], axis=1) * 1e-9
-        
+
         # Prepare and format the tables
         sex_tables = prepare_age_length_tables(aged_full_table)
 
@@ -1970,18 +1970,20 @@ class Reporter:
         stratum_name = list(set(weight_data.columns.names).difference(["age_bin", "sex"]))
 
         # Sum across lengths
-        age_weight_sums = weight_data.sum(axis=0)#.unstack(["sex"] + stratum_name)
+        age_weight_sums = weight_data.sum(axis=0)  # .unstack(["sex"] + stratum_name)
 
         # Apply exclusion filter, if supplied
-        if exclude_filter:            
+        if exclude_filter:
             # ---- Exclusive
             population_masked = utils.apply_filters(
                 age_weight_sums, exclude_filter=exclude_filter, replace_value=0.0
             )
             # ---- Inclusive
-            population_excluded = utils.apply_filters(
-                age_weight_sums, include_filter=exclude_filter
-            ).reindex(population_masked.index).fillna(0.)
+            population_excluded = (
+                utils.apply_filters(age_weight_sums, include_filter=exclude_filter)
+                .reindex(population_masked.index)
+                .fillna(0.0)
+            )
             # ---- Get the bulk sums
             population_masked_sum = population_masked.unstack("age_bin").sum(axis=1)
             population_excluded_sum = population_excluded.unstack("age_bin").sum(axis=1)
@@ -1994,12 +1996,11 @@ class Reporter:
         else:
             population_masked = age_weight_sums
 
-
         # Compute the pivoted weight proportions
         age_weight_proportions = pivot_aged_weight_proportions(
             population_masked.unstack(["sex"] + stratum_name)
         )
-        
+
         # Set the index
         transect_data.set_index(stratum_name, inplace=True)
 
@@ -2014,7 +2015,7 @@ class Reporter:
             )
             for sex in ["all", "female", "male"]
         }
-        
+
         # Format the tables
         prepare_aged_biomass_dataframes(transect_tables)
 
@@ -2345,7 +2346,7 @@ class Reporter:
             "sig_b": "sig_b",
             "wgt_per_fish": "wgt_per_fish",
         }
-        
+
         # Drop un-unique columns
         non_unique_cols = [c for c in transect_data.columns if c in RENAME_MAP.values()]
         # ---- Remove

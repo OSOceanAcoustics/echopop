@@ -406,7 +406,7 @@ def compute_biomass(
 
     # Set index
     dataset.set_index(idx_names, inplace=True)
-    
+
     # !!! ----> Rename `dataset` to not be `dataset` since it is a DataFrame, not an xarray object
     # If grouped beyond just index
     if len(nonidx_names) > 0:

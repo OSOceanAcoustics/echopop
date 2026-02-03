@@ -465,7 +465,7 @@ def plot_population_table_comparisons(
     show_plot : bool
         If True, the plot will be rendered in the user's session.
     log_transform: bool
-        If True, al values wihtin the DataFrames are log-transformed (base-10).
+        If True, al values within the DataFrames are log-transformed (base-10).
     """
             
     # Get all sex keys
