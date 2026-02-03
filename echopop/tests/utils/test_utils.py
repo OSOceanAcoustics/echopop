@@ -103,6 +103,7 @@ def test_group_interpolator_creator_multiple_groups(length_weight_dataset_with_b
     assert ("female", "B") in interpolators or ("female", "stratum_B") in interpolators
     assert callable(interpolators[list(interpolators.keys())[0]])
 
+
 def test_create_grouped_series(proportion_dict):
     """Test the create_grouped_series function."""
     result = utils.create_grouped_series(
