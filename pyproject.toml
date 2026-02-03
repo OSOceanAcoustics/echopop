@@ -62,7 +62,7 @@ dependencies = [
     "holoviews",
     "hvplot",
     "ipywidgets"
-    
+
 ]
 
 [project.urls]
