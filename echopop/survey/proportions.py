@@ -708,8 +708,6 @@ def stratum_averaged_weight(
     das_list = [
         ds["proportion_overall"] for ds in number_proportions.values()
     ]
-    # ---- Find shared dimensions
-    shared_dims = set().union(*map(lambda da: da.dims, das_list))
     # ---- Sum over the target dimensions
     das_list_sum = []
     for da in das_list:   

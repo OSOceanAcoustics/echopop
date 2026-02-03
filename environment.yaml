@@ -27,6 +27,7 @@ dependencies:
   # Static visualization stack
   - cartopy
   - matplotlib
+  - seaborn
   # Interactive visualization stack
   - bokeh
   - geoviews

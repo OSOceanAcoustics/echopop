@@ -54,6 +54,7 @@ dependencies = [
     "jupyter_bokeh>=3.0.5",
     # Static visualization stack
     "matplotlib",
+    "seaborn",
     # Interactive visualization stack
     "bokeh",
     "geoviews",

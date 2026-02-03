@@ -70,9 +70,10 @@ BIODATA_SHIP_SPECIES = {
         21: {
             "survey": 199510
         },
-        499: {
-            "survey": 1995
-        }
+        # IN ECHOPRO: ONLY US DATA WAS USED FOR THI YEAR
+        # 499: {
+        #     "survey": 1995
+        # }
     },
     "species_code": [22500]
 }
@@ -214,8 +215,9 @@ logging.info(
     "Longitude values in 'df_nasc' are in deg.W. However, they must be in deg.E. These have been "
     "converted accordingly."
 )
-if all(df_nasc["longitude"] > 0):
-    df_nasc["longitude"] = df_nasc["longitude"] * -1
+if any(df_nasc["longitude"] > 0):
+    df_nasc["longitude"] = -np.abs(df_nasc["longitude"])
+    
 logging.info(
     "!!! [1995] WARNING:\n"
     "Columns 'region_id', 'layer_height', and 'layer_mean_depth' missing. "
@@ -245,6 +247,11 @@ BIODATA_SEX = {
         3: "unsexed"
     }
 }
+
+logging.info(
+    "!!! [1995] WARNING:\n"
+    "Reading in only US biological data (ship ID: '21', survey: '199510'.)"
+)
 
 # READ IN DATA
 dict_df_bio = ingestion.load_biological_data(
@@ -492,7 +499,7 @@ ds_counts = xr.Dataset()
 
 # AGED
 ds_counts["aged"] = proportions.compute_binned_counts(
-    data=dict_df_bio["specimen"].dropna(subset=["age", "length", "weight"]),
+    data=dict_df_bio["specimen"].dropna(subset=["length"]),
     groupby_cols=["stratum_ks", "length_bin", "age_bin", "sex"],
     count_col="length",
     agg_func="size",
@@ -935,6 +942,16 @@ krg = geostatistics.Kriging(
     coordinate_names=("x", "y"),
 )
 
+# REGISTER KRIGING METHOD
+krg.register_search_strategy("FEAT_strategy", feat.western_boundary_search_strategy)
+# ---- Parameterize
+transect_western_extents = feat.get_survey_western_extents(
+    transects=df_nasc_proc, coordinate_names=("x", "y"), latitude_threshold=51.0
+)
+FEAT_STRATEGY_KWARGS = {
+    "western_extent": transect_western_extents,
+}
+
 # RUN KRIGING
 logging.info(
     "Interpolating population estimates using ordinary kriging\n"
@@ -947,6 +964,8 @@ df_kriged_results = krg.krige(
     variable="biomass_density",
     extrapolate=True,
     default_mesh_cell_area=6.25,
+    adaptive_search_strategy="FEAT_strategy",
+    custom_search_kwargs=FEAT_STRATEGY_KWARGS
 )
 # ==================================================================================================
 # CONVERT BIOMASS DENSITY TO NASC

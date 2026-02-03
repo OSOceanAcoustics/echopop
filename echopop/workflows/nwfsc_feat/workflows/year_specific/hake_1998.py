@@ -931,6 +931,16 @@ krg = geostatistics.Kriging(
     coordinate_names=("x", "y"),
 )
 
+# REGISTER KRIGING METHOD
+krg.register_search_strategy("FEAT_strategy", feat.western_boundary_search_strategy)
+# ---- Parameterize
+transect_western_extents = feat.get_survey_western_extents(
+    transects=df_nasc_proc, coordinate_names=("x", "y"), latitude_threshold=51.0
+)
+FEAT_STRATEGY_KWARGS = {
+    "western_extent": transect_western_extents,
+}
+
 # RUN KRIGING
 logging.info(
     "Interpolating population estimates using ordinary kriging\n"
@@ -943,6 +953,8 @@ df_kriged_results = krg.krige(
     variable="biomass_density",
     extrapolate=True,
     default_mesh_cell_area=6.25,
+    adaptive_search_strategy="FEAT_strategy",
+    custom_search_kwargs=FEAT_STRATEGY_KWARGS
 )
 
 # ==================================================================================================

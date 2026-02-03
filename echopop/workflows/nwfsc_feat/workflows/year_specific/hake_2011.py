@@ -41,7 +41,7 @@ except Exception:
 # ---- spreadsheet will be read in. This also requires defining `NASC_EXPORTS_SHEET`
 NASC_PREPROCESSED = True
 # NASC EXPORTS FILE(S)
-NASC_EXPORTS_FILES = DATA_ROOT / "Exports/US&CAN_detailsa_2011_table2y+_ALL_final.xlsx"
+NASC_EXPORTS_FILES = DATA_ROOT / "Exports/US&CAN_detailsa_2011_table2y+_ALL_stratification1.xlsx"
 # NASC EXPORTS SHEET
 NASC_EXPORTS_SHEET = "Sheet1"
 # REMOVE AGE-1 (I.E., AGE-2+ ONLY)?
@@ -170,14 +170,23 @@ if NASC_PREPROCESSED:
     # DEFINE COLUMN MAPPING
     FEAT_TO_ECHOPOP_COLUMNS = {
         "transect": "transect_num",
+        "transect # ": "transect_num",
+        "region #": "region_id",
         "region id": "region_id",
+        "vlst": "distance_s",
         "vl start": "distance_s",
+        "vled": "distance_e",
         "vl end": "distance_e",
+        "lat": "latitude",
+        "lon": "longitude",
+        "transect spacing": "transect_spacing",
         "spacing": "transect_spacing",
+        "layer depth": "layer_mean_depth",
         "layer mean depth": "layer_mean_depth",
         "layer height": "layer_height",
         "bottom depth": "bottom_depth",
         "assigned haul": "haul_num",
+        "haul #": "haul_num"
     }
 
     # Read file
