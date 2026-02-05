@@ -1,3 +1,5 @@
+import itertools
+
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -146,10 +148,17 @@ def apply_ship_survey_filters(
         # ---- Get ship-specific configurations
         ship_config = subset_dict["ships"]
         # ---- Apply ship-based filter
-        if "ship_id" in df_filtered.columns:
-            df_filtered = df_filtered.loc[df_filtered["ship_id"].isin(ship_ids)]
+        if "ship" in df_filtered.columns:
+            df_filtered = df_filtered.loc[df_filtered["ship"].isin(ship_ids)]
         # ---- Collect survey IDs, if present
-        survey_ids = [v["survey"] for v in ship_config.values() if "survey" in v]
+        survey_ids = list(
+            itertools.chain.from_iterable(
+                [
+                    v["survey"] if isinstance(v["survey"], list) else [v["survey"]]
+                    for v in ship_config.values() if "survey" in v
+                ]
+            )
+        )
         # ---- Apply survey-based filter
         if survey_ids and "survey" in df_filtered.columns:
             df_filtered = df_filtered.loc[df_filtered["survey"].isin(survey_ids)]

@@ -36,7 +36,7 @@ NASC_EXPORTS_FILES = DATA_ROOT / "raw_nasc/"
 NASC_EXPORTS_SHEET = "Sheet1"
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # BIODATA FILE
-BIODATA_FILE = DATA_ROOT / "Biological/1995-2023_biodata_redo.xlsx"
+BIODATA_FILE = DATA_ROOT / "Biological/1995-2025_Survey_Biodata.xlsx"
 # BIODATA SHEETS
 # ---- Assign the sheetnames to 'catch', 'length', 'specimen'
 BIODATA_SHEETS = {

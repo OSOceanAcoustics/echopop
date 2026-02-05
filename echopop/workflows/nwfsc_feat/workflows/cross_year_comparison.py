@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 from echopop.workflows.nwfsc_feat.workflows import comparisons as comp
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # SAVE FILEPATH FOR OUTPUT FIGURE
-SAVE_FILEPATH = Path("C:/Data/EchopopData/cross_year_comparisons.png")
+SAVE_FILEPATH = Path("C:/Data/EchopopData/cross_year_comparisons_updated_biodata.png")
 # YEARS TO PROCESS
 years = [1995, 1998, 2001, 2003, 2005, 2007, 2009, 2011, 2012, 2013, 2015, 2017, 2019, 2021]
 # DATA DIRECTORIES
@@ -28,7 +28,7 @@ def generate_echopro_root(year: int):
     return Path(f"C:/Data/EchopopData/echopop_{year}/reports_echopro")
 # ROOT REPORT DIRECTORY FOR ECHOPRO - GENERATION FUNCTION
 def generate_echopop_root(year: int):
-    return Path(f"C:/Data/EchopopData/echopop_{year}/reports")
+    return Path(f"C:/Data/EchopopData/echopop_{year}/reports_updated_biodata")
 # ==================================================================================================
 # FUNCTION FOR INGESTION
 def get_report(
@@ -45,14 +45,14 @@ def get_report(
         if type == "kriging": 
             file = filepath / "kriged_biomass_mesh_full.xlsx"
         else:
-            file = filepath / "transect_population_results_nonzero.xlsx"
+            file = filepath / "transect_population_results_full.xlsx"
     else:
         if type == "kriging": 
             # ---- Expected file pattern
-            pattern = re.compile(r"^EchoPro_kriged_output(?:-.*)?_1\.xlsx$")
+            pattern = re.compile(r"^EchoPro_kriged_output(?:-.*)?_0\.xlsx$")
         else:
             # ---- Expected file pattern
-            pattern = re.compile(r"^EchoPro_un-kriged_output(?:-.*)?_1\.xlsx$")
+            pattern = re.compile(r"^EchoPro_un-kriged_output(?:-.*)?_0\.xlsx$")
         # ---- Check across available files in directory
         matched_files = [
             f for f in os.listdir(filepath)
@@ -155,6 +155,9 @@ annot_kriging = fmt_percent(signed_pct_diff.loc["kriging"])
 # Find global vmin/vmax for consistent color scaling
 vmin = signed_pct_diff.min().min()
 vmax = signed_pct_diff.max().max()
+
+echopop.loc["transect", 2005]
+echopro.loc["transect", 2005]
 
 fig, axes = plt.subplots(1, 2, figsize=(14, 6), sharey=True)
 
