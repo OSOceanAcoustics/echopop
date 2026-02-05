@@ -24,13 +24,13 @@ except Exception:
 DATA_ROOT = Path("C:/Data/EchopopData/echopop_1995")
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # REPORTS SAVE DIRECTORY
-REPORTS_DIR = DATA_ROOT / "reports"
+REPORTS_DIR = DATA_ROOT / "reports_updated_biodata"
 # COMPARE TO ECHOPRO REPORTS?
 try:
     # ---- FOR CLI USE
     COMPARE = cli_utils.get_compare()
     ECHOPRO_REPORTS_DIR = DATA_ROOT / "reports_echopro"
-    COMPARISONS_DIR = DATA_ROOT / "comparisons"
+    COMPARISONS_DIR = DATA_ROOT / "comparisons_updated_biodata"
     SHOW_PLOT = False
 except Exception:
     # ---- FOR INTERACTIVE REPL USE
@@ -51,7 +51,7 @@ TRANSECT_BOUNDARY_SHEET = "1995-2011"
 SURVEY_FILTER = "survey == 199510"
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # BIODATA FILE
-BIODATA_FILE = DATA_ROOT / "Biological/1995-2023_biodata_redo.xlsx"
+BIODATA_FILE = DATA_ROOT / "Biological/1995-2025_Survey_Biodata.xlsx"
 # BIODATA SHEETS
 # ---- Assign the sheetnames to 'catch', 'length', 'specimen'
 BIODATA_SHEETS = {
@@ -1231,7 +1231,7 @@ reporter.kriged_mesh_results_report(
 reporter.kriged_mesh_results_report(
     filename="kriged_biomass_mesh_nonzero.xlsx",
     sheetname="Sheet1",
-    kriged_data=df_kriged_results[df_kriged_results["biomass"] > 0.],
+    kriged_data=df_kriged_results[df_kriged_results["abundance"] > 0.],
     kriged_stratum="geostratum_ks",
     kriged_variable="biomass",
     sigma_bs_data=invert_hake.sigma_bs_strata,
@@ -1308,7 +1308,7 @@ reporter.transect_population_results_report(
 reporter.transect_population_results_report(
     filename="transect_population_results_nonzero.xlsx",
     sheetname="Sheet1",
-    transect_data=df_nasc_proc[df_nasc_proc["nasc"] > 0.],
+    transect_data=df_nasc_proc[df_nasc_proc["biomass"] > 0.],
     weight_strata_data=da_averaged_weight,
     sigma_bs_stratum=invert_hake.sigma_bs_strata,
     stratum_name="stratum_ks",
@@ -1413,6 +1413,8 @@ if COMPARE:
         save_filepath=COMPARISONS_DIR / "total_length_haul_counts.png",
         show_plot=SHOW_PLOT
     )
+    
+    echopro_total_length_haul_counts["female"] - echopop_total_length_haul_counts["female"]
     
     # KRIGED LENGTH-AGE ABUNDANCE
     echopro_kriged_abundance_table = comparisons.read_pivot_table_report(
