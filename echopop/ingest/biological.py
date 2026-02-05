@@ -1,5 +1,4 @@
 import itertools
-
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -155,7 +154,8 @@ def apply_ship_survey_filters(
             itertools.chain.from_iterable(
                 [
                     v["survey"] if isinstance(v["survey"], list) else [v["survey"]]
-                    for v in ship_config.values() if "survey" in v
+                    for v in ship_config.values()
+                    if "survey" in v
                 ]
             )
         )
