@@ -185,9 +185,10 @@ class InversionLengthTS(InversionBase):
 
         # Weighted average across hauls
         sigma_bs_haul = haul_counts.groupby(
-            self.model_params["stratify_by"] + [self.model_params["haul_column"]])[
-            ["sigma_bs", "length_count"]
-        ].apply(lambda x: np.average(x.sigma_bs, weights=x.length_count))
+            self.model_params["stratify_by"] + [self.model_params["haul_column"]]
+        )[["sigma_bs", "length_count"]].apply(
+            lambda x: np.average(x.sigma_bs, weights=x.length_count)
+        )
 
         # Return the output
         return sigma_bs_haul.to_frame("sigma_bs")

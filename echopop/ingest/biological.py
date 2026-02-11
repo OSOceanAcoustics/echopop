@@ -1,10 +1,10 @@
-import itertools
 import copy
+import itertools
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 
 def load_single_biological_sheet(
@@ -178,6 +178,7 @@ def apply_ship_survey_filters(
 
     return df_filtered
 
+
 def generate_composite_key(
     bio_data: Dict[str, pd.DataFrame],
     index_columns: List[str],
@@ -198,7 +199,7 @@ def generate_composite_key(
             f"Both defined ID columns ('{id_col_str}') or preset 'uid' column missing from "
             f"the following biodata DataFrames: '{entr_str}'."
         )
-        
+
     # Create copy
     bio_data_copy = copy.deepcopy(bio_data)
 
@@ -208,60 +209,60 @@ def generate_composite_key(
         new_name = column + "_adj"
         # ---- Apply adjustment
         bio_data_copy = {
-            k: v.assign(**{
-                new_name: np.where(
-                    v[column] + adjustment > 0,
-                    v[column] + adjustment,
-                    v[column]
-                )
-            }) for k, v in bio_data_copy.items()
+            k: v.assign(
+                **{
+                    new_name: np.where(
+                        v[column] + adjustment > 0, v[column] + adjustment, v[column]
+                    )
+                }
+            )
+            for k, v in bio_data_copy.items()
         }
-        
+
     # Identify the constructor columns
     constructor_columns = [c if c not in adjust else c + "_adj" for c in index_columns]
 
-    # Join the columns to create unique id column 
+    # Join the columns to create unique id column
     bio_data_copy = {
-        k: v.assign(uid = v[constructor_columns].astype(str).agg("-".join, axis=1)).filter(
+        k: v.assign(uid=v[constructor_columns].astype(str).agg("-".join, axis=1)).filter(
             list(bio_data[k].columns) + ["uid"]
         )
         for k, v in bio_data_copy.items()
     }
 
     # Get unique columns + uid for merging into downstream DataFrames
-    unique_uid = pd.concat([
-        d.filter(index_columns + ["uid"]) for d in bio_data_copy.values()
-    ]).drop_duplicates()
-    
+    unique_uid = pd.concat(
+        [d.filter(index_columns + ["uid"]) for d in bio_data_copy.values()]
+    ).drop_duplicates()
+
     # Return the unique IDs
     return unique_uid
+
 
 def apply_composite_key(
     data: pd.DataFrame,
     composite_key: pd.DataFrame,
     haul_offset: Dict[np.number, np.number] = (),
 ) -> pd.DataFrame:
-    
+
     # Apply adjustments to the original composite key columns
     composite_id = composite_key.copy()
     if len(haul_offset) == 2:
         composite_id["haul_num"] = np.where(
             composite_id["ship"] == haul_offset[0],
             composite_id["haul_num"] + haul_offset[1],
-            composite_id["haul_num"]
+            composite_id["haul_num"],
         )
-        
+
     # Drop "uid" from data
     if "uid" in data.columns:
         data.drop(columns=["uid"], inplace=True)
-    
+
     # Left-merge
     shared_columns = [c for c in composite_id.columns if c in data.columns and c != "uid"]
     data_uid = data.merge(
-        composite_id.filter(shared_columns + ["uid"]), 
-        on=shared_columns,
-        how="left"
+        composite_id.filter(shared_columns + ["uid"]), on=shared_columns, how="left"
     )
-    
+
     # Return
     return data_uid

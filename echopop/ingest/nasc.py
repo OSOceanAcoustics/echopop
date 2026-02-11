@@ -962,9 +962,7 @@ def compute_region_layer_depths(
 
 
 def generate_transect_region_haul_key(
-    df: pd.DataFrame, 
-    filter_list: List[str],
-    add_columns: List[str] = []
+    df: pd.DataFrame, filter_list: List[str], add_columns: List[str] = []
 ) -> pd.DataFrame:
     """
     Filter DataFrame by region class patterns and create a mapping.
@@ -979,7 +977,7 @@ def generate_transect_region_haul_key(
     filter_list : List[str]
         List of region class names to include in the filter
     output_columns : List[str]
-        An optional list of additional column names that are included in the output alongside the 
+        An optional list of additional column names that are included in the output alongside the
         expected columns.
 
     Returns
@@ -1223,7 +1221,8 @@ def consolidate_echvoiew_nasc(
             "bottom_depth",
             "nasc",
             "haul_num",
-        ] + add_columns
+        ]
+        + add_columns
     )
 
     # Return the consdolidated NASC file

@@ -282,6 +282,7 @@ def join_geostrata_by_latitude(
     else:
         raise TypeError("Input 'data' must be DataFrame or dictionary of DataFrames")
 
+
 def join_strata_by_uid(
     data: Union[pd.DataFrame, Dict[str, pd.DataFrame]],
     strata_df: Dict[str, pd.DataFrame],

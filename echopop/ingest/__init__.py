@@ -3,11 +3,11 @@ from .biological import apply_composite_key, generate_composite_key, load_biolog
 from .mesh import load_isobath_data, load_mesh_data
 from .params import load_kriging_variogram_params
 from .strata import (
-    join_geostrata_by_latitude, 
-    join_strata_by_haul, 
-    join_strata_by_uid, 
-    load_geostrata, 
-    load_strata
+    join_geostrata_by_latitude,
+    join_strata_by_haul,
+    join_strata_by_uid,
+    load_geostrata,
+    load_strata,
 )
 
 __all__ = [
