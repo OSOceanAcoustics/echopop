@@ -1,53 +1,29 @@
-####################################################################################################
-# 2019 
-# ----
 from pathlib import Path
-from echopop.workflows.nwfsc_feat import cli_utils
-####################################################################################################
-# PARAMETER ENTRY
-# ---------------
-# ** ENTER FILE INFORMATION FOR ALL INGESTED DATASETS.
-# ** ADDITIONAL PARAMETERIZATIONS THROUGHOUT THE SCRIPT SHOULD BE EDITED BASED ON SPECIFIC NEEDS. 
-# ** MAKE SURE TO EDIT WITH CARE.
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# PRINT CONSOLE LOGGING MESSAGES
-# ---- When set to `True`, logging information will be printed in the terminal/console as the 
-# ---- script progresses
-try: 
-    # ---- FOR CLI USE
-    VERBOSE = cli_utils.get_verbose()
-except Exception:
-    # ---- FOR INTERACTIVE REPL USE
-    VERBOSE = True
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+import logging
+import numpy as np
+import pandas as pd
+import xarray as xr
+from lmfit import Parameters
+from echopop.workflows.nwfsc_feat import functions as feat, parameters as feat_parameters, Reporter
+import echopop.ingest as ingestion
+from echopop import geostatistics, inversion, utils
+from echopop.survey import biology, proportions, stratified, transect
+from echopop.workflows.nwfsc_feat import apportionment as feat_apportion, biology as feat_biology
+
 # DATA ROOT DIRECTORY
 DATA_ROOT = Path("C:/Data/EchopopData/echopop_2019")
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 # REPORTS SAVE DIRECTORY
 REPORTS_DIR = DATA_ROOT / "reports_updated_biodata"
-# COMPARE TO ECHOPRO REPORTS?
-try:
-    # ---- FOR CLI USE
-    COMPARE = cli_utils.get_compare()
-    ECHOPRO_REPORTS_DIR = DATA_ROOT / "reports_echopro"
-    COMPARISONS_DIR = DATA_ROOT / "comparisons_updated_biodata"
-    SHOW_PLOT = False
-except Exception:
-    # ---- FOR INTERACTIVE REPL USE
-    COMPARE = False
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# ALREADY PROCESSED NASC FILE ? 
-# ---- When False, the raw NASC exports will be processed. When True, the pre-formatted NASC 
-# ---- spreadsheet will be read in. This also requires defining `NASC_EXPORTS_SHEET`
+
 NASC_PREPROCESSED = True
 # NASC EXPORTS FILE(S)
 NASC_EXPORTS_FILES = DATA_ROOT / "Exports/US&CAN_detailsa_2019_table2y+_ALL_final - updated.xlsx"
-NASC_EXPORTS_FILES = DATA_ROOT / "raw_nasc"
 # NASC EXPORTS SHEET
 NASC_EXPORTS_SHEET = "Sheet1"
 # REMOVE AGE-1 (I.E., AGE-2+ ONLY)?
 REMOVE_AGE1 = True
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 # BIODATA FILE
 BIODATA_FILE = DATA_ROOT / "Biological/1995-2025_Survey_Biodata.xlsx"
 # BIODATA SHEETS
@@ -63,15 +39,13 @@ BIODATA_SHEETS = {
 # ---- define the "ships" based on their IDs with the associated survey IDs. If an offset should be 
 # ---- added to the haul numbers, that must also be defined here. The target species should also be 
 # ---- defined here. 
-CAN_HAUL_OFFSET = 200
+CAN_HAUL_OFFSET = 0
 BIODATA_SHIP_SPECIES = {
     "ships": {
         160: {
-            "country": "US",
             "survey": 201906
         },
         584: {
-            "country": "CAN",
             "survey": 2019097,
             "haul_offset": CAN_HAUL_OFFSET
         }
@@ -122,161 +96,60 @@ ISOBATH_FILE = (
 )
 # 200m ISOBATH SHEET
 ISOBATH_SHEET = "Smoothing_EasyKrig"
-####################################################################################################
-####################################################################################################
-# !!! START OF PROCESSING SCRIPT !!
-# !!! EDIT CODE BELOW WITH CARE !!
-####################################################################################################
-####################################################################################################
-import logging
-import numpy as np
-import pandas as pd
-import xarray as xr
-from lmfit import Parameters
-from echopop.workflows.nwfsc_feat import functions as feat, parameters as feat_parameters, Reporter
-import echopop.ingest as ingestion
-from echopop import geostatistics, inversion, utils
-from echopop.survey import biology, proportions, stratified, transect
-from echopop.workflows.nwfsc_feat import apportionment as feat_apportion, biology as feat_biology
-####################################################################################################
-# FORMAT LOGGER
-for handler in logging.root.handlers[:]:
-    logging.root.removeHandler(handler)
-    
-logging.basicConfig(
-    level=logging.INFO if VERBOSE else logging.WARNING,
-    format="%(message)s")
-# ==================================================================================================
-# DATA INGESTION 
-# ==================================================================================================
-# INGEST NASC DATA 
-if NASC_PREPROCESSED:
-    logging.info(f"Reading pre-generated NASC export file: '{NASC_EXPORTS_FILES.as_posix()}'.")
 
-    # DEFINE COLUMN MAPPING
-    FEAT_TO_ECHOPOP_COLUMNS = {
-        "transect": "transect_num",
-        "region id": "region_id",
-        "vl start": "distance_s",
-        "vl end": "distance_e",
-        "spacing": "transect_spacing",
-        "layer mean depth": "layer_mean_depth",
-        "layer height": "layer_height",
-        "bottom depth": "bottom_depth",
-        "assigned haul": "haul_num",
+# BIODATA DATAFRAME COLUMN NAME MAPPING
+FEAT_TO_ECHOPOP_BIODATA_COLUMNS = {
+    "frequency": "length_count",
+    "haul": "haul_num",
+    "weight_in_haul": "weight",
+}
+
+# BIODATA LABEL MAPPING
+BIODATA_SEX = {
+    "sex": {
+        1: "male",
+        2: "female",
+        3: "unsexed"
     }
+}
 
-    # Read file
-    df_nasc = ingestion.nasc.read_nasc_file(
-        filename=NASC_EXPORTS_FILES,
-        sheetname=NASC_EXPORTS_SHEET,
-        column_name_map=FEAT_TO_ECHOPOP_COLUMNS
-    )
-else:
-    logging.info(
-        f"Beginning NASC export ingestion for files in: '{NASC_EXPORTS_FILES.as_posix()}'."
-    )
-
-    # MERGE EXPORTS
-    logging.info(
-        "---- Merging NASC exports...\n"
-        "     Filename transect pattern: 'T(\\d+)'\n"
-        "     Default transect spacing: 10.0 nmi\n"
-        "     Default latitude threshold: 60.0 deg."
-    )    
-    df_intervals, df_exports = ingestion.nasc.merge_echoview_nasc(
-        nasc_path = NASC_EXPORTS_FILES,
-        filename_transect_pattern = r"T(\d+)",
-        default_transect_spacing = 10.0,
-        default_latitude_threshold = 60.0,
-    )
-
-    # EXPORT REGION NAME MAPPING
-    REGION_NAME_EXPR_DICT = {
-        "REGION_CLASS": {
-            "Age-1 Hake": "^(?:h1a(?![a-z]|m))",
-            "Age-1 Hake Mix": "^(?:h1am(?![a-z]|1a))",
-            "Hake": "^(?:h(?![a-z]|1a)|hake(?![_]))",
-            "Hake Mix": "^(?:hm(?![a-z]|1a)|hake_mix(?![_]))",
-        },
-        "HAUL_NUM": {
-            "[0-9]+",
-        },
-        "COUNTRY": {
-            "CAN": "^[cC]",
-            "US": "^[uU]",
-        },
-    }    
-    
-    # PROCESS REGION NAMES 
-    logging.info(
-        f"---- Processing export region names\n"
-        f"     Applying CAN haul number offset: {CAN_HAUL_OFFSET}"
-    )
-    df_exports_with_regions = ingestion.nasc.process_region_names(
-        df=df_exports,
-        region_name_expr_dict=REGION_NAME_EXPR_DICT,
-        can_haul_offset=CAN_HAUL_OFFSET,
-    )
-    
-    # ASSIGN SHIP ID 
-    logging.info(
-        "---- Assigning ship ID"
-    )
-    df_exports_with_regions["ship"] = None
-    for ship_id, ship_data in BIODATA_SHIP_SPECIES["ships"].items():
-        # ---- Get the country code
-        country = ship_data["country"]
-        # ---- Add ship ID where applicable
-        df_exports_with_regions.loc[lambda d: d["country"] == country, "ship"] = ship_id
-        
-    # GENERATE TRANSECT-REGION-HAUL KEY
-    if REMOVE_AGE1:
-        CLASS_REGIONS = ["Hake", "Hake Mix"]
-    else:
-        CLASS_REGIONS = ["Age-1 Hake", "Age-1 Hake Mix", "Hake", "Hake Mix"]
-    logging.info(
-        f"---- Generating transect-region-haul key mapping\n"
-        f"     Searching for the export regions: {', '.join(CLASS_REGIONS)}"
-    )
-    df_transect_region_haul_key = ingestion.nasc.generate_transect_region_haul_key(
-        df=df_exports_with_regions,
-        filter_list=CLASS_REGIONS,
-        add_columns=["ship"]
-    )
-    
-    # AGE-1 DOMINATED HAUL REMOVAL
-    if REMOVE_AGE1:
-        logging.info(
-            f"The following age-1 dominated haul numbers have been designated for removal from "
-            f"transect-region-haul key mapping:\n"
-            f"{', '.join(map(str, AGE1_DOMINATED_HAULS))}."
-        )
-        df_transect_region_haul_key = utils.apply_filters(
-            df_transect_region_haul_key, exclude_filter={"haul_num": AGE1_DOMINATED_HAULS}
-        )
-
-    # CONSOLIDATE THE EXPORTS WITH TRANSECT-REGION-HAUL MAPPINGS
-    logging.info(
-        "---- Finalizing NASC export ingestion\n"
-        "     Searching for the export regions: 'Age-1 Hake', 'Age-1 Hake Mix', 'Hake', 'Hake Mix'"
-        "     Imputing overlapping region IDs within each interval: True"
-    )
-    df_nasc = ingestion.nasc.consolidate_echvoiew_nasc(
-        df_merged=df_exports_with_regions,
-        interval_df=df_intervals,
-        region_class_names=["Age-1 Hake", "Age-1", "Age-1 Hake Mix", "Hake", "Hake Mix"],
-        impute_region_ids=True,
-        transect_region_haul_key_df=df_transect_region_haul_key,
-        add_columns=["ship"]
-    )
+# READ IN DATA
+dict_df_bio = ingestion.load_biological_data(
+    biodata_filepath=BIODATA_FILE, 
+    biodata_sheet_map=BIODATA_SHEETS, 
+    column_name_map=FEAT_TO_ECHOPOP_BIODATA_COLUMNS, 
+    subset_dict=BIODATA_SHIP_SPECIES, 
+    biodata_label_map=BIODATA_SEX
+)
+# ---- Remove specimen hauls
+feat_biology.remove_specimen_hauls(dict_df_bio)
 logging.info(
-    "NASC ingestion complete\n"
-    "'df_nasc' created."
+    "Biodata ingestion complete\n"
+    "'dict_df_bio' created."
+)
+
+# DEFINE COLUMN MAPPING
+FEAT_TO_ECHOPOP_COLUMNS = {
+    "transect": "transect_num",
+    "region id": "region_id",
+    "vl start": "distance_s",
+    "vl end": "distance_e",
+    "spacing": "transect_spacing",
+    "layer mean depth": "layer_mean_depth",
+    "layer height": "layer_height",
+    "bottom depth": "bottom_depth",
+    "assigned haul": "haul_num",
+}
+
+# Read file
+df_nasc = ingestion.nasc.read_nasc_file(
+    filename=NASC_EXPORTS_FILES,
+    sheetname=NASC_EXPORTS_SHEET,
+    column_name_map=FEAT_TO_ECHOPOP_COLUMNS
 )
 
 # DROP TRANSECTS
-df_nasc = utils.apply_filters(df_nasc, include_filter={"transect_num": np.arange(1, 200)})
+df_nasc = utils.apply_filters(df_nasc, include_filter={"transect_num": np.arange(1, 145)})
 # ==================================================================================================
 # INGEST BIODATA
 logging.info(
@@ -375,6 +248,23 @@ logging.info(
     "Geographic-based stratification loading complete\n"
     "'df_dict_geostrata' created."
 )
+
+###########
+# GENERATE COMPOSITE KEY
+composite_key = ingestion.generate_composite_key(
+    dict_df_bio, index_columns=["ship", "survey", "species_code", "haul_num"]
+)
+
+# APPLY THE COMPOSITE KEY
+df_nasc = ingestion.apply_composite_key(df_nasc, composite_key, (584, CAN_HAUL_OFFSET))
+df_dict_strata = {
+    k: apply_composite_key(v, composite_key, (584, CAN_HAUL_OFFSET)) 
+    for k, v in df_dict_strata.items()
+}
+dict_df_bio = {
+    k: apply_composite_key(v, composite_key) for k, v in dict_df_bio.items()
+}
+
 # ==================================================================================================
 # LOAD KRIGING MESH FILE
 logging.info(
@@ -439,40 +329,50 @@ logging.info(
     "---- 'dict_variogram_params' created [variogram]\n"
     "---- 'dict_kriging_params' created [kriging]"
 )
+
+
 # ==================================================================================================
 # INITIAL DATA PROCESSING
 # ==================================================================================================
 # APPLY STRATIFICATION DEFINITIONS TO BIODATA AND NASC
 logging.info("Applying strata to datasets...")
 
-# HAUL-BASED STRATA
+# HAUL-BASED STRATA (VIA UID)
 logging.info(
-    "Applying haul-based strata to 'dict_df_bio' and 'df_nasc'.\n"
+    "Applying UID-based strata to 'dict_df_bio' and 'df_nasc'.\n"
     "     Default stratum: 0\n"
     "     New columns:\n"
     "         INPFC: 'stratum_inpfc'\n"
     "         KS: 'stratum_ks'"
 )
 # ---- BIODATA [INPFC]
-dict_df_bio = ingestion.join_strata_by_haul(data=dict_df_bio,
-                                            strata_df=df_dict_strata["inpfc"],
-                                            default_stratum=0,
-                                            stratum_name="stratum_inpfc")
+dict_df_bio = ingestion.join_strata_by_uid(
+    data=dict_df_bio,
+    strata_df=df_dict_strata["inpfc"],
+    default_stratum=0,
+    stratum_name="stratum_inpfc"
+)
 # ---- BIODATA [KS]
-dict_df_bio = ingestion.join_strata_by_haul(data=dict_df_bio,
-                                            strata_df=df_dict_strata["ks"],
-                                            default_stratum=0,
-                                            stratum_name="stratum_ks")
+dict_df_bio = ingestion.join_strata_by_uid(
+    data=dict_df_bio,
+    strata_df=df_dict_strata["ks"],
+    default_stratum=0,
+    stratum_name="stratum_ks"
+)
 # ---- NASC [INPFC]
-df_nasc = ingestion.join_strata_by_haul(data=df_nasc,
-                                        strata_df=df_dict_strata["inpfc"],
-                                        default_stratum=0,
-                                        stratum_name="stratum_inpfc")
+df_nasc = ingestion.join_strata_by_uid(
+    data=df_nasc,
+    strata_df=df_dict_strata["inpfc"],
+    default_stratum=0,
+    stratum_name="stratum_inpfc"
+)
 # ---- NASC [KS]
-df_nasc = ingestion.join_strata_by_haul(data=df_nasc,
-                                        strata_df=df_dict_strata["ks"],
-                                        default_stratum=0,
-                                        stratum_name="stratum_ks")
+df_nasc = ingestion.join_strata_by_uid(
+    data=df_nasc,
+    strata_df=df_dict_strata["ks"],
+    default_stratum=0,
+    stratum_name="stratum_ks"
+)
 
 # GEOGRAPHIC-BASED STRATA
 logging.info(
@@ -708,6 +608,7 @@ MODEL_PARAMETERS = {
     "expected_strata": df_dict_strata["ks"].stratum_num.unique(),
     "impute_missing_strata": True,
     "haul_replicates": True,
+    "haul_column": "uid",
 }
 
 # INITIALIZE INVERSION OBJECT

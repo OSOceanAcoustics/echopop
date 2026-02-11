@@ -281,3 +281,65 @@ def join_geostrata_by_latitude(
         return {key: join_single_df(df) for key, df in data.items()}
     else:
         raise TypeError("Input 'data' must be DataFrame or dictionary of DataFrames")
+
+def join_strata_by_uid(
+    data: Union[pd.DataFrame, Dict[str, pd.DataFrame]],
+    strata_df: Dict[str, pd.DataFrame],
+    default_stratum: float = 0.0,
+    stratum_name: str = "stratum_num",
+) -> Union[pd.DataFrame, Dict[str, pd.DataFrame]]:
+    """
+    Join data and stratification definitions using an unique identifier
+
+    Parameters
+    ----------
+    data : |pd.DataFrame| or Dict[str, |pd.DataFrame|]
+        DataFrame or dictionary of DataFrames to join with strata
+    strata_df : |pd.DataFrame|
+        Specific stratification DataFrame with stratum-haul key information
+    default_stratum : float
+        Default stratum value when there are no matching/corresponding values
+    stratum_name : str, default="stratum_num"
+        Name of the column containing stratum information
+
+    Returns
+    -------
+    |pd.DataFrame| or Dict[str, |pd.DataFrame|]
+        Same type as input data with stratification added
+    """
+
+    # Get stratification columns (excluding join column)
+    strata_cols = [col for col in strata_df.columns if col != "haul_num"]
+
+    # Function to join a single DataFrame
+    def join_single_df(df):
+        if not isinstance(df, pd.DataFrame) or "uid" not in df.columns:
+            return df
+        if "uid" not in strata_df.columns:
+            return df
+
+        # Check if stratification columns already exist
+        existing_cols = set(strata_cols).intersection(set(df.columns))
+        if existing_cols:
+            # Drop existing shared columns
+            df = df.drop(columns=list(existing_cols))
+
+        # Merge
+        df_merged = df.merge(strata_df, on=["uid"], how="left")
+
+        # Rename the stratum column name, if needed
+        if stratum_name not in df_merged.columns:
+            df_merged.rename(columns={"stratum_num": stratum_name}, inplace=True)
+
+        # Replace missing strata with `default_stratum`
+        df_merged[stratum_name] = df_merged[stratum_name].fillna(default_stratum)
+
+        return df_merged
+
+    # Apply based on input type
+    if isinstance(data, pd.DataFrame):
+        return join_single_df(data)
+    elif isinstance(data, dict):
+        return {key: join_single_df(df) for key, df in data.items()}
+    else:
+        raise TypeError("Input 'data' must be DataFrame or dictionary of DataFrames")

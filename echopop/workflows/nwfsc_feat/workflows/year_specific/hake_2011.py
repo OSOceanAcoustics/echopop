@@ -76,11 +76,11 @@ BIODATA_SHEETS = {
 # ---- defined here. 
 BIODATA_SHIP_SPECIES = {
     "ships": {
-        19: {
-            "survey": 201201
+        160: {
+            "survey": 201103
         },
         499: {
-            "survey": 201205,
+            "survey": 201103,
             "haul_offset": 100
         }
     },
@@ -90,6 +90,8 @@ BIODATA_SHIP_SPECIES = {
 # ---- This is a list of age-1 dominated haul numbers that should be designated for removal. If no
 # ---- hauls should be removed, then set `AGE1_DOMINATED_HAULS` to `[]`
 AGE1_DOMINATED_HAULS = [1, 7, 9, 11, 12, 15, 26]
+
+AGE1_DOMINATED_HAULS = ["19-201201-22500-1", "19-201201-22500-7", "19-201201-22500-9", "19-201201-22500-11", "19-201201-22500-12", "19-201201-22500-15", "19-201201-22500-26"]
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # HAUL STRATIFICATION FILE
 HAUL_STRATA_FILE = (

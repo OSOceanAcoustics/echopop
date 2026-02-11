@@ -879,6 +879,7 @@ def process_extracted_data(
         "region_class": str,
         "haul_num": float,
         "country": str,
+        "ship": float,
     }
 
     processed = extracted_df.apply(
@@ -960,7 +961,11 @@ def compute_region_layer_depths(
     return summary.reset_index()
 
 
-def generate_transect_region_haul_key(df: pd.DataFrame, filter_list: List[str]) -> pd.DataFrame:
+def generate_transect_region_haul_key(
+    df: pd.DataFrame, 
+    filter_list: List[str],
+    add_columns: List[str] = []
+) -> pd.DataFrame:
     """
     Filter DataFrame by region class patterns and create a mapping.
 
@@ -973,6 +978,9 @@ def generate_transect_region_haul_key(df: pd.DataFrame, filter_list: List[str]) 
         |pd.DataFrame| with processed region data
     filter_list : List[str]
         List of region class names to include in the filter
+    output_columns : List[str]
+        An optional list of additional column names that are included in the output alongside the 
+        expected columns.
 
     Returns
     -------
@@ -1000,7 +1008,7 @@ def generate_transect_region_haul_key(df: pd.DataFrame, filter_list: List[str]) 
 
     # Create final mapping
     return (
-        df_filtered.groupby(["transect_num", "haul_num", "region_id"])[
+        df_filtered.groupby(["transect_num", "haul_num", "region_id"] + add_columns)[
             ["region_class", "region_name"]
         ]
         .first()
@@ -1078,6 +1086,7 @@ def consolidate_echvoiew_nasc(
     region_class_names: List[str],
     impute_region_ids: bool = True,
     transect_region_haul_key_df: Optional[pd.DataFrame] = None,
+    add_columns: List[str] = [],
 ) -> pd.DataFrame:
     """
     Consolidate Echoview NASC data with interval and region information.
@@ -1110,6 +1119,8 @@ def consolidate_echvoiew_nasc(
         Whether to impute region IDs for overlapping regions, by default True
     transect_region_haul_key_df : |pd.DataFrame|, optional
         DataFrame containing haul information to merge, by default None
+    add_columns : List[str]
+        List of additional columns to include in the output DataFrame
 
     Returns
     -------
@@ -1212,7 +1223,7 @@ def consolidate_echvoiew_nasc(
             "bottom_depth",
             "nasc",
             "haul_num",
-        ]
+        ] + add_columns
     )
 
     # Return the consdolidated NASC file
