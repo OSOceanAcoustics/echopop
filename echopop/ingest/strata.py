@@ -23,7 +23,7 @@ def load_single_stratum_sheet(
         Name of the sheet to load
     column_name_map : dict, optional
         Dictionary mapping original column names to new column names
-        
+
     Returns
     -------
     |pd.DataFrame|
@@ -63,15 +63,15 @@ def load_strata(
         (e.g., ``{"fraction_hake": "nasc_proportion", "haul": "haul_num"}``)
     haul_uid_config : Dict[str, Any]
         Optional keyword arguments to override defaults or DataFrame values:
-        
+
         - ship_id (dict): Region-specific IDs, e.g., {'US': 10, 'CAN': 20}.
-        
+
         - survey_id (dict): Region-specific IDs, e.g., {'US': 1, 'CAN': 2}.
-        
+
         - species_id (int/str): A global species code override.
-        
-        - haul_offset (int/float): A value subtracted from 'haul_num' for records identified as 
-          'CAN' (where haul_num - offset >= 0).   
+
+        - haul_offset (int/float): A value subtracted from 'haul_num' for records identified as
+          'CAN' (where haul_num - offset >= 0).
 
     Returns
     -------
@@ -93,15 +93,15 @@ def load_strata(
         strata_type: load_single_stratum_sheet(strata_filepath, sheet_name, column_name_map)
         for strata_type, sheet_name in strata_sheet_map.items()
     }
-    
+
     # Reformat haul datatype
     strata_dict = {
         k: v.assign(haul_num=v["haul_num"].astype(float)) for k, v in strata_dict.items()
     }
-    
+
     # Add UID labels
     _ = {
-        k: add_haul_uids(v, _dataset_type=f"strata.{k}", **haul_uid_config) 
+        k: add_haul_uids(v, _dataset_type=f"strata.{k}", **haul_uid_config)
         for k, v in strata_dict.items()
     }
 
@@ -343,7 +343,7 @@ def join_strata_by_uid(
             return df
         if "uid" not in strata_df.columns:
             return df
-        
+
         # Original columns
         columns_orig = list(df.columns)
 
@@ -362,7 +362,7 @@ def join_strata_by_uid(
 
         # Replace missing strata with `default_stratum`
         df_merged[stratum_name] = df_merged[stratum_name].fillna(default_stratum)
-        
+
         return df_merged.filter(items=columns_orig + [stratum_name, "nasc_proportion"])
 
     # Apply based on input type

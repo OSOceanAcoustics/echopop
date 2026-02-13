@@ -110,15 +110,15 @@ def read_nasc_file(
         Dictionary mapping original column names to new column names
     haul_uid_config : Dict[str, Any]
         Optional keyword arguments to override defaults or DataFrame values:
-        
+
         - ship_id (dict): Region-specific IDs, e.g., {'US': 10, 'CAN': 20}.
-        
+
         - survey_id (dict): Region-specific IDs, e.g., {'US': 1, 'CAN': 2}.
-        
+
         - species_id (int/str): A global species code override.
-        
-        - haul_offset (int/float): A value subtracted from 'haul_num' for records identified as 
-          'CAN' (where haul_num - offset >= 0).   
+
+        - haul_offset (int/float): A value subtracted from 'haul_num' for records identified as
+          'CAN' (where haul_num - offset >= 0).
 
     Examples
     --------
@@ -150,10 +150,10 @@ def read_nasc_file(
     # ---- Longitude
     if "longitude" in consolidated_file.columns and impute_coordinates:
         impute_bad_coordinates(consolidated_file, "longitude")
-        
+
     # Reformat haul datatype
     consolidated_file["haul_num"] = consolidated_file["haul_num"].astype(float)
-        
+
     # Add UID column
     add_haul_uids(consolidated_file, _dataset_type="NASC", **haul_uid_config)
 
@@ -977,9 +977,7 @@ def compute_region_layer_depths(
     return summary.reset_index()
 
 
-def generate_transect_region_haul_key(
-    df: pd.DataFrame, filter_list: List[str]
-) -> pd.DataFrame:
+def generate_transect_region_haul_key(df: pd.DataFrame, filter_list: List[str]) -> pd.DataFrame:
     """
     Filter DataFrame by region class patterns and create a mapping.
 
@@ -1132,15 +1130,15 @@ def consolidate_echvoiew_nasc(
         DataFrame containing haul information to merge, by default None
     haul_uid_config : Dict[str, Any]
         Optional keyword arguments to override defaults or DataFrame values:
-        
+
         - ship_id (dict): Region-specific IDs, e.g., {'US': 10, 'CAN': 20}.
-        
+
         - survey_id (dict): Region-specific IDs, e.g., {'US': 1, 'CAN': 2}.
-        
+
         - species_id (int/str): A global species code override.
-        
-        - haul_offset (int/float): A value subtracted from 'haul_num' for records identified as 
-          'CAN' (where haul_num - offset >= 0).   
+
+        - haul_offset (int/float): A value subtracted from 'haul_num' for records identified as
+          'CAN' (where haul_num - offset >= 0).
 
     Returns
     -------
@@ -1205,30 +1203,31 @@ def consolidate_echvoiew_nasc(
     nasc_hauls = nasc_intervals.merge(transect_region_haul_key_df).set_index(
         ["interval", "transect_num"]
     )
-    
+
     # Check for country codes
     if "country" in transect_regions.columns:
         # ---- Get country codes
         country_indices = transect_regions.groupby(["interval", "transect_num"])["country"].first()
-        nasc_hauls["country"] = nasc_hauls.index.to_frame()[["interval", "transect_num"]].apply(
-            lambda x: country_indices.get((x.interval, x.transect_num)), axis=1
-        ).values
+        nasc_hauls["country"] = (
+            nasc_hauls.index.to_frame()[["interval", "transect_num"]]
+            .apply(lambda x: country_indices.get((x.interval, x.transect_num)), axis=1)
+            .values
+        )
         # ---- Update the input haul UID configuration
         if "country" not in haul_uid_config and "ship" not in nasc_hauls.columns:
             nasc_hauls["ship"] = np.where(nasc_hauls["country"] == "US", 1, 2)
             nasc_hauls["ship"] = nasc_hauls["ship"].values
 
-
     # Append the haul numbers and integrated NASC values to the interval template
     interval_copy.loc[:, nasc_hauls.columns] = nasc_hauls
     # ---- Reset the index
     interval_copy.reset_index(inplace=True)
-    
+
     # Update UID entries as they apply
     if "ship" in interval_copy.columns:
         interval_copy["ship"] = interval_copy["ship"].fillna(1)
     interval_copy["haul_num"] = interval_copy["haul_num"].fillna(0).astype(float)
-    
+
     # Add UID label
     add_haul_uids(interval_copy, _dataset_type="NASC", **haul_uid_config)
 

@@ -1,15 +1,19 @@
 from typing import Any, Union
+
 from pydantic import ConfigDict, Field
 
 from ..core.validators import BaseDictionary
 
+
 class ShipID(BaseDictionary):
     US: Any = Field(default=1)
     CAN: Any = Field(default=2)
-    
+
+
 class SurveyID(BaseDictionary):
     US: Any = Field(default=1)
     CAN: Any = Field(default=2)
+
 
 class ValidateHaulUID(BaseDictionary):
     ship_id: ShipID = Field(default_factory=ShipID)

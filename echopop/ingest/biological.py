@@ -8,6 +8,7 @@ import pandas as pd
 
 from ..utils import add_haul_uids
 
+
 def load_single_biological_sheet(
     biodata_filepath: Path,
     sheet_name: str,
@@ -81,15 +82,15 @@ def load_biological_data(
         ``{"sex": {1: "male", 2: "female", 3: "unsexed"}}``)
     haul_uid_config : Dict[str, Any]
         Optional keyword arguments to override defaults or DataFrame values:
-        
+
         - ship_id (dict): Region-specific IDs, e.g., {'US': 10, 'CAN': 20}.
-        
+
         - survey_id (dict): Region-specific IDs, e.g., {'US': 1, 'CAN': 2}.
-        
+
         - species_id (int/str): A global species code override.
-        
-        - haul_offset (int/float): A value subtracted from 'haul_num' for records identified as 
-          'CAN' (where haul_num - offset >= 0).   
+
+        - haul_offset (int/float): A value subtracted from 'haul_num' for records identified as
+          'CAN' (where haul_num - offset >= 0).
 
     Returns
     -------
@@ -124,7 +125,7 @@ def load_biological_data(
             for name, df in biodata_dict.items():
                 if isinstance(df, pd.DataFrame) and col in df.columns:
                     df[col] = df[col].map(mapping).fillna(df[col])
-                    
+
     # Reformat haul datatype
     biodata_dict = {
         k: v.assign(haul_num=v["haul_num"].astype(float)) for k, v in biodata_dict.items()
@@ -132,10 +133,10 @@ def load_biological_data(
 
     # Add UID labels
     _ = {
-        k: add_haul_uids(v, _dataset_type=f"biodata.{k}", **haul_uid_config) 
+        k: add_haul_uids(v, _dataset_type=f"biodata.{k}", **haul_uid_config)
         for k, v in biodata_dict.items()
     }
-    
+
     return biodata_dict
 
 
@@ -205,7 +206,7 @@ def apply_ship_survey_filters(
 
 def generate_composite_key(
     bio_data: Dict[str, pd.DataFrame],
-    index_columns: List[str], # uid columns
+    index_columns: List[str],  # uid columns
     adjust: Dict[str, np.number] = {},
 ) -> Tuple[Dict[str, pd.DataFrame], pd.DataFrame, Dict[str, pd.DataFrame]]:
 
