@@ -14,7 +14,7 @@ from echopop.ingest import (
 # Stratification tests
 def test_load_strata_basic(strata_excel_file, strata_sheet_map):
     """Test basic loading of stratification data."""
-    result = load_strata(strata_excel_file, strata_sheet_map)
+    result = load_strata(strata_excel_file, strata_sheet_map, column_name_map={"haul": "haul_num"})
 
     assert isinstance(result, dict)
     assert set(result.keys()) == set(strata_sheet_map.keys())

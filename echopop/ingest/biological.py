@@ -1,8 +1,12 @@
+import copy
 import itertools
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
+import numpy as np
 import pandas as pd
+
+from ..utils import add_haul_uids
 
 
 def load_single_biological_sheet(
@@ -53,6 +57,7 @@ def load_biological_data(
     column_name_map: Dict[str, str] = None,
     subset_dict: Optional[Dict] = None,
     biodata_label_map: Optional[Dict[str, Dict]] = None,
+    haul_uid_config: Dict[str, Any] = {},
 ) -> Dict[str, pd.DataFrame]:
     """
     Load biological data from a single Excel file with multiple sheets.
@@ -75,6 +80,17 @@ def load_biological_data(
     biodata_label_map : dict, optional
         Dictionary mapping column names to value replacement dictionaries (e.g.,
         ``{"sex": {1: "male", 2: "female", 3: "unsexed"}}``)
+    haul_uid_config : Dict[str, Any]
+        Optional keyword arguments to override defaults or DataFrame values:
+
+        - ship_id (dict): Region-specific IDs, e.g., {'US': 10, 'CAN': 20}.
+
+        - survey_id (dict): Region-specific IDs, e.g., {'US': 1, 'CAN': 2}.
+
+        - species_id (int/str): A global species code override.
+
+        - haul_offset (int/float): A value subtracted from 'haul_num' for records identified as
+          'CAN' (where haul_num - offset >= 0).
 
     Returns
     -------
@@ -109,6 +125,17 @@ def load_biological_data(
             for name, df in biodata_dict.items():
                 if isinstance(df, pd.DataFrame) and col in df.columns:
                     df[col] = df[col].map(mapping).fillna(df[col])
+
+    # Reformat haul datatype
+    biodata_dict = {
+        k: v.assign(haul_num=v["haul_num"].astype(float)) for k, v in biodata_dict.items()
+    }
+
+    # Add UID labels
+    _ = {
+        k: add_haul_uids(v, _dataset_type=f"biodata.{k}", **haul_uid_config)
+        for k, v in biodata_dict.items()
+    }
 
     return biodata_dict
 
@@ -175,3 +202,92 @@ def apply_ship_survey_filters(
         df_filtered = df_filtered.loc[df_filtered["species_code"].isin(subset_dict["species_code"])]
 
     return df_filtered
+
+
+def generate_composite_key(
+    bio_data: Dict[str, pd.DataFrame],
+    index_columns: List[str],  # uid columns
+    adjust: Dict[str, np.number] = {},
+) -> Tuple[Dict[str, pd.DataFrame], pd.DataFrame, Dict[str, pd.DataFrame]]:
+
+    # Validate that all columns exist in the underlying biodata
+    valid_id_columns = {
+        k: set(index_columns) <= set(v.columns) or "uid" in v.columns for k, v in bio_data.items()
+    }
+    # ---- Collect invalid entries
+    invalid_entries = [k for k, v in valid_id_columns.items() if not v]
+    # ---- Raise KeyError
+    if invalid_entries:
+        id_col_str = "', '".join(index_columns)
+        entr_str = "', '".join(invalid_entries)
+        raise KeyError(
+            f"Both defined ID columns ('{id_col_str}') or preset 'uid' column missing from "
+            f"the following biodata DataFrames: '{entr_str}'."
+        )
+
+    # Create copy
+    bio_data_copy = copy.deepcopy(bio_data)
+
+    # Apply adjustments
+    for column, adjustment in adjust.items():
+        # ---- Format new name
+        new_name = column + "_adj"
+        # ---- Apply adjustment
+        bio_data_copy = {
+            k: v.assign(
+                **{
+                    new_name: np.where(
+                        v[column] + adjustment > 0, v[column] + adjustment, v[column]
+                    )
+                }
+            )
+            for k, v in bio_data_copy.items()
+        }
+
+    # Identify the constructor columns
+    constructor_columns = [c if c not in adjust else c + "_adj" for c in index_columns]
+
+    # Join the columns to create unique id column
+    bio_data_copy = {
+        k: v.assign(uid=v[constructor_columns].astype(str).agg("-".join, axis=1)).filter(
+            list(bio_data[k].columns) + ["uid"]
+        )
+        for k, v in bio_data_copy.items()
+    }
+
+    # Get unique columns + uid for merging into downstream DataFrames
+    unique_uid = pd.concat(
+        [d.filter(index_columns + ["uid"]) for d in bio_data_copy.values()]
+    ).drop_duplicates()
+
+    # Return the unique IDs
+    return unique_uid
+
+
+def apply_composite_key(
+    data: pd.DataFrame,
+    composite_key: pd.DataFrame,
+    haul_offset: Dict[np.number, np.number] = (),
+) -> pd.DataFrame:
+
+    # Apply adjustments to the original composite key columns
+    composite_id = composite_key.copy()
+    if len(haul_offset) == 2:
+        composite_id["haul_num"] = np.where(
+            composite_id["ship"] == haul_offset[0],
+            composite_id["haul_num"] + haul_offset[1],
+            composite_id["haul_num"],
+        )
+
+    # Drop "uid" from data
+    if "uid" in data.columns:
+        data.drop(columns=["uid"], inplace=True)
+
+    # Left-merge
+    shared_columns = [c for c in composite_id.columns if c in data.columns and c != "uid"]
+    data_uid = data.merge(
+        composite_id.filter(shared_columns + ["uid"]), on=shared_columns, how="left"
+    )
+
+    # Return
+    return data_uid

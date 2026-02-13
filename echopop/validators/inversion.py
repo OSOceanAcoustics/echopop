@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Literal, Optional
 
 import numpy as np
 import pandas as pd
@@ -70,6 +70,7 @@ class ValidateLengthTS(BaseDictionary):
     expected_strata: Optional[np.ndarray[np.number]] = Field(default=None)
     impute_missing_strata: bool = Field(default=True)
     haul_replicates: bool = Field(default=True)
+    haul_column: Literal["haul_num", "uid"] = Field(default="haul_num")
     model_config = ConfigDict(title="TS-length inversion model parameters")
 
     @field_validator("stratify_by", mode="before")

@@ -65,17 +65,26 @@ BIODATA_SHEETS = {
 # ---- define the "ships" based on their IDs with the associated survey IDs. If an offset should be 
 # ---- added to the haul numbers, that must also be defined here. The target species should also be 
 # ---- defined here. 
+CAN_HAUL_OFFSET = 300
+SPECIES_ID = 22500 # numeric species code for Pacific hake
+SHIP_US = 21 # US ship ID
+SHIP_CAN = 499 # CAN ship ID
+SURVEY_US = 199810 # US survey identifier
+SURVEY_CAN = 1998 # CAN survey identifier
+
 BIODATA_SHIP_SPECIES = {
     "ships": {
-        21: {
-            "survey": 199810
+        SHIP_US: {
+            "country": "US",
+            "survey": SURVEY_US 
         },
-        499: {
-            "survey": 1998,
-            "haul_offset": 300
+        SHIP_CAN: {
+            "country": "CAN",
+            "survey": SURVEY_CAN,
+            "haul_offset": CAN_HAUL_OFFSET
         }
     },
-    "species_code": [22500]
+    "species_code": [SPECIES_ID]
 }
 # BIODATA PROCESSING: AGE-1 DOMINATED HAULS
 # ---- This is a list of age-1 dominated haul numbers that should be designated for removal. If no
@@ -154,6 +163,15 @@ logging.basicConfig(
 # ==================================================================================================
 # DATA INGESTION 
 # ==================================================================================================
+# FORMAT HAUL-BASED UID 
+logging.info(f"Creating haul-based UID...")
+HAUL_UID_CONFIG = {
+    "ship_id": {"US": SHIP_US, "CAN": SHIP_CAN},
+    "survey_id": {"US": SURVEY_US, "CAN": SURVEY_CAN},
+    "species_id": SPECIES_ID,
+    "haul_offset": CAN_HAUL_OFFSET
+}
+
 # INGEST NASC DATA 
 logging.info(f"Reading pre-generated NASC export file: '{NASC_EXPORTS_FILES.as_posix()}'.")
 
@@ -170,10 +188,10 @@ FEAT_TO_ECHOPOP_COLUMNS = {
 }
 
 # READ FILE
-df_nasc = ingestion.nasc.read_nasc_file(
+df_nasc = ingestion.nasc.read_afsc_nasc_file(
     filename=NASC_EXPORTS_FILES,
     sheetname=NASC_EXPORTS_SHEET,
-    column_name_map=FEAT_TO_ECHOPOP_COLUMNS
+    column_name_map=FEAT_TO_ECHOPOP_COLUMNS,
 )
 
 # CONVERT AFSC TO FEAT FORMAT
@@ -237,7 +255,8 @@ dict_df_bio = ingestion.load_biological_data(
     biodata_sheet_map=BIODATA_SHEETS, 
     column_name_map=FEAT_TO_ECHOPOP_BIODATA_COLUMNS, 
     subset_dict=BIODATA_SHIP_SPECIES, 
-    biodata_label_map=BIODATA_SEX
+    biodata_label_map=BIODATA_SEX,
+    haul_uid_config=HAUL_UID_CONFIG,
 )
 # ---- Remove specimen hauls
 feat_biology.remove_specimen_hauls(dict_df_bio)
@@ -261,7 +280,8 @@ logging.info(
 df_dict_strata = ingestion.load_strata(
     strata_filepath=HAUL_STRATA_FILE, 
     strata_sheet_map=HAUL_STRATA_SHEETS, 
-    column_name_map=FEAT_TO_ECHOPOP_STRATA_COLUMNS
+    column_name_map=FEAT_TO_ECHOPOP_STRATA_COLUMNS,
+    haul_uid_config=HAUL_UID_CONFIG,
 )
 logging.info(
     "Dropping column 'length' from the haul-based stratification datasets."
@@ -600,6 +620,7 @@ MODEL_PARAMETERS = {
     "expected_strata": df_dict_strata["ks"].stratum_num.unique(),
     "impute_missing_strata": True,
     "haul_replicates": True,
+    "haul_column": "uid",
 }
 
 # INITIALIZE INVERSION OBJECT
@@ -661,16 +682,6 @@ feat_biology.compute_biomass(
     transect_data=df_nasc,
     stratum_weights=da_averaged_weight,
 )
-logging.info(
-    "NASC to biomass conversion complete\n"
-    "     New columns in 'df_nasc':\n"
-    "         Sex-specific number densities (animals nmi^-2): "
-    "'number_density_female'/'number_density_male'\n"
-    "         Abundance (animals): 'abundance'/'abundance_female'/'abundance_male'\n"
-    "         Biomass density (kg nmi^-2): 'biomass_density'/'biomass_density_female'/"
-    "'biomass_density_male'\n"
-    "         Biomass (kg): 'biomass'/'biomass_female'/'biomass_male'"
-    )
 # AGE-1 CONTRIBUTION REMOVAL
 if REMOVE_AGE1:
     logging.info(
@@ -727,6 +738,16 @@ logging.info(
     "'biomass_density_male'\n"
     "         Biomass (kg): 'biomass'/'biomass_female'/'biomass_male'"
     )
+# SUMMARIZE TRANSECT RESULTS
+logging.info(
+    f"----------------------\n"
+    f"Transect-based results\n"
+    f"     Total NASC: {df_nasc_proc['nasc'].sum():.1f} m²nmi⁻²\n"
+    f"     Mean number density: {df_nasc_proc['number_density'].mean():.1f} animals nmi⁻²\n"
+    f"     Total abundance: {df_nasc_proc['abundance'].sum():.0f} fish\n"
+    f"     Mean biomass density: {df_nasc_proc['biomass_density'].mean() * 1e-6:.3f} kmt nmi⁻²\n"
+    f"     Total biomass: {df_nasc_proc['biomass'].sum() * 1e-6:.1f} kmt"
+)
 # ==================================================================================================
 # DISTRIBUTE POPULATION ESTIMATES ACROSS AGE AND LENGTH BINS
 logging.info(
@@ -997,6 +1018,15 @@ logging.info(
     "        Biomass (kg): 'biomass'/'biomass_female'/'biomass_male'\n"
     "        Abundance (animals): 'abundance'/'abundance_female'/'abundance_male'\n"
     "        NASC (m^2 nmi^-2): 'nasc'"
+)
+
+# SUMMARIZE KRIGING RESULTS
+logging.info(
+    f"----------------------\n"
+    f"Kriging-based results\n"
+    f"     Total derived NASC: {df_kriged_results['nasc'].sum():.1f} m²nmi⁻²\n"
+    f"     Total derived abundance: {df_kriged_results['abundance'].sum():.0f} fish\n"
+    f"     Total biomass: {df_kriged_results['biomass'].sum() * 1e-6:.1f} kmt"
 )
 # ==================================================================================================
 # DISTRIBUTE POPULATION ESTIMATES ACROSS AGE AND LENGTH BINS

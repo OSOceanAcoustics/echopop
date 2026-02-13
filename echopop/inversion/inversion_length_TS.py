@@ -162,7 +162,9 @@ class InversionLengthTS(InversionBase):
         # Quantize the lengths
         haul_counts = pd.concat(
             [
-                quantize_length_data(d, self.model_params["stratify_by"] + ["haul_num"])
+                quantize_length_data(
+                    d, self.model_params["stratify_by"] + [self.model_params["haul_column"]]
+                )
                 for d in df_length
             ],
             axis=1,
@@ -182,9 +184,11 @@ class InversionLengthTS(InversionBase):
         haul_counts["sigma_bs"] = 10.0 ** (haul_counts["TS"] / 10.0)
 
         # Weighted average across hauls
-        sigma_bs_haul = haul_counts.groupby(self.model_params["stratify_by"] + ["haul_num"])[
-            ["sigma_bs", "length_count"]
-        ].apply(lambda x: np.average(x.sigma_bs, weights=x.length_count))
+        sigma_bs_haul = haul_counts.groupby(
+            self.model_params["stratify_by"] + [self.model_params["haul_column"]]
+        )[["sigma_bs", "length_count"]].apply(
+            lambda x: np.average(x.sigma_bs, weights=x.length_count)
+        )
 
         # Return the output
         return sigma_bs_haul.to_frame("sigma_bs")

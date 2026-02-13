@@ -1,8 +1,10 @@
 from pathlib import Path
-from typing import Dict, Union
+from typing import Any, Dict, Union
 
 import numpy as np
 import pandas as pd
+
+from ..utils import add_haul_uids
 
 
 def load_single_stratum_sheet(
@@ -44,6 +46,7 @@ def load_strata(
     strata_filepath: Path,
     strata_sheet_map: Dict[str, str],
     column_name_map: Dict[str, str] = None,
+    haul_uid_config: Dict[str, Any] = {},
 ) -> Dict[str, pd.DataFrame]:
     """
     Load stratification data from an Excel file with multiple sheets.
@@ -58,6 +61,17 @@ def load_strata(
     column_name_map : dict, optional
         Dictionary mapping original column names to new column names
         (e.g., ``{"fraction_hake": "nasc_proportion", "haul": "haul_num"}``)
+    haul_uid_config : Dict[str, Any]
+        Optional keyword arguments to override defaults or DataFrame values:
+
+        - ship_id (dict): Region-specific IDs, e.g., {'US': 10, 'CAN': 20}.
+
+        - survey_id (dict): Region-specific IDs, e.g., {'US': 1, 'CAN': 2}.
+
+        - species_id (int/str): A global species code override.
+
+        - haul_offset (int/float): A value subtracted from 'haul_num' for records identified as
+          'CAN' (where haul_num - offset >= 0).
 
     Returns
     -------
@@ -78,6 +92,17 @@ def load_strata(
     strata_dict = {
         strata_type: load_single_stratum_sheet(strata_filepath, sheet_name, column_name_map)
         for strata_type, sheet_name in strata_sheet_map.items()
+    }
+
+    # Reformat haul datatype
+    strata_dict = {
+        k: v.assign(haul_num=v["haul_num"].astype(float)) for k, v in strata_dict.items()
+    }
+
+    # Add UID labels
+    _ = {
+        k: add_haul_uids(v, _dataset_type=f"strata.{k}", **haul_uid_config)
+        for k, v in strata_dict.items()
     }
 
     return strata_dict
@@ -273,6 +298,72 @@ def join_geostrata_by_latitude(
         )
 
         return result
+
+    # Apply based on input type
+    if isinstance(data, pd.DataFrame):
+        return join_single_df(data)
+    elif isinstance(data, dict):
+        return {key: join_single_df(df) for key, df in data.items()}
+    else:
+        raise TypeError("Input 'data' must be DataFrame or dictionary of DataFrames")
+
+
+def join_strata_by_uid(
+    data: Union[pd.DataFrame, Dict[str, pd.DataFrame]],
+    strata_df: Dict[str, pd.DataFrame],
+    default_stratum: float = 0.0,
+    stratum_name: str = "stratum_num",
+) -> Union[pd.DataFrame, Dict[str, pd.DataFrame]]:
+    """
+    Join data and stratification definitions using an unique identifier
+
+    Parameters
+    ----------
+    data : |pd.DataFrame| or Dict[str, |pd.DataFrame|]
+        DataFrame or dictionary of DataFrames to join with strata
+    strata_df : |pd.DataFrame|
+        Specific stratification DataFrame with stratum-haul key information
+    default_stratum : float
+        Default stratum value when there are no matching/corresponding values
+    stratum_name : str, default="stratum_num"
+        Name of the column containing stratum information
+
+    Returns
+    -------
+    |pd.DataFrame| or Dict[str, |pd.DataFrame|]
+        Same type as input data with stratification added
+    """
+
+    # Get stratification columns (excluding join column)
+    strata_cols = [col for col in strata_df.columns]
+
+    # Function to join a single DataFrame
+    def join_single_df(df):
+        if not isinstance(df, pd.DataFrame) or "uid" not in df.columns:
+            return df
+        if "uid" not in strata_df.columns:
+            return df
+
+        # Original columns
+        columns_orig = list(df.columns)
+
+        # Check if stratification columns already exist
+        existing_cols = set(strata_cols + [stratum_name]).intersection(set(columns_orig)) - {"uid"}
+        if existing_cols:
+            # Drop existing shared columns
+            df = df.drop(columns=list(existing_cols))
+
+        # Merge
+        df_merged = df.merge(strata_df, on=["uid"], how="left")
+
+        # Rename the stratum column name, if needed
+        if stratum_name not in df_merged.columns:
+            df_merged.rename(columns={"stratum_num": stratum_name}, inplace=True)
+
+        # Replace missing strata with `default_stratum`
+        df_merged[stratum_name] = df_merged[stratum_name].fillna(default_stratum)
+
+        return df_merged.filter(items=columns_orig + [stratum_name, "nasc_proportion"])
 
     # Apply based on input type
     if isinstance(data, pd.DataFrame):

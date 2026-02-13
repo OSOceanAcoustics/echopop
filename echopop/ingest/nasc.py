@@ -10,6 +10,7 @@ from ..core.echoview import (
     ECHOVIEW_EXPORT_ROW_SORT,
     ECHOVIEW_TO_ECHOPOP,
 )
+from ..utils import add_haul_uids
 
 
 def map_transect_num(
@@ -92,7 +93,7 @@ def read_nasc_file(
     sheetname: str,
     impute_coordinates: bool = True,
     column_name_map: Optional[Dict[str, str]] = None,
-    validator: Optional[Any] = None,
+    haul_uid_config: Dict[str, Any] = {},
 ):
     """
     Read NASC data from a consolidated XLSX file
@@ -107,8 +108,79 @@ def read_nasc_file(
         Instruct whether bad spatial coordinates should be imputed or not
     column_name_map : dict, optional
         Dictionary mapping original column names to new column names
-    validator : callable, optional
-        Function to validate the dataframe
+    haul_uid_config : Dict[str, Any]
+        Optional keyword arguments to override defaults or DataFrame values:
+
+        - ship_id (dict): Region-specific IDs, e.g., {'US': 10, 'CAN': 20}.
+
+        - survey_id (dict): Region-specific IDs, e.g., {'US': 1, 'CAN': 2}.
+
+        - species_id (int/str): A global species code override.
+
+        - haul_offset (int/float): A value subtracted from 'haul_num' for records identified as
+          'CAN' (where haul_num - offset >= 0).
+
+    Examples
+    --------
+    >>> column_map = {"transect": "transect_num", "region id": "region_id"}
+    >>> df = read_nasc_file("data.xlsx", "Sheet1", column_map)
+
+    >>> # Without column mapping
+    >>> df = read_nasc_file("data.xlsx", "Sheet1")
+
+    Returns
+    -------
+    pandas.DataFrame
+        Cleaned DataFrame with renamed columns and imputed coordinates
+    """
+    # Read in the defined file
+    consolidated_file = pd.read_excel(filename, sheet_name=sheetname, index_col=None, header=0)
+
+    # Set column names to lowercase
+    consolidated_file.columns = consolidated_file.columns.str.lower()
+
+    # Rename columns
+    if column_name_map:
+        consolidated_file.rename(columns=column_name_map, inplace=True)
+
+    # Fix latitude and longitude
+    # ---- Latitude
+    if "latitude" in consolidated_file.columns and impute_coordinates:
+        impute_bad_coordinates(consolidated_file, "latitude")
+    # ---- Longitude
+    if "longitude" in consolidated_file.columns and impute_coordinates:
+        impute_bad_coordinates(consolidated_file, "longitude")
+
+    # Reformat haul datatype
+    consolidated_file["haul_num"] = consolidated_file["haul_num"].astype(float)
+
+    # Add UID column
+    add_haul_uids(consolidated_file, _dataset_type="NASC", **haul_uid_config)
+
+    # Return the cleaned DataFrame
+    return consolidated_file
+
+
+def read_afsc_nasc_file(
+    filename: Union[str, Path],
+    sheetname: str,
+    impute_coordinates: bool = True,
+    column_name_map: Optional[Dict[str, str]] = None,
+):
+    """
+    Read AFSC NASC data from a consolidated XLSX file. This is for the AFSC files that are
+    missing the haul number column.
+
+    Parameters
+    ----------
+    filename : str or pathlib.Path
+        Path to the Excel file
+    sheetname : str
+        Name of the sheet to read
+    impute_coordinates : bool
+        Instruct whether bad spatial coordinates should be imputed or not
+    column_name_map : dict, optional
+        Dictionary mapping original column names to new column names
 
     Examples
     --------
@@ -879,6 +951,7 @@ def process_extracted_data(
         "region_class": str,
         "haul_num": float,
         "country": str,
+        "ship": float,
     }
 
     processed = extracted_df.apply(
@@ -1078,6 +1151,7 @@ def consolidate_echvoiew_nasc(
     region_class_names: List[str],
     impute_region_ids: bool = True,
     transect_region_haul_key_df: Optional[pd.DataFrame] = None,
+    haul_uid_config: Dict[str, Any] = {},
 ) -> pd.DataFrame:
     """
     Consolidate Echoview NASC data with interval and region information.
@@ -1110,6 +1184,17 @@ def consolidate_echvoiew_nasc(
         Whether to impute region IDs for overlapping regions, by default True
     transect_region_haul_key_df : |pd.DataFrame|, optional
         DataFrame containing haul information to merge, by default None
+    haul_uid_config : Dict[str, Any]
+        Optional keyword arguments to override defaults or DataFrame values:
+
+        - ship_id (dict): Region-specific IDs, e.g., {'US': 10, 'CAN': 20}.
+
+        - survey_id (dict): Region-specific IDs, e.g., {'US': 1, 'CAN': 2}.
+
+        - species_id (int/str): A global species code override.
+
+        - haul_offset (int/float): A value subtracted from 'haul_num' for records identified as
+          'CAN' (where haul_num - offset >= 0).
 
     Returns
     -------
@@ -1128,6 +1213,7 @@ def consolidate_echvoiew_nasc(
         - ``'bottom_depth'`` : Bottom depth
         - ``'nasc'`` : Summed nautical area scattering coefficient
         - ``'haul_num'`` : Haul number (``0`` for ``NaN``)
+        - ``'uid'`` : Unique ship-survey-species-haul identifier
 
     Notes
     -----
@@ -1174,10 +1260,32 @@ def consolidate_echvoiew_nasc(
         ["interval", "transect_num"]
     )
 
+    # Check for country codes
+    if "country" in transect_regions.columns:
+        # ---- Get country codes
+        country_indices = transect_regions.groupby(["interval", "transect_num"])["country"].first()
+        nasc_hauls["country"] = (
+            nasc_hauls.index.to_frame()[["interval", "transect_num"]]
+            .apply(lambda x: country_indices.get((x.interval, x.transect_num)), axis=1)
+            .values
+        )
+        # ---- Update the input haul UID configuration
+        if "country" not in haul_uid_config and "ship" not in nasc_hauls.columns:
+            nasc_hauls["ship"] = np.where(nasc_hauls["country"] == "US", 1, 2)
+            nasc_hauls["ship"] = nasc_hauls["ship"].values
+
     # Append the haul numbers and integrated NASC values to the interval template
     interval_copy.loc[:, nasc_hauls.columns] = nasc_hauls
     # ---- Reset the index
     interval_copy.reset_index(inplace=True)
+
+    # Update UID entries as they apply
+    if "ship" in interval_copy.columns:
+        interval_copy["ship"] = interval_copy["ship"].fillna(1)
+    interval_copy["haul_num"] = interval_copy["haul_num"].fillna(0).astype(float)
+
+    # Add UID label
+    add_haul_uids(interval_copy, _dataset_type="NASC", **haul_uid_config)
 
     # Combine with the transect layer summaries
     full_interval_strata_df = interval_copy.merge(transect_layer_summary, how="left")
@@ -1212,6 +1320,7 @@ def consolidate_echvoiew_nasc(
             "bottom_depth",
             "nasc",
             "haul_num",
+            "uid",
         ]
     )
 
