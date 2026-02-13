@@ -1169,6 +1169,7 @@ def test_consolidate_echvoiew_nasc_basic(sample_merged_data, sample_interval_dat
         "bottom_depth",
         "nasc",
         "haul_num",
+        "uid",
     }
     assert len(result) == len(sample_interval_data)
 
@@ -1210,7 +1211,7 @@ def test_consolidate_echvoiew_nasc_filtering(
 
 def test_read_nasc_file_basic(sample_excel_path):
     """Test basic Excel file reading functionality"""
-    result = read_nasc_file(sample_excel_path, "Sheet1")
+    result = read_nasc_file(sample_excel_path, "Sheet1", column_name_map={"haul": "haul_num"})
 
     # Just verify it returns a DataFrame with the expected data
     assert isinstance(result, pd.DataFrame)

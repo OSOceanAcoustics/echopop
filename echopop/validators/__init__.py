@@ -5,12 +5,12 @@ from .inversion import (
 )
 from .kriging import ValidateKrigingClass
 from .spatial import ValidateHullCropArgs
+from .utils import ValidateHaulUID
 from .variogram import (
     ValidateEmpiricalVariogramArgs,
     ValidateFitVariogramArgs,
     ValidateVariogramClass,
 )
-from .utils import ValidateHaulUID
 
 __all__ = [
     # Inversion

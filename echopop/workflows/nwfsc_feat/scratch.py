@@ -97,7 +97,6 @@ ISOBATH_FILE = (
 ISOBATH_SHEET = "Smoothing_EasyKrig"
 
 
-
 # DEFINE COLUMN MAPPING
 FEAT_TO_ECHOPOP_COLUMNS = {
     "transect": "transect_num",
@@ -120,8 +119,8 @@ df_nasc = ingestion.nasc.read_nasc_file(
         "ship_id": {"US": 160, "CAN": 584},
         "survey_id": {"US": 201906, "CAN": 2019097},
         "species_id": 22500,
-        "haul_offset": CAN_HAUL_OFFSET
-    }
+        "haul_offset": CAN_HAUL_OFFSET,
+    },
 )
 
 # DROP TRANSECTS
@@ -151,8 +150,8 @@ dict_df_bio = ingestion.load_biological_data(
         "ship_id": {"US": 160, "CAN": 584},
         "survey_id": {"US": 201906, "CAN": 2019097},
         "species_id": 22500,
-        "haul_offset": CAN_HAUL_OFFSET
-    }
+        "haul_offset": CAN_HAUL_OFFSET,
+    },
 )
 # ---- Remove specimen hauls
 feat_biology.remove_specimen_hauls(dict_df_bio)
@@ -194,8 +193,8 @@ df_dict_strata = ingestion.load_strata(
         "ship_id": {"US": 160, "CAN": 584},
         "survey_id": {"US": 201906, "CAN": 2019097},
         "species_id": 22500,
-        "haul_offset": CAN_HAUL_OFFSET
-    }
+        "haul_offset": CAN_HAUL_OFFSET,
+    },
 )
 logging.info("Haul-based stratification loading complete\n" "'df_dict_strata' created.")
 

@@ -9,7 +9,9 @@ from echopop.ingest.biological import apply_ship_survey_filters, load_biological
 def test_load_biological_data_basic(bio_excel_file, bio_sheet_map):
     """Test basic loading of biological data without optional parameters."""
     # Pass an empty dict instead of None for column_name_map
-    result = load_biological_data(bio_excel_file, bio_sheet_map, column_name_map={})
+    result = load_biological_data(
+        bio_excel_file, bio_sheet_map, column_name_map={"haul": "haul_num"}
+    )
 
     assert isinstance(result, dict)
     assert set(result.keys()) == set(bio_sheet_map.keys())
@@ -38,7 +40,7 @@ def test_load_biological_data_with_subset(bio_excel_file, bio_sheet_map, subset_
     """Test loading with subset filtering."""
     # Pass an empty dict for column_name_map
     result = load_biological_data(
-        bio_excel_file, bio_sheet_map, column_name_map={}, subset_dict=subset_dict
+        bio_excel_file, bio_sheet_map, column_name_map={"haul": "haul_num"}, subset_dict=subset_dict
     )
 
     for df in result.values():
@@ -52,7 +54,10 @@ def test_load_biological_data_with_subset(bio_excel_file, bio_sheet_map, subset_
 def test_load_biological_data_with_label_map(bio_excel_file, bio_sheet_map, label_map):
     """Test loading with label mapping."""
     result = load_biological_data(
-        bio_excel_file, bio_sheet_map, column_name_map={}, biodata_label_map=label_map
+        bio_excel_file,
+        bio_sheet_map,
+        column_name_map={"haul": "haul_num"},
+        biodata_label_map=label_map,
     )
 
     for df in result.values():
