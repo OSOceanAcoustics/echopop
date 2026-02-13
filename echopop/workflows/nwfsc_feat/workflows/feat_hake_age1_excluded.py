@@ -47,10 +47,29 @@ BIODATA_SHEETS = {
 # ---- define the "ships" based on their IDs with the associated survey IDs. If an offset should be
 # ---- added to the haul numbers, that must also be defined here. The target species should also be
 # ---- defined here.
+CAN_HAUL_OFFSET = 200
+SPECIES_ID = 22500 # numeric species code for Pacific hake
+SHIP_US = 160 # US ship ID
+SHIP_CAN = 584 # CAN ship ID
+SURVEY_US = 201906 # US survey identifier
+SURVEY_CAN = 2019097 # CAN survey identifier
+
 BIODATA_PROC = {
-    "ships": {160: {"survey": 201906}, 584: {"survey": 2019097, "haul_offset": 200}},
-    "species_code": [22500],
+    "ships": {
+        SHIP_US: {
+            "country": "US",
+            "survey": SURVEY_US 
+        },
+        SHIP_CAN: {
+            "country": "CAN",
+            "survey": SURVEY_CAN,
+            "haul_offset": CAN_HAUL_OFFSET
+        }
+    },
+    "species_code": [SPECIES_ID]
 }
+
+
 # BIODATA PROCESSING: AGE-1 DOMINATED HAULS
 # ---- This is a list of age-1 dominated haul numbers that should be designated for removal. If no
 # ---- hauls should be removed, then set `AGE1_DOMINATED_HAULS` to `[]`
@@ -120,6 +139,14 @@ logging.basicConfig(level=logging.INFO if VERBOSE else logging.WARNING, format="
 # ==================================================================================================
 # DATA INGESTION
 # ==================================================================================================
+# FORMAT HAUL-BASED UID 
+HAUL_UID_CONFIG = {
+    "ship_id": {"US": SHIP_US, "CAN": SHIP_CAN},
+    "survey_id": {"US": SURVEY_US, "CAN": SURVEY_CAN},
+    "species_id": SPECIES_ID,
+    "haul_offset": CAN_HAUL_OFFSET
+}
+
 # INGEST NASC DATA
 if NASC_PREPROCESSED:
     logging.info(f"Reading pre-generated NASC export file: '{NASC_EXPORTS_FILES.as_posix()}'.")
@@ -142,6 +169,7 @@ if NASC_PREPROCESSED:
         filename=NASC_EXPORTS_FILES,
         sheetname=NASC_EXPORTS_SHEET,
         column_name_map=FEAT_TO_ECHOPOP_COLUMNS,
+        haul_uid_config=HAUL_UID_CONFIG,
     )
 else:
     logging.info(
@@ -223,6 +251,7 @@ else:
         region_class_names=["Age-1 Hake", "Age-1", "Age-1 Hake Mix", "Hake", "Hake Mix"],
         impute_region_ids=True,
         transect_region_haul_key_df=df_transect_region_haul_key,
+        haul_uid_config=HAUL_UID_CONFIG,
     )
 logging.info("NASC ingestion complete\n" "'df_nasc' created.")
 # ==================================================================================================
@@ -284,6 +313,7 @@ df_dict_strata = ingestion.load_strata(
     strata_filepath=HAUL_STRATA_FILE,
     strata_sheet_map=HAUL_STRATA_SHEETS,
     column_name_map=FEAT_TO_ECHOPOP_STRATA_COLUMNS,
+    haul_uid_config=HAUL_UID_CONFIG,
 )
 logging.info("Haul-based stratification loading complete\n" "'df_dict_strata' created.")
 
@@ -361,6 +391,7 @@ logging.info("Applying strata to datasets...")
 # HAUL-BASED STRATA
 logging.info(
     "Applying haul-based strata to 'dict_df_bio' and 'df_nasc'.\n"
+    "     Using column 'uid' as haul-based unique identifier\n"
     "     Default stratum: 0\n"
     "     New columns:\n"
     "         INPFC: 'stratum_inpfc'\n"
@@ -958,6 +989,15 @@ logging.info(
     "        Abundance (animals): 'abundance'/'abundance_female'/'abundance_male'\n"
     "        NASC (m^2 nmi^-2): 'nasc'"
 )
+
+# SUMMARIZE KRIGING RESULTS
+logging.info(
+    f"----------------------\n"
+    f"Kriging-based results\n"
+    f"     Total derived NASC: {df_kriged_results['nasc'].sum():.1f} m²nmi⁻²\n"
+    f"     Total derived abundance: {df_kriged_results['abundance'].sum():.0f} fish\n"
+    f"     Total biomass: {df_kriged_results['biomass'].sum() * 1e-6:.1f} kmt"
+)
 # ==================================================================================================
 # DISTRIBUTE POPULATION ESTIMATES ACROSS AGE AND LENGTH BINS
 logging.info(
@@ -1090,6 +1130,16 @@ logging.info(
 df_jh_transect_results = jh.summarize(ci_percentile=0.95, ci_method="t-jackknife")
 logging.info("Stratified transect analysis results complete\n'df_jh_transect_results' created.")
 
+# REPORT
+logging.info(
+    f"Mean transect CV [95% CI]: "
+    f"{df_jh_transect_results.loc[('survey', 'cv')]['mean']:.3f} "
+    f"[{df_jh_transect_results.loc[('survey', 'cv')]['low']:.3f}, "
+    f"{df_jh_transect_results.loc[('survey', 'cv')]['high']:.3f}]\n"
+    f"    Resampling/bootstrapping bias: "
+    f"{df_jh_transect_results.loc[('survey', 'cv')]['bias']:.3f}"
+)
+
 # RUN ON KRIGED DATA
 # ---- Create virtual transects
 logging.info(
@@ -1121,3 +1171,13 @@ logging.info(
 )
 df_jh_kriged_results = jh.summarize(ci_percentile=0.95, ci_method="t-jackknife")
 logging.info("Stratified kriged analysis results complete\n'df_jh_kriged_results' created.")
+
+# REPORT
+logging.info(
+    f"Mean kriging CV [95% CI]: "
+    f"{df_jh_kriged_results.loc[('survey', 'cv')]['mean']:.3f} "
+    f"[{df_jh_kriged_results.loc[('survey', 'cv')]['low']:.3f}, "
+    f"{df_jh_kriged_results.loc[('survey', 'cv')]['high']:.3f}]\n"
+    f"    Resampling/bootstrapping bias: "
+    f"{df_jh_kriged_results.loc[('survey', 'cv')]['bias']:.3f}"
+)

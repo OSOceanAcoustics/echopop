@@ -348,7 +348,7 @@ def join_strata_by_uid(
         columns_orig = list(df.columns)
 
         # Check if stratification columns already exist
-        existing_cols = set(strata_cols).intersection(set(columns_orig)) - {"uid"}
+        existing_cols = set(strata_cols + [stratum_name]).intersection(set(columns_orig)) - {"uid"}
         if existing_cols:
             # Drop existing shared columns
             df = df.drop(columns=list(existing_cols))

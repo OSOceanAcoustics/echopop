@@ -20,4 +20,5 @@ class ValidateHaulUID(BaseDictionary):
     survey_id: SurveyID = Field(default_factory=SurveyID)
     species_id: Any = Field(default=99999)
     haul_offset: Union[int, float] = Field(default=0)
+    single_country: bool = Field(default=False)
     model_config = ConfigDict(title="haul-based identifier")

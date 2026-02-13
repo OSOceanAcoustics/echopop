@@ -161,6 +161,62 @@ def read_nasc_file(
     return consolidated_file
 
 
+def read_afsc_nasc_file(
+    filename: Union[str, Path],
+    sheetname: str,
+    impute_coordinates: bool = True,
+    column_name_map: Optional[Dict[str, str]] = None,
+):
+    """
+    Read AFSC NASC data from a consolidated XLSX file. This is for the AFSC files that are
+    missing the haul number column.
+
+    Parameters
+    ----------
+    filename : str or pathlib.Path
+        Path to the Excel file
+    sheetname : str
+        Name of the sheet to read
+    impute_coordinates : bool
+        Instruct whether bad spatial coordinates should be imputed or not
+    column_name_map : dict, optional
+        Dictionary mapping original column names to new column names
+
+    Examples
+    --------
+    >>> column_map = {"transect": "transect_num", "region id": "region_id"}
+    >>> df = read_nasc_file("data.xlsx", "Sheet1", column_map)
+
+    >>> # Without column mapping
+    >>> df = read_nasc_file("data.xlsx", "Sheet1")
+
+    Returns
+    -------
+    pandas.DataFrame
+        Cleaned DataFrame with renamed columns and imputed coordinates
+    """
+    # Read in the defined file
+    consolidated_file = pd.read_excel(filename, sheet_name=sheetname, index_col=None, header=0)
+
+    # Set column names to lowercase
+    consolidated_file.columns = consolidated_file.columns.str.lower()
+
+    # Rename columns
+    if column_name_map:
+        consolidated_file.rename(columns=column_name_map, inplace=True)
+
+    # Fix latitude and longitude
+    # ---- Latitude
+    if "latitude" in consolidated_file.columns and impute_coordinates:
+        impute_bad_coordinates(consolidated_file, "latitude")
+    # ---- Longitude
+    if "longitude" in consolidated_file.columns and impute_coordinates:
+        impute_bad_coordinates(consolidated_file, "longitude")
+
+    # Return the cleaned DataFrame
+    return consolidated_file
+
+
 def clean_echoview_cells_df(
     cells_df: pd.DataFrame, inplace: bool = False
 ) -> Optional[pd.DataFrame]:

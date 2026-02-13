@@ -925,6 +925,15 @@ logging.info(
     "        Abundance (animals): 'abundance'/'abundance_female'/'abundance_male'\n"
     "        NASC (m^2 nmi^-2): 'nasc'"
 )
+
+# SUMMARIZE KRIGING RESULTS
+logging.info(
+    f"----------------------\n"
+    f"Kriging-based results\n"
+    f"     Total derived NASC: {df_kriged_results['nasc'].sum():.1f} m²nmi⁻²\n"
+    f"     Total derived abundance: {df_kriged_results['abundance'].sum():.0f} fish\n"
+    f"     Total biomass: {df_kriged_results['biomass'].sum() * 1e-6:.1f} kmt"
+)
 # ==================================================================================================
 # DISTRIBUTE POPULATION ESTIMATES ACROSS AGE AND LENGTH BINS
 logging.info(
@@ -1058,6 +1067,16 @@ logging.info(
 df_jh_transect_results = jh.summarize(ci_percentile=0.95, ci_method="t-jackknife")
 logging.info("Stratified transect analysis results complete\n'df_jh_transect_results' created.")
 
+# REPORT
+logging.info(
+    f"Mean transect CV [95% CI]: "
+    f"{df_jh_transect_results.loc[('survey', 'cv')]['mean']:.3f} "
+    f"[{df_jh_transect_results.loc[('survey', 'cv')]['low']:.3f}, "
+    f"{df_jh_transect_results.loc[('survey', 'cv')]['high']:.3f}]\n"
+    f"    Resampling/bootstrapping bias: "
+    f"{df_jh_transect_results.loc[('survey', 'cv')]['bias']:.3f}"
+)
+
 # RUN ON KRIGED DATA
 # ---- Create virtual transects
 logging.info(
@@ -1089,6 +1108,16 @@ logging.info(
 )
 df_jh_kriged_results = jh.summarize(ci_percentile=0.95, ci_method="t-jackknife")
 logging.info("Stratified kriged analysis results complete\n'df_jh_kriged_results' created.")
+
+# REPORT
+logging.info(
+    f"Mean kriging CV [95% CI]: "
+    f"{df_jh_kriged_results.loc[('survey', 'cv')]['mean']:.3f} "
+    f"[{df_jh_kriged_results.loc[('survey', 'cv')]['low']:.3f}, "
+    f"{df_jh_kriged_results.loc[('survey', 'cv')]['high']:.3f}]\n"
+    f"    Resampling/bootstrapping bias: "
+    f"{df_jh_kriged_results.loc[('survey', 'cv')]['bias']:.3f}"
+)
 # ==================================================================================================
 # REPORT GENERATION
 # ==================================================================================================

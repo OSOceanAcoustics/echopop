@@ -676,6 +676,10 @@ def resolve_uid_component(
         The initialized configuration model.
     _is_can : pd.Series
         Boolean mask where True indicates a Canadian region record.
+    single_country : bool
+        Boolean flag dictating whether only a single survey is being included for a particular
+        survey. This avoids issues where only a single region is provided, but the function may
+        produce the opposite region due to the handling of the haul offset.
     _dataset_type : str, optional
         Reference label for warnings.
 
@@ -695,10 +699,18 @@ def resolve_uid_component(
         output = pd.Series(index=data.index, dtype=object)
         # ---- Define explicit keys
         key_names = config_entry.model_fields_set
+        # ---- Single-country handling
+        if getattr(config, "single_country", False) and len(key_names) == 1:
+            target_key = list(key_names)[0]
+            # ---- Force _is_can to be True if CAN, all False if US
+            _is_can = pd.Series(target_key == "CAN", index=data.index)
         # ---- Iterate through each model field
         for key in type(config_entry).model_fields.keys():
             # ---- Apply CAN mask where appropriate
             mask = _is_can if key == "CAN" else ~_is_can
+            # ---- Skip if the mask is empty
+            if not mask.any():
+                continue
             # ---- Override and raise UserWarning alerting overwritten entries
             if key in key_names or column_name not in data.columns:
                 if column_name in data.columns:
@@ -814,6 +826,11 @@ def add_haul_uids(data: pd.DataFrame, _dataset_type: Optional[str] = None, **par
 
         - haul_offset (int/float): A value subtracted from 'haul_num' for
           records identified as 'CAN' (where haul_num - offset >= 0).
+
+        - single_country :(bool): A boolean flag dictating whether only a single survey is being
+          included for a particular survey. This avoids issues where only a single region is
+          provided, but the function may produce the opposite region due to the handling of the
+          haul offset.
 
     Raises
     ------
