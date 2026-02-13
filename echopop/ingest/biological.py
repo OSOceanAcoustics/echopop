@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import numpy as np
 import pandas as pd
 
+from ..utils import add_haul_uids
 
 def load_single_biological_sheet(
     biodata_filepath: Path,
@@ -55,6 +56,7 @@ def load_biological_data(
     column_name_map: Dict[str, str] = None,
     subset_dict: Optional[Dict] = None,
     biodata_label_map: Optional[Dict[str, Dict]] = None,
+    haul_uid_config: Dict[str, Any] = {},
 ) -> Dict[str, pd.DataFrame]:
     """
     Load biological data from a single Excel file with multiple sheets.
@@ -77,6 +79,17 @@ def load_biological_data(
     biodata_label_map : dict, optional
         Dictionary mapping column names to value replacement dictionaries (e.g.,
         ``{"sex": {1: "male", 2: "female", 3: "unsexed"}}``)
+    haul_uid_config : Dict[str, Any]
+        Optional keyword arguments to override defaults or DataFrame values:
+        
+        - ship_id (dict): Region-specific IDs, e.g., {'US': 10, 'CAN': 20}.
+        
+        - survey_id (dict): Region-specific IDs, e.g., {'US': 1, 'CAN': 2}.
+        
+        - species_id (int/str): A global species code override.
+        
+        - haul_offset (int/float): A value subtracted from 'haul_num' for records identified as 
+          'CAN' (where haul_num - offset >= 0).   
 
     Returns
     -------
@@ -111,7 +124,18 @@ def load_biological_data(
             for name, df in biodata_dict.items():
                 if isinstance(df, pd.DataFrame) and col in df.columns:
                     df[col] = df[col].map(mapping).fillna(df[col])
+                    
+    # Reformat haul datatype
+    biodata_dict = {
+        k: v.assign(haul_num=v["haul_num"].astype(float)) for k, v in biodata_dict.items()
+    }
 
+    # Add UID labels
+    _ = {
+        k: add_haul_uids(v, _dataset_type=f"biodata.{k}", **haul_uid_config) 
+        for k, v in biodata_dict.items()
+    }
+    
     return biodata_dict
 
 
@@ -181,7 +205,7 @@ def apply_ship_survey_filters(
 
 def generate_composite_key(
     bio_data: Dict[str, pd.DataFrame],
-    index_columns: List[str],
+    index_columns: List[str], # uid columns
     adjust: Dict[str, np.number] = {},
 ) -> Tuple[Dict[str, pd.DataFrame], pd.DataFrame, Dict[str, pd.DataFrame]]:
 

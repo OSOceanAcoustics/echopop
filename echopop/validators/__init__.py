@@ -10,14 +10,21 @@ from .variogram import (
     ValidateFitVariogramArgs,
     ValidateVariogramClass,
 )
+from .utils import ValidateHaulUID
 
 __all__ = [
+    # Inversion
     "ValidateBuildModelArgs",
+    "ValidateInversionMatrix",
+    "ValidateLengthTS",
+    # Kriging
+    "ValidateKrigingClass",
+    # Spatial
     "ValidateHullCropArgs",
+    # Variogram
     "ValidateEmpiricalVariogramArgs",
     "ValidateFitVariogramArgs",
-    "ValidateInversionMatrix",
-    "ValidateKrigingClass",
-    "ValidateLengthTS",
     "ValidateVariogramClass",
+    # Utilities
+    "ValidateHaulUID",
 ]

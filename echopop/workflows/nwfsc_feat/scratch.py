@@ -46,7 +46,7 @@ BIODATA_SHEETS = {
 # ---- define the "ships" based on their IDs with the associated survey IDs. If an offset should be
 # ---- added to the haul numbers, that must also be defined here. The target species should also be
 # ---- defined here.
-CAN_HAUL_OFFSET = 0
+CAN_HAUL_OFFSET = 200
 BIODATA_SHIP_SPECIES = {
     "ships": {160: {"survey": 201906}, 584: {"survey": 2019097, "haul_offset": CAN_HAUL_OFFSET}},
     "species_code": [22500],
@@ -96,27 +96,7 @@ ISOBATH_FILE = (
 # 200m ISOBATH SHEET
 ISOBATH_SHEET = "Smoothing_EasyKrig"
 
-# BIODATA DATAFRAME COLUMN NAME MAPPING
-FEAT_TO_ECHOPOP_BIODATA_COLUMNS = {
-    "frequency": "length_count",
-    "haul": "haul_num",
-    "weight_in_haul": "weight",
-}
 
-# BIODATA LABEL MAPPING
-BIODATA_SEX = {"sex": {1: "male", 2: "female", 3: "unsexed"}}
-
-# READ IN DATA
-dict_df_bio = ingestion.load_biological_data(
-    biodata_filepath=BIODATA_FILE,
-    biodata_sheet_map=BIODATA_SHEETS,
-    column_name_map=FEAT_TO_ECHOPOP_BIODATA_COLUMNS,
-    subset_dict=BIODATA_SHIP_SPECIES,
-    biodata_label_map=BIODATA_SEX,
-)
-# ---- Remove specimen hauls
-feat_biology.remove_specimen_hauls(dict_df_bio)
-logging.info("Biodata ingestion complete\n" "'dict_df_bio' created.")
 
 # DEFINE COLUMN MAPPING
 FEAT_TO_ECHOPOP_COLUMNS = {
@@ -136,10 +116,16 @@ df_nasc = ingestion.nasc.read_nasc_file(
     filename=NASC_EXPORTS_FILES,
     sheetname=NASC_EXPORTS_SHEET,
     column_name_map=FEAT_TO_ECHOPOP_COLUMNS,
+    haul_uid_config={
+        "ship_id": {"US": 160, "CAN": 584},
+        "survey_id": {"US": 201906, "CAN": 2019097},
+        "species_id": 22500,
+        "haul_offset": CAN_HAUL_OFFSET
+    }
 )
 
 # DROP TRANSECTS
-df_nasc = utils.apply_filters(df_nasc, include_filter={"transect_num": np.arange(1, 145)})
+df_nasc = utils.apply_filters(df_nasc, include_filter={"transect_num": np.arange(1, 200)})
 # ==================================================================================================
 # INGEST BIODATA
 logging.info(f"Beginning biodata ingestion for: '{BIODATA_FILE.as_posix()}'.")
@@ -161,6 +147,12 @@ dict_df_bio = ingestion.load_biological_data(
     column_name_map=FEAT_TO_ECHOPOP_BIODATA_COLUMNS,
     subset_dict=BIODATA_SHIP_SPECIES,
     biodata_label_map=BIODATA_SEX,
+    haul_uid_config={
+        "ship_id": {"US": 160, "CAN": 584},
+        "survey_id": {"US": 201906, "CAN": 2019097},
+        "species_id": 22500,
+        "haul_offset": CAN_HAUL_OFFSET
+    }
 )
 # ---- Remove specimen hauls
 feat_biology.remove_specimen_hauls(dict_df_bio)
@@ -198,6 +190,12 @@ df_dict_strata = ingestion.load_strata(
     strata_filepath=HAUL_STRATA_FILE,
     strata_sheet_map=HAUL_STRATA_SHEETS,
     column_name_map=FEAT_TO_ECHOPOP_STRATA_COLUMNS,
+    haul_uid_config={
+        "ship_id": {"US": 160, "CAN": 584},
+        "survey_id": {"US": 201906, "CAN": 2019097},
+        "species_id": 22500,
+        "haul_offset": CAN_HAUL_OFFSET
+    }
 )
 logging.info("Haul-based stratification loading complete\n" "'df_dict_strata' created.")
 
@@ -215,20 +213,6 @@ df_dict_geostrata = ingestion.load_geostrata(
     column_name_map=FEAT_TO_ECHOPOP_GEOSTRATA_COLUMNS,
 )
 logging.info("Geographic-based stratification loading complete\n" "'df_dict_geostrata' created.")
-
-###########
-# GENERATE COMPOSITE KEY
-composite_key = ingestion.generate_composite_key(
-    dict_df_bio, index_columns=["ship", "survey", "species_code", "haul_num"]
-)
-
-# APPLY THE COMPOSITE KEY
-df_nasc = ingestion.apply_composite_key(df_nasc, composite_key, (584, CAN_HAUL_OFFSET))
-df_dict_strata = {
-    k: apply_composite_key(v, composite_key, (584, CAN_HAUL_OFFSET))
-    for k, v in df_dict_strata.items()
-}
-dict_df_bio = {k: apply_composite_key(v, composite_key) for k, v in dict_df_bio.items()}
 
 # ==================================================================================================
 # LOAD KRIGING MESH FILE
@@ -552,6 +536,9 @@ logging.info("Inversion-class object 'invert_hake' created...")
 df_nasc = invert_hake.invert(
     df_nasc=df_nasc, df_length=[dict_df_bio["length"], dict_df_bio["specimen"]]
 )
+
+invert_hake.sigma_bs_strata
+invert_hake.sigma_bs_haul
 logging.info(
     "Number density inversion complete\n"
     "     New column in 'df_nasc':\n"

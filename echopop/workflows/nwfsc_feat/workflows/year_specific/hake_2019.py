@@ -63,7 +63,7 @@ BIODATA_SHEETS = {
 # ---- define the "ships" based on their IDs with the associated survey IDs. If an offset should be 
 # ---- added to the haul numbers, that must also be defined here. The target species should also be 
 # ---- defined here. 
-CAN_HAUL_OFFSET = 200
+CAN_HAUL_OFFSET = 0
 BIODATA_SHIP_SPECIES = {
     "ships": {
         160: {
@@ -213,12 +213,14 @@ else:
         f"---- Processing export region names\n"
         f"     Applying CAN haul number offset: {CAN_HAUL_OFFSET}"
     )
+    
+    # >>>> Maybe insert `utils.add_uid` (or equivalent function)
     df_exports_with_regions = ingestion.nasc.process_region_names(
         df=df_exports,
         region_name_expr_dict=REGION_NAME_EXPR_DICT,
         can_haul_offset=CAN_HAUL_OFFSET,
     )
-    
+
     # ASSIGN SHIP ID 
     logging.info(
         "---- Assigning ship ID"
@@ -241,8 +243,7 @@ else:
     )
     df_transect_region_haul_key = ingestion.nasc.generate_transect_region_haul_key(
         df=df_exports_with_regions,
-        filter_list=CLASS_REGIONS,
-        add_columns=["ship"]
+        filter_list=CLASS_REGIONS
     )
     
     # AGE-1 DOMINATED HAUL REMOVAL
@@ -262,14 +263,30 @@ else:
         "     Searching for the export regions: 'Age-1 Hake', 'Age-1 Hake Mix', 'Hake', 'Hake Mix'"
         "     Imputing overlapping region IDs within each interval: True"
     )
+    
+    # >>>>> Instead of inferring ship id from country code, just retain country code and carry through
+    # >>>>> If no user input, default to using dummy codes, otherwise use user input
+    # ---------> User input dictionary:
+    #            {ship_id: {'US': 160}, {'CAN': 584}}, 
+    #             {survey: {...}, {...}} [same as 'ship_id'], 
+    #             species_code: scalar int [until FEAT wants to make things more complicated ...] = 22500, 
+    #             haul_offset: scalar int/float = 200}
+    # --------> If column already exists, then the argument inputs should overwrite those underlying values
+    # --------> [Because we have mixed confidence in the formatting/naming/etc. of the non-biodata files]
+    #         - Also raise a UserWarning to alert user
+    
+    
     df_nasc = ingestion.nasc.consolidate_echvoiew_nasc(
         df_merged=df_exports_with_regions,
         interval_df=df_intervals,
         region_class_names=["Age-1 Hake", "Age-1", "Age-1 Hake Mix", "Hake", "Hake Mix"],
         impute_region_ids=True,
         transect_region_haul_key_df=df_transect_region_haul_key,
-        add_columns=["ship"]
+        add_columns=["ship"],
+        PLACEHOLDER_UID_CONSTRUCTION_ARG_NAME = ...
     )
+    
+    # >>>
 logging.info(
     "NASC ingestion complete\n"
     "'df_nasc' created."

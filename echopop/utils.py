@@ -1,8 +1,12 @@
 from typing import Any, Dict, List, Optional, Union
+import warnings
 
 import numpy as np
 import pandas as pd
 from scipy import interpolate as interp
+
+from .validators import ValidateHaulUID
+from .core.validators import BaseDictionary
 
 
 def binned_distribution(bins: np.ndarray[np.number]) -> pd.DataFrame:
@@ -643,3 +647,191 @@ def round_half_up(n: Union[pd.Series, pd.DataFrame]):
     half to even" (banker's rounding).
     """
     return n.apply(lambda x: np.floor(x + 0.5) if x >= 0 else np.ceil(x - 0.5))
+
+def resolve_uid_component(
+    data: pd.DataFrame,
+    field_name: str,
+    column_name: str,
+    config: ValidateHaulUID,
+    _is_can: pd.Series,
+    _dataset_type: Optional[str] = None,
+):
+    """
+    Determines the source value for a specific UID component.
+
+    Resolves the hierarchy between manual configuration overrides, 
+    DataFrame columns, and model defaults. For nested models (ship/survey), 
+    it maps values based on the regional _is_can mask.
+
+    Parameters
+    ----------
+    data : pd.DataFrame
+        Input dataset.
+    field_name : str
+        The attribute name in the Pydantic config.
+    column_name : str
+        The corresponding column name in the DataFrame.
+    config : ValidateHaulUID
+        The initialized configuration model.
+    _is_can : pd.Series
+        Boolean mask where True indicates a Canadian region record.
+    _dataset_type : str, optional
+        Reference label for warnings.
+
+    Returns
+    -------
+    pd.Series or Any
+        A series of resolved values (for nested/mixed sources) or a 
+        scalar default.
+    """  
+    
+    # Get the model from the configuration instance
+    config_entry = getattr(config, field_name)
+    
+    # Handle nested model
+    if isinstance(config_entry, BaseDictionary):
+        # ---- Initialize column series
+        output = pd.Series(index=data.index, dtype=object)
+        # ---- Define explicit keys
+        key_names = config_entry.model_fields_set
+        # ---- Iterate through each model field
+        for key in type(config_entry).model_fields.keys():
+            # ---- Apply CAN mask where appropriate
+            mask = _is_can if key == "CAN" else ~_is_can
+            # ---- Override and raise UserWarning alerting overwritten entries
+            if key in key_names or column_name not in data.columns:
+                if column_name in data.columns:
+                    warnings.warn(
+                        f"Override: Using input '{field_name}' instead of '{column_name} from "
+                        f"'{_dataset_type}['{key}']' DataFrame input.",
+                        UserWarning
+                    )
+                output.loc[mask] = getattr(config_entry, key)
+            # ---- Use supplied column values from DataFrame
+            else:
+                output.loc[mask] = data.loc[mask, column_name]
+        return output
+    
+    # Handle scalar model
+    if field_name in config.model_fields_set:
+        # ---- Override and raise UserWarning alerting overwritten entries
+        if column_name in data.columns:
+            warnings.warn(
+                f"Override: Using input '{field_name}' instead of '{column_name}' from "
+                f"'{_dataset_type}' DataFrame input.",
+                UserWarning
+            )
+        return config_entry
+    
+    # Return the DataFrame column if it exists, otherwise the model default
+    return data[column_name] if column_name in data.columns else config_entry
+
+def construct_haul_uids(
+    data: pd.DataFrame,
+    _dataset_type: Optional[str] = None,
+    **params
+) -> pd.Series:
+    """
+    Assembles the component parts of the Haul UID into a single string series.
+
+    This function manages the conditional math for CAN vs. US hauls based on 
+    the provided haul_offset.
+
+    Parameters
+    ----------
+    data : pd.DataFrame
+        Input dataset.
+    _dataset_type : str, optional
+        Reference label for warnings.
+    **params : dict
+        Keyword arguments used to initialize the ValidateHaulUID model.
+
+    Returns
+    -------
+    pd.Series
+        A series of formatted UID strings ('ship-survey-species-haul').
+    """
+    
+    # Validate configuration
+    config = ValidateHaulUID(**params)
+
+    # Adjust the haul numbers by removing any defined offsets
+    offset_haul = data["haul_num"] - config.haul_offset
+
+    # Determine the country mask based on the haul number and the respective offset, if supplied
+    is_can = offset_haul >= 0
+
+    # Resolve the final haul numbers
+    haul = np.where(is_can, offset_haul, data["haul_num"])
+
+    # Resolve components independently
+    ship = resolve_uid_component(
+        data, "ship_id", "ship", config, is_can, _dataset_type)
+    survey = resolve_uid_component(data, "survey_id", "survey", config, is_can, _dataset_type)
+    species = resolve_uid_component(
+        data, "species_id", "species_code", config, is_can, _dataset_type)
+    
+    # Return the constructed UIDs
+    return (
+        pd.Series(ship, index=data.index).astype(str) + "-" + 
+        pd.Series(survey, index=data.index).astype(str) + "-" + 
+        pd.Series(species, index=data.index).astype(str) + "-" + 
+        pd.Series(haul, index=data.index).astype(str)
+    )
+    
+def add_haul_uids(
+    data: pd.DataFrame,
+    _dataset_type: Optional[str] = None,
+    **params
+) -> None:
+    """
+    Adds a 'uid' column to the input DataFrame via in-place mutation.
+    
+    The UID is constructed as '{ship}-{survey}-{species}-{haul}'. The logic 
+    resolves values based on the following priority:
+    
+    1. Explicit manual overrides provided in `**params`.
+    
+    2. Existing DataFrame columns ('ship', 'survey', 'species_code').
+    
+    3. Standard default values.
+    
+    Parameters
+    ----------
+    data : pd.DataFrame
+        Input DataFrame. Must contain at least the 'haul_num' column.
+    _dataset_type : str, optional
+        A label used to identify the dataset in warning messages 
+        (e.g., 'NASC', 'biometry').
+    **params : dict
+        Optional keyword arguments to override defaults or DataFrame values:
+        
+        - ship_id (dict): Region-specific IDs, e.g., {'US': 10, 'CAN': 20}.
+        
+        - survey_id (dict): Region-specific IDs, e.g., {'US': 1, 'CAN': 2}.
+        
+        - species_id (int/str): A global species code override.
+        
+        - haul_offset (int/float): A value subtracted from 'haul_num' for 
+          records identified as 'CAN' (where haul_num - offset >= 0).    
+    
+    Raises
+    ------
+    KeyError
+        If 'haul_num' is missing from the input DataFrame.
+    """
+    
+    # Validate that the input DataFrame contains the column 'haul_num'
+    if "haul_num" not in data.columns:
+        raise KeyError(
+            "Required column 'haul_num' missing from input DataFrame 'data'."
+        )
+    
+    # Construct the haul-based UIDs
+    uids = construct_haul_uids(data, _dataset_type, **params)
+    
+    # Assign directly to the DataFrame via inplace mutation
+    data["uid"] = uids
+    
+    # Replace None
+    return None
