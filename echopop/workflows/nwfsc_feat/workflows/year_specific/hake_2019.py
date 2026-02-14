@@ -764,6 +764,7 @@ feat_biology.compute_abundance(
     exclude_filter={"sex": "unsexed"},
     number_proportions=dict_ds_number_proportion,
 )
+
 # COMPUTE STRATUM-AVERAGED WEIGHTS
 da_averaged_weight = proportions.stratum_averaged_weight(
     number_proportions=dict_ds_number_proportion,
