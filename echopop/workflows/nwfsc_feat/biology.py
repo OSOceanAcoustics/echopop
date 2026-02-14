@@ -432,7 +432,9 @@ def remove_specimen_hauls(
     biodata_dict: Dict[str, pd.DataFrame],
 ) -> None:
     """
-    Remove hauls from the catch data where all samples were individually processed.
+    Remove hauls from the catch data where all samples were individually processed. This further 
+    separates the weight contributions of specimens from the overall catches. This is done since 
+    the catch weights are inclusive of the specimen weights by default.
 
     This function filters the catch data to exclude hauls that don't have corresponding length
     frequency data, ensuring consistency between catch weights and length samples. This prevents
@@ -471,3 +473,17 @@ def remove_specimen_hauls(
     biodata_dict["catch"] = biodata_dict["catch"].loc[
         biodata_dict["catch"]["haul_num"].isin(haul_numbers)
     ]
+    
+    # Sum up the specimen haul weights
+    specimen_haul_weights = biodata_dict["specimen"].groupby(["haul_num"])["weight"].sum()
+    
+    # Index the catch haul weights
+    biodata_dict["catch"].set_index("haul_num", inplace=True)
+    
+    # Update the haul weights in the duplicate catch dataset
+    biodata_dict["catch"]["weight"] = (
+        biodata_dict["catch"]["weight"] - specimen_haul_weights
+    ).dropna()
+    
+    # Reset index
+    biodata_dict["catch"].reset_index(inplace=True)
