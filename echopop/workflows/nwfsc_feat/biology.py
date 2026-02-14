@@ -469,21 +469,21 @@ def remove_specimen_hauls(
     # Get unique haul numbers
     haul_numbers = biodata_dict["length"]["haul_num"].unique()
 
-    # Find incompatible hauls
-    biodata_dict["catch"] = biodata_dict["catch"].loc[
-        biodata_dict["catch"]["haul_num"].isin(haul_numbers)
-    ]
+    # Find incompatible hauls and create copy
+    catch = (
+        biodata_dict["catch"]
+        .loc[biodata_dict["catch"]["haul_num"].isin(haul_numbers)]
+        .copy()
+    )
 
     # Sum up the specimen haul weights
     specimen_haul_weights = biodata_dict["specimen"].groupby(["haul_num"])["weight"].sum()
 
     # Index the catch haul weights
-    biodata_dict["catch"].set_index("haul_num", inplace=True)
+    catch.set_index("haul_num", inplace=True)
 
     # Update the haul weights in the duplicate catch dataset
-    biodata_dict["catch"]["weight"] = (
-        biodata_dict["catch"]["weight"] - specimen_haul_weights
-    ).dropna()
+    catch["weight"] = catch["weight"].sub(specimen_haul_weights).dropna()
 
     # Reset index
-    biodata_dict["catch"].reset_index(inplace=True)
+    biodata_dict["catch"] = catch.reset_index()
