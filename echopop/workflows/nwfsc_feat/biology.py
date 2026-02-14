@@ -231,20 +231,33 @@ def compute_abundance(
 
     # Compute grouped values, if needed
     if number_proportions is not None:
-        # ---- Select overall proportions from each dataset
-        overall_props = {k: ds["proportion_overall"] for k, ds in number_proportions.items()}
-        # ---- Get the set of coordinate names for each DataArray
-        coord_sets = [set(da.coords) for da in overall_props.values()]
-        # ---- Find the intersection (shared coordinates)
-        shared_coords = set.intersection(*coord_sets) - {"length_bin"}
-        # ---- Find overlapping indices
-        idx_names = list(shared_coords.intersection(set(transect_data.columns)))
-        nonidx_names = [id for id in list(shared_coords) if id not in idx_names]
-        # ---- Create grouped table from number proportions
-        grouped_proportions = sum(
-            da.sum(dim=[d for d in da.dims if d not in shared_coords])
-            for da in overall_props.values()
-        )
+        # ---- Dictionary handling
+        if isinstance(number_proportions, dict):
+            # ---- Select overall proportions from each dataset
+            overall_props = {k: ds["proportion_overall"] for k, ds in number_proportions.items()}
+            # ---- Get the set of coordinate names for each DataArray
+            coord_sets = [set(da.coords) for da in overall_props.values()]
+            # ---- Find the intersection (shared coordinates)
+            shared_coords = set.intersection(*coord_sets) - {"length_bin"}
+            # ---- Find overlapping indices
+            idx_names = list(shared_coords.intersection(set(transect_data.columns)))
+            nonidx_names = [id for id in list(shared_coords) if id not in idx_names]
+            # ---- Create grouped table from number proportions
+            grouped_proportions = sum(
+                da.sum(dim=[d for d in da.dims if d not in shared_coords])
+                for da in overall_props.values()
+            )
+        # ---- Dataset handling
+        else:
+            # ---- Get the set of coordinate names for each DataArray
+            coords = set(number_proportions.coords)
+            # ---- Find intersecting sets
+            shared_coords = coords - {"length_bin"}
+            # ---- Find overlapping indices
+            idx_names = list(shared_coords.intersection(set(transect_data.columns)))
+            nonidx_names = [id for id in list(shared_coords) if id not in idx_names]
+            # ---- Create grouped table from number proportions
+            grouped_proportions = number_proportions["proportion_overall"].sum(dim=["length_bin"])
         # ---- Apply exclusion filter, if required
         if exclude_filter:
             # ---- Parse existing labels

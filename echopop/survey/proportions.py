@@ -639,7 +639,7 @@ def calculate_within_group_proportions(
 
 
 def stratum_averaged_weight(
-    number_proportions: Dict[str, xr.Dataset],
+    number_proportions: Union[Dict[str, xr.Dataset], xr.Dataset],
     length_weight_data: xr.DataArray,
     group_columns: List[str] = [],
 ) -> xr.DataArray:
@@ -697,6 +697,10 @@ def stratum_averaged_weight(
     <xarray.DataArray ...>
     """
 
+    # Convert if needed
+    if isinstance(number_proportions, xr.Dataset):
+        number_proportions = {"data": number_proportions}
+
     # Get variable names for number proportions
     proportion_vars = list(number_proportions.keys())
 
@@ -740,6 +744,10 @@ def stratum_averaged_weight(
         proportion_vars, aggregate_proportions, within_grp_props_unnorm.sum(dim=["length_bin"])
     )
 
+    # Adjust for case when only a single group is provided
+    if len(proportion_vars) == 1:
+        adjusted_proportions = xr.full_like(adjusted_proportions, 1)
+
     # Calculate final weights
     fitted_weights = calculate_grouped_weights(
         length_weight_data=length_weight_data,
@@ -749,6 +757,10 @@ def stratum_averaged_weight(
         adjusted_proportions=adjusted_proportions,
         group_keys=proportion_vars,
     )
+
+    # Drop group coordinate if retained
+    if "group" in fitted_weights.coords:
+        fitted_weights = fitted_weights.drop_vars("group", errors="ignore")
 
     return fitted_weights
 
@@ -877,7 +889,7 @@ def weight_proportions(
     weights_aligned = xr.align(*(catch_weights, group_weights), join="outer", fill_value=0.0)
 
     # Get the overall sums
-    total_weights = sum(weights_aligned)
+    total_weights = sum(weights_aligned).astype(float)
 
     # Compute the weight proportions for the array
     arr = weight_data / total_weights
