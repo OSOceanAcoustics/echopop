@@ -333,7 +333,7 @@ def test_remove_speciman_hauls(biological_data):
     biodata_preremoval = biodata.copy()
 
     # Apply removal
-    biology.remove_specimen_hauls(biodata)
+    biology.drop_specimen_only_hauls(biodata)
 
     # Compare
     assert len(biodata["catch"]) == 3 and len(biodata["catch"]) < len(biodata_preremoval["catch"])
@@ -344,13 +344,4 @@ def test_remove_speciman_hauls(biological_data):
             )
         )
         == 0
-    )
-    assert all(
-        (
-            biodata["specimen"].set_index("haul_num")["weight"]
-            + biodata["catch"].set_index("haul_num")["weight"]
-        )
-        .dropna()
-        .values
-        == biological_data["catch"]["weight_in_haul"][:3]
     )

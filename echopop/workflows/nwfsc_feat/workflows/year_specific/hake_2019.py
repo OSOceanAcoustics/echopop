@@ -321,7 +321,9 @@ dict_df_bio = ingestion.load_biological_data(
 # ---- !!! Note: Moving the catch weight - specimen weight (to avoid double-counting) down to 
 # ---- !!! the weight proportions calculations (flagged by an argument). This would revert the below 
 # ---- !!! function to its previous state, but should be renamed to something more specific/descriptive
-feat_biology.remove_specimen_hauls(dict_df_bio)
+feat_biology.drop_specimen_only_hauls(dict_df_bio)
+
+
 logging.info(
     "Biodata ingestion complete\n"
     "'dict_df_bio' created."

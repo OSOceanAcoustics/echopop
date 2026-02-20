@@ -339,7 +339,7 @@ dict_df_bio = ingestion.load_biological_data(
     # haul_uid_config=HAUL_UID_CONFIG,
 )
 # ---- Remove specimen hauls
-feat_biology.remove_specimen_hauls(dict_df_bio)
+feat_biology.drop_specimen_only_hauls(dict_df_bio)
 logging.info(
     "Biodata ingestion complete\n"
     "'dict_df_bio' created."

@@ -172,7 +172,7 @@ dict_df_bio = ingestion.load_biological_data(
     haul_uid_config=HAUL_UID_CONFIG,
 )
 # ---- Remove specimen hauls
-feat_biology.remove_specimen_hauls(dict_df_bio)
+feat_biology.drop_specimen_only_hauls(dict_df_bio)
 
 # ==================================================================================================
 # INGEST STRATIFICATION DATA
@@ -382,7 +382,7 @@ da_counts_specimen = proportions.compute_binned_counts(
     groupby_cols=["stratum_ks", "length_bin", "sex"],
     count_col="length",
     agg_func="size",
-)
+) 
 
 # COMBINE INTO A SINGLE DATASET
 da_counts = da_counts_length + da_counts_specimen
