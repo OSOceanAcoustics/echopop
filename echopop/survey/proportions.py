@@ -923,7 +923,6 @@ def weight_proportions(
 def fitted_weight_proportions(
     weight_data: xr.DataArray,
     reference_weight_proportions: xr.Dataset,
-    catch_data: pd.DataFrame,
     number_proportions: xr.DataArray,
     binned_weights: xr.DataArray,
     stratum_dim: List[str] = [],
@@ -942,8 +941,6 @@ def fitted_weight_proportions(
         xarray DataArray of scaled weights for the group, with dimensions including stratum_dim.
     reference_weight_proportions : xr.Dataset
         xarray Dataset of reference weight proportions for comparison, with compatible dimensions.
-    catch_data : pd.DataFrame
-        DataFrame containing catch data, including columns for stratum_dim and "weight".
     number_proportions : xr.DataArray
         xarray DataArray of number proportions by relevant grouping factors.
     binned_weights : xr.DataArray
@@ -962,7 +959,6 @@ def fitted_weight_proportions(
     >>> props = fitted_weight_proportions(
     ...     scaled_weight_data=da_scaled_unaged_weights,
     ...     reference_weight_proportions=ds_da_weight_proportion["aged"],
-    ...     catch_data=dict_df_bio["catch"],
     ...     number_proportions=dict_ds_number_proportion["unaged"],
     ...     binned_weights=da_binned_weights_all,
     ...     stratum_dim=["stratum_ks"]
@@ -975,26 +971,12 @@ def fitted_weight_proportions(
     subgroup_weights = weight_data.groupby(stratum_dim).sum(dim="length_bin").astype(float)
 
     # Calculate the total grouped weights
-    group_weights = xr.DataArray(
-        subgroup_weights.to_numpy().sum(axis=1),
-        dims=stratum_dim,
-        coords={col: weight_data.coords[col] for col in stratum_dim},
+    group_weights = subgroup_weights.sum(
+        dim=[d for d in subgroup_weights.coords if d not in stratum_dim]
     )
-
-    # Rescale the catch weights
-    scaled_weights = (subgroup_weights / group_weights) * catch_data.groupby(stratum_dim)[
-        "weight"
-    ].sum().to_xarray().fillna(0.0)
 
     # Calculate the grouped weight proportions
-    weight_grouped_props = (
-        (
-            scaled_weights
-            / scaled_weights.sum(dim=[d for d in scaled_weights.coords if d not in stratum_dim])
-        )
-        .fillna(0.0)
-        .squeeze()
-    )
+    weight_grouped_props = (subgroup_weights / group_weights).fillna(0.0)
 
     # Calculate the number proportions based on strata
     length_bin_props = number_proportions["proportion"].sum(

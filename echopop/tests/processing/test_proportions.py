@@ -535,7 +535,6 @@ def test_fitted_weight_proportions(
     result = get_proportions.fitted_weight_proportions(
         weight_data=weight_data,
         reference_weight_proportions=weight_props,
-        catch_data=catch_data_df,
         number_proportions=number_props["unaged"].reset_coords("variable", drop=True),
         binned_weights=lb_weights,
         stratum_dim=["stratum_num"],
@@ -555,6 +554,7 @@ def test_fitted_weight_proportions(
         result_da.sel(sex="female", length_bin="(20, 30]")
         == pytest.approx([0.06747638, 0.16618322])
     ).all()
+
     assert (
         result_da.sel(sex="female", length_bin="(30, 40]")
         == pytest.approx([0.10121457, 0.24927484])
