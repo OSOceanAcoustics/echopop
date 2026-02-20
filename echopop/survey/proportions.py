@@ -1,6 +1,6 @@
 import functools
 import operator
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -836,6 +836,7 @@ def weight_proportions(
     weight_data: xr.DataArray,
     catch_data: pd.DataFrame,
     group_columns: str = [],
+    proportion_reference: Literal["total", "catch"] = "total",
 ) -> xr.DataArray:
     """
     Calculate stratified weight proportions using xarray and pandas inputs.
@@ -854,6 +855,13 @@ def weight_proportions(
         DataFrame with catch data, including columns for group_columns and "weight".
     group_columns : list of str
         List of dimension/column names to group by (e.g., strata, sex, etc.).
+    proportion_reference : Literal["catch", "total"], default 'total'
+        Determines the denominator for the proportions calculation:
+        
+        - "catch": proportions are relative to the summed catch weights only.
+        
+        - "total": proportions are relative to the sum of catch weights and biological weights 
+          (default).
 
     Returns
     -------
@@ -864,8 +872,10 @@ def weight_proportions(
     Notes
     -----
     - No column or dimension names are hard-coded; all logic is dynamic.
+    
     - The function assumes that grouping columns are consistent between weight_data
       and catch_data.
+      
     - Missing or extra group/category combinations are handled automatically by xarray/pandas.
 
     Examples
@@ -873,26 +883,39 @@ def weight_proportions(
     >>> weight_props = weight_proportions(
     ...     weight_data=ds_da_weight_dist["aged"],
     ...     catch_data=dict_df_bio["catch"],
-    ...     group_columns=["stratum_ks"]
+    ...     group_columns=["stratum_ks"],
+    ...     proportion_reference="catch"
     ... )
     >>> print(weight_props)
     <xarray.DataArray ...>
     """
-
+    
+    # Compute the total weights per group from the biological data
+    group_weights = weight_data.sum(dim=[d for d in weight_data.dims if d not in group_columns])
+    
     # Compute the grouped catch weights
     catch_weights = xr.DataArray(catch_data.groupby(group_columns)["weight"].sum())
-
-    # Compute the total weights per stratum from the biological data
-    group_weights = weight_data.sum(dim=[d for d in weight_data.dims if d not in group_columns])
-
-    # Align in case of mismatch in groupings
-    weights_aligned = xr.align(*(catch_weights, group_weights), join="outer", fill_value=0.0)
-
-    # Get the overall sums
-    total_weights = sum(weights_aligned).astype(float)
+    
+    # Make catch haul weights adjustment, if needed, to avoid double-counting weights
+    if proportion_reference == "total":
+        # ---- Align weights
+        catch_weights_aligned, group_weights_aligned = xr.align(
+            catch_weights, group_weights, join="outer", fill_value=0.0
+        )
+        # ---- Sum together
+        total_weights = catch_weights_aligned + group_weights_aligned
+    elif proportion_reference == "catch": 
+        # ---- Use just the summed catch weights
+        total_weights = catch_weights_aligned
+    else:
+        raise ValueError(
+            f"Input for 'proportion_reference' ({proportion_reference}) is invalid. Valid options "
+            f"are limited to 'total' (default) and 'catch'."
+        )
 
     # Compute the weight proportions for the array
     arr = weight_data / total_weights
+    # ---- Assign the array name 
     arr.name = "proportion_overall"
     return arr.to_dataset()
 
