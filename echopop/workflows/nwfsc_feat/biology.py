@@ -440,6 +440,7 @@ def compute_biomass(
     # Reset the index
     transect_data.reset_index(inplace=True)
 
+
 def drop_specimen_only_hauls(
     biodata: Dict[str, pd.DataFrame],
 ) -> None:
@@ -465,16 +466,16 @@ def drop_specimen_only_hauls(
     Notes
     -----
     This function addresses a common issue in fisheries data where:
-    
+
     - Some hauls have bulk catch weights but no individual fish measurements
-    
+
     - Other hauls have detailed individual fish data that represents the entire catch
-    
+
     - Including both would lead to double-counting of biomass
 
-    By filtering catch data to only include hauls with length frequency data, the function ensures 
-    that biomass estimates are based on consistent sampling methods. The function is typically 
-    called after loading biological data but before computing length-weight relationships or 
+    By filtering catch data to only include hauls with length frequency data, the function ensures
+    that biomass estimates are based on consistent sampling methods. The function is typically
+    called after loading biological data but before computing length-weight relationships or
     abundance estimates.
     """
 
@@ -482,6 +483,4 @@ def drop_specimen_only_hauls(
     haul_numbers = biodata["length"]["haul_num"].unique()
 
     # Find incompatible hauls
-    biodata["catch"] = biodata["catch"].loc[
-        biodata["catch"]["haul_num"].isin(haul_numbers)
-    ]
+    biodata["catch"] = biodata["catch"].loc[biodata["catch"]["haul_num"].isin(haul_numbers)]

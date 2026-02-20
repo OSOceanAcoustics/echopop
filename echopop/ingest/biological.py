@@ -50,6 +50,7 @@ def load_single_biological_sheet(
 
     return df_filtered
 
+
 def load_single_biological_view(
     biodata_filepath: Path,
     column_name_map: Dict = {},
@@ -88,6 +89,7 @@ def load_single_biological_view(
 
     return df_filtered
 
+
 def load_materialized_biodata_views(
     biodata_filepaths: Dict[str, Path],
     column_name_map: Dict[str, str] = None,
@@ -96,7 +98,7 @@ def load_materialized_biodata_views(
     haul_uid_config: Dict[str, Any] = {},
 ) -> Dict[str, pd.DataFrame]:
     """
-    Load biological data from materialized views of catch data and a file including specimen-only 
+    Load biological data from materialized views of catch data and a file including specimen-only
     values.
 
     Parameters
@@ -130,18 +132,14 @@ def load_materialized_biodata_views(
     dict
         Dictionary containing processed biological DataFrames keyed by dataset name
     """
-    
+
     # Validate across files
     if not all([v.exists() for v in biodata_filepaths.values()]):
-        raise FileNotFoundError(
-            "Not all files in 'biodata_filepaths' could be found."
-        )
+        raise FileNotFoundError("Not all files in 'biodata_filepaths' could be found.")
 
     # Load each biological dataset
     biodata_dict = {
-        dataset_name: load_single_biological_view(
-            file, column_name_map, subset_dict
-        )
+        dataset_name: load_single_biological_view(file, column_name_map, subset_dict)
         for dataset_name, file in biodata_filepaths.items()
     }
 
@@ -164,8 +162,9 @@ def load_materialized_biodata_views(
         k: add_haul_uids(v, _dataset_type=f"biodata.{k}", **haul_uid_config)
         for k, v in biodata_dict.items()
     }
-    
+
     return biodata_dict
+
 
 def load_biological_data(
     biodata_filepath: Path,

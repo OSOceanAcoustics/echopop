@@ -857,10 +857,10 @@ def weight_proportions(
         List of dimension/column names to group by (e.g., strata, sex, etc.).
     proportion_reference : Literal["catch", "total"], default 'total'
         Determines the denominator for the proportions calculation:
-        
+
         - "catch": proportions are relative to the summed catch weights only.
-        
-        - "total": proportions are relative to the sum of catch weights and biological weights 
+
+        - "total": proportions are relative to the sum of catch weights and biological weights
           (default).
 
     Returns
@@ -872,10 +872,10 @@ def weight_proportions(
     Notes
     -----
     - No column or dimension names are hard-coded; all logic is dynamic.
-    
+
     - The function assumes that grouping columns are consistent between weight_data
       and catch_data.
-      
+
     - Missing or extra group/category combinations are handled automatically by xarray/pandas.
 
     Examples
@@ -889,13 +889,13 @@ def weight_proportions(
     >>> print(weight_props)
     <xarray.DataArray ...>
     """
-    
+
     # Compute the total weights per group from the biological data
     group_weights = weight_data.sum(dim=[d for d in weight_data.dims if d not in group_columns])
-    
+
     # Compute the grouped catch weights
     catch_weights = xr.DataArray(catch_data.groupby(group_columns)["weight"].sum())
-    
+
     # Make catch haul weights adjustment, if needed, to avoid double-counting weights
     if proportion_reference == "total":
         # ---- Align weights
@@ -904,7 +904,7 @@ def weight_proportions(
         )
         # ---- Sum together
         total_weights = catch_weights_aligned + group_weights_aligned
-    elif proportion_reference == "catch": 
+    elif proportion_reference == "catch":
         # ---- Use just the summed catch weights
         total_weights = catch_weights_aligned
     else:
@@ -915,7 +915,7 @@ def weight_proportions(
 
     # Compute the weight proportions for the array
     arr = weight_data / total_weights
-    # ---- Assign the array name 
+    # ---- Assign the array name
     arr.name = "proportion_overall"
     return arr.to_dataset()
 
