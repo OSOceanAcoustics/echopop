@@ -696,7 +696,6 @@ logging.info(
 dict_da_weight_proportion["unaged"] = proportions.fitted_weight_proportions(
     weight_data=ds_da_weight_dist["unaged"],
     reference_weight_proportions=dict_da_weight_proportion["aged"],
-    catch_data=dict_df_bio["catch"],
     number_proportions=dict_ds_number_proportion["unaged"],
     binned_weights=da_binned_weights_all,
     stratum_dim=["stratum_ks"]
