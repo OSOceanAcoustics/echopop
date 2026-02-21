@@ -2,12 +2,13 @@
 This module corrects biological distributions based on length-based net selectivity.
 """
 
-from typing import Dict, List, Literal, Optional, Union
+from typing import Dict, List, Optional, Union
 
 import numpy as np
 import xarray as xr
 
 from ..validators import ValidateSelectivityParams
+
 
 def logistic_selectivity(
     length_bins: xr.DataArray,
@@ -21,13 +22,13 @@ def logistic_selectivity(
     Compute logistic net selectivity by length bin.
 
     Selectivity can be parameterized using either:
-    
+
     1) slope/intercept:
-    
+
        S(l) = 1 / (1 + exp(-(intercept + slope*l)))
-       
+
     2) L50%/SR:
-    
+
        S(l) = (1 + exp(k*(L50 - l)/SR))^-1, where k = 2*log(3)
 
     Parameters
@@ -57,15 +58,15 @@ def logistic_selectivity(
 
     Notes
     -----
-    
+
     - This function supports both common parameterizations used in selectivity studies.
-    
+
     - Exactly one parameter pair must be provided: ``(slope, intercept)`` or ``(l50, sr)``.
 
     References
     ----------
-    Wileman, D. A., Ferro, R. S. T., Fonteyne, R., & Millar, R. B. (Eds.). (1996). *Manual of 
-    methods of measuring the selectivity of towed fishing gears*. ICES Cooperative Research Report 
+    Wileman, D. A., Ferro, R. S. T., Fonteyne, R., & Millar, R. B. (Eds.). (1996). *Manual of
+    methods of measuring the selectivity of towed fishing gears*. ICES Cooperative Research Report
     No. 215.
     """
     # Convert interval bins to midpoint lengths
@@ -87,6 +88,7 @@ def logistic_selectivity(
 
     # ---- Apply lower bound
     return xr.where(selectivity < minimum_selectivity, minimum_selectivity, selectivity)
+
 
 def _extract_proportion_arrays(
     number_data: Union[xr.Dataset, Dict[str, Union[xr.Dataset, xr.DataArray]]],
@@ -111,9 +113,7 @@ def _extract_proportion_arrays(
             else:
                 arrays.extend([array for array in value.data_vars.values()])
     else:
-        raise TypeError(
-            "'number_data' must be an xarray Dataset, or dictionary of Datasets."
-        )
+        raise TypeError("'number_data' must be an xarray Dataset, or dictionary of Datasets.")
 
     # Keep only arrays that include length_bin
     arrays = [array for array in arrays if "length_bin" in array.dims]
@@ -124,6 +124,7 @@ def _extract_proportion_arrays(
     arrays = [xr.where(array.isnull(), 0.0, array).astype(float) for array in arrays]
 
     return arrays
+
 
 def _sum_aligned(arrays: List[xr.DataArray]) -> xr.DataArray:
     """
@@ -146,24 +147,26 @@ def _sum_aligned(arrays: List[xr.DataArray]) -> xr.DataArray:
     # Return with NaN filled with 0.0
     return total.fillna(0.0)
 
+
 def _normalize_by_dims(da: xr.DataArray, dims: List[str]) -> xr.DataArray:
     """
-    Internal utility function for normalizing the proportions over the defined dimensions such that 
-    they always sum to 1.0. This is a required calculation for the corrected proportions since the 
-    inflation of smaller bins (e.g., tails) results in the sum exceeding 1.0.  
+    Internal utility function for normalizing the proportions over the defined dimensions such that
+    they always sum to 1.0. This is a required calculation for the corrected proportions since the
+    inflation of smaller bins (e.g., tails) results in the sum exceeding 1.0.
     """
     # Normalize over dimensions not explicitly retained
     sum_dims = [dim for dim in da.dims if dim not in dims]
     if len(sum_dims) == 0:
         return da.fillna(0.0)
-    
+
     # Normalize over the defined dimensions
     return (da / da.sum(dim=sum_dims)).fillna(0.0)
+
 
 def _construct_corrected_distribution(
     combined_marginal: xr.DataArray,
     normalization_dims: List[str],
-    minimum_selectivity: Optional[float] = None,    
+    minimum_selectivity: Optional[float] = None,
     slope: Optional[float] = None,
     intercept: Optional[float] = None,
     l50: Optional[float] = None,
@@ -188,6 +191,7 @@ def _construct_corrected_distribution(
     # Pure weighting correction (zeros remain zeros)
     return _normalize_by_dims(obs * (1.0 / selectivity), normalization_dims)
 
+
 def _compute_length_age_marginal(
     proportion_arrays: List[xr.DataArray], keep_dims: List[str]
 ) -> Optional[xr.DataArray]:
@@ -210,6 +214,7 @@ def _compute_length_age_marginal(
     # Align and combine all length-age marginals
     return _sum_aligned(length_age_arrays)
 
+
 def _build_adjusted_outputs(
     observed_len_proportion: xr.DataArray,
     corrected_len_proportion: xr.DataArray,
@@ -221,7 +226,7 @@ def _build_adjusted_outputs(
     Internal utility function for formatting the output Dataset structure of the length-based
     selectivity-corrected proportions.
     """
-    
+
     # Build corrected length proportions
     output = xr.Dataset(
         {
@@ -250,7 +255,6 @@ def _build_adjusted_outputs(
     return output
 
 
-
 def correct_number_proportions(
     number_data: Union[xr.Dataset, Dict[str, Union[xr.Dataset]]],
     selectivity_params: Dict[str, float],
@@ -266,59 +270,59 @@ def correct_number_proportions(
     Parameters
     ----------
     number_data : xr.Dataset, Dict[str, xr.Dataset]
-        Observed length-binned counts in the form of proportions (i.e., normalized to sum to 1). 
-        This can either be a single Dataset, or a dictionary of Datasets. Each Dataset must, at a 
-        minimum, include the coordinate ``length_bin`` and the variable ``proportion_overall``. 
+        Observed length-binned counts in the form of proportions (i.e., normalized to sum to 1).
+        This can either be a single Dataset, or a dictionary of Datasets. Each Dataset must, at a
+        minimum, include the coordinate ``length_bin`` and the variable ``proportion_overall``.
     selectivity_params : Dict[str, float]
         A dictionary of selectivity parameters that must contain either:
-        
+
             - 'intercept' (float): Logistic regression intercept coefficient.
-            
+
             - 'slope' (float): Logistic regression slope coefficient.
-        
+
         or:
-        
-            - 'l50' (float): Length-at-50%-retention parameter (the length at which selectivity is 
+
+            - 'l50' (float): Length-at-50%-retention parameter (the length at which selectivity is
                0.5).
-               
+
             - 'sr' (float): Selection range (the length interval between 25% and 75% retention).
-        
-        Optional: 
-        
-            - 'minimum_selectivity' (float, default 1e-12): Lower bound applied to selectivity 
-              values to avoid division-by-zero errors. 
-              
+
+        Optional:
+
+            - 'minimum_selectivity' (float, default 1e-12): Lower bound applied to selectivity
+              values to avoid division-by-zero errors.
+
     stratum_dim : str or list of str, optional
-        Dimensions that define the normalization groups. When provided, both observed and adjusted 
-        length proportions are normalized to sum to 1 within each stratum. Other inferred 
+        Dimensions that define the normalization groups. When provided, both observed and adjusted
+        length proportions are normalized to sum to 1 within each stratum. Other inferred
         coordinates are still retained in the output arrays.
 
     Notes
     -----
-    
+
     - Selectivity is applied strictly as a weighting factor.
-    
+
     - Zero-probability bins remain zero (no gap-filling behavior).
 
     Returns
     -------
     xr.Dataset
         Dataset containing adjusted number distributions with key DataArrays:
-        
+
         - ``length_proportion_adjusted`` over ``length_bin``
-        
+
         - ``length_age_proportion_adjusted`` over ``length_bin`` and ``age_bin`` (when available)
 
         Additional DataArrays include adjusted counts and overall proportions.
     """
-    
+
     # Parse and validate proportion arrays
     proportion_arrays = _extract_proportion_arrays(number_data)
-    
+
     # Resolve retained dimensions and build combined length marginal
     all_dims = sorted(set().union(*[set(array.dims) for array in proportion_arrays]))
     keep_dims = [dim for dim in all_dims if dim not in ["length_bin", "age_bin"]]
-    
+
     # Resolve normalization dimensions
     # ---- Stratified: each stratum sums to 1
     if stratum_dim:
@@ -327,15 +331,15 @@ def correct_number_proportions(
     # ---- Grouped: each combination of non-length, non-age coordinates sum to 1
     else:
         normalization_dims = keep_dims
-        
+
     # Marginalize each array to their respective length-bin proportions
     length_arrays = [
         array.sum(dim=[dim for dim in array.dims if dim not in [*keep_dims, "length_bin"]])
         for array in proportion_arrays
-    ]    
+    ]
     # ---- Align and combine all length marginals
     combined_length_marginal = _sum_aligned(length_arrays)
-    
+
     # Construct the originally observed and corrected length distributions
     # ---- Observed
     observed_length = _normalize_by_dims(combined_length_marginal, normalization_dims)
@@ -343,25 +347,19 @@ def correct_number_proportions(
     valid_params = ValidateSelectivityParams.create(**selectivity_params)
     # ---- Correct
     corrected_length = _construct_corrected_distribution(
-        combined_length_marginal,
-        normalization_dims=normalization_dims,
-        **valid_params
+        combined_length_marginal, normalization_dims=normalization_dims, **valid_params
     )
-    
+
     # When age ios present, optionally build the adjusted 2D length-age distribution
     # ---- Marginalize
-    combined_length_age_marginal = _compute_length_age_marginal(
-        proportion_arrays, keep_dims
-    )
+    combined_length_age_marginal = _compute_length_age_marginal(proportion_arrays, keep_dims)
     # ---- Apply correction, if applicable
     corrected_length_age = None
     if combined_length_age_marginal is not None:
         corrected_length_age = _construct_corrected_distribution(
-            combined_length_age_marginal,
-            normalization_dims=normalization_dims,
-            **valid_params
+            combined_length_age_marginal, normalization_dims=normalization_dims, **valid_params
         )
-        
+
     # Assemble adjusted outputs
     return _build_adjusted_outputs(
         observed_len_proportion=observed_length,
@@ -370,7 +368,8 @@ def correct_number_proportions(
         length_age_marginal=combined_length_age_marginal,
         corrected_length_age_proportion=corrected_length_age,
     )
-    
+
+
 def _build_aged_adjusted_outputs(
     observed_len_proportion: xr.DataArray,
     corrected_len_proportion: xr.DataArray,
@@ -380,11 +379,11 @@ def _build_aged_adjusted_outputs(
     Internal utility function for formatting the output Dataset structure of the length-age-based
     selectivity-corrected proportions.
     """
-    
+
     # Normalize the observed and corrected distributions
     proportions_weight_observed = _normalize_by_dims(observed_len_proportion, normalization_dims)
     proportions_weight_corrected = _normalize_by_dims(corrected_len_proportion, normalization_dims)
-    
+
     # Handle the top-level length-based proportions
     if "age_bin" in proportions_weight_corrected.dims:
         length_props = {
@@ -400,14 +399,15 @@ def _build_aged_adjusted_outputs(
     else:
         length_props = {
             "length_proportions_observed": proportions_weight_observed,
-            "length_proportions_corrected": proportions_weight_corrected
+            "length_proportions_corrected": proportions_weight_corrected,
         }
     # ---- Add downstream variable names for compatibility
     length_props["proportion"] = proportions_weight_corrected
-    length_props["proportion_overall"] = proportions_weight_corrected    
+    length_props["proportion_overall"] = proportions_weight_corrected
 
     # Return the Dataset
     return xr.Dataset(length_props)
+
 
 def correct_weight_proportions(
     corrected_number_proportions: xr.Dataset,
@@ -415,19 +415,19 @@ def correct_weight_proportions(
     stratum_dim: Optional[Union[str, List[str]]] = None,
 ) -> xr.Dataset:
     """
-    Compute weight proportions from sensitivity-corrected number proportions and mean length-binned 
+    Compute weight proportions from sensitivity-corrected number proportions and mean length-binned
     weights.
 
     Parameters
     ----------
     corrected_number_proportions : xr.Dataset
-        Selectivity-corrected number proportions containing that must include the variable 
+        Selectivity-corrected number proportions containing that must include the variable
         ``length_proportions_corrected`` and optionally ``length_age_proportions_corrected``.
     mean_length_binned_weights : xr.DataArray
         Mean fitted weights by ``length_bin`` based on the fitted length-weight relationship.
     stratum_dim : str or list of str, optional
-        Dimensions that define the normalization groups. When provided, both observed and adjusted 
-        length proportions are normalized to sum to 1 within each stratum. Other inferred 
+        Dimensions that define the normalization groups. When provided, both observed and adjusted
+        length proportions are normalized to sum to 1 within each stratum. Other inferred
         coordinates are still retained in the output arrays.
 
     Returns
@@ -435,7 +435,7 @@ def correct_weight_proportions(
     xr.Dataset
 
     """
-    
+
     # Validate that 'length_proportions_corrected`, at a minimum, exists
     if not {"length_proportions_corrected", "length_proportions_observed"} <= set(
         corrected_number_proportions.data_vars
@@ -444,12 +444,13 @@ def correct_weight_proportions(
             "Variables 'length_proportions_corrected' and 'length_proportions_observed' must be "
             "present as variables in 'corrected_number_proportions'."
         )
-        
+
     # Validate that full set for length-age are together, if present
     # ---- Also select the representative proportions
     if any(
         [
-            v for v in ["length_age_proportions_corrected", "length_age_proportions_observed"] 
+            v
+            for v in ["length_age_proportions_corrected", "length_age_proportions_observed"]
             if v in list(corrected_number_proportions.data_vars)
         ]
     ):
@@ -460,34 +461,34 @@ def correct_weight_proportions(
                 "When provided, variables 'length_age_proportions_corrected' and "
                 "'length_age_proportions_observed' must both be provided in "
                 "'corrected_number_proportions'."
-            ) 
+            )
         else:
             proportions_corrected = corrected_number_proportions["length_age_proportions_corrected"]
             proportions_observed = corrected_number_proportions["length_age_proportions_observed"]
     else:
         proportions_corrected = corrected_number_proportions["length_proportions_corrected"]
-        proportions_observed = corrected_number_proportions["length_proportions_observed"]    
-    
+        proportions_observed = corrected_number_proportions["length_proportions_observed"]
+
     # Collapse the non-length dimensions and find mismatches
     if not set(mean_length_binned_weights.coords) <= set(proportions_corrected.coords):
         raise KeyError(
             "Coordinates in 'mean_length_binned_weights' must either match or be a subset of those "
             "in 'corrected_number_proportions'."
         )
-        
-    # Get the weight proportions from the number proportions 
+
+    # Get the weight proportions from the number proportions
     weight_observed = (
-        xr.where(proportions_observed.isnull(), 0.0, proportions_observed).astype(float) *
-        mean_length_binned_weights
+        xr.where(proportions_observed.isnull(), 0.0, proportions_observed).astype(float)
+        * mean_length_binned_weights
     )
     weight_corrected = (
-        xr.where(proportions_corrected.isnull(), 0.0, proportions_corrected).astype(float) *
-        mean_length_binned_weights
+        xr.where(proportions_corrected.isnull(), 0.0, proportions_corrected).astype(float)
+        * mean_length_binned_weights
     )
-    
+
     # Resolve retained dimensions and build combined length marginal
     keep_dims = [dim for dim in weight_corrected.dims if dim not in ["length_bin", "age_bin"]]
-    
+
     # Resolve normalization dimensions
     # ---- Stratified: each stratum sums to 1
     if stratum_dim:
@@ -496,6 +497,6 @@ def correct_weight_proportions(
     # ---- Grouped: each combination of non-length, non-age coordinates sum to 1
     else:
         normalization_dims = keep_dims
-        
+
     # Format and return the output Datasetthe output
     return _build_aged_adjusted_outputs(weight_observed, weight_corrected, normalization_dims)
