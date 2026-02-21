@@ -4,6 +4,7 @@ from .inversion import (
     ValidateLengthTS,
 )
 from .kriging import ValidateKrigingClass
+from .selectivity import ValidateSelectivityParams
 from .spatial import ValidateHullCropArgs
 from .utils import ValidateHaulUID
 from .variogram import (
@@ -19,6 +20,8 @@ __all__ = [
     "ValidateLengthTS",
     # Kriging
     "ValidateKrigingClass",
+    # Selectivity
+    "ValidateSelectivityParams",
     # Spatial
     "ValidateHullCropArgs",
     # Variogram
