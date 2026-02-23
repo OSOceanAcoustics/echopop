@@ -39,6 +39,7 @@ parts:
             title: Compute age- and length-binned number proportions
           - file: example_notebooks/weight_proportions
             title: Compute age- and length-binned weight proportions
+          - file: example_notebooks/net_selectivity
           - file: example_notebooks/basic_inversion
             title: Estimate abundance and biomass from backscatter
       - file: headings/geostats_h_theory
@@ -76,6 +77,7 @@ parts:
             title: Transect-based biomass
           - file: theory/stratification
             title: Stratification
+          - file: theory/selectivity
       - file: headings/geostats_h
         title: Geostatistics
         sections:

@@ -67,6 +67,7 @@ The quantity $\tilde{w}^i_{s,\ell}$ is defined using the total weights for lengt
     \tag{2.12b}
 \end{align*}
 
+(indexing-by-length-age)=
 :::{admonition} Including age ($\alpha$) and other contrasts
 :class: note
 
