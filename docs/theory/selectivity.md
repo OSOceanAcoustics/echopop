@@ -54,7 +54,7 @@ The selectivity probability $S(L)$ can be expressed using either the regression-
         S(L) &= \frac{1}{1 + e^{-(\beta_0 + \beta_1 L)}},
     \tag{2.34a}
     \\[2ex]
-        S(L) &= \left[ 1 + e^{\left( \frac{2 \ln(3) \cdot (L_{50} - L)}{SR} \right)} \right]^{-1}.
+        S(L) &= \left[ 1 + e^{\left( \frac{2 \ln(3) (L_{50} - L)}{SR} \right)} \right]^{-1}.
     \tag{2.34b}
 \end{align*}
 
@@ -64,7 +64,7 @@ The selectivity probability $S(L)$ can be expressed using either the regression-
 For a [distribution consisting of only length](./bio_estimates.md#intext_eq_24_md) ($\tilde{L}_\ell$), the adjusted population proportion $\hat{L}_\ell$ is calculated by dividing the observed proportion $\tilde{L}_\ell$ by its corresponding selectivity $S(L_\ell)$ [^2]:
 
 \begin{align*}
-        \hat{L}_\ell &= \frac{\tilde{L}_\ell \cdot S(L_\ell)^{-1}}{\sum\limits_{i} (\tilde{L}_i \cdot S(L_i)^{-1})},
+        \hat{L}_\ell &= \frac{\tilde{L}_\ell S(L_\ell)^{-1}}{\sum\limits_{i} (\tilde{L}_i S(L_i)^{-1})},
     \tag{2.35a}
     \\[2ex]
         \sum\limits_\ell \hat{L}_\ell &= 1,
