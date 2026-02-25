@@ -1373,7 +1373,7 @@ def compute_dataset_differences(
     return differences, signed_pct_diff
 
 def plot_dataset_differences(
-    signed_pct_diff: pd.DataFrame,
+    signed_percent_differences: pd.DataFrame,
     save_filepath: Optional[Path] = None,
     columns: list = ["abundance", "biomass", "nasc"],
     figsize: Tuple[int, int] = (14, 6),
@@ -1384,7 +1384,7 @@ def plot_dataset_differences(
 
     Parameters
     ----------
-    signed_pct_diff : pandas.DataFrame
+    signed_percent_differences : pandas.DataFrame
         Signed percent differences indexed by ``(report_type, year)``, as returned by
         ``compute_dataset_differences``.
     save_filepath : Optional[Path]
@@ -1403,11 +1403,14 @@ def plot_dataset_differences(
         return df.map(lambda x: f"{x:.1f}%" if not pd.isna(x) else "")
     
     # Annotation DataFrames per report type
-    annot = {rtype: _fmt_percent(signed_pct_diff.loc[rtype]) for rtype in ["transect", "kriging"]}
+    annot = {
+        rtype: _fmt_percent(signed_percent_differences.loc[rtype]) 
+        for rtype in ["transect", "kriging"]
+    }
     
     # Consistent color scaling across both panels
-    vmin = signed_pct_diff.min().min()
-    vmax = signed_pct_diff.max().max()
+    vmin = signed_percent_differences.min().min()
+    vmax = signed_percent_differences.max().max()
     
     # Shared heatmap kwargs
     heatmap_kwargs = dict(
@@ -1436,7 +1439,7 @@ def plot_dataset_differences(
     # Iterate through each data type
     for rtype, ax, title, ylabel, show_yticklabels in panel_configs:
         sns.heatmap(
-            signed_pct_diff.loc[rtype],
+            signed_percent_differences.loc[rtype],
             ax=ax,
             annot=annot[rtype],
             **heatmap_kwargs,
@@ -1448,7 +1451,7 @@ def plot_dataset_differences(
         if show_yticklabels:
             # Explicitly restore year labels in case sharey suppressed them
             ax.set_yticklabels(
-                signed_pct_diff.loc[rtype].index.astype(str),
+                signed_percent_differences.loc[rtype].index.astype(str),
                 rotation=0,
             )
         else:
