@@ -67,7 +67,7 @@ parts:
         title: EchoPro vs Echopop comparisons
         sections:
           - file: FEAT_implementation/FEAT_notebooks/cross_year_comparisons
-            title: Comparing EchoPro and Echopop outputs
+            title: Comparing outputs
           - file: FEAT_implementation/cross_year_comparison_results
             title: Comparison results
       - file: FEAT_implementation/FEAT_notebooks/year_specific_workflows
