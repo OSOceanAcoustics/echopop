@@ -5,9 +5,12 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 import geopandas as gpd
+import hashlib
+import os
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from shapely.geometry import box
 import numpy as np
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Literal, Optional, Tuple, Union
 from matplotlib.ticker import MaxNLocator, ScalarFormatter
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.axes import Axes
@@ -1064,3 +1067,407 @@ def plot_geodata(
             plt.show()
         else:
             plt.close(fig)
+
+def _resolve_geodata_file(
+    filepath: Path,
+    dataset: Literal["echopop", "echopro"],
+    type: Literal["transect", "kriging"],
+    echopop_patterns: Dict[str, str],
+    echopro_patterns: Dict[str, str],
+) -> Path:
+    """
+    Resolve the full path to the target Excel file from the report directory, dataset, and report
+    type. Both Echopop and EchoPro filenames are matched via regex pattern. An exact filename
+    string is a valid pattern and will match only that file.
+    
+    Parameters
+    ----------
+    filepath : Path
+        Root report directory.
+    dataset : Literal["echopop", "echopro"]
+        The dataset source.
+    type : Literal["transect", "kriging"]
+        The report type.
+    echopop_patterns : Dict[str, str]
+        Regex filename patterns for Echopop reports, keyed by type.
+    echopro_patterns : Dict[str, str]
+        Regex filename patterns for EchoPro reports, keyed by type.
+    
+    Returns
+    -------
+    Path
+        The resolved file path.
+    """
+    
+    # Validate root directory
+    if not filepath.exists():
+        raise FileNotFoundError(f"Directory not found: '{filepath.as_posix()}'.")
+
+    # Get regex matches depending on dataset source
+    patterns = echopop_patterns if dataset == "echopop" else echopro_patterns
+    pattern = re.compile(patterns[type])
+    matched_files = [f for f in os.listdir(filepath) if pattern.search(f)]
+    
+    # Validate file existence
+    if len(matched_files) == 1:
+        return filepath / matched_files[0]
+    elif len(matched_files) > 1:
+        raise LookupError(
+            f"Multiple files matching pattern for {dataset}-{type} in '{filepath.as_posix()}'."
+        )
+    else:
+        raise FileNotFoundError(
+            f"No file matching pattern for {dataset}-{type} found in '{filepath.as_posix()}'."
+        )
+
+def _get_cache_path(excel_file: Path, cache_dir: Path) -> Path:
+    """
+    Generate a parquet cache file path based on the Excel file's path and modification time.
+    A change in mtime (i.e. the file was updated) produces a new cache key, forcing a re-read.
+    
+    Parameters
+    ----------
+    excel_file : Path
+        The source Excel file.
+    cache_dir : Path
+        Directory in which cached parquet files are stored.
+    
+    Returns
+    -------
+    Path
+        The cache file path.
+    """
+    
+    # Get timestamp
+    mtime = excel_file.stat().st_mtime
+    
+    # Generate md5 hash 
+    key = hashlib.md5(f"{excel_file.as_posix()}_{mtime}".encode()).hexdigest()
+    
+    # Format the cached parquet file
+    return cache_dir / f"{excel_file.stem}_{key}.parquet"
+
+def fetch_geodata(
+    filepath: Path,
+    dataset: Literal["echopop", "echopro"],
+    type: Literal["transect", "kriging"],
+    echopop_patterns: Dict[str, str],
+    echopro_patterns: Dict[str, str],
+    cache_dir: Optional[Path] = None,
+    verbose: bool = False,
+) -> gpd.GeoDataFrame:
+    """
+    Resolve, optionally cache, and return georeferenced population data from an Excel report.
+    On the first call, the resolved file is read via ``read_geodata`` and cached as parquet.
+    Subsequent calls return the cached version unless the source file has been modified.
+
+    Parameters
+    ----------
+    filepath : Path
+        Root report directory.
+    dataset : Literal["echopop", "echopro"]
+        The dataset source.
+    type : Literal["transect", "kriging"]
+        The report type.
+    echopop_patterns : Dict[str, str]
+        Regex filename patterns for Echopop reports, keyed by type.
+    echopro_patterns : Dict[str, str]
+        Regex filename patterns for EchoPro reports, keyed by type.
+    cache_dir : Optional[Path]
+        Directory for caching parquet files. If ``None``, caching is disabled.
+    verbose : bool, default = False
+        Boolean argument that will iteratively print out the loaded filepaths when set to True.
+
+    Returns
+    -------
+    geopandas.GeoDataFrame
+    """
+
+    # Resolve the actual Excel file
+    excel_file = _resolve_geodata_file(filepath, dataset, type, echopop_patterns, echopro_patterns)
+
+    # Check cache
+    if cache_dir is not None:
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        cache_file = _get_cache_path(excel_file, cache_dir)
+        if cache_file.exists():
+            if verbose:
+                print(f"  [CACHE HIT]  {dataset}/{type} <- {excel_file.name}")
+            return gpd.read_parquet(cache_file)
+
+    # Read from Excel
+    if verbose:
+        print(f"  [READ EXCEL] {dataset}/{type} <- {excel_file.name}")
+    gdf = read_geodata(excel_file)
+    
+    # Coerce any object-typed columns to numeric, replacing unconvertible values with NaN.
+    # This handles cases where columns like 'Depth' contain placeholder strings (e.g. '.')
+    # that would otherwise cause serialization failures (e.g. when writing to parquet).
+    for col in gdf.select_dtypes(include="object").columns:
+        if col != gdf.geometry.name:
+            gdf[col] = pd.to_numeric(gdf[col], errors="coerce")
+
+    # Write cache
+    if cache_dir is not None:
+        gdf.to_parquet(cache_file)
+
+    return gdf
+
+def load_all_geodata_reports(
+    years: list,
+    echopro_root: Callable[[int], Path],
+    echopop_root: Callable[[int], Path],
+    echopop_patterns: Dict[str, str],
+    echopro_patterns: Dict[str, str],
+    cache_dir: Optional[Path] = None,
+    max_workers: Optional[int] = None,
+    verbose: bool = False,
+) -> Tuple[Dict[str, Dict[int, gpd.GeoDataFrame]], Dict[str, Dict[int, gpd.GeoDataFrame]]]:
+    """
+    Load all geodata reports across years and dataset types. By default, files are loaded
+    sequentially. Parallel loading can be enabled by setting ``max_workers`` to an integer
+    greater than 1, which uses a thread pool sized accordingly.
+
+    Parameters
+    ----------
+    years : list
+        Survey years to process.
+    echopro_root : Callable[[int], Path]
+        Function mapping year -> EchoPro report directory.
+    echopop_root : Callable[[int], Path]
+        Function mapping year -> Echopop report directory.
+    echopop_patterns : Dict[str, str]
+        Regex filename patterns for Echopop reports, keyed by type.
+    echopro_patterns : Dict[str, str]
+        Regex filename patterns for EchoPro reports, keyed by type.
+    cache_dir : Optional[Path]
+        Directory for caching parquet files. If ``None``, caching is disabled.
+    max_workers : Optional[int]
+        Number of threads for parallel loading. If ``None`` (default), files are loaded
+        sequentially. Set to a positive integer (e.g. ``8``) to enable parallel loading.
+    verbose : bool, default = False
+        Boolean argument that will iteratively print out the loaded filepaths when set to True.
+
+    Returns
+    -------
+    Dict[Tuple[str, str, int], geopandas.GeoDataFrame]
+        Dictionary keyed by ``(dataset, type, year)``.
+    """
+
+    # Build the full task list
+    tasks = [
+        (year, dataset, rtype, root_fn(year))
+        for year in years
+        for dataset, rtype, root_fn in [
+            ("echopro", "transect", echopro_root),
+            ("echopro", "kriging",  echopro_root),
+            ("echopop", "transect", echopop_root),
+            ("echopop", "kriging",  echopop_root),
+        ]
+    ]
+
+    # Pre-allocate the results --> Dictionary mapping year-dataset-report type to report
+    results: Dict[Tuple[str, str, int], gpd.GeoDataFrame] = {}
+
+    # Sequential or parallelized processing 
+    if max_workers is None:
+        # ---- Sequential loading (default)
+        for year, dataset, rtype, filepath in tasks:
+            try:
+                results[(dataset, rtype, year)] = fetch_geodata(
+                    filepath, dataset, rtype, echopop_patterns, echopro_patterns, cache_dir, verbose
+                )
+            except Exception as e:
+                print(f"  [ERROR] {dataset}/{rtype}/{year}: {e}")
+    else:
+        # ---- Parallel loading (opt-in)
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {
+                executor.submit(
+                    fetch_geodata,
+                    filepath,
+                    dataset,
+                    rtype,
+                    echopop_patterns,
+                    echopro_patterns,
+                    cache_dir,
+                    verbose,
+                ): (year, dataset, rtype)
+                for year, dataset, rtype, filepath in tasks
+            }
+            for future in as_completed(futures):
+                year, dataset, rtype = futures[future]
+                try:
+                    results[(dataset, rtype, year)] = future.result()
+                except Exception as e:
+                    print(f"  [ERROR] {dataset}/{rtype}/{year}: {e}")
+
+    # Unpack flat results into nested {report_type: {year: GeoDataFrame}} containers
+    report_types = ["transect", "kriging"]
+    echopro_datasets = {
+        rtype: {year: results[(  "echopro", rtype, year)] for year in years} 
+        for rtype in report_types}
+    echopop_datasets = {
+        rtype: {year: results[(  "echopop", rtype, year)] for year in years}
+        for rtype in report_types
+    }
+
+    return echopro_datasets, echopop_datasets
+
+def compute_dataset_differences(
+    echopro_datasets: Dict[str, Dict[int, gpd.GeoDataFrame]],
+    echopop_datasets: Dict[str, Dict[int, gpd.GeoDataFrame]],
+    columns: list = ["abundance", "biomass", "nasc"],    
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    """
+    Compute magnitude and signed percent differences between EchoPro and Echopop report outputs
+    across survey years and report types (transect, kriging).
+
+    Parameters
+    ----------
+    echopro_datasets : Dict[str, Dict[int, geopandas.GeoDataFrame]]
+        Nested dictionary of EchoPro data keyed by report type (``"transect"``, ``"kriging"``)
+        and year.
+    echopop_datasets : Dict[str, Dict[int, geopandas.GeoDataFrame]]
+        Nested dictionary of Echopop data keyed by report type and year.
+    columns : list
+        Columns to sum and compare. Defaults to ``["abundance", "biomass", "nasc"]``.
+
+    Returns
+    -------
+    Tuple[pandas.DataFrame, pandas.DataFrame]
+        - ``differences``: Magnitude differences (EchoPro - Echopop), indexed by
+          ``(report_type, year)``.
+        - ``signed_pct_diff``: Signed percent differences relative to the mean of both datasets,
+          indexed by ``(report_type, year)``.
+    """
+    
+    # Helper function for summations
+    def _sum_columns(datasets: Dict[str, Dict[int, gpd.GeoDataFrame]]) -> pd.DataFrame:
+        """Sum the target columns across all years and report types, returning a DataFrame
+        indexed by (report_type, year)."""
+        sums = {
+            rtype: {
+                year: gdf[columns].sum()
+                for year, gdf in year_dict.items()
+            }
+            for rtype, year_dict in datasets.items()
+        }
+        return pd.concat(
+            {rtype: pd.DataFrame(year_sums).T for rtype, year_sums in sums.items()},
+            names=["report_type", "year"],
+        ).sort_index()
+        
+    # Summarize both datasets
+    echopro = _sum_columns(echopro_datasets)
+    echopop = _sum_columns(echopop_datasets)
+    
+    # Magnitude differences
+    differences = echopro - echopop
+
+    # Signed percent differences relative to the mean of both
+    signed_pct_diff = (
+        np.sign(differences) * np.abs(differences) / ((echopro + echopop) / 2) * 1e2
+    )
+    
+    return differences, signed_pct_diff
+
+def plot_dataset_differences(
+    signed_pct_diff: pd.DataFrame,
+    save_filepath: Optional[Path] = None,
+    columns: list = ["abundance", "biomass", "nasc"],
+    figsize: Tuple[int, int] = (14, 6),
+) -> None:
+    """
+    Plot signed percent differences between EchoPro and Echopop report outputs as a heatmap grid,
+    with one panel per report type (transect, kriging).
+
+    Parameters
+    ----------
+    signed_pct_diff : pandas.DataFrame
+        Signed percent differences indexed by ``(report_type, year)``, as returned by
+        ``compute_dataset_differences``.
+    save_filepath : Optional[Path]
+        If provided, the figure is saved to this path at 300 dpi. If ``None``, the figure is
+        only displayed.
+    columns : list
+        Column display labels for the x-axis. Defaults to
+        ``["abundance", "biomass", "nasc"]``.
+    figsize : Tuple[int, int]
+        Figure size in inches. Defaults to ``(14, 6)``.
+    """
+    
+    # Helper function that formats percent difference strings
+    def _fmt_percent(df: pd.DataFrame) -> pd.DataFrame:
+        """Format values as percentage strings for heatmap annotations."""
+        return df.map(lambda x: f"{x:.1f}%" if not pd.isna(x) else "")
+    
+    # Annotation DataFrames per report type
+    annot = {rtype: _fmt_percent(signed_pct_diff.loc[rtype]) for rtype in ["transect", "kriging"]}
+    
+    # Consistent color scaling across both panels
+    vmin = signed_pct_diff.min().min()
+    vmax = signed_pct_diff.max().max()
+    
+    # Shared heatmap kwargs
+    heatmap_kwargs = dict(
+        cmap="coolwarm",
+        vmin=vmin,
+        vmax=vmax,
+        center=0,
+        fmt="",
+        linewidths=1,
+        linecolor="black",
+        cbar=False,
+    )
+    
+    # Initialize plot
+    fig, axes = plt.subplots(1, 2, figsize=figsize)
+    
+    # Definte panel configurations
+    panel_configs = [
+        ("transect", axes[0], "Transect", "Year",  True),
+        ("kriging",  axes[1], "Kriging",  "",      False),
+    ]
+    
+    # Create column mapping
+    x_names = {"abundance": "Abundance", "biomass": "Biomass", "nasc": "NASC"}
+    
+    # Iterate through each data type
+    for rtype, ax, title, ylabel, show_yticklabels in panel_configs:
+        sns.heatmap(
+            signed_pct_diff.loc[rtype],
+            ax=ax,
+            annot=annot[rtype],
+            **heatmap_kwargs,
+        )
+        ax.set_title(title)
+        ax.set_ylabel(ylabel)
+        ax.set_xlabel("")
+        ax.set_xticklabels([x_names[c] for c in columns])
+        if show_yticklabels:
+            # Explicitly restore year labels in case sharey suppressed them
+            ax.set_yticklabels(
+                signed_pct_diff.loc[rtype].index.astype(str),
+                rotation=0,
+            )
+        else:
+            ax.set_yticklabels([])
+            
+    # Add a single shared colorbar to the right of the right-most panel
+    norm = plt.Normalize(vmin=vmin, vmax=vmax)
+    sm = plt.cm.ScalarMappable(cmap="coolwarm", norm=norm)
+    sm.set_array([])
+    fig.colorbar(
+        sm, ax=axes[-1], fraction=0.046, pad=0.04, label="% Difference (EchoPro - Echopop)"
+    )
+    
+    # Tighten layout
+    plt.tight_layout()
+    
+    # If a save filepath is provided, write a *png image
+    if save_filepath is not None:
+        plt.savefig(save_filepath, dpi=300)
+        
+    # Render plot
+    plt.show()
