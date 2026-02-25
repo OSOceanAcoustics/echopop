@@ -41,7 +41,7 @@ except Exception:
 # ---- spreadsheet will be read in. This also requires defining `NASC_EXPORTS_SHEET`
 NASC_PREPROCESSED = True
 # NASC EXPORTS FILE(S)
-NASC_EXPORTS_FILES = DATA_ROOT / "Exports/US&CAN_detailsa_2011_table2y+_ALL_stratification1.xlsx"
+NASC_EXPORTS_FILES = DATA_ROOT / "Exports/US&CAN_detailsa_2011_table2y+_ALL_final.xlsx"
 # NASC EXPORTS SHEET
 NASC_EXPORTS_SHEET = "Sheet1"
 # REMOVE AGE-1 (I.E., AGE-2+ ONLY)?
@@ -98,7 +98,7 @@ BIODATA_SHIP_SPECIES = {
 # BIODATA PROCESSING: AGE-1 DOMINATED HAULS
 # ---- This is a list of age-1 dominated haul numbers that should be designated for removal. If no
 # ---- hauls should be removed, then set `AGE1_DOMINATED_HAULS` to `[]`
-AGE1_DOMINATED_HAULS = [1, 7, 9, 11, 12, 15, 26]
+AGE1_DOMINATED_HAULS = [1, 7, 9, 11, 12, 13, 15, 26]
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # HAUL STRATIFICATION FILE
 HAUL_STRATA_FILE = (
@@ -306,7 +306,13 @@ logging.info(
 )
 
 # DROP TRANSECTS
-df_nasc = utils.apply_filters(df_nasc, include_filter={"transect_num": np.arange(1, 144)})
+df_nasc = utils.apply_filters(
+    df_nasc, 
+    include_filter={
+        "transect_num": np.concatenate([np.array([0.3, 0.5, 0.7]), np.arange(1, 145)])
+    },
+)
+
 # ==================================================================================================
 # INGEST BIODATA
 logging.info(
@@ -336,7 +342,7 @@ dict_df_bio = ingestion.load_biological_data(
     column_name_map=FEAT_TO_ECHOPOP_BIODATA_COLUMNS, 
     subset_dict=BIODATA_SHIP_SPECIES, 
     biodata_label_map=BIODATA_SEX,
-    # haul_uid_config=HAUL_UID_CONFIG,
+    haul_uid_config=HAUL_UID_CONFIG,
 )
 # ---- Remove specimen hauls
 feat_biology.drop_specimen_only_hauls(dict_df_bio)
