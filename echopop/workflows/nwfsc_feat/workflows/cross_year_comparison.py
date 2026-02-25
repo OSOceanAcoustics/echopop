@@ -7,6 +7,7 @@
 # ==================================================================================================
 # PARAMETER ENTRY
 # ---------------
+from datetime import date
 from pathlib import Path
 from typing import Callable
 from echopop.workflows.nwfsc_feat import comparisons as comp
@@ -16,7 +17,9 @@ from echopop.workflows.nwfsc_feat import comparisons as comp
 # ------------------
 
 # OUTPUT FIGURE FILEPATH
-SAVE_FILEPATH = Path("C:/Data/EchopopData/cross_year_comparisons_2025.png")
+SAVE_FILEPATH = Path(
+    f"C:/Data/EchopopData/cross_year_comparisons_{date.today().strftime("%Y%m%d")}.png"
+)
 
 # PARQUET CACHE DIRECTORY
 # Set to None to disable caching entirely.
