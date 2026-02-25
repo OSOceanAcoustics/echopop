@@ -18,6 +18,8 @@ verde
 pandera>=0.25
 pydantic>=2.0.0
 traitlets
+# Data stack
+pyarrow
 # Jupyter stack
 ipympl
 jupyter_bokeh>=3.0.5
