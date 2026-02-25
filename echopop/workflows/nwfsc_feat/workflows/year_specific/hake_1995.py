@@ -1344,7 +1344,7 @@ reporter.transect_population_results_report(
 # ==================================================================================================
 if COMPARE:
     # Import
-    from echopop.workflows.nwfsc_feat.workflows import comparisons
+    from echopop.workflows.nwfsc_feat import comparisons
     
     # Dictionary map
     ECHOPRO_TO_ECHOPOP_FILE_MAP = {

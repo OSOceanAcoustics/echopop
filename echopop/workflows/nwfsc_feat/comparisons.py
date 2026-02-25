@@ -14,7 +14,7 @@ from typing import Any, Callable, Dict, Literal, Optional, Tuple, Union
 from matplotlib.ticker import MaxNLocator, ScalarFormatter
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.axes import Axes
-from ....graphics import utils as gtools, transect_map as ptransect
+from ...graphics import utils as gtools, transect_map as ptransect
 import warnings
 
 def extract_sex_from_sheet(df: pd.DataFrame) -> str:

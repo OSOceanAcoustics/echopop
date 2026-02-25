@@ -16,6 +16,11 @@ from .apportionment import (
     sum_population_tables,
 )
 from .biology import compute_abundance, compute_biomass, length_binned_weights
+from .comparisons import (
+    compute_dataset_differences, 
+    load_all_geodata_reports, 
+    plot_dataset_differences
+)
 from .functions import (
     get_survey_western_extents,
     transect_ends_crop,
@@ -41,11 +46,16 @@ __all__ = [
     "compute_abundance",
     "compute_biomass",
     "length_binned_weights",
+    # Comparison functions
+    "compute_dataset_differences",
+    "load_all_geodata_reports",
+    "plot_dataset_differences",
     # Report generation class,
     "Reporter",
     # Submodules
     "apportionment",
     "biology",
+    "comparison",
     "functions",
     "parameters",
     "reporter",
