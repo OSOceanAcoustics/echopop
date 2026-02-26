@@ -179,7 +179,8 @@ FEAT_TO_ECHOPOP_COLUMNS = {
     "strata": "stratum_ks",
     "width": "transect_spacing",
     "mean layer depth": "layer_depth_mean",
-    "depth": "bottom_depth"
+    "depth": "bottom_depth",
+    "hake": "nasc",
 }
 
 # READ FILE
@@ -200,7 +201,6 @@ df_nasc = feat.convert_afsc_nasc_to_feat(
     df=df_nasc,
     default_interval_distance=0.5,
     default_transect_spacing=10.0,
-    inclusion_filter={"transect_num": np.arange(1, 200)}
 )
 
 # FILTER

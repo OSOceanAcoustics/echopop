@@ -123,7 +123,7 @@ KRIGING_MESH_SHEET = "krigedgrid2_5nm_forChu"
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # KRIGING AND VARIOGRAM PARAMETERS FILE
 KRIGING_VARIOGRAM_PARAMETERS_FILE = (
-    DATA_ROOT / "Kriging_files/default_vario_krig_settings_orig.xlsx"
+    DATA_ROOT / "Kriging_files/default_vario_krig_settings_final.xlsx"
 )
 # KRIGING AND VARIOGRAM PARAMETERS SHEET
 KRIGING_VARIGORAM_PARAMETERS_SHEET = "Sheet1"
@@ -816,7 +816,7 @@ logging.info(
 # NASC
 df_nasc_proc, delta_longitude, delta_latitude = geostatistics.transform_coordinates(
     data = df_nasc_proc,
-    reference = df_isobath,
+    reference = df_isobath.iloc[:148],
     x_offset = -124.78338,
     y_offset = 45.,   
 )
@@ -832,7 +832,7 @@ df_nasc_valid_x = df_nasc_proc.dropna(subset=["x"])
 # MESH
 df_mesh, _, _ = geostatistics.transform_coordinates(
     data = df_mesh,
-    reference = df_isobath,
+    reference = df_isobath.iloc[:148],
     x_offset = -124.78338,
     y_offset = 45.,   
     delta_x=delta_longitude,
@@ -1127,6 +1127,11 @@ else:
 # JOLLY AND HAMPTON (1990) ANALYSIS
 # ==================================================================================================
 logging.info("Beginning stratified analysis to estimate uncertainties (Jolly and Hampton, 1990)...")
+
+A = 3398065879.8201146
+B = 3.2163e+09
+
+np.abs(B - A) / ((A + B) / 2) * 1e2
 
 # ANALYSIS PARAMETERS CONTAINER
 JOLLYHAMPTON_PARAMETERS = {
