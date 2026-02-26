@@ -73,6 +73,7 @@ ECHOPRO_DATASETS, ECHOPOP_DATASETS = comp.load_all_geodata_reports(
     echopro_patterns=ECHOPRO_PATTERNS,
     cache_dir=CACHE_DIR,
     max_workers=MAX_WORKERS,
+    verbose=True
 )
 
 # ==================================================================================================
@@ -82,6 +83,9 @@ differences, signed_pct_diff = comp.compute_dataset_differences(
     echopop_datasets=ECHOPOP_DATASETS,
 )
 
+differences.loc["kriging", 2003]
+ECHOPRO_DATASETS["kriging"][2003].abundance.sum()
+ECHOPOP_DATASETS["kriging"][2003].abundance.sum()
 # ==================================================================================================
 # PLOT DIFFERENCES [%]
 comp.plot_dataset_differences(
