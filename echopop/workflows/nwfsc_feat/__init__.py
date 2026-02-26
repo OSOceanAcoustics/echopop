@@ -17,9 +17,9 @@ from .apportionment import (
 )
 from .biology import compute_abundance, compute_biomass, length_binned_weights
 from .comparisons import (
-    compute_dataset_differences, 
-    load_all_geodata_reports, 
-    plot_dataset_differences
+    compute_dataset_differences,
+    load_all_geodata_reports,
+    plot_dataset_differences,
 )
 from .functions import (
     get_survey_western_extents,

@@ -344,16 +344,22 @@ class JollyHampton:
         """
         # Get the transect summary with reset index for easier indexing
         transect_df = self.transect_summary.reset_index(["transect_num"])
-        
+
         # Helper function for sorting
         def _sort_mixed(arr: np.ndarray) -> np.ndarray:
-            return np.array([
-                np.concatenate([
-                    np.sort(row[np.array([not isinstance(v, str) for v in row])].astype(float)),
-                    np.sort(row[np.array([isinstance(v, str) for v in row])])
-                ])
-                for row in arr
-            ])
+            return np.array(
+                [
+                    np.concatenate(
+                        [
+                            np.sort(
+                                row[np.array([not isinstance(v, str) for v in row])].astype(float)
+                            ),
+                            np.sort(row[np.array([isinstance(v, str) for v in row])]),
+                        ]
+                    )
+                    for row in arr
+                ]
+            )
 
         # Generate bootstrap samples of transect indices for each stratum
         transect_samples = [
@@ -371,7 +377,6 @@ class JollyHampton:
             )
             for j in transect_df.index.unique()
         ]
-        
 
         # Prepare indexed data for efficient lookup
         sampled_data = transect_df.reset_index().set_index(["transect_num"])
