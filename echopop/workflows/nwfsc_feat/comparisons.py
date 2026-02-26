@@ -14,6 +14,7 @@ from typing import Any, Callable, Dict, Literal, Optional, Tuple, Union
 from matplotlib.ticker import MaxNLocator, ScalarFormatter
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.axes import Axes
+from matplotlib.colors import TwoSlopeNorm
 from ...graphics import utils as gtools, transect_map as ptransect
 import warnings
 
@@ -1458,7 +1459,7 @@ def plot_dataset_differences(
             ax.set_yticklabels([])
             
     # Add a single shared colorbar to the right of the right-most panel
-    norm = plt.Normalize(vmin=vmin, vmax=vmax)
+    norm = TwoSlopeNorm(vmin=vmin, vcenter=0, vmax=vmax)
     sm = plt.cm.ScalarMappable(cmap="coolwarm", norm=norm)
     sm.set_array([])
     fig.colorbar(
