@@ -136,7 +136,7 @@ KRIGING_MESH_SHEET = "krigedgrid2_5nm_forChu"
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # KRIGING AND VARIOGRAM PARAMETERS FILE
 KRIGING_VARIOGRAM_PARAMETERS_FILE = (
-    DATA_ROOT / "Kriging_files/default_vario_krig_settings_orig.xlsx"
+    DATA_ROOT / "Kriging_files/default_vario_krig_settings_final.xlsx"
 )
 # KRIGING AND VARIOGRAM PARAMETERS SHEET
 KRIGING_VARIGORAM_PARAMETERS_SHEET = "Sheet1"
@@ -500,7 +500,7 @@ df_nasc = ingestion.join_strata_by_uid(
 )
 # ---- NASC [KS]
 df_nasc = ingestion.join_strata_by_uid(
-    data=df_nasc, strata_df=df_dict_strata["ks"], default_stratum=0, stratum_name="stratum_ks"
+    data=df_nasc, strata_df=df_dict_strata["ks"], default_stratum=1, stratum_name="stratum_ks"
 )
 
 

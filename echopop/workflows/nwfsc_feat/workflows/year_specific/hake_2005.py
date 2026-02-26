@@ -494,7 +494,7 @@ df_nasc = ingestion.join_strata_by_uid(
 )
 # ---- NASC [KS]
 df_nasc = ingestion.join_strata_by_uid(
-    data=df_nasc, strata_df=df_dict_strata["ks"], default_stratum=0, stratum_name="stratum_ks"
+    data=df_nasc, strata_df=df_dict_strata["ks"], default_stratum=1, stratum_name="stratum_ks"
 )
 
 
