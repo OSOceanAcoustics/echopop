@@ -18,6 +18,8 @@ Use the `help()` function or hover tooltips in certain IDEs (e.g. `VSCode`) to i
 
 The workflows have been broken up into the following sections:
 
+- [](overall-workflow)
+- [](echopro-vs-echopop)
 - [](nasc-ingestion)
 - [](biodata-ingestion)
 - [](stratify-data)
@@ -29,4 +31,5 @@ The workflows have been broken up into the following sections:
 - [](jolly-hampton)
 - [](basic-plotting)
 - [](report-generation)
+- [](comparison_implementation)
 - [](year-specific-workflows)

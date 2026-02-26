@@ -1,3 +1,4 @@
+(overall-workflow)=
 # Overview
 
 ## Primary workflow components
@@ -16,9 +17,9 @@ The Echopop data workflow consists of 5 primary components. The documentation is
     - Compute weight proportion
 - **Biological estimates (transect interval-based)**
     - Compute various biological quantities with following sequence (see [flow diagram](echopop_flow_diagram) below):
-        - NASC ($s_A$)
+        - NASC ($S_A$)
         - abundance ($N$)
-        - biomass density $\rho_B$
+        - biomass density ($\rho_B$)
         - biomass ($B$)
     - Distribute biological estimates across (sex, length, age) for each transect interval
 - **Kriging**
@@ -29,7 +30,7 @@ The Echopop data workflow consists of 5 primary components. The documentation is
         - kriged biomass density ($\tilde{\rho}_B$)
         - kriged biomass ($\tilde{B}$)
         - kriged abundance ($\tilde{N}$)
-        - kriged NASC ($\tilde{s}_\text{A}$)
+        - kriged NASC ($\tilde{S}_\text{A}$)
     - Distribute kriged biological estimates across (sex, length, age)
 - **Stratified analysis**
     - Perform Jolly-Hampton analysis using transect-based data and kriged data
