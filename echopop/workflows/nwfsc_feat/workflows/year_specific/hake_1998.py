@@ -816,7 +816,7 @@ logging.info(
 # NASC
 df_nasc_proc, delta_longitude, delta_latitude = geostatistics.transform_coordinates(
     data = df_nasc_proc,
-    reference = df_isobath.iloc[:148],
+    reference = df_isobath.iloc[:145],
     x_offset = -124.78338,
     y_offset = 45.,   
 )
@@ -832,7 +832,7 @@ df_nasc_valid_x = df_nasc_proc.dropna(subset=["x"])
 # MESH
 df_mesh, _, _ = geostatistics.transform_coordinates(
     data = df_mesh,
-    reference = df_isobath.iloc[:148],
+    reference = df_isobath.iloc[:145],
     x_offset = -124.78338,
     y_offset = 45.,   
     delta_x=delta_longitude,

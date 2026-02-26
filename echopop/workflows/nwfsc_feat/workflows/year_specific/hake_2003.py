@@ -480,7 +480,7 @@ logging.info(
 dict_df_bio = ingestion.join_strata_by_uid(
     data=dict_df_bio,
     strata_df=df_dict_strata["inpfc"],
-    default_stratum=0,
+    default_stratum=1,
     stratum_name="stratum_inpfc",
 )
 # ---- BIODATA [KS]
@@ -493,7 +493,7 @@ df_nasc = ingestion.join_strata_by_uid(
 )
 # ---- NASC [KS]
 df_nasc = ingestion.join_strata_by_uid(
-    data=df_nasc, strata_df=df_dict_strata["ks"], default_stratum=0, stratum_name="stratum_ks"
+    data=df_nasc, strata_df=df_dict_strata["ks"], default_stratum=1, stratum_name="stratum_ks"
 )
 
 
@@ -612,9 +612,10 @@ logging.info(
 
 # DATASET CONTAINER
 ds_counts = xr.Dataset()
+# ---- Below are separated due to differences in strata for each dataset
 
 # AGED
-ds_counts["aged"] = proportions.compute_binned_counts(
+ds_counts_aged = proportions.compute_binned_counts(
     data=dict_df_bio["specimen"].dropna(subset=["age", "length", "weight"]),
     groupby_cols=["stratum_ks", "length_bin", "age_bin", "sex"],
     count_col="length",
@@ -622,12 +623,21 @@ ds_counts["aged"] = proportions.compute_binned_counts(
 )
 
 # UNAGED
-ds_counts["unaged"] = proportions.compute_binned_counts(
+ds_counts_unaged = proportions.compute_binned_counts(
     data=dict_df_bio["length"].copy().dropna(subset=["length"]),
     groupby_cols=["stratum_ks", "length_bin", "sex"],
     count_col="length_count",
     agg_func="sum",
 )
+
+# ALIGN
+aged_aligned, unaged_aligned = xr.align(
+    ds_counts_aged, ds_counts_unaged, join="outer", fill_value=0
+)
+# ---- Move into Dataset
+ds_counts["aged"] = aged_aligned
+ds_counts["unaged"] = unaged_aligned
+
 # ==================================================================================================
 # COMPUTE NUMBER PROPORTIONS
 logging.info(
