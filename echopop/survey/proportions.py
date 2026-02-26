@@ -719,7 +719,7 @@ def stratum_averaged_weight(
         das_list_sum.append(da.sum(dim=current_coords, skipna=True))
     # ---- Convert to DataArray
     within_grp_props_unnorm = xr.concat(
-        das_list_sum, dim=xr.IndexVariable("group", list(number_proportions.keys())), join="inner"
+        das_list_sum, dim=xr.IndexVariable("group", list(number_proportions.keys())), join="outer"
     )
     # ---- Normalize
     within_grp_props = within_grp_props_unnorm / within_grp_props_unnorm.sum(dim=["length_bin"])
