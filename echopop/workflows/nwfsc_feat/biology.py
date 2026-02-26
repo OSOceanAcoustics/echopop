@@ -42,21 +42,18 @@ def length_binned_weights(
     Returns
     -------
     xr.DataArray
-        Fitted weights indexed by length bin and grouping dimensions.
+        Fitted weights indexed by length bin and grouping dimensions. The returned DataArray has:
 
-        Dimensions
-        ----------
-        length_bin
-            Length-bin intervals.
-        *group_dims
-            One dimension per grouping variable implied by
-            ``regression_coefficients`` (e.g., ``sex``). Present only when
-            grouped coefficients are supplied.
+        - Dimensions:
 
-        Data
-        ----
-        weight_fitted
-            Fitted weight values for each coordinate combination.
+            - 'length_bin': Length-bin intervals.
+
+            - One dimension per grouping variable implied by ``regression_coefficients`` (e.g.,
+              ``sex``). Present only when grouped coefficients are supplied.
+
+        - Data:
+
+            - 'weight_fitted': Fitted weight values for each coordinate combination.
 
     Examples
     --------
@@ -219,8 +216,8 @@ def compute_abundance(
     None
         Function modifies the transect DataFrame in-place.
 
-    Note
-    ----
+    Notes
+    -----
     When `number_proportions` is provided, the function first calculates base abundance as
     area_interval * number_density, then applies proportions to create grouped abundance columns.
     The original 'abundance' column represents the total.
