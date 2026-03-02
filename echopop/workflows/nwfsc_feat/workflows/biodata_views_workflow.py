@@ -154,7 +154,7 @@ FEAT_TO_ECHOPOP_BIODATA_COLUMNS = {
 }
 
 # READ IN DATA
-dict_df_bio = ingestion.load_materialized_biodata_views(
+dict_df_bio = ingestion.load_biodata_views(
     biodata_filepaths=BIODATA_FILES,
     column_name_map=FEAT_TO_ECHOPOP_BIODATA_COLUMNS,
     subset_dict=BIODATA_SHIP_SPECIES, 
