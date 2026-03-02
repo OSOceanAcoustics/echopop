@@ -1,0 +1,297 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="755.4054"
+   height="193.5135"
+   viewBox="0 0 755.4054 193.5135"
+   role="img"
+   aria-labelledby="title desc"
+   version="1.1"
+   id="svg21"
+   sodipodi:docname="orchestration_batch_wrapper.svg"
+   inkscape:version="1.4.3 (0d15f75, 2025-12-25)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview21"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="1.48"
+     inkscape:cx="279.05405"
+     inkscape:cy="122.63514"
+     inkscape:window-width="1920"
+     inkscape:window-height="1057"
+     inkscape:window-x="1912"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg21" />
+  <title
+     id="title">Batch and shell wrapper orchestration</title>
+  <desc
+     id="desc">Windows and Linux wrapper loops repeatedly call a Python dispatcher with multiple workflow targets.</desc>
+  <defs
+     id="defs3">
+    <style
+       id="style1">
+      .title { font: 700 30px Arial, Helvetica, sans-serif; fill: #111827; }
+      .label { font: 700 18px Arial, Helvetica, sans-serif; fill: #111827; }
+      .body { font: 400 15px Arial, Helvetica, sans-serif; fill: #111827; }
+      .note { font: 400 13px Arial, Helvetica, sans-serif; fill: #374151; }
+      .os { fill: #eef2ff; stroke: #4f46e5; stroke-width: 2.2; }
+      .loop { fill: #ecfeff; stroke: #0e7490; stroke-width: 2.2; }
+      .py { fill: #f0fdf4; stroke: #166534; stroke-width: 2.2; }
+      .out { fill: #f8fafc; stroke: #334155; stroke-width: 2.2; }
+      .arrowA { stroke: #4f46e5; stroke-width: 3; fill: none; }
+      .arrowB { stroke: #0e7490; stroke-width: 3; fill: none; }
+      .arrowC { stroke: #166534; stroke-width: 3; fill: none; }
+    </style>
+    <marker
+       id="headA"
+       markerWidth="12"
+       markerHeight="12"
+       refX="10"
+       refY="6"
+       orient="auto"
+       markerUnits="strokeWidth">
+      <path
+         d="M 0,0 12,6 0,12 Z"
+         fill="#4f46e5"
+         id="path1" />
+    </marker>
+    <marker
+       id="headB"
+       markerWidth="12"
+       markerHeight="12"
+       refX="10"
+       refY="6"
+       orient="auto"
+       markerUnits="strokeWidth">
+      <path
+         d="M 0,0 12,6 0,12 Z"
+         fill="#0e7490"
+         id="path2" />
+    </marker>
+    <marker
+       id="headC"
+       markerWidth="12"
+       markerHeight="12"
+       refX="10"
+       refY="6"
+       orient="auto"
+       markerUnits="strokeWidth">
+      <path
+         d="M 0,0 12,6 0,12 Z"
+         fill="#166534"
+         id="path3" />
+    </marker>
+  </defs>
+  <rect
+     x="0"
+     y="0"
+     width="755.4054"
+     height="193.5135"
+     fill="#ffffff"
+     id="rect3"
+     style="stroke-width:0.532256" />
+  <text
+     x="392.28769"
+     y="26.418472"
+     text-anchor="middle"
+     class="title"
+     id="text3"
+     style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:30px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Batch/shell wrappers for repeated runs</text>
+  <rect
+     class="os"
+     x="9.3938599"
+     y="45.903015"
+     width="141.3557"
+     height="63.111996"
+     rx="5.6542277"
+     id="rect4" />
+  <text
+     x="9.6120148"
+     y="62.445496"
+     class="label"
+     id="text4"
+     style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:18px;line-height:normal;font-family:Arial, Helvetica, sans-serif;fill:#111827"><tspan
+       sodipodi:role="line"
+       id="tspan22"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18px;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+       x="9.6120148"
+       y="62.445496"><tspan
+   style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+   id="tspan24">.bat</tspan>/<tspan
+   style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+   id="tspan23">.ps1</tspan></tspan></text>
+  <text
+     x="13.498093"
+     y="96.931992"
+     class="body"
+     id="text5"
+     style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:15px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Workflow list loop</text>
+  <rect
+     class="os"
+     x="9.3938599"
+     y="115.90302"
+     width="141.35526"
+     height="63.112"
+     rx="5.6542101"
+     id="rect5" />
+  <text
+     x="12.582367"
+     y="153.31036"
+     class="label"
+     id="text6"
+     style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:18px;line-height:normal;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#111827"><tspan
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:15px;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+       id="tspan28">Linux/macOS</tspan></text>
+  <text
+     x="13.497894"
+     y="170.31036"
+     class="body"
+     id="text7"
+     style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:15px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Workflow array loop</text>
+  <rect
+     class="loop"
+     x="205.814"
+     y="76.025879"
+     width="179.32576"
+     height="81.352776"
+     rx="7.1730304"
+     id="rect7" />
+  <text
+     x="216.80121"
+     y="94.931992"
+     class="label"
+     id="text8"
+     style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:18px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Wrapper loop logic</text>
+  <text
+     x="217.4769"
+     y="112.12117"
+     class="body"
+     id="text9"
+     style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:15px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Iterate targets</text>
+  <text
+     x="217.4769"
+     y="128.01306"
+     class="body"
+     id="text10"
+     style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:15px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Run Python command</text>
+  <text
+     x="216.80121"
+     y="144.58063"
+     class="body"
+     id="text11"
+     style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:15px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Capture failures</text>
+  <rect
+     class="py"
+     x="441.2106"
+     y="88.800873"
+     width="163.39735"
+     height="57.451408"
+     rx="7.4271526"
+     id="rect11" />
+  <text
+     x="448.42282"
+     y="106.29684"
+     class="label"
+     id="text12"
+     style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:18px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Python entrypoint</text>
+  <text
+     x="449.09848"
+     y="122.52657"
+     class="body"
+     id="text13"
+     style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:15px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Dispatcher/script</text>
+  <text
+     x="449.09848"
+     y="138.7563"
+     class="body"
+     id="text14"
+     style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:15px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Per-run configuration</text>
+  <g
+     id="g28"
+     transform="translate(-33.442041,-52.068013)">
+    <rect
+       class="out"
+       x="684.11572"
+       y="131.14272"
+       width="93.255112"
+       height="75.552406"
+       rx="5.4855947"
+       id="rect14" />
+    <text
+       x="693.08112"
+       y="148.70271"
+       class="label"
+       id="text15"
+       style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:18px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Results</text>
+    <text
+       x="693.08112"
+       y="165.94595"
+       class="body"
+       id="text16"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:15px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Success/fail</text>
+    <text
+       x="693.75677"
+       y="181.83784"
+       class="body"
+       id="text17"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:15px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Logs</text>
+    <text
+       x="693.08105"
+       y="199.08109"
+       class="body"
+       id="text18"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:15px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Summary</text>
+  </g>
+  <path
+     class="arrowA"
+     d="m 150.51787,81.310365 h 56"
+     marker-end="url(#headA)"
+     id="path18" />
+  <path
+     class="arrowB"
+     d="m 384.66606,115.49955 h 56"
+     marker-end="url(#headB)"
+     id="path20" />
+  <path
+     class="arrowC"
+     d="m 604.53093,116.17522 h 46"
+     marker-end="url(#headC)"
+     id="path21" />
+  <text
+     x="210.93634"
+     y="41.580635"
+     class="note"
+     id="text21"
+     style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:13px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Simple, practical, and effective for repeated operational runs</text>
+  <text
+     x="13.498093"
+     y="80.310364"
+     class="body"
+     id="text24"
+     style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:15px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Windows</text>
+  <text
+     x="9.6120148"
+     y="134.4455"
+     class="label"
+     id="text27"
+     style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:18px;line-height:normal;font-family:'Courier New';-inkscape-font-specification:'Courier New, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#111827"><tspan
+       sodipodi:role="line"
+       id="tspan27"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+       x="9.6120148"
+       y="134.4455">.sh</tspan></text>
+  <path
+     class="arrowA"
+     d="m 150.51787,149.31036 h 56"
+     marker-end="url(#headA)"
+     id="path28" />
+</svg>

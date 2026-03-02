@@ -1,0 +1,443 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="1800"
+   height="1160"
+   viewBox="0 0 1800 1160"
+   role="img"
+   aria-label="Workflow dispatch modes schematic"
+   version="1.1"
+   id="svg42"
+   sodipodi:docname="workflow_dispatch_modes.svg"
+   inkscape:version="1.4.3 (0d15f75, 2025-12-25)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview42"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="0.52118646"
+     inkscape:cx="776.11379"
+     inkscape:cy="547.7886"
+     inkscape:window-width="1920"
+     inkscape:window-height="1057"
+     inkscape:window-x="1912"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg42" />
+  <defs
+     id="defs6">
+    <style
+       id="style1">
+      .title { font: 700 42px Arial, Helvetica, sans-serif; fill: #111827; }
+      .subtitle { font: 400 22px Arial, Helvetica, sans-serif; fill: #374151; }
+      .laneTitle { font: 700 24px Arial, Helvetica, sans-serif; fill: #111827; }
+      .text { font: 400 19px Arial, Helvetica, sans-serif; fill: #111827; }
+      .small { font: 400 16px Arial, Helvetica, sans-serif; fill: #374151; }
+
+      .core { fill: #eef2ff; stroke: #4f46e5; stroke-width: 3; }
+      .modeA { fill: #eff6ff; stroke: #1d4ed8; stroke-width: 2.2; }
+      .modeB { fill: #f0fdf4; stroke: #166534; stroke-width: 2.2; }
+      .modeC { fill: #ecfeff; stroke: #0e7490; stroke-width: 2.2; }
+      .modeD { fill: #fefce8; stroke: #a16207; stroke-width: 2.2; }
+      .modeE { fill: #fdf2f8; stroke: #be185d; stroke-width: 2.2; }
+
+      .connector { stroke: #6b7280; stroke-width: 2.4; fill: none; }
+      .arrowA { stroke: #1d4ed8; stroke-width: 2.8; fill: none; }
+      .arrowB { stroke: #166534; stroke-width: 2.8; fill: none; }
+      .arrowC { stroke: #0e7490; stroke-width: 2.8; fill: none; }
+      .arrowD { stroke: #a16207; stroke-width: 2.8; fill: none; }
+      .arrowE { stroke: #be185d; stroke-width: 2.8; fill: none; }
+    </style>
+    <marker
+       id="headGray"
+       markerWidth="12"
+       markerHeight="12"
+       refX="10"
+       refY="6"
+       orient="auto"
+       markerUnits="strokeWidth">
+      <path
+         d="M0,0 L12,6 L0,12 z"
+         fill="#6b7280"
+         id="path1" />
+    </marker>
+    <marker
+       id="headA"
+       markerWidth="12"
+       markerHeight="12"
+       refX="10"
+       refY="6"
+       orient="auto"
+       markerUnits="strokeWidth">
+      <path
+         d="M0,0 L12,6 L0,12 z"
+         fill="#1d4ed8"
+         id="path2" />
+    </marker>
+    <marker
+       id="headB"
+       markerWidth="12"
+       markerHeight="12"
+       refX="10"
+       refY="6"
+       orient="auto"
+       markerUnits="strokeWidth">
+      <path
+         d="M0,0 L12,6 L0,12 z"
+         fill="#166534"
+         id="path3" />
+    </marker>
+    <marker
+       id="headC"
+       markerWidth="12"
+       markerHeight="12"
+       refX="10"
+       refY="6"
+       orient="auto"
+       markerUnits="strokeWidth">
+      <path
+         d="M0,0 L12,6 L0,12 z"
+         fill="#0e7490"
+         id="path4" />
+    </marker>
+    <marker
+       id="headD"
+       markerWidth="12"
+       markerHeight="12"
+       refX="10"
+       refY="6"
+       orient="auto"
+       markerUnits="strokeWidth">
+      <path
+         d="M0,0 L12,6 L0,12 z"
+         fill="#a16207"
+         id="path5" />
+    </marker>
+    <marker
+       id="headE"
+       markerWidth="12"
+       markerHeight="12"
+       refX="10"
+       refY="6"
+       orient="auto"
+       markerUnits="strokeWidth">
+      <path
+         d="M0,0 L12,6 L0,12 z"
+         fill="#be185d"
+         id="path6" />
+    </marker>
+    <marker
+       id="headGray-1"
+       markerWidth="12"
+       markerHeight="12"
+       refX="10"
+       refY="6"
+       orient="auto"
+       markerUnits="strokeWidth">
+      <path
+         d="M 0,0 12,6 0,12 Z"
+         fill="#6b7280"
+         id="path1-4" />
+    </marker>
+  </defs>
+  <rect
+     x="0"
+     y="0"
+     width="1800"
+     height="1160"
+     fill="#ffffff"
+     id="rect6"
+     style="fill:#ffffff;fill-opacity:1;stroke:none" />
+  <text
+     x="900"
+     y="66"
+     text-anchor="middle"
+     class="title"
+     id="text6"
+     style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:42px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Running workflows in Echopop</text>
+  <text
+     x="900"
+     y="100"
+     text-anchor="middle"
+     class="subtitle"
+     id="text7">Example ways to launch and orchestrate the same modular workflow logic</text>
+  <!-- Core workflow node -->
+  <!-- Left side lanes -->
+  <path
+     class="arrowD"
+     d="m 1240,230 c 294.3089,19.44715 253.6911,93.28455 253.6911,193.28455"
+     marker-end="url(#headD)"
+     id="path38"
+     sodipodi:nodetypes="cc" />
+  <rect
+     class="modeB"
+     x="80"
+     y="615"
+     width="500"
+     height="175"
+     rx="16"
+     ry="16"
+     id="rect14" />
+  <text
+     x="110"
+     y="660"
+     class="laneTitle"
+     id="text15">Run from Jupyter notebook</text>
+  <path
+     class="arrowE"
+     d="m 1240.3113,196.12299 c 712.8455,75 528.9732,387.19408 453.8838,560.03961"
+     marker-end="url(#headE)"
+     id="path39"
+     sodipodi:nodetypes="cc"
+     style="stroke-linejoin:bevel" />
+  <path
+     class="connector"
+     d="m 580,448 c 180,-18 324.06504,107.82113 635.2033,422.61788"
+     marker-end="url(#headGray)"
+     id="path41"
+     sodipodi:nodetypes="cc" />
+  <text
+     x="110"
+     y="693"
+     class="text"
+     id="text16">Edit parameters in notebook cells then execute</text>
+  <path
+     class="connector"
+     d="m 580,968 c 180,0 442.3252,-251.34959 636.1626,-427.2683"
+     marker-end="url(#headGray)"
+     id="path40"
+     sodipodi:nodetypes="cc" />
+  <text
+     x="110"
+     y="723"
+     class="small"
+     id="text17">Good for documentation and interactive diagnostics</text>
+  <rect
+     class="modeA"
+     x="80"
+     y="370"
+     width="500"
+     height="175"
+     rx="16"
+     ry="16"
+     id="rect10" />
+  <text
+     x="110"
+     y="415"
+     class="laneTitle"
+     id="text11">Run Python script directly</text>
+  <text
+     x="110"
+     y="448"
+     class="text"
+     id="text12">Edit script variables and run file manually</text>
+  <text
+     x="110"
+     y="478"
+     class="small"
+     id="text13">Good for exploratory edits and one off runs</text>
+  <text
+     x="110"
+     y="508"
+     class="small"
+     id="text14">Example: python my_workflow.py</text>
+  <text
+     x="110"
+     y="753"
+     class="small"
+     id="text18">Example: run notebook cell or shell command</text>
+  <rect
+     class="modeC"
+     x="80"
+     y="860"
+     width="500"
+     height="215"
+     rx="16"
+     ry="16"
+     id="rect18" />
+  <path
+     class="arrowA"
+     d="M 560,230 C 288.16261,223.13821 311.51219,300.20325 311.51219,365.20325"
+     marker-end="url(#headA)"
+     id="path35"
+     sodipodi:nodetypes="cc" />
+  <path
+     class="arrowB"
+     d="M 560,208.79532 C -67.216374,230.30409 36.292398,460.70176 91.064328,612.28655"
+     marker-end="url(#headB)"
+     id="path36"
+     sodipodi:nodetypes="cc" />
+  <path
+     class="arrowC"
+     d="M 559.21315,174.2662 C 339.71298,182.96672 165.95312,185.51102 94.386211,276.31121 -12.39222,411.78585 37.250627,667.65776 90.329373,854.38753"
+     marker-end="url(#headC)"
+     id="path37"
+     sodipodi:nodetypes="csc"
+     style="stroke-width:2.8;stroke-dasharray:none" />
+  <rect
+     class="core"
+     x="560"
+     y="150"
+     width="680"
+     height="150"
+     rx="20"
+     ry="20"
+     id="rect7" />
+  <text
+     x="110"
+     y="905"
+     class="laneTitle"
+     id="text19">CLI hooks</text>
+  <text
+     x="110"
+     y="938"
+     class="text"
+     id="text20">Launch workflow with command line arguments</text>
+  <text
+     x="110"
+     y="968"
+     class="small"
+     id="text21">Good for repeatable terminal usage and batch scripts</text>
+  <text
+     x="110"
+     y="998"
+     class="small"
+     id="text22">Example: --year, --verbose, custom flags</text>
+  <text
+     x="110"
+     y="1028"
+     class="small"
+     id="text23">Hooks map runtime options into workflow variables</text>
+  <!-- Right side lanes -->
+  <rect
+     class="modeD"
+     x="1220"
+     y="430"
+     width="500"
+     height="235"
+     rx="16"
+     ry="16"
+     id="rect23" />
+  <text
+     x="1250"
+     y="475"
+     class="laneTitle"
+     id="text24">JSON or YAML configuration</text>
+  <text
+     x="1250"
+     y="508"
+     class="text"
+     id="text25">Store parameters outside code in config files</text>
+  <text
+     x="1250"
+     y="538"
+     class="small"
+     id="text26">Good for scenario management and reproducibility</text>
+  <text
+     x="900"
+     y="205"
+     text-anchor="middle"
+     class="laneTitle"
+     id="text8">Echopop workflow script</text>
+  <text
+     x="900"
+     y="238"
+     text-anchor="middle"
+     class="text"
+     id="text9">modular stages: ingestion, conditioning, estimation, reporting</text>
+  <text
+     x="900"
+     y="268"
+     text-anchor="middle"
+     class="small"
+     id="text10">same core logic can be dispatched through different interfaces</text>
+  <text
+     x="1250"
+     y="568"
+     class="small"
+     id="text27">Can be used with or without CLI integration</text>
+  <text
+     x="1250"
+     y="598"
+     class="small"
+     id="text28">Example: workflow reads config then runs</text>
+  <text
+     x="1250"
+     y="628"
+     class="small"
+     id="text29">config.json or config.yaml</text>
+  <rect
+     class="modeE"
+     x="1220"
+     y="760"
+     width="500"
+     height="250"
+     rx="16"
+     ry="16"
+     id="rect29" />
+  <text
+     x="1250"
+     y="805"
+     class="laneTitle"
+     id="text30">External orchestrators</text>
+  <text
+     x="1250"
+     y="838"
+     class="text"
+     id="text31">Use tools such as Prefect for scheduling and retries</text>
+  <text
+     x="1250"
+     y="868"
+     class="small"
+     id="text32">Good for pipelines, monitoring, and multi run automation</text>
+  <text
+     x="1250"
+     y="898"
+     class="small"
+     id="text33">Can dispatch script, notebook, or CLI commands</text>
+  <text
+     x="1250"
+     y="928"
+     class="small"
+     id="text34">Adds execution control around the same workflow logic</text>
+  <text
+     x="1250"
+     y="958"
+     class="small"
+     id="text35">Example: scheduled yearly runs with logging</text>
+  <!-- Connectors from core to branches -->
+  <!-- Optional interconnections -->
+  <text
+     x="722.77197"
+     y="984.63159"
+     text-anchor="middle"
+     class="small"
+     id="text40"
+     style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:16px;line-height:normal;font-family:Arial, Helvetica, sans-serif">CLI can consume config files</text>
+  <text
+     x="780.16998"
+     y="650.40979"
+     text-anchor="middle"
+     class="small"
+     id="text41"
+     style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:16px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Orchestrators can dispatch script or notebook runs</text>
+  <text
+     x="900"
+     y="1120"
+     text-anchor="middle"
+     class="small"
+     id="text42">Illustrative schematic. Interfaces vary by project, while core workflow stages remain modular.</text>
+  <path
+     class="connector"
+     d="m 580.95935,694.55283 c 180,-18 195.85451,164.12522 633.16815,187.90442"
+     marker-end="url(#headGray)"
+     id="path42"
+     sodipodi:nodetypes="cc" />
+</svg>

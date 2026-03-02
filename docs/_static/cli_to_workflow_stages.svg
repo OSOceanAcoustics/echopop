@@ -1,0 +1,604 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="1407.799"
+   height="564.91217"
+   viewBox="0 0 1407.799 564.91217"
+   role="img"
+   aria-label="Shared CLI utility routing for biodata ingestion config"
+   version="1.1"
+   id="svg34"
+   sodipodi:docname="cli_to_workflow_stages.svg"
+   inkscape:version="1.4.3 (0d15f75, 2025-12-25)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview34"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="0.65714815"
+     inkscape:cx="500.64814"
+     inkscape:cy="180.32463"
+     inkscape:window-width="1920"
+     inkscape:window-height="1057"
+     inkscape:window-x="1912"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg34" />
+  <defs
+     id="defs4">
+    <linearGradient
+       id="swatch131"
+       inkscape:swatch="solid">
+      <stop
+         style="stop-color:#513750;stop-opacity:1;"
+         offset="0"
+         id="stop131" />
+    </linearGradient>
+    <style
+       id="style1">
+      .title { font: 700 40px Arial, Helvetica, sans-serif; fill: #111827; }
+      .subtitle { font: 400 20px Arial, Helvetica, sans-serif; fill: #374151; }
+      .label { font: 700 22px Arial, Helvetica, sans-serif; fill: #111827; }
+      .body { font: 400 18px Arial, Helvetica, sans-serif; fill: #111827; }
+      .note { font: 400 16px Arial, Helvetica, sans-serif; fill: #374151; }
+
+      .boxTerm { fill: #eef2ff; stroke: #4f46e5; stroke-width: 2.5; }
+      .boxCli { fill: #ecfeff; stroke: #0e7490; stroke-width: 2.5; }
+      .boxCfg { fill: #f0fdf4; stroke: #166534; stroke-width: 2.5; }
+      .boxUtil { fill: #f5f3ff; stroke: #6d28d9; stroke-width: 2.5; }
+      .boxIngest { fill: #eff6ff; stroke: #1d4ed8; stroke-width: 2.2; }
+      .boxOut { fill: #f8fafc; stroke: #334155; stroke-width: 2.2; }
+
+      .arrowA { stroke: #4f46e5; stroke-width: 3; fill: none; }
+      .arrowB { stroke: #0e7490; stroke-width: 3; fill: none; }
+      .arrowC { stroke: #166534; stroke-width: 3; fill: none; }
+      .arrowD { stroke: #334155; stroke-width: 3; fill: none; }
+    </style>
+    <marker
+       id="headA"
+       markerWidth="12"
+       markerHeight="12"
+       refX="10"
+       refY="6"
+       orient="auto"
+       markerUnits="strokeWidth">
+      <path
+         d="M 0,0 12,6 0,12 Z"
+         fill="#4f46e5"
+         id="path1" />
+    </marker>
+    <marker
+       id="headB"
+       markerWidth="12"
+       markerHeight="12"
+       refX="10"
+       refY="6"
+       orient="auto"
+       markerUnits="strokeWidth">
+      <path
+         d="M 0,0 12,6 0,12 Z"
+         fill="#0e7490"
+         id="path2" />
+    </marker>
+    <marker
+       id="headC"
+       markerWidth="12"
+       markerHeight="12"
+       refX="10"
+       refY="6"
+       orient="auto"
+       markerUnits="strokeWidth">
+      <path
+         d="M 0,0 12,6 0,12 Z"
+         fill="#166534"
+         id="path3" />
+    </marker>
+    <marker
+       id="headD"
+       markerWidth="12"
+       markerHeight="12"
+       refX="10"
+       refY="6"
+       orient="auto"
+       markerUnits="strokeWidth">
+      <path
+         d="M 0,0 12,6 0,12 Z"
+         fill="#334155"
+         id="path4" />
+    </marker>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#swatch131"
+       id="linearGradient131"
+       x1="982.54565"
+       y1="429.01752"
+       x2="1267.5558"
+       y2="429.01752"
+       gradientUnits="userSpaceOnUse" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#swatch131"
+       id="linearGradient180"
+       gradientUnits="userSpaceOnUse"
+       x1="982.54565"
+       y1="429.01752"
+       x2="1267.5558"
+       y2="429.01752" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#swatch131"
+       id="linearGradient181"
+       gradientUnits="userSpaceOnUse"
+       x1="982.54565"
+       y1="429.01752"
+       x2="1267.5558"
+       y2="429.01752" />
+  </defs>
+  <rect
+     x="3.0012796"
+     y="0"
+     width="1404.7977"
+     height="564.92017"
+     fill="#ffffff"
+     id="rect4"
+     style="stroke-width:0.712331"
+     transform="matrix(1,0,-0.00531275,0.99998589,0,0)" />
+  <text
+     x="722.77258"
+     y="38.924606"
+     text-anchor="middle"
+     class="title"
+     id="text4"
+     style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:40px;line-height:normal;font-family:Arial, Helvetica, sans-serif;text-anchor:middle;fill:#111827">Shared <tspan
+   style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:40px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+   id="tspan34">cli_hook_utils.py</tspan> routing for <tspan
+   style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:40px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+   id="tspan35">--config</tspan></text>
+  <text
+     x="836.77258"
+     y="70.924606"
+     text-anchor="middle"
+     class="subtitle"
+     id="text5"
+     style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:20px;line-height:normal;font-family:Arial, Helvetica, sans-serif" />
+  <rect
+     class="boxTerm"
+     x="10.422727"
+     y="64.682991"
+     width="480.59146"
+     height="113.7448"
+     rx="16.019714"
+     ry="7.9621363"
+     id="rect5" />
+  <text
+     x="28.49053"
+     y="87.098709"
+     class="label"
+     id="text6"
+     style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:22px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Terminal command</text>
+  <text
+     x="28.49053"
+     y="112.20747"
+     class="body"
+     id="text7"
+     style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:18px;line-height:normal;font-family:Arial, Helvetica, sans-serif;fill:#111827"><tspan
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:18px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+       id="tspan36">python workflow_runner.py</tspan></text>
+  <text
+     x="28.49053"
+     y="163.98993"
+     class="body"
+     id="text8"
+     style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:18px;line-height:normal;font-family:Arial, Helvetica, sans-serif;fill:#111827"><tspan
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:18px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+       id="tspan38">--config configs/biodata_ingestion.yaml</tspan></text>
+  <rect
+     class="boxCli"
+     x="550.44116"
+     y="74.593201"
+     width="420.66281"
+     height="107.83748"
+     rx="14.022094"
+     ry="7.5486236"
+     id="rect9" />
+  <text
+     x="563.27271"
+     y="97.859566"
+     class="label"
+     id="text10"
+     style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:22px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Workflow script</text>
+  <text
+     x="563.27271"
+     y="121.44661"
+     class="body"
+     id="text11"
+     style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:18px;line-height:normal;font-family:Arial, Helvetica, sans-serif;fill:#111827">Creates <tspan
+   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:18px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+   id="tspan39">argparse.ArgumentParser</tspan></text>
+  <text
+     x="564.79443"
+     y="144.31625"
+     class="body"
+     id="text12"
+     style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:18px;line-height:normal;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#111827"><tspan
+       sodipodi:role="line"
+       id="tspan40"
+       x="564.79443"
+       y="144.31625">Imports hook utilities in <tspan
+   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:18px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+   id="tspan41">cli_hook_utils.py</tspan></tspan></text>
+  <text
+     x="563.27271"
+     y="166.42503"
+     class="body"
+     id="text13"
+     style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:18px;line-height:normal;font-family:Arial, Helvetica, sans-serif;fill:#111827">Calls utility functions only for <tspan
+   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:18px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+   id="tspan42">--config</tspan></text>
+  <rect
+     class="boxCfg"
+     x="1015.0219"
+     y="244.30852"
+     width="369.74261"
+     height="309.87503"
+     rx="10.564074"
+     ry="22.832897"
+     id="rect17" />
+  <text
+     x="1022.347"
+     y="268.91534"
+     class="label"
+     id="text18"
+     style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:22px;line-height:normal;font-family:Arial, Helvetica, sans-serif;fill:#111827"><tspan
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:22px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+       id="tspan117">biodata_ingestion.yaml</tspan></text>
+  <text
+     x="1021.5863"
+     y="294.82898"
+     class="body"
+     id="text21"
+     style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:18px;line-height:normal;font-family:Arial, Helvetica, sans-serif;fill:#111827">Supports YAML/JSON path from <tspan
+   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:18px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+   id="tspan116">--config</tspan></text>
+  <rect
+     class="boxIngest"
+     x="68.98835"
+     y="202.69208"
+     width="618.01074"
+     height="106.16481"
+     rx="10.06064"
+     ry="8.7429838"
+     id="rect21" />
+  <path
+     class="arrowB"
+     d="m 1069.3507,173.4052 c -46.0275,76.13979 -4.7593,62.01136 -387.40896,63.69108"
+     marker-end="url(#headB)"
+     id="path31"
+     sodipodi:nodetypes="cc"
+     style="stroke-width:3;stroke-dasharray:none" />
+  <rect
+     class="boxUtil"
+     x="1010.2705"
+     y="72.422478"
+     width="368.83157"
+     height="100.93408"
+     rx="9.9300814"
+     ry="7.0653858"
+     id="rect13" />
+  <text
+     x="1023.4684"
+     y="96.142159"
+     class="label"
+     id="text14"
+     style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:22px;line-height:normal;font-family:Arial, Helvetica, sans-serif;fill:#111827">Shared <tspan
+   style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:22px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+   id="tspan43">cli_hook_utils.py</tspan></text>
+  <text
+     x="1025.1858"
+     y="118.96834"
+     class="body"
+     id="text15"
+     style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:18px;line-height:normal;font-family:Arial, Helvetica, sans-serif;fill:#111827"><tspan
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:18px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+       id="tspan44">add_config_arg(parser)</tspan></text>
+  <text
+     x="1023.6641"
+     y="138.79453"
+     class="body"
+     id="text16"
+     style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:18px;line-height:normal;font-family:Arial, Helvetica, sans-serif;fill:#111827"><tspan
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:18px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+       id="tspan45">load_config_params(args.config)</tspan></text>
+  <text
+     x="1024.2292"
+     y="160.62071"
+     class="body"
+     id="text17"
+     style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:18px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Single source for config-only hook behavior</text>
+  <text
+     x="79.98304"
+     y="226.53468"
+     class="label"
+     id="text22"
+     style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:22px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Biodata ingestion execution</text>
+  <text
+     x="79.98304"
+     y="250.9265"
+     class="body"
+     id="text23"
+     style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:18px;line-height:normal;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#111827"><tspan
+       sodipodi:role="line"
+       id="tspan120"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:18px;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+       x="79.98304"
+       y="250.9265">Run <tspan
+   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:18px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+   id="tspan121">ingest.load_biological_data(...)</tspan>using loaded configuration</tspan></text>
+  <text
+     x="80.907021"
+     y="274.16626"
+     class="body"
+     id="text24"
+     style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:18px;line-height:normal;font-family:Arial, Helvetica, sans-serif;fill:#111827">If <tspan
+   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:18px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+   id="tspan122">drop_specimen_hauls</tspan> is true:</text>
+  <rect
+     class="boxOut"
+     x="66.841026"
+     y="367.7533"
+     width="593.82794"
+     height="82.120369"
+     rx="12.596351"
+     ry="8.8437309"
+     id="rect24" />
+  <text
+     x="173.29886"
+     y="391.50354"
+     text-anchor="middle"
+     class="label"
+     id="text25"
+     style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:22px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Output for this run</text>
+  <text
+     x="316.90121"
+     y="411.7901"
+     text-anchor="middle"
+     class="body"
+     id="text26"
+     style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:18px;line-height:normal;font-family:Sans;-inkscape-font-specification:'Sans, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-anchor:middle;fill:#111827"><tspan
+       sodipodi:role="line"
+       id="tspan127"
+       x="316.90121"
+       y="411.7901">Dictionary of pre-processed biodata <tspan
+   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:18px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+   id="tspan128">pandas.DataFrame</tspan></tspan></text>
+  <text
+     x="365.17023"
+     y="435.33395"
+     text-anchor="middle"
+     class="note"
+     id="text27"
+     style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:16px;line-height:normal;font-family:Arial, Helvetica, sans-serif;text-anchor:middle;fill:#374151">Run contract = <tspan
+   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:16px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+   id="tspan129">--config</tspan> file pointer + shared <tspan
+   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:16px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+   id="tspan130">cli_hook_utils.py</tspan> behavior</text>
+  <path
+     class="arrowA"
+     d="m 490.77256,120.92461 c 30,0 45,0 60,0"
+     marker-end="url(#headA)"
+     id="path27" />
+  <path
+     class="arrowB"
+     d="m 970.77256,122.92461 c 20,0 30.00004,0 40.00004,0"
+     marker-end="url(#headB)"
+     id="path28" />
+  <path
+     class="arrowC"
+     d="m 1228.7726,174.92461 c 0,25 0,35 0,60"
+     marker-end="url(#headC)"
+     id="path29" />
+  <path
+     class="arrowC"
+     d="M 1014.1774,275.23937 681.9236,274.32093"
+     marker-end="url(#headC)"
+     id="path30"
+     sodipodi:nodetypes="cc"
+     style="stroke-width:3;stroke-dasharray:none" />
+  <path
+     class="arrowD"
+     d="m 386.49186,308.91291 c -0.0351,69.68421 0.0234,30.50292 -0.54971,62.87719"
+     marker-end="url(#headD)"
+     id="path32"
+     sodipodi:nodetypes="cc" />
+  <text
+     x="1296"
+     y="320"
+     class="note"
+     id="text32"
+     style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:16px;line-height:normal;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;white-space:pre;inline-size:457.946;fill:#374151"
+     transform="translate(-61.648498,-123.2976)"
+     xml:space="preserve"><tspan
+       x="1296"
+       y="320"
+       id="tspan1">Load configuration file</tspan></text>
+  <text
+     x="723.0481"
+     y="291.32681"
+     class="note"
+     id="text33"
+     style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:16px;line-height:normal;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#374151"><tspan
+       sodipodi:role="line"
+       id="tspan119"
+       x="723.0481"
+       y="291.32681">Configuration values feed ingestion</tspan></text>
+  <text
+     x="721.30829"
+     y="229.08737"
+     class="note"
+     id="text34"
+     style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:16px;line-height:normal;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#374151"><tspan
+       sodipodi:role="line"
+       id="tspan118"
+       x="721.30829"
+       y="229.08737">Return parsed configuration dictionary</tspan></text>
+  <text
+     x="28.49053"
+     y="139.09871"
+     class="label"
+     id="text36"
+     style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:22px;line-height:normal;font-family:'Courier New';-inkscape-font-specification:'Courier New, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#111827"><tspan
+       sodipodi:role="line"
+       id="tspan37"
+       x="28.49053"
+       y="139.09871">--config argument</tspan></text>
+  <g
+     id="g177"
+     transform="translate(0,4)">
+    <rect
+       style="fill:#f2f1f1;fill-opacity:1;stroke:#6b7280;stroke-width:1.3;stroke-linejoin:bevel;stroke-miterlimit:0.7;stroke-dasharray:none"
+       id="rect131"
+       width="305.88724"
+       height="242.7356"
+       x="1047.7538"
+       y="299.23804" />
+    <g
+       id="g115"
+       transform="translate(76.032999,-7.9882048)"
+       style="fill:url(#linearGradient131)">
+      <text
+         x="998.90057"
+         y="340.25146"
+         class="body"
+         id="text19"
+         style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:18px;line-height:normal;font-family:'Courier New';-inkscape-font-specification:'Courier New, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:url(#linearGradient180);fill-opacity:1"><tspan
+           sodipodi:role="line"
+           id="tspan107"
+           x="998.90057"
+           y="340.25146"
+           style="fill:url(#linearGradient180)">data_root: ...</tspan><tspan
+           sodipodi:role="line"
+           id="tspan108"
+           x="998.90057"
+           y="362.75146"
+           style="fill:url(#linearGradient180)">biodata_file: ...</tspan><tspan
+           sodipodi:role="line"
+           id="tspan109"
+           x="998.90057"
+           y="385.25146"
+           style="fill:url(#linearGradient180)">biodata_sheets:</tspan><tspan
+           sodipodi:role="line"
+           id="tspan110"
+           x="998.90057"
+           y="407.75146"
+           style="fill:url(#linearGradient180)">...</tspan><tspan
+           sodipodi:role="line"
+           id="tspan111"
+           x="998.90057"
+           y="430.25146"
+           style="fill:url(#linearGradient180)">biodata_subset:</tspan><tspan
+           sodipodi:role="line"
+           id="tspan112"
+           x="998.90057"
+           y="452.75146"
+           style="fill:url(#linearGradient180)">...</tspan><tspan
+           sodipodi:role="line"
+           id="tspan113"
+           x="998.90057"
+           y="475.25146"
+           style="fill:url(#linearGradient180)">rename_biodata_columns:</tspan><tspan
+           sodipodi:role="line"
+           id="tspan114"
+           x="998.90057"
+           y="497.75146"
+           style="fill:url(#linearGradient180)">...</tspan><tspan
+           sodipodi:role="line"
+           id="tspan115"
+           x="998.90057"
+           y="520.25146"
+           style="fill:url(#linearGradient180)">drop_specimen_hauls: True</tspan></text>
+      <text
+         x="953.57037"
+         y="332.28632"
+         class="body"
+         id="text95"
+         style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:18px;line-height:normal;font-family:'Courier New';-inkscape-font-specification:'Courier New, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:url(#linearGradient181);fill-opacity:1;stroke-width:0.974124"
+         transform="scale(1.0265635,0.97412382)"><tspan
+           sodipodi:role="line"
+           id="tspan95"
+           x="953.57037"
+           y="332.28632"
+           style="fill:url(#linearGradient181);fill-opacity:1;stroke-width:0.974124">{</tspan><tspan
+           sodipodi:role="line"
+           id="tspan96"
+           x="953.57037"
+           y="354.78632"
+           style="fill:url(#linearGradient181);fill-opacity:1;stroke-width:0.974124"></tspan><tspan
+           sodipodi:role="line"
+           id="tspan97"
+           x="953.57037"
+           y="377.28632"
+           style="fill:url(#linearGradient181);fill-opacity:1;stroke-width:0.974124"></tspan><tspan
+           sodipodi:role="line"
+           id="tspan98"
+           x="953.57037"
+           y="399.78632"
+           style="fill:url(#linearGradient181);fill-opacity:1;stroke-width:0.974124"></tspan><tspan
+           sodipodi:role="line"
+           id="tspan99"
+           x="953.57037"
+           y="422.28632"
+           style="fill:url(#linearGradient181);fill-opacity:1;stroke-width:0.974124"></tspan><tspan
+           sodipodi:role="line"
+           id="tspan100"
+           x="953.57037"
+           y="444.78632"
+           style="fill:url(#linearGradient181);fill-opacity:1;stroke-width:0.974124"></tspan><tspan
+           sodipodi:role="line"
+           id="tspan101"
+           x="953.57037"
+           y="467.28632"
+           style="fill:url(#linearGradient181);fill-opacity:1;stroke-width:0.974124"></tspan><tspan
+           sodipodi:role="line"
+           id="tspan102"
+           x="953.57037"
+           y="489.78632"
+           style="fill:url(#linearGradient181);fill-opacity:1;stroke-width:0.974124"></tspan><tspan
+           sodipodi:role="line"
+           id="tspan103"
+           x="953.57037"
+           y="512.28632"
+           style="fill:url(#linearGradient181);fill-opacity:1;stroke-width:0.974124"></tspan><tspan
+           sodipodi:role="line"
+           id="tspan104"
+           x="953.57037"
+           y="534.78632"
+           style="fill:url(#linearGradient181);fill-opacity:1;stroke-width:0.974124"></tspan><tspan
+           sodipodi:role="line"
+           id="tspan105"
+           x="953.57037"
+           y="557.28632"
+           style="fill:url(#linearGradient181);fill-opacity:1;stroke-width:0.974124">}</tspan><tspan
+           sodipodi:role="line"
+           id="tspan106"
+           x="953.57037"
+           y="579.78632"
+           style="fill:url(#linearGradient181);fill-opacity:1;stroke-width:0.974124"></tspan></text>
+    </g>
+  </g>
+  <text
+     x="118.90702"
+     y="298.16626"
+     class="body"
+     id="text121"
+     style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:18px;line-height:normal;font-family:Arial, Helvetica, sans-serif;fill:#111827">Run <tspan
+   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:18px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+   id="tspan123">biology.drop_specimen_only_hauls(...)</tspan></text>
+</svg>

@@ -1,0 +1,692 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="1513"
+   height="454"
+   viewBox="0 0 1513 454"
+   role="img"
+   aria-labelledby="title desc"
+   version="1.1"
+   id="svg44"
+   sodipodi:docname="year_specific_processing_steps.svg"
+   inkscape:version="1.4.3 (0d15f75, 2025-12-25)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview44"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="4.0000001"
+     inkscape:cx="981.24997"
+     inkscape:cy="335.87499"
+     inkscape:window-width="1920"
+     inkscape:window-height="1057"
+     inkscape:window-x="1912"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg44" />
+  <title
+     id="title">General FEAT year-script processing sequence</title>
+  <desc
+     id="desc">High-level processing stages shared across year-specific FEAT scripts, from parameter entry through reporting and optional comparisons.</desc>
+  <defs
+     id="defs2">
+    <marker
+       style="overflow:visible"
+       id="Triangle"
+       refX="-0.30812591"
+       refY="-0.13927653"
+       orient="auto"
+       inkscape:stockid="Triangle arrow"
+       markerWidth="2.2783198"
+       markerHeight="2.0235882"
+       viewBox="0 0 1 1"
+       inkscape:isstock="true"
+       inkscape:collect="always"
+       preserveAspectRatio="none"
+       markerUnits="strokeWidth">
+      <path
+         transform="scale(0.5)"
+         style="fill:context-stroke;fill-rule:evenodd;stroke:context-stroke;stroke-width:1pt"
+         d="M 5.77,0 -2.88,5 V -5 Z"
+         id="path135" />
+    </marker>
+    <style
+       id="style1">
+      .title { font: 700 30px Arial, Helvetica, sans-serif; fill: #111827; }
+      .label { font: 700 17px Arial, Helvetica, sans-serif; fill: #111827; }
+      .body { font: 400 14px Arial, Helvetica, sans-serif; fill: #111827; }
+      .note { font: 400 13px Arial, Helvetica, sans-serif; fill: #374151; }
+      .param { fill: #fef3c7; stroke: #b45309; stroke-width: 2.2; }
+      .ingest { fill: #eef2ff; stroke: #4f46e5; stroke-width: 2.2; }
+      .process { fill: #ecfeff; stroke: #0e7490; stroke-width: 2.2; }
+      .model { fill: #f3e8ff; stroke: #7e22ce; stroke-width: 2.2; }
+      .out { fill: #ecfdf5; stroke: #047857; stroke-width: 2.2; }
+      .opt { fill: #f8fafc; stroke: #334155; stroke-width: 2.2; stroke-dasharray: 7 5; }
+      .legendBox { fill: #ffffff; stroke: #9ca3af; stroke-width: 1.8; }
+      .legendTitle { font: 700 15px Arial, Helvetica, sans-serif; fill: #111827; }
+      .legendText { font: 400 13px Arial, Helvetica, sans-serif; fill: #111827; }
+      .arrow { stroke: #111827; stroke-width: 2.8; fill: none; }
+      .arrowOpt { stroke: #334155; stroke-width: 2.6; fill: none; stroke-dasharray: 6 5; }
+    </style>
+    <marker
+       id="head"
+       markerWidth="12"
+       markerHeight="0.0144"
+       refX="10"
+       refY="6"
+       orient="auto"
+       markerUnits="strokeWidth"
+       preserveAspectRatio="xMidYMid">
+      <path
+         d="M 0,0 12,6 0,12 Z"
+         fill="#111827"
+         id="path1" />
+    </marker>
+    <marker
+       id="headOpt"
+       markerWidth="12"
+       markerHeight="12"
+       refX="10"
+       refY="6"
+       orient="auto"
+       markerUnits="strokeWidth">
+      <path
+         d="M 0,0 12,6 0,12 Z"
+         fill="#334155"
+         id="path2" />
+    </marker>
+  </defs>
+  <rect
+     x="0"
+     y="0"
+     width="1513"
+     height="454"
+     fill="#ffffff"
+     id="rect2"
+     style="stroke-width:0.781469" />
+  <g
+     id="g2"
+     transform="translate(15,19.748046)">
+    <rect
+       class="opt"
+       x="1056.4568"
+       y="348.04095"
+       width="422.53384"
+       height="67.036125"
+       rx="13.343174"
+       id="rect26" />
+    <text
+       x="1066.725"
+       y="369.17914"
+       class="label"
+       id="text27"
+       style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:17px;line-height:normal;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#111827"><tspan
+         sodipodi:role="line"
+         id="tspan1"
+         x="1066.725"
+         y="369.17914">[Optional] Compare Echopop and EchoPro reports</tspan></text>
+    <text
+       x="1067.0072"
+       y="388.61377"
+       class="body"
+       id="text28"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:14px;line-height:normal;font-family:Arial, Helvetica, sans-serif;fill:#111827">If <tspan
+   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:14px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+   id="tspan2">COMPARE</tspan>: EchoPro vs Echopop diagnostics</text>
+    <text
+       x="1067.2328"
+       y="407.56644"
+       class="body"
+       id="text29"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:14px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Plots, difference summaries</text>
+  </g>
+  <path
+     class="arrow"
+     d="m 1022.4391,401.45357 50.7016,-0.3272"
+     marker-end="url(#head)"
+     id="path36"
+     style="stroke-dasharray:8.90909, 6.36364;stroke-dashoffset:0"
+     sodipodi:nodetypes="cc" />
+  <g
+     id="g123"
+     transform="translate(271.82173,-81.141337)">
+    <rect
+       class="out"
+       x="502.01181"
+       y="448.28943"
+       width="247.49829"
+       height="68.610977"
+       rx="8.7352333"
+       id="rect23" />
+    <text
+       x="510.99496"
+       y="467.63248"
+       class="label"
+       id="text24"
+       style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:17px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Report generation</text>
+    <text
+       x="511.13266"
+       y="486.74338"
+       class="body"
+       id="text25"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:14px;line-height:normal;font-family:Arial, Helvetica, sans-serif;fill:#111827">Excel report set via <tspan
+   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:14px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+   id="tspan123">Reporter(...)</tspan></text>
+    <text
+       x="511.99399"
+       y="505.85428"
+       class="body"
+       id="text26"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:14px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Transect, kriged, age/length outputs</text>
+  </g>
+  <path
+     class="arrow"
+     d="m 111.18002,310.83026 -0.44952,112.43427 646.25665,1.64951"
+     marker-end="url(#head)"
+     id="path123"
+     sodipodi:nodetypes="ccc"
+     style="stroke:#047857;stroke-width:2.8;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#Triangle)" />
+  <g
+     id="g102"
+     transform="translate(-32.124938,79.456557)">
+    <rect
+       class="model"
+       x="356.62399"
+       y="230.894"
+       width="328.69727"
+       height="103.34196"
+       rx="12.326149"
+       id="rect17" />
+    <text
+       x="365.38687"
+       y="252"
+       class="label"
+       id="text18"
+       style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:17px;line-height:normal;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#111827"><tspan
+         sodipodi:role="line"
+         id="tspan98"
+         x="365.38687"
+         y="252">Spatial transformations &amp; geostatistics</tspan></text>
+    <text
+       x="365.673"
+       y="270.5"
+       class="body"
+       id="text19"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:14px;line-height:normal;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#111827"><tspan
+         sodipodi:role="line"
+         id="tspan99"
+         x="365.673"
+         y="270.5">Transform coordinates</tspan><tspan
+         sodipodi:role="line"
+         id="tspan100"
+         x="365.673"
+         y="288">Empirical variogram and model-fitting</tspan><tspan
+         sodipodi:role="line"
+         id="tspan101"
+         x="365.673"
+         y="305.5">Ordinary kriging</tspan><tspan
+         sodipodi:role="line"
+         id="tspan102"
+         x="365.673"
+         y="323">Conversion to biomass, abundance, and NASC</tspan></text>
+  </g>
+  <path
+     class="arrow"
+     d="m 896.80859,302.33556 -0.0484,45.22376"
+     marker-end="url(#head)"
+     id="path125"
+     sodipodi:nodetypes="cc"
+     style="stroke:#047857;stroke-width:2.8;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#Triangle)" />
+  <g
+     id="g106"
+     transform="translate(-32.38176,-12.041839)">
+    <rect
+       class="model"
+       x="699.01031"
+       y="231.04184"
+       width="358.51932"
+       height="83.335564"
+       rx="13.444474"
+       id="rect102" />
+    <text
+       x="708.28497"
+       y="268.19745"
+       class="body"
+       id="text22"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:14px;line-height:normal;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#111827"><tspan
+         sodipodi:role="line"
+         id="tspan103"
+         x="708.28497"
+         y="268.19745">Combine aged and unaged estimates</tspan><tspan
+         sodipodi:role="line"
+         id="tspan104"
+         x="708.28497"
+         y="285.69745">Apportion estimates over age and length</tspan><tspan
+         sodipodi:role="line"
+         id="tspan105"
+         x="708.28497"
+         y="303.32513">[<tspan
+   style="font-style:italic;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:14px;font-family:Sans;-inkscape-font-specification:'Sans, Bold Italic';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+   id="tspan106">Geostatistics</tspan>] Derive biomass, abundance, and NASC</tspan></text>
+    <text
+       x="707.03595"
+       y="251.26851"
+       class="label"
+       id="text102"
+       style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:17px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Distribution</text>
+  </g>
+  <path
+     class="arrow"
+     d="m 152.93002,325.83472 0.10683,35.56883 171.4622,0.61799"
+     marker-end="url(#head)"
+     id="path107"
+     sodipodi:nodetypes="ccc"
+     style="stroke-width:2.8;stroke-dasharray:none" />
+  <rect
+     class="model"
+     x="13.760771"
+     y="218.83075"
+     width="278.3385"
+     height="107.00397"
+     rx="10.437694"
+     id="rect14" />
+  <path
+     class="arrow"
+     d="M 1178.6902,174.72196 C 1036.2841,236.56649 341.37837,136.643 198.32676,173.32243 163.90293,182.14894 175.67645,185.84436 173.93002,219"
+     marker-end="url(#head)"
+     id="path32"
+     sodipodi:nodetypes="csc" />
+  <text
+     x="749.05859"
+     y="30"
+     text-anchor="middle"
+     class="title"
+     id="text2"
+     style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:30px;line-height:normal;font-family:Arial, Helvetica, sans-serif;text-anchor:middle;fill:#111827">General year-script workflow steps (<tspan
+   style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:30px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+   id="tspan44">hake_*.py</tspan>)</text>
+  <g
+     id="g91"
+     transform="translate(1,-11.057186)">
+    <rect
+       class="process"
+       x="1097.3818"
+       y="74.652817"
+       width="160.61665"
+       height="111.12632"
+       rx="7.4130759"
+       id="rect11" />
+    <text
+       x="1109.7747"
+       y="93.144943"
+       class="label"
+       id="text12"
+       style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:17px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Preprocessing</text>
+    <text
+       x="1111.032"
+       y="108.97393"
+       class="body"
+       id="text13"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:14px;line-height:normal;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#111827"><tspan
+         sodipodi:role="line"
+         id="tspan81"
+         x="1111.032"
+         y="108.97393">Generate UIDs</tspan><tspan
+         sodipodi:role="line"
+         id="tspan82"
+         x="1111.032"
+         y="126.47393">Age and length binning</tspan><tspan
+         sodipodi:role="line"
+         id="tspan83"
+         x="1111.032"
+         y="143.97394">Apply strata/geostrata</tspan><tspan
+         sodipodi:role="line"
+         id="tspan84"
+         x="1111.032"
+         y="161.47394">Number proportions</tspan><tspan
+         sodipodi:role="line"
+         id="tspan85"
+         x="1111.032"
+         y="178.97394">Weight proportions</tspan></text>
+  </g>
+  <g
+     id="g90"
+     transform="translate(9,-12)">
+    <path
+       class="arrow"
+       d="m 1038.4148,131.15879 h 56"
+       marker-end="url(#head)"
+       id="path31" />
+    <rect
+       class="ingest"
+       x="747.94641"
+       y="74.87645"
+       width="289.422"
+       height="112.56468"
+       rx="11.57688"
+       id="rect8" />
+    <text
+       x="763.28821"
+       y="90.945053"
+       class="label"
+       id="text9"
+       style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:17px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Input ingestion</text>
+    <text
+       x="763.89032"
+       y="108.94505"
+       class="body"
+       id="text10"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:14px;line-height:normal;font-family:Sans;-inkscape-font-specification:'Sans, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#111827"><tspan
+         sodipodi:role="line"
+         id="tspan86"
+         x="763.89032"
+         y="108.94505">NASC</tspan><tspan
+         sodipodi:role="line"
+         id="tspan87"
+         x="763.89032"
+         y="126.44505">Biodata</tspan><tspan
+         sodipodi:role="line"
+         id="tspan88"
+         x="763.89032"
+         y="143.94505">Strata, geostrata</tspan><tspan
+         sodipodi:role="line"
+         id="tspan89"
+         x="763.89032"
+         y="161.44505">Kriging mesh, 200 m isobath coordinates</tspan><tspan
+         sodipodi:role="line"
+         id="tspan90"
+         x="763.89032"
+         y="178.94505">Kriging and variogram parameters</tspan></text>
+  </g>
+  <g
+     id="g80"
+     transform="translate(9,7.617771)">
+    <path
+       class="arrow"
+       d="m 699.30941,111.54102 h 56"
+       marker-end="url(#head)"
+       id="path30" />
+    <rect
+       class="param"
+       x="399.76273"
+       y="74.692741"
+       width="300.47458"
+       height="73.696564"
+       rx="12.018982"
+       id="rect5" />
+    <text
+       x="410"
+       y="93.318626"
+       class="label"
+       id="text6"
+       style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:17px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Runtime flags &amp; logger</text>
+    <text
+       x="410"
+       y="115.98929"
+       class="body"
+       id="text7"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:14px;line-height:normal;font-family:Arial, Helvetica, sans-serif;fill:#111827"><tspan
+   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:14px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+   id="tspan50">cli_utils.py</tspan> hooks: <tspan
+   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:14px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+   id="tspan51">VERBOSE</tspan> / <tspan
+   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:14px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+   id="tspan52">COMPARE</tspan></text>
+    <text
+       x="410"
+       y="139.11111"
+       class="body"
+       id="text8"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:14px;line-height:normal;font-family:Arial, Helvetica, sans-serif;fill:#111827"><tspan
+   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:14px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+   id="tspan54">l</tspan><tspan
+   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:14px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+   id="tspan53">ogging.basicConfig(...)</tspan>setup</text>
+  </g>
+  <g
+     id="g92"
+     transform="translate(9,-12)">
+    <path
+       class="arrow"
+       d="m 347.60022,131.15866 h 56"
+       marker-end="url(#head)"
+       id="path29" />
+    <rect
+       class="param"
+       x="4.9300222"
+       y="94.547791"
+       width="343.10284"
+       height="73.221725"
+       rx="13.724114"
+       id="rect3" />
+    <text
+       x="11.580447"
+       y="112.72887"
+       class="label"
+       id="text3"
+       style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:17px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Parameter entry</text>
+    <text
+       x="11.580447"
+       y="135.60022"
+       class="body"
+       id="text4"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:14px;line-height:normal;font-family:Arial, Helvetica, sans-serif;fill:#111827"><tspan
+   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:14px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+   id="tspan48">DATA_ROOT,</tspan><tspan
+   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:14px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+   id="tspan49">REPORTS_DIR</tspan>, filepaths</text>
+    <text
+       x="11.580447"
+       y="158.72888"
+       class="body"
+       id="text5"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:14px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Species and survey information, toggles, sheet maps</text>
+  </g>
+  <text
+     x="20.655155"
+     y="243.136"
+     class="label"
+     id="text15"
+     style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:17px;line-height:normal;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#111827"><tspan
+       sodipodi:role="line"
+       id="tspan92"
+       x="20.655155"
+       y="243.136">Inversion &amp; biomass conversion</tspan></text>
+  <text
+     x="21.48914"
+     y="263"
+     class="body"
+     id="text16"
+     style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:14px;line-height:normal;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#111827"><tspan
+       sodipodi:role="line"
+       id="tspan93"
+       x="21.48914"
+       y="263"
+       style="font-style:italic;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:14px;font-family:Sans;-inkscape-font-specification:'Sans, Bold Italic';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">Transect-based analysis</tspan><tspan
+       sodipodi:role="line"
+       id="tspan94"
+       x="21.48914"
+       y="280.5"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:14px;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">TS-length inversion</tspan><tspan
+       sodipodi:role="line"
+       id="tspan95"
+       x="21.48914"
+       y="298"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:14px;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">Abundance and biomass estimation</tspan><tspan
+       sodipodi:role="line"
+       id="tspan96"
+       x="21.48914"
+       y="315.5"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:14px;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">Age-1 exclusion and reallocation</tspan><tspan
+       sodipodi:role="line"
+       id="tspan97"
+       x="21.48914"
+       y="333"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:14px;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal" /></text>
+  <rect
+     class="model"
+     x="1078.5928"
+     y="233.26056"
+     width="301.01547"
+     height="54.814465"
+     rx="11.28808"
+     id="rect20" />
+  <text
+     x="1085.3385"
+     y="251.29453"
+     class="label"
+     id="text21"
+     style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:17px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Jolly and Hampton (1990) algorithm</text>
+  <text
+     x="1085.2531"
+     y="273.89365"
+     class="body"
+     id="text23"
+     style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:14px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Jolly-Hampton bootstrap summaries</text>
+  <path
+     class="arrow"
+     d="M 293.03002,234.7 H 665.62855"
+     marker-end="url(#head)"
+     id="path33"
+     sodipodi:nodetypes="cc" />
+  <path
+     class="arrow"
+     d="m 653.19635,362.02154 88.7895,0.62202 -0.0976,-60.30799"
+     marker-end="url(#head)"
+     id="path34"
+     sodipodi:nodetypes="ccc" />
+  <g
+     id="g1"
+     transform="translate(56.999997,-479.99999)">
+    <rect
+       class="legendBox"
+       x="1220"
+       y="485"
+       width="230"
+       height="182"
+       rx="10"
+       id="rect37" />
+    <text
+       x="1238"
+       y="508"
+       class="legendTitle"
+       id="text37"
+       style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:15px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Legend</text>
+    <rect
+       class="param"
+       x="1240"
+       y="522"
+       width="18"
+       height="12"
+       rx="2"
+       id="rect38" />
+    <text
+       x="1268"
+       y="533"
+       class="legendText"
+       id="text38"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:13px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Parameters / runtime setup</text>
+    <rect
+       class="ingest"
+       x="1240"
+       y="546"
+       width="18"
+       height="12"
+       rx="2"
+       id="rect39" />
+    <text
+       x="1268"
+       y="557"
+       class="legendText"
+       id="text39"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:13px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Input ingestion</text>
+    <rect
+       class="process"
+       x="1240"
+       y="570"
+       width="18"
+       height="12"
+       rx="2"
+       id="rect40" />
+    <text
+       x="1268"
+       y="581"
+       class="legendText"
+       id="text40"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:13px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Preprocessing</text>
+    <rect
+       class="model"
+       x="1240"
+       y="594"
+       width="18"
+       height="12"
+       rx="2"
+       id="rect41" />
+    <text
+       x="1268"
+       y="605"
+       class="legendText"
+       id="text41"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:13px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Modeling / uncertainty</text>
+    <rect
+       class="out"
+       x="1240"
+       y="618"
+       width="18"
+       height="12"
+       rx="2"
+       id="rect42" />
+    <text
+       x="1268"
+       y="629"
+       class="legendText"
+       id="text42"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:13px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Primary outputs</text>
+    <rect
+       class="opt"
+       x="1240"
+       y="642"
+       width="18"
+       height="12"
+       rx="2"
+       id="rect43" />
+    <text
+       x="1268"
+       y="653"
+       class="legendText"
+       id="text43"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:13px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Optional branch</text>
+  </g>
+  <text
+     x="264.30884"
+     y="50.666664"
+     class="note"
+     id="text44"
+     style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:13px;line-height:normal;font-family:Arial, Helvetica, sans-serif;fill:#374151">Coverage basis: common stage structure observed across all <tspan
+   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:13px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+   id="tspan45">hake_1995.py</tspan> ... <tspan
+   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:13px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+   id="tspan46">hake_2023.py</tspan> scripts in <tspan
+   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:13px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+   id="tspan47">year_specific/</tspan>; names and exact branches vary by year.</text>
+  <path
+     class="arrow"
+     d="m 1025.1479,260.66779 h 53.467"
+     marker-end="url(#head)"
+     id="path108"
+     sodipodi:nodetypes="cc" />
+  <path
+     class="arrow"
+     d="m 653.19632,390.19484 103.59527,-0.66622"
+     marker-end="url(#head)"
+     id="path124"
+     sodipodi:nodetypes="cc"
+     style="stroke:#047857;stroke-width:2.8;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#Triangle)" />
+</svg>
