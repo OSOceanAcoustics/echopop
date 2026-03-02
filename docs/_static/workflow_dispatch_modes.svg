@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <svg
-   width="1800"
-   height="1160"
-   viewBox="0 0 1800 1160"
+   width="1224.3903"
+   height="650.58533"
+   viewBox="0 0 1224.3903 650.58533"
    role="img"
    aria-label="Workflow dispatch modes schematic"
    version="1.1"
    id="svg42"
    sodipodi:docname="workflow_dispatch_modes.svg"
-   inkscape:version="1.4.3 (0d15f75, 2025-12-25)"
+   inkscape:version="1.4.2 (f4327f4, 2025-05-13)"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns="http://www.w3.org/2000/svg"
@@ -22,13 +22,13 @@
      inkscape:pageopacity="0.0"
      inkscape:pagecheckerboard="0"
      inkscape:deskcolor="#d1d1d1"
-     inkscape:zoom="0.52118646"
-     inkscape:cx="776.11379"
-     inkscape:cy="547.7886"
-     inkscape:window-width="1920"
-     inkscape:window-height="1057"
-     inkscape:window-x="1912"
-     inkscape:window-y="-8"
+     inkscape:zoom="1.0423729"
+     inkscape:cx="441.3008"
+     inkscape:cy="444.65852"
+     inkscape:window-width="3840"
+     inkscape:window-height="2126"
+     inkscape:window-x="-11"
+     inkscape:window-y="-11"
      inkscape:window-maximized="1"
      inkscape:current-layer="svg42" />
   <defs
@@ -64,7 +64,7 @@
        orient="auto"
        markerUnits="strokeWidth">
       <path
-         d="M0,0 L12,6 L0,12 z"
+         d="M 0,0 12,6 0,12 Z"
          fill="#6b7280"
          id="path1" />
     </marker>
@@ -77,7 +77,7 @@
        orient="auto"
        markerUnits="strokeWidth">
       <path
-         d="M0,0 L12,6 L0,12 z"
+         d="M 0,0 12,6 0,12 Z"
          fill="#1d4ed8"
          id="path2" />
     </marker>
@@ -90,7 +90,7 @@
        orient="auto"
        markerUnits="strokeWidth">
       <path
-         d="M0,0 L12,6 L0,12 z"
+         d="M 0,0 12,6 0,12 Z"
          fill="#166534"
          id="path3" />
     </marker>
@@ -103,7 +103,7 @@
        orient="auto"
        markerUnits="strokeWidth">
       <path
-         d="M0,0 L12,6 L0,12 z"
+         d="M 0,0 12,6 0,12 Z"
          fill="#0e7490"
          id="path4" />
     </marker>
@@ -116,7 +116,7 @@
        orient="auto"
        markerUnits="strokeWidth">
       <path
-         d="M0,0 L12,6 L0,12 z"
+         d="M 0,0 12,6 0,12 Z"
          fill="#a16207"
          id="path5" />
     </marker>
@@ -129,7 +129,7 @@
        orient="auto"
        markerUnits="strokeWidth">
       <path
-         d="M0,0 L12,6 L0,12 z"
+         d="M 0,0 12,6 0,12 Z"
          fill="#be185d"
          id="path6" />
     </marker>
@@ -150,294 +150,370 @@
   <rect
      x="0"
      y="0"
-     width="1800"
-     height="1160"
+     width="1224.3903"
+     height="650.58533"
      fill="#ffffff"
      id="rect6"
-     style="fill:#ffffff;fill-opacity:1;stroke:none" />
+     style="fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:0.617657" />
   <text
-     x="900"
-     y="66"
+     x="708.42108"
+     y="42.016258"
      text-anchor="middle"
      class="title"
      id="text6"
      style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:42px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Running workflows in Echopop</text>
   <text
-     x="900"
-     y="100"
+     x="708.42108"
+     y="76.016258"
      text-anchor="middle"
      class="subtitle"
-     id="text7">Example ways to launch and orchestrate the same modular workflow logic</text>
+     id="text7"
+     style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:22px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Example ways to launch and orchestrate the same modular workflow logic</text>
   <!-- Core workflow node -->
   <!-- Left side lanes -->
-  <path
-     class="arrowD"
-     d="m 1240,230 c 294.3089,19.44715 253.6911,93.28455 253.6911,193.28455"
-     marker-end="url(#headD)"
-     id="path38"
-     sodipodi:nodetypes="cc" />
-  <rect
-     class="modeB"
-     x="80"
-     y="615"
-     width="500"
-     height="175"
-     rx="16"
-     ry="16"
-     id="rect14" />
-  <text
-     x="110"
-     y="660"
-     class="laneTitle"
-     id="text15">Run from Jupyter notebook</text>
-  <path
-     class="arrowE"
-     d="m 1240.3113,196.12299 c 712.8455,75 528.9732,387.19408 453.8838,560.03961"
-     marker-end="url(#headE)"
-     id="path39"
-     sodipodi:nodetypes="cc"
-     style="stroke-linejoin:bevel" />
+  <g
+     id="g9"
+     transform="translate(-554.29406,-336.23163)">
+    <rect
+       class="modeE"
+       x="1219.8663"
+       y="759.86633"
+       width="545.03918"
+       height="177.0041"
+       rx="17.441254"
+       ry="11.328262"
+       id="rect29" />
+    <text
+       x="1232.7317"
+       y="781.2561"
+       class="laneTitle"
+       id="text30"
+       style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:24px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Workflow orchestrators</text>
+    <text
+       x="1232.8416"
+       y="809.68561"
+       class="text"
+       id="text31"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:19px;line-height:normal;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#111827"><tspan
+         sodipodi:role="line"
+         id="tspan8"
+         x="1232.8416"
+         y="809.68561">Add an orchestration layer to run multiple workflows in concert</tspan></text>
+    <text
+       x="1231.9622"
+       y="838.11505"
+       class="small"
+       id="text32"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:16px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Good for pipelines and monitoring</text>
+    <text
+       x="1232.0168"
+       y="866.54456"
+       class="small"
+       id="text33"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:16px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Can dispatch script, notebook, or CLI commands</text>
+    <text
+       x="1232.8372"
+       y="894.974"
+       class="small"
+       id="text34"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:16px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Adds execution control around the same workflow logic</text>
+    <text
+       x="1231.5481"
+       y="923.4035"
+       class="small"
+       id="text35"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:16px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Example: scheduled year-specific workflow runs with logging</text>
+  </g>
   <path
      class="connector"
-     d="m 580,448 c 180,-18 324.06504,107.82113 635.2033,422.61788"
+     d="M 425.39201,582.38195 C 637.61423,583.03693 578.50968,544.35513 669.51922,545.07"
+     marker-end="url(#headGray)"
+     id="path42"
+     sodipodi:nodetypes="cc" />
+  <path
+     class="connector"
+     d="m 391.4737,433.17415 c 191.53217,-1.04092 76.80187,50.4995 278.0454,51.21438"
      marker-end="url(#headGray)"
      id="path41"
      sodipodi:nodetypes="cc" />
-  <text
-     x="110"
-     y="693"
-     class="text"
-     id="text16">Edit parameters in notebook cells then execute</text>
   <path
      class="connector"
-     d="m 580,968 c 180,0 442.3252,-251.34959 636.1626,-427.2683"
+     d="m 461.51464,390.13321 c 180.00004,0 79.57088,-101.09228 272.05155,-94.53145"
      marker-end="url(#headGray)"
      id="path40"
      sodipodi:nodetypes="cc" />
-  <text
-     x="110"
-     y="723"
-     class="small"
-     id="text17">Good for documentation and interactive diagnostics</text>
-  <rect
-     class="modeA"
-     x="80"
-     y="370"
-     width="500"
-     height="175"
-     rx="16"
-     ry="16"
-     id="rect10" />
-  <text
-     x="110"
-     y="415"
-     class="laneTitle"
-     id="text11">Run Python script directly</text>
-  <text
-     x="110"
-     y="448"
-     class="text"
-     id="text12">Edit script variables and run file manually</text>
-  <text
-     x="110"
-     y="478"
-     class="small"
-     id="text13">Good for exploratory edits and one off runs</text>
-  <text
-     x="110"
-     y="508"
-     class="small"
-     id="text14">Example: python my_workflow.py</text>
-  <text
-     x="110"
-     y="753"
-     class="small"
-     id="text18">Example: run notebook cell or shell command</text>
-  <rect
-     class="modeC"
-     x="80"
-     y="860"
-     width="500"
-     height="215"
-     rx="16"
-     ry="16"
-     id="rect18" />
+  <g
+     id="g2"
+     transform="translate(-34.546984,-149.41976)">
+    <g
+       id="g1"
+       transform="translate(53.251462,2.0350877)">
+      <rect
+         class="modeA"
+         x="79.70211"
+         y="369.70212"
+         width="362.20981"
+         height="128.44957"
+         rx="11.590714"
+         ry="11.743961"
+         id="rect10" />
+      <text
+         x="91.345024"
+         y="394.30994"
+         class="laneTitle"
+         id="text11"
+         style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:24px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Run Python script directly</text>
+      <text
+         x="91.345024"
+         y="427.30994"
+         class="text"
+         id="text12"
+         style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:19px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Edit script variables and run file manually</text>
+      <text
+         x="91.345024"
+         y="457.30994"
+         class="small"
+         id="text13"
+         style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:16px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Good for exploratory edits and one off runs</text>
+      <text
+         x="91.345024"
+         y="487.30994"
+         class="small"
+         id="text14"
+         style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:16px;line-height:normal;font-family:Arial, Helvetica, sans-serif;fill:#374151">Example: <tspan
+   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:16px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+   id="tspan1">python my_workflow.py</tspan></text>
+    </g>
+  </g>
+  <g
+     id="g4"
+     transform="translate(-71.654794,-86.858064)">
+    <rect
+       class="modeB"
+       x="79.704414"
+       y="614.70441"
+       width="418.56677"
+       height="111.79442"
+       rx="13.394137"
+       ry="10.221204"
+       id="rect14" />
+    <text
+       x="92.731705"
+       y="636.97559"
+       class="laneTitle"
+       id="text15"
+       style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:24px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Run from Jupyter notebook</text>
+    <text
+       x="92.252029"
+       y="663.97833"
+       class="text"
+       id="text16"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:19px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Edit parameters in notebook cells then execute</text>
+    <text
+       x="92.252029"
+       y="690.98102"
+       class="small"
+       id="text17"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:16px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Good for documentation and interactive diagnostics</text>
+    <text
+       x="92.252029"
+       y="717.98376"
+       class="small"
+       id="text18"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:16px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Example: run notebook cell or shell command</text>
+  </g>
   <path
      class="arrowA"
-     d="M 560,230 C 288.16261,223.13821 311.51219,300.20325 311.51219,365.20325"
+     d="m 366.44917,176.07774 c -71.80686,-1.24618 -73.82527,-6.89558 -74.70232,47.6497"
      marker-end="url(#headA)"
      id="path35"
      sodipodi:nodetypes="cc" />
   <path
      class="arrowB"
-     d="M 560,208.79532 C -67.216374,230.30409 36.292398,460.70176 91.064328,612.28655"
+     d="M 367.65517,158.65476 C 124.32308,149.27828 -23.617534,180.4247 23.681446,528.27778"
      marker-end="url(#headB)"
      id="path36"
      sodipodi:nodetypes="cc" />
+  <g
+     id="g5"
+     transform="translate(-41.931974,-496.14105)">
+    <rect
+       class="modeC"
+       x="79.744324"
+       y="859.74432"
+       width="422.80405"
+       height="149.79591"
+       rx="13.529729"
+       ry="11.147603"
+       id="rect18" />
+    <text
+       x="91.292686"
+       y="882.45526"
+       class="laneTitle"
+       id="text19"
+       style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:24px;line-height:normal;font-family:Arial, Helvetica, sans-serif">CLI hooks</text>
+    <text
+       x="93.691055"
+       y="910.68701"
+       class="text"
+       id="text20"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:19px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Launch workflow with command line arguments</text>
+    <text
+       x="93.691055"
+       y="938.9187"
+       class="small"
+       id="text21"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:16px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Good for repeatable terminal usage and batch scripts</text>
+    <text
+       x="93.691055"
+       y="967.15039"
+       class="small"
+       id="text22"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:16px;line-height:normal;font-family:Arial, Helvetica, sans-serif;fill:#374151">Example: <tspan
+   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:16px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+   id="tspan4">--year</tspan>, <tspan
+   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:16px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+   id="tspan5">--verbose</tspan>, custom flags</text>
+    <text
+       x="93.691055"
+       y="995.38214"
+       class="small"
+       id="text23"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:16px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Hooks map runtime options into workflow variables</text>
+  </g>
   <path
      class="arrowC"
-     d="M 559.21315,174.2662 C 339.71298,182.96672 165.95312,185.51102 94.386211,276.31121 -12.39222,411.78585 37.250627,667.65776 90.329373,854.38753"
+     d="M 374.8951,167.27441 C 145.65346,162.15144 64.561296,173.64842 67.677336,362.44174"
      marker-end="url(#headC)"
      id="path37"
-     sodipodi:nodetypes="csc"
+     sodipodi:nodetypes="cc"
      style="stroke-width:2.8;stroke-dasharray:none" />
-  <rect
-     class="core"
-     x="560"
-     y="150"
-     width="680"
-     height="150"
-     rx="20"
-     ry="20"
-     id="rect7" />
-  <text
-     x="110"
-     y="905"
-     class="laneTitle"
-     id="text19">CLI hooks</text>
-  <text
-     x="110"
-     y="938"
-     class="text"
-     id="text20">Launch workflow with command line arguments</text>
-  <text
-     x="110"
-     y="968"
-     class="small"
-     id="text21">Good for repeatable terminal usage and batch scripts</text>
-  <text
-     x="110"
-     y="998"
-     class="small"
-     id="text22">Example: --year, --verbose, custom flags</text>
-  <text
-     x="110"
-     y="1028"
-     class="small"
-     id="text23">Hooks map runtime options into workflow variables</text>
   <!-- Right side lanes -->
-  <rect
-     class="modeD"
-     x="1220"
-     y="430"
-     width="500"
-     height="235"
-     rx="16"
-     ry="16"
-     id="rect23" />
-  <text
-     x="1250"
-     y="475"
-     class="laneTitle"
-     id="text24">JSON or YAML configuration</text>
-  <text
-     x="1250"
-     y="508"
-     class="text"
-     id="text25">Store parameters outside code in config files</text>
-  <text
-     x="1250"
-     y="538"
-     class="small"
-     id="text26">Good for scenario management and reproducibility</text>
-  <text
-     x="900"
-     y="205"
-     text-anchor="middle"
-     class="laneTitle"
-     id="text8">Echopop workflow script</text>
-  <text
-     x="900"
-     y="238"
-     text-anchor="middle"
-     class="text"
-     id="text9">modular stages: ingestion, conditioning, estimation, reporting</text>
-  <text
-     x="900"
-     y="268"
-     text-anchor="middle"
-     class="small"
-     id="text10">same core logic can be dispatched through different interfaces</text>
-  <text
-     x="1250"
-     y="568"
-     class="small"
-     id="text27">Can be used with or without CLI integration</text>
-  <text
-     x="1250"
-     y="598"
-     class="small"
-     id="text28">Example: workflow reads config then runs</text>
-  <text
-     x="1250"
-     y="628"
-     class="small"
-     id="text29">config.json or config.yaml</text>
-  <rect
-     class="modeE"
-     x="1220"
-     y="760"
-     width="500"
-     height="250"
-     rx="16"
-     ry="16"
-     id="rect29" />
-  <text
-     x="1250"
-     y="805"
-     class="laneTitle"
-     id="text30">External orchestrators</text>
-  <text
-     x="1250"
-     y="838"
-     class="text"
-     id="text31">Use tools such as Prefect for scheduling and retries</text>
-  <text
-     x="1250"
-     y="868"
-     class="small"
-     id="text32">Good for pipelines, monitoring, and multi run automation</text>
-  <text
-     x="1250"
-     y="898"
-     class="small"
-     id="text33">Can dispatch script, notebook, or CLI commands</text>
-  <text
-     x="1250"
-     y="928"
-     class="small"
-     id="text34">Adds execution control around the same workflow logic</text>
-  <text
-     x="1250"
-     y="958"
-     class="small"
-     id="text35">Example: scheduled yearly runs with logging</text>
+  <g
+     id="g8"
+     transform="translate(-480.34315,-207.44153)">
+    <rect
+       class="modeD"
+       x="1219.759"
+       y="429.75897"
+       width="397.35196"
+       height="180.31944"
+       rx="12.715262"
+       ry="12.277068"
+       id="rect23" />
+    <g
+       id="g7">
+      <text
+         x="1231.2927"
+         y="456.29269"
+         class="laneTitle"
+         id="text24"
+         style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:24px;line-height:normal;font-family:Arial, Helvetica, sans-serif">JSON or YAML configuration</text>
+      <text
+         x="1230.8494"
+         y="484.974"
+         class="text"
+         id="text25"
+         style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:19px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Store parameters outside code in config files</text>
+      <text
+         x="1230.8513"
+         y="513.65527"
+         class="small"
+         id="text26"
+         style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:16px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Good for scenario management and reproducibility</text>
+      <text
+         x="1230.906"
+         y="542.33655"
+         class="small"
+         id="text27"
+         style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:16px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Can be used with or without CLI integration</text>
+      <text
+         x="1230.4373"
+         y="571.01788"
+         class="small"
+         id="text28"
+         style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:16px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Example: workflow reads config then runs</text>
+      <text
+         x="1230.3669"
+         y="599.69916"
+         class="small"
+         id="text29"
+         style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:16px;line-height:normal;font-family:Arial, Helvetica, sans-serif;fill:#374151"><tspan
+   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:16px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+   id="tspan6">config.json</tspan> or <tspan
+   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:16px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+   id="tspan7">config.yaml</tspan></text>
+    </g>
+  </g>
+  <path
+     class="arrowD"
+     d="m 902.55257,177.25756 c 81.8976,0.8973 66.7908,-8.54368 66.1509,43.94397"
+     marker-end="url(#headD)"
+     id="path38"
+     sodipodi:nodetypes="cc" />
   <!-- Connectors from core to branches -->
   <!-- Optional interconnections -->
   <text
-     x="722.77197"
-     y="984.63159"
+     x="603.28064"
+     y="273.85999"
      text-anchor="middle"
      class="small"
      id="text40"
-     style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:16px;line-height:normal;font-family:Arial, Helvetica, sans-serif">CLI can consume config files</text>
+     style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:16px;line-height:normal;font-family:Arial, Helvetica, sans-serif">CLI can consume configuration files</text>
   <text
-     x="780.16998"
-     y="650.40979"
+     x="559.80847"
+     y="511.45914"
      text-anchor="middle"
      class="small"
      id="text41"
-     style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:16px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Orchestrators can dispatch script or notebook runs</text>
-  <text
-     x="900"
-     y="1120"
-     text-anchor="middle"
-     class="small"
-     id="text42">Illustrative schematic. Interfaces vary by project, while core workflow stages remain modular.</text>
+     style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:16px;line-height:normal;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-anchor:middle;fill:#374151"><tspan
+       sodipodi:role="line"
+       id="tspan10"
+       x="559.80847"
+       y="511.45914">Orchestrators can dispatch</tspan><tspan
+       sodipodi:role="line"
+       id="tspan11"
+       x="559.80847"
+       y="531.45911">script or notebook runs</tspan></text>
   <path
-     class="connector"
-     d="m 580.95935,694.55283 c 180,-18 195.85451,164.12522 633.16815,187.90442"
-     marker-end="url(#headGray)"
-     id="path42"
-     sodipodi:nodetypes="cc" />
+     class="arrowE"
+     d="m 900.90757,163.70793 c 292.87313,-0.84681 264.27773,102.4242 268.21473,259.80021"
+     marker-end="url(#headE)"
+     id="path39"
+     sodipodi:nodetypes="cc"
+     style="stroke-linejoin:bevel" />
+  <g
+     id="g3"
+     transform="translate(-191.57893,-23.98374)">
+    <rect
+       class="core"
+       x="559.49323"
+       y="149.49321"
+       width="533.27374"
+       height="83.859108"
+       rx="15.684522"
+       ry="11.181215"
+       id="rect7" />
+    <text
+       x="714.36584"
+       y="172.86179"
+       text-anchor="middle"
+       class="laneTitle"
+       id="text8"
+       style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:24px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Echopop workflow script</text>
+    <text
+       x="827.56909"
+       y="197.69106"
+       text-anchor="middle"
+       class="text"
+       id="text9"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:19px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Modular stages: ingestion, conditioning, estimation, reporting</text>
+    <text
+       x="793.03253"
+       y="222.52032"
+       text-anchor="middle"
+       class="small"
+       id="text10"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:16px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Same core logic can be dispatched through different interfaces</text>
+  </g>
 </svg>
