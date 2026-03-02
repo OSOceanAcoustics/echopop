@@ -36,25 +36,11 @@ Workflows are modular because each stage of a script can be composed, replaced, 
 
 A useful way to think about workflow design is to treat each script as a sequence of interchangeable stages.
 
-**Input translation** 
-
-Local source files are transformed into Echopop compatible tables and dictionaries.
-
-**Data conditioning**
-
-Rules are applied for exclusions, corrections, joins, and harmonization.
-
-**Analytical configuration**
-
-Script parameters define options for strata, kriging behavior, diagnostics, and runtime controls.
-
-**Estimation and modeling** 
-
-Shared package functions produce standardized population estimates.
-
-**Reporting and comparison**
-
-Outputs are written, visualized, and optionally compared across software or across years.
+- **Input translation**: Local source files are transformed into Echopop compatible tables and dictionaries.
+- **Data conditioning**: Rules are applied for exclusions, corrections, joins, and alignments.
+- **Analytical configuration**: Script parameters define options for strata, kriging behavior, diagnostics, and runtime controls.
+- **Estimation and modeling**: Shared package functions produce standardized population estimates.
+- **Reporting and comparison**: Outputs are written, visualized, and optionally compared across software or across years.
 
 Because these stages are separable, users can customize any part of a workflow while keeping the remaining stages stable. This supports local flexibility and preserves reproducible scientific processing.
 
@@ -65,12 +51,3 @@ A workflow can be run in several ways, depending on project needs. Users can run
 ![Workflow dispatching and execution](../_static/workflow_dispatch_modes.svg)
 
 These execution options support different operational requirements while preserving the same scientific processing components.
-
-## Read next
-
-For a complete process sequence, see {doc}`overall_workflow`.  
-For required source files and formats, see {doc}`input_files`.  
-For a from-scratch CLI tutorial, see {doc}`FEAT_notebooks/cli_from_scratch`.  
-For JSON and YAML workflow configuration patterns, see {doc}`FEAT_notebooks/workflow_configuration_tutorial`.  
-For command line execution of year scripts, see {doc}`FEAT_notebooks/year_specific_workflows`.  
-For EchoPro and Echopop comparisons, see {doc}`FEAT_notebooks/cross_year_comparisons`.

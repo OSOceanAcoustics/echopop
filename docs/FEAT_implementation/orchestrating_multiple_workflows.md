@@ -84,9 +84,10 @@ The dispatcher ignores the `--source` flag and hands it directly to the ingestio
 
 Only high-level control arguments should be defined within the dispatcher file, e.g., workflow target, configuration path, and other arguments. The dispatcher should also handle its own flags (e.g., which workflow to run) while passing all other "extra" flags directly to the child script. In this example, the dispatcher maintains an explicit mapping of target names to script paths.
 
----
+:::{dropdown} **`workflow_dispatcher.py`**
+:color: primary
+:icon: code
 
-`workflow_dispatcher.py`
 
 ```python
 # Import dependencies
@@ -119,7 +120,7 @@ result = subprocess.run(cmd, check=False)
 # Ensure the dispatcher exits with the same code as the child
 raise SystemExit(result.returncode)
 ```
----
+:::
 
 In production contexts, it is helpful to keep dispatcher mappings version controlled, fail fast on unknown target names, and standardize optional flags (such as verbose logging) across all child workflows.
 
@@ -495,6 +496,10 @@ To maintain this consistency as the project gains complexity, several specific f
 
 - **Cleanup tasks**: A `clean` task uses system commands to wipe old logs or temporary files. This ensures the results folder is reset to a "clean slate" before a fresh analysis begins, preventing data from previous runs from contaminating new results.
 
+:::{dropdown} **`Makefile`**
+:color: primary
+:icon: code
+
 ```make
 # Variables for consistency
 PYTHON = python
@@ -522,7 +527,7 @@ clean:
 	rm -rf outputs/logs/*.log
 	rm -rf __pycache__
 ```
-
+:::
 
 ::::::{admonition} Cross-platform note for `make`
 :class: tip

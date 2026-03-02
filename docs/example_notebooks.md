@@ -32,4 +32,4 @@ The workflows have been broken up into the following sections:
 - [](basic-plotting)
 - [](report-generation)
 - [](comparison_implementation)
-- [](year-specific-workflows)
+- [Custom workflows](./FEAT_implementation/workflows.md)
