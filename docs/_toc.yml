@@ -72,6 +72,15 @@ parts:
             title: Comparison results
       - file: FEAT_implementation/FEAT_notebooks/year_specific_workflows
         title: Running year-specific workflows
+      - file: FEAT_implementation/FEAT_notebooks/year_specific_workflows_copy
+        title: Running year-specific workflows copied
+      - file: FEAT_implementation/FEAT_notebooks/cli_from_scratch
+        title: Building a CLI from scratch
+      - file: FEAT_implementation/FEAT_notebooks/workflow_configuration_json_yaml_only
+        title: Workflow configuration with JSON and YAML
+      - file: FEAT_implementation/orchestrating_multiple_workflows
+        title: Orchestrating multiple workflows
+      - file: FEAT_implementation/workflows
   - file: theory
     title: Underlying theory
     sections:
