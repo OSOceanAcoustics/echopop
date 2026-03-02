@@ -15,6 +15,7 @@ Acoustics
 .. autofunction:: echopop.ingest.nasc.generate_transect_region_haul_key
 .. autofunction:: echopop.ingest.nasc.process_region_names
 .. autofunction:: echopop.ingest.nasc.read_nasc_file
+.. autofunction:: echopop.ingest.nasc.read_afsc_nasc_file
 .. autofunction:: echopop.ingest.nasc.read_transect_region_haul_key
 
 Biological

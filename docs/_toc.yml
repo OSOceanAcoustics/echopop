@@ -23,6 +23,8 @@ parts:
             title: Standard ingestion
           - file: FEAT_implementation/offeffort_transect_filtering
             title: Off-effort transect filtering
+          - file: FEAT_implementation/afsc_nasc_ingestion
+            title: AFSC NASC ingestion
       - file: headings/bio_ingestion_h
         title: Biological data ingestion
         sections:
