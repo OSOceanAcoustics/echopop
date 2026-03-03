@@ -967,42 +967,53 @@ def fitted_weight_proportions(
     <xarray.DataArray ...>
     """
 
-    # Compute the total strata weights
+    # Summed weight for each sex in each stratum
+    # dim: [stratum x sex]
     subgroup_weights = weight_data.groupby(stratum_dim).sum(dim="length_bin").astype(float)
 
-    # Calculate the total grouped weights
+    # Summed weight for each stratum
+    # dim: [stratum]
     group_weights = subgroup_weights.sum(
         dim=[d for d in subgroup_weights.coords if d not in stratum_dim]
     )
 
-    # Calculate the grouped weight proportions
+    # Weight proportion for each sex in each stratum
+    # dim: [stratum x sex]; sex=["female", "male"]
     weight_grouped_props = (subgroup_weights / group_weights).fillna(0.0)
 
-    # Calculate the number proportions based on strata
+    # Number proportion for each length bin in each stratum (sum over sex)
+    # dim: [stratum x length_bin]
     length_bin_props = number_proportions["proportion"].sum(
         dim=[d for d in number_proportions.coords if d not in stratum_dim + ["length_bin"]]
     )
 
-    # Calculate the average weights per length bin within each stratum
+    # Average weight for each length bin and sex in each stratum
+    # ---- binned_weights only has sex="all" over all length bins
+    # ---- dim: [stratum x length_bin x sex="all"]
     fitted_length_weights = (length_bin_props * binned_weights).fillna(0.0)
 
     # Calculate the weight proportions
-    # ---- Get the grouped total fitted weights
+    # ---- Total fitted weight for each stratum (sum over length bins, since sex="all")
+    # ---- dim: [stratum]
     total_fitted_weights = fitted_length_weights.sum(
         dim=[d for d in fitted_length_weights.coords if d not in stratum_dim]
     )
-    # ---- Compute proportions
+    # ---- Weight proportion for each length bin in each stratum (sex="all")
+    # ---- dim: [stratum x length_bin]; sex="all"
     fitted_weight_props = (fitted_length_weights / total_fitted_weights).fillna(0.0).squeeze()
 
-    # Get the overall weight proportions per group for the reference data
+    # Weight proportion of aged samples each stratum
+    # dim: [stratum]
     grouped_reference_proportions = reference_weight_proportions.sum(
         dim=[d for d in reference_weight_proportions.dims if d not in stratum_dim]
     )
 
-    # Calculate the complementary proportions
+    # Weight proportion of unaged samples in each stratum
+    # dim: [stratum]
     compl_data_props = 1 - grouped_reference_proportions
 
-    # Distribute the within-group proportions to get the overall proportions
+    # Compute overall proportion of unaged samples for each length bin in each stratum
+    # dim: [stratum x length_bin x sex]; sex=["female", "male"]
     return compl_data_props * fitted_weight_props * weight_grouped_props
 
 
