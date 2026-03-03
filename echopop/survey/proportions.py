@@ -982,11 +982,15 @@ def fitted_weight_proportions(
     # Average weight for each length bin and sex in each stratum
     # ---- binned_weights only has sex="all" over all length bins, so dropping this dimension
     # ---- dim: [stratum x length_bin]
-    mean_weight_length = (number_prop_length * binned_weights.squeeze().drop_vars("sex")).fillna(0.0)
+    mean_weight_length = (number_prop_length * binned_weights.squeeze().drop_vars("sex")).fillna(
+        0.0
+    )
 
     # ---- Weight proportion for each length bin in each stratum
     # ---- dim: [stratum x length_bin]
-    weight_prop_length = (mean_weight_length / mean_weight_length.sum(dim="length_bin")).fillna(0.0).squeeze()
+    weight_prop_length = (
+        (mean_weight_length / mean_weight_length.sum(dim="length_bin")).fillna(0.0).squeeze()
+    )
 
     # Weight proportion of aged samples in each stratum
     # dim: [stratum]
