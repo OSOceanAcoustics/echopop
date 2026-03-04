@@ -835,8 +835,8 @@ def aggregate_stratum_weights(input_data, stratum_col="stratum_num"):
 def weight_proportions(
     weight_data: xr.DataArray,
     catch_data: pd.DataFrame,
-    group_columns: str = [],
-    proportion_reference: Literal["total", "catch"] = "total",
+    stratum_dim: str = [],
+    proportion_reference: Literal["catch", "catch_plus_specimen"] = "catch",
 ) -> xr.DataArray:
     """
     Calculate stratified weight proportions using xarray and pandas inputs.
@@ -855,13 +855,13 @@ def weight_proportions(
         DataFrame with catch data, including columns for group_columns and "weight".
     group_columns : list of str
         List of dimension/column names to group by (e.g., strata, sex, etc.).
-    proportion_reference : Literal["catch", "total"], default 'total'
+    proportion_reference : Literal["catch", "catch_plus_specimen"], default 'catch'
         Determines the denominator for the proportions calculation:
 
-        - "catch": proportions are relative to the summed catch weights only.
+        - "catch": proportions are relative to the summed catch weights only (default).
 
-        - "total": proportions are relative to the sum of catch weights and biological weights
-          (default).
+        - "catch_plus_specimen": proportions are relative to the sum of catch weights and 
+          individual fish weights
 
     Returns
     -------
@@ -891,17 +891,16 @@ def weight_proportions(
     """
 
     # Compute the total weights per group from the biological data
-    group_weights = weight_data.sum(dim=[d for d in weight_data.dims if d not in group_columns])
+    group_weights = weight_data.sum(dim=[d for d in weight_data.dims if d not in stratum_dim])
 
     # Compute the grouped catch weights
-    catch_weights = xr.DataArray(catch_data.groupby(group_columns)["weight"].sum())
-
+    catch_weights = xr.DataArray(catch_data.groupby(stratum_dim)["weight"].sum())
+    # ---- Align weights
+    catch_weights_aligned, group_weights_aligned = xr.align(
+        catch_weights, group_weights, join="outer", fill_value=0.0
+    )
     # Make catch haul weights adjustment, if needed, to avoid double-counting weights
-    if proportion_reference == "total":
-        # ---- Align weights
-        catch_weights_aligned, group_weights_aligned = xr.align(
-            catch_weights, group_weights, join="outer", fill_value=0.0
-        )
+    if proportion_reference == "catch_plus_specimen":
         # ---- Sum together
         total_weights = catch_weights_aligned + group_weights_aligned
     elif proportion_reference == "catch":
@@ -910,7 +909,7 @@ def weight_proportions(
     else:
         raise ValueError(
             f"Input for 'proportion_reference' ({proportion_reference}) is invalid. Valid options "
-            f"are limited to 'total' (default) and 'catch'."
+            f"are limited to 'catch' (default) and 'catch_plus_specimen'."
         )
 
     # Compute the weight proportions for the array
