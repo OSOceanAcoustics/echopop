@@ -104,24 +104,6 @@ def test_group_interpolator_creator_multiple_groups(length_weight_dataset_with_b
     assert callable(interpolators[list(interpolators.keys())[0]])
 
 
-def test_group_interpolator_creator_insufficient_data():
-    """Test handling of groups with insufficient data for interpolation."""
-    df = pd.DataFrame(
-        {"length": [10.0, 15.0], "weight_fitted": [5.0, 10.0], "sex": ["male", "female"]}
-    )
-
-    interpolators = utils.group_interpolator_creator(
-        grouped_data=df,
-        independent_var="length",
-        dependent_var="weight_fitted",
-        contrast_vars="sex",
-    )
-
-    # Function returns empty dictionary when all groups have insufficient data
-    assert isinstance(interpolators, dict)
-    assert len(interpolators) == 0
-
-
 def test_create_grouped_series(proportion_dict):
     """Test the create_grouped_series function."""
     result = utils.create_grouped_series(

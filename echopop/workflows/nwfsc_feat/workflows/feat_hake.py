@@ -174,7 +174,7 @@ BIODATA_SEX = {"sex": {1: "male", 2: "female", 3: "unsexed"}}
 
 #
 dict_df_bio = load_biological_data(
-    biodata_filepath=DATA_ROOT / "Biological/1995-2023_biodata_redo.xlsx",
+    biodata_filepath=DATA_ROOT / "Biological/1995-2025_Survey_Biodata.xlsx",
     biodata_sheet_map=BIODATA_SHEETS,
     column_name_map=FEAT_TO_ECHOPOP_BIODATA_COLUMNS,
     subset_dict=SUBSET_DICT,
@@ -533,7 +533,7 @@ df_nasc_no_age1["area_interval"] = (
 # --------------------------------------------------------------------------------------------------
 
 biology.compute_abundance(
-    dataset=df_nasc_no_age1,
+    transect_data=df_nasc_no_age1,
     exclude_filter={"sex": "unsexed"},
     number_proportions=dict_ds_number_proportion,
 )
@@ -544,7 +544,7 @@ biology.compute_abundance(
 # --------------------------------------------------------------------------------------------------
 
 biology.compute_biomass(
-    dataset=df_nasc_no_age1,
+    transect_data=df_nasc_no_age1,
     stratum_weights=da_averaged_weight,
 )
 
@@ -781,6 +781,10 @@ df_kriged_results = krg.krige(
     adaptive_search_strategy="FEAT_strategy",
     custom_search_kwargs=FEAT_STRATEGY_KWARGS,
 )
+
+# Print the global survey CV
+print(f"Global kriging survey CV: {krg.survey_cv:.3f}.")
+
 # ##################################################################################################
 # Back-calculate sex-specific biomass and abundance, and total NASC from the kriged biomass
 # density estimates

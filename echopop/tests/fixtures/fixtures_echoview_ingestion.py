@@ -603,6 +603,7 @@ def sample_excel_path(tmp_path):
             "region id": ["A", "B", "C"],
             "latitude": [45.0, 46.0, 47.0],
             "longitude": [-125.0, -126.0, -127.0],
+            "haul_num": [1, 2, 3],
         }
     )
 

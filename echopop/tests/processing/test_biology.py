@@ -82,8 +82,14 @@ def test_fit_length_weight_regression_empty_after_dropna():
     """Test behavior when all data is dropped due to missing values."""
     data = pd.DataFrame({"length": [np.nan, np.nan], "weight": [np.nan, np.nan]})
 
-    with pytest.raises(TypeError):
-        fit_length_weight_regression(data)
+    # Should return a Series of NaN for the slope and intercept
+    result = fit_length_weight_regression(data)
+
+    # Check typing
+    assert isinstance(result, pd.Series)
+
+    # Check values
+    pd.testing.assert_series_equal(result, pd.Series({"slope": np.nan, "intercept": np.nan}))
 
 
 def test_fit_length_weight_regression_missing_columns():

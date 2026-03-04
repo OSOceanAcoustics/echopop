@@ -320,7 +320,11 @@ def test_remove_speciman_hauls(biological_data):
     """
 
     # Pre-process
-    biodata = {k: v.rename(columns={"haul": "haul_num"}) for k, v in biological_data.items()}
+    biodata = {
+        k: v.rename(columns={"haul": "haul_num", "weight_in_haul": "weight"})
+        for k, v in biological_data.items()
+    }
+    biodata["specimen"]["weight"] = [1, 2, 3, 4]
 
     # Swap out haul number 4 from length data
     biodata["length"].loc[4, "haul_num"] = 3
@@ -340,4 +344,13 @@ def test_remove_speciman_hauls(biological_data):
             )
         )
         == 0
+    )
+    assert all(
+        (
+            biodata["specimen"].set_index("haul_num")["weight"]
+            + biodata["catch"].set_index("haul_num")["weight"]
+        )
+        .dropna()
+        .values
+        == biological_data["catch"]["weight_in_haul"][:3]
     )

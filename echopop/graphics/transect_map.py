@@ -59,8 +59,11 @@ def get_transect_lines(
     )
 
     # Convert to lines
-    lines = data_sorted.groupby("transect_num")["geometry"].apply(
-        lambda pts: sg.LineString(pts.tolist()), include_groups=False
+    lines = (
+        data_sorted.groupby("transect_num")["geometry"]
+        .filter(lambda pts: len(pts) > 1)
+        .groupby(data_sorted["transect_num"])
+        .apply(lambda pts: sg.LineString(pts.tolist()), include_groups=False)
     )
 
     # Convert back to a full GeoDataFrame

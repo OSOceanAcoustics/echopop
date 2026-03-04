@@ -5,6 +5,7 @@ from .inversion import (
 )
 from .kriging import ValidateKrigingClass
 from .spatial import ValidateHullCropArgs
+from .utils import ValidateHaulUID
 from .variogram import (
     ValidateEmpiricalVariogramArgs,
     ValidateFitVariogramArgs,
@@ -25,12 +26,18 @@ def _rebuild_on_import():
 _rebuild_on_import()
 
 __all__ = [
+    # Inversion
     "ValidateBuildModelArgs",
+    "ValidateInversionMatrix",
+    "ValidateLengthTS",
+    # Kriging
+    "ValidateKrigingClass",
+    # Spatial
     "ValidateHullCropArgs",
+    # Variogram
     "ValidateEmpiricalVariogramArgs",
     "ValidateFitVariogramArgs",
-    "ValidateInversionMatrix",
-    "ValidateKrigingClass",
-    "ValidateLengthTS",
     "ValidateVariogramClass",
+    # Utilities
+    "ValidateHaulUID",
 ]

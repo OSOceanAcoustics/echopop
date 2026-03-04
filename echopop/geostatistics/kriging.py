@@ -1105,6 +1105,9 @@ class Kriging:
         # Update attributes
         self.__dict__.update(valid_args)
 
+        # Initialize survey CV
+        self.survey_cv = None
+
         # Generate
         return self
 
@@ -1448,7 +1451,7 @@ class Kriging:
 
         # Project the interpolated results
         if default_mesh_cell_area or "area" in kriging_mesh.columns:
-            kriged_results, _ = project_kriging_results(
+            kriged_results, self.survey_cv = project_kriging_results(
                 kriged_estimates=kriged_estimates,
                 kriging_mesh=kriging_mesh,
                 transects=transects,

@@ -46,6 +46,7 @@ parts:
         sections:
           - file: example_notebooks/geostatistical
             title: Semivariograms and kriging
+          - file: example_notebooks/variogram_gui
           - file: FEAT_implementation/kriging_mesh_cropping
             title: Kriging mesh cropping
       - file: FEAT_implementation/kriging_biomass_to_nasc
@@ -82,6 +83,7 @@ parts:
             title: Spatial correlation
           - file: theory/kriging_theory
             title: Interpolate spatial fields
+          - file: theory/adaptive_search
           - file: theory/semivariogram_eq
             title: Theoretical semivariogram models
       - file: headings/apportion_h

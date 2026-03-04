@@ -8,12 +8,15 @@ import os
 parser = argparse.ArgumentParser()
 parser.add_argument("--year", required=True, help="Which workflow script to run (e.g. hake_1995)")
 parser.add_argument("--verbose", action="store_true", help="Enable verbose logging")
+parser.add_argument("--compare", action="store_false", help="Compare output reports to EchoPro")
 args, unknown = parser.parse_known_args()
 
 # Pass additional CLI args to the target script
 sys.argv = [args.year + ".py"] + unknown
 if args.verbose:
     sys.argv.append("--verbose")
+if args.compare:
+    sys.argv.append("--compare")
 
 # Get the script path
 script_path = os.path.join(os.path.dirname(__file__), f"{args.year}.py")
