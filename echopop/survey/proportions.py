@@ -860,7 +860,7 @@ def weight_proportions(
 
         - "catch": proportions are relative to the summed catch weights only (default).
 
-        - "catch_plus_specimen": proportions are relative to the sum of catch weights and 
+        - "catch_plus_specimen": proportions are relative to the sum of catch weights and
           individual fish weights
 
     Returns

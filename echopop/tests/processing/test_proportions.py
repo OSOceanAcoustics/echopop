@@ -462,7 +462,7 @@ def test_weight_proportions_basic(weight_distr_dict, catch_data_df):
         weight_data=weight_distr_dict["aged"],
         catch_data=catch_data_df,
         stratum_dim=["stratum_num"],
-        proportion_reference="catch_plus_specimen"
+        proportion_reference="catch_plus_specimen",
     )["proportion_overall"]
 
     # Check that the result has the expected structure
