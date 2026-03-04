@@ -1,6 +1,6 @@
+import copy
 import functools
 import operator
-import copy
 from typing import Any, Dict, List, Literal, Optional, Union
 
 import numpy as np
@@ -897,22 +897,18 @@ def weight_proportions(
     # Conditionally drop specimen-only hauls if required
     if proportion_reference == "catch_plus_specimen":
         # ---- Validation
-        if (not isinstance(catch_data, dict)) | (
-            set(catch_data) < {"length", "catch"}
-        ):
+        if (not isinstance(catch_data, dict)) | (set(catch_data) < {"length", "catch"}):
             raise KeyError(
                 "'catch_data' must be a dictionary containing two dataframes assigned to the keys "
                 "'length' and 'catch' when 'proportion_reference' is assigned "
                 "'catch_plus_specimen'."
-            ) 
+            )
         # ---- Create catch values copy
         catch_data = copy.deepcopy(catch_data)
         # ---- Get unique haul numbers
         haul_numbers = catch_data["length"]["haul_num"].unique()
         # ---- Find incompatible hauls
-        catch_values = catch_data["catch"].loc[
-            catch_data["catch"]["haul_num"].isin(haul_numbers)
-        ]
+        catch_values = catch_data["catch"].loc[catch_data["catch"]["haul_num"].isin(haul_numbers)]
     else:
         catch_values = catch_data.copy()
 
