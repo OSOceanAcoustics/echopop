@@ -21,16 +21,16 @@ except Exception:
     VERBOSE = True
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # DATA ROOT DIRECTORY
-DATA_ROOT = Path("C:/Data/EchopopData/echopop_2015")
+DATA_ROOT = Path("C:/Data/EchopopData/file_all_years_update_20260303/2015")
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # REPORTS SAVE DIRECTORY
-REPORTS_DIR = DATA_ROOT / "reports_updated_biodata"
+REPORTS_DIR = DATA_ROOT / "output_echopop"
 # COMPARE TO ECHOPRO REPORTS?
 try:
     # ---- FOR CLI USE
     COMPARE = cli_utils.get_compare()
-    ECHOPRO_REPORTS_DIR = DATA_ROOT / "reports_echopro"
-    COMPARISONS_DIR = DATA_ROOT / "comparisons_updated_biodata"
+    ECHOPRO_REPORTS_DIR = DATA_ROOT / "output_echopro"
+    COMPARISONS_DIR = DATA_ROOT / "comparisons"
     SHOW_PLOT = False
 except Exception:
     # ---- FOR INTERACTIVE REPL USE
@@ -42,7 +42,7 @@ except Exception:
 NASC_PREPROCESSED = True
 # NASC EXPORTS FILE(S)
 NASC_EXPORTS_FILES = (
-    DATA_ROOT / 
+    DATA_ROOT / "input" / 
     "Exports/US&CAN_detailsa_2015_table2y+_shoreside_snapshot1_ALL_final.xlsx"
 )
 # NASC EXPORTS SHEET
@@ -51,7 +51,7 @@ NASC_EXPORTS_SHEET = "Sheet1"
 REMOVE_AGE1 = True
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # BIODATA FILE
-BIODATA_FILE = DATA_ROOT / "Biological/1995-2025_Survey_Biodata.xlsx"
+BIODATA_FILE = DATA_ROOT /  "input/Biological/1995-2025_Survey_Biodata.xlsx"
 # BIODATA SHEETS
 # ---- Assign the sheetnames to 'catch', 'length', 'specimen'
 BIODATA_SHEETS = {
@@ -93,7 +93,7 @@ AGE1_DOMINATED_HAULS = []
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # HAUL STRATIFICATION FILE
 HAUL_STRATA_FILE = (
-    DATA_ROOT / 
+    DATA_ROOT / "input" / 
     "Stratification/shoreside_snapshot-1/US&CAN strata 2015 shoreside.xlsx"
 )
 # HAUL STRATIFICATION SHEET MAP
@@ -104,7 +104,7 @@ HAUL_STRATA_SHEETS = {
 }
 # GEOGRAPHIC STRATIFICATION FILE
 GEOSTRATA_FILE = (
-    DATA_ROOT / 
+    DATA_ROOT / "input" / 
     "Stratification/shoreside_snapshot-1/Stratification_geographic_Lat_2015_shoreside.xlsx"
 )
 # GEOGRAPHIC STRATIFICATION SHEET MAP
@@ -116,14 +116,14 @@ GEOSTRATA_SHEETS = {
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # KRIGING MESH FILE 
 KRIGING_MESH_FILE = (
-    DATA_ROOT / "Kriging_files/Kriging_grid_files/krig_grid2_5nm_cut_centroids_2013.xlsx"
+    DATA_ROOT / "input" / "Kriging_files/Kriging_grid_files/krig_grid2_5nm_cut_centroids_2013.xlsx"
 )
 # KRIGING MESH SHEET
 KRIGING_MESH_SHEET = "krigedgrid2_5nm_forChu"
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # KRIGING AND VARIOGRAM PARAMETERS FILE
 KRIGING_VARIOGRAM_PARAMETERS_FILE = (
-    DATA_ROOT / "Kriging_files/default_vario_krig_settings_final.xlsx"
+    DATA_ROOT / "input" / "Kriging_files/default_vario_krig_settings_final.xlsx"
 )
 # KRIGING AND VARIOGRAM PARAMETERS SHEET
 KRIGING_VARIGORAM_PARAMETERS_SHEET = "Sheet1"
@@ -132,7 +132,7 @@ OPTIMIZE_VARIOGRAM = False
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # 200m ISOBATH FILE
 ISOBATH_FILE = (
-    DATA_ROOT / "Kriging_files/Kriging_grid_files/transformation_isobath_coordinates.xlsx"
+    DATA_ROOT / "input" / "Kriging_files/Kriging_grid_files/transformation_isobath_coordinates.xlsx"
 )
 # 200m ISOBATH SHEET
 ISOBATH_SHEET = "Smoothing_EasyKrig"
