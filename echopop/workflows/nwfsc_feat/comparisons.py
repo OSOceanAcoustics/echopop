@@ -1351,7 +1351,7 @@ def compute_dataset_differences(
     columns: list = ["abundance", "biomass", "nasc"],
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
-    Compute magnitude and percent differences between EchoPro and Echopop report outputs across 
+    Compute magnitude and percent differences between EchoPro and Echopop report outputs across
     survey years and report types (transect, kriging).
 
     Parameters
