@@ -460,7 +460,13 @@ def test_weight_proportions_basic(weight_distr_dict, catch_data_df):
     # Call the function
     result = get_proportions.weight_proportions(
         weight_data=weight_distr_dict["aged"],
-        catch_data=catch_data_df,
+        catch_data={
+            "catch": catch_data_df, 
+            "length": pd.DataFrame({
+                "haul_num": [101, 102, 201, 202],
+                "value": [1, 2, 3, 4],    
+            }),
+        },
         stratum_dim=["stratum_num"],
         proportion_reference="catch_plus_specimen",
     )["proportion_overall"]
@@ -489,8 +495,15 @@ def test_fitted_weight_proportions(
     # Tabulate weight proportions
     weight_props = get_proportions.weight_proportions(
         weight_data=weight_distr_dict["aged"],
-        catch_data=catch_data_df,
-        group_columns=["stratum_num"],
+        catch_data={
+            "catch": catch_data_df, 
+            "length": pd.DataFrame({
+                "haul_num": [101, 102, 201, 202],
+                "value": [1, 2, 3, 4],    
+            }),
+        },
+        stratum_dim=["stratum_num"],
+        proportion_reference="catch_plus_specimen",
     )
 
     # Get number proportions
