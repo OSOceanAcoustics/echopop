@@ -441,13 +441,11 @@ def compute_biomass(
     transect_data.reset_index(inplace=True)
 
 
-def remove_specimen_hauls(
-    biodata_dict: Dict[str, pd.DataFrame],
+def drop_specimen_only_hauls(
+    biodata: Dict[str, pd.DataFrame],
 ) -> None:
     """
-    Remove hauls from the catch data where all samples were individually processed. This further
-    separates the weight contributions of specimens from the overall catches. This is done since
-    the catch weights are inclusive of the specimen weights by default.
+    Remove hauls from the catch data where all samples were individually processed.
 
     This function filters the catch data to exclude hauls that don't have corresponding length
     frequency data, ensuring consistency between catch weights and length samples. This prevents
@@ -455,7 +453,7 @@ def remove_specimen_hauls(
 
     Parameters
     ----------
-    biodata_dict : Dict[str, pd.DataFrame]
+    biodata : Dict[str, pd.DataFrame]
         Dictionary containing biological data with keys typically including 'catch' and 'length'.
         The 'length' DataFrame should contain a 'haul_num' column identifying which hauls have
         length frequency data. The 'catch' DataFrame will be filtered to match.
@@ -463,36 +461,26 @@ def remove_specimen_hauls(
     Returns
     -------
     None
-        Function modifies biodata_dict in place by filtering the 'catch' DataFrame.
+        Function modifies biodata in place by filtering the 'catch' DataFrame.
 
     Notes
     -----
     This function addresses a common issue in fisheries data where:
+
     - Some hauls have bulk catch weights but no individual fish measurements
+
     - Other hauls have detailed individual fish data that represents the entire catch
+
     - Including both would lead to double-counting of biomass
 
-    By filtering catch data to only include hauls with length frequency data,
-    the function ensures that biomass estimates are based on consistent sampling methods.
-
-    The function is typically called after loading biological data but before
-    computing length-weight relationships or abundance estimates.
+    By filtering catch data to only include hauls with length frequency data, the function ensures
+    that biomass estimates are based on consistent sampling methods. The function is typically
+    called after loading biological data but before computing length-weight relationships or
+    abundance estimates.
     """
 
     # Get unique haul numbers
-    haul_numbers = biodata_dict["length"]["haul_num"].unique()
+    haul_numbers = biodata["length"]["haul_num"].unique()
 
-    # Find incompatible hauls and create copy
-    catch = biodata_dict["catch"].loc[biodata_dict["catch"]["haul_num"].isin(haul_numbers)].copy()
-
-    # Sum up the specimen haul weights
-    specimen_haul_weights = biodata_dict["specimen"].groupby(["haul_num"])["weight"].sum()
-
-    # Index the catch haul weights
-    catch.set_index("haul_num", inplace=True)
-
-    # Update the haul weights in the duplicate catch dataset
-    catch["weight"] = catch["weight"].sub(specimen_haul_weights).dropna()
-
-    # Reset index
-    biodata_dict["catch"] = catch.reset_index()
+    # Find incompatible hauls
+    biodata["catch"] = biodata["catch"].loc[biodata["catch"]["haul_num"].isin(haul_numbers)]

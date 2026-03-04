@@ -460,8 +460,17 @@ def test_weight_proportions_basic(weight_distr_dict, catch_data_df):
     # Call the function
     result = get_proportions.weight_proportions(
         weight_data=weight_distr_dict["aged"],
-        catch_data=catch_data_df,
-        group_columns=["stratum_num"],
+        catch_data={
+            "catch": catch_data_df,
+            "length": pd.DataFrame(
+                {
+                    "haul_num": [101, 102, 201, 202],
+                    "value": [1, 2, 3, 4],
+                }
+            ),
+        },
+        stratum_dim=["stratum_num"],
+        proportion_reference="catch_plus_specimen",
     )["proportion_overall"]
 
     # Check that the result has the expected structure
@@ -488,8 +497,17 @@ def test_fitted_weight_proportions(
     # Tabulate weight proportions
     weight_props = get_proportions.weight_proportions(
         weight_data=weight_distr_dict["aged"],
-        catch_data=catch_data_df,
-        group_columns=["stratum_num"],
+        catch_data={
+            "catch": catch_data_df,
+            "length": pd.DataFrame(
+                {
+                    "haul_num": [101, 102, 201, 202],
+                    "value": [1, 2, 3, 4],
+                }
+            ),
+        },
+        stratum_dim=["stratum_num"],
+        proportion_reference="catch_plus_specimen",
     )
 
     # Get number proportions
@@ -535,7 +553,6 @@ def test_fitted_weight_proportions(
     result = get_proportions.fitted_weight_proportions(
         weight_data=weight_data,
         reference_weight_proportions=weight_props,
-        catch_data=catch_data_df,
         number_proportions=number_props["unaged"].reset_coords("variable", drop=True),
         binned_weights=lb_weights,
         stratum_dim=["stratum_num"],
@@ -555,6 +572,7 @@ def test_fitted_weight_proportions(
         result_da.sel(sex="female", length_bin="(20, 30]")
         == pytest.approx([0.06747638, 0.16618322])
     ).all()
+
     assert (
         result_da.sel(sex="female", length_bin="(30, 40]")
         == pytest.approx([0.10121457, 0.24927484])

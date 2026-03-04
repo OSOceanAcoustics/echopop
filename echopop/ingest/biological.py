@@ -51,6 +51,121 @@ def load_single_biological_sheet(
     return df_filtered
 
 
+def load_single_biological_view(
+    biodata_filepath: Path,
+    column_name_map: Dict = {},
+    subset_dict: Optional[Dict[str, Any]] = None,
+) -> pd.DataFrame:
+    """
+    Load and process a single biological data view
+
+    Parameters
+    ----------
+    biodata_filepath : pathlib.Path
+        Path to the Excel file
+    column_name_map : dict, default={}
+        Dictionary mapping original column names to new column names
+    subset_dict : dict, optional
+        Subset dictionary containing ships and species_code settings
+        Format: {"ships": {ship_id: {"survey": survey_id, "haul_offset": offset}}, "species_code":
+        [codes]}
+
+    Returns
+    -------
+    |pd.DataFrame|
+        Processed and validated biological data
+    """
+    # Read *.csv file into memory
+    df_initial = pd.read_csv(biodata_filepath, index_col=None, header=0)
+
+    # Force the column names to be lower case
+    df_initial.columns = df_initial.columns.str.lower()
+
+    # Rename the columns
+    df_initial.rename(columns=column_name_map, inplace=True)
+
+    # Apply ship and survey filtering
+    df_filtered = apply_ship_survey_filters(df_initial, subset_dict)
+
+    return df_filtered
+
+
+def load_materialized_biodata_views(
+    biodata_filepaths: Dict[str, Path],
+    column_name_map: Dict[str, str] = None,
+    subset_dict: Optional[Dict] = None,
+    biodata_label_map: Optional[Dict[str, Dict]] = None,
+    haul_uid_config: Dict[str, Any] = {},
+) -> Dict[str, pd.DataFrame]:
+    """
+    Load biological data from materialized views of catch data and a file including specimen-only
+    values.
+
+    Parameters
+    ----------
+    biodata_filepaths : pathlib.Path
+        A dictionary of filepaths to *.csv files containing biological data
+    column_name_map : dict, optional
+        Dictionary mapping original column names to new column names
+        (e.g., ``{"frequency": "length_count", "haul": "haul_num"}``)
+    subset_dict : dict, optional
+        Subset dictionary containing ships and species_code for filtering
+        Format: ``{"ships": {ship_id: {"survey": survey_id, "haul_offset": offset}}, "species_code":
+        [codes]}``
+    biodata_label_map : dict, optional
+        Dictionary mapping column names to value replacement dictionaries (e.g.,
+        ``{"sex": {1: "male", 2: "female", 3: "unsexed"}}``)
+    haul_uid_config : Dict[str, Any]
+        Optional keyword arguments to override defaults or DataFrame values:
+
+        - ship_id (dict): Region-specific IDs, e.g., {'US': 10, 'CAN': 20}.
+
+        - survey_id (dict): Region-specific IDs, e.g., {'US': 1, 'CAN': 2}.
+
+        - species_id (int/str): A global species code override.
+
+        - haul_offset (int/float): A value subtracted from 'haul_num' for records identified as
+          'CAN' (where haul_num - offset >= 0).
+
+    Returns
+    -------
+    dict
+        Dictionary containing processed biological DataFrames keyed by dataset name
+    """
+
+    # Validate across files
+    if not all([v.exists() for v in biodata_filepaths.values()]):
+        raise FileNotFoundError("Not all files in 'biodata_filepaths' could be found.")
+
+    # Load each biological dataset
+    biodata_dict = {
+        dataset_name: load_single_biological_view(file, column_name_map, subset_dict)
+        for dataset_name, file in biodata_filepaths.items()
+    }
+
+    # Apply label mappings if provided
+    if biodata_label_map:
+        # ---- For each column mapping in the label map
+        for col, mapping in biodata_label_map.items():
+            # ---- Apply to each dataframe that has that column
+            for name, df in biodata_dict.items():
+                if isinstance(df, pd.DataFrame) and col in df.columns:
+                    df[col] = df[col].map(mapping).fillna(df[col])
+
+    # Reformat haul datatype
+    biodata_dict = {
+        k: v.assign(haul_num=v["haul_num"].astype(float)) for k, v in biodata_dict.items()
+    }
+
+    # Add UID labels
+    _ = {
+        k: add_haul_uids(v, _dataset_type=f"biodata.{k}", **haul_uid_config)
+        for k, v in biodata_dict.items()
+    }
+
+    return biodata_dict
+
+
 def load_biological_data(
     biodata_filepath: Path,
     biodata_sheet_map: Dict[str, str],
