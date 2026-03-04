@@ -691,7 +691,8 @@ logging.info("Computing aged weight proportions...")
 dict_da_weight_proportion["aged"] = proportions.weight_proportions(
     weight_data=ds_da_weight_dist["aged"], 
     catch_data=dict_df_bio["catch"], 
-    group_columns = ["stratum_ks"]
+    stratum_dim = ["stratum_ks"],
+    proportion_reference = "catch_plus_specimen"
 )
 
 # UNAGED WEIGHT PROPORTIONS
