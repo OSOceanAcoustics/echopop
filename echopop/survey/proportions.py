@@ -1,3 +1,4 @@
+import copy
 import functools
 import operator
 from typing import Any, Dict, List, Literal, Optional, Union
@@ -834,9 +835,9 @@ def aggregate_stratum_weights(input_data, stratum_col="stratum_num"):
 
 def weight_proportions(
     weight_data: xr.DataArray,
-    catch_data: pd.DataFrame,
-    group_columns: str = [],
-    proportion_reference: Literal["total", "catch"] = "total",
+    catch_data: Union[pd.DataFrame, Dict[str, pd.DataFrame]],
+    stratum_dim: str = [],
+    proportion_reference: Literal["catch", "catch_plus_specimen"] = "catch",
 ) -> xr.DataArray:
     """
     Calculate stratified weight proportions using xarray and pandas inputs.
@@ -853,15 +854,15 @@ def weight_proportions(
         dimensions including those in group_columns.
     catch_data : pd.DataFrame
         DataFrame with catch data, including columns for group_columns and "weight".
-    group_columns : list of str
+    stratum_dim : list of str
         List of dimension/column names to group by (e.g., strata, sex, etc.).
-    proportion_reference : Literal["catch", "total"], default 'total'
+    proportion_reference : Literal["catch", "catch_plus_specimen"], default 'catch'
         Determines the denominator for the proportions calculation:
 
-        - "catch": proportions are relative to the summed catch weights only.
+        - "catch": proportions are relative to the summed catch weights only (default).
 
-        - "total": proportions are relative to the sum of catch weights and biological weights
-          (default).
+        - "catch_plus_specimen": proportions are relative to the sum of catch weights and
+          individual fish weights
 
     Returns
     -------
@@ -891,17 +892,34 @@ def weight_proportions(
     """
 
     # Compute the total weights per group from the biological data
-    group_weights = weight_data.sum(dim=[d for d in weight_data.dims if d not in group_columns])
+    group_weights = weight_data.sum(dim=[d for d in weight_data.dims if d not in stratum_dim])
+
+    # Conditionally drop specimen-only hauls if required
+    if proportion_reference == "catch_plus_specimen":
+        # ---- Validation
+        if (not isinstance(catch_data, dict)) | (set(catch_data) < {"length", "catch"}):
+            raise KeyError(
+                "'catch_data' must be a dictionary containing two dataframes assigned to the keys "
+                "'length' and 'catch' when 'proportion_reference' is assigned "
+                "'catch_plus_specimen'."
+            )
+        # ---- Create catch values copy
+        catch_data = copy.deepcopy(catch_data)
+        # ---- Get unique haul numbers
+        haul_numbers = catch_data["length"]["haul_num"].unique()
+        # ---- Find incompatible hauls
+        catch_values = catch_data["catch"].loc[catch_data["catch"]["haul_num"].isin(haul_numbers)]
+    else:
+        catch_values = catch_data.copy()
 
     # Compute the grouped catch weights
-    catch_weights = xr.DataArray(catch_data.groupby(group_columns)["weight"].sum())
-
+    catch_weights = xr.DataArray(catch_values.groupby(stratum_dim)["weight"].sum())
+    # ---- Align weights
+    catch_weights_aligned, group_weights_aligned = xr.align(
+        catch_weights, group_weights, join="outer", fill_value=0.0
+    )
     # Make catch haul weights adjustment, if needed, to avoid double-counting weights
-    if proportion_reference == "total":
-        # ---- Align weights
-        catch_weights_aligned, group_weights_aligned = xr.align(
-            catch_weights, group_weights, join="outer", fill_value=0.0
-        )
+    if proportion_reference == "catch_plus_specimen":
         # ---- Sum together
         total_weights = catch_weights_aligned + group_weights_aligned
     elif proportion_reference == "catch":
@@ -910,7 +928,7 @@ def weight_proportions(
     else:
         raise ValueError(
             f"Input for 'proportion_reference' ({proportion_reference}) is invalid. Valid options "
-            f"are limited to 'total' (default) and 'catch'."
+            f"are limited to 'catch' (default) and 'catch_plus_specimen'."
         )
 
     # Compute the weight proportions for the array
@@ -967,43 +985,43 @@ def fitted_weight_proportions(
     <xarray.DataArray ...>
     """
 
-    # Compute the total strata weights
-    subgroup_weights = weight_data.groupby(stratum_dim).sum(dim="length_bin").astype(float)
+    # Summed weight for each sex in each stratum
+    # dim: [stratum x sex]
+    weight_sex = weight_data.groupby(stratum_dim).sum(dim="length_bin").astype(float)
 
-    # Calculate the total grouped weights
-    group_weights = subgroup_weights.sum(
-        dim=[d for d in subgroup_weights.coords if d not in stratum_dim]
+    # Weight proportion for each sex in each stratum
+    # dim: [stratum x sex]; sex=["female", "male"]
+    weight_prop_sex = (weight_sex / weight_sex.sum(dim="sex")).fillna(0.0)
+
+    # Number proportion for each length bin in each stratum
+    # dim: [stratum x length_bin]
+    number_prop_length = number_proportions["proportion"].sum(dim="sex")
+
+    # Average weight for each length bin and sex in each stratum
+    # ---- binned_weights only has sex="all" over all length bins, so dropping this dimension
+    # ---- dim: [stratum x length_bin]
+    mean_weight_length = (number_prop_length * binned_weights.squeeze().drop_vars("sex")).fillna(
+        0.0
     )
 
-    # Calculate the grouped weight proportions
-    weight_grouped_props = (subgroup_weights / group_weights).fillna(0.0)
-
-    # Calculate the number proportions based on strata
-    length_bin_props = number_proportions["proportion"].sum(
-        dim=[d for d in number_proportions.coords if d not in stratum_dim + ["length_bin"]]
+    # ---- Weight proportion for each length bin in each stratum
+    # ---- dim: [stratum x length_bin]
+    weight_prop_length = (
+        (mean_weight_length / mean_weight_length.sum(dim="length_bin")).fillna(0.0).squeeze()
     )
 
-    # Calculate the average weights per length bin within each stratum
-    fitted_length_weights = (length_bin_props * binned_weights).fillna(0.0)
+    # Weight proportion of aged samples in each stratum
+    # dim: [stratum]
+    dim_to_sum = set(reference_weight_proportions.dims).difference(stratum_dim)
+    weight_prop_aged = reference_weight_proportions.sum(dim=dim_to_sum)
 
-    # Calculate the weight proportions
-    # ---- Get the grouped total fitted weights
-    total_fitted_weights = fitted_length_weights.sum(
-        dim=[d for d in fitted_length_weights.coords if d not in stratum_dim]
-    )
-    # ---- Compute proportions
-    fitted_weight_props = (fitted_length_weights / total_fitted_weights).fillna(0.0).squeeze()
+    # Weight proportion of unaged samples in each stratum
+    # dim: [stratum]
+    weight_prop_unaged = 1 - weight_prop_aged
 
-    # Get the overall weight proportions per group for the reference data
-    grouped_reference_proportions = reference_weight_proportions.sum(
-        dim=[d for d in reference_weight_proportions.dims if d not in stratum_dim]
-    )
-
-    # Calculate the complementary proportions
-    compl_data_props = 1 - grouped_reference_proportions
-
-    # Distribute the within-group proportions to get the overall proportions
-    return compl_data_props * fitted_weight_props * weight_grouped_props
+    # Compute overall proportion of unaged samples for each length bin in each stratum
+    # dim: [stratum x length_bin x sex]; sex=["female", "male"]
+    return weight_prop_unaged * weight_prop_length * weight_prop_sex
 
 
 def get_nasc_proportions_slice(

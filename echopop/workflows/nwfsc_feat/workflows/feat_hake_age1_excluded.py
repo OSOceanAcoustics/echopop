@@ -276,8 +276,6 @@ dict_df_bio = ingestion.load_biological_data(
     subset_dict=BIODATA_PROC,
     biodata_label_map=BIODATA_LABELS,
 )
-# ---- Remove specimen hauls
-feat_biology.drop_specimen_only_hauls(dict_df_bio)
 logging.info("Biodata ingestion complete\n" "'dict_df_bio' created.")
 # ==================================================================================================
 ############################### CHANGES FOR AGE-1 EXCLUSION ########################################

@@ -331,8 +331,6 @@ dict_df_bio = ingestion.load_biological_data(
     biodata_label_map=BIODATA_SEX,
     haul_uid_config=HAUL_UID_CONFIG,
 )
-# ---- Remove specimen hauls
-feat_biology.drop_specimen_only_hauls(dict_df_bio)
 logging.info(
     "Biodata ingestion complete\n"
     "'dict_df_bio' created."
@@ -697,8 +695,9 @@ dict_da_weight_proportion = {}
 logging.info("Computing aged weight proportions...")
 dict_da_weight_proportion["aged"] = proportions.weight_proportions(
     weight_data=ds_da_weight_dist["aged"], 
-    catch_data=dict_df_bio["catch"], 
-    group_columns = ["stratum_ks"]
+    catch_data=dict_df_bio, 
+    stratum_dim = ["stratum_ks"],
+    proportion_reference = "catch_plus_specimen"
 )
 
 # UNAGED WEIGHT PROPORTIONS
