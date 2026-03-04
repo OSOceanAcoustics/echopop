@@ -1351,8 +1351,8 @@ def compute_dataset_differences(
     columns: list = ["abundance", "biomass", "nasc"],
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
-    Compute magnitude and signed percent differences between EchoPro and Echopop report outputs
-    across survey years and report types (transect, kriging).
+    Compute magnitude and percent differences between EchoPro and Echopop report outputs across 
+    survey years and report types (transect, kriging).
 
     Parameters
     ----------
@@ -1369,7 +1369,7 @@ def compute_dataset_differences(
     Tuple[pandas.DataFrame, pandas.DataFrame]
         - ``differences``: Magnitude differences (EchoPro - Echopop), indexed by
           ``(report_type, year)``.
-        - ``signed_pct_diff``: Signed percent differences relative to the mean of both datasets,
+        - ``pct_diff``: Percent differences relative to the mean of both datasets,
           indexed by ``(report_type, year)``.
     """
 
@@ -1393,10 +1393,10 @@ def compute_dataset_differences(
     # Magnitude differences
     differences = echopro - echopop
 
-    # Signed percent differences relative to the mean of both
-    signed_pct_diff = np.sign(differences) * np.abs(differences) / ((echopro + echopop) / 2) * 1e2
+    # Percent differences relative to the mean of both
+    pct_diff = differences / echopro * 1e2
 
-    return differences, signed_pct_diff
+    return differences, pct_diff
 
 
 def plot_dataset_differences(
