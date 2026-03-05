@@ -37,9 +37,7 @@ class ValidateSelectivityParams(BaseDictionary):
 
         # Prevent "mixing and matching" (e.g., providing slope and l50)
         # ---- This catches if they provided one part of one set and one part of the other
-        provided_fields = {
-            k for k, v in self.model_dump().items() if v is not None
-        }
+        provided_fields = {k for k, v in self.model_dump().items() if v is not None}
 
         valid_regression = {"intercept", "slope"}
         valid_metrics = {"l50", "sr"}

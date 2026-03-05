@@ -211,12 +211,16 @@ def assign_selectivity_expansion(
             gear_l50_sr[gear_name] = _to_l50_sr(raw_params, _k)  # type: ignore[arg-type]
 
         # Map each row's gear to its (l50, sr) pair, then compute S(L) vectorised
-        l50_arr = data[gear_col].map(
-            lambda g: gear_l50_sr[g][0] if g in gear_l50_sr else np.nan
-        ).to_numpy(dtype=float)
-        sr_arr = data[gear_col].map(
-            lambda g: gear_l50_sr[g][1] if g in gear_l50_sr else np.nan
-        ).to_numpy(dtype=float)
+        l50_arr = (
+            data[gear_col]
+            .map(lambda g: gear_l50_sr[g][0] if g in gear_l50_sr else np.nan)
+            .to_numpy(dtype=float)
+        )
+        sr_arr = (
+            data[gear_col]
+            .map(lambda g: gear_l50_sr[g][1] if g in gear_l50_sr else np.nan)
+            .to_numpy(dtype=float)
+        )
         L = data[length_col].to_numpy(dtype=float)
 
     S = np.maximum((1.0 + np.exp(_k * (l50_arr - L) / sr_arr)) ** -1, minimum_selectivity)
