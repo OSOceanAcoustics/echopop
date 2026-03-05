@@ -27,8 +27,8 @@ REMOVE_AGE1 = True
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # BIODATA FILE
 BIODATA_FILES = {
-    "catch": DATA_ROOT / "Biological/materialized_view/echopop_catch.csv",
-    "specimen": DATA_ROOT / "Biological/materialized_view/echopop_fish.csv",
+    "catch": DATA_ROOT / "Biological/database_view/echopop_catch.csv",
+    "specimen": DATA_ROOT / "Biological/database_view/echopop_fish.csv",
 }
 
 # BIODATA PROCESSING
@@ -63,7 +63,6 @@ BIODATA_SHIP_SPECIES = {
 NET_SELECTIVITY = {
     "l50": 10.9,
     "sr": 14.0,
-    "minimum_selectivity": 1e-12
 }
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -366,246 +365,47 @@ specimen_data = dict_df_bio["specimen"].merge(
     on="uid",
     how="left",
 )
-# ---- assign_selectivity_expansion
-biodata = specimen.copy()
-net_selectivity_params = {
-    "Aleutian Wing Trawl": {
-        "l50": 10.9,
-        "sr": 14.0
-    }
-}
-minimum_selectivity = 1e-12
-net_column = "gear"
-
-from echopop.validators.selectivity import ValidateSelectivityParams
-from typing import Dict, Tuple
-
-def get_l50_sr(
-    params: Dict[str, float],
-) -> Tuple[float, float]:
-    """
-    Validate and convert selectivity parameters to an (L50, SR) pair.
-
-    Parameters
-    ----------
-    params : dict
-        Must contain exactly one of ``{'l50', 'sr'}`` or ``{'slope', 'intercept'}``.
-
-    Returns
-    -------
-    tuple of (float, float)
-        ``(l50, sr)`` ready for use in the logistic selectivity formula.
-    """
-    # Define internal constant
-    _K = 2.0 * np.log(3.0)
-
-    # Validate and normalize all net selectivity parameters to (L50, SR)
-    validated = ValidateSelectivityParams.create(**params)
-    # ---- If already present
-    if validated.get("l50") is not None:
-        return float(validated["l50"]), float(validated["sr"])
-    # ---- Make conversion
-    slope = float(validated["slope"])
-    intercept = float(validated["intercept"])
-    return -intercept / slope, _K / slope
-
-def assign_selecitivity_expansion(
-    biodata: pd.DataFrame,
-    net_selectivity_params: Union[Dict[str, float], Dict[str, Dict[str, float]]],
-    net_column: str,
-    minimum_selectivity: float = 1e-12
-) -> pd.DataFrame:
-    """
-    Compute per-fish logistic selectivity expansion factors and add them as a new column.
-
-    The caller is responsible for ensuring ``data`` already contains both a length column and a
-    gear column (e.g., via a prior merge of the individual-level and haul-level frames). This
-    function only performs the selectivity computation.
-
-    Parameters
-    ----------
-    data : pd.DataFrame
-        Individual-level DataFrame containing at least ``net_column`` and 'length'.
-    gear_selectivity_params : dict
-        Accepts three shapes:
-
-        1. **Flat** — a single parameter set applied uniformly to every row:
-
-           ``{'l50': float, 'sr': float}``  or  ``{'slope': float, 'intercept': float}``
-
-        2. **Single-gear nested** — one gear name mapped to its parameter dict:
-
-           ``{'AWT': {'l50': float, 'sr': float}}``
-
-        3. **Multi-gear nested** — multiple gear names each mapped to their own parameter dict:
-
-           ``{'AWT': {'l50': float, 'sr': float}, 'MFT': {'slope': float, 'intercept': float}}``
-
-        In the nested forms (2 and 3) each value must contain **exactly one** complete set.
-        Mixed or incomplete sets raise ``ValueError`` via ``ValidateSelectivityParams``.
-        When a row's gear is not found in the nested mapping, its
-        ``selectivity_expansion`` will be ``NaN``.
-    minimum_selectivity : float, default 1e-12
-        Lower bound applied to ``S(L)`` before inversion to prevent division by zero.
-    gear_col : str, default ``'gear'``
-        Column identifying the gear type for each individual.
-    length_col : str, default ``'length'``
-        Column containing individual fish lengths.
-
-    Returns
-    -------
-    pd.DataFrame
-        Copy of ``data`` with one new column added:
-
-        - ``selectivity_expansion`` : ``1 / S(L)`` — the per-fish selectivity expansion factor.
-
-    Raises
-    ------
-    ValueError
-        If any entry in ``gear_selectivity_params`` fails parameter validation.
-
-    Notes
-    -----
-    Slope/intercept parameterizations are converted to ``(l50, sr)`` once before any per-row
-    work:
-
-    .. math::
-
-        L_{50} = -\\beta_0 / \\beta_1, \\quad SR = 2\\ln(3) / \\beta_1
-
-    The per-fish selectivity expansion factor is then:
-
-    .. math::
-
-        \\frac{
-            1
-        }{
-            \\max\\left(\\left[1 + e^{\\frac{
-                2\\ln(3)(L_{50} - L)
-            }{
-                SR
-            }}\\right]^{-1},\\ S_{\\min}\\right)
-        }
-
-    Rows whose gear is not found in ``gear_selectivity_params`` will have ``NaN`` for
-    ``selectivity_expansion``.
-    """
-
-    # Validate DataFrame columns
-    if net_column not in biodata.columns:
-        raise KeyError(
-            f"Column '{net_column}' not found in 'biodata'."
-        )
-    if "length" not in biodata.columns:
-        raise KeyError(
-            "Column 'length' not found in 'biodata'."
-        )
-        
-    # Create DataFrame copy
-    biodata = biodata.copy()
-    
-    # Define internal constant
-    _K = 2.0 * np.log(3.0)
-
-    # Detect whether dictionary is nested (multiple net-types) or flat (single net-type)
-    is_nested = any(isinstance(v, dict) for v in net_selectivity_params.values())
-
-    # Flattened -- single net-type
-    if not is_nested:
-        # ---- Validate
-        l50, sr = get_l50_sr(net_selectivity_params)
-        # ---- Apply to all rows
-        biodata["l50"] = l50; biodata["sr"] = sr
-    # Multiple net-types
-    else:
-        # ---- Validate and normalize all net selectivity parameters to (L50, SR)
-        net_l50_sr = {}
-        # ---- Iterate across all net-types
-        for net_name, input_params in net_selectivity_params.items():
-            net_l50_sr[net_name] = get_l50_sr(input_params)
-        # ---- L50
-        biodata["l50"] = biodata[net_column].map(
-            lambda n: net_l50_sr[n][0] if n in net_l50_sr else np.nan
-        )
-        # ---- SR
-        biodata["sr"] = biodata[net_column].map(
-            lambda n: net_l50_sr[n][1] if n in net_l50_sr else np.nan
-        )
-
-    # Calculate the logistic selectivity expansion weight
-    biodata["selectivity_expansion"] = 1 / np.maximum(
-        (1.0 + np.exp(_K * biodata["l50"] - biodata["length"]) / biodata["sr"]) ** -1, 
-        minimum_selectivity
-    )
-    
-    # Return the annotated DataFrame
-    return biodata
-
-specimen_data_selectivity = assign_selecitivity_expansion(
+# ---- Assign selectivity expansion to each fish
+specimen_data_selectivity = selectivity.assign_selectivity_expansion(
     specimen_data,
-    {"l50": 10.9, "sr": 14.0},
-    net_column="gear"
+    NET_SELECTIVITY,
+    net_column = "gear",
 )
 
 # ==================================================================================================
-# COMPUTE COUNT DISTRIBUTIONS PER AGE- AND LENGTH-BINS
-count_distribution = proportions.compute_binned_counts(
-    data=specimen_data_selectivity.dropna(subset=["length", "weight"]),
+# COMPUTE COUNT DISTRIBUTIONS PER AGE- AND LENGTH-BINS [AT HAUL-LEVEL]
+da_count_distribution_hauls = proportions.compute_binned_counts(
+    data=specimen_data_selectivity.dropna(subset=["length"]),
     groupby_cols=["stratum_ks", "length_bin", "age_bin", "sex", "uid"],
     count_col="selectivity_expansion",
     agg_func="sum",
 )
 
 # ==================================================================================================
-# NUMBER PROPORTIONS
-count_proportions = proportions.number_proportions(
-    data=count_distribution,
-    group_columns=["stratum_ks"],
-)
-# ==================================================================================================
-# COMPUTE COUNT DISTRIBUTIONS PER AGE- AND LENGTH-BINS
-# DATASET CONTAINER
-ds_counts = xr.Dataset()
+# COMPUTE COUNT DISTRIBUTIONS PER AGE- AND LENGTH-BINS [AT STRATUM-LEVEL]
+da_count_distribution_strata = da_count_distribution_hauls.sum(dim=["uid"])
 
-# AGED
-ds_counts["aged"] = proportions.compute_binned_counts(
-    data=specimen_aged.dropna(subset=["length", "weight"]),
+da_count_distirbution = proportions.compute_binned_counts(
+    data=specimen_data.dropna(subset=["length"]),
     groupby_cols=["stratum_ks", "length_bin", "age_bin", "sex"],
     count_col="length",
     agg_func="size",
 )
 
-# UNAGED
-ds_counts["unaged"] = proportions.compute_binned_counts(
-    data=specimen_unaged.dropna(subset=["length_bin"]),
-    groupby_cols=["stratum_ks", "length_bin", "sex"],
-    count_col="length_count",
-    agg_func="sum",
-)
-
 # ==================================================================================================
-# COMPUTE NUMBER PROPORTIONS
-dict_ds_number_proportion = proportions.number_proportions(
-    data=ds_counts,
+# NUMBER PROPORTIONS
+ds_count_proportions = proportions.number_proportions(
+    data=da_count_distribution_strata,
     group_columns=["stratum_ks"],
-    exclude_filters={"aged": {"sex": "unsexed"}},
+    exclude_filters={"sex": "unsexed"}
 )
 
 # ==================================================================================================
-# APPLY NET SELECTIVITY CORRECTIONS
-ds_number_proportions_corrected = selectivity.correct_number_proportions(
-    number_data=dict_ds_number_proportion,
-    selectivity_params=NET_SELECTIVITY,
-    stratum_dim=["stratum_ks"]
-)
-
-# ==================================================================================================
-# DERIVE WEIGHT PROPORTIONS FROM SELECTIVITY-CORRECTED NUMBER PROPORTIONS USING MEAN LENGTH-BINNED 
-# WEIGHTS
-ds_weight_proportions_corrected = selectivity.correct_weight_proportions(
-    corrected_number_proportions=ds_number_proportions_corrected,
-    mean_length_binned_weights=da_binned_weight_table,
-    stratum_dim=["stratum_ks"]
+# FITTED WEIGHT PROPORTIONS
+ds_weight_proportions = proportions.fitted_weight_proportions(
+    number_proportions=ds_count_proportions,
+    binned_weights=da_binned_weights_all,
+    stratum_dim=["stratum_ks"],
 )
 
 # ==================================================================================================
@@ -647,12 +447,12 @@ df_nasc["area_interval"] = (
 feat_biology.compute_abundance(
     transect_data=df_nasc,
     exclude_filter={"sex": "unsexed"},
-    number_proportions=ds_number_proportions_corrected,
+    number_proportions=ds_count_proportions,
 )
 
 # COMPUTE STRATUM-AVERAGED WEIGHTS
 da_averaged_weight = proportions.stratum_averaged_weight(
-    number_proportions=ds_number_proportions_corrected,
+    number_proportions=ds_count_proportions,
     length_weight_data=da_binned_weight_table,
     group_columns=["stratum_ks"]
 )
@@ -667,7 +467,7 @@ feat_biology.compute_biomass(
 if REMOVE_AGE1:
     # NASC
     age1_nasc_proportions = proportions.get_nasc_proportions_slice(
-        number_proportions=ds_number_proportions_corrected,
+        number_proportions=ds_count_proportions,
         group_columns=["stratum_ks"],
         ts_length_regression_parameters={"slope": 20.0, "intercept": -68.0},
         include_filter={"age_bin": [1]},
@@ -675,17 +475,17 @@ if REMOVE_AGE1:
 
     # NUMBER
     age1_number_proportions = proportions.get_number_proportions_slice(
-        number_proportions=ds_number_proportions_corrected,
+        number_proportions=ds_count_proportions,
         stratum_dim=["stratum_ks"],
         include_filter={"age_bin": [1]},
     )
 
     # WEIGHT
     age1_weight_proportions = proportions.get_weight_proportions_slice(
-        weight_proportions=ds_weight_proportions_corrected,
+        weight_proportions=ds_weight_proportions,
         stratum_dim=["stratum_ks"],
         include_filter={"age_bin": [1]},
-        number_proportions=dict_ds_number_proportion,
+        number_proportions=ds_count_proportions,
         length_threshold_min=10.0,
         weight_proportion_threshold=1e-10,
     )
@@ -781,7 +581,7 @@ df_kriged_results["biomass"] = df_kriged_results["biomass_density"] * df_kriged_
 # BIOMASS TO NASC
 feat_apportion.mesh_biomass_to_nasc(
     mesh_data=df_kriged_results,
-    biodata=ds_weight_proportions_corrected,
+    biodata=ds_weight_proportions,
     group_columns=["sex", "stratum_ks"],
     mesh_biodata_link={"geostratum_ks": "stratum_ks"},
     stratum_weights=da_averaged_weight.sel(sex="all"),
@@ -793,7 +593,7 @@ feat_apportion.mesh_biomass_to_nasc(
 # ABUNDANCE [ALL]
 ds_kriged_abundance_table = feat_apportion.distribute_population_estimates(
     data=df_kriged_results,
-    proportions = ds_number_proportions_corrected,
+    proportions = ds_count_proportions,
     variable = "abundance",
     group_columns = ["sex", "age_bin", "length_bin", "stratum_ks"],
     data_proportions_link={"geostratum_ks": "stratum_ks"}
@@ -802,7 +602,7 @@ ds_kriged_abundance_table = feat_apportion.distribute_population_estimates(
 # BIOMASS [ALL]
 ds_kriged_biomass_table = feat_apportion.distribute_population_estimates(
     data = df_kriged_results,
-    proportions = ds_weight_proportions_corrected,
+    proportions = ds_weight_proportions,
     variable = "biomass",
     group_columns = ["sex", "age_bin", "length_bin", "stratum_ks"],
     data_proportions_link={"geostratum_ks": "stratum_ks"}
@@ -812,13 +612,13 @@ ds_kriged_biomass_table = feat_apportion.distribute_population_estimates(
 # ---- ABUNDANCE
 da_kriged_abundance_table = feat_apportion.sum_population_tables(
     population_tables={
-        "all": ds_kriged_abundance_table ,
+        "all": ds_kriged_abundance_table.fillna(0.) ,
     },
 )
 # ---- BIOMASS
 da_kriged_biomass_table = feat_apportion.sum_population_tables(
     population_tables={
-        "all": ds_kriged_biomass_table
+        "all": ds_kriged_biomass_table.fillna(0.)
     },
 )
 
