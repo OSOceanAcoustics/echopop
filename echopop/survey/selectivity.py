@@ -2,9 +2,10 @@
 This module corrects biological distributions based on length-based net selectivity.
 """
 
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
+import pandas as pd
 import xarray as xr
 
 from ..validators import ValidateSelectivityParams
@@ -88,6 +89,141 @@ def logistic_selectivity(
 
     # ---- Apply lower bound
     return xr.where(selectivity < minimum_selectivity, minimum_selectivity, selectivity)
+
+
+def _to_l50_sr(
+    raw: Dict[str, float],
+    k: float,
+) -> Tuple[float, float]:
+    """
+    Validate and convert a selectivity parameter dict to an ``(l50, sr)`` pair.
+
+    Parameters
+    ----------
+    raw : dict
+        Must contain exactly one of ``{'l50', 'sr'}`` or ``{'slope', 'intercept'}``.
+    k : float
+        Logistic steepness constant, typically ``2 * ln(3)``.
+
+    Returns
+    -------
+    tuple of (float, float)
+        ``(l50, sr)`` ready for use in the logistic selectivity formula.
+    """
+    validated = ValidateSelectivityParams.create(**raw)
+    if validated.get("l50") is not None:
+        return float(validated["l50"]), float(validated["sr"])
+    slope = float(validated["slope"])
+    intercept = float(validated["intercept"])
+    return -intercept / slope, k / slope
+
+
+def assign_selectivity_expansion(
+    data: pd.DataFrame,
+    gear_selectivity_params: Union[Dict[str, float], Dict[str, Dict[str, float]]],
+    minimum_selectivity: float = 1e-12,
+    *,
+    gear_col: str = "gear",
+    length_col: str = "length",
+) -> pd.DataFrame:
+    """
+    Compute per-fish logistic selectivity expansion factors and add them as a new column.
+
+    The caller is responsible for ensuring ``data`` already contains both a length column and a
+    gear column (e.g., via a prior merge of the individual-level and haul-level frames). This
+    function only performs the selectivity computation.
+
+    Parameters
+    ----------
+    data : pd.DataFrame
+        Individual-level DataFrame containing at least ``length_col`` and ``gear_col``.
+    gear_selectivity_params : dict
+        Accepts three shapes:
+
+        1. **Flat** — a single parameter set applied uniformly to every row:
+
+           ``{'l50': float, 'sr': float}``  or  ``{'slope': float, 'intercept': float}``
+
+        2. **Single-gear nested** — one gear name mapped to its parameter dict:
+
+           ``{'AWT': {'l50': float, 'sr': float}}``
+
+        3. **Multi-gear nested** — multiple gear names each mapped to their own parameter dict:
+
+           ``{'AWT': {'l50': float, 'sr': float}, 'MFT': {'slope': float, 'intercept': float}}``
+
+        In the nested forms (2 and 3) each value must contain **exactly one** complete set.
+        Mixed or incomplete sets raise ``ValueError`` via ``ValidateSelectivityParams``.
+        When a row's gear is not found in the nested mapping, its
+        ``selectivity_expansion`` will be ``NaN``.
+    minimum_selectivity : float, default 1e-12
+        Lower bound applied to ``S(L)`` before inversion to prevent division by zero.
+    gear_col : str, default ``'gear'``
+        Column identifying the gear type for each individual.
+    length_col : str, default ``'length'``
+        Column containing individual fish lengths.
+
+    Returns
+    -------
+    pd.DataFrame
+        Copy of ``data`` with one new column added:
+
+        - ``selectivity_expansion`` : ``1 / S(L)`` — the per-fish selectivity expansion factor.
+
+    Raises
+    ------
+    ValueError
+        If any entry in ``gear_selectivity_params`` fails parameter validation.
+
+    Notes
+    -----
+    Slope/intercept parameterizations are converted to ``(l50, sr)`` once before any per-row
+    work:
+
+    .. math::
+
+        L_{50} = -\\beta_0 / \\beta_1, \\quad SR = 2\\ln(3) / \\beta_1
+
+    The per-fish selectivity expansion factor is then:
+
+    .. math::
+
+        \\frac{1}{\\max\\left(\\left[1 + e^{\\frac{2\\ln(3)(L_{50} - L)}{SR}}\\right]^{-1},\\ S_{\\min}\\right)}
+
+    Rows whose gear is not found in ``gear_selectivity_params`` will have ``NaN`` for
+    ``selectivity_expansion``.
+    """
+    _k = 2.0 * np.log(3.0)
+
+    # Detect whether a single flat dict or a gear-keyed nested dict was supplied
+    is_nested = any(isinstance(v, dict) for v in gear_selectivity_params.values())
+
+    if not is_nested:
+        # Single parameter set — apply uniformly to every row
+        l50, sr = _to_l50_sr(gear_selectivity_params, _k)  # type: ignore[arg-type]
+        L = data[length_col].to_numpy(dtype=float)
+        l50_arr = np.full(len(L), l50)
+        sr_arr = np.full(len(L), sr)
+    else:
+        # Validate and normalise all gear params to (l50, sr)
+        gear_l50_sr: Dict[str, Tuple[float, float]] = {}
+        for gear_name, raw_params in gear_selectivity_params.items():
+            gear_l50_sr[gear_name] = _to_l50_sr(raw_params, _k)  # type: ignore[arg-type]
+
+        # Map each row's gear to its (l50, sr) pair, then compute S(L) vectorised
+        l50_arr = data[gear_col].map(
+            lambda g: gear_l50_sr[g][0] if g in gear_l50_sr else np.nan
+        ).to_numpy(dtype=float)
+        sr_arr = data[gear_col].map(
+            lambda g: gear_l50_sr[g][1] if g in gear_l50_sr else np.nan
+        ).to_numpy(dtype=float)
+        L = data[length_col].to_numpy(dtype=float)
+
+    S = np.maximum((1.0 + np.exp(_k * (l50_arr - L) / sr_arr)) ** -1, minimum_selectivity)
+
+    out = data.copy()
+    out["selectivity_expansion"] = 1.0 / S
+    return out
 
 
 def _extract_proportion_arrays(
@@ -287,11 +423,8 @@ def correct_number_proportions(
 
             - 'sr' (float): Selection range (the length interval between 25% and 75% retention).
 
-        Optional:
-
-            - 'minimum_selectivity' (float, default 1e-12): Lower bound applied to selectivity
-              values to avoid division-by-zero errors.
-
+    minimum_selectivity : float, default 1e-12
+        Lower bound applied to selectivity values to avoid division-by-zero errors.
     stratum_dim : str or list of str, optional
         Dimensions that define the normalization groups. When provided, both observed and adjusted
         length proportions are normalized to sum to 1 within each stratum. Other inferred
@@ -350,7 +483,7 @@ def correct_number_proportions(
         combined_length_marginal, normalization_dims=normalization_dims, **valid_params
     )
 
-    # When age ios present, optionally build the adjusted 2D length-age distribution
+    # When age is present, optionally build the adjusted 2D length-age distribution
     # ---- Marginalize
     combined_length_age_marginal = _compute_length_age_marginal(proportion_arrays, keep_dims)
     # ---- Apply correction, if applicable

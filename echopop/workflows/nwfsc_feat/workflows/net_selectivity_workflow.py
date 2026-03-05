@@ -1,4 +1,4 @@
-####################################################################################################
+3####################################################################################################
 # 2019 
 # ----
 from pathlib import Path
@@ -359,12 +359,209 @@ da_binned_weight_table = xr.concat(
 )
 
 # ==================================================================================================
-# SPLIT UP DATASET INTO AGED AND UNAGED
-# ---- AGED
-specimen_aged = dict_df_bio["specimen"].dropna(subset=["age_bin"])
-# ---- UNAGED
-specimen_unaged = dict_df_bio["specimen"].loc[lambda x: x["age_bin"].isnull()]
-specimen_unaged = specimen_unaged.copy().value_counts(dropna=False).reset_index(name="length_count")
+# APPLY NET SELECTIVITY CORRECTION
+# ---- Assign gear-type to specimen-level data
+specimen_data = dict_df_bio["specimen"].merge(
+    dict_df_bio["catch"][["uid", "gear"]].drop_duplicates("uid"),
+    on="uid",
+    how="left",
+)
+# ---- assign_selectivity_expansion
+biodata = specimen.copy()
+net_selectivity_params = {
+    "Aleutian Wing Trawl": {
+        "l50": 10.9,
+        "sr": 14.0
+    }
+}
+minimum_selectivity = 1e-12
+net_column = "gear"
+
+from echopop.validators.selectivity import ValidateSelectivityParams
+from typing import Dict, Tuple
+
+def get_l50_sr(
+    params: Dict[str, float],
+) -> Tuple[float, float]:
+    """
+    Validate and convert selectivity parameters to an (L50, SR) pair.
+
+    Parameters
+    ----------
+    params : dict
+        Must contain exactly one of ``{'l50', 'sr'}`` or ``{'slope', 'intercept'}``.
+
+    Returns
+    -------
+    tuple of (float, float)
+        ``(l50, sr)`` ready for use in the logistic selectivity formula.
+    """
+    # Define internal constant
+    _K = 2.0 * np.log(3.0)
+
+    # Validate and normalize all net selectivity parameters to (L50, SR)
+    validated = ValidateSelectivityParams.create(**params)
+    # ---- If already present
+    if validated.get("l50") is not None:
+        return float(validated["l50"]), float(validated["sr"])
+    # ---- Make conversion
+    slope = float(validated["slope"])
+    intercept = float(validated["intercept"])
+    return -intercept / slope, _K / slope
+
+def assign_selecitivity_expansion(
+    biodata: pd.DataFrame,
+    net_selectivity_params: Union[Dict[str, float], Dict[str, Dict[str, float]]],
+    net_column: str,
+    minimum_selectivity: float = 1e-12
+) -> pd.DataFrame:
+    """
+    Compute per-fish logistic selectivity expansion factors and add them as a new column.
+
+    The caller is responsible for ensuring ``data`` already contains both a length column and a
+    gear column (e.g., via a prior merge of the individual-level and haul-level frames). This
+    function only performs the selectivity computation.
+
+    Parameters
+    ----------
+    data : pd.DataFrame
+        Individual-level DataFrame containing at least ``net_column`` and 'length'.
+    gear_selectivity_params : dict
+        Accepts three shapes:
+
+        1. **Flat** — a single parameter set applied uniformly to every row:
+
+           ``{'l50': float, 'sr': float}``  or  ``{'slope': float, 'intercept': float}``
+
+        2. **Single-gear nested** — one gear name mapped to its parameter dict:
+
+           ``{'AWT': {'l50': float, 'sr': float}}``
+
+        3. **Multi-gear nested** — multiple gear names each mapped to their own parameter dict:
+
+           ``{'AWT': {'l50': float, 'sr': float}, 'MFT': {'slope': float, 'intercept': float}}``
+
+        In the nested forms (2 and 3) each value must contain **exactly one** complete set.
+        Mixed or incomplete sets raise ``ValueError`` via ``ValidateSelectivityParams``.
+        When a row's gear is not found in the nested mapping, its
+        ``selectivity_expansion`` will be ``NaN``.
+    minimum_selectivity : float, default 1e-12
+        Lower bound applied to ``S(L)`` before inversion to prevent division by zero.
+    gear_col : str, default ``'gear'``
+        Column identifying the gear type for each individual.
+    length_col : str, default ``'length'``
+        Column containing individual fish lengths.
+
+    Returns
+    -------
+    pd.DataFrame
+        Copy of ``data`` with one new column added:
+
+        - ``selectivity_expansion`` : ``1 / S(L)`` — the per-fish selectivity expansion factor.
+
+    Raises
+    ------
+    ValueError
+        If any entry in ``gear_selectivity_params`` fails parameter validation.
+
+    Notes
+    -----
+    Slope/intercept parameterizations are converted to ``(l50, sr)`` once before any per-row
+    work:
+
+    .. math::
+
+        L_{50} = -\\beta_0 / \\beta_1, \\quad SR = 2\\ln(3) / \\beta_1
+
+    The per-fish selectivity expansion factor is then:
+
+    .. math::
+
+        \\frac{
+            1
+        }{
+            \\max\\left(\\left[1 + e^{\\frac{
+                2\\ln(3)(L_{50} - L)
+            }{
+                SR
+            }}\\right]^{-1},\\ S_{\\min}\\right)
+        }
+
+    Rows whose gear is not found in ``gear_selectivity_params`` will have ``NaN`` for
+    ``selectivity_expansion``.
+    """
+
+    # Validate DataFrame columns
+    if net_column not in biodata.columns:
+        raise KeyError(
+            f"Column '{net_column}' not found in 'biodata'."
+        )
+    if "length" not in biodata.columns:
+        raise KeyError(
+            "Column 'length' not found in 'biodata'."
+        )
+        
+    # Create DataFrame copy
+    biodata = biodata.copy()
+    
+    # Define internal constant
+    _K = 2.0 * np.log(3.0)
+
+    # Detect whether dictionary is nested (multiple net-types) or flat (single net-type)
+    is_nested = any(isinstance(v, dict) for v in net_selectivity_params.values())
+
+    # Flattened -- single net-type
+    if not is_nested:
+        # ---- Validate
+        l50, sr = get_l50_sr(net_selectivity_params)
+        # ---- Apply to all rows
+        biodata["l50"] = l50; biodata["sr"] = sr
+    # Multiple net-types
+    else:
+        # ---- Validate and normalize all net selectivity parameters to (L50, SR)
+        net_l50_sr = {}
+        # ---- Iterate across all net-types
+        for net_name, input_params in net_selectivity_params.items():
+            net_l50_sr[net_name] = get_l50_sr(input_params)
+        # ---- L50
+        biodata["l50"] = biodata[net_column].map(
+            lambda n: net_l50_sr[n][0] if n in net_l50_sr else np.nan
+        )
+        # ---- SR
+        biodata["sr"] = biodata[net_column].map(
+            lambda n: net_l50_sr[n][1] if n in net_l50_sr else np.nan
+        )
+
+    # Calculate the logistic selectivity expansion weight
+    biodata["selectivity_expansion"] = 1 / np.maximum(
+        (1.0 + np.exp(_K * biodata["l50"] - biodata["length"]) / biodata["sr"]) ** -1, 
+        minimum_selectivity
+    )
+    
+    # Return the annotated DataFrame
+    return biodata
+
+specimen_data_selectivity = assign_selecitivity_expansion(
+    specimen_data,
+    {"l50": 10.9, "sr": 14.0},
+    net_column="gear"
+)
+
+# ==================================================================================================
+# COMPUTE COUNT DISTRIBUTIONS PER AGE- AND LENGTH-BINS
+count_distribution = proportions.compute_binned_counts(
+    data=specimen_data_selectivity.dropna(subset=["length", "weight"]),
+    groupby_cols=["stratum_ks", "length_bin", "age_bin", "sex", "uid"],
+    count_col="selectivity_expansion",
+    agg_func="sum",
+)
+
+# ==================================================================================================
+# NUMBER PROPORTIONS
+count_proportions = proportions.number_proportions(
+    data=count_distribution,
+    group_columns=["stratum_ks"],
+)
 # ==================================================================================================
 # COMPUTE COUNT DISTRIBUTIONS PER AGE- AND LENGTH-BINS
 # DATASET CONTAINER
