@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+  width="1500"
+  height="520"
+  viewBox="0 0 1500 520"
+  xmlns="http://www.w3.org/2000/svg"
+  role="img"
+  aria-labelledby="title desc">
+  <title id="title">Net selectivity workflow and proportion tables</title>
+  <desc id="desc">Diagram showing the net-selectivity pathway, where selectivity expansion is applied before tabulating count and number proportions, then weight proportions are derived from fitted length weights.</desc>
+  <defs>
+    <style>
+      .title { font: 700 28px Arial, Helvetica, sans-serif; fill: #111827; }
+      .label { font: 700 16px Arial, Helvetica, sans-serif; fill: #111827; }
+      .body { font: 400 13px Arial, Helvetica, sans-serif; fill: #111827; }
+      .note { font: 400 12px Arial, Helvetica, sans-serif; fill: #374151; }
+      .param { fill: #fef3c7; stroke: #b45309; stroke-width: 2.2; }
+      .ingest { fill: #eef2ff; stroke: #4f46e5; stroke-width: 2.2; }
+      .process { fill: #ecfeff; stroke: #0e7490; stroke-width: 2.2; }
+      .model { fill: #f3e8ff; stroke: #7e22ce; stroke-width: 2.2; }
+      .out { fill: #ecfdf5; stroke: #047857; stroke-width: 2.2; }
+      .opt { fill: #f8fafc; stroke: #334155; stroke-width: 2.2; stroke-dasharray: 7 5; }
+      .arrow { stroke: #111827; stroke-width: 2.6; fill: none; }
+      .arrowOpt { stroke: #334155; stroke-width: 2.4; fill: none; stroke-dasharray: 6 5; }
+    </style>
+    <marker id="head" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M 0,0 12,6 0,12 Z" fill="#111827" />
+    </marker>
+    <marker id="headOpt" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M 0,0 12,6 0,12 Z" fill="#334155" />
+    </marker>
+    <marker id="headOut" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M 0,0 12,6 0,12 Z" fill="#047857" />
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1500" height="520" fill="#ffffff" />
+
+  <text x="750" y="36" text-anchor="middle" class="title">Net selectivity workflow (corrected proportions)</text>
+  <text x="750" y="58" text-anchor="middle" class="note">Selectivity expansion applied before count/number proportions; weight proportions derived from fitted length weights.</text>
+
+  <!-- Stage 1 -->
+  <rect class="ingest" x="40" y="90" width="300" height="86" rx="12" />
+  <text class="label" x="55" y="112">Specimen data</text>
+  <text class="body" x="55" y="132">length, age, sex, gear</text>
+  <text class="body" x="55" y="150">haul UID, stratum</text>
+
+  <!-- Stage 2 -->
+  <rect class="process" x="380" y="90" width="300" height="86" rx="12" />
+  <text class="label" x="395" y="112">Selectivity expansion</text>
+  <text class="body" x="395" y="132">Apply logistic S(L)</text>
+  <text class="body" x="395" y="150">effective_count = 1 / S(L)</text>
+
+  <!-- Stage 3 -->
+  <rect class="model" x="720" y="70" width="340" height="126" rx="12" />
+  <text class="label" x="735" y="92">Count distributions</text>
+  <text class="body" x="735" y="112">Dims: stratum × length_bin × age_bin × sex</text>
+  <text class="body" x="735" y="130">effective_count (sum by UID)</text>
+  <text class="body" x="735" y="148">→ number_proportions</text>
+  <text class="body" x="735" y="166">p(length, age, sex | stratum)</text>
+
+  <!-- Stage 4 -->
+  <rect class="process" x="1100" y="70" width="340" height="126" rx="12" />
+  <text class="label" x="1115" y="92">Fitted length weights</text>
+  <text class="body" x="1115" y="112">length_weight_regression</text>
+  <text class="body" x="1115" y="130">mean weights by length_bin</text>
+  <text class="body" x="1115" y="148">Dims: length_bin (sex=all)</text>
+
+  <!-- Stage 5 -->
+  <rect class="out" x="500" y="260" width="440" height="110" rx="12" />
+  <text class="label" x="515" y="282">Weight proportions (corrected)</text>
+  <text class="body" x="515" y="302">weight_prop_length × p(age, sex | length, stratum)</text>
+  <text class="body" x="515" y="320">Dims: stratum × length_bin × age_bin × sex</text>
+  <text class="body" x="515" y="338">Sums to 1 within each stratum</text>
+
+  <!-- Optional normal pathway -->
+  <rect class="opt" x="70" y="260" width="360" height="110" rx="12" />
+  <text class="label" x="85" y="282">Normal pathway (no selectivity)</text>
+  <text class="body" x="85" y="302">count = 1 per specimen</text>
+  <text class="body" x="85" y="320">number_proportions from raw counts</text>
+  <text class="body" x="85" y="338">weight proportions from fitted weights</text>
+
+  <!-- Arrows -->
+  <path class="arrow" d="M 340 133 H 380" marker-end="url(#head)" />
+  <path class="arrow" d="M 680 133 H 720" marker-end="url(#head)" />
+  <path class="arrow" d="M 1060 133 H 1100" marker-end="url(#head)" />
+  <path class="arrow" d="M 890 196 V 260" marker-end="url(#headOut)" />
+  <path class="arrow" d="M 1270 196 V 260" marker-end="url(#headOut)" />
+  <path class="arrowOpt" d="M 250 176 V 260" marker-end="url(#headOpt)" />
+
+  <text class="note" x="103" y="408">Normal pathway shown for comparison; selectivity pathway inserts expansion before counts.</text>
+</svg>
