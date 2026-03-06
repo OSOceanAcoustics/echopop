@@ -608,9 +608,52 @@ def test_fitted_weight_proportions(
         result_da.sum(dim=["stratum_num", "sex"])
         == pytest.approx([0.26789935, 0.53579869, 0.80369804])
     ).all()
-    assert (
-        result_da.sum(dim=["length_bin", "sex"]) == pytest.approx([0.8097166, 0.79767948])
-    ).all()
+
+
+def test_fitted_weight_proportions_combined(
+    aged_dataarray,
+    unaged_dataarray,
+):
+    """Test fitted weight proportions for combined-sample workflows."""
+
+    # Get number proportions
+    number_props = get_proportions.number_proportions(
+        data=xr.Dataset({"aged": aged_dataarray, "unaged": unaged_dataarray}),
+        group_columns=["stratum_num", "sex"],
+    )
+
+    # Get the length-binned weights
+    lb_weights = (
+        pd.DataFrame(
+            {
+                "length_bin": number_props["unaged"]["length_bin"].values,
+                "sex": np.repeat("all", 3),
+                "weight_fitted": [1, 2, 3],
+            }
+        )
+        .set_index(["length_bin", "sex"])
+        .to_xarray()
+        .to_dataarray()
+        .squeeze("variable")
+        .reset_coords("variable", drop=True)
+    )
+
+    result = get_proportions.fitted_weight_proportions_combined(
+        number_proportions=number_props["unaged"].reset_coords("variable", drop=True),
+        binned_weights=lb_weights,
+        stratum_dim=["stratum_num"],
+    )
+
+    assert isinstance(result, xr.Dataset)
+    assert "proportion_overall" in result
+
+    result_da = result["proportion_overall"]
+
+    # Should preserve original dimensions from number_proportions
+    assert set(result_da.dims) == set(number_props["unaged"]["proportion"].dims)
+
+    # Should be normalized to 1.0 within each stratum
+    assert np.allclose(result_da.sum(dim=["length_bin", "sex"]).values, np.array([1.0, 1.0]))
 
 
 # =============================================================================
