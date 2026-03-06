@@ -404,7 +404,7 @@ ds_count_proportions = proportions.number_proportions(
 # FITTED WEIGHT PROPORTIONS
 ds_weight_proportions = proportions.fitted_weight_proportions_combined(
     number_proportions=ds_count_proportions,
-    binned_weights=da_binned_weights_all,
+    binned_weights=da_binned_weight_table,
     stratum_dim=["stratum_ks"],
 )
 
