@@ -1017,20 +1017,18 @@ def fitted_weight_proportions_combined(
         binned_weights=binned_weights,
         stratum_dim=stratum_dim,
     )
-    
+
     # Calculate the mean length-binned weights
     mean_weight_length = number_proportions["proportion"] * binned_weights
-    
+
     # Gather all dimensions that contribute to a single 'stratum_dim' total
     sum_dims = [d for d in mean_weight_length.dims if d not in stratum_dim]
-    
+
     # Calculate the total 'stratum_dim' weight
     stratum_total = mean_weight_length.sum(dim=sum_dims)
-    
+
     # Normalize to calculate the weight proportions (sum for each 'stratum_dim' = 1)
-    weight_prop = (
-        mean_weight_length / stratum_total.where(stratum_total > 0)
-    ).fillna(0.)
+    weight_prop = (mean_weight_length / stratum_total.where(stratum_total > 0)).fillna(0.0)
     # ---- Assign array name
     weight_prop.name = "proportion_overall"
     return weight_prop.to_dataset()
