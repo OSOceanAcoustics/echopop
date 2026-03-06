@@ -19,6 +19,7 @@ Distributions and proportions
 .. autofunction:: echopop.survey.proportions.stratum_averaged_weight
 .. autofunction:: echopop.survey.proportions.weight_proportions
 .. autofunction:: echopop.survey.proportions.fitted_weight_proportions
+.. autofunction:: echopop.survey.proportions.fitted_weight_proportions_combined
 .. autofunction:: echopop.survey.proportions.get_nasc_proportions_slice
 .. autofunction:: echopop.survey.proportions.get_number_proportions_slice
 .. autofunction:: echopop.survey.proportions.get_weight_proportions_slice
