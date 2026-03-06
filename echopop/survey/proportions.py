@@ -972,6 +972,7 @@ def _validate_fitted_weight_proportions(
             f"'{', '.join(missing_strata)}'."
         )
 
+
 def fitted_weight_proportions_combined(
     number_proportions: xr.Dataset,
     binned_weights: xr.DataArray,
@@ -1017,33 +1018,23 @@ def fitted_weight_proportions_combined(
         stratum_dim=stratum_dim,
     )
     
-    # Number proportion for each length bin within each stratum
-    number_prop_length = number_proportions["proportion"].sum(
-        dim=[
-            d
-            for d in number_proportions["proportion"].dims
-            if d not in stratum_dim + ["length_bin"]
-        ]
-    )
+    # Calculate the mean length-binned weights
+    mean_weight_length = number_proportions["proportion"] * binned_weights
     
-    # Average weight for each length bin within each stratum
-    mean_weight_length = (number_prop_length * binned_weights.squeeze().drop_vars("sex")).fillna(
-        0.0
-    )
-        
-    # Weight proportion for each length bin within each stratum
-    weight_prop_length = (
-        (mean_weight_length / mean_weight_length.sum(dim="length_bin")).fillna(0.0).squeeze()
-    )
+    # Gather all dimensions that contribute to a single 'stratum_dim' total
+    sum_dims = [d for d in mean_weight_length.dims if d not in stratum_dim]
     
-    # Redistributing the weight proportion for each length bin over sex and other vars using
-    # the conditional distribution p(vars | length, stratum) from the number proportions
-    weight_prop = weight_prop_length * (
-        number_proportions["proportion"] / number_prop_length.where(number_prop_length > 0)
-    ).fillna(0.0)
+    # Calculate the total 'stratum_dim' weight
+    stratum_total = mean_weight_length.sum(dim=sum_dims)
+    
+    # Normalize to calculate the weight proportions (sum for each 'stratum_dim' = 1)
+    weight_prop = (
+        mean_weight_length / stratum_total.where(stratum_total > 0)
+    ).fillna(0.)
     # ---- Assign array name
     weight_prop.name = "proportion_overall"
     return weight_prop.to_dataset()
+
 
 def fitted_weight_proportions(
     weight_data: xr.DataArray,
