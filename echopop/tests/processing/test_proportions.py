@@ -626,9 +626,12 @@ def test_fitted_weight_proportions_combined(
     lb_weights = (
         pd.DataFrame(
             {
-                "length_bin": number_props["unaged"]["length_bin"].values,
-                "sex": np.repeat("all", 3),
-                "weight_fitted": [1, 2, 3],
+                "length_bin": np.concatenate([
+                    number_props["unaged"]["length_bin"].values,
+                    number_props["unaged"]["length_bin"].values
+                ]),
+                "sex": np.concatenate([np.repeat("male", 3), np.repeat("female", 3)]),
+                "weight_fitted": [1, 2, 3, 1, 2, 3],
             }
         )
         .set_index(["length_bin", "sex"])
