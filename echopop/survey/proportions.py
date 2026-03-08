@@ -979,12 +979,13 @@ def fitted_weight_proportions_combined(
     stratum_dim: List[str] = [],
 ) -> xr.Dataset:
     """
-    Calculate fitted weight proportions for combined-sample workflows.
+    Calculate weight proportions based on number proportions.
 
-    This pathway is intended for workflows where aged and unaged samples have already been
-    combined (e.g., selectivity-corrected all-sample pipelines). It scales number proportions by
-    fitted mean length-binned weights and redistributes over the existing conditional structure in
-    ``number_proportions``.
+    This function is used in workflows where the aged and unaged samples are pooled, 
+    such as when net selectivity is corrected based on length. 
+    The weight proportions are calculated by multiplying the number of proportions 
+    over sex, length, and aged with sex-specific mean weight at length,
+    and then normalizing over all dimensions within a given stratum.
 
     Parameters
     ----------
@@ -1018,17 +1019,17 @@ def fitted_weight_proportions_combined(
         stratum_dim=stratum_dim,
     )
 
-    # Calculate the mean length-binned weights
-    mean_weight_length = number_proportions["proportion"] * binned_weights
+    # Calculate mean weight in each bin of specific sex, length, and age
+    mean_weight = number_proportions["proportion"] * binned_weights
 
     # Gather all dimensions that contribute to a single 'stratum_dim' total
-    sum_dims = [d for d in mean_weight_length.dims if d not in stratum_dim]
+    sum_dims = [d for d in mean_weight.dims if d not in stratum_dim]
 
     # Calculate the total 'stratum_dim' weight
-    stratum_total = mean_weight_length.sum(dim=sum_dims)
+    stratum_total = mean_weight.sum(dim=sum_dims)
 
     # Normalize to calculate the weight proportions (sum for each 'stratum_dim' = 1)
-    weight_prop = (mean_weight_length / stratum_total.where(stratum_total > 0)).fillna(0.0)
+    weight_prop = (mean_weight / stratum_total.where(stratum_total > 0)).fillna(0.0)
     # ---- Assign array name
     weight_prop.name = "proportion_overall"
     return weight_prop.to_dataset()
