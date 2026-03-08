@@ -981,9 +981,9 @@ def fitted_weight_proportions_combined(
     """
     Calculate weight proportions based on number proportions.
 
-    This function is used in workflows where the aged and unaged samples are pooled, 
-    such as when net selectivity is corrected based on length. 
-    The weight proportions are calculated by multiplying the number of proportions 
+    This function is used in workflows where the aged and unaged samples are pooled,
+    such as when net selectivity is corrected based on length.
+    The weight proportions are calculated by multiplying the number of proportions
     over sex, length, and aged with sex-specific mean weight at length,
     and then normalizing over all dimensions within a given stratum.
 
