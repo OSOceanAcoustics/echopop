@@ -37,13 +37,14 @@ def get_l50_sr(
 
     # Validate and normalize all net selectivity parameters to (L50, SR)
     validated = ValidateSelectivityParams.create(**params)
-    # ---- If already present
+    # ---- If L50 already present
     if validated.get("l50") is not None:
         return float(validated["l50"]), float(validated["sr"])
     # ---- Make conversion
-    slope = float(validated["slope"])
-    intercept = float(validated["intercept"])
-    return -intercept / slope, _K / slope
+    else:
+        slope = float(validated["slope"])
+        intercept = float(validated["intercept"])
+        return -intercept / slope, _K / slope
 
 
 def assign_selectivity_expansion(
