@@ -11,7 +11,6 @@ class ValidateSelectivityParams(BaseDictionary):
     slope: Optional[float] = Field(default=None, allow_inf_nan=False)
     l50: Optional[float] = Field(default=None, allow_inf_nan=False, gt=0.0)
     sr: Optional[float] = Field(default=None, allow_inf_nan=False, gt=0.0)
-    minimum_selectivity: float = Field(default=1e-12, allow_inf_nan=False)
 
     @model_validator(mode="after")
     def validate_parameter_sets(self) -> Self:
@@ -38,9 +37,7 @@ class ValidateSelectivityParams(BaseDictionary):
 
         # Prevent "mixing and matching" (e.g., providing slope and l50)
         # ---- This catches if they provided one part of one set and one part of the other
-        provided_fields = {
-            k for k, v in self.model_dump().items() if v is not None and k != "minimum_selectivity"
-        }
+        provided_fields = {k for k, v in self.model_dump().items() if v is not None}
 
         valid_regression = {"intercept", "slope"}
         valid_metrics = {"l50", "sr"}

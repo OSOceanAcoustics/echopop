@@ -1,0 +1,317 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="956.97559"
+   height="447.44827"
+   viewBox="0 0 956.97559 447.44827"
+   role="img"
+   aria-label="Observed versus selectivity-corrected composition illustration"
+   version="1.1"
+   id="svg28"
+   sodipodi:docname="selectivity_inverse_weighting_theory.svg"
+   inkscape:version="1.4.3 (0d15f75, 2025-12-25)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview28"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="1.259534"
+     inkscape:cx="478.74851"
+     inkscape:cy="231.43481"
+     inkscape:window-width="1920"
+     inkscape:window-height="1057"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg28" />
+  <defs
+     id="defs1">
+    <style
+       id="style1">
+      .title { font: 700 24px Arial, sans-serif; fill: #111827; }
+      .subtitle { font: 400 15px Arial, sans-serif; fill: #374151; }
+      .axis { stroke: #111827; stroke-width: 2; }
+      .grid { stroke: #e5e7eb; stroke-width: 1; }
+      .label { font: 13px Arial, sans-serif; fill: #111827; }
+      .obs { fill: #93c5fd; stroke: #1d4ed8; stroke-width: 1; }
+      .cor { fill: #86efac; stroke: #15803d; stroke-width: 1; }
+      .line { fill: none; stroke: #dc2626; stroke-width: 3; }
+      .note { font: 12px Arial, sans-serif; fill: #1f2937; }
+      .legend { font: 13px Arial, sans-serif; fill: #111827; }
+    </style>
+  </defs>
+  <rect
+     x="0"
+     y="0"
+     width="956.97559"
+     height="447.44827"
+     fill="#ffffff"
+     id="rect1"
+     style="stroke-width:0.954088" />
+  <text
+     x="4.9756107"
+     y="36"
+     class="title"
+     id="text1"
+     style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:24px;line-height:normal;font-family:Arial, sans-serif">Inverse-retention weighting intuition</text>
+  <text
+     x="4.9756107"
+     y="60"
+     class="subtitle"
+     id="text2"
+     style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:15px;line-height:normal;font-family:Arial, sans-serif">Low-retention small lengths are underrepresented in raw counts and are re-expanded by 1 / S(L).</text>
+  <line
+     x1="66.975609"
+     y1="410"
+     x2="876.97559"
+     y2="410"
+     class="axis"
+     id="line2" />
+  <line
+     x1="66.975609"
+     y1="410"
+     x2="66.975609"
+     y2="105"
+     class="axis"
+     id="line3" />
+  <line
+     x1="66.975609"
+     y1="350"
+     x2="876.97559"
+     y2="350"
+     class="grid"
+     id="line4" />
+  <line
+     x1="66.975609"
+     y1="290"
+     x2="876.97559"
+     y2="290"
+     class="grid"
+     id="line5" />
+  <line
+     x1="66.975609"
+     y1="230"
+     x2="876.97559"
+     y2="230"
+     class="grid"
+     id="line6" />
+  <line
+     x1="66.975609"
+     y1="170"
+     x2="876.97559"
+     y2="170"
+     class="grid"
+     id="line7" />
+  <rect
+     x="96.975609"
+     y="330"
+     width="24"
+     height="80"
+     class="obs"
+     id="rect7" />
+  <rect
+     x="124.97561"
+     y="280"
+     width="24"
+     height="130"
+     class="cor"
+     id="rect8" />
+  <rect
+     x="186.97562"
+     y="300"
+     width="24"
+     height="110"
+     class="obs"
+     id="rect9" />
+  <rect
+     x="214.97562"
+     y="255"
+     width="24"
+     height="155"
+     class="cor"
+     id="rect10" />
+  <rect
+     x="276.97562"
+     y="250"
+     width="24"
+     height="160"
+     class="obs"
+     id="rect11" />
+  <rect
+     x="304.97562"
+     y="230"
+     width="24"
+     height="180"
+     class="cor"
+     id="rect12" />
+  <rect
+     x="366.97562"
+     y="215"
+     width="24"
+     height="195"
+     class="obs"
+     id="rect13" />
+  <rect
+     x="394.97562"
+     y="210"
+     width="24"
+     height="200"
+     class="cor"
+     id="rect14" />
+  <rect
+     x="456.97562"
+     y="225"
+     width="24"
+     height="185"
+     class="obs"
+     id="rect15" />
+  <rect
+     x="484.97562"
+     y="240"
+     width="24"
+     height="170"
+     class="cor"
+     id="rect16" />
+  <rect
+     x="546.97559"
+     y="265"
+     width="24"
+     height="145"
+     class="obs"
+     id="rect17" />
+  <rect
+     x="574.97559"
+     y="285"
+     width="24"
+     height="125"
+     class="cor"
+     id="rect18" />
+  <rect
+     x="636.97559"
+     y="315"
+     width="24"
+     height="95"
+     class="obs"
+     id="rect19" />
+  <rect
+     x="664.97559"
+     y="330"
+     width="24"
+     height="80"
+     class="cor"
+     id="rect20" />
+  <rect
+     x="726.97559"
+     y="350"
+     width="24"
+     height="60"
+     class="obs"
+     id="rect21" />
+  <rect
+     x="754.97559"
+     y="358"
+     width="24"
+     height="52"
+     class="cor"
+     id="rect22" />
+  <path
+     class="line"
+     d="m 112.97561,370 c 84,-26 164,-60 234,-105 70,-45 140,-81 210,-108 80,-29 160,-43 270,-47"
+     id="path22" />
+  <text
+     x="830.26068"
+     y="114.03029"
+     class="note"
+     id="text22"
+     style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:12px;line-height:normal;font-family:Arial, sans-serif;-inkscape-font-specification:'Arial, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#1f2937"><tspan
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:14.6667px;font-family:Arial, sans-serif;-inkscape-font-specification:'Arial, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+       id="tspan33">S(L)</tspan></text>
+  <text
+     x="420.19153"
+     y="430.82422"
+     class="label"
+     id="text23"
+     style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:13px;line-height:normal;font-family:Arial, sans-serif;fill:#111827"><tspan
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:17.3333px;font-family:Arial, sans-serif;-inkscape-font-specification:'Arial, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+       id="tspan29">Length bin (ℓ)</tspan></text>
+  <text
+     x="-393.19147"
+     y="58.079048"
+     transform="rotate(-90)"
+     class="label"
+     id="text24"
+     style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:13px;line-height:normal;font-family:Arial, sans-serif;fill:#111827"><tspan
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:17.3333px;font-family:Arial, sans-serif;-inkscape-font-specification:'Arial, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+       id="tspan28">Relative frequency / retention scale</tspan></text>
+  <g
+     id="g32"
+     transform="translate(61.133723,-134.17661)">
+    <rect
+       x="625.04517"
+       y="139.48753"
+       width="264.84326"
+       height="89.818878"
+       fill="#ffffff"
+       stroke="#d1d5db"
+       id="rect24"
+       style="stroke-width:0.920407" />
+    <rect
+       x="632"
+       y="152"
+       width="20"
+       height="12"
+       class="obs"
+       id="rect25" />
+    <text
+       x="662"
+       y="162"
+       class="legend"
+       id="text25"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:13px;line-height:normal;font-family:Arial, sans-serif;fill:#111827"><tspan
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:14.6667px;font-family:Arial, sans-serif;-inkscape-font-specification:'Arial, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+         id="tspan30">Observed composition (raw)</tspan></text>
+    <rect
+       x="632"
+       y="178"
+       width="20"
+       height="12"
+       class="cor"
+       id="rect26" />
+    <text
+       x="662"
+       y="188"
+       class="legend"
+       id="text26"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:13px;line-height:normal;font-family:Arial, sans-serif;fill:#111827"><tspan
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:14.6667px;font-family:Arial, sans-serif;-inkscape-font-specification:'Arial, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+         id="tspan31">Corrected composition (weighted)</tspan></text>
+    <line
+       x1="632"
+       y1="213"
+       x2="652"
+       y2="213"
+       class="line"
+       id="line26" />
+    <text
+       x="662"
+       y="218"
+       class="legend"
+       id="text27"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:13px;line-height:normal;font-family:Arial, sans-serif;fill:#111827"><tspan
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:14.6667px;font-family:Arial, sans-serif;-inkscape-font-specification:'Arial, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+         id="tspan32">Retention curve S(L)</tspan></text>
+  </g>
+  <text
+     x="62.835999"
+     y="426.07483"
+     class="note"
+     id="text28"
+     style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:12px;line-height:normal;font-family:Arial, sans-serif">Small lengths have lower S(L) and receive larger inverse weights.</text>
+</svg>

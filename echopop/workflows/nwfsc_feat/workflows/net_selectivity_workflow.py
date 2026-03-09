@@ -1,4 +1,4 @@
-####################################################################################################
+3####################################################################################################
 # 2019 
 # ----
 from pathlib import Path
@@ -27,8 +27,8 @@ REMOVE_AGE1 = True
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # BIODATA FILE
 BIODATA_FILES = {
-    "catch": DATA_ROOT / "Biological/materialized_view/echopop_catch.csv",
-    "specimen": DATA_ROOT / "Biological/materialized_view/echopop_fish.csv",
+    "catch": DATA_ROOT / "Biological/database_view/echopop_catch.csv",
+    "specimen": DATA_ROOT / "Biological/database_view/echopop_fish.csv",
 }
 
 # BIODATA PROCESSING
@@ -63,7 +63,6 @@ BIODATA_SHIP_SPECIES = {
 NET_SELECTIVITY = {
     "l50": 10.9,
     "sr": 14.0,
-    "minimum_selectivity": 1e-12
 }
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -359,56 +358,47 @@ da_binned_weight_table = xr.concat(
 )
 
 # ==================================================================================================
-# SPLIT UP DATASET INTO AGED AND UNAGED
-# ---- AGED
-specimen_aged = dict_df_bio["specimen"].dropna(subset=["age_bin"])
-# ---- UNAGED
-specimen_unaged = dict_df_bio["specimen"].loc[lambda x: x["age_bin"].isnull()]
-specimen_unaged = specimen_unaged.copy().value_counts(dropna=False).reset_index(name="length_count")
-# ==================================================================================================
-# COMPUTE COUNT DISTRIBUTIONS PER AGE- AND LENGTH-BINS
-# DATASET CONTAINER
-ds_counts = xr.Dataset()
-
-# AGED
-ds_counts["aged"] = proportions.compute_binned_counts(
-    data=specimen_aged.dropna(subset=["length", "weight"]),
-    groupby_cols=["stratum_ks", "length_bin", "age_bin", "sex"],
-    count_col="length",
-    agg_func="size",
+# APPLY NET SELECTIVITY CORRECTION
+# ---- Assign gear-type to specimen-level data
+specimen_data = dict_df_bio["specimen"].merge(
+    dict_df_bio["catch"][["uid", "gear"]].drop_duplicates("uid"),
+    on="uid",
+    how="left",
+)
+# ---- Assign selectivity expansion to each fish
+specimen_data_selectivity = selectivity.assign_selectivity_expansion(
+    specimen_data,
+    NET_SELECTIVITY,
+    net_column = "gear",
 )
 
-# UNAGED
-ds_counts["unaged"] = proportions.compute_binned_counts(
-    data=specimen_unaged.dropna(subset=["length_bin"]),
-    groupby_cols=["stratum_ks", "length_bin", "sex"],
-    count_col="length_count",
+# ==================================================================================================
+# COMPUTE COUNT DISTRIBUTIONS PER AGE- AND LENGTH-BINS [AT HAUL-LEVEL]
+da_count_distribution_hauls = proportions.compute_binned_counts(
+    data=specimen_data_selectivity.dropna(subset=["length"]),
+    groupby_cols=["stratum_ks", "length_bin", "age_bin", "sex", "uid"],
+    count_col="selectivity_expansion",
     agg_func="sum",
 )
 
 # ==================================================================================================
-# COMPUTE NUMBER PROPORTIONS
-dict_ds_number_proportion = proportions.number_proportions(
-    data=ds_counts,
+# COMPUTE COUNT DISTRIBUTIONS PER AGE- AND LENGTH-BINS [AT STRATUM-LEVEL]
+da_count_distribution_strata = da_count_distribution_hauls.sum(dim=["uid"])
+
+# ==================================================================================================
+# NUMBER PROPORTIONS
+ds_count_proportions = proportions.number_proportions(
+    data=da_count_distribution_strata,
     group_columns=["stratum_ks"],
-    exclude_filters={"aged": {"sex": "unsexed"}},
+    exclude_filters={"sex": "unsexed"}
 )
 
 # ==================================================================================================
-# APPLY NET SELECTIVITY CORRECTIONS
-ds_number_proportions_corrected = selectivity.correct_number_proportions(
-    number_data=dict_ds_number_proportion,
-    selectivity_params=NET_SELECTIVITY,
-    stratum_dim=["stratum_ks"]
-)
-
-# ==================================================================================================
-# DERIVE WEIGHT PROPORTIONS FROM SELECTIVITY-CORRECTED NUMBER PROPORTIONS USING MEAN LENGTH-BINNED 
-# WEIGHTS
-ds_weight_proportions_corrected = selectivity.correct_weight_proportions(
-    corrected_number_proportions=ds_number_proportions_corrected,
-    mean_length_binned_weights=da_binned_weight_table,
-    stratum_dim=["stratum_ks"]
+# FITTED WEIGHT PROPORTIONS
+ds_weight_proportions = proportions.fitted_weight_proportions_combined(
+    number_proportions=ds_count_proportions,
+    binned_weights=da_binned_weight_table,
+    stratum_dim=["stratum_ks"],
 )
 
 # ==================================================================================================
@@ -450,12 +440,12 @@ df_nasc["area_interval"] = (
 feat_biology.compute_abundance(
     transect_data=df_nasc,
     exclude_filter={"sex": "unsexed"},
-    number_proportions=ds_number_proportions_corrected,
+    number_proportions=ds_count_proportions,
 )
 
 # COMPUTE STRATUM-AVERAGED WEIGHTS
 da_averaged_weight = proportions.stratum_averaged_weight(
-    number_proportions=ds_number_proportions_corrected,
+    number_proportions=ds_count_proportions,
     length_weight_data=da_binned_weight_table,
     group_columns=["stratum_ks"]
 )
@@ -470,7 +460,7 @@ feat_biology.compute_biomass(
 if REMOVE_AGE1:
     # NASC
     age1_nasc_proportions = proportions.get_nasc_proportions_slice(
-        number_proportions=ds_number_proportions_corrected,
+        number_proportions=ds_count_proportions,
         group_columns=["stratum_ks"],
         ts_length_regression_parameters={"slope": 20.0, "intercept": -68.0},
         include_filter={"age_bin": [1]},
@@ -478,17 +468,17 @@ if REMOVE_AGE1:
 
     # NUMBER
     age1_number_proportions = proportions.get_number_proportions_slice(
-        number_proportions=ds_number_proportions_corrected,
+        number_proportions=ds_count_proportions,
         stratum_dim=["stratum_ks"],
         include_filter={"age_bin": [1]},
     )
 
     # WEIGHT
     age1_weight_proportions = proportions.get_weight_proportions_slice(
-        weight_proportions=ds_weight_proportions_corrected,
+        weight_proportions=ds_weight_proportions,
         stratum_dim=["stratum_ks"],
         include_filter={"age_bin": [1]},
-        number_proportions=dict_ds_number_proportion,
+        number_proportions=ds_count_proportions,
         length_threshold_min=10.0,
         weight_proportion_threshold=1e-10,
     )
@@ -584,7 +574,7 @@ df_kriged_results["biomass"] = df_kriged_results["biomass_density"] * df_kriged_
 # BIOMASS TO NASC
 feat_apportion.mesh_biomass_to_nasc(
     mesh_data=df_kriged_results,
-    biodata=ds_weight_proportions_corrected,
+    biodata=ds_weight_proportions,
     group_columns=["sex", "stratum_ks"],
     mesh_biodata_link={"geostratum_ks": "stratum_ks"},
     stratum_weights=da_averaged_weight.sel(sex="all"),
@@ -596,7 +586,7 @@ feat_apportion.mesh_biomass_to_nasc(
 # ABUNDANCE [ALL]
 ds_kriged_abundance_table = feat_apportion.distribute_population_estimates(
     data=df_kriged_results,
-    proportions = ds_number_proportions_corrected,
+    proportions = ds_count_proportions,
     variable = "abundance",
     group_columns = ["sex", "age_bin", "length_bin", "stratum_ks"],
     data_proportions_link={"geostratum_ks": "stratum_ks"}
@@ -605,7 +595,7 @@ ds_kriged_abundance_table = feat_apportion.distribute_population_estimates(
 # BIOMASS [ALL]
 ds_kriged_biomass_table = feat_apportion.distribute_population_estimates(
     data = df_kriged_results,
-    proportions = ds_weight_proportions_corrected,
+    proportions = ds_weight_proportions,
     variable = "biomass",
     group_columns = ["sex", "age_bin", "length_bin", "stratum_ks"],
     data_proportions_link={"geostratum_ks": "stratum_ks"}
@@ -615,13 +605,13 @@ ds_kriged_biomass_table = feat_apportion.distribute_population_estimates(
 # ---- ABUNDANCE
 da_kriged_abundance_table = feat_apportion.sum_population_tables(
     population_tables={
-        "all": ds_kriged_abundance_table ,
+        "all": ds_kriged_abundance_table.fillna(0.) ,
     },
 )
 # ---- BIOMASS
 da_kriged_biomass_table = feat_apportion.sum_population_tables(
     population_tables={
-        "all": ds_kriged_biomass_table
+        "all": ds_kriged_biomass_table.fillna(0.)
     },
 )
 
