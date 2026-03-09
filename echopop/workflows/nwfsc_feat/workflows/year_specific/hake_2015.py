@@ -21,16 +21,16 @@ except Exception:
     VERBOSE = True
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # DATA ROOT DIRECTORY
-DATA_ROOT = Path("C:/Data/EchopopData/file_all_years_update_20260303/2015")
+DATA_ROOT = Path("C:/Data/EchopopData/echopop_2015")
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # REPORTS SAVE DIRECTORY
-REPORTS_DIR = DATA_ROOT / "output_echopop"
+REPORTS_DIR = DATA_ROOT / "reports_updated_biodata"
 # COMPARE TO ECHOPRO REPORTS?
 try:
     # ---- FOR CLI USE
     COMPARE = cli_utils.get_compare()
-    ECHOPRO_REPORTS_DIR = DATA_ROOT / "output_echopro"
-    COMPARISONS_DIR = DATA_ROOT / "comparisons"
+    ECHOPRO_REPORTS_DIR = DATA_ROOT / "reports_echopro"
+    COMPARISONS_DIR = DATA_ROOT / "comparisons_updated_biodata"
     SHOW_PLOT = False
 except Exception:
     # ---- FOR INTERACTIVE REPL USE
@@ -42,7 +42,7 @@ except Exception:
 NASC_PREPROCESSED = True
 # NASC EXPORTS FILE(S)
 NASC_EXPORTS_FILES = (
-    DATA_ROOT / "input" / 
+    DATA_ROOT / 
     "Exports/US&CAN_detailsa_2015_table2y+_shoreside_snapshot1_ALL_final.xlsx"
 )
 # NASC EXPORTS SHEET
@@ -51,7 +51,7 @@ NASC_EXPORTS_SHEET = "Sheet1"
 REMOVE_AGE1 = True
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # BIODATA FILE
-BIODATA_FILE = DATA_ROOT /  "input/Biological/1995-2025_Survey_Biodata.xlsx"
+BIODATA_FILE = DATA_ROOT / "Biological/1995-2025_Survey_Biodata.xlsx"
 # BIODATA SHEETS
 # ---- Assign the sheetnames to 'catch', 'length', 'specimen'
 BIODATA_SHEETS = {
@@ -93,7 +93,7 @@ AGE1_DOMINATED_HAULS = []
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # HAUL STRATIFICATION FILE
 HAUL_STRATA_FILE = (
-    DATA_ROOT / "input" / 
+    DATA_ROOT / 
     "Stratification/shoreside_snapshot-1/US&CAN strata 2015 shoreside.xlsx"
 )
 # HAUL STRATIFICATION SHEET MAP
@@ -104,7 +104,7 @@ HAUL_STRATA_SHEETS = {
 }
 # GEOGRAPHIC STRATIFICATION FILE
 GEOSTRATA_FILE = (
-    DATA_ROOT / "input" / 
+    DATA_ROOT / 
     "Stratification/shoreside_snapshot-1/Stratification_geographic_Lat_2015_shoreside.xlsx"
 )
 # GEOGRAPHIC STRATIFICATION SHEET MAP
@@ -116,7 +116,7 @@ GEOSTRATA_SHEETS = {
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # KRIGING MESH FILE 
 KRIGING_MESH_FILE = (
-    DATA_ROOT / "input" / "Kriging_files/Kriging_grid_files/krig_grid2_5nm_cut_centroids_2013.xlsx"
+    DATA_ROOT / "Kriging_files/Kriging_grid_files/krig_grid2_5nm_cut_centroids_2013.xlsx"
 )
 # KRIGING MESH SHEET
 KRIGING_MESH_SHEET = "krigedgrid2_5nm_forChu"
@@ -132,7 +132,7 @@ OPTIMIZE_VARIOGRAM = False
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # 200m ISOBATH FILE
 ISOBATH_FILE = (
-    DATA_ROOT / "input" / "Kriging_files/Kriging_grid_files/transformation_isobath_coordinates.xlsx"
+    DATA_ROOT / "Kriging_files/Kriging_grid_files/transformation_isobath_coordinates.xlsx"
 )
 # 200m ISOBATH SHEET
 ISOBATH_SHEET = "Smoothing_EasyKrig"
@@ -682,9 +682,8 @@ dict_da_weight_proportion = {}
 logging.info("Computing aged weight proportions...")
 dict_da_weight_proportion["aged"] = proportions.weight_proportions(
     weight_data=ds_da_weight_dist["aged"], 
-    catch_data=dict_df_bio, 
-    stratum_dim = ["stratum_ks"],
-    proportion_reference = "catch_plus_specimen"
+    catch_data=dict_df_bio["catch"], 
+    group_columns = ["stratum_ks"]
 )
 
 # UNAGED WEIGHT PROPORTIONS
