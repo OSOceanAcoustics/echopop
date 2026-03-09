@@ -59,12 +59,15 @@ sphinx:
     #   inherited-members: true
     autosummary_generate: true  # Automatically generate stub files for all documented members
     bibtex_reference_style: author_year
-    html_extra_path: ["_static"]
+    html_static_path: ["_static"]
+    html_extra_path: ["_static/comparisons"]
     numpydoc_class_members_toctree: false
     tippy_enable_mathjax: true
     numfig: false
     napoleon_use_rtype: false
     myst_footnote_transition: false    
+    html_css_files:
+      - custom_echopop.css
     bibtex_bibfiles: ["references.bib"]
     intersphinx_mapping:
       cartopy: ["https://cartopy.readthedocs.io/stable/", null]

@@ -13,7 +13,7 @@ parts:
     sections:
       - file: FEAT_implementation/overall_workflow
       - file: FEAT_implementation/echopro_vs_echopop
-        title: Differences between EchoPro and Echopop
+        title: EchoPro vs Echopop implementation
       - file: FEAT_implementation/input_files
         title: Input files
       - file: headings/nasc_data_ingestion_h
@@ -63,6 +63,13 @@ parts:
             title: Diagnostic plotting
       - file: FEAT_implementation/FEAT_notebooks/report_generation
         title: Generating reports
+      - file: headings/comparison_h
+        title: EchoPro vs Echopop comparisons
+        sections:
+          - file: FEAT_implementation/FEAT_notebooks/cross_year_comparisons
+            title: Comparing outputs
+          - file: FEAT_implementation/cross_year_comparison_results
+            title: Comparison results
       - file: FEAT_implementation/FEAT_notebooks/year_specific_workflows
         title: Running year-specific workflows
   - file: theory

@@ -40,3 +40,7 @@ p.caption > strong:first-child {
 p.caption > span:first-child:not(.caption-text) {
   display: none !important;
 }
+
+img {
+  max-width: 100%;
+}
