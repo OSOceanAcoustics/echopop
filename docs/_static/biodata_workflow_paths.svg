@@ -6,7 +6,7 @@
    version="1.1"
    id="svg20"
    sodipodi:docname="biodata_workflow_paths.svg"
-   inkscape:version="1.4.3 (0d15f75, 2025-12-25)"
+   inkscape:version="1.4.2 (f4327f4, 2025-05-13)"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns="http://www.w3.org/2000/svg"
@@ -20,13 +20,13 @@
      inkscape:pageopacity="0.0"
      inkscape:pagecheckerboard="0"
      inkscape:deskcolor="#d1d1d1"
-     inkscape:zoom="0.87244898"
-     inkscape:cx="706.05848"
-     inkscape:cy="216.05848"
-     inkscape:window-width="1920"
-     inkscape:window-height="1057"
-     inkscape:window-x="1912"
-     inkscape:window-y="-8"
+     inkscape:zoom="1.744898"
+     inkscape:cx="471.08772"
+     inkscape:cy="381.97076"
+     inkscape:window-width="3840"
+     inkscape:window-height="2126"
+     inkscape:window-x="-11"
+     inkscape:window-y="-11"
      inkscape:window-maximized="1"
      inkscape:current-layer="svg20" />
   <defs
@@ -151,8 +151,8 @@
      xml:space="preserve"><tspan
        x="150"
        y="205"
-       id="tspan6"><tspan
-         style="font-weight:bold;font-family:Sans;-inkscape-font-specification:'Sans, Bold'"
+       id="tspan14"><tspan
+         style="font-weight:bold;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Bold'"
          id="tspan5">Input biodata</tspan></tspan></text>
   <text
      x="834.52228"
@@ -164,12 +164,14 @@
        style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:19px;font-family:Sans;-inkscape-font-specification:'Sans, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
        id="tspan153">Output</tspan></text>
   <text
-     x="26.742071"
-     y="88.760239"
+     x="27.433329"
+     y="92.418129"
      class="body"
      id="text6"
-     style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:19px;line-height:normal;font-family:Arial, Helvetica, sans-serif"
-     clip-path="none">Excel workbook with three sheets:</text>
+     style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:19px;line-height:normal;font-family:Arial, Helvetica, sans-serif;fill:#111827"
+     clip-path="none"><tspan
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:19px;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+       id="tspan8">Excel workbook with three sheets:</tspan></text>
   <text
      x="834.52228"
      y="425.68146"
@@ -180,7 +182,7 @@
        style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:19px;font-family:Sans;-inkscape-font-specification:'Sans, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
        id="tspan152">Output</tspan></text>
   <text
-     x="26.658575"
+     x="27.349833"
      y="119.90643"
      class="body"
      id="text7"
@@ -188,22 +190,28 @@
      clip-path="none"><tspan
        sodipodi:role="line"
        id="tspan32"
-       x="26.658575"
+       x="27.349833"
        y="119.90643"><tspan
    style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:19px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
-   id="tspan35">specimen</tspan>: Individual-level data (species, sex, length, age, weight)</tspan><tspan
+   id="tspan35">specimen</tspan>: <tspan
+   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:19px;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+   id="tspan1">Individual-level data (species, sex, length, age, weight)</tspan></tspan><tspan
        sodipodi:role="line"
        id="tspan33"
-       x="26.658575"
+       x="27.349833"
        y="144.03828"><tspan
    style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:19px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
-   id="tspan36">length</tspan>: Frequency-based data (species, sex, length-binned counts)</tspan><tspan
+   id="tspan36">length</tspan>: <tspan
+   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:19px;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+   id="tspan2">Frequency-based data (species, sex, length-binned counts)</tspan></tspan><tspan
        sodipodi:role="line"
        id="tspan34"
-       x="26.658575"
+       x="27.349833"
        y="168.17014"><tspan
    style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:19px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
-   id="tspan37">catch</tspan>: Haul-based data (species, total haul weights)</tspan></text>
+   id="tspan37">catch</tspan>: <tspan
+   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:19px;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+   id="tspan7">Haul-based data (species, total haul weights)</tspan></tspan></text>
   <text
      x="834.52228"
      y="425.68146"
@@ -309,7 +317,7 @@
      id="text9"
      style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:19px;line-height:normal;font-family:Arial, Helvetica, sans-serif;fill:#111827"
      clip-path="none"><tspan
-       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:19px;font-family:Sans;-inkscape-font-specification:'Sans, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:19px;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
        id="tspan43">Output</tspan></text>
   <text
      x="834.52228"
@@ -326,7 +334,9 @@
      class="body"
      id="text10"
      style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:19px;line-height:normal;font-family:Arial, Helvetica, sans-serif;fill:#111827"
-     clip-path="none">Keys: <tspan
+     clip-path="none"><tspan
+   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:19px;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+   id="tspan13">Keys</tspan>: <tspan
    style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:19px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
    id="tspan45">specimen</tspan>, <tspan
    style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:19px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
@@ -487,7 +497,7 @@
      id="text13"
      style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:19px;line-height:normal;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#111827"
      clip-path="none"><tspan
-       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:19px;font-family:Sans;-inkscape-font-specification:'Sans, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:19px;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
        id="tspan38">Input biodata</tspan></text>
   <text
      x="834.52228"
@@ -499,7 +509,7 @@
        style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:19px;font-family:Sans;-inkscape-font-specification:'Sans, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
        id="tspan136">Output</tspan></text>
   <text
-     x="686.42297"
+     x="686.49603"
      y="118.82597"
      class="body"
      id="text7-9"
@@ -507,16 +517,20 @@
      clip-path="none"><tspan
        sodipodi:role="line"
        id="tspan39"
-       x="686.42297"
+       x="686.49603"
        y="118.82597"><tspan
    style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:19px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
-   id="tspan3">specimen</tspan>: Individual-level data (species, sex, length, age, weight)</tspan><tspan
+   id="tspan3">specimen</tspan>: <tspan
+   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:19px;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+   id="tspan10">Individual-level data (species, sex, length, age, weight)</tspan></tspan><tspan
        sodipodi:role="line"
        id="tspan40"
-       x="686.42297"
+       x="686.49603"
        y="142.95782"><tspan
    style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:19px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
-   id="tspan4">catch</tspan>: Haul-based data (species, total haul weights)</tspan></text>
+   id="tspan4">catch</tspan>: <tspan
+   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:19px;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+   id="tspan11">Haul-based data (species, total haul weights)</tspan></tspan></text>
   <text
      x="834.52228"
      y="425.68146"
@@ -527,12 +541,14 @@
        style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:19px;font-family:Sans;-inkscape-font-specification:'Sans, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
        id="tspan135">Output</tspan></text>
   <text
-     x="686.94672"
-     y="87.614029"
+     x="687.63715"
+     y="91.304802"
      class="body"
      id="text14"
-     style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:19px;line-height:normal;font-family:Arial, Helvetica, sans-serif"
-     clip-path="none">Two separate CSV files:</text>
+     style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:19px;line-height:normal;font-family:Arial, Helvetica, sans-serif;fill:#111827"
+     clip-path="none"><tspan
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:19px;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+       id="tspan9">Two separate CSV files:</tspan></text>
   <text
      x="834.52228"
      y="425.68146"
@@ -644,7 +660,9 @@
      class="body"
      id="text18-1"
      style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:19px;line-height:normal;font-family:Arial, Helvetica, sans-serif;fill:#111827"
-     clip-path="none">Dictionary[<tspan
+     clip-path="none"><tspan
+   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:19px;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+   id="tspan12">Dictionary</tspan>[<tspan
    style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:19px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
    id="tspan44-5">pandas.DataFrame</tspan>]</text>
   <text
@@ -661,10 +679,10 @@
      y="849.61713"
      class="body"
      id="text9-7"
-     style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:19px;line-height:normal;font-family:Arial, Helvetica, sans-serif;white-space:pre;inline-size:0;fill:#111827"
+     style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:19px;line-height:normal;font-family:Arial, Helvetica, sans-serif;white-space:pre;fill:#111827"
      transform="translate(-48,-118)"
      clip-path="none"><tspan
-       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:19px;font-family:Sans;-inkscape-font-specification:'Sans, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:19px;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
        id="tspan43-6">In-place update</tspan></text>
   <text
      x="835.24738"

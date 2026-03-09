@@ -39,7 +39,11 @@ project_root/
     report.yaml
 ```
 
-![Centralized CLI dispatcher flow](../_static/orchestration_central_cli.svg)
+```{image} ../_static/orchestration_central_cli.svg
+:width: 100%
+:align: center
+:target: ../_static/orchestration_central_cli.svg
+```
 
 When running separate workflows, the user must know the specific filename and path for every stage of the analysis. The dispatcher reduces this burden by only requiring the user to know the name of the entrypoint script and keyword for the desired stage.
 
@@ -194,7 +198,11 @@ project_root/
     executed_notebooks/      <-- Papermill artifacts
 ```
 
-![Notebook orchestration flow](../_static/orchestration_notebook_hub.svg)
+```{image} ../_static/orchestration_notebook_hub.svg
+:width: 100%
+:align: center
+:target: ../_static/orchestration_notebook_hub.svg
+```
 
 The orchestrator notebook acts similarly to a dispatcher script with the addition of directing the flow of data through two primary execution paths:
 
@@ -270,7 +278,11 @@ project_root/
     report.yaml
 ```
 
-![Batch and shell wrapper flow](../_static/orchestration_batch_wrapper.svg)
+```{image} ../_static/orchestration_batch_wrapper.svg
+:width: 100%
+:align: center
+:target: ../_static/orchestration_batch_wrapper.svg
+```
 
 The orchestration logic within these scripts follows a structured execution path from initialization to result capture:
 
@@ -407,7 +419,11 @@ project_root/
     report.yaml
 ```
 
-![Task runner orchestration flow](../_static/orchestration_task_runner.svg)
+```{image} ../_static/orchestration_task_runner.svg
+:width: 100%
+:align: center
+:target: ../_static/orchestration_task_runner.svg
+```
 
 ### Using task runners
 

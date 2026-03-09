@@ -7,7 +7,16 @@ Some users may run a complete analysis for one survey year. Other users may run 
 
 ## Example: ingesting biological data
 
-![Biodata workflow paths](../_static/biodata_workflow_paths.svg)
+```{image} ../_static/biodata_workflow_paths.svg
+:width: 100%
+:align: center
+:target: ../_static/biodata_workflow_paths.svg
+```
+
+:::{admonition} Enhance!
+:class: tip
+Some workflow figures may not render well depending on your screen resolution. Click on the images themselves to expand them to full-size in a different window/tab.
+:::
 
 For example, users may have stored biological data using two different formats: 
 
@@ -48,6 +57,10 @@ Because these stages are separable, users can customize any part of a workflow w
 
 A workflow can be run in several ways, depending on project needs. Users can run a Python script and edit parameters directly in the file. Users can also run a Jupyter notebook and edit parameters in notebook cells. For command line use, workflows can accept arguments through defined hooks. For stronger reproducibility, runtime settings can be stored in JSON or YAML configuration files and loaded at run time, with or without command line arguments. For larger operational workloads, orchestration tools such as Prefect can schedule, monitor, and retry workflow runs while using the same underlying analysis logic.
 
-![Workflow dispatching and execution](../_static/workflow_dispatch_modes.svg)
+```{image} ../_static/workflow_dispatch_modes.svg
+:width: 100%
+:align: center
+:target: ../_static/workflow_dispatch_modes.svg
+```
 
 These execution options support different operational requirements while preserving the same scientific processing components.
