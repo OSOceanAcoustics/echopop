@@ -3,6 +3,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import pytest
+import xarray as xr
 
 from echopop.ingest import sv as ingest_sv
 
@@ -296,8 +297,8 @@ def test_ingest_echoview_sv_basic_functionality(sv_directory_with_files):
         impute_coordinates=True,
     )
 
-    assert isinstance(result_data, pd.DataFrame)
-    assert result_coords is None or isinstance(result_coords, pd.DataFrame)
+    assert isinstance(result_data, xr.Dataset)
+    assert result_coords is None or isinstance(result_coords, xr.DataArray)
 
 
 def test_ingest_echoview_sv_with_transect_pattern(sv_directory_with_files):
@@ -311,8 +312,8 @@ def test_ingest_echoview_sv_with_transect_pattern(sv_directory_with_files):
         aggregate_method="interval",
     )
 
-    assert isinstance(result_data, pd.DataFrame)
-    assert isinstance(result_coords, pd.DataFrame)
+    assert isinstance(result_data, xr.Dataset)
+    assert isinstance(result_coords, xr.DataArray)
 
 
 def test_ingest_echoview_sv_no_center_frequencies(sv_directory_with_files):
@@ -321,8 +322,8 @@ def test_ingest_echoview_sv_no_center_frequencies(sv_directory_with_files):
         sv_directory_with_files, transect_pattern=r"x(\d+)", aggregate_method="transect"
     )
 
-    assert isinstance(result_data, pd.DataFrame)
-    assert isinstance(result_coords, pd.DataFrame)
+    assert isinstance(result_data, xr.Dataset)
+    assert isinstance(result_coords, xr.DataArray)
 
 
 def test_ingest_echoview_sv_directory_not_found():

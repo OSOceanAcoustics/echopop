@@ -5,6 +5,7 @@ from lmfit import Parameters
 
 import echopop.inversion.inversion_matrix as im
 from echopop import inversion
+from echopop.ingest import sv as ingest_sv
 from echopop.inversion import InversionMatrix, InvParameters, estimate_population
 
 
@@ -243,64 +244,52 @@ def test_estimate_population(inv_transect_info, inv_interval_info, inv_cells_inf
 
     # Test transect-index
     transect_result = estimate_population(
-        inv_transect_info["inverted"],
-        inv_transect_info["coords"],
+        ingest_sv.df_to_xarray(inv_transect_info["inverted"]),
+        ingest_sv.df_to_xarray(inv_transect_info["coords"]),
         density_sw=1026.0,
         reference_frequency=120e3,
         aggregate_method="transect",
     )
+
     # ---- Check: shape
-    assert transect_result.shape == (5, 17)
-    # ---- Get keys:
-    params = list(inv_transect_info["inverted"]["parameters"].loc[1].values.keys())
-    # ---- Check: columns
-    expected_cols = ["longitude", "latitude", "nasc", "number_density", "biomass_density"] + params
-    assert all([col in transect_result.columns for col in expected_cols])
+    assert transect_result.sizes == {"point": 5}
+    # ---- Check: coords
+    expected_coords = ["longitude", "latitude", "transect_num"]
+    assert all([c in transect_result.coords for c in expected_coords])
     # ---- Check: index
-    assert list(transect_result.index.names) == ["transect_num"]
+    assert set(transect_result.data_vars) == {"biomass_density", "number_density", "nasc"}
 
     # Test interval-index
     interval_result = estimate_population(
-        inv_interval_info["inverted"],
-        inv_interval_info["coords"],
+        ingest_sv.df_to_xarray(inv_interval_info["inverted"]),
+        ingest_sv.df_to_xarray(inv_interval_info["coords"]),
         density_sw=1026.0,
         reference_frequency=120e3,
         aggregate_method="interval",
     )
     # ---- Check: shape
-    assert interval_result.shape == (20, 15)
-    # ---- Get keys:
-    params = list(inv_interval_info["inverted"]["parameters"].loc[1, 1, 1].values.keys())
-    # ---- Check: columns
-    expected_cols = ["nasc", "number_density", "biomass_density"] + params
-    assert all([col in interval_result.columns for col in expected_cols])
+    assert interval_result.sizes == {"point": 20}
+    # ---- Check: coords
+    expected_coords = ["longitude", "latitude", "interval"]
+    assert all([c in interval_result.coords for c in expected_coords])
     # ---- Check: index
-    assert all(
-        [col in ["longitude", "latitude", "interval"] for col in list(interval_result.index.names)]
-    )
+    assert set(interval_result.data_vars) == {"biomass_density", "number_density", "nasc"}
 
     # Test cells-index
     cells_result = estimate_population(
-        inv_cells_info["inverted"],
-        inv_cells_info["coords"],
+        ingest_sv.df_to_xarray(inv_cells_info["inverted"]),
+        ingest_sv.df_to_xarray(inv_cells_info["coords"]),
         density_sw=1026.0,
         reference_frequency=120e3,
         aggregate_method="cells",
     )
     # ---- Check: shape
-    assert cells_result.shape == (10, 15)
-    # ---- Get keys:
-    params = list(inv_cells_info["inverted"]["parameters"].loc[1, 1, -1, -1].values.keys())
-    # ---- Check: columns
-    expected_cols = ["nasc", "number_density", "biomass_density"] + params
-    assert all([col in cells_result.columns for col in expected_cols])
+    assert cells_result.sizes == {"point": 10}
+    # ---- Check: coords
+    expected_coords = ["longitude", "latitude", "interval", "layer"]
+    assert all([c in cells_result.coords for c in expected_coords])
     # ---- Check: index
-    assert all(
-        [
-            col in ["longitude", "latitude", "interval", "layer"]
-            for col in list(cells_result.index.names)
-        ]
-    )
+    assert set(cells_result.data_vars) == {"biomass_density", "number_density", "nasc"}
 
 
 # Test functions for scattering operations
@@ -601,17 +590,27 @@ def test_inversion_matrix_creation():
     """Test InversionMatrix creation and basic functionality."""
     # Create mock data
     frequencies = [38e3, 120e3]
-    n_obs = 5
+    n_obs = 4
 
     # Create MultiIndex columns
-    cols = pd.MultiIndex.from_product(
-        [["sv_mean", "nasc", "thickness_mean"], frequencies], names=[None, "frequency"]
-    )
 
     # Generate random data
     np.random.seed(131)
-    data = np.random.randn(n_obs, len(cols))
-    df = pd.DataFrame(data, columns=cols)
+    data = (
+        pd.DataFrame(
+            {
+                "transect_num": np.repeat([1, 2], n_obs),
+                "frequency": np.tile(frequencies, n_obs),
+                "longitude": np.random.randn(n_obs * len(frequencies)),
+                "sv_mean": np.random.randn(n_obs * len(frequencies)),
+                "nasc": np.random.randn(n_obs * len(frequencies)),
+                "thickness_mean": np.random.randn(n_obs * len(frequencies)),
+            }
+        )
+        .set_index(["transect_num", "longitude", "frequency"])
+        .unstack("frequency")
+        .fillna(0.0)
+    )
 
     # Simulation settings
     sim_settings = {
@@ -622,7 +621,7 @@ def test_inversion_matrix_creation():
     }
 
     # Create InversionMatrix
-    inv_matrix = InversionMatrix(df, sim_settings, verbose=False)
+    inv_matrix = InversionMatrix(ingest_sv.df_to_xarray(data), sim_settings, verbose=False)
 
     assert inv_matrix is not None
     assert inv_matrix.inversion_method == "scattering_model"
