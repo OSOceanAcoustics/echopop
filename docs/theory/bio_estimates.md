@@ -43,6 +43,7 @@ where $\textbf{w}$ is the vector of summed $w$ in length bin $\ell$ and $\tilde{
 
 Let $L_\ell$ denote the nominal frequency (or count) of fish per $\ell$. The normalized frequency is then:
 
+(intext_eq_24_md)=
 \begin{align*}
     \begin{split}
         \tilde{L}_\ell = 

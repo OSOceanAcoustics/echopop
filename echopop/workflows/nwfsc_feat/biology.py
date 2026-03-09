@@ -252,12 +252,13 @@ def compute_abundance(
             # ---- Get the set of coordinate names for each DataArray
             coords = set(number_proportions.coords)
             # ---- Find intersecting sets
-            shared_coords = coords - {"length_bin"}
+            shared_coords = coords - {"age_bin", "length_bin"}
+            dim_coords = list({"age_bin", "length_bin"}.intersection(set(coords)))
             # ---- Find overlapping indices
             idx_names = list(shared_coords.intersection(set(transect_data.columns)))
             nonidx_names = [id for id in list(shared_coords) if id not in idx_names]
             # ---- Create grouped table from number proportions
-            grouped_proportions = number_proportions["proportion_overall"].sum(dim=["length_bin"])
+            grouped_proportions = number_proportions["proportion_overall"].sum(dim=dim_coords)
         # ---- Apply exclusion filter, if required
         if exclude_filter:
             # ---- Parse existing labels

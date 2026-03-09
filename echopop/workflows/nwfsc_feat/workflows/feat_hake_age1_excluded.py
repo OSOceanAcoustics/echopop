@@ -276,7 +276,6 @@ dict_df_bio = ingestion.load_biological_data(
     subset_dict=BIODATA_PROC,
     biodata_label_map=BIODATA_LABELS,
 )
-
 logging.info("Biodata ingestion complete\n" "'dict_df_bio' created.")
 # ==================================================================================================
 ############################### CHANGES FOR AGE-1 EXCLUSION ########################################
@@ -625,7 +624,7 @@ logging.info(
     )
 dict_da_weight_proportion["unaged"] = proportions.fitted_weight_proportions(
     weight_data=ds_da_weight_dist["unaged"],
-    reference_weight_proportions=dict_da_weight_proportion["aged"],
+    aged_weight_proportions=dict_da_weight_proportion["aged"],
     number_proportions=dict_ds_number_proportion["unaged"],
     binned_weights=da_binned_weights_all,
     stratum_dim=["stratum_ks"]
