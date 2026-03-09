@@ -552,7 +552,7 @@ def test_fitted_weight_proportions(
     # Call the function directly - this just tests if it runs without errors
     result = get_proportions.fitted_weight_proportions(
         weight_data=weight_data,
-        reference_weight_proportions=weight_props,
+        aged_weight_proportions=weight_props,
         number_proportions=number_props["unaged"].reset_coords("variable", drop=True),
         binned_weights=lb_weights,
         stratum_dim=["stratum_num"],

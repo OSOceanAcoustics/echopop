@@ -385,13 +385,6 @@ da_count_distribution_hauls = proportions.compute_binned_counts(
 # COMPUTE COUNT DISTRIBUTIONS PER AGE- AND LENGTH-BINS [AT STRATUM-LEVEL]
 da_count_distribution_strata = da_count_distribution_hauls.sum(dim=["uid"])
 
-da_count_distirbution = proportions.compute_binned_counts(
-    data=specimen_data.dropna(subset=["length"]),
-    groupby_cols=["stratum_ks", "length_bin", "age_bin", "sex"],
-    count_col="length",
-    agg_func="size",
-)
-
 # ==================================================================================================
 # NUMBER PROPORTIONS
 ds_count_proportions = proportions.number_proportions(

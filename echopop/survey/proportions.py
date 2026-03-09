@@ -1037,7 +1037,7 @@ def fitted_weight_proportions_combined(
 
 def fitted_weight_proportions(
     weight_data: xr.DataArray,
-    reference_weight_proportions: xr.Dataset,
+    aged_weight_proportions: xr.Dataset,
     number_proportions: xr.Dataset,
     binned_weights: xr.DataArray,
     stratum_dim: List[str] = [],
@@ -1054,8 +1054,9 @@ def fitted_weight_proportions(
     ----------
     weight_data : xr.DataArray
         xarray DataArray of scaled weights for the group, with dimensions including stratum_dim.
-    reference_weight_proportions : xr.Dataset
-        xarray Dataset of reference weight proportions for comparison, with compatible dimensions.
+    aged_weight_proportions : xr.Dataset
+        xarray Dataset of reference aged weight proportions for comparison, with compatible
+        dimensions.
     number_proportions : xr.Dataset
         xarray Dataset of number proportions by relevant grouping factors.
     binned_weights : xr.DataArray
@@ -1073,7 +1074,7 @@ def fitted_weight_proportions(
     --------
     >>> props = fitted_weight_proportions(
     ...     weight_data=da_scaled_unaged_weights,
-    ...     reference_weight_proportions=ds_da_weight_proportion["aged"],
+    ...     aged_weight_proportions=ds_da_weight_proportion["aged"],
     ...     number_proportions=dict_ds_number_proportion["unaged"],
     ...     binned_weights=da_binned_weights_all,
     ...     stratum_dim=["stratum_ks"]
@@ -1116,11 +1117,11 @@ def fitted_weight_proportions(
     weight_prop_length = (
         (mean_weight_length / mean_weight_length.sum(dim="length_bin")).fillna(0.0).squeeze()
     )
-
+    # Weight proportion of aged samples within each stratum
     # Weight proportion of reference samples (e.g., aged) within each stratum
     # dim: [stratum]
-    dim_to_sum = set(reference_weight_proportions.dims).difference(stratum_dim)
-    weight_prop_aged = reference_weight_proportions.sum(dim=dim_to_sum)
+    dim_to_sum = set(aged_weight_proportions.dims).difference(stratum_dim)
+    weight_prop_aged = aged_weight_proportions.sum(dim=dim_to_sum)
 
     # Weight proportion of unaged samples in each stratum
     # dim: [stratum]
