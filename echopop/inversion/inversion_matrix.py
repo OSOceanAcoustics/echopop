@@ -111,7 +111,7 @@ def monte_carlo_initialize(
     Notes
     -----
     This function implements a "warm start" strategy for optimization by
-    pre-selecting the most promising parameter realization before running
+    preselecting the most promising parameter realization before running
     the full optimization procedure.
     """
 
