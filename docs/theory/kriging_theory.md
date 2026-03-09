@@ -3,14 +3,14 @@
 
 ## Ordinary kriging
 
-**Ordinary kriging** is a **Best-Linear-Unbiased Predictor (BLUP)** for spatial interpolation that combines observed values with a model of spatial dependence to produce point estimates and associated uncertainties {cite:p}`cressie_statistics`. The method requires two essential stationarity assumptions. 
+**Ordinary kriging** is a **Best-Linear-Unbiased Predictor (BLUP)** for spatial interpolation that combines observed values with a model of spatial dependence to produce point estimates and associated uncertainties {cite:p}`cressie_statistics`. The method requires two essential stationarity assumptions.
 
-1. **First-Order Stationarity**: the mean of the field is unknown but constant over the local prediction neighborhood. 
+1. **First-Order Stationarity**: the mean of the field is unknown but constant over the local prediction neighborhood.
 2. [**Intrinsic Stationarity**](intrinsic-model): the spatial dependence is only a function of lag vector $\mathbf{h}$, not location $\mathbf{x}$.
 
 This form of kriging is preferred for locally stationary fields or when no reliable trend model is apparent. Since ordinary kriging assumes a locally constant but unknown mean, it is mathematically constructed to filter out this mean. When the regional mean trends slowly, or where any measured trend is very gradual or unreliable, then the small search neighborhood becomes small enough such that the local mean appears effectively constant. Other kriging variants exist (for example, methods that model an explicit spatial trend or include external covariates), and they differ primarily in how the mean is represented and estimated. Mentioning these alternatives is useful for methodological context, but the equations below are restricted to ordinary kriging only {cite:p}`cressie_statistics, chiles_geostatistics_2012`.
 
---- 
+---
 
 ## General assumptions and principles
 
@@ -80,8 +80,8 @@ $$
 
 In many spatial datasets, the correlation structure is direction-dependent, a property known as anisotropy. Ordinary kriging accounts for anisotropy by transforming the coordinate system so that distances are rescaled according to the principal axes of spatial continuity. Specifically, the lag vector $\mathbf{h}$ between two locations is projected onto these axes, yielding components $\Delta x$ and $\Delta y$. The anisotropic distance is then defined as
 
-$$ 
-    d_{\text{anisotropic}}^2 = \left(\frac{\Delta x}{a_x}\right)^2 + \left(\frac{\Delta y}{a_y}\right)^2, 
+$$
+    d_{\text{anisotropic}}^2 = \left(\frac{\Delta x}{a_x}\right)^2 + \left(\frac{\Delta y}{a_y}\right)^2,
     \tag{3.18}
 $$
 
@@ -93,7 +93,7 @@ where $\Delta x$ and $\Delta y$ are the components of $\mathbf{h}$ along the pri
 
 :::{admonition} Note on Notation
 :class: note
-The variable $\mathbf{x}$ is used in Equations (1-4) to denote a general, theoretical location when defining the properties of the random field. From this point forward, the variable $\mathbf{u}$ is used to denote the target location. The indices $\mathbf{u}_b$, $i$, and $j$ all reference the same set of $\mathbf{n}$ sampled data locations ($\mathbf{u}_1, \mathbf{u}_2, \dots, \mathbf{u}_n$). The indices $i$ (rows) and $j$ (columns) are used for indexing the Kriging matrix rows and columns because they correspond to locations $\mathbf{u}_i$ and $\mathbf{u}_j$, respectively. All indices run from 1 to $n$. 
+The variable $\mathbf{x}$ is used in Equations (1-4) to denote a general, theoretical location when defining the properties of the random field. From this point forward, the variable $\mathbf{u}$ is used to denote the target location. The indices $\mathbf{u}_b$, $i$, and $j$ all reference the same set of $\mathbf{n}$ sampled data locations ($\mathbf{u}_1, \mathbf{u}_2, \dots, \mathbf{u}_n$). The indices $i$ (rows) and $j$ (columns) are used for indexing the Kriging matrix rows and columns because they correspond to locations $\mathbf{u}_i$ and $\mathbf{u}_j$, respectively. All indices run from 1 to $n$.
 :::
 
 The general form of the linear predictor, using the $\mathbf{u}$ notation for the prediction location and the observed data $z(\mathbf{u}_b)$, includes the unknown local mean $\mathbf{m}$:
@@ -102,10 +102,10 @@ The general form of the linear predictor, using the $\mathbf{u}$ notation for th
 
 (intext_eq_319_md)=
 $$
-    \mathbf{z}^*(\mathbf{u}) = 
-    \sum_{b=1}^n \lambda_b(\mathbf{u}) z(\mathbf{u}_b) + 
-        \left[ 
-            1 - \sum_{b=1}^n \lambda_b(\mathbf{u}) 
+    \mathbf{z}^*(\mathbf{u}) =
+    \sum_{b=1}^n \lambda_b(\mathbf{u}) z(\mathbf{u}_b) +
+        \left[
+            1 - \sum_{b=1}^n \lambda_b(\mathbf{u})
         \right] \mathbf{m}.
     \tag{3.19}
 $$
@@ -125,10 +125,10 @@ which results with the because the bracketed term in {ref}`Eq. (3.19) <eq-319>` 
 
 $$
     \left[
-        1 - \sum_{b=1}^n \lambda_b(\mathbf{u}) 
-    \right] 
-    \mathbf{m} = \left[ 
-        1 - 1 
+        1 - \sum_{b=1}^n \lambda_b(\mathbf{u})
+    \right]
+    \mathbf{m} = \left[
+        1 - 1
     \right] \mathbf{m} = 0.
     \tag{3.20b}
 $$
@@ -139,7 +139,7 @@ Consequently, the unbiasedness constraint eliminates $\mathbf{m}$ from $\mathbf{
 
 (intext_eq_321_md)=
 $$
-    \mathbf{z}^*(\mathbf{u}) = \sum_{b=1}^n \lambda_b(\mathbf{u}) z(\mathbf{u}_b). 
+    \mathbf{z}^*(\mathbf{u}) = \sum_{b=1}^n \lambda_b(\mathbf{u}) z(\mathbf{u}_b).
     \tag{3.21}
 $$
 
@@ -159,7 +159,7 @@ To solve this constrained optimization problem, the spatial relationships betwee
 
 (intext_eq_323_md)=
 \begin{equation*}
-    \mathbf{\Gamma}_{n \times n} = 
+    \mathbf{\Gamma}_{n \times n} =
         \begin{bmatrix}
             \gamma(\mathbf{u}_1 - \mathbf{u}_1) & \gamma(\mathbf{u}_1 - \mathbf{u}_2) & \cdots & \gamma(\mathbf{u}_1 - \mathbf{u}_n) \\
             \gamma(\mathbf{u}_2 - \mathbf{u}_1) & \gamma(\mathbf{u}_2 - \mathbf{u}_2) & \cdots & \gamma(\mathbf{u}_2 - \mathbf{u}_n) \\
@@ -170,7 +170,7 @@ To solve this constrained optimization problem, the spatial relationships betwee
 \end{equation*}
 
 
-where $\gamma(\mathbf{u}_i - \mathbf{u}_j)$ is the semivariance between data points $i$ and $j$. The minimized $\sigma_E^2$ ({ref}`Eq. 3.22 <eq-322>`) is calculated using the weights and values from $\mathbf{\Gamma}_{n \times n}$. The full expression of $\sigma_E^2(\mathbf{u})$ includes a double summation over all weights and their corresponding semivariances to account for the spatial dependence between every pair of data points, $\mathbf{u}_j$ and $\mathbf{u}_j$. 
+where $\gamma(\mathbf{u}_i - \mathbf{u}_j)$ is the semivariance between data points $i$ and $j$. The minimized $\sigma_E^2$ ({ref}`Eq. 3.22 <eq-322>`) is calculated using the weights and values from $\mathbf{\Gamma}_{n \times n}$. The full expression of $\sigma_E^2(\mathbf{u})$ includes a double summation over all weights and their corresponding semivariances to account for the spatial dependence between every pair of data points, $\mathbf{u}_j$ and $\mathbf{u}_j$.
 
 Specifically, $\sigma_{E}^{2}(\mathbf{u})$ is defined by:
 
@@ -178,9 +178,9 @@ Specifically, $\sigma_{E}^{2}(\mathbf{u})$ is defined by:
 
 (intext_eq_324a_md)=
 $$
-    \sigma_E^2(\mathbf{u}) = 
-        - \sum_{i=1}^n \sum_{j=1}^n 
-    \lambda_i \lambda_j 
+    \sigma_E^2(\mathbf{u}) =
+        - \sum_{i=1}^n \sum_{j=1}^n
+    \lambda_i \lambda_j
     \gamma(\mathbf{u}_i - \mathbf{u}_j) +
         2 \sum_{j=1}^n \lambda_i \gamma(\mathbf{u}_i - \mathbf{u}),
     \tag{3.24a}
@@ -189,8 +189,8 @@ $$
 which can be expressed in matrix notation as it relates to {ref}`Eq. (3.23) <eq-323>`:
 
 $$
-    \sigma_E^2(\mathbf{u}) = 
-        -\lambda^\text{T} \mathbf{\Gamma}_{n \times n} + 
+    \sigma_E^2(\mathbf{u}) =
+        -\lambda^\text{T} \mathbf{\Gamma}_{n \times n} +
             2\lambda^\text{T}\gamma_\mathbf{u},
     \tag{3.24b}
 $$
@@ -228,10 +228,10 @@ $$
 
 To find the minimum of this Lagrangian, partial derivatives are taken with respect to each weight $\lambda_b$ and with respect to the Lagrange multiplier $\mu$. Setting these derivatives to zero yields:
 
-$$ 
-    \frac{\partial \mathcal{L}}{\partial \lambda_b} = 
+$$
+    \frac{\partial \mathcal{L}}{\partial \lambda_b} =
         2 \sum_{j=1}^n \lambda_j \gamma(\mathbf{u}_j - \mathbf{u}_b) - 2 \gamma(\mathbf{u}_b - \mathbf{u}) - 2\mu = 0,
-    \tag{3.26a} 
+    \tag{3.26a}
 $$
 
 which simplifies to:
@@ -306,7 +306,7 @@ where:
 
 In these equations, $\gamma_{i,j} = \gamma(\mathbf{u}_i - \mathbf{u}_j)$ is the semivariance between data points $i$ and $j$, and $\gamma_{i,\mathbf{u}} = \gamma(\mathbf{u}_i - \mathbf{u})$ is the semivariance between data point $i$ and the target location $\mathbf{u}$. The final row, final column, and the bottom-right zero in $\mathbf{\Gamma}$ are produced by {ref}`Eq. (3.27) <eq-327>` to enforce the unbiasedness constraint $\sum \lambda_i = 1$.
 
-Solving this system yields the kriging weights $\lambda_1, \ldots, \lambda_n$ and $\mu$. The Lagrange multiplier is essential for enforcing the unbiasedness constraint and appears as an additional unknown in the system. This approach ensures that the kriging predictor is both unbiased and has minimum variance among all linear unbiased estimators. In practical computation, the system $\mathbf{\Gamma} \hat{\mathbf{\lambda}} = \hat{\mathbf{\gamma}}_\mathbf{u}$ is solved for the vector of unknowns, which includes both $\hat{\lambda}$ and $\mu$. The solution provides the optimal $\hat{\lambda}$ to be applied to $z(\mathbf{u}_b)$ , as well as the value of the $\mu$ that enforces the unbiasedness constraint. 
+Solving this system yields the kriging weights $\lambda_1, \ldots, \lambda_n$ and $\mu$. The Lagrange multiplier is essential for enforcing the unbiasedness constraint and appears as an additional unknown in the system. This approach ensures that the kriging predictor is both unbiased and has minimum variance among all linear unbiased estimators. In practical computation, the system $\mathbf{\Gamma} \hat{\mathbf{\lambda}} = \hat{\mathbf{\gamma}}_\mathbf{u}$ is solved for the vector of unknowns, which includes both $\hat{\lambda}$ and $\mu$. The solution provides the optimal $\hat{\lambda}$ to be applied to $z(\mathbf{u}_b)$ , as well as the value of the $\mu$ that enforces the unbiasedness constraint.
 
 ## Kriging prediction and uncertainty
 
@@ -350,6 +350,6 @@ In summary, the ordinary kriging workflow consists of: (1) modeling the spatial 
 ## Practical considerations
 
 - Variogram/covariance choice: The model must capture short-range behaviour (near the origin) and an appropriate range scale; mismatches bias weights and uncertainty estimates {cite:p}`cressie_statistics`.
-- Conditioning: The augmented matrix in can be ill-conditioned in some sampling geometries; numerical stabilization or mild regularization is often necessary in practice.  
-- Neighborhood definition: Limiting the set of samples used for a given prediction trades off locality against numerical stability and computational cost; this is a modeling choice rather than a theoretical requirement.  
+- Conditioning: The augmented matrix in can be ill-conditioned in some sampling geometries; numerical stabilization or mild regularization is often necessary in practice.
+- Neighborhood definition: Limiting the set of samples used for a given prediction trades off locality against numerical stability and computational cost; this is a modeling choice rather than a theoretical requirement.
 - Extrapolation: Predictions made outside the effective range of spatial dependence should be treated with caution; reported kriging variances may understate true uncertainty when extrapolation is extensive {cite:p}`rivoirard_geostatistics_2000`.

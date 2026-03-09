@@ -55,7 +55,7 @@ parts:
       - file: FEAT_implementation/kriging_biomass_to_nasc
         title: Apportioning kriged abundance, biomass, and NASC
       - file: example_notebooks/stratified_resampling
-        title: Random sampling estimation 
+        title: Random sampling estimation
       - file: headings/plotting_h
         title: Plotting
         sections:

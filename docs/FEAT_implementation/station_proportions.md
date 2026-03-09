@@ -6,7 +6,7 @@ The challenges associated with apportioning the kriged population estimates are 
 
 (apportion-trawl-stations)=
 ## Station 1 (*unaged*)
-Fish specimens are first sorted according to sex. Their respective standard lengths are then grouped by sex and binned into length distributions ({ref}`Eq. 2.2 <eq-22>`). Haul weights correspond to the bulk total of all unaged fish for each trawl. This results in a bifurcated dataset where the length measurements are stored separately from the catch data. 
+Fish specimens are first sorted according to sex. Their respective standard lengths are then grouped by sex and binned into length distributions ({ref}`Eq. 2.2 <eq-22>`). Haul weights correspond to the bulk total of all unaged fish for each trawl. This results in a bifurcated dataset where the length measurements are stored separately from the catch data.
 
 ### Length
 | Haul      | Sex          | Length     | Count               |
@@ -27,7 +27,7 @@ Fish specimens are first sorted according to sex. Their respective standard leng
 | ...   | ...        |
 
 ## Station 2 (*aged*)
-Fish specimens are first sorted according to sex. Their respective standard lengths and weights are measured at sea, and otolith ages are determined post-survey onshore. So where station 1 represents bulk measurements of fish, station 2 is specimen-specific. 
+Fish specimens are first sorted according to sex. Their respective standard lengths and weights are measured at sea, and otolith ages are determined post-survey onshore. So where station 1 represents bulk measurements of fish, station 2 is specimen-specific.
 
 | Haul      | Sex          | Age        | Length     | Weight     |
 |-----------|--------------|------------|------------|------------|
@@ -61,7 +61,7 @@ For unaged fish samples, specimen-specific weights were not measured and are ins
 
 $$
 w^\textrm{unaged}_i = \sum_{g \in G^\textrm{unaged}_i} \sum_{j \in J^{\textrm{unaged}}_{i,g}} w_j.
-$$ 
+$$
 
 ### Overall weight proportion
 The overall weight proportion of aged and unaged fish for stratum $i$ is calculated for both the aged (${r_w}^{\text{aged}/\text{all}}_i$) and unaged (${r_w}^{\text{unaged}/\text{all}}_i$) fish via:

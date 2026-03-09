@@ -58,12 +58,12 @@ The quantity $\tilde{w}^i_{s,\ell}$ is defined using the total weights for lengt
 
 (intext_eq_212_md)=
 \begin{align*}
-        \tilde{w}^i_{s,\ell} &= 
+        \tilde{w}^i_{s,\ell} &=
             \frac{\mathbf{w}^i_s}{\sum\limits_{\ell} w^i_{s,\ell}} =
                 \frac{w^i_\ell}{\sum\limits_{s,\ell} w^i_{s,\ell}},
-    \tag{2.12a}    
+    \tag{2.12a}
     \\[2ex]
-        \sum\limits_{s,\ell} \tilde{w}^i_{s,\ell} &= 1. 
+        \sum\limits_{s,\ell} \tilde{w}^i_{s,\ell} &= 1.
     \tag{2.12b}
 \end{align*}
 
@@ -75,8 +75,8 @@ The above equations can be modified to be binned across any number of contrasts.
 
 $$
 \begin{align*}
-        \tilde{\mathbf{L}}^i_{s,\alpha} = 
-            \left[            
+        \tilde{\mathbf{L}}^i_{s,\alpha} =
+            \left[
                 \begin{split}
                     &\tilde{L}^i_{s,\alpha,1} \\ &\tilde{L}^i_{s,\alpha,2} \\ &\tilde{L}^i_{s,\alpha,3} \\ &\hspace{0.5cm} \vdots
                 \end{split}
@@ -99,7 +99,7 @@ $$
 This would then modify {ref}`Eq. 2.9 <eq-29>` to:
 
 $$
-    \rho_{B; s,\alpha} = 
+    \rho_{B; s,\alpha} =
         \rho^i_{\text{B}; s,\alpha}(x,y) = \rho_\text{A}(x,y) (\tilde{\mathbf{L}}^i_{s,\alpha})^\top \mathbf{\tilde{w}}^i_{s,\alpha},
     \tag{S.2e}
 $$
@@ -107,7 +107,7 @@ $$
 :::
 
 <!-- !!! MOVE TO FEAT IMPLEMENTATION DESCRIPTION -->
-<!-- 
+<!--
 ## Stratification schemes used in the hake survey
 For Pacific hake, two types of stratifications are used:
 
@@ -116,7 +116,7 @@ For Pacific hake, two types of stratifications are used:
 
 (stratified-resampling-algo)=
 ## Stratified random sampling
-{cite:t}`jolly_hampton_1990` proposed a stratified random transect design for estimating the mean and variance of any spatially varying survey quantity. While stratified random sampling as a technique can be generalized to many measured quantities {cite:p}`cochran_sampling_1977`, direct use of the algorithm by {cite:t}`jolly_hampton_1990` requires absolute measurements that are not relative to a unit area (e.g. abundance, biomass). Let $z(\mathbf{x})$ be the surface value at location $\mathbf{x}$ in survey region $D$. In effect, this means that if you are measuring $\rho_\text{A}$, then $z(x^t)$ corresponds is the $\rho_\text{A}$ observed at location $x$ along transect $t$. 
+{cite:t}`jolly_hampton_1990` proposed a stratified random transect design for estimating the mean and variance of any spatially varying survey quantity. While stratified random sampling as a technique can be generalized to many measured quantities {cite:p}`cochran_sampling_1977`, direct use of the algorithm by {cite:t}`jolly_hampton_1990` requires absolute measurements that are not relative to a unit area (e.g. abundance, biomass). Let $z(\mathbf{x})$ be the surface value at location $\mathbf{x}$ in survey region $D$. In effect, this means that if you are measuring $\rho_\text{A}$, then $z(x^t)$ corresponds is the $\rho_\text{A}$ observed at location $x$ along transect $t$.
 
 ### Estimating the mean
 
@@ -142,7 +142,7 @@ where the sum is overall intervals $k$ that belong to transect $t$. Quantities l
 
 (intext_eq_215_md)=
 $$
-    \hat{z}^{\,t} = 
+    \hat{z}^{\,t} =
         \frac{\sum\limits_{k \in t} z(x^k)}{d^t}.
     \tag{2.15}
 $$
@@ -153,9 +153,9 @@ Per-transect estimates $\hat{z}^{,t}$ are reweighted within each stratum $i$. Th
 
 (intext_eq_216_md)=
 $$
-    \tau^t = 
+    \tau^t =
         \frac{d^t}{\frac{1}{n^i} \sum\limits_{t \in i} d^t},
-    \tag{2.16} 
+    \tag{2.16}
 $$
 
 where $n^i$ is the total number of transects in stratum $i$. The mean density value in stratum $i$ is then:
@@ -208,7 +208,7 @@ The coefficient of variation ($\text{CV}$) provides a dimensionless measure of r
 
 (intext_eq_221_md)=
 $$
-    \text{CV} = 
+    \text{CV} =
         \frac{\sqrt{\mathbb{V}(\hat{z})}}{\hat{z}}.
     \tag{2.21}
 $$
@@ -221,17 +221,17 @@ $$
 {cite:t}`jolly_hampton_1990` algorithm can also incorporate bootstrapping whereby entire transects are resampled (without replacement) within each stratum, preserving the grouping that defines the spatial process $Z(\mathbf{x})$. For stratum $i$ with $n^i$ transects, each bootstrap replicate $b$ draws a $\hat{p}^*$ proportion of transects:
 
 $$
-    m^i_b = 
-        \left\lfloor 
+    m^i_b =
+        \left\lfloor
             \hat{p}^* n^i + \frac{1}{2}
         \right\rfloor,
-    \tag{2.22}    
+    \tag{2.22}
 $$
 
 where $m^i_b$ is the number of resampled transects. Let $\mathbb{T}^*_b$ denote the complese set of resampled transect in bootstrap replicate $b$, where each $t^* \in \mathbb{T}^*_b$ is a transect selected for that replicate. Then the mean density calculation from {ref}`Eq. 2.15 <eq-215>` becomes:
 
 $$
-    \hat{z}^{\,t^*}_b = 
+    \hat{z}^{\,t^*}_b =
         \frac{\sum\limits_{k \, \in \, t^*} z(x^k)}{d^{t^*}}.
     \tag{2.23}
 $$
@@ -249,7 +249,7 @@ Then the same distance-based weights calculated using {ref}`Eq. 2.16 <eq-216>` i
 The stratum mean density calculation from {ref}`Eq. 2.17 <eq-217>` becomes:
 
 $$
-    \hat{z}^{i}_b = 
+    \hat{z}^{i}_b =
         \frac{1}{m^i_b} \sum\limits_{t \, \in \, \mathbb{T}^*_b \, \cap \, i} \tau^{t} \hat{z}^{t}_b.
     \tag{2.25}
 $$
@@ -272,7 +272,7 @@ Similarly, the resampled variance for stratum $i$ ({ref}`Eq. 2.19 <eq-219>`) and
         \frac{\sum\limits_{t \, \in \, \mathbb{T}^*_b \, \cap \, i} \tau^t_b (\hat{z}^t_b - \hat{z}^i_b)^2}{m^i(m^i - 1)},
     \tag{2.27a}
     \\[2ex]
-    \mathbb{V}(\hat{z}_b) &= 
+    \mathbb{V}(\hat{z}_b) &=
         \frac{\sum\limits_i (A^i_b)^2\, \mathbb{V}(\hat{z}^i)}{\left( \sum\limits_i A^i_b \right)^2}.
     \tag{2.27b}
 \end{align*}
@@ -280,7 +280,7 @@ Similarly, the resampled variance for stratum $i$ ({ref}`Eq. 2.19 <eq-219>`) and
 Finally, the mean density and variance for each $b$ are used to compute the replicate $\text{CV}$:
 
 $$
-    \text{CV}_b = 
+    \text{CV}_b =
         \frac{\sqrt{\mathbb{V}(\hat{z}_b)}}{\hat{z}_b}.
     \tag{2.27}
 $$

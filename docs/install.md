@@ -24,7 +24,7 @@ Install Echopop from conda-forge with either Anaconda or Miniconda:
 ```shell
 conda install -c conda-forge echopop
 ```
-```{attention} 
+```{attention}
 We recommend using the ``libmamba`` solver instead of the classic solver.
    See instructions [here](https://conda.github.io/conda-libmamba-solver/getting-started/)
    for installation and usage.
@@ -40,7 +40,7 @@ If you need the latest development version or want to contribute, clone the repo
 git clone https:://github.com/OSOceanAcoustics/echopop.git
 cd echopop
 
-# Create a conda environment using hte supplied requirements files
+# Create a conda environment using the supplied requirements files
 conda create -c conda-forge -n echopop --yes python=3.12 --file requirements.txt
 
 # Switch to the newly built environment

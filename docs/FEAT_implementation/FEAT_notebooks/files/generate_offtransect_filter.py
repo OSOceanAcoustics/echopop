@@ -1,16 +1,14 @@
 from pathlib import Path
-from echopop.workflows.nwfsc_feat import functions as feat
-from echopop.graphics.utils import dataframe_to_geodataframe
-from echopop.graphics.transect_map import get_transect_lines
-import echopop.ingest as ingestion
-import geopandas as gpd
+
 import geoviews as gv
 import holoviews as hv
 import hvplot.pandas  # noqa: F401; import is required even though it is not directly called
-import pandas as pd
-import shapely as sg
-from bokeh.models import HoverTool
 from bokeh.themes import Theme
+
+import echopop.ingest as ingestion
+from echopop.graphics.transect_map import get_transect_lines
+from echopop.graphics.utils import dataframe_to_geodataframe
+from echopop.workflows.nwfsc_feat import functions as feat
 
 DATA_ROOT = Path("C:/Data/EchopopData/echopop_2011")
 # NASC EXPORTS FILE(S)
@@ -19,10 +17,10 @@ NASC_EXPORTS_FILES = DATA_ROOT / "raw_nasc/"
 NASC_EXPORTS_SHEET = "Sheet1"
 
 df_intervals, df_exports = ingestion.nasc.merge_echoview_nasc(
-    nasc_path = NASC_EXPORTS_FILES,
-    filename_transect_pattern = "T(\\d+(?:\\.\\d+)?)(?=-)",
-    default_transect_spacing = 10.0,
-    default_latitude_threshold = 60.0,
+    nasc_path=NASC_EXPORTS_FILES,
+    filename_transect_pattern="T(\\d+(?:\\.\\d+)?)(?=-)",
+    default_transect_spacing=10.0,
+    default_latitude_threshold=60.0,
 )
 
 # TRANSECT REGION HAUL KEY NAME MAPPING
@@ -32,15 +30,11 @@ TRANSECT_REGION_FILE_RENAME = {
     "assigned haul": "haul_num",
 }
 
-TRANSECT_REGION_HAUL_FILE = (
-    DATA_ROOT / "Stratification/US&CAN_T_reg_haul_final.csv"
-)
+TRANSECT_REGION_HAUL_FILE = DATA_ROOT / "Stratification/US&CAN_T_reg_haul_final.csv"
 
 # LOAD
 df_transect_region_haul_key = ingestion.nasc.read_transect_region_haul_key(
-    filename=TRANSECT_REGION_HAUL_FILE,
-    sheetname=None,
-    rename_dict=TRANSECT_REGION_FILE_RENAME
+    filename=TRANSECT_REGION_HAUL_FILE, sheetname=None, rename_dict=TRANSECT_REGION_FILE_RENAME
 )
 
 df_nasc_old = ingestion.nasc.consolidate_echvoiew_nasc(
@@ -48,7 +42,7 @@ df_nasc_old = ingestion.nasc.consolidate_echvoiew_nasc(
     interval_df=df_intervals,
     region_class_names=["Age-1 Hake", "Age-1 Hake Mix", "Hake", "Hake Mix"],
     impute_region_ids=True,
-    transect_region_haul_key_df=df_transect_region_haul_key
+    transect_region_haul_key_df=df_transect_region_haul_key,
 )
 
 # TRANSECT BOUNDARY FILE
@@ -59,14 +53,14 @@ TRANSECT_BOUNDARY_SHEET = "1995-2011"
 SURVEY_FILTER = "survey == 201103"
 
 df_nasc_new = feat.filter_transect_intervals(
-    nasc_df=df_nasc_old, 
+    nasc_df=df_nasc_old,
     transect_filter_df=TRANSECT_BOUNDARY_FILE,
     transect_filter_sheet=TRANSECT_BOUNDARY_SHEET,
-    subset_filter=SURVEY_FILTER
+    subset_filter=SURVEY_FILTER,
 )
 
-diff = df_nasc_old.merge(df_nasc_new, how='outer', indicator=True)
-rows_not_in_new = diff[diff['_merge'] == 'left_only'].drop(columns=['_merge'])
+diff = df_nasc_old.merge(df_nasc_new, how="outer", indicator=True)
+rows_not_in_new = diff[diff["_merge"] == "left_only"].drop(columns=["_merge"])
 print(rows_not_in_new)
 
 # Class-level flag to track renderer initialization
@@ -125,21 +119,15 @@ filtered_lines_layer = filtered_lines.hvplot.paths(
 ).opts()
 
 # POINT layer
-off_effort = gv.Points(
-    removed_gdf,
-    label="Off-effort intervals"
-).opts(
-    color="red",
-    line_color="black",
-    size=4,
-    line_width=0.1
+off_effort = gv.Points(removed_gdf, label="Off-effort intervals").opts(
+    color="red", line_color="black", size=4, line_width=0.1
 )
 
 # FULL overlay
 plot = (gv.tile_sources.CartoLight * filtered_lines_layer * off_effort).opts(
-    width=600, 
-    height=400, 
-    legend_position="bottom_left", 
+    width=600,
+    height=400,
+    legend_position="bottom_left",
     show_legend=True,
     xlabel="Longitude (\u00b0E)",
     ylabel="Latitude (\u00b0N)",

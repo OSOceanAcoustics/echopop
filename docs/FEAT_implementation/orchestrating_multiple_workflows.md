@@ -18,7 +18,7 @@ Treat orchestration as an interface design problem. The most effective setups re
 
 ## Centralized Python CLI dispatcher
 
-A centralized dispatcher can be thought of as a "traffic controller". It provides a single stable CLI entrypoint that decides which downstream workflow script(s) to run. This pattern is useful when multiple workflow scripts follow similar conventions but a single stable command interface is desired for end-users. Rather than asking users to memorize each script's arguments, the dispatcher provides a single CLI surface and routes execution to the selected workflow target. Consider a case where a data workflow is modularized into three stages: 
+A centralized dispatcher can be thought of as a "traffic controller". It provides a single stable CLI entrypoint that decides which downstream workflow script(s) to run. This pattern is useful when multiple workflow scripts follow similar conventions but a single stable command interface is desired for end-users. Rather than asking users to memorize each script's arguments, the dispatcher provides a single CLI surface and routes execution to the selected workflow target. Consider a case where a data workflow is modularized into three stages:
 
 1. `workflow_ingest.py`: Data ingestion configured by `ingest.yaml`.
 2. `workflow_estimation.py`: Population estimation configured by `estimate.yaml`.
@@ -207,7 +207,7 @@ project_root/
 The orchestrator notebook acts similarly to a dispatcher script with the addition of directing the flow of data through two primary execution paths:
 
 1. **Script execution**: The notebook calls standalone Python scripts (or a dispatcher) to perform data processing or ingestion.
-2. **Child notebook execution**: The orchestrator can trigger specialized notebooks using tools like [Papermill](https://papermill.readthedocs.io/en/latest/) to generate parameterized reports or interactive analyses. 
+2. **Child notebook execution**: The orchestrator can trigger specialized notebooks using tools like [Papermill](https://papermill.readthedocs.io/en/latest/) to generate parameterized reports or interactive analyses.
 
 In both parts, the results are funneled into a collected outputs layer. This layer is not just a destination; it creates a feedback loop. These outputs (e.g., diagnostic plots, summary statistics) help determine if the parameters in the execution layer need adjustment. Users can return to the orchestrator to refine the configuration and re-run the stage if a result is erroneous or otherwise suspect.
 
@@ -222,8 +222,8 @@ import sys
 
 # Trigger the dispatcher for the ingestion stage
 cmd = [
-    sys.executable, "workflow_dispatcher.py", 
-    "--workflow", "ingest", 
+    sys.executable, "workflow_dispatcher.py",
+    "--workflow", "ingest",
     "--config", "configs/ingest.yaml"
 ]
 
@@ -267,7 +267,7 @@ project_root/
     run_all_stages.bat        <-- Windows Command Prompt (CMD)
     run_all_stages.ps1        <-- Windows PowerShell
     run_all_stages.sh         <-- Linux or macOS Bash
-  workflow_dispatcher.py      
+  workflow_dispatcher.py
   workflows/
     workflow_ingest.py
     workflow_estimate.py
@@ -304,10 +304,10 @@ setlocal enabledelayedexpansion
 :: Iterate through the defined workflow names
 for %%W in (ingest estimate report) do (
     echo [INFO] Executing workflow: %%W ...
-    
+
     :: Call the dispatcher from the parent directory
     python ..\workflow_dispatcher.py --workflow %%W --config ..\configs\%%W.yaml
-    
+
     :: Check the exit code of the Python process
     if errorlevel 1 (
         echo [ERROR] Workflow %%W failed.
@@ -332,9 +332,9 @@ $workflows = @("ingest", "estimate", "report")
 
 foreach ($w in $workflows) {
     Write-Host ">>> Starting $w stage..." -ForegroundColor Cyan
-    
+
     python ../workflow_dispatcher.py --workflow $w --config "../configs/$w.yaml"
-    
+
     if ($LASTEXITCODE -ne 0) {
         Write-Warning "Execution failed for $w. Check logs for details."
     }
@@ -373,7 +373,7 @@ workflows=(ingest estimate report)
 
 for w in "${workflows[@]}"; do
     echo "--- Running $w ---"
-    
+
     # Run python and echo failure if the exit code is non-zero
     python3 ../workflow_dispatcher.py --workflow "$w" --config "../configs/${w}.yaml" || \
     echo "[CRITICAL] $w stage failed"
@@ -506,7 +506,7 @@ As a research project grows, the task runner is often expanded to include shortc
 
 To maintain this consistency as the project gains complexity, several specific features of the task runner are utilized:
 
-- **Variable management**: Definitions like `PYTHON = python` at the top of the file act as global constants. If the project migrates to a newer version of Python or moves the configuration folder, the update is made in one line rather than across every individual task. 
+- **Variable management**: Definitions like `PYTHON = python` at the top of the file act as global constants. If the project migrates to a newer version of Python or moves the configuration folder, the update is made in one line rather than across every individual task.
 
 - **Phony targets**: The `.PHONY` instruction tells the computer that these names are commands to be executed, not actual files on the hard drive. This prevents the runner from getting confused if a folder named `clean` or `report` happens to exist in the project directory.
 
@@ -547,7 +547,7 @@ clean:
 
 ::::::{admonition} Cross-platform note for `make`
 :class: tip
-`make` is typically available by default on Linux and macOS. On Windows, it is usable but usually requires installing GNU Make (for example through MSYS2, Git Bash/MinGW, Cygwin, WSL, or Chocolatey). Other common tool choices include [`just`](https://just.systems/man/en/), [`Invoke`](https://www.pyinvoke.org/), and [`Nox`](https://nox.thea.codes/en/stable/), depending on team preference and platform constraints. The above `Makefile` can be readily translated to any of these. 
+`make` is typically available by default on Linux and macOS. On Windows, it is usable but usually requires installing GNU Make (for example through MSYS2, Git Bash/MinGW, Cygwin, WSL, or Chocolatey). Other common tool choices include [`just`](https://just.systems/man/en/), [`Invoke`](https://www.pyinvoke.org/), and [`Nox`](https://nox.thea.codes/en/stable/), depending on team preference and platform constraints. The above `Makefile` can be readily translated to any of these.
 
 :::::{tab-set}
 ::::{tab-item} `just`
@@ -690,7 +690,7 @@ The choice of pattern is often driven by specific operational goals of the resea
 - **Standardization**: If the primary goal is to ensure every user passes the same flags and configuration files to a set of fragmented scripts, the **Dispatcher** pattern is the most direct solution.
 - **Ease of use**: If the project is shared among a team with varying levels of command-line experience, a **Task runner** provides a simplified command vocabulary that hides technical complexity.
 - **Reporting and transparency**: When the final output must be an interactive or visual document that explains the logic of the analysis, a **Notebook**-based orchestrator may be preferred.
-- **Scale**: When an analysis must be repeated across dozens of survey years or geographic regions without manual intervention, a **Batch wrapper** provides the necessary looping logic. 
+- **Scale**: When an analysis must be repeated across dozens of survey years or geographic regions without manual intervention, a **Batch wrapper** provides the necessary looping logic.
 
 :::{admonition} Setting users up for success
 :class: tip

@@ -19,7 +19,7 @@ The second case is similar to the first where instead of just one interval at th
 
 ### Along-transect
 
-The third and final cases consists of <span style="color:#e6550d"><b>off-effort intervals</b></span> that occur at one or more points along a transect. 
+The third and final cases consists of <span style="color:#e6550d"><b>off-effort intervals</b></span> that occur at one or more points along a transect.
 
 ![Transect filtering](../_static/offeffort_transect_filtering_interior.png)
 
@@ -27,9 +27,9 @@ The third and final cases consists of <span style="color:#e6550d"><b>off-effort 
 
 Off-effort transect intervals have to be removed via Echopop for some survey years (e.g. 2011). This can be accomplished using the `filter_transect_intervals` function from the `functions` module. This function has four arguments:
 
-- `nasc_df`: A `pandas.DataFrame` containing the merged and consolidated NASC exports from Echoview. 
-- `transect_filter_df`: This argument can either a `pandas.DataFrame` or `pathlib.Path`. 
-    - `DataFrame`: There are four required columns: 
+- `nasc_df`: A `pandas.DataFrame` containing the merged and consolidated NASC exports from Echoview.
+- `transect_filter_df`: This argument can either a `pandas.DataFrame` or `pathlib.Path`.
+    - `DataFrame`: There are four required columns:
         - `transect_num`: Transect number.
         - `log_start`: The starting vessel log distance of teac along-transect interval.
         - `log_end`: The ending vessel log distance of each along-transect interval.
@@ -55,7 +55,7 @@ SURVEY_FILTER = "survey == 201103"
 
 # CALL FUNCTION
 df_nasc_filtered = feat.filter_transect_intervals(
-    nasc_df=df_nasc, 
+    nasc_df=df_nasc,
     transect_filter_df=TRANSECT_BOUNDARY_FILE,
     transect_filter_sheet=TRANSECT_BOUNDARY_SHEET,
     subset_filter=SURVEY_FILTER

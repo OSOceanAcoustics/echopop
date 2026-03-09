@@ -1,7 +1,7 @@
 (theory:theory_base)=
 # Underlying theory
 
-This section contains information about the acoustic and spatial statistics theories underlying the computation implemented in Echopop. 
+This section contains information about the acoustic and spatial statistics theories underlying the computation implemented in Echopop.
 
 The [](acoustics-basics) page contains information about important acoustic quantities for deriving biological estimates in general.
 

@@ -7,7 +7,7 @@
 For a given scatterer, the backscattering cross-section ($\sigma_\text{bs}$, m<sup>2</sup>) is defined by {cite:p}`maclennan_2002`:
 
 $$
-    \sigma_\text{bs} = 
+    \sigma_\text{bs} =
         \frac{r^2 I_\text{bs}(r) 10^{\alpha r/10}}{I_\text{inc}},
     \tag{1.1}
 $$
@@ -79,7 +79,7 @@ where $b_{20}$ is the $y$-intercept associated with the fixed slope. Species-spe
 | *Clupea harengus* | 38 | 8.9 | -55.2 | -69.5 | {cite:t}`foote_1986` | Daytime |
 | *C. harengus* | 38 | 21.2 | -74.2 | -72.5 | {cite:t}`foote_1986` | Nighttime |
 | *Gadus morhua* | 38 | | | -58.8 |{cite:t}`nakken_1977` | |
-| Gadoids | 38 | 18.0 | -66.2 | -68.0 | {cite:t}`foote_1987` | 
+| Gadoids | 38 | 18.0 | -66.2 | -68.0 | {cite:t}`foote_1987` |
 | *Merluccius productus* | 38 | | | -68.0 | {cite:t}`traynor_1996` | |
 | *Pollachius virens* | 38 | | | -65.8 | {cite:t}`foote_1987` | |
 | *Sprattus sprattus* | 38 | 17.2 | -60.8 | | {cite:t}`nakken_1977` | |
@@ -91,7 +91,7 @@ where $b_{20}$ is the $y$-intercept associated with the fixed slope. Species-spe
 Methods for converting (integrated) acoustic backscatter into units of population often requires empirically measuring *in situ* $\textit{TS}$ or using models such as the regression coefficients in {ref}`Table (1) <tbl-1>`. First, the volume backscattering coefficient, $s_\text{v}$ (m<sup>-1</sup>), is computed:
 
 $$
-    s_\text{v} = 
+    s_\text{v} =
         \frac{
             \sum\limits_{j=1}^N \sigma_{\text{bs},j}
         }
@@ -108,7 +108,7 @@ $$
     \tag{1.9}
 $$
 
-When $s_\text{v}$ is averaged over a finite volume of water, $S_\text{v}$ is often described as being the mean volume backscattering strength ($\textit{MVBS}$) {cite:p}`maclennan_2002`. 
+When $s_\text{v}$ is averaged over a finite volume of water, $S_\text{v}$ is often described as being the mean volume backscattering strength ($\textit{MVBS}$) {cite:p}`maclennan_2002`.
 
 Alternatively, $s_\text{v}$ can also be expressed as a function of $\left< \sigma_\text{bs} \right>$ and the volumetric animal density ($\rho_\text{v}$, animals m<sup>-3</sup>):
 
@@ -124,7 +124,7 @@ In fisheries acoustics, backscatter is often integrated over the entire water co
 <a id="intext_eq_111"></a>
 (intext_eq_111_md)=
 $$
-    s_\text{a} = 
+    s_\text{a} =
         \int\limits_{z_1}^{z_2} s_\text{v} dz =
             s_\text{v} H,
     \tag{1.11}
@@ -134,7 +134,7 @@ where $z$ is a finite depth bounded by depths $z_1$ and $z_2$, otherwise known a
 
 $$
     s_\text{a}(x) =
-        \int\limits_{x_1}^{x_2} 
+        \int\limits_{x_1}^{x_2}
             \int\limits_{z_1}^{z_2}
                 s_\text{v}(x, z)~ dz~ dx =
                     s_\text{v} H(x),

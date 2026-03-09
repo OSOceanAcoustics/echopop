@@ -21,7 +21,7 @@ The **sigmoidal** shape of the curve effectively captures the transition from **
 
 ### Mathematical derivation of coefficients
 
-When using a logistic selectivity model, parameters like $L_{50}$ are derived from the the slope ($\beta_1$) and intercept ($\beta_0$) of the regression. By applying a logit transformation to the retention probability, $S(L)$, we move from a bounded S-curve to a linear equation: 
+When using a logistic selectivity model, parameters like $L_{50}$ are derived from the the slope ($\beta_1$) and intercept ($\beta_0$) of the regression. By applying a logit transformation to the retention probability, $S(L)$, we move from a bounded S-curve to a linear equation:
 
 $$
     \ln\left( \frac{S(L)}{1 - S(L)} \right) = \beta_0 + \beta_1 L,
@@ -71,7 +71,7 @@ For a [distribution consisting of only length](./bio_estimates.md#intext_eq_24_m
     \tag{2.35b}
 \end{align*}
 
-where $\hat{L}_\ell$ is re-normalized such that it sums to 1. 
+where $\hat{L}_\ell$ is re-normalized such that it sums to 1.
 
 For a [distribution consisting of both length and age](./stratification.md#indexing-by-length-age) ($\tilde{L}_{\ell, \alpha}$), the selectivity remains strictly a function of length. The 1D selectivity vector is broadcast across the age dimension, applying the same retention probability to all age classes within a specific length bin:
 

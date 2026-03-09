@@ -27,7 +27,7 @@ See {ref}`Equation 1.10 <intext_eq_110_md>` for more details.
 (eq-111)=
 :::{admonition} Vertical integration of volumetric backscatter in the water column
 $$
-    s_\text{a} = 
+    s_\text{a} =
         \int\limits_{z_1}^{z_2} s_\text{v} dz =
             s_\text{v} H
 $$
@@ -178,11 +178,11 @@ See {ref}`Equation 2.11 <intext_eq_211_md>` for more details.
 (eq-212)=
 :::{admonition} Normalized weight-length distribution bins
 \begin{align*}
-        \tilde{w}^i_{s,\ell} &= 
+        \tilde{w}^i_{s,\ell} &=
             \frac{\mathbf{w}^i_s}{\sum\limits_{\ell} w^i_{s,\ell}} =
                 \frac{w^i_\ell}{\sum\limits_{s,\ell} w^i_{s,\ell}},
     \\[2ex]
-        \sum\limits_{s,\ell} \tilde{w}^i_{s,\ell} &= 1. 
+        \sum\limits_{s,\ell} \tilde{w}^i_{s,\ell} &= 1.
 \end{align*}
 
 See {ref}`Equation 2.12 <intext_eq_212_md>` for more details.
@@ -192,7 +192,7 @@ See {ref}`Equation 2.12 <intext_eq_212_md>` for more details.
 (eq-215)=
 :::{admonition} Transect-specific mean density
 $$
-    \hat{z}^{\,t} = 
+    \hat{z}^{\,t} =
         \frac{\sum\limits_{k \in t} z(x^k)}{d^t}
 $$
 
@@ -203,7 +203,7 @@ See {ref}`Equation 2.15 <intext_eq_215_md>` for more details.
 (eq-216)=
 :::{admonition} Distance-based transect weights
 $$
-    \tau^t = 
+    \tau^t =
         \frac{d^t}{\frac{1}{n^i} \sum\limits_{t \in i} d^t}
 $$
 
@@ -294,10 +294,10 @@ See {ref}`Equation 3.7 <intext_eq_37_md>` for more details.
 :::{admonition} Kriging linear predictor
 
 $$
-    \mathbf{z}^*(\mathbf{u}) = 
-    \sum_{b=1}^n \lambda_b(\mathbf{u}) z(\mathbf{u}_b) + 
-        \left[ 
-            1 - \sum_{b=1}^n \lambda_b(\mathbf{u}) 
+    \mathbf{z}^*(\mathbf{u}) =
+    \sum_{b=1}^n \lambda_b(\mathbf{u}) z(\mathbf{u}_b) +
+        \left[
+            1 - \sum_{b=1}^n \lambda_b(\mathbf{u})
         \right] \mathbf{m}
 $$
 
@@ -309,10 +309,10 @@ See {ref}`Equation 3.19 <intext_eq_319_md>` for more details.
 :::{admonition} Ordinary Kriging linear predictor
 
 $$
-    \mathbf{z}^*(\mathbf{u}) = 
-    \sum_{b=1}^n \lambda_b(\mathbf{u}) z(\mathbf{u}_b) + 
-        \left[ 
-            1 - \sum_{b=1}^n \lambda_b(\mathbf{u}) 
+    \mathbf{z}^*(\mathbf{u}) =
+    \sum_{b=1}^n \lambda_b(\mathbf{u}) z(\mathbf{u}_b) +
+        \left[
+            1 - \sum_{b=1}^n \lambda_b(\mathbf{u})
         \right] \mathbf{m}
 $$
 
@@ -335,7 +335,7 @@ See {ref}`Equation 3.22 <intext_eq_322_md>` for more details.
 :::{admonition} Kriging linear matrix
 
 \begin{equation*}
-    \mathbf{\Gamma}_{n \times n} = 
+    \mathbf{\Gamma}_{n \times n} =
         \begin{bmatrix}
             \gamma(\mathbf{u}_1 - \mathbf{u}_1) & \gamma(\mathbf{u}_1 - \mathbf{u}_2) & \cdots & \gamma(\mathbf{u}_1 - \mathbf{u}_n) \\
             \gamma(\mathbf{u}_2 - \mathbf{u}_1) & \gamma(\mathbf{u}_2 - \mathbf{u}_2) & \cdots & \gamma(\mathbf{u}_2 - \mathbf{u}_n) \\
@@ -352,9 +352,9 @@ See {ref}`Equation 3.23 <intext_eq_323_md>` for more details.
 :::{admonition} Kriging estimation variance
 
 $$
-    \sigma_E^2(\mathbf{u}) = 
-        - \sum_{i=1}^n \sum_{j=1}^n 
-    \lambda_i \lambda_j 
+    \sigma_E^2(\mathbf{u}) =
+        - \sum_{i=1}^n \sum_{j=1}^n
+    \lambda_i \lambda_j
     \gamma(\mathbf{u}_i - \mathbf{u}_j) +
         2 \sum_{j=1}^n \lambda_i \gamma(\mathbf{u}_i - \mathbf{u})
 $$

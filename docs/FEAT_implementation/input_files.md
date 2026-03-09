@@ -1,7 +1,7 @@
 (input-files)=
 # Input files
 
-In this section we describe input files used by Echopop, grouped by data type. The tables below describe the required data columns. All other columns are ignored by Echopop. All input files are in Excel format. 
+In this section we describe input files used by Echopop, grouped by data type. The tables below describe the required data columns. All other columns are ignored by Echopop. All input files are in Excel format.
 
 ```{contents}
 :local:
@@ -21,7 +21,7 @@ The "length" spreadsheet/dataframe includes data from station 1, in which fish a
 
 
 Echopop column | EchoPro column | Data type | Units | Description
---- | --- | --- | ----- | --- 
+--- | --- | --- | ----- | ---
 haul_num | Haul | integer<br>float |   | Haul number. <br> Rows with empty values are removed
 species_id | Species_Code | integer<br>float<br>string |   | Species identification code (ID)<br>Rows with empty values are removed
 sex | Sex | integer | | Sex of the animal <br> Male: 1/"m"/"male", Female: 2/"f"/"female", Unsexed: 3/"u"/"unsexed" <br>Missing values are replaced with "unsexed"
@@ -33,7 +33,7 @@ length_count | Frequency | integer | count <br> [0, ∞)  | Number of animals wi
 The "specimen" spreadsheet/dataframe includes data from station 2, in which each individual fish is weighed and aged.
 
 Echopop column | EchoPro column | Data type | Units &nbsp; | Description
---- | --- | --- | --- | --- 
+--- | --- | --- | --- | ---
 haul_num | Haul | integer | | Haul number. <br> Rows with empty values are removed
 species_id | Species_Code | integer |    | Species identification code (ID) <br> Rows with empty values are removed
 sex | Sex | integer | | Sex of the animal <br> Male: 1/"m"/"male", Female: 2/"f"/"female", Unsexed: 3/"u"/"unsexed" <br> Missing values are replaced with "unsexed"
@@ -46,7 +46,7 @@ age | Age | float <br> integer | years <br> [0.0, ∞)  | Age of the animal <br>
 The "catch" spreadsheet/dataframe includes the total weight for unaged fish for the entire haul.
 
 Echopop column | EchoPro column | Data type | Units |  Description
---- | --- | --- | --- | --- 
+--- | --- | --- | --- | ---
 haul_num | Haul | integer | | Haul number <br> Rows with empty values are removed
 species_id | Species_Code | integer | | Species identification code (ID) <br> Rows with empty values are removed
 haul_weight | Weight_In_Haul | float | kg <br> [0.0, ∞) | Haul weight <br> Rows with empty values are removed
@@ -61,7 +61,7 @@ File that relates the stratification to the haul.
 
 
 Echopop column | EchoPro column | Data type | Units | Description
---- | --- | --- | --- | --- 
+--- | --- | --- | --- | ---
 stratum_num | Strata index | integer | | Index/grouping representing the stratum identifier based on <br> either length (KS) or latitude (INPFC) <br> Rows with empty values are removed
 haul_num | Haul | integer | | Haul number <br> Rows with empty values are removed
 fraction_hake | wt | float | proportion <br> [0.0-1.0] | Fraction of the haul weight that is hake <br> Missing values are replaced with 0.0
@@ -72,19 +72,19 @@ File that defines the geographic definition of strata.
 
 
 Echopop column | EchoPro column | Data type | Units | Description
---- | --- | --- | --- | --- 
+--- | --- | --- | --- | ---
 stratum_num | Strata index | integer | | Index/grouping representing the stratum identifier based on <br> either length (KS) or latitude (INPFC) <br> Rows with empty values are removed
-northlimit_latitude | Latitude (upper limit) | float | decimal degrees <br> [-90.0, 90.0] | Northern limit of stratum <br> Rows with empty values are removed 
+northlimit_latitude | Latitude (upper limit) | float | decimal degrees <br> [-90.0, 90.0] | Northern limit of stratum <br> Rows with empty values are removed
 
 
 ## NASC
 
 ### No age-1 fish
 
-NASC (Nautical Area Scattering Coefficient) values that do not include age-1 values. Values are defined along transects at cells with an approximately 0.5 nmi spacing, 
+NASC (Nautical Area Scattering Coefficient) values that do not include age-1 values. Values are defined along transects at cells with an approximately 0.5 nmi spacing,
 
 Echopop column | EchoPro column | Data type | Units | Description
---- | --- | --- | --- |  --- 
+--- | --- | --- | --- |  ---
 transect_num | Transect | integer <br> float | | Transect number <br> Rows with empty values are removed
 distance_s | VL start | float | nmi <br> [0.0, ∞) |  Vessel log cumulative distance at start of transect interval <br> Missing values are replaced with `NaN`
 distance_e | VL end | float | nmi <br> [0.0, ∞) | Vessel log cumulative distance at end of transect interval <br> Missing values are replaced with `NaN`
@@ -106,7 +106,7 @@ NASC values that include all ages. The file structure is the same as for the fil
 The "Mesh" file containing the centroids of the Kriging grid cells. The default grid size is 2.5 nmi by 2.5 nmi.
 
 Echopop column | EchoPro column | Data type | Units |  Description
---- | --- | --- | --- | --- 
+--- | --- | --- | --- | ---
 centroid_latitude | Latitude of centroid | float | decimal degrees <br> [-90.0, 90.0] | Mesh cell centroid latitude <br> Rows with empty values are removed
 centroid_longitude | Longitude of centroid | float | decimal degrees <br> [-180.0, 180.0] | Mesh cell centroid longitude <br> Rows with empty values are removed
 fraction_cell_in_polygon | Cell portion | float | proportion <br> [0.0-1.0] | Fraction of mesh cell that is within the interpolation polygon that delineates the mesh <br> Missing values are replaced with 0.0
@@ -116,13 +116,13 @@ fraction_cell_in_polygon | Cell portion | float | proportion <br> [0.0-1.0] | Fr
 Smoothed isobath contour used to transform the mesh points. A set of latitude/longitude locations delineating the 200 meter bathymetric contour that represents the shelf break.
 
 Echopop column | EchoPro column | Data type | Units | Description
---- | --- | --- | --- | --- 
+--- | --- | --- | --- | ---
 latitude | Latitude | float | decimal degrees <br> [-90.0, 90.0] | Isobath latitude <br> Rows with empty values are removed
 longitude | Longitude | float | decimal degrees <br> [-180.0, 180.0] | Isobath longitude <br> Rows with empty values are removed
 
 ### Kriging and variogram parameters
 
-This file comprises two columns: 1) the parameter names and 2) their associated values. 
+This file comprises two columns: 1) the parameter names and 2) their associated values.
 
 Echopop parameter | EchoPro parameter | Data type | Valid range | Description
 --- | --- | --- | --- | ---

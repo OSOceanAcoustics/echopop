@@ -6,7 +6,7 @@
 The biomass estimates for male and female fish ($s=M$ and $s=F$, respectively) along transect interval $k$ across all lengths ($\ell$) and all ages ($\alpha$) are:
 
 (eq-biomass-male)=
-$$ 
+$$
     B_{\textrm{i,M}}^{k} =
         \sum_{\ell} B_{i,\textrm{M}, \ell}^{k, \textrm{unaged}} +
             \sum_{\ell, \alpha} B_{i,\textrm{M}, \ell, \alpha}^{k, \textrm{aged}}
@@ -34,7 +34,7 @@ $$
     \hat{N}^{k}_i = \frac{B^{k}_i}{\overline{\mathcal{W}}(\ell)_\text{all}},
 $$
 
-where $\overline{W}(\ell)_\text{all}$ is the length-weight regression relationship derived from the catch data. 
+where $\overline{W}(\ell)_\text{all}$ is the length-weight regression relationship derived from the catch data.
 
 Similarly, $\hat{\textit{NASC}_i^{\,\,k}}$ can be back-calculated from the estimated abundance using the averaged differential backscattering cross-section of the $i^{\text{th}}$ stratum, $\bar{\sigma}_{bs}^i$, via:
 
@@ -46,7 +46,7 @@ $$
 when the transect interval $k$ falls in stratum $i$.
 
 
-```{note} 
+```{note}
 In Chu's Echopro implementation, both $\hat{N}_{i,s}^{k}$ and $\hat{N}^{k}_i$ are calculated using a single $\overline{\mathcal{W}}(\ell)_\text{all}$ fit from **all** (male, female, and unsexed) fish samples, instead of sex-specific fits.
 ```
 ## Apportioning back-calculated abundance
@@ -199,7 +199,7 @@ $$
 
 #### Aged fish
 
-Similarly, for each transect interval $k$, the total estimated abundance of male, female, and all aged fish of length $\ell$ and age $\alpha$ are apportioned according to the number proportions in {ref}`Eq. (13) <eq-number-proportions-aged-sex-length-age>`: 
+Similarly, for each transect interval $k$, the total estimated abundance of male, female, and all aged fish of length $\ell$ and age $\alpha$ are apportioned according to the number proportions in {ref}`Eq. (13) <eq-number-proportions-aged-sex-length-age>`:
 
 (eq-abundance-aged)=
 $$

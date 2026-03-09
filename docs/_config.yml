@@ -39,7 +39,7 @@ html:
     - docs/custom_echopop.css
 
 sphinx:
-  extra_extensions: 
+  extra_extensions:
     - sphinx_automodapi.automodapi
     - numpydoc
     - sphinx.ext.autodoc
@@ -65,17 +65,17 @@ sphinx:
     tippy_enable_mathjax: true
     numfig: false
     napoleon_use_rtype: false
-    myst_footnote_transition: false    
+    myst_footnote_transition: false
     html_css_files:
       - custom_echopop.css
     bibtex_bibfiles: ["references.bib"]
     intersphinx_mapping:
       cartopy: ["https://cartopy.readthedocs.io/stable/", null]
-      geopandas: ["https://geopandas.org/en/stable/", null]     
+      geopandas: ["https://geopandas.org/en/stable/", null]
       lmfit: ["https://lmfit.github.io/lmfit-py/", null]
       matplotlib: ["https://matplotlib.org/stable/", null]
       numpy: ["https://numpy.org/doc/stable/", null]
-      pandas: ["https://pandas.pydata.org/pandas-docs/stable/", null] 
+      pandas: ["https://pandas.pydata.org/pandas-docs/stable/", null]
       shapely: ["https://shapely.readthedocs.io/en/stable/", null]
       verde: ["https://www.fatiando.org/verde/latest/", null]
       xarray: ["https://docs.xarray.dev/en/stable/", null]

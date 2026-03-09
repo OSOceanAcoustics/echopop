@@ -31,7 +31,7 @@
 ### Circular
 
 $$
-\gamma(h) = 
+\gamma(h) =
 \begin{cases}
 C_1 \left[ 1 - \frac{2}{\pi} \cos^{-1}\left(\frac{h}{a}\right) + \frac{2h}{\pi a} \sqrt{1 - \frac{h^2}{a^2}} \right], & h \leq a \\
 C_1, & h > a
@@ -46,7 +46,7 @@ The circular model describes a spatial process with a finite range, where the se
 ### Cubic
 
 $$
-\gamma(h) = 
+\gamma(h) =
 \begin{cases}
 C_0 + C_1 \left( 7\left(\frac{h}{a}\right)^2 - \frac{35}{4}\left(\frac{h}{a}\right)^3 + \frac{7}{2}\left(\frac{h}{a}\right)^5 - \frac{3}{4}\left(\frac{h}{a}\right)^7 \right), & h \leq a \\
 C_0 + C_1, & h > a
@@ -88,7 +88,7 @@ $$
 $$
 
 The J-Bessel model introduces damped oscillations into the semivariogram, which can represent periodic or cyclic spatial patterns. This is useful for modeling phenomena with repeating structures or "hole effects." {cite:p}`chiles_geostatistics_2012`<br>
-*Parameter limits*: $b > 0$  
+*Parameter limits*: $b > 0$
 
 ### K-Bessel
 
@@ -104,13 +104,13 @@ The K-Bessel model uses the modified Bessel function of the second kind, $\text{
 (eq-legendre)=
 ### Legendre
 
-$$ 
-2 - \frac{1 - L^2}{1 - 2L \cos(\Omega) + L^2} 
+$$
+2 - \frac{1 - L^2}{1 - 2L \cos(\Omega) + L^2}
 \label{eq:legendre}
 $$
 
 The Legendre polynomial semivariogram model is used when you need to model spatial correlation on the surface of a sphere, such as the Earth. This is especially important for global or large-scale geostatistical analyses where the curvature of the Earth cannot be ignored and the usual Euclidean distance-based models are inadequate.<br>
-*Parameter limits*: $L \in (0, 1)$  
+*Parameter limits*: $L \in (0, 1)$
 
 Here, the parameter $\Omega$ is the angular distance between two points on a sphere (in radians) of radius $\approx$ 6378 km (Earth's radius) where:
 
@@ -148,8 +148,8 @@ The linear plateau model describes a spatial process where the semivariogram inc
 
 ### Logarithmic
 
-$$ 
-\gamma(h) = \log(h + a) 
+$$
+\gamma(h) = \log(h + a)
 \label{eq:log}
 $$
 
@@ -170,8 +170,8 @@ The Matérn model provides a flexible approach to modeling spatial correlation. 
 
 ### Matérn (Stein's Parameterization)
 
-$$ 
-\gamma(h) = 1 - \frac{2^{1-\nu}}{\Gamma(\nu)} \left( 2\sqrt{\nu} \frac{h}{a} \right)^{\nu} \text{K}_{\nu}\left( 2\sqrt{\nu} \frac{h}{a} \right) 
+$$
+\gamma(h) = 1 - \frac{2^{1-\nu}}{\Gamma(\nu)} \left( 2\sqrt{\nu} \frac{h}{a} \right)^{\nu} \text{K}_{\nu}\left( 2\sqrt{\nu} \frac{h}{a} \right)
 \label{eq:stein}
 $$
 
@@ -182,7 +182,7 @@ This is the Matérn model using Michael Stein's parameterization, which is widel
 ### Nugget
 
 $$
-\gamma(h) = 
+\gamma(h) =
 \begin{cases}
 0 & h = 0 \\
 C_0 & h > 0
@@ -197,7 +197,7 @@ The nugget model represents pure measurement error or micro-scale variation that
 ### Pentaspherical
 
 $$
-\gamma(h) = 
+\gamma(h) =
 \begin{cases}
 C_0 + C_1 \left( \frac{15h}{8a} - \frac{5h^3}{4a^3} + \frac{3h^5}{8a^5} \right), & h \leq a \\
 C_0 + C_1, & h > a
@@ -212,7 +212,7 @@ The pentaspherical model is smoother than the spherical model, with continuous d
 ### Periodic
 
 $$
-\gamma(h) = 1 - \cos\left( \frac{2\pi h}{a} \right) 
+\gamma(h) = 1 - \cos\left( \frac{2\pi h}{a} \right)
 \label{eq:periodic}
 $$
 
@@ -227,7 +227,7 @@ $$
 \label{eq:power}
 $$
 
-The power law model is used for fractal or scale-invariant processes, where the semivariogram increases as a power of the lag distance. This model does not have a finite sill and is appropriate for phenomena that do not exhibit a clear range. {cite:p}`goovaerts_1997`  
+The power law model is used for fractal or scale-invariant processes, where the semivariogram increases as a power of the lag distance. This model does not have a finite sill and is appropriate for phenomena that do not exhibit a clear range. {cite:p}`goovaerts_1997`
 
 ---
 
@@ -256,7 +256,7 @@ The sinc model generates regular oscillatory patterns, which are suitable for mo
 ### Spherical
 
 $$
-\gamma(h) = 
+\gamma(h) =
 \begin{cases}
 0, & h = 0 \\
 C_0 + C_1 \left( 1.5\frac{h}{a} - 0.5\left(\frac{h}{a}\right)^3 \right), & h \leq a \\
@@ -271,8 +271,8 @@ Used for spatial processes with a finite correlation range and one of the most c
 
 ### Spline
 
-$$ 
-\gamma(h) = h^2 \log(h) 
+$$
+\gamma(h) = h^2 \log(h)
 \label{spline}
 $$
 
@@ -295,12 +295,12 @@ The stable/exclass (exponential class) model generalizes the exponential and Gau
 $$
 \gamma(h) =
 \begin{cases}
-C_0 + C_1 \left[ 
-    \arcsin\left(\frac{h}{a}\right) + \frac{h}{a} 
+C_0 + C_1 \left[
+    \arcsin\left(\frac{h}{a}\right) + \frac{h}{a}
     \sqrt{1 - \left(
         \frac{h}{a}
         \right)^2
-        } + 
+        } +
     \frac{2}{3} \frac{h}{a} \left(
         1 - \left(
             \frac{h}{a}
@@ -319,7 +319,7 @@ The tetraspherical model is a bounded semivariogram model that provides a smooth
 ### Wave
 
 $$
-\gamma(h) = 1 - a \frac{\sin\left( \pi h / a \right)}{\pi h} 
+\gamma(h) = 1 - a \frac{\sin\left( \pi h / a \right)}{\pi h}
 \label{eq:wave}
 $$
 

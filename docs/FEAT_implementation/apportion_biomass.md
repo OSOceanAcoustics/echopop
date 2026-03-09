@@ -13,14 +13,14 @@ $$
 which can then calculate the within-group weight proportions for aged fish:
 
 $$
-    {r_w}^\textrm{aged/all}_{i, s,\ell,\alpha} = 
+    {r_w}^\textrm{aged/all}_{i, s,\ell,\alpha} =
     \frac{ \sum_{j \in J^\textrm{aged}_{i,s,\ell,\alpha}} w_j }{ w_i^{\text{all}}  }.
 $$
 
 This proportion can then be applied to the transect-based estimates to apportion biomass for stratum, length, age, and sex. The apportioned biomass for transect interval $k$ is therefore:
 
 $$
-    B^{k, \textrm{aged}}_{i, s,\ell,\alpha} = 
+    B^{k, \textrm{aged}}_{i, s,\ell,\alpha} =
     \rho^k_\text{B} A^k {r_w}^\textrm{aged/all}_{i, s,\ell,\alpha},
 $$
 
@@ -58,7 +58,7 @@ $$
     {r_n}^\textrm{unaged/unaged}_{i,\ell} = \sum_s {r_n}^\textrm{unaged/unaged}_{i,s,\ell}.
 $$
 
-It is worth noting that these quantities are analagous to $\tilde{\mathbf{L}}$ described by {ref}`Eq. (2.3) <eq-23>`. Using the $\mathcal{W}(\ell)$ computed for all aged fish samples (i.e., inclusive of both male and female fish), the weight proportion of unaged fish samples of length $\ell$ with respect to all unaged fish samples is:
+It is worth noting that these quantities are analogous to $\tilde{\mathbf{L}}$ described by {ref}`Eq. (2.3) <eq-23>`. Using the $\mathcal{W}(\ell)$ computed for all aged fish samples (i.e., inclusive of both male and female fish), the weight proportion of unaged fish samples of length $\ell$ with respect to all unaged fish samples is:
 
 $$
     {r_w}^\textrm{unaged/unaged}_{i,\ell} =
@@ -85,7 +85,7 @@ The weight proportions of male and female unaged fish with respect to all unaged
 
 $$
 \begin{align*}
-    {r_w}^\textrm{unaged/unaged}_\textrm{i,M} &= 
+    {r_w}^\textrm{unaged/unaged}_\textrm{i,M} &=
     \frac{ w^\textrm{unaged}_\textrm{i,M} }{ w^\textrm{unaged}_\textrm{M} + w^\textrm{unaged}_\textrm{F} } \\
     {r_w}^\textrm{unaged/unaged}_\textrm{i,F} &= \frac{ w^\textrm{unaged}_\textrm{i,M} }{ w^\textrm{unaged}_\textrm{i,M} + w^\textrm{unaged}_\textrm{i,F} } .
 \end{align*}
