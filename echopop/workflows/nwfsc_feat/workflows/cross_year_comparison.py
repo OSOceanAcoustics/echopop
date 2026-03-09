@@ -35,10 +35,10 @@ YEARS = [1995, 1998, 2001, 2003, 2005, 2007, 2009, 2011, 2012, 2013, 2015, 2017,
 #   lambda year: Path(f"C:/Data/EchopopData/reports/{year}/echopro/")
 #   lambda year: Path(f"C:/Data/EchopopData/echopop_{year}/reports_echopro")
 ECHOPRO_ROOT: Callable[[int], Path] = lambda year: Path(
-    f"C:/Data/EchopopData/file_all_years_update_20260303/{year}/output_echopro"
+    f"C:/Data/EchopopData/echopop_{year}/reports_echopro"
 )
 ECHOPOP_ROOT: Callable[[int], Path] = lambda year: Path(
-    f"C:/Data/EchopopData/file_all_years_update_20260303/{year}/output_echopop"
+    f"C:/Data/EchopopData/echopop_{year}/reports_updated_biodata"
 )
 
 # FILENAME PATTERNS
@@ -83,6 +83,9 @@ differences, signed_pct_diff = comp.compute_dataset_differences(
     echopop_datasets=ECHOPOP_DATASETS,
 )
 
+differences.loc["kriging", 2003]
+ECHOPRO_DATASETS["kriging"][2003].abundance.sum()
+ECHOPOP_DATASETS["kriging"][2003].abundance.sum()
 # ==================================================================================================
 # PLOT DIFFERENCES [%]
 comp.plot_dataset_differences(

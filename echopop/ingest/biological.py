@@ -90,7 +90,7 @@ def load_single_biological_view(
     return df_filtered
 
 
-def load_materialized_biodata_views(
+def load_biodata_views(
     biodata_filepaths: Dict[str, Path],
     column_name_map: Dict[str, str] = None,
     subset_dict: Optional[Dict] = None,

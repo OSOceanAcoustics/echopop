@@ -154,7 +154,7 @@ FEAT_TO_ECHOPOP_BIODATA_COLUMNS = {
 }
 
 # READ IN DATA
-dict_df_bio = ingestion.load_materialized_biodata_views(
+dict_df_bio = ingestion.load_biodata_views(
     biodata_filepaths=BIODATA_FILES,
     column_name_map=FEAT_TO_ECHOPOP_BIODATA_COLUMNS,
     subset_dict=BIODATA_SHIP_SPECIES, 
@@ -342,7 +342,7 @@ dict_da_weight_proportion["aged"] = proportions.weight_proportions(
 # UNAGED WEIGHT PROPORTIONS
 dict_da_weight_proportion["unaged"] = proportions.fitted_weight_proportions(
     weight_data=ds_da_weight_dist["unaged"],
-    aged_weight_proportions=dict_da_weight_proportion["aged"],
+    reference_weight_proportions=dict_da_weight_proportion["aged"],
     number_proportions=dict_ds_number_proportion["unaged"],
     binned_weights=da_binned_weights_all,
     stratum_dim=["stratum_ks"]

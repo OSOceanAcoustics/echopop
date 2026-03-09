@@ -171,6 +171,8 @@ dict_df_bio = ingestion.load_biological_data(
     biodata_label_map=BIODATA_SEX,
     haul_uid_config=HAUL_UID_CONFIG,
 )
+# ---- Remove specimen hauls
+feat_biology.drop_specimen_only_hauls(dict_df_bio)
 
 # ==================================================================================================
 # INGEST STRATIFICATION DATA

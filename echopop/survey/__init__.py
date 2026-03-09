@@ -18,7 +18,6 @@ from .proportions import (
     stratum_averaged_weight,
     weight_proportions,
 )
-from .selectivity import assign_selectivity_expansion
 from .stratified import JollyHampton
 from .transect import compute_interval_distance
 
@@ -38,8 +37,6 @@ __all__ = [
     "number_proportions",
     "stratum_averaged_weight",
     "weight_proportions",
-    # Selectivity correction functions
-    "assign_selectivity_expansion",
     # Statistics functions
     "confidence_interval",
     # Transect functions
@@ -47,7 +44,6 @@ __all__ = [
     # Submodules
     "biology",
     "proportions",
-    "selectivity",
     "statistics",
     "stratified",
     "transect",
