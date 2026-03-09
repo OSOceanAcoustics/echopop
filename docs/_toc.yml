@@ -83,6 +83,8 @@ parts:
           title: Orchestrating workflows
         - file: FEAT_implementation/FEAT_notebooks/year_specific_workflows
           title: Year-specific workflows
+        - file: FEAT_implementation/FEAT_notebooks/age1_exclusion_workflow
+          title: Age-1 exclusion workflow
   - file: theory
     title: Underlying theory
     sections:

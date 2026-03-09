@@ -1,0 +1,940 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="1025.1711"
+   height="1220.7267"
+   viewBox="0 0 1025.1711 1220.7267"
+   role="img"
+   aria-labelledby="svgtitle svgdesc"
+   version="1.1"
+   id="svg71"
+   sodipodi:docname="age1_exclusion_workflow_steps.svg"
+   inkscape:version="1.4.2 (f4327f4, 2025-05-13)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview71"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="1.9337833"
+     inkscape:cx="330.95745"
+     inkscape:cy="227.79181"
+     inkscape:window-width="3840"
+     inkscape:window-height="2126"
+     inkscape:window-x="-11"
+     inkscape:window-y="-11"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg71" />
+  <title
+     id="svgtitle">Age-1 exclusion workflow — full stage map</title>
+  <desc
+     id="svgdesc">Two-column diagram. Left: every standard FEAT pipeline stage from parameter block through reporting. Right: the four age-1 exclusion blocks with dashed connectors showing exact insertion points.</desc>
+  <defs
+     id="defs3">
+    <style
+       id="style1">
+      .title  { font: 700 30px Arial, Helvetica, sans-serif; fill: #111827; }
+      .note   { font: 400 13px Arial, Helvetica, sans-serif; fill: #374151; }
+      .label  { font: 700 17px Arial, Helvetica, sans-serif; fill: #111827; }
+      .body   { font: 400 14px Arial, Helvetica, sans-serif; fill: #111827; }
+      .param  { fill: #fef3c7; stroke: #b45309; stroke-width: 2.2; }
+      .ingest { fill: #eef2ff; stroke: #4f46e5; stroke-width: 2.2; }
+      .process{ fill: #ecfeff; stroke: #0e7490; stroke-width: 2.2; }
+      .model  { fill: #f3e8ff; stroke: #7e22ce; stroke-width: 2.2; }
+      .out    { fill: #ecfdf5; stroke: #047857; stroke-width: 2.2; }
+      .excl     { fill: #fdf2f8; stroke: #be185d; stroke-width: 2.2; }
+      .excl-opt { fill: #fefce8; stroke: #ca8a04; stroke-width: 2.2; stroke-dasharray: 7 5; }
+      .legendBox   { fill: #ffffff; stroke: #9ca3af; stroke-width: 1.8; }
+      .legendTitle { font: 700 15px Arial, Helvetica, sans-serif; fill: #111827; }
+      .legendText  { font: 400 13px Arial, Helvetica, sans-serif; fill: #111827; }
+      .arrow    { stroke: #111827; stroke-width: 2.8; fill: none; }
+      .arrowExcl{ stroke: #be185d; stroke-width: 2.4; fill: none; stroke-dasharray: 6 4; }
+      .arrowOpt { stroke: #ca8a04; stroke-width: 2.2; fill: none; stroke-dasharray: 6 4; }
+    </style>
+    <marker
+       id="head"
+       markerWidth="12"
+       markerHeight="12"
+       refX="10"
+       refY="6"
+       orient="auto"
+       markerUnits="strokeWidth">
+      <path
+         d="M 0,0 12,6 0,12 Z"
+         fill="#111827"
+         id="path1" />
+    </marker>
+    <marker
+       id="headExcl"
+       markerWidth="12"
+       markerHeight="12"
+       refX="10"
+       refY="6"
+       orient="auto"
+       markerUnits="strokeWidth">
+      <path
+         d="M 0,0 12,6 0,12 Z"
+         fill="#be185d"
+         id="path2" />
+    </marker>
+    <marker
+       id="headOpt"
+       markerWidth="12"
+       markerHeight="12"
+       refX="10"
+       refY="6"
+       orient="auto"
+       markerUnits="strokeWidth">
+      <path
+         d="M 0,0 12,6 0,12 Z"
+         fill="#ca8a04"
+         id="path3" />
+    </marker>
+  </defs>
+  <!-- Background -->
+  <rect
+     x="0"
+     y="0"
+     width="1025.1711"
+     height="1220.7267"
+     fill="#ffffff"
+     id="rect3"
+     style="stroke-width:0.774191" />
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- Title                                                       -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <g
+     id="g100"
+     transform="translate(-234.18408,-3.6762786)">
+    <text
+       x="756"
+       y="38"
+       text-anchor="middle"
+       class="title"
+       id="text3"
+       style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:30px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Age-1 exclusion workflow — full stage map</text>
+    <text
+       x="756"
+       y="60"
+       text-anchor="middle"
+       class="note"
+       id="text4"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:13px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Left: every standard FEAT pipeline stage. Right: age-1 exclusion blocks with exact insertion points (dashed connectors).</text>
+  </g>
+  <!-- Column headers -->
+  <text
+     x="229.83542"
+     y="84.323723"
+     text-anchor="middle"
+     class="label"
+     id="text5"
+     style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:17px;line-height:normal;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-anchor:middle;fill:#111827"><tspan
+       sodipodi:role="line"
+       id="tspan71"
+       x="229.83542"
+       y="84.323723">Standard pipeline</tspan></text>
+  <text
+     x="751.73804"
+     y="84.323723"
+     text-anchor="middle"
+     class="label"
+     id="text6"
+     style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:17px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Age-1 exclusion blocks</text>
+  <line
+     x1="14.827122"
+     y1="90.323723"
+     x2="444.82712"
+     y2="90.323723"
+     stroke="#9ca3af"
+     stroke-width="0.983616"
+     id="line6" />
+  <line
+     x1="500.82712"
+     y1="90.323723"
+     x2="1001.8271"
+     y2="90.323723"
+     stroke="#be185d"
+     stroke-width="0.97882"
+     id="line7" />
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- LEFT COLUMN — pipeline stages                              -->
+  <!-- Box width=640, left x=30. Row pitch=120, first top y=105  -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- Parameter block  y=105 -->
+  <rect
+     class="param"
+     x="14.626543"
+     y="101.12315"
+     width="425.79593"
+     height="82.401154"
+     rx="6.6530614"
+     id="rect7" />
+  <text
+     x="34.827122"
+     y="124.32372"
+     class="label"
+     id="text7"
+     style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:17px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Parameter block</text>
+  <text
+     x="34.827122"
+     y="144.32372"
+     class="body"
+     id="text8"
+     style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:14px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Defines file paths, survey IDs, and workflow toggles</text>
+  <text
+     x="34.827122"
+     y="161.32372"
+     class="body"
+     id="text11"
+     style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:14px;line-height:normal;font-family:Arial, Helvetica, sans-serif"><tspan
+   style="font-family:'Courier New', Courier, monospace"
+   id="tspan8">REMOVE_AGE1</tspan>, <tspan
+   style="font-family:'Courier New', Courier, monospace"
+   id="tspan9">AGE1_DOMINATED_HAULS</tspan>, <tspan
+   style="font-family:'Courier New', Courier, monospace"
+   id="tspan10">VERBOSE</tspan>, <tspan
+   style="font-family:'Courier New', Courier, monospace"
+   id="tspan11">COMPARE</tspan></text>
+  <!-- Ingest  y=225 -->
+  <rect
+     class="ingest"
+     x="14.768597"
+     y="221.26518"
+     width="425.51205"
+     height="110.55871"
+     rx="6.6486259"
+     id="rect11" />
+  <g
+     id="g74"
+     transform="translate(-15.172878,-3.6762786)">
+    <text
+       x="50"
+       y="248"
+       class="label"
+       id="text12"
+       style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:17px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Ingest NASC, biodata, and supporting tables</text>
+    <text
+       x="50"
+       y="268"
+       class="body"
+       id="text13"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:14px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Load NASC (pre-processed or raw exports) and biodata</text>
+    <text
+       x="50"
+       y="285"
+       class="body"
+       id="text14"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:14px;line-height:normal;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#111827"><tspan
+         sodipodi:role="line"
+         id="tspan72"
+         x="50"
+         y="285">Construct haul UID; read strata, mesh, and isobath files</tspan><tspan
+         sodipodi:role="line"
+         id="tspan73"
+         x="50"
+         y="302.5">Apply haul-based and geographic strata</tspan><tspan
+         sodipodi:role="line"
+         id="tspan74"
+         x="50"
+         y="320">Bin ages and lengths</tspan></text>
+  </g>
+  <!-- Stratification  y=345 -->
+  <!-- Length-weight  y=465 -->
+  <g
+     id="g77"
+     transform="translate(-15.172878,-93.676279)">
+    <rect
+       class="process"
+       x="29.797501"
+       y="464.79749"
+       width="425.79999"
+       height="82.048698"
+       rx="6.6531248"
+       id="rect17" />
+    <text
+       x="50"
+       y="488"
+       class="label"
+       id="text18"
+       style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:17px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Length-weight regression and binned weights</text>
+    <text
+       x="50"
+       y="508"
+       class="body"
+       id="text19"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:14px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Fit length-weight models; compute mean weight per length bin</text>
+    <text
+       x="50"
+       y="525"
+       class="body"
+       id="text20"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:14px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Required prerequisite for number and weight proportion tables</text>
+  </g>
+  <!-- Counts/proportions  y=585 -->
+  <g
+     id="g78"
+     transform="translate(-15.172878,-93.676279)">
+    <rect
+       class="process"
+       x="29.797501"
+       y="584.86877"
+       width="425.79999"
+       height="82.048698"
+       rx="6.6531248"
+       id="rect20" />
+    <text
+       x="50"
+       y="608"
+       class="label"
+       id="text21"
+       style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:17px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Counts and proportions</text>
+    <text
+       x="50"
+       y="628"
+       class="body"
+       id="text22"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:14px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Compute binned counts, number proportions (aged and unaged),</text>
+    <text
+       x="50"
+       y="645"
+       class="body"
+       id="text23"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:14px;line-height:normal;font-family:Arial, Helvetica, sans-serif">and weight proportions used by inversion and apportionment</text>
+  </g>
+  <!-- Inversion  y=705 -->
+  <g
+     id="g79"
+     transform="translate(-15.172878,-93.676279)">
+    <rect
+       class="model"
+       x="29.797501"
+       y="704.94"
+       width="425.79999"
+       height="82.048698"
+       rx="6.6531248"
+       id="rect23" />
+    <text
+       x="50"
+       y="728"
+       class="label"
+       id="text24"
+       style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:17px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Inversion and population estimates</text>
+    <text
+       x="50"
+       y="748"
+       class="body"
+       id="text25"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:14px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Invert NASC to number density; compute interval abundance</text>
+    <text
+       x="50"
+       y="765"
+       class="body"
+       id="text26"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:14px;line-height:normal;font-family:Arial, Helvetica, sans-serif">and biomass by sex using number and weight proportions</text>
+  </g>
+  <!-- Coordinate transform + kriging  y=825 -->
+  <g
+     id="g80"
+     transform="translate(-15.172878,-93.676279)">
+    <rect
+       class="model"
+       x="29.797501"
+       y="825.01129"
+       width="425.79999"
+       height="82.048698"
+       rx="6.6531248"
+       id="rect26" />
+    <text
+       x="50"
+       y="848"
+       class="label"
+       id="text27"
+       style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:17px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Coordinate transform and kriging</text>
+    <text
+       x="50"
+       y="868"
+       class="body"
+       id="text28"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:14px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Transform coordinates; fit variogram; krige onto mesh;</text>
+    <text
+       x="50"
+       y="885"
+       class="body"
+       id="text29"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:14px;line-height:normal;font-family:Arial, Helvetica, sans-serif">distribute kriged estimates across age, length, and sex bins</text>
+  </g>
+  <!-- Jolly-Hampton  y=945 -->
+  <g
+     id="g81"
+     transform="translate(-15.172878,-93.676279)">
+    <rect
+       class="out"
+       x="29.797501"
+       y="945.08252"
+       width="425.79999"
+       height="82.048698"
+       rx="6.6531248"
+       id="rect29" />
+    <text
+       x="50"
+       y="968"
+       class="label"
+       id="text30"
+       style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:17px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Stratified analysis (Jolly-Hampton 1990)</text>
+    <text
+       x="50"
+       y="988"
+       class="body"
+       id="text31"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:14px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Bootstrap CV estimates for transect and kriged data;</text>
+    <text
+       x="50"
+       y="1005"
+       class="body"
+       id="text32"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:14px;line-height:normal;font-family:Arial, Helvetica, sans-serif">summarize confidence intervals</text>
+  </g>
+  <!-- Reporting  y=1065 -->
+  <g
+     id="g82"
+     transform="translate(-15.172878,-93.676279)">
+    <rect
+       class="out"
+       x="29.797501"
+       y="1065.1538"
+       width="425.79999"
+       height="82.048698"
+       rx="6.6531248"
+       id="rect32" />
+    <text
+       x="50"
+       y="1088"
+       class="label"
+       id="text33"
+       style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:17px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Report generation and optional comparisons</text>
+    <text
+       x="50"
+       y="1108"
+       class="body"
+       id="text34"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:14px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Generate summary tables and figures via <tspan
+   style="font-family:'Courier New', Courier, monospace"
+   id="tspan33">Reporter(...)</tspan>;</text>
+    <text
+       x="50"
+       y="1125"
+       class="body"
+       id="text35"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:14px;line-height:normal;font-family:Arial, Helvetica, sans-serif">if <tspan
+   style="font-family:'Courier New', Courier, monospace"
+   id="tspan34">COMPARE</tspan>: EchoPro vs Echopop diagnostics</text>
+  </g>
+  <!-- Main pipeline arrows -->
+  <line
+     class="arrow"
+     x1="227.52451"
+     y1="183.32372"
+     x2="227.52451"
+     y2="221.32372"
+     marker-end="url(#head)"
+     id="line35" />
+  <line
+     class="arrow"
+     x1="227.52463"
+     y1="332.92392"
+     x2="227.52463"
+     y2="370.92392"
+     marker-end="url(#head)"
+     id="line37" />
+  <line
+     class="arrow"
+     x1="227.52461"
+     y1="453.32373"
+     x2="227.52461"
+     y2="491.32373"
+     marker-end="url(#head)"
+     id="line38" />
+  <line
+     class="arrow"
+     x1="227.52461"
+     y1="573.32373"
+     x2="227.52461"
+     y2="611.32373"
+     marker-end="url(#head)"
+     id="line39" />
+  <line
+     class="arrow"
+     x1="227.52461"
+     y1="693.32373"
+     x2="227.52461"
+     y2="731.32373"
+     marker-end="url(#head)"
+     id="line40" />
+  <line
+     class="arrow"
+     x1="227.52461"
+     y1="813.32373"
+     x2="227.52461"
+     y2="851.32373"
+     marker-end="url(#head)"
+     id="line41" />
+  <line
+     class="arrow"
+     x1="227.52461"
+     y1="933.32373"
+     x2="227.52461"
+     y2="971.32373"
+     marker-end="url(#head)"
+     id="line42" />
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- RIGHT COLUMN — age-1 exclusion blocks                      -->
+  <!-- Box width=753, left x=730                                  -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- CLI trigger — beside parameter block -->
+  <g
+     id="g75"
+     transform="translate(-228.57464,-3.6762786)">
+    <rect
+       class="excl"
+       x="729.79651"
+       y="104.79649"
+       width="497.68182"
+       height="82.407021"
+       rx="6.6093206"
+       id="rect42" />
+    <text
+       x="750"
+       y="128"
+       class="label"
+       id="text42"
+       style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:17px;line-height:normal;font-family:Arial, Helvetica, sans-serif">CLI trigger</text>
+    <text
+       x="750"
+       y="148"
+       class="body"
+       id="text43"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:14px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Pass <tspan
+   style="font-family:'Courier New', Courier, monospace"
+   id="tspan42">--remove-age1</tspan> to dispatcher; resolved in parameter block</text>
+    <text
+       x="750"
+       y="165"
+       class="body"
+       id="text44"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:14px;line-height:normal;font-family:Arial, Helvetica, sans-serif"><tspan
+   style="font-family:'Courier New', Courier, monospace"
+   id="tspan43">REMOVE_AGE1 = cli_utils.get_remove_age1()</tspan> (defaults to <tspan
+   style="font-family:'Courier New', Courier, monospace"
+   id="tspan44">False</tspan>)</text>
+  </g>
+  <line
+     class="arrowExcl"
+     x1="441.3219"
+     y1="142.32372"
+     x2="501.32187"
+     y2="142.32372"
+     marker-end="url(#headExcl)"
+     id="line44" />
+  <!-- Block A — haul removal — beside ingestion -->
+  <g
+     id="g76"
+     transform="translate(-228.90538,10.545451)">
+    <rect
+       class="excl-opt"
+       x="729.79053"
+       y="224.79465"
+       width="497.65576"
+       height="82.408867"
+       rx="6.6089745"
+       id="rect44" />
+    <text
+       x="750"
+       y="248"
+       class="label"
+       id="text45"
+       style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:17px;line-height:normal;font-family:Arial, Helvetica, sans-serif">[Optional] Age-1 dominated haul removal</text>
+    <text
+       x="750"
+       y="268"
+       class="body"
+       id="text46"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:14px;line-height:normal;font-family:Arial, Helvetica, sans-serif">If <tspan
+   style="font-family:'Courier New', Courier, monospace"
+   id="tspan45">REMOVE_AGE1</tspan> and <tspan
+   style="font-family:'Courier New', Courier, monospace"
+   id="tspan46">len(AGE1_DOMINATED_HAULS) &gt; 0</tspan>:</text>
+    <text
+       x="750"
+       y="285"
+       class="body"
+       id="text47"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:14px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Filter biodata before stratification joins and binning</text>
+  </g>
+  <line
+     class="arrowOpt"
+     x1="441.38065"
+     y1="276.54456"
+     x2="501.38065"
+     y2="276.54456"
+     marker-end="url(#headOpt)"
+     id="line47"
+     style="stroke-width:2.4;stroke-dasharray:6.5454544,4.36363627;stroke-dashoffset:0" />
+  <!-- Block B — proportion extraction — beside counts/proportions -->
+  <g
+     id="g86"
+     transform="translate(-15.172878,5.8308549)">
+    <rect
+       class="excl"
+       x="516.37952"
+       y="487.7215"
+       width="498.29593"
+       height="77.328995"
+       rx="6.6174755"
+       id="rect47" />
+    <text
+       x="536.69751"
+       y="511.03943"
+       class="label"
+       id="text48"
+       style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:17px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Age-1 proportion extraction</text>
+    <text
+       x="536.69751"
+       y="531.03943"
+       class="body"
+       id="text49"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:14px;line-height:normal;font-family:Arial, Helvetica, sans-serif">If <tspan
+   style="font-family:'Courier New', Courier, monospace"
+   id="tspan48">REMOVE_AGE1</tspan>: slice <tspan
+   style="font-family:'Courier New', Courier, monospace"
+   id="tspan49">age_bin=1</tspan> from proportion tables</text>
+    <text
+       x="536.69751"
+       y="548.03943"
+       class="body"
+       id="text51"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:14px;line-height:normal;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#111827"><tspan
+         sodipodi:role="line"
+         id="tspan85"
+         x="536.69751"
+         y="548.03943">Produces age-1 NASC, number, weight proportions</tspan></text>
+  </g>
+  <line
+     class="arrowExcl"
+     x1="441.5246"
+     y1="532.21686"
+     x2="501.52463"
+     y2="532.21686"
+     marker-end="url(#headExcl)"
+     id="line52" />
+  <!-- Block C — signal removal — beside inversion -->
+  <g
+     id="g87"
+     transform="translate(-228.47539,-100.71192)">
+    <rect
+       class="excl"
+       x="729.79517"
+       y="704.94147"
+       width="498.06967"
+       height="96.11705"
+       rx="6.614471"
+       id="rect52" />
+    <text
+       x="750"
+       y="728"
+       class="label"
+       id="text53"
+       style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:17px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Remove age-1 signal from transect estimates</text>
+    <text
+       x="750"
+       y="748"
+       class="body"
+       id="text54"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:14px;line-height:normal;font-family:Arial, Helvetica, sans-serif">If <tspan
+   style="font-family:'Courier New', Courier, monospace"
+   id="tspan53">REMOVE_AGE1</tspan>: remove age-1 NASC, abundance, biomass</text>
+    <text
+       x="750"
+       y="765"
+       class="body"
+       id="text55"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:14px;line-height:normal;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#111827"><tspan
+         sodipodi:role="line"
+         id="tspan86"
+         x="750"
+         y="765">Subtracts age-1 NASC, abundance, biomass from along-transect estimates</tspan><tspan
+         sodipodi:role="line"
+         id="tspan87"
+         x="750"
+         y="782.5">based on the calculated proportions</tspan></text>
+  </g>
+  <line
+     class="arrowExcl"
+     x1="441.5246"
+     y1="652.28809"
+     x2="501.5246"
+     y2="652.28809"
+     marker-end="url(#headExcl)"
+     id="line56" />
+  <!-- Block D — kriged redistribution — beside kriging -->
+  <g
+     id="g89"
+     transform="translate(-228.47539,-89.268589)">
+    <rect
+       class="excl"
+       x="729.65637"
+       y="824.94897"
+       width="498.34717"
+       height="73.357979"
+       rx="6.6181564"
+       id="rect56" />
+    <text
+       x="750"
+       y="848"
+       class="label"
+       id="text57"
+       style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:17px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Redistribute kriged age-1 estimates</text>
+    <text
+       x="750"
+       y="868"
+       class="body"
+       id="text58"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:14px;line-height:normal;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#111827"><tspan
+         sodipodi:role="line"
+         id="tspan88"
+         x="750"
+         y="868">If <tspan
+   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:14px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+   id="tspan89">REMOVE_AGE1</tspan>: reallocate &quot;leaked&quot; age-1 estimates over age-2+ bins</tspan></text>
+    <text
+       x="750"
+       y="885"
+       class="body"
+       id="text59"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:14px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Redistributes estimates for kriged abundance and biomass tables</text>
+  </g>
+  <line
+     class="arrowExcl"
+     x1="441.5246"
+     y1="772.35938"
+     x2="501.52463"
+     y2="772.35938"
+     marker-end="url(#headExcl)"
+     id="line60" />
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- Legend                                                      -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <rect
+     class="legendBox"
+     x="498.18213"
+     y="837.69141"
+     width="518.20709"
+     height="372.52509"
+     rx="3.566463"
+     id="rect60" />
+  <text
+     x="502.22934"
+     y="851.73865"
+     class="legendTitle"
+     id="text61"
+     style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:15px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Legend</text>
+  <g
+     id="g93"
+     transform="translate(-30.07288,10.837872)">
+    <rect
+       class="param"
+       x="533.40222"
+       y="977.41492"
+       width="26"
+       height="18"
+       rx="4"
+       id="rect61" />
+    <text
+       x="565.40222"
+       y="991.41492"
+       class="legendText"
+       id="text62"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:13px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Parameter block</text>
+  </g>
+  <g
+     id="g94"
+     transform="translate(-37.179753,19.887401)">
+    <rect
+       class="ingest"
+       x="540.50909"
+       y="1032.1082"
+       width="26"
+       height="18"
+       rx="4"
+       id="rect62" />
+    <text
+       x="572.50909"
+       y="1046.1082"
+       class="legendText"
+       id="text63"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:13px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Data ingestion / preprocessing</text>
+  </g>
+  <g
+     id="g95"
+     transform="translate(-420.07288,110.45202)">
+    <rect
+       class="process"
+       x="923.40222"
+       y="973.41492"
+       width="26"
+       height="18"
+       rx="4"
+       id="rect63" />
+    <text
+       x="955.40222"
+       y="987.41492"
+       class="legendText"
+       id="text64"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:13px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Processing / proportions</text>
+  </g>
+  <g
+     id="g97"
+     transform="translate(-640.07288,174.19479)">
+    <rect
+       class="model"
+       x="1143.4022"
+       y="973.41492"
+       width="26"
+       height="18"
+       rx="4"
+       id="rect64" />
+    <text
+       x="1175.4022"
+       y="987.41492"
+       class="legendText"
+       id="text65"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:13px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Model / estimation</text>
+  </g>
+  <g
+     id="g99"
+     transform="translate(-830.07288,144.3234)">
+    <rect
+       class="out"
+       x="1333.4022"
+       y="971.41492"
+       width="26"
+       height="18"
+       rx="4"
+       id="rect65" />
+    <text
+       x="1365.4022"
+       y="985.41492"
+       class="legendText"
+       id="text66"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:13px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Output / reporting</text>
+  </g>
+  <g
+     id="g98"
+     transform="translate(-30.07288,14.709255)">
+    <rect
+       class="excl"
+       x="533.40222"
+       y="1005.4149"
+       width="26"
+       height="18"
+       rx="4"
+       id="rect66" />
+    <text
+       x="565.40222"
+       y="1019.4149"
+       class="legendText"
+       id="text67"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:13px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Age-1 exclusion block (if <tspan
+   style="font-family:'Courier New', Courier, monospace"
+   id="tspan66">REMOVE_AGE1</tspan>)</text>
+  </g>
+  <g
+     id="g96"
+     transform="translate(-420.063,178.06617)">
+    <rect
+       class="excl-opt"
+       x="923.40222"
+       y="1001.4149"
+       width="26"
+       height="18"
+       rx="4"
+       id="rect67" />
+    <text
+       x="955.40222"
+       y="1015.4149"
+       class="legendText"
+       id="text68"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:13px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Optional haul filter (if <tspan
+   style="font-family:'Courier New', Courier, monospace"
+   id="tspan67">REMOVE_AGE1</tspan> and <tspan
+   style="font-family:'Courier New', Courier, monospace"
+   id="tspan68">len(AGE1_DOMINATED_HAULS) &gt; 0</tspan>)</text>
+  </g>
+  <g
+     id="g90"
+     transform="translate(-31.172878,-13.676279)">
+    <line
+       x1="533.40222"
+       y1="891.41492"
+       x2="583.40222"
+       y2="891.41492"
+       stroke="#111827"
+       stroke-width="2.8"
+       marker-end="url(#head)"
+       id="line68" />
+    <text
+       x="591.40222"
+       y="895.41492"
+       class="legendText"
+       id="text69"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:13px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Pipeline flow</text>
+  </g>
+  <g
+     id="g91"
+     transform="translate(-177.17288,29.195104)">
+    <line
+       x1="679.40222"
+       y1="891.41492"
+       x2="729.40222"
+       y2="891.41492"
+       stroke="#be185d"
+       stroke-width="2.4"
+       stroke-dasharray="6, 4"
+       marker-end="url(#headExcl)"
+       id="line69" />
+    <text
+       x="737.40222"
+       y="895.41492"
+       class="legendText"
+       id="text70"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:13px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Insertion connector (if <tspan
+   style="font-family:'Courier New', Courier, monospace"
+   id="tspan69">REMOVE_AGE1</tspan>)</text>
+  </g>
+  <g
+     id="g92"
+     transform="translate(-471.17288,69.666488)">
+    <line
+       x1="973.40222"
+       y1="891.41492"
+       x2="1023.4022"
+       y2="891.41492"
+       stroke="#ca8a04"
+       stroke-width="2.2"
+       stroke-dasharray="6, 4"
+       marker-end="url(#headOpt)"
+       id="line70"
+       style="stroke-width:2.4;stroke-dasharray:6.54545, 4.36364;stroke-dashoffset:0" />
+    <text
+       x="1031.4022"
+       y="895.41492"
+       class="legendText"
+       id="text71"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:13px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Insertion connector (optional haul filter)</text>
+  </g>
+</svg>
