@@ -47,6 +47,10 @@ def load_kriging_variogram_params(
     df_initial.columns = df_initial.iloc[0]
     df_initial = df_initial.drop(0)
 
+    # Assign column renaming map if missing
+    if column_name_map is None:
+        column_name_map = {}
+
     # Extract kriging parameters
     kriging_params = (
         df_initial.filter(regex="krig[.]")
