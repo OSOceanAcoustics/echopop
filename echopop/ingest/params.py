@@ -1,3 +1,11 @@
+"""
+Geostatistical parameter ingestion for echopop.
+
+This module loads the combined variogram and kriging parameter workbook produced by the FEAT survey
+workflow and returns the parsed parameter values as a ``pandas.DataFrame``. These parameters are
+consumed directly by the ``Variogram`` and ``Kriging`` classes in the ``geostatistics`` sub-package.
+"""
+
 from pathlib import Path
 from typing import Dict, Tuple, Union
 
