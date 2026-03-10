@@ -1,6 +1,14 @@
+"""
+Matrix-based multi-frequency acoustic inversion using scattering model optimization.
+
+Implements ``InversionMatrix``, which fits scattering model parameters to multi-frequency
+backscatter observations via nonlinear least-squares minimization, and provides supporting
+callback and objective functions used during the optimization procedure.
+"""
+
 import time
 import warnings
-from typing import Any, Dict
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -18,12 +26,12 @@ def mininizer_print_cb(
     Sv_measured: np.ndarray[float],
     center_frequencies: np.ndarray[float],
     inv_params: InvParameters,
-    model_settings: Dict[str, Any],
+    model_settings: dict[str, Any],
     *args,
     **kwargs,
 ):
     """
-    Callback function for optimization iterations in echopop.
+    Print optimization iteration progress for echopop inversion.
 
     This callback function is called during each iteration of the optimization
     process to provide progress updates. It prints parameter values and residuals
@@ -55,7 +63,6 @@ def mininizer_print_cb(
     Progress is printed at iterations 1, 10, and every 25th iteration thereafter.
     The callback displays residual magnitude in dB and key parameter values.
     """
-
     # If correct iteration number...
     if iter in (1, 10) or iter % 25 == 0:
         # ---- Extract parameters
@@ -74,11 +81,11 @@ def mininizer_print_cb(
 
 
 def monte_carlo_initialize(
-    parameters_lmfit: Dict[int, Parameters],
+    parameters_lmfit: dict[int, Parameters],
     center_frequencies: np.ndarray[float],
     Sv_measured: np.ndarray[float],
     parameters_meta: InvParameters,
-    model_settings: Dict[str, Any],
+    model_settings: dict[str, Any],
     **kwargs,
 ):
     """
@@ -114,7 +121,6 @@ def monte_carlo_initialize(
     preselecting the most promising parameter realization before running
     the full optimization procedure.
     """
-
     # Evaluate fits
     fits = [
         fit_Sv(p, Sv_measured, center_frequencies, parameters_meta, model_settings)
@@ -131,8 +137,8 @@ def monte_carlo_initialize(
 def prepare_minimizer(
     Sv_measured: pd.Series,
     scattering_params: InvParameters,
-    model_settings: Dict[str, Any],
-    simulation_settings: Dict[str, Any],
+    model_settings: dict[str, Any],
+    simulation_settings: dict[str, Any],
     verbose: bool,
     **kwargs,
 ):
@@ -173,7 +179,6 @@ def prepare_minimizer(
     The objective function minimizes the sum of squared differences between
     predicted and measured Sv values across all valid frequencies.
     """
-
     # Generate the parameter sets
     scattering_params.simulate_parameter_sets(
         simulation_settings["mc_realizations"], simulation_settings["_rng"]
@@ -225,11 +230,11 @@ def prepare_minimizer(
 
 
 def fit_Sv(
-    parameters: Dict[int, Parameters],
+    parameters: dict[int, Parameters],
     Sv_measured: np.ndarray[float],
     center_frequencies: np.ndarray[float],
     parameters_meta: InvParameters,
-    model_settings: Dict[str, Any],
+    model_settings: dict[str, Any],
 ):
     r"""
     Compute the objective function for acoustic scattering model optimization.
@@ -280,7 +285,6 @@ def fit_Sv(
            organisms using lienar and nonlinear scattering model-based inversion methods. The
            Journal of the Acoustical Society of America, 139: 2885-2895. doi: 10.1121/1.4948759
     """
-
     # Extract the `lmfit.Parameters` values
     parameter_set = parameters.valuesdict()
 
@@ -339,7 +343,7 @@ def perturb_parameters(params: Parameters, scale=0.05):
     ensure validity for subsequent optimization.
     """
     # params: lmfit.Parameters
-    for name, par in params.items():
+    for _name, par in params.items():
         if par.vary:
             # Calculate perturbation
             delta = np.random.uniform(-scale, scale) * abs(par.value if par.value != 0 else 1)
@@ -356,8 +360,8 @@ def perturb_parameters(params: Parameters, scale=0.05):
 def optim(
     Sv_measured: pd.Series,
     scattering_parameters: InvParameters,
-    simulation_settings: Dict[str, Any],
-    optimization_kwargs: Dict[str, Any],
+    simulation_settings: dict[str, Any],
+    optimization_kwargs: dict[str, Any],
     verbose: bool = False,
 ):
     """
@@ -649,9 +653,10 @@ class InversionMatrix(InversionBase):
     def __new__(
         cls,
         data: pd.DataFrame,
-        simulation_settings: Dict[str, Any],
+        simulation_settings: dict[str, Any],
         verbose: bool = True,
     ):
+        """Create and validate a new InversionMatrix instance."""
         # Validate
         try:
             from ..validators.inversion import ValidateInversionMatrix
@@ -678,7 +683,7 @@ class InversionMatrix(InversionBase):
     def __init__(
         self,
         data: pd.DataFrame,
-        simulation_settings: Dict[str, Any],
+        simulation_settings: dict[str, Any],
         verbose: bool = True,
     ):
         """
@@ -711,7 +716,6 @@ class InversionMatrix(InversionBase):
         The random number generator is configured based on 'simulation_settings'. To ensure
         reproducible Monte Carlo sampling, set 'mc_seed' in 'simulation_settings'.
         """
-
         # Set inversion method
         self.inversion_method = "scattering_model"
 
@@ -753,7 +757,6 @@ class InversionMatrix(InversionBase):
         Each minimizer is stored in the 'minimizer' column of self.measurements
         along with a descriptive 'label' for progress reporting during inversion.
         """
-
         # Define a new column for the `lmfit.Minimizer` class
         self.measurements["minimizer"] = np.array(np.nan).astype(object)
 
@@ -783,7 +786,9 @@ class InversionMatrix(InversionBase):
             "; ".join(
                 f"{name if name is not None else 'index'}: {val}"
                 for name, val in zip(
-                    self.measurements.index.names, (idx if isinstance(idx, tuple) else (idx,))
+                    self.measurements.index.names,
+                    (idx if isinstance(idx, tuple) else (idx,)),
+                    strict=False,
                 )
             )
             for idx in self.measurements.index
@@ -792,7 +797,7 @@ class InversionMatrix(InversionBase):
     def build_scattering_model(
         self,
         model_parameters: InvParameters,
-        model_settings: Dict[str, Any],
+        model_settings: dict[str, Any],
     ) -> None:
         """
         Configure the scattering model with parameters and computational settings.
@@ -842,7 +847,6 @@ class InversionMatrix(InversionBase):
         >>> settings = {"type": "pcdwba", "taper_order": 10.0}
         >>> inv_matrix.build_scattering_model(parameters, settings)
         """
-
         # Validate
         # ---- NOTE: This validator checks for the expected argument typing, and then that the
         # ---- parameters in `model_parameters` are valid for the specified model in
@@ -871,7 +875,7 @@ class InversionMatrix(InversionBase):
         # Add the `lmfit.Minimizer` objects to the dataset
         self._set_minimizers()
 
-    def invert(self, optimization_kwargs: Dict[str, Any]):
+    def invert(self, optimization_kwargs: dict[str, Any]):
         """
         Execute acoustic scattering parameter inversion for all measurements.
 
@@ -933,7 +937,6 @@ class InversionMatrix(InversionBase):
         >>> # Access optimized parameters for first measurement
         >>> optimal_params = results.iloc[0]["parameters"]
         """
-
         # Run optimization
         inversion_results = self.measurements[["sv_mean", "minimizer", "label"]].apply(
             optim,

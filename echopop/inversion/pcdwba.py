@@ -1,4 +1,12 @@
-from typing import Any, Dict, Union
+"""
+Prolate-cylinder distorted-wave Born approximation (PCDWBA) scattering model.
+
+Implements the PCDWBA acoustic scattering model for fluid-like zooplankton and fish,
+including Numba-accelerated phase and form-function computations and a vectorized
+differential backscattering cross-section calculator.
+"""
+
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -37,7 +45,6 @@ def fast_phase(M1, delta_gamma_cos):
     .. math::
         \Theta = \exp\left(i\frac{L}{a} k_fa \left(\frac{\vec{r_0}}{h} \cos \gamma\right) \right)
     """
-
     # Return
     return np.exp(1j * M1[:, :, np.newaxis] * delta_gamma_cos[np.newaxis, :, :])
 
@@ -84,9 +91,9 @@ def pcdwba_fbs(
     length_mean: float,
     length_radius_ratio: float,
     radius_of_curvature_ratio: float,
-    theta_radians: Union[np.ndarray[float], float],
-    k_f: Union[np.ndarray[float], float],
-    ka_f: Union[np.ndarray[float], float],
+    theta_radians: np.ndarray[float] | float,
+    k_f: np.ndarray[float] | float,
+    ka_f: np.ndarray[float] | float,
     g: float,
     h: float,
     n_integration: int,
@@ -214,7 +221,6 @@ def pcdwba_fbs(
            cylinders. The Journal of the Acoustical Society of America, 86, 691-705.
            doi: 10.1121/1.398193
     """
-
     kL_max = np.nanmax(k_f * length_mean, axis=1) * (1 + 3.1 * length_sd_norm)
     n_int = np.where(
         kL_max < n_integration, n_integration, np.ceil(kL_max * n_wavelength / (2 * np.pi))
@@ -288,7 +294,7 @@ def pcdwba(
     radius_of_curvature_ratio: float,
     theta_mean: float,
     theta_sd: float,
-    orientation_distribution: Dict[str, Any],
+    orientation_distribution: dict[str, Any],
     g: float,
     h: float,
     sound_speed_sw: float,
@@ -296,10 +302,10 @@ def pcdwba(
     n_integration: int,
     n_wavelength: int,
     number_density: float,
-    length_distribution: Dict[str, Any],
+    length_distribution: dict[str, Any],
     **kwargs,
 ):
-    """
+    r"""
     Phase-Corrected Distorted Wave Born Approximation (PCDWBA) for acoustic scattering.
 
     This function implements the PCDWBA model for computing acoustic backscattering from elongated
@@ -489,7 +495,6 @@ def pcdwba(
            zooplankton. The Journal of the Acoustical Society of America, 106, 1732-1743.
            doi: 10.1121/1.428036
     """
-
     # Pre-allocate arrays based on input size
     n_theta = orientation_distribution["bins"]
     n_length = length_distribution["bins"]
@@ -573,11 +578,11 @@ def pcdwba(
 
 
 def uniformly_bent_cylinder(
-    n_segments: Union[int, np.ndarray[int]],
+    n_segments: int | np.ndarray[int],
     radius_of_curvature_ratio: float,
     taper_order: float,
 ) -> pd.DataFrame:
-    """
+    r"""
     Generate geometric parameters for uniformly bent cylinder with tapered ends.
 
     This function computes the spatial discretization and geometric properties of organisms modeled
@@ -666,7 +671,6 @@ def uniformly_bent_cylinder(
            cylinders. The Journal of the Acoustical Society of America, 86, 691-705.
            doi: 10.1121/1.398193
     """
-
     # Curvature coefficients (for shape normalization)
     # ---- Gamma
     gamma = 0.5 / radius_of_curvature_ratio
