@@ -268,7 +268,7 @@ class JollyHampton:
         self,
         mesh_data: pd.DataFrame,
         geostrata: pd.DataFrame,
-        stratify_by: list[str],
+        stratum_dim: str,
         variable: str,
     ) -> pd.DataFrame:
         """
@@ -284,8 +284,8 @@ class JollyHampton:
             and the response variable.
         geostrata : pd.DataFrame
             DataFrame containing geographical stratum boundaries and definitions.
-        stratify_by : List[str]
-            List of column names to stratify by (typically geographical strata).
+        stratum_dum : str
+            Stratification column name (typically geographical strata).
         variable : str
             Name of the response variable column (e.g., 'biomass', 'abundance').
 
@@ -309,13 +309,9 @@ class JollyHampton:
         # Compute the summary metrics (distance, area, variable sums)
         virtual_df = self._generate_virtual_transects(transects_df, latitude_key, variable)
 
-        # Stratify the virtual transects by joining with geographical strata
-        if len(stratify_by) != 1:
-            raise ValueError("Currently only single stratification variable is supported")
-
         # Stratify the virtual transects
         virtual_df = join_geostrata_by_latitude(
-            data=virtual_df, geostrata=geostrata, stratum_name=stratify_by[0]
+            data=virtual_df, geostrata=geostrata, stratum_name=stratum_dim
         )
 
         return virtual_df.reset_index()
@@ -501,7 +497,7 @@ class JollyHampton:
     def _compute_transect_statistics(
         self,
         data_df: pd.DataFrame,
-        stratify_by: list[str],
+        stratum_dim: str,
     ) -> None:
         """
         Summarize transect-level data within strata.
@@ -513,8 +509,8 @@ class JollyHampton:
         ----------
         data_df : pd.DataFrame
             Input DataFrame containing virtual transect data.
-        stratify_by : List[str]
-            List of stratification variables (column names).
+        stratum_dim : str
+            Stratification variable (column name).
 
         Raises
         ------
@@ -527,7 +523,7 @@ class JollyHampton:
         falling back to coordinate-based calculations if pre-computed values are not available.
         """
         # Create a grouped DataFrame from the DataFrame input
-        grouped_df = data_df.groupby(stratify_by + ["transect_num"], observed=True)
+        grouped_df = data_df.groupby([stratum_dim, "transect_num"], observed=True)
 
         # Sum the variable for each stratum contained within the input dataset
         survey_values = grouped_df[self.variable].sum().to_frame()
@@ -582,7 +578,7 @@ class JollyHampton:
 
     def _compute_strata_statistics(
         self,
-        stratify_by: list[str],
+        stratum_dim: str,
     ) -> None:
         """
         Summarize data at the stratum level.
@@ -592,8 +588,8 @@ class JollyHampton:
 
         Parameters
         ----------
-        stratify_by : List[str]
-            List of stratification variables (column names).
+        stratum_dim : str
+            Stratification variable (column name).
 
         Notes
         -----
@@ -605,7 +601,7 @@ class JollyHampton:
         mp = self.model_params
 
         # Create grouped data by strata
-        grouped_df = self.transect_summary.groupby(stratify_by, observed=True)
+        grouped_df = self.transect_summary.groupby([stratum_dim], observed=True)
 
         # Start with transect counts
         strata_summary = grouped_df[self.variable].count().to_frame("transect_counts")
@@ -799,7 +795,7 @@ class JollyHampton:
     def stratified_bootstrap(
         self,
         data: pd.DataFrame,
-        stratify_by: list[str],
+        stratum_dim: str,
         variable: str,
     ) -> None:
         """
@@ -812,8 +808,8 @@ class JollyHampton:
         ----------
         data : pd.DataFrame
             Input DataFrame containing virtual transect data with all required columns for analysis.
-        stratify_by : List[str]
-            List of column names defining the stratification (e.g., ['geostratum_inpfc']).
+        stratum_dim : str
+            Column name defining the stratification (e.g., 'geostratum_inpfc').
         variable : str
             Name of the response variable column (e.g., 'biomass', 'abundance').
 
@@ -839,10 +835,10 @@ class JollyHampton:
         self.variable = variable
 
         # Summarize transect data within strata
-        self._compute_transect_statistics(data, stratify_by)
+        self._compute_transect_statistics(data, stratum_dim)
 
         # Summarize at stratum level
-        self._compute_strata_statistics(stratify_by)
+        self._compute_strata_statistics(stratum_dim)
 
         # Summarize at the survey level
         self._compute_survey_statistics()
