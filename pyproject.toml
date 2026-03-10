@@ -100,6 +100,16 @@ ignore = [
     "D213", # conflict: multi-line summary second line (D212 preferred)
 ]
 
+[tool.ruff.lint.per-file-ignores]
+# Ignore ALL docstring rules in the tests directory and all its subfolders
+"echopop/tests/**" = ["D"]
+# External tests
+"tests/**" = ["D"]
+# Ignore ALL docstring rules in the docs directory and all its subfolders
+"docs/**" = ["D"]
+# To specifically hit those __init__.py files in core:
+"echopop/core/__init__.py" = ["D104"]
+
 [tool.ruff.lint.pydocstyle]
 convention = "numpy"
 
