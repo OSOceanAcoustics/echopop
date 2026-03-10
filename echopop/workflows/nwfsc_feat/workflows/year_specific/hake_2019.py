@@ -269,11 +269,11 @@ else:
     )
     
     df_nasc = ingestion.nasc.consolidate_echvoiew_nasc(
-        df_merged=df_exports_with_regions,
-        interval_df=df_intervals,
+        nasc_data=df_exports_with_regions,
+        interval_data=df_intervals,
         region_class_names=CLASS_REGIONS,
         impute_region_ids=True,
-        transect_region_haul_key_df=df_transect_region_haul_key,
+        transect_region_haul_key=df_transect_region_haul_key,
         haul_uid_config=HAUL_UID_CONFIG
     )
     

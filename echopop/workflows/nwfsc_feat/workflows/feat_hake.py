@@ -116,19 +116,19 @@ df_transect_region_haul_key_all_ages = nasc.generate_transect_region_haul_key(
 # Consolidate the Echvoiew NASC export files
 # ------------------------------------------
 df_nasc_no_age1 = nasc.consolidate_echvoiew_nasc(
-    df_merged=df_exports_with_regions,
-    interval_df=df_intervals,
+    nasc_data=df_exports_with_regions,
+    interval_data=df_intervals,
     region_class_names=["Hake", "Hake Mix"],
     impute_region_ids=True,
-    transect_region_haul_key_df=transect_region_haul_key_no_age1,
+    transect_region_haul_key=transect_region_haul_key_no_age1,
 )
 
 df_nasc_all_ages = nasc.consolidate_echvoiew_nasc(
-    df_merged=df_exports_with_regions,
-    interval_df=df_intervals,
+    nasc_data=df_exports_with_regions,
+    interval_data=df_intervals,
     region_class_names=["Age-1 Hake", "Age-1", "Hake", "Hake Mix"],
     impute_region_ids=True,
-    transect_region_haul_key_df=transect_region_haul_key_all_ages,
+    transect_region_haul_key=transect_region_haul_key_all_ages,
 )
 
 # ==================================================================================================
@@ -161,7 +161,7 @@ BIODATA_SHEETS = {
     "length": "biodata_length",
     "specimen": "biodata_specimen",
 }
-survey_subset = {
+SUBSET_DICT = {
     "ships": {160: {"survey": 201906}, 584: {"survey": 2019097, "haul_offset": 200}},
     "species_code": [22500],
 }

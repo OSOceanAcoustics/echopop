@@ -258,11 +258,11 @@ else:
         "     Imputing overlapping region IDs within each interval: True"
     )
     df_nasc = ingestion.nasc.consolidate_echvoiew_nasc(
-        df_merged=df_exports_with_regions,
-        interval_df=df_intervals,
+        nasc_data=df_exports_with_regions,
+        interval_data=df_intervals,
         region_class_names=["Age-1 Hake", "Age-1", "Age-1 Hake Mix", "Hake", "Hake Mix"],
         impute_region_ids=True,
-        transect_region_haul_key_df=df_transect_region_haul_key,
+        transect_region_haul_key=df_transect_region_haul_key,
         haul_uid_config=HAUL_UID_CONFIG,
     )
 logging.info("NASC ingestion complete\n" "'df_nasc' created.")

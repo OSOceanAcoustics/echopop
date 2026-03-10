@@ -38,11 +38,11 @@ df_transect_region_haul_key = ingestion.nasc.read_transect_region_haul_key(
 )
 
 df_nasc_old = ingestion.nasc.consolidate_echvoiew_nasc(
-    df_merged=df_exports,
-    interval_df=df_intervals,
+    nasc_data=df_exports,
+    interval_data=df_intervals,
     region_class_names=["Age-1 Hake", "Age-1 Hake Mix", "Hake", "Hake Mix"],
     impute_region_ids=True,
-    transect_region_haul_key_df=df_transect_region_haul_key,
+    transect_region_haul_key=df_transect_region_haul_key,
 )
 
 # TRANSECT BOUNDARY FILE

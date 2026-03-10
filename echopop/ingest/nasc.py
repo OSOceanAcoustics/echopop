@@ -1,3 +1,14 @@
+"""
+NASC data ingestion and preprocessing for echopop.
+
+This module handles all ingestion pathways for Nautical Area Scattering Coefficient (NASC) data
+produced by Echoview and other acoustic backscatter processing software. It supports both raw
+multi-file export directories and pre-consolidated single-sheet workbooks. Key responsibilities
+include merging interval and region export files, parsing region-name codes into structured labels
+(species class, haul number, country), constructing transect-region-haul keys, and producing a clean
+``pandas.DataFrame`` ready for stratification and population estimation.
+"""
+
 import re
 from pathlib import Path
 from typing import Any, Dict, Generator, List, Optional, Tuple, Union
@@ -52,16 +63,16 @@ def map_transect_num(
     return pd.DataFrame(records)
 
 
-def validate_transect_exports(transect_files_df: pd.DataFrame) -> pd.DataFrame:
+def validate_transect_exports(transect_files: pd.DataFrame) -> pd.DataFrame:
     """
     Validate that each transect number has all required export file types without using loops.
 
-    For each transect number, there should be exactly four files:
-    one each for "analysis", "cells", "intervals", and "layers".
+    For each transect number, there should be exactly four files: "analysis", "cells", "intervals",
+    and "layers".
 
     Parameters
     ----------
-    transect_files_df : pd.DataFrame
+    transect_files : pd.DataFrame
         DataFrame with columns "file_type", "file_path", and "transect_num".
 
     Returns
@@ -70,22 +81,22 @@ def validate_transect_exports(transect_files_df: pd.DataFrame) -> pd.DataFrame:
         Filtered DataFrame containing only valid transect numbers that have all required file types.
     """
     # Create a pivot table to count file types by transect number
-    type_count = pd.crosstab(transect_files_df["transect_num"], transect_files_df["file_type"])
+    type_count = pd.crosstab(transect_files["transect_num"], transect_files["file_type"])
 
     # Check that each transect has all required file types
     valid_mask = (type_count[list(ECHOVIEW_DATABASE_EXPORT_FILESET)] == 1).all(axis=1)
     valid_transects = type_count.index[valid_mask].tolist()
 
     # Filter the original DataFrame to include only valid transect numbers
-    filtered_df = transect_files_df[transect_files_df["transect_num"].isin(valid_transects)].copy()
+    filtered_transects = transect_files[transect_files["transect_num"].isin(valid_transects)].copy()
 
     # Log the removed transect numbers
-    all_transects = transect_files_df["transect_num"].unique()
+    all_transects = transect_files["transect_num"].unique()
     removed_transects = np.setdiff1d(all_transects, valid_transects)
     if len(removed_transects) > 0:
         print(f"Removed transect numbers with incomplete file sets: {sorted(removed_transects)}")
 
-    return filtered_df
+    return filtered_transects
 
 
 def read_nasc_file(
@@ -757,7 +768,7 @@ def read_transect_region_haul_key(
 
 
 def write_transect_region_key(
-    transect_region_haul_key_df: pd.DataFrame,
+    transect_region_haul_key: pd.DataFrame,
     filename: str,
     verbose: bool,
 ) -> None:
@@ -766,7 +777,7 @@ def write_transect_region_key(
 
     Parameters
     ----------
-    transect_region_haul_key_df : pd.DataFrame
+    transect_region_haul_key : pd.DataFrame
     filename: str
     verbose : bool
     """
@@ -1152,11 +1163,11 @@ def process_region_names(
 
 
 def consolidate_echvoiew_nasc(
-    df_merged: pd.DataFrame,
-    interval_df: pd.DataFrame,
+    nasc_data: pd.DataFrame,
+    interval_data: pd.DataFrame,
     region_class_names: List[str],
     impute_region_ids: bool = True,
-    transect_region_haul_key_df: Optional[pd.DataFrame] = None,
+    transect_region_haul_key: Optional[pd.DataFrame] = None,
     haul_uid_config: Dict[str, Any] = {},
 ) -> pd.DataFrame:
     """
@@ -1164,31 +1175,41 @@ def consolidate_echvoiew_nasc(
 
     Parameters
     ----------
-    df_merged : |pd.DataFrame|
+    nasc_data : |pd.DataFrame|
         DataFrame containing merged Echoview data with columns:
 
         - ``'region_class'`` : Region classification names
+
         - ``'region_id'`` : Region identifier
+
         - ``'nasc'`` : Nautical area scattering coefficient
+
         - ``'transect_num'`` : Transect number
+
         - ``'interval'`` : Interval identifier
 
-    interval_df : |pd.DataFrame|
+    interval_data : |pd.DataFrame|
         DataFrame containing interval information with columns:
 
         - ``'interval'`` : Interval identifier
+
         - ``'transect_num'`` : Transect number
+
         - ``'distance_s'`` : Starting distance
+
         - ``'distance_e'`` : Ending distance
+
         - ``'latitude'`` : Latitude coordinates
+
         - ``'longitude'`` : Longitude coordinates
+
         - ``'transect_spacing'`` : Spacing between transects
 
     region_class_names : List[str]
         List of region class names to include in the analysis
     impute_region_ids : bool, optional
         Whether to impute region IDs for overlapping regions, by default True
-    transect_region_haul_key_df : |pd.DataFrame|, optional
+    transect_region_haul_key : |pd.DataFrame|, optional
         DataFrame containing haul information to merge, by default None
     haul_uid_config : Dict[str, Any]
         Optional keyword arguments to override defaults or DataFrame values:
@@ -1208,17 +1229,29 @@ def consolidate_echvoiew_nasc(
         Consolidated DataFrame containing:
 
         - ``'transect_num'`` : Transect number
+
         - ``'region_id'`` : Region identifier (``999`` for ``NaN``)
+
         - ``'distance_s'`` : Starting distance
+
         - ``'distance_e'`` : Ending distance
+
         - ``'latitude'`` : Latitude coordinates
+
         - ``'longitude'`` : Longitude coordinates
+
         - ``'transect_spacing'`` : Spacing between transects
+
         - ``'layer_mean_depth'`` : Mean layer depth
+
         - ``'layer_height'`` : Layer height
+
         - ``'bottom_depth'`` : Bottom depth
+
         - ``'nasc'`` : Summed nautical area scattering coefficient
+
         - ``'haul_num'`` : Haul number (``0`` for ``NaN``)
+
         - ``'uid'`` : Unique ship-survey-species-haul identifier
 
     Notes
@@ -1228,7 +1261,7 @@ def consolidate_echvoiew_nasc(
     """
 
     # Create DataFrame copy
-    df_copy = df_merged.copy()
+    df_copy = nasc_data.copy()
     # ---- Change region class names to lowercase
     df_copy.loc[:, "region_class"] = df_copy.loc[:, "region_class"].str.lower()
 
@@ -1259,10 +1292,10 @@ def consolidate_echvoiew_nasc(
     )
 
     # Create copy of interval export template
-    interval_copy = interval_df.copy().set_index(["interval", "transect_num"]).sort_index()
+    interval_copy = interval_data.copy().set_index(["interval", "transect_num"]).sort_index()
 
     # Merge haul information into the integrated NASC DataFrame
-    nasc_hauls = nasc_intervals.merge(transect_region_haul_key_df).set_index(
+    nasc_hauls = nasc_intervals.merge(transect_region_haul_key).set_index(
         ["interval", "transect_num"]
     )
 

@@ -1152,7 +1152,7 @@ def test_consolidate_echvoiew_nasc_basic(sample_merged_data, sample_interval_dat
         sample_merged_data,
         sample_interval_data,
         ["Hake", "Age-1 Hake"],
-        transect_region_haul_key_df=sample_haul_key,
+        transect_region_haul_key=sample_haul_key,
     )
 
     assert isinstance(result, pd.DataFrame)
@@ -1187,7 +1187,7 @@ def test_consolidate_echvoiew_nasc_imputation(
         sample_interval_data,
         ["Hake"],
         impute_region_ids=True,
-        transect_region_haul_key_df=sample_haul_key,
+        transect_region_haul_key=sample_haul_key,
     )
 
     # Check if overlapping regions have same region_id
@@ -1202,7 +1202,7 @@ def test_consolidate_echvoiew_nasc_filtering(
         sample_merged_data,
         sample_interval_data,
         ["Hake"],  # Only include Hake
-        transect_region_haul_key_df=sample_haul_key,
+        transect_region_haul_key=sample_haul_key,
     )
 
     # Check if only Hake regions are included
