@@ -85,7 +85,10 @@ write_to_template = 'version = "{version}"  # noqa'
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-extend-exclude = ["echopop/workflows/nwfsc_feat"]
+extend-exclude = [
+    "echopop/workflows/nwfsc_feat/workflows",
+    "*.ipynb"
+]
 
 [tool.ruff.lint]
 # E/F = Flake8 basics, I = Isort, D = Docstrings (pydocstyle)
