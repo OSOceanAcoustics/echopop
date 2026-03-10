@@ -3,7 +3,7 @@
 
 title: Echopop
 author: The UW Echospace Group
-# logo: logo.png
+logo: assets/echopop_logo.png
 
 # Force re-execution of notebooks on each build.
 # See https://jupyterbook.org/content/execute.html
