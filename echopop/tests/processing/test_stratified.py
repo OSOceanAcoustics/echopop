@@ -260,7 +260,7 @@ def test_JollyHampton_create_virtual_transects_basic():
 
     virtual_data = jh.create_virtual_transects(
         data_df=grid_data,
-        geostrata_df=geostrata,
+        geostrata=geostrata,
         stratify_by=["geostratum_inpfc"],
         variable="biomass",
     )

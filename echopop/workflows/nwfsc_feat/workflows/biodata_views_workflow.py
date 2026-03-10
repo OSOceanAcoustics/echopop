@@ -186,21 +186,21 @@ df_dict_strata = ingestion.load_strata(
 # ---- BIODATA [INPFC]
 dict_df_bio = ingestion.join_strata_by_uid(
     data=dict_df_bio,
-    strata_df=df_dict_strata["inpfc"],
+    strata=df_dict_strata["inpfc"],
     default_stratum=0,
     stratum_name="stratum_inpfc",
 )
 # ---- BIODATA [KS]
 dict_df_bio = ingestion.join_strata_by_uid(
-    data=dict_df_bio, strata_df=df_dict_strata["ks"], default_stratum=0, stratum_name="stratum_ks"
+    data=dict_df_bio, strata=df_dict_strata["ks"], default_stratum=0, stratum_name="stratum_ks"
 )
 # ---- NASC [INPFC]
 df_nasc = ingestion.join_strata_by_uid(
-    data=df_nasc, strata_df=df_dict_strata["inpfc"], default_stratum=0, stratum_name="stratum_inpfc"
+    data=df_nasc, strata=df_dict_strata["inpfc"], default_stratum=0, stratum_name="stratum_inpfc"
 )
 # ---- NASC [KS]
 df_nasc = ingestion.join_strata_by_uid(
-    data=df_nasc, strata_df=df_dict_strata["ks"], default_stratum=0, stratum_name="stratum_ks"
+    data=df_nasc, strata=df_dict_strata["ks"], default_stratum=0, stratum_name="stratum_ks"
 )
 
 # ==================================================================================================

@@ -314,7 +314,7 @@ class JollyHampton:
 
         # Stratify the virtual transects
         virtual_df = join_geostrata_by_latitude(
-            data=virtual_df, geostrata_df=geostrata_df, stratum_name=stratify_by[0]
+            data=virtual_df, geostrata=geostrata_df, stratum_name=stratify_by[0]
         )
 
         return virtual_df.reset_index()

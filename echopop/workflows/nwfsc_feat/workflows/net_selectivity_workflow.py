@@ -250,46 +250,46 @@ dict_kriging_params, dict_variogram_params = ingestion.load_kriging_variogram_pa
 # ---- BIODATA [INPFC]
 dict_df_bio = ingestion.join_strata_by_uid(
     data=dict_df_bio,
-    strata_df=df_dict_strata["inpfc"],
+    strata=df_dict_strata["inpfc"],
     default_stratum=0,
     stratum_name="stratum_inpfc",
 )
 # ---- BIODATA [KS]
 dict_df_bio = ingestion.join_strata_by_uid(
-    data=dict_df_bio, strata_df=df_dict_strata["ks"], default_stratum=0, stratum_name="stratum_ks"
+    data=dict_df_bio, strata=df_dict_strata["ks"], default_stratum=0, stratum_name="stratum_ks"
 )
 # ---- NASC [INPFC]
 df_nasc = ingestion.join_strata_by_uid(
-    data=df_nasc, strata_df=df_dict_strata["inpfc"], default_stratum=0, stratum_name="stratum_inpfc"
+    data=df_nasc, strata=df_dict_strata["inpfc"], default_stratum=0, stratum_name="stratum_inpfc"
 )
 # ---- NASC [KS]
 df_nasc = ingestion.join_strata_by_uid(
-    data=df_nasc, strata_df=df_dict_strata["ks"], default_stratum=0, stratum_name="stratum_ks"
+    data=df_nasc, strata=df_dict_strata["ks"], default_stratum=0, stratum_name="stratum_ks"
 )
 
 # GEOGRAPHIC-BASED STRATA
 # ---- NASC [INPFC]
 df_nasc = ingestion.join_geostrata_by_latitude(
     data=df_nasc,
-    geostrata_df=df_dict_geostrata["inpfc"],
+    geostrata=df_dict_geostrata["inpfc"],
     stratum_name="geostratum_inpfc"
 )
 # ---- NASC [KS]
 df_nasc = ingestion.join_geostrata_by_latitude(
     data=df_nasc,
-    geostrata_df=df_dict_geostrata["ks"],
+    geostrata=df_dict_geostrata["ks"],
     stratum_name="geostratum_ks"
 )
 # ---- MESH [INPFC]
 df_mesh = ingestion.join_geostrata_by_latitude(
     data=df_mesh, 
-    geostrata_df=df_dict_geostrata["inpfc"], 
+    geostrata=df_dict_geostrata["inpfc"], 
     stratum_name="geostratum_inpfc"
 )
 # ---- MESH [KS]
 df_mesh = ingestion.join_geostrata_by_latitude(
     data=df_mesh, 
-    geostrata_df=df_dict_geostrata["ks"], 
+    geostrata=df_dict_geostrata["ks"], 
     stratum_name="geostratum_ks"
 )
 

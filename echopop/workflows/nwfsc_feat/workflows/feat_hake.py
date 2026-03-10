@@ -227,7 +227,7 @@ df_dict_geostrata = load_geostrata(
 # Add INPFC
 # ---- NASC
 df_nasc_all_ages = join_strata_by_haul(
-    data=df_nasc_all_ages, strata_df=df_dict_strata["inpfc"], stratum_name="stratum_inpfc"
+    data=df_nasc_all_ages, strata=df_dict_strata["inpfc"], stratum_name="stratum_inpfc"
 )
 # ---- Biodata
 dict_df_bio = join_strata_by_haul(
@@ -928,7 +928,7 @@ print(transect_results)
 
 kriged_transects = jh.create_virtual_transects(
     data_df=df_kriged_results,
-    geostrata_df=df_dict_geostrata["inpfc"],
+    geostrata=df_dict_geostrata["inpfc"],
     stratify_by=["geostratum_inpfc"],
     variable="biomass",
 )

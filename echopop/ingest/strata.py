@@ -1,3 +1,11 @@
+"""
+Stratification data ingestion for echopop.
+
+This module loads haul-based and geographic stratification tables from Excel workbooks. Haul strata
+map individual trawl hauls, latitude npimdaroes, etc. All are returned as dictionaries of
+``pandas.DataFrame`` objects keyed by stratum type.
+"""
+
 from pathlib import Path
 from typing import Any, Dict, Union
 
@@ -183,7 +191,7 @@ def geostrata_bins(df: pd.DataFrame) -> pd.DataFrame:
 
 def join_strata_by_haul(
     data: Union[pd.DataFrame, Dict[str, pd.DataFrame]],
-    strata_df: Dict[str, pd.DataFrame],
+    strata: Dict[str, pd.DataFrame],
     default_stratum: float = 0.0,
     stratum_name: str = "stratum_num",
 ) -> Union[pd.DataFrame, Dict[str, pd.DataFrame]]:
@@ -194,7 +202,7 @@ def join_strata_by_haul(
     ----------
     data : |pd.DataFrame| or Dict[str, |pd.DataFrame|]
         DataFrame or dictionary of DataFrames to join with strata
-    strata_df : |pd.DataFrame|
+    strata : |pd.DataFrame|
         Specific stratification DataFrame with stratum-haul key information
     default_stratum : float
         Default stratum value when there are no matching/corresponding values
@@ -208,13 +216,13 @@ def join_strata_by_haul(
     """
 
     # Get stratification columns (excluding join column)
-    strata_cols = [col for col in strata_df.columns if col != "haul_num"]
+    strata_cols = [col for col in strata.columns if col != "haul_num"]
 
     # Function to join a single DataFrame
     def join_single_df(df):
         if not isinstance(df, pd.DataFrame) or "haul_num" not in df.columns:
             return df
-        if "haul_num" not in strata_df.columns:
+        if "haul_num" not in strata.columns:
             return df
 
         # Check if stratification columns already exist
@@ -224,7 +232,7 @@ def join_strata_by_haul(
             df = df.drop(columns=list(existing_cols))
 
         # Merge
-        df_merged = df.merge(strata_df, on=["haul_num"], how="left")
+        df_merged = df.merge(strata, on=["haul_num"], how="left")
 
         # Rename the stratum column name, if needed
         if stratum_name not in df_merged.columns:
@@ -246,7 +254,7 @@ def join_strata_by_haul(
 
 def join_geostrata_by_latitude(
     data: Union[pd.DataFrame, Dict[str, pd.DataFrame]],
-    geostrata_df: pd.DataFrame,
+    geostrata: pd.DataFrame,
     stratum_name: str = "stratum_num",
 ) -> Union[pd.DataFrame, Dict[str, pd.DataFrame]]:
     """
@@ -256,7 +264,7 @@ def join_geostrata_by_latitude(
     ----------
     data : |pd.DataFrame| or Dict[str, |pd.DataFrame|]
         DataFrame or dictionary of DataFrames with latitude information
-    geostrata_df : |pd.DataFrame|
+    geostrata : |pd.DataFrame|
         Geographic stratification DataFrame with latitude boundaries and stratum info
     stratum_name : str, default="stratum_num"
         Name of the column containing stratum information
@@ -267,13 +275,13 @@ def join_geostrata_by_latitude(
         Same type as input data with stratification added
     """
     # Sort the geostrata DataFrame by latitude
-    geostrata_df = geostrata_df.copy().sort_values("northlimit_latitude")
+    geostrata = geostrata.copy().sort_values("northlimit_latitude")
 
     # Create latitude bins
-    latitude_bins = np.concatenate([[-90], geostrata_df["northlimit_latitude"].unique(), [90]])
+    latitude_bins = np.concatenate([[-90], geostrata["northlimit_latitude"].unique(), [90]])
 
     # Get geostrata columns (excluding northlimit_latitude)
-    geostrata_cols = [col for col in geostrata_df.columns if col != "northlimit_latitude"]
+    geostrata_cols = [col for col in geostrata.columns if col != "northlimit_latitude"]
 
     # Function to join a single DataFrame
     def join_single_df(df):
@@ -293,7 +301,7 @@ def join_geostrata_by_latitude(
             result["latitude"],
             latitude_bins,
             right=False,
-            labels=list(geostrata_df["stratum_num"]) + [1],
+            labels=list(geostrata["stratum_num"]) + [1],
             ordered=False,
         )
 
@@ -310,7 +318,7 @@ def join_geostrata_by_latitude(
 
 def join_strata_by_uid(
     data: Union[pd.DataFrame, Dict[str, pd.DataFrame]],
-    strata_df: Dict[str, pd.DataFrame],
+    strata: Dict[str, pd.DataFrame],
     default_stratum: float = 0.0,
     stratum_name: str = "stratum_num",
 ) -> Union[pd.DataFrame, Dict[str, pd.DataFrame]]:
@@ -321,7 +329,7 @@ def join_strata_by_uid(
     ----------
     data : |pd.DataFrame| or Dict[str, |pd.DataFrame|]
         DataFrame or dictionary of DataFrames to join with strata
-    strata_df : |pd.DataFrame|
+    strata : |pd.DataFrame|
         Specific stratification DataFrame with stratum-haul key information
     default_stratum : float
         Default stratum value when there are no matching/corresponding values
@@ -335,13 +343,13 @@ def join_strata_by_uid(
     """
 
     # Get stratification columns (excluding join column)
-    strata_cols = [col for col in strata_df.columns]
+    strata_cols = [col for col in strata.columns]
 
     # Function to join a single DataFrame
     def join_single_df(df):
         if not isinstance(df, pd.DataFrame) or "uid" not in df.columns:
             return df
-        if "uid" not in strata_df.columns:
+        if "uid" not in strata.columns:
             return df
 
         # Original columns
@@ -354,7 +362,7 @@ def join_strata_by_uid(
             df = df.drop(columns=list(existing_cols))
 
         # Merge
-        df_merged = df.merge(strata_df, on=["uid"], how="left")
+        df_merged = df.merge(strata, on=["uid"], how="left")
 
         # Rename the stratum column name, if needed
         if stratum_name not in df_merged.columns:

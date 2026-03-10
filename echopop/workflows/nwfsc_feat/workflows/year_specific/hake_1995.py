@@ -391,13 +391,13 @@ logging.info(
 # ---- BIODATA [INPFC]
 dict_df_bio = ingestion.join_strata_by_haul(
     data=dict_df_bio,
-    strata_df=df_dict_strata["inpfc"],
+    strata=df_dict_strata["inpfc"],
     default_stratum=0,
     stratum_name="stratum_inpfc",
 )
 # ---- BIODATA [KS]
 dict_df_bio = ingestion.join_strata_by_haul(
-    data=dict_df_bio, strata_df=df_dict_strata["ks"], default_stratum=0, stratum_name="stratum_ks"
+    data=dict_df_bio, strata=df_dict_strata["ks"], default_stratum=0, stratum_name="stratum_ks"
 )
 # ---- NAS [INPFC]
 df_nasc["nasc_proportion"] = 1.0
@@ -412,25 +412,25 @@ logging.info(
 # ---- NASC [INPFC]
 df_nasc = ingestion.join_geostrata_by_latitude(
     data=df_nasc,
-    geostrata_df=df_dict_geostrata["inpfc"],
+    geostrata=df_dict_geostrata["inpfc"],
     stratum_name="geostratum_inpfc"
 )
 # ---- NASC [KS]
 df_nasc = ingestion.join_geostrata_by_latitude(
     data=df_nasc,
-    geostrata_df=df_dict_geostrata["ks"],
+    geostrata=df_dict_geostrata["ks"],
     stratum_name="geostratum_ks"
 )
 # ---- MESH [INPFC]
 df_mesh = ingestion.join_geostrata_by_latitude(
     data=df_mesh, 
-    geostrata_df=df_dict_geostrata["inpfc"], 
+    geostrata=df_dict_geostrata["inpfc"], 
     stratum_name="geostratum_inpfc"
 )
 # ---- MESH [KS]
 df_mesh = ingestion.join_geostrata_by_latitude(
     data=df_mesh, 
-    geostrata_df=df_dict_geostrata["ks"], 
+    geostrata=df_dict_geostrata["ks"], 
     stratum_name="geostratum_ks"
 )
 logging.info("Strata application complete!")
@@ -1173,7 +1173,7 @@ logging.info(
 )
 kriged_transects = jh.create_virtual_transects(
     data_df=df_kriged_results,
-    geostrata_df=df_dict_geostrata["inpfc"], 
+    geostrata=df_dict_geostrata["inpfc"], 
     stratify_by=["geostratum_inpfc"],
     variable="biomass",
 )

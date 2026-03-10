@@ -116,13 +116,13 @@ def test_join_strata_by_haul_dictionary(biological_data, strata_data):
 
 def test_join_geostrata_by_latitude_dataframe(mesh_data, geostrata_data):
     """Test joining geostrata to a single DataFrame."""
-    geostrata_df = geostrata_data["inpfc"].rename(
+    geostrata = geostrata_data["inpfc"].rename(
         columns={"latitude (upper limit)": "northlimit_latitude", "stratum": "stratum_num"}
     )
 
     df = mesh_data.rename(columns={"centroid_latitude": "latitude"})
 
-    result = join_geostrata_by_latitude(df, geostrata_df)
+    result = join_geostrata_by_latitude(df, geostrata)
 
     assert "stratum_num" in result.columns
     assert not result["stratum_num"].isna().any()
