@@ -53,13 +53,13 @@ TRANSECT_REGION_FILEPATH_ALL_AGES = (
 TRANSECT_REGION_FILEPATH_NO_AGE1 = (
     DATA_ROOT / "Stratification/US_CAN_2019_transect_region_haul_age2+ auto_20191205.xlsx"
 )
-TRANSECT_REGION_FILE_RENAME: dict = {
+TRANSECT_REGION_FILE_RENAME = {
     "tranect": "transect_num",
     "region id": "region_id",
     "trawl #": "haul_num",
 }
-TRANSECT_REGION_SHEETNAME_ALL_AGES: str = "Sheet1"
-TRANSECT_REGION_SHEETNAME_NO_AGE1: str = "Sheet1"
+TRANSECT_REGION_SHEETNAME_ALL_AGES = "Sheet1"
+TRANSECT_REGION_SHEETNAME_NO_AGE1 = "Sheet1"
 
 # Read in the transect-region-haul key files for each group
 transect_region_haul_key_all_ages = nasc.read_transect_region_haul_key(
@@ -68,14 +68,14 @@ transect_region_haul_key_all_ages = nasc.read_transect_region_haul_key(
     rename_dict=TRANSECT_REGION_FILE_RENAME,
 )
 
-transect_region_haul_key_no_age1: pd.DataFrame = nasc.read_transect_region_haul_key(
+transect_region_haul_key_no_age1 = nasc.read_transect_region_haul_key(
     TRANSECT_REGION_FILEPATH_NO_AGE1, TRANSECT_REGION_SHEETNAME_NO_AGE1, TRANSECT_REGION_FILE_RENAME
 )
 
 # ==================================================================================================
 # Read in transect-region-haul keys
 # ---------------------------------
-REGION_NAME_EXPR_DICT: Dict[str, dict] = {
+REGION_NAME_EXPR_DICT = {
     "REGION_CLASS": {
         "Age-1 Hake": "^(?:h1a(?![a-z]|m))",
         "Age-1 Hake Mix": "^(?:h1am(?![a-z]|1a))",
