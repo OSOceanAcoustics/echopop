@@ -10,7 +10,8 @@ from typing import Any
 import geopandas as gpd
 import geoviews as gv
 import holoviews as hv
-import hvplot.pandas  # noqa: F401; import is required even though it is not directly called
+# hvplot.pandas import is required even though it is not directly called
+import hvplot.pandas  # isort: skip # noqa: F401
 import pandas as pd
 import shapely as sg
 from bokeh.models import HoverTool
