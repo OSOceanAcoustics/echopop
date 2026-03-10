@@ -27,8 +27,10 @@ from . import apportionment
 
 def initialize_workbook(filepath: Path) -> Workbook:
     """
-    Initialize an Excel workbook at `filepath`. If a workbook already exists at the path it will
-    be removed and a fresh workbook object returned.
+    Initialize an Excel workbook at ``filepath``.
+
+    If a workbook already exists at the path it will be removed and a fresh workbook object
+    returned.
 
     Parameters
     ----------
@@ -61,7 +63,7 @@ def initialize_workbook(filepath: Path) -> Workbook:
             try:
                 os.remove(str(filepath))
             except Exception:
-                raise PermissionError(f"Could not remove existing file '{filepath}': {e}")
+                raise PermissionError(f"Could not remove existing file '{filepath}': {e}") from e
 
     # Initialize workbook
     wb = Workbook()
@@ -121,8 +123,10 @@ def format_table_headers(
     dataframe: pd.DataFrame, col_name: str = "Age", row_name: str = "Length (cm)"
 ) -> list[str]:
     """
-    Generate header row for an Excel sheet representing a pivot table with a left row label and
-    a top column label.
+    Generate header row.
+
+    Generate header row for an Excel sheet representing a pivot table with a left row label and a
+    top column label.
 
     Parameters
     ----------
@@ -216,6 +220,8 @@ def append_table_aggregates(
     tables_dict: dict[str, pd.DataFrame],
 ) -> None:
     """
+    Append summary aggregate rows.
+
     Append summary aggregate rows (Total age1+, Total age2+) and optional combined sex totals to
     the bottom-left of the worksheet.
 
@@ -821,8 +827,7 @@ def write_age_length_table_report(
     type: str,
 ) -> None:
     """
-    Write age-length pivot tables for each sex into an Excel workbook with header formatting and
-    aggregates.
+    Write age-length pivot tables for each sex into an Excel workbook with aggregates.
 
     Parameters
     ----------
@@ -1051,7 +1056,7 @@ class Reporter:
             raise PermissionError(
                 f"The save directory '{save_directory.as_posix()}' could not be accessed or "
                 f"created due to the following error(s):\n{e}"
-            )
+            ) from e
 
         # Store verbosity
         self.verbose = verbose
@@ -1173,7 +1178,7 @@ class Reporter:
         kriged_data: pd.DataFrame,
         weight_data: xr.DataArray,
         kriged_stratum_link: dict[str, str],
-        exclude_filter: dict[str, Any] = {},
+        exclude_filter: dict[str, Any] = None,
     ) -> None:
         """
         Produce an Excel workbook containing kriged age-specific biomass sheets.
@@ -1226,6 +1231,8 @@ class Reporter:
         {'old':'stratum'}, sheetnames)
         """
         # Type checking
+        if exclude_filter is None:
+            exclude_filter = {}
         if not isinstance(kriged_data, pd.DataFrame):
             raise TypeError("'kriged_data' must be a `pandas.DataFrame`.")
         if not isinstance(weight_data, xr.DataArray):
@@ -1442,7 +1449,7 @@ class Reporter:
         filename: str,
         sheetnames: dict[str, str],
         datatables: dict[str, xr.DataArray],
-        exclude_filter: dict[str, Any] = {},
+        exclude_filter: dict[str, Any] = None,
     ) -> None:
         """
         Create kriged age-length abundance reports and write a 3-sheet workbook.
@@ -1491,6 +1498,8 @@ class Reporter:
         {'stratum':['S1']}, "krig_abund.xlsx", sheetnames)
         """
         # Type checking
+        if exclude_filter is None:
+            exclude_filter = {}
         if not isinstance(datatables, dict):
             raise TypeError("'datatables' must be a `dict`.")
         if "aged" not in datatables or "unaged" not in datatables:
@@ -1577,7 +1586,7 @@ class Reporter:
         filename: str,
         sheetnames: dict[str, str],
         datatable: xr.DataArray,
-        exclude_filter: dict[str, Any] = {},
+        exclude_filter: dict[str, Any] = None,
     ) -> None:
         """
         Create kriged age-length biomass reports (values converted to metric megatonnes).
@@ -1614,6 +1623,8 @@ class Reporter:
         "krig_biomass.xlsx", sheetnames)
         """
         # Type checking
+        if exclude_filter is None:
+            exclude_filter = {}
         if not isinstance(datatable, xr.DataArray):
             raise TypeError("'datatable' must be a `xarray.DataArray`.")
         if not isinstance(filename, str):
@@ -1886,7 +1897,7 @@ class Reporter:
         sheetnames: dict[str, str],
         transect_data: pd.DataFrame,
         weight_data: xr.DataArray,
-        exclude_filter: dict[str, Any] = {},
+        exclude_filter: dict[str, Any] = None,
     ) -> None:
         """
         Produce a transect-level aged biomass workbook (three sex-specific sheets).
@@ -1929,6 +1940,8 @@ class Reporter:
         sheetnames)
         """
         # Type checking
+        if exclude_filter is None:
+            exclude_filter = {}
         if not isinstance(transect_data, pd.DataFrame):
             raise TypeError("'transect_data' must be a `pandas.DataFrame`.")
         if not isinstance(weight_data, xr.DataArray):

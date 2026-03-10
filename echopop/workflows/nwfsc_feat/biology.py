@@ -186,7 +186,7 @@ def length_binned_weights(
 
 def compute_abundance(
     transect_data: pd.DataFrame,
-    exclude_filter: dict[str, str] = {},
+    exclude_filter: dict[str, str] = None,
     number_proportions: dict[str, xr.Dataset] | None = None,
 ) -> None:
     """
@@ -228,6 +228,8 @@ def compute_abundance(
     The original 'abundance' column represents the total.
     """
     # If no grouping, run the simple abundance calculation
+    if exclude_filter is None:
+        exclude_filter = {}
     transect_data["abundance"] = transect_data["area_interval"] * transect_data["number_density"]
 
     # Compute grouped values, if needed
@@ -310,8 +312,7 @@ def matrix_multiply_grouped_table(
     group: str | None = None,
 ) -> None:
     """
-    Multiply multiple data columns by identically indexed grouped array from a separate
-    DataFrame.
+    Multiply multiple data columns by identically indexed grouped array from a separate DataFrame.
 
     Parameters
     ----------
@@ -372,6 +373,8 @@ def compute_biomass(
     stratum_weights: xr.DataArray | float | None = None,
 ) -> None:
     """
+    Convert number density and abundance estimates to biomass density and total biomass.
+
     Convert number density and abundance estimates to biomass density and total biomass,
     respectively. This is done by aligning transect data with either a scalar average weight that
     is applied globally, or group-specific averaged weights (e.g., by stratum and sex). When

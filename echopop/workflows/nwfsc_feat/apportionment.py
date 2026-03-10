@@ -23,6 +23,8 @@ def remove_group_from_estimates(
     group_proportions: xr.Dataset,
 ) -> pd.DataFrame:
     """
+    Partition along-transect population estimates.
+
     Partition NASC, abundance (and number density), and biomass (and biomass density) transect
     values across indexed groups.
 
@@ -117,16 +119,16 @@ def mesh_biomass_to_nasc(
     mesh_biodata_link: dict[str, str],
     stratum_weights: pd.DataFrame,
     stratum_sigma_bs: pd.DataFrame,
-    group_columns: list[str] = [],
+    group_columns: list[str] = None,
 ) -> None:
     """
-    Convert biomass estimates distributed across a grid or mesh into grouped (e.g. sex-specific)
-    abundance and NASC values.
+    Convert kriged biomass estimates into abundance and NASC.
 
-    This function takes kriged biomass density estimates from a mesh/grid and converts them to
-    abundance and NASC (Nautical Area Scattering Coefficient) values by applying biological
-    proportion data and acoustic backscattering coefficients. The function modifies the input
-    mesh DataFrame in place.
+    Convert biomass estimates distributed across a grid or mesh into grouped (e.g. sex-specific)
+    abundance and NASC values. This function takes kriged biomass density estimates from a
+    mesh/grid and converts them to abundance and NASC (Nautical Area Scattering Coefficient) values
+    by applying biological proportion data and acoustic backscattering coefficients. The function
+    modifies the input mesh DataFrame in place.
 
     Parameters
     ----------
@@ -163,15 +165,22 @@ def mesh_biomass_to_nasc(
     Notes
     -----
     The function performs the following steps:
+
     1. Computes biomass from biomass_density x area if not present
+
     2. Links mesh data to biological proportions using mesh_biodata_link
+
     3. Applies proportions to distribute total biomass across biological groups
+
     4. Converts biomass to abundance using stratum weights
+
     5. Calculates NASC using abundance and sigma_bs values
 
     The NASC calculation uses the formula: NASC = abundance x sigma_bs x 4π
     """
     # Convert to a Dictionary if needed
+    if group_columns is None:
+        group_columns = []
     if isinstance(biodata, xr.Dataset):
         biodata = {"": biodata}
 
@@ -279,13 +288,14 @@ def impute_kriged_table(
     impute_variable: list[str],
 ) -> xr.DataArray:
     """
-    Impute missing or zero-valued slices in a standardized xarray DataArray using reference and
-    initial tables.
+    Impute missing slices in binned kriged population estimates.
 
-    This function identifies zero-valued intervals in the reference table for grouped estimates,
-    finds the nearest nonzero reference interval and imputes values in the standardized table using
-    a ratio-based approach. The imputation is performed only where the initial table is nonzero and
-    the reference table is zero, and is done for each group and interval independently.
+    Impute missing or zero-valued slices in a standardized xarray DataArray using reference and
+    initial tables. This function identifies zero-valued intervals in the reference table for
+    grouped estimates, finds the nearest nonzero reference interval and imputes values in the
+    standardized table using a ratio-based approach. The imputation is performed only where the
+    initial table is nonzero and the reference table is zero, and is done for each group and
+    interval independently.
 
     Parameters
     ----------
@@ -508,8 +518,8 @@ def distribute_unaged_from_aged(
     Raises
     ------
     ValueError
-        If required coordinates (e.g., "length_bin") are missing from either input table.
-        If impute=True and `impute_variable` is not provided.
+        If required coordinates (e.g., "length_bin") are missing from either input table. If
+        ``impute=True`` and ``impute_variable`` is not provided.
 
     Notes
     -----
@@ -701,7 +711,7 @@ def sum_population_tables(
 def reallocate_excluded_estimates(
     population_table: xr.DataArray,
     exclusion_filter: dict[str, Any],
-    group_columns: list[str] = [],
+    group_columns: list[str] = None,
 ) -> xr.DataArray:
     """
     Redistribute population estimates after excluding specified segments.
@@ -753,6 +763,8 @@ def reallocate_excluded_estimates(
     <xarray.DataArray ...>
     """
     # If no appropriate filter is defined, then nothing is redistributed
+    if group_columns is None:
+        group_columns = []
     if not exclusion_filter:
         return population_table
 
@@ -817,16 +829,17 @@ def distribute_population_estimates(
     data: pd.DataFrame,
     proportions: dict[str, xr.Dataset] | xr.Dataset,
     variable: str,
-    group_columns: list[str] = [],
+    group_columns: list[str] = None,
     data_proportions_link: dict[str, str] | None = None,
 ) -> xr.DataArray | dict[str, xr.DataArray]:
     """
-    Distribute population estimates (e.g. abundance, biomass) using proportions grouped by metrics
-    such as age and length bins.
+    Distribution population estimates across bins.
 
-    This function takes population estimates and distributes them across different biological
-    categories (e.g. sex, age, length) using calculated proportions. The distribution is performed
-    by multiplying the population estimates with the corresponding proportions.
+    Distribute population estimates (e.g. abundance, biomass) using proportions grouped by metrics
+    such as age and length bins. This function takes population estimates and distributes them
+    across different biological categories (e.g. sex, age, length) using calculated proportions.
+    The distribution is performed by multiplying the population estimates with the corresponding
+    proportions.
 
     Parameters
     ----------
@@ -863,6 +876,8 @@ def distribute_population_estimates(
     automatically identifies and uses the appropriate columns for merging and grouping.
     """
     # Create copy
+    if group_columns is None:
+        group_columns = []
     data = data.copy()
 
     # Type-check and normalize proportions input

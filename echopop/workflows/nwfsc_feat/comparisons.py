@@ -31,9 +31,11 @@ from ...graphics import transect_map as ptransect, utils as gtools
 
 def extract_sex_from_sheet(df: pd.DataFrame) -> str:
     """
-    Tries to extract sex from any cell. Returns 'male', 'female', 'all', or None. Allows for
-    optional parentheses and whitespace, e.g., '(male)', ' (ALL) ', etc. Does not match joint
-    expressions like 'male+female', 'female/male', etc.
+    Extract sex from any cell.
+
+    Returns 'male', 'female', 'all', or None. Allows for optional parentheses and whitespace,
+    e.g., '(male)', ' (ALL) ', etc. Does not match joint expressions like 'male+female',
+    'female/male', etc.
     """
     # Get text
     text = " ".join(str(cell) for row in df.values for cell in row if isinstance(cell, str))
@@ -56,9 +58,10 @@ def extract_sex_from_sheet(df: pd.DataFrame) -> str:
 
 def extract_quantity_type(df: pd.DataFrame) -> str:
     """
-    Tries to extract the quantity-type (e.g., 'abundance', 'biomass', 'counts'). Returns 'counts',
-    'abundance', 'biomass', or None. Allows for optional parentheses and whitespace, e.g.,
-    '(abundance)'.
+    Extract the quantity-type (e.g., 'abundance', 'biomass', 'counts').
+
+    Returns 'counts', 'abundance', 'biomass', or None. Allows for optional parentheses and
+    whitespace, e.g., '(abundance)'.
     """
     # Get text
     text = " ".join(str(cell) for row in df.values for cell in row if isinstance(cell, str))
@@ -82,9 +85,10 @@ def extract_quantity_type(df: pd.DataFrame) -> str:
 
 def translate_dataframe(df: pd.DataFrame) -> None:
     """
-    Translate the Dataframe columns into a standardized naming scheme for easier tracking and
-    developing downstream comparisons and visualization. This does not return an output since it
-    is an inplace operation.
+    Translate the Dataframe columns into a standardized naming scheme.
+
+    This is done for easier tracking and developing downstream comparisons and visualization.
+    This does not return an output since it is an inplace operation.
     """
     # Helper function for translating columns
     # ---- Key
@@ -151,9 +155,10 @@ def align_dataframes(df1: pd.DataFrame, df2: pd.DataFrame) -> tuple[pd.DataFrame
 
 def read_pivot_table_report(filepath: Path) -> dict[str, pd.DataFrame]:
     """
-    Reads all sheets from the aged length haul counts report Excel file. This dynamically assigns
-    sex to the sheet name and returns a dictionary {sex: DataFrame}. Drops last column and row
-    (subtotal) for each column and row, respectively.
+    Read all sheets from the aged length haul counts report Excel file.
+
+    This dynamically assigns sex to the sheet name and returns a dictionary {sex: DataFrame}.
+    Drops last column and row (subtotal) for each column and row, respectively.
     """
     # Validate file typing
     if not isinstance(filepath, Path):
@@ -223,6 +228,7 @@ def read_pivot_table_report(filepath: Path) -> dict[str, pd.DataFrame]:
 def read_geodata(filepath: Path) -> gpd.GeoDataFrame:
     """
     Read in georeferenced population estimates from along-transect intervals of kriging mesh nodes.
+
     This outputs a `geopandas.GeoDataFrame` object with the geometry informed by columns associated
     with 'longitude' and 'latitude'. The EPSG:4326 projection is automatically applied to the
     coordinates.
@@ -258,9 +264,10 @@ def read_geodata(filepath: Path) -> gpd.GeoDataFrame:
 
 def read_aged_geodata(filepath: Path) -> dict[str, gpd.GeoDataFrame]:
     """
-    Read in georeferenced aged population estimates from along-transect intervals of kriging mesh
-    nodes. This outputs a `geopandas.GeoDataFrame` object with the geometry informed by columns
-    associated  with 'longitude' and 'latitude'. The EPSG:4326 projection is automatically applied
+    Read in georeferenced aged population estimates from transects and kriged mesh nodes.
+
+    This outputs a ``geopandas.GeoDataFrame`` object with the geometry informed by columns
+    associated with 'longitude' and 'latitude'. The EPSG:4326 projection is automatically applied
     to the coordinates.
     """
     # Validate file typing
@@ -313,7 +320,10 @@ def plot_haul_count_comparisons(
     show_plot: bool = True,
 ):
     """
+    Plot the differences in fish counts per haul.
+
     For each sex in the intersection of both dicts, plot:
+
     - EchoPro heatmap
     - EchoPop heatmap
     - Difference heatmap.
@@ -461,7 +471,10 @@ def plot_population_table_comparisons(
     log_transform: bool = False,
 ):
     """
+    Plot the differences in population estimates.
+
     For each sex in the intersection of both dicts, plot:
+
     - EchoPro heatmap
     - EchoPop heatmap
     - Difference heatmap.
@@ -885,7 +898,7 @@ def plot_geodata(
             msg.append(f"Columns only in echopro: {sorted(only_in_df1)}")
         if only_in_df2:
             msg.append(f"Columns only in echopop: {sorted(only_in_df2)}")
-        warnings.warn(" | ".join(msg))
+        warnings.warn(" | ".join(msg), stacklevel=2)
     # ---- Keep only columns present in both
     common_cols = sorted(set(df1_cols) & set(df2_cols))
     # ---- Sort
@@ -1091,8 +1104,12 @@ def _resolve_geodata_file(
     echopro_patterns: dict[str, str],
 ) -> Path:
     """
+    Resolve report filepath.
+
     Resolve the full path to the target Excel file from the report directory, dataset, and report
-    type. Both Echopop and EchoPro filenames are matched via regex pattern. An exact filename
+    type.
+
+    Both Echopop and EchoPro filenames are matched via regex pattern. An exact filename
     string is a valid pattern and will match only that file.
 
     Parameters
@@ -1138,6 +1155,7 @@ def _resolve_geodata_file(
 def _get_cache_path(excel_file: Path, cache_dir: Path) -> Path:
     """
     Generate a parquet cache file path based on the Excel file's path and modification time.
+
     A change in mtime (i.e. the file was updated) produces a new cache key, forcing a re-read.
 
     Parameters
@@ -1173,6 +1191,7 @@ def fetch_geodata(
 ) -> gpd.GeoDataFrame:
     """
     Resolve, optionally cache, and return georeferenced population data from an Excel report.
+
     On the first call, the resolved file is read via ``read_geodata`` and cached as parquet.
     Subsequent calls return the cached version unless the source file has been modified.
 
@@ -1239,9 +1258,10 @@ def load_all_geodata_reports(
     verbose: bool = False,
 ) -> tuple[dict[str, dict[int, gpd.GeoDataFrame]], dict[str, dict[int, gpd.GeoDataFrame]]]:
     """
-    Load all geodata reports across years and dataset types. By default, files are loaded
-    sequentially. Parallel loading can be enabled by setting ``max_workers`` to an integer
-    greater than 1, which uses a thread pool sized accordingly.
+    Load all geodata reports across years and dataset types.
+
+    By default, files are loaded sequentially. Parallel loading can be enabled by setting
+    ``max_workers`` to an integer greater than 1, which uses a thread pool sized accordingly.
 
     Parameters
     ----------
@@ -1331,9 +1351,11 @@ def load_all_geodata_reports(
 def compute_dataset_differences(
     echopro_datasets: dict[str, dict[int, gpd.GeoDataFrame]],
     echopop_datasets: dict[str, dict[int, gpd.GeoDataFrame]],
-    columns: list = ["abundance", "biomass", "nasc"],
+    columns: list = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
+    Compute magnitude and percent differences between EchoPro and Echopop reports.
+
     Compute magnitude and percent differences between EchoPro and Echopop report outputs across
     survey years and report types (transect, kriging).
 
@@ -1355,11 +1377,16 @@ def compute_dataset_differences(
         - ``pct_diff``: Percent differences relative to the mean of both datasets,
           indexed by ``(report_type, year)``.
     """
-
     # Helper function for summations
+    if columns is None:
+        columns = ["abundance", "biomass", "nasc"]
+
     def _sum_columns(datasets: dict[str, dict[int, gpd.GeoDataFrame]]) -> pd.DataFrame:
-        """Sum the target columns across all years and report types, returning a DataFrame
-        indexed by (report_type, year).
+        """
+        Sum target columns across all years and report-types.
+
+        Sum the target columns across all years and report types, returning a DataFrame indexed by
+        (report_type, year).
         """
         sums = {
             rtype: {year: gdf[columns].sum() for year, gdf in year_dict.items()}
@@ -1386,11 +1413,13 @@ def compute_dataset_differences(
 def plot_dataset_differences(
     signed_percent_differences: pd.DataFrame,
     save_filepath: Path | None = None,
-    columns: list = ["abundance", "biomass", "nasc"],
+    columns: list = None,
     figsize: tuple[int, int] = (14, 6),
 ) -> None:
     """
-    Plot signed percent differences between EchoPro and Echopop report outputs as a heatmap grid,
+    Plot the percent differences between EchoPro and Echopop population estimates.
+
+    Plot percent differences between EchoPro and Echopop report outputs as a heatmap grid,
     with one panel per report type (transect, kriging).
 
     Parameters
@@ -1407,8 +1436,10 @@ def plot_dataset_differences(
     figsize : Tuple[int, int]
         Figure size in inches. Defaults to ``(14, 6)``.
     """
-
     # Helper function that formats percent difference strings
+    if columns is None:
+        columns = ["abundance", "biomass", "nasc"]
+
     def _fmt_percent(df: pd.DataFrame) -> pd.DataFrame:
         """Format values as percentage strings for heatmap annotations."""
         return df.map(lambda x: f"{x:.1f}%" if not pd.isna(x) else "")

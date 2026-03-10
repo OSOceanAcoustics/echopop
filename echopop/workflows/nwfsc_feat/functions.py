@@ -24,6 +24,8 @@ def get_survey_western_extents(
     latitude_threshold: float,
 ) -> pd.DataFrame:
     """
+    Get the western extents of each survey transect line.
+
     Get the western extents of each survey transect that can be used to constrain the adaptive
     nearest neighbors search algorithm incorporated into the kriging interpolation algorithm.
 
@@ -363,12 +365,13 @@ def transect_ends_crop(
     transect_mesh_region_function: Callable,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
-    Crop the kriging mesh by interpolating the eastern and western extents of survey transects
-    partitioned into discrete regions via user-defined sorting functions.
+    Crop the kriging mesh by interpolating the eastern and western transect extents.
 
-    This function processes survey transect data to define spatial boundaries for mesh cropping.
-    It divides transects into three regions, interpolates their boundaries, and identifies
-    mesh cells that fall within the survey extent.
+    Crop the kriging mesh by interpolating the eastern and western extents of survey transects
+    partitioned into discrete regions via user-defined sorting functions. This function processes
+    survey transect data to define spatial boundaries for mesh cropping. It divides transects into
+    three regions, interpolates their boundaries, and identifies mesh cells that fall within the
+    survey extent.
 
     Parameters
     ----------
@@ -945,8 +948,8 @@ def convert_afsc_nasc_to_feat(
     df: pd.DataFrame,
     default_interval_distance: float = 0.5,
     default_transect_spacing: float = 10.0,
-    inclusion_filter: dict[str, Any] = {},
-    exclusion_filter: dict[str, Any] = {},
+    inclusion_filter: dict[str, Any] = None,
+    exclusion_filter: dict[str, Any] = None,
 ) -> pd.DataFrame:
     """
     Convert AFSC-MACE to NWFSC-FEAT transect NASC format.
@@ -970,6 +973,10 @@ def convert_afsc_nasc_to_feat(
         Transformed DataFrame corresponding to the expected NWFSC-FEAT format.
     """
     # Apply inclusion filter if provided
+    if exclusion_filter is None:
+        exclusion_filter = {}
+    if inclusion_filter is None:
+        inclusion_filter = {}
     df = utils.apply_filters(df, include_filter=inclusion_filter, exclude_filter=exclusion_filter)
 
     # Create distance intervals
