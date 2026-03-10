@@ -1,5 +1,12 @@
+"""
+Kriged mesh map figures using matplotlib and verde for spatial interpolation display.
+
+Renders colour-mapped survey grids showing interpolated biomass or NASC fields, with optional
+coastline and isobath overlays using cartopy projections.
+"""
+
 from pathlib import Path
-from typing import Any, Dict, Literal, Optional, Tuple, Union
+from typing import Any, Literal
 
 import geopandas as gpd
 import matplotlib.pyplot as plt
@@ -17,7 +24,7 @@ def interpolation_mesh(
     y: pd.Series,
     z: pd.Series,
     crs: pyproj.CRS,
-    pseudocolormesh_kwargs: Optional[Dict[str, Any]] = None,
+    pseudocolormesh_kwargs: dict[str, Any] | None = None,
 ) -> xr.DataArray:
     """
     Interpolate scattered data onto a regular mesh using Verde.
@@ -52,7 +59,6 @@ def interpolation_mesh(
     :class:`xarray.DataArray` (`xarray.DataArray docs
     <https://docs.xarray.dev/en/stable/generated/xarray.DataArray.html>`_).
     """
-
     # Assume no user-specified kwargs when not supplied
     if pseudocolormesh_kwargs is None:
         pseudocolormesh_kwargs = {}
@@ -114,20 +120,20 @@ def interpolation_mesh(
 
 
 def plot_kriged_mesh(
-    data: Union[pd.DataFrame, gpd.GeoDataFrame],
+    data: pd.DataFrame | gpd.GeoDataFrame,
     variable: str,
     projection: str = "EPSG:4326",
-    coordinate_names: Tuple[str, str] = ("longitude", "latitude"),
+    coordinate_names: tuple[str, str] = ("longitude", "latitude"),
     plot_type: Literal["hexbin", "pcolormesh", "scatter"] = "hexbin",
-    scatter_kwargs: Optional[Dict[str, Any]] = None,
-    hexbin_kwargs: Optional[Dict[str, Any]] = None,
-    pseudocolormesh_kwargs: Optional[Dict[str, Any]] = None,
-    coast_kwargs: Optional[Dict[str, Any]] = None,
-    axis_kwargs: Optional[Dict[str, Any]] = None,
-    plot_kwargs: Optional[Dict[str, Any]] = None,
-    colorbar_kwargs: Optional[Dict[str, Any]] = None,
-    savepath: Optional[Path] = None,
-    savefig_kwargs: Optional[Dict[str, Any]] = None,
+    scatter_kwargs: dict[str, Any] | None = None,
+    hexbin_kwargs: dict[str, Any] | None = None,
+    pseudocolormesh_kwargs: dict[str, Any] | None = None,
+    coast_kwargs: dict[str, Any] | None = None,
+    axis_kwargs: dict[str, Any] | None = None,
+    plot_kwargs: dict[str, Any] | None = None,
+    colorbar_kwargs: dict[str, Any] | None = None,
+    savepath: Path | None = None,
+    savefig_kwargs: dict[str, Any] | None = None,
 ) -> None:
     """
     Plot a kriged mesh or survey data using various plot types.
@@ -217,7 +223,6 @@ def plot_kriged_mesh(
     a specific kwargs dict (e.g., ``scatter_kwargs``) and ``plot_kwargs``, the value in
     ``plot_kwargs`` takes precedence.
     """
-
     # Create copies
     scatter_kwargs = {} if scatter_kwargs is None else scatter_kwargs.copy()
     hexbin_kwargs = {} if hexbin_kwargs is None else hexbin_kwargs.copy()
@@ -229,7 +234,7 @@ def plot_kriged_mesh(
     savefig_kwargs = {} if savefig_kwargs is None else savefig_kwargs.copy()
 
     # Input validation and type-checking
-    if not isinstance(data, (pd.DataFrame, gpd.GeoDataFrame)):
+    if not isinstance(data, pd.DataFrame | gpd.GeoDataFrame):
         raise TypeError(
             "Data input must be a pandas.DataFrame or geopandas.GeoDataFrame."
         ) from None
@@ -258,7 +263,7 @@ def plot_kriged_mesh(
 
     # Get the coastline
     _, coast_clipped, _ = gutils.get_coastline(
-        gdf=data, projection=projection, coast_kwargs=coast_kwargs
+        geographic_data=data, projection=projection, coast_kwargs=coast_kwargs
     )
 
     # Get the `vmax` and `vmin`
@@ -283,7 +288,7 @@ def plot_kriged_mesh(
     # ---- Compute the total survey extent
     x0, y0, x1, y1 = [
         axis_kwargs.pop(pt, (data.total_bounds * np.array([1.005, 0.995, 0.995, 1.005]))[idx])
-        for pt, idx in zip(["x0", "y0", "x1", "y1"], [0, 1, 2, 3])
+        for pt, idx in zip(["x0", "y0", "x1", "y1"], [0, 1, 2, 3], strict=False)
     ]
 
     # Check for axis labels

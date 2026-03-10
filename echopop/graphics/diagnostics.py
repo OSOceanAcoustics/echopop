@@ -1,4 +1,11 @@
-from typing import Any, Dict, Optional, Union
+"""
+Interactive diagnostic plots for survey transect and kriged mesh data using HoloViews/Bokeh.
+
+Provides linked and overlaid interactive figures that let analysts inspect spatial patterns in
+NASC, biomass, and kriging variance interactively in a Jupyter environment.
+"""
+
+from typing import Any
 
 import geopandas as gpd
 import geoviews as gv
@@ -59,7 +66,7 @@ class Diagnostics:
         },
     }
 
-    def __init__(self, json_theme: Optional[Dict[str, Any]] = None):
+    def __init__(self, json_theme: dict[str, Any] | None = None):
         """
         Initialize Diagnostics with optional Bokeh theme.
 
@@ -100,7 +107,6 @@ class Diagnostics:
         geoviews.Labels
             Labels object with transect numbers at line centroids.
         """
-
         # Convert the point data for each line to LINESTRING objects
         transect_lines = get_transect_lines(transect_data)
 
@@ -138,8 +144,8 @@ class Diagnostics:
 
     def plot_transect_mesh_regions(
         self,
-        transect_data: Union[pd.DataFrame, gpd.GeoDataFrame],
-        mesh_data: Union[pd.DataFrame, gpd.GeoDataFrame],
+        transect_data: pd.DataFrame | gpd.GeoDataFrame,
+        mesh_data: pd.DataFrame | gpd.GeoDataFrame,
         projection: str = "epsg:4326",
     ) -> hv.Overlay:
         """
@@ -159,7 +165,6 @@ class Diagnostics:
         holoviews.Overlay
             Overlay of mesh points, transect lines, and transect labels.
         """
-
         # Type-checking
         # ---- Transect data
         if isinstance(transect_data, pd.DataFrame):
@@ -216,9 +221,9 @@ class Diagnostics:
 
     def plot_mesh_cropping(
         self,
-        mesh_data: Union[pd.DataFrame, gpd.GeoDataFrame],
-        cropped_mesh_data: Union[pd.DataFrame, gpd.GeoDataFrame],
-        isobath_data: Union[pd.DataFrame, gpd.GeoDataFrame],
+        mesh_data: pd.DataFrame | gpd.GeoDataFrame,
+        cropped_mesh_data: pd.DataFrame | gpd.GeoDataFrame,
+        isobath_data: pd.DataFrame | gpd.GeoDataFrame,
         projection: str = "epsg:4326",
     ) -> hv.Overlay:
         """
@@ -295,7 +300,7 @@ class Diagnostics:
 
     def plot_nasc_map(
         self,
-        transect_data: Union[pd.DataFrame, gpd.GeoDataFrame],
+        transect_data: pd.DataFrame | gpd.GeoDataFrame,
         projection: str = "epsg:4326",
     ) -> None:
         """
@@ -410,7 +415,7 @@ class Diagnostics:
 
     def plot_stratified_results(
         self,
-        stratum_results: Dict[str, pd.DataFrame],
+        stratum_results: dict[str, pd.DataFrame],
     ) -> None:
         """
         Plot stratified biomass results with error bars and relative bias.

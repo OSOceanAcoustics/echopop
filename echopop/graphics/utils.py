@@ -1,6 +1,14 @@
+"""
+Shared plotting helpers: GeoDataFrame conversion, colormap utilities, and cartopy tools.
+
+Centralises reusable graphical utilities consumed by the other graphics modules, including
+coordinate-to-GeoDataFrame conversion, discrete colormap construction, and cartopy feature helpers
+for coastlines and country boundaries.
+"""
+
 import inspect
 import warnings
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 import cartopy.feature as cfeature
 import geopandas as gpd
@@ -39,7 +47,6 @@ def call_with_pruned(func, kwargs, /, **overrides):
     This utility is useful when you have a dictionary of parameters but only want to pass those
     that are valid for a given function. Any keys in `overrides` will override those in `kwargs`.
     """
-
     # Get call signature
     sig = inspect.signature(func)
 
@@ -61,14 +68,17 @@ def call_with_pruned(func, kwargs, /, **overrides):
 
 
 def get_coastline(
-    gdf, resolution="10m", projection="epsg:4326", coast_kwargs: Optional[Dict[str, Any]] = None
+    geographic_data,
+    resolution="10m",
+    projection="epsg:4326",
+    coast_kwargs: dict[str, Any] | None = None,
 ):
     """
     Get and clip coastline data from cartopy to the bounds of a GeoDataFrame.
 
     Parameters
     ----------
-    gdf : geopandas.GeoDataFrame
+    geographic_data : geopandas.GeoDataFrame
         Boundary GeoDataFrame. Used to determine the region for coastline clipping.
     resolution : str, default='10m'
         Cartopy resolution ('10m', '50m', or '110m').
@@ -94,19 +104,18 @@ def get_coastline(
     The `coast_kwargs` dictionary is passed directly to Cartopy's feature creation and can be
     used to customize the appearance of the coastline overlay.
     """
-
     # Update kwargs if none are supplied
     if coast_kwargs is None:
         coast_kwargs = {}
 
     # Input validation and type-checking
-    if not hasattr(gdf, "geometry"):
-        raise TypeError("The input dataset for `gdf` must be a `GeoDataFrame`.")
-    if gdf.empty:
+    if not hasattr(geographic_data, "geometry"):
+        raise TypeError("The input dataset for `geographic_data` must be a `GeoDataFrame`.")
+    if geographic_data.empty:
         raise ValueError("Input GeoDataFrame is empty.")
 
     # Get original boundaries
-    xmin0, ymin0, xmax0, ymax0 = gdf.total_bounds
+    xmin0, ymin0, xmax0, ymax0 = geographic_data.total_bounds
 
     # Create boundary boxes
     boundary_box_unbuffered = sg.box(xmin0, ymin0, xmax0, ymax0)
@@ -171,7 +180,6 @@ def format_geoaxes(
     --------
     >>> format_geoaxes(ax, 0, 10, 0, 5, 'Longitude', 'Latitude')
     """
-
     # Input validation and type-checking
     if not hasattr(axes, "set_extent"):
         raise TypeError("Axes must be a GeoAxes instance.")
@@ -235,7 +243,6 @@ def scale_sizes(
     The function linearly rescales `values` to the range [`min_size`, `max_size`]. If all values
     are equal, all points will be assigned `min_size`.
     """
-
     # Create copy
     sizes = values.copy()
 
@@ -252,7 +259,7 @@ def scale_sizes(
 
 def apply_aspect_ratio(
     figure_width: float, x0: float, x1: float, y0: float, y1: float
-) -> Tuple[float, float]:
+) -> tuple[float, float]:
     """
     Compute figure size to maintain aspect ratio.
 
@@ -273,7 +280,6 @@ def apply_aspect_ratio(
     >>> apply_aspect_ratio(6, 0, 10, 0, 5)
     (6, 3)
     """
-
     # Validate inputs
     if x1 == x0:
         raise ValueError("Variables `x1` and `x0` must not be equal for aspect ratio calculation.")
@@ -286,7 +292,7 @@ def apply_aspect_ratio(
 
 
 def dataframe_to_geodataframe(
-    data: pd.DataFrame, projection: str, coordinate_names: Tuple[str, str], **kwargs
+    data: pd.DataFrame, projection: str, coordinate_names: tuple[str, str], **kwargs
 ) -> gpd.GeoDataFrame:
     """
     Convert a DataFrame to a GeoDataFrame using coordinate columns.
@@ -311,7 +317,6 @@ def dataframe_to_geodataframe(
     --------
     >>> gdf = dataframe_to_geodataframe(df, "EPSG:4326", ("lon", "lat"))
     """
-
     if not all(name in data.columns for name in coordinate_names):
         raise KeyError(f"Coordinate columns {coordinate_names} not found in data.")
 
