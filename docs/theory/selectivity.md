@@ -67,6 +67,7 @@ $$
 
 The selectivity expansion factor is therefore defined as:
 
+(specimen-level-expansion-eq)=
 $$
     \phi_j = \frac{1}{S_{\text{eff}}(L_j)}.
     \tag{2.36}
