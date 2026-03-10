@@ -30,7 +30,7 @@ try:
     # ---- FOR CLI USE
     COMPARE = cli_utils.get_compare()
     ECHOPRO_REPORTS_DIR = DATA_ROOT / "output_echopro"
-    ECHOPRO_REPORTS_DIR = DATA_ROOT / "comparisons"
+    COMPARISONS_DIR = DATA_ROOT / "comparisons"
     SHOW_PLOT = False
 except Exception:
     # ---- FOR INTERACTIVE REPL USE
@@ -700,7 +700,7 @@ logging.info("Computing aged weight proportions...")
 dict_da_weight_proportion["aged"] = proportions.weight_proportions(
     weight_data=ds_da_weight_dist["aged"], 
     catch_data=dict_df_bio["catch"], 
-    group_columns = ["stratum_ks"]
+    stratum_dim = "stratum_ks"
 )
 
 # UNAGED WEIGHT PROPORTIONS
@@ -899,7 +899,7 @@ dict_ds_transect_biomass_table[
 ] = feat_apportion.distribute_unaged_from_aged(
     population_table = dict_ds_transect_biomass_table["unaged"],
     reference_table = dict_ds_transect_biomass_table["aged"],
-    collapse_dims = ["stratum_ks"],
+    stratum_dim = "stratum_ks",
     impute = False 
 )
 
@@ -1170,7 +1170,7 @@ logging.info(
 dict_ds_kriged_abundance_table["standardized_unaged"] = feat_apportion.distribute_unaged_from_aged(
     population_table = dict_ds_kriged_abundance_table["unaged"],
     reference_table = dict_ds_kriged_abundance_table["aged"],
-    collapse_dims = ["stratum_ks"],
+    stratum_dim = "stratum_ks",
     impute = False 
 )
 
@@ -1194,7 +1194,7 @@ logging.info(
 dict_ds_kriged_biomass_table["standardized_unaged"] = feat_apportion.distribute_unaged_from_aged(
     population_table = dict_ds_kriged_biomass_table["unaged"],
     reference_table = dict_ds_kriged_biomass_table["aged"],
-    collapse_dims = ["stratum_ks"],
+    stratum_dim = "stratum_ks",
     impute=True,
     impute_variable=["age_bin"],
 )
@@ -1266,8 +1266,8 @@ logging.info(
     "     Stratum transect sampling proportion: 0.75\n"
     "     Stratifying by: 'geostratum_ks'"
 )
-jh.stratified_bootstrap(data_df=df_nasc_proc, 
-                        stratify_by=["geostratum_inpfc"], 
+jh.stratified_bootstrap(data=df_nasc_proc, 
+                        stratum_dim="geostratum_inpfc", 
                         variable="biomass")
 logging.info(
     "Summarizing results....\n"
@@ -1295,9 +1295,9 @@ logging.info(
     "     Virtual transects per latitude: 5"
 )
 kriged_transects = jh.create_virtual_transects(
-    data_df=df_kriged_results,
+    mesh_data=df_kriged_results,
     geostrata=df_dict_geostrata["inpfc"], 
-    stratify_by=["geostratum_inpfc"],
+    stratum_dim="geostratum_inpfc",
     variable="biomass",
 )
 # ---- Run rest of flow
@@ -1308,8 +1308,8 @@ logging.info(
     "     Virtual transect sampling proportion: 0.75\n"
     "     Stratifying by: 'geostratum_ks'"
 )
-jh.stratified_bootstrap(data_df=kriged_transects, 
-                        stratify_by=["geostratum_inpfc"], 
+jh.stratified_bootstrap(data=kriged_transects, 
+                        stratum_dim="geostratum_inpfc", 
                         variable="biomass")
 logging.info(
     "Summarizing results....\n"
