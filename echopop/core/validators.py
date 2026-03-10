@@ -1,3 +1,10 @@
+"""
+Core Pydantic and Pandera validators
+
+This module contains the core Pydantic and Pandera classes that are inherited by all validator
+children.
+"""
+
 from typing import Any, Dict, Type, TypeVar
 
 import pandas as pd
