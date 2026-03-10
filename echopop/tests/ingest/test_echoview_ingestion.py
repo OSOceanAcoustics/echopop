@@ -575,7 +575,7 @@ def test_read_transect_region_haul_key_rename():
 
         # Test the function
         result = read_transect_region_haul_key(
-            Path(temp_file.name), sheetname=None, rename_dict=rename_dict
+            Path(temp_file.name), sheetname=None, column_name_map=rename_dict
         )
 
         # Verify results

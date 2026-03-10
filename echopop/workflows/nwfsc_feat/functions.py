@@ -746,9 +746,9 @@ def transect_ends_crop(
 
 
 def filter_transect_intervals(
-    nasc_df: pd.DataFrame,
-    transect_filter_df: pd.DataFrame | Path,
-    subset_filter: str | None = None,
+    nasc_data: pd.DataFrame,
+    transect_filter: pd.DataFrame | Path,
+    survey_filter: str | None = None,
     transect_filter_sheet: str | None = None,
 ) -> pd.DataFrame:
     """
@@ -756,13 +756,13 @@ def filter_transect_intervals(
 
     Parameters
     ----------
-    nasc_df : pandas.DataFrame
+    nasc_data : pandas.DataFrame
         DataFrame containing NASC data with columns 'transect_num', 'distance_s', and 'distance_e'
-    transect_filter_df : Union[pandas.DataFrame, Path]
+    transect_filter : Union[pandas.DataFrame, Path]
         DataFrame containing transect filter data with columns 'transect_num', 'log_start',
         and 'log_end', or a filepath that reads in a file.
-    subset_filter : str, optional
-        Query string to filter the transect_filter_df (e.g., "region_id == 'A'")
+    survey_filter : str, optional
+        Query survey string to filter ``transect_filter`` (e.g., "region_id == 'A'")
     transect_filter_sheet : str, optional
         Optional sheetname if a filename is input
 
@@ -788,43 +788,43 @@ def filter_transect_intervals(
     >>> result = filter_transect_intervals(nasc_data, filter_data)
     """
     # Make copies to avoid modifying the inputs
-    nasc_df = nasc_df.copy()
+    nasc_df = nasc_data.copy()
 
     # Read in transect filter file
-    if isinstance(transect_filter_df, Path):
+    if isinstance(transect_filter, Path):
         # Read in the defined file
-        transect_filter_df = pd.read_excel(
-            transect_filter_df, sheet_name=transect_filter_sheet, index_col=None, header=0
+        transect_filter = pd.read_excel(
+            transect_filter, sheet_name=transect_filter_sheet, index_col=None, header=0
         )
 
     # Lowercase column names in transect filter DataFrame
-    transect_filter_df.columns = transect_filter_df.columns.str.lower()
+    transect_filter.columns = transect_filter.columns.str.lower()
 
     # Rename 'transect' to 'transect_num' if it exists
     if (
-        "transect" in transect_filter_df.columns
-        and "transect_num" not in transect_filter_df.columns
+        "transect" in transect_filter.columns
+        and "transect_num" not in transect_filter.columns
     ):
-        transect_filter_df.rename(columns={"transect": "transect_num"}, inplace=True)
+        transect_filter.rename(columns={"transect": "transect_num"}, inplace=True)
 
     # Validation check
-    if not set(transect_filter_df.columns) >= set(["transect_num", "log_start", "log_end"]):
+    if not set(transect_filter.columns) >= set(["transect_num", "log_start", "log_end"]):
         # ---- Find mismatch
         missing = list(
-            set(["transect_num", "log_start", "log_end"]) - set(transect_filter_df.columns)
+            set(["transect_num", "log_start", "log_end"]) - set(transect_filter.columns)
         )
         # ---- Format
         missing_str = [f"'{v}'" for v in missing]
         # ---- Print
         raise KeyError(
-            f"The following columns could not be formatted from 'transect_filter_df': "
+            f"The following columns could not be formatted from 'transect_filter': "
             f"{', '.join(missing_str)}."
         )
 
     # Apply a filter, if needed
-    if subset_filter is not None:
+    if survey_filter is not None:
         # Extract tokens from string
-        tokens = re.findall(r"\b[a-zA-Z_][a-zA-Z0-9_]*\b", subset_filter)
+        tokens = re.findall(r"\b[a-zA-Z_][a-zA-Z0-9_]*\b", survey_filter)
 
         # Provide typical Python operator keywords
         keywords = {"and", "or", "not", "in", "notin", "True", "False"}
@@ -833,27 +833,27 @@ def filter_transect_intervals(
         column_names = [
             t
             for t in tokens
-            if t not in keywords and not t.isnumeric() and t in transect_filter_df.columns
+            if t not in keywords and not t.isnumeric() and t in transect_filter.columns
         ]
 
         # Check if all referenced columns exist
-        missing = [col for col in column_names if col not in transect_filter_df.columns]
+        missing = [col for col in column_names if col not in transect_filter.columns]
 
         # Raise error, if needed
         if missing:
             raise ValueError(f"Invalid column(s): {', '.join(missing)}")
         else:
-            transect_filter_df = transect_filter_df.query(subset_filter).sort_values(
+            transect_filter = transect_filter.query(survey_filter).sort_values(
                 ["transect_num"]
             )
 
     # Sort transect filter by vessel log distance start values
-    transect_filter_df = transect_filter_df.sort_values("log_start").reset_index(drop=True)
+    transect_filter = transect_filter.sort_values("log_start").reset_index(drop=True)
 
     # Get arrays for easier processing
-    filter_transect_nums = transect_filter_df["transect_num"].values
-    filter_log_starts = transect_filter_df["log_start"].values
-    filter_log_ends = transect_filter_df["log_end"].values
+    filter_transect_nums = transect_filter["transect_num"].values
+    filter_log_starts = transect_filter["log_start"].values
+    filter_log_ends = transect_filter["log_end"].values
     unique_filter_transects = np.unique(filter_transect_nums)
 
     # Get NASC data arrays
@@ -945,7 +945,7 @@ def filter_transect_intervals(
 
 
 def convert_afsc_nasc_to_feat(
-    df: pd.DataFrame,
+    nasc_data: pd.DataFrame,
     default_interval_distance: float = 0.5,
     default_transect_spacing: float = 10.0,
     inclusion_filter: dict[str, Any] = None,
@@ -956,7 +956,7 @@ def convert_afsc_nasc_to_feat(
 
     Parameters
     ----------
-    df : pd.DataFrame
+    nasc_data : pd.DataFrame
         DataFrame containing AFSC NASC data.
     default_interval_distance : float, optional
         Default distance interval for transects, by default 0.5.
@@ -977,7 +977,9 @@ def convert_afsc_nasc_to_feat(
         exclusion_filter = {}
     if inclusion_filter is None:
         inclusion_filter = {}
-    df = utils.apply_filters(df, include_filter=inclusion_filter, exclude_filter=exclusion_filter)
+    df = utils.apply_filters(
+        nasc_data, include_filter=inclusion_filter, exclude_filter=exclusion_filter
+    )
 
     # Create distance intervals
     df.rename(columns={"distance": "distance_s"}, inplace=True)

@@ -712,7 +712,7 @@ def merge_echoview_nasc(
 
 
 def read_transect_region_haul_key(
-    filename: Path, sheetname: str, rename_dict: dict[str, str] | None = None
+    filename: Path, sheetname: str, column_name_map: dict[str, str] | None = None
 ) -> pd.DataFrame:
     """
     Load the key that maps hauls to export regions to transect numbers.
@@ -726,7 +726,7 @@ def read_transect_region_haul_key(
         Path to the CSV or Excel file containing the mapping data.
     sheetname : str
         Name of the sheet to read (only used for Excel files).
-    rename_dict : Optional[Dict[str, str]], default None
+    column_name_map : Optional[Dict[str, str]], default None
         Dictionary for renaming columns, where keys are original column names and values are new
         column names.
 
@@ -739,7 +739,7 @@ def read_transect_region_haul_key(
     Notes
     -----
     The input file must contain columns that can be mapped to ``"transect_num"``, ``"region_id"``,
-    and ``"haul_num"``, either directly or via the rename_dict.
+    and ``"haul_num"``, either directly or via the ``column_name_map``.
     """
     # Determine appropriate file reader
     if filename.suffix == ".csv":
@@ -754,8 +754,8 @@ def read_transect_region_haul_key(
     transect_region_df.columns = transect_region_df.columns.str.lower()
 
     # Rename column names, if defined
-    if rename_dict:
-        transect_region_df.rename(columns=rename_dict, inplace=True)
+    if column_name_map:
+        transect_region_df.rename(columns=column_name_map, inplace=True)
 
     # TODO: Insert validation here
 
@@ -1092,7 +1092,7 @@ def generate_transect_region_haul_key(
 
 def process_region_names(
     nasc_cells: pd.DataFrame,
-    region_name_expr_dict: dict,
+    region_name_expr: dict,
     can_haul_offset: int | None = None,
 ) -> pd.DataFrame:
     """
@@ -1106,7 +1106,7 @@ def process_region_names(
     nasc_cells : |pd.DataFrame|
         A |pd.DataFrame| comprising NASC export data that must include the column ``'region_name'``
         to function.
-    region_name_expr_dict : Dict
+    region_name_expr : Dict
         Dictionary of pattern specifications for component extraction:
 
         - Keys are component names (e.g., ``'REGION_CLASS'``, ``'HAUL_NUM'``, ``'COUNTRY'``)
@@ -1127,7 +1127,7 @@ def process_region_names(
 
     Example
     -------
-    >>> region_name_expr_dict = {
+    >>> region_name_expr = {
     ...     "REGION_CLASS": {
     ...         "Hake": "^(?:h(?![a-z]|1a)|hake(?![_]))",
     ...         "Hake Mix": "^(?:hm(?![a-z]|1a)|hake_mix(?![_]))"
@@ -1135,10 +1135,10 @@ def process_region_names(
     ...     "HAUL_NUM": {"[0-9]+"},
     ...     "COUNTRY": {"CAN": "^[cC]", "US": "^[uU]"}
     ... }
-    >>> process_region_names(df, region_name_expr_dict, filter_list=["Hake", "Hake Mix"])
+    >>> process_region_names(df, region_name_expr, filter_list=["Hake", "Hake Mix"])
     """
     # Step 1: Extract components from region names
-    extracted_regions = extract_region_components(nasc_cells, region_name_expr_dict)
+    extracted_regions = extract_region_components(nasc_cells, region_name_expr)
 
     # Step 2: Process the extracted data
     processed_regions = process_extracted_data(extracted_regions, can_haul_offset)
