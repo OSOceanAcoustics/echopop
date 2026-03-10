@@ -198,7 +198,7 @@ logging.info(
     "     Including transects: 1 to 400"
 )
 df_nasc = feat.convert_afsc_nasc_to_feat(
-    df=df_nasc,
+    nasc_data=df_nasc,
     default_interval_distance=0.5,
     default_transect_spacing=10.0,
 )
@@ -209,10 +209,10 @@ logging.info(
     f"     Survey filter: '{SURVEY_FILTER}'"
 )
 df_nasc = feat.filter_transect_intervals(
-    nasc_df=df_nasc, 
-    transect_filter_df=TRANSECT_BOUNDARY_FILE,
+    nasc_data=df_nasc, 
+    transect_filter=TRANSECT_BOUNDARY_FILE,
     transect_filter_sheet=TRANSECT_BOUNDARY_SHEET,
-    subset_filter=SURVEY_FILTER
+    survey_filter=SURVEY_FILTER
 )
 logging.info(
     f"!!! [1995] WARNING:\n"

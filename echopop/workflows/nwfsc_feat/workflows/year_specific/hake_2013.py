@@ -244,7 +244,7 @@ else:
     df_transect_region_haul_key = ingestion.nasc.read_transect_region_haul_key(
         filename=TRANSECT_REGION_HAUL_FILE,
         sheetname=TRANSECT_REGION_HAUL_SHEET,
-        rename_dict=TRANSECT_REGION_FILE_RENAME
+        column_name_map=TRANSECT_REGION_FILE_RENAME
     )
     
     # GENERATE TRANSECT-REGION-HAUL KEY

@@ -420,7 +420,7 @@ da_weight_dist = da_weight_dist_specimen + da_weight_dist_length
 da_weight_proportions_initial = proportions.weight_proportions(
     weight_data=da_weight_dist, 
     catch_data=dict_df_bio["catch"], 
-    group_columns = ["stratum_ks"]
+    stratum_dim="stratum_ks"
 )
 
 # READJUST/NORMALIZE

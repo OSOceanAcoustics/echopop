@@ -65,7 +65,7 @@ TRANSECT_REGION_SHEETNAME_NO_AGE1 = "Sheet1"
 transect_region_haul_key_all_ages = nasc.read_transect_region_haul_key(
     filename=TRANSECT_REGION_FILEPATH_ALL_AGES,
     sheetname=TRANSECT_REGION_SHEETNAME_ALL_AGES,
-    rename_dict=TRANSECT_REGION_FILE_RENAME,
+    column_name_map=TRANSECT_REGION_FILE_RENAME,
 )
 
 transect_region_haul_key_no_age1 = nasc.read_transect_region_haul_key(
@@ -75,7 +75,7 @@ transect_region_haul_key_no_age1 = nasc.read_transect_region_haul_key(
 # ==================================================================================================
 # Read in transect-region-haul keys
 # ---------------------------------
-REGION_NAME_EXPR_DICT = {
+region_name_expr = {
     "REGION_CLASS": {
         "Age-1 Hake": "^(?:h1a(?![a-z]|m))",
         "Age-1 Hake Mix": "^(?:h1am(?![a-z]|1a))",
@@ -95,7 +95,7 @@ REGION_NAME_EXPR_DICT = {
 # e.g. H5C - Region 2 corresponds to "Hake, Haul #5, Canada"
 df_exports_with_regions = nasc.process_region_names(
     nasc_cells=df_exports,
-    region_name_expr_dict=REGION_NAME_EXPR_DICT,
+    region_name_expr=REGION_NAME_EXPR_DICT,
     can_haul_offset=200,
 )
 
@@ -461,7 +461,7 @@ dict_da_weight_proportion = {}
 dict_da_weight_proportion["aged"] = proportions.weight_proportions(
     weight_data=ds_da_weight_dist["aged"], 
     catch_data=dict_df_bio["catch"], 
-    stratum_dim = ["stratum_ks"]
+    stratum_dim="stratum_ks"
 )
 
 # ==================================================================================================
@@ -833,7 +833,7 @@ dict_ds_kriged_biomass_table = apportionment.distribute_population_estimates(
 dict_ds_kriged_abundance_table["standardized_unaged"] = apportionment.distribute_unaged_from_aged(
     population_table = dict_ds_kriged_abundance_table["unaged"],
     reference_table = dict_ds_kriged_abundance_table["aged"],
-    collapse_dims = ["stratum_ks"],
+    stratum_dim="stratum_ks",
     impute = False
 )
 
@@ -844,7 +844,7 @@ dict_ds_kriged_abundance_table["standardized_unaged"] = apportionment.distribute
 dict_ds_kriged_biomass_table["standardized_unaged"] = apportionment.distribute_unaged_from_aged(
     population_table = dict_ds_kriged_biomass_table["unaged"],
     reference_table = dict_ds_kriged_biomass_table["aged"],
-    collapse_dims = ["stratum_ks"],
+    stratum_dim="stratum_ks",
     impute=True,
     impute_variable=["age_bin"],
 )
@@ -912,7 +912,7 @@ jh = stratified.JollyHampton(JOLLYHAMPTON_PARAMETERS)
 
 # Run bootstrapping procedure
 jh.stratified_bootstrap(
-    data_df=df_nasc_no_age1_prt, stratify_by=["geostratum_inpfc"], variable="biomass"
+    data=df_nasc_no_age1_prt, stratum_dim="geostratum_inpfc", variable="biomass"
 )
 
 # Store replicates
@@ -927,9 +927,9 @@ print(transect_results)
 # ---------------------------------------------------------------
 
 kriged_transects = jh.create_virtual_transects(
-    data_df=df_kriged_results,
+    mesh_data=df_kriged_results,
     geostrata=df_dict_geostrata["inpfc"],
-    stratify_by=["geostratum_inpfc"],
+    stratum_dim="geostratum_inpfc",
     variable="biomass",
 )
 
@@ -939,7 +939,7 @@ kriged_transects = jh.create_virtual_transects(
 
 # Run bootstrapping procedure
 jh.stratified_bootstrap(
-    data_df=kriged_transects, stratify_by=["geostratum_inpfc"], variable="biomass"
+    data=kriged_transects, stratum_dim="geostratum_inpfc", variable="biomass"
 )
 
 # Store replicates

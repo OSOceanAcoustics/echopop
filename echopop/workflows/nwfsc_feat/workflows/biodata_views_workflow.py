@@ -335,7 +335,7 @@ dict_da_weight_proportion = {}
 dict_da_weight_proportion["aged"] = proportions.weight_proportions(
     weight_data=ds_da_weight_dist["aged"], 
     catch_data=dict_df_bio["catch"], 
-    group_columns = ["stratum_ks"],
+    stratum_dim="stratum_ks",
     proportion_reference = "catch",
 )
 

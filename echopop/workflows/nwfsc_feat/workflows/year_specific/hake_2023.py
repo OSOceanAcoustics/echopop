@@ -219,7 +219,7 @@ else:
     )
 
     # EXPORT REGION NAME MAPPING
-    REGION_NAME_EXPR_DICT = {
+    region_name_expr = {
         "REGION_CLASS": {
             "Age-1 Hake": "^(?:h1a(?![a-z]|m))",
             "Age-1 Hake Mix": "^(?:h1am(?![a-z]|1a))",
@@ -242,7 +242,7 @@ else:
     )
     df_exports_with_regions = ingestion.nasc.process_region_names(
         nasc_cells=df_exports,
-        region_name_expr_dict=REGION_NAME_EXPR_DICT,
+        region_name_expr=REGION_NAME_EXPR_DICT,
         can_haul_offset=200,
     )
 

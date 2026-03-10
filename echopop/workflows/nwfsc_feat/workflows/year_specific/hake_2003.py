@@ -237,7 +237,7 @@ else:
     df_transect_region_haul_key = ingestion.nasc.read_transect_region_haul_key(
         filename=TRANSECT_REGION_HAUL_FILE,
         sheetname=TRANSECT_REGION_HAUL_SHEET,
-        rename_dict=TRANSECT_REGION_FILE_RENAME
+        column_name_map=TRANSECT_REGION_FILE_RENAME
     )
     
     # GENERATE TRANSECT-REGION-HAUL KEY
@@ -287,10 +287,10 @@ logging.info(
     f"     Survey filter: '{SURVEY_FILTER}'"
 )
 df_nasc = feat.filter_transect_intervals(
-    nasc_df=df_nasc, 
-    transect_filter_df=TRANSECT_BOUNDARY_FILE,
+    nasc_data=df_nasc, 
+    transect_filter=TRANSECT_BOUNDARY_FILE,
     transect_filter_sheet=TRANSECT_BOUNDARY_SHEET,
-    subset_filter=SURVEY_FILTER
+    survey_filter=SURVEY_FILTER
 )
 
 # DROP TRANSECTS
