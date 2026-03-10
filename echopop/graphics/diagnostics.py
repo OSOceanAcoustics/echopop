@@ -10,6 +10,7 @@ from typing import Any
 import geopandas as gpd
 import geoviews as gv
 import holoviews as hv
+
 # hvplot.pandas import is required even though it is not directly called
 import hvplot.pandas  # isort: skip # noqa: F401
 import pandas as pd
