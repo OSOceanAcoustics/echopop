@@ -1,10 +1,19 @@
+"""
+FEAT comparison utilities for validating and visualizing echopop vs. EchoPro outputs.
+
+Provides functions for loading, parsing, and comparing survey results across years and
+methodologies, including spatial maps, difference plots, and tabular cross-year
+summaries.
+"""
+
 import hashlib
 import os
 import re
 import warnings
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import Any, Callable, Dict, Literal, Optional, Tuple, Union
+from typing import Any, Literal
 
 import geopandas as gpd
 import matplotlib.pyplot as plt
@@ -26,7 +35,6 @@ def extract_sex_from_sheet(df: pd.DataFrame) -> str:
     optional parentheses and whitespace, e.g., '(male)', ' (ALL) ', etc. Does not match joint
     expressions like 'male+female', 'female/male', etc.
     """
-
     # Get text
     text = " ".join(str(cell) for row in df.values for cell in row if isinstance(cell, str))
 
@@ -52,7 +60,6 @@ def extract_quantity_type(df: pd.DataFrame) -> str:
     'abundance', 'biomass', or None. Allows for optional parentheses and whitespace, e.g.,
     '(abundance)'.
     """
-
     # Get text
     text = " ".join(str(cell) for row in df.values for cell in row if isinstance(cell, str))
 
@@ -79,7 +86,6 @@ def translate_dataframe(df: pd.DataFrame) -> None:
     developing downstream comparisons and visualization. This does not return an output since it
     is an inplace operation.
     """
-
     # Helper function for translating columns
     # ---- Key
     PATTERN_TRANSLATIONS = [
@@ -115,11 +121,8 @@ def translate_dataframe(df: pd.DataFrame) -> None:
     df.rename(columns=rename_map, inplace=True)
 
 
-def align_dataframes(df1: pd.DataFrame, df2: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
-    """
-    Align indices of both pandas.DataFrame objects.
-    """
-
+def align_dataframes(df1: pd.DataFrame, df2: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Align indices of both pandas.DataFrame objects."""
     # Try alignment first
     df1, df2 = df1.align(df2, join="outer", fill_value=0, axis=1)
 
@@ -146,13 +149,12 @@ def align_dataframes(df1: pd.DataFrame, df2: pd.DataFrame) -> Tuple[pd.DataFrame
     return df1_agg, df2_agg
 
 
-def read_pivot_table_report(filepath: Path) -> Dict[str, pd.DataFrame]:
+def read_pivot_table_report(filepath: Path) -> dict[str, pd.DataFrame]:
     """
     Reads all sheets from the aged length haul counts report Excel file. This dynamically assigns
     sex to the sheet name and returns a dictionary {sex: DataFrame}. Drops last column and row
     (subtotal) for each column and row, respectively.
     """
-
     # Validate file typing
     if not isinstance(filepath, Path):
         raise TypeError(
@@ -225,7 +227,6 @@ def read_geodata(filepath: Path) -> gpd.GeoDataFrame:
     with 'longitude' and 'latitude'. The EPSG:4326 projection is automatically applied to the
     coordinates.
     """
-
     # Validate file typing
     if not isinstance(filepath, Path):
         raise TypeError(
@@ -255,14 +256,13 @@ def read_geodata(filepath: Path) -> gpd.GeoDataFrame:
     return gdf
 
 
-def read_aged_geodata(filepath: Path) -> Dict[str, gpd.GeoDataFrame]:
+def read_aged_geodata(filepath: Path) -> dict[str, gpd.GeoDataFrame]:
     """
     Read in georeferenced aged population estimates from along-transect intervals of kriging mesh
     nodes. This outputs a `geopandas.GeoDataFrame` object with the geometry informed by columns
     associated  with 'longitude' and 'latitude'. The EPSG:4326 projection is automatically applied
     to the coordinates.
     """
-
     # Validate file typing
     if not isinstance(filepath, Path):
         raise TypeError(
@@ -307,16 +307,16 @@ def read_aged_geodata(filepath: Path) -> Dict[str, gpd.GeoDataFrame]:
 
 
 def plot_haul_count_comparisons(
-    echopro: Dict[str, pd.DataFrame],
-    echopop: Dict[str, pd.DataFrame],
-    save_filepath: Optional[Path] = None,
+    echopro: dict[str, pd.DataFrame],
+    echopop: dict[str, pd.DataFrame],
+    save_filepath: Path | None = None,
     show_plot: bool = True,
 ):
     """
     For each sex in the intersection of both dicts, plot:
     - EchoPro heatmap
     - EchoPop heatmap
-    - Difference heatmap
+    - Difference heatmap.
 
     Parameters
     ----------
@@ -454,9 +454,9 @@ def plot_haul_count_comparisons(
 
 
 def plot_population_table_comparisons(
-    echopro: Dict[str, pd.DataFrame],
-    echopop: Dict[str, pd.DataFrame],
-    save_filepath: Optional[Path] = None,
+    echopro: dict[str, pd.DataFrame],
+    echopop: dict[str, pd.DataFrame],
+    save_filepath: Path | None = None,
     show_plot: bool = True,
     log_transform: bool = False,
 ):
@@ -464,7 +464,7 @@ def plot_population_table_comparisons(
     For each sex in the intersection of both dicts, plot:
     - EchoPro heatmap
     - EchoPop heatmap
-    - Difference heatmap
+    - Difference heatmap.
 
     Parameters
     ----------
@@ -477,7 +477,6 @@ def plot_population_table_comparisons(
     log_transform: bool
         If True, al values within the DataFrames are log-transformed (base-10).
     """
-
     # Get all sex keys
     all_sexes = sorted(set(echopro.keys()) | set(echopop.keys()))
     n = len(all_sexes)
@@ -649,15 +648,12 @@ def get_mapped_axes(
     ax: Axes,
     gdf: gpd.GeoDataFrame,
     var: str,
-    vrange: Tuple[float, float],
-    xrange: Tuple[float, float],
-    yrange: Tuple[float, float],
+    vrange: tuple[float, float],
+    xrange: tuple[float, float],
+    yrange: tuple[float, float],
     cbar: bool = True,
 ):
-    """
-    Plot the data layer onto the defined plotting axes.
-    """
-
+    """Plot the data layer onto the defined plotting axes."""
     # Get coastline
     with warnings.catch_warnings():
         # ---- Spoof axis limits
@@ -732,15 +728,12 @@ def get_mapped_delta_axes(
     ax: Axes,
     gdf: gpd.GeoDataFrame,
     var: str,
-    vrange: Tuple[float, float],
-    xrange: Tuple[float, float],
-    yrange: Tuple[float, float],
+    vrange: tuple[float, float],
+    xrange: tuple[float, float],
+    yrange: tuple[float, float],
     cbar: bool = True,
 ):
-    """
-    Plot the differences layer onto the defined plotting axes.
-    """
-
+    """Plot the differences layer onto the defined plotting axes."""
     # Get coastline
     with warnings.catch_warnings():
         # ---- Spoof axis limits
@@ -840,11 +833,8 @@ VARIABLES_KEY = {
 }
 
 
-def prettify_varname(var: str) -> Tuple[str, str, str, str]:
-    """
-    Prettify the variable label.
-    """
-
+def prettify_varname(var: str) -> tuple[str, str, str, str]:
+    """Prettify the variable label."""
     # Search over the keys
     matched_str = ""
     for key in VARIABLES_KEY.keys():
@@ -876,14 +866,11 @@ def prettify_varname(var: str) -> Tuple[str, str, str, str]:
 def plot_geodata(
     echopro: gpd.GeoDataFrame,
     echopop: gpd.GeoDataFrame,
-    save_filepath: Union[Path, Dict[Any, Path]],
+    save_filepath: Path | dict[Any, Path],
     show_plot: bool = True,
     log_transform: bool = False,
 ) -> None:
-    """
-    Plot georeferenced transect and kriging mesh data.
-    """
-
+    """Plot georeferenced transect and kriging mesh data."""
     # Find all data variable coordinates
     # ---- Columns to exclude
     exclude_cols = {"longitude", "latitude", "transect_num", "geometry"}
@@ -1100,8 +1087,8 @@ def _resolve_geodata_file(
     filepath: Path,
     dataset: Literal["echopop", "echopro"],
     type: Literal["transect", "kriging"],
-    echopop_patterns: Dict[str, str],
-    echopro_patterns: Dict[str, str],
+    echopop_patterns: dict[str, str],
+    echopro_patterns: dict[str, str],
 ) -> Path:
     """
     Resolve the full path to the target Excel file from the report directory, dataset, and report
@@ -1126,7 +1113,6 @@ def _resolve_geodata_file(
     Path
         The resolved file path.
     """
-
     # Validate root directory
     if not filepath.exists():
         raise FileNotFoundError(f"Directory not found: '{filepath.as_posix()}'.")
@@ -1166,7 +1152,6 @@ def _get_cache_path(excel_file: Path, cache_dir: Path) -> Path:
     Path
         The cache file path.
     """
-
     # Get timestamp
     mtime = excel_file.stat().st_mtime
 
@@ -1181,9 +1166,9 @@ def fetch_geodata(
     filepath: Path,
     dataset: Literal["echopop", "echopro"],
     type: Literal["transect", "kriging"],
-    echopop_patterns: Dict[str, str],
-    echopro_patterns: Dict[str, str],
-    cache_dir: Optional[Path] = None,
+    echopop_patterns: dict[str, str],
+    echopro_patterns: dict[str, str],
+    cache_dir: Path | None = None,
     verbose: bool = False,
 ) -> gpd.GeoDataFrame:
     """
@@ -1212,7 +1197,6 @@ def fetch_geodata(
     -------
     geopandas.GeoDataFrame
     """
-
     # Resolve the actual Excel file
     excel_file = _resolve_geodata_file(filepath, dataset, type, echopop_patterns, echopro_patterns)
 
@@ -1248,12 +1232,12 @@ def load_all_geodata_reports(
     years: list,
     echopro_root: Callable[[int], Path],
     echopop_root: Callable[[int], Path],
-    echopop_patterns: Dict[str, str],
-    echopro_patterns: Dict[str, str],
-    cache_dir: Optional[Path] = None,
-    max_workers: Optional[int] = None,
+    echopop_patterns: dict[str, str],
+    echopro_patterns: dict[str, str],
+    cache_dir: Path | None = None,
+    max_workers: int | None = None,
     verbose: bool = False,
-) -> Tuple[Dict[str, Dict[int, gpd.GeoDataFrame]], Dict[str, Dict[int, gpd.GeoDataFrame]]]:
+) -> tuple[dict[str, dict[int, gpd.GeoDataFrame]], dict[str, dict[int, gpd.GeoDataFrame]]]:
     """
     Load all geodata reports across years and dataset types. By default, files are loaded
     sequentially. Parallel loading can be enabled by setting ``max_workers`` to an integer
@@ -1284,7 +1268,6 @@ def load_all_geodata_reports(
     Dict[Tuple[str, str, int], geopandas.GeoDataFrame]
         Dictionary keyed by ``(dataset, type, year)``.
     """
-
     # Build the full task list
     tasks = [
         (year, dataset, rtype, root_fn(year))
@@ -1298,7 +1281,7 @@ def load_all_geodata_reports(
     ]
 
     # Pre-allocate the results --> Dictionary mapping year-dataset-report type to report
-    results: Dict[Tuple[str, str, int], gpd.GeoDataFrame] = {}
+    results: dict[tuple[str, str, int], gpd.GeoDataFrame] = {}
 
     # Sequential or parallelized processing
     if max_workers is None:
@@ -1346,10 +1329,10 @@ def load_all_geodata_reports(
 
 
 def compute_dataset_differences(
-    echopro_datasets: Dict[str, Dict[int, gpd.GeoDataFrame]],
-    echopop_datasets: Dict[str, Dict[int, gpd.GeoDataFrame]],
+    echopro_datasets: dict[str, dict[int, gpd.GeoDataFrame]],
+    echopop_datasets: dict[str, dict[int, gpd.GeoDataFrame]],
     columns: list = ["abundance", "biomass", "nasc"],
-) -> Tuple[pd.DataFrame, pd.DataFrame]:
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Compute magnitude and percent differences between EchoPro and Echopop report outputs across
     survey years and report types (transect, kriging).
@@ -1374,9 +1357,10 @@ def compute_dataset_differences(
     """
 
     # Helper function for summations
-    def _sum_columns(datasets: Dict[str, Dict[int, gpd.GeoDataFrame]]) -> pd.DataFrame:
+    def _sum_columns(datasets: dict[str, dict[int, gpd.GeoDataFrame]]) -> pd.DataFrame:
         """Sum the target columns across all years and report types, returning a DataFrame
-        indexed by (report_type, year)."""
+        indexed by (report_type, year).
+        """
         sums = {
             rtype: {year: gdf[columns].sum() for year, gdf in year_dict.items()}
             for rtype, year_dict in datasets.items()
@@ -1401,9 +1385,9 @@ def compute_dataset_differences(
 
 def plot_dataset_differences(
     signed_percent_differences: pd.DataFrame,
-    save_filepath: Optional[Path] = None,
+    save_filepath: Path | None = None,
     columns: list = ["abundance", "biomass", "nasc"],
-    figsize: Tuple[int, int] = (14, 6),
+    figsize: tuple[int, int] = (14, 6),
 ) -> None:
     """
     Plot signed percent differences between EchoPro and Echopop report outputs as a heatmap grid,

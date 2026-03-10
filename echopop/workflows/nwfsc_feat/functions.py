@@ -1,6 +1,15 @@
+"""
+FEAT general-purpose workflow utility functions.
+
+Provides spatial, interpolation, and data-manipulation helpers used across FEAT survey workflows,
+including transect extent extraction, kriging mesh preparation, and adaptive
+nearest-neighbor search utilities.
+"""
+
 import re
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, Dict, Optional, Tuple, Union
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -11,12 +20,12 @@ from ... import utils
 
 def get_survey_western_extents(
     transects: pd.DataFrame,
-    coordinate_names: Tuple[str, str],
+    coordinate_names: tuple[str, str],
     latitude_threshold: float,
 ) -> pd.DataFrame:
     """
     Get the western extents of each survey transect that can be used to constrain the adaptive
-    nearest neighbors search algorithm incorporated into the kriging interpolation algorithm
+    nearest neighbors search algorithm incorporated into the kriging interpolation algorithm.
 
     Parameters
     ----------
@@ -38,7 +47,6 @@ def get_survey_western_extents(
         A DataFrame comprising three columns: 'transect_num', and the column names supplied by
         the argument `coordinate_names`.
     """
-
     # Apply the latitude filter
     transect_thresholded = transects.loc[transects["latitude"] < latitude_threshold]
 
@@ -57,7 +65,7 @@ def get_survey_western_extents(
 def western_boundary_search_strategy(
     kriging_mesh: pd.DataFrame,
     western_extent: pd.DataFrame,
-    coordinate_names: Tuple[str, str],
+    coordinate_names: tuple[str, str],
     sparse_radii: np.ndarray[int],
     valid_distances: np.ndarray[int],
     local_points: np.ndarray[float],
@@ -70,9 +78,9 @@ def western_boundary_search_strategy(
     oos_indices: np.ndarray[np.number],
     oos_weights: np.ndarray[float],
     **kwargs,
-) -> Tuple[np.ndarray[np.number], np.ndarray[np.number], np.ndarray[np.number]]:
+) -> tuple[np.ndarray[np.number], np.ndarray[np.number], np.ndarray[np.number]]:
     """
-    Search strategy that applies western boundary constraints for transect-based surveys
+    Search strategy that applies western boundary constraints for transect-based surveys.
 
     Parameters
     ----------
@@ -116,7 +124,6 @@ def western_boundary_search_strategy(
         A tuple with updated values for `wr_indices`, `oos_indices`, and `oos_weights` via a
         search strategy that uses an extrapolation re-weighting based on transect extents.
     """
-
     # Parse ordered coordinate names
     x_name, y_name = coordinate_names
 
@@ -354,7 +361,7 @@ def transect_ends_crop(
     mesh: pd.DataFrame,
     latitude_resolution: float,
     transect_mesh_region_function: Callable,
-) -> Tuple[pd.DataFrame, pd.DataFrame]:
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Crop the kriging mesh by interpolating the eastern and western extents of survey transects
     partitioned into discrete regions via user-defined sorting functions.
@@ -402,13 +409,14 @@ def transect_ends_crop(
     >>> print(f"Original mesh size: {len(mesh)}")
     >>> print(f"Cropped mesh size: {len(cropped_mesh)}")
     """
-
     # Create dictionary from user-defined transect-mesh region assignment
     mesh_region_dict = {
         region: {
             name: value
             for name, value in zip(
-                ["start", "end", "upper", "lower"], transect_mesh_region_function(region)
+                ["start", "end", "upper", "lower"],
+                transect_mesh_region_function(region),
+                strict=False,
             )
         }
         for region in [1, 2, 3]
@@ -736,9 +744,9 @@ def transect_ends_crop(
 
 def filter_transect_intervals(
     nasc_df: pd.DataFrame,
-    transect_filter_df: Union[pd.DataFrame, Path],
-    subset_filter: Optional[str] = None,
-    transect_filter_sheet: Optional[str] = None,
+    transect_filter_df: pd.DataFrame | Path,
+    subset_filter: str | None = None,
+    transect_filter_sheet: str | None = None,
 ) -> pd.DataFrame:
     """
     Filter transect intervals based on log start and end values.
@@ -937,8 +945,8 @@ def convert_afsc_nasc_to_feat(
     df: pd.DataFrame,
     default_interval_distance: float = 0.5,
     default_transect_spacing: float = 10.0,
-    inclusion_filter: Dict[str, Any] = {},
-    exclusion_filter: Dict[str, Any] = {},
+    inclusion_filter: dict[str, Any] = {},
+    exclusion_filter: dict[str, Any] = {},
 ) -> pd.DataFrame:
     """
     Convert AFSC-MACE to NWFSC-FEAT transect NASC format.
@@ -961,7 +969,6 @@ def convert_afsc_nasc_to_feat(
     pd.DataFrame
         Transformed DataFrame corresponding to the expected NWFSC-FEAT format.
     """
-
     # Apply inclusion filter if provided
     df = utils.apply_filters(df, include_filter=inclusion_filter, exclude_filter=exclusion_filter)
 

@@ -1,4 +1,10 @@
-from typing import Dict, Optional, Union
+"""
+FEAT biological data processing functions for length-binned weight estimation.
+
+Provides utilities for computing length-binned average weights from regression coefficients
+and observed data, constructing sex-disaggregated weight arrays, and assembling binned weight
+tables used in proportion and apportionment calculations.
+"""
 
 import numpy as np
 import pandas as pd
@@ -10,7 +16,7 @@ from ...utils import binned_distribution
 def length_binned_weights(
     data: pd.DataFrame,
     length_bins: np.ndarray,
-    regression_coefficients: Union[pd.Series, pd.DataFrame],
+    regression_coefficients: pd.Series | pd.DataFrame,
     impute_bins: bool = True,
     minimum_count_threshold: int = 0,
 ) -> xr.DataArray:
@@ -70,7 +76,6 @@ def length_binned_weights(
     >>> fitted = compute_binned_weights(specimen_data, length_dist, coeffs,
     ...                                impute_bins=False)
     """
-
     # Make a copy to avoid modifying original data
     data = data.copy()  # Create length distribution from bins
     length_distribution = binned_distribution(length_bins)
@@ -181,8 +186,8 @@ def length_binned_weights(
 
 def compute_abundance(
     transect_data: pd.DataFrame,
-    exclude_filter: Dict[str, str] = {},
-    number_proportions: Optional[Dict[str, xr.Dataset]] = None,
+    exclude_filter: dict[str, str] = {},
+    number_proportions: dict[str, xr.Dataset] | None = None,
 ) -> None:
     """
     Convert number density estimates in abundances.
@@ -222,7 +227,6 @@ def compute_abundance(
     area_interval * number_density, then applies proportions to create grouped abundance columns.
     The original 'abundance' column represents the total.
     """
-
     # If no grouping, run the simple abundance calculation
     transect_data["abundance"] = transect_data["area_interval"] * transect_data["number_density"]
 
@@ -303,7 +307,7 @@ def matrix_multiply_grouped_table(
     weights: xr.DataArray,
     variable: str,
     output_variable: str,
-    group: Optional[str] = None,
+    group: str | None = None,
 ) -> None:
     """
     Multiply multiple data columns by identically indexed grouped array from a separate
@@ -325,7 +329,6 @@ def matrix_multiply_grouped_table(
     group : Optional[str], default None
         The specific group to filter the grouped table by. If None, all groups will be used.
     """
-
     # Create pattern for column filtering
     prefix_pattern = variable + "_"
 
@@ -366,7 +369,7 @@ def matrix_multiply_grouped_table(
 
 def compute_biomass(
     transect_data: pd.DataFrame,
-    stratum_weights: Optional[Union[xr.DataArray, float]] = None,
+    stratum_weights: xr.DataArray | float | None = None,
 ) -> None:
     """
     Convert number density and abundance estimates to biomass density and total biomass,
@@ -395,7 +398,6 @@ def compute_biomass(
     None
         Function modifies the transect DataFrame in-place.
     """
-
     # Find overlapping indices
     idx_names = list(set(stratum_weights.coords).intersection(set(transect_data.columns)))
     nonidx_names = [id for id in set(stratum_weights.coords) if id not in idx_names]
@@ -440,7 +442,7 @@ def compute_biomass(
 
 
 def drop_specimen_only_hauls(
-    biodata: Dict[str, pd.DataFrame],
+    biodata: dict[str, pd.DataFrame],
 ) -> None:
     """
     Remove hauls from the catch data where all samples were individually processed.
@@ -476,7 +478,6 @@ def drop_specimen_only_hauls(
     called after loading biological data but before computing length-weight relationships or
     abundance estimates.
     """
-
     # Get unique haul numbers
     haul_numbers = biodata["length"]["haul_num"].unique()
 

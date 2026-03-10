@@ -1,11 +1,17 @@
-from typing import List, Tuple
+"""
+FEAT survey-specific spatial parameter definitions.
+
+Provides year- and region-specific transect boundary functions that encode the spatial
+configuration of NWFSC hake survey regions, used for mesh cropping and transect
+classification across survey years.
+"""
 
 import numpy as np
 
 
 def transect_mesh_region_2019(
     region: np.number,
-) -> Tuple[np.number, np.number, List[np.number], List[np.number]]:
+) -> tuple[np.number, np.number, list[np.number], list[np.number]]:
     """
     Generate region-specific transect boundaries for the 2019 NWFSC survey.
 
@@ -49,7 +55,6 @@ def transect_mesh_region_2019(
     - .6 indicates southern boundary (for region 2)
     - .9 indicates northern boundary (for region 2)
     """
-
     # Initialize variables
     transect_start = None
     transect_end = None
@@ -92,7 +97,7 @@ def transect_mesh_region_2019(
 
 def transect_mesh_region_2017(
     region: np.number,
-) -> Tuple[np.number, np.number, List[np.number], List[np.number]]:
+) -> tuple[np.number, np.number, list[np.number], list[np.number]]:
     """
     Generate region-specific transect boundaries for the 2017 NWFSC survey.
 
@@ -136,7 +141,6 @@ def transect_mesh_region_2017(
     - .6 indicates southern boundary (for region 2)
     - .9 indicates northern boundary (for region 2)
     """
-
     # Initialize variables
     transect_start = None
     transect_end = None
@@ -179,7 +183,7 @@ def transect_mesh_region_2017(
 
 def transect_mesh_region_2015(
     region: np.number,
-) -> Tuple[np.number, np.number, List[np.number], List[np.number]]:
+) -> tuple[np.number, np.number, list[np.number], list[np.number]]:
     """
     Generate region-specific transect boundaries for the 2015 NWFSC survey.
 
@@ -223,7 +227,6 @@ def transect_mesh_region_2015(
     - .6 indicates southern boundary (for region 2)
     - .9 indicates northern boundary (for region 2)
     """
-
     # Initialize variables
     transect_start = None
     transect_end = None
@@ -266,7 +269,7 @@ def transect_mesh_region_2015(
 
 def transect_mesh_region_2013(
     region: np.number,
-) -> Tuple[np.number, np.number, List[np.number], List[np.number]]:
+) -> tuple[np.number, np.number, list[np.number], list[np.number]]:
     """
     Generate region-specific transect boundaries for the 2013 NWFSC survey.
 
@@ -310,7 +313,6 @@ def transect_mesh_region_2013(
     - .6 indicates southern boundary (for region 2)
     - .9 indicates northern boundary (for region 2)
     """
-
     # Initialize variables
     transect_start = None
     transect_end = None
@@ -353,7 +355,7 @@ def transect_mesh_region_2013(
 
 def transect_mesh_region_2012(
     region: np.number,
-) -> Tuple[np.number, np.number, List[np.number], List[np.number]]:
+) -> tuple[np.number, np.number, list[np.number], list[np.number]]:
     """
     Generate region-specific transect boundaries for the 2012 NWFSC survey.
 
@@ -397,7 +399,6 @@ def transect_mesh_region_2012(
     - .6 indicates southern boundary (for region 2)
     - .9 indicates northern boundary (for region 2)
     """
-
     # Initialize variables
     transect_start = None
     transect_end = None
@@ -440,7 +441,7 @@ def transect_mesh_region_2012(
 
 def transect_mesh_region_2011(
     region: np.number,
-) -> Tuple[np.number, np.number, List[np.number], List[np.number]]:
+) -> tuple[np.number, np.number, list[np.number], list[np.number]]:
     """
     Generate region-specific transect boundaries for the 2011 NWFSC survey.
 
@@ -484,7 +485,6 @@ def transect_mesh_region_2011(
     - .6 indicates southern boundary (for region 2)
     - .9 indicates northern boundary (for region 2)
     """
-
     # Initialize variables
     transect_start = None
     transect_end = None
@@ -529,7 +529,7 @@ def transect_mesh_region_2011(
 
 def transect_mesh_region_2009(
     region: np.number,
-) -> Tuple[np.number, np.number, List[np.number], List[np.number]]:
+) -> tuple[np.number, np.number, list[np.number], list[np.number]]:
     """
     Generate region-specific transect boundaries for the 2009 NWFSC survey.
 
@@ -573,7 +573,6 @@ def transect_mesh_region_2009(
     - .6 indicates southern boundary (for region 2)
     - .9 indicates northern boundary (for region 2)
     """
-
     # Initialize variables
     transect_start = None
     transect_end = None
@@ -620,7 +619,7 @@ def transect_mesh_region_2009(
 
 def transect_mesh_region_2007(
     region: np.number,
-) -> Tuple[np.number, np.number, List[np.number], List[np.number]]:
+) -> tuple[np.number, np.number, list[np.number], list[np.number]]:
     """
     Generate region-specific transect boundaries for the 2007 NWFSC survey.
 
@@ -664,7 +663,6 @@ def transect_mesh_region_2007(
     - .6 indicates southern boundary (for region 2)
     - .9 indicates northern boundary (for region 2)
     """
-
     # Initialize variables
     transect_start = None
     transect_end = None
@@ -716,7 +714,7 @@ def transect_mesh_region_2007(
 
 def transect_mesh_region_2005(
     region: np.number,
-) -> Tuple[np.number, np.number, List[np.number], List[np.number]]:
+) -> tuple[np.number, np.number, list[np.number], list[np.number]]:
     """
     Generate region-specific transect boundaries for the 2005 NWFSC survey.
 
@@ -760,7 +758,6 @@ def transect_mesh_region_2005(
     - .6 indicates southern boundary (for region 2)
     - .9 indicates northern boundary (for region 2)
     """
-
     # Initialize variables
     transect_start = None
     transect_end = None
@@ -810,7 +807,7 @@ def transect_mesh_region_2005(
 
 def transect_mesh_region_2003(
     region: np.number,
-) -> Tuple[np.number, np.number, List[np.number], List[np.number]]:
+) -> tuple[np.number, np.number, list[np.number], list[np.number]]:
     """
     Generate region-specific transect boundaries for the 2003 NWFSC survey.
 
@@ -854,7 +851,6 @@ def transect_mesh_region_2003(
     - .6 indicates southern boundary (for region 2)
     - .9 indicates northern boundary (for region 2)
     """
-
     # Initialize variables
     transect_start = None
     transect_end = None
@@ -909,7 +905,7 @@ def transect_mesh_region_2003(
 
 def transect_mesh_region_2001(
     region: np.number,
-) -> Tuple[np.number, np.number, List[np.number], List[np.number]]:
+) -> tuple[np.number, np.number, list[np.number], list[np.number]]:
     """
     Generate region-specific transect boundaries for the 2001 NWFSC survey.
 
@@ -953,7 +949,6 @@ def transect_mesh_region_2001(
     - .6 indicates southern boundary (for region 2)
     - .9 indicates northern boundary (for region 2)
     """
-
     # Initialize variables
     transect_start = None
     transect_end = None
@@ -1025,7 +1020,7 @@ def transect_mesh_region_2001(
 
 def transect_mesh_region_1998(
     region: np.number,
-) -> Tuple[np.number, np.number, List[np.number], List[np.number]]:
+) -> tuple[np.number, np.number, list[np.number], list[np.number]]:
     """
     Generate region-specific transect boundaries for the 1998 NWFSC survey.
 
@@ -1069,7 +1064,6 @@ def transect_mesh_region_1998(
     - .6 indicates southern boundary (for region 2)
     - .9 indicates northern boundary (for region 2)
     """
-
     # Initialize variables
     transect_start = None
     transect_end = None
@@ -1153,7 +1147,7 @@ def transect_mesh_region_1998(
 
 def transect_mesh_region_1995(
     region: np.number,
-) -> Tuple[np.number, np.number, List[np.number], List[np.number]]:
+) -> tuple[np.number, np.number, list[np.number], list[np.number]]:
     """
     Generate region-specific transect boundaries for the 1995 NWFSC survey.
 
@@ -1197,7 +1191,6 @@ def transect_mesh_region_1995(
     - .6 indicates southern boundary (for region 2)
     - .9 indicates northern boundary (for region 2)
     """
-
     # Initialize variables
     transect_start = None
     transect_end = None

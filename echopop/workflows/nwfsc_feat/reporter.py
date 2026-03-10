@@ -1,6 +1,14 @@
+"""
+FEAT report generation utilities for writing survey results to Excel workbooks.
+
+Provides functions for initializing workbooks, populating worksheets with abundance, biomass, and
+apportionment tables, and formatting output files for NWFSC FEAT
+deliverables.
+"""
+
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, Literal
 
 import numpy as np
 import pandas as pd
@@ -39,7 +47,6 @@ def initialize_workbook(filepath: Path) -> Workbook:
     PermissionError
         If an existing file cannot be removed due to permissions.
     """
-
     # Check path-type
     if not isinstance(filepath, Path):
         raise TypeError("Filepath must be a `pathlib.Path`.")
@@ -93,7 +100,6 @@ def format_file_sheet(
     ValueError
         If `sheetname` is empty.
     """
-
     # Check typing
     if not isinstance(workbook, Workbook):
         raise TypeError("Workbook must be an `openpyxl.Workbook` instance")
@@ -113,7 +119,7 @@ def format_file_sheet(
 
 def format_table_headers(
     dataframe: pd.DataFrame, col_name: str = "Age", row_name: str = "Length (cm)"
-) -> List[str]:
+) -> list[str]:
     """
     Generate header row for an Excel sheet representing a pivot table with a left row label and
     a top column label.
@@ -137,7 +143,6 @@ def format_table_headers(
     TypeError
         If `dataframe` is not a pandas DataFrame.
     """
-
     # Check typing
     if not isinstance(dataframe, pd.DataFrame):
         raise TypeError("Dataframe must be a `pandas.DataFrame`.")
@@ -174,7 +179,6 @@ def append_datatable_rows(worksheet: Worksheet, dataframe: pd.DataFrame) -> None
     ValueError
         If the DataFrame index is empty.
     """
-
     # Check typing and data shape
     if not hasattr(worksheet, "append"):
         raise TypeError("Worksheet must be an `openpyxl.Worksheet`.")
@@ -209,7 +213,7 @@ def append_table_aggregates(
     worksheet: Worksheet,
     dataframe: pd.DataFrame,
     sex: Literal["all", "female", "male"],
-    tables_dict: Dict[str, pd.DataFrame],
+    tables_dict: dict[str, pd.DataFrame],
 ) -> None:
     """
     Append summary aggregate rows (Total age1+, Total age2+) and optional combined sex totals to
@@ -234,7 +238,6 @@ def append_table_aggregates(
     KeyError
         If required tables are missing from `tables_dict`.
     """
-
     # Check typing, methods, and keys
     if not hasattr(worksheet, "append"):
         raise TypeError("Worksheet must be an `openpyxl.Worksheet`.")
@@ -320,7 +323,6 @@ def append_sheet_label(
     TypeError
         If inputs are of incorrect types.
     """
-
     # Check typing
     if not hasattr(worksheet, "append"):
         raise TypeError("Worksheet must be an `openpyxl.Worksheet`")
@@ -346,7 +348,7 @@ def pivot_aged_dataframe(
     propdata: pd.DataFrame,
     variable: str,
     sex: str,
-    contrasts: List[str],
+    contrasts: list[str],
 ) -> pd.DataFrame:
     """
     Multiply population estimates by stratified proportions and return a pivot-ready DataFrame.
@@ -378,7 +380,6 @@ def pivot_aged_dataframe(
     KeyError
         If required columns are missing.
     """
-
     # Type checking
     if not isinstance(geodata, pd.DataFrame) or not isinstance(propdata, pd.DataFrame):
         raise TypeError("Georeference Dataframe and proportions must both be `pandas.DataFrame`s.")
@@ -416,7 +417,7 @@ def pivot_aged_dataframe(
 def repivot_table(
     age_length_dataframe: pd.DataFrame,
     variable: str,
-    length_dataframe: Optional[pd.DataFrame] = None,
+    length_dataframe: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
     """
     Re-pivot a stacked age-length table into a matrix with numeric age and length indices.
@@ -444,7 +445,6 @@ def repivot_table(
     TypeError
         If inputs are of incorrect types.
     """
-
     # Type checking
     if not isinstance(age_length_dataframe, pd.DataFrame):
         raise TypeError("'age_length_dataframe' must be a `pandas.DataFrame`.")
@@ -502,7 +502,7 @@ def repivot_table(
 
 def pivot_aged_weight_proportions(
     age_weight_data: pd.DataFrame,
-) -> Dict[str, pd.DataFrame]:
+) -> dict[str, pd.DataFrame]:
     """
     Convert age-weight data into sex-specific proportion tables.
 
@@ -523,7 +523,6 @@ def pivot_aged_weight_proportions(
     TypeError
         If input is not a DataFrame.
     """
-
     # Type checking
     if not isinstance(age_weight_data, pd.DataFrame):
         raise TypeError("'age_weight_data' must be a `pandas.DataFrame`.")
@@ -586,7 +585,6 @@ def pivot_haul_tables(
     KeyError
         If requested sex is not present in columns.
     """
-
     # Type checking
     if not isinstance(dataframe, pd.DataFrame):
         raise TypeError("Dataframe must be a `pandas.DataFrame`.")
@@ -624,7 +622,7 @@ def pivot_haul_tables(
 
 
 def prepare_aged_biomass_dataframes(
-    geodata_tables: Dict[str, pd.DataFrame],
+    geodata_tables: dict[str, pd.DataFrame],
 ):
     """
     Standardize column naming and ordering for aged biomass tables for each sex.
@@ -643,7 +641,6 @@ def prepare_aged_biomass_dataframes(
     TypeError
         If invalid types are provided.
     """
-
     # Type checking
     if not isinstance(geodata_tables, dict):
         raise TypeError("'geodata_tables' must be a `dict`.")
@@ -695,9 +692,9 @@ def prepare_aged_biomass_dataframes(
 
 
 def write_aged_dataframe_report(
-    tables_dict: Dict[str, pd.DataFrame],
+    tables_dict: dict[str, pd.DataFrame],
     filepath: Path,
-    sheetnames: Dict[str, str],
+    sheetnames: dict[str, str],
 ) -> None:
     """
     Write three sheets (all/male/female) of the aged dataframe report to an Excel file.
@@ -718,7 +715,6 @@ def write_aged_dataframe_report(
     KeyError
         If expected keys are missing.
     """
-
     # Type checking
     if not isinstance(filepath, Path):
         raise TypeError("'filepath' must be a `pathlib.Path`.")
@@ -768,8 +764,8 @@ def write_aged_dataframe_report(
 
 def prepare_age_length_tables(
     aged_full_table: pd.DataFrame,
-    unaged_full_table: Optional[pd.DataFrame] = None,
-) -> Dict[str, pd.DataFrame]:
+    unaged_full_table: pd.DataFrame | None = None,
+) -> dict[str, pd.DataFrame]:
     """
     Add 'Un-aged' column, margin rows and return sex-specific pivot tables for writing.
 
@@ -790,7 +786,6 @@ def prepare_age_length_tables(
     TypeError
         If inputs are not DataFrames.
     """
-
     # Initialize dictionary
     sex_tables = {}
 
@@ -819,9 +814,9 @@ def prepare_age_length_tables(
 
 
 def write_age_length_table_report(
-    tables_dict: Dict[str, pd.DataFrame],
+    tables_dict: dict[str, pd.DataFrame],
     filepath: Path,
-    sheetnames: Dict[str, str],
+    sheetnames: dict[str, str],
     variable: str,
     type: str,
 ) -> None:
@@ -849,7 +844,6 @@ def write_age_length_table_report(
     KeyError
         If table dict missing expected keys.
     """
-
     # Type checking
     if not isinstance(tables_dict, dict):
         raise TypeError("'tables_dict' must be a `dict`.")
@@ -889,8 +883,8 @@ def write_age_length_table_report(
 
 
 def write_haul_report(
-    tables_dict: Dict[str, pd.DataFrame],
-    sheetnames: Dict[str, Any],
+    tables_dict: dict[str, pd.DataFrame],
+    sheetnames: dict[str, Any],
     filepath: Path,
 ) -> None:
     """
@@ -909,7 +903,6 @@ def write_haul_report(
     ------
     TypeError, KeyError
     """
-
     # Type checking
     if not isinstance(filepath, Path):
         raise TypeError("'filepath' must be a `pathlib.Path`.")
@@ -1015,7 +1008,7 @@ class Reporter:
       used across multiple report methods (unifying indexing, stacking/unstacking and scaling).
     """
 
-    def __init__(self, save_directory: Union[str, Path], verbose: bool = True):
+    def __init__(self, save_directory: str | Path, verbose: bool = True):
         """
         Initialize a Reporter instance.
 
@@ -1041,7 +1034,6 @@ class Reporter:
         >>> reports = Reporter(Path("reports_out"), verbose=True)
         >>> # directory is created if missing and reports.verbose is True
         """
-
         # Ensure Path-typing
         save_directory = Path(save_directory)
 
@@ -1067,7 +1059,7 @@ class Reporter:
     def aged_length_haul_counts_report(
         self,
         filename: str,
-        sheetnames: Dict[str, str],
+        sheetnames: dict[str, str],
         bio_data: pd.DataFrame,
     ) -> None:
         """
@@ -1111,7 +1103,6 @@ class Reporter:
         >>> sheetnames = {"male":"Male", "female":"Female", "all":"All"}
         >>> reports.aged_length_haul_counts_report(bio_df, "haul_counts.xlsx", sheetnames)
         """
-
         # Initial checks
         # ---- Typing
         if not isinstance(bio_data, pd.DataFrame):
@@ -1178,11 +1169,11 @@ class Reporter:
     def kriged_aged_biomass_mesh_report(
         self,
         filename: str,
-        sheetnames: Dict[str, str],
+        sheetnames: dict[str, str],
         kriged_data: pd.DataFrame,
         weight_data: xr.DataArray,
-        kriged_stratum_link: Dict[str, str],
-        exclude_filter: Dict[str, Any] = {},
+        kriged_stratum_link: dict[str, str],
+        exclude_filter: dict[str, Any] = {},
     ) -> None:
         """
         Produce an Excel workbook containing kriged age-specific biomass sheets.
@@ -1234,7 +1225,6 @@ class Reporter:
         >>> reports.kriged_aged_biomass_mesh_report("krig_biomass.xlsx", kriged_df, weight_df,
         {'old':'stratum'}, sheetnames)
         """
-
         # Type checking
         if not isinstance(kriged_data, pd.DataFrame):
             raise TypeError("'kriged_data' must be a `pandas.DataFrame`.")
@@ -1347,7 +1337,6 @@ class Reporter:
         >>> reports.kriged_mesh_results_report("krig_mesh.xlsx", "Mesh", krig_df, "stratum",
         "biomass", sigma_df, "stratum")
         """
-
         # Type checking
         if not isinstance(kriged_data, pd.DataFrame) or not isinstance(sigma_bs_data, pd.DataFrame):
             raise TypeError("'kriged_data' and 'sigma_bs_data' must be `pandas.DataFrame`s.")
@@ -1451,9 +1440,9 @@ class Reporter:
     def kriged_length_age_abundance_report(
         self,
         filename: str,
-        sheetnames: Dict[str, str],
-        datatables: Dict[str, xr.DataArray],
-        exclude_filter: Dict[str, Any] = {},
+        sheetnames: dict[str, str],
+        datatables: dict[str, xr.DataArray],
+        exclude_filter: dict[str, Any] = {},
     ) -> None:
         """
         Create kriged age-length abundance reports and write a 3-sheet workbook.
@@ -1501,7 +1490,6 @@ class Reporter:
         >>> reports.kriged_length_age_abundance_report({'aged':aged_df, 'unaged':unaged_df},
         {'stratum':['S1']}, "krig_abund.xlsx", sheetnames)
         """
-
         # Type checking
         if not isinstance(datatables, dict):
             raise TypeError("'datatables' must be a `dict`.")
@@ -1587,9 +1575,9 @@ class Reporter:
     def kriged_length_age_biomass_report(
         self,
         filename: str,
-        sheetnames: Dict[str, str],
+        sheetnames: dict[str, str],
         datatable: xr.DataArray,
-        exclude_filter: Dict[str, Any] = {},
+        exclude_filter: dict[str, Any] = {},
     ) -> None:
         """
         Create kriged age-length biomass reports (values converted to metric megatonnes).
@@ -1625,7 +1613,6 @@ class Reporter:
         >>> reports.kriged_length_age_biomass_report(da_full, {},
         "krig_biomass.xlsx", sheetnames)
         """
-
         # Type checking
         if not isinstance(datatable, xr.DataArray):
             raise TypeError("'datatable' must be a `xarray.DataArray`.")
@@ -1714,7 +1701,6 @@ class Reporter:
         >>> reports = Reporter("out")
         >>> reports.kriging_input_report(transect_df, "krig_input.xlsx", "Input")
         """
-
         # Checks
         # ---- Typing
         if not isinstance(transect_data, pd.DataFrame):
@@ -1759,8 +1745,8 @@ class Reporter:
     def total_length_haul_counts_report(
         self,
         filename: str,
-        sheetnames: Dict[str, str],
-        bio_data: Dict[str, pd.DataFrame],
+        sheetnames: dict[str, str],
+        bio_data: dict[str, pd.DataFrame],
     ) -> None:
         """
         Create an Excel report of combined specimen and length haul totals.
@@ -1799,7 +1785,6 @@ class Reporter:
         >>> reports.total_length_haul_counts_report({'specimen':spec_df, 'length':len_df},
         "total_counts.xlsx", sheetnames)
         """
-
         # Type checking
         if not isinstance(bio_data, dict):
             raise TypeError("'bio_data' must be a `dict`.")
@@ -1898,10 +1883,10 @@ class Reporter:
     def transect_aged_biomass_report(
         self,
         filename: str,
-        sheetnames: Dict[str, str],
+        sheetnames: dict[str, str],
         transect_data: pd.DataFrame,
         weight_data: xr.DataArray,
-        exclude_filter: Dict[str, Any] = {},
+        exclude_filter: dict[str, Any] = {},
     ) -> None:
         """
         Produce a transect-level aged biomass workbook (three sex-specific sheets).
@@ -1943,7 +1928,6 @@ class Reporter:
         >>> reports.transect_aged_biomass_report(transect_df, weight_df, "transect_biomass.xlsx",
         sheetnames)
         """
-
         # Type checking
         if not isinstance(transect_data, pd.DataFrame):
             raise TypeError("'transect_data' must be a `pandas.DataFrame`.")
@@ -2029,11 +2013,11 @@ class Reporter:
     def transect_length_age_abundance_report(
         self,
         filename: str,
-        sheetnames: Dict[
+        sheetnames: dict[
             str,
             str,
         ],
-        datatables: Dict[str, xr.DataArray],
+        datatables: dict[str, xr.DataArray],
     ) -> None:
         """
         Write an un-kriged transect length-age abundance workbook (3 sheets).
@@ -2065,7 +2049,6 @@ class Reporter:
         >>> reports.transect_length_age_abundance_report({'aged':aged_df,'unaged':unaged_df},
         "transect_abund.xlsx", sheetnames)
         """
-
         # Type checking
         if not isinstance(datatables, dict):
             raise TypeError("'datatables' must be a `dict`.")
@@ -2142,7 +2125,7 @@ class Reporter:
     def transect_length_age_biomass_report(
         self,
         filename: str,
-        sheetnames: Dict[
+        sheetnames: dict[
             str,
             str,
         ],
@@ -2182,7 +2165,6 @@ class Reporter:
         >>> reports.transect_length_age_biomass_report(datatable, "transect_biomass.xlsx",
         sheetnames)
         """
-
         # Type checking
         if not isinstance(datatable, xr.DataArray):
             raise TypeError("'datatable' must be an `xarray.DataArray`.")
@@ -2300,7 +2282,6 @@ class Reporter:
         >>> reports.transect_population_results_report(transect_df, weight_df, sigma_df, "stratum",
         "transect_pop.xlsx", "PopResults")
         """
-
         # Type checking
         if not isinstance(transect_data, pd.DataFrame):
             raise TypeError("'transect_data' must be a `pandas.DataFrame`.")

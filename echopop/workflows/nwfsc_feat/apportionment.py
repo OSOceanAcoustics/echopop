@@ -1,7 +1,15 @@
+"""
+FEAT apportionment functions for redistributing and standardizing population estimates.
+
+Provides utilities for partitioning NASC, abundance, and biomass transect values across biological
+groups, reallocating excluded age/size classes, and distributing unaged fish counts using aged
+reference proportions.
+"""
+
 import functools
 import operator
 import warnings
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -41,7 +49,6 @@ def remove_group_from_estimates(
     `transect_data`. Missing indices will result in NaN values for those rows. The function
     automatically identifies and uses the appropriate columns for merging.
     """
-
     # Create copy
     transect_data = transect_data.copy()
 
@@ -106,11 +113,11 @@ def remove_group_from_estimates(
 
 def mesh_biomass_to_nasc(
     mesh_data: pd.DataFrame,
-    biodata: Union[pd.DataFrame, Dict[str, pd.DataFrame]],
-    mesh_biodata_link: Dict[str, str],
+    biodata: pd.DataFrame | dict[str, pd.DataFrame],
+    mesh_biodata_link: dict[str, str],
     stratum_weights: pd.DataFrame,
     stratum_sigma_bs: pd.DataFrame,
-    group_columns: List[str] = [],
+    group_columns: list[str] = [],
 ) -> None:
     """
     Convert biomass estimates distributed across a grid or mesh into grouped (e.g. sex-specific)
@@ -164,7 +171,6 @@ def mesh_biomass_to_nasc(
 
     The NASC calculation uses the formula: NASC = abundance x sigma_bs x 4π
     """
-
     # Convert to a Dictionary if needed
     if isinstance(biodata, xr.Dataset):
         biodata = {"": biodata}
@@ -268,9 +274,9 @@ def impute_kriged_table(
     initial_table: xr.DataArray,
     reference_table: xr.DataArray,
     standardized_table: xr.DataArray,
-    group_columns: List[str],
-    subgroup_coords: List[str],
-    impute_variable: List[str],
+    group_columns: list[str],
+    subgroup_coords: list[str],
+    impute_variable: list[str],
 ) -> xr.DataArray:
     """
     Impute missing or zero-valued slices in a standardized xarray DataArray using reference and
@@ -327,7 +333,6 @@ def impute_kriged_table(
 
     - The function updates the standardized table in-place and returns it.
     """
-
     # Extract dimensions
     subgroup_dim = subgroup_coords[0]
 
@@ -463,32 +468,31 @@ def impute_kriged_table(
 def distribute_unaged_from_aged(
     population_table: xr.DataArray,
     reference_table: xr.DataArray,
-    collapse_dims: List[str] = [],
+    stratum_dim: str | None = None,
     impute: bool = True,
-    impute_variable: Optional[List[str]] = None,
+    impute_variable: list[str] | None = None,
 ) -> xr.DataArray:
     """
     Standardize and optionally impute population estimates using reference proportions.
 
     This function redistributes population estimates (e.g., unaged fish) to match the age/size
     structure observed in a reference table (e.g., aged fish), ensuring consistency across
-    biological groups. Standardization is performed by summing over the dimensions in
-    `collapse_dims`, then scaling by the corresponding reference proportions. Optionally,
+    biological groups. Standardization is performed by summing over the stratification dimension
+    in `stratum_dim`, then scaling by the corresponding reference proportions. Optionally,
     nearest-neighbor imputation is performed for missing or zero-valued intervals.
 
     Parameters
     ----------
     population_table : xr.DataArray
-        The input population estimates to be standardized. Must have coordinates for all
-        `collapse_dims` and typically for "length_bin".
+        The input population estimates to be standardized. Must have coordinates for
+        ``stratum_dim`` and typically for "length_bin".
     reference_table : xr.DataArray
         The reference population data used for standardization. Should have matching or compatible
         coordinates/dimensions as `population_table`, with additional detail (e.g., age
         information).
-    collapse_dims : List[str], default []
-        List of dimension names to collapse (sum over) during standardization (e.g., ["stratum"]).
-        These dimensions are summed over in the initial step, and the resulting standardized table
-        will not have these dimensions.
+    stratum_dim : str, optional
+        Stratification dimension name to collapse (sum over) during standardization
+        (e.g., ``"stratum_ks"``). If None, no collapsing is performed.
     impute : bool, default True
         If True, perform nearest-neighbor imputation for missing/zero values after standardization.
     impute_variable : List[str], optional
@@ -509,10 +513,9 @@ def distribute_unaged_from_aged(
 
     Notes
     -----
-
-    - `collapse_dims` are the dimensions that will be summed over (collapsed) in both
-      `population_table` and `reference_table`. For example, if `collapse_dims=["stratum"]`, the
-      result will sum over the "stratum" dimension, producing a table without "stratum".
+    - ``stratum_dim`` is the dimension that will be summed over (collapsed) in both
+      `population_table` and `reference_table`. For example, if ``stratum_dim="stratum_ks"``, the
+      result will sum over the "stratum_ks" dimension, producing a table without it.
 
     - The function expects both `population_table` and `reference_table` to have compatible
       coordinates and dimensions.
@@ -527,14 +530,15 @@ def distribute_unaged_from_aged(
     >>> result = distribute_unaged_from_aged(
     ...     population_table=da_unaged,
     ...     reference_table=da_aged,
-    ...     collapse_dims=["sex"],
+    ...     stratum_dim="stratum_ks",
     ...     impute=True,
     ...     impute_variable=["age_bin"]
     ... )
     >>> print(result)
     <xarray.DataArray ...>
     """
-
+    # Convert stratum_dim to list for internal use
+    collapse_dims = [stratum_dim] if stratum_dim is not None else []
     # Coordinate validation for length bins
     if "length_bin" not in set(population_table.coords) & set(reference_table.coords):
         raise ValueError("Required coordinate 'length_bin' missing from the input tables.")
@@ -549,7 +553,7 @@ def distribute_unaged_from_aged(
     ):
         collapse_str = "', '".join(collapse_dims)
         raise ValueError(
-            f"Coordinate(s) for 'collapse_dims' ('{collapse_str}') missing from the input tables."
+            f"Coordinate(s) for 'stratum_dim' ('{collapse_str}') missing from the input tables."
         )
 
     # Validate arguments for imputation
@@ -590,15 +594,15 @@ def distribute_unaged_from_aged(
             raise ValueError(
                 f"No subgroup coordinate could be determined for imputation. Current coordinates "
                 f"comprise '{table_coords_str}'. Please ensure that at least one additional "
-                f"coordinate exists that does not overlap with 'length_bin' and coordinates "
-                f"supplied to 'collapse_dims'."
+                f"coordinate exists that does not overlap with 'length_bin' and the "
+                f"'stratum_dim' coordinate."
             )
         elif len(table_noncoords) > 1:
             table_noncoords_str = "', '".join(table_noncoords)
             raise ValueError(
                 f"Ambiguous subgroup coordinates for imputation: '{table_noncoords_str}'. "
                 f"Only one grouping dimension is supported for imputation. "
-                f"Please specify 'collapse_dims' to reduce ambiguity."
+                f"Please specify 'stratum_dim' to reduce ambiguity."
             )
         elif not all(coord in reference_table.coords for coord in table_noncoords):
             missing = [coord for coord in table_noncoords if coord not in reference_table.coords]
@@ -620,7 +624,7 @@ def distribute_unaged_from_aged(
 
 
 def sum_population_tables(
-    population_tables: Dict[str, xr.DataArray],
+    population_tables: dict[str, xr.DataArray],
 ) -> xr.DataArray:
     """
     Combine and sum population estimates from multiple input tables into a single result.
@@ -643,7 +647,6 @@ def sum_population_tables(
 
     Notes
     -----
-
     - Any dimension not present in all input tables is summed over before combining.
 
     - The result is aligned on shared dimensions and summed element-wise.
@@ -660,7 +663,6 @@ def sum_population_tables(
     >>> print(combined)
     <xarray.DataArray ...>
     """
-
     # Validate typing
     if not population_tables:
         raise ValueError("Input 'population_tables' dictionary is empty.")
@@ -698,8 +700,8 @@ def sum_population_tables(
 
 def reallocate_excluded_estimates(
     population_table: xr.DataArray,
-    exclusion_filter: Dict[str, Any],
-    group_columns: List[str] = [],
+    exclusion_filter: dict[str, Any],
+    group_columns: list[str] = [],
 ) -> xr.DataArray:
     """
     Redistribute population estimates after excluding specified segments.
@@ -750,7 +752,6 @@ def reallocate_excluded_estimates(
     >>> print(result)
     <xarray.DataArray ...>
     """
-
     # If no appropriate filter is defined, then nothing is redistributed
     if not exclusion_filter:
         return population_table
@@ -814,11 +815,11 @@ def reallocate_excluded_estimates(
 
 def distribute_population_estimates(
     data: pd.DataFrame,
-    proportions: Union[Dict[str, xr.Dataset], xr.Dataset],
+    proportions: dict[str, xr.Dataset] | xr.Dataset,
     variable: str,
-    group_columns: List[str] = [],
-    data_proportions_link: Optional[Dict[str, str]] = None,
-) -> Union[xr.DataArray, Dict[str, xr.DataArray]]:
+    group_columns: list[str] = [],
+    data_proportions_link: dict[str, str] | None = None,
+) -> xr.DataArray | dict[str, xr.DataArray]:
     """
     Distribute population estimates (e.g. abundance, biomass) using proportions grouped by metrics
     such as age and length bins.
@@ -861,7 +862,6 @@ def distribute_population_estimates(
     `data`. Missing indices will result in NaN values for those rows. The function
     automatically identifies and uses the appropriate columns for merging and grouping.
     """
-
     # Create copy
     data = data.copy()
 
