@@ -1,3 +1,5 @@
+"""Tests for base validators."""
+
 import pandas as pd
 import pandera.pandas as pa
 import pytest

@@ -1,3 +1,5 @@
+"""Tests for transect filtering."""
+
 import pandas as pd
 import pytest
 

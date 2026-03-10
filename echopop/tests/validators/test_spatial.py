@@ -1,3 +1,5 @@
+"""Tests for spatial validators."""
+
 import numpy as np
 import pandas as pd
 import pytest

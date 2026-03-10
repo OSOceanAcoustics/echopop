@@ -1,3 +1,5 @@
+"""Test configuration for nwfsc_feat workflow tests."""
+
 from echopop.tests.fixtures.fixtures_basic_plotting import *  # noqa: F401, F403
 from echopop.tests.fixtures.fixtures_biodata_loader import *  # noqa: F401, F403
 from echopop.tests.fixtures.fixtures_biology import *  # noqa: F401, F403

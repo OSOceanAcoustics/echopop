@@ -1,3 +1,5 @@
+"""Tests for apportionment processing."""
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -176,7 +178,7 @@ def test_distribute_unaged_from_aged(apportion_biomass_table):
     assert not std_tbl_imp.equals(std_tbl_no_imp)
 
     # Check shape
-    std_tbl_imp.shape == (3, 4)
+    assert std_tbl_imp.shape == (3, 4)
 
     # Check indices
     assert list(std_tbl_imp.index.names) == ["index_bin"]

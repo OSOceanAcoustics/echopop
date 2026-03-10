@@ -1,3 +1,5 @@
+"""Tests for variogram validators."""
+
 import pandas as pd
 import pytest
 from lmfit import Parameters

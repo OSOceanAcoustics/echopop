@@ -1,3 +1,5 @@
+"""Test fixtures for apportionment tests."""
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -15,7 +17,7 @@ def apportion_mesh():
 
 @pytest.fixture
 def apportion_number_proportions():
-    """Number proportions for apportionment tests."""
+    """Return number proportions for apportionment tests."""
     subgroup1 = pd.DataFrame(
         {
             "bio_stratum": np.tile([1, 2, 3], 6),
