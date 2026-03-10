@@ -104,7 +104,7 @@ def load_biodata_views(
     Parameters
     ----------
     biodata_filepaths : pathlib.Path
-        A dictionary of filepaths to *.csv files containing biological data
+        A dictionary of filepaths to ``*.csv`` files containing biological data
     column_name_map : dict, optional
         Dictionary mapping original column names to new column names
         (e.g., ``{"frequency": "length_count", "haul": "haul_num"}``)
@@ -118,14 +118,14 @@ def load_biodata_views(
     haul_uid_config : Dict[str, Any]
         Optional keyword arguments to override defaults or DataFrame values:
 
-        - ship_id (dict): Region-specific IDs, e.g., {'US': 10, 'CAN': 20}.
+        - ship_id (dict): Region-specific IDs, e.g., ``{'US': 10, 'CAN': 20}``.
 
-        - survey_id (dict): Region-specific IDs, e.g., {'US': 1, 'CAN': 2}.
+        - survey_id (dict): Region-specific IDs, e.g., ``{'US': 1, 'CAN': 2}``.
 
         - species_id (int/str): A global species code override.
 
-        - haul_offset (int/float): A value subtracted from 'haul_num' for records identified as
-          'CAN' (where haul_num - offset >= 0).
+        - haul_offset (int/float): A value subtracted from ``'haul_num'`` for records identified as
+          'CAN' (where ``haul_num - offset >= 0``).
 
     Returns
     -------
