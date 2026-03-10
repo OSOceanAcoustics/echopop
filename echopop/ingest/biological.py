@@ -1,3 +1,13 @@
+"""
+Biological data ingestion for echopop.
+
+This module loads specimen, length, and catch data from consolidated Excel workbooks, from separate
+CSV database-view exports, or directly from a database. It handles ship/survey sub-setting,
+column renaming, label remapping, and haul UID construction so that downstream survey and
+apportionment functions receive uniformly structured either individual ``pandas.DataFrame``
+objects, or keyed by dataset-type within a dictionary.
+"""
+
 import copy
 import itertools
 from pathlib import Path
