@@ -2,7 +2,9 @@ from pathlib import Path
 
 import geoviews as gv
 import holoviews as hv
-import hvplot.pandas  # noqa: F401; import is required even though it is not directly called
+
+# hvplot.pandas import is required even though it is not directly called
+import hvplot.pandas  # isort: skip # noqa: F401
 from bokeh.themes import Theme
 
 import echopop.ingest as ingestion
