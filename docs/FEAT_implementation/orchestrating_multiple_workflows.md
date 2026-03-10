@@ -16,6 +16,7 @@ When workflow logic is fragmented across various scripts or notebooks, manual ex
 Treat orchestration as an interface design problem. The most effective setups reduce how many commands users must remember (i.e., "cognitive load") while increasing how much run context is captured automatically.
 :::
 
+(centralized-python-cli-dispatcher)=
 ## Centralized Python CLI dispatcher
 
 A centralized dispatcher can be thought of as a "traffic controller". It provides a single stable CLI entrypoint that decides which downstream workflow script(s) to run. This pattern is useful when multiple workflow scripts follow similar conventions but a single stable command interface is desired for end-users. Rather than asking users to memorize each script's arguments, the dispatcher provides a single CLI surface and routes execution to the selected workflow target. Consider a case where a data workflow is modularized into three stages:
