@@ -64,7 +64,7 @@ The next step involves taking the unaged abundance and biomass distributions and
 
 - `population_table`: Population estimates to be redistributed.
 - `reference_table`: Reference population table used for the redistribution.
-- `collapse_dims`: List of dimension names to collapse (sum over) during standardization (e.g., `["stratum"]`). These dimensions are summed over in the initial step, and the resulting standardized table will not have these dimensions.
+- `stratum_dim`: Stratification dimension name to collapse (sum over) during standardization (e.g., `["stratum"]`). These dimensions are summed over in the initial step, and the resulting standardized table will not have these dimensions.
 - `impute`: When `True`, perform a nearest-neighbor imputation for missing joint $\alpha$-$\ell$ values within each `group_columns` variable.
 - `impute_variable`: List of variables used for imputation and required when `impute = True`. This typically refers to the dimension being imputed (e.g., `["age_bin"]`).
 
@@ -74,7 +74,7 @@ The next step involves taking the unaged abundance and biomass distributions and
 dict_ds_kriged_abundance_table["redistributed_unaged"] = apportionment.distribute_unaged_from_aged(
     population_table = dict_ds_kriged_abundance_table["unaged"],
     reference_table = dict_ds_kriged_abundance_table["aged"],
-    collapse_dims = ["stratum_ks"],
+    stratum_dim = "stratum_ks",
     impute = False,
 )
 
@@ -82,7 +82,7 @@ dict_ds_kriged_abundance_table["redistributed_unaged"] = apportionment.distribut
 dict_ds_kriged_biomass_table["redistributed_unaged"] = apportionment.distribute_unaged_from_aged(
     population_table = dict_ds_kriged_biomass_table["unaged"],
     reference_table = dict_ds_kriged_biomass_table["aged"],
-    collapse_dims = ["stratum_ks"],
+    stratum_dim = "stratum_ks",
     impute=True,
     impute_variable=["age_bin"],
 )

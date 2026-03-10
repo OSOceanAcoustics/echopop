@@ -36,7 +36,7 @@ TRANSECT_REGION_HAUL_FILE = DATA_ROOT / "Stratification/US&CAN_T_reg_haul_final.
 
 # LOAD
 df_transect_region_haul_key = ingestion.nasc.read_transect_region_haul_key(
-    filename=TRANSECT_REGION_HAUL_FILE, sheetname=None, rename_dict=TRANSECT_REGION_FILE_RENAME
+    filename=TRANSECT_REGION_HAUL_FILE, sheetname=None, column_name_map=TRANSECT_REGION_FILE_RENAME
 )
 
 df_nasc_old = ingestion.nasc.consolidate_echvoiew_nasc(
