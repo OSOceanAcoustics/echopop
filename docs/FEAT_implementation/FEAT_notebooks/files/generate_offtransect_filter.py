@@ -17,7 +17,7 @@ NASC_EXPORTS_FILES = DATA_ROOT / "raw_nasc/"
 NASC_EXPORTS_SHEET = "Sheet1"
 
 df_intervals, df_exports = ingestion.nasc.merge_echoview_nasc(
-    nasc_path=NASC_EXPORTS_FILES,
+    file_directory=NASC_EXPORTS_FILES,
     filename_transect_pattern="T(\\d+(?:\\.\\d+)?)(?=-)",
     default_transect_spacing=10.0,
     default_latitude_threshold=60.0,

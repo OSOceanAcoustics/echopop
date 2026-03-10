@@ -612,7 +612,7 @@ def merge_exports(
 
 
 def merge_echoview_nasc(
-    nasc_path: Path,
+    file_directory: Path,
     filename_transect_pattern: str = r"T(\d+)",
     default_transect_spacing: float = 10.0,
     default_latitude_threshold: float = 60.0,
@@ -623,7 +623,7 @@ def merge_echoview_nasc(
 
     Parameters
     ----------
-    nasc_path : Path
+    file_directory : Path
         Directory containing Echoview export files (\\*.csv).
     filename_transect_pattern: str, default = r"T(\\d+)"
         Regular expression used for extracting the transect number from the filename.
@@ -646,10 +646,10 @@ def merge_echoview_nasc(
 
     # Get all echoview NASC files: analysis, cells, intervals, layers
     ev_export_paths: dict = {
-        "analysis": nasc_path.glob("*(analysis).csv"),  # Removed leading / only
-        "cells": nasc_path.glob("*(cells).csv"),
-        "intervals": nasc_path.glob("*(intervals).csv"),
-        "layers": nasc_path.glob("*(layers).csv"),
+        "analysis": file_directory.glob("*(analysis).csv"),  # Removed leading / only
+        "cells": file_directory.glob("*(cells).csv"),
+        "intervals": file_directory.glob("*(intervals).csv"),
+        "layers": file_directory.glob("*(layers).csv"),
     }
 
     # Create a DataFrame with mapped transect numbers to validate the presence of complete filesets

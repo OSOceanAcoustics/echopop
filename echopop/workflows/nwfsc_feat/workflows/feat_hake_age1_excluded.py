@@ -184,7 +184,7 @@ else:
         "     Default latitude threshold: 60.0 deg."
     )
     df_intervals, df_exports = ingestion.nasc.merge_echoview_nasc(
-        nasc_path=NASC_EXPORTS_FILES,
+        file_directory=NASC_EXPORTS_FILES,
         filename_transect_pattern=r"T(\d+)",
         default_transect_spacing=10.0,
         default_latitude_threshold=60.0,
