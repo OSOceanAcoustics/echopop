@@ -7,8 +7,7 @@ from echopop.workflows.nwfsc_feat import apportionment as apportion
 
 @pytest.fixture
 def apportion_mesh():
-    """Mesh dataset for apportionment tests"""
-
+    """Mesh dataset for apportionment tests."""
     return pd.DataFrame(
         {"mesh_stratum": [1, 2, 3], "biomass_density": [1e6, 2e6, 3e6], "area": [10, 20, 30]}
     )
@@ -16,8 +15,7 @@ def apportion_mesh():
 
 @pytest.fixture
 def apportion_number_proportions():
-    """Number proportions for apportionment tests"""
-
+    """Number proportions for apportionment tests."""
     subgroup1 = pd.DataFrame(
         {
             "bio_stratum": np.tile([1, 2, 3], 6),
@@ -79,8 +77,7 @@ def apportion_number_proportions():
 
 @pytest.fixture
 def apportion_weight_proportions():
-    """Weight proportions for apportionment tests"""
-
+    """Weight proportions for apportionment tests."""
     subgroup1 = (
         pd.DataFrame(
             {
@@ -150,8 +147,7 @@ def apportion_weight_proportions():
 
 @pytest.fixture
 def apportion_stratum_weights():
-    """Average weights per bin for each stratum for apportionment tests"""
-
+    """Average weights per bin for each stratum for apportionment tests."""
     return pd.DataFrame(
         {
             "bio_stratum": [1, 2, 3],
@@ -164,8 +160,7 @@ def apportion_stratum_weights():
 
 @pytest.fixture
 def apportion_stratum_sigma_bs():
-    """Average sigma_bs for each stratum for apportionment tests"""
-
+    """Average sigma_bs for each stratum for apportionment tests."""
     return pd.DataFrame(
         {
             "bio_stratum": [1, 2, 3],
@@ -181,8 +176,7 @@ def apportion_mesh_with_nasc(
     apportion_stratum_weights,
     apportion_stratum_sigma_bs,
 ):
-    """Pre-calculated mesh NASC for apportionment tests"""
-
+    """Pre-calculated mesh NASC for apportionment tests."""
     # Create copy of apportion mesh DataFrame
     mesh_data_df = apportion_mesh.copy()
 
@@ -205,8 +199,7 @@ def apportion_mesh_with_nasc(
 
 @pytest.fixture
 def apportion_biomass_table(apportion_mesh_with_nasc, apportion_weight_proportions):
-    """Pre-calculated apportioned biomass tables for apportionment tests"""
-
+    """Pre-calculated apportioned biomass tables for apportionment tests."""
     # Create copy of apportion mesh DataFrame
     mesh_data_df = apportion_mesh_with_nasc.copy()
 
@@ -227,8 +220,7 @@ def apportion_biomass_table(apportion_mesh_with_nasc, apportion_weight_proportio
 
 @pytest.fixture
 def apportion_biomass_table_with_standardized(apportion_biomass_table):
-    """Pre-calculate apportioned biomass tables with standardized group for apportionment tests"""
-
+    """Pre-calculate apportioned biomass tables with standardized group for apportionment tests."""
     # Generate copy
     table_copy = apportion_biomass_table.copy()
 
@@ -246,8 +238,7 @@ def apportion_biomass_table_with_standardized(apportion_biomass_table):
 
 @pytest.fixture
 def apportion_combined_biomass_table(apportion_biomass_table_with_standardized):
-    """Pre-calculate combined apportioned biomass table for apportionment tests"""
-
+    """Pre-calculate combined apportioned biomass table for apportionment tests."""
     # Combine tables
     return apportion.sum_population_tables(
         population_table=apportion_biomass_table_with_standardized,

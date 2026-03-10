@@ -315,10 +315,7 @@ def test_length_binned_weights_different_imputation_strategies(
 
 
 def test_remove_speciman_hauls(biological_data):
-    """
-    Test basic removal of specimen-specific hauls from catch data
-    """
-
+    """Test basic removal of specimen-specific hauls from catch data."""
     # Pre-process
     biodata = {
         k: v.rename(columns={"haul": "haul_num", "weight_in_haul": "weight"})

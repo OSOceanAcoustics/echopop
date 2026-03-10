@@ -8,10 +8,7 @@ pytestmark = pytest.mark.skip("This entire file is currently skipped due to xarr
 
 
 def test_Reporter(tmp_path):
-    """
-    Test Reporter class initialization
-    """
-
+    """Test Reporter class initialization."""
     # Initialize
     reports = Reporter(tmp_path, verbose=False)
 

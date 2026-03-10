@@ -13,10 +13,7 @@ def test_mesh_biomass_to_nasc(
     apportion_stratum_weights,
     apportion_stratum_sigma_bs,
 ):
-    """
-    Test biomass to NASC conversion
-    """
-
+    """Test biomass to NASC conversion."""
     # Create copy of apportion mesh DataFrame
     mesh_data_df = apportion_mesh.copy()
 
@@ -78,10 +75,7 @@ def test_mesh_biomass_to_nasc(
 def test_distribute_population_estimates_kriged(
     apportion_mesh_with_nasc, apportion_weight_proportions, apportion_number_proportions
 ):
-    """
-    Test distribution of kriged estimates
-    """
-
+    """Test distribution of kriged estimates."""
     # Create copy of apportion mesh DataFrame
     mesh_data_df = apportion_mesh_with_nasc.copy()
 
@@ -132,10 +126,7 @@ def test_distribute_population_estimates_kriged(
 
 
 def test_distribute_unaged_from_aged(apportion_biomass_table):
-    """
-    Test group-standardization of kriged estimates
-    """
-
+    """Test group-standardization of kriged estimates."""
     # Standardize 'subgroup2' based on 'subgroup1' -- No imputation
     std_tbl_no_imp = apportion.distribute_unaged_from_aged(
         population_table=apportion_biomass_table["subgroup2"],
@@ -209,10 +200,7 @@ def test_distribute_unaged_from_aged(apportion_biomass_table):
 
 
 def test_sum_population_tables(apportion_biomass_table_with_standardized):
-    """
-    Test functionality for combining the various apportionment tables
-    """
-
+    """Test functionality for combining the various apportionment tables."""
     # Define arguments that will be used for manual verification in tests
     TABLE_INDEX = ["index_bin"]
     TABLE_COLUMNS = ["extra_bin", "contrast"]
@@ -247,10 +235,7 @@ def test_sum_population_tables(apportion_biomass_table_with_standardized):
 
 
 def test_reallocate_excluded_estimates(apportion_combined_biomass_table):
-    """
-    Test functionality for redistributing apportioned values within a table
-    """
-
+    """Test functionality for redistributing apportioned values within a table."""
     # Create copy for multiple tests
     TEST_DF = apportion_combined_biomass_table.copy()
 

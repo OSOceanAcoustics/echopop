@@ -1210,7 +1210,7 @@ def test_consolidate_echvoiew_nasc_filtering(
 
 
 def test_read_nasc_file_basic(sample_excel_path):
-    """Test basic Excel file reading functionality"""
+    """Test basic Excel file reading functionality."""
     result = read_nasc_file(sample_excel_path, "Sheet1", column_name_map={"haul": "haul_num"})
 
     # Just verify it returns a DataFrame with the expected data
@@ -1221,7 +1221,7 @@ def test_read_nasc_file_basic(sample_excel_path):
 
 
 def test_read_nasc_file_with_column_mapping(sample_excel_path):
-    """Test column mapping with minimal setup"""
+    """Test column mapping with minimal setup."""
     column_map = {"transect": "transect_num", "region id": "region_id"}
 
     result = read_nasc_file(sample_excel_path, "Sheet1", column_name_map=column_map)

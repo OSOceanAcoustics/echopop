@@ -10,7 +10,7 @@ from echopop.inversion import InversionMatrix, InvParameters, estimate_populatio
 
 # Test base InvParameters
 def test_InvParameters(sample_InversionMatrix_parameters):
-    """Test InvParameters structure and methods"""
+    """Test InvParameters structure and methods."""
 
     # Helper function
     def minmaxer(parameter_vals):
@@ -108,7 +108,6 @@ def test_InvParameters(sample_InversionMatrix_parameters):
 # Test functions for mininizer_print_cb
 def test_callback_prints_at_key_iterations(capsys, inv_parameters):
     """Test callback prints output at specified iterations."""
-
     # Get the parameters
     params = inv_parameters.to_lmfit()
 
@@ -158,7 +157,6 @@ def test_monte_carlo_basic_functionality(
     inv_parameters, sample_frequencies, model_InversionMatrix_settings
 ):
     """Test Monte Carlo initialization basic functionality."""
-
     # Create MC parameters with small realizations for testing
     inv_parameters.simulate_parameter_sets(mc_realizations=3, rng=np.random.default_rng(999))
     lmfit_params = inv_parameters.realizations_to_lmfit()
@@ -209,7 +207,7 @@ def test_perturb_parameters_respects_bounds(inv_parameters):
 
     perturbed = im.perturb_parameters(lmfit_params, scale=0.1)
 
-    for name, param in perturbed.items():
+    for _name, param in perturbed.items():
         assert param.min <= param.value <= param.max
 
 
@@ -240,7 +238,6 @@ def test_perturb_parameters_fixed_unchanged():
 # Test functions for estimate_population
 def test_estimate_population(inv_transect_info, inv_interval_info, inv_cells_info):
     """Test population estimation returns expected structure."""
-
     # Test transect-index
     transect_result = estimate_population(
         inv_transect_info["inverted"],
@@ -306,7 +303,6 @@ def test_estimate_population(inv_transect_info, inv_interval_info, inv_cells_inf
 # Test functions for scattering operations
 def test_wavenumber():
     """Test wavenumber calculation."""
-
     # Shared
     SOUND_SPEED = 1500.0
 
@@ -326,7 +322,6 @@ def test_wavenumber():
 
 def test_reflection_coefficient():
     """Test reflection coefficient calculation."""
-
     # Scalar
     g = 1.02  # Density contrast
     h = 1.01  # Sound speed contrast
@@ -339,12 +334,11 @@ def test_reflection_coefficient():
     h = np.array([1.005, 1.01, 1.015])
     result = inversion.reflection_coefficient(g, h)
     assert len(result) == 3
-    assert all(isinstance(val, (float, np.floating)) for val in result)
+    assert all(isinstance(val, float | np.floating) for val in result)
 
 
 def test_orientation_average():
-    """Test the orientation-averaging operation"""
-
+    """Test the orientation-averaging operation."""
     # Shared
     THETA_MEAN = 0.0
     THETA_SD = 10.0
@@ -435,10 +429,7 @@ def test_orientation_average():
 
 
 def test_length_average():
-    """
-    Test the length-averaging operation
-    """
-
+    """Test the length-averaging operation."""
     # Shared
     LENGTH_MEAN = 0.10
     LENGTH_SD_NORM = 0.10
@@ -586,7 +577,6 @@ def test_inv_parameters_workflow(inv_parameters):
 
 def test_mc_parameters_generation(inv_parameters):
     """Test Monte Carlo parameter generation."""
-
     # Test shape
     inv_parameters.simulate_parameter_sets(mc_realizations=5, rng=np.random.default_rng(999))
     assert len(inv_parameters.realizations) == 5

@@ -263,7 +263,7 @@ def test_apply_weight_interpolation_global(length_dataset_with_bins, real_interp
 
     # Check that the interpolation was applied and multiplied by counts
     assert "weight" in result.columns
-    for idx, row in result.iterrows():
+    for _idx, row in result.iterrows():
         expected = row["length"] * 2.5 * row["length_count"]
         assert np.isclose(row["weight"], expected, rtol=1e-5)
 
@@ -287,7 +287,7 @@ def test_apply_weight_interpolation_by_contrast(length_dataset_with_bins, real_i
     # Check that the correct interpolator was applied for each sex
     assert "weight" in result.columns
 
-    for idx, row in result.iterrows():
+    for _idx, row in result.iterrows():
         if row["sex"] == "male":
             expected = row["length"] * 3.0 * row["length_count"]
         else:  # female
@@ -316,7 +316,7 @@ def test_apply_weight_interpolation_missing_interpolator(length_dataset_with_bin
     )
 
     # Check that NaN is assigned for rows without an interpolator
-    for idx, row in result.iterrows():
+    for _idx, row in result.iterrows():
         if row["sex"] == "male":
             expected = row["length"] * 3.0 * row["length_count"]
             assert np.isclose(row["weight"], expected, rtol=1e-5)
@@ -347,7 +347,6 @@ def test_binned_weights_with_interpolation(
 
 def test_binned_weights_without_interpolation(length_dataset_with_bins):
     """Test binned_weights without interpolation."""
-
     # Add direct weights to the dataset
     df = length_dataset_with_bins.copy()
     df["weight"] = df["length"] * 2.0  # Simple weight calculation
@@ -456,7 +455,6 @@ def test_aggregate_stratum_weights_missing_level(weights_df_missing_stratum):
 
 def test_weight_proportions_basic(weight_distr_dict, catch_data_df):
     """Test basic functionality of weight proportions calculation."""
-
     # Call the function
     result = get_proportions.weight_proportions(
         weight_data=weight_distr_dict["aged"],
@@ -493,7 +491,6 @@ def test_fitted_weight_proportions(
     unaged_dataarray,
 ):
     """Test basic functionality of standardized weight proportions."""
-
     # Tabulate weight proportions
     weight_props = get_proportions.weight_proportions(
         weight_data=weight_distr_dict["aged"],
@@ -615,7 +612,6 @@ def test_fitted_weight_proportions_combined(
     unaged_dataarray,
 ):
     """Test fitted weight proportions for combined-sample workflows."""
-
     # Get number proportions
     number_props = get_proportions.number_proportions(
         data=xr.Dataset({"aged": aged_dataarray, "unaged": unaged_dataarray}),
@@ -854,7 +850,6 @@ def test_get_number_proportions_slice():
 @pytest.mark.skip()
 def test_get_weight_proportions_slice():
     """Test weight proportions without thresholding."""
-
     # Create test data and apply proper binning using utils.binify
     raw_data = pd.DataFrame(
         {

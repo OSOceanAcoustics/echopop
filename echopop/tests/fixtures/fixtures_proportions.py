@@ -167,7 +167,6 @@ def aged_dataframe():
 @pytest.fixture
 def aged_dataarray(aged_dataframe):
     """Create sample aged count data with stratum, length, age, and sex."""
-
     dat_da = aged_dataframe.set_index(["stratum_num", "length_bin", "age_bin", "sex"])[
         "count"
     ].to_xarray()
@@ -191,7 +190,6 @@ def unaged_dataframe():
 @pytest.fixture
 def unaged_dataarray(unaged_dataframe):
     """Create sample aged count data with stratum, length, age, and sex."""
-
     dat_da = unaged_dataframe.set_index(["stratum_num", "length_bin", "sex"])["count"].to_xarray()
     dat_da = dat_da.assign_coords({"variable": "count"})
 
@@ -623,7 +621,6 @@ def standardized_data_fixture():
 @pytest.fixture
 def simple_weights_df():
     """Create a simple multi-level column DataFrame with stratum_num in columns."""
-
     # Create simple data with one row
     data = pd.DataFrame(
         {
@@ -716,13 +713,13 @@ def ts_parameters():
 
 @pytest.fixture
 def stratify_by():
-    """Standard stratification columns."""
+    """Return standard stratification columns."""
     return ["stratum_ks"]
 
 
 @pytest.fixture
 def age1_filter():
-    """Standard age-1 inclusion filter."""
+    """Return standard age-1 inclusion filter."""
     return {"age_bin": [1]}
 
 
@@ -734,19 +731,19 @@ def female_filter():
 
 @pytest.fixture
 def length_threshold():
-    """Standard length threshold for testing."""
+    """Return standard length threshold for testing."""
     return 15.0
 
 
 @pytest.fixture
 def weight_threshold():
-    """Standard weight proportion threshold."""
+    """Return standard weight proportion threshold."""
     return 1e-10
 
 
 @pytest.fixture
 def number_proportions_dict(number_proportions_data):
-    """Dictionary of number proportions (aged/unaged format)."""
+    """Return a dictionary of number proportions (aged/unaged format)."""
     return {
         "aged": number_proportions_data,
         "unaged": number_proportions_data.drop(columns=["age_bin"]),

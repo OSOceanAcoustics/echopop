@@ -7,7 +7,7 @@ map individual trawl hauls, latitude npimdaroes, etc. All are returned as dictio
 """
 
 from pathlib import Path
-from typing import Any, Dict, Union
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -18,7 +18,7 @@ from ..utils import add_haul_uids
 def load_single_stratum_sheet(
     strata_filepath: Path,
     sheet_name: str,
-    column_name_map: Dict[str, str] = {},
+    column_name_map: dict[str, str] | None = None,
 ) -> pd.DataFrame:
     """
     Load a single stratification sheet from an Excel file.
@@ -52,10 +52,10 @@ def load_single_stratum_sheet(
 
 def load_strata(
     strata_filepath: Path,
-    strata_sheet_map: Dict[str, str],
-    column_name_map: Dict[str, str] = None,
-    haul_uid_config: Dict[str, Any] = {},
-) -> Dict[str, pd.DataFrame]:
+    strata_sheet_map: dict[str, str],
+    column_name_map: dict[str, str] = None,
+    haul_uid_config: dict[str, Any] | None = None,
+) -> dict[str, pd.DataFrame]:
     """
     Load stratification data from an Excel file with multiple sheets.
 
@@ -92,7 +92,6 @@ def load_strata(
     >>> col_map = {"fraction_hake": "nasc_proportion", "haul": "haul_num"}
     >>> strata_data = load_stratification("strata_file.xlsx", sheet_map, col_map)
     """
-
     if not strata_filepath.exists():
         raise FileNotFoundError(f"Stratification file not found: {strata_filepath}")
 
@@ -109,7 +108,7 @@ def load_strata(
 
     # Add UID labels
     _ = {
-        k: add_haul_uids(v, _dataset_type=f"strata.{k}", **haul_uid_config)
+        k: add_haul_uids(v, _dataset_type=f"strata.{k}", **(haul_uid_config or {}))
         for k, v in strata_dict.items()
     }
 
@@ -117,16 +116,16 @@ def load_strata(
 
 
 def load_geostrata(
-    geostrata_filepath: Union[str, Path],
-    geostrata_sheet_map: Dict[str, str],
-    column_name_map: Dict[str, str] = None,
-) -> Dict[str, pd.DataFrame]:
+    geostrata_filepath: Path,
+    geostrata_sheet_map: dict[str, str],
+    column_name_map: dict[str, str] = None,
+) -> dict[str, pd.DataFrame]:
     """
     Load geographic stratification data from an Excel file with multiple sheets.
 
     Parameters
     ----------
-    geostrata_filepath : str or pathlib.Path
+    geostrata_filepath : pathlib.Path
         Path to the Excel file containing geographic stratification data
     geostrata_sheet_map : dict
         Dictionary mapping stratification types to sheet names
@@ -141,7 +140,6 @@ def load_geostrata(
         Dictionary containing geographic stratification pandas.DataFrames keyed by stratification
         type, each with consolidated latitude intervals from INPFC and KS strata assignments
     """
-
     if not geostrata_filepath.exists():
         raise FileNotFoundError(f"Geographic stratification file not found: {geostrata_filepath}")
 
@@ -161,8 +159,7 @@ def load_geostrata(
 
 def geostrata_bins(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Process a geographic stratification DataFrame by adding latitude intervals
-    and renaming columns as needed.
+    Process a geographic stratification DataFrame by adding latitude intervals and renaming columns.
 
     Parameters
     ----------
@@ -190,11 +187,11 @@ def geostrata_bins(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def join_strata_by_haul(
-    data: Union[pd.DataFrame, Dict[str, pd.DataFrame]],
-    strata: Dict[str, pd.DataFrame],
+    data: pd.DataFrame | dict[str, pd.DataFrame],
+    strata: dict[str, pd.DataFrame],
     default_stratum: float = 0.0,
     stratum_name: str = "stratum_num",
-) -> Union[pd.DataFrame, Dict[str, pd.DataFrame]]:
+) -> pd.DataFrame | dict[str, pd.DataFrame]:
     """
     Join stratification data by haul number or other matching column.
 
@@ -214,7 +211,6 @@ def join_strata_by_haul(
     |pd.DataFrame| or Dict[str, |pd.DataFrame|]
         Same type as input data with stratification added
     """
-
     # Get stratification columns (excluding join column)
     strata_cols = [col for col in strata.columns if col != "haul_num"]
 
@@ -253,10 +249,10 @@ def join_strata_by_haul(
 
 
 def join_geostrata_by_latitude(
-    data: Union[pd.DataFrame, Dict[str, pd.DataFrame]],
+    data: pd.DataFrame | dict[str, pd.DataFrame],
     geostrata: pd.DataFrame,
     stratum_name: str = "stratum_num",
-) -> Union[pd.DataFrame, Dict[str, pd.DataFrame]]:
+) -> pd.DataFrame | dict[str, pd.DataFrame]:
     """
     Join geographic stratification data by latitude intervals.
 
@@ -317,13 +313,13 @@ def join_geostrata_by_latitude(
 
 
 def join_strata_by_uid(
-    data: Union[pd.DataFrame, Dict[str, pd.DataFrame]],
-    strata: Dict[str, pd.DataFrame],
+    data: pd.DataFrame | dict[str, pd.DataFrame],
+    strata: dict[str, pd.DataFrame],
     default_stratum: float = 0.0,
     stratum_name: str = "stratum_num",
-) -> Union[pd.DataFrame, Dict[str, pd.DataFrame]]:
+) -> pd.DataFrame | dict[str, pd.DataFrame]:
     """
-    Join data and stratification definitions using an unique identifier
+    Join data and stratification definitions using an unique identifier.
 
     Parameters
     ----------
@@ -341,7 +337,6 @@ def join_strata_by_uid(
     |pd.DataFrame| or Dict[str, |pd.DataFrame|]
         Same type as input data with stratification added
     """
-
     # Get stratification columns (excluding join column)
     strata_cols = [col for col in strata.columns]
 

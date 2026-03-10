@@ -7,22 +7,21 @@ consumed directly by the ``Variogram`` and ``Kriging`` classes in the ``geostati
 """
 
 from pathlib import Path
-from typing import Dict, Tuple, Union
 
 import pandas as pd
 
 
 def load_kriging_variogram_params(
-    geostatistic_params_filepath: Union[str, Path],
+    geostatistic_params_filepath: Path,
     sheet_name: str,
-    column_name_map: Dict[str, str] = {},
-) -> Tuple[Dict, Dict]:
+    column_name_map: dict[str, str] | None = None,
+) -> tuple[dict, dict]:
     """
     Load kriging and variogram parameters from Excel file.
 
     Parameters
     ----------
-    geostatistic_params_filepath : str or pathlib.Path
+    geostatistic_params_filepath : pathlib.Path
         Path to the Excel file containing kriging parameters
     sheet_name : str
         Name of the sheet to load
@@ -34,7 +33,6 @@ def load_kriging_variogram_params(
     tuple
         Tuple containing kriging and variogram parameter dictionaries
     """
-
     if not geostatistic_params_filepath.exists():
         raise FileNotFoundError(
             f"Kriging parameter file not found: {geostatistic_params_filepath.as_posix()}"

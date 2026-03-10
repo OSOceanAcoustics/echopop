@@ -6,7 +6,7 @@ stratification and NASC data structures used downstream in the echopop analysis 
 """
 
 from pathlib import Path
-from typing import Any, Dict, Literal, Optional, Tuple
+from typing import Any, Literal
 
 import numpy as np
 import pandas as pd
@@ -17,8 +17,8 @@ from . import nasc
 def read_echoview_sv(
     filename: Path,
     impute_coordinates: bool = True,
-    transect_num: Optional[float] = None,
-    validator: Optional[Any] = None,
+    transect_num: float | None = None,
+    validator: Any | None = None,
 ):
     """
     Read and process Echoview volume backscattering strength (Sv) export data.
@@ -55,7 +55,6 @@ def read_echoview_sv(
     >>> print(sv_data.columns)
     ['sv_mean', 'latitude', 'longitude', 'transect_num', 'filename', ...]
     """
-
     # Read in the defined CSV file
     sv_df = nasc.read_echoview_export(filename, validator)
 
@@ -82,7 +81,7 @@ def read_echoview_sv(
     return sv_df
 
 
-def apply_Sv_thresholds(data: pd.DataFrame, thresholds: Dict[str, Any]):
+def apply_Sv_thresholds(data: pd.DataFrame, thresholds: dict[str, Any]):
     """
     Apply frequency-specific Sv thresholds to acoustic data.
 
@@ -120,7 +119,6 @@ def apply_Sv_thresholds(data: pd.DataFrame, thresholds: Dict[str, Any]):
     ...               38.0: {"min": -85., "max": -45.}}
     >>> filtered_data = apply_Sv_thresholds(sv_data, thresholds)
     """
-
     # Create copy
     data = data.copy()
 
@@ -148,7 +146,7 @@ def apply_Sv_thresholds(data: pd.DataFrame, thresholds: Dict[str, Any]):
 
 
 def sv_to_nasc(sv_linear, thickness_mean):
-    """
+    r"""
     Convert volume backscattering coefficient (sv, linear) to NASC (:math:`S_A`).
 
     This function converts linear volume backscattering coefficient values to Nautical Area
@@ -234,7 +232,6 @@ def organize_cells(data: pd.DataFrame):
     Index columns include available spatial identifiers: 'transect_num', 'longitude', 'latitude',
     'interval', and 'layer'.
     """
-
     # Find the overlapping columns
     valid_idx_cols = [
         col
@@ -290,7 +287,6 @@ def aggregate_intervals(
     This approach properly accounts for varying layer thicknesses when integrating volume
     backscatter measurements.
     """
-
     # Create copy
     data = data.copy()
 
@@ -374,7 +370,6 @@ def aggregate_transects(
     This approach accounts for variable sampling density and properly weights spatial coordinates
     by acoustic backscatter intensity.
     """
-
     # Check for 'transect_num'
     if "transect_num" not in data.columns:
         raise KeyError(
@@ -451,7 +446,7 @@ def aggregate_transects(
 def integrate_measurements(
     data: pd.DataFrame,
     method: Literal["cells", "interval", "transect"],
-    sv_thresholds: Dict[str, float],
+    sv_thresholds: dict[str, float],
 ) -> pd.DataFrame:
     """
     Integrate acoustic measurements using specified spatial aggregation method.
@@ -503,7 +498,6 @@ def integrate_measurements(
     The function handles missing NASC values by calculating them from Sv
     and layer thickness using standard fisheries acoustics equations.
     """
-
     # Create copy
     data = data.copy()
 
@@ -559,11 +553,11 @@ def integrate_measurements(
 
 def ingest_echoview_sv(
     sv_path: Path,
-    center_frequencies: Optional[Dict[str, float]] = None,
-    transect_pattern: Optional[str] = None,
+    center_frequencies: dict[str, float] | None = None,
+    transect_pattern: str | None = None,
     aggregate_method: Literal["cells", "interval", "transect"] = "cells",
     impute_coordinates: bool = True,
-) -> Tuple[pd.DataFrame, pd.DataFrame]:
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     r"""
     Complete ingestion pipeline for Echoview Sv export data.
 

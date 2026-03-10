@@ -35,7 +35,7 @@ def echoview_nasc_to_df_test(filtered_df: pd.DataFrame, reader_func) -> list[pd.
 
 
 def mock_reader_with_error(filepath, transect_num):
-    """Mock reader that raises an error for transect 2.0"""
+    """Mock reader that raises an error for transect 2.0."""
     if transect_num == 2.0:
         raise ValueError("Test error reading file")
     return pd.DataFrame({"data": [1, 2, 3], "transect_num": transect_num})

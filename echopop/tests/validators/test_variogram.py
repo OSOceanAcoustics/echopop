@@ -16,7 +16,6 @@ from echopop.validators.variogram import (
 # -----------------------------
 def test_variogram_model_parameters_valid():
     """Test VariogramModelParameters with valid parameters."""
-
     params = VariogramModelParameters(
         sill=1.0,
         nugget=0.1,
@@ -42,7 +41,6 @@ def test_variogram_model_parameters_valid():
 
 def test_variogram_model_parameters_optional():
     """Test VariogramModelParameters with optional parameters."""
-
     params = VariogramModelParameters(sill=1.0, nugget=0.1)
 
     assert params.sill == 1.0
@@ -52,7 +50,6 @@ def test_variogram_model_parameters_optional():
 
 def test_variogram_model_parameters_negative_values():
     """Test VariogramModelParameters with invalid negative values."""
-
     with pytest.raises(ValidationError):
         VariogramModelParameters(sill=-1.0, nugget=0.1)
 
@@ -65,7 +62,6 @@ def test_variogram_model_parameters_negative_values():
 
 def test_variogram_model_parameters_decay_power_validation():
     """Test decay_power validation."""
-
     # Valid values
     params = VariogramModelParameters(decay_power=1.5)
     assert params.decay_power == 1.5
@@ -83,7 +79,6 @@ def test_variogram_model_parameters_decay_power_validation():
 
 def test_variogram_model_parameters_power_exponent_validation():
     """Test power_exponent validation."""
-
     # Valid values
     params = VariogramModelParameters(power_exponent=1.5)
     assert params.power_exponent == 1.5
@@ -104,7 +99,6 @@ def test_variogram_model_parameters_power_exponent_validation():
 
 def test_variogram_model_parameters_smoothness_parameter_validation():
     """Test smoothness_parameter validation."""
-
     # Valid values
     params = VariogramModelParameters(smoothness_parameter=0.5)
     assert params.smoothness_parameter == 0.5
@@ -122,7 +116,6 @@ def test_variogram_model_parameters_smoothness_parameter_validation():
 
 def test_variogram_model_parameters_shape_parameter_validation():
     """Test shape_parameter validation."""
-
     # Valid values
     params = VariogramModelParameters(shape_parameter=1.0)
     assert params.shape_parameter == 1.0
@@ -140,7 +133,6 @@ def test_variogram_model_parameters_shape_parameter_validation():
 
 def test_variogram_model_parameters_sill_nugget_relationship():
     """Test sill-nugget relationship validation."""
-
     # Valid: sill > nugget
     params = VariogramModelParameters(sill=1.0, nugget=0.5)
     assert params.sill == 1.0
@@ -159,7 +151,6 @@ def test_variogram_model_parameters_sill_nugget_relationship():
 # ---------------------------
 def test_validate_variogram_class():
     """Test ValidateVariogramClass with valid parameters."""
-
     params = ValidateVariogramClass(
         coordinate_names=("longitude", "latitude"), lag_resolution=0.5, n_lags=20
     )
@@ -171,7 +162,6 @@ def test_validate_variogram_class():
 
 def test_validate_variogram_class_invalid_lag_resolution():
     """Test ValidateVariogramClass with invalid lag_resolution."""
-
     with pytest.raises(ValidationError):
         ValidateVariogramClass(
             coordinate_names=("longitude", "latitude"), lag_resolution=0.0, n_lags=20
@@ -185,7 +175,6 @@ def test_validate_variogram_class_invalid_lag_resolution():
 
 def test_validate_variogram_class_invalid_n_lags():
     """Test ValidateVariogramClass with invalid n_lags."""
-
     with pytest.raises(ValidationError):
         ValidateVariogramClass(
             coordinate_names=("longitude", "latitude"), lag_resolution=0.5, n_lags=0
@@ -202,7 +191,6 @@ def test_validate_variogram_class_invalid_n_lags():
 # -----------------------------------
 def test_validate_empirical_variogram_args_valid():
     """Test ValidateEmpiricalVariogramArgs with valid data."""
-
     df = pd.DataFrame(
         {
             "longitude": [-124.0, -123.8, -123.6],
@@ -230,7 +218,6 @@ def test_validate_empirical_variogram_args_valid():
 
 def test_validate_empirical_variogram_args_invalid_azimuth():
     """Test ValidateEmpiricalVariogramArgs with invalid azimuth_angle_threshold."""
-
     df = pd.DataFrame(
         {"longitude": [-124.0, -123.8], "latitude": [46.0, 46.2], "biomass_density": [10.5, 15.2]}
     )
@@ -258,7 +245,6 @@ def test_validate_empirical_variogram_args_invalid_azimuth():
 
 def test_validate_empirical_variogram_args_missing_coordinates():
     """Test ValidateEmpiricalVariogramArgs with missing coordinate columns."""
-
     df = pd.DataFrame(
         {
             "longitude": [-124.0, -123.8],
@@ -280,7 +266,6 @@ def test_validate_empirical_variogram_args_missing_coordinates():
 
 def test_validate_empirical_variogram_args_missing_variable():
     """Test ValidateEmpiricalVariogramArgs with missing variable column."""
-
     df = pd.DataFrame(
         {
             "longitude": [-124.0, -123.8],
@@ -305,7 +290,6 @@ def test_validate_empirical_variogram_args_missing_variable():
 # -----------------------------
 def test_validate_fit_variogram_args_single_model():
     """Test ValidateFitVariogramArgs with single model."""
-
     params = Parameters()
     params.add("nugget", value=0.1, min=0.0)
     params.add("sill", value=1.0, min=0.0)
@@ -322,7 +306,6 @@ def test_validate_fit_variogram_args_single_model():
 
 def test_validate_fit_variogram_args_composite_model():
     """Test ValidateFitVariogramArgs with composite model."""
-
     params = Parameters()
     params.add("nugget", value=0.1, min=0.0)
     params.add("sill", value=1.0, min=0.0)
@@ -340,7 +323,6 @@ def test_validate_fit_variogram_args_composite_model():
 
 def test_validate_fit_variogram_args_invalid_model():
     """Test ValidateFitVariogramArgs with invalid model."""
-
     params = Parameters()
     params.add("nugget", value=0.1, min=0.0)
 
@@ -355,7 +337,6 @@ def test_validate_fit_variogram_args_invalid_model():
 # -----------------
 def test_variogram_validators_integration():
     """Test integration of variogram validators."""
-
     # Create test data
     df = pd.DataFrame(
         {

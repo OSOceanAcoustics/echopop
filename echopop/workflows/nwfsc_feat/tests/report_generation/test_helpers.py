@@ -8,9 +8,7 @@ pytestmark = pytest.mark.skip("This entire file is currently skipped due to xarr
 
 
 def test_initialize_workbook(tmp_excel):
-    """
-    Workbook initialization test
-    """
+    """Workbook initialization test."""
     wb = feat.initialize_workbook(tmp_excel)
     assert wb is not None
     wb.create_sheet("TestSheet")
@@ -19,27 +17,21 @@ def test_initialize_workbook(tmp_excel):
 
 
 def test_format_file_sheet(tmp_excel):
-    """
-    File formatting test
-    """
+    """File formatting test."""
     wb = feat.initialize_workbook(tmp_excel)
     ws = feat.format_file_sheet("TestSheet", wb)
     assert ws.title == "TestSheet"
 
 
 def test_format_table_headers(plotting_heatmap_data):
-    """
-    Table header test
-    """
+    """Table header test."""
     headers = feat.format_table_headers(plotting_heatmap_data)
     assert isinstance(headers, list)
     assert headers[0] == "Length (cm)"
 
 
 def test_append_datatable_rows(plotting_heatmap_data, tmp_excel):
-    """
-    Data appending test
-    """
+    """Data appending test."""
     wb = feat.initialize_workbook(tmp_excel)
     ws = feat.format_file_sheet("Test", wb)
     df = plotting_heatmap_data.copy()
@@ -51,9 +43,7 @@ def test_append_datatable_rows(plotting_heatmap_data, tmp_excel):
 
 
 def test_append_table_aggregates(plotting_heatmap_data, tmp_excel):
-    """
-    Aggregate data appending test
-    """
+    """Aggregate data appending test."""
     wb = feat.initialize_workbook(tmp_excel)
     ws = feat.format_file_sheet("Test", wb)
     df = plotting_heatmap_data.copy()
@@ -65,9 +55,7 @@ def test_append_table_aggregates(plotting_heatmap_data, tmp_excel):
 
 
 def test_append_sheet_label(tmp_excel):
-    """
-    Append sheet label test
-    """
+    """Append sheet label test."""
     wb = feat.initialize_workbook(tmp_excel)
     ws = feat.format_file_sheet("Test", wb)
     feat.append_sheet_label(ws, "Title {SEX}", "male")
@@ -75,9 +63,7 @@ def test_append_sheet_label(tmp_excel):
 
 
 def test_pivot_aged_dataframe(sample_ci_grid_data, proportion_dict):
-    """
-    Pivot aged dataframe test
-    """
+    """Pivot aged dataframe test."""
     geo = sample_ci_grid_data.head(2).copy()
     prop = proportion_dict["aged"].head(2).copy()
     # Add required columns for the test
@@ -88,19 +74,14 @@ def test_pivot_aged_dataframe(sample_ci_grid_data, proportion_dict):
 
 
 def test_repivot_table(plotting_heatmap_data):
-    """
-    Repivot test
-    """
+    """Repivot test."""
     df = plotting_heatmap_data.copy()
     out = feat.repivot_table(df, "val")
     assert isinstance(out, type(df))
 
 
 def test_pivot_aged_weight_proportions():
-    """
-    Pivot aged-weight proportions test
-    """
-
+    """Pivot aged-weight proportions test."""
     # Columns
     columns = pd.MultiIndex.from_product([["female", "male"], [1, 2]], names=["sex", "stratum"])
 
@@ -120,10 +101,7 @@ def test_pivot_aged_weight_proportions():
 
 
 def test_pivot_haul_tables():
-    """
-    Pivot haul tables test
-    """
-
+    """Pivot haul tables test."""
     # Columns
     columns = pd.MultiIndex.from_product(
         [
@@ -155,9 +133,7 @@ def test_pivot_haul_tables():
 
 
 def test_prepare_aged_biomass_dataframes(sample_ci_grid_data):
-    """
-    Prepare aged biomass dataframes test
-    """
+    """Prepare aged biomass dataframes test."""
     tables = {
         "all": sample_ci_grid_data.copy(),
         "male": sample_ci_grid_data.copy(),
@@ -168,9 +144,7 @@ def test_prepare_aged_biomass_dataframes(sample_ci_grid_data):
 
 
 def test_write_aged_dataframe_report(tmp_excel, plotting_heatmap_data):
-    """
-    Write aged dataframe report test
-    """
+    """Write aged dataframe report test."""
     df = plotting_heatmap_data.copy()
     tables = {"all": df, "male": df, "female": df}
     sheetnames = {"male": "Male", "female": "Female", "all": "All"}
@@ -179,10 +153,7 @@ def test_write_aged_dataframe_report(tmp_excel, plotting_heatmap_data):
 
 
 def test_prepare_age_length_tables():
-    """
-    Prepare age-length tables test
-    """
-
+    """Prepare age-length tables test."""
     # Group 1
     columns_1 = pd.Index(["male", "female", "all"])
     index_1 = pd.Index([2, 4, 6])
@@ -207,10 +178,7 @@ def test_prepare_age_length_tables():
 
 
 def test_write_age_length_table_report(tmp_excel):
-    """
-    Write age-length table report
-    """
-
+    """Write age-length table report."""
     # Group 1
     columns_1 = pd.Index(["male", "female", "all"])
     index_1 = pd.Index([2, 4, 6])
@@ -235,10 +203,7 @@ def test_write_age_length_table_report(tmp_excel):
 
 
 def test_write_haul_report(tmp_excel):
-    """
-    Write haul report test
-    """
-
+    """Write haul report test."""
     # Columns
     columns = pd.MultiIndex.from_product(
         [

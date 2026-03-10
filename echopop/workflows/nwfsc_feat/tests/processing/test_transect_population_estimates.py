@@ -9,7 +9,6 @@ pytestmark = pytest.mark.skip("This entire file is currently skipped due to xarr
 
 def test_remove_group_from_estimates_nasc_only(sample_transect_dataset, age1_nasc_proportions):
     """Test partitioning with only NASC proportions."""
-
     # NASC-only
     result = apportion.remove_group_from_estimates(
         transect_data=sample_transect_dataset, group_proportions={"nasc": age1_nasc_proportions}
@@ -38,7 +37,6 @@ def test_remove_group_from_estimates_abundance_only(
     sample_transect_dataset, age1_abundance_proportions
 ):
     """Test partitioning with only abundance proportions."""
-
     # Abundance-only
     result = apportion.remove_group_from_estimates(
         transect_data=sample_transect_dataset,
@@ -75,7 +73,6 @@ def test_remove_group_from_estimates_biomass_only(
     sample_transect_dataset, age1_biomass_proportions
 ):
     """Test partitioning with only biomass proportions."""
-
     # Biomass-only
     result = apportion.remove_group_from_estimates(
         transect_data=sample_transect_dataset,
@@ -115,7 +112,6 @@ def test_remove_group_from_estimates_all_variables(
     age1_biomass_proportions,
 ):
     """Test partitioning with all three variable types."""
-
     # All variables
     result = apportion.remove_group_from_estimates(
         transect_data=sample_transect_dataset,
@@ -150,7 +146,6 @@ def test_remove_group_from_estimates_empty_proportions(
     sample_transect_dataset,
 ):
     """Test partitioning with all three variable types."""
-
     # Input dictionary CANNOT be empty
     with pytest.raises(ValueError):
         assert apportion.remove_group_from_estimates(

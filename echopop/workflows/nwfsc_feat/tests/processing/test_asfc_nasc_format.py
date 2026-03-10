@@ -8,10 +8,7 @@ from echopop.workflows.nwfsc_feat import functions as ingest_nasc
 # Test ASFC NASC to FEAT NASC DataFrame conversion
 # ------------------------------------------------
 def test_afsc_nasc_to_feat_conversion():
-    """
-    Test the conversion of ASFC NASC data to FEAT NASC DataFrame format.
-    """
-
+    """Test the conversion of ASFC NASC data to FEAT NASC DataFrame format."""
     # Mock DataFrame
     mock_df = pd.DataFrame(
         {

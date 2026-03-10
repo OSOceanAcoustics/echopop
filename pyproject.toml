@@ -81,12 +81,37 @@ fallback_version = "0.0.0"
 write_to = "echopop/_version.py"
 write_to_template = 'version = "{version}"  # noqa'
 
-[tool.black]
+# --- Ruff configuration ---
+[tool.ruff]
 line-length = 100
+target-version = "py312"
+extend-exclude = ["echopop/workflows/nwfsc_feat"]
 
+[tool.ruff.lint]
+# E/F = Flake8 basics, I = Isort, D = Docstrings (pydocstyle)
+select = ["E", "F", "I", "D", "UP", "B"]
+ignore = [
+    "D100", # Missing docstring in public module
+    "D104", # Missing docstring in public package
+    "D203", # conflict: 1 blank line before class (D211 preferred)
+    "D213", # conflict: multi-line summary second line (D212 preferred)
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+[tool.ruff.lint.isort]
+known-first-party = ["echopop"]
+combine-as-imports = true
+
+# --- Other precommit tools ---
 [tool.codespell]
 skip = "*.ipynb"
 ignore-words-list = "notin,burnin"
+
+[tool.black]
+line-length = 100
+target-version = ["py312"]
 
 [tool.isort]
 known_first_party = "echopop"

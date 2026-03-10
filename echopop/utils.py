@@ -8,7 +8,7 @@ domain-agnostic and are imported freely by ``ingest``, ``survey``, ``geostatisti
 """
 
 import warnings
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -67,7 +67,6 @@ def binned_distribution(bins: np.ndarray[np.number]) -> pd.DataFrame:
     bins extend beyond the original range by one bin width on each side, ensuring that all original
     bin values fall within the created intervals.
     """
-
     # Compute binwidth as mean of half the differences
     binwidth = np.mean(np.diff(bins) / 2.0)
 
@@ -80,7 +79,7 @@ def binned_distribution(bins: np.ndarray[np.number]) -> pd.DataFrame:
 
 
 def binify(
-    data: Union[pd.DataFrame, Dict[str, pd.DataFrame]],
+    data: pd.DataFrame | dict[str, pd.DataFrame],
     bins: np.ndarray[np.number],
     bin_column: str,
 ) -> None:
@@ -151,8 +150,8 @@ def binify(
     # Extract bin categories
     try:
         bin_intervals = bin_distribution["interval"].cat.categories
-    except AttributeError:
-        raise ValueError("Failed to create proper interval categories from bins")
+    except AttributeError as err:
+        raise ValueError("Failed to create proper interval categories from bins") from err
 
     # Format new bin column name
     bin_column_name = f"{bin_column}_bin"
@@ -171,7 +170,7 @@ def binify(
 
     elif isinstance(data, dict):
         # Dictionary of DataFrames - modify each DataFrame in place
-        for key, df in data.items():
+        for _key, df in data.items():
             if isinstance(df, pd.DataFrame):
                 _apply_binning(df)  # Automatically skips if column missing
 
@@ -180,13 +179,12 @@ def binify(
 
 
 def _filter_rows(
-    df: Union[pd.Series, pd.DataFrame],
-    filter_dict: Dict[str, Any],
+    df: pd.Series | pd.DataFrame,
+    filter_dict: dict[str, Any],
     include: bool,
-    replace_value: Union[np.number, str, None] = None,
+    replace_value: np.number | str | None = None,
 ) -> pd.DataFrame:
-    """Helper function to filter DataFrame rows."""
-
+    """Filter DataFrame rows based on index or column values."""
     # Get index DataFrame
     index_df = df.index.to_frame(index=False)
 
@@ -209,9 +207,9 @@ def _filter_rows(
                 if col in df_reset.columns
                 else index_df[col]
                 .apply(
-                    lambda x: any(
+                    lambda x, _vals=vals: any(
                         (v in x if isinstance(x, pd.Interval) else v == x)
-                        for v in np.atleast_1d(vals)
+                        for v in np.atleast_1d(_vals)
                     )
                 )
                 .values
@@ -246,12 +244,11 @@ def _filter_rows(
 
 def _filter_columns(
     df: pd.DataFrame,
-    filter_dict: Dict[str, Any],
+    filter_dict: dict[str, Any],
     include: bool,
-    replace_value: Union[str, None] = None,
+    replace_value: str | None = None,
 ) -> pd.DataFrame:
-    """Helper function to filter DataFrame columns."""
-
+    """Filter DataFrame columns based on column index values."""
     # Get column DataFrame
     col_index_df = df.columns.to_frame(index=False)
 
@@ -281,10 +278,10 @@ def _filter_columns(
 
 
 def apply_filters(
-    data: Union[pd.Series, pd.DataFrame],
-    include_filter: Optional[Dict[str, Any]] = None,
-    exclude_filter: Optional[Dict[str, Any]] = None,
-    replace_value: Optional[np.number] = None,
+    data: pd.Series | pd.DataFrame,
+    include_filter: dict[str, Any] | None = None,
+    exclude_filter: dict[str, Any] | None = None,
+    replace_value: np.number | None = None,
 ) -> pd.DataFrame:
     """
     Apply inclusion and exclusion filters to a DataFrame.
@@ -327,7 +324,6 @@ def apply_filters(
     >>> apply_filters(df, include_filter={"length_bin": [1, 2, 3]},\
         exclude_filter={"sex": "unsexed"})
     """
-
     # Create copy
     result = data.copy()
 
@@ -365,8 +361,8 @@ def group_interpolator_creator(
     grouped_data: pd.DataFrame,
     independent_var: str,
     dependent_var: str,
-    contrast_vars: Optional[Union[str, List[str]]] = None,
-) -> Dict:
+    contrast_vars: str | list[str] | None = None,
+) -> dict:
     """
     Create interpolator functions grouped by one or more contrast variables.
 
@@ -455,7 +451,7 @@ def group_interpolator_creator(
 
 
 def create_grouped_series(
-    proportions_dict: Dict[str, pd.DataFrame], group_cols: List[str], value_col: str
+    proportions_dict: dict[str, pd.DataFrame], group_cols: list[str], value_col: str
 ) -> pd.DataFrame:
     """
     Create and combine grouped series from a dictionary of DataFrames.
@@ -492,8 +488,8 @@ def create_grouped_series(
 
 def create_pivot_table(
     df: pd.DataFrame,
-    index_cols: List[str],
-    strat_cols: List[str],
+    index_cols: list[str],
+    strat_cols: list[str],
     value_col: str,
 ) -> pd.DataFrame:
     """
@@ -534,10 +530,10 @@ def create_pivot_table(
 
 
 def create_grouped_table(
-    proportions_dict: Dict[str, pd.DataFrame],
-    group_cols: List[str],
-    index_cols: List[str],
-    strat_cols: List[str],
+    proportions_dict: dict[str, pd.DataFrame],
+    group_cols: list[str],
+    index_cols: list[str],
+    strat_cols: list[str],
     value_col: str,
 ) -> pd.DataFrame:
     """
@@ -581,15 +577,13 @@ def create_grouped_table(
 
 def is_pivot_table(df: pd.DataFrame):
     """
-    Utility function for determine whether a `pandas.DataFrame` comprises a MultiIndex along either
-    axis.
+    Determine whether a ``pandas.DataFrame`` comprises a MultiIndex along either axis.
 
     Parameters
     ----------
     df : pd.DataFrame
         DataFrame containing some type of dataset.
     """
-
     # Check for a MultiIndex
     is_multiindex = isinstance(df.columns, pd.MultiIndex) or isinstance(df.index, pd.MultiIndex)
 
@@ -609,7 +603,7 @@ def is_pivot_table(df: pd.DataFrame):
         return False
 
 
-def round_half_up(n: Union[pd.Series, pd.DataFrame]):
+def round_half_up(n: pd.Series | pd.DataFrame):
     r"""
     Round values to the nearest integer using the "round half up" rule.
 
@@ -665,10 +659,10 @@ def resolve_uid_component(
     column_name: str,
     config: ValidateHaulUID,
     _is_can: pd.Series,
-    _dataset_type: Optional[str] = None,
+    _dataset_type: str | None = None,
 ):
     """
-    Determines the source value for a specific UID component.
+    Determine the source value for a specific UID component.
 
     Resolves the hierarchy between manual configuration overrides,
     DataFrame columns, and model defaults. For nested models (ship/survey),
@@ -699,7 +693,6 @@ def resolve_uid_component(
         A series of resolved values (for nested/mixed sources) or a
         scalar default.
     """
-
     # Get the model from the configuration instance
     config_entry = getattr(config, field_name)
 
@@ -728,6 +721,7 @@ def resolve_uid_component(
                         f"Override: Using input '{field_name}' instead of '{column_name} from "
                         f"'{_dataset_type}['{key}']' DataFrame input.",
                         UserWarning,
+                        stacklevel=2,
                     )
                 output.loc[mask] = getattr(config_entry, key)
             # ---- Use supplied column values from DataFrame
@@ -743,6 +737,7 @@ def resolve_uid_component(
                 f"Override: Using input '{field_name}' instead of '{column_name}' from "
                 f"'{_dataset_type}' DataFrame input.",
                 UserWarning,
+                stacklevel=2,
             )
         return config_entry
 
@@ -751,7 +746,7 @@ def resolve_uid_component(
 
 
 def construct_haul_uids(
-    data: pd.DataFrame, _dataset_type: Optional[str] = None, **params
+    data: pd.DataFrame, _dataset_type: str | None = None, **params
 ) -> pd.Series:
     """
     Assembles the component parts of the Haul UID into a single string series.
@@ -773,7 +768,6 @@ def construct_haul_uids(
     pd.Series
         A series of formatted UID strings ('ship-survey-species-haul').
     """
-
     # Validate configuration
     config = ValidateHaulUID(**params)
 
@@ -805,9 +799,9 @@ def construct_haul_uids(
     )
 
 
-def add_haul_uids(data: pd.DataFrame, _dataset_type: Optional[str] = None, **params) -> None:
+def add_haul_uids(data: pd.DataFrame, _dataset_type: str | None = None, **params) -> None:
     """
-    Adds a 'uid' column to the input DataFrame via in-place mutation.
+    Add a ``'uid'`` column to the input DataFrame via in-place mutation.
 
     The UID is constructed as '{ship}-{survey}-{species}-{haul}'. The logic
     resolves values based on the following priority:
@@ -823,8 +817,7 @@ def add_haul_uids(data: pd.DataFrame, _dataset_type: Optional[str] = None, **par
     data : pd.DataFrame
         Input DataFrame. Must contain at least the 'haul_num' column.
     _dataset_type : str, optional
-        A label used to identify the dataset in warning messages
-        (e.g., 'NASC', 'biometry').
+        A label used to identify the dataset in warning messages (e.g., 'NASC', 'biometry').
     **params : dict
         Optional keyword arguments to override defaults or DataFrame values:
 
@@ -847,7 +840,6 @@ def add_haul_uids(data: pd.DataFrame, _dataset_type: Optional[str] = None, **par
     KeyError
         If 'haul_num' is missing from the input DataFrame.
     """
-
     # Validate that the input DataFrame contains the column 'haul_num'
     if "haul_num" not in data.columns:
         raise KeyError("Required column 'haul_num' missing from input DataFrame 'data'.")
