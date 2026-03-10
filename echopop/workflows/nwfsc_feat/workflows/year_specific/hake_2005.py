@@ -323,7 +323,7 @@ dict_df_bio = ingestion.load_biological_data(
     biodata_filepath=BIODATA_FILE, 
     biodata_sheet_map=BIODATA_SHEETS, 
     column_name_map=FEAT_TO_ECHOPOP_BIODATA_COLUMNS, 
-    subset_dict=BIODATA_SHIP_SPECIES, 
+    survey_subset=BIODATA_SHIP_SPECIES, 
     biodata_label_map=BIODATA_SEX,
     haul_uid_config=HAUL_UID_CONFIG,
 )

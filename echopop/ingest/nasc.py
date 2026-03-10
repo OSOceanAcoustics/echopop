@@ -1033,7 +1033,9 @@ def compute_region_layer_depths(
     return summary.reset_index()
 
 
-def generate_transect_region_haul_key(df: pd.DataFrame, filter_list: List[str]) -> pd.DataFrame:
+def generate_transect_region_haul_key(
+    region_data: pd.DataFrame, filter_list: List[str]
+) -> pd.DataFrame:
     """
     Filter DataFrame by region class patterns and create a mapping.
 
@@ -1042,7 +1044,7 @@ def generate_transect_region_haul_key(df: pd.DataFrame, filter_list: List[str]) 
 
     Parameters
     ----------
-    df : |pd.DataFrame|
+    region_data : |pd.DataFrame|
         |pd.DataFrame| with processed region data
     filter_list : List[str]
         List of region class names to include in the filter
@@ -1063,17 +1065,19 @@ def generate_transect_region_haul_key(df: pd.DataFrame, filter_list: List[str]) 
     filter_set = {name.lower() for name in filter_list}
 
     # Create df copy
-    df_copy = df.copy()
+    region_data_copy = region_data.copy()
 
     # Change class names to lowercase
-    df_copy.loc[:, "region_class"] = df_copy.loc[:, "region_class"].str.lower()
+    region_data_copy.loc[:, "region_class"] = region_data_copy.loc[:, "region_class"].str.lower()
 
     # Filter
-    df_filtered = df_copy[df_copy["region_class"].str.lower().isin(filter_set)].copy()
+    region_data_filtered = region_data_copy[
+        region_data_copy["region_class"].str.lower().isin(filter_set)
+    ].copy()
 
     # Create final mapping
     return (
-        df_filtered.groupby(["transect_num", "haul_num", "region_id"])[
+        region_data_filtered.groupby(["transect_num", "haul_num", "region_id"])[
             ["region_class", "region_name"]
         ]
         .first()

@@ -105,11 +105,11 @@ df_exports_with_regions = nasc.process_region_names(
 
 # Generate transect-region-haul key from compiled values
 df_transect_region_haul_key_no_age1 = nasc.generate_transect_region_haul_key(
-    df=df_exports_with_regions, filter_list=["Hake", "Hake Mix"]
+    region_data=df_exports_with_regions, filter_list=["Hake", "Hake Mix"]
 )
 
 df_transect_region_haul_key_all_ages = nasc.generate_transect_region_haul_key(
-    df=df_exports_with_regions, filter_list=["Age-1 Hake", "Age-1", "Hake", "Hake Mix"]
+    region_data=df_exports_with_regions, filter_list=["Age-1 Hake", "Age-1", "Hake", "Hake Mix"]
 )
 
 # ==================================================================================================
@@ -161,7 +161,7 @@ BIODATA_SHEETS = {
     "length": "biodata_length",
     "specimen": "biodata_specimen",
 }
-SUBSET_DICT = {
+survey_subset = {
     "ships": {160: {"survey": 201906}, 584: {"survey": 2019097, "haul_offset": 200}},
     "species_code": [22500],
 }
@@ -177,7 +177,7 @@ dict_df_bio = load_biological_data(
     biodata_filepath=DATA_ROOT / "Biological/1995-2025_Survey_Biodata.xlsx",
     biodata_sheet_map=BIODATA_SHEETS,
     column_name_map=FEAT_TO_ECHOPOP_BIODATA_COLUMNS,
-    subset_dict=SUBSET_DICT,
+    survey_subset=SUBSET_DICT,
     biodata_label_map=BIODATA_SEX,
 )
 

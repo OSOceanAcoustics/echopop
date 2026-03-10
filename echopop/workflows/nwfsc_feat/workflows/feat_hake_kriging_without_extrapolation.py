@@ -247,7 +247,8 @@ else:
         "     Searching for the export regions: 'Age-1 Hake', 'Age-1 Hake Mix', 'Hake', 'Hake Mix'"
     )
     df_transect_region_haul_key = ingestion.nasc.generate_transect_region_haul_key(
-        df=df_exports_with_regions, filter_list=["Age-1 Hake", "Age-1 Hake Mix", "Hake", "Hake Mix"]
+        region_data=df_exports_with_regions, 
+        filter_list=["Age-1 Hake", "Age-1 Hake Mix", "Hake", "Hake Mix"]
     )
 
     # CONSOLIDATE THE EXPORTS WITH TRANSECT-REGION-HAUL MAPPINGS
@@ -284,7 +285,7 @@ dict_df_bio = ingestion.load_biological_data(
     biodata_filepath=BIODATA_FILE,
     biodata_sheet_map=BIODATA_SHEETS,
     column_name_map=FEAT_TO_ECHOPOP_BIODATA_COLUMNS,
-    subset_dict=BIODATA_PROC,
+    survey_subset=BIODATA_PROC,
     biodata_label_map=BIODATA_LABELS,
 )
 logging.info("Biodata ingestion complete\n" "'dict_df_bio' created.")

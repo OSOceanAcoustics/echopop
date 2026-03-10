@@ -246,7 +246,7 @@ else:
         f"     Searching for the export regions: {', '.join(CLASS_REGIONS)}"
     )
     df_transect_region_haul_key = ingestion.nasc.generate_transect_region_haul_key(
-        df=df_exports_with_regions,
+        region_data=df_exports_with_regions,
         filter_list=CLASS_REGIONS
     )
     
@@ -313,7 +313,7 @@ dict_df_bio = ingestion.load_biological_data(
     biodata_filepath=BIODATA_FILE, 
     biodata_sheet_map=BIODATA_SHEETS, 
     column_name_map=FEAT_TO_ECHOPOP_BIODATA_COLUMNS, 
-    subset_dict=BIODATA_SHIP_SPECIES, 
+    survey_subset=BIODATA_SHIP_SPECIES, 
     biodata_label_map=BIODATA_SEX,
     haul_uid_config=HAUL_UID_CONFIG,
 )

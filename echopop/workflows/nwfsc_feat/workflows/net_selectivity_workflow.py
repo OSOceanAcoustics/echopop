@@ -165,7 +165,7 @@ FEAT_TO_ECHOPOP_BIODATA_COLUMNS = {
 dict_df_bio = ingestion.load_materialized_biodata_views(
     biodata_filepaths=BIODATA_FILES,
     column_name_map=FEAT_TO_ECHOPOP_BIODATA_COLUMNS,
-    subset_dict=BIODATA_SHIP_SPECIES, 
+    survey_subset=BIODATA_SHIP_SPECIES, 
     haul_uid_config=HAUL_UID_CONFIG,
 )
 

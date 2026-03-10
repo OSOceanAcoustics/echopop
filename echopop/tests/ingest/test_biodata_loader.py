@@ -40,7 +40,10 @@ def test_load_biological_data_with_subset(bio_excel_file, bio_sheet_map, subset_
     """Test loading with subset filtering."""
     # Pass an empty dict for column_name_map
     result = load_biological_data(
-        bio_excel_file, bio_sheet_map, column_name_map={"haul": "haul_num"}, subset_dict=subset_dict
+        bio_excel_file,
+        bio_sheet_map,
+        column_name_map={"haul": "haul_num"},
+        survey_subset=subset_dict,
     )
 
     for df in result.values():
