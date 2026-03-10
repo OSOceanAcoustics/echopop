@@ -1,17 +1,19 @@
+"""Transect-level data processing and aggregation for acoustic survey analysis."""
+
 import numpy as np
 import pandas as pd
 
 
 def compute_interval_distance(
-    df_nasc: pd.DataFrame,
+    nasc_data: pd.DataFrame,
     interval_threshold: float = 0.05,
 ) -> None:
     """
-    Calculate along-transect interval distances and add to DataFrame
+    Calculate along-transect interval distances and add to DataFrame.
 
     Parameters
     ----------
-    df_nasc : pd.DataFrame
+    nasc_data : pd.DataFrame
         DataFrame containing NASC data with distance and spacing information.
         Must contain columns: 'distance_s', 'distance_e', 'transect_spacing'
     interval_threshold : float, default 0.05
@@ -48,22 +50,22 @@ def compute_interval_distance(
     """
     # Calculate the along-transect interval distance
     # ---- Use forward difference to get distance to next point
-    df_nasc["distance_interval"] = df_nasc["distance_s"].diff(periods=-1).abs()
+    nasc_data["distance_interval"] = nasc_data["distance_s"].diff(periods=-1).abs()
 
     # Handle the final interval (no next point available)
     # ---- Use distance_e - distance_s for the last measurement
-    df_nasc.loc[df_nasc.index[-1], "distance_interval"] = (
-        df_nasc["distance_e"].iloc[-1] - df_nasc["distance_s"].iloc[-1]
+    nasc_data.loc[nasc_data.index[-1], "distance_interval"] = (
+        nasc_data["distance_e"].iloc[-1] - nasc_data["distance_s"].iloc[-1]
     )
 
     # Identify and correct erroneous interval lengths
     # ---- Calculate median interval for comparison
-    median_interval = np.nanmedian(df_nasc["distance_interval"])
+    median_interval = np.nanmedian(nasc_data["distance_interval"])
 
     # Find intervals that deviate significantly from median
-    deviation_mask = np.abs(df_nasc["distance_interval"] - median_interval) > interval_threshold
+    deviation_mask = np.abs(nasc_data["distance_interval"] - median_interval) > interval_threshold
 
     # Replace erroneous intervals with direct distance calculation
-    df_nasc.loc[deviation_mask, "distance_interval"] = (
-        df_nasc.loc[deviation_mask, "distance_e"] - df_nasc.loc[deviation_mask, "distance_s"]
+    nasc_data.loc[deviation_mask, "distance_interval"] = (
+        nasc_data.loc[deviation_mask, "distance_e"] - nasc_data.loc[deviation_mask, "distance_s"]
     )

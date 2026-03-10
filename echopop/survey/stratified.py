@@ -1,4 +1,6 @@
-from typing import Any, Dict, List, Literal, Optional, Tuple
+"""Stratified survey analysis including kriging, bootstrap resampling, and biomass estimation."""
+
+from typing import Any, Literal
 
 import awkward as awk
 import geopy.distance
@@ -81,8 +83,8 @@ class JollyHampton:
 
     def __init__(
         self,
-        model_parameters: Dict[str, Any],
-        resample_seed: Optional[int] = None,
+        model_parameters: dict[str, Any],
+        resample_seed: int | None = None,
     ):
         # Ingest model parameters
         self.model_params = model_parameters
@@ -105,7 +107,7 @@ class JollyHampton:
     def _partition_data_into_transects(
         self,
         data_df: pd.DataFrame,
-    ) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    ) -> tuple[pd.DataFrame, pd.DataFrame]:
         """
         Partition gridded dataset into virtual transects based on latitude.
 
@@ -183,7 +185,6 @@ class JollyHampton:
         pd.DataFrame
             Filtered and indexed DataFrame ready for virtual transect calculations.
         """
-
         # Supply required columns
         required_cols = ["transect_num", "longitude", "latitude", "area", variable]
 
@@ -231,7 +232,6 @@ class JollyHampton:
         Transect distances are calculated using great circle distance (nautical miles). Transect
         areas account for edge effects where end transects get half the area of interior transects.
         """
-
         # Initialize with mean latitude values for each transect
         virtual_transect_data = virtual_df.groupby(level=0)["latitude"].mean().to_frame("latitude")
 
@@ -267,7 +267,7 @@ class JollyHampton:
         self,
         data_df: pd.DataFrame,
         geostrata_df: pd.DataFrame,
-        stratify_by: List[str],
+        stratify_by: list[str],
         variable: str,
     ) -> pd.DataFrame:
         """
@@ -321,7 +321,7 @@ class JollyHampton:
 
     def _prepare_bootstrap_arrays(
         self,
-    ) -> Tuple[awk.Array, awk.Array, awk.Array]:
+    ) -> tuple[awk.Array, awk.Array, awk.Array]:
         """
         Prepare awkward arrays for bootstrap resampling.
 
@@ -444,7 +444,6 @@ class JollyHampton:
         The DataFrame is pivoted so that strata become columns and replicates become rows,
         facilitating downstream statistical analysis.
         """
-
         # Get sampling fractions to scale totals back to stratum level
         sampling_fractions = (
             self.strata_summary["num_transects_to_sample"] / self.strata_summary["transect_counts"]
@@ -499,7 +498,7 @@ class JollyHampton:
     def _compute_transect_statistics(
         self,
         data_df: pd.DataFrame,
-        stratify_by: List[str],
+        stratify_by: list[str],
     ) -> None:
         """
         Summarize transect-level data within strata.
@@ -580,7 +579,7 @@ class JollyHampton:
 
     def _compute_strata_statistics(
         self,
-        stratify_by: List[str],
+        stratify_by: list[str],
     ) -> None:
         """
         Summarize data at the stratum level.
@@ -599,7 +598,6 @@ class JollyHampton:
         'strata_transect_proportion' parameter, which is applied to the total transect count in
         each stratum.
         """
-
         # Get model parameters
         mp = self.model_params
 
@@ -631,7 +629,7 @@ class JollyHampton:
                 (strata_summary[self.variable] / strata_summary[s]).to_frame(
                     f"{self.variable}{n}density"
                 )
-                for s, n in zip(["distance", "area"], ["_distance_", "_"])
+                for s, n in zip(["distance", "area"], ["_distance_", "_"], strict=False)
             ],
             axis=1,
         )
@@ -735,7 +733,6 @@ class JollyHampton:
         For strata with only one transect to sample, the degrees of freedom is set to 1 to avoid
         division by zero in variance calculations.
         """
-
         # Adjustment for single-transect strata
         sample_offset = np.where(self.strata_summary["num_transects_to_sample"] == 1, 0, 1)
 
@@ -781,7 +778,6 @@ class JollyHampton:
         This method implements the distance-weighted variance calculation used in acoustic survey
         analysis, where variance is weighted by the square of the distance weights.
         """
-
         # Convert values to per-distance basis, handling division by zero
         with np.errstate(divide="ignore", invalid="ignore"):
             values_adjusted = awk.where(
@@ -800,7 +796,7 @@ class JollyHampton:
     def stratified_bootstrap(
         self,
         data_df: pd.DataFrame,
-        stratify_by: List[str],
+        stratify_by: list[str],
         variable: str,
     ) -> None:
         """
@@ -832,7 +828,6 @@ class JollyHampton:
         4. Compute distance-weighted means and variances
         5. Format results into structured DataFrame
         """
-
         # Store the response variable name
         self.variable = variable
 
@@ -903,8 +898,9 @@ class JollyHampton:
         ] = "t-jackknife",
     ) -> pd.DataFrame:
         """
-        Generate summary statistics and confidence intervals from bootstrap results. This computes
-        confidence intervals for both stratum-level and survey-wide estimates using the
+        Generate summary statistics and confidence intervals from bootstrap results.
+
+        Computes confidence intervals for both stratum-level and survey-wide estimates using the
         specified bootstrap method.
 
         Parameters

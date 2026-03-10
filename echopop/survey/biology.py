@@ -1,4 +1,4 @@
-from typing import List
+"""Biological data processing functions for length, weight, and age distributions."""
 
 import numpy as np
 import pandas as pd
@@ -48,7 +48,7 @@ def fit_length_weight_regression(data: pd.DataFrame) -> pd.Series:
     return regression_coefficients
 
 
-def quantize_length_data(df, group_columns: List[str]):
+def quantize_length_data(df, group_columns: list[str]):
     """
     Process DataFrame to ensure it has 'length' and 'length_count' columns.
 
@@ -109,7 +109,6 @@ def quantize_length_data(df, group_columns: List[str]):
     The resulting DataFrame will have a MultiIndex with group_columns + ['length'] and a single
     'length_count' column containing the aggregated counts.
     """
-
     # Create copy
     df = df.copy()
 

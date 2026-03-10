@@ -718,7 +718,7 @@ logging.info(
     "Defining transect interval distances...\n"
     "     Along-transect interval distance (nmi) threshold: 0.5 nmi"
 )
-transect.compute_interval_distance(df_nasc=df_nasc, interval_threshold=0.05)
+transect.compute_interval_distance(nasc_data=df_nasc, interval_threshold=0.05)
 
 # SET TRANSECT INTERVAL AREAS
 logging.info("Defining transect interval areas...")

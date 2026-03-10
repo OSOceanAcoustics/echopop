@@ -429,7 +429,7 @@ df_nasc = invert_hake.invert(
 # ==================================================================================================
 # CONVERT TO BIOMASS
 # SET TRANSECT INTERVAL DISTANCES
-transect.compute_interval_distance(df_nasc=df_nasc, interval_threshold=0.05)
+transect.compute_interval_distance(nasc_data=df_nasc, interval_threshold=0.05)
 
 # SET TRANSECT INTERVAL AREAS
 df_nasc["area_interval"] = (
