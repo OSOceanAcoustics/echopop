@@ -1,5 +1,10 @@
+"""
+Pydantic and Pandera validators for spatial methods.
+
+Covers coordinate manipulation, method parameterization, and related utilities.
+"""
+
 import re
-from typing import Optional, Tuple
 
 import pandas as pd
 import pandera.pandas as pa
@@ -9,18 +14,23 @@ from ..core.validators import BaseDataFrame, BaseDictionary
 
 
 class MeshDF(BaseDataFrame):
-    longitude: Optional[float] = pa.Field(ge=-180.0, le=180.0, nullable=False)
-    latitude: Optional[float] = pa.Field(ge=-90.0, le=90.0, nullable=False)
-    x: Optional[float] = pa.Field(nullable=False)
-    y: Optional[float] = pa.Field(nullable=False)
-    area: Optional[float] = pa.Field(nullable=False)
-    fraction: Optional[float] = pa.Field(nullable=False)
+    """Pandera schema for validating the kriging mesh DataFrame."""
+
+    longitude: float | None = pa.Field(ge=-180.0, le=180.0, nullable=False)
+    latitude: float | None = pa.Field(ge=-90.0, le=90.0, nullable=False)
+    x: float | None = pa.Field(nullable=False)
+    y: float | None = pa.Field(nullable=False)
+    area: float | None = pa.Field(nullable=False)
+    fraction: float | None = pa.Field(nullable=False)
 
     class Config(BaseDataFrame.Config):
+        """Pandera config for ``MeshDF``."""
+
         title = "kriging mesh DataFrame"
 
     @classmethod
     def pre_validate(cls, df: pd.DataFrame) -> pd.DataFrame:
+        """Pre-validate and coerce the mesh DataFrame before pandera schema checks."""
         # Check for joint longitude-latitude
         lon_lat = {"longitude", "latitude"} <= set(df.columns)
 
@@ -45,16 +55,21 @@ class MeshDF(BaseDataFrame):
 
 
 class TransectsDF(BaseDataFrame):
-    longitude: Optional[float] = pa.Field(ge=-180.0, le=180.0, nullable=False)
-    latitude: Optional[float] = pa.Field(ge=-90.0, le=90.0, nullable=False)
-    x: Optional[float] = pa.Field(nullable=False)
-    y: Optional[float] = pa.Field(nullable=False)
+    """Pandera schema for validating along-transect survey results DataFrames."""
+
+    longitude: float | None = pa.Field(ge=-180.0, le=180.0, nullable=False)
+    latitude: float | None = pa.Field(ge=-90.0, le=90.0, nullable=False)
+    x: float | None = pa.Field(nullable=False)
+    y: float | None = pa.Field(nullable=False)
 
     class Config(BaseDataFrame.Config):
+        """Pandera config for ``TransectsDF``."""
+
         title = "along-transect survey results DataFrame"
 
     @classmethod
     def pre_validate(cls, df: pd.DataFrame) -> pd.DataFrame:
+        """Pre-validate and coerce the transects DataFrame before pandera schema checks."""
         # Check for joint longitude-latitude
         lon_lat = {"longitude", "latitude"} <= set(df.columns)
 
@@ -72,28 +87,33 @@ class TransectsDF(BaseDataFrame):
 
 
 class ValidateHullCropArgs(BaseDictionary):
+    """Validation model for convex hull mesh-cropping arguments."""
+
     transects: pd.DataFrame
     mesh: pd.DataFrame
     num_nearest_transects: int = Field(gt=0)
     mesh_buffer_distance: float = Field(ge=0.0)
     projection: str
-    coordinate_names: Tuple[str, str]
+    coordinate_names: tuple[str, str]
     model_config = ConfigDict(title="hull convex method for kriging mesh cropping")
 
     @field_validator("mesh", mode="after")
     def validate_mesh(cls, v):
+        """Validate the mesh DataFrame against the ``MeshDF`` pandera schema."""
         # Validate with pandera
         return MeshDF.validate(v)
 
     @field_validator("transects", mode="after")
     def validate_transects(cls, v):
+        """Validate the transects DataFrame against the ``TransectsDF`` pandera schema."""
         # Validate with pandera
         return TransectsDF.validate(v)
 
     @field_validator("projection", mode="before")
     def validate_init(cls, v):
+        """Coerce and validate the EPSG projection string."""
         # ---- Convert to a string if read in as an integer
-        if isinstance(v, (int, float)):
+        if isinstance(v, int | float):
             v = str(v)
         # ---- Convert to lowercase
         v = v.lower()
@@ -115,6 +135,7 @@ class ValidateHullCropArgs(BaseDictionary):
 
     @model_validator(mode="after")
     def validate_coordinate_overlap(self):
+        """Ensure mesh and transect DataFrames share the same coordinate column names."""
         # Get the mesh and transects DataFrames
         mesh = self.mesh
         transects = self.transects

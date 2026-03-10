@@ -1,3 +1,5 @@
+"""Pydantic validators for scattering model parameterization."""
+
 from __future__ import annotations
 
 from typing import Literal
@@ -10,8 +12,10 @@ from ..core.validators import BaseDictionary
 
 class ValidatePCDWBAParams(BaseDictionary):
     """
-    Validation schema for Phase-Corrected Distorted Wave Born Approximation (PCDWBA) model
-    parameters.
+    Validate Phase-Corrected Distorted Wave Born Approximation (PCDWBA) model parameters.
+
+    Ensures all required physical and biological parameters are positive and within expected
+    ranges for the PCDWBA acoustic scattering model.
     """
 
     g: float = Field(gt=0.0, le=np.inf, allow_inf_nan=True)
@@ -27,9 +31,7 @@ class ValidatePCDWBAParams(BaseDictionary):
 
 
 class DistributionParameters(BaseDictionary):
-    """
-    Configuration parameters for probability distributions used in scattering models.
-    """
+    """Configuration parameters for probability distributions used in scattering models."""
 
     bins: int = Field(default=30)
     family: Literal["gaussian", "uniform"] = Field(default="gaussian")
@@ -37,9 +39,7 @@ class DistributionParameters(BaseDictionary):
 
 
 class ValidatePCDWBASettings(BaseDictionary):
-    """
-    Validation schema for PCDWBA model computational settings and configuration.
-    """
+    """Validation schema for PCDWBA model computational settings and configuration."""
 
     frequency_interval: float = Field(gt=0.0, allow_inf_nan=False)
     length_distribution: DistributionParameters = Field(default_factory=DistributionParameters)

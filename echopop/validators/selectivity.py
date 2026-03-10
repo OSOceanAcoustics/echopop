@@ -1,19 +1,23 @@
-from typing import Optional
+"""Pydantic validators for net selectivity model parameterization."""
+
+from typing import Self
 
 from pydantic import Field, model_validator
-from typing_extensions import Self
 
 from ..core.validators import BaseDictionary
 
 
 class ValidateSelectivityParams(BaseDictionary):
-    intercept: Optional[float] = Field(default=None, allow_inf_nan=False)
-    slope: Optional[float] = Field(default=None, allow_inf_nan=False)
-    l50: Optional[float] = Field(default=None, allow_inf_nan=False, gt=0.0)
-    sr: Optional[float] = Field(default=None, allow_inf_nan=False, gt=0.0)
+    """Validation model for trawl selectivity parameters."""
+
+    intercept: float | None = Field(default=None, allow_inf_nan=False)
+    slope: float | None = Field(default=None, allow_inf_nan=False)
+    l50: float | None = Field(default=None, allow_inf_nan=False, gt=0.0)
+    sr: float | None = Field(default=None, allow_inf_nan=False, gt=0.0)
 
     @model_validator(mode="after")
     def validate_parameter_sets(self) -> Self:
+        """Ensure exactly one complete parameter set (regression or metrics) is provided."""
         # Define the two valid sets
         regression_set = {self.intercept, self.slope}
         metrics_set = {self.l50, self.sr}

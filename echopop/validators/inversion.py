@@ -1,6 +1,9 @@
+"""Pydantic and Pandera validators for inversion-based methods."""
+
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Literal, Optional
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any, Literal
 
 import numpy as np
 import pandas as pd
@@ -14,7 +17,7 @@ if TYPE_CHECKING:
 
 class TSLRegressionParameters(BaseDictionary):
     """
-    Target strength - length regression parameters
+    Target strength - length regression parameters.
 
     Parameters
     ----------
@@ -66,8 +69,8 @@ class ValidateLengthTS(BaseDictionary):
     """
 
     ts_length_regression: TSLRegressionParameters
-    stratify_by: List[str]
-    expected_strata: Optional[np.ndarray[np.number]] = Field(default=None)
+    stratify_by: list[str]
+    expected_strata: np.ndarray[np.number] | None = Field(default=None)
     impute_missing_strata: bool = Field(default=True)
     haul_replicates: bool = Field(default=True)
     haul_column: Literal["haul_num", "uid"] = Field(default="haul_num")
@@ -75,12 +78,14 @@ class ValidateLengthTS(BaseDictionary):
 
     @field_validator("stratify_by", mode="before")
     def validate_stratify_by(cls, v):
+        """Coerce a single string stratifier into a list."""
         if isinstance(v, str):
             v = [v]
         return v
 
     @field_validator("expected_strata", mode="before")
     def validate_expected_strata(cls, v):
+        """Coerce a list of strata values into a NumPy array."""
         if v is None:
             return v
 
@@ -92,15 +97,16 @@ class ValidateLengthTS(BaseDictionary):
 
 class ScatterDF(BaseDataFrame):
     """
-    Validates MultiIndex DataFrame structure with required top-level columns and nested frequency
-    index.
+    Validate a MultiIndex DataFrame of acoustic backscatter data.
 
-    Ensures the top-level column names include 'sv_mean', 'nasc', and 'thickness_mean', and that
-    the second-level column names ('frequency') are numeric. All values under each frequency must
-    be floats.
+    Ensures the top-level column names include ``'sv_mean'``, ``'nasc'``, and ``'thickness_mean'``,
+    and that the second-level column names (``'frequency'``) are numeric. All values under each
+    frequency must be floats.
     """
 
     class Config(BaseDataFrame.Config):
+        """Pandera config for ``ScatterDF``."""
+
         title = "acoustic backscatter export DataFrame"
         multiindex_strict = True
         multiindex_coerce = True
@@ -108,6 +114,7 @@ class ScatterDF(BaseDataFrame):
 
     @classmethod
     def pre_validate(cls, df: pd.DataFrame) -> pd.DataFrame:
+        """Pre-validate and coerce the backscatter DataFrame before pandera schema checks."""
         # Raise Error if not a MultiIndex DataFrame
         if not isinstance(df.columns, pd.MultiIndex):
             raise TypeError("Expected MultiIndex columns.")
@@ -139,9 +146,7 @@ class ScatterDF(BaseDataFrame):
 
 
 class EnvironmentParameters(BaseDictionary):
-    """
-    Environmental and medium parameters for acoustic scattering models.
-    """
+    """Environmental and medium parameters for acoustic scattering models."""
 
     sound_speed_sw: float = Field(default=1500.0, gt=0.0, allow_inf_nan=False)
     density_sw: float = Field(default=1025.0, gt=0.0, allow_inf_nan=False)
@@ -149,20 +154,19 @@ class EnvironmentParameters(BaseDictionary):
 
 
 class SimulationParameters(BaseDictionary):
-    """
-    Configuration parameters for inversion simulation and optimization.
-    """
+    """Configuration parameters for inversion simulation and optimization."""
 
-    iter_cb: Optional[Callable] = Field(default=None)
-    monte_carlo: Optional[bool] = Field(default=None)
-    mc_realizations: Optional[int] = Field(default=None)
-    mc_seed: Optional[int] = Field(default=None)
+    iter_cb: Callable | None = Field(default=None)
+    monte_carlo: bool | None = Field(default=None)
+    mc_realizations: int | None = Field(default=None)
+    mc_seed: int | None = Field(default=None)
     scale_parameters: bool = Field(default=True)
     minimum_frequency_count: int = Field(default=2)
     model_config = ConfigDict(title="inversion simulation parameters")
 
     @model_validator(mode="after")
     def validate_monte_carlo_realizations(self):
+        """Ensure Monte Carlo realization count is set when Monte Carlo mode is enabled."""
         # Get `monte_carlo`
         monte_carlo = self.monte_carlo or False
 
@@ -177,9 +181,7 @@ class SimulationParameters(BaseDictionary):
 
 
 class ValidateInversionMatrix(BaseDictionary):
-    """
-    Validation model for InversionMatrix class configuration.
-    """
+    """Validation model for InversionMatrix class configuration."""
 
     data: pd.DataFrame
     simulation_settings: SimulationParameters = Field(default_factory=SimulationParameters)
@@ -187,14 +189,13 @@ class ValidateInversionMatrix(BaseDictionary):
 
     @field_validator("data", mode="after")
     def validate_data(cls, v):
+        """Validate the backscatter DataFrame against the ``ScatterDF`` schema."""
         # Validate with pandera
         return ScatterDF.validate(v)
 
 
 class ModelSettingsParameters(BaseDictionary):
-    """
-    Configuration parameters for acoustic scattering models.
-    """
+    """Configuration parameters for acoustic scattering models."""
 
     type: str
     environment: EnvironmentParameters = Field(default_factory=EnvironmentParameters)
@@ -202,18 +203,16 @@ class ModelSettingsParameters(BaseDictionary):
 
 
 class ValidateBuildModelArgs(BaseDictionary):
-    """
-    Validation model for scattering model build arguments.
-    """
+    """Validation model for scattering model build arguments."""
 
-    model_parameters: "InvParameters"
+    model_parameters: InvParameters
     model_settings: ModelSettingsParameters
     model_config = ConfigDict(
         title="scattering model preparation and assembly", protected_namespaces=()
     )
 
     @staticmethod
-    def _check_variable(params: Dict[str, Any], variable: str, validator: Any):
+    def _check_variable(params: dict[str, Any], variable: str, validator: Any):
 
         # Get the schema JSON
         properties = validator.model_json_schema()["properties"]
@@ -242,6 +241,7 @@ class ValidateBuildModelArgs(BaseDictionary):
 
     @model_validator(mode="after")
     def validate_model_parameterization(self):
+        """Validate scattering model parameters and settings against the model-specific schema."""
         from ..inversion import InvParameters
         from .scattering_models import SCATTERING_MODEL_PARAMETERS
 
@@ -299,14 +299,17 @@ class ValidateBuildModelArgs(BaseDictionary):
 
 
 class SingleParameter(BaseDictionary):
-    min: Optional[float] = Field(default=-np.inf, allow_inf_nan=True)
+    """Pydantic model for a single bounded optimization parameter."""
+
+    min: float | None = Field(default=-np.inf, allow_inf_nan=True)
     value: float = Field(allow_inf_nan=False)
-    max: Optional[float] = Field(default=np.inf, allow_inf_nan=True)
+    max: float | None = Field(default=np.inf, allow_inf_nan=True)
     vary: bool = Field(default=False)
     model_config = ConfigDict(title="values for lmfit.Parameters class required for optimization")
 
     @model_validator(mode="after")
     def check_bounds(self):
+        """Verify that min ≤ value ≤ max for the parameter bounds."""
         if self.min > self.max:
             raise ValueError(f"min ({self.min}) cannot be greater than max ({self.max}).")
         if not (self.min <= self.value <= self.max):
@@ -316,7 +319,8 @@ class SingleParameter(BaseDictionary):
         return self
 
 
-class ModelInputParameters(RootModel[Dict[str, "SingleParameter"]]):
+class ModelInputParameters(RootModel[dict[str, "SingleParameter"]]):
+    """Root model mapping parameter names to ``SingleParameter`` instances."""
 
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
@@ -326,6 +330,7 @@ class ModelInputParameters(RootModel[Dict[str, "SingleParameter"]]):
     @model_validator(mode="before")
     @classmethod
     def prevalidator_trans(cls, data):
+        """Coerce an ``InvParameters`` instance into a plain dictionary before validation."""
         # Use TYPE_CHECKING import
         # if TYPE_CHECKING:
         #     from ..inversion import InvParameters  # noqa: F401
@@ -340,9 +345,7 @@ class ModelInputParameters(RootModel[Dict[str, "SingleParameter"]]):
     # Validator method
     @classmethod
     def judge(cls, **kwargs):
-        """
-        Validator method
-        """
+        """Validate kwargs and return a model instance, re-raising any ``ValidationError``."""
         try:
             return cls(**kwargs)
         except ValidationError as e:
@@ -351,7 +354,5 @@ class ModelInputParameters(RootModel[Dict[str, "SingleParameter"]]):
     # Factory method
     @classmethod
     def create(cls, **kwargs):
-        """
-        Factory creation method
-        """
+        """Validate kwargs and return a dumped parameter dictionary."""
         return cls.judge(**kwargs).model_dump(exclude_none=True)
