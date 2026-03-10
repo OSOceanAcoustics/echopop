@@ -14,12 +14,12 @@ def compute_interval_distance(
     Parameters
     ----------
     nasc_data : pd.DataFrame
-        DataFrame containing NASC data with distance and spacing information.
-        Must contain columns: 'distance_s', 'distance_e', 'transect_spacing'
+        DataFrame containing NASC data with distance and spacing information. Must contain columns:
+        'distance_s', 'distance_e', 'transect_spacing'
     interval_threshold : float, default 0.05
-        Along-transect interval threshold for detecting erroneous values.
-        Values that deviate from the median interval by more than this threshold
-        will be corrected using distance_e - distance_s calculation.
+        Along-transect interval threshold for detecting erroneous values. Values that deviate from
+        the median interval by more than this threshold will be corrected using 'distance_e' -
+        'distance_s' calculation.
 
     Returns
     -------
@@ -40,13 +40,12 @@ def compute_interval_distance(
 
     Notes
     -----
-    This function calculates the along-track transect interval length.
-    It identifies and corrects potentially erroneous values at transect endpoints
-    by comparing intervals to the median and replacing outliers with direct
-    distance calculations (distance_e - distance_s).
+    This function calculates the along-track transect interval length. It identifies and corrects
+    potentially erroneous values at transect endpoints by comparing intervals to the median and
+    replacing outliers with direct distance calculations (distance_e - distance_s).
 
-    The interval calculation uses diff(periods=-1) to compute forward differences,
-    making each interval represent the distance to the next measurement point.
+    The interval calculation uses diff(periods=-1) to compute forward differences, making each
+    interval represent the distance to the next measurement point.
     """
     # Calculate the along-transect interval distance
     # ---- Use forward difference to get distance to next point

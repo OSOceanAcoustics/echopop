@@ -151,7 +151,7 @@ def test_JollyHampton_dof_calculation(prepared_jolly_hampton):
 
     dof = jh._dof()
 
-    assert isinstance(dof, (np.ndarray, pd.Series))
+    assert isinstance(dof, np.ndarray | pd.Series)
     assert len(dof) == 2  # Two strata
     assert (dof > 0).all()  # All DOF should be positive
 
@@ -259,7 +259,7 @@ def test_JollyHampton_create_virtual_transects_basic():
     )
 
     virtual_data = jh.create_virtual_transects(
-        data_df=grid_data,
+        mesh_data=grid_data,
         geostrata=geostrata,
         stratify_by=["geostratum_inpfc"],
         variable="biomass",

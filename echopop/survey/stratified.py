@@ -126,12 +126,13 @@ class JollyHampton:
             Tuple containing:
 
             - Modified data DataFrame with added 'transect_num' column
+
             - Lookup DataFrame mapping latitude to transect numbers
 
         Notes
         -----
-        The number of transects per latitude degree is controlled by the
-        'transects_per_latitude' parameter in model_parameters.
+        The number of transects per latitude degree is controlled by the 'transects_per_latitude'
+        parameter in ``model_parameters``.
         """
         # Get model parameters
         mp = self.model_params
@@ -265,8 +266,8 @@ class JollyHampton:
 
     def create_virtual_transects(
         self,
-        data_df: pd.DataFrame,
-        geostrata_df: pd.DataFrame,
+        mesh_data: pd.DataFrame,
+        geostrata: pd.DataFrame,
         stratify_by: list[str],
         variable: str,
     ) -> pd.DataFrame:
@@ -278,10 +279,10 @@ class JollyHampton:
 
         Parameters
         ----------
-        data_df : pd.DataFrame
-            Input DataFrame containing gridded survey data with columns:
-            latitude, longitude, area, and the response variable.
-        geostrata_df : pd.DataFrame
+        mesh_data : pd.DataFrame
+            Input DataFrame containing gridded survey data with columns: latitude, longitude, area,
+            and the response variable.
+        geostrata : pd.DataFrame
             DataFrame containing geographical stratum boundaries and definitions.
         stratify_by : List[str]
             List of column names to stratify by (typically geographical strata).
@@ -300,7 +301,7 @@ class JollyHampton:
         approach in systematic acoustic surveys.
         """
         # Assign transect numbers and get the latitude-transect key
-        data_proc, latitude_key = self._partition_data_into_transects(data_df.copy())
+        data_proc, latitude_key = self._partition_data_into_transects(mesh_data.copy())
 
         # Initialize the virtual transects DataFrame
         transects_df = self._format_virtual_transects(data_proc, variable)
@@ -314,7 +315,7 @@ class JollyHampton:
 
         # Stratify the virtual transects
         virtual_df = join_geostrata_by_latitude(
-            data=virtual_df, geostrata=geostrata_df, stratum_name=stratify_by[0]
+            data=virtual_df, geostrata=geostrata, stratum_name=stratify_by[0]
         )
 
         return virtual_df.reset_index()
@@ -325,8 +326,8 @@ class JollyHampton:
         """
         Prepare awkward arrays for bootstrap resampling.
 
-        Creates nested arrays containing bootstrap samples of transects for each
-        stratum, organized by distances, areas, and response variable values.
+        Creates nested arrays containing bootstrap samples of transects for each stratum, organized
+        by distances, areas, and response variable values.
 
         Returns
         -------
@@ -334,13 +335,15 @@ class JollyHampton:
             Tuple containing awkward arrays for:
 
             - Sampled distances
+
             - Sampled areas
+
             - Sampled response variable values
 
         Notes
         -----
-        The bootstrap sampling is done without replacement within each stratum.
-        Sample sizes are determined by the 'num_transects_to_sample' for each stratum.
+        The bootstrap sampling is done without replacement within each stratum. Sample sizes are
+        determined by the 'num_transects_to_sample' for each stratum.
         """
         # Get the transect summary with reset index for easier indexing
         transect_df = self.transect_summary.reset_index(["transect_num"])
@@ -795,7 +798,7 @@ class JollyHampton:
 
     def stratified_bootstrap(
         self,
-        data_df: pd.DataFrame,
+        data: pd.DataFrame,
         stratify_by: list[str],
         variable: str,
     ) -> None:
@@ -807,9 +810,8 @@ class JollyHampton:
 
         Parameters
         ----------
-        data_df : pd.DataFrame
-            Input DataFrame containing virtual transect data with all required
-            columns for analysis.
+        data : pd.DataFrame
+            Input DataFrame containing virtual transect data with all required columns for analysis.
         stratify_by : List[str]
             List of column names defining the stratification (e.g., ['geostratum_inpfc']).
         variable : str
@@ -822,17 +824,22 @@ class JollyHampton:
         within each stratum.
 
         The method performs the following steps:
+
         1. Summarize transect-level data
+
         2. Summarize stratum-level data
+
         3. Generate bootstrap sample arrays
+
         4. Compute distance-weighted means and variances
+
         5. Format results into structured DataFrame
         """
         # Store the response variable name
         self.variable = variable
 
         # Summarize transect data within strata
-        self._compute_transect_statistics(data_df, stratify_by)
+        self._compute_transect_statistics(data, stratify_by)
 
         # Summarize at stratum level
         self._compute_strata_statistics(stratify_by)
@@ -912,11 +919,17 @@ class JollyHampton:
             Bootstrap confidence interval method:
 
             - "bc": Bias-corrected
+
             - "bca": Bias-corrected and accelerated
+
             - "empirical": Empirical bootstrap
+
             - "normal": Normal approximation
+
             - "percentile": Simple percentile method
+
             - "t": t-distribution based
+
             - "t-jackknife": Jackknife studentized (recommended)
 
         Returns
