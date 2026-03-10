@@ -241,7 +241,7 @@ else:
         "     Applying CAN haul number offset: 200"
     )
     df_exports_with_regions = ingestion.nasc.process_region_names(
-        df=df_exports,
+        nasc_cells=df_exports,
         region_name_expr_dict=REGION_NAME_EXPR_DICT,
         can_haul_offset=200,
     )

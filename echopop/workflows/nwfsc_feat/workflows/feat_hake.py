@@ -94,7 +94,7 @@ REGION_NAME_EXPR_DICT = {
 # Process the region name codes to define the region classes
 # e.g. H5C - Region 2 corresponds to "Hake, Haul #5, Canada"
 df_exports_with_regions = nasc.process_region_names(
-    df=df_exports,
+    nasc_cells=df_exports,
     region_name_expr_dict=REGION_NAME_EXPR_DICT,
     can_haul_offset=200,
 )

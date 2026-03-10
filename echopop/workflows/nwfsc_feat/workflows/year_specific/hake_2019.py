@@ -231,7 +231,7 @@ else:
     
     # >>>> Maybe insert `utils.add_uid` (or equivalent function)
     df_exports_with_regions = ingestion.nasc.process_region_names(
-        df=df_exports,
+        nasc_cells=df_exports,
         region_name_expr_dict=REGION_NAME_EXPR_DICT,
         can_haul_offset=CAN_HAUL_OFFSET,
     )

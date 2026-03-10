@@ -1083,7 +1083,7 @@ def generate_transect_region_haul_key(df: pd.DataFrame, filter_list: List[str]) 
 
 
 def process_region_names(
-    df: pd.DataFrame,
+    nasc_cells: pd.DataFrame,
     region_name_expr_dict: Dict,
     can_haul_offset: Optional[int] = None,
 ) -> pd.DataFrame:
@@ -1095,12 +1095,14 @@ def process_region_names(
 
     Parameters
     ----------
-    df : |pd.DataFrame|
-        |pd.DataFrame| containing a ``'region_name'`` column to process
+    nasc_cells : |pd.DataFrame|
+        A |pd.DataFrame| comprising NASC export data that must include the column ``'region_name'``
+        to function.
     region_name_expr_dict : Dict
         Dictionary of pattern specifications for component extraction:
 
         - Keys are component names (e.g., ``'REGION_CLASS'``, ``'HAUL_NUM'``, ``'COUNTRY'``)
+
         - Values are either:
 
           * Dict mapping labels to regex pattern strings
@@ -1128,21 +1130,21 @@ def process_region_names(
     >>> process_region_names(df, region_name_expr_dict, filter_list=["Hake", "Hake Mix"])
     """
     # Step 1: Extract components from region names
-    extracted_regions = extract_region_components(df, region_name_expr_dict)
+    extracted_regions = extract_region_components(nasc_cells, region_name_expr_dict)
 
     # Step 2: Process the extracted data
     processed_regions = process_extracted_data(extracted_regions, can_haul_offset)
 
     # Step 3: Map to original data
     # ---- Index DataFrame based on region names
-    mapped_df = df.set_index("region_name")
+    mapped_cells = nasc_cells.set_index("region_name")
     # ---- Concatenate the processed region metadata
-    mapped_df.loc[:, processed_regions.columns] = processed_regions
+    mapped_cells.loc[:, processed_regions.columns] = processed_regions
     # ---- Reset the index
-    mapped_df.reset_index(inplace=True)
+    mapped_cells.reset_index(inplace=True)
 
     # Return the mapped DataFrame
-    return mapped_df
+    return mapped_cells
 
 
 def consolidate_echvoiew_nasc(
