@@ -4,7 +4,7 @@
 This section presents the theoretical basis for length-based net selectivity correction in trawl survey composition data. The objective is to infer latent population composition from observations that are systematically biased by size-dependent retention.
 
 ## Gear selectivity
-Fishery surveys are subject to **gear selectivity**, where the probability of retention depends on fish morphology, primarily length. In trawl surveys this acts as a length filter: smaller fish are more likely to escape through mesh while larger fish are increasingly retained. The observed composition is therefore not a direct sample of the true population composition. 
+Fishery surveys are subject to **gear selectivity**, where the probability of retention depends on fish morphology, primarily length. In trawl surveys this acts as a length filter: smaller fish are more likely to escape through mesh while larger fish are increasingly retained. The observed composition is therefore not a direct sample of the true population composition.
 
 Let $S(L)$ denote retention probability at length $L$. Then the inverse $\phi(L) = S(L)^{-1}$ provides a first-order expansion that upweights under-retained lengths. Conceptually, this is a Horvitz-Thompson-style adjustment where each sampled specimen contributes in proportion to the inverse of its inclusion probability under the sampling/retention process. When $S(L)$ is correctly specified and sampling within each design cell is otherwise unbiased, inverse-retention weighting yields an unbiased estimator of compositional moments in expectation. In practice, uncertainty in $S(L)$ estimation, finite sample sizes, and sparse tail support require careful stabilization and interpretation {cite:p}`wileman_1996`.
 
@@ -113,7 +113,7 @@ An important implication is that correction can alter both marginal and conditio
 
 ## Corrected weight proportions from fitted length weights
 
-The corrected number composition $\tilde{L}^{i\star}_{s,\ell,\alpha}$ is converted to corrected mass composition using the **sex-specific mean fitted length-binned weight**, $\overline{\mathcal{W}}_{s,\ell}$. Let $\overline{\mathcal{W}}_{s,\ell}$ be: 
+The corrected number composition $\tilde{L}^{i\star}_{s,\ell,\alpha}$ is converted to corrected mass composition using the **sex-specific mean fitted length-binned weight**, $\overline{\mathcal{W}}_{s,\ell}$. Let $\overline{\mathcal{W}}_{s,\ell}$ be:
 
 $$
     \overline{\mathcal{W}}_{s,\ell} =
@@ -165,7 +165,7 @@ $$
     \tag{2.44}
 $$
 
-where $\mathcal{J}_i$ is the set of valid $s$-$\alpha$-$\ell$ cells in stratum $i$ and $n_i$ is the number of those cells. 
+where $\mathcal{J}_i$ is the set of valid $s$-$\alpha$-$\ell$ cells in stratum $i$ and $n_i$ is the number of those cells.
 
 The fitted-weight vector and unnormalized mass vector over the same cell set are defined by:
 

@@ -32,7 +32,7 @@ Statistics
 ----------
 .. autofunction:: echopop.survey.statistics.confidence_interval
 .. autoclass:: echopop.survey.stratified.JollyHampton
-   :members: 
+   :members:
 
 Transect processing
 -------------------

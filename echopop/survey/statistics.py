@@ -483,31 +483,31 @@ def confidence_interval(
         Method for computing the bootstrap confidence interval:
 
         - "bc": Bias-corrected method[1]_
-        
+
         - "bca": Bias-corrected and accelerated method[2]_
-        
+
         - "empirical": Empirical method using bootstrap deviations[1]_
-        
+
         - "normal": Normal approximation[3]_
-        
+
         - "percentile": Simple percentile method[1]_
-        
+
         - "t": t-distribution based[4]_
-        
+
         - "t-jackknife": Jackknife studentized method[4]_
-        
+
     ci_percentile : float, default 0.95
         Confidence level (between 0 and 1). For example, 0.95 gives a 95% CI.
 
     Returns
     -------
     pd.DataFrame
-    
+
         DataFrame containing confidence interval results with the following structure:
-        
+
         - If population_values has additional column index levels: Returns a DataFrame
           with confidence interval bounds and statistics stacked appropriately
-          
+
         - If population_values has simple columns: Returns a transposed DataFrame
           with metrics as columns
 
