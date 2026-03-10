@@ -15,10 +15,12 @@ Acoustics
 .. autofunction:: echopop.ingest.nasc.generate_transect_region_haul_key
 .. autofunction:: echopop.ingest.nasc.process_region_names
 .. autofunction:: echopop.ingest.nasc.read_nasc_file
+.. autofunction:: echopop.ingest.nasc.read_afsc_nasc_file
 .. autofunction:: echopop.ingest.nasc.read_transect_region_haul_key
 
 Biological
 ----------
+.. autofunction:: echopop.ingest.load_biodata_views
 .. autofunction:: echopop.ingest.load_biological_data
 
 Strata and Geostrata
@@ -27,6 +29,7 @@ Strata and Geostrata
 .. autofunction:: echopop.ingest.join_geostrata_by_latitude
 .. autofunction:: echopop.ingest.load_strata
 .. autofunction:: echopop.ingest.join_strata_by_haul
+.. autofunction:: echopop.ingest.join_strata_by_uid
 
 Spatial
 -------

@@ -23,6 +23,8 @@ parts:
             title: Standard ingestion
           - file: FEAT_implementation/offeffort_transect_filtering
             title: Off-effort transect filtering
+          - file: FEAT_implementation/afsc_nasc_ingestion
+            title: AFSC NASC ingestion
       - file: headings/bio_ingestion_h
         title: Biological data ingestion
         sections:
@@ -53,7 +55,7 @@ parts:
       - file: FEAT_implementation/kriging_biomass_to_nasc
         title: Apportioning kriged abundance, biomass, and NASC
       - file: example_notebooks/stratified_resampling
-        title: Random sampling estimation 
+        title: Random sampling estimation
       - file: headings/plotting_h
         title: Plotting
         sections:
@@ -70,8 +72,19 @@ parts:
             title: Comparing outputs
           - file: FEAT_implementation/cross_year_comparison_results
             title: Comparison results
-      - file: FEAT_implementation/FEAT_notebooks/year_specific_workflows
-        title: Running year-specific workflows
+      - file: FEAT_implementation/workflows
+        title: Custom workflows
+        sections:
+        - file: FEAT_implementation/FEAT_notebooks/workflow_configuration
+          title: Workflow configuration
+        - file: FEAT_implementation/FEAT_notebooks/cli_info
+          title: Command line interface (CLI)
+        - file: FEAT_implementation/orchestrating_multiple_workflows
+          title: Orchestrating workflows
+        - file: FEAT_implementation/FEAT_notebooks/year_specific_workflows
+          title: Year-specific workflows
+        - file: FEAT_implementation/FEAT_notebooks/age1_exclusion_workflows
+          title: Age-1 exclusion workflow
   - file: theory
     title: Underlying theory
     sections:

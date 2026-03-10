@@ -8,8 +8,8 @@
 | $s_\text{A}$ | nautical areal backscattering coefficient | m<sup>2</sup>nmi<sup>-2</sup> | Also commonly abbreviated as $\textit{NASC}$  |
 | $s_\text{v}$ | volume backscattering coefficient | m<sup>-1</sup> |  |
 | $S_\text{v}$ | volume backscattering strength | dB re 1 m<sup>-1</sup> | Sometimes called the mean volume backscattering <br> strength ($\textit{MVBS}$ when averaged over a finite <br>volume of water) |
-| $\sigma_\text{bs}$ | backscattering cross-section | m<sup>2</sup> |   
-| $\sigma_\text{sp}$ | spherical scattering cross-section | m<sup>2</sup> |   
+| $\sigma_\text{bs}$ | backscattering cross-section | m<sup>2</sup> |
+| $\sigma_\text{sp}$ | spherical scattering cross-section | m<sup>2</sup> |
 | $TS$ | target strength | dB re 1 m<sup>2</sup> |  |
 
 ## Biological

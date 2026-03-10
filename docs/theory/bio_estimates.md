@@ -46,13 +46,13 @@ Let $L_\ell$ denote the nominal frequency (or count) of fish per $\ell$. The nor
 (intext_eq_24_md)=
 \begin{align*}
     \begin{split}
-        \tilde{L}_\ell = 
+        \tilde{L}_\ell =
         \frac{L_\ell}{\sum\limits_{\ell} L_\ell},
     \end{split}
-    \tag{2.4a}    
+    \tag{2.4a}
     \\[2ex]
     \begin{split}
-        \sum\limits_\ell \tilde{L}_\ell = 1. 
+        \sum\limits_\ell \tilde{L}_\ell = 1.
     \end{split}
     \tag{2.4b}
 \end{align*}
@@ -83,7 +83,7 @@ $$
     \tag{2.6}
 $$
 
-where $\hat{w}$, $\hat{a}$, and $\hat{b}$ are the weight, $y$-intercept, and slope estimates fitted using ordinary least squares (OLS). Let $L_{\ell}^*$ denote the representive length for bin $\ell$. Then the weight for bin $\ell$ is:
+where $\hat{w}$, $\hat{a}$, and $\hat{b}$ are the weight, $y$-intercept, and slope estimates fitted using ordinary least squares (OLS). Let $L_{\ell}^*$ denote the representative length for bin $\ell$. Then the weight for bin $\ell$ is:
 
 <a id="intext_eq_27"></a>
 

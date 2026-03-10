@@ -1,9 +1,9 @@
 (user_guide)=
 # User guide
 
-The notebooks in this section demonstrate how to use Echopop functions to string together a workflow to infer biomass and other population variables using the combination of acoustic and biological data.  
+The notebooks in this section demonstrate how to use Echopop functions to string together a workflow to infer biomass and other population variables using the combination of acoustic and biological data.
 
-It is often helpful to assign a `DATA_ROOT` directory path as a shortcut for writing the full filepaths of target datasets, as shown in the example. However, this depends on how the different input files are organized.  
+It is often helpful to assign a `DATA_ROOT` directory path as a shortcut for writing the full filepaths of target datasets, as shown in the example. However, this depends on how the different input files are organized.
 
 ```python
 from pathlib import Path
@@ -32,4 +32,4 @@ The workflows have been broken up into the following sections:
 - [](basic-plotting)
 - [](report-generation)
 - [](comparison_implementation)
-- [](year-specific-workflows)
+- [Custom workflows](./FEAT_implementation/workflows.md)

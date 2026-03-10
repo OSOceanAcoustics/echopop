@@ -21,16 +21,16 @@ except Exception:
     VERBOSE = True
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # DATA ROOT DIRECTORY
-DATA_ROOT = Path("C:/Data/EchopopData/file_all_years_update_20260303/2021")
+DATA_ROOT = Path("C:/Data/EchopopData/echopop_2021")
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # REPORTS SAVE DIRECTORY
-REPORTS_DIR = DATA_ROOT / "output_echopop"
+REPORTS_DIR = DATA_ROOT / "reports_updated_biodata"
 # COMPARE TO ECHOPRO REPORTS?
 try:
     # ---- FOR CLI USE
     COMPARE = cli_utils.get_compare()
-    ECHOPRO_REPORTS_DIR = DATA_ROOT / "output_echopro"
-    COMPARISONS_DIR = DATA_ROOT / "comparisons"
+    ECHOPRO_REPORTS_DIR = DATA_ROOT / "reports_echopro"
+    COMPARISONS_DIR = DATA_ROOT / "comparisons_updated_biodata"
     SHOW_PLOT = False
 except Exception:
     # ---- FOR INTERACTIVE REPL USE
@@ -42,8 +42,8 @@ except Exception:
 NASC_PREPROCESSED = True
 # NASC EXPORTS FILE(S)
 NASC_EXPORTS_FILES = (
-    DATA_ROOT / "input" / 
-    "Exports/US&CAN_detailsa_2021_table2y+_ALL_final.xlsx"
+    DATA_ROOT / 
+    "Exports/US_CAN_NASC_2021_table_no_age1_echopro.xlsx"
 )
 # NASC EXPORTS SHEET
 NASC_EXPORTS_SHEET = "Sheet1"
@@ -53,7 +53,7 @@ NASC_EXPORTS_SHEET = "Sheet1"
 REMOVE_AGE1 = True
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # BIODATA FILE
-BIODATA_FILE = DATA_ROOT /  "input/Biological/1995-2025_Survey_Biodata.xlsx"
+BIODATA_FILE = DATA_ROOT / "Biological/1995-2025_Survey_Biodata.xlsx"
 # BIODATA SHEETS
 # ---- Assign the sheetnames to 'catch', 'length', 'specimen'
 BIODATA_SHEETS = {
@@ -94,7 +94,7 @@ BIODATA_SHIP_SPECIES = {
 AGE1_DOMINATED_HAULS = []
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # HAUL STRATIFICATION FILE
-HAUL_STRATA_FILE = DATA_ROOT / "input/Stratification/US&CAN strata 2021_final.xlsx"
+HAUL_STRATA_FILE = DATA_ROOT / "Stratification/US&CAN strata 2021_final.xlsx"
 # HAUL STRATIFICATION SHEET MAP
 # ---- Valid keys are limited to "ks" and "inpfc"
 HAUL_STRATA_SHEETS = {
@@ -102,7 +102,7 @@ HAUL_STRATA_SHEETS = {
     "ks": "Base KS",
 }
 # GEOGRAPHIC STRATIFICATION FILE
-GEOSTRATA_FILE = DATA_ROOT / "input/Stratification/Stratification_geographic_Lat_2021_final.xlsx"
+GEOSTRATA_FILE = DATA_ROOT / "Stratification/Stratification_geographic_Lat_2021_final.xlsx"
 # GEOGRAPHIC STRATIFICATION SHEET MAP
 # ---- Valid keys are limited to "ks" and "inpfc"
 GEOSTRATA_SHEETS = {
@@ -112,7 +112,7 @@ GEOSTRATA_SHEETS = {
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # KRIGING MESH FILE 
 KRIGING_MESH_FILE = (
-    DATA_ROOT / "input" / "Kriging_files/Kriging_grid_files/krig_grid2_5nm_cut_centroids_2013.xlsx"
+    DATA_ROOT / "Kriging_files/Kriging_grid_files/krig_grid2_5nm_cut_centroids_2013.xlsx"
 )
 # KRIGING MESH SHEET
 KRIGING_MESH_SHEET = "krigedgrid2_5nm_forChu"
@@ -121,14 +121,14 @@ OPTIMIZE_VARIOGRAM = False
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # KRIGING AND VARIOGRAM PARAMETERS FILE
 KRIGING_VARIOGRAM_PARAMETERS_FILE = (
-    DATA_ROOT / "input" / "Kriging_files/default_vario_krig_settings_2021_US&CAN.xlsx"
+    DATA_ROOT / "Kriging_files/default_vario_krig_settings_2021_US&CAN.xlsx"
 )
 # KRIGING AND VARIOGRAM PARAMETERS SHEET
 KRIGING_VARIGORAM_PARAMETERS_SHEET = "Sheet1"
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # 200m ISOBATH FILE
 ISOBATH_FILE = (
-    DATA_ROOT / "input" / "Kriging_files/Kriging_grid_files/transformation_isobath_coordinates.xlsx"
+    DATA_ROOT / "Kriging_files/Kriging_grid_files/transformation_isobath_coordinates.xlsx"
 )
 # 200m ISOBATH SHEET
 ISOBATH_SHEET = "Smoothing_EasyKrig"
@@ -679,9 +679,8 @@ dict_da_weight_proportion = {}
 logging.info("Computing aged weight proportions...")
 dict_da_weight_proportion["aged"] = proportions.weight_proportions(
     weight_data=ds_da_weight_dist["aged"], 
-    catch_data=dict_df_bio, 
-    stratum_dim = ["stratum_ks"],
-    proportion_reference = "catch_plus_specimen"
+    catch_data=dict_df_bio["catch"], 
+    group_columns = ["stratum_ks"]
 )
 
 # UNAGED WEIGHT PROPORTIONS

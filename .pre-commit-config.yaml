@@ -1,13 +1,13 @@
 exclude: |
   (?x)^(
     echopop/test_data/|
-    docs/|
     project_docs|
     echopop/file_investigation.py|
     echopop/test_survey.py|
     echopop/scratch/|
     echopop/workflows/nwfsc_feat/workflows/|
-    echopop/workflows/nwfsc_feat/scratch.py
+    echopop/workflows/nwfsc_feat/scratch.py|
+    .*\. (pyc|png|jpg|csv|html|svg|ipynb)$
   )
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -22,7 +22,7 @@ repos:
         args: ["--autofix", "--indent=2", "--no-sort-keys"]
 
   - repo: https://github.com/PyCQA/isort
-    rev: 8.0.1
+    rev: 7.0.0
     hooks:
       - id: isort
         args: ["--profile", "black", "--filter-files"]
@@ -42,4 +42,4 @@ repos:
     hooks:
       - id: codespell
         exclude: '(scratch)/.*'
-        args: ["--skip=*.ipynb", "--toml=pyproject.toml", "-w", "docs/source", "echopype", "echopop"]
+        args: ["--toml=pyproject.toml", "-w", "docs/source", "echopype", "echopop"]

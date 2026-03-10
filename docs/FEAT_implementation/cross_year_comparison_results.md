@@ -5,7 +5,7 @@
 The figure below summarizes the signed percent differences in total abundance, biomass, and $S_\text{A}$ between EchoPro and Echopop across all survey years, for both the transect and kriged population estimates. Each cell represents:
 
 $$
-    \text{\% Difference} = \frac{ \text{X}_\text{Echopop} - \text{X}_\text{EchoPro} }{ \text{X}_\text{EchoPro} } \times 100,
+    \%\text{Difference} = \frac{ \text{X}_\text{Echopop} - \text{X}_\text{EchoPro} }{ \text{X}_\text{EchoPro} } \times 100,
 $$
 
 where $X$ is a specific quantity, such as NASC, biomass density, biomass, etc. In the table, red cells indicate Echopop values exceed EchoPro values, and blue cells indicate the opposite. Cells close to zero (white) indicate strong agreement between the two implementations.

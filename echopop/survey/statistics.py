@@ -483,21 +483,31 @@ def confidence_interval(
         Method for computing the bootstrap confidence interval:
 
         - "bc": Bias-corrected method[1]_
+
         - "bca": Bias-corrected and accelerated method[2]_
+
         - "empirical": Empirical method using bootstrap deviations[1]_
+
         - "normal": Normal approximation[3]_
+
         - "percentile": Simple percentile method[1]_
+
         - "t": t-distribution based[4]_
+
         - "t-jackknife": Jackknife studentized method[4]_
+
     ci_percentile : float, default 0.95
         Confidence level (between 0 and 1). For example, 0.95 gives a 95% CI.
 
     Returns
     -------
     pd.DataFrame
+
         DataFrame containing confidence interval results with the following structure:
+
         - If population_values has additional column index levels: Returns a DataFrame
           with confidence interval bounds and statistics stacked appropriately
+
         - If population_values has simple columns: Returns a transposed DataFrame
           with metrics as columns
 
@@ -536,14 +546,17 @@ def confidence_interval(
     References
     ----------
     .. [1] Efron, B. (1981). Nonparametric standard errors and confidence intervals.
-       *Canadian Journal of Statistics*, *9*(2), 139-158.
-    .. [2] Efron, B., and Tibshirani, R.J. (1993). *An introduction to the Bootstrap*.
-       Springer US. https://doi.org/10.1007/978-1-4899-4541-9
+        *Canadian Journal of Statistics*, 9(2), 139-158.
+
+    .. [2] Efron, B., and Tibshirani, R.J. (1993). *An Introduction to the Bootstrap*.
+        Springer US. https://doi.org/10.1007/978-1-4899-4541-9
+
     .. [3] Efron, B., and Tibshirani, R.J. (1986). Bootstrap methods for standard errors,
-       confidence intervals, and other measures of statistical accuracy. *Statistical
-       Science*, *1*(1), 54-75.
+        confidence intervals, and other measures of statistical accuracy.
+        *Statistical Science*, 1(1), 54-75.
+
     .. [4] DiCiccio, T.J., and Efron, B. (1996). Bootstrap confidence intervals.
-       *Statistical Science*, *11*(3), 189-228.
+        *Statistical Science*, 11(3), 189-228.
     """
 
     # Validate inputs

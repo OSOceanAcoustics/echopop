@@ -5,12 +5,12 @@ from pathlib import Path
 # sys.path.append(str(Path('_ext').resolve()))
 # sys.path.insert(0, str(Path(__file__).parent / "_ext"))
 
-sys.path.append(str(Path('_ext').resolve()))
+sys.path.append(str(Path("_ext").resolve()))
 
 
 # Import the echoautobody extension
 # extensions = ['echoautobody', 'helloworld']
-extensions = ['echoautobody']
+extensions = ["echoautobody"]
 
 # Manually import extension (this registers the directives)
 # import echoautobody

@@ -20,12 +20,12 @@ Mesh Cropping and Coordinate Transformations
 (Semi)Variogram and Covariance Models
 -------------------------------------
 .. autoclass:: echopop.geostatistics.Variogram
-   :members: 
+   :members:
 .. autofunction:: echopop.geostatistics.compute_variogram
-.. autofunction:: echopop.geostatistics.fit_variogram   
+.. autofunction:: echopop.geostatistics.fit_variogram
 
 Kriging and Spatial Interpolation
 ---------------------------------
 .. autoclass:: echopop.geostatistics.Kriging
    :members:
-.. autofunction:: echopop.geostatistics.uniform_search_strategy   
+.. autofunction:: echopop.geostatistics.uniform_search_strategy

@@ -1,0 +1,457 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="1046.5272"
+   height="436.7648"
+   viewBox="0 0 1046.5272 436.7648"
+   role="img"
+   aria-label="Age-1 exclusion orchestration flow"
+   version="1.1"
+   id="svg28"
+   sodipodi:docname="age1_exclusion_orchestration_flow.svg"
+   inkscape:version="1.4.3 (0d15f75, 2025-12-25)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview28"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="0.79549513"
+     inkscape:cx="446.89149"
+     inkscape:cy="87.366971"
+     inkscape:window-width="1920"
+     inkscape:window-height="1057"
+     inkscape:window-x="1912"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg28" />
+  <defs
+     id="defs1">
+    <marker
+       id="arrow"
+       viewBox="0 0 10 10"
+       refX="9"
+       refY="5"
+       markerWidth="8"
+       markerHeight="8"
+       orient="auto-start-reverse">
+      <path
+         d="M 0,0 10,5 0,10 Z"
+         fill="#334155"
+         id="path1" />
+    </marker>
+    <style
+       id="style1">
+      .title { font: 700 34px Arial, sans-serif; fill: #0f172a; }
+      .subtitle { font: 500 20px Arial, sans-serif; fill: #334155; }
+      .box-title { font: 700 20px Arial, sans-serif; fill: #0f172a; }
+      .box-text { font: 500 16px Arial, sans-serif; fill: #1e293b; }
+      .edge { stroke: #334155; stroke-width: 3; fill: none; marker-end: url(#arrow); }
+      .edge-label { font: 600 15px Arial, sans-serif; fill: #334155; }
+      .legend-title { font: 700 18px Arial, sans-serif; fill: #0f172a; }
+      .legend-text { font: 500 14px Arial, sans-serif; fill: #1e293b; }
+    </style>
+  </defs>
+  <rect
+     x="0"
+     y="0"
+     width="1046.5272"
+     height="436.7648"
+     fill="#f8fafc"
+     id="rect1"
+     style="fill:#ffffff;stroke-width:0.655433" />
+  <text
+     x="523.27191"
+     y="41.694984"
+     text-anchor="middle"
+     class="title"
+     id="text1"
+     style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:34px;line-height:normal;font-family:Arial, sans-serif;-inkscape-font-specification:'Arial, sans-serif, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;writing-mode:lr-tb;text-anchor:middle;fill:#0f172a"><tspan
+       sodipodi:role="line"
+       id="tspan57"
+       x="523.27191"
+       y="41.694984">Age-1 exclusion orchestrated workflow</tspan></text>
+  <text
+     x="522.5849"
+     y="73.694984"
+     text-anchor="middle"
+     class="subtitle"
+     id="text2"
+     style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:20px;line-height:normal;font-family:Arial, sans-serif;writing-mode:lr-tb">Dispatcher routes by year; age-1 behavior remains in year-specific workflow logic</text>
+  <rect
+     x="17.158199"
+     y="107.96"
+     rx="9.9756861"
+     ry="6.5294285"
+     width="199.51372"
+     height="69.95816"
+     fill="#dbeafe"
+     stroke="#3b82f6"
+     stroke-width="1.15295"
+     id="rect2" />
+  <text
+     x="116.69284"
+     y="129.71686"
+     text-anchor="middle"
+     class="box-title"
+     id="text3"
+     style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:20px;line-height:normal;font-family:Arial, sans-serif;writing-mode:lr-tb">Execution Surface</text>
+  <text
+     x="30.100063"
+     y="148.38351"
+     text-anchor="middle"
+     class="box-text"
+     id="text4"
+     style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:16px;line-height:normal;font-family:Arial, sans-serif;-inkscape-font-specification:'Arial, sans-serif, Medium';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;writing-mode:lr-tb;text-anchor:start;fill:#1e293b"><tspan
+       sodipodi:role="line"
+       id="tspan28"
+       style="writing-mode:lr-tb;direction:ltr"
+       x="30.100063"
+       y="148.38351">CLI / notebook / wrapper</tspan><tspan
+       sodipodi:role="line"
+       id="tspan29"
+       style="writing-mode:lr-tb;direction:ltr"
+       x="30.100063"
+       y="168.38351">Command entry</tspan></text>
+  <g
+     id="g38"
+     transform="translate(-129.3516,-75.29136)">
+    <rect
+       x="419.71722"
+       y="179.71722"
+       rx="14.024742"
+       ry="7.1891341"
+       width="320.56555"
+       height="77.026436"
+       fill="#e2e8f0"
+       stroke="#64748b"
+       stroke-width="1.43446"
+       id="rect5" />
+    <text
+       x="580.62854"
+       y="200.51527"
+       text-anchor="middle"
+       class="box-title"
+       id="text6"
+       style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:20px;line-height:normal;font-family:Arial, sans-serif;writing-mode:lr-tb;text-anchor:middle;fill:#0f172a"><tspan
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:20px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;writing-mode:lr-tb"
+         id="tspan30">year_specific_workflow.py</tspan></text>
+    <text
+       x="429.78967"
+       y="222.97281"
+       text-anchor="middle"
+       class="box-text"
+       id="text7"
+       style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:16px;line-height:normal;font-family:Arial, sans-serif;-inkscape-font-specification:'Arial, sans-serif, Medium';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;writing-mode:lr-tb;text-anchor:start;fill:#1e293b"><tspan
+         sodipodi:role="line"
+         id="tspan33"
+         x="429.78967"
+         y="222.97281"
+         style="writing-mode:lr-tb"><tspan
+   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:16px;font-family:Arial, sans-serif;-inkscape-font-specification:'Arial, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+   id="tspan35">Parse</tspan> <tspan
+   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:16px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+   id="tspan36">--year</tspan>, <tspan
+   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:16px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+   id="tspan37">--verbose</tspan>, <tspan
+   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:16px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+   id="tspan38">--compare</tspan></tspan><tspan
+         sodipodi:role="line"
+         id="tspan34"
+         x="429.78967"
+         y="243.14844"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:16px;font-family:Arial, sans-serif;-inkscape-font-specification:'Arial, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;writing-mode:lr-tb">Forward passthrough arguments</tspan></text>
+  </g>
+  <path
+     class="edge"
+     d="M 801.05072,180.94146 V 244.1613 H 638.02616"
+     id="path20"
+     sodipodi:nodetypes="ccc" />
+  <rect
+     x="694.62103"
+     y="104.9098"
+     rx="9.0534754"
+     ry="7.0987992"
+     width="194.00307"
+     height="76.058556"
+     fill="#dcfce7"
+     stroke="#16a34a"
+     stroke-width="1.14526"
+     id="rect8" />
+  <text
+     x="784.19891"
+     y="124.44549"
+     text-anchor="middle"
+     class="box-title"
+     id="text9"
+     style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:20px;line-height:normal;font-family:Arial, sans-serif;writing-mode:lr-tb;text-anchor:middle;fill:#0f172a"
+     transform="rotate(0.05683882)"><tspan
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:20px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+       id="tspan44">hake_&lt;year&gt;.py</tspan></text>
+  <text
+     x="700.26849"
+     y="145.79584"
+     text-anchor="middle"
+     class="box-text"
+     id="text10"
+     style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:16px;line-height:normal;font-family:Arial, sans-serif;text-align:start;writing-mode:lr-tb;text-anchor:start;fill:#1e293b"><tspan
+       sodipodi:role="line"
+       id="tspan39"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:16px;font-family:Arial, sans-serif;-inkscape-font-specification:'Arial, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+       x="700.26849"
+       y="145.79584">Year-specific parameters</tspan><tspan
+       sodipodi:role="line"
+       id="tspan40"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:16px;font-family:Arial, sans-serif;-inkscape-font-specification:'Arial, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+       x="700.26849"
+       y="165.79584">Standard workflow stages</tspan></text>
+  <g
+     id="g43"
+     transform="translate(-227.40325,-81.838704)">
+    <rect
+       x="1159.5861"
+       y="179.58607"
+       rx="7.9804387"
+       ry="8.4357862"
+       width="102.60564"
+       height="90.383423"
+       fill="#fef3c7"
+       stroke="#d97706"
+       stroke-width="1.17214"
+       id="rect11" />
+    <text
+       x="1209.5555"
+       y="199.55556"
+       text-anchor="middle"
+       class="box-title"
+       id="text12"
+       style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:20px;line-height:normal;font-family:Arial, sans-serif;writing-mode:lr-tb">Outputs</text>
+    <text
+       x="1170.9276"
+       y="218"
+       text-anchor="middle"
+       class="box-text"
+       id="text13"
+       style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:16px;line-height:normal;font-family:Arial, sans-serif;text-align:start;writing-mode:lr-tb;text-anchor:start;fill:#1e293b"><tspan
+         sodipodi:role="line"
+         id="tspan41"
+         x="1170.9276"
+         y="218">Reports</tspan><tspan
+         sodipodi:role="line"
+         id="tspan42"
+         x="1170.9276"
+         y="238">Logging</tspan><tspan
+         sodipodi:role="line"
+         id="tspan43"
+         x="1170.9276"
+         y="258">Diagnostics</tspan></text>
+  </g>
+  <path
+     class="edge"
+     d="m 217.24839,142.93908 h 70"
+     id="path14" />
+  <path
+     class="edge"
+     d="m 611.6484,142.93908 h 80"
+     id="path15" />
+  <path
+     class="edge"
+     d="m 889.19672,142.93908 h 40.00002"
+     id="path16" />
+  <g
+     id="g55"
+     transform="translate(-66.418278,-90.778234)">
+    <rect
+       x="457.23822"
+       y="359.83823"
+       rx="14.908932"
+       ry="9.2373285"
+       width="489.86487"
+       height="151.7561"
+       fill="#f1f5f9"
+       stroke="#475569"
+       stroke-width="1.67648"
+       id="rect16" />
+    <text
+       x="679.4881"
+       y="379.37595"
+       text-anchor="middle"
+       class="box-title"
+       id="text16"
+       style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:20px;line-height:normal;font-family:Arial, sans-serif;writing-mode:lr-tb;text-anchor:middle;fill:#0f172a"><tspan
+   style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:20px;font-family:Arial, sans-serif;-inkscape-font-specification:'Arial, sans-serif, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+   id="tspan46">Age-1 task control (inside</tspan> <tspan
+   style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:20px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+   id="tspan45">hake_&lt;year&gt;.py</tspan>)</text>
+    <text
+       x="464.92627"
+       y="401.5481"
+       text-anchor="middle"
+       class="box-text"
+       id="text17"
+       style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:16px;line-height:normal;font-family:Arial, sans-serif;-inkscape-font-specification:'Arial, sans-serif, Medium';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;writing-mode:lr-tb;text-anchor:start;fill:#1e293b"><tspan
+         sodipodi:role="line"
+         id="tspan47"
+         x="464.92627"
+         y="401.5481">If <tspan
+   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:16px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+   id="tspan53">REMOVE_AGE1</tspan>:</tspan><tspan
+         sodipodi:role="line"
+         id="tspan48"
+         x="464.92627"
+         y="421.72372">Drop hauls in <tspan
+   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:16px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+   id="tspan54">AGE1_DOMINATED_HAULS</tspan> parameter</tspan><tspan
+         sodipodi:role="line"
+         id="tspan49"
+         x="464.92627"
+         y="441.89935"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:16px;font-family:Arial, sans-serif;-inkscape-font-specification:'Arial, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">Compute age-1 proportions and subtract from population estimates</tspan><tspan
+         sodipodi:role="line"
+         id="tspan50"
+         x="464.92627"
+         y="461.89935" /><tspan
+         sodipodi:role="line"
+         id="tspan51"
+         x="464.92627"
+         y="481.89935">If <tspan
+   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:16px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+   id="tspan55">not REMOVE_AGE1</tspan>:</tspan><tspan
+         sodipodi:role="line"
+         id="tspan52"
+         x="464.92627"
+         y="502.07498">Pass estimates through unchanged</tspan></text>
+  </g>
+  <path
+     class="edge"
+     d="m 635.75272,268.22175 v -73.54302 l 161.829,-0.62854"
+     id="path21"
+     sodipodi:nodetypes="ccc" />
+  <text
+     x="654.58179"
+     y="223.7168"
+     class="edge-label"
+     id="text21"
+     style="font-style:normal;font-variant:normal;font-weight:600;font-stretch:normal;font-size:15px;line-height:normal;font-family:Arial, sans-serif;writing-mode:lr-tb">Integration branch</text>
+  <g
+     id="g57"
+     transform="translate(-52.418278,-71.616478)">
+    <rect
+       x="68.311516"
+       y="264.25488"
+       rx="8.9583931"
+       ry="8.8195915"
+       width="268.7518"
+       height="209.46529"
+       fill="#ffffff"
+       stroke="#94a3b8"
+       stroke-width="1.48146"
+       id="rect21" />
+    <text
+       x="77.777779"
+       y="283.33334"
+       class="legend-title"
+       id="text22"
+       style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:18px;line-height:normal;font-family:Arial, sans-serif;writing-mode:lr-tb">Legend</text>
+    <g
+       id="g56"
+       transform="translate(1.956987)">
+      <rect
+         x="78.800674"
+         y="293.32382"
+         width="18"
+         height="18"
+         fill="#dbeafe"
+         stroke="#3b82f6"
+         stroke-width="1.5"
+         id="rect22" />
+      <text
+         x="106.80067"
+         y="307.32382"
+         class="legend-text"
+         id="text23"
+         style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:14px;line-height:normal;font-family:Arial, sans-serif;writing-mode:lr-tb">Entry surface</text>
+      <rect
+         x="78.800674"
+         y="323.32382"
+         width="18"
+         height="18"
+         fill="#e2e8f0"
+         stroke="#64748b"
+         stroke-width="1.5"
+         id="rect23" />
+      <text
+         x="106.80067"
+         y="337.32382"
+         class="legend-text"
+         id="text24"
+         style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:14px;line-height:normal;font-family:Arial, sans-serif;writing-mode:lr-tb">Dispatcher / shared workflow stage</text>
+      <rect
+         x="78.800674"
+         y="353.32382"
+         width="18"
+         height="18"
+         fill="#dcfce7"
+         stroke="#16a34a"
+         stroke-width="1.5"
+         id="rect24" />
+      <text
+         x="106.80067"
+         y="367.32382"
+         class="legend-text"
+         id="text25"
+         style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:14px;line-height:normal;font-family:Arial, sans-serif;writing-mode:lr-tb">Year-specific script execution</text>
+      <rect
+         x="78.800674"
+         y="383.32382"
+         width="18"
+         height="18"
+         fill="#fef3c7"
+         stroke="#d97706"
+         stroke-width="1.5"
+         id="rect25" />
+      <text
+         x="106.80067"
+         y="397.32382"
+         class="legend-text"
+         id="text26"
+         style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:14px;line-height:normal;font-family:Arial, sans-serif;writing-mode:lr-tb">Output artifact block</text>
+      <rect
+         x="78.800674"
+         y="413.32382"
+         width="18"
+         height="18"
+         fill="#f1f5f9"
+         stroke="#475569"
+         stroke-width="1.5"
+         id="rect26" />
+      <text
+         x="106.80067"
+         y="427.32382"
+         class="legend-text"
+         id="text27"
+         style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:14px;line-height:normal;font-family:Arial, sans-serif;writing-mode:lr-tb">Age-1 decision/control block</text>
+      <line
+         x1="78.800674"
+         y1="455.32382"
+         x2="98.800674"
+         y2="455.32382"
+         stroke="#334155"
+         stroke-width="3"
+         marker-end="url(#arrow)"
+         id="line27" />
+      <text
+         x="106.80067"
+         y="460.32382"
+         class="legend-text"
+         id="text28"
+         style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:14px;line-height:normal;font-family:Arial, sans-serif;writing-mode:lr-tb">Process flow / routing connector</text>
+    </g>
+  </g>
+</svg>

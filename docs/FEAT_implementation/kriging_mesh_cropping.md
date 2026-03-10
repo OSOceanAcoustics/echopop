@@ -28,7 +28,7 @@ kriger = Kriging(
 )
 ```
 
-Here, `df_mesh` corresponds to a `pandas.DataFrame` with a series of coordinates that are used 
+Here, `df_mesh` corresponds to a `pandas.DataFrame` with a series of coordinates that are used
 for kriging interpolation. The `Kriging` class defaults to `extrapolation = True` when using the `Kriging.krige` method:
 
 ```python
@@ -53,7 +53,7 @@ kriger.crop_mesh(
 )
 ```
 
-For reference, a convex hull is the smallest convex polygon that contains all the points in a given set. This boundary acts as a "hard limit" for the kriging interpolation, preventing the model from generating predictions in areas where no data exists. 
+For reference, a convex hull is the smallest convex polygon that contains all the points in a given set. This boundary acts as a "hard limit" for the kriging interpolation, preventing the model from generating predictions in areas where no data exists.
 
 <iframe src="../_static/mesh_cropping_convex.html" width="650" height="400"></iframe>
 
@@ -76,12 +76,12 @@ Here, the <b>only</b> required argument in `Kriging.crop_mesh` is `crop_function
 - `transects`: `pandas.DataFrame` comprising the transect data with the same coordinates (projection/transformation) as the mesh grid
 - `mesh`: `pandas.DataFrame` comprising the mesh grid coordinates. Note that this was not specified in the code snippet above. This is because the mesh grid is already stored internally within the `Kriging`-class object.
 - `latitude_resolution`: The latitudinal resolution (in degrees) used for the interpolation. This determines the spacing between interpolation points and affects the precision of the boundary detection.
-- `transect_mesh_region_function`: This is a `Callable` function that sorts and maps each transect number to a discretized region in the mesh grid. 
+- `transect_mesh_region_function`: This is a `Callable` function that sorts and maps each transect number to a discretized region in the mesh grid.
 
 <iframe src="../_static/mesh_cropping.html" width="650" height="400"></iframe>
 
 ```{tip} Comparing crop methods
-How does this compare and/or contrast to the {ref}`convex hull approach <convex_hull_plot>`? There should be fairly reasonable agreement in the survey extents torward the centers of each transect mesh region.
+How does this compare and/or contrast to the {ref}`convex hull approach <convex_hull_plot>`? There should be fairly reasonable agreement in the survey extents toward the centers of each transect mesh region.
 ```
 
 ## Transect mesh region functions
@@ -152,7 +152,7 @@ tx1=[];
 tx_out1=[];
 tx_out2=[];
 if region == 1
-%% region 1: paralell transects to latitudes from south of SCB to west of QC IS
+%% region 1: parallel transects to latitudes from south of SCB to west of QC IS
     tx0=1;    % southern most transect number
     if para.proc.source == 1
         tx1=86;  % northern most transect number (US only)
@@ -168,7 +168,7 @@ if region == 1
     tx_out1=tx_l;
     tx_out2=tx_r;
 elseif region == 2
-%% region 2: transects paralell to longitudes north of QCI
+%% region 2: transects parallel to longitudes north of QCI
     tx0=121;    % west most transect number
     tx1=127;    % east most transect number
 %% specifies lower (south) and upper (north) region boundaries based on the transects
@@ -181,7 +181,7 @@ elseif region == 2
     tx_out1=tx_l;
     tx_out2=tx_u;
 else
-    %% region 3: paralell transects to latitudes west of QC IS
+    %% region 3: parallel transects to latitudes west of QC IS
     tx0=129;    % northern most transect number
     tx1=145;    % southern most transect number
     %% specifies left (west) and right (east) region boundaries based on the transects
@@ -241,11 +241,11 @@ transect_western_extents = feat.get_survey_western_extents(
 )
 ```
 
-This gets the westernmost extent of each transect that is used to constrain the adaptive nearest neighbors search strategy incorporated into the kriging interpolation algorithm. 
+This gets the westernmost extent of each transect that is used to constrain the adaptive nearest neighbors search strategy incorporated into the kriging interpolation algorithm.
 
 ### Creating custom adaptive search strategies
 
-Any adaptive nearest-neighbor search strategy can be registered to the `Kriging`-class object via `Kriging.register_search_strategy`. A custom function can be created tthat uses external arguments (e.g., `"western_extent"`) that can also reference intermediate variables internal to the `Kriging`-class object. These include:
+Any adaptive nearest-neighbor search strategy can be registered to the `Kriging`-class object via `Kriging.register_search_strategy`. A custom function can be created that uses external arguments (e.g., `"western_extent"`) that can also reference intermediate variables internal to the `Kriging`-class object. These include:
 
 - `sparse_radii`: An integer array comprising indices where there are fewer than ``k_min`` nearest neighbors.
 

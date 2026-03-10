@@ -1,0 +1,342 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="1149.7352"
+   height="200.13467"
+   viewBox="0 0 1149.7352 200.13467"
+   role="img"
+   aria-labelledby="title desc"
+   version="1.1"
+   id="svg24"
+   sodipodi:docname="orchestration_central_cli.svg"
+   inkscape:version="1.4.3 (0d15f75, 2025-12-25)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview24"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="2"
+     inkscape:cx="355.75"
+     inkscape:cy="76.75"
+     inkscape:window-width="1920"
+     inkscape:window-height="1057"
+     inkscape:window-x="1912"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="g31" />
+  <title
+     id="title">Centralized CLI dispatcher orchestration</title>
+  <desc
+     id="desc">Terminal command routed to a dispatcher script, then to selected workflow scripts, then outputs/logs.</desc>
+  <defs
+     id="defs3">
+    <style
+       id="style1">
+      .title { font: 700 30px Arial, Helvetica, sans-serif; fill: #111827; }
+      .label { font: 700 18px Arial, Helvetica, sans-serif; fill: #111827; }
+      .body { font: 400 15px Arial, Helvetica, sans-serif; fill: #111827; }
+      .note { font: 400 13px Arial, Helvetica, sans-serif; fill: #374151; }
+      .term { fill: #eef2ff; stroke: #4f46e5; stroke-width: 2.2; }
+      .dispatch { fill: #ecfeff; stroke: #0e7490; stroke-width: 2.2; }
+      .wf { fill: #f0fdf4; stroke: #166534; stroke-width: 2.2; }
+      .out { fill: #f8fafc; stroke: #334155; stroke-width: 2.2; }
+      .arrowA { stroke: #4f46e5; stroke-width: 3; fill: none; }
+      .arrowB { stroke: #0e7490; stroke-width: 3; fill: none; }
+      .arrowC { stroke: #166534; stroke-width: 3; fill: none; }
+    </style>
+    <marker
+       id="headA"
+       markerWidth="12"
+       markerHeight="12"
+       refX="10"
+       refY="6"
+       orient="auto"
+       markerUnits="strokeWidth">
+      <path
+         d="M 0,0 12,6 0,12 Z"
+         fill="#4f46e5"
+         id="path1" />
+    </marker>
+    <marker
+       id="headB"
+       markerWidth="12"
+       markerHeight="12"
+       refX="10"
+       refY="6"
+       orient="auto"
+       markerUnits="strokeWidth">
+      <path
+         d="M 0,0 12,6 0,12 Z"
+         fill="#0e7490"
+         id="path2" />
+    </marker>
+    <marker
+       id="headC"
+       markerWidth="12"
+       markerHeight="12"
+       refX="10"
+       refY="6"
+       orient="auto"
+       markerUnits="strokeWidth">
+      <path
+         d="M 0,0 12,6 0,12 Z"
+         fill="#166534"
+         id="path3" />
+    </marker>
+  </defs>
+  <rect
+     x="0"
+     y="0"
+     width="1149.7352"
+     height="200.13467"
+     fill="#ffffff"
+     id="rect3"
+     style="stroke-width:0.675686" />
+  <text
+     x="618.71045"
+     y="33.535866"
+     text-anchor="middle"
+     class="title"
+     id="text3"
+     style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:30px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Centralized Python CLI dispatcher</text>
+  <g
+     id="g25"
+     transform="translate(-26.755392,-15.799843)">
+    <rect
+       class="dispatch"
+       x="379.69778"
+       y="89.697739"
+       width="255.33427"
+       height="97.766701"
+       rx="8.7543182"
+       id="rect6" />
+    <text
+       x="389.57785"
+       y="107.32233"
+       class="label"
+       id="text7"
+       style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:18px;line-height:normal;font-family:Sans;-inkscape-font-specification:'Sans, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#111827"><tspan
+         sodipodi:role="line"
+         id="tspan31"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+         x="389.57785"
+         y="107.32233">workflow_dispatcher.py</tspan></text>
+    <text
+       x="390.53342"
+       y="125.81129"
+       class="body"
+       id="text8"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:15px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Parse top-level arguments</text>
+    <text
+       x="390.1445"
+       y="143.21133"
+       class="body"
+       id="text9"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:15px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Resolve target workflow</text>
+    <text
+       x="390.53342"
+       y="160.13362"
+       class="body"
+       id="text10"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:15px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Pass through extra args</text>
+    <text
+       x="391.01117"
+       y="176.57811"
+       class="body"
+       id="text11"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:15px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Launch selected script</text>
+  </g>
+  <g
+     id="g28"
+     transform="translate(-103.96567,-15.766571)">
+    <rect
+       class="wf"
+       x="763.87054"
+       y="83.248848"
+       width="235.59706"
+       height="35.259056"
+       rx="13.088725"
+       id="rect11" />
+    <text
+       x="783.0946"
+       y="105.04054"
+       class="label"
+       id="text12"
+       style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:18px;line-height:normal;font-family:Arial, Helvetica, sans-serif;fill:#111827"><tspan
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+         id="tspan26">workflow_ingest.py</tspan></text>
+  </g>
+  <g
+     id="g29"
+     transform="translate(-104.30383,-11.944372)">
+    <rect
+       class="wf"
+       x="764.20844"
+       y="120.41113"
+       width="235.59663"
+       height="35.258793"
+       rx="13.088702"
+       id="rect12" />
+    <text
+       x="777.01349"
+       y="142.18918"
+       class="label"
+       id="text13"
+       style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:18px;line-height:normal;font-family:Arial, Helvetica, sans-serif;fill:#111827"><tspan
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+         id="tspan27">workflow_estimate.py</tspan></text>
+  </g>
+  <g
+     id="g30"
+     transform="translate(-104.30383,-6.6888488)">
+    <rect
+       class="wf"
+       x="764.20844"
+       y="156.41113"
+       width="235.59663"
+       height="35.258793"
+       rx="13.088702"
+       id="rect28" />
+    <text
+       x="786.03326"
+       y="177.30075"
+       class="label"
+       id="text14"
+       style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:18px;line-height:normal;font-family:Arial, Helvetica, sans-serif;fill:#111827"><tspan
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+         id="tspan28">workflow_report.py</tspan></text>
+  </g>
+  <rect
+     class="out"
+     x="940.60675"
+     y="66.783051"
+     width="194.12701"
+     height="122.60413"
+     rx="12.941799"
+     id="rect14" />
+  <text
+     x="948.31256"
+     y="83.949989"
+     class="label"
+     id="text15"
+     style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:18px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Outputs</text>
+  <text
+     x="949.66388"
+     y="115.42866"
+     class="body"
+     id="text16"
+     style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:15px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Reports</text>
+  <text
+     x="949.94379"
+     y="131.44696"
+     class="body"
+     id="text17"
+     style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:15px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Logs</text>
+  <text
+     x="949.73987"
+     y="148.69235"
+     class="body"
+     id="text18"
+     style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:15px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Exit codes</text>
+  <path
+     class="arrowB"
+     d="m 607.19056,84.740697 h 56"
+     marker-end="url(#headB)"
+     id="path19" />
+  <path
+     class="arrowB"
+     d="m 607.19056,124.7407 h 56"
+     marker-end="url(#headB)"
+     id="path20" />
+  <path
+     class="arrowB"
+     d="m 607.19056,164.7407 h 56"
+     marker-end="url(#headB)"
+     id="path21" />
+  <path
+     class="arrowC"
+     d="m 895.06314,85.913327 h 46.00004"
+     marker-end="url(#headC)"
+     id="path22" />
+  <path
+     class="arrowC"
+     d="m 895.06361,126.86718 h 46"
+     marker-end="url(#headC)"
+     id="path23" />
+  <path
+     class="arrowC"
+     d="m 895.06361,167.712 h 46"
+     marker-end="url(#headC)"
+     id="path24" />
+  <text
+     x="472.54187"
+     y="55.659622"
+     class="note"
+     id="text24"
+     style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:13px;line-height:normal;font-family:Arial, Helvetica, sans-serif">One CLI entrypoint, many workflow targets</text>
+  <g
+     id="g31"
+     transform="translate(0,-4)">
+    <rect
+       class="term"
+       x="13.068357"
+       y="84.023911"
+       width="280.35251"
+       height="84.519394"
+       rx="12.015107"
+       id="rect4" />
+    <text
+       x="19.955812"
+       y="102.95582"
+       class="label"
+       id="text4"
+       style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:18px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Terminal command</text>
+    <text
+       x="20.433588"
+       y="119.48922"
+       class="body"
+       id="text5"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:15px;line-height:normal;font-family:Arial, Helvetica, sans-serif;fill:#111827"><tspan
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:15px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+         id="tspan24">python workflow_dispatcher.py</tspan></text>
+    <text
+       x="19.478037"
+       y="162.91138"
+       class="body"
+       id="text6"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:15px;line-height:normal;font-family:Arial, Helvetica, sans-serif;fill:#111827"><tspan
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:15px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+         id="tspan25">--workflow ingest --config ...</tspan></text>
+    <path
+       class="arrowA"
+       d="m 293.24461,124.20016 h 61.25552"
+       marker-end="url(#headA)"
+       id="path18"
+       sodipodi:nodetypes="cc" />
+    <text
+       x="19.955812"
+       y="144.95581"
+       class="label"
+       id="text25"
+       style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:18px;line-height:normal;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#111827"><tspan
+         sodipodi:role="line"
+         id="tspan32">Parameterized argument</tspan></text>
+  </g>
+  <text
+     x="949.66388"
+     y="99.428658"
+     class="body"
+     id="text30"
+     style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:15px;line-height:normal;font-family:Arial, Helvetica, sans-serif;fill:#111827"><tspan
+       sodipodi:role="line"
+       id="tspan30"
+       x="949.66388"
+       y="99.428658">User-defined data products</tspan></text>
+</svg>

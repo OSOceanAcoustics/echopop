@@ -1,0 +1,356 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="1146.939"
+   height="446.70093"
+   viewBox="0 0 1146.9389 446.70093"
+   role="img"
+   aria-label="Modular configuration management flowchart"
+   version="1.1"
+   id="svg32"
+   sodipodi:docname="modular_configuration_flow.svg"
+   inkscape:version="1.4.2 (f4327f4, 2025-05-13)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview32"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="2.4676584"
+     inkscape:cx="655.68234"
+     inkscape:cy="135.55361"
+     inkscape:window-width="3840"
+     inkscape:window-height="2126"
+     inkscape:window-x="-11"
+     inkscape:window-y="-11"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="g20" />
+  <defs
+     id="defs4">
+    <style
+       id="style1">
+      .title { font: 700 38px Arial, Helvetica, sans-serif; fill: #111827; }
+      .subtitle { font: 400 21px Arial, Helvetica, sans-serif; fill: #374151; }
+      .label { font: 700 22px Arial, Helvetica, sans-serif; fill: #111827; }
+      .body { font: 400 18px Arial, Helvetica, sans-serif; fill: #111827; }
+      .note { font: 400 16px Arial, Helvetica, sans-serif; fill: #374151; }
+
+      .boxCfgA { fill: #eff6ff; stroke: #1d4ed8; stroke-width: 2.5; }
+      .boxCfgB { fill: #f0fdf4; stroke: #166534; stroke-width: 2.5; }
+      .boxCfgC { fill: #fefce8; stroke: #a16207; stroke-width: 2.5; }
+      .boxCore { fill: #eef2ff; stroke: #4f46e5; stroke-width: 3; }
+      .boxOut { fill: #f8fafc; stroke: #334155; stroke-width: 2.2; }
+
+      .arrowA { stroke: #1d4ed8; stroke-width: 3; fill: none; }
+      .arrowB { stroke: #166534; stroke-width: 3; fill: none; }
+      .arrowC { stroke: #a16207; stroke-width: 3; fill: none; }
+      .arrowD { stroke: #4f46e5; stroke-width: 3.2; fill: none; }
+    </style>
+    <marker
+       id="headA"
+       markerWidth="12"
+       markerHeight="12"
+       refX="10"
+       refY="6"
+       orient="auto"
+       markerUnits="strokeWidth">
+      <path
+         d="M 0,0 12,6 0,12 Z"
+         fill="#1d4ed8"
+         id="path1" />
+    </marker>
+    <marker
+       id="headB"
+       markerWidth="12"
+       markerHeight="12"
+       refX="10"
+       refY="6"
+       orient="auto"
+       markerUnits="strokeWidth">
+      <path
+         d="M 0,0 12,6 0,12 Z"
+         fill="#166534"
+         id="path2" />
+    </marker>
+    <marker
+       id="headC"
+       markerWidth="12"
+       markerHeight="12"
+       refX="10"
+       refY="6"
+       orient="auto"
+       markerUnits="strokeWidth">
+      <path
+         d="M 0,0 12,6 0,12 Z"
+         fill="#a16207"
+         id="path3" />
+    </marker>
+    <marker
+       id="headD"
+       markerWidth="12"
+       markerHeight="12"
+       refX="10"
+       refY="6"
+       orient="auto"
+       markerUnits="strokeWidth">
+      <path
+         d="M 0,0 12,6 0,12 Z"
+         fill="#4f46e5"
+         id="path4" />
+    </marker>
+  </defs>
+  <rect
+     x="0"
+     y="0"
+     width="1146.939"
+     height="446.70093"
+     fill="#ffffff"
+     id="rect4"
+     style="stroke-width:0.571617" />
+  <text
+     x="572.3562"
+     y="39.358849"
+     text-anchor="middle"
+     class="title"
+     id="text4"
+     style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:38px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Modular Configuration Management</text>
+  <text
+     x="573.7207"
+     y="73.358849"
+     text-anchor="middle"
+     class="subtitle"
+     id="text5"
+     style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:21px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Separate stage specific settings into dedicated files, then compose them in one workflow run</text>
+  <g
+     id="g20"
+     transform="translate(10.31149)">
+    <g
+       id="g16"
+       transform="translate(8.6007853,-18.641153)">
+      <rect
+         class="boxCfgA"
+         x="21.515038"
+         y="111.94994"
+         width="364.64471"
+         height="101.72075"
+         rx="12.154823"
+         ry="7.911613"
+         id="rect5" />
+      <text
+         x="31.860794"
+         y="132.71092"
+         class="label"
+         id="text6"
+         style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:22px;line-height:normal;font-family:Arial, Helvetica, sans-serif">biodata_ingestion.yaml</text>
+      <text
+         x="32.414505"
+         y="155.39513"
+         class="body"
+         id="text7"
+         style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:18px;line-height:normal;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#111827"><tspan
+           sodipodi:role="line"
+           id="tspan1"
+           x="32.414505"
+           y="155.39513">Dataset filepaths</tspan><tspan
+           sodipodi:role="line"
+           id="tspan2"
+           x="32.414505"
+           y="177.89513">Ingestion settings</tspan><tspan
+           sodipodi:role="line"
+           id="tspan3"
+           x="32.414505"
+           y="200.39513">Conditional logic for dynamic path selection</tspan></text>
+    </g>
+    <g
+       id="g15"
+       transform="translate(-14.18126,-137.97757)">
+      <rect
+         class="boxCfgB"
+         x="21.656977"
+         y="341.50711"
+         width="387.28482"
+         height="123.78774"
+         rx="12.909494"
+         ry="9.6279354"
+         id="rect9" />
+      <text
+         x="29.568396"
+         y="362.69922"
+         class="label"
+         id="text10"
+         style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:22px;line-height:normal;font-family:Arial, Helvetica, sans-serif">stratification.yaml</text>
+      <text
+         x="29.364038"
+         y="385.38339"
+         class="body"
+         id="text11"
+         style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:18px;line-height:normal;font-family:Sans;-inkscape-font-specification:'Sans, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#111827"><tspan
+           sodipodi:role="line"
+           id="tspan4"
+           x="29.364038"
+           y="385.38339"
+           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:18px;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">Dataset filepaths</tspan><tspan
+           sodipodi:role="line"
+           id="tspan5"
+           x="29.364038"
+           y="408.04758"
+           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:18px;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">Ingestion settings</tspan><tspan
+           sodipodi:role="line"
+           id="tspan6"
+           x="29.364038"
+           y="430.71173"
+           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:18px;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">Stratification settings</tspan><tspan
+           sodipodi:role="line"
+           id="tspan7"
+           x="29.364038"
+           y="453.37592"
+           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:18px;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">Conditional logic for dynamic path selection</tspan></text>
+    </g>
+    <g
+       id="g17"
+       transform="translate(107.45292,-259.27714)">
+      <rect
+         class="boxCfgC"
+         x="21.220957"
+         y="595.09442"
+         width="266.08667"
+         height="76.519424"
+         rx="8.8695555"
+         ry="5.9515104"
+         id="rect13" />
+      <text
+         x="30.141495"
+         y="618.44189"
+         class="label"
+         id="text14"
+         style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:22px;line-height:normal;font-family:Arial, Helvetica, sans-serif">biodata_analysis.yaml</text>
+      <text
+         x="31.618057"
+         y="639.4068"
+         class="body"
+         id="text15"
+         style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:18px;line-height:normal;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#111827"><tspan
+           sodipodi:role="line"
+           id="tspan8"
+           x="31.618057"
+           y="639.4068"
+           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:18px;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">Age distribution settings</tspan><tspan
+           sodipodi:role="line"
+           id="tspan9"
+           x="31.618057"
+           y="661.9068"
+           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:18px;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">Length distribution settings</tspan></text>
+    </g>
+    <g
+       id="g18"
+       transform="translate(-44.576674,-88.748103)">
+      <rect
+         class="boxCore"
+         x="541.32208"
+         y="284.36511"
+         width="412.5311"
+         height="172.70323"
+         rx="14.279922"
+         ry="9.1431122"
+         id="rect17" />
+      <text
+         x="652.34039"
+         y="306.7226"
+         text-anchor="middle"
+         class="label"
+         id="text18"
+         style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:22px;line-height:normal;font-family:Arial, Helvetica, sans-serif">workflow_main.py</text>
+      <text
+         x="556.85553"
+         y="331.091"
+         class="body"
+         id="text19"
+         style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:18px;line-height:normal;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#111827"><tspan
+           sodipodi:role="line"
+           id="tspan10"
+           x="556.85553"
+           y="331.091">1. Load modular configuration files</tspan><tspan
+           sodipodi:role="line"
+           id="tspan11"
+           x="556.85553"
+           y="353.591">2. Bind each configuration to its respective stage</tspan><tspan
+           sodipodi:role="line"
+           id="tspan12"
+           x="556.85553"
+           y="376.091">3. Run ingestion using ingestion settings</tspan><tspan
+           sodipodi:role="line"
+           id="tspan13"
+           x="556.85553"
+           y="398.591">4. Apply stratification using strata configuration</tspan><tspan
+           sodipodi:role="line"
+           id="tspan14"
+           x="556.85553"
+           y="421.091">5. Prepare biodata using analysis configuration</tspan><tspan
+           sodipodi:role="line"
+           id="tspan15"
+           x="556.85553"
+           y="443.591">6. Generate ouputs and logs</tspan></text>
+    </g>
+    <g
+       id="g19"
+       transform="translate(-95.311772,-52.823501)">
+      <rect
+         class="boxOut"
+         x="1091.5883"
+         y="303.33582"
+         width="122.71378"
+         height="62.912624"
+         rx="5.7266436"
+         ry="3.2621357"
+         id="rect24" />
+      <text
+         x="1154.3486"
+         y="342.79211"
+         text-anchor="middle"
+         class="label"
+         id="text25"
+         style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:22px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Outputs</text>
+    </g>
+    <path
+       class="arrowA"
+       d="m 394.98824,141.31513 c 50.48714,0 67.95362,16.98377 104.76342,63.68917"
+       marker-end="url(#headA)"
+       id="path29"
+       sodipodi:nodetypes="cc" />
+    <path
+       class="arrowB"
+       d="m 394.79259,265.42341 103.86842,0.28655"
+       marker-end="url(#headB)"
+       id="path30"
+       sodipodi:nodetypes="cc" />
+    <path
+       class="arrowC"
+       d="m 394.66099,374.84346 c 49.62824,0 49.82247,-1.8692 107.76657,-25.64624"
+       marker-end="url(#headC)"
+       id="path31"
+       sodipodi:nodetypes="cc" />
+  </g>
+  <path
+     class="arrowD"
+     d="m 918.77651,281.96863 c 40,0 60,0 89.99999,0"
+     marker-end="url(#headD)"
+     id="path32" />
+  <text
+     x="573.76636"
+     y="435.17136"
+     text-anchor="middle"
+     class="note"
+     id="text32"
+     style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:16px;line-height:normal;font-family:Sans;-inkscape-font-specification:'Sans, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-anchor:middle;fill:#374151"><tspan
+       sodipodi:role="line"
+       id="tspan44"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:16px;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+       x="573.76636"
+       y="435.17136">Configurations for each workflow stage can be revised independently. This allows configuration files to also be modular.</tspan></text>
+</svg>

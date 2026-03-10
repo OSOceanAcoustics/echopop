@@ -24,7 +24,7 @@ apportionment.mesh_biomass_to_nasc(
 )
 ```
 
-The `mesh_biomass_to_nasc` function modifies the DataFrame in-place to add the appropriate columns for sex-apportioned abundance and subsequently $\textit{NASC}$. 
+The `mesh_biomass_to_nasc` function modifies the DataFrame in-place to add the appropriate columns for sex-apportioned abundance and subsequently $\textit{NASC}$.
 
 ## Distributing kriged abundance and biomass over age and length
 
@@ -34,12 +34,12 @@ Kriged abundance and biomass are both distributed over age ($\alpha$) and length
 - `proportions`: Either an `xarray.Dataset` or dictionary containing the number or weight proportions (depending on whether abundance or biomass is being distributed).
 - `variable`: Name of the column in `data` containing the values to distribute (e.g., `"abundance"`, `"biomass"`).
 - `group_columns`: List of column names that define any biological groups for the distribution (e.g., `["sex", "age_bin", "length_bin"]`).
-- `data_proportions_link`: Dictionary that links colum names in `data` to those in `proportions`. For instance, the dictionary `{"stratum_A": "stratum_B"}` links `"stratum_A"` in `data` with `stratum_B` in `proportions`. 
+- `data_proportions_link`: Dictionary that links column names in `data` to those in `proportions`. For instance, the dictionary `{"stratum_A": "stratum_B"}` links `"stratum_A"` in `data` with `stratum_B` in `proportions`.
 
 ```python
 from echopop.workflows.nwfsc_feat import apportionment
 
-# Abundance 
+# Abundance
 dict_ds_kriged_abundance_table = apportionment.distribute_population_estimates(
     data = df_kriged_results,
     proportions = dict_ds_number_proportion,
@@ -114,7 +114,7 @@ da_kriged_biomass_table = apportionment.sum_population_tables(
 
 In some cases, we may exclude certain $\ell$, $\alpha$, or other contrasts from earlier in the workflow. An expected example of this would be removing age-1 fish from the entire workflow. Despite these groups being removed from the workflow in general, there is some "leakage" that occurs in the distributions due to how the biological data are processed. This can be accounted by using the `reallocate_excluded_estimates` function, which has the arguments:
 
-- `population_table`: The consolidated population table as an `xarray.DataArray` with biological groups corresponding coordinates (i.e., `"sex"`, `"age_bin"`, `"length_bin"`). 
+- `population_table`: The consolidated population table as an `xarray.DataArray` with biological groups corresponding coordinates (i.e., `"sex"`, `"age_bin"`, `"length_bin"`).
 - `exclusion_filter`: Dictionary specifying which table to exclude and redistribute. Keys are column and index names, values are the categories to exclude. For example, `exclusion_filter = {"age_bin": [1]}` would exclude age-1 fish.
 - `group_columns`: List of column names that define the grouping variables for redistribution. For example, `group_columns = ["sex"]` would redistribute the age-1 estimates within each sex.
 

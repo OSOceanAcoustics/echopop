@@ -715,7 +715,7 @@ def resolve_uid_component(
             if key in key_names or column_name not in data.columns:
                 if column_name in data.columns:
                     warnings.warn(
-                        f"Override: Using input '{field_name}' instead of '{column_name}' from "
+                        f"Override: Using input '{field_name}' instead of '{column_name} from "
                         f"'{_dataset_type}['{key}']' DataFrame input.",
                         UserWarning,
                     )

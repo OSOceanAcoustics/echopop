@@ -23,7 +23,7 @@ The Echopop data workflow consists of 5 primary components. The documentation is
         - biomass ($B$)
     - Distribute biological estimates across (sex, length, age) for each transect interval
 - **Kriging**
-    - Coordinate transformation 
+    - Coordinate transformation
     - Variogram analysis and fitting
     - Perform kriging on biomass density: interval-based biomass density ($\rho_B$) → kriged biomass density ($\hat{\rho}_B$)
     - Derive/back-calculate other biological estimates with the following sequence (see [flow diagram](echopop_flow_diagram) below):

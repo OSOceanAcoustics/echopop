@@ -1,0 +1,309 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="770.95819"
+   height="194.42372"
+   viewBox="0 0 770.95819 194.42372"
+   role="img"
+   aria-labelledby="title desc"
+   version="1.1"
+   id="svg22"
+   sodipodi:docname="orchestration_notebook_hub.svg"
+   inkscape:version="1.4.3 (0d15f75, 2025-12-25)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview22"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="2.9599999"
+     inkscape:cx="347.29731"
+     inkscape:cy="66.0473"
+     inkscape:window-width="1920"
+     inkscape:window-height="1057"
+     inkscape:window-x="1912"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg22" />
+  <title
+     id="title">Notebook orchestration hub</title>
+  <desc
+     id="desc">Jupyter notebook orchestrates scripts and notebooks and collects outputs.</desc>
+  <defs
+     id="defs3">
+    <style
+       id="style1">
+      .title { font: 700 30px Arial, Helvetica, sans-serif; fill: #111827; }
+      .label { font: 700 18px Arial, Helvetica, sans-serif; fill: #111827; }
+      .body { font: 400 15px Arial, Helvetica, sans-serif; fill: #111827; }
+      .note { font: 400 13px Arial, Helvetica, sans-serif; fill: #374151; }
+      .nb { fill: #fef3c7; stroke: #b45309; stroke-width: 2.2; }
+      .script { fill: #eef2ff; stroke: #4f46e5; stroke-width: 2.2; }
+      .run { fill: #ecfeff; stroke: #0e7490; stroke-width: 2.2; }
+      .out { fill: #f8fafc; stroke: #334155; stroke-width: 2.2; }
+      .arrowA { stroke: #b45309; stroke-width: 3; fill: none; }
+      .arrowScript { stroke: #4f46e5; stroke-width: 3; fill: none; }
+      .arrowB { stroke: #0e7490; stroke-width: 3; fill: none; }
+      .arrowC { stroke: #334155; stroke-width: 3; fill: none; }
+    </style>
+    <marker
+       id="headA"
+       markerWidth="12"
+       markerHeight="12"
+       refX="10"
+       refY="6"
+       orient="auto"
+       markerUnits="strokeWidth"
+       viewBox="0 0 12 12"
+       preserveAspectRatio="xMidYMid">
+      <path
+         d="M 0,0 12,6 0,12 Z"
+         fill="#b45309"
+         id="path1" />
+    </marker>
+    <marker
+       id="headScript"
+       markerWidth="12"
+       markerHeight="12"
+       refX="10"
+       refY="6"
+       orient="auto"
+       markerUnits="strokeWidth"
+       viewBox="0 0 12 12"
+       preserveAspectRatio="xMidYMid">
+      <path
+         d="M 0,0 12,6 0,12 Z"
+         fill="#4f46e5"
+         id="pathScript" />
+    </marker>
+    <marker
+       id="headB"
+       markerWidth="12"
+       markerHeight="12"
+       refX="10"
+       refY="6"
+       orient="auto"
+       markerUnits="strokeWidth"
+       viewBox="0 0 12 12"
+       preserveAspectRatio="xMidYMid">
+      <path
+         d="M 0,0 12,6 0,12 Z"
+         fill="#0e7490"
+         id="path2" />
+    </marker>
+    <marker
+       id="headC"
+       markerWidth="12"
+       markerHeight="12"
+       refX="10"
+       refY="6"
+       orient="auto"
+       markerUnits="strokeWidth">
+      <path
+         d="M 0,0 12,6 0,12 Z"
+         fill="#334155"
+         id="path3" />
+    </marker>
+  </defs>
+  <g
+     id="g23"
+     transform="scale(0.64246514,0.44187208)">
+    <rect
+       x="0"
+       y="0"
+       width="1200"
+       height="440"
+       fill="#ffffff"
+       id="rect3" />
+  </g>
+  <g
+     id="g4"
+     transform="translate(-51.121911,-45.388613)">
+    <rect
+       class="out"
+       x="612.49017"
+       y="122.58482"
+       width="196.62625"
+       height="92.100639"
+       rx="6.5542083"
+       id="rect12" />
+    <text
+       x="622.48645"
+       y="139.43243"
+       class="label"
+       id="text13"
+       style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:18px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Collected outputs</text>
+    <text
+       x="622.48645"
+       y="154.94594"
+       class="body"
+       id="text14"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:15px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Executed notebooks</text>
+    <text
+       x="622.56757"
+       y="170.16216"
+       class="body"
+       id="text15"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:15px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Logs and errors</text>
+    <text
+       x="621.52704"
+       y="186.05405"
+       class="body"
+       id="text16"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:15px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Summary tables/figures</text>
+    <text
+       x="621.89185"
+       y="202.62161"
+       class="body"
+       id="text17"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:15px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Run notes and provenance</text>
+  </g>
+  <text
+     x="387.36783"
+     y="34.922276"
+     text-anchor="middle"
+     class="title"
+     id="text3"
+     style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:30px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Jupyter notebook as orchestration hub</text>
+  <g
+     id="g6">
+    <rect
+       class="run"
+       x="298.08017"
+       y="138.66502"
+       width="178.32733"
+       height="41.909492"
+       rx="7.4303055"
+       id="rect10" />
+    <text
+       x="304.36755"
+       y="154.57864"
+       class="label"
+       id="text11"
+       style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:18px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Child notebooks</text>
+    <text
+       x="305.40512"
+       y="171.02313"
+       class="body"
+       id="text12"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:15px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Parameterized execution</text>
+    <path
+       class="arrowB"
+       d="m 476.36809,159.36756 h 86"
+       marker-end="url(#headB)"
+       id="path20" />
+  </g>
+  <g
+     id="g2"
+     transform="translate(-51.121911,-45.388613)">
+    <rect
+       class="script"
+       x="349.70453"
+       y="107.68058"
+       width="177.32295"
+       height="41.885059"
+       rx="7.3884563"
+       id="rect8" />
+    <text
+       x="358.62677"
+       y="124.85959"
+       class="label"
+       id="text9"
+       style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:18px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Python scripts</text>
+    <text
+       x="358.28894"
+       y="141.42715"
+       class="body"
+       id="text10"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:15px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Subprocess execution</text>
+    <path
+       class="arrowScript"
+       d="m 527.49013,128.11635 h 86"
+       marker-end="url(#headScript)"
+       id="path19" />
+  </g>
+  <g
+     id="g24"
+     transform="translate(-63.284073,-16.334559)">
+    <rect
+       class="nb"
+       x="72.954414"
+       y="87.599075"
+       width="210.8476"
+       height="93.415154"
+       rx="9.0363255"
+       id="rect4" />
+    <text
+       x="82.506584"
+       y="106.09719"
+       class="label"
+       id="text4"
+       style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:18px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Orchestrator notebook</text>
+    <text
+       x="83.520096"
+       y="123.29989"
+       class="body"
+       id="text5"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:15px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Run script commands</text>
+    <text
+       x="83.857933"
+       y="138.51611"
+       class="body"
+       id="text6"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:15px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Execute child notebooks</text>
+    <text
+       x="83.857933"
+       y="154.74585"
+       class="body"
+       id="text7"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:15px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Capture output inline</text>
+    <text
+       x="84.871445"
+       y="170.97557"
+       class="body"
+       id="text8"
+       style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:15px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Annotate with markdown</text>
+    <path
+       class="arrowA"
+       d="m 284.4255,97.36746 h 76"
+       marker-end="url(#headA)"
+       id="path17" />
+    <path
+       class="arrowA"
+       d="m 284.426,172.16715 h 76"
+       marker-end="url(#headA)"
+       id="path18" />
+  </g>
+  <path
+     class="arrowC"
+     d="m 560.2901,128.67847 c -110,-0.47778 -190.24487,-0.41125 -340.72265,-0.88905"
+     marker-end="url(#headC)"
+     id="path21"
+     sodipodi:nodetypes="cc" />
+  <text
+     x="281.33484"
+     y="121.07826"
+     class="note"
+     id="text21"
+     style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:13px;line-height:normal;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#374151"><tspan
+       sodipodi:role="line"
+       id="tspan4"
+       x="281.33484"
+       y="121.07826"><tspan
+   style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:13px;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+   id="tspan5">Feedback loop</tspan>: <tspan
+   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:13px;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+   id="tspan6">review logs -&gt; adjust -&gt; rerun</tspan></tspan></text>
+  <text
+     x="258.63217"
+     y="51.879406"
+     class="note"
+     id="text22"
+     style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:13px;line-height:normal;font-family:Arial, Helvetica, sans-serif">Best for interactive orchestration and diagnostics</text>
+</svg>

@@ -19,18 +19,18 @@ $$
 $$
 
 $$
-\mathbb{E}\!\left[(Z(\mathbf{x}) - m)(Z(\mathbf{x}+\mathbf{h}) - m)\right] = 
+\mathbb{E}\!\left[(Z(\mathbf{x}) - m)(Z(\mathbf{x}+\mathbf{h}) - m)\right] =
 \text{Cov}\big(Z(\mathbf{x}),Z(\mathbf{x}+\mathbf{h})\big) =
-\mathbb{C}(h), 
+\mathbb{C}(h),
 \tag{3.2b}
 $$
 
 where $m$ is a constant expected process mean and $\mathbb{C}(\cdot)$ the covariance function {cite:p}`cressie_statistics`. Here $\mathbf{h}$ denotes the lag vector (direction and magnitude) between two locations and $h$ denotes the Euclidean length (scalar lag distance). Either $\mathbf{h}$ or $h$ can be used depending on whether directionality matters, which is discussed later ([**isotropy and anisotropy**](isotropy-and-anisotropy)). For a specific pair of separate locations indexed by $i$ and $j$ ($i, j \in \{1, \dots, n_s \}$, where $n_s$ is the number of samples) define $\mathbf{h}$ and $h$ by:
 
 $$
-\mathbf{h} = \mathbf{x}_j - \mathbf{x}_i, 
+\mathbf{h} = \mathbf{x}_j - \mathbf{x}_i,
 \qquad
-h = \| \mathbf{h} \| = \| \mathbf{x}_j - \mathbf{x}_i \| = 
+h = \| \mathbf{h} \| = \| \mathbf{x}_j - \mathbf{x}_i \| =
 \sqrt{\sum_{k=1}^d \big(x_{j,k} - x_{i,k}\big)^2},
 \tag{3.3}
 $$
@@ -77,7 +77,7 @@ $$
     \tag{3.6}
 $$
 
-which means that, for a given $\mathbf{h}$, all possible pairs of locations in the spatial domain separated by $\mathbf{h}$ are considered {cite:p}`chiles_geostatistics_2012,montero_2015`. The expectation $\mathbb{E}[\cdot]$ then represents the average of these squared differences over all such pairs. Thus, the intrinsic model generalizes the covariance-based approach, allowing spatial correlation to be characterized through the semivariance even when the covariance function is not well-defined. In practice, however, $Z(\mathbf{x})$ is not known everywhere; only a finite set of observations at sampled locations is available. 
+which means that, for a given $\mathbf{h}$, all possible pairs of locations in the spatial domain separated by $\mathbf{h}$ are considered {cite:p}`chiles_geostatistics_2012,montero_2015`. The expectation $\mathbb{E}[\cdot]$ then represents the average of these squared differences over all such pairs. Thus, the intrinsic model generalizes the covariance-based approach, allowing spatial correlation to be characterized through the semivariance even when the covariance function is not well-defined. In practice, however, $Z(\mathbf{x})$ is not known everywhere; only a finite set of observations at sampled locations is available.
 
 To estimate the semivariogram from data, the theoretical expectation is replaced with an average over all observed pairs of points separated by lag $h$. This leads to the **empirical semivariogram** estimator:
 
@@ -147,7 +147,7 @@ $$
 
 where $C_0$ is the nugget (the value at zero lag), $C_1$ is the partial sill ($C - C_0$), and $\mathscr{f}(h; \theta)$ is a correlation function that depends on lag $h$ and model-specific parameters $\theta$ (e.g., range, smoothness, periodicity) {cite:p}`matern_spatial_1986,stein_1999,whittle_1954`. The process of fitting a variogram model involves finding the set of parameters $\theta$ that best match the empirical semivariogram. This is typically achieved by minimizing the weighted sum of squared differences between the empirical semivariogram values $\gamma_\text{empirical}(h_i)$ and the theoretical model $\gamma_\text{model}(h_i; \theta)$ at each lag $h_i$:
 
-$$ 
+$$
     \min_{\theta} \sum_{b=1}^{n} w_b \left[ \gamma_\text{empirical}(h_b) - \gamma_\text{model}(h_b; \theta) \right]^2,
     \tag{3.11}
 $$
@@ -160,7 +160,7 @@ $$
 $$
 
 In contrast, when $w_b$ are normalized such that they sum to 1:
- 
+
 $$
     \hat{w}_b = \frac{N(h_b)}{\sum\limits_{b=1}^{n} N(h_b)}.
     \tag{3.13}
