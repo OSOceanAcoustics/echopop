@@ -21,16 +21,16 @@ except Exception:
     VERBOSE = True
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # DATA ROOT DIRECTORY
-DATA_ROOT = Path("C:/Data/EchopopData/echopop_2007")
+DATA_ROOT = Path("C:/Data/EchopopData/file_all_years_update_20260303/2007")
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # REPORTS SAVE DIRECTORY
-REPORTS_DIR = DATA_ROOT / "reports_updated_biodata"
+REPORTS_DIR = DATA_ROOT / "output_echopop"
 # COMPARE TO ECHOPRO REPORTS?
 try:
     # ---- FOR CLI USE
     COMPARE = cli_utils.get_compare()
-    ECHOPRO_REPORTS_DIR = DATA_ROOT / "reports_echopro"
-    COMPARISONS_DIR = DATA_ROOT / "comparisons_updated_biodata"
+    ECHOPRO_REPORTS_DIR = DATA_ROOT / "output_echopro"
+    ECHOPRO_REPORTS_DIR = DATA_ROOT / "comparisons"
     SHOW_PLOT = False
 except Exception:
     # ---- FOR INTERACTIVE REPL USE
@@ -41,7 +41,7 @@ except Exception:
 # ---- spreadsheet will be read in. This also requires defining `NASC_EXPORTS_SHEET`
 NASC_PREPROCESSED = True
 # NASC EXPORTS FILE(S)
-NASC_EXPORTS_FILES = DATA_ROOT / "Exports/US&CAN_detailsa_2007_table2y+_ALL_final.xlsx"
+NASC_EXPORTS_FILES = DATA_ROOT / "input/Exports/US&CAN_detailsa_2007_table2y+_ALL_final.xlsx"
 # NASC EXPORTS SHEET
 NASC_EXPORTS_SHEET = "Sheet1"
 # REMOVE AGE-1 (I.E., AGE-2+ ONLY)?
@@ -49,20 +49,20 @@ REMOVE_AGE1 = True
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # TRANSECT REGION HAUL MAPPING FILE
 TRANSECT_REGION_HAUL_FILE = (
-    DATA_ROOT / "Stratification/US&CAN_T_reg_haul.xlsx"
+    DATA_ROOT / "input/Stratification/US&CAN_T_reg_haul.xlsx"
 )
 # TRANSECT REGION HAUL MAPPING SHEET
 TRANSECT_REGION_HAUL_SHEET = "2007_Regions_Trawls"
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # TRANSECT BOUNDARY FILE
-TRANSECT_BOUNDARY_FILE = DATA_ROOT / "Kriging_files/Kriging_grid_files/Transect Bounds to 2011.xlsx"
+TRANSECT_BOUNDARY_FILE = DATA_ROOT / "input/Kriging_files/Kriging_grid_files/Transect Bounds to 2011.xlsx"
 # TRANSECT BOUNDARY SHEET
 TRANSECT_BOUNDARY_SHEET = "1995-2011"
 # SURVEY FILTER
 SURVEY_FILTER = "survey == 200710"
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # BIODATA FILE
-BIODATA_FILE = DATA_ROOT / "Biological/1995-2025_Survey_Biodata.xlsx"
+BIODATA_FILE = DATA_ROOT / "input/Biological/1995-2025_Survey_Biodata.xlsx"
 # BIODATA SHEETS
 # ---- Assign the sheetnames to 'catch', 'length', 'specimen'
 BIODATA_SHEETS = {
@@ -98,7 +98,7 @@ AGE1_DOMINATED_HAULS = []
 # HAUL STRATIFICATION FILE
 HAUL_STRATA_FILE = (
     DATA_ROOT / 
-    "Stratification/US&CAN strata 2007.xlsx"
+    "input/Stratification/US&CAN strata 2007.xlsx"
 )
 # HAUL STRATIFICATION SHEET MAP
 # ---- Valid keys are limited to "ks" and "inpfc"
@@ -109,7 +109,7 @@ HAUL_STRATA_SHEETS = {
 # GEOGRAPHIC STRATIFICATION FILE
 GEOSTRATA_FILE = (
     DATA_ROOT / 
-    "Stratification/Stratification_geographic_Lat_2007.xlsx"
+    "input/Stratification/Stratification_geographic_Lat_2007.xlsx"
 )
 # GEOGRAPHIC STRATIFICATION SHEET MAP
 # ---- Valid keys are limited to "ks" and "inpfc"
@@ -120,7 +120,7 @@ GEOSTRATA_SHEETS = {
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # KRIGING MESH FILE 
 KRIGING_MESH_FILE = (
-    DATA_ROOT / "Kriging_files/Kriging_grid_files/krig_grid2_5nm_cut_centroids_2013.xlsx"
+    DATA_ROOT / "input/Kriging_files/Kriging_grid_files/krig_grid2_5nm_cut_centroids_2013.xlsx"
 )
 # KRIGING MESH SHEET
 KRIGING_MESH_SHEET = "krigedgrid2_5nm_forChu"
@@ -136,7 +136,7 @@ OPTIMIZE_VARIOGRAM = False
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # 200m ISOBATH FILE
 ISOBATH_FILE = (
-    DATA_ROOT / "Kriging_files/Kriging_grid_files/transformation_isobath_coordinates.xlsx"
+    DATA_ROOT / "input/Kriging_files/Kriging_grid_files/transformation_isobath_coordinates.xlsx"
 )
 # 200m ISOBATH SHEET
 ISOBATH_SHEET = "Smoothing_EasyKrig"
