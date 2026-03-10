@@ -1,3 +1,11 @@
+"""
+Kriging mesh and isobath ingestion for echopop.
+
+This module loads the spatial grid used for kriging (mesh centroid coordinates and polygon-fraction
+weights) and the 200 m isobath coordinate file used for coordinate transformation. Both are
+returned as ``pandas.DataFrame`` objects with standardised column names.
+"""
+
 from pathlib import Path
 from typing import Dict, Union
 
