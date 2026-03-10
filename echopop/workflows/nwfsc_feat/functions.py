@@ -801,18 +801,13 @@ def filter_transect_intervals(
     transect_filter.columns = transect_filter.columns.str.lower()
 
     # Rename 'transect' to 'transect_num' if it exists
-    if (
-        "transect" in transect_filter.columns
-        and "transect_num" not in transect_filter.columns
-    ):
+    if "transect" in transect_filter.columns and "transect_num" not in transect_filter.columns:
         transect_filter.rename(columns={"transect": "transect_num"}, inplace=True)
 
     # Validation check
     if not set(transect_filter.columns) >= set(["transect_num", "log_start", "log_end"]):
         # ---- Find mismatch
-        missing = list(
-            set(["transect_num", "log_start", "log_end"]) - set(transect_filter.columns)
-        )
+        missing = list(set(["transect_num", "log_start", "log_end"]) - set(transect_filter.columns))
         # ---- Format
         missing_str = [f"'{v}'" for v in missing]
         # ---- Print
@@ -843,9 +838,7 @@ def filter_transect_intervals(
         if missing:
             raise ValueError(f"Invalid column(s): {', '.join(missing)}")
         else:
-            transect_filter = transect_filter.query(survey_filter).sort_values(
-                ["transect_num"]
-            )
+            transect_filter = transect_filter.query(survey_filter).sort_values(["transect_num"])
 
     # Sort transect filter by vessel log distance start values
     transect_filter = transect_filter.sort_values("log_start").reset_index(drop=True)
