@@ -1,3 +1,12 @@
+"""
+General-purpose utility functions used across the echopop package.
+
+This module provides shared helpers for data filtering, binning, interpolation, pivot-table
+construction, grouped-series creation, and haul UID construction. Functions here are intentionally
+domain-agnostic and are imported freely by ``ingest``, ``survey``, ``geostatistics``, and
+``workflows`` sub-packages.
+"""
+
 import warnings
 from typing import Any, Dict, List, Optional, Union
 
@@ -29,6 +38,7 @@ def binned_distribution(bins: np.ndarray[np.number]) -> pd.DataFrame:
         DataFrame with columns:
 
         - ``'bin'``: Original bin values
+
         - ``'interval'``: :class:`pandas.Interval` objects representing the binning intervals
 
     Raises
@@ -271,7 +281,7 @@ def _filter_columns(
 
 
 def apply_filters(
-    df: Union[pd.Series, pd.DataFrame],
+    data: Union[pd.Series, pd.DataFrame],
     include_filter: Optional[Dict[str, Any]] = None,
     exclude_filter: Optional[Dict[str, Any]] = None,
     replace_value: Optional[np.number] = None,
@@ -285,8 +295,8 @@ def apply_filters(
 
     Parameters
     ----------
-    df : |pd.DataFrame|
-        Input DataFrame to filter
+    data : |pd.DataFrame| pr |pd.Series|
+        Input DataFrame or Series to filter
     include_filter : Dict[str, Any], optional
         Dictionary of column/index:value(s) pairs. Rows/columns will be kept if they match. If
         value is a list, rows/columns matching any value in the list will be kept.
@@ -319,7 +329,7 @@ def apply_filters(
     """
 
     # Create copy
-    result = df.copy()
+    result = data.copy()
 
     # Inclusion filter
     if include_filter:
