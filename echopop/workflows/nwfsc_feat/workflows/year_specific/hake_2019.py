@@ -624,7 +624,7 @@ logging.info(
     )
 dict_ds_number_proportion = proportions.number_proportions(
     data=ds_counts,
-    group_columns=["stratum_ks"],
+    stratum_dim="stratum_ks",
     exclude_filters={"aged": {"sex": "unsexed"}},
 )
 logging.info(
@@ -692,7 +692,7 @@ dict_da_weight_proportion["unaged"] = proportions.fitted_weight_proportions(
     aged_weight_proportions=dict_da_weight_proportion["aged"],
     number_proportions=dict_ds_number_proportion["unaged"],
     binned_weights=da_binned_weights_all,
-    stratum_dim=["stratum_ks"]
+    stratum_dim="stratum_ks"
 )
 
 # ==================================================================================================
@@ -726,7 +726,7 @@ logging.info("Inversion-class object 'invert_hake' created...")
 
 # INVERT NUMBER DENSITY
 df_nasc = invert_hake.invert(
-    df_nasc=df_nasc, df_length=[dict_df_bio["length"], dict_df_bio["specimen"]]
+    nasc_data=df_nasc, length_data=[dict_df_bio["length"], dict_df_bio["specimen"]]
 )
 logging.info(
     "Number density inversion complete\n"
@@ -767,7 +767,7 @@ feat_biology.compute_abundance(
 da_averaged_weight = proportions.stratum_averaged_weight(
     number_proportions=dict_ds_number_proportion,
     length_weight_data=da_binned_weight_table,
-    group_columns=["stratum_ks"]
+    stratum_dim="stratum_ks"
 )
 
 
@@ -794,7 +794,7 @@ if REMOVE_AGE1:
     # NASC
     age1_nasc_proportions = proportions.get_nasc_proportions_slice(
         number_proportions=dict_ds_number_proportion["aged"],
-        group_columns=["stratum_ks"],
+        stratum_dim="stratum_ks",
         ts_length_regression_parameters={"slope": 20.0, "intercept": -68.0},
         include_filter={"age_bin": [1]},
     )
@@ -802,14 +802,14 @@ if REMOVE_AGE1:
     # NUMBER
     age1_number_proportions = proportions.get_number_proportions_slice(
         number_proportions=dict_ds_number_proportion["aged"],
-        stratum_dim=["stratum_ks"],
+        stratum_dim="stratum_ks",
         include_filter={"age_bin": [1]},
     )
 
     # WEIGHT
     age1_weight_proportions = proportions.get_weight_proportions_slice(
         weight_proportions=dict_da_weight_proportion["aged"],
-        stratum_dim=["stratum_ks"],
+        stratum_dim="stratum_ks",
         include_filter={"age_bin": [1]},
         number_proportions=dict_ds_number_proportion,
         length_threshold_min=10.0,
