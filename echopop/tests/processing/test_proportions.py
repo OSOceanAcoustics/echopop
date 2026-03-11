@@ -884,9 +884,7 @@ def test_get_weight_proportions_slice():
     # Normalize to get proportions
     weight_data = weight_data.div(weight_data.sum(axis=0), axis=1).fillna(0)
     # ---- Convert to DataArray
-    weight_cnv = xr.Dataset(
-        {"proportion": weight_data.stack().to_xarray().rename("proportion")}
-    )
+    weight_cnv = xr.Dataset({"proportion": weight_data.stack().to_xarray().rename("proportion")})
 
     # Apply binning using utils.binify (like the real workflow)
     utils.binify(test_data, bins=length_bins, bin_column="length")

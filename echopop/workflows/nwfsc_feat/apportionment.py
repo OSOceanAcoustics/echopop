@@ -927,11 +927,15 @@ def distribute_population_estimates(
     # Calculate the proportions
     # ---- Totals (for normalization)
     group_totals = sum(
-        ds["proportion"].sum(dim=[c for c in proportions_group_columns[k] if c not in data_group_columns])
+        ds["proportion"].sum(
+            dim=[c for c in proportions_group_columns[k] if c not in data_group_columns]
+        )
         for k, ds in proportions.items()
     )
     # ---- Apply normalization
-    proportions_norm = {k: (ds["proportion"] / group_totals).fillna(0.0) for k, ds in proportions.items()}
+    proportions_norm = {
+        k: (ds["proportion"] / group_totals).fillna(0.0) for k, ds in proportions.items()
+    }
 
     # Distribute the variable over each table
     apportioned_groups = {

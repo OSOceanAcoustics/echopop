@@ -75,13 +75,13 @@ def number_proportions(
     -------
     Union[xr.DataArray, Dict[xr.Dataset]]
         If only one DataArray is provided, returns that xarray.DataArray with added proportion
-        coordinates. If a Dataset is provided, returns a dictionary of xarray.Datasets for each variable
-        within 'data'.
+        coordinates. If a Dataset is provided, returns a dictionary of xarray.Datasets for each
+        variable within ``data``.
 
     Notes
     -----
     The function calculates a single proportion variable:
-    
+
     - "proportion": Overall proportion (count divided by the sum of counts across all DataArrays
       within the original Dataset)
 
@@ -724,9 +724,7 @@ def stratum_averaged_weight(
     proportion_arrays = []
     for group_name, ds in number_proportions.items():
         # ---- Get the grouped array
-        grouped_array = ds["proportion"].sum(
-            dim=[d for d in ds.dims if d not in group_columns]
-        )
+        grouped_array = ds["proportion"].sum(dim=[d for d in ds.dims if d not in group_columns])
         # ---- Expand the dimensions
         proportion_arrays.append(grouped_array.expand_dims({"group": [group_name]}))
     aggregate_proportions = xr.concat(proportion_arrays, dim="group")
