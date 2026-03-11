@@ -2,23 +2,25 @@
 FEAT report generation utilities for writing survey results to Excel workbooks.
 
 Provides functions for initializing workbooks, populating worksheets with abundance, biomass, and
-apportionment tables, and formatting output files for NWFSC FEAT
-deliverables.
+apportionment tables, and formatting output files for NWFSC FEAT deliverables.
 """
 
-import os
-from pathlib import Path
 from typing import Any, Literal
 
 import numpy as np
+from openpyxl import Workbook
+
+
+import os
+from pathlib import Path
+
+from openpyxl.worksheet.worksheet import Worksheet
 import pandas as pd
 import pandas.io.formats.excel as pdif
-import xarray as xr
-from openpyxl import Workbook
-from openpyxl.worksheet.worksheet import Worksheet
 
-from ... import utils
-from ...survey import apportionment
+from echopop import utils
+from echopop.survey import apportionment
+import xarray as xr
 
 ####################################################################################################
 # FILE WRITING UTILITY
@@ -164,55 +166,6 @@ def format_table_headers(
     return headers + [""] * (DTSHAPE[1] - len(headers))
 
 
-def append_datatable_rows(worksheet: Worksheet, dataframe: pd.DataFrame) -> None:
-    """
-    Append rows of a pivoted data table into an openpyxl worksheet.
-
-    Parameters
-    ----------
-    worksheet : openpyxl.worksheet.worksheet.Worksheet
-        Worksheet to append the data into.
-    dataframe : pandas.DataFrame
-        Pivoted DataFrame where index represents row labels (e.g. length bins) and columns
-        represent ages (plus a 'Subtotal' margin row).
-
-    Raises
-    ------
-    TypeError
-        If `worksheet` is not an openpyxl Worksheet or `dataframe` is not a pandas DataFrame.
-    ValueError
-        If the DataFrame index is empty.
-    """
-    # Check typing and data shape
-    if not hasattr(worksheet, "append"):
-        raise TypeError("Worksheet must be an `openpyxl.Worksheet`.")
-    if not isinstance(dataframe, pd.DataFrame):
-        raise TypeError("dataframe must be a `pandas.DataFrame`.")
-    if dataframe.index.size == 0:
-        raise ValueError("Dataframe has no rows to write.")
-
-    # Add column names (i.e. age)
-    worksheet.append([0] + dataframe.columns.values.tolist())
-
-    # Get the dataset row indices
-    ROW_INDICES = dataframe.index.values
-
-    # Populate the file with all rows except for the last margins row
-    # ---- Iterate along the length bins
-    for row in ROW_INDICES[:-1]:
-        # ---- Get the row
-        row_data = dataframe.loc[row, :]
-        # ---- Concatenate row name with the rest of the data
-        row_data = [row_data.name] + list(row_data)
-        # ---- Append
-        worksheet.append(row_data)
-
-    # Append the final row
-    # ---- Only apply if 'Subtotal' margin included
-    if "Subtotal" in ROW_INDICES:
-        worksheet.append(["Subtotal"] + dataframe.loc["Subtotal"].values[:-1].tolist())
-
-
 def append_table_aggregates(
     worksheet: Worksheet,
     dataframe: pd.DataFrame,
@@ -305,6 +258,55 @@ def append_table_aggregates(
         age_all_row = age_all_row + [""] * 4 + ["Male+Female:", sexed_total * (1 - age1_proportion)]
     # ---- Append
     worksheet.append(age_all_row)
+
+
+def append_datatable_rows(worksheet: Worksheet, dataframe: pd.DataFrame) -> None:
+    """
+    Append rows of a pivoted data table into an openpyxl worksheet.
+
+    Parameters
+    ----------
+    worksheet : openpyxl.worksheet.worksheet.Worksheet
+        Worksheet to append the data into.
+    dataframe : pandas.DataFrame
+        Pivoted DataFrame where index represents row labels (e.g. length bins) and columns
+        represent ages (plus a 'Subtotal' margin row).
+
+    Raises
+    ------
+    TypeError
+        If `worksheet` is not an openpyxl Worksheet or `dataframe` is not a pandas DataFrame.
+    ValueError
+        If the DataFrame index is empty.
+    """
+    # Check typing and data shape
+    if not hasattr(worksheet, "append"):
+        raise TypeError("Worksheet must be an `openpyxl.Worksheet`.")
+    if not isinstance(dataframe, pd.DataFrame):
+        raise TypeError("dataframe must be a `pandas.DataFrame`.")
+    if dataframe.index.size == 0:
+        raise ValueError("Dataframe has no rows to write.")
+
+    # Add column names (i.e. age)
+    worksheet.append([0] + dataframe.columns.values.tolist())
+
+    # Get the dataset row indices
+    ROW_INDICES = dataframe.index.values
+
+    # Populate the file with all rows except for the last margins row
+    # ---- Iterate along the length bins
+    for row in ROW_INDICES[:-1]:
+        # ---- Get the row
+        row_data = dataframe.loc[row, :]
+        # ---- Concatenate row name with the rest of the data
+        row_data = [row_data.name] + list(row_data)
+        # ---- Append
+        worksheet.append(row_data)
+
+    # Append the final row
+    # ---- Only apply if 'Subtotal' margin included
+    if "Subtotal" in ROW_INDICES:
+        worksheet.append(["Subtotal"] + dataframe.loc["Subtotal"].values[:-1].tolist())
 
 
 def append_sheet_label(

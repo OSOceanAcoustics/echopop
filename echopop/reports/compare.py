@@ -1,32 +1,33 @@
 """
 FEAT comparison utilities for validating and visualizing echopop vs. EchoPro outputs.
 
-Provides functions for loading, parsing, and comparing survey results across years and
-methodologies, including spatial maps, difference plots, and tabular cross-year
-summaries.
+Provides functions for loading, parsing, and comparing survey results across years and 
+methodologies, including spatial maps, difference plots, and tabular cross-year summaries.
 """
 
-import hashlib
-import os
-import re
-import warnings
+
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from pathlib import Path
 from typing import Any, Literal
 
 import geopandas as gpd
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-import seaborn as sns
 from matplotlib.axes import Axes
 from matplotlib.colors import TwoSlopeNorm
+import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator, ScalarFormatter
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+import numpy as np
+from pathlib import Path
+
+import pandas as pd
+
+
+import re
+
+import seaborn as sns
 from shapely.geometry import box
 
-from ...graphics import transect_map as ptransect, utils as gtools
+from echopop.graphics import transect_map as ptransect, utils as gtools
 
 
 def extract_sex_from_sheet(df: pd.DataFrame) -> str:
@@ -657,6 +658,36 @@ def plot_population_table_comparisons(
         plt.close(fig)
 
 
+def prettify_varname(var: str) -> tuple[str, str, str, str]:
+    """Prettify the variable label."""
+    # Search over the keys
+    matched_str = ""
+    for key in VARIABLES_KEY.keys():
+        if re.search(rf"^{key}$", var) or re.search(rf"^{key}_", var):
+            matched_str = key
+            break
+
+    # If no match
+    if matched_str == "":
+        return (var, None, None, None)
+
+    # Get label and units
+    title = VARIABLES_KEY[matched_str]["title"]
+    label = VARIABLES_KEY[matched_str]["label"]
+    units = VARIABLES_KEY[matched_str]["units"]
+
+    # Remove the matched key and underscore from the start, if present
+    suffix = var[len(matched_str) :]
+    if suffix.startswith("_"):
+        suffix = suffix[1:]
+        row_title = (suffix + " " + title).capitalize()
+    else:
+        row_title = title
+
+    # Format
+    return (row_title, title, label, units)
+
+
 def get_mapped_axes(
     ax: Axes,
     gdf: gpd.GeoDataFrame,
@@ -844,36 +875,6 @@ VARIABLES_KEY = {
         "units": r"$\mathregular{m^2~nmi^{-2}}$",
     },
 }
-
-
-def prettify_varname(var: str) -> tuple[str, str, str, str]:
-    """Prettify the variable label."""
-    # Search over the keys
-    matched_str = ""
-    for key in VARIABLES_KEY.keys():
-        if re.search(rf"^{key}$", var) or re.search(rf"^{key}_", var):
-            matched_str = key
-            break
-
-    # If no match
-    if matched_str == "":
-        return (var, None, None, None)
-
-    # Get label and units
-    title = VARIABLES_KEY[matched_str]["title"]
-    label = VARIABLES_KEY[matched_str]["label"]
-    units = VARIABLES_KEY[matched_str]["units"]
-
-    # Remove the matched key and underscore from the start, if present
-    suffix = var[len(matched_str) :]
-    if suffix.startswith("_"):
-        suffix = suffix[1:]
-        row_title = (suffix + " " + title).capitalize()
-    else:
-        row_title = title
-
-    # Format
-    return (row_title, title, label, units)
 
 
 def plot_geodata(
@@ -1372,8 +1373,10 @@ def compute_dataset_differences(
     Returns
     -------
     Tuple[pandas.DataFrame, pandas.DataFrame]
+
         - ``differences``: Magnitude differences (EchoPro - Echopop), indexed by
           ``(report_type, year)``.
+
         - ``pct_diff``: Percent differences relative to the mean of both datasets,
           indexed by ``(report_type, year)``.
     """
@@ -1411,7 +1414,7 @@ def compute_dataset_differences(
 
 
 def plot_dataset_differences(
-    signed_percent_differences: pd.DataFrame,
+    percent_differences: pd.DataFrame,
     save_filepath: Path | None = None,
     columns: list = None,
     figsize: tuple[int, int] = (14, 6),
@@ -1424,15 +1427,14 @@ def plot_dataset_differences(
 
     Parameters
     ----------
-    signed_percent_differences : pandas.DataFrame
-        Signed percent differences indexed by ``(report_type, year)``, as returned by
+    percent_differences : pandas.DataFrame
+        Percent differences indexed by ``(report_type, year)``, as returned by
         ``compute_dataset_differences``.
     save_filepath : Optional[Path]
         If provided, the figure is saved to this path at 300 dpi. If ``None``, the figure is
         only displayed.
     columns : list
-        Column display labels for the x-axis. Defaults to
-        ``["abundance", "biomass", "nasc"]``.
+        Column display labels for the x-axis. Defaults to ``["abundance", "biomass", "nasc"]``.
     figsize : Tuple[int, int]
         Figure size in inches. Defaults to ``(14, 6)``.
     """
@@ -1446,13 +1448,13 @@ def plot_dataset_differences(
 
     # Annotation DataFrames per report type
     annot = {
-        rtype: _fmt_percent(signed_percent_differences.loc[rtype])
+        rtype: _fmt_percent(percent_differences.loc[rtype])
         for rtype in ["transect", "kriging"]
     }
 
     # Consistent color scaling across both panels
-    vmin = signed_percent_differences.min().min()
-    vmax = signed_percent_differences.max().max()
+    vmin = percent_differences.min().min()
+    vmax = percent_differences.max().max()
 
     # Shared heatmap kwargs
     heatmap_kwargs = dict(

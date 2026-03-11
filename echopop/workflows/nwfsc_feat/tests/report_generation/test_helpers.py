@@ -4,14 +4,14 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from echopop.workflows.nwfsc_feat import reporter as feat
+import echopop.reports.reporter
 
 pytestmark = pytest.mark.skip("This entire file is currently skipped due to xarray migration.")
 
 
 def test_initialize_workbook(tmp_excel):
     """Workbook initialization test."""
-    wb = feat.initialize_workbook(tmp_excel)
+    wb = echopop.reports.reporter.initialize_workbook(tmp_excel)
     assert wb is not None
     wb.create_sheet("TestSheet")
     wb.save(tmp_excel)
@@ -20,47 +20,47 @@ def test_initialize_workbook(tmp_excel):
 
 def test_format_file_sheet(tmp_excel):
     """File formatting test."""
-    wb = feat.initialize_workbook(tmp_excel)
-    ws = feat.format_file_sheet("TestSheet", wb)
+    wb = echopop.reports.reporter.initialize_workbook(tmp_excel)
+    ws = echopop.reports.reporter.format_file_sheet("TestSheet", wb)
     assert ws.title == "TestSheet"
 
 
 def test_format_table_headers(plotting_heatmap_data):
     """Table header test."""
-    headers = feat.format_table_headers(plotting_heatmap_data)
+    headers = echopop.reports.reporter.format_table_headers(plotting_heatmap_data)
     assert isinstance(headers, list)
     assert headers[0] == "Length (cm)"
 
 
 def test_append_datatable_rows(plotting_heatmap_data, tmp_excel):
     """Data appending test."""
-    wb = feat.initialize_workbook(tmp_excel)
-    ws = feat.format_file_sheet("Test", wb)
+    wb = echopop.reports.reporter.initialize_workbook(tmp_excel)
+    ws = echopop.reports.reporter.format_file_sheet("Test", wb)
     df = plotting_heatmap_data.copy()
     df.loc["Subtotal"] = df.sum()
     df.columns = [str(c) if hasattr(c, "left") else c for c in df.columns]
     df.index = [str(i) if hasattr(i, "left") else i for i in df.index]
-    feat.append_datatable_rows(ws, df)
+    echopop.reports.reporter.append_datatable_rows(ws, df)
     assert ws.max_row > 1
 
 
 def test_append_table_aggregates(plotting_heatmap_data, tmp_excel):
     """Aggregate data appending test."""
-    wb = feat.initialize_workbook(tmp_excel)
-    ws = feat.format_file_sheet("Test", wb)
+    wb = echopop.reports.reporter.initialize_workbook(tmp_excel)
+    ws = echopop.reports.reporter.format_file_sheet("Test", wb)
     df = plotting_heatmap_data.copy()
     df.loc["Subtotal"] = df.sum()
     tables_dict = {"male": df, "female": df, "all": df}
     df[1] = 999
-    feat.append_table_aggregates(ws, df, "all", tables_dict)
+    echopop.reports.reporter.append_table_aggregates(ws, df, "all", tables_dict)
     assert ws.max_row > 0
 
 
 def test_append_sheet_label(tmp_excel):
     """Append sheet label test."""
-    wb = feat.initialize_workbook(tmp_excel)
-    ws = feat.format_file_sheet("Test", wb)
-    feat.append_sheet_label(ws, "Title {SEX}", "male")
+    wb = echopop.reports.reporter.initialize_workbook(tmp_excel)
+    ws = echopop.reports.reporter.format_file_sheet("Test", wb)
+    echopop.reports.reporter.append_sheet_label(ws, "Title {SEX}", "male")
     assert ws.max_row > 0
 
 
@@ -71,14 +71,14 @@ def test_pivot_aged_dataframe(sample_ci_grid_data, proportion_dict):
     # Add required columns for the test
     geo["biomass"] = [10, 20]
     prop.index = geo.index
-    out = feat.pivot_aged_dataframe(geo, prop, "biomass", "all", ["latitude", "longitude"])
+    out = echopop.reports.reporter.pivot_aged_dataframe(geo, prop, "biomass", "all", ["latitude", "longitude"])
     assert isinstance(out, type(geo))
 
 
 def test_repivot_table(plotting_heatmap_data):
     """Repivot test."""
     df = plotting_heatmap_data.copy()
-    out = feat.repivot_table(df, "val")
+    out = echopop.reports.reporter.repivot_table(df, "val")
     assert isinstance(out, type(df))
 
 
@@ -96,7 +96,7 @@ def test_pivot_aged_weight_proportions():
     )
 
     # Run test
-    out = feat.pivot_aged_weight_proportions(df)
+    out = echopop.reports.reporter.pivot_aged_weight_proportions(df)
     assert "all" in out
     assert "male" in out
     assert "female" in out
@@ -126,7 +126,7 @@ def test_pivot_haul_tables():
     )
 
     # Run test
-    out_male = feat.pivot_haul_tables(df, "male")
+    out_male = echopop.reports.reporter.pivot_haul_tables(df, "male")
     assert isinstance(out_male, pd.DataFrame)
     assert all(out_male.index == [3.0, 5.0, 7.0, "Subtotal"])
     assert out_male.index.name is None
@@ -141,7 +141,7 @@ def test_prepare_aged_biomass_dataframes(sample_ci_grid_data):
         "male": sample_ci_grid_data.copy(),
         "female": sample_ci_grid_data.copy(),
     }
-    feat.prepare_aged_biomass_dataframes(tables)
+    echopop.reports.reporter.prepare_aged_biomass_dataframes(tables)
     assert "all" in tables
 
 
@@ -150,7 +150,7 @@ def test_write_aged_dataframe_report(tmp_excel, plotting_heatmap_data):
     df = plotting_heatmap_data.copy()
     tables = {"all": df, "male": df, "female": df}
     sheetnames = {"male": "Male", "female": "Female", "all": "All"}
-    feat.write_aged_dataframe_report(tables, tmp_excel, sheetnames)
+    echopop.reports.reporter.write_aged_dataframe_report(tables, tmp_excel, sheetnames)
     assert tmp_excel.exists()
 
 
@@ -172,7 +172,7 @@ def test_prepare_age_length_tables():
     index_2 = pd.Index([2, 4, 6])
     df_2 = pd.DataFrame([np.random.random(6)] * 3, index=index_2, columns=columns_2)
 
-    out = feat.prepare_age_length_tables(df_2, df_1)
+    out = echopop.reports.reporter.prepare_age_length_tables(df_2, df_1)
 
     assert isinstance(out, dict)
     assert all([k in out for k in ["male", "female", "all"]])
@@ -197,10 +197,10 @@ def test_write_age_length_table_report(tmp_excel):
     index_2 = pd.Index([2, 4, 6])
     df_2 = pd.DataFrame([np.random.random(6)] * 3, index=index_2, columns=columns_2)
 
-    tables = feat.prepare_age_length_tables(df_2, df_1)
+    tables = echopop.reports.reporter.prepare_age_length_tables(df_2, df_1)
 
     sheetnames = {"male": "Male", "female": "Female", "all": "All"}
-    feat.write_age_length_table_report(tables, tmp_excel, sheetnames, "abundance", "Kriged")
+    echopop.reports.reporter.write_age_length_table_report(tables, tmp_excel, sheetnames, "abundance", "Kriged")
     assert tmp_excel.exists()
 
 
@@ -228,11 +228,11 @@ def test_write_haul_report(tmp_excel):
     )
 
     # Get tables
-    tables = {sex: feat.pivot_haul_tables(df, sex) for sex in ["male", "female", "all"]}
+    tables = {sex: echopop.reports.reporter.pivot_haul_tables(df, sex) for sex in ["male", "female", "all"]}
 
     # Sheetname mapping
     sheetnames = {"male": "Male", "female": "Female", "all": "All"}
 
     # Run test
-    feat.write_haul_report(tables, sheetnames, tmp_excel)
+    echopop.reports.reporter.write_haul_report(tables, sheetnames, tmp_excel)
     assert tmp_excel.exists()
