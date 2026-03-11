@@ -6,14 +6,15 @@ import pytest
 import xarray as xr
 
 from echopop.survey.biology import fit_length_weight_regression
-from echopop.workflows.nwfsc_feat import biology
+import echopop.survey.biology
+from echopop.survey import biology
 
 
 def test_length_binned_weights_basic_functionality(
     sample_specimen_data, sample_length_bins, single_regression_coefficients
 ):
     """Test basic functionality of biology.length_binned_weights."""
-    result = biology.length_binned_weights(
+    result = echopop.survey.biology.length_binned_weights(
         sample_specimen_data, sample_length_bins, single_regression_coefficients
     )
 
@@ -31,7 +32,7 @@ def test_length_binned_weights_grouped_coefficients(
     sample_specimen_data, sample_length_bins, grouped_regression_coefficients
 ):
     """Test with grouped regression coefficients."""
-    result = biology.length_binned_weights(
+    result = echopop.survey.biology.length_binned_weights(
         sample_specimen_data, sample_length_bins, grouped_regression_coefficients
     )
 
@@ -46,7 +47,7 @@ def test_length_binned_weights_impute_bins_false(
     sample_specimen_data, sample_length_bins, single_regression_coefficients
 ):
     """Test with impute_bins=False."""
-    result = biology.length_binned_weights(
+    result = echopop.survey.biology.length_binned_weights(
         sample_specimen_data,
         sample_length_bins,
         single_regression_coefficients,
@@ -65,7 +66,7 @@ def test_length_binned_weights_minimum_count_threshold(
 ):
     """Test with different minimum_count_threshold values."""
     # High threshold - should use more modeled weights
-    result_high = biology.length_binned_weights(
+    result_high = echopop.survey.biology.length_binned_weights(
         sample_specimen_data,
         sample_length_bins,
         single_regression_coefficients,
@@ -73,7 +74,7 @@ def test_length_binned_weights_minimum_count_threshold(
     )
 
     # Low threshold - should use more observed means
-    result_low = biology.length_binned_weights(
+    result_low = echopop.survey.biology.length_binned_weights(
         sample_specimen_data,
         sample_length_bins,
         single_regression_coefficients,
@@ -92,7 +93,7 @@ def test_length_binned_weights_zero_threshold(
     sample_specimen_data, sample_length_bins, single_regression_coefficients
 ):
     """Test with minimum_count_threshold=0."""
-    result = biology.length_binned_weights(
+    result = echopop.survey.biology.length_binned_weights(
         sample_specimen_data,
         sample_length_bins,
         single_regression_coefficients,
@@ -110,7 +111,7 @@ def test_length_binned_weights_minimal_data(
     reduced_specimen_data, sample_length_bins, single_regression_coefficients
 ):
     """Test with minimal specimen data."""
-    result = biology.length_binned_weights(
+    result = echopop.survey.biology.length_binned_weights(
         reduced_specimen_data, sample_length_bins, single_regression_coefficients
     )
 
@@ -123,7 +124,7 @@ def test_length_binned_weights_missing_weights(
     specimen_data_missing_weights, sample_length_bins, single_regression_coefficients
 ):
     """Test handling of missing weight values."""
-    result = biology.length_binned_weights(
+    result = echopop.survey.biology.length_binned_weights(
         specimen_data_missing_weights, sample_length_bins, single_regression_coefficients
     )
 
@@ -138,7 +139,7 @@ def test_length_binned_weights_large_dataset(
     large_specimen_dataset, sample_length_bins, single_regression_coefficients
 ):
     """Test performance with large dataset."""
-    result = biology.length_binned_weights(
+    result = echopop.survey.biology.length_binned_weights(
         large_specimen_dataset, sample_length_bins, single_regression_coefficients
     )
 
@@ -155,7 +156,7 @@ def test_length_binned_weights_empty_data(
     null_specimen_data, sample_length_bins, single_regression_coefficients
 ):
     """Test with empty specimen data."""
-    result = biology.length_binned_weights(
+    result = echopop.survey.biology.length_binned_weights(
         null_specimen_data, sample_length_bins, single_regression_coefficients
     )
 
@@ -168,7 +169,7 @@ def test_length_binned_weights_uneven_distribution(
     uneven_specimen_data, sample_length_bins, single_regression_coefficients
 ):
     """Test with uneven distribution of specimens across bins."""
-    result = biology.length_binned_weights(
+    result = echopop.survey.biology.length_binned_weights(
         uneven_specimen_data,
         sample_length_bins,
         single_regression_coefficients,
@@ -186,7 +187,7 @@ def test_length_binned_weights_multiple_groups(
     specimen_data_multiple_groups, sample_length_bins, coefficients_with_multiple_groups
 ):
     """Test with multiple grouping variables."""
-    result = biology.length_binned_weights(
+    result = echopop.survey.biology.length_binned_weights(
         specimen_data_multiple_groups, sample_length_bins, coefficients_with_multiple_groups
     )
 
@@ -205,7 +206,7 @@ def test_length_binned_weights_preserves_original_data(
     """Test that original data is not modified."""
     original_data = sample_specimen_data.copy()
 
-    biology.length_binned_weights(
+    echopop.survey.biology.length_binned_weights(
         sample_specimen_data, sample_length_bins, single_regression_coefficients
     )
 
@@ -218,11 +219,11 @@ def test_length_binned_weights_deterministic_results(
     sample_specimen_data, sample_length_bins, single_regression_coefficients
 ):
     """Test that function produces deterministic results."""
-    result1 = biology.length_binned_weights(
+    result1 = echopop.survey.biology.length_binned_weights(
         sample_specimen_data, sample_length_bins, single_regression_coefficients
     )
 
-    result2 = biology.length_binned_weights(
+    result2 = echopop.survey.biology.length_binned_weights(
         sample_specimen_data, sample_length_bins, single_regression_coefficients
     )
 
@@ -235,7 +236,7 @@ def test_length_binned_weights_realistic_coefficients(sample_specimen_data, samp
     # Generate coefficients from actual data
     coeffs = fit_length_weight_regression(sample_specimen_data)
 
-    result = biology.length_binned_weights(sample_specimen_data, sample_length_bins, coeffs)
+    result = echopop.survey.biology.length_binned_weights(sample_specimen_data, sample_length_bins, coeffs)
 
     assert isinstance(result, pd.DataFrame)
     # Should return long format with additional columns when no grouping
@@ -249,7 +250,7 @@ def test_length_binned_weights_column_filtering(
     sample_specimen_data, sample_length_bins, single_regression_coefficients
 ):
     """Test that output contains only expected columns."""
-    result = biology.length_binned_weights(
+    result = echopop.survey.biology.length_binned_weights(
         sample_specimen_data, sample_length_bins, single_regression_coefficients
     )
 
@@ -263,7 +264,7 @@ def test_length_binned_weights_weight_values_reasonable(
     sample_specimen_data, sample_length_bins, single_regression_coefficients
 ):
     """Test that fitted weight values are reasonable."""
-    result = biology.length_binned_weights(
+    result = echopop.survey.biology.length_binned_weights(
         sample_specimen_data, sample_length_bins, single_regression_coefficients
     )
 
@@ -281,7 +282,7 @@ def test_length_binned_weights_integration_with_fit_regression(
     coeffs = fit_length_weight_regression(sample_specimen_data)
 
     # Use those coefficients in biology.length_binned_weights
-    result = biology.length_binned_weights(sample_specimen_data, sample_length_bins, coeffs)
+    result = echopop.survey.biology.length_binned_weights(sample_specimen_data, sample_length_bins, coeffs)
 
     assert isinstance(result, pd.DataFrame)
     assert len(result) > 0
@@ -295,7 +296,7 @@ def test_length_binned_weights_different_imputation_strategies(
     uneven_specimen_data, sample_length_bins, single_regression_coefficients
 ):
     """Test different imputation strategies produce different results."""
-    result_impute = biology.length_binned_weights(
+    result_impute = echopop.survey.biology.length_binned_weights(
         uneven_specimen_data,
         sample_length_bins,
         single_regression_coefficients,
@@ -303,7 +304,7 @@ def test_length_binned_weights_different_imputation_strategies(
         minimum_count_threshold=3,
     )
 
-    result_no_impute = biology.length_binned_weights(
+    result_no_impute = echopop.survey.biology.length_binned_weights(
         uneven_specimen_data,
         sample_length_bins,
         single_regression_coefficients,

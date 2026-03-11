@@ -13,7 +13,13 @@ from .apportionment import (
     remove_group_from_estimates, 
     sum_population_tables
 )
-from .biology import fit_length_weight_regression, quantize_length_data
+from .biology import (
+    compute_abundance, 
+    compute_biomass,
+    fit_length_weight_regression,
+    length_binned_weights,
+    quantize_length_data
+)
 from .proportions import (
     binned_weights,
     compute_binned_counts,
@@ -39,7 +45,10 @@ __all__ = [
     "remove_group_from_estimates",
     "sum_population_tables",
     # Biology functions
+    "compute_abundance",
+    "compute_biomass",    
     "fit_length_weight_regression",
+    "length_binned_weights",
     "quantize_length_data",
     # Proportion functions
     "binned_weights",
