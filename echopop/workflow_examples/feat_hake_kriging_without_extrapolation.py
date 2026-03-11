@@ -1,16 +1,15 @@
 ####################################################################################################
 # FEAT hake survey: kriging population estimates without mesh cropping
 # CHANGES:
-# - L91: Define cropping methods from FEAT-specific sub-package
-# - L113: Define FEAT-specific kriging search strategy based, in part, on the western boundary of
+# - L103: Define cropping methods from FEAT-specific sub-package
+# - L125: Define FEAT-specific kriging search strategy based, in part, on the western boundary of
 #         the survey
-# - L957: Apply the FEAT-specific cropping and kriging search strategies that are incorporated into
+# - L907: Apply the FEAT-specific cropping and kriging search strategies that are incorporated into
 #         the ordinary kriging interpolation
+# ----> Or search for commented string "CHANGES FOR NON-EXTRAPOLATION"
 # --------------------------------------------------------------------
 from pathlib import Path
-
-from echopop.utils import feat_parameters as feat_parameters, functions as feat
-
+from echopop.utils import feat_functions as feat, feat_parameters
 ####################################################################################################
 # PARAMETER ENTRY
 # ---------------
@@ -151,8 +150,7 @@ from lmfit import Parameters
 
 import echopop.ingest as ingestion
 from echopop import geostatistics, inversion, utils
-from echopop.survey import biology, proportions, stratified, transect
-from echopop.workflows.nwfsc_feat import apportionment as feat_apportion, biology as feat_biology
+from echopop.survey import apportionment, biology, proportions,  transect
 
 ####################################################################################################
 # FORMAT LOGGER
@@ -215,7 +213,7 @@ else:
     )
 
     # EXPORT REGION NAME MAPPING
-    region_name_expr = {
+    REGION_NAME_EXPR_DICT = {
         "REGION_CLASS": {
             "Age-1 Hake": "^(?:h1a(?![a-z]|m))",
             "Age-1 Hake Mix": "^(?:h1am(?![a-z]|1a))",
@@ -492,7 +490,7 @@ logging.info(
 )
 
 # SEX-SPECIFIC
-da_binned_weights_sex = feat_biology.length_binned_weights(
+da_binned_weights_sex = biology.length_binned_weights(
     data=dict_df_bio["specimen"],
     length_bins=LENGTH_BINS,
     regression_coefficients=dict_length_weight_coefs["sex"],
@@ -501,7 +499,7 @@ da_binned_weights_sex = feat_biology.length_binned_weights(
 )
 
 # ALL FISH
-da_binned_weights_all = feat_biology.length_binned_weights(
+da_binned_weights_all = biology.length_binned_weights(
     data=dict_df_bio["specimen"].assign(sex="all"),
     length_bins=LENGTH_BINS,
     regression_coefficients=dict_length_weight_coefs["all"],
@@ -683,7 +681,7 @@ logging.info(
     "     Grouping by: 'sex'\n"
     "     Excluding: 'sex'='unsexed' from 'dict_df_number_proportions'"
 )
-feat_biology.compute_abundance(
+biology.compute_abundance(
     transect_data=df_nasc,
     exclude_filter={"sex": "unsexed"},
     number_proportions=dict_ds_number_proportion,
@@ -702,7 +700,7 @@ logging.info(
     "     Stratifying by: 'stratum_ks'\n"
     "     Grouping by: 'sex'\n"
 )
-feat_biology.compute_biomass(
+biology.compute_biomass(
     transect_data=df_nasc,
     stratum_weights=da_averaged_weight,
 )
@@ -726,7 +724,7 @@ logging.info(
 
 # ABUNDANCE
 logging.info("Distributing abundances...")
-dict_ds_transect_abundance_table = feat_apportion.distribute_population_estimates(
+dict_ds_transect_abundance_table = apportionment.distribute_population_estimates(
     data = df_nasc,
     proportions = dict_ds_number_proportion,
     variable = "abundance",
@@ -735,7 +733,7 @@ dict_ds_transect_abundance_table = feat_apportion.distribute_population_estimate
 logging.info("Abundance distributions complete\n'dict_ds_transect_abundance_table' created.")
 # BIOMASS [ALL]
 logging.info("Distributing biomass...")
-dict_ds_transect_biomass_table = feat_apportion.distribute_population_estimates(
+dict_ds_transect_biomass_table = apportionment.distribute_population_estimates(
     data=df_nasc,
     proportions=dict_da_weight_proportion,
     variable = "biomass",
@@ -744,7 +742,7 @@ dict_ds_transect_biomass_table = feat_apportion.distribute_population_estimates(
 logging.info("Biomass distribution complete\n'dict_ds_transect_biomass_table' created.")
 # BIOMASS [AGED-ONLY]
 logging.info("Distributing biomass...\n     Aged-only weight proportions: True")
-df_transect_aged_biomass_table = feat_apportion.distribute_population_estimates(
+df_transect_aged_biomass_table = apportionment.distribute_population_estimates(
     data=df_nasc,
     proportions=dict_da_weight_proportion["aged"],
     variable="biomass",
@@ -955,7 +953,7 @@ df_kriged_results["biomass"] = df_kriged_results["biomass_density"] * df_kriged_
 logging.info("New column in 'df_kriged_results': 'biomass'")
 
 # BIOMASS TO NASC
-feat_apportion.mesh_biomass_to_nasc(
+apportionment.mesh_biomass_to_nasc(
     mesh_data=df_kriged_results,
     biodata=dict_da_weight_proportion,
     group_columns=["sex", "stratum_ks"],

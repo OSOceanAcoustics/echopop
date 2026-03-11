@@ -1,13 +1,11 @@
 from pathlib import Path
-from typing import Dict
 
 import numpy as np
-import pandas as pd
 import xarray as xr
 from lmfit import Parameters
 
-import echopop.workflows.nwfsc_feat as feat
 from echopop import inversion, utils
+from echopop.survey import apportionment, biology, proportions, stratified, transect
 from echopop.geostatistics import cropping, kriging, variogram
 from echopop.ingest import (
     join_geostrata_by_latitude,
@@ -20,8 +18,6 @@ from echopop.ingest import (
     load_strata,
     nasc,
 )
-from echopop.survey import fit_length_weight_regression, proportions, stratified, transect
-from echopop.workflows.nwfsc_feat import apportionment, biology
 
 # ==================================================================================================
 # ==================================================================================================
@@ -349,14 +345,14 @@ dict_length_weight_coefs["all"] = (
     dict_df_bio["specimen"]
     .assign(sex="all")
     .groupby(["sex"])
-    .apply(fit_length_weight_regression, include_groups=False)
+    .apply(biology.fit_length_weight_regression, include_groups=False)
 )
 
 # Sex-specific
 dict_length_weight_coefs["sex"] = (
     dict_df_bio["specimen"]
     .groupby(["sex"])
-    .apply(fit_length_weight_regression, include_groups=False)
+    .apply(biology.fit_length_weight_regression, include_groups=False)
 )
 
 # ==================================================================================================
@@ -499,10 +495,10 @@ invert_hake = inversion.InversionLengthTS(MODEL_PARAMETERS)
 # If the above haul-averaged `sigma_bs` values were calculated, then the inversion can can
 # completed without calling in additional biodata
 df_nasc_all_ages = invert_hake.invert(
-    nasc_data=df_nasc_all_ages, df_length=[dict_df_bio["length"], dict_df_bio["specimen"]]
+    nasc_data=df_nasc_all_ages, length_data=[dict_df_bio["length"], dict_df_bio["specimen"]]
 )
 df_nasc_no_age1 = invert_hake.invert(
-    nasc_data=df_nasc_no_age1, df_length=[dict_df_bio["length"], dict_df_bio["specimen"]]
+    nasc_data=df_nasc_no_age1, length_data=[dict_df_bio["length"], dict_df_bio["specimen"]]
 )
 # ---- The average `sigma_bs` for each stratum can be inspected at:
 invert_hake.sigma_bs_strata
@@ -740,23 +736,23 @@ krg = kriging.Kriging(
 # -----------------------------------
 
 krg.crop_mesh(
-    crop_function=feat.transect_ends_crop,
+    crop_function=utils.feat_functions.transect_ends_crop,
     transects=df_nasc_no_age1_prt,
     latitude_resolution=1.25 / 60.0,
-    transect_mesh_region_function=feat_parameters.transect_mesh_region_2019,
+    transect_mesh_region_function=utils.feat_parameters.transect_mesh_region_2019,
 )
 
 # ==================================================================================================
 # [FEAT] Get the western extent of the transect bounds
 # ----------------------------------------------------
-transect_western_extents = feat.get_survey_western_extents(
+transect_western_extents = utils.feat_functions.get_survey_western_extents(
     transects=df_nasc_no_age1_prt, coordinate_names=("x", "y"), latitude_threshold=51.0
 )
 
 # ==================================================================================================
 # [FEAT] Register the custom search strategy
 # ------------------------------------------
-krg.register_search_strategy("FEAT_strategy", feat.western_boundary_search_strategy)
+krg.register_search_strategy("FEAT_strategy", utils.feat_functions.western_boundary_search_strategy)
 # ---- Verify that method was registered
 krg.list_search_strategies()
 

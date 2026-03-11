@@ -1,13 +1,13 @@
 ####################################################################################################
 # FEAT hake survey: age-1 fish excluded
 # CHANGES:
-# - L201: Remove age-1 dominated hauls from the transect-region-haul dataset, if any
-# - L254: Ensure that age-1 dominated hauls are removed from the biological data
-# - L694: Calculate the NASC, abundance, and biomass proportions attributed to age-1 fish
-# - L1038: Redistribute the age-1-associated abundance and biomass estimates from the kriged results
+# - L227: Remove age-1 dominated hauls from the transect-region-haul dataset, if any
+# - 279: Ensure that age-1 dominated hauls are removed from the biological data
+# - 720: Calculate the NASC, abundance, and biomass proportions attributed to age-1 fish
+# - L1073: Redistribute the age-1-associated abundance and biomass estimates from the kriged results
+# ----> Or search for commented string "CHANGES FOR AGE-1 EXCLUSION"
 # -------------------------------------
 from pathlib import Path
-
 ####################################################################################################
 # PARAMETER ENTRY
 # ---------------
@@ -126,8 +126,7 @@ from lmfit import Parameters
 
 import echopop.ingest as ingestion
 from echopop import geostatistics, inversion, utils
-from echopop.survey import biology, proportions, stratified, transect
-from echopop.workflows.nwfsc_feat import apportionment as feat_apportion, biology as feat_biology
+from echopop.survey import apportionment, biology, proportions, stratified, transect
 
 ####################################################################################################
 # FORMAT LOGGER
@@ -497,7 +496,7 @@ logging.info(
 )
 
 # SEX-SPECIFIC
-da_binned_weights_sex = feat_biology.length_binned_weights(
+da_binned_weights_sex = biology.length_binned_weights(
     data=dict_df_bio["specimen"],
     length_bins=LENGTH_BINS,
     regression_coefficients=dict_length_weight_coefs["sex"],
@@ -506,7 +505,7 @@ da_binned_weights_sex = feat_biology.length_binned_weights(
 )
 
 # ALL FISH
-da_binned_weights_all = feat_biology.length_binned_weights(
+da_binned_weights_all = biology.length_binned_weights(
     data=dict_df_bio["specimen"].assign(sex="all"),
     length_bins=LENGTH_BINS,
     regression_coefficients=dict_length_weight_coefs["all"],
@@ -686,7 +685,7 @@ logging.info(
     "     Grouping by: 'sex'\n"
     "     Excluding: 'sex'='unsexed' from 'dict_df_number_proportions'"
 )
-feat_biology.compute_abundance(
+biology.compute_abundance(
     transect_data=df_nasc,
     exclude_filter={"sex": "unsexed"},
     number_proportions=dict_ds_number_proportion,
@@ -704,7 +703,7 @@ logging.info(
     "     Stratifying by: 'stratum_ks'\n"
     "     Grouping by: 'sex'\n"
 )
-feat_biology.compute_biomass(
+biology.compute_biomass(
     transect_data=df_nasc,
     stratum_weights=da_averaged_weight,
 )
@@ -754,7 +753,7 @@ da_age1_weight_proportions = proportions.get_weight_proportions_slice(
 )
 
 # APPLY REMOVAL
-df_nasc_noage1 = feat_apportion.remove_group_from_estimates(
+df_nasc_noage1 = apportionment.remove_group_from_estimates(
     transect_data=df_nasc,
     group_proportions=xr.Dataset({
         "nasc": da_age1_nasc_proportions,
@@ -774,7 +773,7 @@ logging.info(
 
 # ABUNDANCE
 logging.info("Distributing abundances...")
-dict_ds_transect_abundance_table = feat_apportion.distribute_population_estimates(
+dict_ds_transect_abundance_table = apportionment.distribute_population_estimates(
     data = df_nasc_noage1,
     proportions = dict_ds_number_proportion,
     variable = "abundance",
@@ -783,7 +782,7 @@ dict_ds_transect_abundance_table = feat_apportion.distribute_population_estimate
 logging.info("Abundance distributions complete\n'dict_transect_abundance_table' created.")
 # BIOMASS [ALL]
 logging.info("Distributing biomass...")
-dict_ds_transect_biomass_table = feat_apportion.distribute_population_estimates(
+dict_ds_transect_biomass_table = apportionment.distribute_population_estimates(
     data = df_nasc_noage1,
     proportions = dict_ds_number_proportion,
     variable="biomass",
@@ -792,7 +791,7 @@ dict_ds_transect_biomass_table = feat_apportion.distribute_population_estimates(
 logging.info("Biomass distribution complete\n'dict_transect_biomass_table' created.")
 # BIOMASS [AGED-ONLY]
 logging.info("Distributing biomass...\n     Aged-only weight proportions: True")
-ds_transect_aged_biomass_table = feat_apportion.distribute_population_estimates(
+ds_transect_aged_biomass_table = apportionment.distribute_population_estimates(
     data=df_nasc_noage1,
     proportions=dict_da_weight_proportion["aged"],
     variable="biomass",
@@ -971,7 +970,7 @@ df_kriged_results["biomass"] = df_kriged_results["biomass_density"] * df_kriged_
 logging.info("New column in 'df_kriged_results': 'biomass'")
 
 # BIOMASS TO NASC
-feat_apportion.mesh_biomass_to_nasc(
+apportionment.mesh_biomass_to_nasc(
     mesh_data=df_kriged_results,
     biodata=dict_da_weight_proportion,
     group_columns=["sex", "stratum_ks"],
@@ -1005,7 +1004,7 @@ logging.info(
 
 # ABUNDANCE [ALL]
 logging.info("Distributing abundances...")
-dict_ds_kriged_abundance_table = feat_apportion.distribute_population_estimates(
+dict_ds_kriged_abundance_table = apportionment.distribute_population_estimates(
     data=df_kriged_results,
     proportions = dict_ds_number_proportion,
     variable = "abundance",
@@ -1020,7 +1019,7 @@ logging.info(
     "     Reference: Aged abundances\n"
     "     Imputing missing bins: False"
 )
-dict_ds_kriged_abundance_table["standardized_unaged"] = feat_apportion.distribute_unaged_from_aged(
+dict_ds_kriged_abundance_table["standardized_unaged"] = apportionment.distribute_unaged_from_aged(
     population_table = dict_ds_kriged_abundance_table["unaged"],
     reference_table = dict_ds_kriged_abundance_table["aged"],
     stratum_dim="stratum_ks",
@@ -1029,7 +1028,7 @@ dict_ds_kriged_abundance_table["standardized_unaged"] = feat_apportion.distribut
 
 # BIOMASS [ALL]
 logging.info("Distributing biomass...")
-dict_ds_kriged_biomass_table = feat_apportion.distribute_population_estimates(
+dict_ds_kriged_biomass_table = apportionment.distribute_population_estimates(
     data=df_kriged_results,
     proportions = dict_da_weight_proportion,
     variable = "biomass",
@@ -1044,7 +1043,7 @@ logging.info(
     "     Reference: Aged biomass\n"
     "     Imputing missing bins: True"
 )
-dict_ds_kriged_biomass_table["standardized_unaged"] = feat_apportion.distribute_unaged_from_aged(
+dict_ds_kriged_biomass_table["standardized_unaged"] = apportionment.distribute_unaged_from_aged(
     population_table = dict_ds_kriged_biomass_table["unaged"],
     reference_table = dict_ds_kriged_biomass_table["aged"],
     stratum_dim="stratum_ks",
@@ -1055,7 +1054,7 @@ dict_ds_kriged_biomass_table["standardized_unaged"] = feat_apportion.distribute_
 # CONSOLIDATE
 # ---- ABUNDANCE
 logging.info("Consolidating abundance tables...")
-da_kriged_abundance_table = feat_apportion.sum_population_tables(
+da_kriged_abundance_table = apportionment.sum_population_tables(
     population_tables={
         "aged": dict_ds_kriged_abundance_table["aged"],
         "unaged": dict_ds_kriged_abundance_table["standardized_unaged"]
@@ -1064,7 +1063,7 @@ da_kriged_abundance_table = feat_apportion.sum_population_tables(
 logging.info("Abundance table complete\n'df_kriged_abundance_table' created.")
 # ---- Biomass
 logging.info("Consolidating biomass tables...")
-da_kriged_biomass_table = feat_apportion.sum_population_tables(
+da_kriged_biomass_table = apportionment.sum_population_tables(
     population_tables={
         "aged": dict_ds_kriged_biomass_table["aged"],
         "unaged": dict_ds_kriged_biomass_table["standardized_unaged"]
@@ -1075,14 +1074,14 @@ logging.info("Biomass table complete\n'df_kriged_biomass_table' created.")
 ############################### CHANGES FOR AGE-1 EXCLUSION ########################################
 # REDISTRIBUTE AGE-1 ABUNDANCES
 logging.info("Redistributing kriged age-1 abundances and biomasses...")
-da_kriged_abundance_table_noage1 = feat_apportion.reallocate_excluded_estimates(
+da_kriged_abundance_table_noage1 = apportionment.reallocate_excluded_estimates(
     population_table=da_kriged_abundance_table,
     exclusion_filter={"age_bin": [1]},
     group_columns=["sex"],
 )
 
 # REDISTRIBTUE AGE-1 BIOMASS
-da_kriged_biomass_table_noage1 = feat_apportion.reallocate_excluded_estimates(
+da_kriged_biomass_table_noage1 = apportionment.reallocate_excluded_estimates(
     population_table=da_kriged_biomass_table,
     exclusion_filter={"age_bin": [1]},
     group_columns=["sex"],
