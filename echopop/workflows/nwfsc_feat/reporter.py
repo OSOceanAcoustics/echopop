@@ -18,7 +18,7 @@ from openpyxl import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
 
 from ... import utils
-from . import apportionment
+from ...survey import apportionment
 
 ####################################################################################################
 # FILE WRITING UTILITY

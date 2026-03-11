@@ -6,17 +6,19 @@ groups, reallocating excluded age/size classes, and distributing unaged fish cou
 reference proportions.
 """
 
-import functools
-import operator
-import warnings
+
 from typing import Any
+import warnings
 
 import numpy as np
+import functools
+import operator
+
 import pandas as pd
 import xarray as xr
+import warnings
 
 warnings.simplefilter("always")
-
 
 def remove_group_from_estimates(
     transect_data: pd.DataFrame,
@@ -132,20 +134,20 @@ def mesh_biomass_to_nasc(
 
     Parameters
     ----------
-    mesh_data_df : pd.DataFrame
+    mesh_data : pd.DataFrame
         DataFrame containing kriged biomass density estimates with spatial mesh information.
         Must contain columns for linking to biodata and either 'biomass', or 'biomass_density'
-        and 'area', columns.
+        and `'area'`, columns.
     biodata : pd.DataFrame or Dict[str, pd.DataFrame]
         Biological proportion data. Can be a single DataFrame or dictionary of DataFrames
         containing proportion data for different biological groups (e.g., aged/unaged).
     mesh_biodata_link : Dict[str, str]
-        Dictionary mapping column names from mesh_data_df to biodata column names for joining.
+        Dictionary mapping column names from ``mesh_data`` to biodata column names for joining.
         Example: {"geostratum_ks": "stratum_ks"}
-    stratum_weights_df : pd.DataFrame
+    stratum_weights : pd.DataFrame
         DataFrame containing average weights per stratum for converting biomass to abundance.
-        Index should match the linked columns from mesh_biodata_link.
-    stratum_sigma_bs_df : pd.DataFrame
+        Index should match the linked columns from ``mesh_biodata_link``.
+    stratum_sigma_bs : pd.DataFrame
         DataFrame containing sigma_bs (backscattering coefficient) values per stratum.
         Must have 'sigma_bs' column with index matching linked columns.
     group_by : List[str], default []
@@ -154,7 +156,7 @@ def mesh_biomass_to_nasc(
     Returns
     -------
     None
-        Function modifies mesh_data_df in place, adding new columns for biomass, abundance,
+        Function modifies ``mesh_data`` in place, adding new columns for biomass, abundance,
         and NASC values.
 
     Raises
@@ -178,6 +180,7 @@ def mesh_biomass_to_nasc(
 
     The NASC calculation uses the formula: NASC = abundance x sigma_bs x 4π
     """
+    
     # Convert to a Dictionary if needed
     if group_columns is None:
         group_columns = []

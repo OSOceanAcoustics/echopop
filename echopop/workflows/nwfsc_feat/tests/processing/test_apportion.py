@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from echopop.workflows.nwfsc_feat import apportionment as apportion
+import echopop.survey.apportionment
 
 pytestmark = pytest.mark.skip("This entire file is currently skipped due to xarray migration.")
 
@@ -23,7 +23,7 @@ def test_mesh_biomass_to_nasc(
     mesh_data_df["biomass"] = mesh_data_df["biomass_density"] * mesh_data_df["area"]
 
     # This should not raise an error (operation done in-place)
-    apportion.mesh_biomass_to_nasc(
+    echopop.survey.apportionment.mesh_biomass_to_nasc(
         mesh_data_df=mesh_data_df,
         biodata=apportion_weight_proportions,
         mesh_biodata_link={"mesh_stratum": "bio_stratum"},
@@ -33,7 +33,7 @@ def test_mesh_biomass_to_nasc(
     )
 
     # Verify in-place operation
-    test_result = apportion.mesh_biomass_to_nasc(
+    test_result = echopop.survey.apportionment.mesh_biomass_to_nasc(
         mesh_data_df=mesh_data_df,
         biodata=apportion_weight_proportions,
         mesh_biodata_link={"mesh_stratum": "bio_stratum"},
@@ -85,7 +85,7 @@ def test_distribute_population_estimates_kriged(
     mesh_data_df["biomass"] = mesh_data_df["biomass_density"] * mesh_data_df["area"]
 
     # Test-distribute biomass
-    biomass_tables = apportion.distribute_population_estimates(
+    biomass_tables = echopop.survey.apportionment.distribute_population_estimates(
         data=mesh_data_df,
         proportions=apportion_weight_proportions,
         variable="biomass",
@@ -106,7 +106,7 @@ def test_distribute_population_estimates_kriged(
     assert all(biomass_tables["subgroup2"].sum() == np.array([5.0e6, 8.0e6, 4.5e7]))
 
     # Test the same for abundances using a different format for DataFrame
-    abundance_tables = apportion.distribute_population_estimates(
+    abundance_tables = echopop.survey.apportionment.distribute_population_estimates(
         data=mesh_data_df,
         proportions=apportion_number_proportions,
         variable="abundance",
@@ -130,7 +130,7 @@ def test_distribute_population_estimates_kriged(
 def test_distribute_unaged_from_aged(apportion_biomass_table):
     """Test group-standardization of kriged estimates."""
     # Standardize 'subgroup2' based on 'subgroup1' -- No imputation
-    std_tbl_no_imp = apportion.distribute_unaged_from_aged(
+    std_tbl_no_imp = echopop.survey.apportionment.distribute_unaged_from_aged(
         population_table=apportion_biomass_table["subgroup2"],
         reference_table=apportion_biomass_table["subgroup1"],
         group_by=["contrast"],
@@ -166,7 +166,7 @@ def test_distribute_unaged_from_aged(apportion_biomass_table):
     apportion_biomass_table_imp = apportion_biomass_table.copy()
     apportion_biomass_table_imp["subgroup1"].loc[[("A", 5, 1), ("B", 15, 2)]] = 0.0
     # ---- Run standardization
-    std_tbl_imp = apportion.distribute_unaged_from_aged(
+    std_tbl_imp = echopop.survey.apportionment.distribute_unaged_from_aged(
         population_table=apportion_biomass_table_imp["subgroup2"],
         reference_table=apportion_biomass_table_imp["subgroup1"],
         group_by=["contrast"],
@@ -208,7 +208,7 @@ def test_sum_population_tables(apportion_biomass_table_with_standardized):
     TABLE_COLUMNS = ["extra_bin", "contrast"]
 
     # Combine tables
-    df_biomass_table = apportion.sum_population_tables(
+    df_biomass_table = echopop.survey.apportionment.sum_population_tables(
         population_table=apportion_biomass_table_with_standardized,
         table_names=["subgroup1", "standardized_subgroup2"],
         table_index=TABLE_INDEX,
@@ -242,7 +242,7 @@ def test_reallocate_excluded_estimates(apportion_combined_biomass_table):
     TEST_DF = apportion_combined_biomass_table.copy()
 
     # Empty exclusion filter
-    df_no_filter = apportion.reallocate_excluded_estimates(
+    df_no_filter = echopop.survey.apportionment.reallocate_excluded_estimates(
         population_table=TEST_DF,
         exclusion_filter={},
         group_by=["contrast"],
@@ -254,7 +254,7 @@ def test_reallocate_excluded_estimates(apportion_combined_biomass_table):
     assert sorted(df_no_filter.columns) == sorted(TEST_DF.columns)
 
     # No grouping -- distribute across all contrasts not excluded
-    df_no_grouping = apportion.reallocate_excluded_estimates(
+    df_no_grouping = echopop.survey.apportionment.reallocate_excluded_estimates(
         population_table=TEST_DF,
         exclusion_filter={"contrast": "A"},
         group_by=[],
@@ -273,7 +273,7 @@ def test_reallocate_excluded_estimates(apportion_combined_biomass_table):
     assert all(df_no_grouping[[(1, "A"), (2, "A")]] == 0.0)
 
     # Grouping -- defined by column in exclusion filter
-    df_grouping_column = apportion.reallocate_excluded_estimates(
+    df_grouping_column = echopop.survey.apportionment.reallocate_excluded_estimates(
         population_table=TEST_DF,
         exclusion_filter={"contrast": "A"},
         group_by=["contrast"],
@@ -292,7 +292,7 @@ def test_reallocate_excluded_estimates(apportion_combined_biomass_table):
     assert all(df_grouping_column[[(1, "A"), (2, "A")]] == 0.0)
 
     # Grouping -- defined by extra bin
-    df_grouping_col2 = apportion.reallocate_excluded_estimates(
+    df_grouping_col2 = echopop.survey.apportionment.reallocate_excluded_estimates(
         population_table=TEST_DF,
         exclusion_filter={"extra_bin": 1},
         group_by=["contrast"],
@@ -311,7 +311,7 @@ def test_reallocate_excluded_estimates(apportion_combined_biomass_table):
     assert all(df_grouping_col2[1] == 0.0)
 
     # Grouping -- defined by index
-    df_grouping_index = apportion.reallocate_excluded_estimates(
+    df_grouping_index = echopop.survey.apportionment.reallocate_excluded_estimates(
         population_table=TEST_DF,
         exclusion_filter={"index_bin": 5},
         group_by=["contrast"],
@@ -332,7 +332,7 @@ def test_reallocate_excluded_estimates(apportion_combined_biomass_table):
     # Full filtering -- raises warning
 
     with pytest.warns(UserWarning) as record:
-        apportion.reallocate_excluded_estimates(
+        echopop.survey.apportionment.reallocate_excluded_estimates(
             population_table=TEST_DF,
             exclusion_filter={"contrasts": ["A", "B"]},
             group_by=["contrast"],

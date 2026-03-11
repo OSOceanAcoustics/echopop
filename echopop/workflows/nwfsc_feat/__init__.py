@@ -6,14 +6,11 @@ Northwest Fisheries Science Center (NWFSC) Fisheries Ecosystem Assessment Team (
 These are not intended for general use outside of FEAT applications.
 """
 
-from . import parameters
-from .apportionment import (
+from ...survey.apportionment import distribute_unaged_from_aged, mesh_biomass_to_nasc, reallocate_excluded_estimates, remove_group_from_estimates, sum_population_tables
+
+from . import feat_parameters
+from ...survey.apportionment import (
     distribute_population_estimates,
-    distribute_unaged_from_aged,
-    mesh_biomass_to_nasc,
-    reallocate_excluded_estimates,
-    remove_group_from_estimates,
-    sum_population_tables,
 )
 from .biology import compute_abundance, compute_biomass, length_binned_weights
 from .comparisons import (
@@ -57,6 +54,6 @@ __all__ = [
     "biology",
     "comparison",
     "functions",
-    "parameters",
+    "feat_parameters",
     "reporter",
 ]

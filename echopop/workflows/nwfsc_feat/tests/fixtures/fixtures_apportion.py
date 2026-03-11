@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from echopop.workflows.nwfsc_feat import apportionment as apportion
+import echopop.survey.apportionment
 
 
 @pytest.fixture
@@ -186,7 +186,7 @@ def apportion_mesh_with_nasc(
     mesh_data_df["biomass"] = mesh_data_df["biomass_density"] * mesh_data_df["area"]
 
     # Convert biomass into the various derived population estimates
-    apportion.mesh_biomass_to_nasc(
+    echopop.survey.apportionment.mesh_biomass_to_nasc(
         mesh_data_df=mesh_data_df,
         biodata=apportion_weight_proportions,
         mesh_biodata_link={"mesh_stratum": "bio_stratum"},
@@ -208,7 +208,7 @@ def apportion_biomass_table(apportion_mesh_with_nasc, apportion_weight_proportio
     # Add biomass
     mesh_data_df["biomass"] = mesh_data_df["biomass_density"] * mesh_data_df["area"]
 
-    biomass_tables = apportion.distribute_population_estimates(
+    biomass_tables = echopop.survey.apportionment.distribute_population_estimates(
         data=mesh_data_df,
         proportions=apportion_weight_proportions,
         variable="biomass",
@@ -227,7 +227,7 @@ def apportion_biomass_table_with_standardized(apportion_biomass_table):
     table_copy = apportion_biomass_table.copy()
 
     # Add standardized table
-    table_copy["standardized_subgroup2"] = apportion.distribute_unaged_from_aged(
+    table_copy["standardized_subgroup2"] = echopop.survey.apportionment.distribute_unaged_from_aged(
         population_table=apportion_biomass_table["subgroup2"],
         reference_table=apportion_biomass_table["subgroup1"],
         group_by=["contrast"],
@@ -242,7 +242,7 @@ def apportion_biomass_table_with_standardized(apportion_biomass_table):
 def apportion_combined_biomass_table(apportion_biomass_table_with_standardized):
     """Pre-calculate combined apportioned biomass table for apportionment tests."""
     # Combine tables
-    return apportion.sum_population_tables(
+    return echopop.survey.apportionment.sum_population_tables(
         population_table=apportion_biomass_table_with_standardized,
         table_names=["subgroup1", "standardized_subgroup2"],
         table_index=["index_bin"],

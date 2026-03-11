@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from echopop.workflows.nwfsc_feat import apportionment as apportion, biology
+from echopop.survey import apportionment as apportion, biology
 
 pytestmark = pytest.mark.skip("This entire file is currently skipped due to xarray migration.")
 

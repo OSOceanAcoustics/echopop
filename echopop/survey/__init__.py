@@ -6,6 +6,13 @@ including stratified sampling, bootstrap statistics, biological proportions, and
 apportionment.
 """
 
+from .apportionment import (
+    distribute_unaged_from_aged, 
+    mesh_biomass_to_nasc, 
+    reallocate_excluded_estimates, 
+    remove_group_from_estimates, 
+    sum_population_tables
+)
 from .biology import fit_length_weight_regression, quantize_length_data
 from .proportions import (
     binned_weights,
@@ -22,8 +29,15 @@ from .stratified import JollyHampton
 from .transect import compute_interval_distance
 
 __all__ = [
-    # Main class
+    # Class [Stratified]
     "JollyHampton",
+    # Apportionment functions
+    "distribute_population_estimates",
+    "distribute_unaged_from_aged",
+    "mesh_biomass_to_nasc",
+    "reallocate_excluded_estimates",
+    "remove_group_from_estimates",
+    "sum_population_tables",
     # Biology functions
     "fit_length_weight_regression",
     "quantize_length_data",
@@ -42,6 +56,7 @@ __all__ = [
     # Transect functions
     "compute_interval_distance",
     # Submodules
+    "apportionment",
     "biology",
     "proportions",
     "statistics",
