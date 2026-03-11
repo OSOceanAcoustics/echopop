@@ -121,7 +121,6 @@ ISOBATH_SHEET = "Smoothing_EasyKrig"
 import logging
 
 import numpy as np
-import pandas as pd
 import xarray as xr
 from lmfit import Parameters
 

@@ -101,14 +101,11 @@ ISOBATH_SHEET = "Smoothing_EasyKrig"
 ####################################################################################################
 import logging
 import numpy as np
-import pandas as pd
 import xarray as xr
-from lmfit import Parameters
-from echopop.workflows.nwfsc_feat import functions as feat, parameters as feat_parameters, Reporter
 import echopop.ingest as ingestion
-from echopop import geostatistics, inversion, utils
-from echopop.survey import biology, proportions, stratified, transect
-from echopop.workflows.nwfsc_feat import apportionment as feat_apportion, biology as feat_biology
+from echopop import inversion, utils
+from echopop.survey import biology, proportions, transect
+from echopop.workflows.nwfsc_feat import biology as feat_biology
 # ==================================================================================================
 # DATA INGESTION 
 # ==================================================================================================

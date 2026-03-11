@@ -8,7 +8,7 @@ from echopop.workflows.nwfsc_feat import (
     transect_ends_crop,
     western_boundary_search_strategy,
 )
-from echopop.workflows.nwfsc_feat.parameters import transect_mesh_region_2019
+from echopop.utils.feat_parameters import transect_mesh_region_2019
 
 
 # ==================================================================================================

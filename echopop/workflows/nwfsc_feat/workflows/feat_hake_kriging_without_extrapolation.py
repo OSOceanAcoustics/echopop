@@ -9,7 +9,7 @@
 # --------------------------------------------------------------------
 from pathlib import Path
 
-from echopop.workflows.nwfsc_feat import functions as feat, parameters as feat_parameters
+from echopop.utils import feat_parameters as feat_parameters, functions as feat
 
 ####################################################################################################
 # PARAMETER ENTRY

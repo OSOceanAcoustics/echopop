@@ -2,11 +2,11 @@
 FEAT general-purpose workflow utility functions.
 
 Provides spatial, interpolation, and data-manipulation helpers used across FEAT survey workflows,
-including transect extent extraction, kriging mesh preparation, and adaptive
-nearest-neighbor search utilities.
+including transect extent extraction, kriging mesh preparation, and adaptive nearest-neighbor 
+search utilities.
 """
 
-import re
+
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 from scipy import interpolate
 
-from ... import utils
+from echopop import utils
 
 
 def get_survey_western_extents(
@@ -221,6 +221,247 @@ def western_boundary_search_strategy(
 
     # Return Tuple
     return wr_indices, oos_indices, oos_weights
+
+
+def convert_afsc_nasc_to_feat(
+    nasc_data: pd.DataFrame,
+    default_interval_distance: float = 0.5,
+    default_transect_spacing: float = 10.0,
+    inclusion_filter: dict[str, Any] = None,
+    exclusion_filter: dict[str, Any] = None,
+) -> pd.DataFrame:
+    """
+    Convert AFSC-MACE to NWFSC-FEAT transect NASC format.
+
+    Parameters
+    ----------
+    nasc_data : pd.DataFrame
+        DataFrame containing AFSC NASC data.
+    default_interval_distance : float, optional
+        Default distance interval for transects, by default 0.5.
+    default_transect_spacing : float, optional
+        Default transect spacing, by default 10.0.
+    inclusion_filter : Dict[str, Any], optional
+        Filter to include specific rows based on column values, by default {}.
+    exclusion_filter : Dict[str, Any], optional
+        Filter to exclude specific rows based on column values, by default {}.
+
+    Returns
+    -------
+    pd.DataFrame
+        Transformed DataFrame corresponding to the expected NWFSC-FEAT format.
+    """
+    # Apply inclusion filter if provided
+    if exclusion_filter is None:
+        exclusion_filter = {}
+    if inclusion_filter is None:
+        inclusion_filter = {}
+    df = utils.apply_filters(
+        nasc_data, include_filter=inclusion_filter, exclude_filter=exclusion_filter
+    )
+
+    # Create distance intervals
+    df.rename(columns={"distance": "distance_s"}, inplace=True)
+
+    # End of interval
+    df["distance_e"] = df["distance_s"] + default_interval_distance
+
+    # Replace NaN values in transect_spacing with the default value
+    df["transect_spacing"] = df["transect_spacing"].fillna(default_transect_spacing)
+
+    return df
+
+
+def filter_transect_intervals(
+    nasc_data: pd.DataFrame,
+    transect_filter: pd.DataFrame | Path,
+    survey_filter: str | None = None,
+    transect_filter_sheet: str | None = None,
+) -> pd.DataFrame:
+    """
+    Filter transect intervals based on log start and end values.
+
+    Parameters
+    ----------
+    nasc_data : pandas.DataFrame
+        DataFrame containing NASC data with columns 'transect_num', 'distance_s', and 'distance_e'
+    transect_filter : Union[pandas.DataFrame, Path]
+        DataFrame containing transect filter data with columns 'transect_num', 'log_start',
+        and 'log_end', or a filepath that reads in a file.
+    survey_filter : str, optional
+        Query survey string to filter ``transect_filter`` (e.g., "region_id == 'A'")
+    transect_filter_sheet : str, optional
+        Optional sheetname if a filename is input
+
+    Returns
+    -------
+    pandas.DataFrame
+        Filtered DataFrame containing only rows that overlap with the specified transect intervals
+
+    Examples
+    --------
+    >>> nasc_data = pd.DataFrame({
+    ...     'transect_num': [1, 1, 2, 2],
+    ...     'distance_s': [0, 1, 0, 1],
+    ...     'distance_e': [1, 2, 1, 2],
+    ...     'nasc': [10, 20, 30, 40]
+    ... })
+    >>> filter_data = pd.DataFrame({
+    ...     'transect_num': [1, 2],
+    ...     'log_start': [0.5, 0.5],
+    ...     'log_end': [1.5, 1.5],
+    ...     'region_id': ['A', 'B']
+    ... })
+    >>> result = filter_transect_intervals(nasc_data, filter_data)
+    """
+    # Make copies to avoid modifying the inputs
+    nasc_df = nasc_data.copy()
+
+    # Read in transect filter file
+    if isinstance(transect_filter, Path):
+        # Read in the defined file
+        transect_filter = pd.read_excel(
+            transect_filter, sheet_name=transect_filter_sheet, index_col=None, header=0
+        )
+
+    # Lowercase column names in transect filter DataFrame
+    transect_filter.columns = transect_filter.columns.str.lower()
+
+    # Rename 'transect' to 'transect_num' if it exists
+    if "transect" in transect_filter.columns and "transect_num" not in transect_filter.columns:
+        transect_filter.rename(columns={"transect": "transect_num"}, inplace=True)
+
+    # Validation check
+    if not set(transect_filter.columns) >= set(["transect_num", "log_start", "log_end"]):
+        # ---- Find mismatch
+        missing = list(set(["transect_num", "log_start", "log_end"]) - set(transect_filter.columns))
+        # ---- Format
+        missing_str = [f"'{v}'" for v in missing]
+        # ---- Print
+        raise KeyError(
+            f"The following columns could not be formatted from 'transect_filter': "
+            f"{', '.join(missing_str)}."
+        )
+
+    # Apply a filter, if needed
+    if survey_filter is not None:
+        # Extract tokens from string
+        tokens = re.findall(r"\b[a-zA-Z_][a-zA-Z0-9_]*\b", survey_filter)
+
+        # Provide typical Python operator keywords
+        keywords = {"and", "or", "not", "in", "notin", "True", "False"}
+
+        # Check for column names
+        column_names = [
+            t
+            for t in tokens
+            if t not in keywords and not t.isnumeric() and t in transect_filter.columns
+        ]
+
+        # Check if all referenced columns exist
+        missing = [col for col in column_names if col not in transect_filter.columns]
+
+        # Raise error, if needed
+        if missing:
+            raise ValueError(f"Invalid column(s): {', '.join(missing)}")
+        else:
+            transect_filter = transect_filter.query(survey_filter).sort_values(["transect_num"])
+
+    # Sort transect filter by vessel log distance start values
+    transect_filter = transect_filter.sort_values("log_start").reset_index(drop=True)
+
+    # Get arrays for easier processing
+    filter_transect_nums = transect_filter["transect_num"].values
+    filter_log_starts = transect_filter["log_start"].values
+    filter_log_ends = transect_filter["log_end"].values
+    unique_filter_transects = np.unique(filter_transect_nums)
+
+    # Get NASC data arrays
+    nasc_transect_nums = nasc_df["transect_num"].values
+    nasc_distance_starts = nasc_df["distance_s"].values
+    nasc_distance_ends = nasc_df["distance_e"].values
+
+    # Initialize removal list
+    indices_to_remove = []
+
+    # Process each unique transect that has filter intervals
+    for transect in unique_filter_transects:
+        # ---- Find filter interval indices for this transect
+        filter_interval_indices = np.where(filter_transect_nums == transect)[0]
+        num_intervals = len(filter_interval_indices)
+        # ---- Find NASC data indices for this transect
+        nasc_data_indices = np.where(nasc_transect_nums == transect)[0]
+        # ---- Skip if empty
+        if len(nasc_data_indices) == 0:
+            continue
+        # ---- Initialize current transect removal indices
+        current_removal_indices = []
+        # ---- Iterate through gaps
+        if num_intervals > 1:
+            # ---- Multiple intervals case
+            for interval in range(num_intervals):
+                if interval == 0:
+                    # ---- Case 1: Remove data before first interval
+                    condition_indices = np.where(
+                        nasc_distance_ends[nasc_data_indices]
+                        < filter_log_starts[filter_interval_indices[0]]
+                    )[0]
+                elif interval == num_intervals - 1:
+                    # ---- Case 2: Remove data after last interval OR between last two intervals
+                    condition_indices = np.where(
+                        (
+                            nasc_distance_starts[nasc_data_indices]
+                            > filter_log_ends[filter_interval_indices[num_intervals - 1]]
+                        )
+                        | (
+                            (
+                                nasc_distance_starts[nasc_data_indices]
+                                > filter_log_ends[filter_interval_indices[interval - 1]]
+                            )
+                            & (
+                                nasc_distance_ends[nasc_data_indices]
+                                < filter_log_starts[filter_interval_indices[interval]]
+                            )
+                        )
+                    )[0]
+                else:
+                    # ---- Case 3: Remove data between intervals j-1 and j
+                    condition_indices = np.where(
+                        (
+                            nasc_distance_starts[nasc_data_indices]
+                            > filter_log_ends[filter_interval_indices[interval - 1]]
+                        )
+                        & (
+                            nasc_distance_ends[nasc_data_indices]
+                            < filter_log_starts[filter_interval_indices[interval]]
+                        )
+                    )[0]
+                # ---- Add matching NASC indices to removal list
+                if len(condition_indices) > 0:
+                    current_removal_indices.extend(nasc_data_indices[condition_indices])
+        else:
+            # ---- Single interval case: Remove data before start OR after end
+            condition_indices = np.where(
+                (
+                    nasc_distance_ends[nasc_data_indices]
+                    < filter_log_starts[filter_interval_indices[0]]
+                )
+                | (
+                    nasc_distance_starts[nasc_data_indices]
+                    > filter_log_ends[filter_interval_indices[0]]
+                )
+            )[0]
+            if len(condition_indices) > 0:
+                current_removal_indices.extend(nasc_data_indices[condition_indices])
+        # ---- Add all removal indices for this transect
+        indices_to_remove.extend(current_removal_indices)
+
+    # Create boolean mask for rows to keep
+    keep_mask = np.ones(len(nasc_df), dtype=bool)
+    keep_mask[indices_to_remove] = False
+
+    # Return the filtered dataframe
+    return nasc_df[keep_mask].reset_index(drop=True)
 
 
 # Helper functions for setting E-W/N-S assignments
@@ -743,244 +984,3 @@ def transect_ends_crop(
 
     # Return the DataFrames
     return mesh.loc[mesh_indices], transect_df.reset_index()
-
-
-def filter_transect_intervals(
-    nasc_data: pd.DataFrame,
-    transect_filter: pd.DataFrame | Path,
-    survey_filter: str | None = None,
-    transect_filter_sheet: str | None = None,
-) -> pd.DataFrame:
-    """
-    Filter transect intervals based on log start and end values.
-
-    Parameters
-    ----------
-    nasc_data : pandas.DataFrame
-        DataFrame containing NASC data with columns 'transect_num', 'distance_s', and 'distance_e'
-    transect_filter : Union[pandas.DataFrame, Path]
-        DataFrame containing transect filter data with columns 'transect_num', 'log_start',
-        and 'log_end', or a filepath that reads in a file.
-    survey_filter : str, optional
-        Query survey string to filter ``transect_filter`` (e.g., "region_id == 'A'")
-    transect_filter_sheet : str, optional
-        Optional sheetname if a filename is input
-
-    Returns
-    -------
-    pandas.DataFrame
-        Filtered DataFrame containing only rows that overlap with the specified transect intervals
-
-    Examples
-    --------
-    >>> nasc_data = pd.DataFrame({
-    ...     'transect_num': [1, 1, 2, 2],
-    ...     'distance_s': [0, 1, 0, 1],
-    ...     'distance_e': [1, 2, 1, 2],
-    ...     'nasc': [10, 20, 30, 40]
-    ... })
-    >>> filter_data = pd.DataFrame({
-    ...     'transect_num': [1, 2],
-    ...     'log_start': [0.5, 0.5],
-    ...     'log_end': [1.5, 1.5],
-    ...     'region_id': ['A', 'B']
-    ... })
-    >>> result = filter_transect_intervals(nasc_data, filter_data)
-    """
-    # Make copies to avoid modifying the inputs
-    nasc_df = nasc_data.copy()
-
-    # Read in transect filter file
-    if isinstance(transect_filter, Path):
-        # Read in the defined file
-        transect_filter = pd.read_excel(
-            transect_filter, sheet_name=transect_filter_sheet, index_col=None, header=0
-        )
-
-    # Lowercase column names in transect filter DataFrame
-    transect_filter.columns = transect_filter.columns.str.lower()
-
-    # Rename 'transect' to 'transect_num' if it exists
-    if "transect" in transect_filter.columns and "transect_num" not in transect_filter.columns:
-        transect_filter.rename(columns={"transect": "transect_num"}, inplace=True)
-
-    # Validation check
-    if not set(transect_filter.columns) >= set(["transect_num", "log_start", "log_end"]):
-        # ---- Find mismatch
-        missing = list(set(["transect_num", "log_start", "log_end"]) - set(transect_filter.columns))
-        # ---- Format
-        missing_str = [f"'{v}'" for v in missing]
-        # ---- Print
-        raise KeyError(
-            f"The following columns could not be formatted from 'transect_filter': "
-            f"{', '.join(missing_str)}."
-        )
-
-    # Apply a filter, if needed
-    if survey_filter is not None:
-        # Extract tokens from string
-        tokens = re.findall(r"\b[a-zA-Z_][a-zA-Z0-9_]*\b", survey_filter)
-
-        # Provide typical Python operator keywords
-        keywords = {"and", "or", "not", "in", "notin", "True", "False"}
-
-        # Check for column names
-        column_names = [
-            t
-            for t in tokens
-            if t not in keywords and not t.isnumeric() and t in transect_filter.columns
-        ]
-
-        # Check if all referenced columns exist
-        missing = [col for col in column_names if col not in transect_filter.columns]
-
-        # Raise error, if needed
-        if missing:
-            raise ValueError(f"Invalid column(s): {', '.join(missing)}")
-        else:
-            transect_filter = transect_filter.query(survey_filter).sort_values(["transect_num"])
-
-    # Sort transect filter by vessel log distance start values
-    transect_filter = transect_filter.sort_values("log_start").reset_index(drop=True)
-
-    # Get arrays for easier processing
-    filter_transect_nums = transect_filter["transect_num"].values
-    filter_log_starts = transect_filter["log_start"].values
-    filter_log_ends = transect_filter["log_end"].values
-    unique_filter_transects = np.unique(filter_transect_nums)
-
-    # Get NASC data arrays
-    nasc_transect_nums = nasc_df["transect_num"].values
-    nasc_distance_starts = nasc_df["distance_s"].values
-    nasc_distance_ends = nasc_df["distance_e"].values
-
-    # Initialize removal list
-    indices_to_remove = []
-
-    # Process each unique transect that has filter intervals
-    for transect in unique_filter_transects:
-        # ---- Find filter interval indices for this transect
-        filter_interval_indices = np.where(filter_transect_nums == transect)[0]
-        num_intervals = len(filter_interval_indices)
-        # ---- Find NASC data indices for this transect
-        nasc_data_indices = np.where(nasc_transect_nums == transect)[0]
-        # ---- Skip if empty
-        if len(nasc_data_indices) == 0:
-            continue
-        # ---- Initialize current transect removal indices
-        current_removal_indices = []
-        # ---- Iterate through gaps
-        if num_intervals > 1:
-            # ---- Multiple intervals case
-            for interval in range(num_intervals):
-                if interval == 0:
-                    # ---- Case 1: Remove data before first interval
-                    condition_indices = np.where(
-                        nasc_distance_ends[nasc_data_indices]
-                        < filter_log_starts[filter_interval_indices[0]]
-                    )[0]
-                elif interval == num_intervals - 1:
-                    # ---- Case 2: Remove data after last interval OR between last two intervals
-                    condition_indices = np.where(
-                        (
-                            nasc_distance_starts[nasc_data_indices]
-                            > filter_log_ends[filter_interval_indices[num_intervals - 1]]
-                        )
-                        | (
-                            (
-                                nasc_distance_starts[nasc_data_indices]
-                                > filter_log_ends[filter_interval_indices[interval - 1]]
-                            )
-                            & (
-                                nasc_distance_ends[nasc_data_indices]
-                                < filter_log_starts[filter_interval_indices[interval]]
-                            )
-                        )
-                    )[0]
-                else:
-                    # ---- Case 3: Remove data between intervals j-1 and j
-                    condition_indices = np.where(
-                        (
-                            nasc_distance_starts[nasc_data_indices]
-                            > filter_log_ends[filter_interval_indices[interval - 1]]
-                        )
-                        & (
-                            nasc_distance_ends[nasc_data_indices]
-                            < filter_log_starts[filter_interval_indices[interval]]
-                        )
-                    )[0]
-                # ---- Add matching NASC indices to removal list
-                if len(condition_indices) > 0:
-                    current_removal_indices.extend(nasc_data_indices[condition_indices])
-        else:
-            # ---- Single interval case: Remove data before start OR after end
-            condition_indices = np.where(
-                (
-                    nasc_distance_ends[nasc_data_indices]
-                    < filter_log_starts[filter_interval_indices[0]]
-                )
-                | (
-                    nasc_distance_starts[nasc_data_indices]
-                    > filter_log_ends[filter_interval_indices[0]]
-                )
-            )[0]
-            if len(condition_indices) > 0:
-                current_removal_indices.extend(nasc_data_indices[condition_indices])
-        # ---- Add all removal indices for this transect
-        indices_to_remove.extend(current_removal_indices)
-
-    # Create boolean mask for rows to keep
-    keep_mask = np.ones(len(nasc_df), dtype=bool)
-    keep_mask[indices_to_remove] = False
-
-    # Return the filtered dataframe
-    return nasc_df[keep_mask].reset_index(drop=True)
-
-
-def convert_afsc_nasc_to_feat(
-    nasc_data: pd.DataFrame,
-    default_interval_distance: float = 0.5,
-    default_transect_spacing: float = 10.0,
-    inclusion_filter: dict[str, Any] = None,
-    exclusion_filter: dict[str, Any] = None,
-) -> pd.DataFrame:
-    """
-    Convert AFSC-MACE to NWFSC-FEAT transect NASC format.
-
-    Parameters
-    ----------
-    nasc_data : pd.DataFrame
-        DataFrame containing AFSC NASC data.
-    default_interval_distance : float, optional
-        Default distance interval for transects, by default 0.5.
-    default_transect_spacing : float, optional
-        Default transect spacing, by default 10.0.
-    inclusion_filter : Dict[str, Any], optional
-        Filter to include specific rows based on column values, by default {}.
-    exclusion_filter : Dict[str, Any], optional
-        Filter to exclude specific rows based on column values, by default {}.
-
-    Returns
-    -------
-    pd.DataFrame
-        Transformed DataFrame corresponding to the expected NWFSC-FEAT format.
-    """
-    # Apply inclusion filter if provided
-    if exclusion_filter is None:
-        exclusion_filter = {}
-    if inclusion_filter is None:
-        inclusion_filter = {}
-    df = utils.apply_filters(
-        nasc_data, include_filter=inclusion_filter, exclude_filter=exclusion_filter
-    )
-
-    # Create distance intervals
-    df.rename(columns={"distance": "distance_s"}, inplace=True)
-
-    # End of interval
-    df["distance_e"] = df["distance_s"] + default_interval_distance
-
-    # Replace NaN values in transect_spacing with the default value
-    df["transect_spacing"] = df["transect_spacing"].fillna(default_transect_spacing)
-
-    return df

@@ -743,7 +743,7 @@ krg.crop_mesh(
     crop_function=feat.transect_ends_crop,
     transects=df_nasc_no_age1_prt,
     latitude_resolution=1.25 / 60.0,
-    transect_mesh_region_function=feat.parameters.transect_mesh_region_2019,
+    transect_mesh_region_function=feat_parameters.transect_mesh_region_2019,
 )
 
 # ==================================================================================================

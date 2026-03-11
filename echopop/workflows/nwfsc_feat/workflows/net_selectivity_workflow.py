@@ -117,7 +117,7 @@ import echopop.ingest as ingestion
 from echopop import geostatistics, inversion, utils
 from echopop.survey import biology, proportions, selectivity, transect
 from echopop.workflows.nwfsc_feat import apportionment as feat_apportion, biology as feat_biology
-from echopop.workflows.nwfsc_feat import functions as feat
+from echopop.utils import feat_functions as feat
 # ==================================================================================================
 # DATA INGESTION 
 # ==================================================================================================
