@@ -190,7 +190,7 @@ def test_compute_biomass_with_weights(biology_test_dataset, average_weight_df):
     """Test biomass calculation with average weights."""
     test_data = biology_test_dataset.copy()
 
-    build.lib.echopop.survey.biology.compute_biomass(
+    biology.compute_biomass(
         dataset=test_data,
         stratify_by=["stratum_ks"],
         group_by=["sex"],

@@ -3,7 +3,7 @@
 import numpy as np
 import pandas as pd
 
-from echopop.workflows.nwfsc_feat import (
+from echopop.utils import (
     get_survey_western_extents,
     transect_ends_crop,
     western_boundary_search_strategy,

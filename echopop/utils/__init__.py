@@ -13,6 +13,7 @@ from .base import (
 )
 
 from .feat_functions import (
+    filter_transect_intervals,
     get_survey_western_extents,
     transect_ends_crop,
     western_boundary_search_strategy
@@ -30,10 +31,10 @@ __all__ = [
     "group_interpolator_creator",
     "round_half_up",
     # FEAT-specific functions
+    "filter_transect_intervals",
     "get_survey_western_extents",
     "transect_ends_crop",
     "western_boundary_search_strategy",
-
     # Submodules
     "base",
     "feat_functions",

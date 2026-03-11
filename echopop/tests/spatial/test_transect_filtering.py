@@ -3,7 +3,7 @@
 import pandas as pd
 import pytest
 
-from echopop.workflows.nwfsc_feat.functions import filter_transect_intervals
+from echopop.utils import filter_transect_intervals
 
 
 def test_filter_transect_intervals_basic():
