@@ -12,9 +12,7 @@ def test_compute_binned_counts_size_aggregation(sample_specimen_data):
     """Test size aggregation (default)."""
     result = get_proportions.compute_binned_counts(
         sample_specimen_data, ["stratum_num", "length_bin"], "length", agg_func="size"
-    )
-
-    assert isinstance(result, xr.DataArray)
+    )["proportion"]
     assert set(result.coords) == set(["stratum_num", "length_bin"])
     assert result.sum() == len(sample_specimen_data)
 
@@ -159,12 +157,11 @@ def test_number_proportions_single_dataarray(aged_dataarray):
 
     # Check that result is a Dataset and has the right coords
     assert isinstance(result, xr.Dataset)
-    assert set(result.data_vars) == {"proportion_overall", "proportion", "count"}
+    assert set(result.data_vars) == {"proportion", "count"}
     assert set(result.coords) == (set(aged_dataarray.coords))
 
     # Check that proportions sum to 1.0 for each stratum
     assert all(result["proportion"].sum(dim=["length_bin", "age_bin", "sex"]) == 1)
-    assert all(result["proportion_overall"].sum(dim=["length_bin", "age_bin", "sex"]) == 1)
 
 
 def test_number_proportions_multiple_dataarrays(aged_dataarray, unaged_dataarray):
@@ -183,22 +180,18 @@ def test_number_proportions_multiple_dataarrays(aged_dataarray, unaged_dataarray
     aged = result["aged"]
     assert isinstance(aged, xr.Dataset)
     assert set(aged.coords) == ({*aged_dataarray.coords})
-    assert set(aged.data_vars) == {"count", "proportion", "proportion_overall"}
+    assert set(aged.data_vars) == {"count", "proportion"}
 
     # Check the unaged dataframe
     unaged = result["unaged"]
     assert isinstance(unaged, xr.Dataset)
     assert set(unaged.coords) == ({*unaged_dataarray.coords})
-    assert set(unaged.data_vars) == {"count", "proportion", "proportion_overall"}
+    assert set(unaged.data_vars) == {"count", "proportion"}
 
-    # Check sums of within-group proportions
-    assert all(aged["proportion"].sum(dim=["length_bin", "age_bin", "sex"]) == 1)
-    assert all(unaged["proportion"].sum(dim=["length_bin", "sex"]) == 1)
-
-    # Check sums across group proportions
+    # Check sums across groups using the shared proportion variable
     assert all(
-        aged["proportion_overall"].sum(dim=["length_bin", "age_bin", "sex"])
-        + unaged["proportion_overall"].sum(dim=["length_bin", "sex"])
+        aged["proportion"].sum(dim=["length_bin", "age_bin", "sex"])
+        + unaged["proportion"].sum(dim=["length_bin", "sex"])
         == 1
     )
 
@@ -218,9 +211,7 @@ def test_number_proportions_with_exclusion(aged_dataarray):
     """Test exclude_filters parameter in number_proportions."""
     result = get_proportions.number_proportions(
         data=aged_dataarray, exclude_filters={"sex": "unsexed"}, stratum_dim="stratum_num"
-    )
-
-    # Check that unsexed rows are excluded
+    )["proportion"]
     assert {*result["sex"].values} == {"female", "male"}
 
     # Check that proportions are recalculated correctly
@@ -470,7 +461,7 @@ def test_weight_proportions_basic(weight_distr_dict, catch_data_df):
         },
         stratum_dim="stratum_num",
         proportion_reference="catch_plus_specimen",
-    )["proportion_overall"]
+    )["proportion"]
 
     # Check that the result has the expected structure
     assert isinstance(result, xr.DataArray)
@@ -560,7 +551,7 @@ def test_fitted_weight_proportions(
     assert isinstance(result, xr.Dataset)
 
     # Convert to Array for ease of comparisons
-    result_da = result["proportion_overall"]
+    result_da = result["proportion"]
 
     # Verify the DataFrame has the expected structure
     assert result_da.shape == (2, 3, 2)
@@ -648,9 +639,9 @@ def test_fitted_weight_proportions_combined(
     )
 
     assert isinstance(result, xr.Dataset)
-    assert "proportion_overall" in result
+    assert "proportion" in result
 
-    result_da = result["proportion_overall"]
+    result_da = result["proportion"]
 
     # Should preserve original dimensions from number_proportions
     assert set(result_da.dims) == set(number_props["unaged"]["proportion"].dims)
@@ -894,7 +885,7 @@ def test_get_weight_proportions_slice():
     weight_data = weight_data.div(weight_data.sum(axis=0), axis=1).fillna(0)
     # ---- Convert to DataArray
     weight_cnv = xr.Dataset(
-        {"proportion_overall": weight_data.stack().to_xarray().rename("proportion_overall")}
+        {"proportion": weight_data.stack().to_xarray().rename("proportion")}
     )
 
     # Apply binning using utils.binify (like the real workflow)

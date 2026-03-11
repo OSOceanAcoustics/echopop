@@ -463,7 +463,7 @@ def create_grouped_series(
     group_cols : List[str]
         Columns to group by (e.g., ["stratum_num", "sex"])
     value_col : str
-        Column name containing values to be aggregated (e.g., "proportion_overall")
+        Column name containing values to be aggregated (e.g., "proportion")
 
     Returns
     -------
@@ -476,7 +476,7 @@ def create_grouped_series(
     >>> grouped = create_grouped_series(
     ...    props_dict,
     ...    ["stratum_num", "sex"],
-    ...    "proportion_overall"
+    ...    "proportion"
     ... )
     """
     series = [
@@ -517,7 +517,7 @@ def create_pivot_table(
     ...     df=grouped_data,
     ...     index_cols=["group", "sex"],
     ...     strat_cols=["stratum_num"],
-    ...     value_col="proportion_overall"
+    ...     value_col="proportion"
     ... )
     """
     return (
@@ -565,7 +565,7 @@ def create_grouped_table(
     ...     group_cols=["stratum_num", "sex"],
     ...     index_cols=["group"],
     ...     strat_cols=["stratum_num"],
-    ...     value_col="proportion_overall"
+    ...     value_col="proportion"
     ... )
     """
     # First create grouped series

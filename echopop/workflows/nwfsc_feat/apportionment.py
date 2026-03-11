@@ -225,7 +225,7 @@ def mesh_biomass_to_nasc(
 
     # Stack the proportions to be as a function of group
     biodata_grouped = {
-        k: ds["proportion_overall"].sum(dim=[v for v in ds.coords.keys() if v not in group_columns])
+        k: ds["proportion"].sum(dim=[v for v in ds.coords.keys() if v not in group_columns])
         for k, ds in biodata.items()
     }
     # ---- Get the coordinate values
@@ -850,7 +850,7 @@ def distribute_population_estimates(
     proportions : Union[Dict[str, xr.Dataset], xr.Dataset]
         Proportion data for distributing the population estimates. Can be a single xarray.Dataset
         or a dictionary of Datasets (e.g., {"aged": ds_aged, "unaged": ds_unaged}).
-        Each Dataset must contain a variable named "proportion_overall".
+        Each Dataset must contain a variable named "proportion".
     variable : str
         Name of the column in data containing the values to distribute (e.g. "biomass",
         "abundance").
@@ -927,15 +927,11 @@ def distribute_population_estimates(
     # Calculate the proportions
     # ---- Totals (for normalization)
     group_totals = sum(
-        ds["proportion_overall"].sum(
-            dim=[c for c in proportions_group_columns[k] if c not in data_group_columns]
-        )
+        ds["proportion"].sum(dim=[c for c in proportions_group_columns[k] if c not in data_group_columns])
         for k, ds in proportions.items()
     )
     # ---- Apply normalization
-    proportions_norm = {
-        k: (ds["proportion_overall"] / group_totals).fillna(0.0) for k, ds in proportions.items()
-    }
+    proportions_norm = {k: (ds["proportion"] / group_totals).fillna(0.0) for k, ds in proportions.items()}
 
     # Distribute the variable over each table
     apportioned_groups = {

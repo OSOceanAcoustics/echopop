@@ -312,8 +312,7 @@ def proportion_dict():
             "stratum_num": [1, 1, 1, 2, 2, 2],
             "sex": ["female", "male", "male", "female", "male", "female"],
             "length_bin": ["(10, 20]", "(10, 20]", "(20, 30]", "(10, 20]", "(20, 30]", "(20, 30]"],
-            "proportion": [0.3, 0.4, 0.1, 0.05, 0.15, 0.1],
-            "proportion_overall": [0.15, 0.2, 0.05, 0.025, 0.075, 0.05],
+            "proportion": [0.15, 0.2, 0.05, 0.025, 0.075, 0.05],
         }
     )
 
@@ -323,8 +322,7 @@ def proportion_dict():
             "stratum_num": [1, 1, 1, 2, 2, 2],
             "sex": ["female", "male", "male", "female", "male", "female"],
             "length_bin": ["(10, 20]", "(10, 20]", "(20, 30]", "(10, 20]", "(20, 30]", "(20, 30]"],
-            "proportion": [0.25, 0.35, 0.2, 0.1, 0.2, 0.1],
-            "proportion_overall": [0.125, 0.175, 0.1, 0.05, 0.1, 0.05],
+            "proportion": [0.125, 0.175, 0.1, 0.05, 0.1, 0.05],
         }
     )
 
@@ -360,8 +358,7 @@ def proportion_test_dict():
                     "(20, 30]",
                     "(20, 30]",
                 ],
-                "proportion": [0.3, 0.4, 0.1, 0.05, 0.15, 0.1],
-                "proportion_overall": [0.15, 0.2, 0.05, 0.025, 0.075, 0.05],
+                "proportion": [0.15, 0.2, 0.05, 0.025, 0.075, 0.05],
             }
         )
         .set_index(["stratum_num", "sex", "length_bin"])
@@ -382,8 +379,7 @@ def proportion_test_dict():
                     "(20, 30]",
                     "(20, 30]",
                 ],
-                "proportion": [0.25, 0.35, 0.2, 0.1, 0.2, 0.1],
-                "proportion_overall": [0.125, 0.175, 0.1, 0.05, 0.1, 0.05],
+                "proportion": [0.125, 0.175, 0.1, 0.05, 0.1, 0.05],
             }
         )
         .set_index(["stratum_num", "sex", "length_bin"])
@@ -558,8 +554,7 @@ def proportion_dict_fixture():
             "stratum_num": [1, 1, 2, 2],
             "sex": ["male", "female", "male", "female"],
             "length_bin": [30, 30, 30, 40],
-            "proportion": [0.4, 0.6, 0.5, 0.5],
-            "proportion_overall": [0.3, 0.2, 0.3, 0.2],
+            "proportion": [0.3, 0.2, 0.3, 0.2],
         }
     )
 

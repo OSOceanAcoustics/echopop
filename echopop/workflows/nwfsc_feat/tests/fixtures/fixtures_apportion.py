@@ -24,7 +24,7 @@ def apportion_number_proportions():
             "contrast": np.repeat(["A", "B"], 9),
             "index_bin": np.concatenate([np.repeat([5, 10, 15], 3), np.repeat([5, 10, 15], 3)]),
             "extra_bin": np.tile([1, 2], 9),
-            "proportion_overall": [
+            "proportion": [
                 0.10,
                 0.20,
                 0.10,
@@ -51,7 +51,7 @@ def apportion_number_proportions():
             "bio_stratum": np.tile([1, 2, 3], 6),
             "contrast": np.repeat(["A", "B"], 9),
             "index_bin": np.concatenate([np.repeat([5, 10, 15], 3), np.repeat([5, 10, 15], 3)]),
-            "proportion_overall": [
+            "proportion": [
                 0.10,
                 0.20,
                 0.20,

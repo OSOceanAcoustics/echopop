@@ -245,7 +245,7 @@ C_\gamma(g) &\implies C_h(g)
 \end{aligned}~.
 $$
 
-Two different proportions are calculated for the aged and unaged fish: (1) within-group (`proportion`) and (2) across-group (`proportion_overall`). For aged fish, $c=\text{aged}$, and $C=\{\text{aged}\}$ and $C=\{\text{aged, unaged}\}$ for the within- and across-group proportions, respectively. Thus:
+The stored proportion variable is the across-group proportion (`proportion`). Within-group proportions are derived when needed by re-normalizing `proportion` within each target group (e.g., aged-only or unaged-only). For aged fish, $c=\text{aged}$, and $C=\{\text{aged}\}$ and $C=\{\text{aged, unaged}\}$ for the derived within- and stored across-group proportions, respectively. Thus:
 
 $$
 \begin{aligned}
@@ -273,7 +273,7 @@ $$
 \end{aligned}~.
 $$
 
-Unlike the aged proportion calculations, the unaged proportions do not incorporate $\mathcal{E}$; however, they are otherwise calculated similarly. For unaged fish, $c=\text{unaged}$, and $C=\{\text{unaged}\}$ and $C=\{\text{aged, unaged}\}$ for the within- and across-group proportions, respectively. Thus:
+Unlike the aged proportion calculations, the unaged proportions do not incorporate $\mathcal{E}$; however, they are otherwise calculated similarly. For unaged fish, $c=\text{unaged}$, and $C=\{\text{unaged}\}$ and $C=\{\text{aged, unaged}\}$ for the derived within- and stored across-group proportions, respectively. Thus:
 
 $$
 \begin{aligned}

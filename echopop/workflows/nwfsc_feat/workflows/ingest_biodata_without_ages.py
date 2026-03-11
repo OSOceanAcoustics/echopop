@@ -425,8 +425,8 @@ da_weight_proportions_initial = proportions.weight_proportions(
 
 # READJUST/NORMALIZE
 da_weight_proportions = (
-    da_weight_proportions_initial["proportion_overall"] / 
-    da_weight_proportions_initial["proportion_overall"].sum(dim=["length_bin", "sex"])
+    da_weight_proportions_initial["proportion"]
+    / da_weight_proportions_initial["proportion"].sum(dim=["length_bin", "sex"])
 )
 
 # ==================================================================================================

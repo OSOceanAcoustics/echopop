@@ -108,13 +108,11 @@ def test_group_interpolator_creator_multiple_groups(length_weight_dataset_with_b
 
 def test_create_grouped_series(proportion_dict):
     """Test the create_grouped_series function."""
-    result = utils.create_grouped_series(
-        proportion_dict, ["stratum_num", "sex"], "proportion_overall"
-    )
+    result = utils.create_grouped_series(proportion_dict, ["stratum_num", "sex"], "proportion")
 
     # Check shape and column types
     assert result.shape[0] == 8  # 2 strata * 2 sexes * 2 groups
-    assert set(result.columns) == {"stratum_num", "sex", "proportion_overall", "group"}
+    assert set(result.columns) == {"stratum_num", "sex", "proportion", "group"}
 
     # Check that we have both groups in the result
     assert set(result["group"].unique()) == {"aged", "unaged"}
@@ -122,19 +120,15 @@ def test_create_grouped_series(proportion_dict):
     # Check aggregation values for specific combinations
     female_aged_strat1 = result[
         (result["group"] == "aged") & (result["sex"] == "female") & (result["stratum_num"] == 1)
-    ]["proportion_overall"].iloc[0]
+    ]["proportion"].iloc[0]
     assert female_aged_strat1 == 0.15
 
 
 def test_create_pivot_table(proportion_dict):
     """Test the create_pivot_table function."""
-    grouped = utils.create_grouped_series(
-        proportion_dict, ["stratum_num", "sex"], "proportion_overall"
-    )
+    grouped = utils.create_grouped_series(proportion_dict, ["stratum_num", "sex"], "proportion")
 
-    result = utils.create_pivot_table(
-        grouped, ["group", "sex"], ["stratum_num"], "proportion_overall"
-    )
+    result = utils.create_pivot_table(grouped, ["group", "sex"], ["stratum_num"], "proportion")
 
     # Check that the pivot table has the right shape and structure
     assert isinstance(result.index, pd.MultiIndex)
@@ -149,7 +143,7 @@ def test_create_pivot_table(proportion_dict):
 def test_create_grouped_table(proportion_dict):
     """Test the create_grouped_table function."""
     result = utils.create_grouped_table(
-        proportion_dict, ["stratum_num", "sex"], ["group"], ["stratum_num"], "proportion_overall"
+        proportion_dict, ["stratum_num", "sex"], ["group"], ["stratum_num"], "proportion"
     )
 
     # Check that we get a pivot table with the right structure

@@ -237,7 +237,7 @@ def compute_abundance(
         # ---- Dictionary handling
         if isinstance(number_proportions, dict):
             # ---- Select overall proportions from each dataset
-            overall_props = {k: ds["proportion_overall"] for k, ds in number_proportions.items()}
+            overall_props = {k: ds["proportion"] for k, ds in number_proportions.items()}
             # ---- Get the set of coordinate names for each DataArray
             coord_sets = [set(da.coords) for da in overall_props.values()]
             # ---- Find the intersection (shared coordinates)
@@ -261,7 +261,7 @@ def compute_abundance(
             idx_names = list(shared_coords.intersection(set(transect_data.columns)))
             nonidx_names = [id for id in list(shared_coords) if id not in idx_names]
             # ---- Create grouped table from number proportions
-            grouped_proportions = number_proportions["proportion_overall"].sum(dim=dim_coords)
+            grouped_proportions = number_proportions["proportion"].sum(dim=dim_coords)
         # ---- Apply exclusion filter, if required
         if exclude_filter:
             # ---- Parse existing labels
