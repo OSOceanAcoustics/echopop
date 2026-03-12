@@ -25,7 +25,7 @@ The third and final cases consists of <span style="color:#e6550d"><b>off-effort 
 
 ## Implementation within Echopop
 
-Off-effort transect intervals have to be removed via Echopop for some survey years (e.g. 2011). This can be accomplished using the `filter_transect_intervals` function from the `functions` module. This function has four arguments:
+Off-effort transect intervals have to be removed via Echopop for some survey years (e.g. 2011). This can be accomplished using the {py:func}`filter_transect_intervals <echopop.utils.feat_functions.filter_transect_intervals>` function from the `utils` sub-package. This function has four arguments:
 
 - `nasc_data`: A `pandas.DataFrame` containing the merged and consolidated NASC exports from Echoview.
 - `transect_filter`: This argument can either a `pandas.DataFrame` or `pathlib.Path`.
@@ -41,7 +41,7 @@ So calling this function would look like:
 
 ```python
 from pathlib import Path
-from echopop.workflows.nwfsc_feat import functions as feat
+from echopop.utils import filter_transect_intervals
 
 # DATA ROOT DIRECTORY
 DATA_ROOT = Path("C:/Data/EchopopData/echopop_2011")
@@ -54,7 +54,7 @@ TRANSECT_BOUNDARY_SHEET = "1995-2011"
 SURVEY_FILTER = "survey == 201103"
 
 # CALL FUNCTION
-df_nasc_filtered = feat.filter_transect_intervals(
+df_nasc_filtered = filter_transect_intervals(
     nasc_data=df_nasc,
     transect_filter=TRANSECT_BOUNDARY_FILE,
     transect_filter_sheet=TRANSECT_BOUNDARY_SHEET,

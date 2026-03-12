@@ -16,7 +16,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from ..utils import add_haul_uids
+from ..utils.base import add_haul_uids
 
 
 def load_single_biological_sheet(

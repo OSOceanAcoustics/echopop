@@ -14,8 +14,8 @@ import numpy as np
 import pandas as pd
 from scipy import interpolate as interp
 
-from .core.validators import BaseDictionary
-from .validators import ValidateHaulUID
+from ..core.validators import BaseDictionary
+from ..validators import ValidateHaulUID
 
 
 def binned_distribution(bins: np.ndarray[np.number]) -> pd.DataFrame:

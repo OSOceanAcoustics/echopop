@@ -1,7 +1,7 @@
 Report generation
 =================
 
-.. autoclass:: echopop.reports.reporter.Report
+.. autoclass:: echopop.reports.reporter.Reporter
     :members:
 
 Report comparisons

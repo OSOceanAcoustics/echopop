@@ -9,7 +9,7 @@ The 1995, 1998, and 2001 Pacific hake surveys were conducted by the Alaska Fishe
 The standard NWFSC ingestion pathway ({py:func}`read_nasc_file <echopop.ingest.nasc.read_nasc_file>`) expects a haul number column and constructs a unique haul identifier (UID) directly from the input file. AFSC-formatted files lack this column entirely, so a two-step ingestion pattern is required:
 
 1. **Read** the raw AFSC file with {py:func}`read_afsc_nasc_file <echopop.ingest.nasc.read_afsc_nasc_file>`.
-2. **Convert** the result into FEAT-compatible format with {py:func}`convert_afsc_nasc_to_feat <echopop.workflows.nwfsc_feat.functions.convert_afsc_nasc_to_feat>` .
+2. **Convert** the result into FEAT-compatible format with {py:func}`convert_afsc_nasc_to_feat <echopop.utils.feat_functions.convert_afsc_nasc_to_feat>` .
 
 ## Reading AFSC NASC files
 
@@ -45,7 +45,7 @@ df_nasc = ingest_nasc.read_afsc_nasc_file(
 
 After reading, the DataFrame must be restructured to match the FEAT transect interval schema expected by the rest of the ingestion pipeline. This is handled by `convert_afsc_nasc_to_feat`, which computes interval end distances from interval start distances, fills missing transect spacing values with a configurable default, and applies inclusion or exclusion filters to restrict the data to a specific set of transects or other column values. It has five arguments:
 
-- `df`: The DataFrame returned by `read_afsc_nasc_file`.
+- `nasc_data`: The DataFrame returned by `read_afsc_nasc_file`.
 - `default_interval_distance`: Along-transect interval length in nautical miles used to compute `distance_e` from `distance_s`. Defaults to `0.5`.
 - `default_transect_spacing`: Cross-transect spacing in nautical miles applied wherever `transect_spacing` is `NaN`. Defaults to `10.0`.
 - `inclusion_filter`: An optional dictionary that keeps only rows where column values match the provided arrays or scalar values.
@@ -56,7 +56,7 @@ import numpy as np
 from echopop.workflows.nwfsc_feat import functions as feat
 
 df_nasc = feat.convert_afsc_nasc_to_feat(
-    df=df_nasc,
+    nasc_data=df_nasc,
     default_interval_distance=0.5,
     default_transect_spacing=10.0,
     inclusion_filter={"transect_num": np.arange(1, 400)},
@@ -70,7 +70,7 @@ A complete AFSC ingestion sequence combines both steps in order. After `convert_
 ```python
 import numpy as np
 from echopop.ingest import nasc as ingest_nasc
-from echopop.workflows.nwfsc_feat import functions as feat
+from echopop.utils import convert_afsc_nasc_to_feat
 
 FEAT_TO_ECHOPOP_COLUMNS = {
     "transect": "transect_num",
@@ -91,8 +91,8 @@ df_nasc = ingest_nasc.read_afsc_nasc_file(
 )
 
 # Step 2: Convert
-df_nasc = feat.convert_afsc_nasc_to_feat(
-    df=df_nasc,
+df_nasc = convert_afsc_nasc_to_feat(
+    nasc_data=df_nasc,
     default_interval_distance=0.5,
     default_transect_spacing=10.0,
     inclusion_filter={"transect_num": np.arange(1, 400)},

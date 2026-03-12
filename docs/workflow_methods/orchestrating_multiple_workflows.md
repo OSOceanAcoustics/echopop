@@ -589,7 +589,7 @@ clean:
 
 `Invoke` is a Python-native task runner. It is highly effective for teams that prefer to stay entirely within the Python ecosystem, as it allows for the use of standard Python logic to handle file paths and execution.
 
-:::{dropdown} Click to expand tasks.py code
+:::{dropdown} Click to expand `tasks.py` code
 :color: light
 ```python
 from invoke import task
@@ -628,7 +628,7 @@ def clean(c):
 ::::{tab-item} `Nox`
 `Nox` focuses on reproducibility by automatically creating isolated environments for every task. This ensures the analysis is not dependent on specific packages installed on one person's laptop.
 
-:::{dropdown} Click to expand noxfile.py code
+:::{dropdown} Click to expand `noxfile.py` code
 :color: light
 ```python
 import nox

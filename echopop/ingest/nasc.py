@@ -22,7 +22,7 @@ from ..core.echoview import (
     ECHOVIEW_EXPORT_ROW_SORT,
     ECHOVIEW_TO_ECHOPOP,
 )
-from ..utils import add_haul_uids
+from ..utils.base import add_haul_uids
 
 
 def map_transect_num(

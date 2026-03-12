@@ -44,6 +44,6 @@ Percent differences in kriged abundance, biomass, and $S_\text{A}$ are all below
 
 While differences in kriged biomass were less than 1.0% for this period, abundance (2007 and 2011) and $S_\text{A}$ (just 2007) differed by more than 1.0%. This mismatch of agreement-disagreement across quantities is indicative of minor differences in biodata processing and how proportions are calculated. The factors contributing to differences in biomass from 2015 to 2021 can explain those observed in these two years.
 
-#### 1998 - 2003, 2009, 2012,
+#### 1998 - 2003, 2009, 2012
 
 Biomass, abundance, and $S_\text{A}$ differed by up to 4.0% across these years. It is likely that the updated kriging implementation used by Echopop is the main driver for these observed deviations given the otherwise relatively strong agreement in the transect-based estimates. Given the observed differences in their respective transect-based estimates, it is likely that updated kriging implementation used by Echopop is the primary contributor

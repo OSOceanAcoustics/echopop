@@ -16,6 +16,7 @@ from .base import (
     round_half_up,
 )
 from .feat_functions import (
+    convert_afsc_nasc_to_feat,
     filter_transect_intervals,
     get_survey_western_extents,
     transect_ends_crop,
@@ -32,6 +33,7 @@ __all__ = [
     "group_interpolator_creator",
     "round_half_up",
     # FEAT-specific functions
+    "convert_afsc_nasc_to_feat",
     "filter_transect_intervals",
     "get_survey_western_extents",
     "transect_ends_crop",
