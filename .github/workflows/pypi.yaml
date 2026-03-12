@@ -77,7 +77,8 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           # Force pip to check TestPyPI for echopop, but PyPI for other dependencies
-          python -m pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ echopop==${{ github.ref_name }}
+          VERSION=${{ github.ref_name }}
+          python -m pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ echopop==${VERSION#v}
           python -c "import echopop; print('TestPyPI Install Success! Version:', echopop.__version__)"
 
   publish-pypi:
