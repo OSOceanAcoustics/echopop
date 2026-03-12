@@ -3,7 +3,7 @@
 import numpy as np
 import pandas as pd
 
-from echopop.workflows.nwfsc_feat import functions as ingest_nasc
+from echopop.utils import feat_functions as ingest_nasc
 
 
 # ==================================================================================================
