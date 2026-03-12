@@ -10,7 +10,7 @@
 from datetime import date
 from pathlib import Path
 from typing import Callable
-import echopop.reports.compare
+from echopop.reports import compare
 
 # ==================================================================================================
 # USER CONFIGURATION
@@ -65,7 +65,7 @@ MAX_WORKERS = None
 
 # ==================================================================================================
 # LOAD ALL DATA
-ECHOPRO_DATASETS, ECHOPOP_DATASETS = echopop.reports.compare.load_all_geodata_reports(
+ECHOPRO_DATASETS, ECHOPOP_DATASETS = compare.load_all_geodata_reports(
     years=YEARS,
     echopro_root=ECHOPRO_ROOT,
     echopop_root=ECHOPOP_ROOT,
@@ -78,14 +78,14 @@ ECHOPRO_DATASETS, ECHOPOP_DATASETS = echopop.reports.compare.load_all_geodata_re
 
 # ==================================================================================================
 # COMPUTE DIFFERENCES
-differences, pct_diff = echopop.reports.compare.compute_dataset_differences(
+differences, pct_diff = compare.compute_dataset_differences(
     echopro_datasets=ECHOPRO_DATASETS,
     echopop_datasets=ECHOPOP_DATASETS,
 )
 
 # ==================================================================================================
 # PLOT DIFFERENCES [%]
-echopop.reports.compare.plot_dataset_differences(
+compare.plot_dataset_differences(
     pct_diff,
     save_filepath=SAVE_FILEPATH,
 )
