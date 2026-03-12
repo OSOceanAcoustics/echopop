@@ -2,14 +2,14 @@ import warnings
 
 import numpy as np
 import pandas as pd
-import xarray as xr
 import pytest
+import xarray as xr
 
 from echopop.survey.biology import (
     drop_specimen_only_hauls,
-    fit_length_weight_regression, 
+    fit_length_weight_regression,
     length_binned_weights,
-    quantize_length_data
+    quantize_length_data,
 )
 
 
@@ -251,6 +251,7 @@ def test_quantize_length_data_different_groups():
     )
     assert result[mask]["length_count"].iloc[0] == 2
 
+
 def test_length_binned_weights_basic_functionality(
     sample_specimen_data, sample_length_bins, single_regression_coefficients
 ):
@@ -334,7 +335,7 @@ def test_length_binned_weights_zero_threshold(
     sample_specimen_data, sample_length_bins, single_regression_coefficients
 ):
     """Test with minimum_count_threshold=0."""
-    result = biology.length_binned_weights(
+    result = length_binned_weights(
         sample_specimen_data,
         sample_length_bins,
         single_regression_coefficients,
@@ -352,7 +353,7 @@ def test_length_binned_weights_minimal_data(
     reduced_specimen_data, sample_length_bins, single_regression_coefficients
 ):
     """Test with minimal specimen data."""
-    result = biology.length_binned_weights(
+    result = length_binned_weights(
         reduced_specimen_data, sample_length_bins, single_regression_coefficients
     )
 
@@ -447,9 +448,7 @@ def test_length_binned_weights_preserves_original_data(
     """Test that original data is not modified."""
     original_data = sample_specimen_data.copy()
 
-    length_binned_weights(
-        sample_specimen_data, sample_length_bins, single_regression_coefficients
-    )
+    length_binned_weights(sample_specimen_data, sample_length_bins, single_regression_coefficients)
 
     # Original data should be unchanged (function makes copy)
     pd.testing.assert_frame_equal(sample_specimen_data, original_data)

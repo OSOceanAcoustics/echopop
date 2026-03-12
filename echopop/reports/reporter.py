@@ -5,22 +5,19 @@ Provides functions for initializing workbooks, populating worksheets with abunda
 apportionment tables, and formatting output files for NWFSC FEAT deliverables.
 """
 
+import os
+from pathlib import Path
 from typing import Any, Literal
 
 import numpy as np
-from openpyxl import Workbook
-
-
-import os
-from pathlib import Path
-
-from openpyxl.worksheet.worksheet import Worksheet
 import pandas as pd
 import pandas.io.formats.excel as pdif
+import xarray as xr
+from openpyxl import Workbook
+from openpyxl.worksheet.worksheet import Worksheet
 
 from echopop import utils
 from echopop.survey import apportionment
-import xarray as xr
 
 ####################################################################################################
 # FILE WRITING UTILITY

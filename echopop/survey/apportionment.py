@@ -6,19 +6,17 @@ groups, reallocating excluded age/size classes, and distributing unaged fish cou
 reference proportions.
 """
 
-
-from typing import Any
-import warnings
-
-import numpy as np
 import functools
 import operator
+import warnings
+from typing import Any
 
+import numpy as np
 import pandas as pd
 import xarray as xr
-import warnings
 
 warnings.simplefilter("always")
+
 
 def remove_group_from_estimates(
     transect_data: pd.DataFrame,
@@ -180,7 +178,6 @@ def mesh_biomass_to_nasc(
 
     The NASC calculation uses the formula: NASC = abundance x sigma_bs x 4π
     """
-    
     # Convert to a Dictionary if needed
     if group_columns is None:
         group_columns = []

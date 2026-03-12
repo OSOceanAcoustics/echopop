@@ -2,9 +2,9 @@
 
 import numpy as np
 import pandas as pd
+import xarray as xr
 
 from echopop.utils import binned_distribution
-import xarray as xr
 
 
 def fit_length_weight_regression(data: pd.DataFrame) -> pd.Series:
@@ -141,14 +141,15 @@ def length_binned_weights(
     """
     Compute length-binned average weights using regression coefficients and observed data.
 
-    This function calculates fitted weights for length bins by combining modeled weights (from 
-    length-weight regression) with observed mean weights. For bins with sufficient sample sizes, 
-    observed means are used; for bins with low sample sizes, modeled weights are used if imputation is enabled.
+    This function calculates fitted weights for length bins by combining modeled weights (from
+    length-weight regression) with observed mean weights. For bins with sufficient sample sizes,
+    observed means are used; for bins with low sample sizes, modeled weights are used if imputation
+    is enabled.
 
     Parameters
     ----------
     data : pd.DataFrame
-        Specimen data containing 'length', 'weight', and 'length_bin' columns. The 'length_bin' 
+        Specimen data containing 'length', 'weight', and 'length_bin' columns. The 'length_bin'
         column must already exist in the data.
     length_distribution : pd.DataFrame
         DataFrame with length bin information, containing 'bin' and 'interval' columns.
@@ -156,10 +157,10 @@ def length_binned_weights(
         Length-weight regression coefficients from fit_length_weight_regression().
         If DataFrame, represents grouped coefficients (e.g., by sex).
     impute_bins : bool, default True
-        Whether to use modeled weights for bins with insufficient data. If False, only observed 
+        Whether to use modeled weights for bins with insufficient data. If False, only observed
         means are used regardless of sample size.
     minimum_count_threshold : int, default 0
-        Minimum number of specimens required to use observed mean instead of modeled weight. Only 
+        Minimum number of specimens required to use observed mean instead of modeled weight. Only
         relevant when impute_bins=True.
 
     Returns

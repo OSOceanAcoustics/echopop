@@ -93,6 +93,7 @@ def sample_mesh_with_fraction():
         }
     )
 
+
 @pytest.fixture
 def sample_western_extent():
     """Create sample western extent data."""

@@ -5,8 +5,7 @@ exclude: |
     echopop/file_investigation.py|
     echopop/test_survey.py|
     echopop/scratch/|
-    echopop/workflows/nwfsc_feat/workflows/|
-    echopop/workflows/nwfsc_feat/scratch.py|
+    echopop/workflow_examples/|
     .*\. (pyc|png|jpg|csv|html|svg|ipynb)$
   )
 repos:

@@ -71,7 +71,9 @@ def test_pivot_aged_dataframe(sample_ci_grid_data, proportion_dict):
     # Add required columns for the test
     geo["biomass"] = [10, 20]
     prop.index = geo.index
-    out = echopop.reports.reporter.pivot_aged_dataframe(geo, prop, "biomass", "all", ["latitude", "longitude"])
+    out = echopop.reports.reporter.pivot_aged_dataframe(
+        geo, prop, "biomass", "all", ["latitude", "longitude"]
+    )
     assert isinstance(out, type(geo))
 
 
@@ -200,7 +202,9 @@ def test_write_age_length_table_report(tmp_excel):
     tables = echopop.reports.reporter.prepare_age_length_tables(df_2, df_1)
 
     sheetnames = {"male": "Male", "female": "Female", "all": "All"}
-    echopop.reports.reporter.write_age_length_table_report(tables, tmp_excel, sheetnames, "abundance", "Kriged")
+    echopop.reports.reporter.write_age_length_table_report(
+        tables, tmp_excel, sheetnames, "abundance", "Kriged"
+    )
     assert tmp_excel.exists()
 
 
@@ -228,7 +232,10 @@ def test_write_haul_report(tmp_excel):
     )
 
     # Get tables
-    tables = {sex: echopop.reports.reporter.pivot_haul_tables(df, sex) for sex in ["male", "female", "all"]}
+    tables = {
+        sex: echopop.reports.reporter.pivot_haul_tables(df, sex)
+        for sex in ["male", "female", "all"]
+    }
 
     # Sheetname mapping
     sheetnames = {"male": "Male", "female": "Female", "all": "All"}

@@ -1,11 +1,10 @@
 """
 FEAT survey-specific spatial parameter definitions.
 
-Provides year- and region-specific transect boundary functions that encode the spatial 
-configuration of NWFSC hake survey regions, used for mesh cropping and transect classification 
+Provides year- and region-specific transect boundary functions that encode the spatial
+configuration of NWFSC hake survey regions, used for mesh cropping and transect classification
 across survey years.
 """
-
 
 import numpy as np
 

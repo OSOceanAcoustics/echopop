@@ -1,30 +1,28 @@
 """
 FEAT comparison utilities for validating and visualizing echopop vs. EchoPro outputs.
 
-Provides functions for loading, parsing, and comparing survey results across years and 
+Provides functions for loading, parsing, and comparing survey results across years and
 methodologies, including spatial maps, difference plots, and tabular cross-year summaries.
 """
 
-
+import hashlib
+import os
+import re
+import warnings
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
 from typing import Any, Literal
 
 import geopandas as gpd
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import seaborn as sns
 from matplotlib.axes import Axes
 from matplotlib.colors import TwoSlopeNorm
-import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator, ScalarFormatter
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-import numpy as np
-from pathlib import Path
-
-import pandas as pd
-
-
-import re
-
-import seaborn as sns
 from shapely.geometry import box
 
 from echopop.graphics import transect_map as ptransect, utils as gtools
@@ -1448,8 +1446,7 @@ def plot_dataset_differences(
 
     # Annotation DataFrames per report type
     annot = {
-        rtype: _fmt_percent(percent_differences.loc[rtype])
-        for rtype in ["transect", "kriging"]
+        rtype: _fmt_percent(percent_differences.loc[rtype]) for rtype in ["transect", "kriging"]
     }
 
     # Consistent color scaling across both panels
@@ -1483,7 +1480,7 @@ def plot_dataset_differences(
     # Iterate through each data type
     for rtype, ax, title, ylabel, show_yticklabels in panel_configs:
         sns.heatmap(
-            signed_percent_differences.loc[rtype],
+            percent_differences.loc[rtype],
             ax=ax,
             annot=annot[rtype],
             **heatmap_kwargs,
@@ -1495,7 +1492,7 @@ def plot_dataset_differences(
         if show_yticklabels:
             # Explicitly restore year labels in case sharey suppressed them
             ax.set_yticklabels(
-                signed_percent_differences.loc[rtype].index.astype(str),
+                percent_differences.loc[rtype].index.astype(str),
                 rotation=0,
             )
         else:

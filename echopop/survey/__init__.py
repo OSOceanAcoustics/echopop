@@ -7,18 +7,18 @@ apportionment.
 """
 
 from .apportionment import (
-    distribute_unaged_from_aged, 
-    mesh_biomass_to_nasc, 
-    reallocate_excluded_estimates, 
-    remove_group_from_estimates, 
-    sum_population_tables
+    distribute_unaged_from_aged,
+    mesh_biomass_to_nasc,
+    reallocate_excluded_estimates,
+    remove_group_from_estimates,
+    sum_population_tables,
 )
 from .biology import (
-    compute_abundance, 
+    compute_abundance,
     compute_biomass,
     fit_length_weight_regression,
     length_binned_weights,
-    quantize_length_data
+    quantize_length_data,
 )
 from .proportions import (
     binned_weights,
@@ -46,7 +46,7 @@ __all__ = [
     "sum_population_tables",
     # Biology functions
     "compute_abundance",
-    "compute_biomass",    
+    "compute_biomass",
     "fit_length_weight_regression",
     "length_binned_weights",
     "quantize_length_data",
