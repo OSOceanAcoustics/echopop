@@ -1,19 +1,29 @@
+"""
+Biological data ingestion for echopop.
+
+This module loads specimen, length, and catch data from consolidated Excel workbooks, from separate
+CSV database-view exports, or directly from a database. It handles ship/survey sub-setting,
+column renaming, label remapping, and haul UID construction so that downstream survey and
+apportionment functions receive uniformly structured either individual ``pandas.DataFrame``
+objects, or keyed by dataset-type within a dictionary.
+"""
+
 import copy
 import itertools
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import numpy as np
 import pandas as pd
 
-from ..utils import add_haul_uids
+from ..utils.base import add_haul_uids
 
 
 def load_single_biological_sheet(
     biodata_filepath: Path,
     sheet_name: str,
-    column_name_map: Dict = {},
-    subset_dict: Optional[Dict[str, Any]] = None,
+    column_name_map: dict | None = None,
+    survey_subset: dict[str, Any] | None = None,
 ) -> pd.DataFrame:
     """
     Load and process a single biological data sheet.
@@ -26,7 +36,7 @@ def load_single_biological_sheet(
         Name of the sheet to load
     column_name_map : dict, default={}
         Dictionary mapping original column names to new column names
-    subset_dict : dict, optional
+    survey_subset : dict, optional
         Subset dictionary containing ships and species_code settings
         Format: {"ships": {ship_id: {"survey": survey_id, "haul_offset": offset}}, "species_code":
         [codes]}
@@ -43,21 +53,22 @@ def load_single_biological_sheet(
     df_initial.columns = df_initial.columns.str.lower()
 
     # Rename the columns
-    df_initial.rename(columns=column_name_map, inplace=True)
+    if column_name_map:
+        df_initial.rename(columns=column_name_map, inplace=True)
 
     # Apply ship and survey filtering
-    df_filtered = apply_ship_survey_filters(df_initial, subset_dict)
+    df_filtered = apply_ship_survey_filters(df_initial, survey_subset)
 
     return df_filtered
 
 
 def load_single_biological_view(
     biodata_filepath: Path,
-    column_name_map: Dict = {},
-    subset_dict: Optional[Dict[str, Any]] = None,
+    column_name_map: dict | None = None,
+    survey_subset: dict[str, Any] | None = None,
 ) -> pd.DataFrame:
     """
-    Load and process a single biological data view
+    Load and process a single biological data view.
 
     Parameters
     ----------
@@ -65,7 +76,7 @@ def load_single_biological_view(
         Path to the Excel file
     column_name_map : dict, default={}
         Dictionary mapping original column names to new column names
-    subset_dict : dict, optional
+    survey_subset : dict, optional
         Subset dictionary containing ships and species_code settings
         Format: {"ships": {ship_id: {"survey": survey_id, "haul_offset": offset}}, "species_code":
         [codes]}
@@ -82,22 +93,25 @@ def load_single_biological_view(
     df_initial.columns = df_initial.columns.str.lower()
 
     # Rename the columns
-    df_initial.rename(columns=column_name_map, inplace=True)
+    if column_name_map:
+        df_initial.rename(columns=column_name_map, inplace=True)
 
     # Apply ship and survey filtering
-    df_filtered = apply_ship_survey_filters(df_initial, subset_dict)
+    df_filtered = apply_ship_survey_filters(df_initial, survey_subset)
 
     return df_filtered
 
 
 def load_biodata_views(
-    biodata_filepaths: Dict[str, Path],
-    column_name_map: Dict[str, str] = None,
-    subset_dict: Optional[Dict] = None,
-    biodata_label_map: Optional[Dict[str, Dict]] = None,
-    haul_uid_config: Dict[str, Any] = {},
-) -> Dict[str, pd.DataFrame]:
+    biodata_filepaths: dict[str, Path],
+    column_name_map: dict[str, str] = None,
+    survey_subset: dict | None = None,
+    biodata_label_map: dict[str, dict] | None = None,
+    haul_uid_config: dict[str, Any] | None = None,
+) -> dict[str, pd.DataFrame]:
     """
+    Load biological data from a database view.
+
     Load biological data from materialized views of catch data and a file including specimen-only
     values.
 
@@ -108,7 +122,7 @@ def load_biodata_views(
     column_name_map : dict, optional
         Dictionary mapping original column names to new column names
         (e.g., ``{"frequency": "length_count", "haul": "haul_num"}``)
-    subset_dict : dict, optional
+    survey_subset : dict, optional
         Subset dictionary containing ships and species_code for filtering
         Format: ``{"ships": {ship_id: {"survey": survey_id, "haul_offset": offset}}, "species_code":
         [codes]}``
@@ -132,14 +146,13 @@ def load_biodata_views(
     dict
         Dictionary containing processed biological DataFrames keyed by dataset name
     """
-
     # Validate across files
     if not all([v.exists() for v in biodata_filepaths.values()]):
         raise FileNotFoundError("Not all files in 'biodata_filepaths' could be found.")
 
     # Load each biological dataset
     biodata_dict = {
-        dataset_name: load_single_biological_view(file, column_name_map, subset_dict)
+        dataset_name: load_single_biological_view(file, column_name_map, survey_subset)
         for dataset_name, file in biodata_filepaths.items()
     }
 
@@ -148,7 +161,7 @@ def load_biodata_views(
         # ---- For each column mapping in the label map
         for col, mapping in biodata_label_map.items():
             # ---- Apply to each dataframe that has that column
-            for name, df in biodata_dict.items():
+            for _name, df in biodata_dict.items():
                 if isinstance(df, pd.DataFrame) and col in df.columns:
                     df[col] = df[col].map(mapping).fillna(df[col])
 
@@ -159,7 +172,7 @@ def load_biodata_views(
 
     # Add UID labels
     _ = {
-        k: add_haul_uids(v, _dataset_type=f"biodata.{k}", **haul_uid_config)
+        k: add_haul_uids(v, _dataset_type=f"biodata.{k}", **(haul_uid_config or {}))
         for k, v in biodata_dict.items()
     }
 
@@ -168,12 +181,12 @@ def load_biodata_views(
 
 def load_biological_data(
     biodata_filepath: Path,
-    biodata_sheet_map: Dict[str, str],
-    column_name_map: Dict[str, str] = None,
-    subset_dict: Optional[Dict] = None,
-    biodata_label_map: Optional[Dict[str, Dict]] = None,
-    haul_uid_config: Dict[str, Any] = {},
-) -> Dict[str, pd.DataFrame]:
+    biodata_sheet_map: dict[str, str],
+    column_name_map: dict[str, str] = None,
+    survey_subset: dict | None = None,
+    biodata_label_map: dict[str, dict] | None = None,
+    haul_uid_config: dict[str, Any] | None = None,
+) -> dict[str, pd.DataFrame]:
     """
     Load biological data from a single Excel file with multiple sheets.
 
@@ -188,7 +201,7 @@ def load_biological_data(
     column_name_map : dict, optional
         Dictionary mapping original column names to new column names
         (e.g., ``{"frequency": "length_count", "haul": "haul_num"}``)
-    subset_dict : dict, optional
+    survey_subset : dict, optional
         Subset dictionary containing ships and species_code for filtering
         Format: ``{"ships": {ship_id: {"survey": survey_id, "haul_offset": offset}}, "species_code":
         [codes]}``
@@ -220,14 +233,13 @@ def load_biological_data(
     >>> label_map = {"sex": {1: "male", 2: "female", 3: "unsexed"}}
     >>> bio_data = load_biological_data("biodata.xlsx", sheet_map, col_map, subset, label_map)
     """
-
     if not biodata_filepath.exists():
         raise FileNotFoundError(f"Biological data file not found: {biodata_filepath}")
 
     # Load each biological dataset
     biodata_dict = {
         dataset_name: load_single_biological_sheet(
-            biodata_filepath, sheet_name, column_name_map, subset_dict
+            biodata_filepath, sheet_name, column_name_map, survey_subset
         )
         for dataset_name, sheet_name in biodata_sheet_map.items()
     }
@@ -237,7 +249,7 @@ def load_biological_data(
         # ---- For each column mapping in the label map
         for col, mapping in biodata_label_map.items():
             # ---- Apply to each dataframe that has that column
-            for name, df in biodata_dict.items():
+            for _name, df in biodata_dict.items():
                 if isinstance(df, pd.DataFrame) and col in df.columns:
                     df[col] = df[col].map(mapping).fillna(df[col])
 
@@ -248,7 +260,7 @@ def load_biological_data(
 
     # Add UID labels
     _ = {
-        k: add_haul_uids(v, _dataset_type=f"biodata.{k}", **haul_uid_config)
+        k: add_haul_uids(v, _dataset_type=f"biodata.{k}", **(haul_uid_config or {}))
         for k, v in biodata_dict.items()
     }
 
@@ -256,41 +268,42 @@ def load_biological_data(
 
 
 def apply_ship_survey_filters(
-    df: pd.DataFrame,
-    subset_dict: Optional[Dict] = None,
+    biodata: pd.DataFrame,
+    survey_subset: dict | None = None,
 ) -> pd.DataFrame:
     """
     Apply ship ID, survey ID, and haul offset filters to biological data.
 
     Parameters
     ----------
-    df : |pd.DataFrame|
-        Input DataFrame to filter
-    subset_dict : dict, optional
-        Subset dictionary containing ships and species_code settings
+    biodata : |pd.DataFrame|
+        Biological data that will be filtered.
+    survey_subset : dict, optional
+        Subset dictionary containing ships and species_code settings.
         Format: ``{"ships": {ship_id: {"survey": survey_id, "haul_offset": offset}}, "species_code":
         [codes]}``
+
     Returns
     -------
     |pd.DataFrame|
         Filtered DataFrame
     """
     # Create copy
-    df_filtered = df.copy()  # Fixed: df_initial -> df
+    biodata_filtered = biodata.copy()  # Fixed: df_initial -> df
 
     # Check if subset_dict exists
-    if subset_dict is None:
-        return df_filtered
+    if survey_subset is None:
+        return biodata_filtered
 
     # Extract ship configuration from nested structure
-    if "ships" in subset_dict:
+    if "ships" in survey_subset:
         # ---- Get general ship ID's
-        ship_ids = [*subset_dict["ships"].keys()]
+        ship_ids = [*survey_subset["ships"].keys()]
         # ---- Get ship-specific configurations
-        ship_config = subset_dict["ships"]
+        ship_config = survey_subset["ships"]
         # ---- Apply ship-based filter
-        if "ship" in df_filtered.columns:
-            df_filtered = df_filtered.loc[df_filtered["ship"].isin(ship_ids)]
+        if "ship" in biodata_filtered.columns:
+            biodata_filtered = biodata_filtered.loc[biodata_filtered["ship"].isin(ship_ids)]
         # ---- Collect survey IDs, if present
         survey_ids = list(
             itertools.chain.from_iterable(
@@ -302,32 +315,50 @@ def apply_ship_survey_filters(
             )
         )
         # ---- Apply survey-based filter
-        if survey_ids and "survey" in df_filtered.columns:
-            df_filtered = df_filtered.loc[df_filtered["survey"].isin(survey_ids)]
+        if survey_ids and "survey" in biodata_filtered.columns:
+            biodata_filtered = biodata_filtered.loc[biodata_filtered["survey"].isin(survey_ids)]
         # ---- Collect haul offsets, if any are present
         haul_offsets = {k: v["haul_offset"] for k, v in ship_config.items() if "haul_offset" in v}
         # ---- Apply haul number offsets, if defined
-        if haul_offsets and "ship" in df_filtered.columns:
-            df_filtered["haul_num"] = df_filtered["haul_num"] + df_filtered["ship"].map(
-                haul_offsets
-            ).fillna(0)
+        if haul_offsets and "ship" in biodata_filtered.columns:
+            biodata_filtered["haul_num"] = biodata_filtered["haul_num"] + biodata_filtered[
+                "ship"
+            ].map(haul_offsets).fillna(0)
 
     # Filter species
-    if "species_code" in subset_dict:
-        df_filtered = df_filtered.loc[df_filtered["species_code"].isin(subset_dict["species_code"])]
+    if "species_code" in survey_subset:
+        biodata_filtered = biodata_filtered.loc[
+            biodata_filtered["species_code"].isin(survey_subset["species_code"])
+        ]
 
-    return df_filtered
+    return biodata_filtered
 
 
 def generate_composite_key(
-    bio_data: Dict[str, pd.DataFrame],
-    index_columns: List[str],  # uid columns
-    adjust: Dict[str, np.number] = {},
-) -> Tuple[Dict[str, pd.DataFrame], pd.DataFrame, Dict[str, pd.DataFrame]]:
+    biodata: dict[str, pd.DataFrame],
+    index_columns: list[str],  # uid columns
+    adjust: dict[str, np.number] | None = None,
+) -> tuple[dict[str, pd.DataFrame], pd.DataFrame, dict[str, pd.DataFrame]]:
+    """
+    Build a composite UID key from one or more index columns across all biodata DataFrames.
 
+    Parameters
+    ----------
+    biodata : dict[str, pandas.DataFrame]
+        Dictionary of biological DataFrames keyed by dataset name.
+    index_columns : list[str]
+        Column names used to construct the composite key (e.g. ``['ship', 'haul_num']``).
+    adjust : dict[str, numeric], optional
+        Mapping of column name to a numeric offset applied before key construction.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Unique index-column / UID pairs suitable for merging into downstream DataFrames.
+    """
     # Validate that all columns exist in the underlying biodata
     valid_id_columns = {
-        k: set(index_columns) <= set(v.columns) or "uid" in v.columns for k, v in bio_data.items()
+        k: set(index_columns) <= set(v.columns) or "uid" in v.columns for k, v in biodata.items()
     }
     # ---- Collect invalid entries
     invalid_entries = [k for k, v in valid_id_columns.items() if not v]
@@ -341,14 +372,15 @@ def generate_composite_key(
         )
 
     # Create copy
-    bio_data_copy = copy.deepcopy(bio_data)
+    biodata_copy = copy.deepcopy(biodata)
 
     # Apply adjustments
+    adjust = adjust or {}
     for column, adjustment in adjust.items():
         # ---- Format new name
         new_name = column + "_adj"
         # ---- Apply adjustment
-        bio_data_copy = {
+        biodata_copy = {
             k: v.assign(
                 **{
                     new_name: np.where(
@@ -356,23 +388,23 @@ def generate_composite_key(
                     )
                 }
             )
-            for k, v in bio_data_copy.items()
+            for k, v in biodata_copy.items()
         }
 
     # Identify the constructor columns
     constructor_columns = [c if c not in adjust else c + "_adj" for c in index_columns]
 
     # Join the columns to create unique id column
-    bio_data_copy = {
+    biodata_copy = {
         k: v.assign(uid=v[constructor_columns].astype(str).agg("-".join, axis=1)).filter(
-            list(bio_data[k].columns) + ["uid"]
+            list(biodata[k].columns) + ["uid"]
         )
-        for k, v in bio_data_copy.items()
+        for k, v in biodata_copy.items()
     }
 
     # Get unique columns + uid for merging into downstream DataFrames
     unique_uid = pd.concat(
-        [d.filter(index_columns + ["uid"]) for d in bio_data_copy.values()]
+        [d.filter(index_columns + ["uid"]) for d in biodata_copy.values()]
     ).drop_duplicates()
 
     # Return the unique IDs
@@ -380,11 +412,29 @@ def generate_composite_key(
 
 
 def apply_composite_key(
-    data: pd.DataFrame,
+    biodata: pd.DataFrame,
     composite_key: pd.DataFrame,
-    haul_offset: Dict[np.number, np.number] = (),
+    haul_offset: dict[np.number, np.number] = (),
 ) -> pd.DataFrame:
+    """
+    Merge a composite UID key into a biological DataFrame.
 
+    Parameters
+    ----------
+    biodata : pandas.DataFrame
+        Biological data that will receive the UID column.
+    composite_key : pandas.DataFrame
+        DataFrame of unique index-column / UID pairs produced by
+        :func:`generate_composite_key`.
+    haul_offset : tuple of (numeric, numeric), optional
+        Two-element sequence ``(ship_id, offset)``; the offset is added to
+        ``haul_num`` for rows belonging to ``ship_id`` before the merge.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Input DataFrame with a ``'uid'`` column appended via a left merge.
+    """
     # Apply adjustments to the original composite key columns
     composite_id = composite_key.copy()
     if len(haul_offset) == 2:
@@ -395,12 +445,12 @@ def apply_composite_key(
         )
 
     # Drop "uid" from data
-    if "uid" in data.columns:
-        data.drop(columns=["uid"], inplace=True)
+    if "uid" in biodata.columns:
+        biodata.drop(columns=["uid"], inplace=True)
 
     # Left-merge
-    shared_columns = [c for c in composite_id.columns if c in data.columns and c != "uid"]
-    data_uid = data.merge(
+    shared_columns = [c for c in composite_id.columns if c in biodata.columns and c != "uid"]
+    data_uid = biodata.merge(
         composite_id.filter(shared_columns + ["uid"]), on=shared_columns, how="left"
     )
 

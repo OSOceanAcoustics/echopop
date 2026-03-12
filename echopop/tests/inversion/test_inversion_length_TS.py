@@ -47,7 +47,7 @@ def test_invert_basic(model_parameters, nasc_df, specimen_df):
     """Test basic inversion functionality."""
     inverter = inversion.InversionLengthTS(model_parameters)
 
-    result = inverter.invert(df_nasc=nasc_df, df_length=specimen_df)
+    result = inverter.invert(nasc_data=nasc_df, length_data=specimen_df)
 
     assert "number_density" in result.columns
     assert len(result) == len(nasc_df)

@@ -8,7 +8,7 @@
    version="1.1"
    id="svg32"
    sodipodi:docname="modular_configuration_flow.svg"
-   inkscape:version="1.4.2 (f4327f4, 2025-05-13)"
+   inkscape:version="1.4.3 (0d15f75, 2025-12-25)"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns="http://www.w3.org/2000/svg"
@@ -22,13 +22,13 @@
      inkscape:pageopacity="0.0"
      inkscape:pagecheckerboard="0"
      inkscape:deskcolor="#d1d1d1"
-     inkscape:zoom="2.4676584"
-     inkscape:cx="655.68234"
-     inkscape:cy="135.55361"
-     inkscape:window-width="3840"
-     inkscape:window-height="2126"
-     inkscape:window-x="-11"
-     inkscape:window-y="-11"
+     inkscape:zoom="0.87244899"
+     inkscape:cx="532.98245"
+     inkscape:cy="460.19882"
+     inkscape:window-width="1920"
+     inkscape:window-height="1057"
+     inkscape:window-x="1912"
+     inkscape:window-y="-8"
      inkscape:window-maximized="1"
      inkscape:current-layer="g20" />
   <defs
@@ -147,7 +147,9 @@
          y="132.71092"
          class="label"
          id="text6"
-         style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:22px;line-height:normal;font-family:Arial, Helvetica, sans-serif">biodata_ingestion.yaml</text>
+         style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:22px;line-height:normal;font-family:Arial, Helvetica, sans-serif;fill:#111827"><tspan
+           style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:22px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+           id="tspan19">biodata_ingestion.yaml</tspan></text>
       <text
          x="32.414505"
          y="155.39513"
@@ -184,7 +186,9 @@
          y="362.69922"
          class="label"
          id="text10"
-         style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:22px;line-height:normal;font-family:Arial, Helvetica, sans-serif">stratification.yaml</text>
+         style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:22px;line-height:normal;font-family:Arial, Helvetica, sans-serif;fill:#111827"><tspan
+           style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:22px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+           id="tspan18">stratification.yaml</tspan></text>
       <text
          x="29.364038"
          y="385.38339"
@@ -217,33 +221,35 @@
        transform="translate(107.45292,-259.27714)">
       <rect
          class="boxCfgC"
-         x="21.220957"
-         y="595.09442"
-         width="266.08667"
-         height="76.519424"
-         rx="8.8695555"
-         ry="5.9515104"
+         x="-8.5135174"
+         y="595.16113"
+         width="295.75446"
+         height="76.386032"
+         rx="9.8584814"
+         ry="5.9411354"
          id="rect13" />
       <text
-         x="30.141495"
+         x="-3.8585052"
          y="618.44189"
          class="label"
          id="text14"
-         style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:22px;line-height:normal;font-family:Arial, Helvetica, sans-serif">biodata_analysis.yaml</text>
+         style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:22px;line-height:normal;font-family:Arial, Helvetica, sans-serif;fill:#111827"><tspan
+           style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:22px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+           id="tspan17">biodata_analysis.yaml</tspan></text>
       <text
-         x="31.618057"
+         x="-4.057724"
          y="639.4068"
          class="body"
          id="text15"
          style="font-style:normal;font-variant:normal;font-weight:400;font-stretch:normal;font-size:18px;line-height:normal;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#111827"><tspan
            sodipodi:role="line"
            id="tspan8"
-           x="31.618057"
+           x="-4.057724"
            y="639.4068"
            style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:18px;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">Age distribution settings</tspan><tspan
            sodipodi:role="line"
            id="tspan9"
-           x="31.618057"
+           x="-4.057724"
            y="661.9068"
            style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:18px;font-family:Arial, Helvetica, sans-serif;-inkscape-font-specification:'Arial, Helvetica, sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal">Length distribution settings</tspan></text>
     </g>
@@ -260,12 +266,14 @@
          ry="9.1431122"
          id="rect17" />
       <text
-         x="652.34039"
+         x="662.7442"
          y="306.7226"
          text-anchor="middle"
          class="label"
          id="text18"
-         style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:22px;line-height:normal;font-family:Arial, Helvetica, sans-serif">workflow_main.py</text>
+         style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:22px;line-height:normal;font-family:Arial, Helvetica, sans-serif;text-anchor:middle;fill:#111827"><tspan
+           style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:22px;font-family:'Courier New';-inkscape-font-specification:'Courier New, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal"
+           id="tspan16">workflow_main.py</tspan></text>
       <text
          x="556.85553"
          y="331.091"

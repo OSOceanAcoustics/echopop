@@ -1,15 +1,23 @@
+"""
+Utility functions for acoustic inversion preprocessing and parameter extraction.
+
+Provides helpers for imputing missing backscattering cross-sections across strata,
+extracting and formatting optimized model parameters, and other shared computations
+used across the inversion pipeline.
+"""
+
 from functools import lru_cache
-from typing import Literal, Optional, Tuple, Union
+from typing import Literal
 
 import numpy as np
 import pandas as pd
 
 
 def impute_missing_sigma_bs(
-    unique_strata: Union[list, np.ndarray[np.number]], sigma_bs_df: pd.DataFrame
+    unique_strata: list | np.ndarray[np.number], sigma_bs_df: pd.DataFrame
 ) -> pd.DataFrame:
-    """
-    Imputes :math:`\\sigma_\\text{bs}` for strata without measurements or values
+    r"""
+    Imputes :math:`\\sigma_\\text{bs}` for strata without measurements or values.
 
     Parameters
     ----------
@@ -56,7 +64,6 @@ def impute_missing_sigma_bs(
     2. Interpolates the :math:`\\sigma_\\text{bs}` value as the mean of these neighbors
     3. If no neighbors exist on one side, uses the available neighbor value
     """
-
     # Extract the stratum index name
     stratum_name = sigma_bs_df.index.name
 
@@ -106,10 +113,10 @@ def impute_missing_sigma_bs(
 
 
 def wavenumber(
-    frequency: Union[np.ndarray[float], float],
+    frequency: np.ndarray[float] | float,
     sound_speed_sw: float,
 ) -> np.ndarray[float]:
-    """
+    r"""
     Compute the acoustic wavenumber from frequency and sound speed.
 
     The acoustic wavenumber relates frequency and wavelength through the medium's sound speed,
@@ -153,15 +160,14 @@ def wavenumber(
     ----------
     .. [1] Medwin, H. & Clay, C.S. (1998). Fundamentals of Acoustical Oceanography. Academic Press.
     """
-
     return 2 * np.pi * frequency / sound_speed_sw
 
 
 def reflection_coefficient(
-    g: Union[np.ndarray[float], float],
-    h: Union[np.ndarray[float], float],
+    g: np.ndarray[float] | float,
+    h: np.ndarray[float] | float,
 ) -> np.ndarray[float]:
-    """
+    r"""
     Compute the acoustic reflection coefficient from material properties.
 
     The reflection coefficient quantifies acoustic impedance mismatch between organism tissue and s
@@ -216,7 +222,6 @@ def reflection_coefficient(
     encapsulates how acoustic waves are partially reflected an transmitted due to this impedance
     mismatch.
     """
-
     # Convert to arrays for consistent operations
     g_arr = np.asarray(g)
     h_arr = np.asarray(h)
@@ -236,15 +241,17 @@ def reflection_coefficient(
 
 def orientation_average(
     theta: np.ndarray[float],
-    form_function: Union[np.ndarray[complex], np.ndarray[float]],
-    theta_mean: Optional[float] = None,
-    theta_sd: Optional[float] = None,
+    form_function: np.ndarray[complex] | np.ndarray[float],
+    theta_mean: float | None = None,
+    theta_sd: float | None = None,
     distribution: Literal["gaussian", "uniform"] = "gaussian",
     output_type: Literal["sigma_bs", "f_bs"] = "sigma_bs",
     convert_type: bool = True,
 ) -> list[np.ndarray[float]]:
-    """
-    Compute the orientation-averaged form function (:math:`\\mathscr{f}(f, \\theta)`) for
+    r"""
+    Compute the orientation-averaged form function for a scattering coefficient or cross-section.
+
+    Computes the orientation-averaged form function (:math:`\\mathscr{f}(f, \\theta)`) for
     complex linear scattering coefficient :math:`f_\\text{bs}` or backscattering cross-section
     :math:`\\sigma_\\text{bs}`.
 
@@ -363,7 +370,6 @@ def orientation_average(
     converting the mean linear scattering coefficient :math:`\\bar{f}_\\text{bs}(f)` to the mean
     backscattering cross-section :math:`\\bar{\\sigma}_\\text{bs}(f)`.
     """
-
     # Weight based on distribution input
     # ---- Gaussian (Normal)
     if distribution == "gaussian":
@@ -404,10 +410,7 @@ def orientation_average(
 
 
 def valid_array_row_length(arr: np.ndarray[float]) -> int:
-    """
-    Returns the number of valid (i.e. not NaN) length of each row within an array
-    """
-
+    """Return the number of valid (i.e. not NaN) elements in each row of an array."""
     return np.sum(~np.isnan(arr))
 
 
@@ -415,15 +418,17 @@ def length_average(
     length_values: np.ndarray[float],
     ka_f: np.ndarray[float],
     ka_c: np.ndarray[float],
-    form_function: Union[np.ndarray[complex], np.ndarray[float]],
+    form_function: np.ndarray[complex] | np.ndarray[float],
     length_mean: float,
     length_deviation: float,
     distribution: Literal["gaussian", "uniform"] = "gaussian",
     output_type: Literal["sigma_bs", "f_bs"] = "sigma_bs",
     convert_type: bool = True,
 ) -> list[np.ndarray[float]]:
-    """
-    Compute length-averaged backscattering cross-section (:math:`\\sigma_\\text{bs}(f, L)`) or
+    r"""
+    Compute the length-averaged backscattering cross-section or linear scattering coefficient.
+
+    Computes length-averaged backscattering cross-section (:math:`\\sigma_\\text{bs}(f, L)`) or
     linear scattinering coefficient :math:`f_\\text{bs}` (m) or backscattering cross-section
     :math:`\\sigma_\\text{bs}` (m²).
 
@@ -542,7 +547,6 @@ def length_average(
     .. math::
         \\bar{\\sigma}_\\text{bs}(f) = \\bar{\\sigma}_\\text{bs}^*(f) \\times \\bar{L}^2
     """
-
     # Normalize the length values, if needed
     length_norm = length_values / length_mean
     # ---- Also normalize the standard deviation
@@ -609,13 +613,13 @@ def length_average(
 
 def _make_freq_key(
     frequency: np.ndarray, length_sd_norm: float, frequency_interval: float, /, ndigits: int = 12
-) -> Tuple:
+) -> tuple:
     cf = tuple(round(float(x), ndigits) for x in np.asarray(frequency).ravel())
     return (cf, round(float(length_sd_norm), ndigits), round(float(frequency_interval), ndigits))
 
 
 @lru_cache(maxsize=128)
-def _generate_frequency_interval_cached_key(key: Tuple) -> np.ndarray:
+def _generate_frequency_interval_cached_key(key: tuple) -> np.ndarray:
     # key is (cf_tuple, length_sd_norm_rounded, frequency_interval_rounded)
     cf_tuple, length_sd_norm_rounded, frequency_interval_rounded = key
     # rebuild numpy array from tuple
@@ -642,7 +646,9 @@ def generate_frequency_interval(
     frequency: np.ndarray, length_sd_norm: float, frequency_interval: float, ndigits: int = 12
 ) -> np.ndarray:
     """
-    Wrapper that builds a stable hashable key and uses an lru_cache-backed worker.
+    Build a stable hashable key and return a cached frequency interval array.
+
+    Wraps ``_generate_frequency_interval_cached_key`` with an lru_cache-backed worker.
     No module-level globals are created; cache is managed by functools.lru_cache.
     """
     key = _make_freq_key(frequency, length_sd_norm, frequency_interval, ndigits)

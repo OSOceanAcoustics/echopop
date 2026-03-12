@@ -1,3 +1,10 @@
+"""
+Acoustic inversion subpackage for estimating fish population characteristics from backscatter.
+
+Exposes the core inversion classes and helpers: ``InversionBase``, ``InversionLengthTS``,
+``InversionMatrix``, ``InvParameters``, and the ``ts_length_regression`` utility.
+"""
+
 from .inversion_base import InversionBase, InvParameters
 from .inversion_length_TS import InversionLengthTS, ts_length_regression
 from .inversion_matrix import InversionMatrix

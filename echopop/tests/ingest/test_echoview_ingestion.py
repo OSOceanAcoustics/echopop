@@ -575,7 +575,7 @@ def test_read_transect_region_haul_key_rename():
 
         # Test the function
         result = read_transect_region_haul_key(
-            Path(temp_file.name), sheetname=None, rename_dict=rename_dict
+            Path(temp_file.name), sheetname=None, column_name_map=rename_dict
         )
 
         # Verify results
@@ -1152,7 +1152,7 @@ def test_consolidate_echvoiew_nasc_basic(sample_merged_data, sample_interval_dat
         sample_merged_data,
         sample_interval_data,
         ["Hake", "Age-1 Hake"],
-        transect_region_haul_key_df=sample_haul_key,
+        transect_region_haul_key=sample_haul_key,
     )
 
     assert isinstance(result, pd.DataFrame)
@@ -1187,7 +1187,7 @@ def test_consolidate_echvoiew_nasc_imputation(
         sample_interval_data,
         ["Hake"],
         impute_region_ids=True,
-        transect_region_haul_key_df=sample_haul_key,
+        transect_region_haul_key=sample_haul_key,
     )
 
     # Check if overlapping regions have same region_id
@@ -1202,7 +1202,7 @@ def test_consolidate_echvoiew_nasc_filtering(
         sample_merged_data,
         sample_interval_data,
         ["Hake"],  # Only include Hake
-        transect_region_haul_key_df=sample_haul_key,
+        transect_region_haul_key=sample_haul_key,
     )
 
     # Check if only Hake regions are included
@@ -1210,7 +1210,7 @@ def test_consolidate_echvoiew_nasc_filtering(
 
 
 def test_read_nasc_file_basic(sample_excel_path):
-    """Test basic Excel file reading functionality"""
+    """Test basic Excel file reading functionality."""
     result = read_nasc_file(sample_excel_path, "Sheet1", column_name_map={"haul": "haul_num"})
 
     # Just verify it returns a DataFrame with the expected data
@@ -1221,7 +1221,7 @@ def test_read_nasc_file_basic(sample_excel_path):
 
 
 def test_read_nasc_file_with_column_mapping(sample_excel_path):
-    """Test column mapping with minimal setup"""
+    """Test column mapping with minimal setup."""
     column_map = {"transect": "transect_num", "region id": "region_id"}
 
     result = read_nasc_file(sample_excel_path, "Sheet1", column_name_map=column_map)

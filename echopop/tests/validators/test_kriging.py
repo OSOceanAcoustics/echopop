@@ -1,3 +1,5 @@
+"""Tests for kriging validators."""
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -16,7 +18,6 @@ from echopop.validators.kriging import (
 # ----------------------
 def test_kriging_parameters_valid():
     """Test KrigingParameters with valid parameters."""
-
     params = KrigingParameters(aspect_ratio=0.5, k_min=5, k_max=20, search_radius=10.0)
 
     assert params.aspect_ratio == 0.5
@@ -27,7 +28,6 @@ def test_kriging_parameters_valid():
 
 def test_kriging_parameters_defaults():
     """Test KrigingParameters with default values."""
-
     params = KrigingParameters(search_radius=10.0)
 
     assert params.aspect_ratio == 1e-3  # Default value
@@ -38,7 +38,6 @@ def test_kriging_parameters_defaults():
 
 def test_kriging_parameters_invalid_aspect_ratio():
     """Test KrigingParameters with invalid aspect_ratio."""
-
     # aspect_ratio must be > 0
     with pytest.raises(ValidationError):
         KrigingParameters(aspect_ratio=0.0, search_radius=10.0)
@@ -50,7 +49,6 @@ def test_kriging_parameters_invalid_aspect_ratio():
 
 def test_kriging_parameters_invalid_k_min():
     """Test KrigingParameters with invalid k_min."""
-
     # k_min must be >= 2
     with pytest.raises(ValidationError):
         KrigingParameters(k_min=1, search_radius=10.0)
@@ -58,7 +56,6 @@ def test_kriging_parameters_invalid_k_min():
 
 def test_kriging_parameters_invalid_search_radius():
     """Test KrigingParameters with invalid search_radius."""
-
     # search_radius must be > 0
     with pytest.raises(ValidationError):
         KrigingParameters(search_radius=0.0)
@@ -70,7 +67,6 @@ def test_kriging_parameters_invalid_search_radius():
 
 def test_kriging_parameters_k_interval_validation():
     """Test k_min <= k_max validation."""
-
     # Valid: k_min < k_max
     params = KrigingParameters(k_min=5, k_max=20, search_radius=10.0)
     assert params.k_min == 5
@@ -91,7 +87,6 @@ def test_kriging_parameters_k_interval_validation():
 # ----------------------------------
 def test_variogram_krige_model_parameters_valid():
     """Test VariogramKrigeModelParameters with valid parameters."""
-
     params = VariogramKrigeModelParameters(
         model="exponential", sill=1.0, nugget=0.1, correlation_range=0.5
     )
@@ -104,7 +99,6 @@ def test_variogram_krige_model_parameters_valid():
 
 def test_variogram_krige_model_parameters_composite_model():
     """Test VariogramKrigeModelParameters with composite model."""
-
     params = VariogramKrigeModelParameters(
         model=["bessel", "exponential"],
         sill=1.0,
@@ -124,7 +118,6 @@ def test_variogram_krige_model_parameters_composite_model():
 
 def test_variogram_krige_model_parameters_invalid_values():
     """Test VariogramKrigeModelParameters with invalid parameter values."""
-
     # Invalid sill (must be > 0)
     with pytest.raises(ValidationError):
         VariogramKrigeModelParameters(model="exponential", sill=0.0)
@@ -147,7 +140,6 @@ def test_variogram_krige_model_parameters_invalid_values():
 # -------------------------
 def test_validate_kriging_class_valid():
     """Test ValidateKrigingClass with valid arguments."""
-
     mesh_df = pd.DataFrame(
         {
             "longitude": [-124.0, -123.8, -123.6],
@@ -177,7 +169,6 @@ def test_validate_kriging_class_valid():
 
 def test_validate_kriging_class_invalid_mesh():
     """Test ValidateKrigingClass with invalid mesh DataFrame."""
-
     # Invalid mesh (missing coordinates and area/fraction)
     mesh_df = pd.DataFrame({"other_column": [1, 2, 3]})
 
@@ -233,7 +224,6 @@ def test_validate_mesh_crop_args_empty_kwargs():
 # -----------------
 def test_kriging_validators_integration():
     """Test integration of kriging validators."""
-
     # Create test mesh
     mesh_df = pd.DataFrame(
         {
@@ -286,7 +276,6 @@ def test_kriging_validators_integration():
 
 def test_kriging_validators_realistic_parameters():
     """Test kriging validators with realistic FEAT hake parameters."""
-
     # Realistic mesh for hake survey
     n_points = 1000
     mesh_df = pd.DataFrame(

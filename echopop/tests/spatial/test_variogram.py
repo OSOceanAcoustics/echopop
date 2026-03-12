@@ -124,7 +124,7 @@ def test_semivariance_basic(
 
     # Check that outputs are arrays of correct length
     assert len(gamma_h) == len(sample_lag_counts), "gamma_h should match lag_counts length"
-    assert isinstance(lag_covariance, (float, np.floating)), "lag_covariance should be a scalar"
+    assert isinstance(lag_covariance, float | np.floating), "lag_covariance should be a scalar"
 
     # Check that semivariance values are non-negative
     assert all(gamma >= 0 for gamma in gamma_h), "Semivariance values should be non-negative"
@@ -151,7 +151,7 @@ def test_semivariance_output_types(
     # Check data types
     assert isinstance(gamma_h, np.ndarray), "gamma_h should be numpy array"
     assert gamma_h.dtype == np.float64, "gamma_h should be float64"
-    assert isinstance(lag_covariance, (float, np.floating)), "lag_covariance should be float"
+    assert isinstance(lag_covariance, float | np.floating), "lag_covariance should be float"
 
 
 # ==================================================================================================
@@ -174,7 +174,7 @@ def test_empirical_variogram_basic(sample_transect_df):
     assert len(lags) == n_lags, f"lags should have {n_lags} elements"
     assert len(gamma_h) == n_lags, f"gamma_h should have {n_lags} elements"
     assert len(lag_counts) == n_lags, f"lag_counts should have {n_lags} elements"
-    assert isinstance(lag_covariance, (float, np.floating)), "lag_covariance should be a scalar"
+    assert isinstance(lag_covariance, float | np.floating), "lag_covariance should be a scalar"
 
     # Check that first lag is 0 (due to force_lag_zero=True)
     assert lags[0] == 0.0, "First lag should be 0.0"
@@ -198,7 +198,7 @@ def test_empirical_variogram_with_azimuth(sample_transect_df):
     assert len(lags) == n_lags, f"lags should have {n_lags} elements"
     assert len(gamma_h) == n_lags, f"gamma_h should have {n_lags} elements"
     assert len(lag_counts) == n_lags, f"lag_counts should have {n_lags} elements"
-    assert isinstance(lag_covariance, (float, np.floating)), "lag_covariance should be a scalar"
+    assert isinstance(lag_covariance, float | np.floating), "lag_covariance should be a scalar"
 
 
 def test_empirical_variogram_different_variable(sample_transect_df):

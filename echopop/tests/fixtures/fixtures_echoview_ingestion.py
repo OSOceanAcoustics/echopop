@@ -140,6 +140,7 @@ def mock_empty_df():
 # ----------------------------
 @pytest.fixture
 def bad_coords_at_start():
+    """Return a DataFrame with invalid coordinate values at the start."""
     return pd.DataFrame(
         {
             "latitude": [999.0, 999.0, 45.2, 45.3, 45.4],
@@ -150,6 +151,7 @@ def bad_coords_at_start():
 
 @pytest.fixture
 def bad_coords_in_middle():
+    """Return a DataFrame with invalid coordinate values in the middle."""
     return pd.DataFrame(
         {
             "latitude": [45.1, 45.2, 999.0, 999.0, 45.5],
@@ -160,6 +162,7 @@ def bad_coords_in_middle():
 
 @pytest.fixture
 def bad_coords_at_end():
+    """Return a DataFrame with invalid coordinate values at the end."""
     return pd.DataFrame(
         {
             "latitude": [45.1, 45.2, 45.3, 999.0, 999.0],
@@ -170,6 +173,7 @@ def bad_coords_at_end():
 
 @pytest.fixture
 def multiple_bad_coord_groups():
+    """Return a DataFrame with multiple separated groups of invalid coordinates."""
     return pd.DataFrame(
         {
             "latitude": [999.0, 45.1, 45.2, 999.0, 999.0, 45.5, 999.0],
@@ -180,6 +184,7 @@ def multiple_bad_coord_groups():
 
 @pytest.fixture
 def no_bad_coords():
+    """Return a DataFrame with all valid coordinate values."""
     return pd.DataFrame(
         {
             "latitude": [45.1, 45.2, 45.3, 45.4, 45.5],
@@ -596,7 +601,7 @@ def sample_transect_data():
 # ----------------------
 @pytest.fixture
 def sample_excel_path(tmp_path):
-    """Create a simple Excel file for testing"""
+    """Create a simple Excel file for testing."""
     df = pd.DataFrame(
         {
             "transect": [1, 2, 3],

@@ -1,3 +1,11 @@
+"""
+Post-inversion processing for converting acoustic inversion results to population estimates.
+
+Provides functions for aggregating inverted scattering parameters into population-level
+metrics including fish density, mean body size, and biomass, across different spatial
+aggregation schemes (cells, intervals, transects).
+"""
+
 from typing import Literal
 
 import numpy as np
@@ -13,7 +21,7 @@ def estimate_population(
     reference_frequency: float,
     aggregate_method: Literal["cells", "interval", "transect"],
 ):
-    """
+    r"""
     Estimate population characteristics from inverted acoustic data.
 
     This function computes population-level estimates including body size,
@@ -60,7 +68,6 @@ def estimate_population(
     where W is body weight, ρ_sw is seawater density, g is the relative
     density factor, r is mean radius, and L is mean length.
     """
-
     # Unpackage the parameters using optimized extraction
     parameters = _extract_parameters_optimized(inverted_data)
 
@@ -127,7 +134,7 @@ def calculate_transect_number_density(
     reference_nasc: pd.DataFrame,
     parameters: pd.DataFrame,
 ):
-    """
+    r"""
     Compute areal number density aggregated by survey transect.
 
     This function estimates the areal number density of organisms by
@@ -169,7 +176,6 @@ def calculate_transect_number_density(
     .. math::
         w = \\frac{\\text{NASC}_{ref}}{\\text{NASC}_{acoustic}}
     """
-
     # Create copies
     acoustic_df = acoustic_data.copy()
     reference_df = reference_nasc.copy()
@@ -203,7 +209,7 @@ def calculate_intervals_number_density(
     acoustic_data: pd.DataFrame,
     parameters: pd.DataFrame,
 ):
-    """
+    r"""
     Compute areal number density for individual depth/range intervals.
 
     This function calculates areal number density by converting volumetric
@@ -239,7 +245,6 @@ def calculate_intervals_number_density(
     This method maintains spatial resolution at the interval level, making
     it suitable for detailed vertical distribution analysis.
     """
-
     # Calculate the layer density
     layer_density = parameters["number_density"] * acoustic_data["thickness_mean"]
 

@@ -1,4 +1,9 @@
-from typing import Tuple
+"""
+Coordinate projection utilities for converting between WGS-84 and UTM reference frames.
+
+Wraps pyproj transformations and provides helper functions that determine appropriate UTM zones
+from longitude and apply batch coordinate conversions to survey datasets.
+"""
 
 import geopandas as gpd
 import numpy as np
@@ -45,7 +50,6 @@ def utm_string_generator(longitude: float, latitude: float):
     - 326XX for northern hemisphere (where XX is the zero-padded zone number)
     - 327XX for southern hemisphere (where XX is the zero-padded zone number)
     """
-
     # Calculate UTM band value
     utm_value = str((np.floor((longitude + 180) / 6) % 60 + 1).astype(int))
 
@@ -106,7 +110,6 @@ def wgs84_to_utm(geodataframe: gpd.GeoDataFrame):
     The transformation uses the median coordinates to ensure the UTM zone is appropriate for the
     entire dataset, which is particularly important for datasets spanning multiple UTM zones.
     """
-
     # Detect the correct longitude and latitude coordinates
     # ---- Latitude
     lat_col = [col for col in geodataframe.columns if "lat" in col.lower()][0]
@@ -123,9 +126,9 @@ def wgs84_to_utm(geodataframe: gpd.GeoDataFrame):
 
 
 def reproject_dataset(
-    data_df: pd.DataFrame,
+    data: pd.DataFrame,
     crs_out: str,
-    coordinate_names: Tuple[str, str] = ("longitude", "latitude"),
+    coordinate_names: tuple[str, str] = ("longitude", "latitude"),
     projection: str = "epsg:4326",
 ) -> pd.DataFrame:
     """
@@ -159,7 +162,7 @@ def reproject_dataset(
     --------
     >>> # Project from WGS84 to UTM Zone 10N
     >>> df_projected = reproject_dataset(
-    ...     data_df=survey_data,
+    ...     data=survey_data,
     ...     crs_out='epsg:32610',
     ...     coordinate_names=('longitude', 'latitude')
     ... )
@@ -167,7 +170,7 @@ def reproject_dataset(
 
     >>> # Project from UTM back to WGS84
     >>> df_geo = reproject_dataset(
-    ...     data_df=utm_data,
+    ...     data=utm_data,
     ...     crs_out='epsg:4326',
     ...     coordinate_names=('x', 'y'),
     ...     projection='epsg:32610'
@@ -180,13 +183,12 @@ def reproject_dataset(
     projections. The geometry column created during processing is automatically dropped from the
     output :class:`pandas.DataFrame`.
     """
-
     # Get the coordinate names
     x_coord, y_coord = coordinate_names
 
     # Convert DataFrame into GeoDataFrame
     gdf = gpd.GeoDataFrame(
-        data_df, geometry=gpd.points_from_xy(data_df[x_coord], data_df[y_coord]), crs=projection
+        data, geometry=gpd.points_from_xy(data[x_coord], data[y_coord]), crs=projection
     )
 
     # Project to new CRS

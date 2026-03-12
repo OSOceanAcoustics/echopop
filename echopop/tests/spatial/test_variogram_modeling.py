@@ -1,3 +1,5 @@
+"""Tests for variogram modeling."""
+
 import numpy as np
 import pytest
 

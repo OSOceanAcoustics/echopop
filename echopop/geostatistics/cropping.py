@@ -1,5 +1,11 @@
+"""
+Spatial cropping and coordinate transformation utilities for kriging mesh preparation.
+
+Functions here clip the kriging mesh to the survey region boundaries, apply isobath constraints,
+and convert geographic coordinates to projected frames suitable for kriging.
+"""
+
 import warnings
-from typing import Optional, Tuple, Union
 
 import geopandas as gpd
 import numpy as np
@@ -19,11 +25,11 @@ def transform_coordinates(
     data: pd.DataFrame,
     x_offset: float = 0.0,
     y_offset: float = 0.0,
-    coordinate_names: Tuple[str, str] = ("longitude", "latitude"),
-    reference: Optional[pd.DataFrame] = None,
-    delta_x: Optional[float] = None,
-    delta_y: Optional[float] = None,
-) -> Tuple[pd.DataFrame, Union[float, None], Union[float, None]]:
+    coordinate_names: tuple[str, str] = ("longitude", "latitude"),
+    reference: pd.DataFrame | None = None,
+    delta_x: float | None = None,
+    delta_y: float | None = None,
+) -> tuple[pd.DataFrame, float | None, float | None]:
     """
     Transform the x- and y-coordinates of a georeferenced dataset.
 
@@ -58,7 +64,6 @@ def transform_coordinates(
         Distance of the pre-transformed y-axis coordinates that can be used to transform other
         georeferenced datasets (assuming shared projections).
     """
-
     # Get the coordinate names
     x_coord, y_coord = coordinate_names
 
@@ -124,7 +129,6 @@ def transect_coordinate_centroid(spatial_grouped: gpd.GeoSeries):
     The function uses :meth:`geopandas.GeoSeries.union_all` to combine all geometries before
     calculating the centroid, which ensures proper handling of the spatial reference system.
     """
-
     # Compute the union of all coordinates within `spatial_grouped`
     centroid_point = spatial_grouped.union_all().centroid
 
@@ -136,9 +140,9 @@ def transect_extent(transects: pd.DataFrame, projection: str, num_nearest_transe
     """
     Compute the spatial extent of survey transects using convex hull generation.
 
-    This function creates a polygon representing the spatial extent of survey transects
-    by generating convex hulls around each transect and its nearest neighbors, then
-    unioning all hulls to create the overall survey boundary.
+    This function creates a polygon representing the spatial extent of survey transects by
+    generating convex hulls around each transect and its nearest neighbors, then 'unioning' all
+    hulls to create the overall survey boundary.
 
     Parameters
     ----------
@@ -146,7 +150,9 @@ def transect_extent(transects: pd.DataFrame, projection: str, num_nearest_transe
         Dataframe containing survey transect data with columns:
 
         - ``'longitude'``: Longitude coordinates
+
         - ``'latitude'``: Latitude coordinates
+
         - ``'transect_num'``: Transect identifier numbers
 
     projection : str
@@ -181,16 +187,20 @@ def transect_extent(transects: pd.DataFrame, projection: str, num_nearest_transe
     The function performs the following steps:
 
     1. Converts the DataFrame to a :class:`geopandas.GeoDataFrame` with point geometries
+
     2. Transforms coordinates from WGS84 to UTM for accurate distance calculations
+
     3. Calculates centroids for each transect
+
     4. For each transect, finds the nearest neighbor transects
+
     5. Generates convex hulls around each transect and its neighbors
+
     6. Returns the union of all convex hulls
 
     The resulting polygon can be used for spatial filtering, mesh cropping, or defining survey
     boundaries for analysis.
     """
-
     # Copy
     transect_df = transects.copy()
 
@@ -228,7 +238,7 @@ def transect_extent(transects: pd.DataFrame, projection: str, num_nearest_transe
             continue
         # ---- Calculate the distance between centroids
         other_centroids["distance_centroid"] = other_centroids.geometry.apply(
-            lambda g: coord_centroid.distance(g)
+            lambda g, cc=coord_centroid: cc.distance(g)
         )
         # ---- Find the 'n' nearest transect centroids
         nearest_centroids = other_centroids.distance_centroid.nsmallest(num_nearest_transects)
@@ -255,15 +265,14 @@ def hull_crop(
     num_nearest_transects: int = 3,
     mesh_buffer_distance: float = 2.5,
     projection: str = "epsg:4326",
-    coordinate_names: Tuple[str, str] = ("longitude", "latitude"),
+    coordinate_names: tuple[str, str] = ("longitude", "latitude"),
 ) -> pd.DataFrame:
     """
     Crop the kriging mesh using convex hull polygons generated from survey transects.
 
-    This function creates a survey boundary by generating convex hulls around each transect
-    and its nearest neighbors, then filters the mesh to include only cells within the
-    buffered survey area. This approach provides a more flexible alternative to
-    region-based cropping.
+    This function creates a survey boundary by generating convex hulls around each transect and its
+    nearest neighbors, then filters the mesh to include only cells within the buffered survey area.
+    This approach provides a more flexible alternative to region-based cropping.
 
     Parameters
     ----------
@@ -306,10 +315,15 @@ def hull_crop(
     The function performs the following steps:
 
     1. Converts the mesh DataFrame to a :class:`geopandas.GeoDataFrame` with point geometries
+
     2. Transforms coordinates from WGS84 to UTM for accurate distance calculations
+
     3. Generates survey extent polygon using :func:`echopop.geostatistics.transect_extent`
+
     4. Applies buffer distance (converted from nautical miles to meters)
+
     5. Filters mesh cells to those within the buffered polygon
+
     6. Returns the filtered mesh without geometry column
 
     The UTM transformation ensures accurate distance calculations for the convex hull generation
@@ -319,7 +333,6 @@ def hull_crop(
     This method is particularly useful for irregularly shaped survey areas where region-based
     cropping may be too restrictive or complex.
     """
-
     # Validate parameters
     try:
         valid_params = ValidateHullCropArgs.create(

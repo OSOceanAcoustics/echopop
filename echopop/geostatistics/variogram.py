@@ -1,5 +1,13 @@
+"""
+Variogram class wrapping empirical computation and parametric model fitting.
+
+Provides the ``Variogram`` class that calculates empirical semi-variograms from transect data,
+selects a variogram family, and stores the fitted model parameters for downstream use in ordinary
+kriging.
+"""
+
 import warnings
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -14,13 +22,13 @@ warnings.simplefilter("always")
 
 
 def lag_distance_matrix(
-    coordinates_1: Union[pd.DataFrame, np.ndarray],
-    coordinate_names: Optional[Tuple[str, str]] = None,
-    coordinates_2: Optional[Union[pd.DataFrame, np.ndarray]] = None,
+    coordinates_1: pd.DataFrame | np.ndarray,
+    coordinate_names: tuple[str, str] | None = None,
+    coordinates_2: pd.DataFrame | np.ndarray | None = None,
     self: bool = False,
     azimuth_matrix: bool = False,
-) -> Tuple[np.ndarray, np.ndarray]:
-    """
+) -> tuple[np.ndarray, np.ndarray]:
+    r"""
     Calculate Euclidean distance and optional azimuth matrices between coordinate sets.
 
     Computes pairwise distances between all combinations of coordinates from two datasets,
@@ -43,8 +51,8 @@ def lag_distance_matrix(
     Returns
     -------
     Tuple[np.ndarray, np.ndarray]
-        If azimuth_matrix is True, returns (distance_matrix, azimuth_angles).
-        If azimuth_matrix is False, returns (distance_matrix, empty_array).
+        If azimuth_matrix is True, returns (distance_matrix, azimuth_angles). If azimuth_matrix is
+        False, returns (distance_matrix, empty_array).
 
     Notes
     -----
@@ -69,7 +77,6 @@ def lag_distance_matrix(
     .. [1] Cressie, N. (1993). Statistics for Spatial Data. Wiley.
     .. [2] Isaaks, E.H. & Srivastava, R.M. (1989). Applied Geostatistics. Oxford University Press.
     """
-
     # Get coordinate names
     if coordinate_names is not None:
         x_name, y_name = coordinate_names
@@ -130,10 +137,10 @@ def lag_distance_matrix(
 def filter_lag_matrix(
     data_matrix: np.ndarray[int],
     mask_matrix: np.ndarray[bool],
-    azimuth_matrix: Optional[np.ndarray[float]] = None,
-    azimuth_angle_threshold: Optional[float] = None,
+    azimuth_matrix: np.ndarray[float] | None = None,
+    azimuth_angle_threshold: float | None = None,
 ) -> np.ndarray[int]:
-    """
+    r"""
     Apply spatial filtering to distance matrices using boolean masks and azimuth constraints.
 
     This function extracts elements from 2D spatial matrices (typically distance or lag matrices)
@@ -180,8 +187,11 @@ def filter_lag_matrix(
     where θ₀ is the reference direction (typically 0° for N-S analysis).
 
     This dual filtering enables:
+
     - Efficient variogram computation (avoiding redundant calculations)
+
     - Directional variogram analysis for anisotropic processes
+
     - Flexible spatial neighborhood definition
 
     References
@@ -190,7 +200,6 @@ def filter_lag_matrix(
     .. [2] Goovaerts, P. (1997). Geostatistics for Natural Resources Evaluation. Oxford University
            Press.
     """
-
     # Convert array to matrix, if needed
     if data_matrix.ndim == 1:
         data_matrix = np.tile(data_matrix, (len(data_matrix), 1))
@@ -229,9 +238,9 @@ def quantize_lags(
     mask_matrix: np.ndarray[bool],
     azimuth_matrix: np.ndarray[float],
     n_lags: int,
-    azimuth_angle_threshold: Optional[float] = None,
-) -> Tuple[np.ndarray[int], np.ndarray[float], np.ndarray[float], np.ndarray[float]]:
-    """
+    azimuth_angle_threshold: float | None = None,
+) -> tuple[np.ndarray[int], np.ndarray[float], np.ndarray[float], np.ndarray[float]]:
+    r"""
     Aggregate spatial data into lag bins for empirical variogram computation.
 
     Performs the quantization step of variogram analysis by grouping spatial data pairs into
@@ -256,9 +265,13 @@ def quantize_lags(
     Returns
     -------
     Tuple[np.ndarray[int], np.ndarray[float], np.ndarray[float], np.ndarray[float]]
+
         - lag_counts: Number of spatial pairs in each lag bin
+
         - lag_estimates: Sum of estimates for pairs in each lag bin
+
         - lag_estimates_squared: Sum of squared estimates for pairs in each lag bin
+
         - lag_deviations: Sum of squared differences between paired estimates
 
     Notes
@@ -294,7 +307,6 @@ def quantize_lags(
     .. [2] Petitgas, P. (1993). Geostatistics for fish stock assessments. Reviews in Fish Biology
            and Fisheries, 3(4), 307-334.
     """
-
     # Validate that `estimates` is a 1D array
     if estimates.ndim > 1:
         raise ValueError("Estimates array ('estimates') must be a 1D array.")
@@ -363,8 +375,8 @@ def semivariance(
     lag_counts: np.ndarray[int],
     lag_deviations: np.ndarray[float],
     head_index: np.ndarray[int],
-) -> Tuple[np.ndarray[float], np.ndarray[float]]:
-    """
+) -> tuple[np.ndarray[float], np.ndarray[float]]:
+    r"""
     Compute standardized semivariance for empirical variogram estimation.
 
     Calculates the final step in empirical variogram computation using the standardized
@@ -415,9 +427,13 @@ def semivariance(
         C_{lag} = \\frac{1}{K} \\sum_{k=1}^{K} σ_{head}(h_k) \\cdot σ_{tail}(h_k)
 
     This standardization approach provides several advantages:
+
     - Handles heteroscedastic spatial data more robustly
+
     - Reduces sensitivity to extreme values
+
     - Improves model fitting for irregular sampling patterns
+
     - Maintains interpretability of classical variogram theory
 
     The method is particularly well-suited for fisheries acoustic data where biomass estimates can
@@ -430,7 +446,6 @@ def semivariance(
     .. [2] Petitgas, P. (1993). Use of a disjunctive kriging to model areas of high pelagic fish
            density in acoustic fisheries surveys. Aquatic Living Resources, 6(3), 201-209.
     """
-
     # Calculate the mean head estimate per lag bin
     mean_head = (estimates[:, np.newaxis] * (head_index / lag_counts)).sum(axis=0)
 
@@ -480,10 +495,10 @@ def empirical_variogram(
     azimuth_filter: bool,
     azimuth_angle_threshold: float,
     variable: str = "biomass_density",
-    coordinate_names: Tuple[str, str] = ("x", "y"),
+    coordinate_names: tuple[str, str] = ("x", "y"),
     force_lag_zero: bool = True,
-) -> Tuple[np.ndarray[float], np.ndarray[float], np.ndarray[int], float]:
-    """
+) -> tuple[np.ndarray[float], np.ndarray[float], np.ndarray[int], float]:
+    r"""
     Compute empirical variogram from spatial survey data using standardized semivariance.
 
     This function implements the complete empirical variogram computation workflow, from distance
@@ -515,9 +530,13 @@ def empirical_variogram(
     Returns
     -------
     Tuple[np.ndarray[float], np.ndarray[float], np.ndarray[int], float]
+
         - lags: Array of lag distances
+
         - gamma: Standardized semivariance values
+
         - lag_counts: Number of pairs contributing to each lag
+
         - lag_covariance: Mean covariance between head and tail points
 
     Notes
@@ -542,13 +561,19 @@ def empirical_variogram(
     exactly once, avoiding redundant calculations in symmetric distance matrices.
 
     **Quality Indicators:**
+
     - `lag_counts`: Higher counts indicate more reliable lag estimates
+
     - `lag_covariance`: Overall measure of spatial correlation structure
+
     - Lags with few pairs (< 30) should be interpreted cautiously
 
     The standardized approach is particularly effective for:
+
     - Acoustic survey data with patchy biomass distributions
+
     - Irregular sampling grids typical in marine surveys
+
     - Data with strong heteroscedasticity
 
     References
@@ -619,9 +644,8 @@ def empirical_variogram(
 
 
 class Variogram:
-    """ "
-    Class for calculating and fitting variograms to quantify the spatial variance in population
-    variables and other metrics.
+    r"""
+    Class for calculating and fitting variograms to quantify spatial variance.
 
     A variogram (or semivariogram) is a fundamental tool in geostatistics that describes
     the spatial correlation structure of a variable as a function of distance. The empirical
@@ -748,8 +772,9 @@ class Variogram:
         cls,
         lag_resolution: float,
         n_lags: int,
-        coordinate_names: Tuple[str, str] = ("x", "y"),
+        coordinate_names: tuple[str, str] = ("x", "y"),
     ):
+        """Create and validate a new ``Variogram`` instance."""
         # Validate
         try:
             # ---- Check
@@ -771,7 +796,7 @@ class Variogram:
         # Generate
         return self
 
-    def __init__(self, lag_resolution: float, n_lags: int, coordinate_names: Tuple[str, str]):
+    def __init__(self, lag_resolution: float, n_lags: int, coordinate_names: tuple[str, str]):
 
         # Initialize variables
         self.gamma = None
@@ -791,7 +816,7 @@ class Variogram:
         azimuth_angle_threshold: float = 180.0,
         force_lag_zero: bool = True,
     ) -> None:
-        """
+        r"""
         Compute the empirical variogram from transect data.
 
         Calculates the standardized semivariogram using the method described in Rivoirard et al.
@@ -830,7 +855,6 @@ class Variogram:
         .. [1] Rivoirard, J., Simmonds, J., Foote, K.G., Fernandes, P., and Bez, N. (2000).
            *Geostatistics for Estimating Fish Abundance*. Blackwell Science.
         """
-
         # Validate
         try:
             # ---- Check
@@ -857,15 +881,14 @@ class Variogram:
 
     def fit_variogram_model(
         self,
-        model: Union[str, List[str]],
+        model: str | list[str],
         model_parameters: Parameters,
-        optimizer_kwargs: Dict[str, Any] = {},
-    ) -> Dict[str, Any]:
-        """
-        Fit a theoretical variogram model to the empirical variogram using weighted least squares
-        optimization.
+        optimizer_kwargs: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        r"""
+        Fit a theoretical variogram model to the empirical variogram.
 
-        Fits parametric models of the form:
+        Uses weighted least squares optimization. Fits parametric models of the form:
 
         .. math::
             \\gamma(h) = C_0 + C_1 \\cdot \\mathscr{f}(h; \\theta)
@@ -920,6 +943,8 @@ class Variogram:
            gradient method for large-scale bound-constrained minimization problems. *SIAM Journal
            on Scientific Computing*, 21(1), 1-23.
         """
+        # Apply mutable default guard
+        optimizer_kwargs = optimizer_kwargs or {}
 
         # Validate
         try:

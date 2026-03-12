@@ -1,3 +1,10 @@
+"""
+Geostatistics sub-package for echopop.
+
+Provides spatial analysis tools including coordinate projection, mesh cropping, variogram
+modeling, and ordinary kriging for interpolating survey data onto a regular grid.
+"""
+
 from .cropping import (
     hull_crop,
     transect_coordinate_centroid,

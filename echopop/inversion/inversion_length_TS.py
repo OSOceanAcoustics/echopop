@@ -1,4 +1,12 @@
-from typing import Any, Dict, List, Union
+"""
+Length-TS acoustic inversion using empirical target strength–length relationships.
+
+Implements ``InversionLengthTS``, which converts vertically integrated backscatter (S_A)
+to fish density and abundance via a log-linear TS-length regression, and provides the
+standalone ``ts_length_regression`` helper for computing mean backscattering cross-sections.
+"""
+
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -11,9 +19,8 @@ from .utils import impute_missing_sigma_bs
 
 
 class InversionLengthTS(InversionBase):
-    """
-    Class to perform acoustic inversion using log-linear relationship between body length and
-    target strength (TS, dB re. 1 :math:`\\text{m}^{-2}`).
+    r"""
+    Perform acoustic inversion using a log-linear length–TS relationship.
 
     This class implements acoustic inversion by relating fish length to acoustic backscatter
     through empirical TS-length relationships. It calculates stratified mean backscattering
@@ -27,13 +34,16 @@ class InversionLengthTS(InversionBase):
 
         - ``'ts_length_regression'``: Dictionary with ``'slope'`` and ``'intercept'`` for the
           TS-length regression equation.
+
         - ``'stratify_by'``: str or List[str] - stratification columns (e.g., ``'stratum_number'``)
 
         Optional keys:
 
         - ``'expected_strata'``: An array of specific strata to expect in the data
+
         - ``'impute_missing_strata'``: A boolean argument that elects whether or not to impute
           missing strata values
+
         - ``'haul_replicates':`` A boolean argument that elects whether or not to use haul
           numbers/ids as replicates instead of individuals to account for pseudoreplication.
 
@@ -85,8 +95,9 @@ class InversionLengthTS(InversionBase):
 
     def __new__(
         cls,
-        model_parameters: Dict[str, Any],
+        model_parameters: dict[str, Any],
     ):
+        """Create and validate a new InversionLengthTS instance."""
         # Validate
         try:
             # ---- Check
@@ -104,7 +115,7 @@ class InversionLengthTS(InversionBase):
         # Generate
         return self
 
-    def __init__(self, model_parameters: Dict[str, Any]):
+    def __init__(self, model_parameters: dict[str, Any]):
 
         # Set inversion method
         self.inversion_method = "length_TS_regression"
@@ -113,7 +124,7 @@ class InversionLengthTS(InversionBase):
         self.sigma_bs_haul = None
         self.sigma_bs_strata = None
 
-    def set_haul_sigma_bs(self, df_length: Union[pd.DataFrame, List[pd.DataFrame]]) -> pd.DataFrame:
+    def set_haul_sigma_bs(self, length_data: pd.DataFrame | list[pd.DataFrame]) -> pd.DataFrame:
         """
         Compute the mean linear scattering coefficient (sigma_bs) for each haul.
 
@@ -122,26 +133,35 @@ class InversionLengthTS(InversionBase):
 
         Parameters
         ----------
-        df_length : pd.DataFrame or list of pd.DataFrame
+        length_data : pd.DataFrame or list of pd.DataFrame
             Length data containing fish measurements. Can be:
 
             - Single DataFrame with length measurements per haul
+
             - List of DataFrames to be concatenated
+
             - Dictionary of DataFrames (values will be used)
 
             Required columns:
 
             - All columns specified in model_params["stratify_by"]
+
             - "haul_num": Haul identifier
+
             - "length": Fish length measurements
+
             - "length_count" (optional): Pre-aggregated counts per length
 
         Notes
         -----
         The method performs the following steps:
+
         1. Quantizes length data by stratification variables and haul
+
         2. Applies TS-length regression to convert lengths to target strength
+
         3. Converts TS to linear backscattering cross-section (sigma_bs)
+
         4. Calculates length-weighted average sigma_bs per haul
 
         Examples
@@ -152,6 +172,8 @@ class InversionLengthTS(InversionBase):
         >>> # Multiple DataFrames
         >>> inverter.set_haul_sigma_bs([specimen_df, length_df])
         """
+        # Create copy
+        df_length = length_data.copy()
 
         # Prepare the calculation depending on if `df` is a single DataFrame or Dictionary
         if isinstance(df_length, pd.DataFrame):
@@ -195,7 +217,7 @@ class InversionLengthTS(InversionBase):
 
     def get_stratified_sigma_bs(
         self,
-        df_length: Union[pd.DataFrame, List[pd.DataFrame]],
+        length_data: pd.DataFrame | list[pd.DataFrame],
         haul_replicates: bool = True,
     ) -> None:
         """
@@ -208,13 +230,17 @@ class InversionLengthTS(InversionBase):
 
         Parameters
         ----------
-        df_length : pd.DataFrame or list of pd.DataFrame
+        length_data : pd.DataFrame or list of pd.DataFrame
             Length data for computing sigma_bs.
 
             Required columns (when provided):
+
             - All columns specified in model_params["stratify_by"]
+
             - "length": Fish length measurements
+
             - "length_count" (optional): Pre-aggregated counts per length
+
             - "haul_num": When `haul_replicates=True`, otherwise it is optional.
 
         haul_replicates : bool
@@ -234,8 +260,11 @@ class InversionLengthTS(InversionBase):
         individuals within hauls are not independent[1]_.
 
         The sigma_bs calculation follows:
+
         1. Convert length to TS using regression: TS = slope * log10(length) + intercept
+
         2. Convert TS to linear scale: sigma_bs = 10^(TS/10)
+
         3. Calculate weighted average by length frequency within each stratum
 
         Examples
@@ -248,6 +277,8 @@ class InversionLengthTS(InversionBase):
         .. [1] Hurlbert, S.H. (1984). Pseudoreplication and the Design of Ecological Field
         Experiments. *Ecological Monographs*, 54(2), 187-211. https://doi.org/10.2307/1942661
         """
+        # Create copy
+        df_length = length_data.copy()
 
         # Grab mean hauls if `df_length` is not specified
         if df_length is None and self.sigma_bs_haul is not None:
@@ -329,10 +360,10 @@ class InversionLengthTS(InversionBase):
                 ].apply(lambda x: np.average(x.sigma_bs, weights=x.length_count))
             ).to_frame("sigma_bs")
 
-    def invert(self, df_nasc: pd.DataFrame, df_length: Union[pd.DataFrame, List[pd.DataFrame]]):
-
+    def invert(self, nasc_data: pd.DataFrame, length_data: pd.DataFrame | list[pd.DataFrame]):
+        """Invert NASC data to number density using the TS-length regression."""
         # Create copy
-        df_nasc = df_nasc.copy()
+        df_nasc = nasc_data.copy()
 
         # When stratified
         if "stratify_by" in self.model_params:
@@ -344,7 +375,7 @@ class InversionLengthTS(InversionBase):
                 unique_strata = np.unique(df_nasc[self.model_params["stratify_by"]])
 
             # Get the mean linear scattering coefficient for each stratum
-            self.get_stratified_sigma_bs(df_length, self.model_params["haul_replicates"])
+            self.get_stratified_sigma_bs(length_data, self.model_params["haul_replicates"])
 
             # Impute, if defined
             if (
@@ -371,11 +402,9 @@ class InversionLengthTS(InversionBase):
             return df_nasc.reset_index()
 
 
-def ts_length_regression(
-    length: Union[np.ndarray, float], slope: float, intercept: float
-) -> np.ndarray:
-    """
-    Converts length values into acoustic target strength (TS, dB re. 1 :math:`\\text{m}^{-2}`)
+def ts_length_regression(length: np.ndarray | float, slope: float, intercept: float) -> np.ndarray:
+    r"""
+    Convert length values into acoustic target strength (TS, dB re. 1 :math:`\text{m}^{-2}`).
 
     Parameters
     ----------

@@ -1,7 +1,9 @@
+"""Functions for computing number, weight, and NASC proportions from survey data."""
+
 import copy
 import functools
 import operator
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, Literal
 
 import numpy as np
 import pandas as pd
@@ -12,7 +14,7 @@ from .. import utils
 
 def compute_binned_counts(
     data: pd.DataFrame,
-    groupby_cols: List[str],
+    groupby_cols: list[str],
     count_col: str,
     agg_func: str = "size",
 ) -> xr.DataArray:
@@ -36,7 +38,6 @@ def compute_binned_counts(
     xr.DataArray
         Grouped counts with coordinates based on the column names provided in 'groupby_cols'.
     """
-
     # Copy the dataset
     df = data.copy()
 
@@ -48,24 +49,24 @@ def compute_binned_counts(
 
 
 def number_proportions(
-    data: Union[xr.DataArray, xr.Dataset],
-    group_columns: list = [],
-    exclude_filters: dict = {},
-) -> Union[xr.DataArray, xr.Dataset]:
+    data: xr.DataArray | xr.Dataset,
+    stratum_dim: str | None = None,
+    exclude_filters: dict | None = None,
+) -> xr.DataArray | xr.Dataset:
     """
     Calculate number proportions from one or more xarray DataArrays or Datasets.
 
-    This function computes both within-group proportions and overall proportions
-    across all provided xarray objects. It can handle different xarray structures,
-    as long as they all have a 'count' variable and share the grouping columns.
+    This function computes proportions across all provided xarray objects. It can handle different
+    xarray structures, as long as they all have a ``'count'`` variable and share the grouping
+    columns.
 
     Parameters
     ----------
     data : Union[xr.DataArray, xr.Dataset]
         Either a single xarray.DataArray or an xarray.Dataset containing multiple named
         xarray.DataArray objects.
-    group_columns : list, default ["stratum_num"]
-        Dimensions to group by for calculating totals.
+    stratum_dim : str, optional
+        Stratification dimension name to group by for calculating totals (e.g., ``"stratum_ks"``).
     exclude_filters : dict, default {}
         Filters to exclude coordinates from xarray objects. For a single DataArray, this should be
         a dict like {"sex": "unsexed"}; for a Dataset, a dict of dicts keyed by variable name.
@@ -74,17 +75,15 @@ def number_proportions(
     -------
     Union[xr.DataArray, Dict[xr.Dataset]]
         If only one DataArray is provided, returns that xarray.DataArray with added proportion
-        coordinates.
-        If a Dataset is provided, returns a dictionary of xarray.Datasets for each variable
-        within 'data'.
+        coordinates. If a Dataset is provided, returns a dictionary of xarray.Datasets for each
+        variable within ``data``.
 
     Notes
     -----
-    The function calculates two types of proportions:
-    - "proportion": Within-group proportion (count divided by total count within the same DataArray
-    /group)
-    - "proportion_overall": Overall proportion (count divided by the sum of counts across all
-    DataArrays within the original Dataset)
+    The function calculates a single proportion variable:
+
+    - "proportion": Overall proportion (count divided by the sum of counts across all DataArrays
+      within the original Dataset)
 
     Examples
     --------
@@ -95,6 +94,9 @@ def number_proportions(
     >>> dataset_input = Dataset({"aged": aged_counts, "unaged": unaged_counts})
     >>> result = number_proportions(dataset_input)
     """
+    # Apply mutable default guards
+    group_columns = [stratum_dim] if stratum_dim is not None else []
+    exclude_filters = exclude_filters or {}
 
     # Handle xr.DataArray
     if isinstance(data, xr.DataArray):
@@ -144,30 +146,14 @@ def number_proportions(
     # Compute proportions for each variable
     output = {}
     for varname, da in filtered_vars.items():
-        sum_dims = [d for d in da.dims if d not in group_columns]
-        if sum_dims:
-            group_total_full = group_totals[varname]
-            # ---- Expand group_total_full to match da's shape
-            missing_dims = set(sum_dims) - set(group_total_full.dims)
-            if missing_dims:
-                expand_dict = {d: da.coords[d] for d in missing_dims}
-                group_total_full = group_total_full.expand_dims(expand_dict)
-            proportion = da / group_total_full
-            proportion_overall = da / overall_total
-        elif group_columns:
-            # ---- Broadcast
-            sel_dict = {g: da.coords[g] for g in group_columns}
-            proportion = da / group_totals[varname].sel(**sel_dict)
-            proportion_overall = da / overall_total.sel(**sel_dict)
-        else:
-            proportion = da / group_totals[varname]
-            proportion_overall = da / overall_total
+        # Store only overall proportions; within-group values can be derived downstream by
+        # re-normalizing within the requested groups.
+        proportion = da / overall_total
         # ---- Attach as new DataArrays with appropriate names
         output[varname] = xr.Dataset(
             {
                 "count": da,
                 "proportion": proportion,
-                "proportion_overall": proportion_overall,
             }
         )
 
@@ -178,18 +164,18 @@ def number_proportions(
 
 def apply_weight_interpolation(
     target_df: pd.DataFrame,
-    interpolators: Dict,
+    interpolators: dict,
     dependent_var: str,
     independent_var: str,
     count_col: str,
-    contrast_vars: Optional[Union[str, List[str]]] = None,
+    contrast_vars: str | list[str] | None = None,
 ) -> pd.DataFrame:
     """
     Apply weight interpolation to a DataFrame based on interpolators.
 
-    Uses the provided interpolators to estimate weights for each row in the target
-    DataFrame, optionally multiplying by a count column (e.g., for expanding
-    interpolated weights to a length frequency count).
+    Uses the provided interpolators to estimate weights for each row in the target DataFrame,
+    optionally multiplying by a count column (e.g., for expanding interpolated weights to a length
+    frequency count).
 
     Parameters
     ----------
@@ -204,19 +190,19 @@ def apply_weight_interpolation(
     count_col : str
         Column containing count values to multiply interpolated values by
     contrast_vars : str, List[str], or None, default None
-        Column(s) used as contrast variables in the interpolators.
-        If None or empty list, uses the global interpolator.
+        Column(s) used as contrast variables in the interpolators. If None or empty list, uses the
+        global interpolator.
 
     Returns
     -------
     pd.DataFrame
-        DataFrame with added dependent_var column containing interpolated values
-        (multiplied by count_col values if present)
+        DataFrame with added dependent_var column containing interpolated values (multiplied by
+        count_col values if present)
 
     Notes
     -----
-    When using contrast variables, rows with contrast values not found in the
-    interpolators will receive NaN values for the dependent variable.
+    When using contrast variables, rows with contrast values not found in the interpolators will
+    receive NaN values for the dependent variable.
     """
     # Create copy to avoid modifying original
     result_df = target_df.copy()
@@ -268,9 +254,9 @@ def apply_weight_interpolation(
 def binned_weights(
     length_data: pd.DataFrame,
     interpolate_regression: bool = True,
-    group_columns: list = ["length_bin"],
-    length_weight_data: Optional[xr.DataArray] = None,
-    include_filter: Optional[Dict[str, Any]] = None,
+    group_columns: list | None = None,
+    length_weight_data: xr.DataArray | None = None,
+    include_filter: dict[str, Any] | None = None,
 ) -> xr.DataArray:
     """
     Process length-weight data and return an xarray.DataArray of weights binned by group_columns.
@@ -283,20 +269,20 @@ def binned_weights(
     Parameters
     ----------
     length_dataset : pd.DataFrame
-        Dataset with length measurements. Must contain 'length_bin' and 'length_count'
-        columns when using interpolation, or direct 'weight' values when not interpolating.
+        Dataset with length measurements. Must contain 'length_bin' and 'length_count' columns when
+        using interpolation, or direct 'weight' values when not interpolating.
     interpolate_regression : bool, default True
         Whether to use interpolation for weights. If True, interpolates weights based on
-        length-weight relationships from length_weight_dataset. If False, uses existing
-        weight values in length_dataset.
+        length-weight relationships from length_weight_dataset. If False, uses existing weight
+        values in length_dataset.
     group_columns : list, default ["length_bin"]
         Columns to use as coordinates in the output DataArray.
     length_weight_dataset : xr.DataArray, optional
-        DataArray with length-weight relationships. Required when interpolate_regression=True.
-        Must contain 'length_bin' as a coordinate.
+        DataArray with length-weight relationships. Required when interpolate_regression=True. Must
+        contain 'length_bin' as a coordinate.
     include_filter : Dict[str, Any], optional
-        Filter to apply to both datasets (e.g., to include only certain sexes).
-        Rows are kept if they match the filter.
+        Filter to apply to both datasets (e.g., to include only certain sexes). Rows are kept if
+        they match the filter.
 
     Returns
     -------
@@ -311,9 +297,12 @@ def binned_weights(
     Notes
     -----
     - The output DataArray will have coordinates as specified by group_columns.
+
     - Filtering is performed before binning/interpolation.
+
     - If interpolate_regression is True, interpolation is performed using the regression model
       in length_weight_dataset, which is first converted to a DataFrame for compatibility.
+
     - If interpolate_regression is False, weights are taken directly from length_dataset.
 
     Examples
@@ -334,6 +323,8 @@ def binned_weights(
     ...     include_filter={"sex": ["female", "male"]}
     ... )
     """
+    # Apply mutable default guard
+    group_columns = group_columns if group_columns is not None else ["length_bin"]
 
     # Apply include_filter if provided
     if include_filter:
@@ -406,7 +397,7 @@ def binned_weights(
 
 
 def calculate_adjusted_proportions(
-    group_keys: List[str],
+    group_keys: list[str],
     aggregate_proportions: xr.DataArray,
     group_proportions: xr.DataArray,
 ) -> xr.DataArray:
@@ -429,9 +420,8 @@ def calculate_adjusted_proportions(
 
     Notes
     -----
-    This function calculates adjusted proportions for multiple datasets.
-    The first group is used as a reference, and other groups are adjusted
-    based on their relative proportions.
+    This function calculates adjusted proportions for multiple datasets. The first group is used as
+    a reference, and other groups are adjusted based on their relative proportions.
 
     Examples
     --------
@@ -442,7 +432,6 @@ def calculate_adjusted_proportions(
     ...     sex_proportions_table
     ... )
     """
-
     # Initialize the dictionary for the group-specific DataArrays
     adjusted_props = {}
     # ---- Use the first group as the reference
@@ -476,7 +465,7 @@ def calculate_grouped_weights(
     within_group_proportions_all: xr.DataArray,
     aggregate_proportions: xr.DataArray,
     adjusted_proportions: xr.DataArray,
-    group_keys: List[str],
+    group_keys: list[str],
 ) -> xr.DataArray:
     """
     Calculate average weights by sex category across groups.
@@ -504,7 +493,9 @@ def calculate_grouped_weights(
     Notes
     -----
     The function calculates weighted average weights for different grouping categories:
+
     - For "all", it uses aggregate proportions across all groups
+
     - For individual groupings, it uses sex-specific adjusted proportions
 
     Examples
@@ -518,7 +509,6 @@ def calculate_grouped_weights(
     ...     ["aged", "unaged"]
     ... )
     """
-
     # Initialize the dictionary to contain the grouped weights
     weight_das = {}
 
@@ -589,8 +579,8 @@ def calculate_grouped_weights(
 
 
 def calculate_within_group_proportions(
-    proportions_dict: Dict[str, pd.DataFrame],
-    group_cols: List[str],
+    proportions_dict: dict[str, pd.DataFrame],
+    group_cols: list[str],
 ) -> pd.DataFrame:
     """
     Calculate within-group proportions for each DataFrame.
@@ -640,42 +630,41 @@ def calculate_within_group_proportions(
 
 
 def stratum_averaged_weight(
-    number_proportions: Union[Dict[str, xr.Dataset], xr.Dataset],
+    number_proportions: dict[str, xr.Dataset] | xr.Dataset,
     length_weight_data: xr.DataArray,
-    group_columns: List[str] = [],
+    stratum_dim: str | None = None,
 ) -> xr.DataArray:
     """
     Calculate stratum- and group-specific average weights using xarray inputs.
 
-    This function combines length-at-age or length-only distributions from multiple groups
-    (e.g., aged and unaged fish) to produce weighted average weights by group and stratum,
-    using xarray objects for all calculations. It accounts for the proportions of each group
-    and correctly weights their contributions to the final average.
+    This function combines length-at-age or length-only distributions from multiple groups (e.g.,
+    aged and unaged fish) to produce weighted average weights by group and stratum, using xarray
+    objects for all calculations. It accounts for the proportions of each group and correctly
+    weights their contributions to the final average.
 
     Parameters
     ----------
     number_proportions : Dict[str, xr.Dataset]
-        Dictionary mapping group names to xarray Datasets containing proportion data.
-        Each Dataset must have at least one variable representing proportions and
-        coordinates for all relevant grouping and binning dimensions.
+        Dictionary mapping group names to xarray Datasets containing proportion data. Each Dataset
+        must have at least one variable representing proportions and coordinates for all relevant
+        grouping and binning dimensions.
 
     length_weight_data : xr.DataArray
-        xarray DataArray containing fitted weights, with coordinates matching the
-        grouping and binning dimensions used in the proportion Datasets.
+        xarray DataArray containing fitted weights, with coordinates matching the grouping and
+        binning dimensions used in the proportion Datasets.
 
-    group_columns : List[str], optional (default is [])
-        List of dimension names to use for grouping (e.g., strata, sex, etc.).
-        If None, all non-binning dimensions present in the data will be used.
+    stratum_dim : str, optional
+        Stratification dimension name to use for grouping (e.g., ``"stratum_ks"``).
+        If None, no stratification grouping is applied.
 
     Returns
     -------
     xr.DataArray
-        DataArray with average weights for each stratum and group, indexed by group_columns and
+        DataArray with average weights for each stratum and group, indexed by stratum_dim and
         groupings.
 
     Notes
     -----
-
     - The function assumes that the length bins in number_proportions and length_weight_data match.
 
     - The function requires an 'all' group category in length_weight_data for calculating combined
@@ -693,10 +682,12 @@ def stratum_averaged_weight(
     >>> length_weight_data = da_binned_weights
     >>> # Calculate average weights
     >>> weights = stratum_averaged_weight(number_proportions, length_weight_data,
-    group_columns=['stratum_num', 'sex'])
+    stratum_dim='stratum_num')
     >>> print(weights)
     <xarray.DataArray ...>
     """
+    # Apply mutable default guard
+    group_columns = [stratum_dim] if stratum_dim is not None else []
 
     # Convert if needed
     if isinstance(number_proportions, xr.Dataset):
@@ -710,7 +701,7 @@ def stratum_averaged_weight(
 
     # Compute the overall proportions across all animals
     # ---- Extract arrays
-    das_list = [ds["proportion_overall"] for ds in number_proportions.values()]
+    das_list = [ds["proportion"] for ds in number_proportions.values()]
     # ---- Sum over the target dimensions
     das_list_sum = []
     for da in das_list:
@@ -729,13 +720,11 @@ def stratum_averaged_weight(
         dim=grps + ["length_bin"]
     )
 
-    # Extract proportion_overall and add group dimension
+    # Extract overall proportions and add group dimension
     proportion_arrays = []
     for group_name, ds in number_proportions.items():
         # ---- Get the grouped array
-        grouped_array = ds["proportion_overall"].sum(
-            dim=[d for d in ds.dims if d not in group_columns]
-        )
+        grouped_array = ds["proportion"].sum(dim=[d for d in ds.dims if d not in group_columns])
         # ---- Expand the dimensions
         proportion_arrays.append(grouped_array.expand_dims({"group": [group_name]}))
     aggregate_proportions = xr.concat(proportion_arrays, dim="group")
@@ -776,8 +765,8 @@ def aggregate_stratum_weights(input_data, stratum_col="stratum_num"):
     Parameters
     ----------
     input_data : Union[Dict[str, pd.DataFrame], pd.DataFrame]
-        Either a DataFrame with multi-level columns including stratum_num
-        or a dictionary of such DataFrames
+        Either a DataFrame with multi-level columns including stratum_num or a dictionary of such
+        DataFrames
     stratum_col : str, default "stratum_num"
         Column name for stratum identifier
 
@@ -835,27 +824,27 @@ def aggregate_stratum_weights(input_data, stratum_col="stratum_num"):
 
 def weight_proportions(
     weight_data: xr.DataArray,
-    catch_data: Union[pd.DataFrame, Dict[str, pd.DataFrame]],
-    stratum_dim: str = [],
+    catch_data: pd.DataFrame | dict[str, pd.DataFrame],
+    stratum_dim: str | None = None,
     proportion_reference: Literal["catch", "catch_plus_specimen"] = "catch",
 ) -> xr.DataArray:
     """
     Calculate stratified weight proportions using xarray and pandas inputs.
 
-    This function computes the proportional weight distribution for each group
-    relative to the total weights across all strata or groupings, using an xarray
-    DataArray for biological weights and a pandas DataFrame for catch weights.
-    All grouping is handled dynamically based on the provided group_columns.
+    This function computes the proportional weight distribution for each group relative to the
+    total weights across all strata or groupings, using an xarray DataArray for biological weights
+    and a pandas DataFrame for catch weights. All grouping is handled dynamically based on the
+    provided ``stratum_dim``.
 
     Parameters
     ----------
     weight_data : xr.DataArray
         xarray DataArray containing weight distributions for all groups, with
-        dimensions including those in group_columns.
+        dimensions including stratum_dim.
     catch_data : pd.DataFrame
-        DataFrame with catch data, including columns for group_columns and "weight".
-    stratum_dim : list of str
-        List of dimension/column names to group by (e.g., strata, sex, etc.).
+        DataFrame with catch data, including columns for stratum_dim and "weight".
+    stratum_dim : str, optional
+        Stratification dimension name to group by (e.g., ``"stratum_ks"``).
     proportion_reference : Literal["catch", "catch_plus_specimen"], default 'catch'
         Determines the denominator for the proportions calculation:
 
@@ -867,8 +856,8 @@ def weight_proportions(
     Returns
     -------
     xr.DataArray
-        DataArray containing the calculated weight proportions, indexed by all
-        grouping dimensions present in the input data.
+        DataArray containing the calculated weight proportions, indexed by all grouping dimensions
+        present in the input data.
 
     Notes
     -----
@@ -884,15 +873,17 @@ def weight_proportions(
     >>> weight_props = weight_proportions(
     ...     weight_data=ds_da_weight_dist["aged"],
     ...     catch_data=dict_df_bio["catch"],
-    ...     group_columns=["stratum_ks"],
+    ...     stratum_dim="stratum_ks",
     ...     proportion_reference="catch"
     ... )
     >>> print(weight_props)
     <xarray.DataArray ...>
     """
+    # Convert stratum_dim to list for internal use
+    stratum_dim_list = [stratum_dim] if stratum_dim is not None else []
 
     # Compute the total weights per stratum from the biological data
-    group_weights = weight_data.sum(dim=[d for d in weight_data.dims if d not in stratum_dim])
+    group_weights = weight_data.sum(dim=[d for d in weight_data.dims if d not in stratum_dim_list])
 
     # Conditionally drop specimen-only hauls if required
     if proportion_reference == "catch_plus_specimen":
@@ -913,7 +904,7 @@ def weight_proportions(
         catch_values = catch_data.copy()
 
     # Compute the grouped catch weights
-    catch_weights = xr.DataArray(catch_values.groupby(stratum_dim)["weight"].sum())
+    catch_weights = xr.DataArray(catch_values.groupby(stratum_dim_list)["weight"].sum())
     # ---- Align weights
     catch_weights_aligned, group_weights_aligned = xr.align(
         catch_weights, group_weights, join="outer", fill_value=0.0
@@ -934,22 +925,20 @@ def weight_proportions(
     # Compute the weight proportions for the array
     arr = weight_data / total_weights
     # ---- Assign the array name
-    arr.name = "proportion_overall"
+    arr.name = "proportion"
     return arr.to_dataset()
 
 
 def _validate_fitted_weight_proportions(
-    number_proportions: Union[xr.DataArray, xr.Dataset],
+    number_proportions: xr.DataArray | xr.Dataset,
     binned_weights: xr.DataArray,
-    stratum_dim: List[str],
+    stratum_dim: str,
 ) -> None:
     """Validate inputs for ``fitted_weight_proportions``."""
-
     # Ensure number_proportions is a Dataset with the expected variables
     if not isinstance(number_proportions, xr.Dataset):
         raise TypeError(
-            "'number_proportions' must be an xr.Dataset containing 'proportion' and "
-            "'proportion_overall' variables."
+            "'number_proportions' must be an xr.Dataset containing a 'proportion' variable."
         )
     if "proportion" not in number_proportions:
         raise KeyError("'number_proportions' must contain a 'proportion' variable.")
@@ -960,32 +949,29 @@ def _validate_fitted_weight_proportions(
     if "length_bin" not in binned_weights.dims:
         raise KeyError("'binned_weights' must have 'length_bin' as a dimension.")
 
-    # Ensure stratum_dim is a list
-    if not isinstance(stratum_dim, list):
-        raise TypeError(f"'stratum_dim' must be a list, got {type(stratum_dim).__name__}.")
+    # Ensure stratum_dim is a str
+    if not isinstance(stratum_dim, str):
+        raise TypeError(f"'stratum_dim' must be a str, got {type(stratum_dim).__name__}.")
 
     # Validate stratum_dim exists in number_proportions
-    missing_strata = [d for d in stratum_dim if d not in number_proportions.coords]
-    if missing_strata:
+    if stratum_dim not in number_proportions.coords:
         raise KeyError(
-            f"Dimensions in 'stratum_dim' not found in 'number_proportions': "
-            f"'{', '.join(missing_strata)}'."
+            f"Dimension '{stratum_dim}' in 'stratum_dim' not found in 'number_proportions'."
         )
 
 
 def fitted_weight_proportions_combined(
     number_proportions: xr.Dataset,
     binned_weights: xr.DataArray,
-    stratum_dim: List[str] = [],
+    stratum_dim: str | None = None,
 ) -> xr.Dataset:
     """
     Calculate weight proportions based on number proportions.
 
-    This function is used in workflows where the aged and unaged samples are pooled,
-    such as when net selectivity is corrected based on length.
-    The weight proportions are calculated by multiplying the number of proportions
-    over sex, length, and aged with sex-specific mean weight at length,
-    and then normalizing over all dimensions within a given stratum.
+    This function is used in workflows where the aged and unaged samples are pooled, such as when
+    net selectivity is corrected based on length. The weight proportions are calculated by
+    multiplying the number of proportions over sex, length, and aged with sex-specific mean weight
+    at length, and then normalizing over all dimensions within a given stratum.
 
     Parameters
     ----------
@@ -995,8 +981,10 @@ def fitted_weight_proportions_combined(
     binned_weights : xr.DataArray
         Mean fitted length-binned weights that must contain ``length_bin`` as a dimension and
         ``sex`` as a coordinate.
-    stratum_dim : list of str
-        Stratification dimensions used for normalizing proportions within each stratum.
+    stratum_dim : str, optional
+        Stratification dimension name for normalizing proportions within each stratum
+        (e.g., ``"stratum_ks"``).
+
     Returns
     -------
     xr.Dataset
@@ -1008,9 +996,11 @@ def fitted_weight_proportions_combined(
     >>> weight_props = fitted_weight_proportions_combined(
     ...     number_proportions=count_proportions,
     ...     binned_weights=da_binned_weights_all,
-    ...     stratum_dim=["stratum_ks"],
+    ...     stratum_dim="stratum_ks",
     ... )
     """
+    # Apply mutable default guard and convert to list for internal use
+    stratum_dim_list = [stratum_dim] if stratum_dim is not None else []
 
     # Validate the inputs
     _validate_fitted_weight_proportions(
@@ -1019,11 +1009,16 @@ def fitted_weight_proportions_combined(
         stratum_dim=stratum_dim,
     )
 
+    # Derive within-stratum proportions from overall proportions.
+    number_proportion = number_proportions["proportion"]
+    normalize_dims = [d for d in number_proportion.dims if d not in stratum_dim_list]
+    within_group_proportion = number_proportion / number_proportion.sum(dim=normalize_dims)
+
     # Calculate mean weight in each bin of specific sex, length, and age
-    mean_weight = number_proportions["proportion"] * binned_weights
+    mean_weight = within_group_proportion * binned_weights
 
     # Gather all dimensions that contribute to a single 'stratum_dim' total
-    sum_dims = [d for d in mean_weight.dims if d not in stratum_dim]
+    sum_dims = [d for d in mean_weight.dims if d not in stratum_dim_list]
 
     # Calculate the total 'stratum_dim' weight
     stratum_total = mean_weight.sum(dim=sum_dims)
@@ -1031,7 +1026,7 @@ def fitted_weight_proportions_combined(
     # Normalize to calculate the weight proportions (sum for each 'stratum_dim' = 1)
     weight_prop = (mean_weight / stratum_total.where(stratum_total > 0)).fillna(0.0)
     # ---- Assign array name
-    weight_prop.name = "proportion_overall"
+    weight_prop.name = "proportion"
     return weight_prop.to_dataset()
 
 
@@ -1040,11 +1035,10 @@ def fitted_weight_proportions(
     aged_weight_proportions: xr.Dataset,
     number_proportions: xr.Dataset,
     binned_weights: xr.DataArray,
-    stratum_dim: List[str] = [],
+    stratum_dim: str | None = None,
 ) -> xr.Dataset:
     """
-    Calculate weight proportions based on fitted weights with adjustments based on reference
-    values.
+    Calculate weight proportions based on fitted weights with reference-value adjustments.
 
     This function computes comprehensive weight proportions for a group, accounting for reference
     proportions, length-binned proportions, and fitted weight tables. All grouping and dimension
@@ -1061,8 +1055,8 @@ def fitted_weight_proportions(
         xarray Dataset of number proportions by relevant grouping factors.
     binned_weights : xr.DataArray
         xarray DataArray of fitted weights by length bins (and possibly other groupings).
-    stratum_dim : list of str
-        Stratification dimension name (e.g., ['stratum_ks']).
+    stratum_dim : str, optional
+        Stratification dimension name (e.g., ``"stratum_ks"``).
 
     Returns
     -------
@@ -1077,17 +1071,19 @@ def fitted_weight_proportions(
     ...     aged_weight_proportions=ds_da_weight_proportion["aged"],
     ...     number_proportions=dict_ds_number_proportion["unaged"],
     ...     binned_weights=da_binned_weights_all,
-    ...     stratum_dim=["stratum_ks"]
+    ...     stratum_dim="stratum_ks"
     ... )
     >>> print(props)
     <xarray.DataArray ...>
     """
+    # Apply mutable default guard and convert to list for internal use
+    stratum_dim_list = [stratum_dim] if stratum_dim is not None else []
 
     # Summed weight for each sex in each stratum
     # dim: [stratum x sex]
     weight_sex = (
-        weight_data.groupby(stratum_dim)
-        .sum(dim=[d for d in weight_data.dims if d not in stratum_dim + ["sex"]])
+        weight_data.groupby(stratum_dim_list)
+        .sum(dim=[d for d in weight_data.dims if d not in stratum_dim_list + ["sex"]])
         .astype(float)
     )
 
@@ -1097,13 +1093,15 @@ def fitted_weight_proportions(
 
     # Number proportion for each length bin in each stratum
     # dim: [stratum x length_bin]
-    number_prop_length = number_proportions["proportion"].sum(
+    number_overall = number_proportions["proportion"]
+    number_prop_length = number_overall.sum(
         dim=[
             d
             for d in number_proportions["proportion"].dims
-            if d not in stratum_dim + ["length_bin"]
+            if d not in stratum_dim_list + ["length_bin"]
         ]
     )
+    number_prop_length = number_prop_length / number_prop_length.sum(dim="length_bin")
 
     # Average weight for each length bin and sex in each stratum
     # ---- binned_weights only has sex="all" over all length bins, so dropping this dimension
@@ -1120,7 +1118,7 @@ def fitted_weight_proportions(
     # Weight proportion of aged samples within each stratum
     # Weight proportion of reference samples (e.g., aged) within each stratum
     # dim: [stratum]
-    dim_to_sum = set(aged_weight_proportions.dims).difference(stratum_dim)
+    dim_to_sum = set(aged_weight_proportions.dims).difference(stratum_dim_list)
     weight_prop_aged = aged_weight_proportions.sum(dim=dim_to_sum)
 
     # Weight proportion of unaged samples in each stratum
@@ -1134,24 +1132,24 @@ def fitted_weight_proportions(
 
 def get_nasc_proportions_slice(
     number_proportions: xr.Dataset,
-    ts_length_regression_parameters: Dict[str, float],
-    include_filter: Dict[str, Any] = {},
-    exclude_filter: Dict[str, Any] = {},
-    group_columns: List[str] = [],
+    ts_length_regression_parameters: dict[str, float],
+    include_filter: dict[str, Any] | None = None,
+    exclude_filter: dict[str, Any] | None = None,
+    stratum_dim: str | None = None,
 ) -> xr.DataArray:
     """
-    Extract and aggregate NASC proportions for specified groups from an xarray.DataArray, with
-    dynamic filtering.
+    Extract and aggregate NASC proportions for specified groups from an xarray.DataArray.
 
     This function selects and aggregates NASC proportions from an xarray.DataArray according to
-    user-specified grouping columns and filters, and returns the result as an xarray.DataArray.
-    All grouping and filtering logic is handled dynamically based on the provided arguments.
+    user-specified stratification dimension and filters, and returns the result as an
+    xarray.DataArray. All grouping and filtering logic is handled dynamically based on the provided
+    arguments.
 
     Parameters
     ----------
     number_proportions : xr.Dataset
         xarray.Dataset of number proportions by relevant grouping factors, with dimensions
-        including those in group_columns and binning columns (e.g., 'sex').
+        including stratum_dim and binning columns (e.g., 'sex').
     exclude_filter : Dict[str, Any], optional
         Dictionary specifying values to exclude for filtering.
     include_filter : Dict[str, Any], optional
@@ -1160,14 +1158,14 @@ def get_nasc_proportions_slice(
         Target strength-length regression parameters:
         - slope: regression slope
         - intercept: regression intercept
-    group_columns : list of str, optional
-        List of dimension names to use for grouping (e.g., ['stratum_num']).
+    stratum_dim : str, optional
+        Stratification dimension name to use for grouping (e.g., ``"stratum_ks"``).
 
     Returns
     -------
     xr.DataArray
         DataArray containing the aggregated NASC proportions for each group/stratum,
-        indexed by group_columns.
+        indexed by stratum_dim.
 
     Notes
     -----
@@ -1178,18 +1176,22 @@ def get_nasc_proportions_slice(
 
     - Filtering is applied dynamically using include_filter and exclude_filter.
 
-    - Output is an xarray.DataArray indexed by group_columns.
+    - Output is an xarray.DataArray indexed by stratum_dim.
 
     Examples
     --------
     >>> props = get_nasc_proportions_slice(
     ...     number_proportions=aged_data,
-    ...     group_columns=["stratum_ks"],
+    ...     stratum_dim="stratum_ks",
     ...     include_filter={"age_bin": [1]}
     ... )
     >>> print(props)
     <xarray.DataArray ...>
     """
+    # Apply mutable default guards
+    include_filter = include_filter or {}
+    exclude_filter = exclude_filter or {}
+    group_columns = [stratum_dim] if stratum_dim is not None else []
 
     # Get length values from length bins
     length_vals = number_proportions["length_bin"].to_series().map(lambda x: x.mid).astype(float)
@@ -1238,13 +1240,16 @@ def get_nasc_proportions_slice(
 
 def get_number_proportions_slice(
     number_proportions: xr.DataArray,
-    stratum_dim: List[str] = [],
-    exclude_filter: Dict[str, Any] = {},
-    include_filter: Dict[str, Any] = {},
+    stratum_dim: list[str] | None = None,
+    exclude_filter: dict[str, Any] | None = None,
+    include_filter: dict[str, Any] | None = None,
 ) -> xr.DataArray:
     """
-    Extract and aggregate number proportions for specified groups from an xarray.DataArray, with
-    dynamic filtering.
+    Extract and aggregate number proportions for specified groups from an xarray.DataArray.
+
+    This function selects and aggregates number proportions from an xarray.DataArray according to
+
+    Extract and aggregate number proportions for specified groups from an xarray.DataArray.
 
     This function selects and aggregates number proportions from an xarray.DataArray according to
     user-specified grouping columns and filters, and returns the result as an xarray.DataArray.
@@ -1254,9 +1259,9 @@ def get_number_proportions_slice(
     ----------
     number_proportions : xr.DataArray
         xarray.DataArray of number proportions by relevant grouping factors, with dimensions
-        including those in group_columns and binning columns (e.g., 'length_bin').
-    stratum_dim : list of str
-        Stratification dimension name (e.g., ['stratum_ks']).
+        including stratum_dim and binning columns (e.g., 'length_bin').
+    stratum_dim : str, optional
+        Stratification dimension name (e.g., ``"stratum_ks"``).
     exclude_filter : Dict[str, Any], optional
         Dictionary specifying values to exclude for filtering.
     include_filter : Dict[str, Any], optional
@@ -1266,11 +1271,10 @@ def get_number_proportions_slice(
     -------
     xr.DataArray
         DataArray containing the aggregated number proportions for each group/stratum,
-        indexed by group_columns.
+        indexed by stratum_dim.
 
     Notes
     -----
-
     - No dimension names are hard-coded; all grouping and filtering is dynamic.
 
     - The function assumes that grouping and binning dimensions are consistent with the DataArray
@@ -1278,18 +1282,22 @@ def get_number_proportions_slice(
 
     - Filtering is applied dynamically using include_filter and exclude_filter.
 
-    - Output is an xarray.DataArray indexed by group_columns.
+    - Output is an xarray.DataArray indexed by stratum_dim.
 
     Examples
     --------
     >>> props = get_number_proportions_slice(
     ...     number_proportions=dict_ds_number_proportion["aged"],
-    ...     group_columns=["stratum_ks"],
+    ...     stratum_dim="stratum_ks",
     ...     include_filter={"age_bin": [1]}
     ... )
     >>> print(props)
     <xarray.DataArray ...>
     """
+    # Apply mutable default guards
+    stratum_dim_list = [stratum_dim] if stratum_dim is not None else []
+    exclude_filter = exclude_filter or {}
+    include_filter = include_filter or {}
 
     # Determine index columns from filter keys and length_bin
     filter_indices = set(list(exclude_filter.keys()) + list(include_filter.keys()) + ["length_bin"])
@@ -1299,7 +1307,7 @@ def get_number_proportions_slice(
 
     # Get length-binned proportions aggregated based on strata
     aggregate_array = number_proportions["proportion"].sum(
-        dim=[d for d in number_proportions.coords if d not in [*stratum_dim, *index_set]]
+        dim=[d for d in number_proportions.coords if d not in [*stratum_dim_list, *index_set]]
     )
 
     # Apply filters, if any
@@ -1317,34 +1325,33 @@ def get_number_proportions_slice(
     grouped_props = aggregate_array.squeeze(drop=True)
 
     # Aggregate further over the defined strata
-    return grouped_props.sum(dim=[d for d in grouped_props.coords if d not in stratum_dim])
+    return grouped_props.sum(dim=[d for d in grouped_props.coords if d not in stratum_dim_list])
 
 
 def get_weight_proportions_slice(
     weight_proportions: xr.Dataset,
-    stratum_dim: List[str] = [],
-    include_filter: Dict[str, Any] = {},
-    exclude_filter: Dict[str, Any] = {},
-    number_proportions: Dict[str, xr.Dataset] = {},
-    length_threshold_min: Optional[float] = None,
+    stratum_dim: str | None = None,
+    include_filter: dict[str, Any] | None = None,
+    exclude_filter: dict[str, Any] | None = None,
+    number_proportions: dict[str, xr.Dataset] | None = None,
+    length_threshold_min: float | None = None,
     weight_proportion_threshold: float = 1e-10,
 ) -> xr.DataArray:
     """
-    Calculate weight proportions for a specific slice of the population using xarray, with optional
-    thresholding.
+    Calculate weight proportions for a specific population slice using xarray.
 
     This function computes weight proportions for a target population group from an
     xarray.Dataset, with optional thresholding based on number proportions. Thresholding helps
     identify and mask unreliable estimates due to low sample sizes or small proportions. Number
     proportions must be provided as a dictionary of xarray.Dataset objects, each containing a
-    "proportion" variable.
+    ``"proportion"`` variable.
 
     Parameters
     ----------
     weight_proportions : xr.Dataset
         Dataset with weight proportions and all relevant grouping dimensions.
-    stratum_dim : list of str
-        Stratification dimension name (e.g., ['stratum_ks']).
+    stratum_dim : str, optional
+        Stratification dimension name (e.g., ``"stratum_ks"``).
     include_filter : Dict[str, Any], default {}
         Dictionary of filter criteria for the target group (e.g., {"age_bin": [1]}).
     exclude_filter : Dict[str, Any], default {}
@@ -1361,7 +1368,7 @@ def get_weight_proportions_slice(
     Returns
     -------
     xr.DataArray
-        Weight proportions by group_columns for the target group, with unreliable estimates masked
+        Weight proportions by stratum_dim for the target group, with unreliable estimates masked
         to 0.
 
     Notes
@@ -1369,19 +1376,20 @@ def get_weight_proportions_slice(
     Thresholding Logic:
 
     1. Calculate target group weight proportions.
+
     2. If number_proportions are provided, calculate corresponding number thresholds.
+
     3. If length_threshold_min is set, exclude length bins below this threshold.
+
     4. Apply a mask where both weight and number proportions are very small.
+
     5. Set masked values to 0.0 to indicate unreliable estimates.
 
     Examples
     --------
     >>> weight_props = get_weight_proportions_slice(
     ...     weight_proportions,
-    ...     group_columns=["stratum_ks"],
-    >>> weight_props = get_weight_proportions_slice(
-    ...     weight_proportions,
-    ...     group_columns=["stratum_ks"],
+    ...     stratum_dim="stratum_ks",
     ...     include_filter={"age_bin": [1]},
     ...     number_proportions={"aged": ds_aged, "unaged": ds_unaged},
     ...     length_threshold_min=10.0
@@ -1389,13 +1397,18 @@ def get_weight_proportions_slice(
     >>> print(weight_props)
     <xarray.DataArray ...>
     """
+    # Apply mutable default guards and convert stratum_dim to list for internal use
+    stratum_dim_list = [stratum_dim] if stratum_dim is not None else []
+    include_filter = include_filter or {}
+    exclude_filter = exclude_filter or {}
+    number_proportions = number_proportions or {}
 
     # Determine index columns from filter keys and length_bin
     index_set = set(list(exclude_filter.keys()) + list(include_filter.keys()) + ["length_bin"])
 
     # Get length-binned proportions aggregated based on strata
-    aggregate_array = weight_proportions["proportion_overall"].sum(
-        dim=[d for d in weight_proportions.coords if d not in [*stratum_dim, *index_set]]
+    aggregate_array = weight_proportions["proportion"].sum(
+        dim=[d for d in weight_proportions.coords if d not in [*stratum_dim_list, *index_set]]
     )
 
     # Apply filters, if any
@@ -1408,12 +1421,12 @@ def get_weight_proportions_slice(
 
     # Aggregate target stratum proportions
     target_group_weight_proportions = grouped_props.sum(
-        dim=[d for d in grouped_props.dims if d not in stratum_dim], skipna=True
+        dim=[d for d in grouped_props.dims if d not in stratum_dim_list], skipna=True
     )
 
     # Normalize by the unfiltered proportions
-    total_weight_proportions = weight_proportions["proportion_overall"].sum(
-        dim=[d for d in weight_proportions.dims if d not in stratum_dim], skipna=True
+    total_weight_proportions = weight_proportions["proportion"].sum(
+        dim=[d for d in weight_proportions.dims if d not in stratum_dim_list], skipna=True
     )
     proportions_weight = target_group_weight_proportions / total_weight_proportions
 
@@ -1441,7 +1454,7 @@ def get_weight_proportions_slice(
             filtered_number_proportions_grp = {
                 key: get_number_proportions_slice(
                     ds,
-                    stratum_dim=stratum_dim + ["length_bin"],
+                    stratum_dim=stratum_dim,
                     exclude_filter=length_exclusion_filter,
                     include_filter=include_filter,
                 )
@@ -1454,7 +1467,7 @@ def get_weight_proportions_slice(
                 dim=[
                     d
                     for d in next(iter(filtered_number_proportions_grp.values())).dims
-                    if d not in stratum_dim
+                    if d not in stratum_dim_list
                 ]
             )
             # ---- Align/reindex

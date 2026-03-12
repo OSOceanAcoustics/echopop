@@ -1,4 +1,6 @@
-from typing import Any, Dict, List, Optional, Tuple, Union
+"""Pydantic validators for empirical variograms, theoretical modeling, and optimization."""
+
+from typing import Any
 
 import pandas as pd
 from lmfit import Parameters
@@ -10,21 +12,22 @@ from . import spatial
 
 
 class VariogramModelParameters(BaseDictionary):
-    correlation_range: Optional[float] = Field(default=None, gt=0.0, allow_inf_nan=False)
-    decay_power: Optional[float] = Field(default=None, gt=0.0, le=2.0, allow_inf_nan=False)
-    enhance_semivariance: Optional[bool] = Field(default=None)
-    hole_effect_range: Optional[float] = Field(default=None, ge=0.0, allow_inf_nan=False)
-    sill: Optional[float] = Field(default=None, gt=0.0, allow_inf_nan=False)
-    nugget: Optional[float] = Field(default=None, ge=0.0, allow_inf_nan=False)
-    smoothness_parameter: Optional[float] = Field(
-        default=None, gt=0.0, le=10.0, allow_inf_nan=False
-    )
-    shape_parameter: Optional[float] = Field(default=None, gt=0.0, le=100.0, allow_inf_nan=False)
-    power_exponent: Optional[float] = Field(default=None, gt=0.0, lt=2.0, allow_inf_nan=False)
+    """Pydantic validation model for theoretical variogram model parameters."""
+
+    correlation_range: float | None = Field(default=None, gt=0.0, allow_inf_nan=False)
+    decay_power: float | None = Field(default=None, gt=0.0, le=2.0, allow_inf_nan=False)
+    enhance_semivariance: bool | None = Field(default=None)
+    hole_effect_range: float | None = Field(default=None, ge=0.0, allow_inf_nan=False)
+    sill: float | None = Field(default=None, gt=0.0, allow_inf_nan=False)
+    nugget: float | None = Field(default=None, ge=0.0, allow_inf_nan=False)
+    smoothness_parameter: float | None = Field(default=None, gt=0.0, le=10.0, allow_inf_nan=False)
+    shape_parameter: float | None = Field(default=None, gt=0.0, le=100.0, allow_inf_nan=False)
+    power_exponent: float | None = Field(default=None, gt=0.0, lt=2.0, allow_inf_nan=False)
     model_config = ConfigDict(title="theoretical variogram model parameters")
 
     @field_validator("decay_power", mode="before")
     def validate_decay_power(cls, v):
+        """Validate that ``decay_power`` is in the interval (0, 2]."""
         if v is None:
             return v
 
@@ -37,6 +40,7 @@ class VariogramModelParameters(BaseDictionary):
 
     @field_validator("power_exponent", mode="before")
     def validate_power_exponent(cls, v):
+        """Validate that ``power_exponent`` is in the interval (0, 2)."""
         if v is None:
             return v
 
@@ -49,6 +53,7 @@ class VariogramModelParameters(BaseDictionary):
 
     @field_validator("smoothness_parameter", mode="before")
     def validate_smoothness_parameter(cls, v):
+        """Validate that ``smoothness_parameter`` is in the interval (0, 10]."""
         if v is None:
             return v
 
@@ -61,6 +66,7 @@ class VariogramModelParameters(BaseDictionary):
 
     @field_validator("shape_parameter", mode="before")
     def validate_shape_parameter(cls, v):
+        """Validate that ``shape_parameter`` is in the interval (0, 100]."""
         if v is None:
             return v
 
@@ -70,6 +76,7 @@ class VariogramModelParameters(BaseDictionary):
 
     @model_validator(mode="after")
     def validate_sill_nugget_relationship(self):
+        """Ensure the sill is strictly greater than the nugget."""
         if self.sill is not None and self.nugget is not None:
             if self.sill <= self.nugget:
                 raise ValueError(
@@ -80,16 +87,20 @@ class VariogramModelParameters(BaseDictionary):
 
 
 class ValidateVariogramClass(BaseDictionary):
-    coordinate_names: Tuple[str, str]
+    """Validation model for the ``Variogram`` class constructor arguments."""
+
+    coordinate_names: tuple[str, str]
     lag_resolution: float = Field(gt=0.0, allow_inf_nan=False)
     n_lags: int = Field(gt=0)
     model_config = ConfigDict(title="variogram analysis parameters")
 
 
 class ValidateEmpiricalVariogramArgs(BaseDictionary):
+    """Validation model for empirical variogram computation arguments."""
+
     azimuth_angle_threshold: float = Field(ge=0.0, le=180.0, allow_inf_nan=None)
     azimuth_filter: bool
-    coordinate_names: Tuple[str, str]
+    coordinate_names: tuple[str, str]
     data: pd.DataFrame
     force_lag_zero: bool
     variable: str
@@ -97,11 +108,13 @@ class ValidateEmpiricalVariogramArgs(BaseDictionary):
 
     @field_validator("data", mode="after")
     def validate_transects(cls, v):
+        """Validate the transect DataFrame against the ``TransectsDF`` pandera schema."""
         # Validate with pandera
         return spatial.TransectsDF.validate(v)
 
     @model_validator(mode="after")
     def validate_df_columns(self):
+        """Ensure the data DataFrame contains the required coordinate and variable columns."""
         # Get the mesh and transects DataFrames
         coords = self.coordinate_names
         data = self.data
@@ -136,15 +149,18 @@ class ValidateEmpiricalVariogramArgs(BaseDictionary):
 
 
 class ValidateFitVariogramArgs(BaseDictionary):
-    model: Union[str, List[str]] = Field(union_mode="left_to_right")
+    """Validation model for theoretical variogram model fitting arguments."""
+
+    model: str | list[str] = Field(union_mode="left_to_right")
     model_parameters: Parameters
-    optimizer_kwargs: Dict[str, Any]
+    optimizer_kwargs: dict[str, Any]
     model_config = ConfigDict(
         title="theoretical variogram fitting parameters", protected_namespaces=()
     )
 
     @field_validator("model", mode="before")
     def validate_model(cls, v):
+        """Validate the variogram model name against the available model registry."""
         # Check applicable models
         try:
             _ = get_variogram_arguments(v)

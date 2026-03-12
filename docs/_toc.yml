@@ -6,86 +6,86 @@ root: index
 parts:
 - caption: Documentation
   chapters:
-  - file: install
+  - file: general/install
     title: Installation guide
-  - file: example_notebooks
+  - file: main_workflow/workflow_intro
     title: User guide
     sections:
-      - file: FEAT_implementation/overall_workflow
-      - file: FEAT_implementation/echopro_vs_echopop
+      - file: main_workflow/overall_workflow
+      - file: comparison_docs/echopro_vs_echopop
         title: EchoPro vs Echopop implementation
-      - file: FEAT_implementation/input_files
+      - file: general/input_files
         title: Input files
       - file: headings/nasc_data_ingestion_h
         title: NASC data ingestion
         sections:
-          - file: example_notebooks/nasc_ingestion
+          - file: main_workflow/nasc_ingestion
             title: Standard ingestion
-          - file: FEAT_implementation/offeffort_transect_filtering
+          - file: special_ops/offeffort_transect_filtering
             title: Off-effort transect filtering
-          - file: FEAT_implementation/afsc_nasc_ingestion
+          - file: special_ops/afsc_nasc_ingestion
             title: AFSC NASC ingestion
       - file: headings/bio_ingestion_h
         title: Biological data ingestion
         sections:
-          - file: example_notebooks/biodata_ingestion
+          - file: main_workflow/biodata_ingestion
             title: Spreadsheets and delimited files
-          - file: example_notebooks/biodatabase_ingestion
+          - file: main_workflow/biodatabase_ingestion
             title: Database
       - file: headings/transect_h
         title: Transect-based analysis
         sections:
-          - file: example_notebooks/stratify_data
+          - file: main_workflow/stratify_data
             title: Stratify acoustic and biological data
-          - file: example_notebooks/number_proportions
+          - file: main_workflow/number_proportions
             title: Compute age- and length-binned number proportions
-          - file: example_notebooks/weight_proportions
+          - file: main_workflow/weight_proportions
             title: Compute age- and length-binned weight proportions
-          - file: example_notebooks/net_selectivity
-          - file: example_notebooks/basic_inversion
+          - file: special_ops/net_selectivity
+          - file: main_workflow/basic_inversion
             title: Estimate abundance and biomass from backscatter
       - file: headings/geostats_h_theory
         title: Geostatistics
         sections:
-          - file: example_notebooks/geostatistical
+          - file: main_workflow/geostatistical
             title: Semivariograms and kriging
-          - file: example_notebooks/variogram_gui
-          - file: FEAT_implementation/kriging_mesh_cropping
+          - file: special_ops/variogram_gui
+          - file: special_ops/kriging_mesh_cropping
             title: Kriging mesh cropping
-      - file: FEAT_implementation/kriging_biomass_to_nasc
+      - file: main_workflow/kriging_biomass_to_nasc
         title: Apportioning kriged abundance, biomass, and NASC
-      - file: example_notebooks/stratified_resampling
+      - file: main_workflow/stratified_resampling
         title: Random sampling estimation
       - file: headings/plotting_h
         title: Plotting
         sections:
-          - file: example_notebooks/plotting
+          - file: special_ops/plotting
             title: Standard plotting
-          - file: FEAT_implementation/FEAT_notebooks/diagnostic_plotting
+          - file: special_ops/diagnostic_plotting
             title: Diagnostic plotting
-      - file: FEAT_implementation/FEAT_notebooks/report_generation
+      - file: main_workflow/report_generation
         title: Generating reports
       - file: headings/comparison_h
         title: EchoPro vs Echopop comparisons
         sections:
-          - file: FEAT_implementation/FEAT_notebooks/cross_year_comparisons
+          - file: comparison_docs/cross_year_comparisons
             title: Comparing outputs
-          - file: FEAT_implementation/cross_year_comparison_results
+          - file: comparison_docs/cross_year_comparison_results
             title: Comparison results
-      - file: FEAT_implementation/workflows
+      - file: workflow_methods/workflows
         title: Custom workflows
         sections:
-        - file: FEAT_implementation/FEAT_notebooks/workflow_configuration
+        - file: workflow_methods/workflow_configuration
           title: Workflow configuration
-        - file: FEAT_implementation/FEAT_notebooks/cli_info
+        - file: workflow_methods/cli_info
           title: Command line interface (CLI)
-        - file: FEAT_implementation/orchestrating_multiple_workflows
+        - file: workflow_methods/orchestrating_multiple_workflows
           title: Orchestrating workflows
-        - file: FEAT_implementation/FEAT_notebooks/year_specific_workflows
+        - file: example_workflows/year_specific_workflows
           title: Year-specific workflows
-        - file: FEAT_implementation/FEAT_notebooks/age1_exclusion_workflows
+        - file: example_workflows/age1_exclusion_workflows
           title: Age-1 exclusion workflow
-  - file: theory
+  - file: general/theory
     title: Underlying theory
     sections:
       - file: theory/acoustics
@@ -111,13 +111,13 @@ parts:
       - file: headings/apportion_h
         title: Apportioning population estimates
         sections:
-          - file: FEAT_implementation/station_proportions.md
+          - file: theory/station_proportions.md
             title: Weight and number proportion for fish samples
-          - file: FEAT_implementation/apportion_biomass
+          - file: theory/apportion_biomass
             title: Apportioning biomass over transects
-          - file: FEAT_implementation/apportion_abundance
+          - file: theory/apportion_abundance
             title: Apportioning abundance and NASC over transects
-      - file: glossary
+      - file: general/glossary
         title: Glossary
 - caption: Help & references
   chapters:
@@ -136,13 +136,8 @@ parts:
           - file: api/inversion/api_invmatrix
         - file: api/api_utils
         - file: api/api_graphics
-    - file: headings/featapi_h
-      title: FEAT-specific API
-      sections:
-        - file: FEAT_implementation/api/api_functions
-        - file: FEAT_implementation/api/api_biology
-        - file: FEAT_implementation/api/api_apportionment
-        - file: FEAT_implementation/api/api_transect_region_mesh
-        - file: FEAT_implementation/api/api_reporter
+        - file: api/api_feat_functions
+        - file: api/api_feat_transect_region_mesh
+        - file: api/api_reporter
     - file: zbibliography
       title: References

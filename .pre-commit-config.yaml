@@ -5,8 +5,7 @@ exclude: |
     echopop/file_investigation.py|
     echopop/test_survey.py|
     echopop/scratch/|
-    echopop/workflows/nwfsc_feat/workflows/|
-    echopop/workflows/nwfsc_feat/scratch.py|
+    echopop/workflow_examples/|
     .*\. (pyc|png|jpg|csv|html|svg|ipynb)$
   )
 repos:
@@ -21,21 +20,27 @@ repos:
       - id: pretty-format-json
         args: ["--autofix", "--indent=2", "--no-sort-keys"]
 
-  - repo: https://github.com/PyCQA/isort
-    rev: 7.0.0
+  # - repo: https://github.com/PyCQA/isort
+  #   rev: 7.0.0
+  #   hooks:
+  #     - id: isort
+  #       args: ["--profile", "black", "--filter-files"]
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.9.0
     hooks:
-      - id: isort
-        args: ["--profile", "black", "--filter-files"]
+      - id: ruff
+        args: [ --fix, --exit-non-zero-on-fix ]
 
   - repo: https://github.com/psf/black-pre-commit-mirror
     rev: 26.3.0
     hooks:
       - id: black
 
-  - repo: https://github.com/PyCQA/flake8
-    rev: 7.3.0
-    hooks:
-      - id: flake8
+  # - repo: https://github.com/PyCQA/flake8
+  #   rev: 7.3.0
+  #   hooks:
+  #     - id: flake8
 
   - repo: https://github.com/codespell-project/codespell
     rev: v2.4.2

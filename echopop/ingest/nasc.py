@@ -1,6 +1,18 @@
+"""
+NASC data ingestion and preprocessing for echopop.
+
+This module handles all ingestion pathways for Nautical Area Scattering Coefficient (NASC) data
+produced by Echoview and other acoustic backscatter processing software. It supports both raw
+multi-file export directories and pre-consolidated single-sheet workbooks. Key responsibilities
+include merging interval and region export files, parsing region-name codes into structured labels
+(species class, haul number, country), constructing transect-region-haul keys, and producing a clean
+``pandas.DataFrame`` ready for stratification and population estimation.
+"""
+
 import re
+from collections.abc import Generator
 from pathlib import Path
-from typing import Any, Dict, Generator, List, Optional, Tuple, Union
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -10,11 +22,11 @@ from ..core.echoview import (
     ECHOVIEW_EXPORT_ROW_SORT,
     ECHOVIEW_TO_ECHOPOP,
 )
-from ..utils import add_haul_uids
+from ..utils.base import add_haul_uids
 
 
 def map_transect_num(
-    ev_export_paths: Dict[str, Generator], transect_pattern: str = r"T(\d+)"
+    ev_export_paths: dict[str, Generator], transect_pattern: str = r"T(\d+)"
 ) -> pd.DataFrame:
     """
     Extract transect numbers from Echoview export filenames without using loops.
@@ -32,7 +44,6 @@ def map_transect_num(
     pd.DataFrame
         DataFrame with columns for file_type, file_path, and transect_num.
     """
-
     # Compile the transect pattern regex
     compiled_pattern = re.compile(transect_pattern)
 
@@ -52,16 +63,16 @@ def map_transect_num(
     return pd.DataFrame(records)
 
 
-def validate_transect_exports(transect_files_df: pd.DataFrame) -> pd.DataFrame:
+def validate_transect_exports(transect_files: pd.DataFrame) -> pd.DataFrame:
     """
     Validate that each transect number has all required export file types without using loops.
 
-    For each transect number, there should be exactly four files:
-    one each for "analysis", "cells", "intervals", and "layers".
+    For each transect number, there should be exactly four files: "analysis", "cells", "intervals",
+    and "layers".
 
     Parameters
     ----------
-    transect_files_df : pd.DataFrame
+    transect_files : pd.DataFrame
         DataFrame with columns "file_type", "file_path", and "transect_num".
 
     Returns
@@ -70,33 +81,33 @@ def validate_transect_exports(transect_files_df: pd.DataFrame) -> pd.DataFrame:
         Filtered DataFrame containing only valid transect numbers that have all required file types.
     """
     # Create a pivot table to count file types by transect number
-    type_count = pd.crosstab(transect_files_df["transect_num"], transect_files_df["file_type"])
+    type_count = pd.crosstab(transect_files["transect_num"], transect_files["file_type"])
 
     # Check that each transect has all required file types
     valid_mask = (type_count[list(ECHOVIEW_DATABASE_EXPORT_FILESET)] == 1).all(axis=1)
     valid_transects = type_count.index[valid_mask].tolist()
 
     # Filter the original DataFrame to include only valid transect numbers
-    filtered_df = transect_files_df[transect_files_df["transect_num"].isin(valid_transects)].copy()
+    filtered_transects = transect_files[transect_files["transect_num"].isin(valid_transects)].copy()
 
     # Log the removed transect numbers
-    all_transects = transect_files_df["transect_num"].unique()
+    all_transects = transect_files["transect_num"].unique()
     removed_transects = np.setdiff1d(all_transects, valid_transects)
     if len(removed_transects) > 0:
         print(f"Removed transect numbers with incomplete file sets: {sorted(removed_transects)}")
 
-    return filtered_df
+    return filtered_transects
 
 
 def read_nasc_file(
-    filename: Union[str, Path],
+    filename: str | Path,
     sheetname: str,
     impute_coordinates: bool = True,
-    column_name_map: Optional[Dict[str, str]] = None,
-    haul_uid_config: Dict[str, Any] = {},
+    column_name_map: dict[str, str] | None = None,
+    haul_uid_config: dict[str, Any] | None = None,
 ):
     """
-    Read NASC data from a consolidated XLSX file
+    Read NASC data from a consolidated XLSX file.
 
     Parameters
     ----------
@@ -155,21 +166,22 @@ def read_nasc_file(
     consolidated_file["haul_num"] = consolidated_file["haul_num"].astype(float)
 
     # Add UID column
-    add_haul_uids(consolidated_file, _dataset_type="NASC", **haul_uid_config)
+    add_haul_uids(consolidated_file, _dataset_type="NASC", **(haul_uid_config or {}))
 
     # Return the cleaned DataFrame
     return consolidated_file
 
 
 def read_afsc_nasc_file(
-    filename: Union[str, Path],
+    filename: str | Path,
     sheetname: str,
     impute_coordinates: bool = True,
-    column_name_map: Optional[Dict[str, str]] = None,
+    column_name_map: dict[str, str] | None = None,
 ):
     """
-    Read AFSC NASC data from a consolidated XLSX file. This is for the AFSC files that are
-    missing the haul number column.
+    Read AFSC NASC data from a consolidated XLSX file.
+
+    This is for the AFSC files that are missing the haul number column.
 
     Parameters
     ----------
@@ -217,11 +229,9 @@ def read_afsc_nasc_file(
     return consolidated_file
 
 
-def clean_echoview_cells_df(
-    cells_df: pd.DataFrame, inplace: bool = False
-) -> Optional[pd.DataFrame]:
+def clean_echoview_cells_df(cells_df: pd.DataFrame, inplace: bool = False) -> pd.DataFrame | None:
     """
-    Clean the various region class and name entries
+    Clean the various region class and name entries.
 
     Parameters
     ----------
@@ -236,7 +246,6 @@ def clean_echoview_cells_df(
         DataFrame with cleaned strings for the region class and name strings if inplace=False
         None if inplace=True
     """
-
     # Work on the original or a copy based on inplace parameter
     df = cells_df if inplace else cells_df.copy()
 
@@ -332,10 +341,11 @@ def impute_bad_coordinates(data: pd.DataFrame, column: str) -> None:
             )
 
 
-def read_echoview_export(filename: Path, validator: Optional[Any] = None) -> pd.DataFrame:
+def read_echoview_export(filename: Path, validator: Any | None = None) -> pd.DataFrame:
     """
-    Generic reader for Echoview export CSVs. Used for files like analysis, cells, layers,
-    intervals.
+    Read a generic Echoview export CSV file.
+
+    Handles analysis, cells, layers, and intervals export types.
 
     Parameters
     ----------
@@ -349,7 +359,6 @@ def read_echoview_export(filename: Path, validator: Optional[Any] = None) -> pd.
     pd.DataFrame
         Cleaned and formatted data.
     """
-
     # Read the CSV file
     # df = read_csv_file(filename)
     df = pd.read_csv(filename, index_col=None, header=0, skipinitialspace=True)
@@ -389,7 +398,7 @@ def read_echoview_export(filename: Path, validator: Optional[Any] = None) -> pd.
 
 def sort_echoview_export_df(export_df: pd.DataFrame, inplace: bool = False) -> pd.DataFrame:
     """
-    Sort the file rows and reset indices
+    Sort the file rows and reset indices.
 
     Parameters
     ----------
@@ -403,7 +412,6 @@ def sort_echoview_export_df(export_df: pd.DataFrame, inplace: bool = False) -> p
     pd.DataFrame or None
         Sorted and reindexed DataFrame if inplace=False, None otherwise
     """
-
     # Work on the original or a copy based on inplace parameter
     df = export_df if inplace else export_df.copy()
 
@@ -425,7 +433,7 @@ def update_transect_spacing(
     default_transect_spacing: float,
     latitude_threshold: float = 60.0,
     inplace: bool = False,
-) -> Optional[pd.DataFrame]:
+) -> pd.DataFrame | None:
     """
     Calculate and update the maximum spacing between transects.
 
@@ -502,11 +510,12 @@ def read_echoview_nasc(
     filename: Path,
     transect_num: float,
     impute_coordinates: bool = True,
-    validator: Optional[Any] = None,
+    validator: Any | None = None,
 ) -> pd.DataFrame:
     """
-    Generic reader for Echoview export CSVs. Used for files like analysis, cells, layers,
-    intervals.
+    Read and pre-process a single Echoview NASC export CSV for one transect.
+
+    Handles coordinate imputation and transect number assignment.
 
     Parameters
     ----------
@@ -522,7 +531,6 @@ def read_echoview_nasc(
     pd.DataFrame
         Cleaned and formatted DataFrame
     """
-
     # Read in the defined CSV file
     nasc_df = read_echoview_export(filename, validator)
 
@@ -545,7 +553,7 @@ def echoview_nasc_to_df(
     filtered_df: pd.DataFrame, impute_coordinates: bool = True
 ) -> list[pd.DataFrame]:
     """
-    Reads and returns Echoview NASC dataframes for each file in the input DataFrame.
+    Read and return Echoview NASC DataFrames for each file listed in the input DataFrame.
 
     Parameters
     ----------
@@ -612,20 +620,20 @@ def merge_exports(
 
 
 def merge_echoview_nasc(
-    nasc_path: Path,
+    file_directory: Path,
     filename_transect_pattern: str = r"T(\d+)",
     default_transect_spacing: float = 10.0,
     default_latitude_threshold: float = 60.0,
     impute_coordinates: bool = True,
-) -> Tuple[pd.DataFrame, pd.DataFrame]:
-    """
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    r"""
     Ingest and merge all Echoview NASC files (intervals, cells, layers).
 
     Parameters
     ----------
-    nasc_path : Path
-        Directory containing Echoview export files (\\*.csv).
-    filename_transect_pattern: str, default = r"T(\\d+)"
+    file_directory : Path
+        Directory containing Echoview export files (``\\*.csv``).
+    filename_transect_pattern: str, default = ``r"T(\\d+)"``
         Regular expression used for extracting the transect number from the filename.
     default_transect_spacing : float, default = 10.
         Default spacing (nmi) to impute where missing.
@@ -641,15 +649,15 @@ def merge_echoview_nasc(
         A tuple containing two pandas.DataFrames:
 
         - ``df_intervals``: The processed intervals DataFrame with added transect spacing
+
         - ``merged_exports_df``: The merged DataFrame from intervals, cells, and layers
     """
-
     # Get all echoview NASC files: analysis, cells, intervals, layers
     ev_export_paths: dict = {
-        "analysis": nasc_path.glob("*(analysis).csv"),  # Removed leading / only
-        "cells": nasc_path.glob("*(cells).csv"),
-        "intervals": nasc_path.glob("*(intervals).csv"),
-        "layers": nasc_path.glob("*(layers).csv"),
+        "analysis": file_directory.glob("*(analysis).csv"),  # Removed leading / only
+        "cells": file_directory.glob("*(cells).csv"),
+        "intervals": file_directory.glob("*(intervals).csv"),
+        "layers": file_directory.glob("*(layers).csv"),
     }
 
     # Create a DataFrame with mapped transect numbers to validate the presence of complete filesets
@@ -704,7 +712,7 @@ def merge_echoview_nasc(
 
 
 def read_transect_region_haul_key(
-    filename: Path, sheetname: str, rename_dict: Optional[Dict[str, str]] = None
+    filename: Path, sheetname: str, column_name_map: dict[str, str] | None = None
 ) -> pd.DataFrame:
     """
     Load the key that maps hauls to export regions to transect numbers.
@@ -718,7 +726,7 @@ def read_transect_region_haul_key(
         Path to the CSV or Excel file containing the mapping data.
     sheetname : str
         Name of the sheet to read (only used for Excel files).
-    rename_dict : Optional[Dict[str, str]], default None
+    column_name_map : Optional[Dict[str, str]], default None
         Dictionary for renaming columns, where keys are original column names and values are new
         column names.
 
@@ -731,9 +739,8 @@ def read_transect_region_haul_key(
     Notes
     -----
     The input file must contain columns that can be mapped to ``"transect_num"``, ``"region_id"``,
-    and ``"haul_num"``, either directly or via the rename_dict.
+    and ``"haul_num"``, either directly or via the ``column_name_map``.
     """
-
     # Determine appropriate file reader
     if filename.suffix == ".csv":
         # transect_region_df = read_csv_file(filename)
@@ -747,8 +754,8 @@ def read_transect_region_haul_key(
     transect_region_df.columns = transect_region_df.columns.str.lower()
 
     # Rename column names, if defined
-    if rename_dict:
-        transect_region_df.rename(columns=rename_dict, inplace=True)
+    if column_name_map:
+        transect_region_df.rename(columns=column_name_map, inplace=True)
 
     # TODO: Insert validation here
 
@@ -757,23 +764,23 @@ def read_transect_region_haul_key(
 
 
 def write_transect_region_key(
-    transect_region_haul_key_df: pd.DataFrame,
+    transect_region_haul_key: pd.DataFrame,
     filename: str,
     verbose: bool,
 ) -> None:
     """
-    Write transect-region-haul key
+    Write transect-region-haul key.
 
     Parameters
     ----------
-    transect_region_haul_key_df : pd.DataFrame
+    transect_region_haul_key : pd.DataFrame
     filename: str
     verbose : bool
     """
     pass
 
 
-def compile_patterns(pattern_dict: Dict[str, str]) -> Dict[str, str]:
+def compile_patterns(pattern_dict: dict[str, str]) -> dict[str, str]:
     """
     Compile regex patterns from a pattern dictionary.
 
@@ -798,7 +805,6 @@ def compile_patterns(pattern_dict: Dict[str, str]) -> Dict[str, str]:
     Handles both dictionary-based patterns (where label is the key and pattern is the value)
     and set-based patterns (where patterns are directly in a set).
     """
-
     # Initialize pattern dictionary
     compiled_patterns = {}
 
@@ -807,7 +813,7 @@ def compile_patterns(pattern_dict: Dict[str, str]) -> Dict[str, str]:
         compiled_patterns[part_name] = []
 
         if isinstance(part_patterns, dict):
-            for label, pattern in part_patterns.items():
+            for _label, pattern in part_patterns.items():
                 compiled_patterns[part_name].append(re.compile(pattern, re.IGNORECASE))
         elif isinstance(part_patterns, set):
             for pattern in part_patterns:
@@ -817,7 +823,7 @@ def compile_patterns(pattern_dict: Dict[str, str]) -> Dict[str, str]:
     return compiled_patterns
 
 
-def extract_parts_and_labels(region_name: str, compiled_patterns: Dict, pattern_dict: Dict) -> Dict:
+def extract_parts_and_labels(region_name: str, compiled_patterns: dict, pattern_dict: dict) -> dict:
     """
     Extract components and their labels from a region name using compiled patterns.
 
@@ -843,7 +849,6 @@ def extract_parts_and_labels(region_name: str, compiled_patterns: Dict, pattern_
     This function progressively processes the region name, removing matched
     portions as it goes to avoid duplicate matches.
     """
-
     # Initialize the labels dictionary
     labels = {}
     remaining_name = region_name
@@ -874,7 +879,7 @@ def extract_parts_and_labels(region_name: str, compiled_patterns: Dict, pattern_
     return labels
 
 
-def extract_region_components(df: pd.DataFrame, pattern_dict: Dict[str, str]) -> pd.DataFrame:
+def extract_region_components(df: pd.DataFrame, pattern_dict: dict[str, str]) -> pd.DataFrame:
     """
     Extract and process components from region names using pattern dictionary.
 
@@ -921,7 +926,7 @@ def extract_region_components(df: pd.DataFrame, pattern_dict: Dict[str, str]) ->
 
 
 def process_extracted_data(
-    extracted_df: pd.DataFrame, can_haul_offset: Optional[int] = None
+    extracted_df: pd.DataFrame, can_haul_offset: int | None = None
 ) -> pd.DataFrame:
     """
     Process extracted data with type conversions and Canadian haul offsets.
@@ -1033,7 +1038,9 @@ def compute_region_layer_depths(
     return summary.reset_index()
 
 
-def generate_transect_region_haul_key(df: pd.DataFrame, filter_list: List[str]) -> pd.DataFrame:
+def generate_transect_region_haul_key(
+    region_data: pd.DataFrame, filter_list: list[str]
+) -> pd.DataFrame:
     """
     Filter DataFrame by region class patterns and create a mapping.
 
@@ -1042,7 +1049,7 @@ def generate_transect_region_haul_key(df: pd.DataFrame, filter_list: List[str]) 
 
     Parameters
     ----------
-    df : |pd.DataFrame|
+    region_data : |pd.DataFrame|
         |pd.DataFrame| with processed region data
     filter_list : List[str]
         List of region class names to include in the filter
@@ -1058,22 +1065,23 @@ def generate_transect_region_haul_key(df: pd.DataFrame, filter_list: List[str]) 
     ``'region_id'``, with first instances of ``'region_class'`` and ``'region_name'``, sorted by
     ``'haul_num'``.
     """
-
     # Convert filter list to lowercase for case-insensitive comparison
     filter_set = {name.lower() for name in filter_list}
 
     # Create df copy
-    df_copy = df.copy()
+    region_data_copy = region_data.copy()
 
     # Change class names to lowercase
-    df_copy.loc[:, "region_class"] = df_copy.loc[:, "region_class"].str.lower()
+    region_data_copy.loc[:, "region_class"] = region_data_copy.loc[:, "region_class"].str.lower()
 
     # Filter
-    df_filtered = df_copy[df_copy["region_class"].str.lower().isin(filter_set)].copy()
+    region_data_filtered = region_data_copy[
+        region_data_copy["region_class"].str.lower().isin(filter_set)
+    ].copy()
 
     # Create final mapping
     return (
-        df_filtered.groupby(["transect_num", "haul_num", "region_id"])[
+        region_data_filtered.groupby(["transect_num", "haul_num", "region_id"])[
             ["region_class", "region_name"]
         ]
         .first()
@@ -1083,9 +1091,9 @@ def generate_transect_region_haul_key(df: pd.DataFrame, filter_list: List[str]) 
 
 
 def process_region_names(
-    df: pd.DataFrame,
-    region_name_expr_dict: Dict,
-    can_haul_offset: Optional[int] = None,
+    nasc_cells: pd.DataFrame,
+    region_name_expr: dict,
+    can_haul_offset: int | None = None,
 ) -> pd.DataFrame:
     """
     Process region names in a DataFrame using regex patterns.
@@ -1095,12 +1103,14 @@ def process_region_names(
 
     Parameters
     ----------
-    df : |pd.DataFrame|
-        |pd.DataFrame| containing a ``'region_name'`` column to process
-    region_name_expr_dict : Dict
+    nasc_cells : |pd.DataFrame|
+        A |pd.DataFrame| comprising NASC export data that must include the column ``'region_name'``
+        to function.
+    region_name_expr : Dict
         Dictionary of pattern specifications for component extraction:
 
         - Keys are component names (e.g., ``'REGION_CLASS'``, ``'HAUL_NUM'``, ``'COUNTRY'``)
+
         - Values are either:
 
           * Dict mapping labels to regex pattern strings
@@ -1117,7 +1127,7 @@ def process_region_names(
 
     Example
     -------
-    >>> region_name_expr_dict = {
+    >>> region_name_expr = {
     ...     "REGION_CLASS": {
     ...         "Hake": "^(?:h(?![a-z]|1a)|hake(?![_]))",
     ...         "Hake Mix": "^(?:hm(?![a-z]|1a)|hake_mix(?![_]))"
@@ -1125,64 +1135,74 @@ def process_region_names(
     ...     "HAUL_NUM": {"[0-9]+"},
     ...     "COUNTRY": {"CAN": "^[cC]", "US": "^[uU]"}
     ... }
-    >>> process_region_names(df, region_name_expr_dict, filter_list=["Hake", "Hake Mix"])
+    >>> process_region_names(df, region_name_expr, filter_list=["Hake", "Hake Mix"])
     """
     # Step 1: Extract components from region names
-    extracted_regions = extract_region_components(df, region_name_expr_dict)
+    extracted_regions = extract_region_components(nasc_cells, region_name_expr)
 
     # Step 2: Process the extracted data
     processed_regions = process_extracted_data(extracted_regions, can_haul_offset)
 
     # Step 3: Map to original data
     # ---- Index DataFrame based on region names
-    mapped_df = df.set_index("region_name")
+    mapped_cells = nasc_cells.set_index("region_name")
     # ---- Concatenate the processed region metadata
-    mapped_df.loc[:, processed_regions.columns] = processed_regions
+    mapped_cells.loc[:, processed_regions.columns] = processed_regions
     # ---- Reset the index
-    mapped_df.reset_index(inplace=True)
+    mapped_cells.reset_index(inplace=True)
 
     # Return the mapped DataFrame
-    return mapped_df
+    return mapped_cells
 
 
 def consolidate_echvoiew_nasc(
-    df_merged: pd.DataFrame,
-    interval_df: pd.DataFrame,
-    region_class_names: List[str],
+    nasc_data: pd.DataFrame,
+    interval_data: pd.DataFrame,
+    region_class_names: list[str],
     impute_region_ids: bool = True,
-    transect_region_haul_key_df: Optional[pd.DataFrame] = None,
-    haul_uid_config: Dict[str, Any] = {},
+    transect_region_haul_key: pd.DataFrame | None = None,
+    haul_uid_config: dict[str, Any] | None = None,
 ) -> pd.DataFrame:
     """
     Consolidate Echoview NASC data with interval and region information.
 
     Parameters
     ----------
-    df_merged : |pd.DataFrame|
+    nasc_data : |pd.DataFrame|
         DataFrame containing merged Echoview data with columns:
 
         - ``'region_class'`` : Region classification names
+
         - ``'region_id'`` : Region identifier
+
         - ``'nasc'`` : Nautical area scattering coefficient
+
         - ``'transect_num'`` : Transect number
+
         - ``'interval'`` : Interval identifier
 
-    interval_df : |pd.DataFrame|
+    interval_data : |pd.DataFrame|
         DataFrame containing interval information with columns:
 
         - ``'interval'`` : Interval identifier
+
         - ``'transect_num'`` : Transect number
+
         - ``'distance_s'`` : Starting distance
+
         - ``'distance_e'`` : Ending distance
+
         - ``'latitude'`` : Latitude coordinates
+
         - ``'longitude'`` : Longitude coordinates
+
         - ``'transect_spacing'`` : Spacing between transects
 
     region_class_names : List[str]
         List of region class names to include in the analysis
     impute_region_ids : bool, optional
         Whether to impute region IDs for overlapping regions, by default True
-    transect_region_haul_key_df : |pd.DataFrame|, optional
+    transect_region_haul_key : |pd.DataFrame|, optional
         DataFrame containing haul information to merge, by default None
     haul_uid_config : Dict[str, Any]
         Optional keyword arguments to override defaults or DataFrame values:
@@ -1202,17 +1222,29 @@ def consolidate_echvoiew_nasc(
         Consolidated DataFrame containing:
 
         - ``'transect_num'`` : Transect number
+
         - ``'region_id'`` : Region identifier (``999`` for ``NaN``)
+
         - ``'distance_s'`` : Starting distance
+
         - ``'distance_e'`` : Ending distance
+
         - ``'latitude'`` : Latitude coordinates
+
         - ``'longitude'`` : Longitude coordinates
+
         - ``'transect_spacing'`` : Spacing between transects
+
         - ``'layer_mean_depth'`` : Mean layer depth
+
         - ``'layer_height'`` : Layer height
+
         - ``'bottom_depth'`` : Bottom depth
+
         - ``'nasc'`` : Summed nautical area scattering coefficient
+
         - ``'haul_num'`` : Haul number (``0`` for ``NaN``)
+
         - ``'uid'`` : Unique ship-survey-species-haul identifier
 
     Notes
@@ -1220,9 +1252,8 @@ def consolidate_echvoiew_nasc(
     All numeric columns (``'nasc'``, ``'layer_mean_depth'``, ``'layer_height'``,
     ``'bottom_depth'``) are filled with ``0.0`` for ``NaN`` values.
     """
-
     # Create DataFrame copy
-    df_copy = df_merged.copy()
+    df_copy = nasc_data.copy()
     # ---- Change region class names to lowercase
     df_copy.loc[:, "region_class"] = df_copy.loc[:, "region_class"].str.lower()
 
@@ -1253,10 +1284,10 @@ def consolidate_echvoiew_nasc(
     )
 
     # Create copy of interval export template
-    interval_copy = interval_df.copy().set_index(["interval", "transect_num"]).sort_index()
+    interval_copy = interval_data.copy().set_index(["interval", "transect_num"]).sort_index()
 
     # Merge haul information into the integrated NASC DataFrame
-    nasc_hauls = nasc_intervals.merge(transect_region_haul_key_df).set_index(
+    nasc_hauls = nasc_intervals.merge(transect_region_haul_key).set_index(
         ["interval", "transect_num"]
     )
 
@@ -1270,7 +1301,7 @@ def consolidate_echvoiew_nasc(
             .values
         )
         # ---- Update the input haul UID configuration
-        if "country" not in haul_uid_config and "ship" not in nasc_hauls.columns:
+        if "country" not in (haul_uid_config or {}) and "ship" not in nasc_hauls.columns:
             nasc_hauls["ship"] = np.where(nasc_hauls["country"] == "US", 1, 2)
             nasc_hauls["ship"] = nasc_hauls["ship"].values
 
@@ -1285,7 +1316,7 @@ def consolidate_echvoiew_nasc(
     interval_copy["haul_num"] = interval_copy["haul_num"].fillna(0).astype(float)
 
     # Add UID label
-    add_haul_uids(interval_copy, _dataset_type="NASC", **haul_uid_config)
+    add_haul_uids(interval_copy, _dataset_type="NASC", **(haul_uid_config or {}))
 
     # Combine with the transect layer summaries
     full_interval_strata_df = interval_copy.merge(transect_layer_summary, how="left")

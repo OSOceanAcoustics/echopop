@@ -1,3 +1,5 @@
+"""Tests for inversion validators."""
+
 import numpy as np
 import pytest
 from pydantic import ValidationError
@@ -13,7 +15,6 @@ from echopop.validators.inversion import (
 # ----------------------------
 def test_tsl_regression_parameters_valid():
     """Test TSLRegressionParameters with valid parameters."""
-
     params = TSLRegressionParameters(slope=-20.5, intercept=67.3)
 
     assert params.slope == -20.5
@@ -22,7 +23,6 @@ def test_tsl_regression_parameters_valid():
 
 def test_tsl_regression_parameters_zero_values():
     """Test TSLRegressionParameters with zero values."""
-
     params = TSLRegressionParameters(slope=0.0, intercept=0.0)
 
     assert params.slope == 0.0
@@ -31,7 +31,6 @@ def test_tsl_regression_parameters_zero_values():
 
 def test_tsl_regression_parameters_positive_slope():
     """Test TSLRegressionParameters with positive slope."""
-
     params = TSLRegressionParameters(slope=15.2, intercept=-45.8)
 
     assert params.slope == 15.2
@@ -40,7 +39,6 @@ def test_tsl_regression_parameters_positive_slope():
 
 def test_tsl_regression_parameters_invalid_slope():
     """Test TSLRegressionParameters with invalid slope values."""
-
     # Test infinite slope
     with pytest.raises(ValidationError):
         TSLRegressionParameters(slope=np.inf, intercept=67.3)
@@ -52,7 +50,6 @@ def test_tsl_regression_parameters_invalid_slope():
 
 def test_tsl_regression_parameters_invalid_intercept():
     """Test TSLRegressionParameters with invalid intercept values."""
-
     # Test infinite intercept
     with pytest.raises(ValidationError):
         TSLRegressionParameters(slope=-20.5, intercept=np.inf)
@@ -64,7 +61,6 @@ def test_tsl_regression_parameters_invalid_intercept():
 
 def test_tsl_regression_parameters_realistic_hake_values():
     """Test TSLRegressionParameters with realistic hake TS-length parameters."""
-
     # Typical hake TS-length regression parameters from literature
     params = TSLRegressionParameters(slope=-20.8, intercept=67.5)
 
@@ -77,7 +73,6 @@ def test_tsl_regression_parameters_realistic_hake_values():
 # ---------------------
 def test_validate_length_ts_valid():
     """Test ValidateLengthTS with valid parameters."""
-
     ts_regression = TSLRegressionParameters(slope=-20.5, intercept=67.3)
 
     params = ValidateLengthTS(
@@ -98,7 +93,6 @@ def test_validate_length_ts_valid():
 
 def test_validate_length_ts_defaults():
     """Test ValidateLengthTS with default values."""
-
     ts_regression = TSLRegressionParameters(slope=-20.5, intercept=67.3)
 
     params = ValidateLengthTS(ts_length_regression=ts_regression, stratify_by=["stratum_ks"])
@@ -111,7 +105,6 @@ def test_validate_length_ts_defaults():
 
 def test_validate_length_ts_single_stratify_string():
     """Test ValidateLengthTS with single string for stratify_by."""
-
     ts_regression = TSLRegressionParameters(slope=-20.5, intercept=67.3)
 
     params = ValidateLengthTS(
@@ -123,7 +116,6 @@ def test_validate_length_ts_single_stratify_string():
 
 def test_validate_length_ts_multiple_stratify_by():
     """Test ValidateLengthTS with multiple stratification columns."""
-
     ts_regression = TSLRegressionParameters(slope=-20.5, intercept=67.3)
 
     params = ValidateLengthTS(
@@ -135,7 +127,6 @@ def test_validate_length_ts_multiple_stratify_by():
 
 def test_validate_length_ts_expected_strata_list():
     """Test ValidateLengthTS with expected_strata as list."""
-
     ts_regression = TSLRegressionParameters(slope=-20.5, intercept=67.3)
 
     params = ValidateLengthTS(
@@ -149,7 +140,6 @@ def test_validate_length_ts_expected_strata_list():
 
 def test_validate_length_ts_expected_strata_none():
     """Test ValidateLengthTS with expected_strata as None."""
-
     ts_regression = TSLRegressionParameters(slope=-20.5, intercept=67.3)
 
     params = ValidateLengthTS(
@@ -161,7 +151,6 @@ def test_validate_length_ts_expected_strata_none():
 
 def test_validate_length_ts_boolean_flags():
     """Test ValidateLengthTS with various boolean flag combinations."""
-
     ts_regression = TSLRegressionParameters(slope=-20.5, intercept=67.3)
 
     # Test all combinations of boolean flags
@@ -181,7 +170,6 @@ def test_validate_length_ts_boolean_flags():
 
 def test_validate_length_ts_realistic_hake_scenario():
     """Test ValidateLengthTS with realistic hake survey parameters."""
-
     # Realistic hake TS-length regression
     ts_regression = TSLRegressionParameters(slope=-20.8, intercept=67.5)
 
@@ -206,7 +194,6 @@ def test_validate_length_ts_realistic_hake_scenario():
 
 def test_validate_length_ts_multiple_stratification():
     """Test ValidateLengthTS with complex stratification scenario."""
-
     ts_regression = TSLRegressionParameters(slope=-19.2, intercept=65.1)
 
     params = ValidateLengthTS(
@@ -230,7 +217,6 @@ def test_validate_length_ts_multiple_stratification():
 # -----------------
 def test_inversion_validators_integration():
     """Test integration of inversion validators."""
-
     # Create TS-length regression parameters
     ts_regression = TSLRegressionParameters(slope=-20.5, intercept=67.3)
 
@@ -253,7 +239,6 @@ def test_inversion_validators_integration():
 
 def test_inversion_validators_create_factory_method():
     """Test inversion validators with create factory method."""
-
     # Test TSLRegressionParameters create method
     ts_params_dict = TSLRegressionParameters.create(slope=-20.5, intercept=67.3)
     expected_ts = {"slope": -20.5, "intercept": 67.3}
@@ -277,7 +262,6 @@ def test_inversion_validators_create_factory_method():
 
 def test_inversion_validators_edge_cases():
     """Test inversion validators with edge cases."""
-
     # Test with very small slope (near zero but not zero)
     ts_regression = TSLRegressionParameters(slope=-0.001, intercept=100.0)
     params = ValidateLengthTS(ts_length_regression=ts_regression, stratify_by=["stratum_ks"])

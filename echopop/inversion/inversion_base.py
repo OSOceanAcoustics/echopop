@@ -1,5 +1,12 @@
+"""
+Abstract base class and shared parameter model for acoustic inversion methods.
+
+Defines ``InversionBase``, the common interface for all inversion strategies, and
+``InvParameters``, the Pydantic model used to validate and manage inversion configuration.
+"""
+
 import abc
-from typing import Any, Dict, Optional
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -19,8 +26,11 @@ class InversionBase(abc.ABC):
     ----------
     model_parameters : Dict[str, Any]
         Dictionary containing model configuration parameters. Common keys include:
+
         - 'stratify_by': str or List[str] - columns to stratify by
+
         - 'strata': array-like - specific strata to process
+
         - 'impute_missing_strata': bool - whether to impute missing strata
 
     Attributes
@@ -100,7 +110,7 @@ class InversionBase(abc.ABC):
 
 
 class InvParameters:
-    """
+    r"""
     Primary class for managing acoustic scattering model parameters used in matrix inversion.
 
     This class manages parameter sets used in acoustic inversion analysis, providing
@@ -114,8 +124,11 @@ class InvParameters:
         Dictionary of parameter specifications compatible with :func:`lmfit.Parameters`:
 
         - ``'value'``: Current parameter value
+
         - ``'min'``: Lower bound (optional, default=-inf)
+
         - ``'max'``: Upper bound (optional, default=+inf)
+
         - ``'vary'``: Whether parameter should be optimized (optional, default=False)
 
     Attributes
@@ -167,7 +180,7 @@ class InvParameters:
 
     def __init__(
         self,
-        parameters: Dict[str, Any],
+        parameters: dict[str, Any],
     ):
 
         # Run initial validation
@@ -186,9 +199,11 @@ class InvParameters:
         self.parameters = validated_parameters
 
     def __repr__(self):
+        """Return unambiguous string representation of InvParameters."""
         return f"InvParameters(scaled={self._scaled}, parameters={list(self.parameters.keys())})"
 
     def __str__(self):
+        """Return human-readable string representation of InvParameters."""
         # Format the parameters string
         parameters_str = ", ".join([f"{k}: {v}" for k, v in self.parameters.items()])
 
@@ -196,18 +211,15 @@ class InvParameters:
         return f"InvParameters(scaled={self._scaled}, parameters=[{parameters_str}])"
 
     def _validate(self, parameters):
-        """
-        Internal validator
-        """
-
+        """Validate the input parameters dictionary against the expected schema."""
         # Delay import to avoid circular import issues
         from ..validators.inversion import ModelInputParameters
 
         # Validation step
         if not isinstance(parameters, dict):
             raise TypeError("Parameters must be a dictionary.")
-        for k, v in parameters.items():
-            if not isinstance(k, (int, float, str)):
+        for k, _v in parameters.items():
+            if not isinstance(k, int | float | str):
                 raise TypeError(f"Parameter key '{k}' must be a numeric or string.")
 
         # Validate parameters
@@ -318,7 +330,6 @@ class InvParameters:
         bounds for later unscaling operations. It extracts only the bound
         information, ignoring other parameter attributes.
         """
-
         # Get the upper and lower values in case of rescaling
         parameter_limits = {
             key: {"min": value["min"], "max": value["max"]} for key, value in parameters.items()
@@ -327,8 +338,8 @@ class InvParameters:
         return parameter_limits
 
     def _scale_parameters(self):
-        """
-        Internal method for scaling parameters to [0,1] range using min-max normalization.
+        r"""
+        Scale parameters to [0,1] range using min-max normalization.
 
         This method transforms parameter values to a normalized range which
         improves optimization performance by ensuring all parameters have
@@ -346,7 +357,6 @@ class InvParameters:
 
         The scaling status flag is updated to True after this operation.
         """
-
         # Update parameters
         scaled_params = {
             key: (
@@ -370,7 +380,7 @@ class InvParameters:
         self._scaled_parameters = scaled_params
 
     def scale(self):
-        """
+        r"""
         Scale model parameters to [0, 1] range using min-max normalization.
 
         This method transforms all model parameter values to a normalized range which helps
@@ -389,7 +399,6 @@ class InvParameters:
 
         The scaling status flag is updated to True after this operation.
         """
-
         # Update the `is_scaled` property
         self._scaled = True
 
@@ -397,7 +406,7 @@ class InvParameters:
         self.parameters = self._scaled_parameters
 
     def unscale(self):
-        """
+        r"""
         Convert scaled [0, 1] parameters back to their original units and ranges.
 
         This method reverses the min-max normalization, restoring parameters to their original
@@ -414,7 +423,6 @@ class InvParameters:
         After unscaling, parameters return to their original bounds and units.
         The scaling status flag is updated to False after this operation.
         """
-
         # Update the `is_scaled` property
         self._scaled = False
 
@@ -458,7 +466,7 @@ class InvParameters:
             )
         return params
 
-    def realizations_to_lmfit(self) -> Dict[str, dict]:
+    def realizations_to_lmfit(self) -> dict[str, dict]:
         """
         Convert all parameter realizations to lmfit.Parameters format.
 
@@ -468,10 +476,9 @@ class InvParameters:
         Returns
         -------
         dict
-            If serialize=False: Dictionary mapping realization indices to
-            lmfit.Parameters objects
-            If serialize=True: Single Parameters object with parameters named
-            as {param_name}_{realization_index}
+            If serialize=False: Dictionary mapping realization indices to lmfit.Parameters objects
+            If serialize=True: Single Parameters object with parameters named as
+            ``{param_name}_{realization_index}``
 
         Examples
         --------
@@ -482,11 +489,10 @@ class InvParameters:
 
         Notes
         -----
-        The serialized format is useful when evaluating multiple realizations
-        simultaneously in vectorized forward models or when using optimization
-        algorithms that can handle large parameter spaces efficiently.
+        The serialized format is useful when evaluating multiple realizations simultaneously in
+        vectorized forward models or when using optimization algorithms that can handle large
+        parameter spaces efficiently.
         """
-
         # Convert the dictionary of realizations into lmfit.Parameters
         return {
             i: (
@@ -512,9 +518,9 @@ class InvParameters:
         """
         Convert a dictionary of scaled [0,1] parameter values to original units.
 
-        This utility method transforms scaled parameter values back to their
-        original ranges using the bounds stored during initialization. It's
-        useful for converting optimization results back to physical units.
+        This utility method transforms scaled parameter values back to their original ranges using
+        the bounds stored during initialization. It's useful for converting optimization results
+        back to physical units.
 
         Parameters
         ----------
@@ -536,8 +542,8 @@ class InvParameters:
 
         Notes
         -----
-        This method does not modify the internal parameter state, only
-        converts the provided dictionary values.
+        This method does not modify the internal parameter state, only converts the provided
+        dictionary values.
         """
         return {
             k: scaled_dict[k] * (self.parameter_bounds[k]["max"] - self.parameter_bounds[k]["min"])
@@ -547,11 +553,9 @@ class InvParameters:
 
     @staticmethod
     def _set_parameter_bounds(
-        parameters: Dict[str, dict], bounds: Dict[str, dict]
-    ) -> Dict[str, dict]:
-        """
-        Internal method for setting the parameter boundaries of a parameter set.
-        """
+        parameters: dict[str, dict], bounds: dict[str, dict]
+    ) -> dict[str, dict]:
+        """Set the parameter boundaries of a parameter set."""
         return {
             k: {
                 **v,
@@ -561,7 +565,7 @@ class InvParameters:
             for k, v in parameters.items()
         }
 
-    def update_bounds(self, bounds: Dict[str, dict]) -> None:
+    def update_bounds(self, bounds: dict[str, dict]) -> None:
         """
         Add or update interval boundaries for each designated parameter.
 
@@ -575,7 +579,6 @@ class InvParameters:
         >>> bounds = {'length_mean': {'min': 0.5, 'max': 2.0}, 'g': {'min': 0.9, 'max': 1.1}}
         >>> params.update_bounds(bounds)
         """
-
         # Map the new min/max values to the appropriate values
         updated_parameters = self._set_parameter_bounds(self._unscaled_parameters, bounds)
 
@@ -593,21 +596,21 @@ class InvParameters:
         """
         Create InvParameters instance from a pandas Series.
 
-        This class method provides a convenient way to construct InvParameters
-        from pandas Series data, commonly used when reading parameters from
-        DataFrames or other pandas data structures.
+        This class method provides a convenient way to construct ``InvParameters`` from
+        ``pandas.Series`` data, commonly used when reading parameters from DataFrames or other
+        pandas data structures.
 
         Parameters
         ----------
         series : pd.Series
-            Series containing parameter names as index and values as data.
-            Only parameter values are extracted; bounds default to infinite.
+            Series containing parameter names as index and values as data. Only parameter values
+            are extracted; bounds default to infinite.
 
         Returns
         -------
         InvParameters
-            New instance with parameters set from series values and
-            default bounds (no min/max constraints, vary=False)
+            New instance with parameters set from series values and default bounds (no min/max
+            constraints, vary=False)
 
         Raises
         ------
@@ -624,10 +627,9 @@ class InvParameters:
 
         Notes
         -----
-        Parameters created this way have default bounds (no constraints)
-        and vary=False, making them suitable for fixed-parameter scenarios.
+        Parameters created this way have default bounds (no constraints) and ``vary=False``, making
+        them suitable for fixed-parameter scenarios.
         """
-
         if not isinstance(series, pd.Series):
             raise TypeError(
                 f"InvParameters expects a `Series` for `.from_series`. Got type " f"{type(series)}."
@@ -636,18 +638,16 @@ class InvParameters:
 
     def simulate_parameter_sets(
         self,
-        mc_realizations: Optional[int] = None,
-        rng: Optional[np.random.Generator] = None,
+        mc_realizations: int | None = None,
+        rng: np.random.Generator | None = None,
     ) -> None:
         """
-        Generate Monte Carlo sampled parameter sets used for initializing the optimization methods
-        that inform the acoustic inversion and for uncertainty quantification.
+        Generate Monte Carlo sampled parameter sets for optimization initialization and UQ.
 
         This class extends `InvParameters` to generate a list of realizations through Monte Carlo
         sampling. It is used for both uncertainty propagation and initializing the optimization
         algorithm in acoustic inversion by providing ensembles of parameter sets.
         """
-
         # Extract the initial parameter set
         params = self.parameters
 

@@ -1,4 +1,4 @@
-from typing import Optional
+"""Tests for base validators."""
 
 import pandas as pd
 import pandera.pandas as pa
@@ -51,7 +51,7 @@ def test_base_dictionary_create_exclude_none():
 
     class TestDict(BaseDictionary):
         value: int
-        optional_value: Optional[int] = None
+        optional_value: int | None = None
 
     result = TestDict.create(value=42)
     expected = {"value": 42}
@@ -126,7 +126,7 @@ def test_base_integration_custom_model():
 
     class CustomModel(BaseDictionary):
         positive_number: float
-        optional_string: Optional[str] = None
+        optional_string: str | None = None
 
         @field_validator("positive_number")
         def validate_positive(cls, v):
