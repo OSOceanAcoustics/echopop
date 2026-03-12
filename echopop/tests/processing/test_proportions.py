@@ -12,7 +12,7 @@ def test_compute_binned_counts_size_aggregation(sample_specimen_data):
     """Test size aggregation (default)."""
     result = get_proportions.compute_binned_counts(
         sample_specimen_data, ["stratum_num", "length_bin"], "length", agg_func="size"
-    )["proportion"]
+    )
     assert set(result.coords) == set(["stratum_num", "length_bin"])
     assert result.sum() == len(sample_specimen_data)
 
@@ -211,14 +211,14 @@ def test_number_proportions_with_exclusion(aged_dataarray):
     """Test exclude_filters parameter in number_proportions."""
     result = get_proportions.number_proportions(
         data=aged_dataarray, exclude_filters={"sex": "unsexed"}, stratum_dim="stratum_num"
-    )["proportion"]
+    )
     assert {*result["sex"].values} == {"female", "male"}
 
     # Check that proportions are recalculated correctly
     stratum1_total = aged_dataarray.sel(stratum_num=1, sex=["female", "male"]).sum()
     stratum1_female = aged_dataarray.sel(stratum_num=1, sex=["female"]).sum()
     expected_proportion = stratum1_female / stratum1_total
-    actual_proportion = result.sel(stratum_num=1, sex="female")["proportion"]
+    actual_proportion = result.sel(stratum_num=1, sex="female")
     assert actual_proportion.sum() == expected_proportion
 
 

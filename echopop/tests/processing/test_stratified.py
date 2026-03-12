@@ -168,7 +168,7 @@ def test_JollyHampton_compute_transect_statistics(sample_survey_ci_data):
     jh = stratified.JollyHampton(model_params)
     jh.variable = "biomass"
 
-    jh._compute_transect_statistics(sample_survey_ci_data, ["geostratum_inpfc"])
+    jh._compute_transect_statistics(sample_survey_ci_data, "geostratum_inpfc")
 
     # Check that transect_summary was created
     assert jh.transect_summary is not None
@@ -195,10 +195,10 @@ def test_JollyHampton_compute_strata_statistics(sample_survey_ci_data):
     jh.variable = "biomass"
 
     # First summarize transects
-    jh._compute_transect_statistics(sample_survey_ci_data, ["geostratum_inpfc"])
+    jh._compute_transect_statistics(sample_survey_ci_data, "geostratum_inpfc")
 
     # Then summarize strata
-    jh._compute_strata_statistics(["geostratum_inpfc"])
+    jh._compute_strata_statistics("geostratum_inpfc")
 
     # Check that strata_summary was created
     assert jh.strata_summary is not None
@@ -261,7 +261,7 @@ def test_JollyHampton_create_virtual_transects_basic():
     virtual_data = jh.create_virtual_transects(
         mesh_data=grid_data,
         geostrata=geostrata,
-        stratify_by=["geostratum_inpfc"],
+        stratum_dim="geostratum_inpfc",
         variable="biomass",
     )
 
@@ -339,8 +339,8 @@ def test_JollyHampton_single_transect_stratum():
     jh.variable = "biomass"
 
     # This should handle single-transect strata gracefully
-    jh._compute_transect_statistics(test_data, ["geostratum_inpfc"])
-    jh._compute_strata_statistics(["geostratum_inpfc"])
+    jh._compute_transect_statistics(test_data, "geostratum_inpfc")
+    jh._compute_strata_statistics("geostratum_inpfc")
 
     # Check that single-transect strata get at least 1 sample
     assert (jh.strata_summary["num_transects_to_sample"] >= 1).all()

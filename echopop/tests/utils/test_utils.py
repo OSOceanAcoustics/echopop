@@ -108,7 +108,7 @@ def test_group_interpolator_creator_multiple_groups(length_weight_dataset_with_b
 
 def test_create_grouped_series(proportion_dict):
     """Test the create_grouped_series function."""
-    result = utils.create_grouped_series(proportion_dict, ["stratum_num", "sex"], "proportion")
+    result = utils.base.create_grouped_series(proportion_dict, ["stratum_num", "sex"], "proportion")
 
     # Check shape and column types
     assert result.shape[0] == 8  # 2 strata * 2 sexes * 2 groups
@@ -126,7 +126,9 @@ def test_create_grouped_series(proportion_dict):
 
 def test_create_pivot_table(proportion_dict):
     """Test the create_pivot_table function."""
-    grouped = utils.create_grouped_series(proportion_dict, ["stratum_num", "sex"], "proportion")
+    grouped = utils.base.create_grouped_series(
+        proportion_dict, ["stratum_num", "sex"], "proportion"
+    )
 
     result = utils.create_pivot_table(grouped, ["group", "sex"], ["stratum_num"], "proportion")
 
