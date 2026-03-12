@@ -1,8 +1,8 @@
 ####################################################################################################
-# 2019 
+# 2017 
 # ----
 from pathlib import Path
-from echopop.workflows.nwfsc_feat import cli_utils
+from echopop.workflow_examples import cli_utils
 ####################################################################################################
 # PARAMETER ENTRY
 # ---------------
@@ -21,7 +21,7 @@ except Exception:
     VERBOSE = True
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # DATA ROOT DIRECTORY
-DATA_ROOT = Path("C:/Data/EchopopData/file_all_years_update_20260303/2019")
+DATA_ROOT = Path("C:/Data/EchopopData/file_all_years_update_20260303/2017")
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # REPORTS SAVE DIRECTORY
 REPORTS_DIR = DATA_ROOT / "output_echopop"
@@ -41,7 +41,7 @@ except Exception:
 # ---- spreadsheet will be read in. This also requires defining `NASC_EXPORTS_SHEET`
 NASC_PREPROCESSED = True
 # NASC EXPORTS FILE(S)
-NASC_EXPORTS_FILES = DATA_ROOT / "input/Exports/US&CAN_detailsa_2019_table2y+_ALL_final - updated.xlsx"
+NASC_EXPORTS_FILES = DATA_ROOT / "input/Exports/US&CAN_detailsa_2017_table2y+_ALL_final.xlsx"
 # NASC EXPORTS SHEET
 NASC_EXPORTS_SHEET = "Sheet1"
 # REMOVE AGE-1 (I.E., AGE-2+ ONLY)?
@@ -66,8 +66,8 @@ CAN_HAUL_OFFSET = 200
 SPECIES_ID = 22500 # numeric species code for Pacific hake
 SHIP_US = 160 # US ship ID
 SHIP_CAN = 584 # CAN ship ID
-SURVEY_US = 201906 # US survey identifier
-SURVEY_CAN = 2019097 # CAN survey identifier
+SURVEY_US = 201707 # US survey identifier
+SURVEY_CAN = 201701 # CAN survey identifier
 
 BIODATA_SHIP_SPECIES = {
     "ships": {
@@ -89,7 +89,7 @@ BIODATA_SHIP_SPECIES = {
 AGE1_DOMINATED_HAULS = []
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # HAUL STRATIFICATION FILE
-HAUL_STRATA_FILE = DATA_ROOT / "input/Stratification/US_CAN strata 2019_final.xlsx"
+HAUL_STRATA_FILE = DATA_ROOT / "input/Stratification/2017/US&CAN strata_final.xlsx"
 # HAUL STRATIFICATION SHEET MAP
 # ---- Valid keys are limited to "ks" and "inpfc"
 HAUL_STRATA_SHEETS = {
@@ -97,7 +97,7 @@ HAUL_STRATA_SHEETS = {
     "ks": "Base KS",
 }
 # GEOGRAPHIC STRATIFICATION FILE
-GEOSTRATA_FILE = DATA_ROOT / "input/Stratification/Stratification_geographic_Lat_2019_final.xlsx"
+GEOSTRATA_FILE = DATA_ROOT / "input/Stratification/Stratification_geographic_Lat_final.xlsx"
 # GEOGRAPHIC STRATIFICATION SHEET MAP
 # ---- Valid keys are limited to "ks" and "inpfc"
 GEOSTRATA_SHEETS = {
@@ -114,7 +114,7 @@ KRIGING_MESH_SHEET = "krigedgrid2_5nm_forChu"
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # KRIGING AND VARIOGRAM PARAMETERS FILE
 KRIGING_VARIOGRAM_PARAMETERS_FILE = (
-    DATA_ROOT / "input/Kriging_files/default_vario_krig_settings_2019_US_CAN.xlsx"
+    DATA_ROOT / "input" / "Kriging_files/default_vario_krig_settings_INPFC_final.xlsx"
 )
 # KRIGING AND VARIOGRAM PARAMETERS SHEET
 KRIGING_VARIGORAM_PARAMETERS_SHEET = "Sheet1"
@@ -135,14 +135,13 @@ ISOBATH_SHEET = "Smoothing_EasyKrig"
 ####################################################################################################
 import logging
 import numpy as np
-import pandas as pd
 import xarray as xr
 from lmfit import Parameters
-from echopop.workflows.nwfsc_feat import functions as feat, parameters as feat_parameters, Reporter
+from echopop.utils import feat_functions as feat
+from echopop.reports import Reporter, compare
 import echopop.ingest as ingestion
 from echopop import geostatistics, inversion, utils
-from echopop.survey import biology, proportions, stratified, transect
-from echopop.workflows.nwfsc_feat import apportionment as feat_apportion, biology as feat_biology
+from echopop.survey import apportionment, biology, proportions, stratified, transect
 ####################################################################################################
 # FORMAT LOGGER
 for handler in logging.root.handlers[:]:
@@ -207,7 +206,7 @@ else:
     )
 
     # EXPORT REGION NAME MAPPING
-    region_name_expr = {
+    REGION_NAME_EXPR_DICT = {
         "REGION_CLASS": {
             "Age-1 Hake": "^(?:h1a(?![a-z]|m))",
             "Age-1 Hake Mix": "^(?:h1am(?![a-z]|1a))",
@@ -225,17 +224,15 @@ else:
     
     # PROCESS REGION NAMES 
     logging.info(
-        f"---- Processing export region names\n"
-        f"     Applying CAN haul number offset: {CAN_HAUL_OFFSET}"
+        "---- Processing export region names\n"
+        "     Applying CAN haul number offset: 200"
     )
-    
-    # >>>> Maybe insert `utils.add_uid` (or equivalent function)
     df_exports_with_regions = ingestion.nasc.process_region_names(
         nasc_cells=df_exports,
         region_name_expr=REGION_NAME_EXPR_DICT,
-        can_haul_offset=CAN_HAUL_OFFSET,
+        can_haul_offset=200,
     )
-    
+
     # GENERATE TRANSECT-REGION-HAUL KEY
     if REMOVE_AGE1:
         CLASS_REGIONS = ["Hake", "Hake Mix"]
@@ -265,9 +262,8 @@ else:
     logging.info(
         "---- Finalizing NASC export ingestion\n"
         "     Searching for the export regions: 'Age-1 Hake', 'Age-1 Hake Mix', 'Hake', 'Hake Mix'"
-        "     Imputing overlapping region IDs within each interval: True"
+        "     \nImputing overlapping region IDs within each interval: True"
     )
-    
     df_nasc = ingestion.nasc.consolidate_echvoiew_nasc(
         nasc_data=df_exports_with_regions,
         interval_data=df_intervals,
@@ -276,8 +272,6 @@ else:
         transect_region_haul_key=df_transect_region_haul_key,
         haul_uid_config=HAUL_UID_CONFIG
     )
-    
-    # >>>
 logging.info(
     "NASC ingestion complete\n"
     "'df_nasc' created."
@@ -295,7 +289,6 @@ logging.info(
 FEAT_TO_ECHOPOP_BIODATA_COLUMNS = {
     "frequency": "length_count",
     "haul": "haul_num",
-    "haul ": "haul_num",
     "weight_in_haul": "weight",
 }
 
@@ -317,7 +310,6 @@ dict_df_bio = ingestion.load_biological_data(
     biodata_label_map=BIODATA_SEX,
     haul_uid_config=HAUL_UID_CONFIG,
 )
-
 logging.info(
     "Biodata ingestion complete\n"
     "'dict_df_bio' created."
@@ -346,9 +338,11 @@ logging.info(
 
 # HAUL-BASED STRATIFICATION DATAFRAME COLUMN NAME MAPPING
 FEAT_TO_ECHOPOP_STRATA_COLUMNS = {
-    "fraction_hake": "nasc_proportion",
+    "wt": "nasc_proportion",
     "haul": "haul_num",
-    "stratum": "stratum_num",
+    "haul ": "haul_num",
+    "cluster number": "stratum_num",
+    "inpfc": "stratum_num"
 }
 
 # READ IN STRATA FILE 
@@ -369,7 +363,7 @@ logging.info(
 # GEOGRAPHIC-BASED STRATIFICATION DATAFRAME COLUMN NAME MAPPING
 FEAT_TO_ECHOPOP_GEOSTRATA_COLUMNS = {
     "latitude (upper limit)": "northlimit_latitude",
-    "stratum": "stratum_num",
+    "strata index": "stratum_num",
 }
 
 # READ IN GEOSTRATA FILE
@@ -484,6 +478,7 @@ df_nasc = ingestion.join_strata_by_uid(
     data=df_nasc, strata=df_dict_strata["ks"], default_stratum=0, stratum_name="stratum_ks"
 )
 
+
 # GEOGRAPHIC-BASED STRATA
 logging.info(
     "Applying geographic-based strata to 'df_nasc' and 'df_mesh.\n"
@@ -567,7 +562,7 @@ logging.info(
     )
 
 # SEX-SPECIFIC
-da_binned_weights_sex = feat_biology.length_binned_weights(
+da_binned_weights_sex = biology.length_binned_weights(
     data=dict_df_bio["specimen"],
     length_bins=LENGTH_BINS,
     regression_coefficients=dict_length_weight_coefs["sex"],
@@ -576,7 +571,7 @@ da_binned_weights_sex = feat_biology.length_binned_weights(
 )
 
 # ALL FISH
-da_binned_weights_all = feat_biology.length_binned_weights(
+da_binned_weights_all = biology.length_binned_weights(
     data=dict_df_bio["specimen"].assign(sex="all"),
     length_bins=LENGTH_BINS,
     regression_coefficients=dict_length_weight_coefs["all"],
@@ -757,12 +752,11 @@ logging.info(
     "     Grouping by: 'sex'\n"
     "     Excluding: 'sex'='unsexed' from 'dict_df_number_proportions'"    
 )
-feat_biology.compute_abundance(
+biology.compute_abundance(
     transect_data=df_nasc,
     exclude_filter={"sex": "unsexed"},
     number_proportions=dict_ds_number_proportion,
 )
-
 # COMPUTE STRATUM-AVERAGED WEIGHTS
 da_averaged_weight = proportions.stratum_averaged_weight(
     number_proportions=dict_ds_number_proportion,
@@ -777,11 +771,10 @@ logging.info(
     "     Stratifying by: 'stratum_ks'\n"
     "     Grouping by: 'sex'\n"  
 )
-feat_biology.compute_biomass(
+biology.compute_biomass(
     transect_data=df_nasc,
     stratum_weights=da_averaged_weight,
 )
-
 # AGE-1 CONTRIBUTION REMOVAL
 if REMOVE_AGE1:
     logging.info(
@@ -817,7 +810,7 @@ if REMOVE_AGE1:
     )
 
     # APPLY REMOVAL
-    df_nasc_proc = feat_apportion.remove_group_from_estimates(
+    df_nasc_proc = apportionment.remove_group_from_estimates(
         transect_data=df_nasc,
         group_proportions=xr.Dataset({
             "nasc": age1_nasc_proportions,
@@ -858,7 +851,7 @@ logging.info(
 
 # ABUNDANCE
 logging.info("Distributing abundances...")
-dict_ds_transect_abundance_table = feat_apportion.distribute_population_estimates(
+dict_ds_transect_abundance_table = apportionment.distribute_population_estimates(
     data = df_nasc,
     proportions = dict_ds_number_proportion,
     variable = "abundance",
@@ -868,7 +861,7 @@ dict_ds_transect_abundance_table = feat_apportion.distribute_population_estimate
 logging.info("Abundance distributions complete\n'dict_ds_transect_abundance_table' created.")
 # BIOMASS [ALL]
 logging.info("Distributing biomass...")
-dict_ds_transect_biomass_table = feat_apportion.distribute_population_estimates(
+dict_ds_transect_biomass_table = apportionment.distribute_population_estimates(
     data=df_nasc,
     proportions=dict_da_weight_proportion,
     variable = "biomass",
@@ -877,14 +870,14 @@ dict_ds_transect_biomass_table = feat_apportion.distribute_population_estimates(
 
 dict_ds_transect_biomass_table[
     "standardized_unaged"
-] = feat_apportion.distribute_unaged_from_aged(
+] = apportionment.distribute_unaged_from_aged(
     population_table = dict_ds_transect_biomass_table["unaged"],
     reference_table = dict_ds_transect_biomass_table["aged"],
     stratum_dim = "stratum_ks",
     impute = False 
 )
 
-da_transect_biomass_table = feat_apportion.sum_population_tables(
+da_transect_biomass_table = apportionment.sum_population_tables(
     population_tables={
         "aged": dict_ds_transect_biomass_table["aged"],
         "unaged": dict_ds_transect_biomass_table["standardized_unaged"]
@@ -894,7 +887,7 @@ da_transect_biomass_table = feat_apportion.sum_population_tables(
 logging.info("Biomass distribution complete\n'dict_ds_transect_biomass_table' created.")
 # BIOMASS [AGED-ONLY]
 logging.info("Distributing biomass...\n     Aged-only weight proportions: True")
-df_transect_aged_biomass_table = feat_apportion.distribute_population_estimates(
+df_transect_aged_biomass_table = apportionment.distribute_population_estimates(
     data=df_nasc_proc,
     proportions=dict_da_weight_proportion["aged"],
     variable="biomass",
@@ -1042,11 +1035,6 @@ KRIGING_PARAMETERS = {
 # VARIOGRAM PARAMETERS CONTAINER
 VARIOGRAM_PARAMETERS = {
     "model": ["exponential", "bessel"],
-    "sill": dict_variogram_params["sill"],
-    "nugget": dict_variogram_params["nugget"],
-    "correlation_range": dict_variogram_params["correlation_range"],
-    "hole_effect_range": dict_variogram_params["hole_effect_range"],
-    "decay_power": dict_variogram_params["decay_power"],
     **best_fit_parameters
 }
 
@@ -1089,7 +1077,6 @@ logging.info(
     f"'df_kriged_results' created.\n"
     f"Global survey CV: {krg.survey_cv:.3f}"
 )
-
 # ==================================================================================================
 # CONVERT BIOMASS DENSITY TO NASC
 logging.info(
@@ -1104,7 +1091,7 @@ df_kriged_results["biomass"] = df_kriged_results["biomass_density"] * df_kriged_
 logging.info("New column in 'df_kriged_results': 'biomass'")
 
 # BIOMASS TO NASC
-feat_apportion.mesh_biomass_to_nasc(
+apportionment.mesh_biomass_to_nasc(
     mesh_data=df_kriged_results,
     biodata=dict_da_weight_proportion,
     group_columns=["sex", "stratum_ks"],
@@ -1138,7 +1125,7 @@ logging.info(
 
 # ABUNDANCE [ALL]
 logging.info("Distributing abundances...")
-dict_ds_kriged_abundance_table = feat_apportion.distribute_population_estimates(
+dict_ds_kriged_abundance_table = apportionment.distribute_population_estimates(
     data=df_kriged_results,
     proportions = dict_ds_number_proportion,
     variable = "abundance",
@@ -1153,7 +1140,7 @@ logging.info(
     "     Reference: Aged abundances\n"
     "     Imputing missing bins: False"
 )
-dict_ds_kriged_abundance_table["standardized_unaged"] = feat_apportion.distribute_unaged_from_aged(
+dict_ds_kriged_abundance_table["standardized_unaged"] = apportionment.distribute_unaged_from_aged(
     population_table = dict_ds_kriged_abundance_table["unaged"],
     reference_table = dict_ds_kriged_abundance_table["aged"],
     stratum_dim = "stratum_ks",
@@ -1162,7 +1149,7 @@ dict_ds_kriged_abundance_table["standardized_unaged"] = feat_apportion.distribut
 
 # BIOMASS [ALL]
 logging.info("Distributing biomass...")
-dict_ds_kriged_biomass_table = feat_apportion.distribute_population_estimates(
+dict_ds_kriged_biomass_table = apportionment.distribute_population_estimates(
     data = df_kriged_results,
     proportions = dict_da_weight_proportion,
     variable = "biomass",
@@ -1177,7 +1164,7 @@ logging.info(
     "     Reference: Aged biomass\n"
     "     Imputing missing bins: True"
 )
-dict_ds_kriged_biomass_table["standardized_unaged"] = feat_apportion.distribute_unaged_from_aged(
+dict_ds_kriged_biomass_table["standardized_unaged"] = apportionment.distribute_unaged_from_aged(
     population_table = dict_ds_kriged_biomass_table["unaged"],
     reference_table = dict_ds_kriged_biomass_table["aged"],
     stratum_dim = "stratum_ks",
@@ -1188,7 +1175,7 @@ dict_ds_kriged_biomass_table["standardized_unaged"] = feat_apportion.distribute_
 # CONSOLIDATE
 # ---- ABUNDANCE
 logging.info("Consolidating abundance tables...")
-da_kriged_abundance_table = feat_apportion.sum_population_tables(
+da_kriged_abundance_table = apportionment.sum_population_tables(
     population_tables={
         "aged": dict_ds_kriged_abundance_table["aged"],
         "unaged": dict_ds_kriged_abundance_table["standardized_unaged"]
@@ -1197,7 +1184,7 @@ da_kriged_abundance_table = feat_apportion.sum_population_tables(
 logging.info("Abundance table complete\n'df_kriged_abundance_table' created.")
 # ---- Biomass
 logging.info("Consolidating biomass tables...")
-da_kriged_biomass_table = feat_apportion.sum_population_tables(
+da_kriged_biomass_table = apportionment.sum_population_tables(
     population_tables={
         "aged": dict_ds_kriged_biomass_table["aged"],
         "unaged": dict_ds_kriged_biomass_table["standardized_unaged"]
@@ -1209,14 +1196,14 @@ logging.info("Biomass table complete\n'df_kriged_biomass_table' created.")
 if REMOVE_AGE1:
     # REDISTRIBUTE AGE-1 ABUNDANCES
     logging.info("Redistributing kriged age-1 abundances and biomasses...")
-    da_kriged_abundance_table_proc = feat_apportion.reallocate_excluded_estimates(
+    da_kriged_abundance_table_proc = apportionment.reallocate_excluded_estimates(
         population_table=da_kriged_abundance_table,
         exclusion_filter={"age_bin": [1]},
         group_columns=["sex"],
     )
 
     # REDISTRIBTUE AGE-1 BIOMASS
-    da_kriged_biomass_table_proc = feat_apportion.reallocate_excluded_estimates(
+    da_kriged_biomass_table_proc = apportionment.reallocate_excluded_estimates(
         population_table=da_kriged_biomass_table,
         exclusion_filter={"age_bin": [1]},
         group_columns=["sex"],
@@ -1314,7 +1301,6 @@ logging.info(
     f"    Resampling/bootstrapping bias: "
     f"{df_jh_kriged_results.loc[('survey', 'cv')]['bias']:.3f}"
 )
-
 # ==================================================================================================
 # REPORT GENERATION
 # ==================================================================================================
@@ -1446,6 +1432,7 @@ reporter.transect_population_results_report(
     stratum_name="stratum_ks",
 )
 
+
 # Nonzero values
 reporter.transect_population_results_report(
     filename="transect_population_results_nonzero.xlsx",
@@ -1461,9 +1448,6 @@ reporter.transect_population_results_report(
 # [OPTIONAL] REPORT COMPARISONS WITH ECHOPRO
 # ==================================================================================================
 if COMPARE:
-    # Import
-    from echopop.workflows.nwfsc_feat import comparisons
-    
     # Dictionary map
     ECHOPRO_TO_ECHOPOP_FILE_MAP = {
         "aged_length_haul_counts": {
@@ -1475,19 +1459,19 @@ if COMPARE:
             "echopop": "total_length_haul_counts.xlsx"
         },
         "aged_kriged_mesh_biomass_full": {
-            "echopro": "EchoPro_kriged_aged_output-2019_1.xlsx",
+            "echopro": "EchoPro_kriged_aged_output-2017_1.xlsx",
             "echopop": "kriged_aged_biomass_mesh_full.xlsx"
         },
         "aged_kriged_mesh_biomass_subset": {
-            "echopro": "EchoPro_kriged_aged_output-2019_0.xlsx",
+            "echopro": "EchoPro_kriged_aged_output-2017_0.xlsx",
             "echopop": "kriged_aged_biomass_mesh_nonzero.xlsx"
         },
         "kriged_mesh_biomass_full": {
-            "echopro": "EchoPro_kriged_output-28-Jan-2026_0.xlsx",
+            "echopro": "EchoPro_kriged_output-27-Jan-2026_0.xlsx",
             "echopop": "kriged_biomass_mesh_full.xlsx"
         },
         "kriged_mesh_biomass_subset": {
-            "echopro": "EchoPro_kriged_output-28-Jan-2026_1.xlsx",
+            "echopro": "EchoPro_kriged_output-27-Jan-2026_1.xlsx",
             "echopop": "kriged_biomass_mesh_nonzero.xlsx"
         },
         "kriging_input": {
@@ -1503,11 +1487,11 @@ if COMPARE:
             "echopop": "kriged_length_age_biomass_report.xlsx"
         },
         "aged_transect_biomass_full": {
-            "echopro": "EchoPro_un-kriged_aged_output-2019_0.xlsx",
+            "echopro": "EchoPro_un-kriged_aged_output-2017_0.xlsx",
             "echopop": "transect_aged_biomass_report_full.xlsx"
         },
         "aged_transect_biomass_subset": {
-            "echopro": "EchoPro_un-kriged_aged_output-2019_1.xlsx",
+            "echopro": "EchoPro_un-kriged_aged_output-2017_1.xlsx",
             "echopop": "transect_aged_biomass_report_nonzero.xlsx"
         },
         "transect_length_age_abundance": {
@@ -1519,23 +1503,23 @@ if COMPARE:
             "echopop": "transect_length_age_biomass_report.xlsx"
         },
         "transect_results_full": {
-            "echopro": "EchoPro_un-kriged_output-28-Jan-2026_0.xlsx",
+            "echopro": "EchoPro_un-kriged_output-27-Jan-2026_0.xlsx",
             "echopop": "transect_population_results_full.xlsx"
         },
         "transect_results_subset": {
-            "echopro": "EchoPro_un-kriged_output-28-Jan-2026_1.xlsx",
+            "echopro": "EchoPro_un-kriged_output-27-Jan-2026_1.xlsx",
             "echopop": "transect_population_results_nonzero.xlsx"
         }
     }
     
     # AGED LENGTH HAUL COUNTS
-    echopro_aged_length_haul_counts = comparisons.read_pivot_table_report(
+    echopro_aged_length_haul_counts = compare.read_pivot_table_report(
         ECHOPRO_REPORTS_DIR / ECHOPRO_TO_ECHOPOP_FILE_MAP["aged_length_haul_counts"]["echopro"]
     )
-    echopop_aged_length_haul_counts = comparisons.read_pivot_table_report(
+    echopop_aged_length_haul_counts = compare.read_pivot_table_report(
         REPORTS_DIR / ECHOPRO_TO_ECHOPOP_FILE_MAP["aged_length_haul_counts"]["echopop"]
     )
-    comparisons.plot_haul_count_comparisons(
+    compare.plot_haul_count_comparisons(
         echopro=echopro_aged_length_haul_counts, 
         echopop=echopop_aged_length_haul_counts,
         save_filepath=COMPARISONS_DIR / "aged_length_haul_counts.png",
@@ -1543,13 +1527,13 @@ if COMPARE:
     )
     
     # TOTAL LENGTH HAUL COUNTS
-    echopro_total_length_haul_counts = comparisons.read_pivot_table_report(
+    echopro_total_length_haul_counts = compare.read_pivot_table_report(
         ECHOPRO_REPORTS_DIR / ECHOPRO_TO_ECHOPOP_FILE_MAP["total_length_haul_counts"]["echopro"]
     )
-    echopop_total_length_haul_counts = comparisons.read_pivot_table_report(
+    echopop_total_length_haul_counts = compare.read_pivot_table_report(
         REPORTS_DIR / ECHOPRO_TO_ECHOPOP_FILE_MAP["total_length_haul_counts"]["echopop"]
     )
-    comparisons.plot_haul_count_comparisons(
+    compare.plot_haul_count_comparisons(
         echopro=echopro_total_length_haul_counts, 
         echopop=echopop_total_length_haul_counts,
         save_filepath=COMPARISONS_DIR / "total_length_haul_counts.png",
@@ -1557,16 +1541,16 @@ if COMPARE:
     )
     
     # KRIGED LENGTH-AGE ABUNDANCE
-    echopro_kriged_abundance_table = comparisons.read_pivot_table_report(
+    echopro_kriged_abundance_table = compare.read_pivot_table_report(
         filepath=(
             ECHOPRO_REPORTS_DIR / 
             ECHOPRO_TO_ECHOPOP_FILE_MAP["kriged_length_age_abundance"]["echopro"]
         )
     )
-    echopop_kriged_abundance_table = comparisons.read_pivot_table_report(
+    echopop_kriged_abundance_table = compare.read_pivot_table_report(
         filepath=REPORTS_DIR / ECHOPRO_TO_ECHOPOP_FILE_MAP["kriged_length_age_abundance"]["echopop"]
     )
-    comparisons.plot_population_table_comparisons(
+    compare.plot_population_table_comparisons(
         echopro=echopro_kriged_abundance_table, 
         echopop=echopop_kriged_abundance_table, 
         save_filepath=COMPARISONS_DIR / "kriged_length_age_abundance.png",
@@ -1574,18 +1558,18 @@ if COMPARE:
     )
     
     # TRANSECT LENGTH-AGE ABUNDANCE
-    echopro_transect_abundance_table = comparisons.read_pivot_table_report(
+    echopro_transect_abundance_table = compare.read_pivot_table_report(
         filepath=(
             ECHOPRO_REPORTS_DIR / 
             ECHOPRO_TO_ECHOPOP_FILE_MAP["transect_length_age_abundance"]["echopro"]
         )
     )
-    echopop_transect_abundance_table = comparisons.read_pivot_table_report(
+    echopop_transect_abundance_table = compare.read_pivot_table_report(
         filepath=(
             REPORTS_DIR / ECHOPRO_TO_ECHOPOP_FILE_MAP["transect_length_age_abundance"]["echopop"]
         )
     )
-    comparisons.plot_population_table_comparisons(
+    compare.plot_population_table_comparisons(
         echopro=echopro_transect_abundance_table, 
         echopop=echopop_transect_abundance_table, 
         log_transform=True,
@@ -1594,16 +1578,16 @@ if COMPARE:
     )
 
     # KRIGED AGED BIOMASS
-    echopro_kriged_biomass_table = comparisons.read_pivot_table_report(
+    echopro_kriged_biomass_table = compare.read_pivot_table_report(
         filepath=(
             ECHOPRO_REPORTS_DIR / 
             ECHOPRO_TO_ECHOPOP_FILE_MAP["kriged_length_age_biomass"]["echopro"]
         )
     )
-    echopop_kriged_biomass_table = comparisons.read_pivot_table_report(
+    echopop_kriged_biomass_table = compare.read_pivot_table_report(
         filepath=REPORTS_DIR / ECHOPRO_TO_ECHOPOP_FILE_MAP["kriged_length_age_biomass"]["echopop"]
     )
-    comparisons.plot_population_table_comparisons(
+    compare.plot_population_table_comparisons(
         echopro=echopro_kriged_biomass_table, 
         echopop=echopop_kriged_biomass_table, 
         save_filepath=COMPARISONS_DIR / "kriged_length_age_biomass.png",
@@ -1611,16 +1595,16 @@ if COMPARE:
     )
 
     # TRANSECT AGED BIOMASS
-    echopro_transect_biomass_table = comparisons.read_pivot_table_report(
+    echopro_transect_biomass_table = compare.read_pivot_table_report(
         filepath=(
             ECHOPRO_REPORTS_DIR / 
             ECHOPRO_TO_ECHOPOP_FILE_MAP["transect_length_age_biomass"]["echopro"]
         )
     )
-    echopop_transect_biomass_table = comparisons.read_pivot_table_report(
+    echopop_transect_biomass_table = compare.read_pivot_table_report(
         filepath=REPORTS_DIR / ECHOPRO_TO_ECHOPOP_FILE_MAP["transect_length_age_biomass"]["echopop"]
     )
-    comparisons.plot_population_table_comparisons(
+    compare.plot_population_table_comparisons(
         echopro=echopro_transect_biomass_table, 
         echopop=echopop_transect_biomass_table, 
         save_filepath=COMPARISONS_DIR / "transect_length_age_biomass.png",
@@ -1628,14 +1612,14 @@ if COMPARE:
     )
 
     # KRIGING INPUTS
-    echopro_kriging_input = comparisons.read_geodata(
+    echopro_kriging_input = compare.read_geodata(
         filepath=ECHOPRO_REPORTS_DIR / ECHOPRO_TO_ECHOPOP_FILE_MAP["kriging_input"]["echopro"]
     )
-    echopop_kriging_input = comparisons.read_geodata(
+    echopop_kriging_input = compare.read_geodata(
         filepath=REPORTS_DIR / ECHOPRO_TO_ECHOPOP_FILE_MAP["kriging_input"]["echopop"]
     ) 
 
-    comparisons.plot_geodata(
+    compare.plot_geodata(
         echopro=echopro_kriging_input,
         echopop=echopop_kriging_input,
         save_filepath=COMPARISONS_DIR / "kriging_input.png",
@@ -1643,17 +1627,17 @@ if COMPARE:
     )
 
     # TRANSECT POPULATION ESTIMATES
-    echopro_transect_estimates = comparisons.read_geodata(
+    echopro_transect_estimates = compare.read_geodata(
         filepath=(
             ECHOPRO_REPORTS_DIR / ECHOPRO_TO_ECHOPOP_FILE_MAP["transect_results_full"]["echopro"]
         ),
     )
 
-    echopop_transect_estimates = comparisons.read_geodata(
+    echopop_transect_estimates = compare.read_geodata(
         filepath=REPORTS_DIR / ECHOPRO_TO_ECHOPOP_FILE_MAP["transect_results_full"]["echopop"],
     )
 
-    comparisons.plot_geodata(
+    compare.plot_geodata(
         echopro=echopro_transect_estimates,
         echopop=echopop_transect_estimates,
         save_filepath={
@@ -1671,14 +1655,14 @@ if COMPARE:
     )
 
     # KRIGING POPULATION ESTIMATES
-    echopro_kriged_estimates = comparisons.read_geodata(
+    echopro_kriged_estimates = compare.read_geodata(
         filepath=(
             ECHOPRO_REPORTS_DIR / 
             ECHOPRO_TO_ECHOPOP_FILE_MAP["kriged_mesh_biomass_full"]["echopro"]
         ),
     )
 
-    echopop_kriged_estimates = comparisons.read_geodata(
+    echopop_kriged_estimates = compare.read_geodata(
         filepath=REPORTS_DIR / ECHOPRO_TO_ECHOPOP_FILE_MAP["kriged_mesh_biomass_full"]["echopop"],
     )
     
@@ -1694,7 +1678,7 @@ if COMPARE:
         f"  Echopop: {round(echopop_kriged_estimates["abundance"].sum())} fish"
     )
 
-    comparisons.plot_geodata(
+    compare.plot_geodata(
         echopro=echopro_kriged_estimates,
         echopop=echopop_kriged_estimates,
         save_filepath={
@@ -1706,3 +1690,6 @@ if COMPARE:
         },
         show_plot=SHOW_PLOT
     )
+
+
+
