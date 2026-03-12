@@ -107,6 +107,8 @@ ignore = [
 "tests/**" = ["D"]
 # Ignore ALL docstring rules in the docs directory and all its subfolders
 "docs/**" = ["D"]
+# Ignore for workflows
+"echopop/workflow_examples/**" = ["D", "B"]
 # To specifically hit those __init__.py files in core:
 "echopop/core/__init__.py" = ["D104"]
 
