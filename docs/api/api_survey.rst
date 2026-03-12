@@ -8,7 +8,10 @@ Survey
 
 Biological
 ----------
+.. autofunction:: echopop.survey.biology.compute_abundance
+.. autofunction:: echopop.survey.biology.compute_biomass
 .. autofunction:: echopop.survey.biology.fit_length_weight_regression
+.. autofunction:: echopop.survey.biology.length_binned_weights
 .. autofunction:: echopop.survey.biology.quantize_length_data
 
 Distributions and proportions
@@ -23,6 +26,8 @@ Distributions and proportions
 .. autofunction:: echopop.survey.proportions.get_nasc_proportions_slice
 .. autofunction:: echopop.survey.proportions.get_number_proportions_slice
 .. autofunction:: echopop.survey.proportions.get_weight_proportions_slice
+.. automodule:: echopop.survey.apportionment
+   :members:
 
 Net selectivity correction
 --------------------------

@@ -5,5 +5,5 @@
 
 Utilities
 =========
-.. autofunction:: echopop.utils.apply_filters
-.. autofunction:: echopop.utils.binify
+.. autofunction:: echopop.utils.base.apply_filters
+.. autofunction:: echopop.utils.base.binify
