@@ -4,6 +4,7 @@ from .biological import (
     generate_composite_key,
     load_biodata_views,
     load_biological_data,
+    load_biodata_db_views,
 )
 from .mesh import load_isobath_data, load_mesh_data
 from .params import load_kriging_variogram_params
@@ -21,6 +22,7 @@ __all__ = [
     "load_biological_data",
     "load_isobath_data",
     "load_biodata_views",
+    "load_biodata_db_views",
     "load_mesh_data",
     "load_kriging_variogram_params",
     "join_geostrata_by_latitude",

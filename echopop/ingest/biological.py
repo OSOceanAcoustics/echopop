@@ -6,8 +6,9 @@ from typing import Any, Dict, List, Optional, Tuple
 import numpy as np
 import pandas as pd
 
-from ..utils import add_haul_uids
+from sqlalchemy import create_engine
 
+from ..utils import add_haul_uids
 
 def load_single_biological_sheet(
     biodata_filepath: Path,
@@ -89,6 +90,117 @@ def load_single_biological_view(
 
     return df_filtered
 
+def load_biodata_db_views(
+    db_credentials: Dict[str, str],
+    biodata_table_map: Dict[str, str],
+    column_name_map: Dict[str, str] = None,
+    subset_dict: Optional[Dict] = None,
+    biodata_label_map: Optional[Dict[str, Dict]] = None,
+    haul_uid_config: Dict[str, Any] = {},
+) -> Dict[str, pd.DataFrame] | None :
+    """
+    Load biological data from a postgres database.
+    Parameters
+    ----------
+    db_credentials : dict
+        Dictionary containing database credentials
+        (e.g., {"host": "localhost", "port": "5432", "dbname": "fisheries", "schema": "biodata"
+        "user": "<USERNAME>", "password": "<PASSWORD>"})
+    biodata_table_map : dict
+        Dictionary mapping dataset names to database table names
+        (e.g., {"specimen": "biodata_specimen", "length": "biodata_length", "catch": "biodata_catch"})
+    column_name_map : dict, optional
+        Dictionary mapping original column names to new column names
+        (e.g., {"frequency": "length_count", "haul": "haul_num"})
+    subset_dict : dict, optional
+        Subset dictionary containing ships and species_code for filtering
+        Format: {"ships": {ship_id: {"survey": survey_id, "haul_offset": offset}}, "species_code":
+        [codes]}
+    biodata_label_map : dict, optional
+        Dictionary mapping column names to value replacement dictionaries
+        (e.g., {"sex": {1: "male", 2: "female", 3: "unsexed"}})
+    haul_uid_config : Dict[str, Any]
+        Optional keyword arguments to override defaults or DataFrame values:
+
+        - ship_id (dict): Region-specific IDs, e.g., ``{'US': 10, 'CAN': 20}``.
+
+        - survey_id (dict): Region-specific IDs, e.g., ``{'US': 1, 'CAN': 2}``.
+
+        - species_id (int/str): A global species code override.
+
+        - haul_offset (int/float): A value subtracted from ``'haul_num'`` for records identified as
+          'CAN' (where ``haul_num - offset >= 0``).
+
+    Returns
+    -------
+    dict
+        Dictionary containing processed biological DataFrames keyed by dataset name
+    Examples
+    --------
+    >>> subset = {"ships": {160: {"survey": 201906}}, "species_code": [22500]}
+    >>> col_map = {"frequency": "length_count", "haul": "haul_num"}
+    >>> label_map = {"sex": {1: "male", 2: "female", 3: "unsexed"}}
+    """
+
+    try:
+        db_url = (f"postgresql+psycopg://"
+                  f"{db_credentials['user']}:{db_credentials['password']}@"
+                  f"{db_credentials['host']}:{db_credentials['port']}/"
+                  f"{db_credentials['dbname']}")
+
+        engine = create_engine(db_url)
+
+        biodata_dict = {}
+
+        with engine.connect() as connection:
+            for data_set, table in biodata_table_map.items():
+                query = f"SELECT * FROM {db_credentials['schema']}.{table};"
+
+                df_initial = pd.read_sql_query(query, connection)
+
+                # Force the column names to be lower case
+                df_initial.columns = df_initial.columns.str.lower()
+
+                # Rename the columns
+                if column_name_map:
+                    df_initial.rename(columns=column_name_map, inplace=True)
+
+                # # Validate data types for ship and survey before filtering
+                df_initial["ship"] = pd.to_numeric(df_initial["ship"])
+                df_initial["survey"] = pd.to_numeric(df_initial["survey"])
+
+                biodata_dict[data_set] = apply_ship_survey_filters(df_initial, subset_dict)
+
+        # Apply label mappings if provided
+        if biodata_label_map:
+            for col, mapping in biodata_label_map.items():
+                for name, df in biodata_dict.items():
+                    if isinstance(df, pd.DataFrame) and col in df.columns:
+                        df[col] = df[col].map(mapping).fillna(df[col])
+
+        # # Validate data types
+        biodata_dict["specimen"]["length"] = pd.to_numeric(biodata_dict["specimen"]["length"])
+        biodata_dict["specimen"]["weight"] = pd.to_numeric(biodata_dict["specimen"]["weight"])
+
+        # Reformat haul datatype
+        biodata_dict = {
+            k: v.assign(haul_num=v["haul_num"].astype(float)) for k, v in biodata_dict.items()
+        }
+
+        # Add UID labels
+        _ = {
+            k: add_haul_uids(v, _dataset_type=f"biodata.{k}", **haul_uid_config)
+            for k, v in biodata_dict.items()
+        }
+
+        return biodata_dict
+
+    except Exception as e:
+        print(f"Database error: {e}")
+
+    finally:
+        if 'engine' in locals():
+            engine.dispose()
 
 def load_biodata_views(
     biodata_filepaths: Dict[str, Path],
