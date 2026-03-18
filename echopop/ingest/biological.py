@@ -109,7 +109,7 @@ def load_biodata_db_views(
     column_name_map: dict[str, str] = None,
     subset_dict: dict | None = None,
     biodata_label_map: dict[str, dict] | None = None,
-    haul_uid_config: dict[str, Any] = {},
+    haul_uid_config: dict[str, Any] = None,
 ) -> dict[str, pd.DataFrame] | None:
     """
     Load biological data from a postgres database.
@@ -122,7 +122,8 @@ def load_biodata_db_views(
         "user": "<USERNAME>", "password": "<PASSWORD>"})
     biodata_table_map : dict
         Dictionary mapping dataset names to database table names
-        (e.g., {"specimen": "biodata_specimen", "length": "biodata_length", "catch": "biodata_catch"})
+        (e.g., {"specimen": "biodata_specimen", "length": "biodata_length",
+        "catch": "biodata_catch"})
     column_name_map : dict, optional
         Dictionary mapping original column names to new column names
         (e.g., {"frequency": "length_count", "haul": "haul_num"})
@@ -190,7 +191,7 @@ def load_biodata_db_views(
         # Apply label mappings if provided
         if biodata_label_map:
             for col, mapping in biodata_label_map.items():
-                for name, df in biodata_dict.items():
+                for _name, df in biodata_dict.items():
                     if isinstance(df, pd.DataFrame) and col in df.columns:
                         df[col] = df[col].map(mapping).fillna(df[col])
 

@@ -26,9 +26,10 @@ def postgres_container():
             "obj",
             (object,),
             {
-                "get_connection_url": lambda: "postgresql+psycopg://test_user:postgres@localhost:5432/test",
-                "get_container_host_ip": lambda: "localhost",
-                "get_exposed_port": lambda x: 5432,
+                "get_connection_url": lambda
+                    self: "postgresql+psycopg://test_user:postgres@localhost:5432/test",
+                "get_container_host_ip": lambda self: "localhost",
+                "get_exposed_port": lambda self, port: 5432,
             },
         )()
     else:
