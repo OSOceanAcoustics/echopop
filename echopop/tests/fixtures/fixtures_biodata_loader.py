@@ -9,6 +9,7 @@ HERE = Path(__file__).parent.absolute()
 TEST_DATA_ROOT = HERE.parent / "test_data"
 TEST_SQL_FILE = TEST_DATA_ROOT / "ingest" / "test_bio_data.sql"
 
+
 @pytest.fixture(scope="session")
 def postgres_container():
     """
@@ -21,21 +22,22 @@ def postgres_container():
 
     if is_github_action:
         # In GitHub Actions use the postgres service from workflow
-        yield type('obj', (object,), {
-            'get_connection_url': lambda: "postgresql+psycopg://test_user:postgres@localhost:5432/test",
-            'get_container_host_ip': lambda: "localhost",
-            'get_exposed_port': lambda x: 5432
-        })()
+        yield type(
+            "obj",
+            (object,),
+            {
+                "get_connection_url": lambda: "postgresql+psycopg://test_user:postgres@localhost:5432/test",
+                "get_container_host_ip": lambda: "localhost",
+                "get_exposed_port": lambda x: 5432,
+            },
+        )()
     else:
         # Local development
         try:
             from testcontainers.postgres import PostgresContainer
 
             container = PostgresContainer(
-                image="postgres:16",
-                username="test_user",
-                password="postgres",
-                dbname="test"
+                image="postgres:16", username="test_user", password="postgres", dbname="test"
             )
             container.start()
             yield container
@@ -78,7 +80,7 @@ def database_credentials(postgres_container):
     try:
         engine = create_engine(db_url)
         with engine.begin() as connection:
-            with open(TEST_SQL_FILE, "r") as f:
+            with open(TEST_SQL_FILE) as f:
                 sql_script = f.read()
                 connection.execute(text(sql_script))
     except Exception as e:
@@ -170,13 +172,12 @@ def pg_subset_dict():
         "species_code": [22500],
     }
 
+
 @pytest.fixture
 def bio_data_table_map():
     """Create table mapping for biological data in the database."""
-    return {
-        "catch": "echopop_catch",
-        "specimen": "echopop_fish"
-    }
+    return {"catch": "echopop_catch", "specimen": "echopop_fish"}
+
 
 @pytest.fixture
 def column_name_map():
@@ -186,6 +187,7 @@ def column_name_map():
         "weight_in_haul": "haul_weight",
         "species_id": "species_code",
     }
+
 
 @pytest.fixture
 def label_map():

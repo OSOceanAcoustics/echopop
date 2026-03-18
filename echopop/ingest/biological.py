@@ -15,10 +15,10 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
-
 from sqlalchemy import create_engine
 
 from ..utils.base import add_haul_uids
+
 
 def load_single_biological_sheet(
     biodata_filepath: Path,
@@ -102,6 +102,7 @@ def load_single_biological_view(
 
     return df_filtered
 
+
 def load_biodata_db_views(
     db_credentials: Dict[str, str],
     biodata_table_map: Dict[str, str],
@@ -109,9 +110,10 @@ def load_biodata_db_views(
     subset_dict: Optional[Dict] = None,
     biodata_label_map: Optional[Dict[str, Dict]] = None,
     haul_uid_config: Dict[str, Any] = {},
-) -> Dict[str, pd.DataFrame] | None :
+) -> Dict[str, pd.DataFrame] | None:
     """
     Load biological data from a postgres database.
+
     Parameters
     ----------
     db_credentials : dict
@@ -147,18 +149,20 @@ def load_biodata_db_views(
     -------
     dict
         Dictionary containing processed biological DataFrames keyed by dataset name
+
     Examples
     --------
     >>> subset = {"ships": {160: {"survey": 201906}}, "species_code": [22500]}
     >>> col_map = {"frequency": "length_count", "haul": "haul_num"}
     >>> label_map = {"sex": {1: "male", 2: "female", 3: "unsexed"}}
     """
-
     try:
-        db_url = (f"postgresql+psycopg://"
-                  f"{db_credentials['user']}:{db_credentials['password']}@"
-                  f"{db_credentials['host']}:{db_credentials['port']}/"
-                  f"{db_credentials['dbname']}")
+        db_url = (
+            f"postgresql+psycopg://"
+            f"{db_credentials['user']}:{db_credentials['password']}@"
+            f"{db_credentials['host']}:{db_credentials['port']}/"
+            f"{db_credentials['dbname']}"
+        )
 
         engine = create_engine(db_url)
 
@@ -211,8 +215,9 @@ def load_biodata_db_views(
         print(f"Database error: {e}")
 
     finally:
-        if 'engine' in locals():
+        if "engine" in locals():
             engine.dispose()
+
 
 def load_biodata_views(
     biodata_filepaths: dict[str, Path],
